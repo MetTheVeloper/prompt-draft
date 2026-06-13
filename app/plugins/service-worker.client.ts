@@ -1,15 +1,23 @@
+import { Capacitor } from '@capacitor/core'
+
 export default defineNuxtPlugin(() => {
-  if (!('serviceWorker' in navigator)) return
+  if (!process.client) return
 
-  window.addEventListener('load', async () => {
-    try {
-      const registration = await navigator.serviceWorker.register('/sw.js', {
-        scope: '/',
+  const isNativeApp = Capacitor.isNativePlatform()
+
+  if (isNativeApp) {
+    return
+  }
+
+  if (!('serviceWorker' in navigator)) {
+    return
+  }
+
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .catch((error) => {
+        console.warn('Service worker registration failed:', error)
       })
-
-      registration.update()
-    } catch (error) {
-      console.error('Service Worker registration failed:', error)
-    }
   })
 })

@@ -1,4 +1,8 @@
 <script setup lang="ts">
+import { Capacitor } from '@capacitor/core'
+
+const isNativeApp = ref(false)
+
 type BeforeInstallPromptEvent = Event & {
   prompt: () => Promise<void>
   userChoice: Promise<{
@@ -20,6 +24,7 @@ const isDismissed = ref(false)
 const isStandaloneMode = ref(false)
 
 const shouldShowBanner = computed(() => {
+  if (isNativeApp.value) return false
   if (isDismissed.value) return false
   if (isStandaloneMode.value) return false
 
@@ -117,6 +122,7 @@ const handleInstallClick = async () => {
 }
 
 onMounted(() => {
+  isNativeApp.value = Capacitor.isNativePlatform()
   isStandaloneMode.value = getIsStandalone()
 
   if (isStandaloneMode.value) return
