@@ -11,7 +11,7 @@ const { mini } = useScreen();
 
 <template>
   <el-flex v-if="app.ready" rules="rbc" type="header" :p="[8, 24]" :gap="16" :br="[0, 0, 1, 0]" bc="normal5" bg="surface65" bd="b8"
-    class="post t0 l0 r0 w100 zi200">
+    class="post t0 l0 r0 w100 zi200 app-header">
     <el-flex rules="rsc" type="link" to="/">
       <img :src="`img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp32" :alt="$t('app.title')" />
       <!-- <img :src="`img/logo_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp40" :alt="$t('app.title')" /> -->
@@ -39,3 +39,9 @@ const { mini } = useScreen();
     </el-flex>
   </el-flex>
 </template>
+
+<style>
+html.is-native-app .app-header {
+  padding-top: calc(var(--native-statusbar-height, 24px) + 8px) !important;
+}
+</style>
