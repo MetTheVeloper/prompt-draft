@@ -1,0 +1,2401 @@
+export default {
+  app: {
+    title: "Prompt Draft",
+    navigation: {
+      create: "ساخت پرامپت",
+      collage: "کلاژ آثار",
+      guide: "راهنما",
+    },
+    switchTheme: 'تعویض تم',
+    switchLang: 'تغییر زبان',
+  },
+  pwa: {
+    install: {
+      android: {
+        title: "نصب اپلیکیشن",
+        description: "می‌تونی Prompt Draft رو مثل یک اپلیکیشن روی دستگاهت نصب کنی.",
+        action: "نصب اپلیکیشن",
+      },
+      ios: {
+        title: "نصب روی دستگاه iOS",
+        description:
+          "برای نصب روی آیفون یا آیپد، از دکمه Share مرورگر استفاده کن و گزینه Add to Home Screen رو بزن.",
+        action: "گرفتم",
+        steps: {
+          share: "۱. روی دکمه Share در Safari بزن.",
+          addToHomeScreen: "۲. گزینه Add to Home Screen رو انتخاب کن.",
+          confirm: "۳. در مرحله بعد روی Add بزن.",
+        },
+      },
+      actions: {
+        close: "بستن",
+      },
+    },
+  },
+  pages: {
+    collage: {
+      title: "کلاژساز",
+      description: "تصاویر را انتخاب، جای‌گذاری یا Drag & Drop کن و خروجی نهایی را از canvas بگیر.",
+      rotateYourPhone: 'گوشی خود را بچرخانید',
+      dropzone: {
+        title: "افزودن تصویر",
+        description: "کلیک / Paste / Drag & Drop",
+      },
+      images: {
+        title: "تصاویر",
+        empty: "هنوز تصویری اضافه نشده است.",
+      },
+      brand: {
+        title: "لایه برند",
+        telegramPostId: "شناسه پست تلگرام",
+        telegramPostIdPlaceholder: "مثلا 450",
+        logoColor: "رنگ لوگو",
+        logoThemes: {
+          white: "سفید",
+          black: "مشکی",
+        },
+        position: "موقعیت برند",
+        positions: {
+          "top-left": "بالا چپ",
+          "top-center": "بالا وسط",
+          "top-right": "بالا راست",
+          "center-left": "وسط چپ",
+          center: "وسط",
+          "center-right": "وسط راست",
+          "bottom-left": "پایین چپ",
+          "bottom-center": "پایین وسط",
+          "bottom-right": "پایین راست",
+        },
+        height: "ارتفاع برند: {value}px",
+        opacity: "شفافیت: {value}٪",
+        gap: "فاصله لوگو و QR: {value}px",
+        help: "اگر شناسه پست خالی باشد، فقط لوگو نمایش داده می‌شود.",
+      },
+      canvas: {
+        title: "Canvas",
+        padding: "فاصله داخلی: {value}px",
+        gap: "فاصله بین تصاویر: {value}px",
+        backgroundColor: "رنگ پس‌زمینه",
+      },
+      preview: {
+        grid: "گرید: {columns}×{rows}",
+        rendering: "در حال رندر...",
+      },
+      actions: {
+        save: "ذخیره",
+        copy: "کپی",
+        clear: "پاک کردن",
+        remove: "حذف",
+      },
+    },
+  },
+  modules: {
+    style: {
+      title: "استایل",
+      description: "جهت بصری و هنری پرامپت را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "استایل اصلی",
+          description: "هویت اصلی استایل و مدیوم رندرینگ.",
+        },
+        modifiers: {
+          title: "تنظیم‌کننده‌های استایل",
+          description: "زبان بصری و رفتار استایلایزیشن را دقیق‌تر تنظیم کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری که به متن استایل ساخته‌شده اضافه می‌شوند.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی استایل ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        preset: {
+          label: "پریست استایل",
+          description: "استایل هنری اصلی را انتخاب کن.",
+          placeholder: "یک پریست استایل انتخاب کن",
+          options: {
+            "3d_cartoon": "کارتون سه‌بعدی",
+            anime_cover: "کاور انیمه",
+            cinematic_realism: "رئالیسم سینمایی",
+            clay_sculpture: "مجسمه گِلی",
+            vinyl_toy: "اسباب‌بازی وینیل",
+            angular_animation: "انیمیشن زاویه‌دار",
+            childlike_drawing: "نقاشی کودکانه",
+            cinematic_cgi_character: "کاراکتر CGI سینمایی",
+            crafted_paper_collage: "کلاژ کاغذی دست‌ساز",
+            fashion_caricature_sketch: "اسکچ کاریکاتور فشن",
+            geometric_editorial: "ادیتوریال هندسی",
+            ink_character_sketch: "اسکچ کاراکتر جوهری",
+            low_poly_3d: "سه‌بعدی لو-پلی",
+            low_poly_character: "کاراکتر لو-پلی",
+            marker_concept_art: "کانسپت آرت ماژیکی",
+            papier_mache_character: "کاراکتر پاپیه ماشه",
+            pixel_art_game_character: "کاراکتر بازی پیکسل آرت",
+            plush_toy_character: "کاراکتر عروسکی پولیشی",
+            primitive_cut_paper: "کاغذبری ابتدایی",
+            retro_comic: "کمیک رترو",
+            risograph_poster_art: "پوستر آرت ریزوگراف",
+            studio_photo_realism: "فوتورئالیسم استودیویی",
+            watercolor_editorial: "ادیتوریال آبرنگی",
+            woodcut_editorial: "ادیتوریال چوب‌تراش",
+          },
+        },
+        medium: {
+          label: "مدیوم",
+          description: "مدیوم بصری پایه را انتخاب کن.",
+          placeholder: "یک مدیوم انتخاب کن",
+          categories: {
+            digital_cg: "دیجیتال / CG",
+            drawing: "طراحی",
+            painting: "نقاشی",
+            paper_craft: "کاغذ / کاردستی",
+            photography: "عکاسی",
+            printmaking: "چاپ هنری",
+            sculpture_object: "مجسمه / شیء",
+            textile_handmade: "پارچه / دست‌ساز",
+          },
+          options: {
+            three_d_render: "رندر سه‌بعدی",
+            digital_illustration: "تصویرسازی دیجیتال",
+            photo_real: "فوتورئال",
+            painterly: "نقاشانه",
+          },
+        },
+        stylizationLevel: {
+          label: "سطح استایلایزیشن",
+          description: "کنترل کن استایل تا چه حد از واقع‌گرایی فاصله بگیرد.",
+          placeholder: "سطح استایلایزیشن را انتخاب کن",
+          options: {
+            subtle: "ظریف",
+            controlled: "کنترل‌شده",
+            strong: "قوی",
+            extreme: "شدید",
+            abstract: "انتزاعی",
+          },
+        },
+        shapeLanguage: {
+          label: "زبان فرم",
+          description: "رفتار غالب فرم و سیلوئت را مشخص کن.",
+          placeholder: "زبان فرم را انتخاب کن",
+          options: {
+            soft_rounded: "نرم و گرد",
+            geometric: "هندسی",
+            fluid: "سیال",
+            blocky: "بلوک‌مانند",
+            angular: "زاویه‌دار",
+            elongated: "کشیده",
+          },
+        },
+        visualTreatment: {
+          label: "پرداخت بصری",
+          description: "نوع رندرینگ و رفتار سطح را مشخص کن.",
+          compatibilityWarnings: {
+            mediumMismatch: "این گزینه ممکن است طبیعی‌ترین انتخاب برای مدیوم انتخاب‌شده نباشد.",
+          },
+          options: {
+            cel_shaded: "سل‌شید",
+            flat_graphic: "گرافیک تخت",
+            halftone_comic: "هافتون کمیک",
+            hand_painted: "دست‌نقاشی‌شده",
+            ink_watercolor: "جوهر و آبرنگ",
+            minimalist: "مینیمال",
+            paper_cutout: "برش کاغذی",
+            textured: "بافت‌دار",
+          },
+          placeholder: "نوع پرداخت بصری را انتخاب کن",
+        },
+        finish: {
+          label: "پرداخت نهایی",
+          description: "پولیش نهایی و حس سطح را مشخص کن.",
+          placeholder: "پرداخت نهایی را انتخاب کن",
+          compatibilityWarnings: {
+            mediumMismatch: "این گزینه ممکن است طبیعی‌ترین انتخاب برای مدیوم انتخاب‌شده نباشد.",
+          },
+          options: {
+            clean: "تمیز",
+            premium: "پریمیوم",
+            handcrafted: "دست‌ساز",
+            graphic: "گرافیکی",
+            glossy: "براق",
+            matte: "مات",
+            rough: "زبر",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری استایل را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه استایل را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی استایل",
+          description:
+            "اگر پر شود، این متن به خروجی نهایی استایل تبدیل می‌شود و همه فیلدهای دیگر نادیده گرفته می‌شوند.",
+          placeholder: "یک توضیح کامل سفارشی برای استایل بنویس...",
+        },
+      },
+      presets: {
+        soft_3d_cartoon: {
+          label: "کارتون سه‌بعدی نرم",
+          description: "یک ظاهر کارتونی سه‌بعدی، پولیش‌شده و استایلایز با فرم‌های نرم و گرد.",
+        },
+        premium_vinyl_character: {
+          label: "کاراکتر وینیل پریمیوم",
+          description: "استایل اسباب‌بازی وینیل کلکسیونی با پرداخت لوکس و پولیش‌شده.",
+        },
+        handmade_clay_artwork: {
+          label: "اثر گِلی دست‌ساز",
+          description: "استایل مجسمه گِلی دست‌ساز با حس لمسی و فیزیکی.",
+        },
+        cinematic_realistic_image: {
+          label: "تصویر رئالیستی سینمایی",
+          description: "یک تنظیم رئالیسم سینمایی تمیز با استایلایزیشن ظریف.",
+        },
+        angular_2d_animation: {
+          label: "انیمیشن دوبعدی زاویه‌دار",
+          description:
+            "استایل انیمیشن دوبعدی مینیمال و زاویه‌دار با سیلوئت‌های گرافیکی جسورانه و فرم‌های هندسی تیز.",
+        },
+        cinematic_cgi_character: {
+          label: "کاراکتر CGI سینمایی",
+          description:
+            "استایل کاراکتر CGI سینمایی با فرم‌های نرم و گرد، پرداخت نقاشانه و فینیش پریمیوم و پولیش‌شده.",
+        },
+        crafted_paper_collage: {
+          label: "کلاژ کاغذی دست‌ساز",
+          description: "استایل کلاژ کاغذی دست‌ساز با ساختار لایه‌لایه، فرم‌های بلوکی و فینیش لمسی.",
+        },
+        geometric_editorial_portrait: {
+          label: "پرتره ادیتوریال هندسی",
+          description:
+            "استایل پرتره ادیتوریال هندسی و جسورانه با شکل‌های زاویه‌دار ساده‌شده و پرداخت گرافیک تخت.",
+        },
+        ink_character_sketch: {
+          label: "اسکچ کاراکتر جوهری",
+          description:
+            "اسکچ کاراکتر جوهری و بیانگر با فرم‌های ارگانیک، بافت آبرنگی و فینیش هنری زبر.",
+        },
+        low_poly_character: {
+          label: "کاراکتر لو-پلی",
+          description: "استایل کاراکتر لو-پلی با فرم‌های هندسی ساده‌شده و فینیش مینیمال تمیز.",
+        },
+        marker_concept_art: {
+          label: "کانسپت آرت ماژیکی",
+          description:
+            "ظاهر کانسپت آرت استایلایز شده با ماژیک، فرم‌های ساختارمند، پرداخت دست‌نقاشی‌شده و فینیش بصری تمیز.",
+        },
+        messy_fashion_caricature: {
+          label: "کاریکاتور فشن آشفته",
+          description:
+            "استایل کاریکاتور فشن گروتسک با آناتومی اغراق‌شده، پرداخت جوهر و آبرنگ آشفته و انرژی ادیتوریال طنزآمیز.",
+        },
+        naive_childlike_artwork: {
+          label: "اثر کودکانه خام‌دستانه",
+          description:
+            "استایل اثر کودکانه خام‌دستانه با فرم‌های ساده‌شده، نقص‌های بازیگوشانه و جذابیت دست‌ساز.",
+        },
+        papier_mache_character: {
+          label: "کاراکتر پاپیه ماشه",
+          description:
+            "استایل کاراکتر پاپیه ماشه دست‌ساز با فرم‌های زاویه‌دار ساده‌شده و فینیش هنری لمسی.",
+        },
+        pixel_art_game_character: {
+          label: "کاراکتر بازی پیکسل آرت",
+          description:
+            "استایل کاراکتر بازی پیکسل آرت با فرم‌های بلوکی ساده‌شده، استایلایزیشن قوی و خوانایی گرافیکی جسورانه.",
+        },
+        plush_toy_character: {
+          label: "کاراکتر عروسکی پولیشی",
+          description:
+            "استایل کاراکتر عروسکی پولیشی با فرم‌های نرم و گرد، استایلایزیشن قوی و فینیش دست‌ساز و لمسی.",
+        },
+        primitive_cut_paper_portrait: {
+          label: "پرتره کاغذبری ابتدایی",
+          description:
+            "استایل پرتره کاغذبری ابتدایی، ساخته‌شده از شکل‌های ساده، بزرگ و لایه‌لایه با ساختار تخت و جسورانه.",
+        },
+        retro_comic_pop_art: {
+          label: "پاپ آرت کمیک رترو",
+          description:
+            "استایل پاپ آرت کمیک رترو با دورخط‌های مشکی جسورانه، کنتراست گرافیکی و پرداخت هافتون پرانرژی.",
+        },
+        risograph_poster_art: {
+          label: "پوستر آرت ریزوگراف",
+          description:
+            "استایل پوستر آرت ریزوگراف با فرم‌های ساختارمند، استایلایزیشن کنترل‌شده و فینیش گرافیکی جسورانه.",
+        },
+        studio_photo_realism: {
+          label: "فوتورئالیسم استودیویی",
+          description:
+            "تنظیم فوتورئالیسم استودیویی با استایلایزیشن ظریف، فرم‌های طبیعی و فینیش تمیز و پولیش‌شده.",
+        },
+        watercolor_editorial: {
+          label: "ادیتوریال آبرنگی",
+          description:
+            "استایل تصویرسازی ادیتوریال آبرنگی با فرم‌های ارگانیک سیال و پرداخت بیانگر جوهر و آبرنگ.",
+        },
+        woodcut_editorial: {
+          label: "ادیتوریال چوب‌تراش",
+          description:
+            "استایل ادیتوریال چوب‌تراش با فرم‌های گرافیکی زاویه‌دار، استایلایزیشن قوی و فینیش زبر شبیه چاپ.",
+        },
+      },
+    },
+    texture: {
+      title: "بافت",
+      description: "متریال، کیفیت سطح و جزئیات لمسی پرامپت را کنترل می‌کند.",
+      categories: {
+        vinyl_plastic: "وینیل / پلاستیک",
+        clay_ceramic: "گِل / سرامیک",
+        metal: "فلز",
+        wood: "چوب",
+        stone_mineral: "سنگ / ماده معدنی",
+        glass_crystal: "شیشه / کریستال",
+        fabric_textile: "پارچه / منسوجات",
+        leather_hide: "چرم / پوست",
+        paper_cardboard: "کاغذ / مقوا",
+        rubber: "لاستیک",
+        organic_natural: "ارگانیک / طبیعی",
+      },
+      warnings: {
+        surface_smooth: "این سطح معمولا برای متریال‌های تمیز، پولیش‌شده یا صنعتی مناسب‌تر است.",
+        surface_matte:
+          "سطوح مات معمولا با کاغذ، پارچه، گِل، چوب، لاستیک یا متریال‌های غیر بازتابنده بهتر کار می‌کنند.",
+        surface_glossy:
+          "سطوح براق برای پارچه یا متریال‌های بسیار متخلخل طبیعی نیستند، مگر اینکه روکش‌دار، لمینت‌شده یا پرداخت‌شده باشند.",
+        surface_high_gloss:
+          "فینیش بسیار براق و آینه‌ای معمولا برای شیشه، فلز، سرامیک، رزین یا پلاستیک روکش‌دار مناسب‌تر است.",
+        surface_brushed:
+          "بافت سطح برس‌خورده بیشتر برای فلز مناسب است و فقط گاهی روی چوب یا پلاستیک پرداخت‌شده جواب می‌دهد.",
+        surface_rough:
+          "سطوح زبر و لمسی معمولا روی چوب، سنگ، گِل، کاغذ یا متریال‌های دارای بافت طبیعی بهتر کار می‌کنند.",
+        surface_porous: "سطوح متخلخل معمولا برای شیشه یا فلزهای تمیز کمتر مناسب هستند.",
+        surface_grainy:
+          "بافت دانه‌ریز معمولا روی چوب، گِل، سنگ، کاغذ یا متریال‌های ارگانیک بهتر کار می‌کند.",
+        surface_fibrous: "بافت الیافی برای پارچه، کاغذ، چوب یا متریال‌های ارگانیک طبیعی‌تر است.",
+        surface_woven: "بافت بافته‌شده بیشتر برای پارچه یا متریال‌های نساجی مناسب است.",
+        surface_translucent:
+          "سطوح نیمه‌شفاف معمولا برای شیشه، کریستال، رزین، موم یا بعضی پلاستیک‌ها مناسب هستند.",
+        surface_frosted:
+          "سطوح مات‌شیشه‌ای روی شیشه، کریستال، رزین یا پلاستیک پرداخت‌شده بهتر کار می‌کنند.",
+        detail_intricate:
+          "جزئیات ظریف و پیچیده معمولا برای متریال‌های خیلی نرم یا لاستیکی کمتر مناسب است.",
+        detail_coarse:
+          "بافت درشت معمولا برای شیشه، کریستال، ابریشم، مخمل یا متریال‌های بسیار پولیش‌شده کمتر مناسب است.",
+        imperfection_grain:
+          "بافت دانه‌ریز معمولا روی چوب، گِل، سنگ، کاغذ یا متریال‌های ارگانیک متخلخل بهتر کار می‌کند.",
+        imperfection_brush_marks:
+          "رد قلم‌مو معمولا روی سطوح رنگ‌شده، دست‌ساز، کاغذی، چوبی، گِلی یا سرامیکی منطقی‌تر است.",
+        imperfection_paint_splatter:
+          "پاشش رنگ معمولا روی سطوح رنگ‌شده، کاغذ، بوم، چوب، پلاستیک، رزین یا متریال‌های اسباب‌بازی‌مانند بهتر کار می‌کند.",
+        imperfection_scratches:
+          "خط‌وخش معمولا روی متریال‌های سخت مثل فلز، پلاستیک، شیشه، چوب یا چرم واضح‌تر است.",
+        imperfection_cracks:
+          "ترک‌ها معمولا روی گِل، سرامیک، سنگ، چوب، رنگ، شیشه یا متریال‌های شکننده طبیعی‌تر هستند.",
+        imperfection_dents:
+          "فرورفتگی‌ها معمولا روی فلز، پلاستیک، لاستیک، چرم، گِل یا متریال‌های انعطاف‌پذیر بهتر کار می‌کنند.",
+        imperfection_chips: "لب‌پریدگی معمولا روی متریال‌های سخت یا شکننده بهتر جواب می‌دهد.",
+        imperfection_stains:
+          "لکه‌ها معمولا روی پارچه، کاغذ، چوب، چرم، سنگ، گِل، سرامیک یا متریال‌های متخلخل طبیعی‌تر هستند.",
+        imperfection_roughness:
+          "بافت ناهموار و زبر معمولا برای شیشه، کریستال، ابریشم، مخمل یا متریال‌های خیلی صاف کمتر مناسب است.",
+        imperfection_fading:
+          "رنگ‌پریدگی معمولا روی پارچه، کاغذ، چرم، چوب، پلاستیک یا متریال‌های رنگ‌شده بهتر کار می‌کند.",
+        imperfection_wrinkles:
+          "چین‌وچروک و تاخوردگی معمولا برای پارچه، چرم، کاغذ، لاستیک یا متریال‌های انعطاف‌پذیر مناسب است.",
+        imperfection_peeling:
+          "پوسته‌شدن یا ورقه‌شدن روی سطوح رنگ‌شده، روکش‌دار، کهنه یا لایه‌لایه بهتر کار می‌کند.",
+        imperfection_corrosion: "خوردگی و اکسیدشدگی بیشتر برای متریال‌های فلزی مناسب است.",
+      },
+      groups: {
+        material: {
+          title: "متریال",
+          description: "هویت اصلی متریال را مشخص کن.",
+        },
+        surface: {
+          title: "کیفیت سطح",
+          description: "فینیش سطح و میزان جزئیات بافت را کنترل کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته بافت",
+          description: "نقص‌های اختیاری و توضیحات اضافه بافت را وارد کن.",
+        },
+      },
+      fields: {
+        material: {
+          label: "متریال",
+          description: "نوع متریال پایه را انتخاب کن.",
+          placeholder: "یک متریال انتخاب کن",
+          options: {
+            vinyl: "وینیل",
+            clay: "گِل",
+            plastic: "پلاستیک",
+            metal: "فلز",
+            fabric: "پارچه",
+            acrylic_plastic: "اکریلیک / پلاستیک",
+            molded_plastic: "پلاستیک قالب‌گیری‌شده",
+            pvc: "پی‌وی‌سی",
+            resin: "رزین",
+            silicone: "سیلیکون",
+            aluminum: "آلومینیوم",
+            bamboo: "بامبو",
+            birch: "چوب توس",
+            bone: "استخوان",
+            brass: "برنج",
+            bronze: "برنز",
+            canvas: "بوم",
+            cardboard: "مقوا",
+            cedar: "چوب سدر",
+            chrome: "کروم",
+            concrete: "بتن",
+            copper: "مس",
+            coral: "مرجان",
+            cotton: "پنبه",
+            crystal: "کریستال",
+            denim: "جین",
+            earthenware: "سفالینه",
+            faux_leather: "چرم مصنوعی",
+            felt: "نمد",
+            frosted_glass: "شیشه مات",
+            glass: "شیشه",
+            gold: "طلا",
+            granite: "گرانیت",
+            iron: "آهن",
+            ivory: "عاج",
+            kraft_paper: "کاغذ کرافت",
+            lace: "تور",
+            latex: "لاتکس",
+            leather: "چرم",
+            limestone: "سنگ آهک",
+            linen: "کتان",
+            mahogany: "چوب ماهون",
+            maple: "چوب افرا",
+            marble: "مرمر",
+            neoprene: "نئوپرن",
+            oak: "چوب بلوط",
+            paper: "کاغذ",
+            parchment: "پوست‌نوشته",
+            pine: "چوب کاج",
+            plush: "پارچه پولیشی",
+            porcelain: "چینی",
+            quartz: "کوارتز",
+            rubber: "لاستیک",
+            sandstone: "ماسه‌سنگ",
+            shell: "صدف",
+            silk: "ابریشم",
+            silver: "نقره",
+            slate: "سنگ لوح",
+            stained_glass: "شیشه رنگی",
+            stainless_steel: "استیل ضدزنگ",
+            steel: "فولاد",
+            stoneware: "سرامیک سنگی",
+            suede: "جیر",
+            terracotta: "تراکوتا",
+            titanium: "تیتانیوم",
+            velvet: "مخمل",
+            walnut: "چوب گردو",
+            wax: "موم",
+            wool: "پشم",
+          },
+        },
+        surface: {
+          label: "سطح",
+          description: "فینیش سطح را انتخاب کن.",
+          placeholder: "یک فینیش سطح انتخاب کن",
+          options: {
+            smooth: "صاف",
+            matte: "مات",
+            glossy: "براق",
+            porous: "متخلخل",
+            brushed: "برس‌خورده",
+            fibrous: "الیافی",
+            frosted: "مات یخ‌زده",
+            grainy: "دانه‌دانه",
+            high_gloss: "براقیت زیاد",
+            rough: "خشن",
+            translucent: "نیمه‌شفاف",
+            woven: "بافته‌شده",
+          },
+        },
+        detailLevel: {
+          label: "سطح جزئیات",
+          description: "کنترل کن چه مقدار از جزئیات سطح دیده شود.",
+          placeholder: "سطح جزئیات را انتخاب کن",
+          options: {
+            minimal: "حداقلی",
+            subtle: "ظریف",
+            visible: "قابل مشاهده",
+            rich: "غنی",
+            coarse: "زبر",
+            highly_detailed: "بسیار پرجزئیات",
+            intricate: "پیچیده",
+          },
+        },
+        imperfections: {
+          label: "نقص‌های سطح",
+          description: "نقص‌های واقعی یا استایلایز شده سطح را اضافه کن.",
+          placeholder: "نقص‌های سطح را انتخاب کن",
+          options: {
+            clean: "تمیز",
+            handmade: "نقص‌های دست‌ساز",
+            grain: "دانه‌ریزی ظریف",
+            brush_marks: "رد قلم‌مو",
+            paint_splatter: "پاشش رنگ",
+            chips: "لب‌پریدگی",
+            corrosion: "خوردگی",
+            cracks: "ترک‌ها",
+            dents: "فرورفتگی‌ها",
+            dust: "گرد و غبار",
+            fading: "محو شدن رنگ",
+            peeling: "پوسته‌پوسته شدن",
+            roughness: "زبری",
+            scratches: "خراش‌ها",
+            stains: "لکه‌ها",
+            weathered: "فرسوده",
+            wrinkles: "چروک‌ها",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری بافت را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه بافت را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی بافت",
+          description:
+            "اگر پر شود، این متن به خروجی نهایی بافت تبدیل می‌شود و همه فیلدهای دیگر نادیده گرفته می‌شوند.",
+          placeholder: "یک توضیح کامل سفارشی برای بافت بنویس...",
+        },
+      },
+      presets: {
+        smooth_vinyl: {
+          label: "وینیل صاف",
+          description: "یک تنظیم متریال تمیز و صاف شبیه وینیل.",
+        },
+        handmade_clay: {
+          label: "گِل دست‌ساز",
+          description: "سطح گِلی دست‌ساز و لمسی با نقص‌های ظریف.",
+        },
+        polished_metal: {
+          label: "فلز پولیش‌شده",
+          description: "متریال فلزی براق و پولیش‌شده.",
+        },
+        painterly_surface: {
+          label: "سطح نقاشانه",
+          description: "سطح مات و استایلایز شده با رد قلم‌مو و جزئیات رنگ.",
+        },
+      },
+    },
+    deformation: {
+      title: "دفرمیشن",
+      description: "کنترل می‌کند سوژه چطور دفرمه، اغراق‌شده یا تبدیل شود.",
+      groups: {
+        core: {
+          title: "دفرمیشن",
+          description: "استایل دقیق دفرمیشن را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری دفرمیشن را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی دفرمیشن ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        deformationStyle: {
+          label: "استایل دفرمیشن",
+          description: "استایل دفرمیشن موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل دفرمیشن انتخاب کن",
+          categories: {
+            brutalist: "بروتالیست",
+            caricature: "کاریکاتوری",
+            compressed: "فشرده",
+            cute_chibi: "کیوت / چیبی",
+            elastic: "کشسان",
+            extreme_stylized: "استایلایز شدید",
+            fashion_editorial: "مد / ادیتوریال",
+            geometric: "هندسی",
+            grotesque: "گروتسک",
+            inflated: "بادشده",
+            insectoid_creature: "حشره‌مانند / موجود",
+            liquid: "سیال",
+            material_driven: "متریال‌محور",
+            minimal: "مینیمال",
+            motion_driven: "حرکت‌محور",
+            organic: "ارگانیک",
+            paper_cutout: "برش کاغذی",
+            puppet_doll: "عروسکی",
+            sculptural: "مجسمه‌وار",
+            surreal: "سوررئال",
+          },
+          options: {
+            abstract_human_hybrid: "هیبرید انسانی انتزاعی",
+            abstract_statue_deformation: "دفرمه‌سازی مجسمه انتزاعی",
+            absurd_misshapen_anatomy: "آناتومی بدشکل و absurd",
+            action_arc_distortion: "اعوجاج قوس اکشن",
+            alien_elongated_structure: "ساختار کشیده بیگانه",
+            angular_faceted_anatomy: "آناتومی زاویه‌دار و چندوجهی",
+            asymmetric_natural_growth: "رشد طبیعی نامتقارن",
+            asymmetrical_body_imbalance: "عدم‌تعادل نامتقارن بدن",
+            avant_garde_pose_distortion: "اعوجاج ژست آوانگارد",
+            awkward_personality_distortion: "اعوجاج شخصیتی ناشیانه",
+            baby_like_proportion_shift: "تغییر تناسبات کودکانه",
+            balloon_like_anatomy: "آناتومی بادکنکی",
+            chiseled_stone_like_planes: "سطوح سنگی تراش‌خورده",
+            clay_built_body_distortion: "اعوجاج بدن ساخته‌شده از گل",
+            comedic_face_heavy_exaggeration: "اغراق شدید چهره کمیک",
+            compact_toy_cuteness: "کیوتی فشرده اسباب‌بازی‌مانند",
+            creature_hybrid_distortion: "اعوجاج هیبرید موجود خیالی",
+            cuboid_block_deformation: "دفرمه‌سازی بلوکی مکعبی",
+            distorted_elegance: "ظرافت دفرمه‌شده",
+            dramatic_silhouette_exaggeration: "اغراق دراماتیک سیلوئت",
+            dreamlike_proportion_shift: "تغییر تناسبات رؤیاگونه",
+            exoskeleton_body_logic: "منطق بدن با اسکلت بیرونی",
+            experimental_art_deformation: "دفرمه‌سازی هنری تجربی",
+            extreme_limb_flexibility: "انعطاف‌پذیری شدید اندام‌ها",
+            fabric_fold_deformation: "دفرمه‌سازی چین‌های پارچه‌ای",
+            fashion_caricature_distortion: "اعوجاج کاریکاتوری فشن",
+            flat_graphic_figure: "فیگور گرافیکی تخت",
+            flattened_body_distortion: "اعوجاج بدن تخت‌شده",
+            floating_inflated_figure: "فیگور بادشده و شناور",
+            fluid_smear_transformation: "تبدیل اسمیر سیال",
+            fractured_plane_structure: "ساختار صفحات شکسته",
+            full_abstraction_distortion: "اعوجاج انتزاعی کامل",
+            gentle_posture_redesign: "بازطراحی ملایم حالت بدن",
+            gravity_defying_figure: "فیگور ضدجاذبه",
+            grotesque_humorous_exaggeration: "اغراق طنزآمیز گروتسک",
+            harsh_angular_compression: "فشردگی زاویه‌دار خشن",
+            heavy_block_anatomy: "آناتومی بلوکی سنگین",
+            heavy_downward_compression: "فشردگی سنگین رو به پایین",
+            impact_squash_and_stretch: "اسکواش و استرچ ضربه‌ای",
+            impossible_body_geometry: "هندسه بدنی غیرممکن",
+            insectoid_segmented_anatomy: "آناتومی بندبند حشره‌مانند",
+            latex_stretch_distortion: "اعوجاج کشسان لاتکس",
+            layered_paper_body: "بدن کاغذی لایه‌لایه",
+            liquid_stretch_distortion: "اعوجاج کشسان مایع",
+            low_intensity_proportion_shift: "تغییر تناسبات با شدت کم",
+            luxury_sculptural_body: "بدن مجسمه‌وار لوکس",
+            mannequin_body_structure: "ساختار بدن مانکن",
+            marionette_jointed_body: "بدن مفصلی ماریونت",
+            melting_body_collapse: "فروپاشی بدن ذوب‌شونده",
+            miniature_handmade_model: "مدل مینیاتوری دست‌ساز",
+            monumental_rough_figure: "فیگور زمخت و عظیم",
+            oversized_head_tiny_body: "سر بزرگ و بدن کوچک",
+            overstuffed_soft_proportions: "تناسبات نرم و بیش‌ازحد پُر",
+            porcelain_doll_proportions: "تناسبات عروسک چینی",
+            primitive_block_distortion: "اعوجاج بلوکی ابتدایی",
+            puppet_cutout_pose: "ژست عروسکی برش‌خورده",
+            radical_silhouette_transformation: "تغییر رادیکال سیلوئت",
+            restrained_facial_stylization: "استایلایز کنترل‌شده صورت",
+            root_like_body_flow: "جریان بدنی ریشه‌مانند",
+            rubber_hose_body_stretch: "کشش بدن به سبک Rubber Hose",
+            runway_elongation: "کشیدگی ران‌وی",
+            soft_bendable_figure: "فیگور نرم و خم‌شونده",
+            soft_biomorphic_distortion: "اعوجاج بیومورفیک نرم",
+            soft_rounded_mascot_body: "بدن ماسکات نرم و گرد",
+            soft_warped_anatomy: "آناتومی نرم و تاب‌خورده",
+            speed_smear_body: "بدن با اسمیر سرعت",
+            spring_loaded_anatomy: "آناتومی فنری",
+            squashed_compact_anatomy: "آناتومی فشرده و له‌شده",
+            squeezed_facial_features: "ویژگی‌های صورت فشرده",
+            strange_theatrical_distortion: "اعوجاج تئاتری عجیب",
+            subtle_body_elongation: "کشیدگی ظریف بدن",
+            swollen_facial_structure: "ساختار صورت متورم",
+            torn_collage_distortion: "اعوجاج کلاژ پاره‌شده",
+            triangular_silhouette_distortion: "اعوجاج سیلوئت مثلثی",
+            twisted_organic_anatomy: "آناتومی ارگانیک پیچ‌خورده",
+            warped_wood_volume: "حجم چوبی تاب‌خورده",
+            wax_droop_distortion: "اعوجاج مومی افتاده",
+            wild_expressive_anatomy: "آناتومی بیانگر و وحشی",
+            wind_pulled_anatomy: "آناتومی کشیده‌شده با باد",
+            wooden_doll_distortion: "اعوجاج عروسک چوبی",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری دفرمیشن را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه دفرمیشن را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "متن دفرمیشن دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن دفرمیشن سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    background: {
+      title: "پس‌زمینه",
+      description: "فضای بصری یا بک‌دراپ پشت سوژه را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "پس‌زمینه",
+          description: "استایل دقیق پس‌زمینه را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری پس‌زمینه را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی پس‌زمینه ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        backgroundStyle: {
+          label: "استایل پس‌زمینه",
+          description: "استایل پس‌زمینه موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل پس‌زمینه انتخاب کن",
+          categories: {
+            abstract: "انتزاعی",
+            cinematic: "سینمایی",
+            clean_minimal: "تمیز / مینیمال",
+            collage_mixed_media: "کلاژ / ترکیب رسانه‌ها",
+            depth_blurred: "عمق / محوشده",
+            dynamic_action: "پویا / اکشن",
+            environmental: "محیطی",
+            fantasy_surreal: "فانتزی / سوررئال",
+            graphic_poster: "گرافیک / پوستر",
+            luxury_premium: "لوکس / پریمیوم",
+            nature: "طبیعت",
+            pattern: "الگو / پترن",
+            sci_fi_futuristic: "علمی‌تخیلی / آینده‌نگر",
+            sports_stadium: "ورزشی / استادیوم",
+            studio: "استودیویی",
+            texture_material: "بافت / متریال",
+            thematic: "موضوعی",
+            transparent_cutout: "شفاف / برش‌خورده",
+            urban: "شهری",
+            vintage_retro: "وینتیج / رترو",
+          },
+          options: {
+            action_field_setting: "فضای میدان اکشن",
+            airy_white_space_composition: "ترکیب‌بندی خلوت با فضای سفید",
+            analog_film_era_backdrop: "پس‌زمینه دوران فیلم آنالوگ",
+            arena_crowd_atmosphere: "فضای جمعیت استادیومی",
+            atmospheric_haze_scene: "صحنه با مه اتمسفریک",
+            bold_poster_composition: "ترکیب‌بندی پوستر جسورانه",
+            classic_studio_paper_backdrop: "پس‌زمینه کاغذی کلاسیک استودیو",
+            coastal_or_waterside_scene: "صحنه ساحلی یا کنار آب",
+            color_field_abstraction: "انتزاع میدان رنگ",
+            commercial_product_studio: "استودیوی محصول تجاری",
+            concrete_or_stone_surface: "سطح بتنی یا سنگی",
+            cyber_inspired_setting: "فضای سایبر الهام‌گرفته",
+            dramatic_dark_studio: "استودیوی تاریک دراماتیک",
+            dramatic_storytelling_backdrop: "پس‌زمینه داستان‌پردازانه دراماتیک",
+            dreamlike_fantasy_environment: "محیط فانتزی رؤیاگونه",
+            editorial_graphic_layout: "چیدمان گرافیکی ادیتوریال",
+            elegant_premium_setting: "فضای پریمیوم ظریف",
+            enchanted_world_backdrop: "پس‌زمینه جهان افسون‌شده",
+            everyday_indoor_environment: "محیط داخلی روزمره",
+            expressive_abstract_energy: "انرژی انتزاعی بیانگر",
+            fabric_or_soft_material_backdrop: "پس‌زمینه پارچه‌ای یا متریال نرم",
+            fluid_abstract_forms: "فرم‌های انتزاعی سیال",
+            forest_or_woodland_setting: "فضای جنگلی یا بیشه‌زار",
+            futuristic_architectural_space: "فضای معماری آینده‌نگر",
+            geometric_abstract_structure: "ساختار انتزاعی هندسی",
+            holographic_tech_environment: "محیط تکنولوژیک هولوگرافیک",
+            industrial_urban_texture: "بافت شهری صنعتی",
+            lush_natural_landscape: "منظره طبیعی سرسبز",
+            luxury_interior_ambiance: "حال‌وهوای داخلی لوکس",
+            metal_or_industrial_material: "متریال فلزی یا صنعتی",
+            modern_city_backdrop: "پس‌زمینه شهر مدرن",
+            moody_cinematic_depth: "عمق سینمایی مودی",
+            neon_lit_urban_night: "شب شهری با نور نئون",
+            night_scene_cinematic_setting: "فضای سینمایی شبانه",
+            nostalgic_retro_setting: "فضای رترو نوستالژیک",
+            open_sky_and_horizon: "آسمان باز و افق",
+            opulent_dramatic_backdrop: "پس‌زمینه باشکوه دراماتیک",
+            paper_or_handmade_texture: "بافت کاغذی یا دست‌ساز",
+            plain_seamless_backdrop: "پس‌زمینه ساده و یکدست",
+            polished_brand_aesthetic: "زیبایی‌شناسی برند پولیش‌شده",
+            premium_portrait_studio: "استودیوی پرتره پریمیوم",
+            promotional_campaign_backdrop: "پس‌زمینه کمپین تبلیغاتی",
+            public_place_atmosphere: "فضای مکان عمومی",
+            realistic_outdoor_setting: "فضای بیرونی واقع‌گرایانه",
+            retro_graphic_environment: "محیط گرافیکی رترو",
+            soft_neutral_background: "پس‌زمینه نرم و خنثی",
+            space_age_minimal_future: "آینده مینیمال عصر فضا",
+            stadium_spotlight_environment: "محیط استادیومی با نورافکن",
+            street_level_urban_scene: "صحنه شهری در سطح خیابان",
+            subtle_tonal_gradient: "گرادیان تونال ظریف",
+            surreal_spatial_distortion: "اعوجاج فضایی سوررئال",
+            symbolic_surreal_scene: "صحنه سوررئال نمادین",
+            thumbnail_friendly_graphic_scene: "صحنه گرافیکی مناسب تامبنیل",
+            training_or_performance_backdrop: "پس‌زمینه تمرین یا اجرا",
+            work_or_lifestyle_environment: "محیط کاری یا سبک زندگی",
+            worn_old_world_ambiance: "حال‌وهوای کهنه و قدیمی",
+            asset_ready_transparent_space: "فضای شفاف آماده استفاده",
+            branded_motif_repetition: "تکرار موتیف‌های برند",
+            cinematic_defocused_backdrop: "پس‌زمینه سینمایی خارج از فوکوس",
+            clean_sticker_style_isolation: "جداسازی تمیز به سبک استیکر",
+            creamy_bokeh_atmosphere: "فضای بوکه نرم و خامه‌ای",
+            distant_environmental_blur: "محو شدگی محیطی دوردست",
+            explosion_of_visual_energy: "انفجار انرژی بصری",
+            fashion_themed_setting: "فضای با تم مد و فشن",
+            high_intensity_action_backdrop: "پس‌زمینه اکشن پرانرژی",
+            isolated_subject_extraction: "استخراج سوژه جداشده",
+            minimal_micro_pattern_texture: "بافت میکروپترن مینیمال",
+            mixed_media_art_backdrop: "پس‌زمینه هنری میکس‌مدیا",
+            music_themed_environment: "محیط با تم موسیقی",
+            organic_decorative_pattern: "الگوی تزئینی ارگانیک",
+            paper_collage_composition: "ترکیب‌بندی کلاژ کاغذی",
+            poster_collage_energy: "انرژی کلاژ پوستر",
+            pure_transparent_cutout: "برش کاملاً شفاف",
+            repeating_geometric_pattern: "الگوی هندسی تکرارشونده",
+            scrapbook_style_arrangement: "چیدمان به سبک اسکرپ‌بوک",
+            shallow_depth_portrait_blur: "محو پرتره با عمق میدان کم",
+            speed_line_action_field: "فضای اکشن با خطوط سرعت",
+            sports_themed_context: "زمینه با تم ورزشی",
+            technology_themed_scene: "صحنه با تم تکنولوژی",
+            wind_and_motion_atmosphere: "فضای باد و حرکت",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری پس‌زمینه را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه پس‌زمینه را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "توضیح پس‌زمینه دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن پس‌زمینه سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    lighting: {
+      title: "نورپردازی",
+      description: "چیدمان نور یا حس‌وحال روشنایی در صحنه را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "نورپردازی",
+          description: "استایل دقیق نورپردازی را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری نورپردازی را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی نورپردازی ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        lightingStyle: {
+          label: "استایل نورپردازی",
+          description: "استایل نورپردازی موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل نورپردازی انتخاب کن",
+          categories: {
+            atmospheric: "فضاساز",
+            cinematic: "سینمایی",
+            color_mood: "رنگ / مود",
+            hard_graphic: "سخت / گرافیکی",
+            practical_environmental: "عملی / محیطی",
+            soft_natural: "نرم / طبیعی",
+            studio: "استودیویی",
+            stylized_artistic: "هنری / استایلایز",
+            subject_separation: "جداسازی سوژه",
+          },
+          options: {
+            anime_style_dramatic_lighting: "نورپردازی دراماتیک سبک انیمه",
+            background_separation_light: "نور جداساز پس‌زمینه",
+            backlit_silhouette: "سیلوئت با نور از پشت",
+            beauty_lighting: "نورپردازی زیبایی",
+            bloom_heavy_glow: "درخشش شدید بلوم",
+            candlelight_glow: "درخشش نور شمع",
+            chiaroscuro_lighting: "نورپردازی کیاروسکورو",
+            claymation_lighting: "نورپردازی کلیمیشن",
+            clean_studio_lighting: "نورپردازی تمیز استودیویی",
+            comic_book_lighting: "نورپردازی کمیک‌بوکی",
+            cool_blue_mood_light: "نور آبی سرد مودی",
+            cool_natural_light: "نور طبیعی سرد",
+            dramatic_cinematic_lighting: "نورپردازی سینمایی دراماتیک",
+            dual_tone_lighting: "نورپردازی دو رنگ",
+            dusty_light_rays: "پرتوهای نور غبارآلود",
+            edge_highlight: "هایلایت لبه",
+            film_noir_lighting: "نورپردازی فیلم نوآر",
+            firelight: "نور آتش",
+            fluorescent_indoor_light: "نور فلورسنت داخلی",
+            gentle_ambient_light: "نور محیطی ملایم",
+            golden_hour_cinematic_light: "نور سینمایی ساعت طلایی",
+            halo_backlight: "بک‌لایت هاله‌ای",
+            hard_direct_light: "نور مستقیم سخت",
+            harsh_flash_lighting: "نورپردازی فلش تند",
+            hazy_volumetric_light: "نور حجمی مه‌آلود",
+            high_contrast_graphic_lighting: "نورپردازی گرافیکی پرکنتراست",
+            high_key_studio_lighting: "نورپردازی استودیویی High-Key",
+            iridescent_lighting: "نورپردازی رنگین‌تاب",
+            low_key_studio_lighting: "نورپردازی استودیویی Low-Key",
+            misty_soft_glow: "درخشش نرم مه‌آلود",
+            monochromatic_lighting: "نورپردازی تک‌رنگ",
+            moody_side_lighting: "نور جانبی مودی",
+            natural_window_light: "نور طبیعی پنجره",
+            neon_color_lighting: "نورپردازی رنگی نئون",
+            overcast_daylight: "نور روز ابری",
+            painterly_lighting: "نورپردازی نقاشانه",
+            pastel_lighting: "نورپردازی پاستلی",
+            rainy_reflective_lighting: "نورپردازی بارانی و بازتابی",
+            rim_light: "ریم‌لایت",
+            rim_lit_studio_setup: "چیدمان استودیویی با ریم‌لایت",
+            screen_light: "نور صفحه‌نمایش",
+            silhouette_emphasis: "تاکید بر سیلوئت",
+            smoky_stage_light: "نور صحنه‌ای دودی",
+            soft_diffused_light: "نور نرم و دیفیوز",
+            softbox_lighting: "نورپردازی سافت‌باکس",
+            spotlight_lighting: "نورپردازی اسپات‌لایت",
+            stage_lighting: "نورپردازی صحنه‌ای",
+            streetlight_illumination: "روشنایی چراغ خیابان",
+            strong_shadow_pattern: "الگوی سایه قوی",
+            subject_focused_light: "نور متمرکز روی سوژه",
+            surreal_dream_lighting: "نورپردازی رؤیایی سوررئال",
+            top_hard_light: "نور سخت از بالا",
+            toy_render_lighting: "نورپردازی رندر اسباب‌بازی",
+            underlighting: "نورپردازی از پایین",
+            warm_cinematic_glow: "درخشش سینمایی گرم",
+            warm_natural_light: "نور طبیعی گرم",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری نورپردازی را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه نورپردازی را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "متن نورپردازی دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن نورپردازی سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    framing: {
+      title: "کادربندی",
+      description:
+        "اندازه شات، جای‌گذاری سوژه، زاویه دوربین، ترکیب‌بندی، قوانین کراپ و هدف چیدمان را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "کادربندی",
+          description: "استایل دقیق کادربندی و ترکیب‌بندی را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری کادربندی را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی کادربندی ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        framingStyle: {
+          label: "استایل کادربندی",
+          description: "استایل کادربندی موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل کادربندی انتخاب کن",
+          categories: {
+            camera_distance_lens_feel: "فاصله دوربین / حس لنز",
+            composition_style: "سبک ترکیب‌بندی",
+            cropping_rules: "قواعد کراپ",
+            format_layout_intent: "فرمت / هدف چیدمان",
+            perspective_angle: "پرسپکتیو / زاویه",
+            shot_size_crop: "اندازه شات / کراپ",
+            subject_placement: "جای‌گذاری سوژه",
+          },
+          options: {
+            asset_safe_margin: "حاشیه امن برای asset",
+            asymmetrical_composition: "ترکیب‌بندی نامتقارن",
+            birds_eye_view: "نمای چشم پرنده",
+            bust_shot: "شات نیم‌تنه",
+            centered_composition: "ترکیب‌بندی مرکزی",
+            cinematic_composition: "ترکیب‌بندی سینمایی",
+            cinematic_widescreen_framing: "قاب‌بندی وایداسکرین سینمایی",
+            close_up: "کلوزآپ",
+            distant_observational_frame: "قاب دور و مشاهده‌گرانه",
+            dramatic_wide_angle_frame: "قاب وایدانگل دراماتیک",
+            dynamic_diagonal_composition: "ترکیب‌بندی مورب پویا",
+            edge_weighted_composition: "ترکیب‌بندی سنگین در لبه‌ها",
+            editorial_composition: "ترکیب‌بندی ادیتوریال",
+            extreme_close_up: "اکستریم کلوزآپ",
+            eye_level_angle: "زاویه هم‌سطح چشم",
+            face_safe_crop: "کراپ امن برای صورت",
+            frontal_view: "نمای روبه‌رو",
+            full_body: "تمام‌قد",
+            graphic_composition: "ترکیب‌بندی گرافیکی",
+            hands_safe_crop: "کراپ امن برای دست‌ها",
+            head_and_shoulders: "سر و شانه‌ها",
+            high_angle_view: "نمای زاویه بالا",
+            intimate_portrait_distance: "فاصله پرتره صمیمی",
+            isolated_subject_composition: "ترکیب‌بندی سوژه ایزوله",
+            layered_depth_composition: "ترکیب‌بندی عمق لایه‌ای",
+            low_angle_view: "نمای زاویه پایین",
+            lower_frame_placement: "جای‌گذاری در پایین قاب",
+            medium_shot: "مدیوم شات",
+            natural_portrait_distance: "فاصله طبیعی پرتره",
+            negative_space_composition: "ترکیب‌بندی فضای منفی",
+            no_crop_safe_frame: "قاب امن بدون کراپ",
+            off_center_composition: "ترکیب‌بندی خارج از مرکز",
+            poster_framing: "قاب‌بندی پوستری",
+            poster_safe_composition: "ترکیب‌بندی امن برای پوستر",
+            product_style_framing: "قاب‌بندی سبک محصول",
+            profile_view: "نمای پروفایل",
+            rule_of_thirds_placement: "جای‌گذاری قانون یک‌سوم",
+            silhouette_safe_crop: "کراپ امن برای سیلوئت",
+            social_portrait_framing: "قاب‌بندی پرتره اجتماعی",
+            square_icon_framing: "قاب‌بندی آیکون مربعی",
+            symmetrical_composition: "ترکیب‌بندی متقارن",
+            telephoto_compressed_frame: "قاب فشرده تله‌فوتو",
+            three_quarter_angle: "زاویه سه‌رخ",
+            three_quarter_shot: "شات سه‌چهارم",
+            thumbnail_framing: "قاب‌بندی تامبنیل",
+            tight_intentional_crop: "کراپ فشرده و عمدی",
+            top_down_view: "نمای بالا به پایین",
+            upper_frame_placement: "جای‌گذاری در بالای قاب",
+            wide_angle_environmental_frame: "قاب محیطی وایدانگل",
+            wide_full_body_frame: "قاب تمام‌قد عریض",
+            worms_eye_view: "نمای چشم کرم",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری کادربندی را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه کادربندی را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های کادربندی دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن کادربندی سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    pose: {
+      title: "ژست",
+      description:
+        "حالت بدن، حرکات دست‌و‌بدن و جای‌گیری پویا یا ایستای سوژه در صحنه را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "ژست",
+          description: "ژست دقیق و نحوه قرارگیری بدن سوژه را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "دستورالعمل‌های اختیاری ژست را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی ژست ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        poseStyle: {
+          label: "استایل ژست",
+          description: "استایل ژست موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل ژست انتخاب کن",
+          categories: {
+            character_emotional: "کاراکتری / احساسی",
+            dynamic_action: "پویا / اکشن",
+            editorial_fashion: "ادیتوریال / فشن",
+            gesture_hand_based: "ژست / دست‌محور",
+            interaction_object: "تعامل / شیء",
+            neutral_basic: "خنثی / پایه",
+            seated_resting: "نشسته / در حال استراحت",
+            sports_athletic: "ورزشی / اتلتیک",
+          },
+          options: {
+            action_ready_stance: "استنس آماده اکشن",
+            arms_crossed_pose: "ژست دست‌به‌سینه",
+            athlete_ready_stance: "استنس آماده ورزشکار",
+            awkward_off_balance_pose: "ژست نامتعادل و ناشیانه",
+            casual_weight_shift_pose: "ژست کژوال با انتقال وزن",
+            celebration_pose: "ژست جشن گرفتن",
+            confident_upright_pose: "ژست ایستاده بااعتمادبه‌نفس",
+            contemplative_pose: "ژست متفکرانه",
+            crouching_pose: "ژست چمباتمه",
+            dramatic_asymmetrical_fashion_pose: "ژست فشن دراماتیک نامتقارن",
+            elongated_elegant_pose: "ژست کشیده و الگانت",
+            expressive_hand_pose: "ژست دست بیانگر",
+            fashion_editorial_stance: "استنس فشن ادیتوریال",
+            hand_on_hip_pose: "ژست دست روی کمر",
+            hands_at_sides_pose: "ژست دست‌ها در کنار بدن",
+            hands_in_pockets_pose: "ژست دست‌ها در جیب",
+            heroic_pose: "ژست قهرمانانه",
+            holding_object_pose: "ژست نگه داشتن شیء",
+            interacting_with_environment_pose: "ژست تعامل با محیط",
+            jumping_pose: "ژست پرش",
+            kneeling_pose: "ژست زانو زده",
+            leaning_on_surface_pose: "ژست تکیه به سطح",
+            leaning_seated_pose: "ژست نشسته و تکیه‌داده",
+            looking_at_object_pose: "ژست نگاه به شیء",
+            mid_performance_pose: "ژست میانه اجرا",
+            mysterious_guarded_pose: "ژست مرموز و محافظه‌کار",
+            open_arm_welcoming_pose: "ژست خوشامدگویی با دست‌های باز",
+            over_the_shoulder_pose: "ژست از روی شانه",
+            phone_or_device_interaction_pose: "ژست تعامل با موبایل یا دستگاه",
+            playful_character_pose: "ژست کاراکتری بازیگوش",
+            playful_hand_gesture_pose: "ژست دست بازیگوش",
+            pointing_gesture_pose: "ژست اشاره کردن",
+            power_stance_pose: "استنس قدرتی",
+            presenting_object_pose: "ژست ارائه شیء",
+            reaching_pose: "ژست دست دراز کردن",
+            reclining_pose: "ژست لمیده",
+            relaxed_seated_pose: "ژست نشسته ریلکس",
+            relaxed_standing_pose: "ژست ایستاده ریلکس",
+            running_action_pose: "ژست دویدن اکشن",
+            runway_inspired_pose: "ژست الهام‌گرفته از ران‌وی",
+            seated_upright_pose: "ژست نشسته صاف",
+            shy_inward_pose: "ژست خجالتی و درون‌گرا",
+            sport_specific_action_pose: "ژست اکشن مخصوص ورزش",
+            standing_neutral_pose: "ژست ایستاده خنثی",
+            symmetrical_formal_pose: "ژست رسمی متقارن",
+            training_action_pose: "ژست تمرینی اکشن",
+            turning_in_motion_pose: "ژست چرخش در حرکت",
+            walking_motion_pose: "ژست راه رفتن در حرکت",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "دستورالعمل‌های اختیاری ژست را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه ژست را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های ژست دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن ژست سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    expression: {
+      title: "حالت چهره",
+      description: "حالت صورت، لحن احساسی و حس‌وحال کلی چهره سوژه را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "حالت چهره",
+          description: "حالت دقیق چهره و استایل احساسی را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description:
+            "دستورالعمل‌های اختیاری حالت چهره را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی حالت چهره ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        expressionStyle: {
+          label: "استایل حالت چهره",
+          description: "استایل حالت چهره موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل حالت چهره انتخاب کن",
+          categories: {
+            angry_aggressive: "عصبانی / تهاجمی",
+            comic_grotesque: "کمیک / گروتسک",
+            cute_chibi: "کیوت / چیبی",
+            dramatic_serious: "دراماتیک / جدی",
+            editorial_fashion: "ادیتوریال / فشن",
+            fantasy_creature: "فانتزی / موجود",
+            neutral_controlled: "خنثی / کنترل‌شده",
+            positive_friendly: "مثبت / دوستانه",
+            sad_vulnerable: "غمگین / آسیب‌پذیر",
+            surprised_shocked: "متعجب / شوکه",
+          },
+          options: {
+            absurd_caricature_expression: "حالت چهره کاریکاتوری absurd",
+            adorable_happy_face: "چهره شاد و دوست‌داشتنی",
+            aggressive_confrontational_face: "چهره تهاجمی و تقابلی",
+            alien_unreadable_face: "چهره بیگانه و ناخوانا",
+            aloof_fashion_expression: "حالت فشن سرد و بی‌اعتنا",
+            ancient_wise_expression: "حالت باستانی و خردمندانه",
+            angry_intense_expression: "حالت عصبانی و شدید",
+            awkward_humorous_expression: "حالت طنزآمیز و ناشیانه",
+            battle_ready_expression: "حالت آماده نبرد",
+            cheerful_approachable_expression: "حالت شاد و صمیمی",
+            comic_disbelief_expression: "حالت ناباوری کمیک",
+            confident_editorial_stare: "نگاه ادیتوریال بااعتمادبه‌نفس",
+            confident_smile: "لبخند بااعتمادبه‌نفس",
+            confused_startled_expression: "حالت گیج و startled",
+            controlled_professional_expression: "حالت حرفه‌ای کنترل‌شده",
+            cool_detached_gaze: "نگاه خونسرد و جداافتاده",
+            curious_nonhuman_expression: "حالت کنجکاو غیرانسانی",
+            cute_excited_expression: "حالت کیوت و هیجان‌زده",
+            distorted_theatrical_expression: "حالت تئاتری دفرمه",
+            dramatic_cinematic_gaze: "نگاه سینمایی دراماتیک",
+            dramatic_gasp_expression: "حالت نفس‌گیر دراماتیک",
+            dramatic_model_face: "چهره مدلینگ دراماتیک",
+            elegant_subtle_expression: "حالت ظریف و الگانت",
+            exaggerated_goofy_face: "چهره احمقانه اغراق‌شده",
+            focused_determined_expression: "حالت متمرکز و مصمم",
+            furious_shouting_expression: "حالت فریاد خشمگین",
+            gentle_smile: "لبخند ملایم",
+            gritted_teeth_expression: "حالت دندان‌های فشرده",
+            grotesque_comic_grin: "پوزخند کمیک گروتسک",
+            heartbroken_expression: "حالت دل‌شکسته",
+            innocent_wide_eyed_expression: "حالت معصوم با چشم‌های باز",
+            intense_serious_stare: "نگاه جدی و شدید",
+            joyful_expression: "حالت شادمان",
+            lonely_distant_gaze: "نگاه دور و تنها",
+            luxury_calm_expression: "حالت آرام لوکس",
+            magical_calm_expression: "حالت آرام جادویی",
+            mascot_friendly_expression: "حالت دوستانه ماسکات",
+            melancholic_serious_face: "چهره جدی مالیخولیایی",
+            minimal_emotional_expression: "حالت احساسی مینیمال",
+            mysterious_creature_gaze: "نگاه موجود مرموز",
+            mysterious_restrained_expression: "حالت مرموز و کنترل‌شده",
+            neutral_calm_expression: "حالت آرام و خنثی",
+            outraged_protest_expression: "حالت اعتراض خشمگین",
+            overwhelmed_reaction_face: "چهره واکنشی آشفته",
+            playful_smile: "لبخند بازیگوش",
+            predatory_focused_expression: "حالت شکارچی و متمرکز",
+            quiet_melancholic_expression: "حالت مالیخولیایی آرام",
+            relaxed_subtle_expression: "حالت ریلکس و ظریف",
+            sad_emotional_expression: "حالت غمگین و احساسی",
+            satirical_smug_expression: "حالت ساتیریک و ازخودراضی",
+            serious_neutral_face: "چهره جدی و خنثی",
+            shocked_exaggerated_face: "چهره شوکه اغراق‌شده",
+            soft_natural_expression: "حالت نرم و طبیعی",
+            soft_sleepy_expression: "حالت خواب‌آلود نرم",
+            stern_powerful_expression: "حالت سخت‌گیر و قدرتمند",
+            surprised_wide_eyed_expression: "حالت متعجب با چشم‌های باز",
+            tearful_emotional_face: "چهره اشک‌آلود و احساسی",
+            tiny_shy_smile: "لبخند کوچک و خجالتی",
+            vulnerable_soft_expression: "حالت نرم و آسیب‌پذیر",
+            warm_friendly_smile: "لبخند گرم و دوستانه",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description:
+            "دستورالعمل‌های اختیاری حالت چهره را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه حالت چهره را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های حالت چهره دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن حالت چهره سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    outfit: {
+      title: "لباس",
+      description:
+        "لباس، پوشش، کاستوم و استایل پوشش سوژه را بدون وابستگی به سن یا گونه کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "لباس",
+          description: "استایل لباس سوژه را از لیست دسته‌بندی‌شده انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "جزئیات اختیاری لباس را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی لباس ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        outfitStyle: {
+          label: "استایل لباس",
+          description: "استایل لباس موردنظر را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل لباس انتخاب کن",
+          categories: {
+            boys: "پسرانه",
+            costume: "لباس نمایشی / کاستوم",
+            general: "عمومی",
+            girls: "دخترانه",
+          },
+          options: {
+            boyish_casual_outfit: "اوتفیت کژوال پسرانه",
+            casual_outfit: "اوتفیت کژوال",
+            cute_dress_outfit: "اوتفیت لباس کیوت",
+            elegant_girls_outfit: "اوتفیت دخترانه الگانت",
+            fantasy_warrior_costume: "کاستوم جنگجوی فانتزی",
+            festive_outfit: "اوتفیت جشنانه",
+            formal_boys_outfit: "اوتفیت رسمی پسرانه",
+            formal_outfit: "اوتفیت رسمی",
+            girlish_casual_outfit: "اوتفیت کژوال دخترانه",
+            hoodie_and_jeans_outfit: "اوتفیت هودی و جین",
+            luxury_outfit: "اوتفیت لوکس",
+            magical_wizard_costume: "کاستوم جادوگر جادویی",
+            medieval_knight_costume: "کاستوم شوالیه قرون وسطایی",
+            party_dress_outfit: "اوتفیت لباس مهمانی",
+            princess_costume: "کاستوم پرنسسی",
+            sci_fi_space_suit: "لباس فضایی علمی‌تخیلی",
+            sporty_boys_outfit: "اوتفیت اسپرت پسرانه",
+            sporty_outfit: "اوتفیت اسپرت",
+            superhero_costume: "کاستوم ابرقهرمانی",
+            traditional_ethnic_outfit: "اوتفیت سنتی قومی",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "جزئیات اختیاری لباس را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه لباس را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های لباس دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن لباس سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    hair: {
+      title: "مو",
+      description: "مدل مو، رنگ، بافت و استایل تزئینی موی سوژه را کنترل می‌کند.",
+      groups: {
+        core: {
+          title: "مو",
+          description: "مدل مو، رنگ و بافت مو را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "دستورالعمل‌های اختیاری مو را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی مو ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        hairStyle: {
+          label: "مدل مو",
+          description: "مدل مو را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک مدل مو انتخاب کن",
+          categories: {
+            boys_masculine: "پسرانه / مردانه",
+            fantasy_stylized: "فانتزی / استایلایز",
+            general: "عمومی",
+            girls_feminine: "دخترانه / زنانه",
+            hair_styling_accessories: "استایل مو / اکسسوری‌ها",
+            iconic_celebrity_inspired: "الهام‌گرفته از چهره‌های آیکونیک",
+          },
+          options: {
+            anime_spiky_hair: "موی انیمه‌ای سیخ‌سیخی",
+            bob_haircut: "مدل موی باب",
+            braided_crown: "تاج بافته‌شده",
+            braided_hairstyle: "مدل موی بافته",
+            classic_rockabilly_pompadour: "پامپادور کلاسیک راکابیلی",
+            classic_short_boys_haircut: "مدل موی کوتاه کلاسیک پسرانه",
+            cloud_like_hair: "موی ابرمانند",
+            covered_hair_or_scarf: "موی پوشیده یا روسری",
+            curly_boys_hairstyle: "مدل موی فر پسرانه",
+            curly_feminine_hair: "موی فر زنانه",
+            curly_voluminous_hair: "موی فر و حجیم",
+            decorative_hair_ornaments: "تزئینات موی دکوراتیو",
+            elf_like_long_hair: "موی بلند الف‌مانند",
+            fantasy_warrior_hair: "موی جنگجوی فانتزی",
+            fashion_editorial_hair: "موی فشن ادیتوریال",
+            fire_like_hair: "موی آتش‌مانند",
+            floating_gravity_defying_hair: "موی شناور و ضدجاذبه",
+            formal_styled_hair: "موی رسمی استایل‌شده",
+            glam_rock_layered_hair: "موی لایه‌ای گلم راک",
+            glamorous_waves: "موج‌های گلمور",
+            hair_under_hat: "مو زیر کلاه",
+            hair_with_bow: "مو با پاپیون",
+            hair_with_clips: "مو با کلیپس",
+            hair_with_headband: "مو با هدبند",
+            high_ponytail: "دم‌اسبی بالا",
+            ice_like_hair: "موی یخ‌مانند",
+            k_pop_idol_hairstyle: "مدل موی آیدل K-Pop",
+            long_elegant_hair: "موی بلند و الگانت",
+            long_flowing_hair: "موی بلند و روان",
+            long_masculine_hair: "موی بلند مردانه",
+            low_ponytail: "دم‌اسبی پایین",
+            magical_glowing_hair: "موی درخشان جادویی",
+            medium_natural_hair: "موی طبیعی با طول متوسط",
+            mermaid_flowing_hair: "موی پری‌دریایی روان",
+            messy_boyish_hair: "موی پسرانه نامرتب",
+            messy_casual_hair: "موی کژوال نامرتب",
+            messy_festival_hair: "موی فستیوالی نامرتب",
+            modern_fade_haircut: "مدل فید مدرن",
+            nineties_boyband_curtain_hair: "موی پرده‌ای بوی‌بند دهه نود",
+            old_hollywood_blonde_waves: "موج‌های بلوند هالیوود قدیم",
+            pixie_cut: "پیکسی کات",
+            pop_star_wet_look_hair: "موی خیس پاپ‌استار",
+            princess_like_hair: "موی پرنسسی",
+            punk_mohawk: "موهاک پانک",
+            retro_beehive_hairstyle: "مدل موی کندوی عسل رترو",
+            rock_singer_shag_haircut: "شَگ موی خواننده راک",
+            rockstar_messy_hair: "موی نامرتب راک‌استار",
+            sculptural_stylized_hair: "موی مجسمه‌وار استایلایز",
+            shaved_or_buzz_cut: "موی تراشیده یا بازکات",
+            short_clean_hair: "موی کوتاه و مرتب",
+            side_part_hairstyle: "مدل موی فرق کج",
+            slicked_back_hair: "موی رو به عقب شانه‌شده",
+            soft_layered_hair: "موی نرم لایه‌ای",
+            spiky_hair: "موی سیخ‌سیخی",
+            sports_tied_back_hair: "موی بسته‌شده ورزشی",
+            straight_smooth_hair: "موی صاف و نرم",
+            textured_crop_hairstyle: "مدل موی کراپ بافت‌دار",
+            twin_tails: "دو دم‌اسبی",
+            undercut_hairstyle: "مدل موی آندرکات",
+            vintage_cinema_star_waves: "موج‌های ستاره سینمای وینتیج",
+            wavy_soft_hair: "موی موج‌دار نرم",
+            wet_look_hair: "موی خیس",
+            wind_blown_hair: "موی بادخورده",
+          },
+        },
+        hairColor: {
+          label: "رنگ مو",
+          description: "رنگ موی سوژه را انتخاب کن.",
+          placeholder: "رنگ مو را انتخاب کن",
+        },
+        hairTexture: {
+          label: "بافت مو",
+          description: "بافت یا نوع مو را از لیست انتخاب کن.",
+          placeholder: "بافت مو را انتخاب کن",
+          options: {
+            coarse: "زبر",
+            coily: "پیچ‌خورده",
+            curly: "فر",
+            fine: "نازک",
+            fluffy: "پف‌دار",
+            glossy: "براق",
+            matte: "مات",
+            sculpted: "مجسمه‌وار",
+            silky: "ابریشمی",
+            straight: "صاف",
+            thick: "ضخیم",
+            wavy: "موج‌دار",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description: "دستورالعمل‌های اختیاری مو را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه مو را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های موی دلخواهت را بنویس و خروجی ساخته شده را جایگزین کن.",
+          placeholder: "متن موی سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    effects: {
+      title: "افکت‌ها",
+      description:
+        "افکت‌های بصری و استایلی اعمال‌شده روی تصویر را کنترل می‌کند؛ مثل افکت‌های عکاسی، گلیچ یا جادویی.",
+      groups: {
+        core: {
+          title: "افکت‌ها",
+          description: "استایل و شدت افکت را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description: "دستورالعمل‌های اختیاری افکت را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی افکت ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        effectStyle: {
+          label: "استایل افکت",
+          description: "یک یا چند افکت را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "استایل افکت‌ها را انتخاب کن...",
+          categories: {
+            atmospheric: "اتمسفریک / فضاساز",
+            digital_glitch: "دیجیتال / گلیچ",
+            film_analog: "فیلم / آنالوگ",
+            light_glow: "نور / درخشش",
+            motion_energy: "حرکت / انرژی",
+            photographic: "عکاسانه",
+            print_poster: "چاپ / پوستر",
+            quality_degradation: "افت کیفیت / تخریب بصری",
+            surreal_magical: "سوررئال / جادویی",
+            ui_graphic: "رابط کاربری / گرافیک",
+          },
+          options: {
+            "35mm_film_effect": "افکت فیلم ۳۵ میلی‌متری",
+            analog_film_grain: "گرین فیلم آنالوگ",
+            bloom_glow: "درخشش بلوم",
+            chromatic_aberration: "انحراف رنگی",
+            comic_dot_shading: "سایه‌زنی نقطه‌ای کمیک",
+            comic_speech_bubble: "حباب گفتار کمیک",
+            datamosh_artifact: "آرتیفکت دیتاماش",
+            depth_haze: "مه‌گرفتگی عمقی",
+            digital_noise: "نویز دیجیتال",
+            dust_and_scratches: "گرد و غبار و خط و خش",
+            dust_particles: "ذرات گرد و غبار",
+            energy_aura: "هاله انرژی",
+            ethereal_aura: "هاله اثیری",
+            film_grain: "گرین فیلم",
+            floating_sparkles: "درخشش‌های شناور",
+            fog_overlay: "اورلی مه",
+            glitch_distortion: "اعوجاج گلیچ",
+            halftone_effect: "افکت هافتون",
+            hud_overlay: "اورلی HUD",
+            jpeg_artifacts: "آرتیفکت‌های JPEG",
+            lens_flare: "فلر لنز",
+            light_leak_effect: "افکت نشت نور",
+            low_quality: "کیفیت پایین",
+            lowres_artifact: "آرتیفکت رزولوشن پایین",
+            magical_particles: "ذرات جادویی",
+            misty_glow: "درخشش مه‌آلود",
+            motion_blur: "محو حرکت",
+            motion_trails: "رد حرکت",
+            neon_glow: "درخشش نئونی",
+            pixel_sorting: "سورتینگ پیکسل",
+            pixelated_image: "تصویر پیکسلی",
+            rain_droplets: "قطرات باران",
+            rgb_split_effect: "افکت جداسازی RGB",
+            risograph_misregistration: "ناهماهنگی چاپ ریسوگراف",
+            scanline_effect: "افکت اسکن‌لاین",
+            screen_distortion: "اعوجاج صفحه‌نمایش",
+            screen_print_texture: "بافت چاپ سیلک",
+            shallow_bloom: "بلوم ملایم",
+            soft_focus: "فوکوس نرم",
+            soft_halo: "هاله نرم",
+            sparkle_highlights: "هایلایت‌های درخشان",
+            speed_lines: "خطوط سرعت",
+            subtle_vignette: "وینیت ظریف",
+            vhs_tape_effect: "افکت نوار VHS",
+            vintage_film_look: "ظاهر فیلم وینتیج",
+          },
+        },
+        effectIntensity: {
+          label: "شدت افکت",
+          description: "انتخاب کن افکت با چه شدتی دیده شود.",
+          placeholder: "شدت افکت را انتخاب کن...",
+          options: {
+            balanced: "متعادل",
+            extreme: "افراطی",
+            strong: "قوی",
+            subtle: "ظریف",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description:
+            "دستورالعمل‌ها یا توضیحات اختیاری افکت‌ها را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه افکت را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های دلخواهت را بنویس تا خروجی افکت ساخته‌شده جایگزین شود.",
+          placeholder: "متن افکت سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    camera: {
+      title: "دوربین",
+      description:
+        "نوع دوربین و پرسپکتیو لنز تصویر را کنترل می‌کند؛ شامل استایل‌های کلی لنز یا مدل‌های مشخص دوربین.",
+      groups: {
+        core: {
+          title: "دوربین",
+          description: "استایل و مدل دوربین را انتخاب کن.",
+        },
+        advanced: {
+          title: "جزئیات پیشرفته",
+          description:
+            "دستورالعمل‌های اختیاری دوربین را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+        },
+        override: {
+          title: "بازنویسی سفارشی",
+          description: "خروجی دوربین ساخته‌شده را با متن خودت جایگزین کن.",
+        },
+      },
+      fields: {
+        cameraStyle: {
+          label: "استایل دوربین",
+          description: "یک استایل دوربین یا مدل مشخص دوربین را از لیست دسته‌بندی‌شده انتخاب کن.",
+          placeholder: "یک استایل دوربین انتخاب کن...",
+          categories: {
+            analog: "آنالوگ",
+            digital: "دیجیتال",
+            general: "عمومی",
+          },
+          options: {
+            canon_ae1: "Canon AE-1",
+            contax_t2: "Contax T2",
+            hasselblad_500c: "Hasselblad 500C",
+            kodak_disposable: "Kodak Disposable",
+            leica_m6: "Leica M6",
+            lomography: "Lomography",
+            nikon_f3: "Nikon F3",
+            pentax_k1000: "Pentax K1000",
+            polaroid_sx70: "Polaroid SX-70",
+            rolleiflex: "Rolleiflex",
+            action_camera: "دوربین اکشن",
+            aerial_drone: "دوربین پهپادی هوایی",
+            arri_alexa: "دوربین ARRI Alexa",
+            blackmagic_pocket: "دوربین Blackmagic Pocket",
+            canon_eos_r5: "دوربین Canon EOS R5",
+            cinematic_camera: "دوربین سینمایی",
+            deep_focus: "فوکوس عمیق",
+            documentary_camera: "دوربین مستند",
+            fisheye_lens: "لنز فیش‌آی",
+            fujifilm_gfx_100s: "دوربین Fujifilm GFX 100S",
+            fujifilm_x100v: "دوربین Fujifilm X100V",
+            handheld_camera: "دوربین روی دست",
+            hasselblad_x2d: "دوربین Hasselblad X2D",
+            leica_q2: "دوربین Leica Q2",
+            leica_sl2: "دوربین Leica SL2",
+            macro_lens: "لنز ماکرو",
+            nikon_z8: "دوربین Nikon Z8",
+            portrait_lens: "لنز پرتره",
+            red_komodo: "دوربین RED Komodo",
+            security_camera: "دوربین امنیتی",
+            shallow_dof: "عمق میدان کم",
+            smartphone_camera: "دوربین موبایل",
+            sony_a7r_iv: "دوربین Sony A7R IV",
+            sony_a7s_iii: "دوربین Sony A7S III",
+            telephoto_compression: "فشردگی تله‌فوتو",
+            ultra_wide_angle: "زاویه فوق عریض",
+            webcam_camera: "وب‌کم",
+            wide_angle_lens: "لنز واید",
+          },
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description:
+            "دستورالعمل‌ها یا توضیحات اختیاری دوربین را بدون جایگزین کردن خروجی ساخته شده اضافه کن.",
+          placeholder: "جزئیات اضافه دوربین را وارد کن...",
+        },
+        customText: {
+          label: "بازنویسی سفارشی",
+          description: "دستورالعمل‌های دلخواهت را بنویس تا خروجی دوربین ساخته‌شده جایگزین شود.",
+          placeholder: "متن دوربین سفارشی خودت را بنویس...",
+        },
+      },
+    },
+    colorPalette: {
+      title: "پالت رنگ",
+      description: "تم رنگی تصویر را با استفاده از رنگ‌های سفارشی یا پالت‌های آماده کنترل کن.",
+      groups: {
+        core: {
+          title: "اصلی",
+          description:
+            "پالت‌ها یا رنگ‌های سفارشی را به بخش‌های مشخص تصویر مثل پس‌زمینه، لباس، نورپردازی و موارد دیگر اختصاص بده.",
+        },
+        advanced: {
+          title: "پیشرفته",
+          description:
+            "یادداشت‌های اختیاری درباره نحوه استفاده از رنگ‌ها را بدون جایگزین کردن پالت ساخته‌شده اضافه کن.",
+        },
+      },
+      fields: {
+        paletteAssignments: {
+          label: "اختصاص رنگ‌ها",
+          description:
+            "پالت‌ها یا رنگ‌های سفارشی را به بخش‌های مشخص تصویر مثل پس‌زمینه، لباس، نورپردازی و موارد دیگر اختصاص بده.",
+          placeholder: "نحوه پخش رنگ‌ها را انتخاب کن",
+        },
+        extraDetails: {
+          label: "جزئیات اضافه",
+          description:
+            "یادداشت‌های اختیاری درباره نحوه استفاده از رنگ‌ها را بدون جایگزین کردن پالت ساخته‌شده اضافه کن.",
+          placeholder: "جزئیات اضافه پالت رنگ را وارد کنید...",
+        },
+        customText: {
+          description:
+            "اگر این فیلد پر شود، متن آن خروجی نهایی پالت رنگ می‌شود و بقیه فیلدهای color palette نادیده گرفته می‌شوند.",
+          label: "جایگزین دستی پالت رنگ",
+          placeholder: "توضیح کامل پالت رنگ را به صورت دستی بنویس...",
+        },
+      },
+    },
+  },
+  panel: {
+    keyModule: "ماژول کلیدی",
+    customMode: "سفارشی",
+    clear: "پاک کردن",
+    clearCustom: "پاک کردن متن سفارشی",
+    copy: "کپی",
+    copied: "کپی شد",
+    none: "هیچ‌کدام",
+    presets: "پریست‌ها",
+    presetsDescription: "یک گزینه پایه را سریع انتخاب کن",
+    presetSelected: "پریست انتخاب شده",
+    compiledOutput: "خروجی",
+    emptyOutput: "هنوز خروجی‌ای وجود ندارد",
+    emptyOutputTitle: "هنوز چیزی ساخته نشده",
+    emptyOutputDescription: "یک پریست انتخاب کن یا یکی از فیلدهای بالا را پر کن.",
+    emptyCustomOutputDescription: "برای ساخت خروجی این ماژول، یک توضیح سفارشی بنویس.",
+    customOverrideActive: "بازنویسی سفارشی فعال است",
+    customOverrideEmpty: "حالت سفارشی فعال است، اما خروجی سفارشی خالی است.",
+    fieldsFilled: "پر شده",
+    multiSelectHint: "برای انتخاب چند گزینه، Ctrl/Cmd را نگه دار.",
+    emptyModuleTitle: "فیلد قابل تنظیمی وجود ندارد",
+    emptyModuleDescription: "این ماژول هنوز هیچ فیلد قابل نمایشی ندارد.",
+    expand: "باز کردن",
+    collapse: "بستن",
+    statusEmpty: "خالی",
+    statusPartiallyFilled: "نیمه‌پر",
+    statusPreset: "پریست اعمال شده",
+    statusCustom: "بازنویسی سفارشی",
+    statusCustomEmpty: "سفارشی خالی",
+  },
+  home: {
+    eyebrow: "پرامپت‌ساز",
+    title: "Prompt Draft",
+    description:
+      "پرامپت‌های ماژولار و schema-driven را با استفاده از ماژول‌های کلیدی قابل استفاده مجدد بساز.",
+    createPrompt: "ساخت پرامپت",
+  },
+  create: {
+    tabs: {
+      setup: "تنظیمات",
+      editor: "ویرایشگر",
+      output: "خروجی",
+    },
+    draft: {
+      restoring: "در حال بازیابی Draft...",
+      saving: "در حال ذخیره...",
+      savedAt: "ذخیره شد {time}",
+      newDraft: "Draft جدید",
+      clear: "پاک کردن پیش نویس",
+      clearConfirm: "کل پیش نویس پاک شود؟ این کار قابل برگشت نیست.",
+    },
+    eyebrow: "پرامپت‌ساز",
+    title: "ساخت پرامپت",
+    description:
+      "ماژول‌های کلیدی را انتخاب کن، مقدارهایشان را ویرایش کن و خروجی ترکیبی پرامپت را بساز.",
+    backHome: "بازگشت به خانه",
+    modulesTitle: "ماژول‌های کلیدی",
+    modulesDescription: "انتخاب کن کدام ماژول‌ها در این پرامپت استفاده شوند.",
+    outputTitle: "خروجی کلی",
+    outputDescription: "خروجی ترکیبی ساخته‌شده از ماژول‌های انتخاب‌شده.",
+    emptyOutput: "هنوز پرامپتی ساخته نشده است.",
+    outputFormats: {
+      modular: "ماژولار",
+      natural: "طبیعی",
+      json: "JSON",
+    },
+  },
+  promptSetup: {
+    title: "تنظیمات پرامپت",
+    description: "ساختار کلی و زمینه پرامپت را مشخص کن.",
+    mode: {
+      title: "نوع پرامپت",
+      description: "انتخاب کن پرامپت چطور تفسیر شود.",
+      options: {
+        text_to_image: {
+          label: "متن به تصویر",
+          description: "ساخت تصویر از یک پرامپت کاملا متنی.",
+        },
+        image_to_image: {
+          label: "تصویر به تصویر",
+          description: "تبدیل تصویر مرجع پیوست‌شده.",
+        },
+      },
+    },
+    idea: {
+      label: "ایده",
+      description: "مفهوم اصلی یا هدف تبدیل را توصیف کن.",
+      placeholder: "مثال: پرتره ورودی را به یک کاراکتر سه‌بعدی استایلایز شده تبدیل کن...",
+    },
+    subject: {
+      label: "سوژه",
+      description: "سوژه اصلی پرامپت را مشخص کن.",
+      placeholder: "مثال: شخص داخل تصویر مرجع پیوست‌شده",
+    },
+    aspectRatio: {
+      label: "نسبت تصویر",
+      description: "نسبت تصویر خروجی نهایی را انتخاب کن.",
+    },
+    core: {
+      title: "کانتکس کلی",
+      label: "ایده و موضوع کلی پرامپت را وارد کن",
+    },
+    output: {
+      title: "تنظیمات خروجی",
+      label: "تنظیمات کلی خروجی پرامپت رو مشخص کن",
+    },
+    globalRules: {
+      label: "قوانین کلی",
+      description: "قوانینی اضافه کن که روی کل پرامپت اثر بگذارند.",
+      placeholder:
+        "مثال: هویت را حفظ کن، سوژه را در مرکز نگه دار، از بریده شدن اعضای بدن جلوگیری کن...",
+    },
+    imageToImage: {
+      title: "تنظیمات تصویر به تصویر",
+      description: "مشخص کن تصویر مرجع پیوست‌شده چطور باید تفسیر شود.",
+      referenceSubjectType: {
+        label: "نوع سوژه مرجع",
+        description: "انتخاب کن تصویر مرجع پیوست‌شده عمدتا شامل چه چیزی است.",
+        options: {
+          person: "شخص",
+          object: "شیء",
+          animal: "حیوان",
+          building: "ساختمان / معماری",
+          product: "محصول",
+          vehicle: "وسیله نقلیه",
+          scene: "صحنه / محیط",
+          custom: "سفارشی",
+        },
+      },
+      customSubject: {
+        label: "سوژه سفارشی",
+        description: "یک نوع سوژه سفارشی برای تصویر مرجع بنویس.",
+        placeholder: "مثال: ماسک سرامیکی دست‌ساز، موجود فانتزی، مجسمه انتزاعی...",
+      },
+      subjectDescription: {
+        label: "توضیحات سوژه",
+        description: "جزئیات اختیاری درباره سوژه داخل تصویر مرجع اضافه کن.",
+        placeholder: "مثال: مرد جوان با موهای فر و هودی مشکی...",
+      },
+      generatedSubject: {
+        label: "سوژه ساخته‌شده",
+        empty: "هنوز سوژه‌ای ساخته نشده است.",
+      },
+      referenceUsage: {
+        label: "میزان استفاده از مرجع",
+        description: "کنترل کن خروجی تا چه حد باید از تصویر مرجع پیروی کند.",
+        options: {
+          strict: "مرجع دقیق",
+          balanced: "مرجع متعادل",
+          loose: "الهام آزاد",
+        },
+      },
+      transformationStrength: {
+        label: "شدت تبدیل",
+        description: "کنترل کن نتیجه تا چه حد می‌تواند از تصویر مرجع فاصله بگیرد.",
+        options: {
+          subtle: "ظریف",
+          balanced: "متعادل",
+          strong: "قوی",
+          extreme: "شدید",
+        },
+      },
+      preserve: {
+        title: "گزینه‌های حفظ جزئیات",
+        description: "انتخاب کن کدام بخش‌های مرجع باید قابل تشخیص باقی بمانند.",
+        options: {
+          mainSubject: "حفظ سوژه اصلی",
+          identity: "حفظ هویت شخص",
+          pose: "حفظ ژست",
+          outfit: "حفظ لباس و اکسسوری‌های قابل مشاهده",
+          composition: "حفظ ترکیب‌بندی",
+          colors: "حفظ حس رنگی اصلی",
+          materials: "حفظ متریال‌ها و جزئیات سطح",
+          lighting: "حفظ نورپردازی و حس‌وحال",
+        },
+      },
+    },
+  },
+  promptEditor: {
+    emptyTitle: "هیچ ماژولی انتخاب نشده",
+    emptyDescription: "برای شروع ساخت پرامپت، حداقل یک ماژول کلیدی انتخاب کن.",
+  },
+  validation: {
+    title: "نیاز به توجه",
+    level: {
+      error: "خطا",
+      warning: "هشدار",
+    },
+    noModulesSelected: "حداقل یک ماژول کلیدی را از تنظیمات پرامپت انتخاب کن.",
+    customOverrideEmpty:
+      "حالت سفارشی برای {module} فعال است، اما متن سفارشی خالی است. متن سفارشی اضافه کن یا حالت سفارشی را خاموش کن.",
+    textToImageMissingContext:
+      "برای پرامپت‌های متن به تصویر، حداقل یک ایده یا سوژه در تنظیمات پرامپت وارد کن.",
+    customSubjectEmpty:
+      "نوع سوژه مرجع روی سفارشی تنظیم شده، اما سوژه سفارشی خالی است. یک سوژه سفارشی اضافه کن یا نوع سوژه دیگری انتخاب کن.",
+    ideaEmpty: "برای دقیق‌تر و قابل‌کنترل‌تر شدن پرامپت، یک ایده اضافه کن.",
+    unknown: "قبل از کپی کردن خروجی، چیزی نیاز به اصلاح دارد.",
+  },
+  guide: {
+    title: "راهنمای ماژول‌ها",
+    description: "یاد بگیر هر ماژول ثبت‌شده چه اثری روی پرامپت نهایی تصویر می‌گذارد.",
+    common: {
+      fields: "فیلدها",
+      overview: "معرفی کلی",
+      whenToUse: "چه زمانی استفاده شود",
+      recommendedWorkflow: "روش پیشنهادی استفاده",
+      fieldGuide: "راهنما",
+      tip: "نکته",
+      options: "{d} گزینه",
+      categories: "{d} دسته‌بندی",
+      override: "جایگزین کامل",
+      optional: "اختیاری",
+      placeholder: "متن نمونه",
+      backToModules: "بازگشت به فهرست ماژول‌ها",
+      customTextNote:
+        "وقتی این فیلد پر شود، خروجی ساخته‌شده‌ی این ماژول کاملاً با متن دستی جایگزین می‌شود و بقیه فیلدهای این ماژول نادیده گرفته می‌شوند.",
+      extraDetailsNote:
+        "این فیلد جزئیات اضافه را به خروجی ماژول اضافه می‌کند، بدون اینکه خروجی ساخته‌شده را جایگزین کند.",
+    },
+    modules: {
+      style: {
+        overview:
+          "ماژول Style زبان بصری و هنری کلی تصویر را مشخص می‌کند. این ماژول تعیین می‌کند خروجی حس یک رندر سه‌بعدی، تصویرسازی دیجیتال، نقاشی، طراحی اسباب‌بازی، اثر ادیتوریال، تصویر استودیویی واقع‌گرا یا یک مسیر بصری دیگر را داشته باشد.",
+        whenToUse:
+          "وقتی می‌خواهی هویت بصری اصلی تصویر را قبل از جزئیاتی مثل تکسچر، نورپردازی، دوربین، ژست، لباس یا بک‌گراند مشخص کنی، از این ماژول استفاده کن.",
+        workflow:
+          "برای شروع سریع و منسجم، اول یک Style Preset انتخاب کن. بعد نتیجه را با Medium، Stylization Level، Shape Language، Visual Treatment و Finish دقیق‌تر کن. از Extra Details برای اضافه کردن جزئیات کوچک استفاده کن و Custom Override را فقط وقتی به کار ببر که می‌خواهی کل متن استایل را خودت بنویسی.",
+        fields: {
+          preset: {
+            guide:
+              "Preset سریع‌ترین راه برای مشخص کردن یک مسیر کامل استایل است. معمولاً مدیوم، حس رندر، هویت بصری و زیبایی‌شناسی کلی را در یک انتخاب ترکیب می‌کند.",
+            tip: "برای ایده‌پردازی اول از preset شروع کن. بعد نتیجه را با medium، shape language و finish دقیق‌تر کن.",
+          },
+          medium: {
+            guide:
+              "Medium روش اصلی تولید تصویر را مشخص می‌کند؛ مثل رندر سه‌بعدی، تصویرسازی دیجیتال، نقاشی، عکاسی، کاغذ و کلاژ، چاپ دستی یا مجسمه‌سازی.",
+            tip: "بهتر است medium را قبل از texture و finish انتخاب کنی، چون خیلی از جزئیات بصری باید با مدیوم انتخاب‌شده هماهنگ باشند.",
+          },
+          stylizationLevel: {
+            guide:
+              "Stylization Level مشخص می‌کند تصویر چقدر از واقع‌گرایی فاصله بگیرد. مقدارهای پایین‌تر خروجی طبیعی‌تر می‌سازند و مقدارهای قوی‌تر اجازه اغراق، تغییر فرم و انتزاع بیشتری می‌دهند.",
+            tip: "برای خروجی‌های واقع‌گراتر از subtle یا controlled استفاده کن. برای تبدیل‌های خلاقانه‌تر، strong، extreme یا abstract مناسب‌ترند.",
+          },
+          shapeLanguage: {
+            guide:
+              "Shape Language رفتار غالب فرم‌ها و سیلوئت تصویر را مشخص می‌کند. می‌تواند خروجی را نرم، هندسی، زاویه‌دار، بلوکی، سیال، کشیده یا ساختارمندتر کند.",
+            tip: "این فیلد برای طراحی کاراکتر، پرتره‌های استایلایز، اسباب‌بازی، تصویرسازی ادیتوریال و پرامپت‌های دارای دفرمیشن خیلی کاربردی است.",
+          },
+          visualTreatment: {
+            guide:
+              "Visual Treatment نوع پرداخت رندر را روی مدیوم اصلی مشخص می‌کند؛ مثلاً cel-shaded، flat graphic، halftone، hand-painted، textured یا minimalist.",
+            tip: "از این فیلد برای قابل‌تشخیص‌تر کردن استایل استفاده کن، بدون اینکه کل مدیوم تصویر را تغییر بدهی.",
+          },
+          finish: {
+            guide:
+              "Finish حس نهایی سطح و پولیش تصویر را مشخص می‌کند. می‌تواند خروجی را clean، premium، handcrafted، graphic، glossy، matte یا rough نشان دهد.",
+            tip: "Finish را به عنوان آخرین مرحله‌ی پالایش بصری بعد از preset، medium و visual treatment انتخاب کن.",
+          },
+          extraDetails: {
+            guide: "Extra Details جزئیات کوچک استایل را به خروجی ساخته‌شده اضافه می‌کند.",
+            tip: "برای مواردی مثل soft matte finish، حس پوستر ادیتوریال، یا سطح دست‌سازتر و دارای variation از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide:
+              "Custom Override اجازه می‌دهد کل خروجی استایل را با یک متن کامل و دستی جایگزین کنی.",
+            tip: "فقط وقتی از این فیلد استفاده کن که ترکیب ساخته‌شده کافی نیست و می‌خواهی کنترل کامل دستی داشته باشی.",
+          },
+        },
+      },
+      hair: {
+        overview:
+          "ماژول Hair مدل مو، رنگ مو، جنس و بافت مو، و جزئیات تزئینی مربوط به مو را کنترل می‌کند. این ماژول کمک می‌کند توضیح مو از لباس، ژست، حالت چهره و استایل کلی جدا و دقیق باقی بماند.",
+        whenToUse:
+          "وقتی مو در هویت بصری سوژه، طراحی کاراکتر، مسیر فشن، خوانایی پرتره یا دقت تبدیل تصویر مهم است، از این ماژول استفاده کن.",
+        workflow:
+          "اول Hair Style را انتخاب کن تا سیلوئت اصلی مو مشخص شود. بعد Hair Color و Hair Texture را تنظیم کن. از Extra Details برای اکسسوری، تزئینات مو، حالت خاص یا اصلاحات کوچک استفاده کن. Custom Override را فقط وقتی به کار ببر که می‌خواهی کل توضیح مو را دستی بنویسی.",
+        fields: {
+          hairStyle: {
+            guide:
+              "Hair Style سیلوئت اصلی، طول، ساختار و جهت کلی مدل مو را مشخص می‌کند. این فیلد می‌تواند تأثیر زیادی روی هویت و خوانایی کاراکتر داشته باشد.",
+            tip: "این گزینه را قبل از رنگ و تکسچر انتخاب کن، چون مدل مو معمولاً بیشترین اثر را روی شناخت‌پذیری سوژه دارد.",
+          },
+          hairColor: {
+            guide:
+              "Hair Color رنگ غالب موی سوژه را مشخص می‌کند. این رنگ می‌تواند طبیعی، استایلایز، فانتزی یا هماهنگ با پالت رنگی کلی تصویر باشد.",
+            tip: "برای پرامپت‌های واقع‌گرا از رنگ‌های طبیعی استفاده کن. برای پرامپت‌های فانتزی یا استایلایز، رنگ مو را در خدمت کانسپت بصری بگیر.",
+          },
+          hairTexture: {
+            guide:
+              "Hair Texture رفتار فیزیکی تارهای مو را مشخص می‌کند؛ مثل straight، wavy، curly، coily، braided، layered، messy یا smooth.",
+            tip: "از texture برای خاص‌تر و باورپذیرتر کردن مدل مو استفاده کن.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details جزئیات کوچک مربوط به مو را اضافه می‌کند، بدون اینکه خروجی ساخته‌شده‌ی مو را جایگزین کند.",
+            tip: "برای مواردی مثل روبان، کلیپس، موی خیس، تارهای مو در باد، چتری آزاد، flyaway hair یا تزئینات مو از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide:
+              "Custom Override اجازه می‌دهد کل خروجی hair را با یک توضیح کامل دستی جایگزین کنی.",
+            tip: "وقتی مدل مو نیاز به توصیف خیلی خاصی دارد که با فیلدهای موجود ساخته نمی‌شود، از این گزینه استفاده کن.",
+          },
+        },
+      },
+      deformation: {
+        overview:
+          "ماژول Deformation نحوه تغییر فرم خلاقانه‌ی بدن، صورت، تناسبات، حجم و ساختار سوژه را کنترل می‌کند. این ماژول برای پرتره‌های استایلایز، طراحی کاراکتر، تبدیل‌های اغراق‌آمیز، فیگورهای سورئال، فرم‌های اسباب‌بازی‌مانند، بازتفسیرهای هندسی و ادیت‌های image-to-image با دفرمیشن کنترل‌شده کاربرد دارد.",
+        whenToUse:
+          "وقتی نمی‌خواهی سوژه کاملاً واقع‌گرا باقی بماند، از این ماژول استفاده کن. مخصوصاً برای اغراق، انتزاع، صفحات کوبیستی، بدن‌های بلوکی، فرم‌های low-poly، اندام‌های معلق، طنز گروتسک، کاریکاتور فشن یا تغییرات ساختاری واضح مناسب است.",
+        workflow:
+          "اول دسته‌بندی دفرمیشن را انتخاب کن، بعد آیتم دقیق دفرمیشن را مشخص کن. از Extra Details برای توضیح شدت، تمیزی، آشفتگی، طنز، حس ادیتوریال یا سورئال بودن دفرمیشن استفاده کن. Custom Override را فقط وقتی به کار ببر که می‌خواهی کل دستور دفرمیشن را خودت بنویسی.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده‌ی کلی دفرمیشن را مشخص می‌کند؛ مثل دفرمیشن هندسی، سورئال، کاریکاتوری، بلوکی، low-poly، کودکانه، ادیتوریال یا متریال‌محور.",
+            tip: "اول category را انتخاب کن تا مسیر دفرمیشن منسجم بماند، بعد سراغ آیتم دقیق‌تر برو.",
+          },
+          item: {
+            guide:
+              "Item رفتار دقیق دفرمیشن را مشخص می‌کند؛ مثل صفحات جابه‌جا شده، اعضای بدن مکعبی، فرم‌های کشیده، اندام‌های معلق، تناسبات اغراق‌شده یا آناتومی ساده‌شده‌ی اسباب‌بازی‌مانند.",
+            tip: "با این فیلد تغییر فرم قابل مشاهده را کنترل کن. اگر خروجی بیش از حد شلوغ شد، آیتم را مشخص‌تر انتخاب کن و Extra Details را کمتر کن.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details جزئیات کوچک دفرمیشن را اضافه می‌کند، بدون اینکه خروجی ساخته‌شده‌ی دفرمیشن را جایگزین کند.",
+            tip: "برای شدت، جهت، ناحیه‌های بدن، تقارن، خوانایی یا نکته‌هایی مثل حفظ شناخت‌پذیری چهره و سیلوئت سوژه از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override کل خروجی دفرمیشن را با دستور دستی خودت جایگزین می‌کند.",
+            tip: "وقتی ایده‌ی دفرمیشن خیلی خاص است یا با category و item موجود ساخته نمی‌شود، از این فیلد استفاده کن.",
+          },
+          deformationStyle: {
+            guide:
+              "Deformation Style رفتار دقیق تغییر فرم سوژه را مشخص می‌کند؛ مثل تناسبات اغراق‌شده، صفحات هندسی جابه‌جا شده، فرم‌های مکعبی، آناتومی سورئال، اندام‌های معلق یا دفرمیشن ساختاری استایلایز.",
+            tip: "از این فیلد برای کنترل میزان تغییر قابل مشاهده سوژه استفاده کن. اگر حفظ هویت یا خوانایی سوژه مهم است، دفرمیشن را خوانا و کنترل‌شده نگه دار.",
+          },
+        },
+      },
+      framing: {
+        overview:
+          "ماژول Framing نحوه قرارگیری سوژه داخل تصویر را کنترل می‌کند. این ماژول اندازه کادر، کراپ، فاصله دوربین، زاویه دید، ترکیب‌بندی، تعادل و میزان دیده شدن بدن یا محیط را مشخص می‌کند.",
+        whenToUse:
+          "هر وقت ترکیب‌بندی مهم است، از این ماژول استفاده کن. برای پرتره، کاراکترهای محصول‌مانند، تبدیل‌های تمام‌قد، لی‌اوت‌های ادیتوریال، ترکیب‌بندی‌های متقارن و پرامپت‌هایی که به کراپ دقیق نیاز دارند خیلی مهم است.",
+        workflow:
+          "اول category مربوط به framing را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای توضیح کراپ، تعادل، فضای خالی، جایگاه سوژه یا حس رسمی، پویا، سینمایی، مرکزی یا ادیتوریال ترکیب‌بندی استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده‌ی اصلی framing را مشخص می‌کند؛ مثل کراپ پرتره، کراپ بدن، زاویه دوربین، لی‌اوت ترکیب‌بندی یا تعادل فضایی.",
+            tip: "category را بر اساس مهم‌ترین نیاز انتخاب کن: فاصله دوربین، مقدار بدن قابل مشاهده، یا نحوه چیدمان سوژه در کادر.",
+          },
+          item: {
+            guide:
+              "Item دستور دقیق framing را مشخص می‌کند؛ مثل close-up، head-and-shoulders، bust shot، full body، low angle، centered portrait، symmetrical layout یا off-center negative space.",
+            tip: "این فیلد یکی از بهترین راه‌ها برای جلوگیری از کراپ ناخواسته است. وقتی تصویر باید محدوده خاصی از بدن را نشان دهد، دقیق انتخابش کن.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details دستورهای ترکیب‌بندی را اضافه می‌کند، بدون اینکه خروجی framing را جایگزین کند.",
+            tip: "برای نکته‌هایی مثل کامل دیده شدن سر، فضای کافی اطراف سوژه، کادر پرتره متعادل یا قطع نشدن دست‌ها از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی framing را با یک دستور کامل و دستی جایگزین می‌کند.",
+            tip: "وقتی ترکیب‌بندی به کنترل خیلی دقیق نیاز دارد، مخصوصاً در image-to-image یا کراپ‌های سخت‌گیرانه، از این فیلد استفاده کن.",
+          },
+          framingStyle: {
+            guide:
+              "Framing Style کراپ دقیق، اندازه شات، فاصله دوربین، ترکیب‌بندی و جایگاه سوژه داخل تصویر را مشخص می‌کند.",
+            tip: "از این فیلد برای جلوگیری از کراپ ناخواسته استفاده کن. وقتی تصویر باید سر، شانه‌ها، بالاتنه، تمام بدن یا یک کادر پرتره متعادل را نشان دهد، دقیق بنویس.",
+          },
+        },
+      },
+      expression: {
+        overview:
+          "ماژول Expression احساس چهره، حالت صورت، نگرش و مود خوانای سوژه را کنترل می‌کند. این ماژول کمک می‌کند اجرای احساسی صورت از pose، style، lighting و deformation جدا بماند.",
+        whenToUse:
+          "وقتی چهره باید احساس، شخصیت، واکنش یا نگرش مشخصی را منتقل کند، از این ماژول استفاده کن. برای پرتره، طراحی کاراکتر، کاریکاتور فشن، تصاویر سینمایی، استایلایزهای احساسی و تبدیل‌هایی که خوانایی چهره مهم است کاربرد دارد.",
+        workflow:
+          "اول category احساسی را انتخاب کن، بعد expression دقیق را مشخص کن. از Extra Details برای کنترل شدت، ظرافت، حالت چشم، فرم دهان، تون احساسی یا طبیعی، نمایشی، عجیب، آرام یا اغراق‌آمیز بودن حالت چهره استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده احساسی کلی را مشخص می‌کند؛ مثل آرام، مطمئن، بازیگوش، شوکه، جدی، شدید، عجیب یا نمایشی.",
+            tip: "قبل از انتخاب expression دقیق، جهت احساسی را مشخص کن تا چهره با کانسپت هماهنگ بماند.",
+          },
+          item: {
+            guide:
+              "Item اجرای دقیق چهره را مشخص می‌کند؛ مثل neutral calm، stern powerful، playful light، shocked exaggerated، gritted-teeth intensity، confident، alien unreadable یا mask-like expression.",
+            tip: "برای پرتره‌های واقع‌گرا از حالت‌های ظریف‌تر استفاده کن و برای خروجی‌های استایلایز، کمدی، سورئال یا کاراکترمحور سراغ حالت‌های قوی‌تر برو.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک اجرای صورت را اضافه می‌کند، بدون اینکه خروجی expression را جایگزین کند.",
+            tip: "برای eye contact، تنش ابرو، فرم دهان، عدم تقارن، کنترل احساسی یا انرژی نمایشی اغراق‌شده از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی expression را با توضیح کامل دستی خودت جایگزین می‌کند.",
+            tip: "وقتی چهره به یک اجرای احساسی خیلی خاص یا ترکیبی نیاز دارد، از این فیلد استفاده کن.",
+          },
+          expressionStyle: {
+            guide:
+              "Expression Style اجرای احساسی چهره و تون صورت سوژه را مشخص می‌کند؛ مثل آرام، مطمئن، بازیگوش، شوکه، جدی، عجیب، نمایشی، ماسک‌مانند یا اغراق‌شده.",
+            tip: "از این فیلد برای رساندن یک نگرش مشخص در چهره استفاده کن. برای پرتره‌های واقع‌گرا، expression را کنترل‌شده نگه دار. برای پرامپت‌های استایلایز، حالت‌های قوی‌تر بهتر جواب می‌دهند.",
+          },
+        },
+      },
+      pose: {
+        overview:
+          "ماژول Pose موقعیت بدن، ژست، حالت ایستادن، تعادل و حرکت سوژه را کنترل می‌کند. این ماژول مشخص می‌کند سوژه آرام، رسمی، پویا، قدرتمند، متقارن، پیچ‌خورده، نشسته، در حال حرکت یا ادیتوریال دیده شود.",
+        whenToUse:
+          "وقتی زبان بدن مهم است، از این ماژول استفاده کن. برای پرامپت‌های تمام‌قد، ژست‌های فشن، طراحی کاراکتر، اکشن پویا، پرتره ادیتوریال، image-to-image و موقعیت‌هایی که خوانایی بدن مهم است کاربرد دارد.",
+        workflow:
+          "اول category ژست را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای کنترل gesture، تقسیم وزن بدن، جای دست‌ها، حرکت، خشکی یا نرمی بدن، ظرافت، تعادل یا میزان فاصله گرفتن از رفرنس استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی زبان بدن را مشخص می‌کند؛ مثل حالت casual، متقارن، پویا، نشسته، ادیتوریال، قدرتمند، پیچشی یا حرکتی.",
+            tip: "category را بر اساس انرژی و پیامی که بدن سوژه باید منتقل کند انتخاب کن.",
+          },
+          item: {
+            guide:
+              "Item رفتار دقیق pose را مشخص می‌کند؛ مثل casual weight shift، frontal symmetrical stance، contrapposto، dynamic asymmetry، editorial tilt، seated lean، twisting motion یا power pose.",
+            tip: "برای image-to-image، اگر حفظ هویت و کامپوزیشن مهم است، pose را با رفرنس سازگار نگه دار.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک pose را اضافه می‌کند، بدون اینکه خروجی ساخته‌شده‌ی pose را جایگزین کند.",
+            tip: "برای جای دست‌ها، زاویه شانه، میزان خشکی بدن، جهت حرکت، تعادل یا نکته‌هایی مثل حفظ خوانایی pose از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی pose را با یک دستور کامل و دستی جایگزین می‌کند.",
+            tip: "وقتی سوژه به موقعیت بدنی یا gesture بسیار مشخصی نیاز دارد، از این فیلد استفاده کن.",
+          },
+          poseStyle: {
+            guide:
+              "Pose Style حالت بدن، gesture، تعادل، حرکت، ایستادن و زبان بدن کلی سوژه را مشخص می‌کند.",
+            tip: "از این فیلد برای کنترل انرژی فیزیکی سوژه استفاده کن. مخصوصاً در پرتره‌ها و image-to-image، pose را با framing هماهنگ نگه دار.",
+          },
+        },
+      },
+      outfit: {
+        overview:
+          "ماژول Outfit لباس، کاستوم، یونیفرم، مسیر فشن و استایل پوشیدنی سوژه را کنترل می‌کند. این ماژول کمک می‌کند تصمیم‌های مربوط به پوشش از pose، hair، texture و style کلی جدا بماند.",
+        whenToUse:
+          "وقتی لباس روی هویت سوژه، نقش کاراکتر، دوره زمانی، مود، شغل، دسته‌بندی فشن یا تم بصری اثر دارد، از این ماژول استفاده کن. برای پرتره، طراحی کاراکتر، پرامپت فشن، کاستوم، یونیفرم و تبدیل‌های تم‌دار کاربرد دارد.",
+        workflow:
+          "اول category لباس را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای جنس پارچه، اکسسوری، لایه‌بندی، فیت لباس، استایل فرهنگی، دوره زمانی، رنگ یا اصلاحات کوچک پوشش استفاده کن. Custom Override برای توضیح کاملاً دستی لباس است.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی پوشش را مشخص می‌کند؛ مثل casual، formal، sporty، streetwear، vintage، uniform، ethnic، costume، masculine، feminine یا لباس‌های تم‌دار.",
+            tip: "category را بر اساس نقش سوژه و داستان بصری انتخاب کن، بعد سراغ آیتم دقیق لباس برو.",
+          },
+          item: {
+            guide:
+              "Item مسیر دقیق لباس را مشخص می‌کند؛ مثل hoodie، denim jacket، business suit، school uniform، gown، princess costume، superhero outfit، medieval armor یا sci-fi clothing.",
+            tip: "از item برای مشخص کردن نقش و ظاهر سوژه به اندازه کافی واضح استفاده کن.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک لباس را اضافه می‌کند، بدون اینکه خروجی outfit را جایگزین کند.",
+            tip: "برای اکسسوری، فیت، جنس پارچه، لایه‌بندی، رنگ‌های تاکیدی، کفش، زیورآلات یا لباس متناسب با آب‌وهوا از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی outfit را با توضیح کامل دستی خودت جایگزین می‌کند.",
+            tip: "وقتی استایل لباس خیلی خاص است و با گزینه‌های موجود ساخته نمی‌شود، از این فیلد استفاده کن.",
+          },
+          outfitStyle: {
+            guide:
+              "Outfit Style مسیر لباس سوژه را مشخص می‌کند؛ شامل پوشش، کاستوم، یونیفرم، دسته‌بندی فشن، هویت پوشیدنی و داستان بصری لباس.",
+            tip: "وقتی لباس روی نقش، دوره زمانی، شخصیت یا تم سوژه اثر دارد، از این فیلد استفاده کن.",
+          },
+        },
+      },
+      background: {
+        overview:
+          "ماژول Background محیط، بک‌دراپ، اتمسفر، فضای اطراف و کانتکست بصری پشت سوژه را کنترل می‌کند. این ماژول مشخص می‌کند تصویر حس یک پرتره استودیویی تمیز، فضای طبیعی، پوستر انتزاعی، ست ادیتوریال، فضای داخلی یا یک دنیای اتمسفریک را داشته باشد.",
+        whenToUse:
+          "وقتی سوژه به یک فضای مشخص نیاز دارد یا بک‌گراند باید از داستان، مود، پالت رنگ، نورپردازی یا ترکیب‌بندی حمایت کند، از این ماژول استفاده کن. برای پرتره، تصویر کاراکتر، رندر محصول‌مانند، پوستر ادیتوریال و صحنه سینمایی کاربرد دارد.",
+        workflow:
+          "اول category بک‌گراند را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای کنترل عمق، سادگی، اتمسفر، الگو، تکسچر، اجزای محیط یا میزان جلب توجه بک‌گراند استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی بک‌گراند را مشخص می‌کند؛ مثل استودیو تمیز، گرادیانت، محیط طبیعی، فضای داخلی، الگوی انتزاعی، آسمان شب، بافت کاغذ یا اتمسفر سینمایی.",
+            tip: "وقتی سوژه باید تمرکز اصلی باشد، category ساده انتخاب کن. وقتی محیط بخشی از کانسپت است، سراغ category غنی‌تر برو.",
+          },
+          item: {
+            guide:
+              "Item نوع دقیق بک‌گراند را مشخص می‌کند؛ مثل seamless studio backdrop، soft neutral background، gradient ambient field، ocean horizon، modern studio interior، repeating pattern، textured paper یا night sky.",
+            tip: "بک‌گراند را با framing و lighting هماهنگ نگه دار تا تصویر نهایی عمدی و کنترل‌شده به نظر برسد.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک بک‌گراند را اضافه می‌کند، بدون اینکه خروجی background را جایگزین کند.",
+            tip: "برای عمق، بلور، پراپ‌ها، مود رنگی، سادگی، تکسچر، مقیاس، اتمسفر یا نکته‌هایی مثل پرت نکردن حواس از سوژه استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی background را با توضیح کامل دستی خودت جایگزین می‌کند.",
+            tip: "وقتی محیط، لوکیشن یا آرت‌دایرکشن خیلی مشخصی داری، از این فیلد استفاده کن.",
+          },
+          backgroundStyle: {
+            guide:
+              "Background Style نوع پرداخت بصری محیط پشت سوژه را مشخص می‌کند؛ مثل بک‌دراپ استودیویی تمیز، گرادیانت، بافت کاغذ، صحنه طبیعی، فضای داخلی، الگوی انتزاعی یا محیط اتمسفریک.",
+            tip: "از این فیلد برای کنترل مسیر بک‌گراند استفاده کن، بدون اینکه پرامپت بیش از حد شلوغ شود. اگر سوژه باید تمرکز اصلی باشد، بک‌گراند را ساده نگه دار.",
+          },
+        },
+      },
+      lighting: {
+        overview:
+          "ماژول Lighting نورپردازی، رفتار سایه، مود، کنتراست، درخشش، جهت نور و درام بصری را کنترل می‌کند. این ماژول روی واقع‌گرایی، اتمسفر، خوانایی متریال و حس احساسی تصویر اثر زیادی دارد.",
+        whenToUse:
+          "وقتی تصویر به مود یا تنظیم نور حرفه‌ای نیاز دارد، از این ماژول استفاده کن. برای پرتره استودیویی، صحنه سینمایی، رندر محصول‌مانند، تبدیل‌های دراماتیک، تصاویر ادیتوریال نرم، ظاهر نئونی و تصویرهایی که فرم یا تکسچر باید واضح باشد کاربرد دارد.",
+        workflow:
+          "اول category نورپردازی را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای توضیح جهت نور، نرمی، کنتراست، دمای رنگ، rim light، افکت‌های volumetric، شدت سایه یا طبیعی، سینمایی یا گرافیک بودن نور استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی نورپردازی را مشخص می‌کند؛ مثل نور طبیعی، نور استودیویی، نور سینمایی، high-key، low-key، rim light، neon، volumetric یا spotlight دراماتیک.",
+            tip: "اول category را بر اساس مود انتخاب کن، بعد رفتار دقیق نور را با item اصلاح کن.",
+          },
+          item: {
+            guide:
+              "Item تنظیم دقیق نور را مشخص می‌کند؛ مثل soft diffused light، window light، beauty dish، three-point lighting، backlit silhouette، teal-orange cinematic light، neon edge light یا volumetric beams.",
+            tip: "نور باید از متریال و استایل حمایت کند. مثلاً سطح glossy با سطح matte یا کاغذی نورپردازی متفاوتی می‌خواهد.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک نورپردازی را اضافه می‌کند، بدون اینکه خروجی lighting را جایگزین کند.",
+            tip: "برای نرمی سایه، جای هایلایت، جهت نور، دمای رنگ، شدت glow یا اتمسفر از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی lighting را با دستور کامل دستی خودت جایگزین می‌کند.",
+            tip: "وقتی به یک تنظیم نور یا مود سینمایی خیلی مشخص نیاز داری، از این فیلد استفاده کن.",
+          },
+          lightingStyle: {
+            guide:
+              "Lighting Style تنظیم اصلی نور را مشخص می‌کند؛ شامل نرمی، کنتراست، جهت، مود، رفتار سایه، glow، rim light، نور استودیویی، نور طبیعی یا نور سینمایی.",
+            tip: "از این فیلد برای شکل دادن به مود احساسی و خوانایی متریال تصویر استفاده کن. نورپردازی باید از style و texture انتخاب‌شده حمایت کند.",
+          },
+        },
+      },
+      camera: {
+        overview:
+          "ماژول Camera نوع دوربین، رفتار لنز، پرسپکتیو اپتیکی، عمق میدان و زبان ثبت عکاسانه را کنترل می‌کند. این ماژول کمک می‌کند تصویر حس یک ستاپ دوربین مشخص داشته باشد، نه فقط یک استایل بصری.",
+        whenToUse:
+          "وقتی پرسپکتیو، فشردگی لنز، میدان دید، blur، واقع‌گرایی یا حس عکاسانه مهم است، از این ماژول استفاده کن. برای پرتره، رندر محصول، صحنه سینمایی، ماکرو، wide-angle distortion، ظاهر فیلم و پرامپت‌های استودیویی حرفه‌ای کاربرد دارد.",
+        workflow:
+          "اول category دوربین را انتخاب کن، بعد camera یا lens دقیق را مشخص کن. از Extra Details برای عمق میدان، رفتار فوکوس، حس فاصله کانونی، grain فیلم، حس سنسور یا عکاسانه، سینمایی، ماکرو، distorted یا clean بودن تصویر استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی دوربین یا لنز را مشخص می‌کند؛ مثل portrait lens، wide-angle، macro، fisheye، tilt-shift، DSLR، mirrorless، film camera یا ظاهر عکاسی vintage.",
+            tip: "category را بر اساس پرسپکتیو و حس ثبت تصویر انتخاب کن، نه فقط کیفیت تصویر.",
+          },
+          item: {
+            guide:
+              "Item رفتار دقیق دوربین یا لنز را مشخص می‌کند؛ مثل 50mm lens، 85mm portrait lens، macro lens، fisheye، 35mm film look، shallow depth of field یا disposable camera style.",
+            tip: "برای پرتره‌های خوش‌فرم از لنزهای بلندتر استفاده کن. برای پرسپکتیو پویا یا دفرم‌شده، wide-angle یا fisheye مناسب‌تر است.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات دوربینی را اضافه می‌کند، بدون اینکه خروجی camera را جایگزین کند.",
+            tip: "برای فوکوس، عمق میدان، bokeh، grain فیلم، distortion لنز، sharpness، حس سنسور یا فاصله دوربین از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی camera را با دستور کامل و دستی دوربین جایگزین می‌کند.",
+            tip: "وقتی ستاپ دوربین باید با زبان دقیق عکاسی توضیح داده شود، از این فیلد استفاده کن.",
+          },
+          cameraStyle: {
+            guide:
+              "Camera Style رفتار عکاسانه یا اپتیکی تصویر را مشخص می‌کند؛ شامل نوع لنز، سبک ثبت تصویر، پرسپکتیو، عمق میدان و زبان بصری دوربین.",
+            tip: "وقتی پرسپکتیو لنز مهم است از این فیلد استفاده کن. لنزهای پرتره تمرکز تمیزتری روی سوژه می‌دهند، اما wide-angle، macro، fisheye یا film look شخصیت بصری خاص‌تری می‌سازند.",
+          },
+        },
+      },
+      colorPalette: {
+        overview:
+          "ماژول Color Palette سیستم رنگی غالب، هارمونی، دمای رنگ، کنتراست و نحوه پخش رنگ‌ها بین سوژه، بک‌گراند، لباس، نور و accentهای تصویری را کنترل می‌کند.",
+        whenToUse:
+          "وقتی تصویر به هویت رنگی کنترل‌شده نیاز دارد، از این ماژول استفاده کن. برای تصاویر ادیتوریال، ویژوال‌های شبیه برند، پرتره‌های استایلایز، طراحی اسباب‌بازی، فشن، پوستر، مود سینمایی و هر جایی که رنگ‌های تصادفی مطلوب نیستند کاربرد دارد.",
+        workflow:
+          "اول مسیر اصلی پالت یا هارمونی رنگ را انتخاب کن. بعد اگر فیلدهای assignment، temperature، contrast یا جزئیات رنگی در دسترس هستند، رفتار پالت را دقیق‌تر کن. از Extra Details برای accent color، رفتار رنگ بک‌گراند یا محدودیت‌های رنگی استفاده کن.",
+        fields: {
+          colorPalette: {
+            guide:
+              "Color Palette هویت رنگی کلی تصویر را مشخص می‌کند؛ مثل monochrome، pastel، earthy، vibrant، muted، cinematic، complementary، analogous یا سیستم‌های رنگی دیگر.",
+            tip: "از این فیلد برای یکپارچه نگه داشتن تصویر قبل از تنظیم background، outfit، lighting یا texture استفاده کن.",
+          },
+          palette: {
+            guide:
+              "Palette هویت رنگی کلی تصویر را مشخص می‌کند؛ مثل monochrome، pastel، earthy، vibrant، muted، cinematic، complementary، analogous یا سیستم‌های رنگی دیگر.",
+            tip: "از این فیلد برای یکپارچه نگه داشتن تصویر قبل از تنظیم background، outfit، lighting یا texture استفاده کن.",
+          },
+          assignment: {
+            guide:
+              "Assignment مشخص می‌کند رنگ‌های انتخاب‌شده چطور در تصویر پخش شوند؛ مثلاً روی سوژه، لباس، بک‌گراند، هایلایت‌ها، سایه‌ها یا accentها.",
+            tip: "وقتی پالت خوب است اما مدل باید دقیق‌تر بداند هر رنگ کجا استفاده شود، از assignment استفاده کن.",
+          },
+          colorPaletteAssignment: {
+            guide:
+              "Color Palette Assignment مشخص می‌کند رنگ‌های انتخاب‌شده چطور در تصویر پخش شوند؛ مثلاً روی سوژه، لباس، بک‌گراند، هایلایت‌ها، سایه‌ها یا accentها.",
+            tip: "وقتی پالت خوب است اما مدل باید دقیق‌تر بداند هر رنگ کجا استفاده شود، از assignment استفاده کن.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک رنگی را اضافه می‌کند، بدون اینکه خروجی color palette را جایگزین کند.",
+            tip: "برای accent color، رنگ‌های ممنوع، رنگ بک‌گراند، سطح کنتراست، میزان saturation یا محدودیت‌های پالت از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی color palette را با دستور کامل رنگی خودت جایگزین می‌کند.",
+            tip: "وقتی می‌خواهی کنترل کاملاً دستی روی رنگ‌های تصویر داشته باشی، از این فیلد استفاده کن.",
+          },
+          paletteAssignments: {
+            guide:
+              "Palette Assignments مشخص می‌کند رنگ‌های انتخاب‌شده چطور در تصویر پخش شوند؛ مثلاً روی سوژه، لباس، بک‌گراند، سایه‌ها، هایلایت‌ها یا accentها.",
+            tip: "وقتی پالت درست است اما مدل باید دقیق‌تر بداند هر رنگ کجا استفاده شود، از این فیلد استفاده کن.",
+          },
+        },
+      },
+      effects: {
+        overview:
+          "ماژول Effects افکت‌های تصویری اضافه، overlayها، پرداخت‌های اتمسفریک، بهبودهای گرافیکی، glow، ذرات، distortion، motion، آرتیفکت‌های لنز و افکت‌هایی را کنترل می‌کند که روی تصویر اصلی قرار می‌گیرند.",
+        whenToUse:
+          "وقتی تصویر به اتمسفر بیشتر، حرکت، جادو، انرژی، ضربه ادیتوریال، پولیش سینمایی یا پرداخت گرافیکی نیاز دارد، از این ماژول استفاده کن. افکت باید از تصویر حمایت کند، نه اینکه جای style، lighting یا background را بگیرد.",
+        workflow:
+          "اول category افکت را انتخاب کن، بعد item دقیق را مشخص کن. از Extra Details برای کنترل شدت، محل قرارگیری، ظرافت، جهت، مقیاس، شفافیت یا واقعی، گرافیکی، جادویی، سینمایی یا تجربی بودن افکت استفاده کن.",
+        fields: {
+          category: {
+            guide:
+              "Category خانواده کلی افکت را مشخص می‌کند؛ مثل atmosphere، particles، glow، motion، distortion، lens effects، graphic overlays، texture overlays یا magical energy.",
+            tip: "category را بر اساس چیزی انتخاب کن که افکت باید به تصویر اضافه کند: مود، حرکت، پولیش، انتزاع یا درام بصری.",
+          },
+          item: {
+            guide:
+              "Item رفتار دقیق افکت را مشخص می‌کند؛ مثل dust particles، bloom glow، chromatic aberration، halftone overlay، motion blur، smoke، sparkles، light leaks یا abstract energy.",
+            tip: "افکت‌ها را کنترل‌شده نگه دار. افکت‌های زیاد و قوی می‌توانند خوانایی سوژه را کم کنند.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک افکت را اضافه می‌کند، بدون اینکه خروجی effects را جایگزین کند.",
+            tip: "برای شدت، جایگاه، opacity، رنگ، جهت، مقیاس یا نکته‌هایی مثل subtle only و do not cover the face از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی effects را با دستور کامل دستی جایگزین می‌کند.",
+            tip: "وقتی افکت به رفتار بصری خیلی مشخصی نیاز دارد، از این فیلد استفاده کن.",
+          },
+          effectIntensity: {
+            guide:
+              "Effect Intensity مشخص می‌کند افکت انتخاب‌شده در خروجی نهایی چقدر قوی یا ظریف دیده شود.",
+            tip: "برای خروجی‌های پولیش‌شده یا واقع‌گراتر از intensity ظریف استفاده کن. intensity قوی‌تر را فقط وقتی انتخاب کن که افکت باید بخش اصلی هویت بصری باشد.",
+          },
+          effectStyle: {
+            guide:
+              "Effect Style نوع افکت تصویری اضافه را مشخص می‌کند؛ مثل glow، ذرات، دود، motion، distortion، overlayها، آرتیفکت‌های لنز یا پرداخت‌های اتمسفریک.",
+            tip: "از افکت‌ها برای حمایت از مود تصویر استفاده کن، نه برای جایگزین کردن style، lighting یا background اصلی.",
+          },
+        },
+      },
+      texture: {
+        overview:
+          "ماژول Texture متریال، کیفیت سطح، سطح جزئیات، نقص‌ها و رفتار لمسی/بصری سطح را کنترل می‌کند. این ماژول کمک می‌کند تصویر حس vinyl، clay، metal، wood، fabric، paper، ceramic، glass، rubber، stone یا یک متریال فیزیکی دیگر را داشته باشد.",
+        whenToUse:
+          "وقتی سطح سوژه یا آبجکت مهم است، از این ماژول استفاده کن. برای طراحی اسباب‌بازی، رندر سه‌بعدی، مجسمه، کاراکترهای clay، ویژوال‌های محصول‌مانند، استایل‌های دست‌ساز، مطالعه متریال و پرامپت‌هایی که جزئیات لمسی باید دیده شوند کاربرد دارد.",
+        workflow:
+          "اول متریال اصلی را انتخاب کن. بعد آن را با surface، detail level و imperfections دقیق‌تر کن. از Extra Details برای مشخص کردن محل تکسچر، شدت آن، و clean، handmade، aged، polished، rough یا worn بودن سطح استفاده کن.",
+        fields: {
+          material: {
+            guide:
+              "Material ماده فیزیکی سوژه یا آبجکت را مشخص می‌کند؛ مثل vinyl، clay، ceramic، metal، wood، stone، glass، fabric، leather، paper، rubber یا organic material.",
+            tip: "material را قبل از surface و imperfections انتخاب کن، چون تنظیمات بعدی texture باید با متریال سازگار باشند.",
+          },
+          surface: {
+            guide:
+              "Surface کیفیت لمسی بیرونی متریال را مشخص می‌کند؛ مثل smooth، matte، glossy، satin، rough، porous، brushed، hammered، frosted، polished، cracked، wrinkled یا creased.",
+            tip: "surface روی تعامل نور با آبجکت اثر زیادی دارد. آن را با lighting و style هماهنگ کن.",
+          },
+          detailLevel: {
+            guide:
+              "Detail Level مشخص می‌کند اطلاعات تکسچر چقدر واضح و شدید دیده شوند؛ از رفتار سطحی خیلی ظریف تا جزئیات لمسی سنگین.",
+            tip: "برای رندرهای clean و premium از جزئیات subtle استفاده کن. برای سطح‌های handmade، aged، rough یا expressive سراغ detail قوی‌تر برو.",
+          },
+          imperfections: {
+            guide:
+              "Imperfections بی‌نظمی‌های واقعی یا دست‌ساز اضافه می‌کند؛ مثل brush marks، chipped edges، patina، scratches، peeling، oxidation، cracks یا خطاهای کوچک ساخت دستی.",
+            tip: "imperfections باعث باورپذیری متریال می‌شود، ولی مقدار زیاد آن می‌تواند تصویر را کثیف یا شلوغ کند.",
+          },
+          extraDetails: {
+            guide:
+              "Extra Details نکات کوچک texture را اضافه می‌کند، بدون اینکه خروجی texture را جایگزین کند.",
+            tip: "برای نکته‌هایی مثل only on clothing، visible on the face، soft matte finish، subtle handmade variation یا avoid reflective surfaces از این فیلد استفاده کن.",
+          },
+          customText: {
+            guide: "Custom Override خروجی texture را با دستور کامل دستی خودت جایگزین می‌کند.",
+            tip: "وقتی رفتار متریال و سطح باید خیلی دقیق و دستی توضیح داده شود، از این فیلد استفاده کن.",
+          },
+        },
+      },
+    },
+  },
+}

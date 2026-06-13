@@ -1,0 +1,436 @@
+body {
+  padding: 0;
+  margin: 0;
+}
+
+* {
+  box-sizing: border-box;
+  user-select: none;
+  -webkit-tap-highlight-color: rgba(255, 255, 255, 0);
+  scrollbar-width: thin;
+  scrollbar-color: var(--themeSurface) transparent;
+
+  &::-webkit-scrollbar {
+    width: 2px;
+    height: 2px;
+  }
+
+  &::-webkit-scrollbar-track {
+    background: var(--themeRed);
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background-color: var(--themeRed);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+
+  &::-webkit-scrollbar-thumb:hover {
+    background-color: #333;
+  }
+}
+
+a {
+  text-decoration: none;
+  color: var(--normalText) initial;
+}
+
+p,
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+span {
+  margin: 0;
+  padding: 0;
+}
+
+img {
+  -webkit-user-drag: none;
+}
+
+li {
+  list-style-type: none;
+  padding: 0;
+  margin: 0;
+}
+
+ul {
+  padding: 0;
+  margin: 0;
+}
+
+/* ---------------------------------------------
+  Global Form Elements
+--------------------------------------------- */
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border: 1px solid var(--normalText15);
+  outline: 0;
+  border-radius: 8px;
+  background: var(--normalText5);
+  color: var(--normalText);
+  font-size: 13px;
+  line-height: 1.5;
+  transition:
+    border-color 0.2s ease,
+    background-color 0.2s ease,
+    color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+/* ---------------------------------------------
+  Text-like Inputs
+--------------------------------------------- */
+
+input:not(
+  [type="checkbox"],
+  [type="radio"],
+  [type="range"],
+  [type="color"],
+  [type="file"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"]
+),
+select,
+textarea {
+  padding: 8px 12px;
+}
+
+/* ---------------------------------------------
+  Textarea
+--------------------------------------------- */
+
+textarea {
+  resize: none;
+  min-height: 80px;
+}
+
+/* ---------------------------------------------
+  Placeholder
+--------------------------------------------- */
+
+input::placeholder,
+textarea::placeholder {
+  color: var(--normalText40);
+}
+
+/* ---------------------------------------------
+  Focus State
+--------------------------------------------- */
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+  background: var(--normalText10);
+  box-shadow: 0 0 0 3px var(--primary15);
+}
+
+/* ---------------------------------------------
+  Disabled / Readonly
+--------------------------------------------- */
+
+input:disabled,
+select:disabled,
+textarea:disabled,
+input:read-only,
+textarea:read-only {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+input:read-only,
+textarea:read-only {
+  cursor: default;
+}
+
+/* ---------------------------------------------
+  Invalid State
+--------------------------------------------- */
+
+input:invalid,
+select:invalid,
+textarea:invalid {
+  border-color: var(--error, #ef4444);
+}
+
+input:invalid:focus,
+select:invalid:focus,
+textarea:invalid:focus {
+  box-shadow: 0 0 0 3px var(--error15, rgba(239, 68, 68, 0.15));
+}
+
+/* ---------------------------------------------
+  Select / Native Multiselect
+--------------------------------------------- */
+
+select {
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, var(--normalText60) 50%),
+    linear-gradient(135deg, var(--normalText60) 50%, transparent 50%);
+  background-position:
+    calc(100% - 18px) 50%,
+    calc(100% - 13px) 50%;
+  background-size:
+    5px 5px,
+    5px 5px;
+  background-repeat: no-repeat;
+  padding-inline-end: 36px;
+}
+
+select[multiple] {
+  min-height: 120px;
+  padding: 8px;
+  background-image: none;
+  overflow-y: auto;
+}
+
+select option {
+  background: var(--background);
+  color: var(--normalText);
+}
+
+select option:checked {
+  background: var(--normalText10);
+}
+
+/* ---------------------------------------------
+  Checkbox / Radio
+--------------------------------------------- */
+
+input[type="checkbox"],
+input[type="radio"] {
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+input[type="radio"] {
+  border-radius: 50%;
+}
+
+/* ---------------------------------------------
+  Range
+--------------------------------------------- */
+
+input[type="range"] {
+  height: 28px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  accent-color: var(--primary);
+}
+
+input[type="range"]::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--normalText15);
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  margin-top: -5px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--onPrimary, #fff);
+  cursor: pointer;
+}
+
+input[type="range"]::-moz-range-track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--normalText15);
+}
+
+input[type="range"]::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--onPrimary, #fff);
+  cursor: pointer;
+}
+
+/* ---------------------------------------------
+  Color Picker
+--------------------------------------------- */
+
+input[type="color"] {
+  width: 44px;
+  height: 36px;
+  padding: 4px;
+  cursor: pointer;
+}
+
+input[type="color"]::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+input[type="color"]::-webkit-color-swatch {
+  border: 0;
+  border-radius: 6px;
+}
+
+input[type="color"]::-moz-color-swatch {
+  border: 0;
+  border-radius: 6px;
+}
+
+/* ---------------------------------------------
+  File Input
+--------------------------------------------- */
+
+input[type="file"] {
+  padding: 6px;
+  cursor: pointer;
+}
+
+input[type="file"]::file-selector-button {
+  border: 0;
+  outline: 0;
+  margin-inline-end: 10px;
+  padding: 6px 12px;
+  border-radius: 6px;
+  background: var(--primary);
+  color: var(--onPrimary, #fff);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------
+  Date / Time Inputs
+--------------------------------------------- */
+
+input[type="date"],
+input[type="time"],
+input[type="datetime-local"],
+input[type="month"],
+input[type="week"] {
+  color-scheme: dark;
+}
+
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="time"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator,
+input[type="week"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.7;
+  filter: invert(1);
+}
+
+/* ---------------------------------------------
+  Number Input
+--------------------------------------------- */
+
+input[type="number"] {
+  appearance: textfield;
+  -moz-appearance: textfield;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  margin: 0;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+/* ---------------------------------------------
+  Search Input
+--------------------------------------------- */
+
+input[type="search"] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+input[type="search"]::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+/* ---------------------------------------------
+  Button-like Inputs
+--------------------------------------------- */
+
+input[type="button"],
+input[type="submit"],
+input[type="reset"],
+button {
+  border: 0;
+  outline: 0;
+  border-radius: 8px;
+  padding: 8px 14px;
+  background: var(--primary);
+  color: var(--onPrimary, #fff);
+  font-size: 13px;
+  line-height: 1.5;
+  cursor: pointer;
+  transition:
+    opacity 0.2s ease,
+    background-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+input[type="button"]:hover,
+input[type="submit"]:hover,
+input[type="reset"]:hover,
+button:hover {
+  opacity: 0.9;
+}
+
+input[type="button"]:disabled,
+input[type="submit"]:disabled,
+input[type="reset"]:disabled,
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ---------------------------------------------
+  Autofill Fix
+--------------------------------------------- */
+
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+select:-webkit-autofill {
+  -webkit-text-fill-color: var(--normalText);
+  box-shadow: 0 0 0 1000px var(--normalText5) inset;
+  transition: background-color 9999s ease-in-out 0s;
+}
+
+/* ---------------------------------------------
+  Selection
+--------------------------------------------- */
+
+input::selection,
+textarea::selection {
+  background: var(--primary30);
+  color: var(--normalText);
+}

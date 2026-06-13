@@ -1,0 +1,1331 @@
+@use "sass:math";
+@use "sass:list";
+
+input {
+  outline: 0;
+}
+.childsOff {
+  * {
+    pointer-events: none;
+  }
+}
+.tr {
+  text-align: right !important;
+}
+.tc {
+  text-align: center !important;
+}
+.tl {
+  text-align: left !important;
+}
+.tj {
+  text-align: justify !important;
+}
+.ofh {
+  overflow: hidden;
+}
+.ofha {
+  overflow: hidden auto;
+}
+.ofah {
+  overflow: auto hidden;
+}
+.lh1 {
+  line-height: 1;
+}
+.lh11 {
+  line-height: 1.1;
+}
+.lh12 {
+  line-height: 1.2;
+}
+.lh13 {
+  line-height: 1.3;
+}
+.lh14 {
+  line-height: 1.4;
+}
+.lh15 {
+  line-height: 1.5;
+}
+.usn {
+  user-select: none;
+}
+.chpen {
+  * {
+    pointer-events: none;
+  }
+}
+.pen {
+  pointer-events: none;
+}
+.fw {
+  flex-wrap: wrap;
+}
+.dltr {
+  direction: ltr !important;
+}
+.drtl {
+  direction: rtl !important;
+}
+.wsnw {
+  white-space: nowrap;
+}
+.crp {
+  cursor: pointer !important;
+}
+.txt-gr {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.txt-clip {
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.txt-clip::before {
+  background: linear-gradient(
+    0deg,
+    var(--primary) 0%,
+    var(--primaryDark) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.txt-clip-orange::before {
+  background: linear-gradient(
+    0deg,
+    var(--themeOrange) 0%,
+    var(--themeRed) 100%
+  );
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+.dsil {
+  display: inline-block;
+}
+.dsn {
+  display: none;
+}
+.chpen {
+  * {
+    pointer-events: none;
+  }
+}
+.notoolbar {
+  .quill-toolbar {
+    display: none !important;
+  }
+}
+.bg-gr-prim {
+  background: var(--primary);
+  background: linear-gradient(
+    0deg,
+    var(--primary) 0%,
+    var(--primaryDark) 100%
+  );
+}
+.bg-gr-sec {
+  background: var(--secondary);
+  background: linear-gradient(
+    0deg,
+    var(--secondary) 0%,
+    var(--secondaryDark) 100%
+  );
+}
+.bg-gr-normal {
+  // background-color: var(--primary);
+  background: linear-gradient(
+    45deg,
+    var(--normalText5) 15.38%,
+    var(--normalText0) 15.38%,
+    var(--normalText0) 50%,
+    var(--normalText5) 50%,
+    var(--normalText5) 65.38%,
+    var(--normalText0) 65.38%,
+    var(--normalText0) 100%
+  );
+  background-size: 18.38px 18.38px;
+}
+.ss {
+  scroll-behavior: smooth;
+}
+
+$names: "primary", "primaryDark", "onPrimary", "secondary", "secondaryDark", "onSecondary", "normalText", "darkText", "invertText", "themeSurface", "themeBackground", "themeRed", "themeGreen", "themeBlue", "themeOrange", "themeYellow", "themePink", "themeViolet", "themeIndigo", "themePurple", "themeCyan", "themeTeal", "themeLime", "themeBrown", "themeSlate", "themeWhite", "themeBlack", "themeGray", "paletteOne", "paletteTwo", "paletteThree", "transparent", "themeFuchsia";
+
+$shortNames: "prim", "primDark", "onPrim", "sec", "secDark", "onSec", "normal", "dark", "invert", "surface", "background", "red", "green", "blue", "orange", "yellow", "pink", "violet", "indigo", "purple", "cyan", "teal", "lime", "brown", "slate", "white", "black", "gray", "paletteOne", "paletteTwo", "paletteThree", "trans", "themeFuchsia";
+
+$alphas:
+  "",
+  "0",
+  "5",
+  "10",
+  "15",
+  "20",
+  "25",
+  "30",
+  "35",
+  "40",
+  "45",
+  "50",
+  "55",
+  "60",
+  "65",
+  "70",
+  "75",
+  "80",
+  "85",
+  "90",
+  "95",
+  "100";
+
+@each $name, $shortName in list.zip($names, $shortNames) {
+  .gr-radial-#{$shortName} {
+    background: rgb(0, 252, 255);
+    background: radial-gradient(
+      circle,
+      var(--#{$name}) 0%,
+      var(--#{$name + "0"}) 100%
+    );
+  }
+  @each $alpha in $alphas {
+    .txt-#{$shortName}#{$alpha} {
+      color: var(--#{$name + $alpha});
+    }
+    .txt-gr-#{$shortName}#{$alpha}::before {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--#{$name}5) 100%
+      );
+      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+    }
+    .txt-gr-#{$shortName}#{$alpha} {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--#{$name}5) 100%
+      );
+      -webkit-text-fill-color: transparent;
+      -webkit-background-clip: text;
+    }
+    .htxt-#{$shortName}#{$alpha}:hover {
+      color: var(--#{$name + $alpha});
+    }
+    .bg-#{$shortName}#{$alpha} {
+      background-color: var(--#{$name + $alpha});
+    }
+    .bg-#{$shortName}#{$alpha}i {
+      background-color: var(--#{$name + $alpha}) !important;
+    }
+    .hbg-#{$shortName}#{$alpha}:hover {
+      background-color: var(--#{$name + $alpha});
+    }
+    .bc-#{$shortName}#{$alpha} {
+      border-color: var(--#{$name + $alpha});
+    }
+    .bc-#{$shortName}#{$alpha}i {
+      border-color: var(--#{$name + $alpha}) !important;
+    }
+    .hbc-#{$shortName}#{$alpha}i {
+      border-color: var(--#{$name + $alpha}) !important;
+    }
+    .hbc-#{$shortName}#{$alpha}:hover {
+      border-color: var(--#{$name + $alpha});
+    }
+    .focbc-#{$shortName}#{$alpha}:focus {
+      border-color: var(--#{$name + $alpha});
+    }
+  }
+}
+
+@for $i from 0 through 360 {
+  .rot#{$i} {
+    transform: rotate(#{$i}deg);
+  }
+}
+$gradientAlphas: 10, 20, 30, 40, 50, 60, 70, 80, 90, 100;
+
+@each $name, $shortName in list.zip($names, $shortNames) {
+  @each $alpha in $gradientAlphas {
+    $previousAlpha: $alpha - 20;
+    .gr-#{$shortName}#{$alpha} {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--#{$name + $previousAlpha}) 100%
+      );
+    }
+    .gr-nr-#{$shortName}#{$alpha} {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--normalText#{$previousAlpha}) 100%
+      );
+    }
+    .gr-w-#{$shortName}#{$alpha} {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--themeWhite#{$previousAlpha}) 100%
+      );
+    }
+    .gr-b-#{$shortName}#{$alpha} {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--themeBlack#{$previousAlpha}) 100%
+      );
+    }
+    .hgr-#{$shortName}#{$alpha}:hover {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--#{$name + $previousAlpha}) 100%
+      );
+    }
+    .hgr-nr-#{$shortName}#{$alpha}:hover {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--normalText#{$previousAlpha}) 100%
+      );
+    }
+    .hgr-w-#{$shortName}#{$alpha}:hover {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--themeWhite#{$previousAlpha}) 100%
+      );
+    }
+    .hgr-b-#{$shortName}#{$alpha}:hover {
+      background: var(--#{$name + $alpha});
+      background: linear-gradient(
+        0deg,
+        var(--#{$name + $alpha}) 0%,
+        var(--themeBlack#{$previousAlpha}) 100%
+      );
+    }
+  }
+}
+
+// تعریف لیست‌های مقادیر
+$bgpositions: (cc, tl, tc, tr, bl, bc, br);
+$repeats: (nr, rx, ry);
+$sizes: (cv, a, ct);
+
+// تعریف یک placeholder برای خاصیت‌های مشترک
+%bg-styles {
+  background: inherit;
+}
+
+// تعریف یک تابع برای تبدیل مقادیر لیست به مقادیر css
+@function convert($value) {
+  @if $value == cc {
+    @return center center;
+  } @else if $value == tl {
+    @return top left;
+  } @else if $value == tc {
+    @return top center;
+  } @else if $value == tr {
+    @return top right;
+  } @else if $value == bl {
+    @return bottom left;
+  } @else if $value == bc {
+    @return bottom center;
+  } @else if $value == br {
+    @return bottom right;
+  } @else if $value == nr {
+    @return no-repeat;
+  } @else if $value == rx {
+    @return repeat-x;
+  } @else if $value == ry {
+    @return repeat-y;
+  } @else if $value == cv {
+    @return cover;
+  } @else if $value == a {
+    @return auto;
+  } @else if $value == ct {
+    @return contain;
+  } @else {
+    @return $value;
+  }
+}
+
+// حلقه برای ایجاد کلاس‌های مربوط به background-position
+@for $i from 1 through list.length($bgpositions) {
+  .bgp#{list.nth($bgpositions, $i)} {
+    @extend %bg-styles; // استفاده از placeholder
+    background-position: convert(
+      list.nth($bgpositions, $i)
+    ); // اعمال تابع convert بر روی عنصر i ام از لیست
+  }
+}
+
+// حلقه برای ایجاد کلاس‌های مربوط به background-repeat
+@for $i from 1 through list.length($repeats) {
+  .bgr#{list.nth($repeats, $i)} {
+    @extend %bg-styles; // استفاده از placeholder
+    background-repeat: convert(
+      list.nth($repeats, $i)
+    ); // اعمال تابع convert بر روی عنصر i ام از لیست
+  }
+}
+
+// حلقه برای ایجاد کلاس‌های مربوط به background-size
+@for $i from 1 through list.length($sizes) {
+  .bgs#{list.nth($sizes, $i)} {
+    @extend %bg-styles; // استفاده از placeholder
+    background-size: convert(
+      list.nth($sizes, $i)
+    ); // اعمال تابع convert بر روی عنصر i ام از لیست
+  }
+}
+
+$directions: (
+  "": "",
+  t: "-top",
+  r: "-right",
+  b: "-bottom",
+  l: "-left",
+);
+
+$properties: (
+  m: "margin",
+  p: "padding",
+);
+@for $i from 0 through 400 {
+  @each $prop, $propName in $properties {
+    @each $dir, $dirName in $directions {
+      .#{$prop}#{$dir}#{$i} {
+        #{$propName}#{$dirName}: #{$i}px;
+      }
+    }
+  }
+}
+@for $i from 0 through 100 {
+  // backdrop
+  .bdb#{$i} {
+    backdrop-filter: blur(#{i}px);
+  }
+  .bdi#{$i} {
+    backdrop-filter: invert(math.percentage(math.div($i, 100)));
+  }
+  // filters
+  .flb#{$i} {
+    filter: blur(#{$i}px);
+  }
+  .flg#{$i} {
+    filter: grayscale(math.percentage(math.div($i, 100)));
+  }
+  // translate
+  .trnsx#{$i} {
+    transform: translateX(math.percentage(math.div($i, 100)));
+  }
+  .trnsx-#{$i} {
+    transform: translateX(math.percentage(math.div($i, -100)));
+  }
+  .trnsy#{$i} {
+    transform: translateY(math.percentage(math.div($i, 100)));
+  }
+  .trnsy-#{$i} {
+    transform: translateY(math.percentage(math.div($i, -100)));
+  }
+  .trnsxy#{$i} {
+    transform: translate(
+      math.percentage(math.div($i, 100)),
+      math.percentage(math.div($i, 100))
+    );
+  }
+  .trnsxy-#{$i} {
+    transform: translate(
+      math.percentage(math.div($i, -100)),
+      math.percentage(math.div($i, -100))
+    );
+  }
+  // full border
+  .brs#{$i} {
+    border-width: #{$i}px;
+    border-style: solid;
+  }
+  .brd#{$i} {
+    border-width: #{$i}px;
+    border-style: dashed;
+  }
+  // border top
+  .brst#{$i} {
+    border-top-width: #{$i}px;
+    border-top-style: solid;
+  }
+  .brdt#{$i} {
+    border-top-width: #{$i}px;
+    border-top-style: dashed;
+  }
+  // border bottom
+  .brsb#{$i} {
+    border-bottom-width: #{$i}px;
+    border-bottom-style: solid;
+  }
+  .brdb#{$i} {
+    border-bottom-width: #{$i}px;
+    border-bottom-style: dashed;
+  }
+  // border left
+  .brsl#{$i} {
+    border-left-width: #{$i}px;
+    border-left-style: solid;
+  }
+  .brdl#{$i} {
+    border-left-width: #{$i}px;
+    border-left-style: dashed;
+  }
+  // border right
+  .brsr#{$i} {
+    border-right-width: #{$i}px;
+    border-right-style: solid;
+  }
+  .brdr#{$i} {
+    border-right-width: #{$i}px;
+    border-right-style: dashed;
+  }
+}
+
+@for $i from 1 through 12 {
+  // backdrop
+  .fill-col-#{$i} {
+    grid-column: span #{$i};
+  }
+}
+
+@for $i from 0 through 200 {
+  .scl#{$i} {
+    transform: scale(math.percentage(math.div($i, 100)));
+  }
+  .hscl#{$i}:hover {
+    transform: scale(math.percentage(math.div($i, 100)));
+  }
+}
+// animations
+@keyframes opAnimation {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@for $i from 0 through 100 {
+  .anbl#{$i * 50} {
+    animation: opAnimation #{$i * 50}ms ease-in-out infinite;
+  }
+}
+@for $i from 8 through 100 {
+  .fs#{$i} {
+    font-size: #{$i}px;
+  }
+}
+
+@for $i from 1 through 10 {
+  .fw#{$i}00 {
+    font-weight: #{$i}00;
+  }
+}
+
+$borderRadiusDirections: (
+  br: "border-radius",
+  brtl: "border-top-left-radius",
+  brtr: "border-top-right-radius",
+  brbl: "border-bottom-left-radius",
+  brbr: "border-bottom-right-radius",
+);
+
+@for $i from 0 through 100 {
+  @each $br, $brName in $borderRadiusDirections {
+    .#{$br}#{$i} {
+      #{$brName}: #{$i}px;
+    }
+  }
+}
+
+$flexDirections: (
+  r: "row",
+  c: "column",
+);
+
+$justifyContents: (
+  s: "flex-start",
+  c: "center",
+  e: "flex-end",
+  a: "space-around",
+  b: "space-between",
+);
+
+$alignItems: (
+  s: "flex-start",
+  c: "center",
+  e: "flex-end",
+  ch: "stretch",
+);
+
+@each $fd, $fdName in $flexDirections {
+  @each $jc, $jcName in $justifyContents {
+    @each $ai, $aiName in $alignItems {
+      .f#{$fd}#{$jc}#{$ai} {
+        display: flex;
+        flex-direction: #{$fdName};
+        justify-content: #{$jcName};
+        align-items: #{$aiName};
+      }
+    }
+  }
+}
+
+.f {
+  display: flex;
+}
+
+.fr {
+  display: flex;
+  flex-direction: row;
+}
+
+.fc {
+  display: flex;
+  flex-direction: column;
+}
+
+$justifyContentss: (
+  s: "flex-start",
+  c: "center",
+  e: "flex-end",
+  a: "space-around",
+  b: "space-between",
+);
+
+@each $jc, $jcName in $justifyContentss {
+  .j#{$jc} {
+    justify-content: #{$jcName};
+  }
+}
+
+$alignItemss: (
+  s: "flex-start",
+  c: "center",
+  e: "flex-end",
+  ch: "stretch",
+);
+
+@each $ai, $aiName in $alignItemss {
+  .a#{$ai} {
+    align-items: #{$aiName};
+  }
+}
+
+$positions: s, r, a, f, st;
+$positionNames: static, relative, absolute, fixed, sticky;
+$positionLocations: t, tr, tl, b, br, bl, l, r, c;
+
+@for $i from 1 through list.length($positions) {
+  .po#{list.nth($positions, $i)} {
+    position: list.nth($positionNames, $i);
+  }
+}
+
+@for $i from 1 through list.length($positionLocations) {
+  $pl: list.nth($positionLocations, $i);
+  @if $pl == "t" {
+    .poft,
+    .poat {
+      position: fixed;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  } @else if $pl == "tr" {
+    .poftr,
+    .poatr {
+      position: fixed;
+      top: 0;
+      right: 0;
+    }
+  } @else if $pl == "tl" {
+    .poftl,
+    .poatl {
+      position: fixed;
+      top: 0;
+      left: 0;
+    }
+  } @else if $pl == "b" {
+    .pofb,
+    .poab {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  } @else if $pl == "br" {
+    .pofbr,
+    .poabr {
+      position: fixed;
+      bottom: 0;
+      right: 0;
+    }
+  } @else if $pl == "bl" {
+    .pofbl,
+    .poabl {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+    }
+  } @else if $pl == "l" {
+    .pofl,
+    .poal {
+      position: fixed;
+      top: 50%;
+      left: 0;
+      transform: translateY(-50%);
+    }
+  } @else if $pl == "r" {
+    .pofr,
+    .poar {
+      position: fixed;
+      top: 50%;
+      right: 0;
+      transform: translateY(-50%);
+    }
+  } @else if $pl == "c" {
+    .pofc,
+    .poac {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+    }
+  }
+}
+
+@for $i from 0 through 500 {
+  // width
+  .wp#{$i * 2} {
+    width: #{$i * 2}px;
+  }
+  .mxwp#{$i * 2} {
+    max-width: #{$i * 2}px;
+  }
+  .mnwp#{$i * 2} {
+    min-width: #{$i * 2}px;
+  }
+  // height
+  .hp#{$i * 2} {
+    height: #{$i * 2}px;
+  }
+  .mxhp#{$i * 2} {
+    max-height: #{$i * 2}px;
+  }
+  .mnhp#{$i * 2} {
+    min-height: #{$i * 2}px;
+  }
+  // box shadow
+  .bsh#{$i} {
+    box-shadow: 0
+      #{$i * 1.2}px
+      #{$i}px
+      #{calc($i * -1)}px
+      var(--themeBlack15);
+  }
+}
+
+@for $i from 0 through 1000 {
+  // opacity
+  .zi#{$i * 5} {
+    z-index: #{$i * 5};
+  }
+  // opacity
+  .hzi#{$i * 5}:hover {
+    z-index: #{$i * 5};
+  }
+}
+@for $i from 0 through 200 {
+  // backdrop
+  .bdb#{$i} {
+    backdrop-filter: blur(#{$i}px);
+  }
+  .bdi#{$i} {
+    backdrop-filter: invert(math.percentage(math.div($i, 100)));
+  }
+  // positionin
+  .lp#{$i} {
+    left: #{$i}px;
+  }
+  .rp#{$i} {
+    right: #{$i}px;
+  }
+  .tp#{$i} {
+    top: #{$i}px;
+  }
+  .bp#{$i} {
+    bottom: #{$i}px;
+  }
+  .l#{$i} {
+    left: math.percentage(math.div($i, 100));
+  }
+  .r#{$i} {
+    right: math.percentage(math.div($i, 100));
+  }
+  .t#{$i} {
+    top: math.percentage(math.div($i, 100));
+  }
+  .b#{$i} {
+    bottom: math.percentage(math.div($i, 100));
+  }
+  // positionin mines
+  .lp-#{$i} {
+    left: #{$i * -1}px;
+  }
+  .rp-#{$i} {
+    right: #{$i * -1}px;
+  }
+  .tp-#{$i} {
+    top: #{$i * -1}px;
+  }
+  .bp-#{$i} {
+    bottom: #{$i * -1}px;
+  }
+  .l-#{$i} {
+    left: math.percentage(math.div($i, -100));
+  }
+  .r-#{$i} {
+    right: math.percentage(math.div($i, -100));
+  }
+  .t-#{$i} {
+    top: math.percentage(math.div($i, -100));
+  }
+  .b-#{$i} {
+    bottom: math.percentage(math.div($i, -100));
+  }
+  // opacity
+  .o#{$i} {
+    opacity: calc($i / 100);
+  }
+  .ho#{$i}:hover {
+    opacity: calc($i / 100);
+  }
+  // flex grow
+  .fg#{$i} {
+    flex-grow: calc($i / 100);
+  }
+  // felx gap
+  .fgp#{$i} {
+    gap: #{$i}px;
+  }
+  // handle width
+  .w#{$i} {
+    width: math.percentage(math.div($i, 100));
+  }
+  .mxw#{$i} {
+    max-width: math.percentage(math.div($i, 100));
+  }
+  .mnw#{$i} {
+    min-width: math.percentage(math.div($i, 100));
+  }
+  .wvw#{$i} {
+    width: #{$i}vw;
+  }
+  .mxwvw#{$i} {
+    max-width: #{$i}vw;
+  }
+  .mnwvw#{$i} {
+    min-width: #{$i}vw;
+  }
+  // handle height
+  .h#{$i} {
+    height: math.percentage(math.div($i, 100));
+  }
+  .mxh#{$i} {
+    max-height: math.percentage(math.div($i, 100));
+  }
+  .mnh#{$i} {
+    min-height: math.percentage(math.div($i, 100));
+  }
+  .hvh#{$i} {
+    height: #{$i}vh;
+  }
+  .mxhvh#{$i} {
+    max-height: #{$i}vh;
+  }
+  .mnhvh#{$i} {
+    min-height: #{$i}vh;
+  }
+}
+
+$transitions: (
+  "tn": (
+    "e": ease-in-out,
+    "l": linear,
+    "cf": cubic-bezier(1, 0, 0, 1),
+    "ch": cubic-bezier(0.5, 0, 0, 0.5),
+  ),
+);
+
+@each $transition, $easings in $transitions {
+  @each $easing, $easing-function in $easings {
+    @for $i from 0 through 50 {
+      .#{$transition}#{$easing}#{$i*100} {
+        transition: $easing-function #{$i * 100}ms all;
+      }
+    }
+  }
+}
+
+// $widths: (10, 20, 25, 33, 50);
+
+// @each $width in $widths {
+//   .wg#{$width} {
+//     width: calc((100% - 32px) / 5);
+//   }
+// }
+.wg10 {
+  width: calc((100% - 9 * 8px) / 10);
+}
+
+.wg20 {
+  width: calc((100% - 4 * 8px) / 5);
+}
+
+.wg25 {
+  width: calc((100% - 3 * 8px) / 4);
+}
+
+.wg33 {
+  width: calc((100% - 2 * 8px) / 3);
+}
+
+.wg50 {
+  width: calc((100% - 8px) / 2);
+}
+
+// reset blocks
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  padding: 0;
+  margin: 0;
+  line-height: 1.5;
+}
+.line-hor,
+.line-ver {
+  border-radius: 24px;
+  background-color: var(--normalText25);
+}
+.line-hor {
+  width: 100px;
+  height: 1px;
+}
+.line-ver {
+  width: 1px;
+}
+.line-hor-dash {
+  width: 100%;
+  background-color: var(--primary0);
+  border-top: dashed 2px var(--normalText25);
+  height: 1px;
+}
+.line-ver-dash {
+  height: 100%;
+  background-color: var(--primary0);
+  border-left: dashed 2px var(--normalText25);
+  width: 1px;
+}
+.login-simpleBox:active,
+.login-simpleBox:focus {
+  box-shadow: 0 0 0 2px var(--primary25);
+}
+// responsived
+// level 1
+@media screen and (max-width: 800px) {
+  @for $i from 0 through 100 {
+    // flex grow
+    .fg#{$i}-1 {
+      flex-grow: calc($i / 100) !important;
+    }
+    // felx gap
+    .fgp#{$i}-1 {
+      gap: #{$i}px !important;
+    }
+    // handle width
+    .w#{$i}-1 {
+      width: math.percentage(math.div($i, 100)) !important;
+    }
+    .mxw#{$i}-1 {
+      max-width: math.percentage(math.div($i, 100)) !important;
+    }
+    .mnw#{$i}-1 {
+      min-width: math.percentage(math.div($i, 100)) !important;
+    }
+    .wvw#{$i}-1 {
+      width: #{$i}vw !important;
+    }
+    .mxwvw#{$i}-1 {
+      max-width: #{$i}vw !important;
+    }
+    .mnwvw#{$i}-1 {
+      min-width: #{$i}vw !important;
+    }
+    // handle height
+    .h#{$i}-1 {
+      height: math.percentage(math.div($i, 100)) !important;
+    }
+    .mxh#{$i}-1 {
+      max-height: math.percentage(math.div($i, 100)) !important;
+    }
+    .mnh#{$i}-1 {
+      min-height: math.percentage(math.div($i, 100)) !important;
+    }
+    .hvh#{$i}-1 {
+      height: #{$i}vh !important;
+    }
+    .mxhvh#{$i}-1 {
+      max-height: #{$i}vh !important;
+    }
+    .mnhvh#{$i}-1 {
+      min-height: #{$i}vh !important;
+    }
+  }
+  .wg10-1 {
+    width: calc((100% - 9 * 8px) / 10) !important;
+  }
+
+  .wg20-1 {
+    width: calc((100% - 4 * 8px) / 5) !important;
+  }
+
+  .wg25-1 {
+    width: calc((100% - 3 * 8px) / 4) !important;
+  }
+
+  .wg33-1 {
+    width: calc((100% - 2 * 8px) / 3) !important;
+  }
+
+  .wg50-1 {
+    width: calc((100% - 8px) / 2) !important;
+  }
+}
+
+
+
+// Grid Template Definitions
+$gridColumns: (
+  1: "1fr",
+  2: "repeat(2, 1fr)",
+  3: "repeat(3, 1fr)",
+  4: "repeat(4, 1fr)",
+  5: "repeat(5, 1fr)",
+  6: "repeat(6, 1fr)",
+  7: "repeat(7, 1fr)",
+  8: "repeat(8, 1fr)",
+  9: "repeat(9, 1fr)",
+  10: "repeat(10, 1fr)",
+);
+
+$gridRows: (
+  1: "auto",
+  2: "repeat(2, auto)",
+  3: "repeat(3, auto)",
+  4: "repeat(4, auto)",
+  5: "repeat(5, auto)",
+  6: "repeat(6, auto)",
+  7: "repeat(7, auto)",
+  8: "repeat(8, auto)",
+  9: "repeat(9, auto)",
+  10: "repeat(10, auto)",
+);
+
+$gridGaps: (
+  0: "0px",
+  1: "1px",
+  2: "2px",
+  3: "3px",
+  4: "4px",
+  5: "5px",
+  6: "6px",
+  7: "7px",
+  8: "8px",
+  9: "9px",
+  10: "10px",
+  11: "11px",
+  12: "12px",
+  13: "13px",
+  14: "14px",
+  15: "15px",
+  16: "16px",
+  17: "17px",
+  18: "18px",
+  19: "19px",
+  20: "20px",
+  21: "21px",
+  22: "22px",
+  23: "23px",
+  24: "24px",
+);
+
+// Justify and Align for Grid
+$gridJustifyContents: (
+  s: "start",
+  c: "center",
+  e: "end",
+  a: "space-around",
+  b: "space-between",
+);
+
+$gridAlignItems: (
+  s: "start",
+  c: "center",
+  e: "end",
+  ch: "stretch",
+);
+
+// Generating Grid Classes
+@each $col, $colValue in $gridColumns {
+  @each $row, $rowValue in $gridRows {
+    @each $gap, $gapValue in $gridGaps {
+      .g-#{$col}-#{$row}-#{$gap} {
+        display: grid;
+        grid-template-columns: #{$colValue};
+        grid-template-rows: #{$rowValue};
+        gap: #{$gapValue};
+      }
+    }
+  }
+}
+
+// Generating Justify and Align Classes for Grid
+@each $jc, $jcValue in $gridJustifyContents {
+  .gj#{$jc} {
+    justify-content: #{$jcValue};
+  }
+}
+
+@each $ai, $aiValue in $gridAlignItems {
+  .ga#{$ai} {
+    align-items: #{$aiValue};
+  }
+}
+
+// General Grid Utility Classes
+.g {
+  display: grid;
+}
+
+.gfw {
+  grid-auto-flow: row;
+}
+
+.gfc {
+  grid-auto-flow: column;
+}
+
+@for $i from 1 through 12 {
+  .gc#{$i} {
+    display: grid;
+    grid-template-columns: repeat(#{$i}, 1fr);
+  }
+  
+  .gr#{$i} {
+    display: grid;
+    grid-template-rows: repeat(#{$i}, 1fr);
+  }
+}
+
+
+.g {
+  display: grid;
+}
+
+@for $i from 1 through 24 {
+  // grid system column
+  .cols#{$i} {
+    grid-template-columns: repeat(#{$i}, minmax(0, 1fr));
+  }
+  .rows#{$i} {
+    grid-template-rows: repeat(#{$i}, minmax(0, 1fr));
+  }
+  // grid system column
+  .col#{$i} {
+    grid-column: span #{$i};
+  }
+  .row#{$i} {
+    grid-row: span #{$i};
+  }
+}
+
+// aspect classes
+@for $i from 1 through 20 {
+  @for $j from 1 through 20 {
+    .asp-#{$i}-#{$j} {
+      aspect-ratio: #{$i} / #{$j};
+    }
+  }
+}
+
+
+// Grid Template Definitions
+$gridColumns: (
+  1: "1fr",
+  2: "repeat(2, 1fr)",
+  3: "repeat(3, 1fr)",
+  4: "repeat(4, 1fr)",
+  5: "repeat(5, 1fr)",
+  6: "repeat(6, 1fr)",
+  7: "repeat(7, 1fr)",
+  8: "repeat(8, 1fr)",
+  9: "repeat(9, 1fr)",
+  10: "repeat(10, 1fr)",
+);
+
+$gridRows: (
+  1: "auto",
+  2: "repeat(2, auto)",
+  3: "repeat(3, auto)",
+  4: "repeat(4, auto)",
+  5: "repeat(5, auto)",
+  6: "repeat(6, auto)",
+  7: "repeat(7, auto)",
+  8: "repeat(8, auto)",
+  9: "repeat(9, auto)",
+  10: "repeat(10, auto)",
+);
+
+$gridGaps: (
+  0: "0px",
+  1: "1px",
+  2: "2px",
+  3: "3px",
+  4: "4px",
+  5: "5px",
+  6: "6px",
+  7: "7px",
+  8: "8px",
+  9: "9px",
+  10: "10px",
+  11: "11px",
+  12: "12px",
+  13: "13px",
+  14: "14px",
+  15: "15px",
+  16: "16px",
+  17: "17px",
+  18: "18px",
+  19: "19px",
+  20: "20px",
+  21: "21px",
+  22: "22px",
+  23: "23px",
+  24: "24px",
+);
+
+// Justify and Align for Grid
+$gridJustifyContents: (
+  s: "start",
+  c: "center",
+  e: "end",
+  a: "space-around",
+  b: "space-between",
+);
+
+$gridAlignItems: (
+  s: "start",
+  c: "center",
+  e: "end",
+  ch: "stretch",
+);
+
+// Generating Grid Classes
+@each $col, $colValue in $gridColumns {
+  @each $row, $rowValue in $gridRows {
+    @each $gap, $gapValue in $gridGaps {
+      .g-#{$col}-#{$row}-#{$gap} {
+        display: grid;
+        grid-template-columns: #{$colValue};
+        grid-template-rows: #{$rowValue};
+        gap: #{$gapValue};
+      }
+    }
+  }
+}
+
+// Generating Justify and Align Classes for Grid
+@each $jc, $jcValue in $gridJustifyContents {
+  .gj#{$jc} {
+    justify-content: #{$jcValue};
+  }
+}
+
+@each $ai, $aiValue in $gridAlignItems {
+  .ga#{$ai} {
+    align-items: #{$aiValue};
+  }
+}
+
+// General Grid Utility Classes
+.g {
+  display: grid;
+}
+
+.gfw {
+  grid-auto-flow: row;
+}
+
+.gfc {
+  grid-auto-flow: column;
+}
+
+@for $i from 1 through 12 {
+  .gc#{$i} {
+    display: grid;
+    grid-template-columns: repeat(#{$i}, 1fr);
+  }
+  
+  .gr#{$i} {
+    display: grid;
+    grid-template-rows: repeat(#{$i}, 1fr);
+  }
+}
+
+
+// level 2
+@media screen and (max-width: 1000px) and (max-width: 801px) {
+}
+// level 3
+@media screen and (max-width: 1900px) and (min-width: 1001px) {
+}
+// level 4
+@media screen and (max-width: 1200px) and (min-width: 901px) {
+}
+// level 5
+@media screen and (max-width: 1600px) and (min-width: 1201px) {
+}
+// level 6
+@media screen and (max-width: 1800px) and (min-width: 1601px) {
+}
+// level 7
+@media screen and (min-width: 1800px) {
+}
+
+// components
