@@ -10,8 +10,8 @@ const { mini } = useScreen();
 </script>
 
 <template>
-  <el-flex v-if="app.ready" rules="rbc" type="header" :p="[8, 24]" :gap="16" :br="[0, 0, 1, 0]" bc="normal5" bg="surface"
-    class="post t0 l0 r0 w100 bdb8 zi200">
+  <el-flex v-if="app.ready" rules="rbc" type="header" :p="[8, 24]" :gap="16" :br="[0, 0, 1, 0]" bc="normal5" bg="surface65" bd="b8"
+    class="post t0 l0 r0 w100 zi200">
     <el-flex rules="rsc" type="link" to="/">
       <img :src="`img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp32" :alt="$t('app.title')" />
       <!-- <img :src="`img/logo_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp40" :alt="$t('app.title')" /> -->
@@ -21,7 +21,7 @@ const { mini } = useScreen();
       <el-button v-for="item in NAVIGATION"
         :key="item.to"
         :to="item.to"
-        color="prim"
+        :color="route.name === item.name ? 'prim' : 'normal'"
         :effect="true"
         :mode="route.name === item.name ? 'normal' : 'flat'"
         :label="$t(`app.navigation.${item.name}`)"

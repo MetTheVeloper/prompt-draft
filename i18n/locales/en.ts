@@ -2,8 +2,8 @@ export default {
   app: {
     title: "Prompt Draft",
     navigation: {
-      create: "Create Prompt",
-      collage: "Collage Artworks",
+      create: "Create",
+      collage: "Collage",
       guide: "Guides",
     },
     switchTheme: 'Switch Theme',

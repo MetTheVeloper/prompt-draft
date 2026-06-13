@@ -302,7 +302,7 @@ onBeforeUnmount(() => {
         :mode="tb.label === tab.label ? 'normal' : 'outline'"
         :color="tb.label === tab.label ? 'prim' : 'normal'" />
     </el-grid>
-    <el-grid :cols="!mini ? ['300px', 'minmax(0, 1fr)', '340px'] : 1" class="create-page__layout">
+    <el-grid :cols="!mini ? ['300px', 'minmax(0, 1fr)', '340px'] : 1" class="create-page__layout" :gap="16">
       <el-flex type="aside" rules="csc" class="create-page__sidebar" v-if="!mini || mini && tab.label === 'setup'">
         <PromptSetupPanel v-model:settings="promptSettings" v-model:selected-module-keys="selectedModuleKeys"
           :modules="promptModules" />

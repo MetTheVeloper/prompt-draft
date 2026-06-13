@@ -1,5 +1,10 @@
-const CACHE_VERSION = 'v1'
-const CACHE_NAME = `prompt-draft-${CACHE_VERSION}`
+const CACHE_VERSION = 'v2'
+
+const APP_CACHE = `prompt-draft-app-${CACHE_VERSION}`
+const STATIC_CACHE = `prompt-draft-static-${CACHE_VERSION}`
+const SLIDER_CACHE = `prompt-draft-slider-${CACHE_VERSION}`
+
+const SLIDER_MAX_ENTRIES = 80
 
 const APP_SHELL = [
   '/',
@@ -14,7 +19,7 @@ self.addEventListener('install', (event) => {
 
   event.waitUntil(
     caches
-      .open(CACHE_NAME)
+      .open(APP_CACHE)
       .then((cache) => cache.addAll(APP_SHELL))
   )
 })
@@ -24,9 +29,15 @@ self.addEventListener('activate', (event) => {
     caches
       .keys()
       .then((cacheNames) => {
+        const validCaches = [
+          APP_CACHE,
+          STATIC_CACHE,
+          SLIDER_CACHE,
+        ]
+
         return Promise.all(
           cacheNames
-            .filter((cacheName) => cacheName !== CACHE_NAME)
+            .filter((cacheName) => !validCaches.includes(cacheName))
             .map((cacheName) => caches.delete(cacheName))
         )
       })
@@ -48,8 +59,13 @@ self.addEventListener('fetch', (event) => {
     return
   }
 
+  if (isSliderAsset(url)) {
+    event.respondWith(cacheFirst(request, SLIDER_CACHE, SLIDER_MAX_ENTRIES))
+    return
+  }
+
   if (isStaticAsset(url)) {
-    event.respondWith(cacheFirst(request))
+    event.respondWith(cacheFirst(request, STATIC_CACHE))
     return
   }
 
@@ -60,23 +76,19 @@ async function networkFirstNavigation(request) {
   try {
     const response = await fetch(request)
 
-    const cache = await caches.open(CACHE_NAME)
-    cache.put(request, response.clone())
+    if (isSafeResponse(response)) {
+      const cache = await caches.open(APP_CACHE)
+      await cache.put(request, response.clone())
+    }
 
     return response
   } catch {
-    const cache = await caches.open(CACHE_NAME)
+    const cache = await caches.open(APP_CACHE)
 
     return (
       (await cache.match(request)) ||
       (await cache.match('/')) ||
-      new Response('Offline', {
-        status: 503,
-        statusText: 'Offline',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-      })
+      createOfflineResponse()
     )
   }
 }
@@ -85,37 +97,73 @@ async function networkFirst(request) {
   try {
     const response = await fetch(request)
 
-    const cache = await caches.open(CACHE_NAME)
-    cache.put(request, response.clone())
+    if (isSafeResponse(response)) {
+      const cache = await caches.open(APP_CACHE)
+      await cache.put(request, response.clone())
+    }
 
     return response
   } catch {
     const cachedResponse = await caches.match(request)
 
-    return (
-      cachedResponse ||
-      new Response('Offline', {
-        status: 503,
-        statusText: 'Offline',
-        headers: {
-          'Content-Type': 'text/plain',
-        },
-      })
-    )
+    return cachedResponse || createOfflineResponse()
   }
 }
 
-async function cacheFirst(request) {
-  const cachedResponse = await caches.match(request)
+async function cacheFirst(request, cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
 
-  if (cachedResponse) return cachedResponse
+  const cachedResponse = await cache.match(request)
+
+  if (cachedResponse) {
+    return cachedResponse
+  }
 
   const response = await fetch(request)
 
-  const cache = await caches.open(CACHE_NAME)
-  cache.put(request, response.clone())
+  if (isSafeResponse(response)) {
+    await cache.put(request, response.clone())
+
+    if (maxEntries) {
+      await trimCache(cacheName, maxEntries)
+    }
+  }
 
   return response
+}
+
+async function trimCache(cacheName, maxEntries) {
+  const cache = await caches.open(cacheName)
+  const keys = await cache.keys()
+
+  if (keys.length <= maxEntries) return
+
+  const keysToDelete = keys.slice(0, keys.length - maxEntries)
+
+  await Promise.all(
+    keysToDelete.map((request) => cache.delete(request))
+  )
+}
+
+function isSafeResponse(response) {
+  return response && response.ok && response.status === 200
+}
+
+function createOfflineResponse() {
+  return new Response('Offline', {
+    status: 503,
+    statusText: 'Offline',
+    headers: {
+      'Content-Type': 'text/plain',
+    },
+  })
+}
+
+function isSliderAsset(url) {
+  return (
+    url.pathname.startsWith('/slider/') &&
+    /\.(webp|png|jpg|jpeg)$/i.test(url.pathname)
+  )
 }
 
 function isStaticAsset(url) {

@@ -2,8 +2,8 @@ export default {
   app: {
     title: "Prompt Draft",
     navigation: {
-      create: "ساخت پرامپت",
-      collage: "کلاژ آثار",
+      create: "ایجاد",
+      collage: "کلاژ",
       guide: "راهنما",
     },
     switchTheme: 'تعویض تم',
