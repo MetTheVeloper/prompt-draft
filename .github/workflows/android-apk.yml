@@ -43,10 +43,10 @@ jobs:
 
       - name: Generate Nuxt static output
         run: pnpm generate
-        
+
       - name: Generate Android app assets
         run: pnpm exec capacitor-assets generate android --assetPath assets --androidProject android --iconBackgroundColor '#0f0f14' --iconBackgroundColorDark '#0f0f14' --splashBackgroundColor '#0f0f14' --splashBackgroundColorDark '#0f0f14'
-        
+
       - name: Accept Android SDK licenses
         run: yes | $ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager --licenses || true
 

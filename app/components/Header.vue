@@ -42,6 +42,11 @@ const { mini } = useScreen();
 
 <style>
 html.is-native-app .app-header {
-  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
+  padding-top: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 8px) !important;
+}
+html.is-native-app,
+html.is-native-app body,
+html.is-native-app #__nuxt {
+  background: #0f0f14;
 }
 </style>

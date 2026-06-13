@@ -5,6 +5,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.Window;
 
+import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
@@ -13,6 +14,8 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
+    SplashScreen.installSplashScreen(this);
+
     super.onCreate(savedInstanceState);
 
     Window window = getWindow();
