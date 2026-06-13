@@ -42,6 +42,6 @@ const { mini } = useScreen();
 
 <style>
 html.is-native-app .app-header {
-  padding-top: calc(var(--native-statusbar-height, 24px) + 8px) !important;
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) !important;
 }
 </style>

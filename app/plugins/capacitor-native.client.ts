@@ -1,6 +1,10 @@
-import { Capacitor } from '@capacitor/core'
+import {
+  Capacitor,
+  SystemBars,
+  SystemBarsStyle,
+  SystemBarType,
+} from '@capacitor/core'
 import { App as CapacitorApp } from '@capacitor/app'
-import { StatusBar, Style } from '@capacitor/status-bar'
 
 const HOME_PATHS = new Set(['/', '/index'])
 
@@ -12,26 +16,17 @@ export default defineNuxtPlugin(async () => {
   document.documentElement.classList.add('is-native-app')
 
   try {
-    await StatusBar.setOverlaysWebView({ overlay: true })
-    await StatusBar.setStyle({ style: Style.Dark })
-
-    const info = await StatusBar.getInfo()
-
-    if (info.height) {
-      document.documentElement.style.setProperty(
-        '--native-statusbar-height',
-        `${info.height}px`
-      )
-    }
+    await SystemBars.setStyle({
+      style: SystemBarsStyle.Dark,
+      bar: SystemBarType.StatusBar,
+    })
   } catch (error) {
-    console.warn('Native status bar setup failed:', error)
+    console.warn('Native system bars setup failed:', error)
   }
 
   const routeStack = useState<string[]>('native-route-stack', () => [])
 
-  const normalizePath = (path: string) => {
-    return path || '/'
-  }
+  const normalizePath = (path: string) => path || '/'
 
   await router.isReady()
 
