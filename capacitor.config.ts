@@ -1,5 +1,3 @@
-/// <reference types="@capacitor/splash-screen" />
-
 import type { CapacitorConfig } from '@capacitor/cli'
 
 const config: CapacitorConfig = {
@@ -8,7 +6,7 @@ const config: CapacitorConfig = {
   webDir: '.output/public',
 
   android: {
-    backgroundColor: '#0f0f14',
+    backgroundColor: 'transparent',
   },
 
   plugins: {
@@ -17,7 +15,7 @@ const config: CapacitorConfig = {
       style: 'DARK',
       hidden: false,
       animation: 'NONE',
-    }
+    },
   },
 }
 

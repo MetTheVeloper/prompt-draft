@@ -1,8 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-  <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar">
-    <item name="android:background">#0f0f14</item>
-  </style>
-
+  <style name="AppTheme.NoActionBarLaunch" parent="AppTheme.NoActionBar" />
 </resources>
