@@ -5,7 +5,6 @@ import android.os.Build;
 import android.os.Bundle;
 import android.view.Window;
 
-import androidx.core.splashscreen.SplashScreen;
 import androidx.core.view.WindowCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
@@ -14,10 +13,17 @@ import com.getcapacitor.BridgeActivity;
 public class MainActivity extends BridgeActivity {
   @Override
   protected void onCreate(Bundle savedInstanceState) {
-    SplashScreen.installSplashScreen(this);
-
     super.onCreate(savedInstanceState);
+    applyTransparentSystemBars();
+  }
 
+  @Override
+  protected void onResume() {
+    super.onResume();
+    applyTransparentSystemBars();
+  }
+
+  private void applyTransparentSystemBars() {
     Window window = getWindow();
 
     WindowCompat.setDecorFitsSystemWindows(window, false);
@@ -26,6 +32,7 @@ public class MainActivity extends BridgeActivity {
     window.setNavigationBarColor(Color.TRANSPARENT);
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+      window.setStatusBarContrastEnforced(false);
       window.setNavigationBarContrastEnforced(false);
     }
 

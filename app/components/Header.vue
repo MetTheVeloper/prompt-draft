@@ -42,20 +42,7 @@ const { mini } = useScreen();
 
 <style>
 html.is-native-app .app-header {
-  position: relative;
-  padding-top: 8px !important;
-}
-
-html.is-native-app .app-header::before {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 100%;
-  height: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
-  background: inherit;
-  backdrop-filter: inherit;
-  -webkit-backdrop-filter: inherit;
-  border-bottom: inherit;
+  top: 0 !important;
+  padding-top: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 8px) !important;
 }
 </style>

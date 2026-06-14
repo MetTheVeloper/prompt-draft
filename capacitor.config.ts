@@ -17,17 +17,7 @@ const config: CapacitorConfig = {
       style: 'DARK',
       hidden: false,
       animation: 'NONE',
-    },
-
-    SplashScreen: {
-      launchShowDuration: 1200,
-      launchAutoHide: true,
-      launchFadeOutDuration: 250,
-      backgroundColor: '#0f0f14',
-      androidSplashResourceName: 'splash',
-      androidScaleType: 'CENTER_CROP',
-      showSpinner: false,
-    },
+    }
   },
 }
 
