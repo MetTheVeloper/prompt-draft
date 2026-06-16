@@ -204,12 +204,12 @@ select[multiple] {
 }
 
 select option {
-  background: var(--background);
+  background: var(--themeBackground);
   color: var(--normalText);
 }
 
 select option:checked {
-  background: var(--normalText10);
+  background: var(--themeSurface);
 }
 
 /* ---------------------------------------------

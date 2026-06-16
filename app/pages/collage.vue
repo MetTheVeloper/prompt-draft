@@ -1,5 +1,10 @@
 <script setup lang="ts">
 
+import { Capacitor } from '@capacitor/core'
+import { Directory, Filesystem } from '@capacitor/filesystem'
+import { Share } from '@capacitor/share'
+import { Media } from '@capacitor-community/media'
+
 const { orientation, mini } = useScreen();
 
 import QRCode from 'qrcode'
@@ -234,25 +239,39 @@ function getBrandOverlayRect(
   overlayWidth: number,
   overlayHeight: number
 ) {
-  const margin = Math.max(28, Math.round(Math.min(canvasWidth, canvasHeight) * 0.025))
+  const margin = Math.max(
+    28,
+    Math.round(Math.min(canvasWidth, canvasHeight) * 0.025)
+  )
+
+  const position = watermarkPosition.value
+
+  const isLeft = position.endsWith('left')
+  const isRight = position.endsWith('right')
+  const isTop = position.startsWith('top')
+  const isBottom = position.startsWith('bottom')
+  const isVerticalCenter =
+    position === 'center' || position.startsWith('center')
+  const isHorizontalCenter =
+    position === 'center' || position.endsWith('center')
 
   let x = margin
   let y = margin
 
-  if (watermarkPosition.value.includes('center')) {
+  if (isHorizontalCenter) {
     x = (canvasWidth - overlayWidth) / 2
-  }
-
-  if (watermarkPosition.value.includes('right')) {
+  } else if (isRight) {
     x = canvasWidth - overlayWidth - margin
+  } else if (isLeft) {
+    x = margin
   }
 
-  if (watermarkPosition.value.startsWith('center')) {
+  if (isVerticalCenter) {
     y = (canvasHeight - overlayHeight) / 2
-  }
-
-  if (watermarkPosition.value.startsWith('bottom')) {
+  } else if (isBottom) {
     y = canvasHeight - overlayHeight - margin
+  } else if (isTop) {
+    y = margin
   }
 
   return {
@@ -1402,10 +1421,110 @@ function getExportBlob(type = 'image/png', quality = 0.96): Promise<Blob | null>
   })
 }
 
+function blobToDataUrl(blob: Blob): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+
+    reader.onloadend = () => {
+      if (typeof reader.result !== 'string') {
+        reject(new Error('Could not convert blob to data URL'))
+        return
+      }
+
+      resolve(reader.result)
+    }
+
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(blob)
+  })
+}
+
+async function writeBlobToNativeCache(blob: Blob) {
+  const dataUrl = await blobToDataUrl(blob)
+  const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
+  const fileName = `collage-${Date.now()}.png`
+
+  const result = await Filesystem.writeFile({
+    path: fileName,
+    data: base64,
+    directory: Directory.Cache
+  })
+
+  return result.uri
+}
+
+async function shareBlobNative(blob: Blob) {
+  const uri = await writeBlobToNativeCache(blob)
+
+  await Share.share({
+    title: 'Prompt Draft Collage',
+    text: 'Created with Prompt Draft',
+    files: [uri],
+    dialogTitle: 'Share collage'
+  })
+}
+
+async function getOrCreatePromptDraftAlbumIdentifier() {
+  const albumName = 'Prompt Draft'
+
+  const currentAlbums = await Media.getAlbums()
+  const existingAlbum = currentAlbums.albums.find(
+    (album) => album.name === albumName
+  )
+
+  if (existingAlbum) {
+    return existingAlbum.identifier
+  }
+
+  await Media.createAlbum({
+    name: albumName
+  })
+
+  const updatedAlbums = await Media.getAlbums()
+  const createdAlbum = updatedAlbums.albums.find(
+    (album) => album.name === albumName
+  )
+
+  if (!createdAlbum) {
+    throw new Error('Could not create Prompt Draft album')
+  }
+
+  return createdAlbum.identifier
+}
+
+async function saveBlobToGalleryNative(blob: Blob) {
+  const dataUrl = await blobToDataUrl(blob)
+  const albumIdentifier = await getOrCreatePromptDraftAlbumIdentifier()
+
+  await Media.savePhoto({
+    path: dataUrl,
+    albumIdentifier,
+    fileName: `collage-${Date.now()}`
+  })
+}
+
 async function downloadCanvas() {
   const blob = await getExportBlob('image/png')
 
   if (!blob) return
+
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await saveBlobToGalleryNative(blob)
+      alert('Collage saved to gallery.')
+    } catch (error) {
+      console.error('Native save failed:', error)
+
+      try {
+        await shareBlobNative(blob)
+      } catch (shareError) {
+        console.error('Native share failed:', shareError)
+        alert('Could not save or share collage.')
+      }
+    }
+
+    return
+  }
 
   const url = URL.createObjectURL(blob)
   const link = document.createElement('a')
@@ -1422,6 +1541,17 @@ async function copyCanvas() {
 
   if (!blob) return
 
+  if (Capacitor.isNativePlatform()) {
+    try {
+      await shareBlobNative(blob)
+    } catch (error) {
+      console.error('Native share failed:', error)
+      alert('Could not share collage.')
+    }
+
+    return
+  }
+
   if (!navigator.clipboard || !window.ClipboardItem) {
     alert('Clipboard image copy is not supported in this browser.')
     return
@@ -1433,6 +1563,116 @@ async function copyCanvas() {
     })
   ])
 }
+
+function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Could not convert canvas to PNG blob'))
+        return
+      }
+
+      resolve(blob)
+    }, 'image/png')
+  })
+}
+
+// function blobToDataUrl(blob: Blob): Promise<string> {
+//   return new Promise((resolve, reject) => {
+//     const reader = new FileReader()
+
+//     reader.onloadend = () => {
+//       if (typeof reader.result !== 'string') {
+//         reject(new Error('Could not read blob as data URL'))
+//         return
+//       }
+
+//       resolve(reader.result)
+//     }
+
+//     reader.onerror = () => reject(reader.error)
+//     reader.readAsDataURL(blob)
+//   })
+// }
+
+async function shareCanvasNative() {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const { uri } = await writeCanvasToNativeCache(canvas)
+
+  await Share.share({
+    title: 'Prompt Draft Collage',
+    text: 'Created with Prompt Draft',
+    files: [uri],
+    dialogTitle: 'Save or share collage'
+  })
+}
+
+async function canvasToPngDataUrl(canvas: HTMLCanvasElement) {
+  const blob = await canvasToBlob(canvas)
+  return blobToDataUrl(blob)
+}
+
+async function writeCanvasToNativeCache(canvas: HTMLCanvasElement) {
+  const dataUrl = await canvasToPngDataUrl(canvas)
+  const base64 = dataUrl.replace(/^data:image\/png;base64,/, '')
+  const fileName = `prompt-draft-collage-${Date.now()}.png`
+
+  const result = await Filesystem.writeFile({
+    path: fileName,
+    data: base64,
+    directory: Directory.Cache
+  })
+
+  return {
+    fileName,
+    uri: result.uri
+  }
+}
+
+function waitFrame() {
+  return new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+}
+
+let renderAfterRotateTimer: ReturnType<typeof setTimeout> | null = null
+
+function scheduleRenderAfterRotate() {
+  if (!images.value.length) return
+
+  if (renderAfterRotateTimer) {
+    clearTimeout(renderAfterRotateTimer)
+  }
+
+  renderAfterRotateTimer = setTimeout(async () => {
+    renderAfterRotateTimer = null
+
+    await nextTick()
+    await waitFrame()
+    await waitFrame()
+
+    if (!canvasRef.value) return
+
+    await renderCanvas()
+  }, 120)
+}
+
+watch(
+  [orientation, mini],
+  () => {
+    const canShowCollage =
+      !mini.value || orientation.value === 'landscape'
+
+    if (!canShowCollage) return
+
+    scheduleRenderAfterRotate()
+  },
+  {
+    flush: 'post'
+  }
+)
 
 watch(
   [
@@ -1470,14 +1710,15 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-flex rules="ccc" v-if="orientation === 'portrait' && mini" class="w100 h100" :radius="24" :br="1" bt="d" bd="b4" bc="red">
+  <el-flex rules="ccc" v-if="orientation === 'portrait' && mini" class="w100 h100" :radius="24" :br="1" bt="d" bd="b4"
+    bc="red">
     <el-icon :size="80" color="normal50" icon="rotate-left" />
     <el-text :size="14" color="normal80">
       {{ $t('pages.collage.rotateYourPhone') }}
     </el-text>
   </el-flex>
-  <el-grid v-else type="main" class="ofha w100" :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)']" :gap="8" @drop="handleDrop"
-    @dragover="handleDragOver" @dragleave="handleDragLeave">
+  <el-grid v-show="!mini || orientation === 'landscape'" type="main" class="ofha w100" :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)']" :gap="8"
+    @drop="handleDrop" @dragover="handleDragOver" @dragleave="handleDragLeave">
     <el-grid type="aside" class="ofha mxh100" :radius="16" :cols="1" :gap="16" :p="16" bg="normal5">
       <el-grid class="collage-sidebar__head" :gap="6">
         <el-text type="h1" :size="22" weight="700">

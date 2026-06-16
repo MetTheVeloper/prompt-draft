@@ -1,4 +1,5 @@
 import type { PromptKeyModule } from '../modules/types'
+import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 
 export type ModuleOutputMap = Record<string, string>
 
@@ -86,9 +87,9 @@ function getOrderedModuleOutputs(
       }
     })
     .filter(Boolean) as Array<{
-    key: string
-    output: string
-  }>
+      key: string
+      output: string
+    }>
 }
 
 function cleanText(value: string) {
@@ -188,7 +189,7 @@ export function buildPromptSubject(settings: PromptSettings) {
   const baseSubject =
     imageSettings.referenceSubjectType === 'custom'
       ? cleanText(imageSettings.customSubject) ||
-        referenceSubjectTypeToText('custom')
+      referenceSubjectTypeToText('custom')
       : referenceSubjectTypeToText(imageSettings.referenceSubjectType)
 
   const description = cleanText(imageSettings.subjectDescription)
@@ -492,6 +493,66 @@ function compileJsonOutput(
   )
 }
 
+function getNaturalOptimizerOptions(settings: PromptSettings) {
+  return {
+    mode: settings.mode,
+    transformationStrength:
+      settings.mode === 'image_to_image'
+        ? settings.imageToImage.transformationStrength
+        : undefined,
+    referenceSubjectType:
+      settings.mode === 'image_to_image'
+        ? settings.imageToImage.referenceSubjectType
+        : undefined
+  }
+}
+
+function isNaturalOptimizerLogEnabled() {
+  if (import.meta.dev) return true
+
+  if (typeof window === 'undefined') return false
+
+  return window.localStorage.getItem('promptDraft:logNaturalOptimizer') === '1'
+}
+
+function logNaturalOptimizerResult(payload: {
+  settings: PromptSettings
+  moduleOutputs: Array<{ key: string; output: string }>
+  rawOutput: string
+  optimizedOutput: string
+}) {
+  if (!isNaturalOptimizerLogEnabled()) return
+
+  const rawLength = payload.rawOutput.length
+  const optimizedLength = payload.optimizedOutput.length
+  const reduction =
+    rawLength > 0
+      ? Math.round(((rawLength - optimizedLength) / rawLength) * 100)
+      : 0
+
+  console.groupCollapsed(
+    `[Prompt Draft] Natural Output Optimizer | ${rawLength} → ${optimizedLength} chars | ${reduction}% shorter`
+  )
+
+  console.clear();
+  console.log('Settings:', payload.settings)
+  console.log('Module outputs:', payload.moduleOutputs)
+
+  console.log('Raw natural output:')
+  console.log(payload.rawOutput)
+
+  console.log('Optimized natural output:')
+  console.log(payload.optimizedOutput)
+
+  console.table({
+    rawLength,
+    optimizedLength,
+    reductionPercent: reduction
+  })
+
+  console.groupEnd()
+}
+
 export function compilePromptOutput(
   modules: PromptKeyModule[],
   outputs: ModuleOutputMap,
@@ -515,7 +576,21 @@ export function compilePromptOutput(
   }
 
   if (format === 'natural') {
-    return compileNaturalOutput(settings, moduleOutputs)
+    const rawOutput = compileNaturalOutput(settings, moduleOutputs)
+
+    const optimizedOutput = optimizeNaturalPrompt(
+      rawOutput,
+      getNaturalOptimizerOptions(settings)
+    )
+
+    logNaturalOptimizerResult({
+      settings,
+      moduleOutputs,
+      rawOutput,
+      optimizedOutput
+    })
+
+    return optimizedOutput
   }
 
   return compileModularOutput(settings, moduleOutputs)
