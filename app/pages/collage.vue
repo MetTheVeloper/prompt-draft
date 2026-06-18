@@ -1,4 +1,5 @@
 <script setup lang="ts">
+// app/pages/collage.vue
 
 import { Capacitor } from '@capacitor/core'
 import { Directory, Filesystem } from '@capacitor/filesystem'
@@ -9,14 +10,57 @@ const { orientation, mini } = useScreen();
 
 import QRCode from 'qrcode'
 
+import {
+  createCanvasSliderRenderer,
+  type CanvasSliderRenderer,
+  type CanvasSliderImageSource
+} from '~/utils/canvasSliderRenderer'
+
 import type {
   CollageImageItem,
   CollageLayoutResult,
-  CollageWatermarkPosition
+  CollageWatermarkPosition,
 } from '~/types/collage'
 
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
+
+type CollageMode = 'image' | 'video'
+
+const activeMode = ref<CollageMode>('image')
+
+const videoWidth = ref(1080)
+const videoHeight = ref(1920)
+const videoFps = ref(30)
+const videoInterval = ref(2500)
+const videoTransitionDuration = ref(1200)
+const videoEdgeBlur = ref(160)
+const videoRandom = ref(true)
+const videoPreset = ref('1080x1920')
+const videoLoop = ref(false)
+const videoRepeat = ref(1)
+
+const isRecordingVideo = ref(false)
+
+let videoRenderer: CanvasSliderRenderer | null = null
+
+function applyVideoPreset(value: string) {
+  videoPreset.value = value
+
+  const [width, height] = value.split('x').map(Number)
+
+  if (!width || !height) return
+
+  videoWidth.value = width
+  videoHeight.value = height
+}
+
+function handleVideoPresetChange(event: Event) {
+  const target = event.target as HTMLSelectElement | null
+  if (!target) return
+
+  applyVideoPreset(target.value)
+}
 
 const images = ref<CollageImageItem[]>([])
 
@@ -42,6 +86,55 @@ const qrCache = ref<{
 }>({
   url: '',
   image: null
+})
+
+const videoImageCount = computed(() => images.value.length)
+
+const normalizedVideoRepeat = computed(() => {
+  return Math.max(1, Math.round(videoRepeat.value || 1))
+})
+
+const videoTotalSlideCount = computed(() => {
+  return videoImageCount.value * normalizedVideoRepeat.value
+})
+
+const videoTransitionCount = computed(() => {
+  const totalSlides = videoTotalSlideCount.value
+
+  if (totalSlides <= 1) return 0
+
+  return videoLoop.value ? totalSlides : totalSlides - 1
+})
+
+const videoDurationMs = computed(() => {
+  const imageCount = videoImageCount.value
+
+  if (!imageCount) return 0
+
+  const repeat = normalizedVideoRepeat.value
+  const interval = Math.max(videoInterval.value, 0)
+  const transition = Math.max(videoTransitionDuration.value, 0)
+
+  if (imageCount === 1) {
+    return repeat * Math.max(interval, 3000)
+  }
+
+  return (
+    videoTotalSlideCount.value * interval +
+    videoTransitionCount.value * transition
+  )
+})
+
+const videoDurationLabel = computed(() => {
+  const seconds = videoDurationMs.value / 1000
+
+  if (!seconds) return '0s'
+
+  if (seconds < 10) {
+    return `${seconds.toFixed(1)}s`
+  }
+
+  return `${Math.round(seconds)}s`
 })
 
 const padding = ref(24)
@@ -75,6 +168,18 @@ const watermarkPositions: {
   ]
 
 const canExport = computed(() => images.value.length > 0)
+
+const canExportImage = computed(() => {
+  return activeMode.value === 'image' && images.value.length > 0
+})
+
+const canExportVideo = computed(() => {
+  return (
+    activeMode.value === 'video' &&
+    images.value.length > 0 &&
+    !isRecordingVideo.value
+  )
+})
 
 function openFilePicker() {
   fileInputRef.value?.click()
@@ -301,7 +406,7 @@ async function addFiles(files: File[]) {
   images.value.push(...loadedImages)
 
   await nextTick()
-  await renderCanvas()
+  await renderCurrentMode()
 }
 
 function loadImageFile(file: File): Promise<CollageImageItem> {
@@ -339,7 +444,7 @@ function removeImage(id: string) {
 
   images.value = images.value.filter((item) => item.id !== id)
 
-  renderCanvas()
+  renderCurrentMode()
 }
 
 function clearImages() {
@@ -349,7 +454,7 @@ function clearImages() {
 
   images.value = []
 
-  renderCanvas()
+  renderCurrentMode()
 }
 
 function handlePaste(event: ClipboardEvent) {
@@ -1314,7 +1419,110 @@ function createTreemapLayoutsForRatio(ratio: number): CollageLayoutResult[] {
   return result
 }
 
+function stopVideoRenderer() {
+  videoRenderer?.destroy()
+  videoRenderer = null
+}
+
+function getVideoSources(): CanvasSliderImageSource[] {
+  return images.value.map((item) => ({
+    src: item.url,
+    image: item.image
+  }))
+}
+
+function drawVideoEmptyState() {
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  const ctx = canvas.getContext('2d')
+  if (!ctx) return
+
+  canvas.width = videoWidth.value
+  canvas.height = videoHeight.value
+
+  ctx.clearRect(0, 0, canvas.width, canvas.height)
+
+  ctx.fillStyle = backgroundColor.value
+  ctx.fillRect(0, 0, canvas.width, canvas.height)
+
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.72)'
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.font = '500 44px sans-serif'
+  ctx.fillText('Add images to create video', canvas.width / 2, canvas.height / 2)
+
+  previewInfo.value = {
+    width: canvas.width,
+    height: canvas.height,
+    ratio: canvas.width / canvas.height,
+    columns: 0,
+    rows: 0
+  }
+}
+
+async function renderVideoPreview() {
+  if (activeMode.value !== 'video') return
+
+  await nextTick()
+
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  stopVideoRenderer()
+
+  if (!images.value.length) {
+    drawVideoEmptyState()
+    return
+  }
+
+  const width = Math.max(1, Math.round(videoWidth.value))
+  const height = Math.max(1, Math.round(videoHeight.value))
+
+  videoRenderer = createCanvasSliderRenderer({
+    canvas,
+    sources: getVideoSources(),
+    width,
+    height,
+    dpr: 1,
+    interval: videoInterval.value,
+    transitionDuration: videoTransitionDuration.value,
+    edgeBlur: videoEdgeBlur.value,
+    random: videoLoop.value || normalizedVideoRepeat.value > 1
+      ? false
+      : videoRandom.value,
+    initialIndex: 0,
+    backgroundColor: backgroundColor.value
+  })
+
+  videoRenderer.setPointer(width / 2, height / 2)
+  videoRenderer.start()
+
+  previewInfo.value = {
+    width,
+    height,
+    ratio: width / height,
+    columns: 0,
+    rows: 0
+  }
+}
+
+async function renderCurrentMode() {
+  if (activeMode.value === 'video') {
+    await renderVideoPreview()
+    return
+  }
+
+  stopVideoRenderer()
+  await renderCanvas()
+}
+
 async function renderCanvas() {
+
+  if (activeMode.value !== 'image') return
+
+  stopVideoRenderer();
+
   const canvas = canvasRef.value
   if (!canvas) return
 
@@ -1503,6 +1711,141 @@ async function saveBlobToGalleryNative(blob: Blob) {
   })
 }
 
+function getSupportedVideoMimeType() {
+  const types = [
+    'video/webm;codecs=vp9',
+    'video/webm;codecs=vp8',
+    'video/webm'
+  ]
+
+  return types.find((type) => MediaRecorder.isTypeSupported(type)) || ''
+}
+
+function recordCanvasAsVideo(
+  canvas: HTMLCanvasElement,
+  durationMs: number,
+  fps: number
+): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    if (!canvas.captureStream) {
+      reject(new Error('Canvas captureStream is not supported in this browser.'))
+      return
+    }
+
+    if (!window.MediaRecorder) {
+      reject(new Error('MediaRecorder is not supported in this browser.'))
+      return
+    }
+
+    const stream = canvas.captureStream(fps)
+    const mimeType = getSupportedVideoMimeType()
+
+    const recorder = new MediaRecorder(
+      stream,
+      mimeType ? { mimeType } : undefined
+    )
+
+    const chunks: Blob[] = []
+
+    recorder.ondataavailable = (event) => {
+      if (event.data.size > 0) {
+        chunks.push(event.data)
+      }
+    }
+
+    recorder.onerror = () => {
+      stream.getTracks().forEach((track) => track.stop())
+      reject(recorder.error || new Error('Video recording failed.'))
+    }
+
+    recorder.onstop = () => {
+      stream.getTracks().forEach((track) => track.stop())
+
+      const blob = new Blob(chunks, {
+        type: mimeType || 'video/webm'
+      })
+
+      resolve(blob)
+    }
+
+    recorder.start(250)
+
+    window.setTimeout(() => {
+      if (recorder.state !== 'inactive') {
+        recorder.stop()
+      }
+    }, Math.max(durationMs, 1000))
+  })
+}
+
+function downloadVideoBlob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `prompt-draft-video-${Date.now()}.webm`
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+
+async function writeVideoBlobToNativeCache(blob: Blob) {
+  const dataUrl = await blobToDataUrl(blob)
+  const base64 = dataUrl.split(',')[1] || ''
+  const fileName = `prompt-draft-video-${Date.now()}.webm`
+
+  const result = await Filesystem.writeFile({
+    path: fileName,
+    data: base64,
+    directory: Directory.Cache
+  })
+
+  return result.uri
+}
+
+async function shareVideoBlobNative(blob: Blob) {
+  const uri = await writeVideoBlobToNativeCache(blob)
+
+  await Share.share({
+    title: 'Prompt Draft Video',
+    text: 'Created with Prompt Draft',
+    files: [uri],
+    dialogTitle: 'Share video'
+  })
+}
+
+async function exportSliderVideo() {
+  if (!images.value.length) return
+
+  const canvas = canvasRef.value
+  if (!canvas) return
+
+  try {
+    isRecordingVideo.value = true
+
+    await renderVideoPreview()
+    await waitFrame()
+
+    const blob = await recordCanvasAsVideo(
+      canvas,
+      videoDurationMs.value,
+      videoFps.value
+    )
+
+    if (Capacitor.isNativePlatform()) {
+      await shareVideoBlobNative(blob)
+      return
+    }
+
+    downloadVideoBlob(blob)
+  } catch (error) {
+    console.error('Video export failed:', error)
+    alert('Could not export video in this browser.')
+  } finally {
+    isRecordingVideo.value = false
+  }
+}
+
 async function downloadCanvas() {
   const blob = await getExportBlob('image/png')
 
@@ -1676,6 +2019,7 @@ watch(
 
 watch(
   [
+    activeMode,
     images,
     watermarkPosition,
     watermarkSize,
@@ -1688,6 +2032,8 @@ watch(
     brandOverlayGap
   ],
   () => {
+    if (activeMode.value !== 'image') return
+
     renderCanvas()
   },
   {
@@ -1695,15 +2041,41 @@ watch(
   }
 )
 
+watch(
+  [
+    activeMode,
+    images,
+    videoWidth,
+    videoHeight,
+    videoInterval,
+    videoTransitionDuration,
+    videoEdgeBlur,
+    videoRandom,
+    backgroundColor,
+    videoLoop,
+    videoRepeat,
+  ],
+  () => {
+    if (activeMode.value !== 'video') return
+
+    renderVideoPreview()
+  },
+  {
+    deep: true,
+    flush: 'post'
+  }
+)
+
 onMounted(async () => {
   window.addEventListener('paste', handlePaste)
-  await renderCanvas()
+  await renderCurrentMode()
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('paste', handlePaste)
 
   for (const item of images.value) {
+    stopVideoRenderer()
     URL.revokeObjectURL(item.url)
   }
 })
@@ -1717,8 +2089,9 @@ onBeforeUnmount(() => {
       {{ $t('pages.collage.rotateYourPhone') }}
     </el-text>
   </el-flex>
-  <el-grid v-show="!mini || orientation === 'landscape'" type="main" class="ofha w100" :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)']" :gap="8"
-    @drop="handleDrop" @dragover="handleDragOver" @dragleave="handleDragLeave">
+  <el-grid v-show="!mini || orientation === 'landscape'" type="main" class="ofha w100"
+    :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)']" :gap="8" @drop="handleDrop" @dragover="handleDragOver"
+    @dragleave="handleDragLeave">
     <el-grid type="aside" class="ofha mxh100" :radius="16" :cols="1" :gap="16" :p="16" bg="normal5">
       <el-grid class="collage-sidebar__head" :gap="6">
         <el-text type="h1" :size="22" weight="700">
@@ -1785,6 +2158,29 @@ onBeforeUnmount(() => {
       </el-grid>
 
       <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5">
+        <el-text :size="14" weight="700" icon="setting-2">
+          Output Mode
+        </el-text>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Mode
+          </el-text>
+
+          <select v-model="activeMode">
+            <option value="image">
+              Image Collage
+            </option>
+
+            <option value="video">
+              Video Slider
+            </option>
+          </select>
+        </label>
+      </el-grid>
+
+      <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5"
+        v-if="activeMode === 'image'">
         <el-text :size="14" weight="700" icon="drop">
           {{ $t('pages.collage.brand.title') }}
         </el-text>
@@ -1855,7 +2251,8 @@ onBeforeUnmount(() => {
         </el-text>
       </el-grid>
 
-      <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5">
+      <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5"
+        v-if="activeMode === 'image'">
         <el-text :size="14" weight="700" icon="grid-1">
           {{ $t('pages.collage.canvas.title') }}
         </el-text>
@@ -1885,17 +2282,154 @@ onBeforeUnmount(() => {
         </label>
       </el-grid>
 
-      <el-grid :cols="3" :gap="10">
+      <el-grid v-if="activeMode === 'video'" class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10"
+        bg="normal5">
+        <el-text :size="14" weight="700" icon="video-play">
+          Video Slider
+        </el-text>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Preset
+          </el-text>
+
+          <select v-model="videoPreset" @change="handleVideoPresetChange">
+            <option value="1080x1920">
+              Story / Reel — 1080×1920
+            </option>
+
+            <option value="1080x1350">
+              Portrait Post — 1080×1350
+            </option>
+
+            <option value="1080x1080">
+              Square Post — 1080×1080
+            </option>
+
+            <option value="1920x1080">
+              Landscape — 1920×1080
+            </option>
+          </select>
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Width
+          </el-text>
+
+          <input v-model.number="videoWidth" type="number" min="256" max="4096" step="2">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Height
+          </el-text>
+
+          <input v-model.number="videoHeight" type="number" min="256" max="4096" step="2">
+        </label>
+
+        <el-grid :gap="4">
+          <el-text type="span" :size="12" color="normal70">
+            Calculated Duration
+          </el-text>
+          <el-text type="span" :size="11" color="normal55">
+            {{ videoTotalSlideCount }} slide views · {{ videoTransitionCount }} transitions
+          </el-text>
+          <el-text type="span" :size="13" weight="700" color="normal90">
+            {{ videoDurationLabel }}
+          </el-text>
+        </el-grid>
+
+        <label class="collage-field collage-checkbox-field">
+          <input v-model="videoLoop" type="checkbox">
+
+          <el-text type="span" :size="12" color="normal70">
+            Seamless loop back to first image
+          </el-text>
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            Repeat: {{ normalizedVideoRepeat }}×
+          </el-text>
+
+          <input v-model.number="videoRepeat" type="range" min="1" max="10" step="1">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            FPS: {{ videoFps }}
+          </el-text>
+
+          <input v-model.number="videoFps" type="range" min="24" max="60" step="1">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            Image Interval: {{ videoInterval }}ms
+          </el-text>
+
+          <input v-model.number="videoInterval" type="range" min="800" max="8000" step="100">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            Transition: {{ videoTransitionDuration }}ms
+          </el-text>
+
+          <input v-model.number="videoTransitionDuration" type="range" min="300" max="4000" step="100">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            Edge Blur: {{ videoEdgeBlur }}
+          </el-text>
+
+          <input v-model.number="videoEdgeBlur" type="range" min="0" max="400" step="10">
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Background Color
+          </el-text>
+
+          <input v-model="backgroundColor" type="color">
+        </label>
+
+        <label class="collage-field collage-checkbox-field">
+          <input v-model="videoRandom" type="checkbox" :disabled="videoLoop || normalizedVideoRepeat > 1">
+
+          <el-text type="span" :size="12" color="normal70">
+            Random order
+          </el-text>
+        </label>
+
+        <el-text v-if="videoLoop || normalizedVideoRepeat > 1" type="span" :size="11" color="normal55">
+          Random order is disabled for loop/repeat so the sequence can stay seamless.
+        </el-text>
+      </el-grid>
+
+      <el-grid v-if="activeMode === 'image'" :cols="3" :gap="10">
         <el-button :label="$t('pages.collage.actions.save')" :p="[12, 24]" :size="14" type="fab" icon="ram" color="prim"
-          tooltip-position="top" :disable="!canExport" @click="downloadCanvas" />
+          tooltip-position="top" :disable="!canExportImage" @click="downloadCanvas" />
 
         <el-button :label="$t('pages.collage.actions.copy')" :p="[12, 24]" :size="14" type="fab" icon="document-copy"
-          color="normal10" tooltip-position="top" :disable="!canExport" @click="copyCanvas" />
+          color="normal10" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10" :disable="!images.length"
           @click="clearImages" />
       </el-grid>
+
+      <el-grid v-else :cols="2" :gap="10">
+        <el-button :label="isRecordingVideo ? 'Recording...' : 'Export Video'" :p="[12, 24]" :size="14" type="fab"
+          icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo" @click="exportSliderVideo" />
+
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+          tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10"
+          :disable="!images.length || isRecordingVideo" @click="clearImages" />
+      </el-grid>
+
     </el-grid>
 
     <el-grid type="section" class="collage-workspace" :rows="['auto', 'minmax(0, 1fr)']" :gap="8" :p="0">
@@ -1906,13 +2440,19 @@ onBeforeUnmount(() => {
             {{ previewInfo.width }}×{{ previewInfo.height }}
           </el-text>
 
-          <el-text :size="12" color="normal55" localize>
-            {{ $t('pages.collage.preview.grid', { columns: previewInfo.columns, rows: previewInfo.rows }) }}
-          </el-text>
+          {{
+            activeMode === 'video'
+              ? `Video Slider · ${videoWidth}×${videoHeight} · ${videoDurationLabel} · ${videoFps}fps ·
+          ${normalizedVideoRepeat}×${videoLoop ? ' · loop' : ''}`
+              : $t('pages.collage.preview.grid', { columns: previewInfo.columns, rows: previewInfo.rows })
+          }}
         </el-flex>
 
         <el-text v-if="isRendering" :size="12" color="normal55">
           {{ $t('pages.collage.preview.rendering') }}
+        </el-text>
+        <el-text v-if="isRecordingVideo" :size="12" color="normal55">
+          Recording video...
         </el-text>
       </el-flex>
 
