@@ -2,9 +2,9 @@ export type CanvasSliderImageSource =
   | string
   | HTMLImageElement
   | {
-      src?: string
-      image: HTMLImageElement
-    }
+    src?: string
+    image: HTMLImageElement
+  }
 
 type CanvasSliderImage = {
   src: string
@@ -25,9 +25,22 @@ export type CanvasSliderRendererOptions = {
   random?: boolean
   initialIndex?: number
   backgroundColor?: string
+  onAfterDrawFrame?: (payload: {
+    canvas: HTMLCanvasElement
+    ctx: CanvasRenderingContext2D
+    timeMs: number
+  }) => void
+}
+
+export type CanvasSliderFrameOptions = {
+  repeat?: number
+  loop?: boolean
+  originX?: number
+  originY?: number
 }
 
 export class CanvasSliderRenderer {
+  private onAfterDrawFrame?: CanvasSliderRendererOptions['onAfterDrawFrame']
   private canvas: HTMLCanvasElement
   private ctx: CanvasRenderingContext2D | null = null
 
@@ -73,9 +86,20 @@ export class CanvasSliderRenderer {
     y: 0
   }
 
+  private emitAfterDrawFrame(timeMs: number) {
+    if (!this.ctx || !this.onAfterDrawFrame) return
+
+    this.onAfterDrawFrame({
+      canvas: this.canvas,
+      ctx: this.ctx,
+      timeMs
+    })
+  }
+
   constructor(options: CanvasSliderRendererOptions) {
     this.canvas = options.canvas
 
+    this.onAfterDrawFrame = options.onAfterDrawFrame
     this.interval = options.interval ?? this.interval
     this.transitionDuration = options.transitionDuration ?? this.transitionDuration
     this.edgeBlur = options.edgeBlur ?? this.edgeBlur
@@ -214,12 +238,7 @@ export class CanvasSliderRenderer {
   drawFrame(now = performance.now()) {
     if (!this.ctx || !this.width || !this.height) return
 
-    this.ctx.clearRect(0, 0, this.width, this.height)
-
-    if (this.backgroundColor) {
-      this.ctx.fillStyle = this.backgroundColor
-      this.ctx.fillRect(0, 0, this.width, this.height)
-    }
+    this.clearStage()
 
     if (!this.slides.length) return
 
@@ -245,7 +264,7 @@ export class CanvasSliderRenderer {
     if (this.isTransitioning) {
       const progress = this.clamp(
         (now - this.transitionStartedAt) /
-          Math.max(this.transitionDuration, 1),
+        Math.max(this.transitionDuration, 1),
         0,
         1
       )
@@ -255,6 +274,167 @@ export class CanvasSliderRenderer {
       if (progress >= 1) {
         this.finishTransition(now)
       }
+    }
+
+    this.emitAfterDrawFrame(now)
+  }
+
+  drawFrameAt(timeMs: number, options: CanvasSliderFrameOptions = {}) {
+    if (!this.ctx || !this.width || !this.height) return
+
+    this.clearStage()
+
+    if (!this.slides.length) return
+
+    const slideCount = this.slides.length
+    const repeat = Math.max(1, Math.round(options.repeat ?? 1))
+    const loop = options.loop ?? false
+
+    const interval = Math.max(this.interval, 0)
+    const transition = Math.max(this.transitionDuration, 0)
+
+    const totalSlideViews = slideCount * repeat
+    const transitionCount = loop
+      ? totalSlideViews
+      : Math.max(totalSlideViews - 1, 0)
+
+    const totalDuration =
+      totalSlideViews * interval + transitionCount * transition
+
+    if (loop && timeMs >= totalDuration) {
+      const firstSlide = this.slides[0]
+
+      if (firstSlide?.loaded && !firstSlide.failed) {
+        this.drawImageCover(
+          this.ctx,
+          firstSlide,
+          0,
+          0,
+          0
+        )
+      }
+
+      return
+    }
+
+    if (!totalDuration || slideCount === 1) {
+      const slide = this.slides[0]
+
+      if (slide?.loaded && !slide.failed) {
+        this.drawImageCover(this.ctx, slide, 0, 0, 0)
+      }
+
+      return
+    }
+
+    const safeTime = this.clamp(
+      Math.max(timeMs, 0),
+      0,
+      Math.max(totalDuration - 0.001, 0)
+    )
+
+    let cursor = 0
+
+    for (let sequenceIndex = 0; sequenceIndex < totalSlideViews; sequenceIndex++) {
+      const currentIndex = this.getValidIndex(sequenceIndex)
+      const currentSlide = this.slides[currentIndex]
+
+      const holdStart = cursor
+      const holdEnd = holdStart + interval
+
+      const currentPanStartedAt =
+        sequenceIndex === 0
+          ? 0
+          : Math.max(0, holdStart - transition)
+
+      if (safeTime < holdEnd || (sequenceIndex === totalSlideViews - 1 && !loop)) {
+        if (currentSlide?.loaded && !currentSlide.failed) {
+          this.drawImageCover(
+            this.ctx,
+            currentSlide,
+            safeTime,
+            currentPanStartedAt,
+            currentIndex
+          )
+        }
+
+        return
+      }
+
+      cursor = holdEnd
+
+      const hasTransition =
+        transition > 0 && sequenceIndex < transitionCount
+
+      if (hasTransition) {
+        const transitionStart = cursor
+        const transitionEnd = transitionStart + transition
+
+        if (safeTime < transitionEnd) {
+          const nextSequenceIndex = sequenceIndex + 1
+          const nextIndex = this.getValidIndex(nextSequenceIndex)
+
+          const isClosingLoopTransition =
+            loop && nextSequenceIndex >= totalSlideViews
+
+          const nextPanStartedAt = isClosingLoopTransition
+            ? safeTime
+            : transitionStart
+
+          if (currentSlide?.loaded && !currentSlide.failed) {
+            this.drawImageCover(
+              this.ctx,
+              currentSlide,
+              safeTime,
+              currentPanStartedAt,
+              currentIndex
+            )
+          }
+
+          const progress = this.clamp(
+            (safeTime - transitionStart) / Math.max(transition, 1),
+            0,
+            1
+          )
+
+          this.drawSoftRevealAt({
+            now: safeTime,
+            progress,
+            nextIndex,
+            nextPanStartedAt,
+            originX: options.originX ?? this.width / 2,
+            originY: options.originY ?? this.height / 2
+          })
+
+          return
+        }
+
+        cursor = transitionEnd
+      }
+    }
+
+    const lastIndex = loop ? 0 : this.getValidIndex(totalSlideViews - 1)
+    const lastSlide = this.slides[lastIndex]
+
+    if (lastSlide?.loaded && !lastSlide.failed) {
+      this.drawImageCover(
+        this.ctx,
+        lastSlide,
+        safeTime,
+        Math.max(0, safeTime - interval),
+        lastIndex
+      )
+    }
+  }
+
+  private clearStage() {
+    if (!this.ctx) return
+
+    this.ctx.clearRect(0, 0, this.width, this.height)
+
+    if (this.backgroundColor) {
+      this.ctx.fillStyle = this.backgroundColor
+      this.ctx.fillRect(0, 0, this.width, this.height)
     }
   }
 
@@ -462,9 +642,13 @@ export class CanvasSliderRenderer {
   }
 
   private getMaxRevealRadius() {
-    const x = this.transitionOrigin.x
-    const y = this.transitionOrigin.y
+    return this.getMaxRevealRadiusAt(
+      this.transitionOrigin.x,
+      this.transitionOrigin.y
+    )
+  }
 
+  private getMaxRevealRadiusAt(x: number, y: number) {
     const distances = [
       Math.hypot(x, y),
       Math.hypot(this.width - x, y),
@@ -476,6 +660,24 @@ export class CanvasSliderRenderer {
   }
 
   private drawSoftReveal(now: number, progress: number) {
+    this.drawSoftRevealAt({
+      now,
+      progress,
+      nextIndex: this.nextIndex,
+      nextPanStartedAt: this.nextPanStartedAt,
+      originX: this.transitionOrigin.x,
+      originY: this.transitionOrigin.y
+    })
+  }
+
+  private drawSoftRevealAt(options: {
+    now: number
+    progress: number
+    nextIndex: number
+    nextPanStartedAt: number
+    originX: number
+    originY: number
+  }) {
     if (
       !this.ctx ||
       !this.bufferCanvas ||
@@ -486,12 +688,15 @@ export class CanvasSliderRenderer {
       return
     }
 
-    const nextSlide = this.slides[this.nextIndex]
+    const nextSlide = this.slides[options.nextIndex]
 
     if (!nextSlide?.loaded || nextSlide.failed) return
 
-    const easedProgress = this.easeOutCubic(progress)
-    const radius = this.getMaxRevealRadius() * easedProgress
+    const easedProgress = this.easeOutCubic(options.progress)
+    const radius = this.getMaxRevealRadiusAt(
+      options.originX,
+      options.originY
+    ) * easedProgress
 
     this.bufferCtx.clearRect(0, 0, this.width, this.height)
     this.maskCtx.clearRect(0, 0, this.width, this.height)
@@ -499,9 +704,9 @@ export class CanvasSliderRenderer {
     this.drawImageCover(
       this.bufferCtx,
       nextSlide,
-      now,
-      this.nextPanStartedAt,
-      this.nextIndex
+      options.now,
+      options.nextPanStartedAt,
+      options.nextIndex
     )
 
     const blur = Math.max(this.edgeBlur, 1)
@@ -509,11 +714,11 @@ export class CanvasSliderRenderer {
     const outerRadius = Math.max(radius, 1)
 
     const gradient = this.maskCtx.createRadialGradient(
-      this.transitionOrigin.x,
-      this.transitionOrigin.y,
+      options.originX,
+      options.originY,
       innerRadius,
-      this.transitionOrigin.x,
-      this.transitionOrigin.y,
+      options.originX,
+      options.originY,
       outerRadius
     )
 
@@ -574,7 +779,7 @@ export class CanvasSliderRenderer {
 
     for (let i = result.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[result[i], result[j]] = [result[j], result[i]]
+        ;[result[i], result[j]] = [result[j], result[i]]
     }
 
     return result

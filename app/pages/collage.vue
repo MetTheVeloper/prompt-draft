@@ -5,6 +5,7 @@ import { Capacitor } from '@capacitor/core'
 import { Directory, Filesystem } from '@capacitor/filesystem'
 import { Share } from '@capacitor/share'
 import { Media } from '@capacitor-community/media'
+import { exportCanvasSliderMp4 } from '~/utils/exportCanvasSliderMp4'
 
 const { orientation, mini } = useScreen();
 
@@ -39,8 +40,58 @@ const videoRandom = ref(true)
 const videoPreset = ref('1080x1920')
 const videoLoop = ref(false)
 const videoRepeat = ref(1)
+const isExportingMp4 = ref(false)
+const mp4ExportProgress = ref(0)
+const mp4ExportStatus = ref('')
+const videoAudioFile = ref<File | null>(null)
+
+const videoAudioLabel = computed(() => {
+  return videoAudioFile.value?.name || 'No audio selected'
+})
+
+function handleVideoAudioInput(event: Event) {
+  const input = event.target as HTMLInputElement | null
+  const file = input?.files?.[0]
+
+  videoAudioFile.value = file || null
+}
+
+function clearVideoAudio() {
+  videoAudioFile.value = null
+}
 
 const isRecordingVideo = ref(false)
+
+type VideoQualityPreset = 'compact' | 'balanced' | 'high'
+
+const videoQualityPreset = ref<VideoQualityPreset>('balanced')
+
+const videoQualitySettings = computed(() => {
+  if (videoQualityPreset.value === 'compact') {
+    return {
+      crf: 24,
+      preset: 'veryfast',
+      frameQuality: 0.86,
+      audioBitrate: '128k'
+    }
+  }
+
+  if (videoQualityPreset.value === 'high') {
+    return {
+      crf: 17,
+      preset: 'fast',
+      frameQuality: 0.96,
+      audioBitrate: '192k'
+    }
+  }
+
+  return {
+    crf: 20,
+    preset: 'veryfast',
+    frameQuality: 0.92,
+    audioBitrate: '160k'
+  }
+})
 
 let videoRenderer: CanvasSliderRenderer | null = null
 
@@ -177,7 +228,8 @@ const canExportVideo = computed(() => {
   return (
     activeMode.value === 'video' &&
     images.value.length > 0 &&
-    !isRecordingVideo.value
+    !isRecordingVideo.value &&
+    !isExportingMp4.value
   )
 })
 
@@ -385,6 +437,37 @@ function getBrandOverlayRect(
     width: overlayWidth,
     height: overlayHeight
   }
+}
+
+function drawBrandOverlayCanvas(
+  ctx: CanvasRenderingContext2D,
+  canvasWidth: number,
+  canvasHeight: number,
+  brandOverlay: HTMLCanvasElement
+) {
+  const rect = getBrandOverlayRect(
+    canvasWidth,
+    canvasHeight,
+    brandOverlay.width,
+    brandOverlay.height
+  )
+
+  ctx.save()
+
+  ctx.globalAlpha = watermarkOpacity.value
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
+  ctx.shadowBlur = 18
+  ctx.shadowOffsetY = 8
+
+  ctx.drawImage(
+    brandOverlay,
+    rect.x,
+    rect.y,
+    rect.width,
+    rect.height
+  )
+
+  ctx.restore()
 }
 
 async function handleFileInput(event: Event) {
@@ -1479,6 +1562,8 @@ async function renderVideoPreview() {
   const width = Math.max(1, Math.round(videoWidth.value))
   const height = Math.max(1, Math.round(videoHeight.value))
 
+  const brandOverlay = await createBrandOverlayCanvas()
+
   videoRenderer = createCanvasSliderRenderer({
     canvas,
     sources: getVideoSources(),
@@ -1492,7 +1577,18 @@ async function renderVideoPreview() {
       ? false
       : videoRandom.value,
     initialIndex: 0,
-    backgroundColor: backgroundColor.value
+    backgroundColor: backgroundColor.value,
+
+    onAfterDrawFrame: ({ canvas, ctx }) => {
+      if (!brandOverlay) return
+
+      drawBrandOverlayCanvas(
+        ctx,
+        canvas.width,
+        canvas.height,
+        brandOverlay
+      )
+    }
   })
 
   videoRenderer.setPointer(width / 2, height / 2)
@@ -1578,29 +1674,12 @@ async function renderCanvas() {
   const brandOverlay = await createBrandOverlayCanvas()
 
   if (brandOverlay) {
-    const rect = getBrandOverlayRect(
+    drawBrandOverlayCanvas(
+      ctx,
       canvas.width,
       canvas.height,
-      brandOverlay.width,
-      brandOverlay.height
+      brandOverlay
     )
-
-    ctx.save()
-
-    ctx.globalAlpha = watermarkOpacity.value
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.35)'
-    ctx.shadowBlur = 18
-    ctx.shadowOffsetY = 8
-
-    ctx.drawImage(
-      brandOverlay,
-      rect.x,
-      rect.y,
-      rect.width,
-      rect.height
-    )
-
-    ctx.restore()
   }
 
   previewInfo.value = {
@@ -1846,6 +1925,99 @@ async function exportSliderVideo() {
   }
 }
 
+function clampProgress(value: number) {
+  if (!Number.isFinite(value)) return 0
+
+  return Math.min(100, Math.max(0, Math.round(value)))
+}
+
+function normalizeProgress(value: number) {
+  if (!Number.isFinite(value)) return 0
+
+  return Math.min(1, Math.max(0, value))
+}
+
+function setMp4Progress(value: number) {
+  mp4ExportProgress.value = clampProgress(value)
+}
+
+async function exportSliderMp4() {
+  if (!images.value.length) return
+
+  try {
+    isExportingMp4.value = true
+    mp4ExportProgress.value = 0
+    mp4ExportStatus.value = 'Preparing MP4 export...'
+
+    const brandOverlay = await createBrandOverlayCanvas()
+    const quality = videoQualitySettings.value
+    const blob = await exportCanvasSliderMp4({
+      sources: getVideoSources(),
+      width: videoWidth.value,
+      height: videoHeight.value,
+      fps: videoFps.value,
+      durationMs: videoDurationMs.value,
+      interval: videoInterval.value,
+      transitionDuration: videoTransitionDuration.value,
+      edgeBlur: videoEdgeBlur.value,
+      repeat: normalizedVideoRepeat.value,
+      loop: videoLoop.value,
+      backgroundColor: backgroundColor.value,
+
+      crf: quality.crf,
+      preset: quality.preset,
+      frameQuality: quality.frameQuality,
+
+      audioFile: videoAudioFile.value,
+      audioBitrate: quality.audioBitrate,
+
+      onAfterDrawFrame: ({ canvas, ctx }) => {
+        if (!brandOverlay) return
+
+        drawBrandOverlayCanvas(
+          ctx,
+          canvas.width,
+          canvas.height,
+          brandOverlay
+        )
+      },
+      onProgress: ({ phase, progress, message }) => {
+        const safeProgress = normalizeProgress(progress)
+
+        if (phase === 'loading') {
+          setMp4Progress(safeProgress * 5)
+        }
+
+        if (phase === 'frames') {
+          setMp4Progress(5 + safeProgress * 70)
+        }
+
+        if (phase === 'encoding') {
+          setMp4Progress(75 + safeProgress * 24)
+        }
+
+        if (phase === 'done') {
+          setMp4Progress(100)
+        }
+
+        mp4ExportStatus.value = message || ''
+      }
+    })
+
+    if (Capacitor.isNativePlatform()) {
+      await shareMp4BlobNative(blob)
+      return
+    }
+
+    downloadMp4Blob(blob)
+  } catch (error) {
+    console.error('MP4 export failed:', error)
+    alert('Could not export MP4 video.')
+  } finally {
+    isExportingMp4.value = false
+  }
+}
+
 async function downloadCanvas() {
   const blob = await getExportBlob('image/png')
 
@@ -1917,6 +2089,42 @@ function canvasToBlob(canvas: HTMLCanvasElement): Promise<Blob> {
 
       resolve(blob)
     }, 'image/png')
+  })
+}
+
+function downloadMp4Blob(blob: Blob) {
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+
+  link.href = url
+  link.download = `prompt-draft-video-${Date.now()}.mp4`
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+
+async function writeMp4BlobToNativeCache(blob: Blob) {
+  const dataUrl = await blobToDataUrl(blob)
+  const base64 = dataUrl.split(',')[1] || ''
+  const fileName = `prompt-draft-video-${Date.now()}.mp4`
+
+  const result = await Filesystem.writeFile({
+    path: fileName,
+    data: base64,
+    directory: Directory.Cache
+  })
+
+  return result.uri
+}
+
+async function shareMp4BlobNative(blob: Blob) {
+  const uri = await writeMp4BlobToNativeCache(blob)
+
+  await Share.share({
+    title: 'Prompt Draft Video',
+    text: 'Created with Prompt Draft',
+    files: [uri],
+    dialogTitle: 'Share video'
   })
 }
 
@@ -2051,9 +2259,15 @@ watch(
     videoTransitionDuration,
     videoEdgeBlur,
     videoRandom,
-    backgroundColor,
     videoLoop,
     videoRepeat,
+    backgroundColor,
+    watermarkPosition,
+    watermarkSize,
+    watermarkOpacity,
+    brandOverlayTheme,
+    telegramPostId,
+    brandOverlayGap
   ],
   () => {
     if (activeMode.value !== 'video') return
@@ -2179,8 +2393,7 @@ onBeforeUnmount(() => {
         </label>
       </el-grid>
 
-      <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5"
-        v-if="activeMode === 'image'">
+      <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5">
         <el-text :size="14" weight="700" icon="drop">
           {{ $t('pages.collage.brand.title') }}
         </el-text>
@@ -2287,6 +2500,44 @@ onBeforeUnmount(() => {
         <el-text :size="14" weight="700" icon="video-play">
           Video Slider
         </el-text>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            MP4 Quality
+          </el-text>
+
+          <select v-model="videoQualityPreset">
+            <option value="compact">
+              Compact — smaller file
+            </option>
+
+            <option value="balanced">
+              Balanced — recommended
+            </option>
+
+            <option value="high">
+              High — larger file
+            </option>
+          </select>
+        </label>
+
+        <label class="collage-field">
+          <el-text type="span" :size="12" color="normal70">
+            Background Music
+          </el-text>
+
+          <input type="file" accept="audio/*" @change="handleVideoAudioInput">
+        </label>
+
+        <el-grid v-if="videoAudioFile" :gap="6">
+          <el-text type="span" :size="11" color="normal55">
+            {{ videoAudioLabel }}
+          </el-text>
+
+          <button type="button" @click="clearVideoAudio">
+            Remove audio
+          </button>
+        </el-grid>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
@@ -2422,12 +2673,17 @@ onBeforeUnmount(() => {
       </el-grid>
 
       <el-grid v-else :cols="2" :gap="10">
-        <el-button :label="isRecordingVideo ? 'Recording...' : 'Export Video'" :p="[12, 24]" :size="14" type="fab"
-          icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo" @click="exportSliderVideo" />
+        <el-button :label="isRecordingVideo ? 'Recording...' : 'Export WebM'" :p="[12, 24]" :size="14" type="fab"
+          v-if="false" icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo"
+          @click="exportSliderVideo" />
+
+        <el-button :label="isExportingMp4 ? 'Exporting MP4...' : 'Export MP4'" :p="[12, 24]" :size="14" type="fab"
+          icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo" @click="exportSliderMp4" />
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10"
           :disable="!images.length || isRecordingVideo" @click="clearImages" />
+
       </el-grid>
 
     </el-grid>
@@ -2453,6 +2709,9 @@ onBeforeUnmount(() => {
         </el-text>
         <el-text v-if="isRecordingVideo" :size="12" color="normal55">
           Recording video...
+        </el-text>
+        <el-text v-if="isExportingMp4" :size="12" color="normal55">
+          {{ mp4ExportStatus }} · {{ mp4ExportProgress }}%
         </el-text>
       </el-flex>
 

@@ -4,6 +4,25 @@ export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
   ssr: false,
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@capacitor-community/media',
+        '@capacitor/app',
+        '@capacitor/core',
+        '@capacitor/filesystem',
+        '@capacitor/share',
+        '@ffmpeg/ffmpeg',
+        '@vueuse/core',
+        'moment-jalaali', // CJS
+        'qrcode', // CJS
+      ],
+      exclude: [
+        '@ffmpeg/ffmpeg',
+        '@ffmpeg/core',
+      ]
+    }
+  },
 
   devServer: {
     host: "localhost",
