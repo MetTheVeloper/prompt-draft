@@ -48,6 +48,22 @@ span {
   padding: 0;
 }
 
+html.is-telegram-webapp,
+html.is-telegram-webapp body,
+html.is-telegram-webapp #__nuxt {
+  min-height: var(--telegram-viewport-height, 100dvh);
+  background: #0f0f14;
+  overscroll-behavior: none;
+}
+
+html.is-telegram-webapp {
+  color-scheme: dark;
+}
+
+html.is-telegram-webapp body {
+  margin: 0;
+}
+
 img {
   -webkit-user-drag: none;
 }

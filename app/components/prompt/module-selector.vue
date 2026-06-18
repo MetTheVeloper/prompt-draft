@@ -3,6 +3,8 @@ import type { PromptKeyModule } from "../../modules/types";
 
 const { t } = useI18n();
 
+const { mobile, mini } = useScreen();
+
 const props = withDefaults(
   defineProps<{
     modules: PromptKeyModule[];
@@ -77,7 +79,7 @@ function toggleModule(moduleKey: string) {
     <el-divider v-if="!hideHead" />
 
     <!-- Module List -->
-    <el-grid :cols="6" rules="rsc" class="fw" :gap="8" :p="embedded ? [0] : [16]">
+    <el-grid :cols="mobile ? 3 : mini ? 4 : 6" rules="rsc" class="fw" :gap="8" :p="embedded ? [0] : [16]">
       <label v-for="module in modules" :key="module.key" class="crp">
         <el-button
           :label="moduleTitle(module)"
@@ -85,9 +87,9 @@ function toggleModule(moduleKey: string) {
           :color="isModuleSelected(module.key) ? 'prim' : 'prim15'"
           :text-color="isModuleSelected(module.key) ? 'onPrim' : 'normal'"
           :p="[10, 4]"
-          type="fab"
+          :type="mini ? 'default' : 'fab'"
           :size="12"
-          :gap="4"
+          :gap="8"
           mode="normal" />
           <input
             type="checkbox" class="dsn"

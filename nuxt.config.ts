@@ -56,6 +56,12 @@ export default defineNuxtConfig({
           content: "black-translucent",
         },
       ],
+      script: [
+        {
+          src: 'https://telegram.org/js/telegram-web-app.js?62',
+          tagPosition: 'head',
+        },
+      ],
     },
   },
 
