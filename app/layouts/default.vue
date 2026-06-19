@@ -4,7 +4,7 @@ const { mobile, tablet } = useScreen();
 const route = useRoute();
 
 const padding = computed(() => {
-  return route.name === 'index' ? 0 : tablet.value ? 24 : mobile.value ? 16 : 32;
+  return route.name === 'index' || route.name === 'collage' ? 0 : tablet.value ? 24 : mobile.value ? 16 : 32;
 })
 
 onMounted(() => {});

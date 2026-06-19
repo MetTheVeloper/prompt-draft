@@ -3,12 +3,24 @@ export default defineNuxtPlugin(() => {
 
   const getWebApp = () => window.Telegram?.WebApp
 
+  const isTelegramVersionAtLeast = (version: string) => {
+    const tg = getWebApp()
+
+    return Boolean(tg?.isVersionAtLeast?.(version))
+  }
+
   const setTelegramViewportHeight = () => {
     const tg = getWebApp()
 
-    const height = tg?.viewportStableHeight || tg?.viewportHeight || window.innerHeight
+    const height =
+      tg?.viewportStableHeight ||
+      tg?.viewportHeight ||
+      window.innerHeight
 
-    document.documentElement.style.setProperty('--telegram-viewport-height', `${height}px`)
+    document.documentElement.style.setProperty(
+      '--telegram-viewport-height',
+      `${height}px`
+    )
   }
 
   const setTelegramTheme = () => {
@@ -17,10 +29,21 @@ export default defineNuxtPlugin(() => {
     document.documentElement.classList.toggle('is-telegram-webapp', Boolean(tg))
     document.documentElement.dataset.telegramTheme = tg?.colorScheme || 'dark'
 
-    tg?.setHeaderColor?.('#0f0f14')
-    tg?.setBackgroundColor?.('#0f0f14')
+    if (!tg) return
 
-    if (tg?.isVersionAtLeast?.('7.10')) {
+    /**
+     * setHeaderColor / setBackgroundColor are not supported in older Telegram WebApp versions.
+     * Calling them directly on version 6.0 causes console warnings.
+     */
+    if (isTelegramVersionAtLeast('6.1')) {
+      tg.setHeaderColor?.('#0f0f14')
+      tg.setBackgroundColor?.('#0f0f14')
+    }
+
+    /**
+     * Bottom bar color is only available in newer Telegram WebApp versions.
+     */
+    if (isTelegramVersionAtLeast('7.10')) {
       tg.setBottomBarColor?.('#0f0f14')
     }
   }
@@ -51,15 +74,20 @@ export default defineNuxtPlugin(() => {
   const setupTelegramBackButton = () => {
     const tg = getWebApp()
 
-    if (!tg?.BackButton) return
+    /**
+     * BackButton is not supported in Telegram WebApp 6.0.
+     * Checking only tg.BackButton is not enough because the object may exist,
+     * but calling show/hide/onClick can still produce warnings.
+     */
+    if (!tg?.BackButton || !isTelegramVersionAtLeast('6.1')) return
 
     const syncBackButton = () => {
       const currentPath = router.currentRoute.value.path
 
       if (currentPath === '/') {
-        tg.BackButton?.hide()
+        tg.BackButton.hide()
       } else {
-        tg.BackButton?.show()
+        tg.BackButton.show()
       }
     }
 
@@ -67,7 +95,7 @@ export default defineNuxtPlugin(() => {
       const currentPath = router.currentRoute.value.path
 
       if (currentPath === '/') {
-        tg.close()
+        tg.close?.()
         return
       }
 
@@ -85,8 +113,8 @@ export default defineNuxtPlugin(() => {
 
     if (!tg) return
 
-    tg.ready()
-    tg.expand()
+    tg.ready?.()
+    tg.expand?.()
 
     setTelegramTheme()
     setTelegramViewportHeight()

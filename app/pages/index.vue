@@ -1,14 +1,6 @@
 <script setup lang="ts">
-import { useAppStore } from "~/store/app";
-
 const { t } = useI18n();
-const app = useAppStore();
-
 const { mini } = useScreen();
-
-onMounted(() => {
-  console.log("normal0:", splitColor("normal0"));
-});
 </script>
 
 <template>

@@ -42,18 +42,18 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
   const textOverlayFontGroups = COLLAGE_TEXT_OVERLAY_FONT_GROUPS
 
   const watermarkPosition = ref<CollageWatermarkPosition>('bottom-center')
-  const watermarkSize = ref(180)
-  const watermarkOpacity = ref(0.92)
+  const watermarkSize = ref(80)
+  const watermarkOpacity = ref(1)
 
   const brandOverlayTheme = ref<BrandOverlayTheme>('white')
   const telegramPostId = ref('')
   const brandOverlayGap = ref(14)
 
-  const textOverlayEnabled = ref(false)
-  const textOverlayText = ref('')
+  const textOverlayEnabled = ref(true)
+  const textOverlayText = ref('پرامپت تبدیل به ')
   const textOverlayFontSize = ref(72)
   const textOverlayColor = ref('#ffffff')
-  const textOverlayGap = ref(26)
+  const textOverlayGap = ref(0)
   const textOverlayMaxWidthRatio = ref(0.86)
 
   const textOverlayFontFamily = ref('Vazirmatn')

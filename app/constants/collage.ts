@@ -109,3 +109,7 @@ export const COLLAGE_VIDEO_PRESET_OPTIONS = [
   { label: 'Landscape 1920 × 1080', value: '1920x1080' },
   { label: 'Portrait 1080 × 1350', value: '1080x1350' },
 ]
+
+export const CANVAS_VIEW_ZOOM_MIN = 10
+export const CANVAS_VIEW_ZOOM_MAX = 200
+export const CANVAS_VIEW_ZOOM_DEFAULT = 50

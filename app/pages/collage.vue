@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useCollagePage } from '~/composables/collage/useCollagePage';
-
+import { useCollagePage } from '~/composables/collage/useCollagePage'
+const { locale } = useI18n()
 const {
   orientation,
   mini,
@@ -93,6 +93,15 @@ const {
   isRendering,
   previewInfo,
 
+  canvasWrapRef,
+  canvasZoom,
+  canvasZoomMin,
+  canvasZoomMax,
+  canvasDisplayStyle,
+  setCanvasZoom,
+  setCanvasActualSize,
+  fitCanvasToWrap,
+
   downloadCanvas,
   copyCanvas,
   exportSliderVideo,
@@ -108,9 +117,10 @@ const {
       {{ $t('pages.collage.rotateYourPhone') }}
     </el-text>
   </el-flex>
-  <el-grid v-show="!mini || orientation === 'landscape'" type="main" class="ofha w100"
-    :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)']" :gap="8" @drop="handleDrop" @dragover="handleDragOver"
+  <el-grid v-show="!mini || orientation === 'landscape'" type="main" class="ofh w100" :p="24"
+    :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)', 'auto']" :gap="8" @drop="handleDrop" @dragover="handleDragOver"
     @dragleave="handleDragLeave">
+    <!-- panel -->
     <el-grid type="aside" class="ofha mxh100" :radius="16" :cols="1" :gap="16" :p="16" bg="normal5">
       <el-grid class="collage-sidebar__head" :gap="6">
         <el-text type="h1" :size="22" weight="700">
@@ -178,21 +188,21 @@ const {
 
       <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5">
         <el-text :size="14" weight="700" icon="setting-2">
-          Output Mode
+          {{ $t('pages.collage.outputMode.title') }}
         </el-text>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Mode
+            {{ $t('pages.collage.outputMode.mode') }}
           </el-text>
 
           <select v-model="activeMode">
             <option value="image">
-              Image Collage
+              {{ $t('pages.collage.outputMode.modes.image') }}
             </option>
 
             <option value="video">
-              Video Slider
+              {{ $t('pages.collage.outputMode.modes.video') }}
             </option>
           </select>
         </label>
@@ -203,17 +213,17 @@ const {
           {{ $t('pages.collage.brand.title') }}
         </el-text>
 
-        <label class="field">
+        <el-flex type="label" class="collage-checkbox-field" rules="rsc" :gap="8">
+          <input v-model="textOverlayEnabled" type="checkbox">
+
           <el-text type="span" :size="12" color="normal70">
-            Text overlay
+            {{ $t('pages.collage.textOverlay.enabled') }}
           </el-text>
-
-          <input v-model="textOverlayEnabled" type="checkbox" />
-        </label>
+        </el-flex>
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Text font
+            {{ $t('pages.collage.textOverlay.font') }}
           </el-text>
 
           <select :value="textOverlayFontValue" @change="handleTextOverlayFontChange">
@@ -228,15 +238,15 @@ const {
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Overlay text
+            {{ $t('pages.collage.textOverlay.text') }}
           </el-text>
 
-          <textarea v-model="textOverlayText" placeholder="مثلا: پرامپت تبدیل به سبک نقاشی آبرنگ" rows="3" />
+          <textarea v-model="textOverlayText" :placeholder="$t('pages.collage.textOverlay.placeholder')" rows="3" />
         </label>
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Text size
+            {{ $t('pages.collage.textOverlay.size') }}
           </el-text>
 
           <input v-model.number="textOverlayFontSize" type="range" min="24" max="140" step="2" />
@@ -244,7 +254,7 @@ const {
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Text color
+            {{ $t('pages.collage.textOverlay.color') }}
           </el-text>
 
           <input v-model="textOverlayColor" type="color" />
@@ -252,10 +262,10 @@ const {
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Text / brand gap
+            {{ $t('pages.collage.textOverlay.gap') }}
           </el-text>
 
-          <input v-model.number="textOverlayGap" type="range" min="0" max="80" step="2" />
+          <input v-model.number="textOverlayGap" type="range" min="0" max="160" step="2" />
         </label>
 
         <label class="collage-field">
@@ -297,7 +307,7 @@ const {
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
-            Safe area
+            {{ $t('pages.collage.safeArea.title') }}
           </el-text>
 
           <select :value="overlaySafeAreaPreset" @change="handleOverlaySafeAreaChange">
@@ -370,32 +380,32 @@ const {
       <el-grid v-if="activeMode === 'video'" class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10"
         bg="normal5">
         <el-text :size="14" weight="700" icon="video-play">
-          Video Slider
+          {{ $t('pages.collage.video.title') }}
         </el-text>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            MP4 Quality
+            {{ $t('pages.collage.video.quality') }}
           </el-text>
 
           <select v-model="videoQualityPreset">
             <option value="compact">
-              Compact — smaller file
+              {{ $t('pages.collage.video.qualityPresets.compact') }}
             </option>
 
             <option value="balanced">
-              Balanced — recommended
+              {{ $t('pages.collage.video.qualityPresets.balanced') }}
             </option>
 
             <option value="high">
-              High — larger file
+              {{ $t('pages.collage.video.qualityPresets.high') }}
             </option>
           </select>
         </label>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Background Music
+            {{ $t('pages.collage.video.backgroundMusic') }}
           </el-text>
 
           <input type="file" accept="audio/*" @change="handleVideoAudioInput">
@@ -407,37 +417,37 @@ const {
           </el-text>
 
           <button type="button" @click="clearVideoAudio">
-            Remove audio
+            {{ $t('pages.collage.video.removeAudio') }}
           </button>
         </el-grid>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Preset
+            {{ $t('pages.collage.video.preset') }}
           </el-text>
 
           <select v-model="videoPreset" @change="handleVideoPresetChange">
             <option value="1080x1920">
-              Story / Reel — 1080×1920
+              {{ $t('pages.collage.video.presets.storyReel') }}
             </option>
 
             <option value="1080x1350">
-              Portrait Post — 1080×1350
+              {{ $t('pages.collage.video.presets.portraitPost') }}
             </option>
 
             <option value="1080x1080">
-              Square Post — 1080×1080
+              {{ $t('pages.collage.video.presets.squarePost') }}
             </option>
 
             <option value="1920x1080">
-              Landscape — 1920×1080
+              {{ $t('pages.collage.video.presets.landscape') }}
             </option>
           </select>
         </label>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Width
+            {{ $t('pages.collage.video.width') }}
           </el-text>
 
           <input v-model.number="videoWidth" type="number" min="256" max="4096" step="2">
@@ -445,35 +455,39 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Height
+            {{ $t('pages.collage.video.height') }}
           </el-text>
 
           <input v-model.number="videoHeight" type="number" min="256" max="4096" step="2">
         </label>
 
-        <el-grid :gap="4">
+        <el-flex rules="ccs" :gap="4" class="w100" :radius="18" bg="normal5" :p="12">
           <el-text type="span" :size="12" color="normal70">
-            Calculated Duration
+            {{ $t('pages.collage.video.calculatedDuration') }}
           </el-text>
+
           <el-text type="span" :size="11" color="normal55">
-            {{ videoTotalSlideCount }} slide views · {{ videoTransitionCount }} transitions
+            {{ $t('pages.collage.video.durationMeta', {
+              slides: videoTotalSlideCount, transitions: videoTransitionCount
+            }) }}
           </el-text>
-          <el-text type="span" :size="13" weight="700" color="normal90">
+
+          <el-text type="span" :size="24" icon="clock-1" weight="700" color="normal90">
             {{ videoDurationLabel }}
           </el-text>
-        </el-grid>
+        </el-flex>
 
-        <label class="collage-field collage-checkbox-field">
+        <el-flex type="label" class="collage-checkbox-field" rules="rsc" :gap="8">
           <input v-model="videoLoop" type="checkbox">
 
           <el-text type="span" :size="12" color="normal70">
-            Seamless loop back to first image
+            {{ $t('pages.collage.video.loop') }}
           </el-text>
-        </label>
+        </el-flex>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
-            Repeat: {{ normalizedVideoRepeat }}×
+            {{ $t('pages.collage.video.repeat', { value: normalizedVideoRepeat }) }}
           </el-text>
 
           <input v-model.number="videoRepeat" type="range" min="1" max="10" step="1">
@@ -481,7 +495,7 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
-            FPS: {{ videoFps }}
+            {{ $t('pages.collage.video.fps', { value: videoFps }) }}
           </el-text>
 
           <input v-model.number="videoFps" type="range" min="24" max="60" step="1">
@@ -489,7 +503,7 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
-            Image Interval: {{ videoInterval }}ms
+            {{ $t('pages.collage.video.imageInterval', { value: videoInterval }) }}
           </el-text>
 
           <input v-model.number="videoInterval" type="range" min="800" max="8000" step="100">
@@ -497,7 +511,7 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
-            Transition: {{ videoTransitionDuration }}ms
+            {{ $t('pages.collage.video.transition', { value: videoTransitionDuration }) }}
           </el-text>
 
           <input v-model.number="videoTransitionDuration" type="range" min="300" max="4000" step="100">
@@ -505,7 +519,7 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
-            Edge Blur: {{ videoEdgeBlur }}
+            {{ $t('pages.collage.video.edgeBlur', { value: videoEdgeBlur }) }}
           </el-text>
 
           <input v-model.number="videoEdgeBlur" type="range" min="0" max="400" step="10">
@@ -513,22 +527,22 @@ const {
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
-            Background Color
+            {{ $t('pages.collage.canvas.backgroundColor') }}
           </el-text>
 
           <input v-model="backgroundColor" type="color">
         </label>
 
-        <label class="collage-field collage-checkbox-field">
+        <el-flex type="label" class="collage-checkbox-field" rules="rsc" :gap="8">
           <input v-model="videoRandom" type="checkbox" :disabled="videoLoop || normalizedVideoRepeat > 1">
 
           <el-text type="span" :size="12" color="normal70">
-            Random order
+            {{ $t('pages.collage.video.randomOrder') }}
           </el-text>
-        </label>
+        </el-flex>
 
         <el-text v-if="videoLoop || normalizedVideoRepeat > 1" type="span" :size="11" color="normal55">
-          Random order is disabled for loop/repeat so the sequence can stay seamless.
+          {{ $t('pages.collage.video.randomOrderDisabled') }}
         </el-text>
       </el-grid>
 
@@ -545,33 +559,42 @@ const {
       </el-grid>
 
       <el-grid v-else :cols="2" :gap="10">
-        <el-button :label="isRecordingVideo ? 'Recording...' : 'Export WebM'" :p="[12, 24]" :size="14" type="fab"
-          v-if="false" icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo"
-          @click="exportSliderVideo" />
+        <el-button
+          :label="isRecordingVideo ? $t('pages.collage.actions.recording') : $t('pages.collage.actions.exportWebm')"
+          :p="[12, 24]" :size="14" type="fab" v-if="false" icon="video-play" color="prim" tooltip-position="top"
+          :disable="!canExportVideo" @click="exportSliderVideo" />
 
-        <el-button :label="isExportingMp4 ? 'Exporting MP4...' : 'Export MP4'" :p="[12, 24]" :size="14" type="fab"
-          icon="video-play" color="prim" tooltip-position="top" :disable="!canExportVideo" @click="exportSliderMp4" />
+        <el-button
+          :label="isExportingMp4 ? $t('pages.collage.actions.exportingMp4') : $t('pages.collage.actions.exportMp4')"
+          :p="[12, 24]" :size="14" type="fab" icon="video-play" color="prim" tooltip-position="top"
+          :disable="!canExportVideo" @click="exportSliderMp4" />
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10"
           :disable="!images.length || isRecordingVideo" @click="clearImages" />
-
       </el-grid>
-
     </el-grid>
-
+    <!-- main box -->
     <el-grid type="section" class="collage-workspace" :rows="['auto', 'minmax(0, 1fr)']" :gap="8" :p="0">
-      <el-flex class="collage-preview-head" rules="rbc" :gap="16" :p="[14, 16]" :radius="18" :br="1" bc="normal10"
-        bg="normal5">
+      <el-flex class="collage-preview-head por ofh" rules="rbc" :gap="16" :p="[14, 16]" :radius="18" :br="1"
+        bc="normal10" bg="normal5">
+        <div class="poa t0 l0 b0 bg-blue15" v-if="isExportingMp4" :style="{ width: `${mp4ExportProgress}%` }"></div>
         <el-flex rules="ccs" :gap="0">
-          <el-text :size="14" weight="700" localize>
+          <el-text :size="14" weight="700" localize :icon="activeMode === 'video' ? 'video' : 'gallery'">
             {{ previewInfo.width }}×{{ previewInfo.height }}
           </el-text>
           <el-text type="span" :size="12" color="normal70">
             {{
               activeMode === 'video'
-                ? `Video Slider · ${videoWidth}×${videoHeight} · ${videoDurationLabel} · ${videoFps}fps ·
-            ${normalizedVideoRepeat}×${videoLoop ? ' · loop' : ''}`
+                ? $t('pages.collage.preview.videoMeta', {
+                  title: $t('pages.collage.video.title'),
+                  width: videoWidth,
+                  height: videoHeight,
+                  duration: videoDurationLabel,
+                  fps: videoFps,
+                  repeat: normalizedVideoRepeat,
+                  loop: videoLoop ? $t('pages.collage.preview.loopSuffix') : '',
+                })
                 : $t('pages.collage.preview.grid', { columns: previewInfo.columns, rows: previewInfo.rows })
             }}
           </el-text>
@@ -580,17 +603,70 @@ const {
           {{ $t('pages.collage.preview.rendering') }}
         </el-text>
         <el-text v-if="isRecordingVideo" :size="12" color="normal55">
-          Recording video...
+          {{ $t('pages.collage.preview.recordingVideo') }}
         </el-text>
-        <el-text v-if="isExportingMp4" :size="12" color="normal55">
-          {{ mp4ExportStatus }} · {{ mp4ExportProgress }}%
+        <el-flex rules="cce" v-if="isExportingMp4" :gap="0">
+          <el-text :size="14" :weight="700" color="normal55">
+            {{ mp4ExportStatus }}
+          </el-text>
+          <el-text :size="12" color="normal55">
+            {{ mp4ExportProgress }}%
+          </el-text>
+        </el-flex>
+      </el-flex>
+
+      <el-grid ref="canvasWrapRef" class="collage-canvas-wrap" :p="8" :radius="18" :br="1" bc="normal10"
+        place-items="start center">
+        <canvas ref="canvasRef" :style="canvasDisplayStyle" />
+      </el-grid>
+    </el-grid>
+
+    <!-- canvas options -->
+    <el-flex rules="cbc" :gap="6" :p="8" class="collage-canvas-options" :radius="8">
+      <!-- zoom -->
+      <el-flex rules="csc">
+        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.fit')" icon="maximize-3" type="fab" mode="flat"
+          @click="fitCanvasToWrap" />
+
+        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.actual')" icon="scan" type="fab" mode="flat"
+          @click="setCanvasActualSize" />
+
+        <input class="vertical-range" type="range" :min="canvasZoomMin" :max="canvasZoomMax" :value="canvasZoom"
+          @input="setCanvasZoom(Number(($event.target as HTMLInputElement).value))">
+
+        <el-text :size="12">
+          %{{ canvasZoom }}
         </el-text>
       </el-flex>
 
-      <el-grid class="collage-canvas-wrap" :p="22" :radius="24" :br="1" bc="normal10" place-items="start center">
-        <canvas ref="canvasRef" />
+      <el-grid v-if="activeMode === 'image'" :cols="1" :gap="10">
+        <el-button :label="$t('pages.collage.actions.save')" :p="[8]" :size="14" type="fab" icon="ram" color="prim"
+          tooltip-position="top" :disable="!canExportImage" @click="downloadCanvas" />
+
+        <el-button :label="$t('pages.collage.actions.copy')" :p="[8]" :size="14" mode="flat" type="fab"
+          icon="document-copy" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
+
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+          tooltip-position="top" :p="[8]" :size="14" mode="flat" color="red" :disable="!images.length"
+          @click="clearImages" />
       </el-grid>
-    </el-grid>
+
+      <el-grid v-else :cols="1" :gap="10">
+        <el-button
+          :label="isRecordingVideo ? $t('pages.collage.actions.recording') : $t('pages.collage.actions.exportWebm')"
+          :p="[8]" :size="14" type="fab" v-if="false" icon="video-play" color="prim" tooltip-position="top"
+          :disable="!canExportVideo" @click="exportSliderVideo" />
+
+        <el-button
+          :label="isExportingMp4 ? $t('pages.collage.actions.exportingMp4') : $t('pages.collage.actions.exportMp4')"
+          :p="[8]" :size="14" type="fab" icon="video-play" color="prim" tooltip-position="top"
+          :disable="!canExportVideo" @click="exportSliderMp4" />
+
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+          tooltip-position="top" :p="[8]" :size="14" mode="flat" color="normal10"
+          :disable="!images.length || isRecordingVideo" @click="clearImages" />
+      </el-grid>
+    </el-flex>
   </el-grid>
 </template>
 
@@ -674,6 +750,7 @@ const {
 }
 
 .collage-canvas-wrap {
+  position: relative;
   min-height: 0;
   overflow: auto;
   background:
@@ -687,11 +764,52 @@ const {
 
 .collage-canvas-wrap canvas {
   display: block;
-  width: min(100%, 1000px);
+  flex: 0 0 auto;
+  max-width: none;
+  max-height: none;
   background-color: var(--themeSurface);
-  height: max(100%, auto);
   border-radius: 18px;
   box-shadow: 0 24px 80px var(--themeBlack25);
+}
+
+.collage-canvas-options {
+  z-index: 5;
+  user-select: none;
+}
+
+.vertical-range {
+  writing-mode: vertical-lr;
+  direction: rtl !important;
+  width: auto;
+  height: 96px;
+  accent-color: var(--normalText);
+}
+
+.collage-checkbox-field {
+  width: fit-content;
+  min-height: 28px;
+  cursor: pointer;
+  user-select: none;
+
+  input[type='checkbox'] {
+    flex: 0 0 auto;
+    transform: translateY(0);
+  }
+
+  span {
+    cursor: pointer;
+    line-height: 1.2;
+  }
+
+  &:has(input:disabled) {
+    opacity: 0.55;
+    cursor: not-allowed;
+
+    span,
+    input {
+      cursor: not-allowed;
+    }
+  }
 }
 
 @media (max-width: 900px) {

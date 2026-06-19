@@ -28,10 +28,28 @@ import {
   useCollageRenderer,
 } from '~/composables/collage/useCollageRenderer'
 
+import {
+  useCollageCanvasView,
+} from '~/composables/collage/useCollageCanvasView'
+
 export function useCollagePage() {
   const { orientation, mini } = useScreen()
 
   const canvasRef = ref<HTMLCanvasElement | null>(null)
+
+  const {
+    canvasWrapRef,
+    canvasZoom,
+    canvasZoomMin,
+    canvasZoomMax,
+    canvasViewMode,
+    canvasDisplayStyle,
+    syncCanvasIntrinsicSize,
+    setCanvasZoom,
+    setCanvasActualSize,
+    fitCanvasToWrap,
+    reapplyCanvasView,
+  } = useCollageCanvasView(canvasRef)
 
   const activeMode = ref<CollageMode>('image')
 
@@ -148,6 +166,7 @@ export function useCollagePage() {
       if (!canvasRef.value) return
 
       await rendererApi.renderCanvas()
+      await reapplyCanvasView()
     }, 120)
   }
 
@@ -188,13 +207,15 @@ export function useCollagePage() {
       overlayApi.textOverlayGap,
       overlayApi.textOverlayMaxWidthRatio,
     ],
-    () => {
+    async () => {
       if (activeMode.value !== 'image') return
 
-      rendererApi.renderCanvas()
+      await rendererApi.renderCanvas()
+      await reapplyCanvasView()
     },
     {
       deep: true,
+      flush: 'post',
     }
   )
 
@@ -226,10 +247,11 @@ export function useCollagePage() {
       overlayApi.overlaySafeAreaPreset,
       overlayApi.watermarkPosition,
     ],
-    () => {
+    async () => {
       if (activeMode.value !== 'video') return
 
-      rendererApi.renderVideoPreview()
+      await rendererApi.renderVideoPreview()
+      await reapplyCanvasView()
     },
     {
       flush: 'post',
@@ -238,8 +260,8 @@ export function useCollagePage() {
 
   onMounted(async () => {
     window.addEventListener('paste', imagesApi.handlePaste)
-
     await rendererApi.renderCurrentMode()
+    await reapplyCanvasView()
   })
 
   onBeforeUnmount(() => {
@@ -270,6 +292,19 @@ export function useCollagePage() {
     canExport,
     canExportImage,
     canExportVideo,
+
+    canvasWrapRef,
+    canvasZoom,
+    canvasZoomMin,
+    canvasZoomMax,
+    canvasViewMode,
+    canvasDisplayStyle,
+
+    syncCanvasIntrinsicSize,
+    setCanvasZoom,
+    setCanvasActualSize,
+    fitCanvasToWrap,
+    reapplyCanvasView,
 
     ...imagesApi,
     ...overlayApi,
