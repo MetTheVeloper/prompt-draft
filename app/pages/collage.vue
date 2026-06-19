@@ -23,6 +23,11 @@ import type {
   CollageWatermarkPosition,
 } from '~/types/collage'
 
+import {
+  getOverlayPlacement,
+  type OverlaySafeAreaPreset,
+} from '~/utils/overlayPlacement'
+
 const fileInputRef = ref<HTMLInputElement | null>(null)
 const canvasRef = ref<HTMLCanvasElement | null>(null)
 
@@ -94,6 +99,17 @@ const videoQualitySettings = computed(() => {
 })
 
 let videoRenderer: CanvasSliderRenderer | null = null
+let videoPreviewRenderToken = 0
+
+function stopVideoRenderer() {
+  videoRenderer?.destroy()
+  videoRenderer = null
+}
+
+function cancelVideoPreviewRender() {
+  videoPreviewRenderToken++
+  stopVideoRenderer()
+}
 
 function applyVideoPreset(value: string) {
   videoPreset.value = value
@@ -114,6 +130,24 @@ function handleVideoPresetChange(event: Event) {
 }
 
 const images = ref<CollageImageItem[]>([])
+
+const overlaySafeAreaPreset = ref<OverlaySafeAreaPreset>('none')
+
+const overlaySafeAreaOptions: {
+  label: string
+  value: OverlaySafeAreaPreset
+}[] = [
+    { label: 'None', value: 'none' },
+    { label: 'Instagram Story', value: 'story' },
+    { label: 'Instagram Reels', value: 'reel' },
+  ]
+
+function handleOverlaySafeAreaChange(event: Event) {
+  const target = event.target as HTMLSelectElement | null
+  if (!target) return
+
+  overlaySafeAreaPreset.value = target.value as OverlaySafeAreaPreset
+}
 
 const watermarkPosition = ref<CollageWatermarkPosition>('bottom-center')
 const watermarkSize = ref(180)
@@ -401,42 +435,24 @@ function getBrandOverlayRect(
     Math.round(Math.min(canvasWidth, canvasHeight) * 0.025)
   )
 
-  const position = watermarkPosition.value
+  const safeArea =
+    activeMode.value === 'video'
+      ? overlaySafeAreaPreset.value
+      : 'none'
 
-  const isLeft = position.endsWith('left')
-  const isRight = position.endsWith('right')
-  const isTop = position.startsWith('top')
-  const isBottom = position.startsWith('bottom')
-  const isVerticalCenter =
-    position === 'center' || position.startsWith('center')
-  const isHorizontalCenter =
-    position === 'center' || position.endsWith('center')
+  return getOverlayPlacement({
+    canvasWidth,
+    canvasHeight,
+    overlayWidth,
+    overlayHeight,
+    position: watermarkPosition.value,
+    safeArea,
+    padding: margin,
 
-  let x = margin
-  let y = margin
-
-  if (isHorizontalCenter) {
-    x = (canvasWidth - overlayWidth) / 2
-  } else if (isRight) {
-    x = canvasWidth - overlayWidth - margin
-  } else if (isLeft) {
-    x = margin
-  }
-
-  if (isVerticalCenter) {
-    y = (canvasHeight - overlayHeight) / 2
-  } else if (isBottom) {
-    y = canvasHeight - overlayHeight - margin
-  } else if (isTop) {
-    y = margin
-  }
-
-  return {
-    x,
-    y,
-    width: overlayWidth,
-    height: overlayHeight
-  }
+    // اگر برند با QR برای safe rect بزرگ باشد، خروجی را proportional کوچک می‌کند
+    // تا واقعاً داخل ناحیه‌ی safe بماند.
+    fitInsideSafeArea: safeArea !== 'none',
+  })
 }
 
 function drawBrandOverlayCanvas(
@@ -1502,11 +1518,6 @@ function createTreemapLayoutsForRatio(ratio: number): CollageLayoutResult[] {
   return result
 }
 
-function stopVideoRenderer() {
-  videoRenderer?.destroy()
-  videoRenderer = null
-}
-
 function getVideoSources(): CanvasSliderImageSource[] {
   return images.value.map((item) => ({
     src: item.url,
@@ -1545,9 +1556,18 @@ function drawVideoEmptyState() {
 }
 
 async function renderVideoPreview() {
+  const renderToken = ++videoPreviewRenderToken
+
   if (activeMode.value !== 'video') return
 
   await nextTick()
+
+  if (
+    renderToken !== videoPreviewRenderToken ||
+    activeMode.value !== 'video'
+  ) {
+    return
+  }
 
   const canvas = canvasRef.value
   if (!canvas) return
@@ -1564,7 +1584,14 @@ async function renderVideoPreview() {
 
   const brandOverlay = await createBrandOverlayCanvas()
 
-  videoRenderer = createCanvasSliderRenderer({
+  if (
+    renderToken !== videoPreviewRenderToken ||
+    activeMode.value !== 'video'
+  ) {
+    return
+  }
+
+  const renderer = createCanvasSliderRenderer({
     canvas,
     sources: getVideoSources(),
     width,
@@ -1591,6 +1618,15 @@ async function renderVideoPreview() {
     }
   })
 
+  if (
+    renderToken !== videoPreviewRenderToken ||
+    activeMode.value !== 'video'
+  ) {
+    renderer.destroy()
+    return
+  }
+
+  videoRenderer = renderer
   videoRenderer.setPointer(width / 2, height / 2)
   videoRenderer.start()
 
@@ -2262,9 +2298,7 @@ watch(
     videoLoop,
     videoRepeat,
     backgroundColor,
-    watermarkPosition,
     watermarkSize,
-    watermarkOpacity,
     brandOverlayTheme,
     telegramPostId,
     brandOverlayGap
@@ -2275,7 +2309,6 @@ watch(
     renderVideoPreview()
   },
   {
-    deep: true,
     flush: 'post'
   }
 )
@@ -2288,11 +2321,18 @@ onMounted(async () => {
 onBeforeUnmount(() => {
   window.removeEventListener('paste', handlePaste)
 
+  cancelVideoPreviewRender()
+
+  if (renderAfterRotateTimer) {
+    clearTimeout(renderAfterRotateTimer)
+    renderAfterRotateTimer = null
+  }
+
   for (const item of images.value) {
-    stopVideoRenderer()
     URL.revokeObjectURL(item.url)
   }
 })
+
 </script>
 
 <template>
@@ -2431,6 +2471,16 @@ onBeforeUnmount(() => {
           <select v-model="watermarkPosition">
             <option v-for="position in watermarkPositions" :key="position.value" :value="position.value">
               {{ $t(`pages.collage.brand.positions.${position.value}`) }}
+            </option>
+          </select>
+        </label>
+
+        <label class="field">
+          <span>Safe area</span>
+
+          <select :value="overlaySafeAreaPreset" @change="handleOverlaySafeAreaChange">
+            <option v-for="option in overlaySafeAreaOptions" :key="option.value" :value="option.value">
+              {{ option.label }}
             </option>
           </select>
         </label>
