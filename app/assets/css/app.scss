@@ -182,13 +182,13 @@ textarea:read-only {
 input:invalid,
 select:invalid,
 textarea:invalid {
-  border-color: var(--error, #ef4444);
+  border-color: var(--themeRed, #ef4444);
 }
 
 input:invalid:focus,
 select:invalid:focus,
 textarea:invalid:focus {
-  box-shadow: 0 0 0 3px var(--error15, rgba(239, 68, 68, 0.15));
+  box-shadow: 0 0 0 3px var(--themeRed15, rgba(239, 68, 68, 0.15));
 }
 
 /* ---------------------------------------------
@@ -199,6 +199,11 @@ select {
   cursor: pointer;
   appearance: none;
   -webkit-appearance: none;
+  transition: all ease-in-out 300ms;
+
+  background-color: var(--themeBackground);
+  color: var(--normalText);
+
   background-image:
     linear-gradient(45deg, transparent 50%, var(--normalText60) 50%),
     linear-gradient(135deg, var(--normalText60) 50%, transparent 50%);
@@ -209,6 +214,7 @@ select {
     5px 5px,
     5px 5px;
   background-repeat: no-repeat;
+
   padding-inline-end: 36px;
 }
 
@@ -226,6 +232,28 @@ select option {
 
 select option:checked {
   background: var(--themeSurface);
+  color: var(--normalText);
+}
+
+/* Optgroup header */
+select optgroup {
+  background: var(--themeSurface);
+  color: var(--normalText);
+  font-weight: 800;
+  font-style: normal;
+}
+
+/* Options inside optgroup */
+select optgroup option {
+  background: var(--themeBackground);
+  color: var(--normalText);
+  font-weight: 400;
+  padding-inline-start: 18px;
+}
+
+select optgroup option:checked {
+  background: var(--themeSurface);
+  color: var(--normalText);
 }
 
 /* ---------------------------------------------

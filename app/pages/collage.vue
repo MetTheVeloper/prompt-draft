@@ -25,6 +25,7 @@ import type {
 
 import {
   getOverlayPlacement,
+  getOverlaySafeAreaRect,
   type OverlaySafeAreaPreset,
 } from '~/utils/overlayPlacement'
 
@@ -158,6 +159,80 @@ type BrandOverlayTheme = 'black' | 'white'
 const brandOverlayTheme = ref<BrandOverlayTheme>('white')
 const telegramPostId = ref('')
 const brandOverlayGap = ref(14)
+
+const textOverlayEnabled = ref(false)
+const textOverlayText = ref('')
+const textOverlayFontSize = ref(72)
+const textOverlayColor = ref('#ffffff')
+const textOverlayGap = ref(26)
+const textOverlayMaxWidthRatio = ref(0.86)
+
+const textOverlayFontFamily = ref('Vazirmatn')
+const textOverlayFontWeight = ref(800)
+
+type TextOverlayFontOption = {
+  label: string
+  family: string
+  weight: number
+}
+
+type TextOverlayFontGroup = {
+  label: string
+  options: TextOverlayFontOption[]
+}
+
+const textOverlayFontGroups: TextOverlayFontGroup[] = [
+  {
+    label: 'Vazirmatn',
+    options: [
+      { label: 'Thin / 100', family: 'Vazirmatn', weight: 100 },
+      { label: 'Extra Light / 200', family: 'Vazirmatn', weight: 200 },
+      { label: 'Light / 300', family: 'Vazirmatn', weight: 300 },
+      { label: 'Regular / 400', family: 'Vazirmatn', weight: 400 },
+      { label: 'Medium / 500', family: 'Vazirmatn', weight: 500 },
+      { label: 'Semi Bold / 600', family: 'Vazirmatn', weight: 600 },
+      { label: 'Bold / 700', family: 'Vazirmatn', weight: 700 },
+      { label: 'Extra Bold / 800', family: 'Vazirmatn', weight: 800 },
+      { label: 'Black / 900', family: 'Vazirmatn', weight: 900 },
+    ],
+  },
+  {
+    label: 'Handjet',
+    options: [
+      { label: 'Thin / 100', family: 'Handjet', weight: 100 },
+      { label: 'Extra Light / 200', family: 'Handjet', weight: 200 },
+      { label: 'Light / 300', family: 'Handjet', weight: 300 },
+      { label: 'Regular / 400', family: 'Handjet', weight: 400 },
+      { label: 'Medium / 500', family: 'Handjet', weight: 500 },
+      { label: 'Semi Bold / 600', family: 'Handjet', weight: 600 },
+      { label: 'Bold / 700', family: 'Handjet', weight: 700 },
+      { label: 'Extra Bold / 800', family: 'Handjet', weight: 800 },
+      { label: 'Black / 900', family: 'Handjet', weight: 900 },
+    ],
+  },
+  {
+    label: 'Marhey',
+    options: [
+      { label: 'Light / 300', family: 'Marhey', weight: 300 },
+      { label: 'Regular / 400', family: 'Marhey', weight: 400 },
+      { label: 'Medium / 500', family: 'Marhey', weight: 500 },
+      { label: 'Semi Bold / 600', family: 'Marhey', weight: 600 },
+      { label: 'Bold / 700', family: 'Marhey', weight: 700 },
+    ],
+  },
+  {
+    label: 'Badeen Display',
+    options: [
+      { label: 'Regular / 400', family: 'Badeen Display', weight: 400 },
+    ],
+  },
+  {
+    label: 'Oi',
+    options: [
+      { label: 'Regular / 400', family: 'Oi', weight: 400 },
+    ],
+  },
+]
 
 const telegramChannelBase = 'https://t.me/Prompt_draft'
 
@@ -359,7 +434,7 @@ async function createBrandOverlayCanvas() {
 
   if (overlayHeight <= 0) return null
 
-  const logoSrc = `/img/logo_${brandOverlayTheme.value}.svg`
+  const logoSrc = `/img/logo_${brandOverlayTheme.value}.png`
   const logoImage = await loadImageSource(logoSrc)
 
   const qrUrl = normalizeTelegramPostUrl()
@@ -424,21 +499,244 @@ async function createBrandOverlayCanvas() {
   return overlayCanvas
 }
 
-function getBrandOverlayRect(
+type OverlayInternalAlign = 'left' | 'center' | 'right'
+
+function getOverlayMargin(canvasWidth: number, canvasHeight: number) {
+  return Math.max(
+    28,
+    Math.round(Math.min(canvasWidth, canvasHeight) * 0.025)
+  )
+}
+
+function getActiveOverlaySafeArea(): OverlaySafeAreaPreset {
+  return activeMode.value === 'video'
+    ? overlaySafeAreaPreset.value
+    : 'none'
+}
+
+function getOverlayInternalAlign(
+  position: CollageWatermarkPosition
+): OverlayInternalAlign {
+  if (position.endsWith('right')) return 'right'
+  if (position === 'center' || position.endsWith('center')) return 'center'
+  return 'left'
+}
+
+function getAlignedChildX(
+  parentWidth: number,
+  childWidth: number,
+  align: OverlayInternalAlign
+) {
+  if (align === 'right') return parentWidth - childWidth
+  if (align === 'center') return (parentWidth - childWidth) / 2
+  return 0
+}
+
+function getTextDirection(text: string): CanvasDirection {
+  return /[\u0600-\u06FF]/.test(text) ? 'rtl' : 'ltr'
+}
+
+const textOverlayFontValue = computed(() => {
+  return `${textOverlayFontFamily.value}::${textOverlayFontWeight.value}`
+})
+
+function handleTextOverlayFontChange(event: Event) {
+  const target = event.target as HTMLSelectElement | null
+  if (!target) return
+
+  const [family, weight] = target.value.split('::')
+
+  textOverlayFontFamily.value = family
+  textOverlayFontWeight.value = Number(weight) || 400
+}
+
+function getTextOverlayFontOptionValue(option: TextOverlayFontOption) {
+  return `${option.family}::${option.weight}`
+}
+
+function getTextOverlayFont() {
+  return `${textOverlayFontWeight.value} ${textOverlayFontSize.value}px "${textOverlayFontFamily.value}", "Vazirmatn", Tahoma, Arial, sans-serif`
+}
+
+async function ensureTextOverlayFontLoaded() {
+  if (!document.fonts) return
+
+  try {
+    await document.fonts.load(getTextOverlayFont())
+  } catch (error) {
+    console.warn('Could not preload text overlay font:', error)
+  }
+}
+
+function wrapCanvasText(
+  ctx: CanvasRenderingContext2D,
+  text: string,
+  maxWidth: number
+) {
+  const lines: string[] = []
+  const paragraphs = text
+    .split(/\n+/)
+    .map((item) => item.trim())
+    .filter(Boolean)
+
+  for (const paragraph of paragraphs) {
+    const words = paragraph.split(/\s+/)
+    let line = ''
+
+    for (const word of words) {
+      const testLine = line ? `${line} ${word}` : word
+      const testWidth = ctx.measureText(testLine).width
+
+      if (testWidth > maxWidth && line) {
+        lines.push(line)
+        line = word
+      } else {
+        line = testLine
+      }
+    }
+
+    if (line) {
+      lines.push(line)
+    }
+  }
+
+  return lines
+}
+
+function createTextOverlayCanvas(options: {
+  maxWidth: number
+  align: OverlayInternalAlign
+}) {
+  if (!textOverlayEnabled.value) return null
+
+  const text = textOverlayText.value.trim()
+  if (!text) return null
+
+  const maxWidth = Math.max(80, Math.round(options.maxWidth))
+  const fontSize = Math.max(8, Math.round(textOverlayFontSize.value))
+  const lineHeight = Math.round(fontSize * 1.16)
+  const paddingX = Math.round(fontSize * 0.08)
+  const paddingY = Math.round(fontSize * 0.12)
+
+  const measureCanvas = document.createElement('canvas')
+  const measureCtx = measureCanvas.getContext('2d')
+  if (!measureCtx) return null
+
+  measureCtx.font = getTextOverlayFont()
+
+  const lines = wrapCanvasText(measureCtx, text, maxWidth)
+  if (!lines.length) return null
+
+  const measuredWidth = Math.max(
+    ...lines.map((line) => measureCtx.measureText(line).width)
+  )
+
+  const canvasWidth = Math.ceil(Math.min(maxWidth, measuredWidth) + paddingX * 2)
+  const canvasHeight = Math.ceil(lines.length * lineHeight + paddingY * 2)
+
+  const overlayCanvas = document.createElement('canvas')
+  overlayCanvas.width = canvasWidth
+  overlayCanvas.height = canvasHeight
+
+  const ctx = overlayCanvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.clearRect(0, 0, canvasWidth, canvasHeight)
+
+  ctx.font = getTextOverlayFont()
+  ctx.fillStyle = textOverlayColor.value
+  ctx.textBaseline = 'top'
+  ctx.direction = getTextDirection(text)
+
+  ctx.shadowColor = 'rgba(0, 0, 0, 0.42)'
+  ctx.shadowBlur = Math.round(fontSize * 0.16)
+  ctx.shadowOffsetY = Math.round(fontSize * 0.05)
+
+  if (options.align === 'right') {
+    ctx.textAlign = 'right'
+  } else if (options.align === 'center') {
+    ctx.textAlign = 'center'
+  } else {
+    ctx.textAlign = 'left'
+  }
+
+  const textX =
+    options.align === 'right'
+      ? canvasWidth - paddingX
+      : options.align === 'center'
+        ? canvasWidth / 2
+        : paddingX
+
+  lines.forEach((line, index) => {
+    ctx.fillText(
+      line,
+      textX,
+      paddingY + index * lineHeight,
+      canvasWidth - paddingX * 2
+    )
+  })
+
+  return overlayCanvas
+}
+
+async function createCompositeOverlayCanvas(
+  canvasWidth: number,
+  canvasHeight: number
+) {
+  const brandOverlay = await createBrandOverlayCanvas()
+  const align = getOverlayInternalAlign(watermarkPosition.value)
+
+  const margin = getOverlayMargin(canvasWidth, canvasHeight)
+  const safeArea = getActiveOverlaySafeArea()
+
+  const safeRect = getOverlaySafeAreaRect({
+    canvasWidth,
+    canvasHeight,
+    safeArea,
+    padding: margin,
+  })
+
+  await ensureTextOverlayFontLoaded()
+
+  const textOverlay = createTextOverlayCanvas({
+    maxWidth: safeRect.width * textOverlayMaxWidthRatio.value,
+    align,
+  })
+
+  if (!brandOverlay && !textOverlay) return null
+  if (!textOverlay) return brandOverlay
+  if (!brandOverlay) return textOverlay
+
+  const groupGap = Math.max(0, Math.round(textOverlayGap.value))
+  const groupWidth = Math.max(textOverlay.width, brandOverlay.width)
+  const groupHeight = textOverlay.height + groupGap + brandOverlay.height
+
+  const groupCanvas = document.createElement('canvas')
+  groupCanvas.width = groupWidth
+  groupCanvas.height = groupHeight
+
+  const ctx = groupCanvas.getContext('2d')
+  if (!ctx) return null
+
+  ctx.clearRect(0, 0, groupWidth, groupHeight)
+
+  const textX = getAlignedChildX(groupWidth, textOverlay.width, align)
+  const brandX = getAlignedChildX(groupWidth, brandOverlay.width, align)
+
+  ctx.drawImage(textOverlay, textX, 0)
+  ctx.drawImage(brandOverlay, brandX, textOverlay.height + groupGap)
+
+  return groupCanvas
+}
+
+function getOverlayRect(
   canvasWidth: number,
   canvasHeight: number,
   overlayWidth: number,
   overlayHeight: number
 ) {
-  const margin = Math.max(
-    28,
-    Math.round(Math.min(canvasWidth, canvasHeight) * 0.025)
-  )
-
-  const safeArea =
-    activeMode.value === 'video'
-      ? overlaySafeAreaPreset.value
-      : 'none'
+  const margin = getOverlayMargin(canvasWidth, canvasHeight)
+  const safeArea = getActiveOverlaySafeArea()
 
   return getOverlayPlacement({
     canvasWidth,
@@ -448,24 +746,21 @@ function getBrandOverlayRect(
     position: watermarkPosition.value,
     safeArea,
     padding: margin,
-
-    // اگر برند با QR برای safe rect بزرگ باشد، خروجی را proportional کوچک می‌کند
-    // تا واقعاً داخل ناحیه‌ی safe بماند.
     fitInsideSafeArea: safeArea !== 'none',
   })
 }
 
-function drawBrandOverlayCanvas(
+function drawOverlayCanvas(
   ctx: CanvasRenderingContext2D,
   canvasWidth: number,
   canvasHeight: number,
-  brandOverlay: HTMLCanvasElement
+  overlayCanvas: HTMLCanvasElement
 ) {
-  const rect = getBrandOverlayRect(
+  const rect = getOverlayRect(
     canvasWidth,
     canvasHeight,
-    brandOverlay.width,
-    brandOverlay.height
+    overlayCanvas.width,
+    overlayCanvas.height
   )
 
   ctx.save()
@@ -476,7 +771,7 @@ function drawBrandOverlayCanvas(
   ctx.shadowOffsetY = 8
 
   ctx.drawImage(
-    brandOverlay,
+    overlayCanvas,
     rect.x,
     rect.y,
     rect.width,
@@ -1582,7 +1877,7 @@ async function renderVideoPreview() {
   const width = Math.max(1, Math.round(videoWidth.value))
   const height = Math.max(1, Math.round(videoHeight.value))
 
-  const brandOverlay = await createBrandOverlayCanvas()
+  const overlayCanvas = await createCompositeOverlayCanvas(width, height)
 
   if (
     renderToken !== videoPreviewRenderToken ||
@@ -1607,13 +1902,13 @@ async function renderVideoPreview() {
     backgroundColor: backgroundColor.value,
 
     onAfterDrawFrame: ({ canvas, ctx }) => {
-      if (!brandOverlay) return
+      if (!overlayCanvas) return
 
-      drawBrandOverlayCanvas(
+      drawOverlayCanvas(
         ctx,
         canvas.width,
         canvas.height,
-        brandOverlay
+        overlayCanvas
       )
     }
   })
@@ -1707,14 +2002,17 @@ async function renderCanvas() {
     ctx.restore()
   }
 
-  const brandOverlay = await createBrandOverlayCanvas()
+  const overlayCanvas = await createCompositeOverlayCanvas(
+    canvas.width,
+    canvas.height
+  )
 
-  if (brandOverlay) {
-    drawBrandOverlayCanvas(
+  if (overlayCanvas) {
+    drawOverlayCanvas(
       ctx,
       canvas.width,
       canvas.height,
-      brandOverlay
+      overlayCanvas
     )
   }
 
@@ -1985,7 +2283,10 @@ async function exportSliderMp4() {
     mp4ExportProgress.value = 0
     mp4ExportStatus.value = 'Preparing MP4 export...'
 
-    const brandOverlay = await createBrandOverlayCanvas()
+    const overlayCanvas = await createCompositeOverlayCanvas(
+      videoWidth.value,
+      videoHeight.value
+    )
     const quality = videoQualitySettings.value
     const blob = await exportCanvasSliderMp4({
       sources: getVideoSources(),
@@ -2008,13 +2309,13 @@ async function exportSliderMp4() {
       audioBitrate: quality.audioBitrate,
 
       onAfterDrawFrame: ({ canvas, ctx }) => {
-        if (!brandOverlay) return
+        if (!overlayCanvas) return
 
-        drawBrandOverlayCanvas(
+        drawOverlayCanvas(
           ctx,
           canvas.width,
           canvas.height,
-          brandOverlay
+          overlayCanvas
         )
       },
       onProgress: ({ phase, progress, message }) => {
@@ -2273,7 +2574,16 @@ watch(
     backgroundColor,
     brandOverlayTheme,
     telegramPostId,
-    brandOverlayGap
+    brandOverlayGap,
+    textOverlayEnabled,
+    textOverlayText,
+    textOverlayFontSize,
+    textOverlayFontWeight,
+    textOverlayColor,
+    textOverlayGap,
+    textOverlayMaxWidthRatio,
+    overlaySafeAreaPreset,
+    watermarkPosition,
   ],
   () => {
     if (activeMode.value !== 'image') return
@@ -2301,7 +2611,16 @@ watch(
     watermarkSize,
     brandOverlayTheme,
     telegramPostId,
-    brandOverlayGap
+    brandOverlayGap,
+    textOverlayEnabled,
+    textOverlayText,
+    textOverlayFontSize,
+    textOverlayFontWeight,
+    textOverlayColor,
+    textOverlayGap,
+    textOverlayMaxWidthRatio,
+    overlaySafeAreaPreset,
+    watermarkPosition,
   ],
   () => {
     if (activeMode.value !== 'video') return
@@ -2438,6 +2757,61 @@ onBeforeUnmount(() => {
           {{ $t('pages.collage.brand.title') }}
         </el-text>
 
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Text overlay
+          </el-text>
+
+          <input v-model="textOverlayEnabled" type="checkbox" />
+        </label>
+
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Text font
+          </el-text>
+
+          <select :value="textOverlayFontValue" @change="handleTextOverlayFontChange">
+            <optgroup v-for="group in textOverlayFontGroups" :key="group.label" :label="group.label">
+              <option v-for="option in group.options" :key="getTextOverlayFontOptionValue(option)"
+                :value="getTextOverlayFontOptionValue(option)">
+                {{ option.label }}
+              </option>
+            </optgroup>
+          </select>
+        </label>
+
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Overlay text
+          </el-text>
+
+          <textarea v-model="textOverlayText" placeholder="مثلا: پرامپت تبدیل به سبک نقاشی آبرنگ" rows="3" />
+        </label>
+
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Text size
+          </el-text>
+
+          <input v-model.number="textOverlayFontSize" type="range" min="24" max="140" step="2" />
+        </label>
+
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Text color
+          </el-text>
+
+          <input v-model="textOverlayColor" type="color" />
+        </label>
+
+        <label class="field">
+          <el-text type="span" :size="12" color="normal70">
+            Text / brand gap
+          </el-text>
+
+          <input v-model.number="textOverlayGap" type="range" min="0" max="80" step="2" />
+        </label>
+
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.brand.telegramPostId') }}
@@ -2476,7 +2850,9 @@ onBeforeUnmount(() => {
         </label>
 
         <label class="field">
-          <span>Safe area</span>
+          <el-text type="span" :size="12" color="normal70">
+            Safe area
+          </el-text>
 
           <select :value="overlaySafeAreaPreset" @change="handleOverlaySafeAreaChange">
             <option v-for="option in overlaySafeAreaOptions" :key="option.value" :value="option.value">
@@ -2741,19 +3117,19 @@ onBeforeUnmount(() => {
     <el-grid type="section" class="collage-workspace" :rows="['auto', 'minmax(0, 1fr)']" :gap="8" :p="0">
       <el-flex class="collage-preview-head" rules="rbc" :gap="16" :p="[14, 16]" :radius="18" :br="1" bc="normal10"
         bg="normal5">
-        <el-flex rules="rsc" :gap="12">
+        <el-flex rules="ccs" :gap="0">
           <el-text :size="14" weight="700" localize>
             {{ previewInfo.width }}×{{ previewInfo.height }}
           </el-text>
-
-          {{
-            activeMode === 'video'
-              ? `Video Slider · ${videoWidth}×${videoHeight} · ${videoDurationLabel} · ${videoFps}fps ·
-          ${normalizedVideoRepeat}×${videoLoop ? ' · loop' : ''}`
-              : $t('pages.collage.preview.grid', { columns: previewInfo.columns, rows: previewInfo.rows })
-          }}
+          <el-text type="span" :size="12" color="normal70">
+            {{
+              activeMode === 'video'
+                ? `Video Slider · ${videoWidth}×${videoHeight} · ${videoDurationLabel} · ${videoFps}fps ·
+            ${normalizedVideoRepeat}×${videoLoop ? ' · loop' : ''}`
+                : $t('pages.collage.preview.grid', { columns: previewInfo.columns, rows: previewInfo.rows })
+            }}
+          </el-text>
         </el-flex>
-
         <el-text v-if="isRendering" :size="12" color="normal55">
           {{ $t('pages.collage.preview.rendering') }}
         </el-text>
