@@ -38,14 +38,40 @@ export interface CollageLayoutResult {
   score: number
 }
 
-interface TreemapRect {
+export type CollageMode = 'image' | 'video'
+
+export type BrandOverlayTheme = 'black' | 'white'
+
+export type VideoQualityPreset = 'compact' | 'balanced' | 'high'
+
+export type VideoQualitySettings = {
+  crf: number
+  preset: string
+  frameQuality: number
+  audioBitrate: string
+}
+
+export type TextOverlayFontOption = {
+  label: string
+  family: string
+  weight: number
+}
+
+export type TextOverlayFontGroup = {
+  label: string
+  options: TextOverlayFontOption[]
+}
+
+export type OverlayInternalAlign = 'left' | 'center' | 'right'
+
+export type TreemapRect = {
   x: number
   y: number
   width: number
   height: number
 }
 
-interface TreemapCandidate {
+export type TreemapCandidate = {
   cells: CollageLayoutResult['cells']
   score: number
 }

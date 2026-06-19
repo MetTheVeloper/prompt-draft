@@ -3,6 +3,6 @@ export default defineNuxtPlugin(() => {
 
   onNuxtReady(() => {
     initTheme()
-    syncThemeWithOS()
+    // syncThemeWithOS()
   })
 })
