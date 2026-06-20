@@ -27,10 +27,10 @@ type SafeAreaInsetRatios = {
 
 const SAFE_AREA_INSET_RATIOS: Record<OverlaySafeAreaPreset, SafeAreaInsetRatios> = {
   none: {
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
+    top: 0.05,
+    right: 0.05,
+    bottom: 0.05,
+    left: 0.05,
   },
 
   // Organic Story:
@@ -39,7 +39,7 @@ const SAFE_AREA_INSET_RATIOS: Record<OverlaySafeAreaPreset, SafeAreaInsetRatios>
   story: {
     top: 0.14,
     right: 0.06,
-    bottom: 0.12,
+    bottom: 0.14,
     left: 0.06,
   },
 
@@ -48,7 +48,7 @@ const SAFE_AREA_INSET_RATIOS: Record<OverlaySafeAreaPreset, SafeAreaInsetRatios>
   reel: {
     top: 0.14,
     right: 0.15,
-    bottom: 0.15,
+    bottom: 0.14,
     left: 0.15,
   },
 }

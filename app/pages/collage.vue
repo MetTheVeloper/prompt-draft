@@ -77,6 +77,8 @@ const {
   videoAudioLabel,
   videoQualityPreset,
   videoQualitySettings,
+  videoMusicVisualizationEnabled,
+  videoMusicVisualizationMaxHeightPercent,
 
   videoImageCount,
   normalizedVideoRepeat,
@@ -155,12 +157,12 @@ const {
           </el-text>
 
           <el-text :size="12" color="normal55" localize>
-            {{ images.length }}
+            {{ images?.length || 0 }}
           </el-text>
         </el-flex>
 
-        <el-grid v-if="images.length" class="collage-images" :gap="10">
-          <el-grid v-for="item in images" :key="item.id" class="collage-image-item"
+        <el-grid v-if="images?.length" class="collage-images" :gap="10">
+          <el-grid v-for="item in images || []" :key="item.id" class="collage-image-item"
             :cols="['52px', 'minmax(0, 1fr)', 'auto']" :gap="10" :p="8" :radius="14" bg="normal5" align-items="center">
             <img :src="item.url" :alt="item.name">
 
@@ -421,6 +423,24 @@ const {
           </button>
         </el-grid>
 
+        <el-flex v-if="videoAudioFile" type="label" class="collage-checkbox-field" rules="rsc" :gap="8">
+          <input v-model="videoMusicVisualizationEnabled" type="checkbox">
+
+          <el-text type="span" :size="12" color="normal70">
+            {{ $t('pages.collage.video.musicVisualizationSoftWave') }}
+          </el-text>
+        </el-flex>
+
+        <label v-if="videoAudioFile && videoMusicVisualizationEnabled" class="collage-field">
+          <el-text type="span" :size="12" color="normal70" localize>
+            {{ $t('pages.collage.video.musicVisualizationHeight', {
+              value: videoMusicVisualizationMaxHeightPercent
+            }) }}
+          </el-text>
+
+          <input v-model.number="videoMusicVisualizationMaxHeightPercent" type="range" min="0" max="50" step="1">
+        </label>
+
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.video.preset') }}
@@ -554,7 +574,7 @@ const {
           color="normal10" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
-          tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10" :disable="!images.length"
+          tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10" :disable="!(images?.length)"
           @click="clearImages" />
       </el-grid>
 
@@ -571,7 +591,7 @@ const {
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10"
-          :disable="!images.length || isRecordingVideo" @click="clearImages" />
+          :disable="!(images?.length) || isRecordingVideo" @click="clearImages" />
       </el-grid>
     </el-grid>
     <!-- main box -->
@@ -647,7 +667,7 @@ const {
           icon="document-copy" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
-          tooltip-position="top" :p="[8]" :size="14" mode="flat" color="red" :disable="!images.length"
+          tooltip-position="top" :p="[8]" :size="14" mode="flat" color="red" :disable="!(images?.length)"
           @click="clearImages" />
       </el-grid>
 
@@ -664,7 +684,7 @@ const {
 
         <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
           tooltip-position="top" :p="[8]" :size="14" mode="flat" color="normal10"
-          :disable="!images.length || isRecordingVideo" @click="clearImages" />
+          :disable="!(images?.length) || isRecordingVideo" @click="clearImages" />
       </el-grid>
     </el-flex>
   </el-grid>

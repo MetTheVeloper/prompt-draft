@@ -17,6 +17,7 @@ Responsibilities:
 * Render the Collage page template.
 * Import and call `useCollagePage`.
 * Expose returned state/actions to the template.
+* Render template-only controls such as audio picker, soft-wave checkbox, and soft-wave height range.
 * Avoid adding business logic directly here.
 
 Current script should mostly look like:
@@ -32,7 +33,7 @@ const {
 </script>
 ```
 
-When adding a new feature, avoid placing the logic directly in this file unless it is only template glue.
+When adding a new feature, avoid placing the logic directly in this file unless it is only template glue. For example, adding the music visualization checkbox or height range belongs here, but audio decoding, wave drawing, and MP4 composition do not.
 
 ---
 
@@ -74,6 +75,7 @@ Responsibilities:
   * cancels video preview renderer
   * clears rotate timer
   * disposes image object URLs
+* Returns video export-only settings from `useCollageVideo`, including soft-wave music visualization state.
 
 Edit this file when:
 
@@ -259,6 +261,14 @@ Responsibilities:
   * `videoAudioLabel`
   * `handleVideoAudioInput`
   * `clearVideoAudio`
+  * `getAudioDurationMs` helper for metadata-based audio duration detection
+  * `getRandomAudioStartOffsetMs` helper for randomizing the audio start point
+* Music visualization export settings:
+
+  * `videoMusicVisualizationEnabled`
+  * `videoMusicVisualizationMaxHeightPercent`
+  * automatically enables soft-wave visualization when an audio file is selected
+  * disables audio-dependent visualization state when audio is cleared
 * Quality:
 
   * `videoQualityPreset`
@@ -273,6 +283,8 @@ Responsibilities:
   * `videoDurationLabel`
 * Builds video sources from collage images.
 * Records canvas as WebM.
+* Calculates random audio start offset before MP4 export when the audio is longer than the video.
+* Passes audio, audio start offset, quality, and music visualization options into `exportCanvasSliderMp4`.
 * Exports MP4 using `exportCanvasSliderMp4`.
 * Applies overlay during MP4 frame rendering.
 * Sends final video blob to web download or native share.
@@ -284,6 +296,9 @@ Edit this file when:
 * Video preset behavior changes.
 * Video quality presets change.
 * Audio handling changes.
+* Random audio start behavior changes.
+* Music visualization UI state changes.
+* Music visualization export options change.
 * MP4 progress mapping changes.
 * WebM recording behavior changes.
 * MP4 export options change.
@@ -294,6 +309,84 @@ Related files:
 * `app/utils/exportCanvasSliderMp4.ts`
 * `app/utils/canvasSliderRenderer.ts`
 * `app/composables/collage/useCollageExport.ts`
+* `app/composables/collage/useCollageOverlay.ts`
+
+---
+
+## MP4 Export, Audio Mixing, and Music Visualization
+
+### `app/utils/exportCanvasSliderMp4.ts`
+
+This utility renders the final MP4 frame-by-frame and handles ffmpeg-based video/audio muxing.
+
+Responsibilities:
+
+* Create the offscreen export canvas.
+* Create and drive `CanvasSliderRenderer` for MP4 frames.
+* Encode rendered frames for ffmpeg.
+* Add optional audio to the exported MP4.
+* Loop audio by default when the audio is shorter than the video.
+* Start audio from a randomized offset when `audioStartOffsetMs` is provided.
+* Apply default audio fade-in and fade-out. Current intended fade duration is `0.3s`.
+* Decode the selected audio with `AudioContext` when music visualization is enabled.
+* Calculate loudness/RMS from the selected audio at the current exported frame time.
+* Smooth loudness so the visualizer motion does not jump harshly between frames.
+* Draw the soft-wave music visualization during MP4 export.
+* Report MP4 export progress.
+* Return the final MP4 `Blob`.
+
+Current music visualization behavior:
+
+* The visualizer is export-only. It is drawn into the MP4 frames and is not shown in the live preview canvas unless preview support is implemented separately.
+* The visualizer uses three white soft-wave layers.
+* Current layer opacity values are intended to be:
+
+  * `1`
+  * `0.5`
+  * `0.25`
+* Current layer amplitude multipliers are intended to be:
+
+  * `1`
+  * `1.2`
+  * `1.5`
+* `musicVisualizationMaxHeightPercent` is a base maximum height percentage relative to canvas height.
+* The default base max height is `5%`.
+* The UI range is intended to allow `0` to `50`.
+* Each layer applies its own amplitude multiplier to that base max height. For example, with a base value of `5%`:
+
+  * layer `1` => max `5%`
+  * layer `1.2` => max `6%`
+  * layer `1.5` => max `7.5%`
+* Wave speed is driven by the layer `speedA`, `speedB`, and `speedC` values.
+* Wave speed can also be multiplied by loudness, so quiet parts move slower and louder parts move faster.
+* The drawing function is edge-aware and supports both:
+
+  * `bottom` wave
+  * `top` wave
+* The current export draws both top and bottom soft waves.
+
+Important MP4 frame layer order:
+
+```txt
+1. Canvas slider frame / main visual content
+2. Soft-wave music visualization, top and bottom
+3. Brand overlay and text overlay
+```
+
+This order keeps brand and text above the wave layers. If the drawing order is changed, the wave may cover the brand/text or the overlay may hide the wave.
+
+Edit this file when:
+
+* MP4 frame rendering behavior changes.
+* ffmpeg input/output arguments change.
+* Audio fade, loop, muxing, or random start behavior changes.
+* Music visualization shape, opacity, height, speed, loudness mapping, or top/bottom placement changes.
+* MP4 encoder options, progress mapping, or output codec settings change.
+
+Related files:
+
+* `app/composables/collage/useCollageVideo.ts`
+* `app/utils/canvasSliderRenderer.ts`
 * `app/composables/collage/useCollageOverlay.ts`
 
 ---
@@ -621,10 +714,18 @@ MP4 export flow:
 ```txt
 export MP4 button
   -> useCollageVideo.exportSliderMp4
+  -> calculate random audioStartOffsetMs if audio is longer than video
   -> exportCanvasSliderMp4
   -> getVideoSources
+  -> create offscreen export canvas
+  -> create CanvasSliderRenderer
+  -> draw slider frame
+  -> decode audio for visualization when enabled
+  -> draw top and bottom soft-wave music visualization when enabled
   -> createCompositeOverlayCanvas
   -> drawOverlayCanvas on exported frames
+  -> encode frames
+  -> mux audio with loop, random start, and 0.3s fade-in/fade-out
   -> web download / native share
 ```
 
@@ -696,6 +797,28 @@ Edit:
 
 ```txt
 app/composables/collage/useCollageVideo.ts
+```
+
+Also edit this file when adding or exposing video export UI state such as audio selection, music visualization enabled state, or visualizer height controls.
+
+---
+
+---
+
+### Change MP4 encoder, audio muxing, random audio start, audio fade, or music visualization drawing
+
+Edit:
+
+```txt
+app/utils/exportCanvasSliderMp4.ts
+```
+
+Optional, if UI state or export options also change:
+
+```txt
+app/composables/collage/useCollageVideo.ts
+app/pages/collage.vue
+app/composables/collage/useCollagePage.ts
 ```
 
 ---
@@ -775,7 +898,39 @@ Examples:
 * MP4 CRF affects export only, not preview.
 * Background color affects image and video preview.
 * Audio file affects MP4 export only, not canvas preview.
+* Soft-wave music visualization affects MP4 export only, not canvas preview.
+* Soft-wave height affects MP4 export only, not canvas preview.
 * Safe area currently affects video overlay behavior.
+
+
+---
+
+## Current Audio and Music Visualization Notes
+
+Audio and soft-wave visualization are currently part of MP4 export, not live preview.
+
+Current intended behavior:
+
+* Selecting an audio file automatically enables `videoMusicVisualizationEnabled`.
+* Clearing the audio file disables audio-dependent visualization state.
+* If the audio is longer than the generated video, `useCollageVideo.ts` chooses a random audio start offset so repeated exports can use different parts of the same music file.
+* If the audio is shorter than the generated video, the MP4 exporter loops the audio input by default.
+* Audio fade-in and fade-out are applied by the MP4 exporter. Current intended fade duration is `0.3s`.
+* The soft-wave visualizer is only rendered during MP4 export.
+* The soft-wave visualizer uses decoded audio loudness to drive wave height and movement.
+* Wave height is controlled by `videoMusicVisualizationMaxHeightPercent`, with a default value of `5`.
+* The height slider is intended to range from `0` to `50`.
+* Layer amplitude multipliers still apply on top of the base height percentage.
+* Wave movement speed can be scaled by loudness, so quieter parts move slower and louder parts move faster.
+* The visualizer is edge-aware and currently draws both top and bottom waves.
+* Brand and text overlays should be drawn after the wave so they remain visually above it.
+
+Related translation keys:
+
+```txt
+pages.collage.video.musicVisualizationSoftWave
+pages.collage.video.musicVisualizationHeight
+```
 
 ---
 
@@ -812,6 +967,8 @@ app/utils/collage/layout.ts
 app/utils/collage/drawing.ts
 app/utils/collage/file.ts
 app/utils/collage/nativeShare.ts
+app/utils/canvasSliderRenderer.ts
+app/utils/exportCanvasSliderMp4.ts
 
 app/constants/collage.ts
 app/types/collage.ts

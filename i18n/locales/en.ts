@@ -142,6 +142,8 @@ export default {
         transition: "Transition: {value}ms",
         edgeBlur: "Edge Blur: {value}",
         randomOrder: "Random order",
+        musicVisualizationSoftWave: 'Enable soft wave music visualization',
+        musicVisualizationHeight: 'Soft wave height: {value}%',
         randomOrderDisabled:
           "Random order is disabled for loop/repeat so the sequence can stay seamless.",
       },

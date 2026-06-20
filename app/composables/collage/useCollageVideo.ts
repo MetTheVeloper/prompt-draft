@@ -66,6 +66,8 @@ export function useCollageVideo(options: UseCollageVideoOptions) {
 
   const videoAudioFile = ref<File | null>(null)
   const videoQualityPreset = ref<VideoQualityPreset>('balanced')
+  const videoMusicVisualizationEnabled = ref(false)
+  const videoMusicVisualizationMaxHeightPercent = ref(5)
 
   const videoAudioLabel = computed(() => {
     return videoAudioFile.value?.name || 'No audio selected'
@@ -154,10 +156,80 @@ export function useCollageVideo(options: UseCollageVideoOptions) {
     const file = input?.files?.[0]
 
     videoAudioFile.value = file || null
+    videoMusicVisualizationEnabled.value = Boolean(file)
   }
 
   function clearVideoAudio() {
     videoAudioFile.value = null
+    videoMusicVisualizationEnabled.value = false
+  }
+
+  function getAudioDurationMs(file: File): Promise<number> {
+    return new Promise((resolve) => {
+      const audio = document.createElement('audio')
+      const url = URL.createObjectURL(file)
+
+      let done = false
+      let timer: ReturnType<typeof window.setTimeout> | null = null
+
+      const cleanup = () => {
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+        audio.removeEventListener('error', handleError)
+
+        if (timer) {
+          window.clearTimeout(timer)
+        }
+
+        audio.src = ''
+        URL.revokeObjectURL(url)
+      }
+
+      const finish = (durationMs: number) => {
+        if (done) return
+
+        done = true
+        cleanup()
+        resolve(durationMs)
+      }
+
+      function handleLoadedMetadata() {
+        const durationSeconds = audio.duration
+
+        if (!Number.isFinite(durationSeconds) || durationSeconds <= 0) {
+          finish(0)
+          return
+        }
+
+        finish(durationSeconds * 1000)
+      }
+
+      function handleError() {
+        finish(0)
+      }
+
+      timer = window.setTimeout(() => {
+        finish(0)
+      }, 5000)
+
+      audio.preload = 'metadata'
+      audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+      audio.addEventListener('error', handleError)
+      audio.src = url
+    })
+  }
+
+  async function getRandomAudioStartOffsetMs(
+    file: File | null,
+    durationMs: number
+  ) {
+    if (!file || durationMs <= 0) return 0
+
+    const audioDurationMs = await getAudioDurationMs(file)
+    const maxOffsetMs = Math.max(0, audioDurationMs - durationMs)
+
+    if (!maxOffsetMs) return 0
+
+    return Math.round(Math.random() * maxOffsetMs)
   }
 
   function applyVideoPreset(value: string) {
@@ -315,6 +387,11 @@ export function useCollageVideo(options: UseCollageVideoOptions) {
 
       const quality = videoQualitySettings.value
 
+      const audioStartOffsetMs = await getRandomAudioStartOffsetMs(
+        videoAudioFile.value,
+        videoDurationMs.value
+      )
+
       const blob = await exportCanvasSliderMp4({
         sources: getVideoSources(),
         width: videoWidth.value,
@@ -334,6 +411,11 @@ export function useCollageVideo(options: UseCollageVideoOptions) {
 
         audioFile: videoAudioFile.value,
         audioBitrate: quality.audioBitrate,
+        audioStartOffsetMs,
+        musicVisualizationEnabled: Boolean(
+          videoAudioFile.value && videoMusicVisualizationEnabled.value
+        ),
+        musicVisualizationMaxHeightPercent: videoMusicVisualizationMaxHeightPercent.value,
 
         onAfterDrawFrame: ({ canvas, ctx }) => {
           if (!overlayCanvas) return
@@ -405,6 +487,8 @@ export function useCollageVideo(options: UseCollageVideoOptions) {
     videoAudioLabel,
     videoQualityPreset,
     videoQualitySettings,
+    videoMusicVisualizationEnabled,
+    videoMusicVisualizationMaxHeightPercent,
 
     videoImageCount,
     normalizedVideoRepeat,

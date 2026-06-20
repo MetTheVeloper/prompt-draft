@@ -311,5 +311,19 @@ export function useCollagePage() {
     ...exportApi,
     ...videoApi,
     ...rendererApi,
+
+    // Keep image API explicit after spreads so nothing can accidentally override it.
+    fileInputRef: imagesApi.fileInputRef,
+    images: imagesApi.images,
+    isDragging: imagesApi.isDragging,
+
+    openFilePicker: imagesApi.openFilePicker,
+    handleFileInput: imagesApi.handleFileInput,
+    addFiles: imagesApi.addFiles,
+    removeImage: imagesApi.removeImage,
+    clearImages: imagesApi.clearImages,
+    handleDrop: imagesApi.handleDrop,
+    handleDragOver: imagesApi.handleDragOver,
+    handleDragLeave: imagesApi.handleDragLeave,
   }
 }

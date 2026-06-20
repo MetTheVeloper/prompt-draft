@@ -142,6 +142,8 @@ export default {
         transition: "ترنزیشن: {value}ms",
         edgeBlur: "محوشدگی لبه: {value}",
         randomOrder: "ترتیب تصادفی",
+        musicVisualizationSoftWave: 'فعال‌سازی موج نرم موزیک',
+        musicVisualizationHeight: 'ارتفاع موج نرم: {value}٪',
         randomOrderDisabled: "ترتیب تصادفی برای لوپ/تکرار غیرفعال است تا توالی یکپارچه بماند.",
       },
       zoom: {
