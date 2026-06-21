@@ -1,3 +1,4 @@
+// app/utils/optimizeNaturalPrompt.ts
 export type NaturalOptimizeOptions = {
   mode?: string
   transformationStrength?: string

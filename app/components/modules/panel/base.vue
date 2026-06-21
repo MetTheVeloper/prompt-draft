@@ -422,6 +422,7 @@ function fieldClasses(field: ModuleField) {
       fieldWidth === "full" ||
       field.type === "textarea" ||
       field.type === "multiSelect" ||
+      field.type === "textGroups" ||
       isCategorizedSelect(field),
     "module-panel__field--half": fieldWidth !== "full",
     "module-panel__field--checkbox": field.type === "checkbox",
@@ -885,22 +886,15 @@ async function copyOutput() {
 </script>
 
 <template>
-  <el-grid type="section"
-    :p="mobile ? 12 : mini ? 16 : 20"
-    :br="2"
-    :bc="!isPanelExpanded ? 'normal10' : 'blue50'"
-    :radius="mobile ? 16 : mini ? 24 : 32"
-    bg="surface"
-    :class="['w100']">
+  <el-grid type="section" :p="mobile ? 12 : mini ? 16 : 20" :br="2" :bc="!isPanelExpanded ? 'normal10' : 'blue50'"
+    :radius="mobile ? 16 : mini ? 24 : 32" bg="surface" :class="['w100']">
     <!-- module head -->
     <el-flex rules="csc" class="w100">
       <el-flex rules="ccs" class="w100">
         <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100">
           <!-- key module label and fill state -->
           <el-flex rules="rcc" :gap="16">
-            <el-text type="span"
-              marker="blue5"
-              color="blue" :size="12" :weight="700">
+            <el-text type="span" marker="blue5" color="blue" :size="12" :weight="700">
               {{ t("panel.keyModule") }}
             </el-text>
 
@@ -914,31 +908,20 @@ async function copyOutput() {
           </el-flex>
           <!-- actions -->
           <el-flex rules="rcc" :class="mini ? 'w100' : ''">
-            <el-switch v-if="hasOverrideField"
-              :class="mini ? 'fg100' : ''"
-              :value="isCustomMode"
-              @click="isCustomMode = !isCustomMode"
-              :label="t('panel.customMode')" />
+            <el-switch v-if="hasOverrideField" :class="mini ? 'fg100' : ''" :value="isCustomMode"
+              @click="isCustomMode = !isCustomMode" :label="t('panel.customMode')" />
             <el-button type="fab" :size="14" @click="clearModule" :disable="!hasAnyValue" mode="flat" :p="8"
               :label="isCustomMode ? t('panel.clearCustom') : t('panel.clear')" icon="trash" />
             <el-button type="fab" :size="14" @click="copyOutput" :disable="!output" :mode="isCopied ? 'flat' : 'normal'"
               color="prim" :p="8" :label="isCopied ? t('panel.copied') : t('panel.copy')"
               :icon="isCopied ? 'tick' : 'document-copy'" />
-            <el-button type="fab" :size="14" @click="togglePanel"
-              mode="flat"
-              color="prim"
-              :p="8"
+            <el-button type="fab" :size="14" @click="togglePanel" mode="flat" color="prim" :p="8"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
               :icon="!isPanelExpanded ? 'arrow-down-1' : 'arrow-up'" />
           </el-flex>
         </el-flex>
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
-          <el-text type="h2"
-            :size="24"
-            :weight="800"
-            class="lh1"
-            effect="glitch"
-            :icon="module.icon">
+          <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
             {{ moduleTitle.toUpperCase() }}
           </el-text>
           <el-text type="p" :size="14" :weight="200" icon="info-circle" color="normal60" icon-color="normal50"
@@ -1196,6 +1179,9 @@ async function copyOutput() {
               </button>
             </div>
 
+            <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]" :field="field"
+              :module-key="module.key" />
+
             <input v-else-if="field.type === 'number'" v-model.number="values[field.id]" type="number"
               :min="field.ui?.min" :max="field.ui?.max" :step="field.ui?.step"
               :placeholder="fieldPlaceholder(field.id)" />
@@ -1235,17 +1221,9 @@ async function copyOutput() {
               {{ moduleTitle }}
             </el-text>
           </el-flex>
-          <el-button
-            :label="isCopied ? t('panel.copied') : t('panel.copy')"
-            :icon="isCopied ? 'tick' : 'document-copy'"
-            color="prim"
-            :mode="isCopied ? 'flat' : 'normal'"
-            @click="copyOutput"
-            :disable="!output"
-            :size="12"
-            :gap="8"
-            :type="mini ? 'fab' : 'normal'"
-            :p="mini ? [8] : [8, 12]" />
+          <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'tick' : 'document-copy'"
+            color="prim" :mode="isCopied ? 'flat' : 'normal'" @click="copyOutput" :disable="!output" :size="12" :gap="8"
+            :type="mini ? 'fab' : 'normal'" :p="mini ? [8] : [8, 12]" />
         </el-flex>
         <el-divider />
         <el-text :size="14" :weight="300" color="normal85" v-if="output">

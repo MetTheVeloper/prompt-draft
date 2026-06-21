@@ -1,3 +1,4 @@
+// app/modules/registry.ts
 import type { PromptKeyModule } from './types'
 import { StyleModule } from './style.module'
 import { TextureModule } from './texture.module'
@@ -12,6 +13,7 @@ import { OutfitModule } from './outfit.module'
 import { EffectsModule } from './effects.module'
 import { CameraModule } from './camera.module'
 import { ColorPaletteModule } from './colorPalette.module'
+import { TypographyModule } from './typography.module'
 
 export const promptModules = [
   StyleModule,
@@ -25,6 +27,7 @@ export const promptModules = [
   LightingModule,
   CameraModule,
   ColorPaletteModule,
+  TypographyModule,
   EffectsModule,
   TextureModule,
 ] satisfies PromptKeyModule[]

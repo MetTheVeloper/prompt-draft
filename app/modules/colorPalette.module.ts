@@ -1,3 +1,4 @@
+// app/modules/colorPalette.module.ts
 import type { PromptKeyModule, ModuleField } from "./types";
 
 const colorPaletteAssignmentsOptions = [

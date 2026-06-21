@@ -1,3 +1,4 @@
+// app/modules/types.ts
 export type ModuleFieldWidth = "half" | "full";
 
 export type ModuleFieldOptionLayout = "default" | "categorized";
@@ -29,10 +30,65 @@ export type ModuleFieldOption = {
   compatibility?: ModuleOptionCompatibility;
 };
 
+export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
+
+export type TypographyTextDirection = "row" | "column";
+
+export type TypographyWritingDirection =
+  | "ltr"
+  | "rtl"
+  | "vertical_ttb"
+  | "vertical_btt";
+
+export type TypographyAlignment =
+  | "start"
+  | "center"
+  | "end"
+  | "justify";
+
+export type TypographyDistribution =
+  | "compact"
+  | "balanced"
+  | "spaced"
+  | "scattered";
+
+export type TypographyTextBlock = {
+  id?: string;
+  layerName: string;
+  text: string;
+  purpose?: string;
+  customPurpose?: string;
+  fontStyle?: string;
+  customFontStyle?: string;
+  fontSize?: string;
+  customFontSize?: string;
+  fontWeight?: string;
+  customFontWeight?: string;
+  additionalDescription?: string;
+};
+
+export type TypographyTextGroup = {
+  id?: string;
+  groupName: string;
+  groupPurpose?: string;
+  customGroupPurpose?: string;
+  positionPreset?: string;
+  customPositionDescription?: string;
+  direction?: TypographyTextDirection;
+  writingDirection?: TypographyWritingDirection;
+  alignment?: TypographyAlignment;
+  distribution?: TypographyDistribution;
+  texts: TypographyTextBlock[];
+  additionalDescription?: string;
+};
+
+export type ModuleFieldConfig = Record<string, unknown>;
+
 export type ModuleFieldType =
   | 'text'
   | 'textarea'
   | 'colorAssignments'
+  | 'textGroups'
   | 'select'
   | 'multiSelect'
   | 'checkbox'
@@ -45,6 +101,8 @@ export type ModuleFieldValue =
   | number
   | boolean
   | string[]
+  | TypographyTextGroup[]
+  | Record<string, unknown>[]
   | null
   | undefined
 
@@ -68,7 +126,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: 'input' | 'textarea' | 'select' | 'multiSelect' | 'segmented' | 'checkbox' | 'slider' | 'color' | 'colorAssignments'
+  component?: 'input' | 'textarea' | 'select' | 'multiSelect' | 'segmented' | 'checkbox' | 'slider' | 'color' | 'colorAssignments' | 'textGroups'
   placeholder?: string
   rows?: number
   width?: 'full' | 'half' | 'third'
@@ -93,6 +151,7 @@ export interface ModuleField {
   isOverride?: boolean
   promptText?: string
   ui?: ModuleFieldUiConfig
+  config?: ModuleFieldConfig
 }
 
 export interface ModuleGroup {
