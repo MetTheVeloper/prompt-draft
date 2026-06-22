@@ -84,11 +84,29 @@ export type TypographyTextGroup = {
 
 export type ModuleFieldConfig = Record<string, unknown>;
 
+export type PromptVariableType =
+  | 'text'
+  | 'subject'
+  | 'reference'
+  | 'object'
+  | 'color'
+  | 'custom'
+
+export type PromptVariable = {
+  id: string
+  key: string
+  value: string
+  description?: string
+  type?: PromptVariableType
+  enabled: boolean
+}
+
 export type ModuleFieldType =
   | 'text'
   | 'textarea'
   | 'colorAssignments'
   | 'textGroups'
+  | 'variables'
   | 'select'
   | 'multiSelect'
   | 'checkbox'
@@ -102,6 +120,7 @@ export type ModuleFieldValue =
   | boolean
   | string[]
   | TypographyTextGroup[]
+  | PromptVariable[]
   | Record<string, unknown>[]
   | null
   | undefined
@@ -126,7 +145,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: 'input' | 'textarea' | 'select' | 'multiSelect' | 'segmented' | 'checkbox' | 'slider' | 'color' | 'colorAssignments' | 'textGroups'
+  component?: 'input' | 'textarea' | 'select' | 'multiSelect' | 'segmented' | 'checkbox' | 'slider' | 'color' | 'colorAssignments' | 'textGroups' | 'variables'
   placeholder?: string
   rows?: number
   width?: 'full' | 'half' | 'third'

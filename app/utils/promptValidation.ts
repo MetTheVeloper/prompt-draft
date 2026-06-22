@@ -1,4 +1,5 @@
-import type { PromptSettings } from './compilePrompt'
+import type { ModuleOutputMap, PromptSettings } from './compilePrompt'
+import { VARIABLES_MODULE_KEY, parseVariableDefinitions, extractVariableReferences, isReservedVariableKey } from './promptVariables'
 
 export type PromptValidationIssueLevel = 'error' | 'warning'
 
@@ -8,6 +9,8 @@ export type PromptValidationIssueCode =
   | 'text_to_image_missing_context'
   | 'custom_subject_empty'
   | 'idea_empty'
+  | 'undefined_variable_reference'
+  | 'unused_variable'
 
 export interface PromptValidationIssue {
   id: string
@@ -15,6 +18,8 @@ export interface PromptValidationIssue {
   level: PromptValidationIssueLevel
   moduleKey?: string
   moduleLabel?: string
+  variableKey?: string
+  token?: string
 }
 
 function isEmpty(value: string) {
@@ -22,7 +27,8 @@ function isEmpty(value: string) {
 }
 
 export function validatePromptSettings(
-  settings: PromptSettings
+  settings: PromptSettings,
+  outputs?: ModuleOutputMap
 ): PromptValidationIssue[] {
   const issues: PromptValidationIssue[] = []
 
@@ -63,6 +69,57 @@ export function validatePromptSettings(
       level: 'warning'
     })
   }
+
+  if (outputs) {
+    issues.push(...validateVariableReferencesFromOutputs(outputs))
+  }
+
+  return issues
+}
+
+function validateVariableReferencesFromOutputs(
+  outputs: ModuleOutputMap
+): PromptValidationIssue[] {
+  const variablesOutput = outputs[VARIABLES_MODULE_KEY]?.trim() || ''
+  const definedKeys = new Set(
+    parseVariableDefinitions(variablesOutput).map((variable) => variable.key)
+  )
+
+  const textsToScan = Object.entries(outputs)
+    .filter(([key]) => key !== VARIABLES_MODULE_KEY)
+    .map(([, output]) => output)
+
+  const references = new Set(
+    textsToScan.flatMap((text) => extractVariableReferences(text))
+  )
+
+  const issues: PromptValidationIssue[] = []
+
+  references.forEach((key) => {
+    if (isReservedVariableKey(key)) return
+
+    if (!definedKeys.has(key)) {
+      issues.push({
+        id: `variables:reference:${key}:undefined`,
+        code: 'undefined_variable_reference',
+        level: 'warning',
+        variableKey: key,
+        token: `{${key}}`
+      })
+    }
+  })
+
+  definedKeys.forEach((key) => {
+    if (!references.has(key)) {
+      issues.push({
+        id: `variables:reference:${key}:unused`,
+        code: 'unused_variable',
+        level: 'warning',
+        variableKey: key,
+        token: `{${key}}`
+      })
+    }
+  })
 
   return issues
 }

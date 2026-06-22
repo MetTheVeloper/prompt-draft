@@ -7,6 +7,8 @@ import type {
   ModuleValues,
   ModuleFieldOption,
   PromptKeyModule,
+  PromptVariable,
+  PromptVariableType,
 } from "../../../modules/types";
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
 import {
@@ -14,6 +16,13 @@ import {
   createDefaultModuleValues,
   getModulePresetValues,
 } from "../../../utils/compileModules";
+import {
+  createUniqueVariableKey,
+  formatVariableToken,
+  isReservedVariableKey,
+  isValidVariableKey,
+  normalizeVariableKey,
+} from "../../../utils/promptVariables";
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
 
@@ -423,6 +432,7 @@ function fieldClasses(field: ModuleField) {
       field.type === "textarea" ||
       field.type === "multiSelect" ||
       field.type === "textGroups" ||
+      field.type === "variables" ||
       isCategorizedSelect(field),
     "module-panel__field--half": fieldWidth !== "full",
     "module-panel__field--checkbox": field.type === "checkbox",
@@ -606,6 +616,235 @@ function getVisibleCategorizedOptions(field: ModuleField) {
   return getFieldOptions(field).filter((option) => {
     return option.category === activeCategory;
   });
+}
+
+
+type PromptVariablePatch = Partial<PromptVariable>;
+
+function createVariableId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+
+  return `variable_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function getVariableTypeOptions(field: ModuleField) {
+  const configuredOptions = field.config?.typeOptions;
+
+  if (Array.isArray(configuredOptions) && configuredOptions.length) {
+    return configuredOptions as ModuleFieldOption[];
+  }
+
+  return [
+    { value: "text" },
+    { value: "subject" },
+    { value: "reference" },
+    { value: "object" },
+    { value: "color" },
+    { value: "custom" },
+  ];
+}
+
+function getPromptVariables(fieldId: string): PromptVariable[] {
+  const value = values[fieldId];
+
+  if (Array.isArray(value)) {
+    return value as PromptVariable[];
+  }
+
+  values[fieldId] = [];
+
+  return values[fieldId] as PromptVariable[];
+}
+
+function setPromptVariables(fieldId: string, variables: PromptVariable[]) {
+  values[fieldId] = variables;
+}
+
+function getExistingVariableKeys(fieldId: string, exceptIndex?: number) {
+  return getPromptVariables(fieldId)
+    .filter((_, index) => index !== exceptIndex)
+    .map((variable) => normalizeVariableKey(variable.key));
+}
+
+function createPromptVariable(fieldId: string, baseKey = "variable"): PromptVariable {
+  const key = createUniqueVariableKey(baseKey, getExistingVariableKeys(fieldId));
+
+  return {
+    id: createVariableId(),
+    key,
+    value: "",
+    description: "",
+    type: "text",
+    enabled: true,
+  };
+}
+
+function addPromptVariable(fieldId: string) {
+  const variables = [...getPromptVariables(fieldId), createPromptVariable(fieldId)];
+  setPromptVariables(fieldId, variables);
+}
+
+function duplicatePromptVariable(fieldId: string, variableIndex: number) {
+  const variables = getPromptVariables(fieldId);
+  const source = variables[variableIndex];
+
+  if (!source) return;
+
+  const key = createUniqueVariableKey(source.key || "variable", getExistingVariableKeys(fieldId));
+  const duplicated: PromptVariable = {
+    ...source,
+    id: createVariableId(),
+    key,
+  };
+
+  setPromptVariables(fieldId, [...variables, duplicated]);
+}
+
+function removePromptVariable(fieldId: string, variableIndex: number) {
+  const variables = getPromptVariables(fieldId).filter(
+    (_, index) => index !== variableIndex
+  );
+
+  setPromptVariables(fieldId, variables);
+}
+
+function updatePromptVariable(
+  fieldId: string,
+  variableIndex: number,
+  patch: PromptVariablePatch
+) {
+  const variables = [...getPromptVariables(fieldId)];
+  const current = variables[variableIndex];
+
+  if (!current) return;
+
+  variables[variableIndex] = {
+    ...current,
+    ...patch,
+  };
+
+  setPromptVariables(fieldId, variables);
+}
+
+function handleVariableKeyInput(
+  fieldId: string,
+  variableIndex: number,
+  event: Event
+) {
+  const target = event.target as HTMLInputElement;
+  updatePromptVariable(fieldId, variableIndex, {
+    key: target.value,
+  });
+}
+
+function normalizePromptVariableKey(fieldId: string, variableIndex: number) {
+  const variables = getPromptVariables(fieldId);
+  const current = variables[variableIndex];
+
+  if (!current) return;
+
+  const normalizedKey = normalizeVariableKey(current.key);
+
+  if (isReservedVariableKey(normalizedKey)) {
+    updatePromptVariable(fieldId, variableIndex, {
+      key: normalizedKey,
+    });
+    return;
+  }
+
+  const key = createUniqueVariableKey(
+    normalizedKey,
+    getExistingVariableKeys(fieldId, variableIndex)
+  );
+
+  updatePromptVariable(fieldId, variableIndex, {
+    key,
+  });
+}
+
+function handleVariableValueInput(
+  fieldId: string,
+  variableIndex: number,
+  event: Event
+) {
+  const target = event.target as HTMLTextAreaElement;
+  updatePromptVariable(fieldId, variableIndex, {
+    value: target.value,
+  });
+}
+
+function handleVariableDescriptionInput(
+  fieldId: string,
+  variableIndex: number,
+  event: Event
+) {
+  const target = event.target as HTMLInputElement;
+  updatePromptVariable(fieldId, variableIndex, {
+    description: target.value,
+  });
+}
+
+function handleVariableTypeChange(
+  fieldId: string,
+  variableIndex: number,
+  event: Event
+) {
+  const target = event.target as HTMLSelectElement;
+  updatePromptVariable(fieldId, variableIndex, {
+    type: target.value as PromptVariableType,
+  });
+}
+
+function handleVariableEnabledChange(
+  fieldId: string,
+  variableIndex: number,
+  event: Event
+) {
+  const target = event.target as HTMLInputElement;
+  updatePromptVariable(fieldId, variableIndex, {
+    enabled: target.checked,
+  });
+}
+
+function getVariableNormalizedKey(variable: PromptVariable) {
+  return normalizeVariableKey(variable.key);
+}
+
+function getVariableToken(variable: PromptVariable) {
+  return formatVariableToken(getVariableNormalizedKey(variable));
+}
+
+function getVariableKeyIssue(fieldId: string, variable: PromptVariable, variableIndex: number) {
+  const key = getVariableNormalizedKey(variable);
+
+  if (!isValidVariableKey(key)) {
+    return "Invalid variable key.";
+  }
+
+  if (isReservedVariableKey(key)) {
+    return "This key is reserved for internal typography tokens.";
+  }
+
+  const duplicate = getPromptVariables(fieldId).some((item, index) => {
+    if (index === variableIndex) return false;
+
+    return normalizeVariableKey(item.key) === key;
+  });
+
+  if (duplicate) {
+    return "Duplicate variable key.";
+  }
+
+  return "";
+}
+
+function variableTypeLabel(field: ModuleField, optionValue: string) {
+  return translate(
+    `${moduleI18nBase.value}.fields.${field.id}.types.${optionValue}`,
+    optionValue
+  );
 }
 
 type ColorAssignmentMode = "preset" | "custom";
@@ -1102,6 +1341,78 @@ async function copyOutput() {
             <input v-else-if="field.type === 'color'" v-model="values[field.id]" type="color"
               :placeholder="fieldPlaceholder(field.id)" class="module-field__color-picker" />
 
+            <div v-else-if="field.type === 'variables'" class="module-field__variables">
+              <div v-for="(variable, variableIndex) in getPromptVariables(field.id)" :key="variable.id || variableIndex"
+                class="module-field__variable-card">
+                <el-flex rules="rbc" :gap="8" class="w100">
+                  <el-flex rules="rsc" :gap="8">
+                    <input type="checkbox" :checked="variable.enabled !== false"
+                      @change="handleVariableEnabledChange(field.id, variableIndex, $event)" />
+
+                    <el-text :size="12" :weight="700" marker="blue10" color="blue">
+                      {{ getVariableToken(variable) }}
+                    </el-text>
+                  </el-flex>
+
+                  <el-flex rules="rcc" :gap="6">
+                    <button type="button" class="module-field__small-button"
+                      @click="duplicatePromptVariable(field.id, variableIndex)">
+                      Duplicate
+                    </button>
+
+                    <button type="button" class="module-field__small-button module-field__small-button--danger"
+                      @click="removePromptVariable(field.id, variableIndex)">
+                      Remove
+                    </button>
+                  </el-flex>
+                </el-flex>
+
+                <el-grid :cols="mobile ? 1 : 2" :gap="8">
+                  <div class="module-field__variable-control">
+                    <el-text :size="10" color="normal45">Key</el-text>
+                    <input type="text" :value="variable.key" placeholder="Music title"
+                      @input="handleVariableKeyInput(field.id, variableIndex, $event)"
+                      @blur="normalizePromptVariableKey(field.id, variableIndex)" />
+                  </div>
+
+                  <div class="module-field__variable-control">
+                    <el-text :size="10" color="normal45">Type</el-text>
+                    <select :value="variable.type || 'text'"
+                      @change="handleVariableTypeChange(field.id, variableIndex, $event)">
+                      <option v-for="option in getVariableTypeOptions(field)" :key="option.value" :value="option.value">
+                        {{ variableTypeLabel(field, option.value) }}
+                      </option>
+                    </select>
+                  </div>
+                </el-grid>
+
+                <div class="module-field__variable-control">
+                  <el-text :size="10" color="normal45">Value</el-text>
+                  <textarea :value="variable.value" rows="2" placeholder="person in the first attached photo"
+                    @input="handleVariableValueInput(field.id, variableIndex, $event)" />
+                </div>
+
+                <div class="module-field__variable-control">
+                  <el-text :size="10" color="normal45">Description</el-text>
+                  <input type="text" :value="variable.description || ''" placeholder="Optional internal note"
+                    @input="handleVariableDescriptionInput(field.id, variableIndex, $event)" />
+                </div>
+
+                <el-text :size="10" color="orange" icon="danger" icon-color="orange"
+                  v-if="getVariableKeyIssue(field.id, variable, variableIndex)">
+                  {{ getVariableKeyIssue(field.id, variable, variableIndex) }}
+                </el-text>
+
+                <el-text :size="10" color="normal45" icon="code" v-else>
+                  Output token: {{ getVariableToken(variable) }}
+                </el-text>
+              </div>
+
+              <button type="button" class="module-field__add-button" @click="addPromptVariable(field.id)">
+                Add variable
+              </button>
+            </div>
+
             <div v-else-if="field.type === 'colorAssignments'" class="module-field__color-assignments">
               <div v-for="(assignment, assignmentIndex) in getColorAssignments(field.id)"
                 :key="`${field.id}-${assignmentIndex}`" class="module-field__color-assignment">
@@ -1258,6 +1569,30 @@ async function copyOutput() {
 
 .module-panel__field--full textarea {
   width: 100%;
+}
+
+.module-field__variables {
+  display: grid;
+  gap: 12px;
+}
+
+.module-field__variable-card {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--normalText10);
+  border-radius: 10px;
+  background: var(--normalText5);
+}
+
+.module-field__variable-control {
+  display: grid;
+  gap: 4px;
+}
+
+.module-field__variable-card textarea {
+  width: 100%;
+  resize: vertical;
 }
 
 .module-field__color-assignments {

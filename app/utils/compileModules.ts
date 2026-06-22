@@ -8,6 +8,7 @@ import type {
   TypographyTextBlock,
   TypographyTextGroup,
 } from "../modules/types";
+import { formatPromptVariableDefinitions } from "./promptVariables";
 
 function isEmptyValue(value: ModuleFieldValue) {
   if (value === null || value === undefined) return true;
@@ -336,6 +337,11 @@ function typographyVisibleTextGuardPromptText() {
   ].join("; ");
 }
 
+
+function compileVariablesModule(values: ModuleValues): string {
+  return formatPromptVariableDefinitions(values.variables);
+}
+
 function compileTypographyModule(
   module: PromptKeyModule,
   values: ModuleValues,
@@ -527,6 +533,10 @@ export function compileModule(
   module: PromptKeyModule,
   values: ModuleValues,
 ): string {
+  if (module.key === "variables") {
+    return compileVariablesModule(values);
+  }
+
   if (module.key === "typography") {
     return compileTypographyModule(module, values);
   }

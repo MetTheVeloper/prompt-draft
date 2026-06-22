@@ -14,8 +14,10 @@ import { EffectsModule } from './effects.module'
 import { CameraModule } from './camera.module'
 import { ColorPaletteModule } from './colorPalette.module'
 import { TypographyModule } from './typography.module'
+import { VariablesModule } from './variables.module'
 
 export const promptModules = [
+  VariablesModule,
   StyleModule,
   DeformationModule,
   FramingModule,

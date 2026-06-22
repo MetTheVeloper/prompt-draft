@@ -1,6 +1,7 @@
 // app/utils/compilePrompt.ts
 import type { PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
+import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 
 export type ModuleOutputMap = Record<string, string>
 
@@ -78,6 +79,8 @@ function getOrderedModuleOutputs(
 ) {
   return modules
     .map((module) => {
+      if (module.key === VARIABLES_MODULE_KEY) return null
+
       const output = outputs[module.key]?.trim()
 
       if (!output) return null
@@ -330,11 +333,23 @@ function getModuleNaturalParts(
   })
 }
 
+function getVariablesOutput(outputs: ModuleOutputMap) {
+  return outputs[VARIABLES_MODULE_KEY]?.trim() || ''
+}
+
 function compileModularOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: string }>
+  moduleOutputs: Array<{ key: string; output: string }>,
+  variablesOutput = ''
 ) {
-  const parts = [`{mode} = ${modeToPromptText(settings.mode)}`]
+  const parts: string[] = []
+
+  if (variablesOutput) {
+    parts.push(variablesOutput)
+    parts.push('')
+  }
+
+  parts.push(`{mode} = ${modeToPromptText(settings.mode)}`)
 
   const subject = buildPromptSubject(settings)
 
@@ -456,14 +471,19 @@ function compileNaturalOutput(
 
 function compileJsonOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: string }>
+  moduleOutputs: Array<{ key: string; output: string }>,
+  variablesOutput = ''
 ) {
   const modules = moduleOutputs.reduce<Record<string, string>>((result, item) => {
     result[item.key] = item.output
     return result
   }, {})
 
+  const variables = variableDefinitionsToRecord(variablesOutput)
+  const hasVariables = Object.keys(variables).length > 0
+
   const baseOutput = {
+    ...(hasVariables ? { variables } : {}),
     mode: settings.mode,
     idea: settings.idea.trim(),
     subject: buildPromptSubject(settings),
@@ -561,6 +581,7 @@ export function compilePromptOutput(
   format: PromptOutputFormat = 'modular'
 ) {
   const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
+  const variablesOutput = getVariablesOutput(outputs)
 
   const hasSettingsOutput =
     settings.idea.trim() ||
@@ -568,12 +589,12 @@ export function compilePromptOutput(
     settings.aspectRatio.trim() ||
     settings.globalRules.trim()
 
-  if (!moduleOutputs.length && !hasSettingsOutput) {
+  if (!moduleOutputs.length && !hasSettingsOutput && !variablesOutput) {
     return ''
   }
 
   if (format === 'json') {
-    return compileJsonOutput(settings, moduleOutputs)
+    return compileJsonOutput(settings, moduleOutputs, variablesOutput)
   }
 
   if (format === 'natural') {
@@ -591,8 +612,8 @@ export function compilePromptOutput(
       optimizedOutput
     })
 
-    return optimizedOutput
+    return variablesOutput ? `${variablesOutput}\n\n${optimizedOutput}` : optimizedOutput
   }
 
-  return compileModularOutput(settings, moduleOutputs)
+  return compileModularOutput(settings, moduleOutputs, variablesOutput)
 }
