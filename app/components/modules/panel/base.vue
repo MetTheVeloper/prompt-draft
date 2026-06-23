@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
-import { computed, nextTick, reactive, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
+
 import type {
   ModuleField,
   ModulePreset,
@@ -10,12 +11,15 @@ import type {
   PromptVariable,
   PromptVariableType,
 } from "../../../modules/types";
+
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
+
 import {
   compileModule,
   createDefaultModuleValues,
   getModulePresetValues,
 } from "../../../utils/compileModules";
+
 import {
   createUniqueVariableKey,
   formatVariableToken,
@@ -23,8 +27,20 @@ import {
   isValidVariableKey,
   normalizeVariableKey,
 } from "../../../utils/promptVariables";
+
+import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
+
+const promptEditor = usePromptEditor();
+
+const {
+  setPromptVariables: setGlobalPromptVariables,
+  clearPromptVariables,
+} = usePromptVariables();
+
 
 const props = defineProps<{
   module: PromptKeyModule;
@@ -61,6 +77,52 @@ const values = reactive<ModuleValues>({});
 const isSyncingValues = ref(false);
 const isSyncingPanelState = ref(false);
 
+watch(
+  values,
+  () => {
+    if (props.module.key !== "variables") return;
+
+    const variableList = values.variables;
+
+    setGlobalPromptVariables(
+      Array.isArray(variableList) ? variableList as PromptVariable[] : []
+    );
+  },
+  {
+    deep: true,
+    immediate: true,
+  }
+);
+
+// 
+type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
+
+function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
+  if (!target) return false;
+
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+}
+
+function promptEditorId(fieldId: string, suffix = "") {
+  return `${props.module.key}:${fieldId}${suffix ? `:${suffix}` : ""}`;
+}
+
+function handleEditorFocus(event: Event, fieldId: string, suffix = "") {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.registerEditor(promptEditorId(fieldId, suffix), event.target);
+}
+
+function handleEditorBlur(fieldId: string, suffix = "") {
+  promptEditor.blurEditor(promptEditorId(fieldId, suffix));
+}
+
+function handleEditorCursor(event: Event) {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.updateCursor(event.target);
+}
+// 
 function cloneModuleValues(source?: ModuleValues): ModuleValues {
   if (!source) return {};
 
@@ -346,6 +408,7 @@ watch(
     immediate: true,
   }
 );
+
 
 function translate(path: string, fallback = "") {
   const translated = t(path);
@@ -1122,6 +1185,12 @@ async function copyOutput() {
   }
 }
 
+onBeforeUnmount(() => {
+  if (props.module.key === "variables") {
+    clearPromptVariables();
+  }
+});
+
 </script>
 
 <template>
@@ -1229,10 +1298,15 @@ async function copyOutput() {
         </el-flex>
 
         <textarea v-if="overrideField.type === 'textarea'" v-model="values[overrideField.id]"
-          :rows="overrideField.ui?.rows || 4" :placeholder="fieldPlaceholder(overrideField.id)" />
+          :rows="overrideField.ui?.rows || 4" :placeholder="fieldPlaceholder(overrideField.id)"
+          @focus="handleEditorFocus($event, overrideField.id, 'override')"
+          @blur="handleEditorBlur(overrideField.id, 'override')" @input="handleEditorCursor" @click="handleEditorCursor"
+          @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
 
-        <input v-else v-model="values[overrideField.id]" type="text"
-          :placeholder="fieldPlaceholder(overrideField.id)" />
+        <input v-else v-model="values[overrideField.id]" type="text" :placeholder="fieldPlaceholder(overrideField.id)"
+          @focus="handleEditorFocus($event, overrideField.id, 'override')"
+          @blur="handleEditorBlur(overrideField.id, 'override')" @input="handleEditorCursor" @click="handleEditorCursor"
+          @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
 
         <el-text v-if="!customOverrideValue" :size="12" icon="danger" icon-color="orange" :weight="300" color="orange">
           {{ t("panel.customOverrideEmpty") }}
@@ -1298,6 +1372,7 @@ async function copyOutput() {
                 </option>
               </select>
             </div>
+
             <div v-else-if="isCategorizedMultiSelect(field)" class="module-panel__categorized-multiselects">
               <select :value="getActiveOptionCategory(field)" @change="handleOptionCategoryChange(field, $event)">
                 <option value="">{{ t("panel.none") }}</option>
@@ -1334,7 +1409,9 @@ async function copyOutput() {
             </select>
 
             <textarea v-else-if="field.type === 'textarea'" v-model="values[field.id]" :rows="field.ui?.rows || 3"
-              :placeholder="fieldPlaceholder(field.id)" />
+              :placeholder="fieldPlaceholder(field.id)" @focus="handleEditorFocus($event, field.id)"
+              @blur="handleEditorBlur(field.id)" @input="handleEditorCursor" @click="handleEditorCursor"
+              @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
 
             <input v-else-if="field.type === 'checkbox'" v-model="values[field.id]" type="checkbox" />
 
@@ -1490,8 +1567,8 @@ async function copyOutput() {
               </button>
             </div>
 
-            <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]" :field="field"
-              :module-key="module.key" />
+            <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]"
+              :field="field" :module-key="module.key" />
 
             <input v-else-if="field.type === 'number'" v-model.number="values[field.id]" type="number"
               :min="field.ui?.min" :max="field.ui?.max" :step="field.ui?.step"
@@ -1500,7 +1577,10 @@ async function copyOutput() {
             <input v-else-if="field.type === 'range'" v-model.number="values[field.id]" type="range"
               :min="field.ui?.min" :max="field.ui?.max" :step="field.ui?.step" />
 
-            <input v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)" />
+            <input v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)"
+              @focus="handleEditorFocus($event, field.id)" @blur="handleEditorBlur(field.id)"
+              @input="handleEditorCursor" @click="handleEditorCursor" @keyup="handleEditorCursor"
+              @select="handleEditorCursor" @touchend="handleEditorCursor" />
 
             <el-text :size="10" icon="info-circle" v-if="field.type === 'multiSelect'">
               {{ t("panel.multiSelectHint") }}
@@ -1517,7 +1597,7 @@ async function copyOutput() {
         <el-text :size="14" :weight="400">{{ t("panel.emptyModuleTitle") }}</el-text>
         <el-text :size="12" :weight="300">{{
           t("panel.emptyModuleDescription")
-        }}</el-text>
+          }}</el-text>
       </el-flex>
 
       <el-grid rules="csc" :gap="16" :br="1" :p="16" :radius="[16]" :bc="!output ? 'orange25' : 'normal15'"
