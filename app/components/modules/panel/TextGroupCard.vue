@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
+
 import type {
   ModuleField,
   ModuleFieldOption,
@@ -18,6 +20,36 @@ const emit = defineEmits<{
   (event: "remove"): void;
   (event: "addTextBlock"): void;
 }>();
+
+const promptEditor = usePromptEditor();
+
+type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
+
+function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
+  if (!target) return false;
+
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+}
+
+function editorId(fieldKey: string) {
+  return `${props.moduleKey || "typography"}:${props.field.id}:group_${props.groupIndex}:${fieldKey}`;
+}
+
+function handleEditorFocus(event: Event, fieldKey: string) {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.registerEditor(editorId(fieldKey), event.target);
+}
+
+function handleEditorBlur(fieldKey: string) {
+  promptEditor.blurEditor(editorId(fieldKey));
+}
+
+function handleEditorCursor(event: Event) {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.updateCursor(event.target);
+}
 
 function humanizeValue(value: string) {
   return value
@@ -111,8 +143,11 @@ function removeTextBlock(blockIndex: number) {
         <span>Custom group purpose</span>
 
         <input type="text" :value="modelValue.customGroupPurpose || ''"
-          placeholder="Describe this text group purpose..."
-          @input="updateGroupField('customGroupPurpose', getEventValue($event))" />
+          placeholder="Describe this text group purpose..." @focus="handleEditorFocus($event, 'customGroupPurpose')"
+          @blur="handleEditorBlur('customGroupPurpose')"
+          @input="updateGroupField('customGroupPurpose', getEventValue($event)); handleEditorCursor($event)"
+          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+          @touchend="handleEditorCursor" />
       </label>
 
       <label class="text-group-card__field">
@@ -133,7 +168,11 @@ function removeTextBlock(blockIndex: number) {
 
         <textarea :value="modelValue.customPositionDescription || ''" rows="2"
           placeholder="Describe the exact placement of this text group..."
-          @input="updateGroupField('customPositionDescription', getEventValue($event))" />
+          @focus="handleEditorFocus($event, 'customPositionDescription')"
+          @blur="handleEditorBlur('customPositionDescription')"
+          @input="updateGroupField('customPositionDescription', getEventValue($event)); handleEditorCursor($event)"
+          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+          @touchend="handleEditorCursor" />
       </label>
 
       <div class="text-group-card__grid">
@@ -190,7 +229,10 @@ function removeTextBlock(blockIndex: number) {
 
         <textarea :value="modelValue.additionalDescription || ''" rows="2"
           placeholder="Optional note for this whole group..."
-          @input="updateGroupField('additionalDescription', getEventValue($event))" />
+          @focus="handleEditorFocus($event, 'additionalDescription')" @blur="handleEditorBlur('additionalDescription')"
+          @input="updateGroupField('additionalDescription', getEventValue($event)); handleEditorCursor($event)"
+          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+          @touchend="handleEditorCursor" />
       </label>
     </el-grid>
 

@@ -2,6 +2,10 @@
 import type { PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
+import {
+  getAspectRatioPromptHint,
+  getDefaultAspectRatioValue,
+} from "../constants/aspectRatios";
 
 export type ModuleOutputMap = Record<string, string>
 
@@ -53,7 +57,7 @@ export function createDefaultPromptSettings(): PromptSettings {
     mode: 'image_to_image',
     idea: '',
     subject: '',
-    aspectRatio: '4:5',
+    aspectRatio: getDefaultAspectRatioValue(),
     globalRules: '',
     imageToImage: {
       referenceSubjectType: 'person',
@@ -385,8 +389,10 @@ function compileModularOutput(
     )
   }
 
-  if (settings.aspectRatio.trim()) {
-    parts.push(`{aspect} = ${cleanText(settings.aspectRatio)}`)
+  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+
+  if (aspectRatioPromptHint.trim()) {
+    parts.push(`{aspect} = ${cleanText(aspectRatioPromptHint)}`)
   }
 
   if (settings.globalRules.trim()) {
@@ -406,7 +412,7 @@ function compileNaturalOutput(
 ) {
   const idea = normalizeTransformationIdea(settings.idea)
   const subject = buildNaturalSubject(settings)
-  const aspectRatio = cleanNaturalPart(settings.aspectRatio)
+  const aspectRatio = cleanNaturalPart(getAspectRatioPromptHint(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
   const moduleParts = getModuleNaturalParts(moduleOutputs)
   const sentences: string[] = []
@@ -459,7 +465,7 @@ function compileNaturalOutput(
   }
 
   if (aspectRatio) {
-    sentences.push(`Use a ${aspectRatio} aspect ratio.`)
+    sentences.push(`Use ${aspectRatio}.`)
   }
 
   if (globalRules) {
@@ -487,7 +493,8 @@ function compileJsonOutput(
     mode: settings.mode,
     idea: settings.idea.trim(),
     subject: buildPromptSubject(settings),
-    aspectRatio: settings.aspectRatio.trim(),
+    aspectRatio: getAspectRatioPromptHint(settings.aspectRatio).trim(),
+    aspectRatioValue: settings.aspectRatio.trim(),
     globalRules: settings.globalRules.trim(),
     modules
   }

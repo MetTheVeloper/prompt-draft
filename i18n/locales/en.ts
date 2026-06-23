@@ -142,8 +142,8 @@ export default {
         transition: "Transition: {value}ms",
         edgeBlur: "Edge Blur: {value}",
         randomOrder: "Random order",
-        musicVisualizationSoftWave: 'Enable soft wave music visualization',
-        musicVisualizationHeight: 'Soft wave height: {value}%',
+        musicVisualizationSoftWave: "Enable soft wave music visualization",
+        musicVisualizationHeight: "Soft wave height: {value}%",
         randomOrderDisabled:
           "Random order is disabled for loop/repeat so the sequence can stay seamless.",
       },
@@ -226,6 +226,12 @@ export default {
             digital_illustration: "Digital Illustration",
             photo_real: "Photo Real",
             painterly: "Painterly",
+            cgi: "CGI",
+            digital_painting: "Digital Painting",
+            game_asset_render: "Game Asset Render",
+            low_poly_render: "Low Poly Render",
+            pixel_art_digital: "Pixel Art Digital",
+            vector_illustration: "Vector Illustration",
           },
         },
         stylizationLevel: {
@@ -1780,6 +1786,57 @@ export default {
         },
       },
     },
+    typography: {
+      description:
+        "Create structured typography instructions with reusable text groups, layout, hierarchy, and styling details.",
+      fields: {
+        textGroups: {
+          description:
+            "Define typography groups, text content, placement, hierarchy, and visual styling.",
+          label: "Text Groups",
+        },
+      },
+      groups: {
+        advanced: {
+          description:
+            "Fine-tune typography details such as spacing, material, readability, depth, and layout behavior.",
+          title: "Advanced Typography",
+        },
+        core: {
+          description:
+            "Define the main typography structure, text groups, content, hierarchy, and placement.",
+          title: "Core Typography",
+        },
+      },
+      title: "Typography",
+    },
+    variables: {
+      description:
+        "Create reusable prompt variables that can be inserted into prompt fields and reused across modules.",
+      fields: {
+        variables: {
+          description:
+            "Define named variables for text, subjects, colors, references, objects, or custom prompt values.",
+          label: "Variables",
+          types: {
+            color: "Color",
+            custom: "Custom",
+            object: "Object",
+            reference: "Reference",
+            subject: "Subject",
+            text: "Text",
+          },
+        },
+      },
+      groups: {
+        core: {
+          description:
+            "Manage the main list of reusable variables available inside the prompt editor.",
+          title: "Core Variables",
+        },
+      },
+      title: "Variables",
+    },
   },
   panel: {
     keyModule: "Key Module",
@@ -1884,6 +1941,336 @@ export default {
     aspectRatio: {
       label: "Aspect Ratio",
       description: "Choose the final image aspect ratio.",
+      groups: {
+        common: {
+          label: "Common Ratios",
+        },
+        printCards: {
+          label: "Print Cards",
+        },
+        printIso: {
+          label: "ISO Paper Sizes",
+        },
+        printPosters: {
+          label: "Print Posters",
+        },
+        social: {
+          label: "Social Media",
+        },
+        socialBanners: {
+          label: "Social Banners",
+        },
+        webUiAds: {
+          label: "Web, UI & Ads",
+        },
+      },
+      options: {
+        a0Landscape: {
+          label: "A0 Landscape",
+          description:
+            "Large horizontal ISO print format, suitable for oversized posters, banners, exhibition graphics, and wide display layouts.",
+        },
+        a0Portrait: {
+          label: "A0 Portrait",
+          description:
+            "Large vertical ISO print format, suitable for oversized posters, signage, exhibition graphics, and premium print layouts.",
+        },
+        a1Landscape: {
+          label: "A1 Landscape",
+          description:
+            "Wide A1 print format, useful for posters, presentation boards, event graphics, and large horizontal layouts.",
+        },
+        a1Portrait: {
+          label: "A1 Portrait",
+          description:
+            "Vertical A1 print format, suitable for posters, announcement boards, event designs, and large promotional prints.",
+        },
+        a2Landscape: {
+          label: "A2 Landscape",
+          description:
+            "Horizontal A2 print format, useful for medium-large posters, boards, menus, and promotional layouts.",
+        },
+        a2Portrait: {
+          label: "A2 Portrait",
+          description:
+            "Vertical A2 print format, suitable for posters, art prints, event notices, and medium-large promotional designs.",
+        },
+        a3Landscape: {
+          label: "A3 Landscape",
+          description:
+            "Horizontal A3 format, useful for posters, presentation sheets, menus, and compact display graphics.",
+        },
+        a3Portrait: {
+          label: "A3 Portrait",
+          description:
+            "Vertical A3 format, suitable for posters, flyers, presentation sheets, and compact print layouts.",
+        },
+        a4Landscape: {
+          label: "A4 Landscape",
+          description:
+            "Standard horizontal document format, useful for reports, sheets, presentations, and print-ready layouts.",
+        },
+        a4Portrait: {
+          label: "A4 Portrait",
+          description:
+            "Standard vertical document format, suitable for documents, flyers, worksheets, and everyday print designs.",
+        },
+        a5Landscape: {
+          label: "A5 Landscape",
+          description:
+            "Compact horizontal print format, useful for small cards, leaflets, invitations, and folded print designs.",
+        },
+        a5Portrait: {
+          label: "A5 Portrait",
+          description:
+            "Compact vertical print format, suitable for flyers, small posters, booklet covers, and handheld print designs.",
+        },
+        a6Landscape: {
+          label: "A6 Landscape",
+          description:
+            "Small horizontal print format, useful for postcards, compact flyers, coupons, and small promotional cards.",
+        },
+        a6Portrait: {
+          description:
+            "Small vertical print format, suitable for compact cards, flyers, and handheld designs.",
+          label: "A6 Portrait",
+        },
+        albumCover: {
+          label: "Album Cover",
+          description:
+            "Square cover format, suitable for music albums, playlist artwork, podcast covers, and visual identity graphics.",
+        },
+        appSplashLandscape: {
+          label: "App Splash Screen Landscape",
+          description:
+            "Horizontal app splash screen format, useful for landscape mobile or tablet startup screens.",
+        },
+        appSplashPortrait: {
+          label: "App Splash Screen Portrait",
+          description:
+            "Vertical app splash screen format, suitable for mobile startup screens, onboarding visuals, and app launch graphics.",
+        },
+        bookCover: {
+          label: "Book Cover",
+          description:
+            "Vertical book cover format, suitable for novels, guides, ebooks, and editorial cover designs.",
+        },
+        businessCardHorizontal: {
+          description:
+            "Standard horizontal business card format, suitable for print-ready identity designs.",
+          label: "Business Card Horizontal",
+        },
+        businessCardVertical: {
+          label: "Business Card Vertical",
+          description:
+            "Vertical business card format, suitable for modern identity cards, personal branding, and compact contact layouts.",
+        },
+        commonCinematicWide: {
+          label: "Cinematic Wide",
+          description:
+            "Extra-wide cinematic ratio, useful for dramatic scenes, film frames, trailers, and panoramic compositions.",
+        },
+        commonLandscapeFiveFour: {
+          label: "Landscape 5:4",
+          description:
+            "Balanced 5:4 landscape ratio, suitable for editorial layouts, framed prints, and controlled horizontal compositions.",
+        },
+        commonLandscapeFourThree: {
+          description:
+            "Classic 4:3 landscape ratio, useful for presentations, editorial layouts, and general image compositions.",
+          label: "Landscape 4:3",
+        },
+        commonPhotoLandscape: {
+          label: "Photo Landscape",
+          description:
+            "Classic landscape photo ratio, useful for photography, product shots, travel scenes, and horizontal image layouts.",
+        },
+        commonPhotoPortrait: {
+          label: "Photo Portrait",
+          description:
+            "Classic portrait photo ratio, suitable for portraits, fashion shots, product images, and vertical compositions.",
+        },
+        commonPortraitFourFive: {
+          label: "Portrait 4:5",
+          description:
+            "Popular vertical 4:5 ratio, useful for social posts, portraits, product showcases, and feed-friendly layouts.",
+        },
+        commonPortraitThreeFour: {
+          label: "Portrait 3:4",
+          description:
+            "Classic vertical 3:4 ratio, suitable for portraits, posters, cards, and balanced vertical designs.",
+        },
+        commonSquare: {
+          label: "Square 1:1",
+          description:
+            "Simple square ratio, suitable for icons, covers, product shots, social posts, and balanced centered compositions.",
+        },
+        commonVertical: {
+          label: "Vertical 9:16",
+          description:
+            "Tall vertical ratio, suitable for stories, reels, mobile-first posters, and full-screen social media layouts.",
+        },
+        commonWidescreen: {
+          label: "Widescreen 16:9",
+          description:
+            "Standard widescreen ratio, useful for videos, thumbnails, presentations, banners, and horizontal compositions.",
+        },
+        facebookPageCover: {
+          label: "Facebook Page Cover",
+          description:
+            "Wide Facebook page cover format, suitable for brand headers, campaign visuals, and social profile banners.",
+        },
+        greetingCardSquare: {
+          label: "Greeting Card Square",
+          description:
+            "Square greeting card format, useful for celebration cards, invitations, gift notes, and social greetings.",
+        },
+        instagramLandscapePost: {
+          label: "Instagram Landscape Post",
+          description:
+            "Horizontal Instagram post format, suitable for wide product shots, photography, announcements, and feed content.",
+        },
+        instagramPhotoPost: {
+          label: "Instagram Photo Post",
+          description:
+            "Standard Instagram photo format, useful for clean photo posts, lifestyle images, and visual feed content.",
+        },
+        instagramPortraitPost: {
+          label: "Instagram Portrait Post",
+          description:
+            "Vertical Instagram feed format, suitable for product showcases, portraits, posters, and high-impact posts.",
+        },
+        instagramSquarePost: {
+          description:
+            "Classic square Instagram post format, suitable for feed posts, product shots, and clean social layouts.",
+          label: "Instagram Square Post",
+        },
+        instagramStoryReel: {
+          label: "Instagram Story / Reel",
+          description:
+            "Full-screen vertical Instagram format, suitable for stories, reels, short videos, and mobile-first posters.",
+        },
+        invitationLandscape: {
+          label: "Invitation Landscape",
+          description:
+            "Horizontal invitation format, useful for event cards, wedding invitations, announcements, and elegant print layouts.",
+        },
+        invitationPortrait: {
+          label: "Invitation Portrait",
+          description:
+            "Vertical invitation format, suitable for event cards, wedding invitations, announcements, and formal layouts.",
+        },
+        leaderboardAd: {
+          label: "Leaderboard Ad",
+          description:
+            "Wide horizontal ad format, suitable for website headers, display ads, campaign banners, and promotional placements.",
+        },
+        linkedinCover: {
+          label: "LinkedIn Cover",
+          description:
+            "Wide LinkedIn cover format, useful for professional profiles, company pages, personal branding, and career visuals.",
+        },
+        magazineCover: {
+          label: "Magazine Cover",
+          description:
+            "Vertical magazine cover format, suitable for editorial design, fashion covers, feature stories, and publication layouts.",
+        },
+        mediumRectangleAd: {
+          label: "Medium Rectangle Ad",
+          description:
+            "Standard medium rectangle ad format, useful for web advertising, sidebar placements, and campaign creatives.",
+        },
+        moviePoster: {
+          label: "Movie Poster",
+          description:
+            "Vertical movie poster format, suitable for cinematic posters, key art, event promos, and dramatic compositions.",
+        },
+        postcardHorizontal: {
+          label: "Postcard Horizontal",
+          description:
+            "Horizontal postcard format, useful for travel cards, promotional mailers, greetings, and compact print designs.",
+        },
+        postcardVertical: {
+          label: "Postcard Vertical",
+          description:
+            "Vertical postcard format, suitable for promotional cards, greetings, travel visuals, and compact print layouts.",
+        },
+        posterLandscapeFiveFour: {
+          label: "Poster Landscape 5:4",
+          description:
+            "Landscape poster ratio with a balanced frame, suitable for art prints, announcements, and horizontal poster designs.",
+        },
+        posterLandscapeFourThree: {
+          label: "Poster Landscape 4:3",
+          description:
+            "Classic landscape poster ratio, useful for event posters, presentation visuals, and wide promotional layouts.",
+        },
+        posterLandscapeThreeTwo: {
+          label: "Poster Landscape 3:2",
+          description:
+            "Wide landscape poster ratio, suitable for cinematic posters, photography prints, and horizontal campaign graphics.",
+        },
+        posterPortraitFourFive: {
+          label: "Poster Portrait 4:5",
+          description:
+            "Vertical poster ratio, useful for social posters, product showcases, portraits, and clean promotional layouts.",
+        },
+        posterPortraitThreeFour: {
+          label: "Poster Portrait 3:4",
+          description:
+            "Balanced vertical poster ratio, suitable for event posters, editorial graphics, and print-ready compositions.",
+        },
+        posterPortraitTwoThree: {
+          description:
+            "Classic vertical poster ratio, suitable for movie posters, event posters, and printed promotional designs.",
+          label: "Poster Portrait 2:3",
+        },
+        squareAd: {
+          label: "Square Ad",
+          description:
+            "Square advertising format, useful for social ads, product promotions, campaign visuals, and compact ad placements.",
+        },
+        squareBusinessCard: {
+          label: "Square Business Card",
+          description:
+            "Square business card format, suitable for creative identity cards, modern branding, and compact contact designs.",
+        },
+        tiktokShortsReels: {
+          label: "TikTok / Shorts / Reels",
+          description:
+            "Full-screen vertical short-video format, suitable for TikTok, YouTube Shorts, Reels, and mobile-first content.",
+        },
+        webBannerWide: {
+          label: "Wide Web Banner",
+          description:
+            "Wide web banner format, useful for website headers, landing sections, campaign banners, and digital promotions.",
+        },
+        websiteHeroUltraWide: {
+          label: "Website Hero Ultra Wide",
+          description:
+            "Ultra-wide website hero format, suitable for immersive landing pages, large headers, and cinematic web visuals.",
+        },
+        websiteHeroWide: {
+          description:
+            "Wide website hero format, useful for landing pages, headers, and large web banners.",
+          label: "Website Hero Wide",
+        },
+        xTwitterHeader: {
+          label: "X / Twitter Header",
+          description:
+            "Wide X / Twitter header format, useful for profile branding, campaign headers, and social banner designs.",
+        },
+        youtubeChannelBanner: {
+          label: "YouTube Channel Banner",
+          description:
+            "Wide YouTube channel banner format, suitable for channel branding, creator identity, and header artwork.",
+        },
+        youtubeThumbnail: {
+          description:
+            "Standard YouTube thumbnail format, suitable for video previews and clickable cover images.",
+          label: "YouTube Thumbnail",
+        },
+      },
     },
     globalRules: {
       label: "Global Rules",

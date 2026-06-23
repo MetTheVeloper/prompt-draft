@@ -2,7 +2,12 @@ body {
   padding: 0;
   margin: 0;
 }
-
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+  background: #0f0f14;
+}
 * {
   box-sizing: border-box;
   user-select: none;

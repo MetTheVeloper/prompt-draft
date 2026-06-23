@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { computed } from "vue";
 import type { PromptKeyModule } from "../../modules/types";
 import type {
@@ -12,8 +13,46 @@ import type {
 import { buildPromptSubject } from "../../utils/compilePrompt";
 import PromptModuleSelector from "./module-selector.vue";
 
+import {
+  ASPECT_RATIO_GROUPS,
+  findAspectRatioGroupByOption,
+  findAspectRatioOption,
+  getDefaultAspectRatioValue,
+  type AspectRatioCategoryId,
+} from "../../constants/aspectRatios";
+
 const { t } = useI18n();
 const { mini } = useScreen();
+
+const promptEditor = usePromptEditor();
+
+type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
+
+function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
+  if (!target) return false;
+
+  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
+}
+
+function editorId(fieldKey: string) {
+  return `setup:${fieldKey}`;
+}
+
+function handleEditorFocus(event: Event, fieldKey: string) {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.registerEditor(editorId(fieldKey), event.target);
+}
+
+function handleEditorBlur(fieldKey: string) {
+  promptEditor.blurEditor(editorId(fieldKey));
+}
+
+function handleEditorCursor(event: Event) {
+  if (!isPromptEditableTarget(event.target)) return;
+
+  promptEditor.updateCursor(event.target);
+}
 
 const props = defineProps<{
   modules: PromptKeyModule[];
@@ -28,8 +67,6 @@ const emit = defineEmits<{
 
 const promptModes: PromptMode[] = ["text_to_image", "image_to_image"];
 
-const aspectRatioOptions = ["1:1", "4:5", "5:4", "3:4", "4:3", "9:16", "16:9", "21:9"];
-
 const referenceSubjectTypes: ReferenceSubjectType[] = [
   "person",
   "object",
@@ -42,6 +79,39 @@ const referenceSubjectTypes: ReferenceSubjectType[] = [
 ];
 
 const referenceUsageOptions: ReferenceUsage[] = ["strict", "balanced", "loose"];
+
+const activeAspectRatioGroup = computed(() => {
+  return (
+    findAspectRatioGroupByOption(props.settings.aspectRatio) ||
+    ASPECT_RATIO_GROUPS[0]
+  );
+});
+
+const activeAspectRatioCategory = computed(() => {
+  return activeAspectRatioGroup.value?.id || "common";
+});
+
+const activeAspectRatioOptions = computed(() => {
+  return activeAspectRatioGroup.value?.options || [];
+});
+
+const activeAspectRatioOption = computed(() => {
+  return findAspectRatioOption(props.settings.aspectRatio);
+});
+
+function updateAspectRatioCategory(categoryId: AspectRatioCategoryId) {
+  const group = ASPECT_RATIO_GROUPS.find((item) => item.id === categoryId);
+
+  updateSettings({
+    aspectRatio: group?.options[0]?.value || getDefaultAspectRatioValue(),
+  });
+}
+
+function updateAspectRatioValue(value: string) {
+  updateSettings({
+    aspectRatio: value || getDefaultAspectRatioValue(),
+  });
+}
 
 const transformationStrengthOptions: TransformationStrength[] = [
   "subtle",
@@ -247,7 +317,10 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-flex>
 
             <textarea :value="settings.idea" rows="4" :placeholder="t('promptSetup.idea.placeholder')"
-              @input="updateSettings({ idea: getInputValue($event) })" />
+              @focus="handleEditorFocus($event, 'idea')" @blur="handleEditorBlur('idea')"
+              @input="updateSettings({ idea: getInputValue($event) }); handleEditorCursor($event)"
+              @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+              @touchend="handleEditorCursor" />
           </el-text>
 
           <el-text type="label" v-if="settings.mode === 'text_to_image'">
@@ -262,7 +335,10 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-flex>
 
             <input :value="settings.subject" type="text" :placeholder="t('promptSetup.subject.placeholder')"
-              @input="updateSettings({ subject: getInputValue($event) })" />
+              @focus="handleEditorFocus($event, 'subject')" @blur="handleEditorBlur('subject')"
+              @input="updateSettings({ subject: getInputValue($event) }); handleEditorCursor($event)"
+              @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+              @touchend="handleEditorCursor" />
           </el-text>
         </el-grid>
       </el-grid>
@@ -315,11 +391,14 @@ function updatePreserveValue(key: string, value: boolean) {
           </el-flex>
 
           <input :value="settings.imageToImage.customSubject" type="text"
-            :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')" @input="
+            :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')"
+            @focus="handleEditorFocus($event, 'customSubject')" @blur="handleEditorBlur('customSubject')" @input="
               updateImageToImageSettings({
                 customSubject: getInputValue($event),
-              })
-              " />
+              });
+            handleEditorCursor($event)
+              " @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+            @touchend="handleEditorCursor" />
         </label>
 
         <label>
@@ -334,11 +413,15 @@ function updatePreserveValue(key: string, value: boolean) {
           </el-flex>
 
           <textarea :value="settings.imageToImage.subjectDescription" rows="3"
-            :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')" @input="
+            :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')"
+            @focus="handleEditorFocus($event, 'subjectDescription')" @blur="handleEditorBlur('subjectDescription')"
+            @input="
               updateImageToImageSettings({
                 subjectDescription: getInputValue($event),
-              })
-              " />
+              });
+            handleEditorCursor($event)
+              " @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+            @touchend="handleEditorCursor" />
         </label>
 
         <!-- Generated Subject -->
@@ -451,11 +534,30 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <select :value="settings.aspectRatio" @change="updateSettings({ aspectRatio: getInputValue($event) })">
-            <option v-for="ratio in aspectRatioOptions" :key="ratio" :value="ratio">
-              {{ ratio }}
-            </option>
-          </select>
+          <el-grid :gap="8">
+            <select :value="activeAspectRatioCategory"
+              @change="updateAspectRatioCategory(getInputValue($event) as AspectRatioCategoryId)">
+              <option v-for="group in ASPECT_RATIO_GROUPS" :key="group.id" :value="group.id">
+                {{ t(group.labelKey) }}
+              </option>
+            </select>
+
+            <select :value="settings.aspectRatio" @change="updateAspectRatioValue(getInputValue($event))">
+              <option v-for="option in activeAspectRatioOptions" :key="option.value" :value="option.value">
+                {{ t(option.labelKey) }} — {{ option.ratio }}
+              </option>
+            </select>
+
+            <el-grid v-if="activeAspectRatioOption" :gap="4" :p="[10]" :radius="12" bg="normal5">
+              <el-text :size="11" :weight="700" color="normal70">
+                {{ activeAspectRatioOption.ratio }}
+              </el-text>
+
+              <el-text :size="11" :weight="300" color="normal55">
+                {{ t(activeAspectRatioOption.descriptionKey) }}
+              </el-text>
+            </el-grid>
+          </el-grid>
         </label>
 
         <label>
@@ -470,7 +572,10 @@ function updatePreserveValue(key: string, value: boolean) {
           </el-flex>
 
           <textarea :value="settings.globalRules" rows="4" :placeholder="t('promptSetup.globalRules.placeholder')"
-            @input="updateSettings({ globalRules: getInputValue($event) })" />
+            @focus="handleEditorFocus($event, 'globalRules')" @blur="handleEditorBlur('globalRules')"
+            @input="updateSettings({ globalRules: getInputValue($event) }); handleEditorCursor($event)"
+            @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
+            @touchend="handleEditorCursor" />
         </label>
       </el-grid>
 
