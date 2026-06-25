@@ -12,11 +12,7 @@ onMounted(() => {
   <NuxtLoadingIndicator />
 
   <Transition name="appBootLoader">
-    <div
-      v-if="!isAppMounted"
-      class="appBootLoader"
-      aria-label="Loading application"
-    >
+    <div v-if="!isAppMounted" class="appBootLoader" aria-label="Loading application">
       <div class="appBootLoader__content">
         <div class="appBootLoader__logo">
           PROMPT DRAFT
@@ -31,8 +27,8 @@ onMounted(() => {
     <NuxtPage />
   </NuxtLayout>
 
-  <el-modal />
   <el-variable-fab />
+  <el-modal />
 </template>
 
 <style scoped>

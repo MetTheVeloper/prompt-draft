@@ -5,6 +5,9 @@ import VariablePickerModal from '~/components/modals/VariablePickerModal.vue'
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
+const { t } = useI18n();
+const { mobile } = useScreen();
+
 const modal = useModal()
 const { hasActiveEditor } = usePromptEditor()
 const { enabledPromptVariables } = usePromptVariables()
@@ -19,24 +22,14 @@ function openVariablePicker() {
   modal.open({
     header: {
       icon: 'code',
-      title: 'Insert variable',
-      subtitle: 'Choose a variable to insert at the cursor position',
+      title: t('components.modal.title.insertVariable'),
+      subtitle: t('components.modal.title.insertVariableSubtitle'),
       color: 'blue',
     },
     component: VariablePickerModal,
     props: {
       variables: enabledPromptVariables.value,
     },
-    actions: [
-      {
-        label: 'modal.actions.close',
-        color: 'normal',
-        mode: 'flat',
-        icon: 'close-circle',
-        size: 14,
-        close: true,
-      },
-    ],
     options: {
       width: 560,
       closeOnBackdrop: true,
@@ -51,12 +44,12 @@ function openVariablePicker() {
   <Teleport to="body">
     <el-button
       v-if="showFab"
-      label="Insert variable"
+      :label="t('components.modal.insertVariable')"
       icon="code"
-      type="fab"
+      :type="mobile ? 'fab' : 'normal'"
       color="prim"
       tooltip-position="left"
-      :size="16"
+      :size="14"
       class="variable-fab"
       @click="openVariablePicker" />
   </Teleport>

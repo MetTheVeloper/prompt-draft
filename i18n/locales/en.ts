@@ -1771,6 +1771,24 @@ export default {
           description:
             "Assign palettes or custom colors to specific parts of the image such as background, outfit, lighting, etc.",
           placeholder: "Select palette assignments",
+          actions: {
+            addAssignment: "Add Assignment",
+            remove: "Remove",
+          },
+          modes: {
+            custom: "Custom",
+            preset: "Preset",
+          },
+          ruleTitle: "Palette Rule",
+          usages: {
+            accents: "Accents",
+            background: "Background",
+            hair: "Hair",
+            lighting: "Lighting",
+            outfit: "Outfit",
+            overall: "Overall",
+            subject: "Subject",
+          },
         },
         extraDetails: {
           label: "Extra Details",
@@ -1794,6 +1812,82 @@ export default {
           description:
             "Define typography groups, text content, placement, hierarchy, and visual styling.",
           label: "Text Groups",
+          actions: {
+            addGroup: "Add Group",
+          },
+          block: {
+            actions: {
+              remove: "Remove Text",
+            },
+            controls: {
+              additionalDescription: {
+                label: "Additional Description",
+                placeholder: "Add extra styling, layout, readability, or visual behavior notes...",
+              },
+              fontSize: {
+                label: "Font Size",
+              },
+              fontStyle: {
+                label: "Font Style",
+              },
+              fontWeight: {
+                label: "Font Weight",
+              },
+              purpose: {
+                label: "Text Purpose",
+              },
+              text: {
+                label: "Text",
+                placeholder: "Write the text content...",
+              },
+              customFontStyle: {
+                label: "Custom Font Style",
+                placeholder:
+                  "Describe a custom font style, lettering mood, or typography behavior...",
+              },
+            },
+            validation: {
+              requiredTextEmpty: "Text content is required.",
+            },
+          },
+          count: "{count} text groups",
+          group: {
+            actions: {
+              addText: "Add Text",
+              remove: "Remove Group",
+            },
+            controls: {
+              additionalDescription: {
+                label: "Additional Description",
+                placeholder:
+                  "Describe spacing, orbit behavior, depth, readability, or custom layout details...",
+              },
+              alignment: {
+                label: "Alignment",
+              },
+              direction: {
+                label: "Direction",
+              },
+              distribution: {
+                label: "Distribution",
+              },
+              groupPurpose: {
+                label: "Group Purpose",
+              },
+              positionPreset: {
+                label: "Position Preset",
+              },
+              writingDirection: {
+                label: "Writing Direction",
+              },
+            },
+            textBlocksTitle: "Text Blocks",
+          },
+          title: "Typography Groups",
+          empty: {
+            description: "Create at least one typography group, then add text blocks inside it.",
+            title: "No typography groups yet",
+          },
         },
       },
       groups: {
@@ -1825,6 +1919,38 @@ export default {
             reference: "Reference",
             subject: "Subject",
             text: "Text",
+          },
+          actions: {
+            add: "Add Variable",
+            duplicate: "Duplicate",
+            remove: "Remove",
+          },
+          controls: {
+            description: {
+              label: "Description",
+            },
+            key: {
+              label: "Key",
+              placeholder: "variable_name",
+            },
+            type: {
+              label: "Type",
+            },
+            value: {
+              label: "Value",
+              placeholder: "Write the variable value...",
+            },
+          },
+          outputToken: "Output Token",
+          picker: {
+            search: {
+              placeholder: "Search variables...",
+            },
+            empty: {
+              description:
+                "Create at least one variable first, then you can insert it into prompt fields.",
+              title: "No variables found",
+            },
           },
         },
       },
@@ -2875,6 +3001,18 @@ export default {
             tip: "Use this when the material and surface behavior need a very specific manual description.",
           },
         },
+      },
+    },
+  },
+  components: {
+    modal: {
+      insertVariable: "Insert variable",
+      actions: {
+        close: "Close",
+      },
+      title: {
+        insertVariable: "Insert Variable",
+        insertVariableSubtitle: "Choose a variable and insert it into the active prompt field.",
       },
     },
   },

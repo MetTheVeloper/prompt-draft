@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 
+const { t } = useI18n();
+
 import type {
   ModuleField,
   ModuleFieldOption,
@@ -121,17 +123,21 @@ function removeTextBlock(blockIndex: number) {
       </el-flex>
 
       <button type="button" class="text-group-card__button text-group-card__button--danger" @click="emit('remove')">
-        Remove group
+        {{ t("modules.typography.fields.textGroups.group.actions.remove") }}
       </button>
     </el-flex>
 
     <el-grid :cols="1" :gap="10">
       <label class="text-group-card__field">
-        <span>Group purpose</span>
+        <span>
+          {{ t("modules.typography.fields.textGroups.group.controls.groupPurpose.label") }}
+        </span>
 
         <select :value="modelValue.groupPurpose || ''"
           @change="updateGroupField('groupPurpose', getEventValue($event))">
-          <option value="">None</option>
+          <option value="">
+            {{ t("panel.none") }}
+          </option>
 
           <option v-for="option in getConfigOptions('groupPurposeOptions')" :key="option.value" :value="option.value">
             {{ humanizeValue(option.value) }}
@@ -143,7 +149,8 @@ function removeTextBlock(blockIndex: number) {
         <span>Custom group purpose</span>
 
         <input type="text" :value="modelValue.customGroupPurpose || ''"
-          placeholder="Describe this text group purpose..." @focus="handleEditorFocus($event, 'customGroupPurpose')"
+          :placeholder="t('modules.typography.fields.textGroups.group.controls.customGroupPurpose.placeholder')"
+          @focus="handleEditorFocus($event, 'customGroupPurpose')"
           @blur="handleEditorBlur('customGroupPurpose')"
           @input="updateGroupField('customGroupPurpose', getEventValue($event)); handleEditorCursor($event)"
           @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
@@ -151,11 +158,15 @@ function removeTextBlock(blockIndex: number) {
       </label>
 
       <label class="text-group-card__field">
-        <span>Position</span>
+        <span>
+          {{ t("modules.typography.fields.textGroups.group.controls.positionPreset.label") }}
+        </span>
 
         <select :value="modelValue.positionPreset || ''"
           @change="updateGroupField('positionPreset', getEventValue($event))">
-          <option value="">None</option>
+          <option value="">
+            {{ t("panel.none") }}
+          </option>
 
           <option v-for="option in getConfigOptions('positionPresetOptions')" :key="option.value" :value="option.value">
             {{ humanizeValue(option.value) }}
@@ -164,10 +175,12 @@ function removeTextBlock(blockIndex: number) {
       </label>
 
       <label v-if="modelValue.positionPreset === 'custom'" class="text-group-card__field">
-        <span>Custom position description</span>
+        <span>
+          {{ t("modules.typography.fields.textGroups.group.controls.customPositionDescription.label") }}
+        </span>
 
         <textarea :value="modelValue.customPositionDescription || ''" rows="2"
-          placeholder="Describe the exact placement of this text group..."
+          :placeholder="t('modules.typography.fields.textGroups.group.controls.customPositionDescription.placeholder')"
           @focus="handleEditorFocus($event, 'customPositionDescription')"
           @blur="handleEditorBlur('customPositionDescription')"
           @input="updateGroupField('customPositionDescription', getEventValue($event)); handleEditorCursor($event)"
@@ -177,7 +190,9 @@ function removeTextBlock(blockIndex: number) {
 
       <div class="text-group-card__grid">
         <label class="text-group-card__field">
-          <span>Direction</span>
+          <span>
+            {{ t("modules.typography.fields.textGroups.group.controls.direction.label") }}
+          </span>
 
           <select :value="modelValue.direction || 'column'"
             @change="updateGroupField('direction', getEventValue($event) as TypographyTextGroup['direction'])">
@@ -188,11 +203,15 @@ function removeTextBlock(blockIndex: number) {
         </label>
 
         <label class="text-group-card__field">
-          <span>Writing direction</span>
+          <span>
+            {{ t("modules.typography.fields.textGroups.group.controls.writingDirection.label") }}
+          </span>
 
           <select :value="modelValue.writingDirection || ''"
             @change="updateGroupField('writingDirection', (getEventValue($event) || undefined) as TypographyTextGroup['writingDirection'])">
-            <option value="">None</option>
+            <option value="">
+              {{ t("panel.none") }}
+            </option>
 
             <option v-for="option in getConfigOptions('writingDirectionOptions')" :key="option.value"
               :value="option.value">
@@ -202,7 +221,9 @@ function removeTextBlock(blockIndex: number) {
         </label>
 
         <label class="text-group-card__field">
-          <span>Alignment</span>
+          <span>
+            {{ t("modules.typography.fields.textGroups.group.controls.alignment.label") }}
+          </span>
 
           <select :value="modelValue.alignment || 'center'"
             @change="updateGroupField('alignment', getEventValue($event) as TypographyTextGroup['alignment'])">
@@ -213,7 +234,9 @@ function removeTextBlock(blockIndex: number) {
         </label>
 
         <label class="text-group-card__field">
-          <span>Distribution</span>
+          <span>
+            {{ t("modules.typography.fields.textGroups.group.controls.distribution.label") }}
+          </span>
 
           <select :value="modelValue.distribution || 'compact'"
             @change="updateGroupField('distribution', getEventValue($event) as TypographyTextGroup['distribution'])">
@@ -225,10 +248,12 @@ function removeTextBlock(blockIndex: number) {
       </div>
 
       <label class="text-group-card__field">
-        <span>Group additional description</span>
+        <span>
+          {{ t("modules.typography.fields.textGroups.group.controls.additionalDescription.label") }}
+        </span>
 
         <textarea :value="modelValue.additionalDescription || ''" rows="2"
-          placeholder="Optional note for this whole group..."
+          :placeholder="t('modules.typography.fields.textGroups.group.controls.additionalDescription.placeholder')"
           @focus="handleEditorFocus($event, 'additionalDescription')" @blur="handleEditorBlur('additionalDescription')"
           @input="updateGroupField('additionalDescription', getEventValue($event)); handleEditorCursor($event)"
           @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
@@ -240,11 +265,11 @@ function removeTextBlock(blockIndex: number) {
 
     <el-flex rules="rbc" class="w100">
       <el-text :size="13" :weight="600" icon="text">
-        Text blocks
+        {{ t("modules.typography.fields.textGroups.group.textBlocksTitle") }}
       </el-text>
 
       <button type="button" class="text-group-card__button" @click="emit('addTextBlock')">
-        Add text
+        {{ t("modules.typography.fields.textGroups.group.actions.addText") }}
       </button>
     </el-flex>
 

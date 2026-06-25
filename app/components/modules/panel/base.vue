@@ -1434,26 +1434,28 @@ onBeforeUnmount(() => {
                   <el-flex rules="rcc" :gap="6">
                     <button type="button" class="module-field__small-button"
                       @click="duplicatePromptVariable(field.id, variableIndex)">
-                      Duplicate
+                      {{ t("modules.variables.fields.variables.actions.duplicate") }}
                     </button>
 
                     <button type="button" class="module-field__small-button module-field__small-button--danger"
                       @click="removePromptVariable(field.id, variableIndex)">
-                      Remove
+                      {{ t("modules.variables.fields.variables.actions.remove") }}
                     </button>
                   </el-flex>
                 </el-flex>
 
                 <el-grid :cols="mobile ? 1 : 2" :gap="8">
                   <div class="module-field__variable-control">
-                    <el-text :size="10" color="normal45">Key</el-text>
-                    <input type="text" :value="variable.key" placeholder="Music title"
+                    <el-text :size="10" color="normal45">{{ t("modules.variables.fields.variables.controls.key.label") }}</el-text>
+                    <input type="text" :value="variable.key" :placeholder="t('modules.variables.fields.variables.controls.key.placeholder')"
                       @input="handleVariableKeyInput(field.id, variableIndex, $event)"
                       @blur="normalizePromptVariableKey(field.id, variableIndex)" />
                   </div>
 
                   <div class="module-field__variable-control">
-                    <el-text :size="10" color="normal45">Type</el-text>
+                    <el-text :size="10" color="normal45">
+                      {{ t("modules.variables.fields.variables.controls.type.label") }}
+                    </el-text>
                     <select :value="variable.type || 'text'"
                       @change="handleVariableTypeChange(field.id, variableIndex, $event)">
                       <option v-for="option in getVariableTypeOptions(field)" :key="option.value" :value="option.value">
@@ -1464,14 +1466,20 @@ onBeforeUnmount(() => {
                 </el-grid>
 
                 <div class="module-field__variable-control">
-                  <el-text :size="10" color="normal45">Value</el-text>
-                  <textarea :value="variable.value" rows="2" placeholder="person in the first attached photo"
+                  <el-text :size="10" color="normal45">
+                    {{ t("modules.variables.fields.variables.controls.value.label") }}
+                  </el-text>
+                  <textarea :value="variable.value" rows="2"
+                    :placeholder="t('modules.variables.fields.variables.controls.value.placeholder')"
                     @input="handleVariableValueInput(field.id, variableIndex, $event)" />
                 </div>
 
                 <div class="module-field__variable-control">
-                  <el-text :size="10" color="normal45">Description</el-text>
-                  <input type="text" :value="variable.description || ''" placeholder="Optional internal note"
+                  <el-text :size="10" color="normal45">
+                    {{ t("modules.variables.fields.variables.controls.description.label") }}
+                  </el-text>
+                  <input type="text" :value="variable.description || ''"
+                    placeholder="Optional internal note"
                     @input="handleVariableDescriptionInput(field.id, variableIndex, $event)" />
                 </div>
 
@@ -1481,12 +1489,12 @@ onBeforeUnmount(() => {
                 </el-text>
 
                 <el-text :size="10" color="normal45" icon="code" v-else>
-                  Output token: {{ getVariableToken(variable) }}
+                  {{ t("modules.variables.fields.variables.outputToken", { token: getVariableToken(variable) }) }}
                 </el-text>
               </div>
 
               <button type="button" class="module-field__add-button" @click="addPromptVariable(field.id)">
-                Add variable
+                {{ t("modules.variables.fields.variables.actions.add") }}
               </button>
             </div>
 
@@ -1495,31 +1503,49 @@ onBeforeUnmount(() => {
                 :key="`${field.id}-${assignmentIndex}`" class="module-field__color-assignment">
                 <el-flex rules="rbc" :gap="8">
                   <el-text :size="12" :weight="400">
-                    Color Rule {{ assignmentIndex + 1 }}
+                    {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", { index: assignmentIndex + 1 }) }}
                   </el-text>
 
                   <button type="button" class="module-field__small-button module-field__small-button--danger"
                     @click="removeColorAssignment(field.id, assignmentIndex)">
-                    Remove
+                    {{ t("modules.colorPalette.fields.paletteAssignments.actions.remove") }}
                   </button>
                 </el-flex>
 
                 <el-grid :cols="mobile ? 1 : 2" :gap="8">
                   <select :value="assignment.mode"
                     @change="updateColorAssignmentMode(field.id, assignmentIndex, $event)">
-                    <option value="preset">Preset palette</option>
-                    <option value="custom">Custom colors</option>
+                    <option value="preset">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.modes.preset") }}
+                    </option>
+                    <option value="custom">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.modes.custom") }}
+                    </option>
                   </select>
 
                   <select :value="assignment.usage"
                     @change="updateColorAssignmentUsage(field.id, assignmentIndex, $event)">
-                    <option value="overall">Overall image</option>
-                    <option value="background">Background</option>
-                    <option value="subject">Main subject</option>
-                    <option value="outfit">Outfit</option>
-                    <option value="hair">Hair</option>
-                    <option value="lighting">Lighting</option>
-                    <option value="accents">Graphic accents</option>
+                    <option value="overall">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.overall") }}
+                    </option>
+                    <option value="background">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.background") }}
+                    </option>
+                    <option value="subject">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.subject") }}
+                    </option>
+                    <option value="outfit">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.outfit") }}
+                    </option>
+                    <option value="hair">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.hair") }}
+                    </option>
+                    <option value="lighting">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.lighting") }}
+                    </option>
+                    <option value="accents">
+                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.accents") }}
+                    </option>
                   </select>
                 </el-grid>
 
@@ -1546,24 +1572,25 @@ onBeforeUnmount(() => {
                     <input type="color" :value="color"
                       @input="updateColorAssignmentColor(field.id, assignmentIndex, colorIndex, $event)" />
 
-                    <input type="text" :value="color" placeholder="#000000"
+                    <input type="text" :value="color"
+                      :placeholder="t('modules.colorPalette.fields.paletteAssignments.controls.color.placeholder')"
                       @input="updateColorAssignmentColor(field.id, assignmentIndex, colorIndex, $event)" />
 
                     <button type="button" class="module-field__small-button"
                       @click="removeColorAssignmentColor(field.id, assignmentIndex, colorIndex)">
-                      Remove
+                      {{ t("modules.colorPalette.fields.paletteAssignments.actions.remove") }}
                     </button>
                   </div>
 
                   <button type="button" class="module-field__small-button"
                     @click="addColorAssignmentColor(field.id, assignmentIndex)">
-                    Add color
+                    {{ t("modules.colorPalette.fields.paletteAssignments.actions.addColor") }}
                   </button>
                 </div>
               </div>
 
               <button type="button" class="module-field__add-button" @click="addColorAssignment(field.id)">
-                Add color assignment
+                {{ t("modules.colorPalette.fields.paletteAssignments.actions.addAssignment") }}
               </button>
             </div>
 

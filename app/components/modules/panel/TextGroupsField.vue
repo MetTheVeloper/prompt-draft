@@ -7,6 +7,8 @@ import type {
 } from "../../../modules/types";
 import TextGroupCard from "./TextGroupCard.vue";
 
+const { t } = useI18n();
+
 const props = defineProps<{
   modelValue?: unknown;
   field: ModuleField;
@@ -166,11 +168,11 @@ function addTextBlock(groupIndex: number) {
     <el-flex rules="rbc" class="w100">
       <el-flex rules="ccs" :gap="2">
         <el-text :size="13" :weight="600" icon="text">
-          Text groups
+          {{ t("modules.typography.fields.textGroups.title") }}
         </el-text>
 
         <el-text :size="10" color="normal45">
-          {{ groups.length }} group{{ groups.length === 1 ? "" : "s" }}
+          {{ t("modules.typography.fields.textGroups.count", { count: groups.length }) }}
         </el-text>
       </el-flex>
 
@@ -178,7 +180,7 @@ function addTextBlock(groupIndex: number) {
         type="button"
         class="text-groups-field__add-button"
         @click="addGroup">
-        Add text group
+        {{ t("modules.typography.fields.textGroups.actions.addGroup") }}
       </button>
     </el-flex>
 
@@ -188,11 +190,11 @@ function addTextBlock(groupIndex: number) {
       class="text-groups-field__empty"
       :gap="4">
       <el-text :size="13" :weight="600" icon="info-circle">
-        No text group yet
+        {{ t("modules.typography.fields.textGroups.empty.title") }}
       </el-text>
 
       <el-text :size="11" color="normal45">
-        Add a group to define poster titles, subtitles, badges, prices, captions, or other typography layers.
+        {{ t("modules.typography.fields.textGroups.empty.description") }}
       </el-text>
     </el-flex>
 

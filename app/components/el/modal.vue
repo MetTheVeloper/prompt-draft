@@ -10,22 +10,21 @@
             <!-- header -->
             <el-flex v-if="modal.header" rules="rbs" class="w100 globalModalHeader" :gap="16">
               <el-flex rules="rsc" class="globalModalHeaderContent" :gap="12">
-                <el-flex v-if="headerIcon" rules="ccc" class="globalModalHeaderIcon" bg="normal5" :radius="14">
-                  <el-icon :icon="headerIcon" :size="24" :color="headerColor" />
-                </el-flex>
+                <el-icon v-if="headerIcon" :icon="headerIcon" :size="32" :color="headerColor" />
 
-                <el-flex rules="css" class="globalModalHeaderTexts" :gap="2">
-                  <el-text :size="16" :weight="700" v-if="modal.header.title" class="globalModalHeaderTitle">
+                <el-flex rules="css" :gap="2">
+                  <el-text :size="16" :weight="700" v-if="modal.header.title">
                     {{ modal.header.title }}
                   </el-text>
 
-                  <el-text :size="12" :weight="400" v-if="headerSubtitle" class="globalModalHeaderSubtitle">
+                  <el-text :size="12" :weight="400" v-if="headerSubtitle">
                     {{ headerSubtitle }}
                   </el-text>
                 </el-flex>
               </el-flex>
 
-              <el-button v-if="showCloseButton" label="بستن" icon="close-circle" :size="12" color="red" mode="flat" type="fab"
+              <el-button v-if="showCloseButton" :label="t('components.modal.actions.close')"
+                icon="close-circle" :size="12" color="red" mode="flat" type="fab"
                 :disable="globalLoading" @click="handleCloseButton" />
             </el-flex>
 
@@ -69,6 +68,8 @@ import type { GlobalModalAction } from '~/composables/useModal'
 
 const modalApi = useModal()
 const modalState = modalApi.state
+
+const { t } = useI18n()
 
 const isOpen = computed(() => modalState.isOpen)
 
@@ -264,39 +265,6 @@ function afterLeave() {
 
 .globalModalHeader {
   min-width: 0;
-}
-
-.globalModalHeaderContent {
-  min-width: 0;
-  flex: 1;
-}
-
-.globalModalHeaderIcon {
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
-}
-
-.globalModalHeaderTexts {
-  min-width: 0;
-}
-
-.globalModalHeaderTitle {
-  line-height: 1.8;
-}
-
-.globalModalHeaderSubtitle {
-  line-height: 1.8;
-  opacity: 0.75;
-}
-
-.globalModalActions {
-  margin-top: 24px;
-}
-
-.title,
-.desc {
-  line-height: 2;
 }
 
 /* Vue 3 transition classes */

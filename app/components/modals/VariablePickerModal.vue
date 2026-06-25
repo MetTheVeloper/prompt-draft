@@ -4,7 +4,7 @@ import type { PromptVariable } from '~/modules/types'
 
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
-
+const { t } = useI18n();
 const props = defineProps<{
   variables: PromptVariable[]
 }>()
@@ -53,27 +53,53 @@ function insert(variable: PromptVariable) {
       v-model="search"
       type="text"
       class="variable-picker__search"
-      placeholder="Search variables..."
+      :placeholder="t('modules.variables.fields.variables.picker.search.placeholder')"
       autofocus
     />
 
     <el-flex v-if="filteredVariables.length" rules="ccs" class="w100" :gap="8">
-      <button
+      <el-flex type="button" rules="rsc"
+        bg="normal5"
+        :radius="12"
+        :br="1"
+        bc="normal10"
+        :p="[10, 12]"
+        :gap="10"
         v-for="variable in filteredVariables"
         :key="variable.id || variable.key"
-        type="button"
-        class="variable-picker__item"
-        @click="insert(variable)"
-      >
-        <span class="variable-picker__token">{{ token(variable) }}</span>
-        <span class="variable-picker__value">{{ variable.value }}</span>
-        <span v-if="variable.type" class="variable-picker__type">{{ variable.type }}</span>
-      </button>
+        class="variable-picker__item crp chpen w100"
+        @click="insert(variable)">
+        <el-flex rules="ccs" class="fg100" :gap="0">
+          <el-text type="span"
+            :size="16"
+            :weight="700"
+            color="white"
+            marker="blue35"
+            class="variable-picker__token">
+            {{ token(variable) }}
+          </el-text>
+          <el-text
+            :size="12"
+            :weight="400"
+            class="frsc">
+            {{ variable.value }}
+          </el-text>
+        </el-flex>
+        <el-text
+          v-if="variable.type"
+          class="variable-picker__type">
+          {{ variable.type }}
+        </el-text>
+      </el-flex>
     </el-flex>
 
     <el-flex v-else rules="ccs" class="w100 variable-picker__empty" :gap="4">
-      <el-text :size="14" :weight="700">No variables found</el-text>
-      <el-text :size="12" color="normal50">Create or enable variables first.</el-text>
+      <el-text :size="14" :weight="700">
+        {{ t("modules.variables.fields.variables.picker.empty.title") }}
+      </el-text>
+      <el-text :size="12" color="normal50">
+        {{ t("modules.variables.fields.variables.picker.empty.description") }}
+      </el-text>
     </el-flex>
   </el-flex>
 </template>
@@ -88,16 +114,8 @@ function insert(variable: PromptVariable) {
 }
 
 .variable-picker__item {
-  display: grid;
-  grid-template-columns: minmax(120px, auto) minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: center;
   width: 100%;
   padding: 10px 12px;
-  border: 1px solid var(--normalText10);
-  border-radius: 12px;
-  background: var(--normalText5);
-  color: var(--normalText);
   cursor: pointer;
   text-align: left;
 }
@@ -109,17 +127,6 @@ function insert(variable: PromptVariable) {
 
 .variable-picker__token {
   font-family: monospace;
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--themeBlue);
-  white-space: nowrap;
-}
-
-.variable-picker__value {
-  overflow: hidden;
-  color: var(--normalText75);
-  font-size: 12px;
-  text-overflow: ellipsis;
   white-space: nowrap;
 }
 

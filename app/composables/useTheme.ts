@@ -90,6 +90,15 @@ export const useTheme = () => {
 
   const t = computed(() => activeTheme.value)
 
+  function syncDocumentLocale(selectedLang: string) {
+    if (!isClient()) return
+
+    const isFa = selectedLang === 'fa'
+
+    document.documentElement.lang = isFa ? 'fa' : 'en'
+    document.documentElement.dir = isFa ? 'rtl' : 'ltr'
+  }
+
   const isClient = () => import.meta.client
 
   const normalizeThemeMode = (mode: string | null): ThemeMode => {
@@ -255,7 +264,7 @@ export const useTheme = () => {
 
     appConfig.value = config
     lang.value = selectedLang
-
+    syncDocumentLocale(selectedLang)
     const savedTheme = normalizeThemeMode(localStorage.getItem('theme'))
 
     localStorage.setItem('theme', savedTheme)

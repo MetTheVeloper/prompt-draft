@@ -1751,6 +1751,24 @@ export default {
           description:
             "پالت‌ها یا رنگ‌های سفارشی را به بخش‌های مشخص تصویر مثل پس‌زمینه، لباس، نورپردازی و موارد دیگر اختصاص بده.",
           placeholder: "نحوه پخش رنگ‌ها را انتخاب کن",
+          actions: {
+            addAssignment: "افزودن تخصیص",
+            remove: "حذف",
+          },
+          modes: {
+            custom: "سفارشی",
+            preset: "پریست",
+          },
+          ruleTitle: "قانون پالت",
+          usages: {
+            accents: "اکسنت‌ها",
+            background: "پس‌زمینه",
+            hair: "مو",
+            lighting: "نورپردازی",
+            outfit: "لباس",
+            overall: "کلی",
+            subject: "سوژه",
+          },
         },
         extraDetails: {
           label: "جزئیات اضافه",
@@ -1774,6 +1792,83 @@ export default {
           description:
             "گروه‌های تایپوگرافی، محتوای متن، جای‌گذاری، سلسله‌مراتب و استایل بصری را تعریف کن.",
           label: "گروه‌های متنی",
+          actions: {
+            addGroup: "افزودن گروه",
+          },
+          block: {
+            actions: {
+              remove: "حذف متن",
+            },
+            controls: {
+              additionalDescription: {
+                label: "توضیحات بیشتر",
+                placeholder:
+                  "نکته‌های بیشتر درباره استایل، چیدمان، خوانایی یا رفتار بصری متن بنویس...",
+              },
+              fontSize: {
+                label: "اندازه فونت",
+              },
+              fontStyle: {
+                label: "استایل فونت",
+              },
+              fontWeight: {
+                label: "وزن فونت",
+              },
+              purpose: {
+                label: "هدف متن",
+              },
+              text: {
+                label: "متن",
+                placeholder: "محتوای متن را بنویس...",
+              },
+              customFontStyle: {
+                label: "استایل فونت سفارشی",
+                placeholder:
+                  "استایل فونت، حس حروف‌نگاری یا رفتار تایپوگرافی دلخواه را توضیح بده...",
+              },
+            },
+            validation: {
+              requiredTextEmpty: "محتوای متن الزامی است.",
+            },
+          },
+          count: "{count} گروه متنی",
+          group: {
+            actions: {
+              addText: "افزودن متن",
+              remove: "حذف گروه",
+            },
+            controls: {
+              additionalDescription: {
+                label: "توضیحات بیشتر",
+                placeholder:
+                  "جزئیات فاصله‌گذاری، حرکت مداری، عمق، خوانایی یا چیدمان سفارشی را توضیح بده...",
+              },
+              alignment: {
+                label: "تراز",
+              },
+              direction: {
+                label: "جهت چیدمان",
+              },
+              distribution: {
+                label: "پخش‌شدن",
+              },
+              groupPurpose: {
+                label: "هدف گروه",
+              },
+              positionPreset: {
+                label: "جایگاه",
+              },
+              writingDirection: {
+                label: "جهت نوشتار",
+              },
+            },
+            textBlocksTitle: "بلاک‌های متن",
+          },
+          title: "گروه‌های تایپوگرافی",
+          empty: {
+            description: "اول حداقل یک گروه تایپوگرافی بساز، بعد داخل آن بلاک‌های متن اضافه کن.",
+            title: "هنوز گروه تایپوگرافی ساخته نشده",
+          },
         },
       },
       groups: {
@@ -1805,6 +1900,38 @@ export default {
             reference: "رفرنس",
             subject: "سوژه",
             text: "متن",
+          },
+          actions: {
+            add: "افزودن متغیر",
+            duplicate: "کپی‌کردن",
+            remove: "حذف",
+          },
+          controls: {
+            description: {
+              label: "توضیح",
+            },
+            key: {
+              label: "کلید",
+              placeholder: "variable_name",
+            },
+            type: {
+              label: "نوع",
+            },
+            value: {
+              label: "مقدار",
+              placeholder: "مقدار متغیر را بنویس...",
+            },
+          },
+          outputToken: "توکن خروجی",
+          picker: {
+            search: {
+              placeholder: "جستجوی متغیرها...",
+            },
+            empty: {
+              description:
+                "اول حداقل یک متغیر بساز، بعد می‌تونی آن را داخل فیلدهای پرامپت وارد کنی.",
+              title: "متغیری پیدا نشد",
+            },
           },
         },
       },
@@ -2838,6 +2965,18 @@ export default {
             tip: "وقتی رفتار متریال و سطح باید خیلی دقیق و دستی توضیح داده شود، از این فیلد استفاده کن.",
           },
         },
+      },
+    },
+  },
+  components: {
+    modal: {
+      insertVariable: "درج وریبل",
+      actions: {
+        close: "بستن",
+      },
+      title: {
+        insertVariable: "وارد کردن متغیر",
+        insertVariableSubtitle: "یک متغیر انتخاب کن و آن را داخل فیلد فعال پرامپت وارد کن.",
       },
     },
   },

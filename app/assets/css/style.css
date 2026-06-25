@@ -318,13 +318,6 @@ body {
   position: relative;
 }
 
-*.dltr {
-  font-family: 'poppins';
-}
-*.drtl {
-  font-family: 'persian';
-}
-
 pre {
   font-family: 'Courier New', Courier, monospace !important;
   direction: ltr !important;
