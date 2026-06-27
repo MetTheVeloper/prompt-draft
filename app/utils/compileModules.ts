@@ -145,198 +145,137 @@ function quoteTypographyText(value: string) {
   return `"${cleanPromptPart(value).replace(/"/g, '\\"')}"`;
 }
 
-function compileTypographyTextBlock(
+// 
+function serializeTypographyTextBlock(
   field: ModuleField,
   block: TypographyTextBlock,
-  blockIndex: number,
 ) {
   const text = block.text?.trim();
 
-  if (!text) return "";
+  if (!text) return null;
 
-  const layerName = block.layerName?.trim() || `{text_${blockIndex + 1}}`;
+  return {
+    content: text,
 
-  const purposeText = resolveConfigPromptText(
-    field,
-    "textPurposeOptions",
-    block.purpose,
-    block.customPurpose,
-  );
+    purpose: resolveConfigPromptText(
+      field,
+      "textPurposeOptions",
+      block.purpose,
+      block.customPurpose,
+    ) || undefined,
 
-  const fontStyleText = resolveConfigPromptText(
-    field,
-    "fontStyleOptions",
-    block.fontStyle,
-    block.customFontStyle,
-  );
+    typography: {
+      fontStyle: resolveConfigPromptText(
+        field,
+        "fontStyleOptions",
+        block.fontStyle,
+        block.customFontStyle,
+      ) || undefined,
 
-  const fontSizeText = resolveConfigPromptText(
-    field,
-    "fontSizeOptions",
-    block.fontSize,
-    block.customFontSize,
-  );
+      fontSize: resolveConfigPromptText(
+        field,
+        "fontSizeOptions",
+        block.fontSize,
+        block.customFontSize,
+      ) || undefined,
 
-  const fontWeightText = resolveConfigPromptText(
-    field,
-    "fontWeightOptions",
-    block.fontWeight,
-    block.customFontWeight,
-  );
+      fontWeight: resolveConfigPromptText(
+        field,
+        "fontWeightOptions",
+        block.fontWeight,
+        block.customFontWeight,
+      ) || undefined,
+    },
 
-  const typographyParts = [
-    fontStyleText,
-    fontSizeText,
-    fontWeightText,
-  ].filter(Boolean);
-
-  const parts = [`${layerName}: ${quoteTypographyText(text)}`];
-
-  if (purposeText) {
-    parts.push(purposeText);
-  }
-
-  if (typographyParts.length) {
-    parts.push(`using ${formatList(typographyParts)}`);
-  }
-
-  if (block.additionalDescription?.trim()) {
-    parts.push(
-      `with non-visible styling note: ${cleanPromptPart(block.additionalDescription)}`,
-    );
-  }
-
-  return parts.join(", ");
+    description: block.additionalDescription?.trim() || undefined,
+  };
 }
 
-function compileTypographyTextGroup(
+function serializeTypographyTextGroup(
   field: ModuleField,
   group: TypographyTextGroup,
-  groupIndex: number,
 ) {
-  const groupName = group.groupName?.trim() || `{text_group_${groupIndex + 1}}`;
-
-  const groupPurposeText = resolveConfigPromptText(
-    field,
-    "groupPurposeOptions",
-    group.groupPurpose,
-    group.customGroupPurpose,
-  );
-
-  const positionText = resolveConfigPromptText(
-    field,
-    "positionPresetOptions",
-    group.positionPreset,
-    group.customPositionDescription,
-  );
-
-  const directionText = resolveConfigPromptText(
-    field,
-    "directionOptions",
-    group.direction,
-  );
-
-  const writingDirectionText = resolveConfigPromptText(
-    field,
-    "writingDirectionOptions",
-    group.writingDirection,
-  );
-
-  const alignmentText = resolveConfigPromptText(
-    field,
-    "alignmentOptions",
-    group.alignment,
-  );
-
-  const distributionText = resolveConfigPromptText(
-    field,
-    "distributionOptions",
-    group.distribution,
-  );
-
-  const groupParts = [groupName];
-
-  if (groupPurposeText) {
-    groupParts.push(groupPurposeText);
-  }
-
-  if (positionText) {
-    groupParts.push(`positioned ${positionText} as one grouped typography unit`);
-  }
-
-  if (directionText) {
-    groupParts.push(directionText);
-  }
-
-  if (writingDirectionText) {
-    groupParts.push(writingDirectionText);
-  }
-
-  if (alignmentText) {
-    groupParts.push(alignmentText);
-  }
-
-  if (distributionText) {
-    groupParts.push(distributionText);
-  }
-
-  if (group.additionalDescription?.trim()) {
-    groupParts.push(
-      `with non-visible group styling note: ${cleanPromptPart(group.additionalDescription)}`,
-    );
-  }
-
-  const textBlocks = (group.texts || [])
+  const texts = (group.texts || [])
     .filter(isTypographyTextBlock)
-    .map((block, blockIndex) => {
-      return compileTypographyTextBlock(field, block, blockIndex);
-    })
+    .map((block) => serializeTypographyTextBlock(field, block))
     .filter(Boolean);
 
-  if (!textBlocks.length) return "";
+  if (!texts.length) return null;
 
-  return `Typography group ${groupParts.join(", ")} containing ${textBlocks.join("; ")}`;
+  return {
+    purpose: resolveConfigPromptText(
+      field,
+      "groupPurposeOptions",
+      group.groupPurpose,
+      group.customGroupPurpose,
+    ) || undefined,
+
+    position: {
+      preset: resolveConfigPromptText(
+        field,
+        "positionPresetOptions",
+        group.positionPreset,
+        group.customPositionDescription,
+      ) || undefined,
+    },
+
+    layout: {
+      direction: resolveConfigPromptText(
+        field,
+        "directionOptions",
+        group.direction,
+      ) || undefined,
+
+      writingDirection: resolveConfigPromptText(
+        field,
+        "writingDirectionOptions",
+        group.writingDirection,
+      ) || undefined,
+
+      alignment: resolveConfigPromptText(
+        field,
+        "alignmentOptions",
+        group.alignment,
+      ) || undefined,
+
+      distribution: resolveConfigPromptText(
+        field,
+        "distributionOptions",
+        group.distribution,
+      ) || undefined,
+    },
+
+    description: group.additionalDescription?.trim() || undefined,
+
+    texts,
+  };
 }
 
-function compileTextGroupsField(
+function serializeTypographyField(
   field: ModuleField,
   value: ModuleFieldValue,
+  accuracy = "exact",
 ) {
-  if (!Array.isArray(value)) return "";
+  if (!Array.isArray(value)) return null;
 
   const groups = value
     .filter(isTypographyTextGroup)
-    .map((group, groupIndex) => {
-      return compileTypographyTextGroup(field, group, groupIndex);
-    })
+    .map((group) => serializeTypographyTextGroup(field, group))
     .filter(Boolean);
 
-  if (!groups.length) return "";
+  if (!groups.length) return null;
 
-  return `Typography layout: ${groups.join(". ")}`;
-}
+  return {
+    groups,
 
-function typographyAccuracyToPromptText(value?: string) {
-  const map: Record<string, string> = {
-    flexible:
-      "typography may be interpreted flexibly when exact lettering is not essential",
-    readable:
-      "render all quoted typography text as clear readable text with intentional letterforms",
-    exact:
-      "render all quoted typography text exactly as written with correct spelling and no extra letters",
+    renderRules: {
+      accuracy,
+      renderTextValuesOnly: true,
+      preserveSpelling: true,
+    },
   };
-
-  return map[value || "exact"] || map.exact;
 }
-
-function typographyVisibleTextGuardPromptText() {
-  return [
-    "Only render the quoted text values as visible typography",
-    "do not render layer names, group names, purposes, notes, field labels, or descriptions as extra visible text",
-    "use purposes and descriptions only as layout and styling instructions",
-  ].join("; ");
-}
-
+// 
 
 function compileVariablesModule(values: ModuleValues): string {
   return formatPromptVariableDefinitions(values.variables);
@@ -345,12 +284,17 @@ function compileVariablesModule(values: ModuleValues): string {
 function compileTypographyModule(
   module: PromptKeyModule,
   values: ModuleValues,
-): string {
+) {
   const fields = Object.values(module.fields);
 
   const overrideFieldId =
     module.compile?.overrideField ||
     fields.find((field) => field.isOverride)?.id;
+
+  const textAccuracy =
+    typeof values.textAccuracy === "string" && values.textAccuracy.trim()
+      ? values.textAccuracy
+      : "exact";
 
   if (overrideFieldId) {
     const overrideValue = values[overrideFieldId];
@@ -361,32 +305,29 @@ function compileTypographyModule(
   }
 
   const textGroupsField = module.fields.textGroups;
-  const textGroupsOutput = textGroupsField
-    ? compileTextGroupsField(textGroupsField, values.textGroups)
-    : "";
 
   const extraDetails =
     typeof values.extraDetails === "string"
       ? cleanPromptPart(values.extraDetails)
       : "";
 
-  const parts = [textGroupsOutput].filter(Boolean);
+  return {
+    groups: textGroupsField
+      ? serializeTypographyField(
+          textGroupsField,
+          values.textGroups,
+          textAccuracy,
+        )?.groups || []
+      : [],
 
-  if (textGroupsOutput) {
-    const textAccuracy =
-      typeof values.textAccuracy === "string" && values.textAccuracy.trim()
-        ? values.textAccuracy
-        : "exact";
+    renderRules: {
+      accuracy: textAccuracy,
+      renderTextValuesOnly: true,
+      preserveSpelling: true,
+    },
 
-    parts.push(typographyAccuracyToPromptText(textAccuracy));
-    parts.push(typographyVisibleTextGuardPromptText());
-  }
-
-  if (extraDetails) {
-    parts.push(extraDetails);
-  }
-
-  return parts.join(". ");
+    extraDetails: extraDetails || undefined,
+  };
 }
 
 function compileColorAssignmentsField(
@@ -468,10 +409,6 @@ function compileField(field: ModuleField, value: ModuleFieldValue) {
     return compileColorAssignmentsField(field, value);
   }
 
-  if (field.type === "textGroups") {
-    return compileTextGroupsField(field, value);
-  }
-
   if (field.type === "color") {
     return compileColorField(field, value);
   }
@@ -532,7 +469,7 @@ export function getModulePresetValues(
 export function compileModule(
   module: PromptKeyModule,
   values: ModuleValues,
-): string {
+): string | Record<string, unknown> {
   if (module.key === "variables") {
     return compileVariablesModule(values);
   }

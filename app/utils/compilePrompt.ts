@@ -7,7 +7,9 @@ import {
   getDefaultAspectRatioValue,
 } from "../constants/aspectRatios";
 
-export type ModuleOutputMap = Record<string, string>
+export type ModuleOutputValue = string | Record<string, any>
+
+export type ModuleOutputMap = Record<string, ModuleOutputValue>
 
 export type PromptOutputFormat = 'modular' | 'natural' | 'json'
 
@@ -85,9 +87,15 @@ function getOrderedModuleOutputs(
     .map((module) => {
       if (module.key === VARIABLES_MODULE_KEY) return null
 
-      const output = outputs[module.key]?.trim()
+      const output = outputs[module.key]
 
-      if (!output) return null
+      if (
+        output === undefined ||
+        output === null ||
+        (typeof output === "string" && !output.trim())
+      ) {
+        return null
+      }
 
       return {
         key: module.key,
@@ -314,14 +322,16 @@ function getPreservePromptText(settings: PromptSettings) {
 }
 
 function getModuleNaturalParts(
-  moduleOutputs: Array<{ key: string; output: string }>
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
-  const parts = moduleOutputs.flatMap((item) => {
-    return item.output
-      .split(',')
-      .map(cleanNaturalPart)
-      .filter(Boolean)
-  })
+  const parts = moduleOutputs
+    .filter((item) => typeof item.output === "string")
+    .flatMap((item) => {
+      return item.output
+        .split(",")
+        .map(cleanNaturalPart)
+        .filter(Boolean)
+    })
 
   const seen = new Set<string>()
 
@@ -343,7 +353,7 @@ function getVariablesOutput(outputs: ModuleOutputMap) {
 
 function compileModularOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: string }>,
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
   variablesOutput = ''
 ) {
   const parts: string[] = []
@@ -400,7 +410,12 @@ function compileModularOutput(
   }
 
   moduleOutputs.forEach((item) => {
-    parts.push(`{${item.key}} = ${item.output}`)
+    const value =
+      typeof item.output === "string"
+        ? item.output
+        : JSON.stringify(item.output, null, 2)
+
+    parts.push(`{${item.key}} = ${value}`)
   })
 
   return parts.join('\n')
@@ -408,7 +423,7 @@ function compileModularOutput(
 
 function compileNaturalOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: string }>
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
   const idea = normalizeTransformationIdea(settings.idea)
   const subject = buildNaturalSubject(settings)
@@ -477,10 +492,12 @@ function compileNaturalOutput(
 
 function compileJsonOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: string }>,
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
   variablesOutput = ''
 ) {
-  const modules = moduleOutputs.reduce<Record<string, string>>((result, item) => {
+  const modules = moduleOutputs.reduce<
+    Record<string, ModuleOutputValue>
+  >((result, item) => {
     result[item.key] = item.output
     return result
   }, {})
@@ -545,7 +562,7 @@ function isNaturalOptimizerLogEnabled() {
 
 function logNaturalOptimizerResult(payload: {
   settings: PromptSettings
-  moduleOutputs: Array<{ key: string; output: string }>
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
   rawOutput: string
   optimizedOutput: string
 }) {
