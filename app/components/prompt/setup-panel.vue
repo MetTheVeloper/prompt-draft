@@ -316,9 +316,15 @@ function updatePreserveValue(key: string, value: boolean) {
               </el-text>
             </el-flex>
 
-            <el-text-field :model-value="settings.idea" type="textarea" rows="4"
-              :placeholder="t('promptSetup.idea.placeholder')" :editor-id="editorId('idea')" support-variables
-              @update:model-value="updateSettings({ idea: $event })" />
+            <el-text-field
+              :model-value="settings.idea"
+              type="textarea"
+              rows="4"
+              :placeholder="t('promptSetup.idea.placeholder')"
+              :editor-id="editorId('idea')"
+              support-variables
+              @update:model-value="updateSettings({ idea: $event })"
+            />
           </el-text>
 
           <el-text type="label" v-if="settings.mode === 'text_to_image'">

@@ -1,43 +1,18 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import VariablePickerModal from '~/components/modals/VariablePickerModal.vue'
+import { computed } from "vue";
 
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
-import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { useVariablePickerModal } from "~/composables/prompt/useVariablePickerModal";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
 
-const modal = useModal()
-const { hasActiveEditor } = usePromptEditor()
-const { enabledPromptVariables } = usePromptVariables()
+const { hasActiveEditor } = usePromptEditor();
+const { enabledPromptVariables, openVariablePicker } = useVariablePickerModal();
 
 const showFab = computed(() => {
-  return hasActiveEditor.value && enabledPromptVariables.value.length > 0
-})
-
-function openVariablePicker() {
-  if (!showFab.value) return
-
-  modal.open({
-    header: {
-      icon: 'code',
-      title: t('components.modal.title.insertVariable'),
-      subtitle: t('components.modal.title.insertVariableSubtitle'),
-      color: 'blue',
-    },
-    component: VariablePickerModal,
-    props: {
-      variables: enabledPromptVariables.value,
-    },
-    options: {
-      width: 560,
-      closeOnBackdrop: true,
-      closeOnEsc: true,
-      blur: true,
-    },
-  })
-}
+  return hasActiveEditor.value && enabledPromptVariables.value.length > 0;
+});
 </script>
 
 <template>
@@ -51,7 +26,8 @@ function openVariablePicker() {
       tooltip-position="left"
       :size="14"
       class="variable-fab"
-      @click="openVariablePicker" />
+      @click="openVariablePicker"
+    />
   </Teleport>
 </template>
 

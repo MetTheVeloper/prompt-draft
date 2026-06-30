@@ -2,8 +2,6 @@
 
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 
-import TranslationOptionsModal from "./TranslationOptionsModal.vue";
-
 import type {
   ElDropdownItem,
   ElDropdownValue,
@@ -29,8 +27,6 @@ import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
-
-const modal = useModal();
 
 const {
   setPromptVariables: setGlobalPromptVariables,
@@ -743,139 +739,6 @@ function clearModule() {
   activePresetId.value = null;
 }
 
-type TranslateResponse = {
-  translatedText: string;
-  alternatives?: string[];
-  detectedLanguage?: {
-    confidence?: number;
-    language?: string;
-  } | null;
-};
-
-const isTranslatingCustomOverride = ref(false);
-const selectedTranslationOption = ref("");
-
-function normalizeTranslationOptions(result: TranslateResponse) {
-  return Array.from(
-    new Set(
-      [result.translatedText, ...(result.alternatives || [])]
-        .map((item) => item?.trim())
-        .filter(Boolean)
-    )
-  );
-}
-
-function applySelectedCustomOverrideTranslation() {
-  if (!overrideField.value) return false;
-  if (!selectedTranslationOption.value) return false;
-
-  values[overrideField.value.id] = selectedTranslationOption.value;
-
-  return true;
-}
-
-async function translateCustomOverride() {
-  if (!overrideField.value) return;
-
-  const text = String(values[overrideField.value.id] ?? "").trim();
-
-  if (!text || isTranslatingCustomOverride.value) return;
-
-  isTranslatingCustomOverride.value = true;
-
-  let result: TranslateResponse;
-
-  try {
-    result = await $fetch<TranslateResponse>("/api/translate", {
-      method: "POST",
-      body: {
-        text,
-        source: "auto",
-        target: "en",
-        alternatives: 3,
-      },
-    });
-  } catch (error) {
-    console.error("LibreTranslate request failed:", error);
-
-    modal.message({
-      type: "error",
-      title: "خطا در ترجمه",
-      message:
-        "سرویس ترجمه در دسترس نیست. مطمئن شو LibreTranslate روی پورت 5000 روشن است.",
-      actionLabel: t("components.modal.actions.close"),
-    });
-
-    isTranslatingCustomOverride.value = false;
-    return;
-  }
-
-  isTranslatingCustomOverride.value = false;
-
-  const options = normalizeTranslationOptions(result);
-
-  if (!options.length) {
-    modal.message({
-      type: "warning",
-      title: "ترجمه‌ای پیدا نشد",
-      message: "موتور ترجمه پاسخی برای این متن برنگرداند.",
-      actionLabel: t("components.modal.actions.close"),
-    });
-
-    return;
-  }
-
-  selectedTranslationOption.value = options[0];
-
-  modal.open({
-    header: {
-      icon: "translate",
-      title: "انتخاب ترجمه",
-      subtitle: "یکی از ترجمه‌ها را انتخاب کن تا جایگزین متن فعلی شود.",
-      color: "blue",
-    },
-
-    component: TranslationOptionsModal,
-
-    props: {
-      sourceText: text,
-      options,
-      selected: selectedTranslationOption.value,
-      onSelect: (value: string) => {
-        selectedTranslationOption.value = value;
-      },
-    },
-
-    actions: [
-      {
-        label: t("components.modal.actions.close"),
-        icon: "close-circle",
-        color: "normal",
-        mode: "flat",
-        close: true,
-      },
-      {
-        label: "استفاده از ترجمه انتخاب‌شده",
-        icon: "tick-circle",
-        color: "blue",
-        mode: "normal",
-        close: true,
-        disable: () => !selectedTranslationOption.value,
-        handler: () => {
-          return applySelectedCustomOverrideTranslation();
-        },
-      },
-    ],
-
-    options: {
-      width: 760,
-      closeOnBackdrop: true,
-      closeOnEsc: true,
-      blur: true,
-    },
-  });
-}
-
 async function copyOutput() {
   if (!output.value) return;
 
@@ -995,13 +858,6 @@ onBeforeUnmount(() => {
               </el-text>
 
               <el-flex rules="rcc" :gap="8" :class="mini ? 'w100' : ''">
-                <el-button :label="isTranslatingCustomOverride
-                  ? 'در حال ترجمه...'
-                  : 'ترجمه به انگلیسی'
-                  " icon="translate" color="blue" mode="flat" :size="12" :type="mini ? 'fab' : 'normal'"
-                  :p="mini ? 8 : [8, 12]" :disable="!customOverrideValue || isTranslatingCustomOverride"
-                  @click.stop="translateCustomOverride" />
-
                 <el-text marker="normal5" :size="12" :weight="300" v-if="isCustomMode">
                   {{ t("panel.customOverrideActive") }}
                 </el-text>

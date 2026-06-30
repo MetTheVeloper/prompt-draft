@@ -254,7 +254,7 @@ export const useTheme = () => {
     }
   }
 
-  const initTheme = (config = defaultTheme, selectedLang = 'fa') => {
+  const initTheme = (config = defaultTheme) => {
     if (!isClient()) return
 
     const appStore = useAppStore()
@@ -263,8 +263,7 @@ export const useTheme = () => {
     appStore.setValue('uiState', 'loading')
 
     appConfig.value = config
-    lang.value = selectedLang
-    syncDocumentLocale(selectedLang)
+
     const savedTheme = normalizeThemeMode(localStorage.getItem('theme'))
 
     localStorage.setItem('theme', savedTheme)

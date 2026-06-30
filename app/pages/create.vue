@@ -303,18 +303,18 @@ onBeforeUnmount(() => {
         :color="tb.label === tab.label ? 'prim' : 'normal'" />
     </el-grid>
     <el-grid :cols="!mini ? ['300px', 'minmax(0, 1fr)', '340px'] : 1" class="create-page__layout" :gap="16">
-      <el-flex type="aside" rules="csc" class="create-page__sidebar" v-if="!mini || mini && tab.label === 'setup'">
+      <el-flex type="aside" rules="csc" class="create-page__sidebar" v-show="!mini || mini && tab.label === 'setup'">
         <PromptSetupPanel v-model:settings="promptSettings" v-model:selected-module-keys="selectedModuleKeys"
           :modules="promptModules" />
       </el-flex>
 
-      <el-flex type="section" class="w100" v-if="!mini || mini && tab.label === 'editor'">
+      <el-flex type="section" class="w100" v-show="!mini || mini && tab.label === 'editor'">
         <PromptEditor :modules="selectedModules" v-model:module-values="moduleValues"
           v-model:module-panel-states="modulePanelStates" @update:outputs="updateModuleOutputs"
           @update:issues="updateModuleIssues" />
       </el-flex>
 
-      <el-flex type="aside" class="create-page__output post t0" v-if="!mini || mini && tab.label === 'output'">
+      <el-flex type="aside" class="create-page__output post t0" v-show="!mini || mini && tab.label === 'output'">
         <PromptOutputPreview v-model:format="outputFormat" :output="globalOutput" :issues="globalValidationIssues" />
       </el-flex>
     </el-grid>
