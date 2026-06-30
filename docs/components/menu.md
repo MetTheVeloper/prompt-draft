@@ -8,8 +8,8 @@ The menu system is a lightweight centralized overlay system for:
 * right-click context menus
 * floating point menus
 * action menus
-* future select/option dropdowns
-* future custom menu components
+* native select/option replacement through `el-dropdown`
+* custom menu components
 
 The public API is available as:
 
@@ -37,7 +37,7 @@ It does:
 * close on Escape
 * close on scroll/resize based on options
 * support item-based menus
-* support future custom component menus
+* support custom component menus
 
 ---
 
@@ -55,6 +55,10 @@ app/
     el/
       global-menu.vue
       menu-list.vue
+      dropdown.vue
+
+  types/
+    dropdown.ts
 
   app.vue
 ```
@@ -291,7 +295,7 @@ Use it for:
 * more menus
 * profile menus
 * language menus
-* future select/dropdown components
+* `el-dropdown` select replacement components
 
 Example:
 
@@ -492,6 +496,7 @@ Current behavior:
 * menu is clamped using `safePadding`
 * dropdown mode uses anchor rect
 * point mode uses click/cursor coordinate
+* menu can be constrained by `maxHeight` and scrolled internally
 * if measurement fails, fallback dimensions are used
 
 Important implementation note:
@@ -509,6 +514,7 @@ export type GlobalMenuOptions = {
   width?: number | string
   minWidth?: number | string
   maxWidth?: number | string
+  maxHeight?: number | string
 
   offset?: number
   safePadding?: number
@@ -543,6 +549,7 @@ Default options:
   matchAnchorWidth: false,
 
   zIndex: 1000,
+  maxHeight: undefined,
 }
 ```
 
@@ -787,6 +794,53 @@ Current working template:
 
 ---
 
+## Modal compatibility
+
+Dropdown menus can be opened from inside the global modal.
+
+Because the menu is teleported outside the modal content, the menu root should stop pointer/click propagation so a click inside the dropdown is not interpreted as a modal outside click.
+
+Recommended root pattern:
+
+```vue
+<div
+  v-if="isOpen"
+  class="globalMenuRoot"
+  data-el-overlay="menu"
+  :style="rootStyle"
+  @pointerdown.stop
+  @click.stop
+>
+```
+
+Recommended outside layer pattern:
+
+```vue
+<div
+  class="globalMenuLayer"
+  :style="layerStyle"
+  @pointerdown.stop
+  @click.stop="closeByOutside"
+/>
+```
+
+Recommended box pattern:
+
+```vue
+<div
+  ref="menuBox"
+  class="globalMenuBox bg-surface brs2 bc-normal25"
+  data-el-overlay="menu-box"
+  :style="boxStyle"
+  @pointerdown.stop
+  @click.stop
+>
+```
+
+This allows dropdowns inside modals to open, select values, and close independently without closing the modal.
+
+---
+
 ## Current item UI
 
 Current item renderer path:
@@ -930,14 +984,20 @@ async function handleItemClick(item: GlobalMenuItem) {
 Current item type:
 
 ```ts
+export type GlobalMenuItemType = 'item' | 'divider' | 'header'
+
 export type GlobalMenuItem = {
+  type?: GlobalMenuItemType
+
   label?: string
   icon?: string
   color?: string
   description?: string
   value?: string | number | boolean
+
   active?: boolean
   divider?: boolean
+
   disabled?: boolean | (() => boolean)
   close?: boolean
   handler?: (helpers: GlobalMenuItemHelpers) => void | boolean | Promise<void | boolean>
@@ -1061,6 +1121,14 @@ Divider item:
 
 ```ts
 {
+  type: 'divider',
+}
+```
+
+The legacy shorthand is still supported:
+
+```ts
+{
   divider: true,
 }
 ```
@@ -1069,9 +1137,41 @@ Current UI:
 
 ```vue
 <el-divider
-  v-if="item.divider"
+  v-if="item.type === 'divider' || item.divider"
   class="mb2 mt2"
 />
+```
+
+---
+
+## Header items
+
+Header items are non-interactive menu rows used for grouped dropdowns.
+
+```ts
+{
+  type: 'header',
+  label: 'Typography',
+}
+```
+
+Header items:
+
+* are rendered as muted text
+* do not run handlers
+* are treated as disabled by `isItemDisabled()`
+* are useful for replacing native `optgroup` UI
+
+Example generated menu items:
+
+```ts
+[
+  { type: 'header', label: 'Brand fonts' },
+  { type: 'item', label: 'Inter', value: 'inter' },
+  { type: 'item', label: 'Vazirmatn', value: 'vazirmatn' },
+  { type: 'header', label: 'System fonts' },
+  { type: 'item', label: 'Sans', value: 'sans' },
+]
 ```
 
 ---
@@ -1590,41 +1690,262 @@ Menu:
 
 ---
 
-## Future select usage
+## `el-dropdown` select replacement
 
-The menu system was designed to support custom select/dropdown components later.
+The menu system is now used by `el-dropdown`, the project-level replacement for native `select`, `option`, and basic `optgroup` usage.
 
-Possible future select implementation:
+Current scope:
 
-```ts
-$menu.open({
-  mode: 'dropdown',
-  anchor: selectButton.value,
-  placement: 'bottom-start',
-  options: {
-    matchAnchorWidth: true,
-    closeOnScroll: false,
-  },
-  component: SelectOptionsMenu,
-  props: {
-    options,
-    modelValue,
-    onSelect(value) {
-      emit('update:modelValue', value)
-      $menu.close()
-    },
-  },
-})
+* single select only
+* `v-model` output
+* clearable empty option
+* disabled trigger
+* placeholder
+* active selected item
+* grouped options through menu header items
+* trigger rendered with `el-button`
+* overlay rendered through `$menu.open()`
+
+Not included in the current scope:
+
+* native multi-select replacement
+* checkbox-style multi dropdown
+* keyboard item navigation
+* search/filter inside dropdown
+
+---
+
+## `el-dropdown` files
+
+```txt
+app/
+  components/
+    el/
+      dropdown.vue
+
+  types/
+    dropdown.ts
 ```
 
-This would allow all project selects/dropdowns to share:
+`el-dropdown` is intentionally an adapter between form-like components and the global menu overlay.
 
-* one overlay system
-* one positioning system
-* one outside click behavior
-* one Escape behavior
-* one z-index strategy
-* one theme-compatible visual layer
+External components should not need to create `GlobalMenuItem[]` manually for normal select usage. Instead, they pass raw items and optional accessors.
+
+---
+
+## Dropdown value and item types
+
+Current dropdown value type:
+
+```ts
+export type ElDropdownValue = string | number | boolean
+```
+
+Current dropdown item type:
+
+```ts
+export type ElDropdownItemType = 'item' | 'divider' | 'header'
+
+export type ElDropdownItem = {
+  type?: ElDropdownItemType
+
+  label?: string
+  icon?: string
+  color?: string
+  description?: string
+
+  value?: ElDropdownValue
+
+  disabled?: boolean | (() => boolean)
+
+  group?: string
+  groupLabel?: string
+}
+```
+
+Raw item support allows `el-dropdown` to receive:
+
+```ts
+string | number | boolean | ElDropdownItem | Record<string, any>
+```
+
+---
+
+## `el-dropdown` props
+
+Main props:
+
+```ts
+modelValue?: ElDropdownValue
+items?: ElDropdownRawItem[]
+
+placeholder?: string
+clearable?: boolean
+disabled?: boolean
+emptyValue?: ElDropdownValue
+
+placement?: GlobalMenuPlacement
+menuOptions?: GlobalMenuOptions
+icon?: string
+```
+
+Accessor props:
+
+```ts
+itemLabel?: string | ((item: any, index: number) => string)
+itemValue?: string | ((item: any, index: number) => ElDropdownValue)
+itemDescription?: string | ((item: any, index: number) => string)
+itemDisabled?: string | ((item: any, index: number) => boolean | (() => boolean))
+itemIcon?: string | ((item: any, index: number) => string)
+itemColor?: string | ((item: any, index: number) => string)
+itemGroup?: string | ((item: any, index: number) => string)
+itemGroupLabel?: string | ((item: any, index: number) => string)
+```
+
+Accessors can be either:
+
+* a string key, for example `item-value="value"`
+* a function, for example `:item-label="(option) => t(option.labelKey)"`
+
+---
+
+## Basic dropdown usage
+
+```vue
+<el-dropdown
+  v-model="value"
+  :items="options"
+  item-label="label"
+  item-value="value"
+  placeholder="Select option"
+  clearable
+/>
+```
+
+Primitive array usage:
+
+```vue
+<el-dropdown
+  :model-value="settings.mode"
+  :items="['image', 'video']"
+  :item-label="(mode) => t(`pages.collage.outputMode.modes.${mode}`)"
+  :item-value="(mode) => mode"
+  @update:model-value="updateMode"
+/>
+```
+
+Object array usage:
+
+```vue
+<el-dropdown
+  v-model="values[field.id]"
+  :items="getFieldOptions(field)"
+  :item-label="(option) => optionLabel(field.id, option.value)"
+  item-value="value"
+  item-disabled="disabled"
+  :placeholder="t('panel.none')"
+  :clearable="field.ui?.clearable !== false"
+/>
+```
+
+---
+
+## Grouped dropdown usage
+
+Grouped dropdowns replace basic native `optgroup` usage.
+
+```vue
+<el-dropdown
+  :model-value="textOverlayFontValue"
+  :items="textOverlayFontDropdownOptions"
+  item-label="label"
+  item-value="value"
+  item-group="group"
+  item-group-label="groupLabel"
+  @update:model-value="updateTextOverlayFont"
+/>
+```
+
+The dropdown converts group changes into `GlobalMenuItem` header rows:
+
+```ts
+[
+  { type: 'header', label: 'Brand fonts' },
+  { type: 'item', label: 'Inter', value: 'inter' },
+  { type: 'item', label: 'Vazirmatn', value: 'vazirmatn' },
+]
+```
+
+For categorized fields that previously used two native selects, keep the two-step UI and replace each native select with one `el-dropdown`:
+
+```vue
+<el-dropdown
+  :model-value="getActiveOptionCategory(field)"
+  :items="getFieldOptionCategories(field)"
+  :item-label="(category) => optionCategoryLabel(field, category.value, category.label)"
+  item-value="value"
+  clearable
+  @update:model-value="handleOptionCategoryValueChange(field, $event)"
+/>
+
+<el-dropdown
+  v-model="values[field.id]"
+  :items="getVisibleCategorizedOptions(field)"
+  :item-label="(option) => optionLabel(field.id, option.value)"
+  item-value="value"
+  item-disabled="disabled"
+  :disabled="!getActiveOptionCategory(field)"
+  :clearable="field.ui?.clearable !== false"
+/>
+```
+
+---
+
+## Dropdown inside modal
+
+Dropdowns inside modal content should work without closing the modal.
+
+The recommended `el-dropdown` menu options include a higher z-index than the base menu default:
+
+```ts
+options: {
+  matchAnchorWidth: true,
+  minWidth: 180,
+  maxHeight: 'min(360px, calc(100vh - 24px))',
+  zIndex: 3000,
+  ...props.menuOptions,
+}
+```
+
+If a specific modal stack uses a higher z-index, pass a higher value through `menuOptions`.
+
+```vue
+<el-dropdown
+  v-model="value"
+  :items="items"
+  :menu-options="{ zIndex: 5000 }"
+/>
+```
+
+---
+
+## Native select migration rules
+
+Recommended migration order:
+
+1. Replace simple single `select` with `el-dropdown`.
+2. Replace categorized single selects with two `el-dropdown` components.
+3. Replace native `optgroup` with `item-group` / `item-group-label`.
+4. Keep native `multiple` selects until a dedicated multi-dropdown exists.
+
+Avoid wrapping `el-dropdown` inside a native `<label>` because the trigger is button-based. Use a normal wrapper instead:
+
+```vue
+<div class="field">
+  <el-text>Label</el-text>
+  <el-dropdown ... />
+</div>
+```
 
 ---
 
@@ -1649,8 +1970,10 @@ Recommended next steps:
 10. Add `shortcut` field for menu item keyboard shortcut labels.
 11. Add `to` field if menu items should support navigation through `el-button`.
 12. Add docs for custom component menu examples.
-13. Build first real use case in project UI.
-14. Later use this system to replace repeated select/option dropdown logic.
+13. Add a dedicated `el-multi-dropdown` or `multiple` mode for multi-select fields.
+14. Add optional search/filter UI for long option lists.
+15. Add selected/checkmark UI separate from active background if needed.
+16. Continue replacing any remaining native single selects with `el-dropdown`.
 
 ---
 
