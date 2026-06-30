@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useCollagePage } from '~/composables/collage/useCollagePage'
+import type { ElDropdownValue } from '~/types/dropdown'
 const { locale } = useI18n()
 const {
   orientation,
@@ -109,6 +110,88 @@ const {
   exportSliderVideo,
   exportSliderMp4,
 } = useCollagePage()
+
+const collageModeOptions = ['image', 'video']
+
+const brandOverlayThemeOptions = ['white', 'black']
+
+const videoQualityPresetOptions = ['compact', 'balanced', 'high']
+
+const videoPresetOptions = [
+  {
+    value: '1080x1920',
+    labelKey: 'pages.collage.video.presets.storyReel',
+  },
+  {
+    value: '1080x1350',
+    labelKey: 'pages.collage.video.presets.portraitPost',
+  },
+  {
+    value: '1080x1080',
+    labelKey: 'pages.collage.video.presets.squarePost',
+  },
+  {
+    value: '1920x1080',
+    labelKey: 'pages.collage.video.presets.landscape',
+  },
+]
+
+const textOverlayFontDropdownOptions = computed(() => {
+  const groups = unref(textOverlayFontGroups) || []
+
+  if (!Array.isArray(groups)) return []
+
+  return groups.flatMap((group) => {
+    return (group.options || []).map((option) => ({
+      ...option,
+      value: getTextOverlayFontOptionValue(option),
+      group: group.label,
+      groupLabel: group.label,
+    }))
+  })
+})
+
+function getDropdownString(value: ElDropdownValue, fallback = '') {
+  return String(value || fallback)
+}
+
+function createDropdownChangeEvent(value: ElDropdownValue) {
+  return {
+    target: {
+      value: getDropdownString(value),
+    },
+  } as unknown as Event
+}
+
+function updateActiveMode(value: ElDropdownValue) {
+  activeMode.value = getDropdownString(value, 'image') as typeof activeMode.value
+}
+
+function updateTextOverlayFontDropdown(value: ElDropdownValue) {
+  handleTextOverlayFontChange(createDropdownChangeEvent(value))
+}
+
+function updateBrandOverlayTheme(value: ElDropdownValue) {
+  brandOverlayTheme.value = getDropdownString(value, 'white') as typeof brandOverlayTheme.value
+}
+
+function updateWatermarkPosition(value: ElDropdownValue) {
+  watermarkPosition.value = getDropdownString(value) as typeof watermarkPosition.value
+}
+
+function updateOverlaySafeAreaPreset(value: ElDropdownValue) {
+  handleOverlaySafeAreaChange(createDropdownChangeEvent(value))
+}
+
+function updateVideoQualityPreset(value: ElDropdownValue) {
+  videoQualityPreset.value = getDropdownString(value, 'balanced') as typeof videoQualityPreset.value
+}
+
+function updateVideoPreset(value: ElDropdownValue) {
+  videoPreset.value = getDropdownString(value, '1080x1920') as typeof videoPreset.value
+  handleVideoPresetChange(createDropdownChangeEvent(value))
+}
+
 </script>
 
 <template>
@@ -193,21 +276,19 @@ const {
           {{ $t('pages.collage.outputMode.title') }}
         </el-text>
 
-        <label class="collage-field">
+        <div class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.outputMode.mode') }}
           </el-text>
 
-          <select v-model="activeMode">
-            <option value="image">
-              {{ $t('pages.collage.outputMode.modes.image') }}
-            </option>
-
-            <option value="video">
-              {{ $t('pages.collage.outputMode.modes.video') }}
-            </option>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="activeMode"
+            :items="collageModeOptions"
+            :item-label="(mode) => $t(`pages.collage.outputMode.modes.${mode}`)"
+            :item-value="(mode) => mode"
+            @update:model-value="updateActiveMode"
+          />
+        </div>
       </el-grid>
 
       <el-grid class="collage-panel" :gap="12" :p="14" :radius="18" :br="1" bc="normal10" bg="normal5">
@@ -223,20 +304,21 @@ const {
           </el-text>
         </el-flex>
 
-        <label class="field">
+        <div class="field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.textOverlay.font') }}
           </el-text>
 
-          <select :value="textOverlayFontValue" @change="handleTextOverlayFontChange">
-            <optgroup v-for="group in textOverlayFontGroups" :key="group.label" :label="group.label">
-              <option v-for="option in group.options" :key="getTextOverlayFontOptionValue(option)"
-                :value="getTextOverlayFontOptionValue(option)">
-                {{ option.label }}
-              </option>
-            </optgroup>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="textOverlayFontValue"
+            :items="textOverlayFontDropdownOptions"
+            item-label="label"
+            item-value="value"
+            item-group="group"
+            item-group-label="groupLabel"
+            @update:model-value="updateTextOverlayFontDropdown"
+          />
+        </div>
 
         <label class="field">
           <el-text type="span" :size="12" color="normal70">
@@ -279,45 +361,47 @@ const {
             :placeholder="$t('pages.collage.brand.telegramPostIdPlaceholder')">
         </label>
 
-        <label class="collage-field">
+        <div class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.brand.logoColor') }}
           </el-text>
 
-          <select v-model="brandOverlayTheme">
-            <option value="white">
-              {{ $t('pages.collage.brand.logoThemes.white') }}
-            </option>
+          <el-dropdown
+            :model-value="brandOverlayTheme"
+            :items="brandOverlayThemeOptions"
+            :item-label="(theme) => $t(`pages.collage.brand.logoThemes.${theme}`)"
+            :item-value="(theme) => theme"
+            @update:model-value="updateBrandOverlayTheme"
+          />
+        </div>
 
-            <option value="black">
-              {{ $t('pages.collage.brand.logoThemes.black') }}
-            </option>
-          </select>
-        </label>
-
-        <label class="collage-field">
+        <div class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.brand.position') }}
           </el-text>
 
-          <select v-model="watermarkPosition">
-            <option v-for="position in watermarkPositions" :key="position.value" :value="position.value">
-              {{ $t(`pages.collage.brand.positions.${position.value}`) }}
-            </option>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="watermarkPosition"
+            :items="watermarkPositions"
+            :item-label="(position) => $t(`pages.collage.brand.positions.${position.value}`)"
+            item-value="value"
+            @update:model-value="updateWatermarkPosition"
+          />
+        </div>
 
-        <label class="field">
+        <div class="field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.safeArea.title') }}
           </el-text>
 
-          <select :value="overlaySafeAreaPreset" @change="handleOverlaySafeAreaChange">
-            <option v-for="option in overlaySafeAreaOptions" :key="option.value" :value="option.value">
-              {{ option.label }}
-            </option>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="overlaySafeAreaPreset"
+            :items="overlaySafeAreaOptions"
+            item-label="label"
+            item-value="value"
+            @update:model-value="updateOverlaySafeAreaPreset"
+          />
+        </div>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70" localize>
@@ -385,25 +469,19 @@ const {
           {{ $t('pages.collage.video.title') }}
         </el-text>
 
-        <label class="collage-field">
+        <div class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.video.quality') }}
           </el-text>
 
-          <select v-model="videoQualityPreset">
-            <option value="compact">
-              {{ $t('pages.collage.video.qualityPresets.compact') }}
-            </option>
-
-            <option value="balanced">
-              {{ $t('pages.collage.video.qualityPresets.balanced') }}
-            </option>
-
-            <option value="high">
-              {{ $t('pages.collage.video.qualityPresets.high') }}
-            </option>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="videoQualityPreset"
+            :items="videoQualityPresetOptions"
+            :item-label="(preset) => $t(`pages.collage.video.qualityPresets.${preset}`)"
+            :item-value="(preset) => preset"
+            @update:model-value="updateVideoQualityPreset"
+          />
+        </div>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">
@@ -441,29 +519,19 @@ const {
           <input v-model.number="videoMusicVisualizationMaxHeightPercent" type="range" min="0" max="50" step="1">
         </label>
 
-        <label class="collage-field">
+        <div class="collage-field">
           <el-text type="span" :size="12" color="normal70">
             {{ $t('pages.collage.video.preset') }}
           </el-text>
 
-          <select v-model="videoPreset" @change="handleVideoPresetChange">
-            <option value="1080x1920">
-              {{ $t('pages.collage.video.presets.storyReel') }}
-            </option>
-
-            <option value="1080x1350">
-              {{ $t('pages.collage.video.presets.portraitPost') }}
-            </option>
-
-            <option value="1080x1080">
-              {{ $t('pages.collage.video.presets.squarePost') }}
-            </option>
-
-            <option value="1920x1080">
-              {{ $t('pages.collage.video.presets.landscape') }}
-            </option>
-          </select>
-        </label>
+          <el-dropdown
+            :model-value="videoPreset"
+            :items="videoPresetOptions"
+            :item-label="(option) => $t(option.labelKey)"
+            item-value="value"
+            @update:model-value="updateVideoPreset"
+          />
+        </div>
 
         <label class="collage-field">
           <el-text type="span" :size="12" color="normal70">

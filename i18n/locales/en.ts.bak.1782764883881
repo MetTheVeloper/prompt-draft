@@ -1829,11 +1829,6 @@ export default {
             overall: "Overall",
             subject: "Subject",
           },
-          controls: {
-            color: {
-              placeholder: "Select or enter a color...",
-            },
-          },
         },
         extraDetails: {
           label: "Extra Details",

@@ -1,15 +1,16 @@
 # Global Modal System for Nuxt 4
 
-This document describes the centralized modal system used in the Nuxt 4 project. It is intended to be reusable project documentation so that future work can use the existing modal API consistently.
+This document describes the current global modal system used in the Nuxt 4 project.
 
 The system provides:
 
-- a single global modal component rendered once in `app.vue`
-- a composable API via `useModal()`
-- Nuxt injections via `$modal` and `$message`
-- localized default modal titles and action labels
-- support for default text content and custom modal components
-- support for actions, async handlers, loading states, disabled actions, transitions, backdrop behavior, and Escape handling
+* a single global modal component rendered once in `app.vue`
+* a composable API via `useModal()`
+* Nuxt injections via `$modal` and `$message`
+* support for default text content
+* support for custom modal components
+* support for actions, async action handlers, disabled actions, loading state, backdrop behavior, Escape handling, and close transitions
+* modal rendering through `ClientOnly`, `Teleport`, and Vue transition
 
 ---
 
@@ -32,7 +33,7 @@ app/
   app.vue
 ```
 
-The modal component is registered once in `app.vue`:
+The modal component should be rendered once in `app.vue`:
 
 ```vue
 <template>
@@ -60,39 +61,24 @@ Nuxt auto-imports it as:
 
 ---
 
-## UI components used by the modal
+## Core files
 
-The Nuxt 4 project uses custom UI components:
+### `app/composables/useModal.ts`
 
-```txt
-el-flex
-el-button
-el-icon
-el-divider
-el-text
-```
+This file contains:
 
-Important UI rules:
+* global modal state
+* modal config types
+* action config types
+* message config types
+* `open`
+* `close`
+* `update`
+* `clearAfterClose`
+* `getComponent`
+* `message`
 
-- `el-flex` has the same prop behavior as the older `zee-flex`.
-- `el-button` has similar props to the old `zee-btn`, but its `size` prop only accepts numbers.
-- `el-button` does not use a `trans` color. For flat/transparent buttons, use `mode="flat"`.
-- Icons use the `icon` prop only. The old `ic` key is not used in this project.
-- `el-icon` props:
-  - `icon: string`
-  - `size: number`
-  - `color: string`
-- Text should be rendered with `el-text` where possible.
-- `el-text` props:
-  - `size: number`
-  - `weight: number`
-  - `color: string`
-
----
-
-## Core idea
-
-Pages and components should not build modal layouts directly. They should call the central API:
+The composable returns a singleton API object. Every call to `useModal()` uses the same shared modal state.
 
 ```ts
 const modal = useModal()
@@ -103,7 +89,11 @@ modal.update({...})
 modal.message({...})
 ```
 
-Or use Nuxt injections:
+---
+
+### `app/plugins/modal.ts`
+
+This plugin injects the modal API into Nuxt:
 
 ```ts
 const { $modal, $message } = useNuxtApp()
@@ -112,7 +102,93 @@ $modal.open({...})
 $message({...})
 ```
 
-In Options API components, this also works:
+It also adds TypeScript declarations for:
+
+```ts
+NuxtApp.$modal
+NuxtApp.$message
+this.$modal
+this.$message
+```
+
+---
+
+### `app/components/el/modal.vue`
+
+This is the actual UI renderer.
+
+It:
+
+* renders only on the client through `ClientOnly`
+* teleports the modal to `body`
+* uses a Vue transition named `globalModalTransition`
+* locks body scroll while the modal is open
+* renders an optional header
+* renders either a custom component or default title/description content
+* renders modal actions as `el-button`
+* handles backdrop click
+* handles Escape key
+* clears modal data only after the leave transition finishes
+
+---
+
+## Public API
+
+Use the composable:
+
+```ts
+const modal = useModal()
+```
+
+Available methods:
+
+```ts
+modal.open(config)
+modal.close()
+modal.update(config)
+modal.clearAfterClose()
+modal.getComponent()
+modal.message(options)
+```
+
+Usually, pages and components should only use:
+
+```ts
+modal.open()
+modal.close()
+modal.update()
+modal.message()
+```
+
+`clearAfterClose()` is used internally by `modal.vue` after the close transition finishes.
+
+---
+
+## Nuxt injections
+
+The plugin provides:
+
+```ts
+const { $modal, $message } = useNuxtApp()
+```
+
+Usage:
+
+```ts
+$modal.open({
+  title: 'Delete item',
+  descriptions: 'Are you sure?',
+})
+```
+
+```ts
+$message({
+  type: 'success',
+  message: 'Saved successfully.',
+})
+```
+
+Options API components can also use:
 
 ```ts
 this.$modal.open({...})
@@ -121,283 +197,19 @@ this.$message({...})
 
 ---
 
-## Simple messages with `$message`
-
-Use `$message` for simple feedback messages, similar to toast behavior, but displayed as a modal.
-
-### Basic usage
+## Modal config shape
 
 ```ts
-const { $message } = useNuxtApp()
-
-$message({
-  type: 'warning',
-  message: 'No value was entered for this field.',
-})
-```
-
-### String shortcut
-
-```ts
-const { $message } = useNuxtApp()
-
-$message('Operation completed.')
-```
-
-When a string is passed directly, the message type defaults to `info`.
-
-### Using `useModal()`
-
-```ts
-const modal = useModal()
-
-modal.message({
-  type: 'success',
-  message: 'Data was saved successfully.',
-})
-```
-
----
-
-## `$message` options
-
-```ts
-$message({
-  type: 'success' | 'warning' | 'error' | 'info',
-  title: 'Optional title or i18n key',
-  subtitle: 'Optional subtitle or i18n key',
-  message: 'Required message text or i18n key',
-  icon: 'optional-icon-name',
-  actionLabel: 'Optional button label or i18n key',
-  actionColor: 'green',
-  actionMode: 'flat',
-  actionIcon: 'tick-circle',
-  actionSize: 16,
-  width: 480,
-  closeOnBackdrop: true,
-  closeOnEsc: true,
-  persistent: false,
-  blur: true,
-})
-```
-
-The only required field is:
-
-```ts
-message
-```
-
-If `type` is missing or invalid, it defaults to:
-
-```ts
-info
-```
-
-The message action always closes the modal. It does not run custom logic.
-
----
-
-## Default message types
-
-The default message metadata should use i18n keys for titles:
-
-```ts
-success:
-  icon: 'tick-circle'
-  title: 'modal.titles.success'
-  color: 'green'
-
-warning:
-  icon: 'warning-2'
-  title: 'modal.titles.warning'
-  color: 'orange'
-
-error:
-  icon: 'close-circle'
-  title: 'modal.titles.error'
-  color: 'red'
-
-info:
-  icon: 'info-circle'
-  title: 'modal.titles.info'
-  color: 'blue'
-```
-
-The default confirmation button label should also be an i18n key:
-
-```ts
-modal.actions.ok
-```
-
----
-
-## Required i18n keys
-
-The project uses i18n, so the modal system should use translation keys for default system text.
-
-Example English locale:
-
-```ts
-export default {
-  modal: {
-    titles: {
-      success: 'Success',
-      warning: 'Warning',
-      error: 'Error',
-      info: 'Information',
-    },
-    actions: {
-      ok: 'OK',
-      close: 'Close',
-      cancel: 'Cancel',
-      delete: 'Delete',
-    },
-  },
+export type GlobalModalConfig = {
+  header?: GlobalModalHeader | null
+  title?: string
+  description?: string
+  descriptions?: string | string[]
+  component?: Component | null
+  props?: Record<string, any>
+  actions?: GlobalModalAction[]
+  options?: GlobalModalOptions
 }
-```
-
-Example Persian locale:
-
-```ts
-export default {
-  modal: {
-    titles: {
-      success: 'موفقیت',
-      warning: 'هشدار',
-      error: 'خطا',
-      info: 'اطلاع‌رسانی',
-    },
-    actions: {
-      ok: 'باشه',
-      close: 'بستن',
-      cancel: 'انصراف',
-      delete: 'حذف',
-    },
-  },
-}
-```
-
-The modal component should translate text only when the provided value is a valid i18n key. Literal strings should remain unchanged.
-
-Recommended helper inside `app/components/el/modal.vue`:
-
-```ts
-const { t, te } = useI18n()
-
-function translate(value?: string) {
-  if (!value) return ''
-
-  return te(value) ? t(value) : value
-}
-```
-
-Use it for:
-
-- header title
-- header subtitle
-- default content title
-- default descriptions
-- button labels
-
----
-
-## Opening a full modal with `modal.open`
-
-Use `modal.open` for confirmations, delete dialogs, custom content, forms, and advanced modal layouts.
-
-```ts
-const modal = useModal()
-
-modal.open({
-  header: {
-    icon: 'trash',
-    title: 'Delete item',
-    subtitle: 'Remove from list',
-    color: 'red',
-  },
-
-  title: 'Are you sure you want to delete this item?',
-
-  descriptions: [
-    'This action cannot be undone.',
-    'The item will be permanently removed.',
-  ],
-
-  actions: [
-    {
-      label: 'Delete',
-      color: 'red',
-      icon: 'trash',
-      size: 14,
-      handler: () => {
-        // delete item
-      },
-    },
-    {
-      label: 'Cancel',
-      color: 'normal',
-      mode: 'flat',
-      icon: 'close-circle',
-      size: 14,
-      close: true,
-    },
-  ],
-})
-```
-
----
-
-## Full `modal.open` config shape
-
-```ts
-modal.open({
-  header: {
-    icon: 'trash',
-    title: 'Header title or i18n key',
-    subtitle: 'Header subtitle or i18n key',
-    desc: 'Alternative subtitle or i18n key',
-    closeButton: true,
-    color: 'red',
-  },
-
-  title: 'Main title or i18n key',
-
-  description: 'Single description string or i18n key',
-
-  descriptions: [
-    'First description or i18n key',
-    'Second description or i18n key',
-  ],
-
-  component: CustomModalComponent,
-
-  props: {
-    id: 123,
-  },
-
-  actions: [
-    {
-      label: 'Button label or i18n key',
-      icon: 'tick-circle',
-      color: 'blue',
-      mode: undefined,
-      size: 14,
-      type: undefined,
-      close: false,
-      disable: false,
-      handler: ({ close, update, modal }) => {},
-    },
-  ],
-
-  options: {
-    width: 594,
-    closeOnBackdrop: true,
-    closeOnEsc: true,
-    persistent: false,
-    blur: true,
-    loading: false,
-  },
-})
 ```
 
 ---
@@ -405,7 +217,7 @@ modal.open({
 ## Header config
 
 ```ts
-header: {
+export type GlobalModalHeader = {
   icon?: string
   title?: string
   subtitle?: string
@@ -415,29 +227,164 @@ header: {
 }
 ```
 
-Notes:
+Example:
 
-- Use `icon`, not `ic`.
-- `title`, `subtitle`, and `desc` may be literal strings or i18n keys.
-- `color` is used for the header icon.
-- If `closeButton` is `false`, the close button is hidden.
+```ts
+modal.open({
+  header: {
+    icon: 'trash',
+    title: 'Delete item',
+    subtitle: 'This action is permanent',
+    color: 'red',
+  },
+})
+```
+
+Header behavior:
+
+* The header is rendered only when `header` exists.
+* `icon` is rendered with `el-icon`.
+* `title` is rendered as plain text.
+* `subtitle` is preferred over `desc`.
+* `color` controls the header icon color.
+* The close button is shown by default.
+* Set `closeButton: false` to hide the close button.
+
+Example without close button:
+
+```ts
+modal.open({
+  header: {
+    title: 'Processing',
+    closeButton: false,
+  },
+})
+```
+
+---
+
+## Important i18n note
+
+In the current implementation, modal text values are rendered as plain strings.
+
+This means these fields are not automatically translated by `modal.vue`:
+
+```ts
+header.title
+header.subtitle
+header.desc
+title
+description
+descriptions
+action.label
+```
+
+So this:
+
+```ts
+modal.open({
+  title: 'profile.messages.saved',
+})
+```
+
+will currently display:
+
+```txt
+profile.messages.saved
+```
+
+not the translated value.
+
+To show translated text in the current implementation, translate before passing the value:
+
+```ts
+const { t } = useI18n()
+
+modal.open({
+  title: t('profile.messages.saved'),
+})
+```
+
+The only text translated directly inside `modal.vue` right now is the header close button label:
+
+```ts
+t('components.modal.actions.close')
+```
+
+---
+
+## Required i18n key currently used by `modal.vue`
+
+The modal close button uses:
+
+```ts
+components.modal.actions.close
+```
+
+Example locale entry:
+
+```ts
+export default {
+  components: {
+    modal: {
+      actions: {
+        close: 'Close',
+      },
+    },
+  },
+}
+```
+
+Persian example:
+
+```ts
+export default {
+  components: {
+    modal: {
+      actions: {
+        close: 'بستن',
+      },
+    },
+  },
+}
+```
+
+---
+
+## Message default keys
+
+The `message()` helper currently creates default titles and labels using these string values:
+
+```ts
+modal.titles.success
+modal.titles.warning
+modal.titles.error
+modal.titles.info
+modal.actions.ok
+```
+
+However, because `modal.vue` does not currently auto-translate modal text, these values may appear as raw keys unless the implementation is updated later or custom translated values are passed manually.
+
+For example:
+
+```ts
+const { t } = useI18n()
+
+$message({
+  type: 'success',
+  title: t('modal.titles.success'),
+  message: t('profile.messages.saved'),
+  actionLabel: t('modal.actions.ok'),
+})
+```
 
 ---
 
 ## Descriptions
 
-The system supports both string and array descriptions.
+The modal supports both a single description and multiple descriptions.
 
-### Single string
-
-```ts
-modal.open({
-  title: 'Warning',
-  descriptions: 'This action cannot be undone.',
-})
-```
-
-Or:
+### Single description
 
 ```ts
 modal.open({
@@ -446,7 +393,18 @@ modal.open({
 })
 ```
 
-### Array
+Or:
+
+```ts
+modal.open({
+  title: 'Warning',
+  descriptions: 'This action cannot be undone.',
+})
+```
+
+Both are normalized internally to an array.
+
+### Multiple descriptions
 
 ```ts
 modal.open({
@@ -458,186 +416,152 @@ modal.open({
 })
 ```
 
-Descriptions can also be i18n keys.
+Falsy description items are filtered out.
 
 ---
 
 ## Actions
 
-Every action becomes one `el-button`.
+Every action is rendered as an `el-button`.
 
 ```ts
-{
-  label: 'Delete',
-  color: 'red',
-  icon: 'trash',
-  size: 14,
-  close: false,
-  handler: () => {
-    // custom logic
-  },
+export type GlobalModalAction = {
+  label: string
+  icon?: string
+  color?: string
+  size?: number
+  type?: string
+  mode?: string
+  center?: boolean
+  close?: boolean
+  disable?: boolean | (() => boolean)
+  handler?: (helpers: GlobalModalActionHelpers) => void | boolean | Promise<void | boolean>
 }
 ```
 
-Supported action fields:
+Example:
 
 ```ts
-label: string
-icon?: string
-color?: string
-mode?: string
-size?: number
-type?: string
-close?: boolean
-disable?: boolean | (() => boolean)
-handler?: Function
+modal.open({
+  title: 'Delete item',
+  descriptions: 'Are you sure?',
+  actions: [
+    {
+      label: 'Delete',
+      icon: 'trash',
+      color: 'red',
+      size: 14,
+      close: true,
+    },
+    {
+      label: 'Cancel',
+      icon: 'close-circle',
+      color: 'normal',
+      mode: 'flat',
+      size: 14,
+      close: true,
+    },
+  ],
+})
+```
+
+Action rendering currently binds:
+
+```vue
+:label="action.label"
+:icon="action.icon"
+:color="action.color || 'prim'"
+:size="action.size || 14"
+:type="action.type"
+:mode="action.mode"
+:disable="isActionDisabled(action)"
 ```
 
 Important rules:
 
-- Use `icon`, not `ic`.
-- `size` must be a number.
-- Do not use `color: 'trans'`.
-- For transparent/flat buttons, use `mode: 'flat'`.
-- The UI kit uses `disable`, not `disabled`.
+* Use `icon`, not `ic`.
+* `size` should be a number.
+* Use `mode: 'flat'` for flat buttons.
+* The UI kit uses `disable`, not `disabled`.
+* `center` exists in the TypeScript type, but it is not currently bound in `modal.vue`.
 
 ---
 
-## Flat/cancel action example
+## Action handlers
 
-Old Vue 2 pattern:
+Action handlers receive helper methods:
 
 ```ts
-{
-  label: 'Cancel',
-  color: 'trans',
-  icon: 'close',
-  close: true,
+export type GlobalModalActionHelpers = {
+  close: () => void
+  update: (config: Partial<GlobalModalConfig>) => void
+  modal: GlobalModalConfig | null
 }
 ```
 
-Nuxt 4 pattern:
+Example:
 
 ```ts
-{
-  label: 'modal.actions.cancel',
-  color: 'normal',
-  mode: 'flat',
-  icon: 'close-circle',
-  size: 14,
-  close: true,
-}
+modal.open({
+  title: 'Save changes?',
+  actions: [
+    {
+      label: 'Save',
+      color: 'green',
+      icon: 'tick-circle',
+      size: 14,
+      async handler({ close }) {
+        await saveChanges()
+        close()
+      },
+    },
+  ],
+})
 ```
 
 ---
 
-## Closing the modal from an action
+## Auto close behavior
 
-If an action only closes the modal:
-
-```ts
-{
-  label: 'modal.actions.cancel',
-  color: 'normal',
-  mode: 'flat',
-  icon: 'close-circle',
-  size: 14,
-  close: true,
-}
-```
-
-If an action has a handler and `close: true`, the modal closes after the handler finishes, unless the handler returns `false`.
+If an action has `close: true`, the modal closes after its handler finishes.
 
 ```ts
 {
   label: 'Save',
-  color: 'green',
-  icon: 'tick-circle',
-  size: 14,
   close: true,
-  handler: () => {
-    if (!formIsValid.value) return false
+  handler() {
+    saveData()
+  },
+}
+```
+
+To prevent auto close, return `false` from the handler:
+
+```ts
+{
+  label: 'Save',
+  close: true,
+  handler() {
+    if (!formIsValid.value) {
+      return false
+    }
 
     saveData()
   },
 }
 ```
 
----
-
-## Action handler helpers
-
-Action handlers receive a helpers object:
-
-```ts
-handler: ({ close, update, modal }) => {
-  close()
-}
-```
-
-Helpers:
-
-```ts
-close: () => void
-update: (config) => void
-modal: GlobalModalConfig | null
-```
-
-Using helpers is optional. This is also valid:
-
-```ts
-handler: () => {
-  deleteItem()
-}
-```
+If the handler throws an error, the error is logged and the modal does not continue to the auto-close step.
 
 ---
 
-## Async actions
-
-Handlers can be async:
-
-```ts
-{
-  label: 'Delete',
-  color: 'red',
-  icon: 'trash',
-  size: 14,
-  async handler() {
-    await deleteItem()
-
-    const modal = useModal()
-    modal.close()
-  },
-}
-```
-
-Or with helpers:
-
-```ts
-{
-  label: 'Save',
-  color: 'green',
-  icon: 'tick-circle',
-  size: 14,
-  async handler({ close }) {
-    await saveData()
-    close()
-  },
-}
-```
-
----
-
-## Disabling actions
+## Disabled actions
 
 An action can be disabled with a boolean:
 
 ```ts
 {
   label: 'Save',
-  color: 'green',
-  size: 14,
   disable: true,
 }
 ```
@@ -647,47 +571,257 @@ Or with a function:
 ```ts
 {
   label: 'Save',
-  color: 'green',
-  size: 14,
   disable: () => !formIsValid.value,
 }
 ```
 
-If `options.loading` is active, all actions are disabled.
+When modal loading is active, all actions are disabled automatically.
+
+---
+
+## Modal options
+
+```ts
+export type GlobalModalOptions = {
+  width?: number | string
+  closeOnBackdrop?: boolean
+  closeOnEsc?: boolean
+  persistent?: boolean
+  blur?: boolean
+  loading?: boolean | (() => boolean)
+}
+```
+
+Default options:
+
+```ts
+{
+  width: 594,
+  closeOnBackdrop: true,
+  closeOnEsc: true,
+  persistent: false,
+  blur: true,
+  loading: false,
+}
+```
+
+---
+
+## Width
+
+Width can be a number:
+
+```ts
+modal.open({
+  options: {
+    width: 720,
+  },
+})
+```
+
+This becomes:
+
+```css
+max-width: 720px;
+```
+
+Width can also be a CSS string:
+
+```ts
+modal.open({
+  options: {
+    width: 'min(720px, 100%)',
+  },
+})
+```
+
+The modal box also has this base width in CSS:
+
+```css
+width: calc(100% - 64px);
+```
+
+---
+
+## Backdrop click
+
+Backdrop click closes the modal by default.
+
+```ts
+modal.open({
+  options: {
+    closeOnBackdrop: true,
+  },
+})
+```
+
+Disable backdrop close:
+
+```ts
+modal.open({
+  options: {
+    closeOnBackdrop: false,
+  },
+})
+```
+
+Backdrop click is also blocked when:
+
+```ts
+persistent: true
+```
+
+or when:
+
+```ts
+loading: true
+```
+
+---
+
+## Escape key
+
+Escape closes the modal by default.
+
+```ts
+modal.open({
+  options: {
+    closeOnEsc: true,
+  },
+})
+```
+
+Disable Escape close:
+
+```ts
+modal.open({
+  options: {
+    closeOnEsc: false,
+  },
+})
+```
+
+Escape close is also blocked when:
+
+```ts
+persistent: true
+```
+
+or when:
+
+```ts
+loading: true
+```
+
+---
+
+## Persistent modal
+
+A persistent modal cannot be closed by backdrop click or Escape.
+
+```ts
+modal.open({
+  options: {
+    persistent: true,
+  },
+})
+```
+
+The header close button can still close the modal unless it is hidden or loading is active.
+
+For fully blocking manual close, combine:
+
+```ts
+modal.open({
+  header: {
+    closeButton: false,
+  },
+  options: {
+    persistent: true,
+  },
+})
+```
+
+---
+
+## Backdrop blur
+
+Backdrop blur is enabled by default.
+
+```ts
+modal.open({
+  options: {
+    blur: true,
+  },
+})
+```
+
+Disable blur:
+
+```ts
+modal.open({
+  options: {
+    blur: false,
+  },
+})
+```
+
+When blur is enabled, `modal.vue` adds this class:
+
+```txt
+hasBlur
+```
+
+and applies:
+
+```css
+backdrop-filter: blur(8px);
+```
 
 ---
 
 ## Loading behavior
 
-The Nuxt 4 modal uses `options.loading`.
-
-### Boolean loading
+Loading can be a boolean:
 
 ```ts
 modal.open({
-  title: 'Delete',
-  descriptions: 'Are you sure?',
   options: {
     loading: true,
   },
 })
 ```
 
-### Reactive loading
-
-If the loading state is reactive, prefer passing a function:
+Or a function:
 
 ```ts
 const pending = ref(false)
 
 modal.open({
-  title: 'Delete',
-  descriptions: 'Are you sure?',
-
   options: {
     loading: () => pending.value,
   },
+})
+```
 
+When loading is active:
+
+* all actions are disabled
+* the header close button is disabled
+* backdrop click is ignored
+* Escape key is ignored
+
+Example:
+
+```ts
+const pending = ref(false)
+
+modal.open({
+  title: 'Delete item',
+  descriptions: 'This action cannot be undone.',
+  options: {
+    loading: () => pending.value,
+  },
   actions: [
     {
       label: 'Delete',
@@ -705,93 +839,23 @@ modal.open({
         }
       },
     },
+    {
+      label: 'Cancel',
+      color: 'normal',
+      mode: 'flat',
+      icon: 'close-circle',
+      size: 14,
+      close: true,
+    },
   ],
 })
-```
-
-When loading is active:
-
-- actions are disabled
-- the close button is disabled
-- clicking the backdrop does not close the modal
-- pressing Escape does not close the modal
-
----
-
-## Modal options
-
-```ts
-options: {
-  width: 594,
-  closeOnBackdrop: true,
-  closeOnEsc: true,
-  persistent: false,
-  blur: true,
-  loading: false,
-}
-```
-
-### width
-
-```ts
-options: {
-  width: 720,
-}
-```
-
-Or:
-
-```ts
-options: {
-  width: 'min(720px, 100%)',
-}
-```
-
-### closeOnBackdrop
-
-If `false`, clicking the backdrop does not close the modal.
-
-```ts
-options: {
-  closeOnBackdrop: false,
-}
-```
-
-### closeOnEsc
-
-If `false`, pressing Escape does not close the modal.
-
-```ts
-options: {
-  closeOnEsc: false,
-}
-```
-
-### persistent
-
-If `true`, the modal cannot be closed by backdrop click or Escape.
-
-```ts
-options: {
-  persistent: true,
-}
-```
-
-### blur
-
-If `false`, backdrop blur is disabled.
-
-```ts
-options: {
-  blur: false,
-}
 ```
 
 ---
 
 ## Custom component content
 
-Use `component` and `props` for custom modal layouts.
+Use `component` and `props` to render custom content inside the modal.
 
 ```ts
 import UserDetailsModal from '~/components/modals/UserDetailsModal.vue'
@@ -813,7 +877,7 @@ modal.open({
 
   actions: [
     {
-      label: 'modal.actions.close',
+      label: 'Close',
       color: 'normal',
       mode: 'flat',
       icon: 'close-circle',
@@ -824,7 +888,9 @@ modal.open({
 })
 ```
 
-Custom component example:
+The custom component receives `props` through `v-bind`.
+
+Example custom component:
 
 ```vue
 <template>
@@ -860,53 +926,109 @@ function closeModal() {
 </script>
 ```
 
-The central `el-modal` listens to `close` and calls `modalApi.close`.
+The global modal listens to this event and calls:
+
+```ts
+modalApi.close()
+```
+
+---
+
+## Component storage behavior
+
+Custom components are stored separately from `state.modal`.
+
+Internally:
+
+* the component is stored in a `shallowRef`
+* the component is wrapped with `markRaw`
+* `state.modal.component` is normalized to `null`
+* `modal.getComponent()` returns the active component
+
+This avoids making the Vue component object deeply reactive.
 
 ---
 
 ## Updating an open modal
 
-Use `modal.update` to update the current modal without closing it.
+Use `modal.update()` to update the current modal without closing it.
 
 ```ts
-const modal = useModal()
-
 modal.update({
   title: 'New title',
   descriptions: 'New description',
 })
 ```
 
-Example:
+`update()` does nothing when no modal is currently active.
+
+---
+
+## Update merge behavior
+
+The current implementation uses special merge behavior for some fields.
+
+### `header`
+
+When `header` is provided, it is merged with the existing header:
 
 ```ts
-modal.open({
-  title: 'Processing',
-  descriptions: 'Please wait...',
-  options: {
-    persistent: true,
-  },
-})
-
-await doSomething()
-
 modal.update({
-  title: 'Done',
-  descriptions: 'The operation finished successfully.',
-  actions: [
-    {
-      label: 'modal.actions.ok',
-      color: 'green',
-      icon: 'tick-circle',
-      size: 14,
-      close: true,
-    },
-  ],
-  options: {
-    persistent: false,
+  header: {
+    title: 'Updated title',
   },
 })
 ```
+
+This keeps other existing header fields.
+
+Current limitation:
+
+* Passing `header: null` does not reliably clear the existing header during `update()`.
+* To open a modal without a header, use `modal.open()` without a header.
+
+### `props`
+
+Props are merged:
+
+```ts
+modal.update({
+  props: {
+    userId: 2,
+  },
+})
+```
+
+### `options`
+
+Options are merged:
+
+```ts
+modal.update({
+  options: {
+    loading: true,
+  },
+})
+```
+
+### `actions`
+
+Actions are replaced only when the `actions` field exists in the update config:
+
+```ts
+modal.update({
+  actions: [
+    {
+      label: 'Done',
+      close: true,
+    },
+  ],
+})
+```
+
+### `description` and `descriptions`
+
+Descriptions are replaced only when their fields exist in the update config.
 
 ---
 
@@ -926,55 +1048,83 @@ const { $modal } = useNuxtApp()
 $modal.close()
 ```
 
+Calling `close()` sets:
+
+```ts
+state.isOpen = false
+```
+
+The modal data is not cleared immediately. It is cleared after the leave transition finishes.
+
 ---
 
 ## Transition and cleanup behavior
 
-When `close()` is called:
+When closing:
 
-1. `state.isOpen` becomes `false`.
-2. The leave transition runs.
-3. After the transition finishes, `clearAfterClose()` runs.
-4. The modal data and active component are cleared.
+1. `modal.close()` sets `state.isOpen` to `false`.
+2. The leave transition starts.
+3. `modal.vue` waits for `@after-leave`.
+4. `afterLeave()` calls `modalApi.clearAfterClose()`.
+5. `state.modal` is set to `null`.
+6. `activeComponent` is set to `null`.
+7. `global-modal-open` is removed from `body`.
 
-This prevents the content from disappearing abruptly during the close animation.
+This prevents modal content from disappearing before the close animation finishes.
 
 ---
 
-## Recommended `useModal.ts` changes for this project
+## Body scroll lock
 
-The Nuxt 4 project should not keep Vue 2 compatibility fields such as `ic`, string sizes, or `trans` colors.
+When the modal opens, `modal.vue` adds this class to `body`:
 
-Recommended action type:
+```txt
+global-modal-open
+```
 
-```ts
-export type GlobalModalAction = {
-  label: string
-  icon?: string
-  color?: string
-  mode?: string
-  size?: number
-  type?: string
-  close?: boolean
-  disable?: boolean | (() => boolean)
-  handler?: (helpers: GlobalModalActionHelpers) => void | boolean | Promise<void | boolean>
+Global CSS:
+
+```css
+body.global-modal-open {
+  overflow: hidden;
 }
 ```
 
-Recommended header type:
+The class is removed:
+
+* after the close transition finishes
+* when the component is unmounted
+
+---
+
+## `$message`
+
+Use `$message` for simple modal messages.
 
 ```ts
-export type GlobalModalHeader = {
-  icon?: string
-  title?: string
-  subtitle?: string
-  desc?: string
-  closeButton?: boolean
-  color?: string
-}
+const { $message } = useNuxtApp()
+
+$message({
+  type: 'warning',
+  message: 'No value was entered for this field.',
+})
 ```
 
-Recommended message options:
+String shortcut:
+
+```ts
+$message('Operation completed.')
+```
+
+When a string is passed, the message type defaults to:
+
+```ts
+info
+```
+
+---
+
+## Message options
 
 ```ts
 export type GlobalMessageOptions = {
@@ -985,7 +1135,6 @@ export type GlobalMessageOptions = {
   icon?: string
   actionLabel?: string
   actionColor?: string
-  actionMode?: string
   actionIcon?: string
   actionSize?: number
   width?: number | string
@@ -996,81 +1145,102 @@ export type GlobalMessageOptions = {
 }
 ```
 
-Recommended message action default:
+Required field:
 
 ```ts
-actions: [
-  {
-    label: finalOptions.actionLabel || 'modal.actions.ok',
-    color: finalOptions.actionColor || typeConfig.color,
-    mode: finalOptions.actionMode,
-    icon: finalOptions.actionIcon || 'tick-circle',
-    size: finalOptions.actionSize || 16,
-    close: true,
-  },
-]
+message
 ```
+
+If `message` is missing or invalid, the helper logs a warning and does not open the modal.
 
 ---
 
-## Recommended `modal.vue` changes for this project
+## Message types
 
-The Nuxt 4 modal should:
-
-- remove all `ic` fallbacks
-- bind `mode` to `el-button`
-- translate text with `useI18n`
-- use numeric button sizes
-- use `el-text` for text rendering
-- fix the CSS selector `.title, .desc`
-
-Important template patterns:
-
-```vue
-<el-text
-  :size="16"
-  :weight="700"
-  v-if="modal.header.title"
->
-  {{ translate(modal.header.title) }}
-</el-text>
+```ts
+export type GlobalModalMessageType = 'success' | 'warning' | 'error' | 'info'
 ```
 
-```vue
-<el-button
-  v-for="(action, index) in modal.actions"
-  :key="index"
-  :label="translate(action.label)"
-  :icon="action.icon"
-  :color="action.color || 'prim'"
-  :mode="action.mode"
-  :size="action.size || 14"
-  :type="action.type"
-  :disable="isActionDisabled(action)"
-  :p="[8, 12]"
-  :radius="8"
-  @click="runAction(action)"
-/>
-```
+Default message metadata:
 
-CSS fix:
+```ts
+success: {
+  icon: 'tick-circle',
+  title: 'modal.titles.success',
+  color: 'green',
+}
 
-```css
-.title,
-.desc {
-  line-height: 2;
+warning: {
+  icon: 'warning-2',
+  title: 'modal.titles.warning',
+  color: 'orange',
+}
+
+error: {
+  icon: 'close-circle',
+  title: 'modal.titles.error',
+  color: 'red',
+}
+
+info: {
+  icon: 'info-circle',
+  title: 'modal.titles.info',
+  color: 'blue',
 }
 ```
 
+If `type` is missing or invalid, it falls back to:
+
+```ts
+info
+```
+
 ---
 
-## Complete example: delete item
+## Message action
+
+`$message` always creates one close action.
+
+Default action:
+
+```ts
+{
+  label: finalOptions.actionLabel || 'modal.actions.ok',
+  color: finalOptions.actionColor || typeConfig.color,
+  icon: finalOptions.actionIcon || 'tick-circle',
+  size: finalOptions.actionSize || 16,
+  close: true,
+}
+```
+
+The current `GlobalMessageOptions` type does not support `actionMode`.
+
+---
+
+## Message modal options
+
+`$message` maps options like this:
+
+```ts
+options: {
+  width: finalOptions.width || 480,
+  closeOnBackdrop: finalOptions.closeOnBackdrop !== false,
+  closeOnEsc: finalOptions.closeOnEsc !== false,
+  persistent: !!finalOptions.persistent,
+  blur: finalOptions.blur !== false,
+}
+```
+
+`$message` does not currently support `loading`.
+
+---
+
+## Complete example: confirmation modal
 
 ```ts
 const modal = useModal()
-const pending = ref(false)
 
-function showDeleteModal(itemName: string) {
+function showDeleteModal() {
   modal.open({
     header: {
       icon: 'trash',
@@ -1079,34 +1249,80 @@ function showDeleteModal(itemName: string) {
       color: 'red',
     },
 
-    title: `Are you sure you want to delete ${itemName}?`,
+    title: 'Are you sure you want to delete this item?',
 
-    descriptions: 'This action cannot be undone.',
-
-    options: {
-      loading: () => pending.value,
-      width: 520,
-    },
+    descriptions: [
+      'This action cannot be undone.',
+      'The item will be permanently removed.',
+    ],
 
     actions: [
       {
-        label: 'modal.actions.delete',
+        label: 'Delete',
         color: 'red',
         icon: 'trash',
         size: 14,
         async handler({ close }) {
-          pending.value = true
-
-          try {
-            await deleteItem()
-            close()
-          } finally {
-            pending.value = false
-          }
+          await deleteItem()
+          close()
         },
       },
       {
-        label: 'modal.actions.cancel',
+        label: 'Cancel',
+        color: 'normal',
+        mode: 'flat',
+        icon: 'close-circle',
+        size: 14,
+        close: true,
+      },
+    ],
+
+    options: {
+      width: 520,
+      closeOnBackdrop: true,
+      closeOnEsc: true,
+      blur: true,
+    },
+  })
+}
+```
+
+---
+
+## Complete example: translated confirmation modal
+
+Because the current modal renderer does not translate modal text automatically, translate values before passing them.
+
+```ts
+const modal = useModal()
+const { t } = useI18n()
+
+function showDeleteModal() {
+  modal.open({
+    header: {
+      icon: 'trash',
+      title: t('items.delete.title'),
+      subtitle: t('items.delete.subtitle'),
+      color: 'red',
+    },
+
+    title: t('items.delete.confirmTitle'),
+
+    descriptions: [
+      t('items.delete.description1'),
+      t('items.delete.description2'),
+    ],
+
+    actions: [
+      {
+        label: t('items.delete.actions.delete'),
+        color: 'red',
+        icon: 'trash',
+        size: 14,
+        close: true,
+      },
+      {
+        label: t('items.delete.actions.cancel'),
         color: 'normal',
         mode: 'flat',
         icon: 'close-circle',
@@ -1120,50 +1336,83 @@ function showDeleteModal(itemName: string) {
 
 ---
 
-## Complete example: warning message
-
-```ts
-const { $message } = useNuxtApp()
-
-$message({
-  type: 'warning',
-  message: 'No value was entered for this field.',
-})
-```
-
----
-
-## Complete example: localized message
+## Complete example: simple message
 
 ```ts
 const { $message } = useNuxtApp()
 
 $message({
   type: 'success',
-  title: 'modal.titles.success',
-  message: 'profile.messages.saved',
-  actionLabel: 'modal.actions.ok',
+  message: 'Saved successfully.',
 })
 ```
 
-If `profile.messages.saved` exists in i18n messages, it will be translated by the modal component. If it does not exist, the literal string will be displayed.
+---
+
+## Complete example: translated message
+
+```ts
+const { $message } = useNuxtApp()
+const { t } = useI18n()
+
+$message({
+  type: 'success',
+  title: t('modal.titles.success'),
+  message: t('profile.messages.saved'),
+  actionLabel: t('modal.actions.ok'),
+})
+```
 
 ---
 
-## Notes for future development
+## UI components used by the modal
 
-- The central modal component lives at `app/components/el/modal.vue`.
-- It is rendered once in `app.vue` as `<el-modal />`.
-- The modal API lives in `app/composables/useModal.ts`.
-- `$modal` and `$message` are injected from `app/plugins/modal.ts`.
-- Use `$message` for simple informational modals.
-- Use `modal.open` for confirmations, delete dialogs, forms, and custom content.
-- Use `component` and `props` for custom modal layouts.
-- Use `options.loading` or `options.persistent` for critical operations.
-- For reactive loading, prefer `loading: () => pending.value`.
-- Use `icon`, not `ic`.
-- Use numeric `size` for buttons.
-- Use `mode: 'flat'` instead of `color: 'trans'`.
-- Use `el-text` for text rendering.
-- Use `el-divider` instead of a plain `.line-hor` divider.
-- Header layout is implemented manually with `el-flex`, `el-icon`, and `el-text`; there is no `title-row` in the Nuxt 4 project.
+The modal currently uses these project UI components:
+
+```txt
+el-flex
+el-button
+el-icon
+el-divider
+el-text
+```
+
+Important usage notes:
+
+* `el-button` receives `label`, `icon`, `color`, `size`, `type`, `mode`, `disable`, `p`, and `radius`.
+* `el-button.size` should be numeric.
+* Flat buttons should use `mode="flat"`.
+* Icons use `icon`, not `ic`.
+* Disabled state uses `disable`, not `disabled`.
+* Text content is rendered with `el-text`.
+
+---
+
+## Current limitations
+
+The current implementation has a few important limitations:
+
+* Modal text is not automatically translated, except for the header close button.
+* `$message` default titles and OK label are currently stored as i18n key strings, but they are not translated by `modal.vue`.
+* `GlobalMessageOptions` does not support `actionMode`.
+* `GlobalModalAction.center` exists in the type but is not currently used in the modal template.
+* `modal.update({ header: null })` does not reliably remove an existing header because header updates are merged.
+* There is no modal queue. Opening a new modal replaces the current modal.
+* There is no focus trap or ARIA dialog metadata in the current `modal.vue`.
+
+---
+
+## Recommended usage rules
+
+* Render `<el-modal />` once in `app.vue`.
+* Use `useModal()` or `$modal` instead of building modal layouts manually in pages.
+* Use `$message` only for simple informational messages.
+* Use `modal.open()` for confirmations, delete dialogs, custom content, and forms.
+* Use `component` and `props` for custom modal bodies.
+* Use `options.loading` for async operations.
+* Use `options.persistent` for critical operations.
+* Translate text before passing it to the modal in the current implementation.
+* Use `icon`, not `ic`.
+* Use numeric button sizes.
+* Use `mode: 'flat'` instead of old transparent color patterns.
+* Use `disable`, not `disabled`.

@@ -1,3 +1,4 @@
+// composables/prompt/usePromptEditor.ts
 import { computed, reactive, ref } from "vue";
 
 export type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;

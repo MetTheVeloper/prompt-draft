@@ -1,8 +1,7 @@
 <script setup lang="ts">
-import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 
 const { t } = useI18n();
-
+import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   ModuleField,
   ModuleFieldOption,
@@ -23,34 +22,9 @@ const emit = defineEmits<{
   (event: "addTextBlock"): void;
 }>();
 
-const promptEditor = usePromptEditor();
-
-type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
-
-function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
-  if (!target) return false;
-
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-}
 
 function editorId(fieldKey: string) {
   return `${props.moduleKey || "typography"}:${props.field.id}:group_${props.groupIndex}:${fieldKey}`;
-}
-
-function handleEditorFocus(event: Event, fieldKey: string) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.registerEditor(editorId(fieldKey), event.target);
-}
-
-function handleEditorBlur(fieldKey: string) {
-  promptEditor.blurEditor(editorId(fieldKey));
-}
-
-function handleEditorCursor(event: Event) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.updateCursor(event.target);
 }
 
 function humanizeValue(value: string) {
@@ -78,10 +52,6 @@ function getConfigOptions(key: string): ModuleFieldOption[] {
   return value.filter(isModuleFieldOption);
 }
 
-function getEventValue(event: Event) {
-  return (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
-}
-
 function updateGroupField<K extends keyof TypographyTextGroup>(
   key: K,
   value: TypographyTextGroup[K],
@@ -98,6 +68,48 @@ function updateTextBlock(blockIndex: number, block: TypographyTextBlock) {
   texts[blockIndex] = block;
 
   updateGroupField("texts", texts);
+}
+
+function getDropdownValue(value: ElDropdownValue, fallback = "") {
+  return String(value || fallback);
+}
+
+function updateGroupPurpose(value: ElDropdownValue) {
+  updateGroupField("groupPurpose", getDropdownValue(value));
+}
+
+function updatePositionPreset(value: ElDropdownValue) {
+  updateGroupField("positionPreset", getDropdownValue(value));
+}
+
+function updateDirection(value: ElDropdownValue) {
+  updateGroupField(
+    "direction",
+    getDropdownValue(value, "column") as TypographyTextGroup["direction"],
+  );
+}
+
+function updateWritingDirection(value: ElDropdownValue) {
+  const nextValue = getDropdownValue(value);
+
+  updateGroupField(
+    "writingDirection",
+    (nextValue || undefined) as TypographyTextGroup["writingDirection"],
+  );
+}
+
+function updateAlignment(value: ElDropdownValue) {
+  updateGroupField(
+    "alignment",
+    getDropdownValue(value, "center") as TypographyTextGroup["alignment"],
+  );
+}
+
+function updateDistribution(value: ElDropdownValue) {
+  updateGroupField(
+    "distribution",
+    getDropdownValue(value, "compact") as TypographyTextGroup["distribution"],
+  );
 }
 
 function removeTextBlock(blockIndex: number) {
@@ -133,28 +145,28 @@ function removeTextBlock(blockIndex: number) {
           {{ t("modules.typography.fields.textGroups.group.controls.groupPurpose.label") }}
         </span>
 
-        <select :value="modelValue.groupPurpose || ''"
-          @change="updateGroupField('groupPurpose', getEventValue($event))">
-          <option value="">
-            {{ t("panel.none") }}
-          </option>
-
-          <option v-for="option in getConfigOptions('groupPurposeOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.groupPurpose || ''"
+          :items="getConfigOptions('groupPurposeOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          :placeholder="t('panel.none')"
+          clearable
+          @update:model-value="updateGroupPurpose"
+        />
       </label>
 
       <label v-if="modelValue.groupPurpose === 'custom'" class="text-group-card__field">
         <span>Custom group purpose</span>
 
-        <input type="text" :value="modelValue.customGroupPurpose || ''"
+        <el-text-field
+          :model-value="modelValue.customGroupPurpose || ''"
+          type="text"
           :placeholder="t('modules.typography.fields.textGroups.group.controls.customGroupPurpose.placeholder')"
-          @focus="handleEditorFocus($event, 'customGroupPurpose')"
-          @blur="handleEditorBlur('customGroupPurpose')"
-          @input="updateGroupField('customGroupPurpose', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customGroupPurpose')"
+          support-variables
+          @update:model-value="updateGroupField('customGroupPurpose', $event)"
+        />
       </label>
 
       <label class="text-group-card__field">
@@ -162,16 +174,15 @@ function removeTextBlock(blockIndex: number) {
           {{ t("modules.typography.fields.textGroups.group.controls.positionPreset.label") }}
         </span>
 
-        <select :value="modelValue.positionPreset || ''"
-          @change="updateGroupField('positionPreset', getEventValue($event))">
-          <option value="">
-            {{ t("panel.none") }}
-          </option>
-
-          <option v-for="option in getConfigOptions('positionPresetOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.positionPreset || ''"
+          :items="getConfigOptions('positionPresetOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          :placeholder="t('panel.none')"
+          clearable
+          @update:model-value="updatePositionPreset"
+        />
       </label>
 
       <label v-if="modelValue.positionPreset === 'custom'" class="text-group-card__field">
@@ -179,13 +190,15 @@ function removeTextBlock(blockIndex: number) {
           {{ t("modules.typography.fields.textGroups.group.controls.customPositionDescription.label") }}
         </span>
 
-        <textarea :value="modelValue.customPositionDescription || ''" rows="2"
+        <el-text-field
+          :model-value="modelValue.customPositionDescription || ''"
+          type="textarea"
+          rows="2"
           :placeholder="t('modules.typography.fields.textGroups.group.controls.customPositionDescription.placeholder')"
-          @focus="handleEditorFocus($event, 'customPositionDescription')"
-          @blur="handleEditorBlur('customPositionDescription')"
-          @input="updateGroupField('customPositionDescription', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customPositionDescription')"
+          support-variables
+          @update:model-value="updateGroupField('customPositionDescription', $event)"
+        />
       </label>
 
       <div class="text-group-card__grid">
@@ -194,12 +207,13 @@ function removeTextBlock(blockIndex: number) {
             {{ t("modules.typography.fields.textGroups.group.controls.direction.label") }}
           </span>
 
-          <select :value="modelValue.direction || 'column'"
-            @change="updateGroupField('direction', getEventValue($event) as TypographyTextGroup['direction'])">
-            <option v-for="option in getConfigOptions('directionOptions')" :key="option.value" :value="option.value">
-              {{ humanizeValue(option.value) }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="modelValue.direction || 'column'"
+            :items="getConfigOptions('directionOptions')"
+            :item-label="(option) => humanizeValue(option.value)"
+            item-value="value"
+            @update:model-value="updateDirection"
+          />
         </label>
 
         <label class="text-group-card__field">
@@ -207,17 +221,15 @@ function removeTextBlock(blockIndex: number) {
             {{ t("modules.typography.fields.textGroups.group.controls.writingDirection.label") }}
           </span>
 
-          <select :value="modelValue.writingDirection || ''"
-            @change="updateGroupField('writingDirection', (getEventValue($event) || undefined) as TypographyTextGroup['writingDirection'])">
-            <option value="">
-              {{ t("panel.none") }}
-            </option>
-
-            <option v-for="option in getConfigOptions('writingDirectionOptions')" :key="option.value"
-              :value="option.value">
-              {{ humanizeValue(option.value) }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="modelValue.writingDirection || ''"
+            :items="getConfigOptions('writingDirectionOptions')"
+            :item-label="(option) => humanizeValue(option.value)"
+            item-value="value"
+            :placeholder="t('panel.none')"
+            clearable
+            @update:model-value="updateWritingDirection"
+          />
         </label>
 
         <label class="text-group-card__field">
@@ -225,12 +237,13 @@ function removeTextBlock(blockIndex: number) {
             {{ t("modules.typography.fields.textGroups.group.controls.alignment.label") }}
           </span>
 
-          <select :value="modelValue.alignment || 'center'"
-            @change="updateGroupField('alignment', getEventValue($event) as TypographyTextGroup['alignment'])">
-            <option v-for="option in getConfigOptions('alignmentOptions')" :key="option.value" :value="option.value">
-              {{ humanizeValue(option.value) }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="modelValue.alignment || 'center'"
+            :items="getConfigOptions('alignmentOptions')"
+            :item-label="(option) => humanizeValue(option.value)"
+            item-value="value"
+            @update:model-value="updateAlignment"
+          />
         </label>
 
         <label class="text-group-card__field">
@@ -238,12 +251,13 @@ function removeTextBlock(blockIndex: number) {
             {{ t("modules.typography.fields.textGroups.group.controls.distribution.label") }}
           </span>
 
-          <select :value="modelValue.distribution || 'compact'"
-            @change="updateGroupField('distribution', getEventValue($event) as TypographyTextGroup['distribution'])">
-            <option v-for="option in getConfigOptions('distributionOptions')" :key="option.value" :value="option.value">
-              {{ humanizeValue(option.value) }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="modelValue.distribution || 'compact'"
+            :items="getConfigOptions('distributionOptions')"
+            :item-label="(option) => humanizeValue(option.value)"
+            item-value="value"
+            @update:model-value="updateDistribution"
+          />
         </label>
       </div>
 
@@ -252,12 +266,15 @@ function removeTextBlock(blockIndex: number) {
           {{ t("modules.typography.fields.textGroups.group.controls.additionalDescription.label") }}
         </span>
 
-        <textarea :value="modelValue.additionalDescription || ''" rows="2"
+        <el-text-field
+          :model-value="modelValue.additionalDescription || ''"
+          type="textarea"
+          rows="2"
           :placeholder="t('modules.typography.fields.textGroups.group.controls.additionalDescription.placeholder')"
-          @focus="handleEditorFocus($event, 'additionalDescription')" @blur="handleEditorBlur('additionalDescription')"
-          @input="updateGroupField('additionalDescription', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('additionalDescription')"
+          support-variables
+          @update:model-value="updateGroupField('additionalDescription', $event)"
+        />
       </label>
     </el-grid>
 

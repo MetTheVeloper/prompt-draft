@@ -28,6 +28,8 @@ onMounted(() => {
   </NuxtLayout>
 
   <el-variable-fab />
+
+  <el-global-menu />
   <el-modal />
 </template>
 

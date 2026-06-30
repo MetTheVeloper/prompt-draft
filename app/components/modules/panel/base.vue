@@ -2,14 +2,19 @@
 
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
 
+import TranslationOptionsModal from "./TranslationOptionsModal.vue";
+
+import type {
+  ElDropdownItem,
+  ElDropdownValue,
+} from '~/types/dropdown'
+
 import type {
   ModuleField,
   ModulePreset,
   ModuleValues,
-  ModuleFieldOption,
   PromptKeyModule,
   PromptVariable,
-  PromptVariableType,
 } from "../../../modules/types";
 
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
@@ -20,21 +25,12 @@ import {
   getModulePresetValues,
 } from "../../../utils/compileModules";
 
-import {
-  createUniqueVariableKey,
-  formatVariableToken,
-  isReservedVariableKey,
-  isValidVariableKey,
-  normalizeVariableKey,
-} from "../../../utils/promptVariables";
-
-import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
 
-const promptEditor = usePromptEditor();
+const modal = useModal();
 
 const {
   setPromptVariables: setGlobalPromptVariables,
@@ -94,35 +90,10 @@ watch(
   }
 );
 
-// 
-type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
-
-function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
-  if (!target) return false;
-
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-}
-
 function promptEditorId(fieldId: string, suffix = "") {
   return `${props.module.key}:${fieldId}${suffix ? `:${suffix}` : ""}`;
 }
 
-function handleEditorFocus(event: Event, fieldId: string, suffix = "") {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.registerEditor(promptEditorId(fieldId, suffix), event.target);
-}
-
-function handleEditorBlur(fieldId: string, suffix = "") {
-  promptEditor.blurEditor(promptEditorId(fieldId, suffix));
-}
-
-function handleEditorCursor(event: Event) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.updateCursor(event.target);
-}
-// 
 function cloneModuleValues(source?: ModuleValues): ModuleValues {
   if (!source) return {};
 
@@ -210,6 +181,13 @@ watch(
     });
   }
 );
+
+function handleOptionCategoryValueChange(field: ModuleField, value: ElDropdownValue) {
+  const nextCategory = String(value ?? '')
+
+  selectedOptionCategories[field.id] = nextCategory
+  values[field.id] = ''
+}
 
 const openGroups = reactive<Record<string, boolean>>({});
 const selectedOptionCategories = reactive<Record<string, string>>({});
@@ -681,428 +659,6 @@ function getVisibleCategorizedOptions(field: ModuleField) {
   });
 }
 
-
-type PromptVariablePatch = Partial<PromptVariable>;
-
-function createVariableId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return `variable_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
-function getVariableTypeOptions(field: ModuleField) {
-  const configuredOptions = field.config?.typeOptions;
-
-  if (Array.isArray(configuredOptions) && configuredOptions.length) {
-    return configuredOptions as ModuleFieldOption[];
-  }
-
-  return [
-    { value: "text" },
-    { value: "subject" },
-    { value: "reference" },
-    { value: "object" },
-    { value: "color" },
-    { value: "custom" },
-  ];
-}
-
-function getPromptVariables(fieldId: string): PromptVariable[] {
-  const value = values[fieldId];
-
-  if (Array.isArray(value)) {
-    return value as PromptVariable[];
-  }
-
-  values[fieldId] = [];
-
-  return values[fieldId] as PromptVariable[];
-}
-
-function setPromptVariables(fieldId: string, variables: PromptVariable[]) {
-  values[fieldId] = variables;
-}
-
-function getExistingVariableKeys(fieldId: string, exceptIndex?: number) {
-  return getPromptVariables(fieldId)
-    .filter((_, index) => index !== exceptIndex)
-    .map((variable) => normalizeVariableKey(variable.key));
-}
-
-function createPromptVariable(fieldId: string, baseKey = "variable"): PromptVariable {
-  const key = createUniqueVariableKey(baseKey, getExistingVariableKeys(fieldId));
-
-  return {
-    id: createVariableId(),
-    key,
-    value: "",
-    description: "",
-    type: "text",
-    enabled: true,
-  };
-}
-
-function addPromptVariable(fieldId: string) {
-  const variables = [...getPromptVariables(fieldId), createPromptVariable(fieldId)];
-  setPromptVariables(fieldId, variables);
-}
-
-function duplicatePromptVariable(fieldId: string, variableIndex: number) {
-  const variables = getPromptVariables(fieldId);
-  const source = variables[variableIndex];
-
-  if (!source) return;
-
-  const key = createUniqueVariableKey(source.key || "variable", getExistingVariableKeys(fieldId));
-  const duplicated: PromptVariable = {
-    ...source,
-    id: createVariableId(),
-    key,
-  };
-
-  setPromptVariables(fieldId, [...variables, duplicated]);
-}
-
-function removePromptVariable(fieldId: string, variableIndex: number) {
-  const variables = getPromptVariables(fieldId).filter(
-    (_, index) => index !== variableIndex
-  );
-
-  setPromptVariables(fieldId, variables);
-}
-
-function updatePromptVariable(
-  fieldId: string,
-  variableIndex: number,
-  patch: PromptVariablePatch
-) {
-  const variables = [...getPromptVariables(fieldId)];
-  const current = variables[variableIndex];
-
-  if (!current) return;
-
-  variables[variableIndex] = {
-    ...current,
-    ...patch,
-  };
-
-  setPromptVariables(fieldId, variables);
-}
-
-function handleVariableKeyInput(
-  fieldId: string,
-  variableIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLInputElement;
-  updatePromptVariable(fieldId, variableIndex, {
-    key: target.value,
-  });
-}
-
-function normalizePromptVariableKey(fieldId: string, variableIndex: number) {
-  const variables = getPromptVariables(fieldId);
-  const current = variables[variableIndex];
-
-  if (!current) return;
-
-  const normalizedKey = normalizeVariableKey(current.key);
-
-  if (isReservedVariableKey(normalizedKey)) {
-    updatePromptVariable(fieldId, variableIndex, {
-      key: normalizedKey,
-    });
-    return;
-  }
-
-  const key = createUniqueVariableKey(
-    normalizedKey,
-    getExistingVariableKeys(fieldId, variableIndex)
-  );
-
-  updatePromptVariable(fieldId, variableIndex, {
-    key,
-  });
-}
-
-function handleVariableValueInput(
-  fieldId: string,
-  variableIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLTextAreaElement;
-  updatePromptVariable(fieldId, variableIndex, {
-    value: target.value,
-  });
-}
-
-function handleVariableDescriptionInput(
-  fieldId: string,
-  variableIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLInputElement;
-  updatePromptVariable(fieldId, variableIndex, {
-    description: target.value,
-  });
-}
-
-function handleVariableTypeChange(
-  fieldId: string,
-  variableIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLSelectElement;
-  updatePromptVariable(fieldId, variableIndex, {
-    type: target.value as PromptVariableType,
-  });
-}
-
-function handleVariableEnabledChange(
-  fieldId: string,
-  variableIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLInputElement;
-  updatePromptVariable(fieldId, variableIndex, {
-    enabled: target.checked,
-  });
-}
-
-function getVariableNormalizedKey(variable: PromptVariable) {
-  return normalizeVariableKey(variable.key);
-}
-
-function getVariableToken(variable: PromptVariable) {
-  return formatVariableToken(getVariableNormalizedKey(variable));
-}
-
-function getVariableKeyIssue(fieldId: string, variable: PromptVariable, variableIndex: number) {
-  const key = getVariableNormalizedKey(variable);
-
-  if (!isValidVariableKey(key)) {
-    return "Invalid variable key.";
-  }
-
-  if (isReservedVariableKey(key)) {
-    return "This key is reserved for internal typography tokens.";
-  }
-
-  const duplicate = getPromptVariables(fieldId).some((item, index) => {
-    if (index === variableIndex) return false;
-
-    return normalizeVariableKey(item.key) === key;
-  });
-
-  if (duplicate) {
-    return "Duplicate variable key.";
-  }
-
-  return "";
-}
-
-function variableTypeLabel(field: ModuleField, optionValue: string) {
-  return translate(
-    `${moduleI18nBase.value}.fields.${field.id}.types.${optionValue}`,
-    optionValue
-  );
-}
-
-type ColorAssignmentMode = "preset" | "custom";
-
-type ColorAssignmentUsage =
-  | "overall"
-  | "background"
-  | "subject"
-  | "outfit"
-  | "hair"
-  | "lighting"
-  | "accents";
-
-function colorPalettePresetLabel(option: ModuleFieldOption) {
-  return option.value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
-
-type ColorAssignmentItem = {
-  mode: ColorAssignmentMode;
-  preset: string;
-  colors: string[];
-  usage: ColorAssignmentUsage;
-};
-
-function getColorPalettePresetOptions(field: ModuleField) {
-  return field.options || [];
-}
-
-function getColorPalettePresetCategories(field: ModuleField) {
-  const categories = new Map<string, string>();
-
-  getColorPalettePresetOptions(field).forEach((option) => {
-    if (!option.category) return;
-
-    categories.set(option.category, option.categoryLabel || option.category);
-  });
-
-  return Array.from(categories.entries()).map(([value, label]) => ({
-    value,
-    label,
-  }));
-}
-
-function getColorPalettePresetsByCategory(field: ModuleField, category: string) {
-  return getColorPalettePresetOptions(field).filter((option) => {
-    return option.category === category;
-  });
-}
-
-
-function createColorAssignment(): ColorAssignmentItem {
-  return {
-    mode: "preset",
-    preset: "",
-    colors: [],
-    usage: "overall",
-  };
-}
-
-function getColorAssignments(fieldId: string): ColorAssignmentItem[] {
-  const value = values[fieldId];
-
-  if (Array.isArray(value)) {
-    return value as ColorAssignmentItem[];
-  }
-
-  values[fieldId] = [];
-
-  return values[fieldId] as ColorAssignmentItem[];
-}
-
-function setColorAssignments(fieldId: string, assignments: ColorAssignmentItem[]) {
-  values[fieldId] = assignments;
-}
-
-function addColorAssignment(fieldId: string) {
-  const assignments = [...getColorAssignments(fieldId), createColorAssignment()];
-  setColorAssignments(fieldId, assignments);
-}
-
-function removeColorAssignment(fieldId: string, assignmentIndex: number) {
-  const assignments = getColorAssignments(fieldId).filter(
-    (_, index) => index !== assignmentIndex
-  );
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function updateColorAssignmentMode(
-  fieldId: string,
-  assignmentIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLSelectElement;
-  const mode = target.value as ColorAssignmentMode;
-
-  const assignments = [...getColorAssignments(fieldId)];
-  const current = assignments[assignmentIndex];
-
-  assignments[assignmentIndex] = {
-    ...current,
-    mode,
-    preset: mode === "preset" ? current.preset : "",
-    colors: mode === "custom" ? current.colors || [] : [],
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function updateColorAssignmentUsage(
-  fieldId: string,
-  assignmentIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLSelectElement;
-  const usage = target.value as ColorAssignmentUsage;
-
-  const assignments = [...getColorAssignments(fieldId)];
-  assignments[assignmentIndex] = {
-    ...assignments[assignmentIndex],
-    usage,
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function updateColorAssignmentPreset(
-  fieldId: string,
-  assignmentIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLSelectElement;
-
-  const assignments = [...getColorAssignments(fieldId)];
-  assignments[assignmentIndex] = {
-    ...assignments[assignmentIndex],
-    preset: target.value,
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function addColorAssignmentColor(fieldId: string, assignmentIndex: number) {
-  const assignments = [...getColorAssignments(fieldId)];
-  const current = assignments[assignmentIndex];
-
-  assignments[assignmentIndex] = {
-    ...current,
-    colors: [...(current.colors || []), "#000000"],
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function removeColorAssignmentColor(
-  fieldId: string,
-  assignmentIndex: number,
-  colorIndex: number
-) {
-  const assignments = [...getColorAssignments(fieldId)];
-  const current = assignments[assignmentIndex];
-
-  assignments[assignmentIndex] = {
-    ...current,
-    colors: (current.colors || []).filter((_, index) => index !== colorIndex),
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
-function updateColorAssignmentColor(
-  fieldId: string,
-  assignmentIndex: number,
-  colorIndex: number,
-  event: Event
-) {
-  const target = event.target as HTMLInputElement;
-  const assignments = [...getColorAssignments(fieldId)];
-  const current = assignments[assignmentIndex];
-  const colors = [...(current.colors || [])];
-
-  colors[colorIndex] = target.value;
-
-  assignments[assignmentIndex] = {
-    ...current,
-    colors,
-  };
-
-  setColorAssignments(fieldId, assignments);
-}
-
 function handleOptionCategoryChange(field: ModuleField, event: Event) {
   const target = event.target as HTMLSelectElement;
   const nextCategory = target.value;
@@ -1154,6 +710,23 @@ watch(
   }
 );
 
+function groupColumns(group: ModuleGroupView) {
+  if (mobile.value) return 1;
+
+  const hasFullWidthField = group.fields.some((field) => {
+    return (
+      field.ui?.width === "full" ||
+      field.type === "variables" ||
+      field.type === "textarea" ||
+      field.type === "multiSelect" ||
+      field.type === "textGroups" ||
+      field.type === "colorAssignments" ||
+      isCategorizedSelect(field)
+    );
+  });
+
+  return hasFullWidthField ? 1 : 2;
+}
 
 function clearModule() {
   const defaults = createDefaultModuleValues(props.module);
@@ -1168,6 +741,139 @@ function clearModule() {
   });
 
   activePresetId.value = null;
+}
+
+type TranslateResponse = {
+  translatedText: string;
+  alternatives?: string[];
+  detectedLanguage?: {
+    confidence?: number;
+    language?: string;
+  } | null;
+};
+
+const isTranslatingCustomOverride = ref(false);
+const selectedTranslationOption = ref("");
+
+function normalizeTranslationOptions(result: TranslateResponse) {
+  return Array.from(
+    new Set(
+      [result.translatedText, ...(result.alternatives || [])]
+        .map((item) => item?.trim())
+        .filter(Boolean)
+    )
+  );
+}
+
+function applySelectedCustomOverrideTranslation() {
+  if (!overrideField.value) return false;
+  if (!selectedTranslationOption.value) return false;
+
+  values[overrideField.value.id] = selectedTranslationOption.value;
+
+  return true;
+}
+
+async function translateCustomOverride() {
+  if (!overrideField.value) return;
+
+  const text = String(values[overrideField.value.id] ?? "").trim();
+
+  if (!text || isTranslatingCustomOverride.value) return;
+
+  isTranslatingCustomOverride.value = true;
+
+  let result: TranslateResponse;
+
+  try {
+    result = await $fetch<TranslateResponse>("/api/translate", {
+      method: "POST",
+      body: {
+        text,
+        source: "auto",
+        target: "en",
+        alternatives: 3,
+      },
+    });
+  } catch (error) {
+    console.error("LibreTranslate request failed:", error);
+
+    modal.message({
+      type: "error",
+      title: "خطا در ترجمه",
+      message:
+        "سرویس ترجمه در دسترس نیست. مطمئن شو LibreTranslate روی پورت 5000 روشن است.",
+      actionLabel: t("components.modal.actions.close"),
+    });
+
+    isTranslatingCustomOverride.value = false;
+    return;
+  }
+
+  isTranslatingCustomOverride.value = false;
+
+  const options = normalizeTranslationOptions(result);
+
+  if (!options.length) {
+    modal.message({
+      type: "warning",
+      title: "ترجمه‌ای پیدا نشد",
+      message: "موتور ترجمه پاسخی برای این متن برنگرداند.",
+      actionLabel: t("components.modal.actions.close"),
+    });
+
+    return;
+  }
+
+  selectedTranslationOption.value = options[0];
+
+  modal.open({
+    header: {
+      icon: "translate",
+      title: "انتخاب ترجمه",
+      subtitle: "یکی از ترجمه‌ها را انتخاب کن تا جایگزین متن فعلی شود.",
+      color: "blue",
+    },
+
+    component: TranslationOptionsModal,
+
+    props: {
+      sourceText: text,
+      options,
+      selected: selectedTranslationOption.value,
+      onSelect: (value: string) => {
+        selectedTranslationOption.value = value;
+      },
+    },
+
+    actions: [
+      {
+        label: t("components.modal.actions.close"),
+        icon: "close-circle",
+        color: "normal",
+        mode: "flat",
+        close: true,
+      },
+      {
+        label: "استفاده از ترجمه انتخاب‌شده",
+        icon: "tick-circle",
+        color: "blue",
+        mode: "normal",
+        close: true,
+        disable: () => !selectedTranslationOption.value,
+        handler: () => {
+          return applySelectedCustomOverrideTranslation();
+        },
+      },
+    ],
+
+    options: {
+      width: 760,
+      closeOnBackdrop: true,
+      closeOnEsc: true,
+      blur: true,
+    },
+  });
 }
 
 async function copyOutput() {
@@ -1283,13 +989,23 @@ onBeforeUnmount(() => {
         <!-- header -->
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
-            <el-flex rules="rbc" class="w100">
+            <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="8">
               <el-text type="h3" :size="16" :weight="600" class="lh1" icon="edit">
                 {{ fieldLabel(overrideField.id) }}
               </el-text>
-              <el-text marker="normal5" :size="12" :weight="300" v-if="isCustomMode">
-                {{ t("panel.customOverrideActive") }}
-              </el-text>
+
+              <el-flex rules="rcc" :gap="8" :class="mini ? 'w100' : ''">
+                <el-button :label="isTranslatingCustomOverride
+                  ? 'در حال ترجمه...'
+                  : 'ترجمه به انگلیسی'
+                  " icon="translate" color="blue" mode="flat" :size="12" :type="mini ? 'fab' : 'normal'"
+                  :p="mini ? 8 : [8, 12]" :disable="!customOverrideValue || isTranslatingCustomOverride"
+                  @click.stop="translateCustomOverride" />
+
+                <el-text marker="normal5" :size="12" :weight="300" v-if="isCustomMode">
+                  {{ t("panel.customOverrideActive") }}
+                </el-text>
+              </el-flex>
             </el-flex>
             <el-text :size="10" :weight="300" v-if="fieldDescription(overrideField.id)">
               {{ fieldDescription(overrideField.id) }}
@@ -1297,16 +1013,10 @@ onBeforeUnmount(() => {
           </el-flex>
         </el-flex>
 
-        <textarea v-if="overrideField.type === 'textarea'" v-model="values[overrideField.id]"
-          :rows="overrideField.ui?.rows || 4" :placeholder="fieldPlaceholder(overrideField.id)"
-          @focus="handleEditorFocus($event, overrideField.id, 'override')"
-          @blur="handleEditorBlur(overrideField.id, 'override')" @input="handleEditorCursor" @click="handleEditorCursor"
-          @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
-
-        <input v-else v-model="values[overrideField.id]" type="text" :placeholder="fieldPlaceholder(overrideField.id)"
-          @focus="handleEditorFocus($event, overrideField.id, 'override')"
-          @blur="handleEditorBlur(overrideField.id, 'override')" @input="handleEditorCursor" @click="handleEditorCursor"
-          @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
+        <el-text-field v-model="values[overrideField.id]"
+          :type="overrideField.type === 'textarea' ? 'textarea' : 'text'" :rows="overrideField.ui?.rows || 4"
+          :placeholder="fieldPlaceholder(overrideField.id)" :editor-id="promptEditorId(overrideField.id, 'override')"
+          support-variables />
 
         <el-text v-if="!customOverrideValue" :size="12" icon="danger" icon-color="orange" :weight="300" color="orange">
           {{ t("panel.customOverrideEmpty") }}
@@ -1336,9 +1046,9 @@ onBeforeUnmount(() => {
           </el-flex>
         </el-flex>
 
-        <el-grid v-if="isGroupOpen(group)" :cols="mobile ? 1 : 2">
+        <el-grid v-if="isGroupOpen(group)" :cols="groupColumns(group)">
           <el-grid v-for="field in group.fields" :key="field.id" :br="1" :radius="12" bc="normal5" :p="12"
-            :class="fieldClasses(field)">
+            :class="fieldClasses(field)" :gap="24">
             <el-flex rules="ccs" :gap="0">
               <el-text :size="14" :weight="400" icon="star">
                 {{ fieldLabel(field.id) }}
@@ -1349,57 +1059,39 @@ onBeforeUnmount(() => {
               </el-text>
             </el-flex>
 
-            <div v-if="isCategorizedSelect(field)" class="module-panel__categorized-selects">
-              <select :value="getActiveOptionCategory(field)" @change="handleOptionCategoryChange(field, $event)">
-                <option value="">
-                  {{ t("panel.none") }}
-                </option>
+            <el-flex rules="csc" :gap="8" v-if="isCategorizedSelect(field)">
+              <el-dropdown
+                :model-value="getActiveOptionCategory(field)"
+                :items="getFieldOptionCategories(field)"
+                :item-label="(category) => optionCategoryLabel(field, category.value, category.label)"
+                item-value="value"
+                :placeholder="t('panel.none')"
+                clearable
+                @update:model-value="handleOptionCategoryValueChange(field, $event)"
+              />
 
-                <option v-for="category in getFieldOptionCategories(field)" :key="category.value"
-                  :value="category.value">
-                  {{ optionCategoryLabel(field, category.value, category.label) }}
-                </option>
-              </select>
+              <el-dropdown
+                v-model="values[field.id]"
+                :items="getVisibleCategorizedOptions(field)"
+                :item-label="(option) => optionLabel(field.id, option.value)"
+                item-value="value"
+                item-disabled="disabled"
+                :placeholder="t('panel.none')"
+                :disabled="!getActiveOptionCategory(field)"
+                :clearable="field.ui?.clearable !== false"
+              />
+            </el-flex>
 
-              <select v-model="values[field.id]" :disabled="!getActiveOptionCategory(field)">
-                <option v-if="field.ui?.clearable !== false" value="">
-                  {{ t("panel.none") }}
-                </option>
-
-                <option v-for="option in getVisibleCategorizedOptions(field)" :key="option.value" :value="option.value"
-                  :disabled="option.disabled">
-                  {{ optionLabel(field.id, option.value) }}
-                </option>
-              </select>
-            </div>
-
-            <div v-else-if="isCategorizedMultiSelect(field)" class="module-panel__categorized-multiselects">
-              <select :value="getActiveOptionCategory(field)" @change="handleOptionCategoryChange(field, $event)">
-                <option value="">{{ t("panel.none") }}</option>
-                <option v-for="category in getFieldOptionCategories(field)" :key="category.value"
-                  :value="category.value">
-                  {{ optionCategoryLabel(field, category.value, category.label) }}
-                </option>
-              </select>
-
-              <select v-model="values[field.id]" multiple :disabled="!getActiveOptionCategory(field)">
-                <option v-for="option in getVisibleCategorizedOptions(field)" :key="option.value" :value="option.value"
-                  :disabled="option.disabled">
-                  {{ optionLabel(field.id, option.value) }}
-                </option>
-              </select>
-            </div>
-
-            <select v-else-if="field.type === 'select'" v-model="values[field.id]">
-              <option v-if="field.ui?.clearable !== false" value="">
-                {{ t("panel.none") }}
-              </option>
-
-              <option v-for="option in getFieldOptions(field)" :key="option.value" :value="option.value"
-                :disabled="option.disabled">
-                {{ optionLabel(field.id, option.value) }}
-              </option>
-            </select>
+            <el-dropdown
+              v-else-if="field.type === 'select'"
+              v-model="values[field.id]"
+              :items="getFieldOptions(field)"
+              :item-label="(option) => optionLabel(field.id, option.value)"
+              item-value="value"
+              item-disabled="disabled"
+              :placeholder="t('panel.none')"
+              :clearable="field.ui?.clearable !== false"
+            />
 
             <select v-else-if="field.type === 'multiSelect'" v-model="values[field.id]" multiple>
               <option v-for="option in field.options" :key="option.value" :value="option.value"
@@ -1408,191 +1100,20 @@ onBeforeUnmount(() => {
               </option>
             </select>
 
-            <textarea v-else-if="field.type === 'textarea'" v-model="values[field.id]" :rows="field.ui?.rows || 3"
-              :placeholder="fieldPlaceholder(field.id)" @focus="handleEditorFocus($event, field.id)"
-              @blur="handleEditorBlur(field.id)" @input="handleEditorCursor" @click="handleEditorCursor"
-              @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
+            <el-text-field v-else-if="field.type === 'textarea'" v-model="values[field.id]" type="textarea"
+              :rows="field.ui?.rows || 3" :placeholder="fieldPlaceholder(field.id)"
+              :editor-id="promptEditorId(field.id)" support-variables />
 
             <input v-else-if="field.type === 'checkbox'" v-model="values[field.id]" type="checkbox" />
 
             <input v-else-if="field.type === 'color'" v-model="values[field.id]" type="color"
-              :placeholder="fieldPlaceholder(field.id)" class="module-field__color-picker" />
+              :placeholder="fieldPlaceholder(field.id)" />
 
-            <div v-else-if="field.type === 'variables'" class="module-field__variables">
-              <div v-for="(variable, variableIndex) in getPromptVariables(field.id)" :key="variable.id || variableIndex"
-                class="module-field__variable-card">
-                <el-flex rules="rbc" :gap="8" class="w100">
-                  <el-flex rules="rsc" :gap="8">
-                    <input type="checkbox" :checked="variable.enabled !== false"
-                      @change="handleVariableEnabledChange(field.id, variableIndex, $event)" />
+            <modules-variables-field v-else-if="field.type === 'variables'" v-model="values[field.id]" :field="field"
+              :module-key="module.key" />
 
-                    <el-text :size="12" :weight="700" marker="blue10" color="blue">
-                      {{ getVariableToken(variable) }}
-                    </el-text>
-                  </el-flex>
-
-                  <el-flex rules="rcc" :gap="6">
-                    <button type="button" class="module-field__small-button"
-                      @click="duplicatePromptVariable(field.id, variableIndex)">
-                      {{ t("modules.variables.fields.variables.actions.duplicate") }}
-                    </button>
-
-                    <button type="button" class="module-field__small-button module-field__small-button--danger"
-                      @click="removePromptVariable(field.id, variableIndex)">
-                      {{ t("modules.variables.fields.variables.actions.remove") }}
-                    </button>
-                  </el-flex>
-                </el-flex>
-
-                <el-grid :cols="mobile ? 1 : 2" :gap="8">
-                  <div class="module-field__variable-control">
-                    <el-text :size="10" color="normal45">{{ t("modules.variables.fields.variables.controls.key.label") }}</el-text>
-                    <input type="text" :value="variable.key" :placeholder="t('modules.variables.fields.variables.controls.key.placeholder')"
-                      @input="handleVariableKeyInput(field.id, variableIndex, $event)"
-                      @blur="normalizePromptVariableKey(field.id, variableIndex)" />
-                  </div>
-
-                  <div class="module-field__variable-control">
-                    <el-text :size="10" color="normal45">
-                      {{ t("modules.variables.fields.variables.controls.type.label") }}
-                    </el-text>
-                    <select :value="variable.type || 'text'"
-                      @change="handleVariableTypeChange(field.id, variableIndex, $event)">
-                      <option v-for="option in getVariableTypeOptions(field)" :key="option.value" :value="option.value">
-                        {{ variableTypeLabel(field, option.value) }}
-                      </option>
-                    </select>
-                  </div>
-                </el-grid>
-
-                <div class="module-field__variable-control">
-                  <el-text :size="10" color="normal45">
-                    {{ t("modules.variables.fields.variables.controls.value.label") }}
-                  </el-text>
-                  <textarea :value="variable.value" rows="2"
-                    :placeholder="t('modules.variables.fields.variables.controls.value.placeholder')"
-                    @input="handleVariableValueInput(field.id, variableIndex, $event)" />
-                </div>
-
-                <div class="module-field__variable-control">
-                  <el-text :size="10" color="normal45">
-                    {{ t("modules.variables.fields.variables.controls.description.label") }}
-                  </el-text>
-                  <input type="text" :value="variable.description || ''"
-                    placeholder="Optional internal note"
-                    @input="handleVariableDescriptionInput(field.id, variableIndex, $event)" />
-                </div>
-
-                <el-text :size="10" color="orange" icon="danger" icon-color="orange"
-                  v-if="getVariableKeyIssue(field.id, variable, variableIndex)">
-                  {{ getVariableKeyIssue(field.id, variable, variableIndex) }}
-                </el-text>
-
-                <el-text :size="10" color="normal45" icon="code" v-else>
-                  {{ t("modules.variables.fields.variables.outputToken", { token: getVariableToken(variable) }) }}
-                </el-text>
-              </div>
-
-              <button type="button" class="module-field__add-button" @click="addPromptVariable(field.id)">
-                {{ t("modules.variables.fields.variables.actions.add") }}
-              </button>
-            </div>
-
-            <div v-else-if="field.type === 'colorAssignments'" class="module-field__color-assignments">
-              <div v-for="(assignment, assignmentIndex) in getColorAssignments(field.id)"
-                :key="`${field.id}-${assignmentIndex}`" class="module-field__color-assignment">
-                <el-flex rules="rbc" :gap="8">
-                  <el-text :size="12" :weight="400">
-                    {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", { index: assignmentIndex + 1 }) }}
-                  </el-text>
-
-                  <button type="button" class="module-field__small-button module-field__small-button--danger"
-                    @click="removeColorAssignment(field.id, assignmentIndex)">
-                    {{ t("modules.colorPalette.fields.paletteAssignments.actions.remove") }}
-                  </button>
-                </el-flex>
-
-                <el-grid :cols="mobile ? 1 : 2" :gap="8">
-                  <select :value="assignment.mode"
-                    @change="updateColorAssignmentMode(field.id, assignmentIndex, $event)">
-                    <option value="preset">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.modes.preset") }}
-                    </option>
-                    <option value="custom">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.modes.custom") }}
-                    </option>
-                  </select>
-
-                  <select :value="assignment.usage"
-                    @change="updateColorAssignmentUsage(field.id, assignmentIndex, $event)">
-                    <option value="overall">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.overall") }}
-                    </option>
-                    <option value="background">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.background") }}
-                    </option>
-                    <option value="subject">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.subject") }}
-                    </option>
-                    <option value="outfit">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.outfit") }}
-                    </option>
-                    <option value="hair">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.hair") }}
-                    </option>
-                    <option value="lighting">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.lighting") }}
-                    </option>
-                    <option value="accents">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.usages.accents") }}
-                    </option>
-                  </select>
-                </el-grid>
-
-                <div v-if="assignment.mode === 'preset'" class="module-field__assignment-body">
-                  <select :value="assignment.preset || ''"
-                    @change="updateColorAssignmentPreset(field.id, assignmentIndex, $event)">
-                    <option value="">
-                      {{ t("panel.none") }}
-                    </option>
-
-                    <optgroup v-for="category in getColorPalettePresetCategories(field)" :key="category.value"
-                      :label="category.label">
-                      <option v-for="option in getColorPalettePresetsByCategory(field, category.value)"
-                        :key="option.value" :value="option.value">
-                        {{ colorPalettePresetLabel(option) }}
-                      </option>
-                    </optgroup>
-                  </select>
-                </div>
-
-                <div v-else class="module-field__assignment-body">
-                  <div v-for="(color, colorIndex) in assignment.colors"
-                    :key="`${field.id}-${assignmentIndex}-${colorIndex}`" class="module-field__color-row">
-                    <input type="color" :value="color"
-                      @input="updateColorAssignmentColor(field.id, assignmentIndex, colorIndex, $event)" />
-
-                    <input type="text" :value="color"
-                      :placeholder="t('modules.colorPalette.fields.paletteAssignments.controls.color.placeholder')"
-                      @input="updateColorAssignmentColor(field.id, assignmentIndex, colorIndex, $event)" />
-
-                    <button type="button" class="module-field__small-button"
-                      @click="removeColorAssignmentColor(field.id, assignmentIndex, colorIndex)">
-                      {{ t("modules.colorPalette.fields.paletteAssignments.actions.remove") }}
-                    </button>
-                  </div>
-
-                  <button type="button" class="module-field__small-button"
-                    @click="addColorAssignmentColor(field.id, assignmentIndex)">
-                    {{ t("modules.colorPalette.fields.paletteAssignments.actions.addColor") }}
-                  </button>
-                </div>
-              </div>
-
-              <button type="button" class="module-field__add-button" @click="addColorAssignment(field.id)">
-                {{ t("modules.colorPalette.fields.paletteAssignments.actions.addAssignment") }}
-              </button>
-            </div>
+            <modules-panel-color-assignments-field v-else-if="field.type === 'colorAssignments'"
+              v-model="values[field.id]" :field="field" />
 
             <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]"
               :field="field" :module-key="module.key" />
@@ -1604,10 +1125,8 @@ onBeforeUnmount(() => {
             <input v-else-if="field.type === 'range'" v-model.number="values[field.id]" type="range"
               :min="field.ui?.min" :max="field.ui?.max" :step="field.ui?.step" />
 
-            <input v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)"
-              @focus="handleEditorFocus($event, field.id)" @blur="handleEditorBlur(field.id)"
-              @input="handleEditorCursor" @click="handleEditorCursor" @keyup="handleEditorCursor"
-              @select="handleEditorCursor" @touchend="handleEditorCursor" />
+            <el-text-field v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)"
+              :editor-id="promptEditorId(field.id)" support-variables />
 
             <el-text :size="10" icon="info-circle" v-if="field.type === 'multiSelect'">
               {{ t("panel.multiSelectHint") }}
@@ -1624,7 +1143,7 @@ onBeforeUnmount(() => {
         <el-text :size="14" :weight="400">{{ t("panel.emptyModuleTitle") }}</el-text>
         <el-text :size="12" :weight="300">{{
           t("panel.emptyModuleDescription")
-          }}</el-text>
+        }}</el-text>
       </el-flex>
 
       <el-grid rules="csc" :gap="16" :br="1" :p="16" :radius="[16]" :bc="!output ? 'orange25' : 'normal15'"
@@ -1662,101 +1181,4 @@ onBeforeUnmount(() => {
   </el-grid>
 </template>
 
-<style scoped>
-.module-panel__field--full {
-  grid-column: 1 / -1;
-}
-
-.module-panel__categorized-selects {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  width: 100%;
-}
-
-.module-panel__field--full textarea {
-  width: 100%;
-}
-
-.module-field__variables {
-  display: grid;
-  gap: 12px;
-}
-
-.module-field__variable-card {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--normalText10);
-  border-radius: 10px;
-  background: var(--normalText5);
-}
-
-.module-field__variable-control {
-  display: grid;
-  gap: 4px;
-}
-
-.module-field__variable-card textarea {
-  width: 100%;
-  resize: vertical;
-}
-
-.module-field__color-assignments {
-  display: grid;
-  gap: 12px;
-}
-
-.module-field__color-assignment {
-  display: grid;
-  gap: 10px;
-  padding: 10px;
-  border: 1px solid var(--normalText10);
-  border-radius: 10px;
-  background: var(--normalText5);
-}
-
-.module-field__assignment-body {
-  display: grid;
-  gap: 8px;
-}
-
-.module-field__color-row {
-  display: grid;
-  grid-template-columns: 44px 1fr auto;
-  gap: 8px;
-  align-items: center;
-}
-
-.module-field__color-row input[type="color"] {
-  width: 44px;
-  height: 36px;
-  padding: 2px;
-}
-
-.module-field__small-button,
-.module-field__add-button {
-  border: 1px solid var(--normalText15);
-  border-radius: 8px;
-  background: var(--normalText5);
-  color: var(--normalText);
-  padding: 7px 10px;
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.module-field__small-button--danger {
-  color: var(--themeRed);
-  border-color: var(--themeRed30);
-}
-
-.module-field__add-button {
-  width: 100%;
-}
-
-@media (max-width: 768px) {
-  .module-panel__categorized-selects {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
+<style scoped></style>

@@ -27,7 +27,7 @@
           :color="mode === 'outline' || mode === 'flat' ? (iconColor || targetColor.short) : iconColor ?? buttonTextColor">
           {{ icon }}
         </el-icon>
-        <el-flex :rules="!invert ? 'ccc' : 'cce'" v-if="!buttonType.fab || (buttonType.fab && typeof label === 'number')">
+        <el-flex :gap="2" :rules="!invert ? 'ccs' : 'cce'" v-if="!buttonType.fab || (buttonType.fab && typeof label === 'number')">
           <el-text
             :size="sizes.button.label"
             :style="{
@@ -60,6 +60,7 @@
           {{ icon }}
         </el-icon>
         <slot name="icon" v-if="invert && $slots.icon"></slot>
+        <slot name="iconafter"></slot>
       </el-flex>
     </el-flex>
     <!-- tooltip -->

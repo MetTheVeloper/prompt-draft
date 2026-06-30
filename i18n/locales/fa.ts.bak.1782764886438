@@ -1809,11 +1809,6 @@ export default {
             overall: "کلی",
             subject: "سوژه",
           },
-          controls: {
-            color: {
-              placeholder: "یک رنگ انتخاب کن یا بنویس...",
-            },
-          },
         },
         extraDetails: {
           label: "جزئیات اضافه",

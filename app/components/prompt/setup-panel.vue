@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { computed } from "vue";
+import type { ElDropdownItem, ElDropdownValue } from "~/types/dropdown";
 import type { PromptKeyModule } from "../../modules/types";
 import type {
   ImageToImageSettings,
@@ -24,34 +24,8 @@ import {
 const { t } = useI18n();
 const { mini } = useScreen();
 
-const promptEditor = usePromptEditor();
-
-type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
-
-function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
-  if (!target) return false;
-
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-}
-
 function editorId(fieldKey: string) {
   return `setup:${fieldKey}`;
-}
-
-function handleEditorFocus(event: Event, fieldKey: string) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.registerEditor(editorId(fieldKey), event.target);
-}
-
-function handleEditorBlur(fieldKey: string) {
-  promptEditor.blurEditor(editorId(fieldKey));
-}
-
-function handleEditorCursor(event: Event) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.updateCursor(event.target);
 }
 
 const props = defineProps<{
@@ -168,6 +142,32 @@ const preserveOptions = computed(() => {
 const generatedSubject = computed(() => {
   return buildPromptSubject(props.settings);
 });
+
+function updateReferenceSubjectType(value: ElDropdownValue) {
+  updateImageToImageSettings({
+    referenceSubjectType: value as ReferenceSubjectType,
+  });
+}
+
+function updateReferenceUsage(value: ElDropdownValue) {
+  updateImageToImageSettings({
+    referenceUsage: value as ReferenceUsage,
+  });
+}
+
+function updateTransformationStrength(value: ElDropdownValue) {
+  updateImageToImageSettings({
+    transformationStrength: value as TransformationStrength,
+  });
+}
+
+function updateAspectRatioCategoryValue(value: ElDropdownValue) {
+  updateAspectRatioCategory(value as AspectRatioCategoryId);
+}
+
+function updateAspectRatioDropdownValue(value: ElDropdownValue) {
+  updateAspectRatioValue(String(value || ""));
+}
 
 const isPersonReference = computed(() => {
   return props.settings.imageToImage.referenceSubjectType === "person";
@@ -316,11 +316,9 @@ function updatePreserveValue(key: string, value: boolean) {
               </el-text>
             </el-flex>
 
-            <textarea :value="settings.idea" rows="4" :placeholder="t('promptSetup.idea.placeholder')"
-              @focus="handleEditorFocus($event, 'idea')" @blur="handleEditorBlur('idea')"
-              @input="updateSettings({ idea: getInputValue($event) }); handleEditorCursor($event)"
-              @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-              @touchend="handleEditorCursor" />
+            <el-text-field :model-value="settings.idea" type="textarea" rows="4"
+              :placeholder="t('promptSetup.idea.placeholder')" :editor-id="editorId('idea')" support-variables
+              @update:model-value="updateSettings({ idea: $event })" />
           </el-text>
 
           <el-text type="label" v-if="settings.mode === 'text_to_image'">
@@ -334,11 +332,9 @@ function updatePreserveValue(key: string, value: boolean) {
               </el-text>
             </el-flex>
 
-            <input :value="settings.subject" type="text" :placeholder="t('promptSetup.subject.placeholder')"
-              @focus="handleEditorFocus($event, 'subject')" @blur="handleEditorBlur('subject')"
-              @input="updateSettings({ subject: getInputValue($event) }); handleEditorCursor($event)"
-              @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-              @touchend="handleEditorCursor" />
+            <el-text-field :model-value="settings.subject" type="text"
+              :placeholder="t('promptSetup.subject.placeholder')" :editor-id="editorId('subject')" support-variables
+              @update:model-value="updateSettings({ subject: $event })" />
           </el-text>
         </el-grid>
       </el-grid>
@@ -366,17 +362,14 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <select :value="settings.imageToImage.referenceSubjectType" @change="
-            updateImageToImageSettings({
-              referenceSubjectType: getInputValue($event) as ReferenceSubjectType,
-            })
-            ">
-            <option v-for="subjectType in referenceSubjectTypes" :key="subjectType" :value="subjectType">
-              {{
-                t(`promptSetup.imageToImage.referenceSubjectType.options.${subjectType}`)
-              }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="settings.imageToImage.referenceSubjectType"
+            icon="add"
+            :items="referenceSubjectTypes"
+            :item-label="(subjectType) => t(`promptSetup.imageToImage.referenceSubjectType.options.${subjectType}`)"
+            :item-value="(subjectType) => subjectType"
+            @update:model-value="updateReferenceSubjectType"
+          />
         </label>
 
         <label v-if="settings.imageToImage.referenceSubjectType === 'custom'">
@@ -390,15 +383,13 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <input :value="settings.imageToImage.customSubject" type="text"
+          <el-text-field :model-value="settings.imageToImage.customSubject" type="text"
             :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')"
-            @focus="handleEditorFocus($event, 'customSubject')" @blur="handleEditorBlur('customSubject')" @input="
+            :editor-id="editorId('customSubject')" support-variables @update:model-value="
               updateImageToImageSettings({
-                customSubject: getInputValue($event),
-              });
-            handleEditorCursor($event)
-              " @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-            @touchend="handleEditorCursor" />
+                customSubject: $event,
+              })
+              " />
         </label>
 
         <label>
@@ -412,16 +403,13 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <textarea :value="settings.imageToImage.subjectDescription" rows="3"
+          <el-text-field :model-value="settings.imageToImage.subjectDescription" type="textarea" rows="3"
             :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')"
-            @focus="handleEditorFocus($event, 'subjectDescription')" @blur="handleEditorBlur('subjectDescription')"
-            @input="
+            :editor-id="editorId('subjectDescription')" support-variables @update:model-value="
               updateImageToImageSettings({
-                subjectDescription: getInputValue($event),
-              });
-            handleEditorCursor($event)
-              " @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-            @touchend="handleEditorCursor" />
+                subjectDescription: $event,
+              })
+              " />
         </label>
 
         <!-- Generated Subject -->
@@ -447,15 +435,13 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <select :value="settings.imageToImage.referenceUsage" @change="
-            updateImageToImageSettings({
-              referenceUsage: getInputValue($event) as ReferenceUsage,
-            })
-            ">
-            <option v-for="usage in referenceUsageOptions" :key="usage" :value="usage">
-              {{ t(`promptSetup.imageToImage.referenceUsage.options.${usage}`) }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="settings.imageToImage.referenceUsage"
+            :items="referenceUsageOptions"
+            :item-label="(usage) => t(`promptSetup.imageToImage.referenceUsage.options.${usage}`)"
+            :item-value="(usage) => usage"
+            @update:model-value="updateReferenceUsage"
+          />
         </label>
 
         <label>
@@ -469,17 +455,13 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <select :value="settings.imageToImage.transformationStrength" @change="
-            updateImageToImageSettings({
-              transformationStrength: getInputValue($event) as TransformationStrength,
-            })
-            ">
-            <option v-for="strength in transformationStrengthOptions" :key="strength" :value="strength">
-              {{
-                t(`promptSetup.imageToImage.transformationStrength.options.${strength}`)
-              }}
-            </option>
-          </select>
+          <el-dropdown
+            :model-value="settings.imageToImage.transformationStrength"
+            :items="transformationStrengthOptions"
+            :item-label="(strength) => t(`promptSetup.imageToImage.transformationStrength.options.${strength}`)"
+            :item-value="(strength) => strength"
+            @update:model-value="updateTransformationStrength"
+          />
         </label>
 
         <!-- Preserve Options -->
@@ -535,18 +517,21 @@ function updatePreserveValue(key: string, value: boolean) {
           </el-flex>
 
           <el-grid :gap="8">
-            <select :value="activeAspectRatioCategory"
-              @change="updateAspectRatioCategory(getInputValue($event) as AspectRatioCategoryId)">
-              <option v-for="group in ASPECT_RATIO_GROUPS" :key="group.id" :value="group.id">
-                {{ t(group.labelKey) }}
-              </option>
-            </select>
-
-            <select :value="settings.aspectRatio" @change="updateAspectRatioValue(getInputValue($event))">
-              <option v-for="option in activeAspectRatioOptions" :key="option.value" :value="option.value">
-                {{ t(option.labelKey) }} — {{ option.ratio }}
-              </option>
-            </select>
+            <el-dropdown
+              :model-value="activeAspectRatioCategory"
+              :items="ASPECT_RATIO_GROUPS"
+              :item-label="(group) => t(group.labelKey)"
+              item-value="id"
+              @update:model-value="updateAspectRatioCategoryValue"
+            />
+            <el-dropdown
+              :model-value="settings.aspectRatio"
+              :items="activeAspectRatioOptions"
+              :item-label="(option) => `${t(option.labelKey)} — ${option.ratio}`"
+              :item-description="(option) => t(option.descriptionKey)"
+              item-value="value"
+              @update:model-value="updateAspectRatioDropdownValue"
+            />
 
             <el-grid v-if="activeAspectRatioOption" :gap="4" :p="[10]" :radius="12" bg="normal5">
               <el-text :size="11" :weight="700" color="normal70">
@@ -571,11 +556,9 @@ function updatePreserveValue(key: string, value: boolean) {
             </el-text>
           </el-flex>
 
-          <textarea :value="settings.globalRules" rows="4" :placeholder="t('promptSetup.globalRules.placeholder')"
-            @focus="handleEditorFocus($event, 'globalRules')" @blur="handleEditorBlur('globalRules')"
-            @input="updateSettings({ globalRules: getInputValue($event) }); handleEditorCursor($event)"
-            @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-            @touchend="handleEditorCursor" />
+          <el-text-field :model-value="settings.globalRules" type="textarea" rows="4"
+            :placeholder="t('promptSetup.globalRules.placeholder')" :editor-id="editorId('globalRules')"
+            support-variables @update:model-value="updateSettings({ globalRules: $event })" />
         </label>
       </el-grid>
 

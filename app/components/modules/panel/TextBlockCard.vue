@@ -1,6 +1,5 @@
 <script setup lang="ts">
-import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
-
+import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   ModuleField,
   ModuleFieldOption,
@@ -22,34 +21,9 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 
-const promptEditor = usePromptEditor();
-
-type PromptEditableElement = HTMLInputElement | HTMLTextAreaElement;
-
-function isPromptEditableTarget(target: EventTarget | null): target is PromptEditableElement {
-  if (!target) return false;
-
-  return target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement;
-}
 
 function editorId(fieldKey: string) {
   return `${props.moduleKey || "typography"}:${props.field.id}:block_${props.blockIndex}:${fieldKey}`;
-}
-
-function handleEditorFocus(event: Event, fieldKey: string) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.registerEditor(editorId(fieldKey), event.target);
-}
-
-function handleEditorBlur(fieldKey: string) {
-  promptEditor.blurEditor(editorId(fieldKey));
-}
-
-function handleEditorCursor(event: Event) {
-  if (!isPromptEditableTarget(event.target)) return;
-
-  promptEditor.updateCursor(event.target);
 }
 
 function humanizeValue(value: string) {
@@ -69,16 +43,32 @@ function isModuleFieldOption(value: unknown): value is ModuleFieldOption {
   );
 }
 
+function getDropdownValue(value: ElDropdownValue, fallback = "") {
+  return String(value || fallback);
+}
+
+function updatePurpose(value: ElDropdownValue) {
+  updateBlockField("purpose", getDropdownValue(value));
+}
+
+function updateFontStyle(value: ElDropdownValue) {
+  updateBlockField("fontStyle", getDropdownValue(value));
+}
+
+function updateFontSize(value: ElDropdownValue) {
+  updateBlockField("fontSize", getDropdownValue(value));
+}
+
+function updateFontWeight(value: ElDropdownValue) {
+  updateBlockField("fontWeight", getDropdownValue(value, "regular"));
+}
+
 function getConfigOptions(key: string): ModuleFieldOption[] {
   const value = props.field.config?.[key];
 
   if (!Array.isArray(value)) return [];
 
   return value.filter(isModuleFieldOption);
-}
-
-function getEventValue(event: Event) {
-  return (event.target as HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement).value;
 }
 
 function updateBlockField<K extends keyof TypographyTextBlock>(
@@ -116,11 +106,15 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
         {{ t("modules.typography.fields.textGroups.block.controls.text.label") }}
       </span>
 
-      <textarea :value="modelValue.text || ''" rows="2"
+      <el-text-field
+        :model-value="modelValue.text || ''"
+        type="textarea"
+        rows="2"
         :placeholder="t('modules.typography.fields.textGroups.block.controls.text.placeholder')"
-        @focus="handleEditorFocus($event, 'text')" @blur="handleEditorBlur('text')"
-        @input="updateBlockField('text', getEventValue($event)); handleEditorCursor($event)" @click="handleEditorCursor"
-        @keyup="handleEditorCursor" @select="handleEditorCursor" @touchend="handleEditorCursor" />
+        :editor-id="editorId('text')"
+        support-variables
+        @update:model-value="updateBlockField('text', $event)"
+      />
     </label>
 
     <div class="text-block-card__grid">
@@ -129,15 +123,15 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.purpose.label") }}
         </span>
 
-        <select :value="modelValue.purpose || ''" @change="updateBlockField('purpose', getEventValue($event))">
-          <option value="">
-            {{ t("panel.none") }}
-          </option>
-
-          <option v-for="option in getConfigOptions('textPurposeOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.purpose || ''"
+          :items="getConfigOptions('textPurposeOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          :placeholder="t('panel.none')"
+          clearable
+          @update:model-value="updatePurpose"
+        />
       </label>
 
       <label v-if="modelValue.purpose === 'custom'" class="text-block-card__field">
@@ -145,12 +139,14 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.customPurpose.label") }}
         </span>
 
-        <input type="text" :value="modelValue.customPurpose || ''"
+        <el-text-field
+          :model-value="modelValue.customPurpose || ''"
+          type="text"
           :placeholder="t('modules.typography.fields.textGroups.block.controls.customPurpose.placeholder')"
-          @focus="handleEditorFocus($event, 'customPurpose')" @blur="handleEditorBlur('customPurpose')"
-          @input="updateBlockField('customPurpose', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customPurpose')"
+          support-variables
+          @update:model-value="updateBlockField('customPurpose', $event)"
+        />
       </label>
 
       <label class="text-block-card__field">
@@ -158,15 +154,15 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.fontStyle.label") }}
         </span>
 
-        <select :value="modelValue.fontStyle || ''" @change="updateBlockField('fontStyle', getEventValue($event))">
-          <option value="">
-            {{ t("panel.none") }}
-          </option>
-
-          <option v-for="option in getConfigOptions('fontStyleOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.fontStyle || ''"
+          :items="getConfigOptions('fontStyleOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          :placeholder="t('panel.none')"
+          clearable
+          @update:model-value="updateFontStyle"
+        />
       </label>
 
       <label v-if="modelValue.fontStyle === 'custom'" class="text-block-card__field">
@@ -174,12 +170,14 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.customFontStyle.label") }}
         </span>
 
-        <input type="text" :value="modelValue.customFontStyle || ''"
+        <el-text-field
+          :model-value="modelValue.customFontStyle || ''"
+          type="text"
           :placeholder="t('modules.typography.fields.textGroups.block.controls.customFontStyle.placeholder')"
-          @focus="handleEditorFocus($event, 'customFontStyle')" @blur="handleEditorBlur('customFontStyle')"
-          @input="updateBlockField('customFontStyle', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customFontStyle')"
+          support-variables
+          @update:model-value="updateBlockField('customFontStyle', $event)"
+        />
       </label>
 
       <label class="text-block-card__field">
@@ -187,15 +185,15 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.fontSize.label") }}
         </span>
 
-        <select :value="modelValue.fontSize || ''" @change="updateBlockField('fontSize', getEventValue($event))">
-          <option value="">
-            {{ t("panel.none") }}
-          </option>
-
-          <option v-for="option in getConfigOptions('fontSizeOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.fontSize || ''"
+          :items="getConfigOptions('fontSizeOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          :placeholder="t('panel.none')"
+          clearable
+          @update:model-value="updateFontSize"
+        />
       </label>
 
       <label v-if="modelValue.fontSize === 'custom'" class="text-block-card__field">
@@ -203,12 +201,14 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.customFontSize.label") }}
         </span>
 
-        <input type="text" :value="modelValue.customFontSize || ''"
+        <el-text-field
+          :model-value="modelValue.customFontSize || ''"
+          type="text"
           :placeholder="t('modules.typography.fields.textGroups.block.controls.customFontSize.placeholder')"
-          @focus="handleEditorFocus($event, 'customFontSize')" @blur="handleEditorBlur('customFontSize')"
-          @input="updateBlockField('customFontSize', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customFontSize')"
+          support-variables
+          @update:model-value="updateBlockField('customFontSize', $event)"
+        />
       </label>
 
       <label class="text-block-card__field">
@@ -216,12 +216,13 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.fontWeight.label") }}
         </span>
 
-        <select :value="modelValue.fontWeight || 'regular'"
-          @change="updateBlockField('fontWeight', getEventValue($event))">
-          <option v-for="option in getConfigOptions('fontWeightOptions')" :key="option.value" :value="option.value">
-            {{ humanizeValue(option.value) }}
-          </option>
-        </select>
+        <el-dropdown
+          :model-value="modelValue.fontWeight || 'regular'"
+          :items="getConfigOptions('fontWeightOptions')"
+          :item-label="(option) => humanizeValue(option.value)"
+          item-value="value"
+          @update:model-value="updateFontWeight"
+        />
       </label>
 
       <label v-if="modelValue.fontWeight === 'custom'" class="text-block-card__field">
@@ -229,12 +230,14 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ t("modules.typography.fields.textGroups.block.controls.customFontWeight.label") }}
         </span>
 
-        <input type="text" :value="modelValue.customFontWeight || ''"
+        <el-text-field
+          :model-value="modelValue.customFontWeight || ''"
+          type="text"
           :placeholder="t('modules.typography.fields.textGroups.block.controls.customFontWeight.placeholder')"
-          @focus="handleEditorFocus($event, 'customFontWeight')" @blur="handleEditorBlur('customFontWeight')"
-          @input="updateBlockField('customFontWeight', getEventValue($event)); handleEditorCursor($event)"
-          @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-          @touchend="handleEditorCursor" />
+          :editor-id="editorId('customFontWeight')"
+          support-variables
+          @update:model-value="updateBlockField('customFontWeight', $event)"
+        />
       </label>
     </div>
 
@@ -243,12 +246,15 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
         {{ t("modules.typography.fields.textGroups.block.controls.additionalDescription.label") }}
       </span>
 
-      <textarea :value="modelValue.additionalDescription || ''" rows="2"
+      <el-text-field
+        :model-value="modelValue.additionalDescription || ''"
+        type="textarea"
+        rows="2"
         :placeholder="t('modules.typography.fields.textGroups.block.controls.additionalDescription.placeholder')"
-        @focus="handleEditorFocus($event, 'additionalDescription')" @blur="handleEditorBlur('additionalDescription')"
-        @input="updateBlockField('additionalDescription', getEventValue($event)); handleEditorCursor($event)"
-        @click="handleEditorCursor" @keyup="handleEditorCursor" @select="handleEditorCursor"
-        @touchend="handleEditorCursor" />
+        :editor-id="editorId('additionalDescription')"
+        support-variables
+        @update:model-value="updateBlockField('additionalDescription', $event)"
+      />
     </label>
   </el-grid>
 </template>
