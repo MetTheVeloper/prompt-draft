@@ -18,6 +18,7 @@ import {
 } from '~/utils/collage/drawing'
 
 import type {
+  CollageCanvasAspectRatioLock,
   CollageImageFitMode,
   CollageImageItem,
   CollageImageTransform,
@@ -35,10 +36,13 @@ type UseCollageRendererOptions = {
   padding: Ref<number>
   gap: Ref<number>
   backgroundColor: Ref<string>
+  cellRadius: Ref<number>
+  canvasDecorationsEnabled: Ref<boolean>
 
   imageShuffleSeed: Ref<number>
   layoutShuffleSeed: Ref<number>
   layoutConstraintMode: Ref<CollageLayoutConstraintMode>
+  canvasAspectRatioLock: Ref<CollageCanvasAspectRatioLock>
 
   videoWidth: Ref<number>
   videoHeight: Ref<number>
@@ -64,6 +68,26 @@ type UseCollageRendererOptions = {
   ) => void
 }
 
+
+const CANVAS_ASPECT_RATIO_VALUES: Record<
+  Exclude<CollageCanvasAspectRatioLock, 'auto'>,
+  number
+> = {
+  '1:1': 1,
+  '16:9': 16 / 9,
+  '9:16': 9 / 16,
+  '2:1': 2 / 1,
+  '3:2': 3 / 2,
+  '3:1': 3 / 1,
+  '3:7': 3 / 7,
+}
+
+function getCanvasAspectRatioCandidates(lock: CollageCanvasAspectRatioLock) {
+  if (lock === 'auto') return undefined
+
+  return [CANVAS_ASPECT_RATIO_VALUES[lock]]
+}
+
 const DEFAULT_IMAGE_TRANSFORM: CollageImageTransform = {
   fit: 'cover',
   panX: 0,
@@ -72,6 +96,10 @@ const DEFAULT_IMAGE_TRANSFORM: CollageImageTransform = {
 
 function clamp(value: number, min: number, max: number) {
   return Math.max(min, Math.min(max, value))
+}
+
+function normalizeCellRadius(value: number) {
+  return clamp(Math.round(value || 0), 0, 100)
 }
 
 export function useCollageRenderer(options: UseCollageRendererOptions) {
@@ -347,6 +375,18 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     resetImageTransform(selectedCell.image.id)
   }
 
+  function toggleSelectedImageFitMode() {
+    const selectedCell = selectedImageCell.value
+    if (!selectedCell) return
+
+    const current = getImageTransform(selectedCell.image.id)
+
+    setImageFitMode(
+      selectedCell.image.id,
+      current.fit === 'detail' ? 'cover' : 'detail',
+    )
+  }
+
   function pruneImageTransforms() {
     const availableIds = new Set(options.images.value.map((image) => image.id))
     const nextTransforms: Record<string, CollageImageTransform> = {}
@@ -429,10 +469,11 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     try {
       const layout = createCollageLayout({
         images: options.images.value,
-        padding: options.padding.value,
-        gap: options.gap.value,
+        padding: options.canvasDecorationsEnabled.value ? options.padding.value : 0,
+        gap: options.canvasDecorationsEnabled.value ? options.gap.value : 0,
         layoutShuffleSeed: options.layoutShuffleSeed.value,
         constraintMode: options.layoutConstraintMode.value,
+        ratios: getCanvasAspectRatioCandidates(options.canvasAspectRatioLock.value),
       })
 
       if (!layout) {
@@ -440,8 +481,10 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
         canvas.height = 1200
 
         ctx.clearRect(0, 0, canvas.width, canvas.height)
-        ctx.fillStyle = options.backgroundColor.value
-        ctx.fillRect(0, 0, canvas.width, canvas.height)
+        if (options.canvasDecorationsEnabled.value) {
+          ctx.fillStyle = options.backgroundColor.value
+          ctx.fillRect(0, 0, canvas.width, canvas.height)
+        }
 
         previewInfo.value = {
           width: canvas.width,
@@ -462,8 +505,10 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
-      ctx.fillStyle = options.backgroundColor.value
-      ctx.fillRect(0, 0, canvas.width, canvas.height)
+      if (options.canvasDecorationsEnabled.value) {
+        ctx.fillStyle = options.backgroundColor.value
+        ctx.fillRect(0, 0, canvas.width, canvas.height)
+      }
 
       const renderedCells = shuffleSimilarRatioCellImages(layout.cells, {
         seed: options.imageShuffleSeed.value,
@@ -487,7 +532,16 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
         ctx.save()
 
-        drawRoundedRect(ctx, cell.x, cell.y, cell.width, cell.height, 28)
+        drawRoundedRect(
+          ctx,
+          cell.x,
+          cell.y,
+          cell.width,
+          cell.height,
+          options.canvasDecorationsEnabled.value
+            ? normalizeCellRadius(options.cellRadius.value)
+            : 0,
+        )
 
         ctx.clip()
 
@@ -559,6 +613,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     setImageTransform,
     setImageFitMode,
     setSelectedImageFitMode,
+    toggleSelectedImageFitMode,
     resetImageTransform,
     resetSelectedImageTransform,
     panImageTransform,

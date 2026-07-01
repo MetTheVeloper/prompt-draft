@@ -34,11 +34,11 @@ export default {
   },
   pages: {
     collage: {
-      imageFit: {
-        mode: "حالت نمایش تصویر",
-        cover: "کاور",
-        detail: "جزئیات",
-        resetPosition: "ریست موقعیت",
+      "imageFit": {
+        "mode": "حالت نمایش تصویر",
+        "cover": "کاور",
+        "detail": "جزئیات",
+        "resetPosition": "ریست موقعیت"
       },
       title: "کلاژساز",
       description: "تصاویر را انتخاب، جای‌گذاری یا Drag & Drop کن و خروجی نهایی را از canvas بگیر.",
@@ -82,9 +82,6 @@ export default {
         padding: "فاصله داخلی: {value}px",
         gap: "فاصله بین تصاویر: {value}px",
         backgroundColor: "رنگ پس‌زمینه",
-        exportQuality: "کیفیت خروجی",
-        decorationsEnabled: "فعال‌سازی فاصله و پس‌زمینه",
-        cellRadius: "گردی گوشه سلول‌ها: {value}px"
       },
       preview: {
         grid: "گرید: {columns}×{rows}",
@@ -103,8 +100,6 @@ export default {
         exportWebm: "خروجی WebM",
         exportingMp4: "در حال خروجی MP4...",
         exportMp4: "خروجی MP4",
-        replaceImage: "جایگزینی تصویر",
-        removeImage: "حذف تصویر"
       },
       outputMode: {
         title: "حالت خروجی",
@@ -170,10 +165,6 @@ export default {
         constraintModes: {
           controlled: "کنترل‌شده",
           free: "آزاد",
-        },
-        canvasRatio: "نسبت کنوس",
-        canvasRatios: {
-          auto: "خودکار",
         },
       },
     },

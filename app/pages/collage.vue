@@ -12,12 +12,18 @@ const {
 
   padding,
   gap,
+  cellRadius,
   backgroundColor,
+  canvasDecorationsEnabled,
 
   layoutConstraintMode,
+  canvasAspectRatioLock,
+  imageExportQuality,
+  selectedImageCellOverlayStyle,
   shuffleSimilarImages,
   shuffleLayout,
   setLayoutConstraintMode,
+  setCanvasAspectRatioLock,
 
   selectedImageCell,
   handleCanvasPointerDown,
@@ -130,6 +136,17 @@ const videoQualityPresetOptions = ['compact', 'balanced', 'high']
 
 const layoutConstraintModeOptions = ['controlled', 'free']
 
+const canvasAspectRatioLockOptions = [
+  { value: 'auto', labelKey: 'pages.collage.layoutTools.canvasRatios.auto' },
+  { value: '1:1', label: '1:1' },
+  { value: '16:9', label: '16:9' },
+  { value: '9:16', label: '9:16' },
+  { value: '2:1', label: '2:1' },
+  { value: '3:2', label: '3:2' },
+  { value: '3:1', label: '3:1' },
+  { value: '3:7', label: '3:7' },
+]
+
 const videoPresetOptions = [
   {
     value: '1080x1920',
@@ -148,6 +165,125 @@ const videoPresetOptions = [
     labelKey: 'pages.collage.video.presets.landscape',
   },
 ]
+
+const collagePageGridAttrs = computed(() => ({
+  p: 24,
+  cols: [unref(mini) ? '260px' : '360px', 'minmax(0, 1fr)', 'auto'],
+  gap: 8,
+}))
+
+const collageSidebarAttrs = {
+  radius: 16,
+  cols: 1,
+  gap: 16,
+  p: 16,
+  bg: 'normal5',
+} as const
+
+const collageSidebarHeadAttrs = {
+  class: 'w100',
+  gap: 6,
+} as const
+
+const collageDropzoneAttrs = {
+  rules: 'ccc',
+  gap: 6,
+  p: 24,
+  class: 'w100',
+  radius: 18,
+  br: 1,
+  bc: 'normal30',
+  bg: 'normal5',
+} as const
+
+const collagePanelAttrs = {
+  gap: 12,
+  radius: 18,
+  class: 'w100',
+  br: 1,
+  bc: 'normal10',
+  bg: 'normal5',
+} as const
+
+const collagePanelHeaderAttrs = {
+  rules: 'rbc',
+  p: 14,
+  gap: 8,
+} as const
+
+const collagePanelBodyAttrs = {
+  gap: 12,
+  p: 14,
+} as const
+
+const collageFieldAttrs = {
+  type: 'label',
+  rules: 'ccs',
+  gap: 8,
+} as const
+
+const collageCheckboxFieldAttrs = {
+  type: 'label',
+  rules: 'rsc',
+  gap: 8,
+} as const
+
+const collageImageItemAttrs = {
+  rules: 'ccc',
+  gap: 10,
+  p: 0,
+  radius: 14,
+  class: 'por',
+  bg: 'normal5',
+  'align-items': 'center',
+} as const
+
+const collageToolBoxAttrs = {
+  gap: 10,
+  p: 12,
+  radius: 16,
+  bg: 'normal5',
+} as const
+
+const collageImageActionsAttrs = {
+  cols: 3,
+  gap: 10,
+  bd: 'b8',
+  p: 8,
+  radius: 80,
+  class: 'post b0 zi50',
+} as const
+
+const collageVideoActionsAttrs = {
+  cols: 2,
+  gap: 10,
+  bd: 'b8',
+  p: 8,
+  radius: 80,
+  class: 'post b0 zi50',
+} as const
+
+type CollagePanelKey = 'images' | 'outputMode' | 'brand' | 'canvas' | 'video'
+
+const expandedPanels = reactive<Record<CollagePanelKey, boolean>>({
+  images: false,
+  outputMode: true,
+  brand: false,
+  canvas: false,
+  video: false,
+})
+
+function isPanelExpanded(panel: CollagePanelKey) {
+  return expandedPanels[panel]
+}
+
+function togglePanel(panel: CollagePanelKey) {
+  expandedPanels[panel] = !expandedPanels[panel]
+}
+
+function getPanelToggleSymbol(panel: CollagePanelKey) {
+  return isPanelExpanded(panel) ? 'minus' : 'add'
+}
 
 const textOverlayFontDropdownOptions = computed(() => {
   const groups = unref(textOverlayFontGroups) || []
@@ -217,6 +353,12 @@ function updateLayoutConstraintMode(value: ElDropdownValue) {
   )
 }
 
+function updateCanvasAspectRatioLock(value: ElDropdownValue) {
+  setCanvasAspectRatioLock(
+    getDropdownString(value, 'auto') as typeof canvasAspectRatioLock.value,
+  )
+}
+
 function updateVideoPreset(value: ElDropdownValue) {
   videoPreset.value = getDropdownString(
     value,
@@ -245,25 +387,18 @@ function updateVideoPreset(value: ElDropdownValue) {
   <el-grid
     v-show="!mini || orientation === 'landscape'"
     type="main"
-    class="ofh w100"
-    :p="24"
-    :cols="[mini ? '260px' : '360px', 'minmax(0, 1fr)', 'auto']"
-    :gap="8"
+    class="ofh w100 h100"
+    v-bind="collagePageGridAttrs"
     @drop="handleDrop"
     @dragover="handleDragOver"
-    @dragleave="handleDragLeave"
-  >
+    @dragleave="handleDragLeave">
     <!-- panel -->
-    <el-grid
+    <el-flex
       type="aside"
-      class="ofha mxh100"
-      :radius="16"
-      :cols="1"
-      :gap="16"
-      :p="16"
-      bg="normal5"
-    >
-      <el-grid class="collage-sidebar__head" :gap="6">
+      class="ofha mxh100 w100 scrollbar-hidden"
+      v-bind="collageSidebarAttrs">
+      <!-- header -->
+      <el-grid class="collage-sidebar__head" v-bind="collageSidebarHeadAttrs">
         <el-text type="h1" :size="22" weight="700">
           {{ $t('pages.collage.title') }}
         </el-text>
@@ -272,7 +407,34 @@ function updateVideoPreset(value: ElDropdownValue) {
           {{ $t('pages.collage.description') }}
         </el-text>
       </el-grid>
+      <!-- sticky tool -->
+      <el-grid class="collage-panel post t0 zi100" v-bind="collagePanelAttrs" :gap="0" bd="b8">
+        <el-flex v-bind="collagePanelHeaderAttrs" v-if="false"
+          class="collage-panel__head"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('outputMode')">
+          <el-text :size="14" weight="700" icon="setting-2">
+            {{ $t('pages.collage.outputMode.title') }}
+          </el-text>
+        </el-flex>
 
+        <el-grid v-show="isPanelExpanded('outputMode')" v-bind="collagePanelBodyAttrs">
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.outputMode.mode') }}
+            </el-text>
+
+            <el-dropdown
+              :model-value="activeMode"
+              :items="collageModeOptions"
+              :item-label="(mode) => $t(`pages.collage.outputMode.modes.${mode}`)"
+              :item-value="(mode) => mode"
+              @update:model-value="updateActiveMode"
+            />
+          </el-flex>
+        </el-grid>
+      </el-grid>
       <input
         ref="fileInputRef"
         class="collage-file-input"
@@ -282,15 +444,9 @@ function updateVideoPreset(value: ElDropdownValue) {
         @change="handleFileInput"
       />
 
-      <el-flex
-        rules="ccc"
+      <el-flex v-bind="collageDropzoneAttrs"
+        class="collage-dropzone"
         :class="{ 'collage-dropzone--active': isDragging }"
-        :gap="6"
-        :p="24"
-        :radius="18"
-        :br="1"
-        bc="normal30"
-        bg="normal5"
         @click="openFilePicker"
       >
         <el-icon icon="gallery-add" :size="40" color="blue" />
@@ -304,680 +460,722 @@ function updateVideoPreset(value: ElDropdownValue) {
         </el-text>
       </el-flex>
 
-      <el-grid
-        class="collage-panel"
-        :gap="12"
-        :p="14"
-        :radius="18"
-        :br="1"
-        bc="normal10"
-        bg="normal5"
-      >
-        <el-flex rules="rbc" :gap="8">
+      <el-grid class="collage-panel" v-bind="collagePanelAttrs">
+        <el-flex
+          v-bind="collagePanelHeaderAttrs"
+          class="collage-panel__head"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('images')"
+          @click="togglePanel('images')"
+          @keydown.enter.prevent="togglePanel('images')"
+          @keydown.space.prevent="togglePanel('images')"
+        >
           <el-text :size="14" weight="700" icon="gallery">
             {{ $t('pages.collage.images.title') }}
           </el-text>
 
-          <el-text :size="12" color="normal55" localize>
-            {{ images?.length || 0 }}
-          </el-text>
-        </el-flex>
-
-        <el-grid v-if="images?.length" class="collage-images" :gap="10">
-          <el-grid
-            v-for="item in images || []"
-            :key="item.id"
-            class="collage-image-item"
-            :cols="['52px', 'minmax(0, 1fr)', 'auto']"
-            :gap="10"
-            :p="8"
-            :radius="14"
-            bg="normal5"
-            align-items="center"
-          >
-            <img :src="item.url" :alt="item.name" />
-
-            <el-grid class="collage-image-meta" :gap="2">
-              <el-text class="collage-image-name" :size="12" weight="700">
-                {{ item.name }}
-              </el-text>
-
-              <el-text :size="11" color="normal55" localize>
-                {{ item.width }}×{{ item.height }}
-              </el-text>
-            </el-grid>
-
-            <el-button
-              :label="$t('pages.collage.actions.remove')"
-              :size="12"
-              mode="flat"
-              type="fab"
-              color="red"
-              icon="trash"
-              @click="removeImage(item.id)"
-            />
-          </el-grid>
-        </el-grid>
-
-        <el-flex v-else rules="ccc" class="collage-empty" :p="14">
-          <el-text :size="13" color="normal45">
-            {{ $t('pages.collage.images.empty') }}
-          </el-text>
-        </el-flex>
-      </el-grid>
-
-      <el-grid
-        class="collage-panel"
-        :gap="12"
-        :p="14"
-        :radius="18"
-        :br="1"
-        bc="normal10"
-        bg="normal5"
-      >
-        <el-text :size="14" weight="700" icon="setting-2">
-          {{ $t('pages.collage.outputMode.title') }}
-        </el-text>
-
-        <div class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.outputMode.mode') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="activeMode"
-            :items="collageModeOptions"
-            :item-label="(mode) => $t(`pages.collage.outputMode.modes.${mode}`)"
-            :item-value="(mode) => mode"
-            @update:model-value="updateActiveMode"
-          />
-        </div>
-      </el-grid>
-
-      <el-grid
-        class="collage-panel"
-        :gap="12"
-        :p="14"
-        :radius="18"
-        :br="1"
-        bc="normal10"
-        bg="normal5"
-      >
-        <el-text :size="14" weight="700" icon="drop">
-          {{ $t('pages.collage.brand.title') }}
-        </el-text>
-
-        <el-flex
-          type="label"
-          class="collage-checkbox-field"
-          rules="rsc"
-          :gap="8"
-        >
-          <input v-model="textOverlayEnabled" type="checkbox" />
-
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.enabled') }}
-          </el-text>
-        </el-flex>
-
-        <div class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.font') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="textOverlayFontValue"
-            :items="textOverlayFontDropdownOptions"
-            item-label="label"
-            item-value="value"
-            item-group="group"
-            item-group-label="groupLabel"
-            @update:model-value="updateTextOverlayFontDropdown"
-          />
-        </div>
-
-        <label class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.text') }}
-          </el-text>
-
-          <textarea
-            v-model="textOverlayText"
-            :placeholder="$t('pages.collage.textOverlay.placeholder')"
-            rows="3"
-          />
-        </label>
-
-        <label class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.size') }}
-          </el-text>
-
-          <input
-            v-model.number="textOverlayFontSize"
-            type="range"
-            min="24"
-            max="140"
-            step="2"
-          />
-        </label>
-
-        <label class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.color') }}
-          </el-text>
-
-          <input v-model="textOverlayColor" type="color" />
-        </label>
-
-        <label class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.textOverlay.gap') }}
-          </el-text>
-
-          <input
-            v-model.number="textOverlayGap"
-            type="range"
-            min="0"
-            max="160"
-            step="2"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.brand.telegramPostId') }}
-          </el-text>
-
-          <input
-            v-model="telegramPostId"
-            type="text"
-            :placeholder="$t('pages.collage.brand.telegramPostIdPlaceholder')"
-          />
-        </label>
-
-        <div class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.brand.logoColor') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="brandOverlayTheme"
-            :items="brandOverlayThemeOptions"
-            :item-label="
-              (theme) => $t(`pages.collage.brand.logoThemes.${theme}`)
-            "
-            :item-value="(theme) => theme"
-            @update:model-value="updateBrandOverlayTheme"
-          />
-        </div>
-
-        <div class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.brand.position') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="watermarkPosition"
-            :items="watermarkPositions"
-            :item-label="
-              (position) =>
-                $t(`pages.collage.brand.positions.${position.value}`)
-            "
-            item-value="value"
-            @update:model-value="updateWatermarkPosition"
-          />
-        </div>
-
-        <div class="field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.safeArea.title') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="overlaySafeAreaPreset"
-            :items="overlaySafeAreaOptions"
-            item-label="label"
-            item-value="value"
-            @update:model-value="updateOverlaySafeAreaPreset"
-          />
-        </div>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.brand.height', { value: watermarkSize }) }}
-          </el-text>
-
-          <input
-            v-model.number="watermarkSize"
-            type="range"
-            min="48"
-            max="260"
-            step="4"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{
-              $t('pages.collage.brand.opacity', {
-                value: Math.round(watermarkOpacity * 100),
-              })
-            }}
-          </el-text>
-
-          <input
-            v-model.number="watermarkOpacity"
-            type="range"
-            min="0.1"
-            max="1"
-            step="0.01"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.brand.gap', { value: brandOverlayGap }) }}
-          </el-text>
-
-          <input
-            v-model.number="brandOverlayGap"
-            type="range"
-            min="0"
-            max="48"
-            step="2"
-          />
-        </label>
-
-        <el-text type="small" class="collage-help" :size="11" color="normal45">
-          {{ $t('pages.collage.brand.help') }}
-        </el-text>
-      </el-grid>
-
-      <el-grid
-        class="collage-panel"
-        :gap="12"
-        :p="14"
-        :radius="18"
-        :br="1"
-        bc="normal10"
-        bg="normal5"
-        v-if="activeMode === 'image'"
-      >
-        <el-text :size="14" weight="700" icon="grid-1">
-          {{ $t('pages.collage.canvas.title') }}
-        </el-text>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.canvas.padding', { value: padding }) }}
-          </el-text>
-
-          <input
-            v-model.number="padding"
-            type="range"
-            min="0"
-            max="96"
-            step="2"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.canvas.gap', { value: gap }) }}
-          </el-text>
-
-          <input v-model.number="gap" type="range" min="0" max="64" step="2" />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.canvas.backgroundColor') }}
-          </el-text>
-
-          <input v-model="backgroundColor" type="color" />
-        </label>
-
-        <el-grid :gap="10" :p="12" :radius="16" bg="normal5">
-          <el-flex rules="rbc" :gap="8">
-            <el-text :size="13" weight="700" icon="gallery">
-              {{ $t('pages.collage.layoutTools.title') }}
+          <el-flex rules="rce" :gap="8">
+            <el-text :size="12" color="normal55" localize>
+              {{ images?.length || 0 }}
             </el-text>
 
-            <el-text :size="11" color="normal45"> Shift + S / L / C </el-text>
+            <el-icon :icon="getPanelToggleSymbol('images')" :size="20" color="normal55" />
           </el-flex>
+        </el-flex>
 
-          <el-grid :cols="2" :gap="8">
-            <el-button
-              :label="$t('pages.collage.layoutTools.shuffleSimilar')"
-              :size="12"
-              :p="[10, 12]"
-              type="fab"
-              mode="outline"
-              color="normal"
-              :bc="['blue25']"
-              icon="gallery"
-              :disable="images.length < 2"
-              @click="shuffleSimilarImages"
-            />
+        <el-grid v-show="isPanelExpanded('images')" v-bind="collagePanelBodyAttrs">
+          <el-grid v-if="images?.length" class="collage-images" :gap="10" :cols="3">
+            <el-flex
+              v-for="item in images || []"
+              :key="item.id"
+              class="collage-image-item"
+              v-bind="collageImageItemAttrs">
+              <img :src="item.url" :alt="item.name" />
 
-            <el-button
-              :label="$t('pages.collage.layoutTools.shuffleLayout')"
-              :size="12"
-              :p="[10, 12]"
-              type="fab"
-              mode="outline"
-              color="normal"
-              :bc="['blue25']"
-              icon="grid-1"
-              :disable="images.length < 2"
-              @click="shuffleLayout"
-            />
+              <el-grid class="collage-image-meta" :gap="2" v-if="false">
+                <el-text class="collage-image-name" :size="12" weight="700">
+                  {{ item.name }}
+                </el-text>
+
+                <el-text :size="11" color="normal55" localize>
+                  {{ item.width }}×{{ item.height }}
+                </el-text>
+              </el-grid>
+
+              <el-button
+                class="poa t50 l50 trnsxy-50"
+                :label="$t('pages.collage.actions.remove')"
+                :size="12"
+                mode="flat"
+                bd="b8"
+                type="fab"
+                color="red"
+                icon="trash"
+                @click="removeImage(item.id)"
+              />
+            </el-flex>
           </el-grid>
 
-          <div class="collage-field">
+          <el-flex v-else rules="ccc" class="collage-empty" :p="14">
+            <el-text :size="13" color="normal45">
+              {{ $t('pages.collage.images.empty') }}
+            </el-text>
+          </el-flex>
+        </el-grid>
+      </el-grid>
+
+      <el-grid class="collage-panel" v-bind="collagePanelAttrs">
+        <el-flex
+          v-bind="collagePanelHeaderAttrs"
+          class="collage-panel__head"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('brand')"
+          @click="togglePanel('brand')"
+          @keydown.enter.prevent="togglePanel('brand')"
+          @keydown.space.prevent="togglePanel('brand')"
+        >
+          <el-text :size="14" weight="700" icon="drop">
+            {{ $t('pages.collage.brand.title') }}
+          </el-text>
+
+          <el-icon :icon="getPanelToggleSymbol('brand')" :size="20" color="normal55" />
+        </el-flex>
+
+        <el-grid v-show="isPanelExpanded('brand')" v-bind="collagePanelBodyAttrs">
+          <el-flex v-bind="collageCheckboxFieldAttrs" class="collage-checkbox-field">
+            <input v-model="textOverlayEnabled" type="checkbox" />
+
             <el-text type="span" :size="12" color="normal70">
-              {{ $t('pages.collage.layoutTools.constraintMode') }}
+              {{ $t('pages.collage.textOverlay.enabled') }}
+            </el-text>
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.textOverlay.font') }}
             </el-text>
 
             <el-dropdown
-              :model-value="layoutConstraintMode"
-              :items="layoutConstraintModeOptions"
-              :item-label="
-                (mode) =>
-                  $t(`pages.collage.layoutTools.constraintModes.${mode}`)
-              "
-              :item-value="(mode) => mode"
-              @update:model-value="updateLayoutConstraintMode"
+              :model-value="textOverlayFontValue"
+              :items="textOverlayFontDropdownOptions"
+              item-label="label"
+              item-value="value"
+              item-group="group"
+              item-group-label="groupLabel"
+              @update:model-value="updateTextOverlayFontDropdown"
             />
-          </div>
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.textOverlay.text') }}
+            </el-text>
+
+            <textarea
+              v-model="textOverlayText"
+              :placeholder="$t('pages.collage.textOverlay.placeholder')"
+              rows="3"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.textOverlay.size') }}
+            </el-text>
+
+            <input
+              v-model.number="textOverlayFontSize"
+              type="range"
+              min="24"
+              max="140"
+              step="2"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.textOverlay.color') }}
+            </el-text>
+
+            <input v-model="textOverlayColor" type="color" />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.textOverlay.gap') }}
+            </el-text>
+
+            <input
+              v-model.number="textOverlayGap"
+              type="range"
+              min="0"
+              max="160"
+              step="2"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.brand.telegramPostId') }}
+            </el-text>
+
+            <input
+              v-model="telegramPostId"
+              type="text"
+              :placeholder="$t('pages.collage.brand.telegramPostIdPlaceholder')"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.brand.logoColor') }}
+            </el-text>
+
+            <el-dropdown
+              :model-value="brandOverlayTheme"
+              :items="brandOverlayThemeOptions"
+              :item-label="
+                (theme) => $t(`pages.collage.brand.logoThemes.${theme}`)
+              "
+              :item-value="(theme) => theme"
+              @update:model-value="updateBrandOverlayTheme"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.brand.position') }}
+            </el-text>
+
+            <el-dropdown
+              :model-value="watermarkPosition"
+              :items="watermarkPositions"
+              :item-label="
+                (position) =>
+                  $t(`pages.collage.brand.positions.${position.value}`)
+              "
+              item-value="value"
+              @update:model-value="updateWatermarkPosition"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.safeArea.title') }}
+            </el-text>
+
+            <el-dropdown
+              :model-value="overlaySafeAreaPreset"
+              :items="overlaySafeAreaOptions"
+              item-label="label"
+              item-value="value"
+              @update:model-value="updateOverlaySafeAreaPreset"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{ $t('pages.collage.brand.height', { value: watermarkSize }) }}
+            </el-text>
+
+            <input
+              v-model.number="watermarkSize"
+              type="range"
+              min="48"
+              max="260"
+              step="4"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.brand.opacity', {
+                  value: Math.round(watermarkOpacity * 100),
+                })
+              }}
+            </el-text>
+
+            <input
+              v-model.number="watermarkOpacity"
+              type="range"
+              min="0.1"
+              max="1"
+              step="0.01"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{ $t('pages.collage.brand.gap', { value: brandOverlayGap }) }}
+            </el-text>
+
+            <input
+              v-model.number="brandOverlayGap"
+              type="range"
+              min="0"
+              max="48"
+              step="2"
+            />
+          </el-flex>
+
+          <el-text type="small" class="collage-help" :size="11" color="normal45">
+            {{ $t('pages.collage.brand.help') }}
+          </el-text>
         </el-grid>
       </el-grid>
 
-      <el-grid
+      <el-grid v-bind="collagePanelAttrs"
+        v-if="activeMode === 'image'"
+        class="collage-panel"
+      >
+        <el-flex
+          v-bind="collagePanelHeaderAttrs"
+          class="collage-panel__head"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('canvas')"
+          @click="togglePanel('canvas')"
+          @keydown.enter.prevent="togglePanel('canvas')"
+          @keydown.space.prevent="togglePanel('canvas')"
+        >
+          <el-text :size="14" weight="700" icon="grid-1">
+            {{ $t('pages.collage.canvas.title') }}
+          </el-text>
+
+          <el-icon :icon="getPanelToggleSymbol('canvas')" :size="20" color="normal55" />
+        </el-flex>
+
+        <el-grid v-show="isPanelExpanded('canvas')" v-bind="collagePanelBodyAttrs">
+          <el-flex v-bind="collageCheckboxFieldAttrs" class="collage-checkbox-field">
+            <input v-model="canvasDecorationsEnabled" type="checkbox" />
+
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.canvas.decorationsEnabled') }}
+            </el-text>
+          </el-flex>
+
+          <template v-if="canvasDecorationsEnabled">
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70" localize>
+                {{ $t('pages.collage.canvas.padding', { value: padding }) }}
+              </el-text>
+
+              <input
+                v-model.number="padding"
+                type="range"
+                min="0"
+                max="96"
+                step="2"
+              />
+            </el-flex>
+
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70" localize>
+                {{ $t('pages.collage.canvas.gap', { value: gap }) }}
+              </el-text>
+
+              <input v-model.number="gap" type="range" min="0" max="64" step="2" />
+            </el-flex>
+
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70" localize>
+                {{ $t('pages.collage.canvas.cellRadius', { value: cellRadius }) }}
+              </el-text>
+
+              <input
+                v-model.number="cellRadius"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+            </el-flex>
+
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70">
+                {{ $t('pages.collage.canvas.backgroundColor') }}
+              </el-text>
+
+              <input v-model="backgroundColor" type="color" />
+            </el-flex>
+          </template>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.canvas.exportQuality', {
+                  value: imageExportQuality,
+                })
+              }}
+            </el-text>
+
+            <input
+              v-model.number="imageExportQuality"
+              type="range"
+              min="30"
+              max="100"
+              step="1"
+            />
+          </el-flex>
+
+          <el-grid v-bind="collageToolBoxAttrs">
+            <el-flex v-bind="collagePanelHeaderAttrs">
+              <el-text :size="13" weight="700" icon="gallery">
+                {{ $t('pages.collage.layoutTools.title') }}
+              </el-text>
+
+              <el-text :size="11" color="normal45"> Shift + S / L / C </el-text>
+            </el-flex>
+
+            <el-grid :cols="2" :gap="8">
+              <el-button
+                :label="$t('pages.collage.layoutTools.shuffleSimilar')"
+                :size="12"
+                :p="[10, 12]"
+                type="fab"
+                mode="outline"
+                color="normal"
+                :bc="['blue25']"
+                icon="gallery"
+                :disable="images.length < 2"
+                @click="shuffleSimilarImages"
+              />
+
+              <el-button
+                :label="$t('pages.collage.layoutTools.shuffleLayout')"
+                :size="12"
+                :p="[10, 12]"
+                type="fab"
+                mode="outline"
+                color="normal"
+                :bc="['blue25']"
+                icon="grid-1"
+                :disable="images.length < 2"
+                @click="shuffleLayout"
+              />
+            </el-grid>
+
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70">
+                {{ $t('pages.collage.layoutTools.constraintMode') }}
+              </el-text>
+
+              <el-dropdown
+                :model-value="layoutConstraintMode"
+                :items="layoutConstraintModeOptions"
+                :item-label="
+                  (mode) =>
+                    $t(`pages.collage.layoutTools.constraintModes.${mode}`)
+                "
+                :item-value="(mode) => mode"
+                @update:model-value="updateLayoutConstraintMode"
+              />
+            </el-flex>
+
+            <el-flex v-bind="collageFieldAttrs" class="collage-field">
+              <el-text type="span" :size="12" color="normal70">
+                {{ $t('pages.collage.layoutTools.canvasRatio') }}
+              </el-text>
+
+              <el-dropdown
+                :model-value="canvasAspectRatioLock"
+                :items="canvasAspectRatioLockOptions"
+                :item-label="
+                  (option) => option.labelKey ? $t(option.labelKey) : option.label
+                "
+                item-value="value"
+                @update:model-value="updateCanvasAspectRatioLock"
+              />
+            </el-flex>
+          </el-grid>
+        </el-grid>
+      </el-grid>
+
+      <el-grid v-bind="collagePanelAttrs"
         v-if="activeMode === 'video'"
         class="collage-panel"
-        :gap="12"
-        :p="14"
-        :radius="18"
-        :br="1"
-        bc="normal10"
-        bg="normal5"
       >
-        <el-text :size="14" weight="700" icon="video-play">
-          {{ $t('pages.collage.video.title') }}
-        </el-text>
-
-        <div class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.quality') }}
-          </el-text>
-
-          <el-dropdown
-            :model-value="videoQualityPreset"
-            :items="videoQualityPresetOptions"
-            :item-label="
-              (preset) => $t(`pages.collage.video.qualityPresets.${preset}`)
-            "
-            :item-value="(preset) => preset"
-            @update:model-value="updateVideoQualityPreset"
-          />
-        </div>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.backgroundMusic') }}
-          </el-text>
-
-          <input type="file" accept="audio/*" @change="handleVideoAudioInput" />
-        </label>
-
-        <el-grid v-if="videoAudioFile" :gap="6">
-          <el-text type="span" :size="11" color="normal55">
-            {{ videoAudioLabel }}
-          </el-text>
-
-          <button type="button" @click="clearVideoAudio">
-            {{ $t('pages.collage.video.removeAudio') }}
-          </button>
-        </el-grid>
-
         <el-flex
-          v-if="videoAudioFile"
-          type="label"
-          class="collage-checkbox-field"
-          rules="rsc"
-          :gap="8"
+          v-bind="collagePanelHeaderAttrs"
+          class="collage-panel__head"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('video')"
+          @click="togglePanel('video')"
+          @keydown.enter.prevent="togglePanel('video')"
+          @keydown.space.prevent="togglePanel('video')"
         >
-          <input v-model="videoMusicVisualizationEnabled" type="checkbox" />
-
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.musicVisualizationSoftWave') }}
+          <el-text :size="14" weight="700" icon="video-play">
+            {{ $t('pages.collage.video.title') }}
           </el-text>
+
+          <el-icon :icon="getPanelToggleSymbol('video')" :size="20" color="normal55" />
         </el-flex>
 
-        <label
-          v-if="videoAudioFile && videoMusicVisualizationEnabled"
-          class="collage-field"
-        >
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{
-              $t('pages.collage.video.musicVisualizationHeight', {
-                value: videoMusicVisualizationMaxHeightPercent,
-              })
-            }}
-          </el-text>
+        <el-grid v-show="isPanelExpanded('video')" v-bind="collagePanelBodyAttrs">
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.quality') }}
+            </el-text>
 
-          <input
-            v-model.number="videoMusicVisualizationMaxHeightPercent"
-            type="range"
-            min="0"
-            max="50"
-            step="1"
-          />
-        </label>
+            <el-dropdown
+              :model-value="videoQualityPreset"
+              :items="videoQualityPresetOptions"
+              :item-label="
+                (preset) => $t(`pages.collage.video.qualityPresets.${preset}`)
+              "
+              :item-value="(preset) => preset"
+              @update:model-value="updateVideoQualityPreset"
+            />
+          </el-flex>
 
-        <div class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.preset') }}
-          </el-text>
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.backgroundMusic') }}
+            </el-text>
 
-          <el-dropdown
-            :model-value="videoPreset"
-            :items="videoPresetOptions"
-            :item-label="(option) => $t(option.labelKey)"
-            item-value="value"
-            @update:model-value="updateVideoPreset"
-          />
-        </div>
+            <input type="file" accept="audio/*" @change="handleVideoAudioInput" />
+          </el-flex>
 
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.width') }}
-          </el-text>
+          <el-grid v-if="videoAudioFile" :gap="6">
+            <el-text type="span" :size="11" color="normal55">
+              {{ videoAudioLabel }}
+            </el-text>
 
-          <input
-            v-model.number="videoWidth"
-            type="number"
-            min="256"
-            max="4096"
-            step="2"
-          />
-        </label>
+            <button type="button" @click="clearVideoAudio">
+              {{ $t('pages.collage.video.removeAudio') }}
+            </button>
+          </el-grid>
 
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.height') }}
-          </el-text>
+          <el-flex
+            v-if="videoAudioFile"
+            v-bind="collageCheckboxFieldAttrs"
+            class="collage-checkbox-field"
+          >
+            <input v-model="videoMusicVisualizationEnabled" type="checkbox" />
 
-          <input
-            v-model.number="videoHeight"
-            type="number"
-            min="256"
-            max="4096"
-            step="2"
-          />
-        </label>
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.musicVisualizationSoftWave') }}
+            </el-text>
+          </el-flex>
 
-        <el-flex
-          rules="ccs"
-          :gap="4"
-          class="w100"
-          :radius="18"
-          bg="normal5"
-          :p="12"
-        >
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.calculatedDuration') }}
-          </el-text>
+          <el-flex
+            v-if="videoAudioFile && videoMusicVisualizationEnabled"
+            v-bind="collageFieldAttrs"
+            class="collage-field"
+          >
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.video.musicVisualizationHeight', {
+                  value: videoMusicVisualizationMaxHeightPercent,
+                })
+              }}
+            </el-text>
 
-          <el-text type="span" :size="11" color="normal55">
-            {{
-              $t('pages.collage.video.durationMeta', {
-                slides: videoTotalSlideCount,
-                transitions: videoTransitionCount,
-              })
-            }}
-          </el-text>
+            <input
+              v-model.number="videoMusicVisualizationMaxHeightPercent"
+              type="range"
+              min="0"
+              max="50"
+              step="1"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.preset') }}
+            </el-text>
+
+            <el-dropdown
+              :model-value="videoPreset"
+              :items="videoPresetOptions"
+              :item-label="(option) => $t(option.labelKey)"
+              item-value="value"
+              @update:model-value="updateVideoPreset"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.width') }}
+            </el-text>
+
+            <input
+              v-model.number="videoWidth"
+              type="number"
+              min="256"
+              max="4096"
+              step="2"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.height') }}
+            </el-text>
+
+            <input
+              v-model.number="videoHeight"
+              type="number"
+              min="256"
+              max="4096"
+              step="2"
+            />
+          </el-flex>
+
+          <el-flex
+            rules="ccs"
+            :gap="4"
+            class="w100"
+            :radius="18"
+            bg="normal5"
+            :p="12"
+          >
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.calculatedDuration') }}
+            </el-text>
+
+            <el-text type="span" :size="11" color="normal55">
+              {{
+                $t('pages.collage.video.durationMeta', {
+                  slides: videoTotalSlideCount,
+                  transitions: videoTransitionCount,
+                })
+              }}
+            </el-text>
+
+            <el-text
+              type="span"
+              :size="24"
+              icon="clock-1"
+              weight="700"
+              color="normal90"
+            >
+              {{ videoDurationLabel }}
+            </el-text>
+          </el-flex>
+
+          <el-flex v-bind="collageCheckboxFieldAttrs" class="collage-checkbox-field">
+            <input v-model="videoLoop" type="checkbox" />
+
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.loop') }}
+            </el-text>
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.video.repeat', { value: normalizedVideoRepeat })
+              }}
+            </el-text>
+
+            <input
+              v-model.number="videoRepeat"
+              type="range"
+              min="1"
+              max="10"
+              step="1"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{ $t('pages.collage.video.fps', { value: videoFps }) }}
+            </el-text>
+
+            <input
+              v-model.number="videoFps"
+              type="range"
+              min="24"
+              max="60"
+              step="1"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.video.imageInterval', { value: videoInterval })
+              }}
+            </el-text>
+
+            <input
+              v-model.number="videoInterval"
+              type="range"
+              min="800"
+              max="8000"
+              step="100"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{
+                $t('pages.collage.video.transition', {
+                  value: videoTransitionDuration,
+                })
+              }}
+            </el-text>
+
+            <input
+              v-model.number="videoTransitionDuration"
+              type="range"
+              min="300"
+              max="4000"
+              step="100"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70" localize>
+              {{ $t('pages.collage.video.edgeBlur', { value: videoEdgeBlur }) }}
+            </el-text>
+
+            <input
+              v-model.number="videoEdgeBlur"
+              type="range"
+              min="0"
+              max="400"
+              step="10"
+            />
+          </el-flex>
+
+          <el-flex v-bind="collageFieldAttrs" class="collage-field">
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.canvas.backgroundColor') }}
+            </el-text>
+
+            <input v-model="backgroundColor" type="color" />
+          </el-flex>
+
+          <el-flex v-bind="collageCheckboxFieldAttrs" class="collage-checkbox-field">
+            <input
+              v-model="videoRandom"
+              type="checkbox"
+              :disabled="videoLoop || normalizedVideoRepeat > 1"
+            />
+
+            <el-text type="span" :size="12" color="normal70">
+              {{ $t('pages.collage.video.randomOrder') }}
+            </el-text>
+          </el-flex>
 
           <el-text
+            v-if="videoLoop || normalizedVideoRepeat > 1"
             type="span"
-            :size="24"
-            icon="clock-1"
-            weight="700"
-            color="normal90"
+            :size="11"
+            color="normal55"
           >
-            {{ videoDurationLabel }}
+            {{ $t('pages.collage.video.randomOrderDisabled') }}
           </el-text>
-        </el-flex>
-
-        <el-flex
-          type="label"
-          class="collage-checkbox-field"
-          rules="rsc"
-          :gap="8"
-        >
-          <input v-model="videoLoop" type="checkbox" />
-
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.loop') }}
-          </el-text>
-        </el-flex>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{
-              $t('pages.collage.video.repeat', { value: normalizedVideoRepeat })
-            }}
-          </el-text>
-
-          <input
-            v-model.number="videoRepeat"
-            type="range"
-            min="1"
-            max="10"
-            step="1"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.video.fps', { value: videoFps }) }}
-          </el-text>
-
-          <input
-            v-model.number="videoFps"
-            type="range"
-            min="24"
-            max="60"
-            step="1"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{
-              $t('pages.collage.video.imageInterval', { value: videoInterval })
-            }}
-          </el-text>
-
-          <input
-            v-model.number="videoInterval"
-            type="range"
-            min="800"
-            max="8000"
-            step="100"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{
-              $t('pages.collage.video.transition', {
-                value: videoTransitionDuration,
-              })
-            }}
-          </el-text>
-
-          <input
-            v-model.number="videoTransitionDuration"
-            type="range"
-            min="300"
-            max="4000"
-            step="100"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70" localize>
-            {{ $t('pages.collage.video.edgeBlur', { value: videoEdgeBlur }) }}
-          </el-text>
-
-          <input
-            v-model.number="videoEdgeBlur"
-            type="range"
-            min="0"
-            max="400"
-            step="10"
-          />
-        </label>
-
-        <label class="collage-field">
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.canvas.backgroundColor') }}
-          </el-text>
-
-          <input v-model="backgroundColor" type="color" />
-        </label>
-
-        <el-flex
-          type="label"
-          class="collage-checkbox-field"
-          rules="rsc"
-          :gap="8"
-        >
-          <input
-            v-model="videoRandom"
-            type="checkbox"
-            :disabled="videoLoop || normalizedVideoRepeat > 1"
-          />
-
-          <el-text type="span" :size="12" color="normal70">
-            {{ $t('pages.collage.video.randomOrder') }}
-          </el-text>
-        </el-flex>
-
-        <el-text
-          v-if="videoLoop || normalizedVideoRepeat > 1"
-          type="span"
-          :size="11"
-          color="normal55"
-        >
-          {{ $t('pages.collage.video.randomOrderDisabled') }}
-        </el-text>
+        </el-grid>
       </el-grid>
 
-      <el-grid v-if="activeMode === 'image'" :cols="3" :gap="10">
+      <el-grid v-if="activeMode === 'image'" v-bind="collageImageActionsAttrs">
         <el-button
           :label="$t('pages.collage.actions.save')"
           :p="[12, 24]"
@@ -996,7 +1194,7 @@ function updateVideoPreset(value: ElDropdownValue) {
           :size="14"
           type="fab"
           icon="document-copy"
-          color="normal10"
+          color="prim"
           tooltip-position="top"
           :disable="!canExportImage"
           @click="copyCanvas"
@@ -1011,13 +1209,13 @@ function updateVideoPreset(value: ElDropdownValue) {
           :p="[12, 24]"
           :size="14"
           mode="flat"
-          color="normal10"
+          color="red"
           :disable="!images?.length"
           @click="clearImages"
         />
       </el-grid>
 
-      <el-grid v-else :cols="2" :gap="10">
+      <el-grid v-else v-bind="collageVideoActionsAttrs">
         <el-button
           :label="
             isRecordingVideo
@@ -1065,7 +1263,7 @@ function updateVideoPreset(value: ElDropdownValue) {
           @click="clearImages"
         />
       </el-grid>
-    </el-grid>
+    </el-flex>
     <!-- main box -->
     <el-grid
       type="section"
@@ -1167,6 +1365,12 @@ function updateVideoPreset(value: ElDropdownValue) {
           @pointerup="handleCanvasPointerUp"
           @pointercancel="handleCanvasPointerUp"
           @contextmenu="handleCanvasContextMenu"
+        />
+
+        <div
+          v-if="activeMode === 'image' && selectedImageCell"
+          class="collage-selected-cell-overlay"
+          :style="selectedImageCellOverlayStyle"
         />
       </el-grid>
     </el-grid>
@@ -1313,8 +1517,9 @@ function updateVideoPreset(value: ElDropdownValue) {
 }
 
 .collage-dropzone {
+  width: 100%;
   cursor: pointer;
-  min-height: 112px;
+  aspect-ratio: 16/9;
   border-style: dashed !important;
   transition: 0.2s ease;
 }
@@ -1329,17 +1534,34 @@ function updateVideoPreset(value: ElDropdownValue) {
   min-width: 0;
 }
 
+.collage-panel__head {
+  cursor: pointer;
+  user-select: none;
+}
+
+.collage-panel__head:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 3px;
+}
+
+.collage-panel__toggle {
+  min-width: 18px;
+  text-align: center;
+  line-height: 1;
+}
+
 .collage-images {
   min-width: 0;
 }
 
 .collage-image-item {
   min-width: 0;
+  aspect-ratio: 7/5;
 }
 
 .collage-image-item img {
-  width: 52px;
-  height: 52px;
+  width: 100%;
+  height: 100%;
   object-fit: cover;
   border-radius: 10px;
 }
@@ -1359,8 +1581,8 @@ function updateVideoPreset(value: ElDropdownValue) {
 }
 
 .collage-field {
-  display: grid;
-  gap: 8px;
+  width: 100%;
+  min-width: 0;
 }
 
 .collage-help {
@@ -1391,10 +1613,10 @@ function updateVideoPreset(value: ElDropdownValue) {
   min-height: 0;
   overflow: auto;
   background:
-    linear-gradient(45deg, var(--normalText15) 25%, transparent 25%),
-    linear-gradient(-45deg, var(--normalText15) 25%, transparent 25%),
-    linear-gradient(45deg, transparent 75%, var(--normalText10) 75%),
-    linear-gradient(-45deg, transparent 75%, var(--normalText10) 75%);
+    linear-gradient(45deg, var(--normalText5) 25%, var(--normalText0) 25%),
+    linear-gradient(-45deg, var(--normalText5) 25%, var(--normalText0) 25%),
+    linear-gradient(45deg, var(--normalText0) 75%, var(--normalText5) 75%),
+    linear-gradient(-45deg, var(--normalText0) 75%, var(--normalText5) 75%);
   background-size: 16px 16px;
   background-position:
     0 0,
@@ -1411,6 +1633,23 @@ function updateVideoPreset(value: ElDropdownValue) {
   background-color: var(--themeSurface);
   border-radius: 18px;
   box-shadow: 0 24px 80px var(--themeBlack25);
+}
+
+.collage-selected-cell-overlay {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  border: 2px solid var(--primary);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 70%) inset,
+    0 0 0 99999px rgb(0 0 0 / 10%),
+    0 0 26px var(--primary);
+  transition:
+    left 0.16s ease,
+    top 0.16s ease,
+    width 0.16s ease,
+    height 0.16s ease,
+    border-radius 0.16s ease;
 }
 
 .collage-canvas-options {

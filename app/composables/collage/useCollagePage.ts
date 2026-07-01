@@ -1,6 +1,7 @@
 import type { GlobalMenuItem } from '~/composables/useMenu'
 
 import type {
+  CollageCanvasAspectRatioLock,
   CollageImageFitMode,
   CollageLayoutConstraintMode,
   CollageMode,
@@ -31,6 +32,12 @@ type CollageImagePanState = {
     x: number
     y: number
   }
+  moved: boolean
+}
+
+type PendingCellSelectionToggle = {
+  pointerId: number
+  imageId: string
 }
 
 export function useCollagePage() {
@@ -58,13 +65,27 @@ export function useCollagePage() {
 
   const padding = ref(COLLAGE_DEFAULT_PADDING)
   const gap = ref(COLLAGE_DEFAULT_GAP)
+  const cellRadius = ref(28)
   const backgroundColor = ref(COLLAGE_DEFAULT_BACKGROUND_COLOR)
+  const canvasDecorationsEnabled = ref(true)
 
   const imageShuffleSeed = ref(0)
   const layoutShuffleSeed = ref(0)
   const layoutConstraintMode = ref<CollageLayoutConstraintMode>('controlled')
+  const canvasAspectRatioLock = ref<CollageCanvasAspectRatioLock>('auto')
+  const imageExportQuality = ref(100)
+  const selectedImageCellOverlayStyle = ref<Record<string, string>>({})
 
   let imagePanState: CollageImagePanState | null = null
+  let pendingCellSelectionToggle: PendingCellSelectionToggle | null = null
+  let lastCanvasClick:
+    | {
+        imageId: string
+        time: number
+        x: number
+        y: number
+      }
+    | null = null
   let imagePanRenderFrame: number | null = null
   let imagePanRenderRunning = false
   let imagePanRenderQueued = false
@@ -76,6 +97,7 @@ export function useCollagePage() {
 
   async function requestRenderCurrentMode() {
     await renderCurrentModeProxy?.()
+    await updateSelectedImageCellOverlaySoon()
   }
 
   async function renderVideoPreviewForExport() {
@@ -86,6 +108,57 @@ export function useCollagePage() {
     return new Promise<void>((resolve) => {
       requestAnimationFrame(() => resolve())
     })
+  }
+
+  function clearSelectedImageCellOverlayStyle() {
+    selectedImageCellOverlayStyle.value = {}
+  }
+
+  function normalizeCellRadius(value = cellRadius.value) {
+    return Math.max(0, Math.min(100, Math.round(value || 0)))
+  }
+
+  function updateSelectedImageCellOverlayStyle() {
+    const selectedCell = rendererApi?.selectedImageCell?.value
+    const canvas = canvasRef.value
+
+    if (!selectedCell || !canvas || !canvas.width || !canvas.height) {
+      clearSelectedImageCellOverlayStyle()
+      return
+    }
+
+    const wrap = canvas.parentElement
+
+    if (!wrap) {
+      clearSelectedImageCellOverlayStyle()
+      return
+    }
+
+    const canvasRect = canvas.getBoundingClientRect()
+    const wrapRect = wrap.getBoundingClientRect()
+
+    if (!canvasRect.width || !canvasRect.height) {
+      clearSelectedImageCellOverlayStyle()
+      return
+    }
+
+    const scaleX = canvasRect.width / canvas.width
+    const scaleY = canvasRect.height / canvas.height
+    const scale = Math.min(scaleX, scaleY)
+
+    selectedImageCellOverlayStyle.value = {
+      left: `${canvasRect.left - wrapRect.left + wrap.scrollLeft + selectedCell.x * scaleX}px`,
+      top: `${canvasRect.top - wrapRect.top + wrap.scrollTop + selectedCell.y * scaleY}px`,
+      width: `${selectedCell.width * scaleX}px`,
+      height: `${selectedCell.height * scaleY}px`,
+      borderRadius: `${canvasDecorationsEnabled.value ? normalizeCellRadius() * scale : 0}px`,
+    }
+  }
+
+  async function updateSelectedImageCellOverlaySoon() {
+    await nextTick()
+    await waitFrame()
+    updateSelectedImageCellOverlayStyle()
   }
 
   const imagesApi = useCollageImages({
@@ -124,11 +197,14 @@ export function useCollagePage() {
 
     padding,
     gap,
+    cellRadius,
     backgroundColor,
+    canvasDecorationsEnabled,
 
     imageShuffleSeed,
     layoutShuffleSeed,
     layoutConstraintMode,
+    canvasAspectRatioLock,
 
     videoWidth: videoApi.videoWidth,
     videoHeight: videoApi.videoHeight,
@@ -165,22 +241,105 @@ export function useCollagePage() {
     )
   })
 
+
+  function normalizeImageExportQuality(value = imageExportQuality.value) {
+    return Math.max(30, Math.min(100, Math.round(value || 100)))
+  }
+
+  function getImageExportConfig() {
+    const normalizedQuality = normalizeImageExportQuality()
+
+    if (normalizedQuality >= 100) {
+      return {
+        mimeType: 'image/png',
+        extension: 'png',
+        quality: undefined,
+      }
+    }
+
+    return {
+      mimeType: 'image/jpeg',
+      extension: 'jpg',
+      quality: normalizedQuality / 100,
+    }
+  }
+
+  function createCanvasBlob(
+    canvas: HTMLCanvasElement,
+    mimeType: string,
+    quality?: number,
+  ) {
+    return new Promise<Blob>((resolve, reject) => {
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob)
+          } else {
+            reject(new Error('Canvas export failed'))
+          }
+        },
+        mimeType,
+        quality,
+      )
+    })
+  }
+
+  function downloadImageBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+
+    anchor.href = url
+    anchor.download = filename
+    anchor.style.display = 'none'
+
+    document.body.appendChild(anchor)
+    anchor.click()
+    anchor.remove()
+
+    window.setTimeout(() => {
+      URL.revokeObjectURL(url)
+    }, 1000)
+  }
+
+  async function downloadCanvas() {
+    const canvas = canvasRef.value
+
+    if (!canvas || !canExportImage.value) return
+
+    const config = getImageExportConfig()
+    const blob = await createCanvasBlob(
+      canvas,
+      config.mimeType,
+      config.quality,
+    )
+
+    downloadImageBlob(
+      blob,
+      `prompt-draft-collage-${Date.now()}.${config.extension}`,
+    )
+  }
+
+  function isEditableKeyboardTarget(event: KeyboardEvent) {
+    const target = event.target as HTMLElement | null
+
+    return !!target?.closest(
+      'input, textarea, select, button, [contenteditable="true"]',
+    )
+  }
+
   function canRunCollageShortcut(event: KeyboardEvent) {
     if (!event.shiftKey || event.altKey || event.ctrlKey || event.metaKey) {
       return false
     }
 
-    const target = event.target as HTMLElement | null
+    return !isEditableKeyboardTarget(event)
+  }
 
-    if (
-      target?.closest(
-        'input, textarea, select, button, [contenteditable="true"]',
-      )
-    ) {
-      return false
-    }
+  function canRunSelectedCellArrowPan(event: KeyboardEvent) {
+    if (event.altKey || event.ctrlKey || event.metaKey) return false
+    if (isEditableKeyboardTarget(event)) return false
 
-    return true
+    return activeMode.value === 'image'
   }
 
   function shuffleSimilarImages() {
@@ -195,7 +354,7 @@ export function useCollagePage() {
       return
 
     layoutShuffleSeed.value++
-    rendererApi.clearSelectedImageCell()
+    clearSelectedImageCell()
   }
 
   function setLayoutConstraintMode(mode: CollageLayoutConstraintMode) {
@@ -203,7 +362,24 @@ export function useCollagePage() {
 
     layoutConstraintMode.value = mode
     layoutShuffleSeed.value++
+    clearSelectedImageCell()
+  }
+
+  function setCanvasAspectRatioLock(lock: CollageCanvasAspectRatioLock) {
+    if (canvasAspectRatioLock.value === lock) return
+
+    canvasAspectRatioLock.value = lock
+    clearSelectedImageCell()
+  }
+
+  function selectImageCell(cell = rendererApi.selectedImageCell.value) {
+    rendererApi.selectedImageCell.value = cell
+    void updateSelectedImageCellOverlaySoon()
+  }
+
+  function clearSelectedImageCell() {
     rendererApi.clearSelectedImageCell()
+    clearSelectedImageCellOverlayStyle()
   }
 
   function toggleLayoutConstraintMode() {
@@ -212,7 +388,68 @@ export function useCollagePage() {
     )
   }
 
+  async function replaceSelectedImage() {
+    const selectedCell = rendererApi.selectedImageCell.value
+    if (!selectedCell) return
+
+    imagesApi.openReplaceFilePicker(selectedCell.image.id)
+  }
+
+  async function removeSelectedImage() {
+    const selectedCell = rendererApi.selectedImageCell.value
+    if (!selectedCell) return
+
+    const selectedImageId = selectedCell.image.id
+
+    clearSelectedImageCell()
+    rendererApi.resetImageTransform(selectedImageId)
+
+    await imagesApi.removeImage(selectedImageId)
+  }
+
+  async function toggleSelectedImageFitMode() {
+    rendererApi.toggleSelectedImageFitMode()
+
+    await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
+  }
+
+  function panSelectedImageWithKeyboard(event: KeyboardEvent) {
+    if (!canRunSelectedCellArrowPan(event)) return false
+
+    const selectedCell = rendererApi.selectedImageCell.value
+    if (!selectedCell) return false
+
+    const transform = rendererApi.getImageTransform(selectedCell.image.id)
+    if (transform.fit !== 'detail') return false
+
+    const step = event.shiftKey ? 48 : 16
+    let deltaX = 0
+    let deltaY = 0
+
+    if (event.key === 'ArrowLeft') deltaX = -step
+    else if (event.key === 'ArrowRight') deltaX = step
+    else if (event.key === 'ArrowUp') deltaY = -step
+    else if (event.key === 'ArrowDown') deltaY = step
+    else return false
+
+    event.preventDefault()
+
+    if (rendererApi.panImageTransform(
+      selectedCell.image.id,
+      selectedCell,
+      deltaX,
+      deltaY,
+    )) {
+      scheduleImagePanRender()
+    }
+
+    return true
+  }
+
   function handleCollageKeydown(event: KeyboardEvent) {
+    if (panSelectedImageWithKeyboard(event)) return
+
     if (!canRunCollageShortcut(event)) return
 
     const key = event.key.toLowerCase()
@@ -247,6 +484,7 @@ export function useCollagePage() {
 
       try {
         await rendererApi.renderCanvas()
+        updateSelectedImageCellOverlayStyle()
       } finally {
         imagePanRenderRunning = false
 
@@ -270,24 +508,71 @@ export function useCollagePage() {
   }
 
   function handleCanvasPointerDown(event: PointerEvent) {
-    rendererApi.handleCanvasPointerDown(event)
-
     if (activeMode.value !== 'image') return
     if (event.button !== 0 || event.isPrimary === false) return
 
-    const selectedCell = rendererApi.selectedImageCell.value
-    if (!selectedCell) return
-
-    const transform = rendererApi.getImageTransform(selectedCell.image.id)
-    if (transform.fit !== 'detail') return
-
     const point = rendererApi.getCanvasPointFromPointerEvent(event)
+    const hitCell = rendererApi.getImageCellAtPointerEvent(event)
+
     if (!point) return
+
+    const previousSelectedCell = rendererApi.selectedImageCell.value
+    const wasSelected =
+      !!hitCell && previousSelectedCell?.image.id === hitCell.image.id
+
+    const now = performance.now()
+    const isDoubleClick =
+      !!hitCell &&
+      (event.detail >= 2 ||
+        (!!lastCanvasClick &&
+          lastCanvasClick.imageId === hitCell.image.id &&
+          now - lastCanvasClick.time <= 320 &&
+          Math.abs(point.x - lastCanvasClick.x) <= 32 &&
+          Math.abs(point.y - lastCanvasClick.y) <= 32))
+
+    lastCanvasClick = hitCell
+      ? {
+          imageId: hitCell.image.id,
+          time: now,
+          x: point.x,
+          y: point.y,
+        }
+      : null
+
+    if (isDoubleClick && hitCell) {
+      lastCanvasClick = null
+      pendingCellSelectionToggle = null
+      stopImagePan(event)
+      selectImageCell(hitCell)
+      event.preventDefault()
+      void toggleSelectedImageFitMode()
+      return
+    }
+
+    if (!hitCell) {
+      pendingCellSelectionToggle = null
+      clearSelectedImageCell()
+      return
+    }
+
+    if (wasSelected) {
+      pendingCellSelectionToggle = {
+        pointerId: event.pointerId,
+        imageId: hitCell.image.id,
+      }
+    } else {
+      pendingCellSelectionToggle = null
+      selectImageCell(hitCell)
+    }
+
+    const transform = rendererApi.getImageTransform(hitCell.image.id)
+    if (transform.fit !== 'detail') return
 
     imagePanState = {
       pointerId: event.pointerId,
-      imageId: selectedCell.image.id,
+      imageId: hitCell.image.id,
       lastPoint: point,
+      moved: false,
     }
 
     const target = event.currentTarget as HTMLCanvasElement | null
@@ -316,6 +601,11 @@ export function useCollagePage() {
     const deltaX = point.x - imagePanState.lastPoint.x
     const deltaY = point.y - imagePanState.lastPoint.y
 
+    if (Math.abs(deltaX) > 1 || Math.abs(deltaY) > 1) {
+      imagePanState.moved = true
+      pendingCellSelectionToggle = null
+    }
+
     imagePanState.lastPoint = point
 
     if (
@@ -328,7 +618,18 @@ export function useCollagePage() {
   }
 
   function handleCanvasPointerUp(event: PointerEvent) {
-    if (!imagePanState || imagePanState.pointerId !== event.pointerId) return
+    const activePanState =
+      imagePanState?.pointerId === event.pointerId ? imagePanState : null
+
+    if (
+      pendingCellSelectionToggle?.pointerId === event.pointerId &&
+      !activePanState?.moved
+    ) {
+      clearSelectedImageCell()
+      pendingCellSelectionToggle = null
+    }
+
+    if (!activePanState) return
 
     stopImagePan(event)
   }
@@ -337,12 +638,14 @@ export function useCollagePage() {
     rendererApi.setSelectedImageFitMode(fit)
 
     await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
   }
 
   async function resetSelectedImageTransform() {
     rendererApi.resetSelectedImageTransform()
 
     await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
   }
 
   function createCanvasContextMenuItems(): GlobalMenuItem[] {
@@ -360,6 +663,29 @@ export function useCollagePage() {
           }),
           icon: 'gallery',
           disabled: true,
+        },
+        {
+          divider: true,
+        },
+      )
+    }
+
+    if (selectedCell) {
+      items.push(
+        {
+          label: t('pages.collage.actions.replaceImage'),
+          icon: 'refresh-2',
+          handler: () => {
+            void replaceSelectedImage()
+          },
+        },
+        {
+          label: t('pages.collage.actions.removeImage'),
+          icon: 'trash',
+          color: 'red',
+          handler: () => {
+            void removeSelectedImage()
+          },
         },
         {
           divider: true,
@@ -463,7 +789,7 @@ export function useCollagePage() {
         icon: 'ram',
         disabled: !canExportImage.value,
         handler: () => {
-          void exportApi.downloadCanvas()
+          void downloadCanvas()
         },
       },
       {
@@ -493,8 +819,7 @@ export function useCollagePage() {
 
     event.preventDefault()
 
-    rendererApi.selectedImageCell.value =
-      rendererApi.getImageCellAtPointerEvent(event)
+    selectImageCell(rendererApi.getImageCellAtPointerEvent(event))
 
     $menu.open({
       mode: 'point',
@@ -525,6 +850,7 @@ export function useCollagePage() {
 
       await rendererApi.renderCanvas()
       await reapplyCanvasView()
+      await updateSelectedImageCellOverlaySoon()
     }, 120)
   }
 
@@ -551,7 +877,9 @@ export function useCollagePage() {
       overlayApi.watermarkOpacity,
       padding,
       gap,
+      cellRadius,
       backgroundColor,
+      canvasDecorationsEnabled,
       overlayApi.brandOverlayTheme,
       overlayApi.telegramPostId,
       overlayApi.brandOverlayGap,
@@ -566,15 +894,27 @@ export function useCollagePage() {
       imageShuffleSeed,
       layoutShuffleSeed,
       layoutConstraintMode,
+      canvasAspectRatioLock,
     ],
     async () => {
       if (activeMode.value !== 'image') return
 
       await rendererApi.renderCanvas()
       await reapplyCanvasView()
+      await updateSelectedImageCellOverlaySoon()
     },
     {
       deep: true,
+      flush: 'post',
+    },
+  )
+
+  watch(
+    [canvasZoom],
+    () => {
+      void updateSelectedImageCellOverlaySoon()
+    },
+    {
       flush: 'post',
     },
   )
@@ -612,22 +952,30 @@ export function useCollagePage() {
 
       await rendererApi.renderVideoPreview()
       await reapplyCanvasView()
+      clearSelectedImageCellOverlayStyle()
     },
     {
       flush: 'post',
     },
   )
 
+  function handleWindowResize() {
+    updateSelectedImageCellOverlayStyle()
+  }
+
   onMounted(async () => {
     window.addEventListener('paste', imagesApi.handlePaste)
     window.addEventListener('keydown', handleCollageKeydown)
+    window.addEventListener('resize', handleWindowResize)
     await rendererApi.renderCurrentMode()
     await reapplyCanvasView()
+    await updateSelectedImageCellOverlaySoon()
   })
 
   onBeforeUnmount(() => {
     window.removeEventListener('paste', imagesApi.handlePaste)
     window.removeEventListener('keydown', handleCollageKeydown)
+    window.removeEventListener('resize', handleWindowResize)
 
     rendererApi.cancelVideoPreviewRender()
 
@@ -637,6 +985,8 @@ export function useCollagePage() {
     }
 
     imagePanState = null
+    pendingCellSelectionToggle = null
+    lastCanvasClick = null
     imagePanRenderRunning = false
     imagePanRenderQueued = false
 
@@ -658,14 +1008,20 @@ export function useCollagePage() {
 
     padding,
     gap,
+    cellRadius,
     backgroundColor,
+    canvasDecorationsEnabled,
 
     imageShuffleSeed,
     layoutShuffleSeed,
     layoutConstraintMode,
+    canvasAspectRatioLock,
+    imageExportQuality,
+    selectedImageCellOverlayStyle,
     shuffleSimilarImages,
     shuffleLayout,
     setLayoutConstraintMode,
+    setCanvasAspectRatioLock,
     toggleLayoutConstraintMode,
 
     canExport,
@@ -688,10 +1044,15 @@ export function useCollagePage() {
     ...imagesApi,
     ...overlayApi,
     ...exportApi,
+    downloadCanvas,
+    copyCanvas: exportApi.copyCanvas,
     ...videoApi,
     ...rendererApi,
 
+    replaceSelectedImage,
+    removeSelectedImage,
     setSelectedImageFitMode,
+    toggleSelectedImageFitMode,
     resetSelectedImageTransform,
     handleCanvasPointerDown,
     handleCanvasPointerMove,
@@ -704,8 +1065,10 @@ export function useCollagePage() {
     isDragging: imagesApi.isDragging,
 
     openFilePicker: imagesApi.openFilePicker,
+    openReplaceFilePicker: imagesApi.openReplaceFilePicker,
     handleFileInput: imagesApi.handleFileInput,
     addFiles: imagesApi.addFiles,
+    replaceImage: imagesApi.replaceImage,
     removeImage: imagesApi.removeImage,
     clearImages: imagesApi.clearImages,
     handleDrop: imagesApi.handleDrop,

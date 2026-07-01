@@ -50,6 +50,16 @@ export type CollageMode = 'image' | 'video'
 
 export type CollageLayoutConstraintMode = 'controlled' | 'free'
 
+export type CollageCanvasAspectRatioLock =
+  | 'auto'
+  | '1:1'
+  | '16:9'
+  | '9:16'
+  | '2:1'
+  | '3:2'
+  | '3:1'
+  | '3:7'
+
 export type BrandOverlayTheme = 'black' | 'white'
 
 export type VideoQualityPreset = 'compact' | 'balanced' | 'high'

@@ -19,6 +19,46 @@ export function useCollageImages(options: UseCollageImagesOptions = {}) {
     fileInputRef.value?.click()
   }
 
+  function openReplaceFilePicker(id: string) {
+    if (!import.meta.client) return
+
+    const input = document.createElement('input')
+
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.style.display = 'none'
+
+    let cleanupTimer: number | null = null
+
+    function cleanup() {
+      if (cleanupTimer !== null) {
+        window.clearTimeout(cleanupTimer)
+        cleanupTimer = null
+      }
+
+      input.remove()
+    }
+
+    input.addEventListener(
+      'change',
+      () => {
+        const file = input.files?.[0]
+
+        cleanup()
+
+        if (!file) return
+
+        void replaceImage(id, file)
+      },
+      { once: true },
+    )
+
+    document.body.appendChild(input)
+    input.click()
+
+    cleanupTimer = window.setTimeout(cleanup, 60_000)
+  }
+
   async function notifyChange() {
     await options.onChange?.()
   }
@@ -42,6 +82,29 @@ export function useCollageImages(options: UseCollageImagesOptions = {}) {
     )
 
     images.value.push(...loadedImages)
+
+    await nextTick()
+    await notifyChange()
+  }
+
+  async function replaceImage(id: string, file: File) {
+    if (!file.type.startsWith('image/')) return
+
+    const targetIndex = images.value.findIndex((item) => item.id === id)
+
+    if (targetIndex < 0) return
+
+    const previousImage = images.value[targetIndex]
+    if (!previousImage) return
+
+    const nextImage = await loadCollageImageFile(file)
+
+    URL.revokeObjectURL(previousImage.url)
+
+    images.value.splice(targetIndex, 1, {
+      ...nextImage,
+      id: previousImage.id,
+    })
 
     await nextTick()
     await notifyChange()
@@ -114,8 +177,10 @@ export function useCollageImages(options: UseCollageImagesOptions = {}) {
     isDragging,
 
     openFilePicker,
+    openReplaceFilePicker,
     handleFileInput,
     addFiles,
+    replaceImage,
     removeImage,
     clearImages,
     handlePaste,
