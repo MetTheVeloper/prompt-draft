@@ -1,7 +1,4 @@
-import type {
-  ComputedRef,
-  Ref,
-} from 'vue'
+import type { ComputedRef, Ref } from 'vue'
 
 import {
   createCanvasSliderRenderer,
@@ -9,17 +6,24 @@ import {
   type CanvasSliderRenderer,
 } from '~/utils/canvasSliderRenderer'
 
-import {
-  createCollageLayout,
-} from '~/utils/collage/layout'
+import { createCollageLayout } from '~/utils/collage/layout'
+
+import { shuffleSimilarRatioCellImages } from '~/utils/collage/shuffle'
 
 import {
-  drawImageCover,
+  drawImageInCell,
   drawRoundedRect,
+  getImageCellDrawMetrics,
+  normalizeImageCellPan,
 } from '~/utils/collage/drawing'
 
 import type {
+  CollageImageFitMode,
   CollageImageItem,
+  CollageImageTransform,
+  CollageLayoutCell,
+  CollageLayoutConstraintMode,
+  CollageLayoutResult,
   CollageMode,
 } from '~/types/collage'
 
@@ -31,6 +35,10 @@ type UseCollageRendererOptions = {
   padding: Ref<number>
   gap: Ref<number>
   backgroundColor: Ref<string>
+
+  imageShuffleSeed: Ref<number>
+  layoutShuffleSeed: Ref<number>
+  layoutConstraintMode: Ref<CollageLayoutConstraintMode>
 
   videoWidth: Ref<number>
   videoHeight: Ref<number>
@@ -45,19 +53,32 @@ type UseCollageRendererOptions = {
 
   createCompositeOverlayCanvas: (
     canvasWidth: number,
-    canvasHeight: number
+    canvasHeight: number,
   ) => Promise<HTMLCanvasElement | null>
 
   drawOverlayCanvas: (
     ctx: CanvasRenderingContext2D,
     canvasWidth: number,
     canvasHeight: number,
-    overlayCanvas: HTMLCanvasElement
+    overlayCanvas: HTMLCanvasElement,
   ) => void
+}
+
+const DEFAULT_IMAGE_TRANSFORM: CollageImageTransform = {
+  fit: 'cover',
+  panX: 0,
+  panY: 0,
+}
+
+function clamp(value: number, min: number, max: number) {
+  return Math.max(min, Math.min(max, value))
 }
 
 export function useCollageRenderer(options: UseCollageRendererOptions) {
   const isRendering = ref(false)
+  const lastImageLayout = ref<CollageLayoutResult | null>(null)
+  const selectedImageCell = ref<CollageLayoutCell | null>(null)
+  const imageTransforms = ref<Record<string, CollageImageTransform>>({})
 
   const previewInfo = ref({
     width: 0,
@@ -102,7 +123,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     ctx.fillText(
       'Add images to create video',
       canvas.width / 2,
-      canvas.height / 2
+      canvas.height / 2,
     )
 
     previewInfo.value = {
@@ -112,6 +133,9 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
       columns: 0,
       rows: 0,
     }
+
+    lastImageLayout.value = null
+    selectedImageCell.value = null
   }
 
   async function renderVideoPreview() {
@@ -132,6 +156,8 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     if (!canvas) return
 
     stopVideoRenderer()
+    lastImageLayout.value = null
+    selectedImageCell.value = null
 
     if (!options.images.value.length) {
       drawVideoEmptyState()
@@ -143,7 +169,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
     const overlayCanvas = await options.createCompositeOverlayCanvas(
       width,
-      height
+      height,
     )
 
     if (
@@ -176,7 +202,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
           ctx,
           canvas.width,
           canvas.height,
-          overlayCanvas
+          overlayCanvas,
         )
       },
     })
@@ -202,10 +228,191 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     }
   }
 
+  function clearSelectedImageCell() {
+    selectedImageCell.value = null
+  }
+
+  function getCanvasPointFromPointerEvent(event: MouseEvent) {
+    const canvas = options.canvasRef.value
+    if (!canvas) return null
+
+    const rect = canvas.getBoundingClientRect()
+
+    if (!rect.width || !rect.height) return null
+
+    return {
+      x: (event.clientX - rect.left) * (canvas.width / rect.width),
+      y: (event.clientY - rect.top) * (canvas.height / rect.height),
+    }
+  }
+
+  function getImageCellAtCanvasPoint(x: number, y: number) {
+    const layout = lastImageLayout.value
+    if (!layout) return null
+
+    return (
+      layout.cells.find((cell) => {
+        return (
+          x >= cell.x &&
+          x <= cell.x + cell.width &&
+          y >= cell.y &&
+          y <= cell.y + cell.height
+        )
+      }) || null
+    )
+  }
+
+  function getImageCellAtPointerEvent(event: MouseEvent) {
+    const point = getCanvasPointFromPointerEvent(event)
+    if (!point) return null
+
+    return getImageCellAtCanvasPoint(point.x, point.y)
+  }
+
+  function getImageCellByImageId(imageId: string) {
+    return (
+      lastImageLayout.value?.cells.find((cell) => cell.image.id === imageId) ||
+      null
+    )
+  }
+
+  function handleCanvasPointerDown(event: MouseEvent) {
+    if (options.activeMode.value !== 'image') return
+
+    selectedImageCell.value = getImageCellAtPointerEvent(event)
+  }
+
+  function getImageTransform(imageId: string): CollageImageTransform {
+    return imageTransforms.value[imageId] || DEFAULT_IMAGE_TRANSFORM
+  }
+
+  function hasCustomImageTransform(imageId: string) {
+    const transform = getImageTransform(imageId)
+
+    return (
+      transform.fit !== DEFAULT_IMAGE_TRANSFORM.fit ||
+      transform.panX !== DEFAULT_IMAGE_TRANSFORM.panX ||
+      transform.panY !== DEFAULT_IMAGE_TRANSFORM.panY
+    )
+  }
+
+  function setImageTransform(
+    imageId: string,
+    transform: Partial<CollageImageTransform>,
+  ) {
+    const current = getImageTransform(imageId)
+
+    imageTransforms.value = {
+      ...imageTransforms.value,
+      [imageId]: {
+        fit: transform.fit || current.fit,
+        panX: normalizeImageCellPan(transform.panX ?? current.panX),
+        panY: normalizeImageCellPan(transform.panY ?? current.panY),
+      },
+    }
+  }
+
+  function setImageFitMode(imageId: string, fit: CollageImageFitMode) {
+    const nextTransform: Partial<CollageImageTransform> = {
+      fit,
+    }
+
+    if (fit === 'cover') {
+      nextTransform.panX = 0
+      nextTransform.panY = 0
+    }
+
+    setImageTransform(imageId, nextTransform)
+  }
+
+  function setSelectedImageFitMode(fit: CollageImageFitMode) {
+    const selectedCell = selectedImageCell.value
+    if (!selectedCell) return
+
+    setImageFitMode(selectedCell.image.id, fit)
+  }
+
+  function resetImageTransform(imageId: string) {
+    if (!imageTransforms.value[imageId]) return
+
+    const nextTransforms = { ...imageTransforms.value }
+    delete nextTransforms[imageId]
+    imageTransforms.value = nextTransforms
+  }
+
+  function resetSelectedImageTransform() {
+    const selectedCell = selectedImageCell.value
+    if (!selectedCell) return
+
+    resetImageTransform(selectedCell.image.id)
+  }
+
+  function pruneImageTransforms() {
+    const availableIds = new Set(options.images.value.map((image) => image.id))
+    const nextTransforms: Record<string, CollageImageTransform> = {}
+    let changed = false
+
+    for (const [imageId, transform] of Object.entries(imageTransforms.value)) {
+      if (!availableIds.has(imageId)) {
+        changed = true
+        continue
+      }
+
+      nextTransforms[imageId] = transform
+    }
+
+    if (changed) {
+      imageTransforms.value = nextTransforms
+    }
+  }
+
+  function panImageTransform(
+    imageId: string,
+    cell: CollageLayoutCell,
+    deltaX: number,
+    deltaY: number,
+  ) {
+    const transform = getImageTransform(imageId)
+
+    if (transform.fit !== 'detail') return false
+
+    const metrics = getImageCellDrawMetrics(
+      cell.image.image,
+      cell.x,
+      cell.y,
+      cell.width,
+      cell.height,
+      transform,
+    )
+
+    let nextPanX = transform.panX
+    let nextPanY = transform.panY
+
+    if (metrics.overflowX > 0) {
+      nextPanX = clamp(transform.panX - (deltaX * 2) / metrics.overflowX, -1, 1)
+    }
+
+    if (metrics.overflowY > 0) {
+      nextPanY = clamp(transform.panY - (deltaY * 2) / metrics.overflowY, -1, 1)
+    }
+
+    if (nextPanX === transform.panX && nextPanY === transform.panY) {
+      return false
+    }
+
+    setImageTransform(imageId, {
+      panX: nextPanX,
+      panY: nextPanY,
+    })
+
+    return true
+  }
+
   async function renderCanvas() {
     if (options.activeMode.value !== 'image') return
 
     stopVideoRenderer()
+    pruneImageTransforms()
 
     const canvas = options.canvasRef.value
     if (!canvas) return
@@ -224,6 +431,8 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
         images: options.images.value,
         padding: options.padding.value,
         gap: options.gap.value,
+        layoutShuffleSeed: options.layoutShuffleSeed.value,
+        constraintMode: options.layoutConstraintMode.value,
       })
 
       if (!layout) {
@@ -242,6 +451,9 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
           rows: 0,
         }
 
+        lastImageLayout.value = null
+        selectedImageCell.value = null
+
         return
       }
 
@@ -253,27 +465,40 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
       ctx.fillStyle = options.backgroundColor.value
       ctx.fillRect(0, 0, canvas.width, canvas.height)
 
-      for (const cell of layout.cells) {
+      const renderedCells = shuffleSimilarRatioCellImages(layout.cells, {
+        seed: options.imageShuffleSeed.value,
+      })
+
+      lastImageLayout.value = {
+        ...layout,
+        cells: renderedCells,
+      }
+
+      const selectedImageId = selectedImageCell.value?.image.id
+
+      if (selectedImageId) {
+        selectedImageCell.value =
+          renderedCells.find((cell) => cell.image.id === selectedImageId) ||
+          null
+      }
+
+      for (const cell of renderedCells) {
+        const transform = getImageTransform(cell.image.id)
+
         ctx.save()
 
-        drawRoundedRect(
-          ctx,
-          cell.x,
-          cell.y,
-          cell.width,
-          cell.height,
-          28
-        )
+        drawRoundedRect(ctx, cell.x, cell.y, cell.width, cell.height, 28)
 
         ctx.clip()
 
-        drawImageCover(
+        drawImageInCell(
           ctx,
           cell.image.image,
           cell.x,
           cell.y,
           cell.width,
-          cell.height
+          cell.height,
+          transform,
         )
 
         ctx.restore()
@@ -281,7 +506,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
       const overlayCanvas = await options.createCompositeOverlayCanvas(
         canvas.width,
-        canvas.height
+        canvas.height,
       )
 
       if (overlayCanvas) {
@@ -289,7 +514,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
           ctx,
           canvas.width,
           canvas.height,
-          overlayCanvas
+          overlayCanvas,
         )
       }
 
@@ -318,6 +543,25 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
   return {
     isRendering,
     previewInfo,
+    lastImageLayout,
+    selectedImageCell,
+    imageTransforms,
+
+    clearSelectedImageCell,
+    getCanvasPointFromPointerEvent,
+    getImageCellAtCanvasPoint,
+    getImageCellAtPointerEvent,
+    getImageCellByImageId,
+    handleCanvasPointerDown,
+
+    getImageTransform,
+    hasCustomImageTransform,
+    setImageTransform,
+    setImageFitMode,
+    setSelectedImageFitMode,
+    resetImageTransform,
+    resetSelectedImageTransform,
+    panImageTransform,
 
     stopVideoRenderer,
     cancelVideoPreviewRender,

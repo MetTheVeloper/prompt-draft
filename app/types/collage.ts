@@ -19,13 +19,21 @@ export interface CollageImageItem {
   image: HTMLImageElement
 }
 
+export type CollageImageFitMode = 'cover' | 'detail'
+
+export type CollageImageTransform = {
+  fit: CollageImageFitMode
+  panX: number
+  panY: number
+}
+
 export interface CollageLayoutCell {
   image: CollageImageItem
   x: number
   y: number
   width: number
   height: number
-  fit?: 'cover' | 'contain'
+  fit?: CollageImageFitMode
 }
 
 export interface CollageLayoutResult {
@@ -39,6 +47,8 @@ export interface CollageLayoutResult {
 }
 
 export type CollageMode = 'image' | 'video'
+
+export type CollageLayoutConstraintMode = 'controlled' | 'free'
 
 export type BrandOverlayTheme = 'black' | 'white'
 

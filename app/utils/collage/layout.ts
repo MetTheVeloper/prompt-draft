@@ -1,5 +1,6 @@
 import type {
   CollageImageItem,
+  CollageLayoutConstraintMode,
   CollageLayoutResult,
   TreemapCandidate,
   TreemapRect,
@@ -10,11 +11,36 @@ import {
   COLLAGE_CANVAS_MAX_SIDE,
 } from '~/constants/collage'
 
+import { seededShuffle } from '~/utils/collage/shuffle'
+
 type CollageLayoutContext = {
   images: CollageImageItem[]
   padding: number
   gap: number
   maxSide: number
+  constraintMode: CollageLayoutConstraintMode
+  layoutShuffleSeed: number
+}
+
+const COLLAGE_FREE_CANDIDATE_RATIOS = [
+  ...COLLAGE_CANDIDATE_RATIOS,
+  9 / 16,
+  2 / 3,
+  3 / 4,
+  4 / 5,
+  5 / 4,
+  4 / 3,
+  3 / 2,
+  16 / 9,
+  2 / 1,
+  1 / 2,
+]
+
+function getCandidateRatios(mode: CollageLayoutConstraintMode) {
+  const ratios =
+    mode === 'free' ? COLLAGE_FREE_CANDIDATE_RATIOS : COLLAGE_CANDIDATE_RATIOS
+
+  return [...new Set(ratios.map((ratio) => Number(ratio.toFixed(4))))]
 }
 
 export type CreateCollageLayoutOptions = {
@@ -23,23 +49,32 @@ export type CreateCollageLayoutOptions = {
   gap: number
   maxSide?: number
   ratios?: number[]
+  layoutShuffleSeed?: number
+  constraintMode?: CollageLayoutConstraintMode
 }
 
 export function createCollageLayout(
-  options: CreateCollageLayoutOptions
+  options: CreateCollageLayoutOptions,
 ): CollageLayoutResult | null {
   if (!options.images.length) return null
 
+  const layoutShuffleSeed = options.layoutShuffleSeed || 0
+  const constraintMode = options.constraintMode || 'controlled'
+
   const context: CollageLayoutContext = {
-    images: options.images,
+    images:
+      layoutShuffleSeed > 0
+        ? seededShuffle(options.images, layoutShuffleSeed)
+        : options.images,
     padding: options.padding,
     gap: options.gap,
     maxSide: options.maxSide || COLLAGE_CANVAS_MAX_SIDE,
+    constraintMode,
+    layoutShuffleSeed,
   }
 
-  const ratios = options.ratios || COLLAGE_CANDIDATE_RATIOS
-
-  let bestLayout: CollageLayoutResult | null = null
+  const ratios = options.ratios || getCandidateRatios(constraintMode)
+  const allCandidates: CollageLayoutResult[] = []
 
   for (const ratio of ratios) {
     const candidates: CollageLayoutResult[] = []
@@ -56,20 +91,33 @@ export function createCollageLayout(
     candidates.push(...createSplitGroupLayoutsForRatio(context, ratio))
     candidates.push(...createAdaptiveColumnLayoutsForRatio(context, ratio))
 
-    for (const layout of candidates) {
-      if (!bestLayout || layout.score < bestLayout.score) {
-        bestLayout = layout
-      }
-    }
+    allCandidates.push(...candidates)
   }
 
-  return bestLayout
+  return pickLayoutCandidate(allCandidates, layoutShuffleSeed)
 }
 
-function getCanvasSizeFromRatio(
-  context: CollageLayoutContext,
-  ratio: number
-) {
+function pickLayoutCandidate(
+  candidates: CollageLayoutResult[],
+  seed: number,
+): CollageLayoutResult | null {
+  if (!candidates.length) return null
+
+  const sorted = [...candidates].sort((a, b) => a.score - b.score)
+
+  if (seed <= 0) return sorted[0]
+
+  const bestScore = sorted[0].score
+  const pool = sorted.filter((layout, index) => {
+    return index < 18 && layout.score <= bestScore + 0.28
+  })
+
+  return (
+    seededShuffle(pool.length ? pool : sorted.slice(0, 8), seed)[0] || sorted[0]
+  )
+}
+
+function getCanvasSizeFromRatio(context: CollageLayoutContext, ratio: number) {
   const maxSide = context.maxSide
 
   if (ratio >= 1) {
@@ -105,7 +153,8 @@ function calculateLayoutScore(cells: CollageLayoutResult['cells']) {
   const maxCrop = Math.max(...cropScores)
 
   const areas = cells.map((cell) => cell.width * cell.height)
-  const averageArea = areas.reduce((sum, value) => sum + value, 0) / areas.length
+  const averageArea =
+    areas.reduce((sum, value) => sum + value, 0) / areas.length
 
   const areaVariance =
     areas.reduce((sum, area) => {
@@ -122,7 +171,7 @@ function createLayoutResult(
   cells: CollageLayoutResult['cells'],
   columns = 0,
   rows = 0,
-  extraPenalty = 0
+  extraPenalty = 0,
 ): CollageLayoutResult {
   return {
     width,
@@ -168,7 +217,9 @@ function getTreemapOrderVariants(context: CollageLayoutContext) {
   })
 
   const portraits = ratioAscending.filter((image) => getImageRatio(image) < 0.9)
-  const landscapes = ratioAscending.filter((image) => getImageRatio(image) >= 0.9)
+  const landscapes = ratioAscending.filter(
+    (image) => getImageRatio(image) >= 0.9,
+  )
 
   const portraitEdges = [
     ...portraits.slice(0, Math.ceil(portraits.length / 2)),
@@ -184,12 +235,7 @@ function getTreemapOrderVariants(context: CollageLayoutContext) {
     if (landscapes[index]) alternating.push(landscapes[index])
   }
 
-  const variants = [
-    original,
-    ratioAscending,
-    portraitEdges,
-    alternating,
-  ]
+  const variants = [original, ratioAscending, portraitEdges, alternating]
 
   const signatures = new Set<string>()
 
@@ -221,9 +267,10 @@ function getTreemapSplitIndexes(length: number) {
 }
 
 function getTreemapSplitRatios(
+  context: CollageLayoutContext,
   groupA: CollageImageItem[],
   groupB: CollageImageItem[],
-  direction: 'vertical' | 'horizontal'
+  direction: 'vertical' | 'horizontal',
 ) {
   const countRatio = groupA.length / (groupA.length + groupB.length)
 
@@ -241,16 +288,15 @@ function getTreemapSplitRatios(
     idealRatio = heightDemandA / (heightDemandA + heightDemandB)
   }
 
-  const rawRatios = [
-    idealRatio,
-    0.5,
-    countRatio,
-  ]
+  const rawRatios = [idealRatio, 0.5, countRatio]
 
   const uniqueRatios = new Set<number>()
 
+  const minSplit = context.constraintMode === 'free' ? 0.16 : 0.22
+  const maxSplit = context.constraintMode === 'free' ? 0.84 : 0.78
+
   for (const ratio of rawRatios) {
-    uniqueRatios.add(Number(clamp(ratio, 0.22, 0.78).toFixed(3)))
+    uniqueRatios.add(Number(clamp(ratio, minSplit, maxSplit).toFixed(3)))
   }
 
   return [...uniqueRatios]
@@ -260,7 +306,7 @@ function splitTreemapRect(
   context: CollageLayoutContext,
   rect: TreemapRect,
   direction: 'vertical' | 'horizontal',
-  splitRatio: number
+  splitRatio: number,
 ): [TreemapRect, TreemapRect] {
   const gap = context.gap
 
@@ -342,7 +388,7 @@ function getColumnSignature(columns: CollageImageItem[][]) {
 function pushUniqueColumnVariant(
   variants: CollageImageItem[][][],
   signatures: Set<string>,
-  columns: CollageImageItem[][]
+  columns: CollageImageItem[][],
 ) {
   const cleanColumns = columns.filter((column) => column.length > 0)
 
@@ -360,7 +406,7 @@ function createLayoutFromColumns(
   context: CollageLayoutContext,
   ratio: number,
   columns: CollageImageItem[][],
-  extraPenalty = 0
+  extraPenalty = 0,
 ): CollageLayoutResult | null {
   if (!columns.length) return null
 
@@ -434,7 +480,7 @@ function createLayoutFromColumns(
     cells,
     columns.length,
     Math.max(...columns.map((column) => column.length)),
-    extraPenalty + columnCountPenalty + tinyColumnPenalty
+    extraPenalty + columnCountPenalty + tinyColumnPenalty,
   )
 }
 
@@ -442,7 +488,7 @@ function solveTreemapGroup(
   context: CollageLayoutContext,
   items: CollageImageItem[],
   rect: TreemapRect,
-  depth = 0
+  depth = 0,
 ): TreemapCandidate[] {
   if (!items.length) {
     return []
@@ -477,21 +523,28 @@ function solveTreemapGroup(
     const groupB = items.slice(splitIndex)
 
     for (const direction of ['vertical', 'horizontal'] as const) {
-      const splitRatios = getTreemapSplitRatios(groupA, groupB, direction)
+      const splitRatios = getTreemapSplitRatios(
+        context,
+        groupA,
+        groupB,
+        direction,
+      )
 
       for (const splitRatio of splitRatios) {
         const [rectA, rectB] = splitTreemapRect(
           context,
           rect,
           direction,
-          splitRatio
+          splitRatio,
         )
 
+        const minimumCellSide = context.constraintMode === 'free' ? 8 : 16
+
         if (
-          rectA.width <= 16 ||
-          rectA.height <= 16 ||
-          rectB.width <= 16 ||
-          rectB.height <= 16
+          rectA.width <= minimumCellSide ||
+          rectA.height <= minimumCellSide ||
+          rectB.width <= minimumCellSide ||
+          rectB.height <= minimumCellSide
         ) {
           continue
         }
@@ -517,14 +570,12 @@ function solveTreemapGroup(
     }
   }
 
-  return candidates
-    .sort((a, b) => a.score - b.score)
-    .slice(0, 2)
+  return candidates.sort((a, b) => a.score - b.score).slice(0, 2)
 }
 
 function createAdaptiveColumnLayoutsForRatio(
   context: CollageLayoutContext,
-  ratio: number
+  ratio: number,
 ): CollageLayoutResult[] {
   const result: CollageLayoutResult[] = []
 
@@ -553,55 +604,46 @@ function createAdaptiveColumnLayoutsForRatio(
     const leftPortraits = portraitSingleColumns.slice(0, splitIndex)
     const rightPortraits = portraitSingleColumns.slice(splitIndex)
 
+    pushUniqueColumnVariant(variants, signatures, [
+      ...leftPortraits,
+      ...landscapeColumns,
+      ...rightPortraits,
+    ])
+
+    pushUniqueColumnVariant(variants, signatures, [
+      ...portraitSingleColumns,
+      ...landscapeColumns,
+    ])
+
+    pushUniqueColumnVariant(variants, signatures, [
+      ...landscapeColumns,
+      ...portraitSingleColumns,
+    ])
+
     pushUniqueColumnVariant(
       variants,
       signatures,
-      [
-        ...leftPortraits,
-        ...landscapeColumns,
-        ...rightPortraits,
-      ]
+      interleaveColumns(portraitSingleColumns, landscapeColumns),
     )
 
     pushUniqueColumnVariant(
       variants,
       signatures,
-      [
-        ...portraitSingleColumns,
-        ...landscapeColumns,
-      ]
-    )
-
-    pushUniqueColumnVariant(
-      variants,
-      signatures,
-      [
-        ...landscapeColumns,
-        ...portraitSingleColumns,
-      ]
-    )
-
-    pushUniqueColumnVariant(
-      variants,
-      signatures,
-      interleaveColumns(portraitSingleColumns, landscapeColumns)
-    )
-
-    pushUniqueColumnVariant(
-      variants,
-      signatures,
-      interleaveColumns(landscapeColumns, portraitSingleColumns)
+      interleaveColumns(landscapeColumns, portraitSingleColumns),
     )
   }
 
   const sortedByRatio = getSortedImagesByRatio(context)
 
-  for (const columnCount of [2, 3, 4, 5]) {
+  const adaptiveColumnCounts =
+    context.constraintMode === 'free' ? [2, 3, 4, 5, 6] : [2, 3, 4, 5]
+
+  for (const columnCount of adaptiveColumnCounts) {
     if (columnCount > context.images.length) continue
 
     const columns: CollageImageItem[][] = Array.from(
       { length: columnCount },
-      () => []
+      () => [],
     )
 
     sortedByRatio.forEach((image, index) => {
@@ -624,7 +666,7 @@ function createAdaptiveColumnLayoutsForRatio(
 
 function createGridLayoutForRatio(
   context: CollageLayoutContext,
-  ratio: number
+  ratio: number,
 ): CollageLayoutResult | null {
   if (!context.images.length) return null
 
@@ -661,8 +703,14 @@ function createGridLayoutForRatio(
     })
 
     const emptyCells = columns * rows - imageCount
-    const emptyCellsPenalty = emptyCells * 0.22
-    const tooManyColumnsPenalty = columns > 4 ? (columns - 4) * 0.14 : 0
+    const emptyCellsPenalty =
+      emptyCells * (context.constraintMode === 'free' ? 0.12 : 0.22)
+    const preferredMaxColumns = context.constraintMode === 'free' ? 6 : 4
+    const tooManyColumnsPenalty =
+      columns > preferredMaxColumns
+        ? (columns - preferredMaxColumns) *
+          (context.constraintMode === 'free' ? 0.06 : 0.14)
+        : 0
 
     const layout = createLayoutResult(
       canvasSize.width,
@@ -671,7 +719,7 @@ function createGridLayoutForRatio(
       cells,
       columns,
       rows,
-      emptyCellsPenalty + tooManyColumnsPenalty
+      emptyCellsPenalty + tooManyColumnsPenalty,
     )
 
     if (!bestLayout || layout.score < bestLayout.score) {
@@ -684,7 +732,7 @@ function createGridLayoutForRatio(
 
 function createSideHeroLayoutsForRatio(
   context: CollageLayoutContext,
-  ratio: number
+  ratio: number,
 ): CollageLayoutResult[] {
   const result: CollageLayoutResult[] = []
 
@@ -709,7 +757,10 @@ function createSideHeroLayoutsForRatio(
 
   if (portraitRatio > 0.9) return result
 
-  const heroWidthRatios = [0.34, 0.38, 0.42, 0.46, 0.5]
+  const heroWidthRatios =
+    context.constraintMode === 'free'
+      ? [0.26, 0.3, 0.34, 0.38, 0.42, 0.46, 0.5, 0.56, 0.62]
+      : [0.34, 0.38, 0.42, 0.46, 0.5]
 
   for (const heroWidthRatio of heroWidthRatios) {
     const heroWidth = (innerWidth - context.gap) * heroWidthRatio
@@ -767,8 +818,8 @@ function createSideHeroLayoutsForRatio(
         leftHeroCells,
         2,
         stackRows,
-        sideHeroPenalty
-      )
+        sideHeroPenalty,
+      ),
     )
 
     result.push(
@@ -779,8 +830,8 @@ function createSideHeroLayoutsForRatio(
         rightHeroCells,
         2,
         stackRows,
-        sideHeroPenalty
-      )
+        sideHeroPenalty,
+      ),
     )
   }
 
@@ -789,7 +840,7 @@ function createSideHeroLayoutsForRatio(
 
 function createSplitGroupLayoutsForRatio(
   context: CollageLayoutContext,
-  ratio: number
+  ratio: number,
 ): CollageLayoutResult[] {
   const result: CollageLayoutResult[] = []
 
@@ -814,7 +865,10 @@ function createSplitGroupLayoutsForRatio(
 
   if (!portraitImages.length || !landscapeImages.length) return result
 
-  const splitRatios = [0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65]
+  const splitRatios =
+    context.constraintMode === 'free'
+      ? [0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65, 0.7, 0.75]
+      : [0.35, 0.4, 0.45, 0.5, 0.55, 0.6, 0.65]
 
   for (const splitRatio of splitRatios) {
     const leftWidth = (innerWidth - context.gap) * splitRatio
@@ -874,8 +928,8 @@ function createSplitGroupLayoutsForRatio(
         leftPortraitCells,
         2,
         Math.max(portraitImages.length, landscapeImages.length),
-        0.08
-      )
+        0.08,
+      ),
     )
 
     result.push(
@@ -886,8 +940,8 @@ function createSplitGroupLayoutsForRatio(
         rightPortraitCells,
         2,
         Math.max(portraitImages.length, landscapeImages.length),
-        0.08
-      )
+        0.08,
+      ),
     )
   }
 
@@ -896,7 +950,7 @@ function createSplitGroupLayoutsForRatio(
 
 function createTreemapLayoutsForRatio(
   context: CollageLayoutContext,
-  ratio: number
+  ratio: number,
 ): CollageLayoutResult[] {
   const result: CollageLayoutResult[] = []
 
@@ -927,8 +981,8 @@ function createTreemapLayoutsForRatio(
           candidate.cells,
           0,
           0,
-          0.015
-        )
+          0.015,
+        ),
       )
     }
   }

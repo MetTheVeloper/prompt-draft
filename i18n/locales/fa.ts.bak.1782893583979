@@ -34,12 +34,6 @@ export default {
   },
   pages: {
     collage: {
-      "imageFit": {
-        "mode": "حالت نمایش تصویر",
-        "cover": "کاور",
-        "detail": "جزئیات",
-        "resetPosition": "ریست موقعیت"
-      },
       title: "کلاژساز",
       description: "تصاویر را انتخاب، جای‌گذاری یا Drag & Drop کن و خروجی نهایی را از canvas بگیر.",
       rotateYourPhone: "گوشی خود را بچرخانید",
@@ -89,7 +83,6 @@ export default {
         videoMeta: "{title} · {width}×{height} · {duration} · {fps}fps · {repeat}×{loop}",
         loopSuffix: " · لوپ",
         recordingVideo: "در حال ضبط ویدئو...",
-        selectedCell: "سلول انتخاب‌شده {name}",
       },
       actions: {
         save: "ذخیره",
@@ -156,16 +149,6 @@ export default {
       zoom: {
         fit: "Fit",
         actual: "Actual",
-      },
-      layoutTools: {
-        title: "ابزارهای چیدمان",
-        shuffleSimilar: "شافل عکس‌های مشابه",
-        shuffleLayout: "شافل چیدمان",
-        constraintMode: "حالت محدودیت",
-        constraintModes: {
-          controlled: "کنترل‌شده",
-          free: "آزاد",
-        },
       },
     },
   },

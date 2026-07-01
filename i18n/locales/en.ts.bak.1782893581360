@@ -34,12 +34,6 @@ export default {
   },
   pages: {
     collage: {
-      "imageFit": {
-        "mode": "Image display mode",
-        "cover": "Cover",
-        "detail": "Detail",
-        "resetPosition": "Reset position"
-      },
       title: "Collage Builder",
       description: "Select, paste, or drag images and export the final result from the canvas.",
       rotateYourPhone: "Rotate Your Phone",
@@ -89,7 +83,6 @@ export default {
         videoMeta: "{title} · {width}×{height} · {duration} · {fps}fps · {repeat}×{loop}",
         loopSuffix: " · loop",
         recordingVideo: "Recording video...",
-        selectedCell: "Selected Cell {name}",
       },
       actions: {
         save: "Save",
@@ -157,16 +150,6 @@ export default {
       zoom: {
         fit: "Fit",
         actual: "Actual",
-      },
-      layoutTools: {
-        title: "Layout Tools",
-        shuffleSimilar: "Shuffle Similar Images",
-        shuffleLayout: "Shuffle Layout",
-        constraintMode: "Constraint Mode",
-        constraintModes: {
-          controlled: "Controlled",
-          free: "Free",
-        },
       },
     },
   },
