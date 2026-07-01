@@ -44,7 +44,7 @@ function getItemEffect(item: GlobalMenuItem) {
   if (isDisabled(item)) return undefined
 
   return {
-    color: isActive(item) ? 'normal25' : item.color || 'blue50',
+    color: isActive(item) ? 'normal15' : item.color || 'blue15',
   }
 }
 
@@ -70,13 +70,15 @@ async function handleItemClick(item: GlobalMenuItem) {
 
       <el-grid v-else-if="item.description" :gap="2" class="w100">
         <el-button class="w100" rules="rsc" :label="item.label || ''" :icon="item.icon" :size="12"
-          :sublabel="item.description" :mode="getItemMode(item)" :color="`${getItemColor(item)}25`"
+          text-color="normal"
+          :sublabel="item.description" :mode="getItemMode(item)" :color="`${getItemColor(item)}15`" 
           :effect="getItemEffect(item)" :disable="isDisabled(item)" :radius="8" :p="[8]"
           @click="handleItemClick(item)" />
       </el-grid>
 
       <el-button v-else class="w100" rules="rsc" :label="item.label || ''" :icon="item.icon" :size="12"
-        :mode="getItemMode(item)" :color="`${getItemColor(item)}25`" :effect="getItemEffect(item)" :disable="isDisabled(item)"
+        text-color="normal"
+        :mode="getItemMode(item)" :color="`${getItemColor(item)}15`" :effect="getItemEffect(item)" :disable="isDisabled(item)"
         :radius="10" :p="[12, 8]" @click="handleItemClick(item)" />
     </template>
   </el-grid>
