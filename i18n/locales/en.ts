@@ -83,7 +83,7 @@ export default {
         gap: "Image gap: {value}px",
         backgroundColor: "Background color",
         exportQuality: "Export Quality",
-        decorationsEnabled: "Enable spacing and background",
+        decorationsEnabled: "Padding & Borders",
         cellRadius: "Cell corner radius: {value}px"
       },
       preview: {
@@ -92,7 +92,7 @@ export default {
         videoMeta: "{title} · {width}×{height} · {duration} · {fps}fps · {repeat}×{loop}",
         loopSuffix: " · loop",
         recordingVideo: "Recording video...",
-        selectedCell: "Selected Cell {name}",
+        selectedCell: "{name}",
       },
       actions: {
         save: "Save",
@@ -104,7 +104,14 @@ export default {
         exportingMp4: "Exporting MP4...",
         exportMp4: "Export MP4",
         replaceImage: "Replace image",
-        removeImage: "Remove image"
+        removeImage: "Remove image",
+        "refreshPage": "Refresh page"
+      },
+      "emptyCanvas": {
+        "title": "Add images to start",
+        "description": "Drag and drop images here, paste from clipboard, or choose files below.",
+        "pasteHint": "You can paste copied images directly with Ctrl/⌘ + V.",
+        "action": "Add images"
       },
       outputMode: {
         title: "Output Mode",
@@ -147,7 +154,7 @@ export default {
         height: "Height",
         calculatedDuration: "Calculated Duration",
         durationMeta: "{slides} slide views · {transitions} transitions",
-        loop: "Seamless loop back to first image",
+        loop: "Loop",
         repeat: "Repeat: {value}×",
         fps: "FPS: {value}",
         imageInterval: "Image Interval: {value}ms",

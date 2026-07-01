@@ -25,6 +25,8 @@ import { useCollageRenderer } from '~/composables/collage/useCollageRenderer'
 
 import { useCollageCanvasView } from '~/composables/collage/useCollageCanvasView'
 
+import { usePageContextMenu } from '~/composables/usePageContextMenu'
+
 type CollageImagePanState = {
   pointerId: number
   imageId: string
@@ -40,10 +42,43 @@ type PendingCellSelectionToggle = {
   imageId: string
 }
 
+
+type CollagePersistedSettings = {
+  activeMode?: CollageMode
+  brandOverlayEnabled?: boolean
+  padding?: number
+  gap?: number
+  cellRadius?: number
+  backgroundColor?: string
+  canvasDecorationsEnabled?: boolean
+  layoutConstraintMode?: CollageLayoutConstraintMode
+  canvasAspectRatioLock?: CollageCanvasAspectRatioLock
+  imageExportQuality?: number
+}
+
+const COLLAGE_SETTINGS_STORAGE_KEY = 'prompt-draft:collage:settings:v1'
+
+const COLLAGE_MODE_OPTIONS: CollageMode[] = ['image', 'video']
+const COLLAGE_LAYOUT_CONSTRAINT_MODE_OPTIONS: CollageLayoutConstraintMode[] = [
+  'controlled',
+  'free',
+]
+const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS: CollageCanvasAspectRatioLock[] = [
+  'auto',
+  '1:1',
+  '16:9',
+  '9:16',
+  '2:1',
+  '3:2',
+  '3:1',
+  '3:7',
+]
+
 export function useCollagePage() {
   const { orientation, mini } = useScreen()
   const { t } = useI18n()
-  const { $menu } = useNuxtApp()
+  const { openPageContextMenu, shouldIgnorePageContextMenu } =
+    usePageContextMenu()
 
   const canvasRef = ref<HTMLCanvasElement | null>(null)
 
@@ -62,6 +97,7 @@ export function useCollagePage() {
   } = useCollageCanvasView(canvasRef)
 
   const activeMode = ref<CollageMode>('image')
+  const brandOverlayEnabled = ref(true)
 
   const padding = ref(COLLAGE_DEFAULT_PADDING)
   const gap = ref(COLLAGE_DEFAULT_GAP)
@@ -75,6 +111,103 @@ export function useCollagePage() {
   const canvasAspectRatioLock = ref<CollageCanvasAspectRatioLock>('auto')
   const imageExportQuality = ref(100)
   const selectedImageCellOverlayStyle = ref<Record<string, string>>({})
+
+  function clampNumber(value: unknown, fallback: number, min: number, max: number) {
+    const parsed = Number(value)
+
+    if (!Number.isFinite(parsed)) return fallback
+
+    return Math.max(min, Math.min(max, Math.round(parsed)))
+  }
+
+  function isValidHexColor(value: unknown) {
+    return typeof value === 'string' && /^#[0-9a-f]{6}$/i.test(value)
+  }
+
+  function applyPersistedCollageSettings() {
+    if (!import.meta.client) return
+
+    try {
+      const raw = window.localStorage.getItem(COLLAGE_SETTINGS_STORAGE_KEY)
+      if (!raw) return
+
+      const settings = JSON.parse(raw) as CollagePersistedSettings
+
+      if (COLLAGE_MODE_OPTIONS.includes(settings.activeMode as CollageMode)) {
+        activeMode.value = settings.activeMode as CollageMode
+      }
+
+      if (typeof settings.brandOverlayEnabled === 'boolean') {
+        brandOverlayEnabled.value = settings.brandOverlayEnabled
+      }
+
+      if (typeof settings.canvasDecorationsEnabled === 'boolean') {
+        canvasDecorationsEnabled.value = settings.canvasDecorationsEnabled
+      }
+
+      padding.value = clampNumber(settings.padding, padding.value, 0, 96)
+      gap.value = clampNumber(settings.gap, gap.value, 0, 64)
+      cellRadius.value = clampNumber(settings.cellRadius, cellRadius.value, 0, 100)
+      imageExportQuality.value = clampNumber(
+        settings.imageExportQuality,
+        imageExportQuality.value,
+        30,
+        100,
+      )
+
+      if (isValidHexColor(settings.backgroundColor)) {
+        backgroundColor.value = settings.backgroundColor as string
+      }
+
+      if (
+        COLLAGE_LAYOUT_CONSTRAINT_MODE_OPTIONS.includes(
+          settings.layoutConstraintMode as CollageLayoutConstraintMode,
+        )
+      ) {
+        layoutConstraintMode.value =
+          settings.layoutConstraintMode as CollageLayoutConstraintMode
+      }
+
+      if (
+        COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS.includes(
+          settings.canvasAspectRatioLock as CollageCanvasAspectRatioLock,
+        )
+      ) {
+        canvasAspectRatioLock.value =
+          settings.canvasAspectRatioLock as CollageCanvasAspectRatioLock
+      }
+    } catch (error) {
+      console.warn('[collage] Failed to restore persisted settings', error)
+    }
+  }
+
+  function persistCollageSettings() {
+    if (!import.meta.client) return
+
+    const settings: CollagePersistedSettings = {
+      activeMode: activeMode.value,
+      brandOverlayEnabled: brandOverlayEnabled.value,
+      padding: padding.value,
+      gap: gap.value,
+      cellRadius: cellRadius.value,
+      backgroundColor: backgroundColor.value,
+      canvasDecorationsEnabled: canvasDecorationsEnabled.value,
+      layoutConstraintMode: layoutConstraintMode.value,
+      canvasAspectRatioLock: canvasAspectRatioLock.value,
+      imageExportQuality: normalizeImageExportQuality(),
+    }
+
+    try {
+      window.localStorage.setItem(
+        COLLAGE_SETTINGS_STORAGE_KEY,
+        JSON.stringify(settings),
+      )
+    } catch (error) {
+      console.warn('[collage] Failed to persist settings', error)
+    }
+  }
+
+  applyPersistedCollageSettings()
 
   let imagePanState: CollageImagePanState | null = null
   let pendingCellSelectionToggle: PendingCellSelectionToggle | null = null
@@ -169,6 +302,26 @@ export function useCollagePage() {
     activeMode,
   })
 
+  async function createEnabledCompositeOverlayCanvas(
+    canvasWidth: number,
+    canvasHeight: number,
+  ) {
+    if (!brandOverlayEnabled.value) return null
+
+    return overlayApi.createCompositeOverlayCanvas(canvasWidth, canvasHeight)
+  }
+
+  function drawEnabledOverlayCanvas(
+    ctx: CanvasRenderingContext2D,
+    canvasWidth: number,
+    canvasHeight: number,
+    overlayCanvas: HTMLCanvasElement,
+  ) {
+    if (!brandOverlayEnabled.value) return
+
+    overlayApi.drawOverlayCanvas(ctx, canvasWidth, canvasHeight, overlayCanvas)
+  }
+
   const exportApi = useCollageExport({
     canvasRef,
   })
@@ -181,8 +334,8 @@ export function useCollagePage() {
     renderVideoPreview: renderVideoPreviewForExport,
     waitFrame,
 
-    createCompositeOverlayCanvas: overlayApi.createCompositeOverlayCanvas,
-    drawOverlayCanvas: overlayApi.drawOverlayCanvas,
+    createCompositeOverlayCanvas: createEnabledCompositeOverlayCanvas,
+    drawOverlayCanvas: drawEnabledOverlayCanvas,
 
     downloadVideoBlob: exportApi.downloadVideoBlob,
     shareVideoBlobNative: exportApi.shareVideoBlobNative,
@@ -217,8 +370,8 @@ export function useCollagePage() {
 
     getVideoSources: videoApi.getVideoSources,
 
-    createCompositeOverlayCanvas: overlayApi.createCompositeOverlayCanvas,
-    drawOverlayCanvas: overlayApi.drawOverlayCanvas,
+    createCompositeOverlayCanvas: createEnabledCompositeOverlayCanvas,
+    drawOverlayCanvas: drawEnabledOverlayCanvas,
   })
 
   renderCurrentModeProxy = rendererApi.renderCurrentMode
@@ -648,9 +801,124 @@ export function useCollagePage() {
     await updateSelectedImageCellOverlaySoon()
   }
 
-  function createCanvasContextMenuItems(): GlobalMenuItem[] {
+  function refreshPage() {
+    if (!import.meta.client) return
+
+    window.location.reload()
+  }
+
+  function createBaseContextMenuItems(): GlobalMenuItem[] {
     const hasImages = imagesApi.images.value.length > 0
     const hasMultipleImages = imagesApi.images.value.length > 1
+
+    const items: GlobalMenuItem[] = [
+      {
+        label: t('pages.collage.dropzone.title'),
+        icon: 'gallery-add',
+        handler: () => {
+          imagesApi.openFilePicker()
+        },
+      },
+      {
+        divider: true,
+      },
+    ]
+
+    if (activeMode.value === 'image') {
+      items.push(
+        {
+          label: t('pages.collage.layoutTools.shuffleSimilar'),
+          icon: 'gallery',
+          description: 'Shift + S',
+          disabled: !hasMultipleImages,
+          handler: () => {
+            shuffleSimilarImages()
+          },
+        },
+        {
+          label: t('pages.collage.layoutTools.shuffleLayout'),
+          icon: 'grid-1',
+          description: 'Shift + L',
+          disabled: !hasMultipleImages,
+          handler: () => {
+            shuffleLayout()
+          },
+        },
+        {
+          label: t('pages.collage.layoutTools.constraintModes.controlled'),
+          icon: 'setting-2',
+          description: t('pages.collage.layoutTools.constraintMode'),
+          active: layoutConstraintMode.value === 'controlled',
+          handler: () => {
+            setLayoutConstraintMode('controlled')
+          },
+        },
+        {
+          label: t('pages.collage.layoutTools.constraintModes.free'),
+          icon: 'setting-2',
+          description: t('pages.collage.layoutTools.constraintMode'),
+          active: layoutConstraintMode.value === 'free',
+          handler: () => {
+            setLayoutConstraintMode('free')
+          },
+        },
+        {
+          divider: true,
+        },
+        {
+          label: t('pages.collage.actions.save'),
+          icon: 'ram',
+          disabled: !canExportImage.value,
+          handler: () => {
+            void downloadCanvas()
+          },
+        },
+        {
+          label: t('pages.collage.actions.copy'),
+          icon: 'document-copy',
+          disabled: !canExportImage.value,
+          handler: () => {
+            void exportApi.copyCanvas()
+          },
+        },
+      )
+    } else {
+      items.push({
+        label: t('pages.collage.actions.exportMp4'),
+        icon: 'video-play',
+        disabled: !canExportVideo.value,
+        handler: () => {
+          void videoApi.exportSliderMp4()
+        },
+      })
+    }
+
+    items.push(
+      {
+        label: t('pages.collage.actions.clear'),
+        icon: 'trash',
+        color: 'red',
+        disabled: !hasImages,
+        handler: () => {
+          imagesApi.clearImages()
+        },
+      },
+      {
+        divider: true,
+      },
+      {
+        label: t('pages.collage.actions.refreshPage'),
+        icon: 'refresh',
+        handler: () => {
+          refreshPage()
+        },
+      },
+    )
+
+    return items
+  }
+
+  function createCanvasContextMenuItems(): GlobalMenuItem[] {
     const selectedCell = rendererApi.selectedImageCell.value
 
     const items: GlobalMenuItem[] = []
@@ -731,104 +999,53 @@ export function useCollagePage() {
       )
     }
 
-    items.push(
-      {
-        label: t('pages.collage.dropzone.title'),
-        icon: 'gallery-add',
-        handler: () => {
-          imagesApi.openFilePicker()
-        },
-      },
-      {
-        divider: true,
-      },
-      {
-        label: t('pages.collage.layoutTools.shuffleSimilar'),
-        icon: 'gallery',
-        description: 'Shift + S',
-        disabled: !hasMultipleImages,
-        handler: () => {
-          shuffleSimilarImages()
-        },
-      },
-      {
-        label: t('pages.collage.layoutTools.shuffleLayout'),
-        icon: 'grid-1',
-        description: 'Shift + L',
-        disabled: !hasMultipleImages,
-        handler: () => {
-          shuffleLayout()
-        },
-      },
-      {
-        divider: true,
-      },
-      {
-        label: t('pages.collage.layoutTools.constraintModes.controlled'),
-        icon: 'setting-2',
-        description: t('pages.collage.layoutTools.constraintMode'),
-        active: layoutConstraintMode.value === 'controlled',
-        handler: () => {
-          setLayoutConstraintMode('controlled')
-        },
-      },
-      {
-        label: t('pages.collage.layoutTools.constraintModes.free'),
-        icon: 'setting-2',
-        description: t('pages.collage.layoutTools.constraintMode'),
-        active: layoutConstraintMode.value === 'free',
-        handler: () => {
-          setLayoutConstraintMode('free')
-        },
-      },
-      {
-        divider: true,
-      },
-      {
-        label: t('pages.collage.actions.save'),
-        icon: 'ram',
-        disabled: !canExportImage.value,
-        handler: () => {
-          void downloadCanvas()
-        },
-      },
-      {
-        label: t('pages.collage.actions.copy'),
-        icon: 'document-copy',
-        disabled: !canExportImage.value,
-        handler: () => {
-          void exportApi.copyCanvas()
-        },
-      },
-      {
-        label: t('pages.collage.actions.clear'),
-        icon: 'trash',
-        color: 'red',
-        disabled: !hasImages,
-        handler: () => {
-          imagesApi.clearImages()
-        },
-      },
-    )
+    items.push(...createBaseContextMenuItems())
 
     return items
   }
 
   function handleCanvasContextMenu(event: MouseEvent) {
-    if (activeMode.value !== 'image') return
-
-    event.preventDefault()
+    if (activeMode.value !== 'image') {
+      handlePageContextMenu(event)
+      return
+    }
 
     selectImageCell(rendererApi.getImageCellAtPointerEvent(event))
 
-    $menu.open({
-      mode: 'point',
-      event,
-      options: {
-        minWidth: 220,
-        closeOnScroll: false,
-      },
+    openPageContextMenu(event, {
+      minWidth: 220,
+      closeOnScroll: false,
       items: createCanvasContextMenuItems(),
+    })
+  }
+
+  function handleCanvasWrapPointerDown(event: PointerEvent) {
+    if (activeMode.value !== 'image') return
+    if (event.button !== 0 || event.isPrimary === false) return
+
+    clearSelectedImageCell()
+  }
+
+  function handlePageContextMenu(event: MouseEvent) {
+    if (shouldIgnorePageContextMenu(event)) return
+
+    if (activeMode.value === 'image') {
+      clearSelectedImageCell()
+    }
+
+    openPageContextMenu(event, {
+      minWidth: 220,
+      closeOnScroll: false,
+      items: createBaseContextMenuItems(),
+      fallbackItems: [
+        {
+          label: t('pages.collage.actions.refreshPage'),
+          icon: 'refresh',
+          handler: () => {
+            refreshPage()
+          },
+        },
+      ],
     })
   }
 
@@ -871,6 +1088,7 @@ export function useCollagePage() {
   watch(
     [
       activeMode,
+      brandOverlayEnabled,
       imagesApi.images,
       overlayApi.watermarkPosition,
       overlayApi.watermarkSize,
@@ -922,6 +1140,7 @@ export function useCollagePage() {
   watch(
     [
       activeMode,
+      brandOverlayEnabled,
       imagesApi.images,
       videoApi.videoWidth,
       videoApi.videoHeight,
@@ -953,6 +1172,28 @@ export function useCollagePage() {
       await rendererApi.renderVideoPreview()
       await reapplyCanvasView()
       clearSelectedImageCellOverlayStyle()
+    },
+    {
+      flush: 'post',
+    },
+  )
+
+
+  watch(
+    [
+      activeMode,
+      brandOverlayEnabled,
+      padding,
+      gap,
+      cellRadius,
+      backgroundColor,
+      canvasDecorationsEnabled,
+      layoutConstraintMode,
+      canvasAspectRatioLock,
+      imageExportQuality,
+    ],
+    () => {
+      persistCollageSettings()
     },
     {
       flush: 'post',
@@ -1005,6 +1246,7 @@ export function useCollagePage() {
     canvasRef,
 
     activeMode,
+    brandOverlayEnabled,
 
     padding,
     gap,
@@ -1058,6 +1300,8 @@ export function useCollagePage() {
     handleCanvasPointerMove,
     handleCanvasPointerUp,
     handleCanvasContextMenu,
+    handleCanvasWrapPointerDown,
+    handlePageContextMenu,
 
     // Keep image API explicit after spreads so nothing can accidentally override it.
     fileInputRef: imagesApi.fileInputRef,

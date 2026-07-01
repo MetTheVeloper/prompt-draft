@@ -78,12 +78,12 @@ export default {
         help: "اگر شناسه پست خالی باشد، فقط لوگو نمایش داده می‌شود.",
       },
       canvas: {
-        title: "Canvas",
+        title: "بـوم",
         padding: "فاصله داخلی: {value}px",
         gap: "فاصله بین تصاویر: {value}px",
         backgroundColor: "رنگ پس‌زمینه",
         exportQuality: "کیفیت خروجی",
-        decorationsEnabled: "فعال‌سازی فاصله و پس‌زمینه",
+        decorationsEnabled: "فاصله و پس‌زمینه",
         cellRadius: "گردی گوشه سلول‌ها: {value}px"
       },
       preview: {
@@ -104,7 +104,14 @@ export default {
         exportingMp4: "در حال خروجی MP4...",
         exportMp4: "خروجی MP4",
         replaceImage: "جایگزینی تصویر",
-        removeImage: "حذف تصویر"
+        removeImage: "حذف تصویر",
+        refreshPage: "رفرش صفحه"
+      },
+      "emptyCanvas": {
+        title: "برای شروع تصویر اضافه کن",
+        description: "تصاویر را اینجا بکش و رها کن، paste کن، یا از دکمه زیر انتخابشان کن.",
+        pasteHint: "می‌توانی تصویر کپی‌شده را مستقیم با Ctrl/⌘ + V اضافه کنی.",
+        action: "افزودن تصویر"
       },
       outputMode: {
         title: "حالت خروجی",

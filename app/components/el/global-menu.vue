@@ -320,6 +320,18 @@ function closeByOutside() {
   menuApi.close()
 }
 
+function handleLayerContextMenu(event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+
+  closeByOutside()
+}
+
+function handleBoxContextMenu(event: MouseEvent) {
+  event.preventDefault()
+  event.stopPropagation()
+}
+
 function handleKeydown(event: KeyboardEvent) {
   if (!isOpen.value) return
   if (event.key !== 'Escape') return
@@ -393,12 +405,14 @@ onBeforeUnmount(() => {
           data-el-overlay="menu"
           :style="rootStyle"
           @pointerdown.stop
-          @click.stop>
+          @click.stop
+          @contextmenu.prevent.stop>
           <div
             class="globalMenuLayer"
             :style="layerStyle"
             @pointerdown.stop
-            @click.stop="closeByOutside">
+            @click.stop="closeByOutside"
+            @contextmenu="handleLayerContextMenu">
           </div>
 
           <div ref="menuBox"
@@ -406,7 +420,8 @@ onBeforeUnmount(() => {
             data-el-overlay="menu-box"
             :style="boxStyle"
             @pointerdown.stop
-            @click.stop>
+            @click.stop
+            @contextmenu="handleBoxContextMenu">
             <component :is="activeComponent" v-if="activeComponent" v-bind="menu?.props || {}" @close="menuApi.close" />
 
             <el-menu-list v-else :items="menu?.items || []" />
