@@ -32,88 +32,89 @@ const emit = defineEmits<{
   (event: 'close'): void
 }>()
 
+function shortenFileName(value?: string, maxLength = 16) {
+  const input = String(value || '').trim()
+
+  if (!input || input.length <= maxLength) return input
+
+  const colonIndex = input.lastIndexOf(': ')
+  const prefix = colonIndex >= 0 ? input.slice(0, colonIndex + 2) : ''
+  const name = colonIndex >= 0 ? input.slice(colonIndex + 2) : input
+  const lastDotIndex = name.lastIndexOf('.')
+
+  if (lastDotIndex <= 0 || lastDotIndex === name.length - 1) {
+    return `${prefix}${name.slice(0, Math.max(1, maxLength - 1))}…`
+  }
+
+  const extension = name.slice(lastDotIndex + 1)
+  const suffix = `….${extension}`
+  const availableBaseLength = Math.max(1, maxLength - suffix.length)
+
+  return `${prefix}${name.slice(0, availableBaseLength)}${suffix}`
+}
+
+const shortTitle = computed(() => shortenFileName(props.title))
+const isCoverMode = computed(() => props.fitMode === 'cover')
+
 async function run(action?: () => void | Promise<void>) {
   await action?.()
   emit('close')
 }
 
-function getFitColor(mode: CollageImageFitMode) {
-  return props.fitMode === mode ? 'blue' : 'normal'
-}
-
-function getFitEffect(mode: CollageImageFitMode) {
-  return {
-    color: props.fitMode === mode ? 'normal25' : 'blue50',
+async function toggleFitMode() {
+  if (isCoverMode.value) {
+    await props.onSetDetail?.()
+  } else {
+    await props.onSetCover?.()
   }
+
+  emit('close')
 }
 </script>
 
 <template>
-  <el-grid class="collage-cell-context-menu" :gap="10" :p="10">
-    <el-flex v-if="title" rules="rsc" :gap="8" :p="[4, 4]">
-      <el-icon icon="gallery" :size="18" color="normal55" />
+  <el-flex rules="css" class="collage-cell-context-menu" :gap="8" :p="10">
+    <el-flex v-if="shortTitle" rules="rsc" :gap="8" :p="[2, 4]">
+      <el-icon icon="gallery" :size="16" color="normal55" />
       <el-text class="collage-cell-context-menu__title" :size="12" color="normal60">
-        {{ title }}
+        {{ shortTitle }}
       </el-text>
     </el-flex>
 
-    <el-flex rules="rsc" :gap="8">
+    <el-flex rules="rsc" class="collage-cell-context-menu__row" :gap="8">
       <el-button
-        class="w100"
+        :label="pipLabel"
+        icon="gallery-add"
+        mode="flat"
+        color="blue"
+        :size="13"
+        :p="[8, 10]"
+        @click="run(onSelectPip)"
+      />
+
+      <el-divider direction="vertical" :height="16" />
+
+      <el-switch
+        :size="14"
+        v-model="isCoverMode"
+        :label="coverLabel"
+        @click="toggleFitMode"
+      />
+
+      <el-divider direction="vertical" :height="16" />
+
+      <el-button
         :label="replaceLabel"
         icon="refresh-2"
         type="fab"
         mode="flat"
         color="normal"
         :size="13"
-        :p="[9, 12]"
+        :p="[8, 10]"
         @click="run(onReplace)"
       />
 
       <el-button
-        class="w100"
-        :label="pipLabel"
-        icon="gallery"
-        type="fab"
-        mode="flat"
-        color="blue"
-        :size="13"
-        :p="[9, 12]"
-        @click="run(onSelectPip)"
-      />
-    </el-flex>
-
-    <el-flex rules="rsc" :gap="8">
-      <el-button
-        class="w100"
-        :label="coverLabel"
-        icon="gallery"
-        type="fab"
-        mode="flat"
-        :color="getFitColor('cover')"
-        :effect="getFitEffect('cover')"
-        :size="13"
-        :p="[9, 12]"
-        @click="run(onSetCover)"
-      />
-
-      <el-button
-        class="w100"
-        :label="detailLabel"
-        icon="scan"
-        type="fab"
-        mode="flat"
-        :color="getFitColor('detail')"
-        :effect="getFitEffect('detail')"
-        :size="13"
-        :p="[9, 12]"
-        @click="run(onSetDetail)"
-      />
-    </el-flex>
-
-    <el-flex rules="rsc" :gap="8">
-      <el-button
-        class="w100"
         :label="resetLabel"
         icon="rotate-left"
         type="fab"
@@ -121,32 +122,38 @@ function getFitEffect(mode: CollageImageFitMode) {
         color="normal"
         :disable="!canReset"
         :size="13"
-        :p="[9, 12]"
+        :p="[8, 10]"
         @click="run(onReset)"
       />
 
       <el-button
-        class="w100"
         :label="removeLabel"
         icon="trash"
         type="fab"
         mode="flat"
         color="red"
         :size="13"
-        :p="[9, 12]"
+        :p="[8, 10]"
         @click="run(onRemove)"
       />
     </el-flex>
-  </el-grid>
+  </el-flex>
 </template>
 
 <style scoped>
 .collage-cell-context-menu {
-  width: min(320px, calc(100vw - 24px));
+  width: max-content;
+  max-width: calc(100vw - 24px);
+}
+
+.collage-cell-context-menu__row {
+  width: max-content;
+  max-width: calc(100vw - 44px);
+  flex-wrap: wrap;
 }
 
 .collage-cell-context-menu__title {
-  max-width: 240px;
+  max-width: 180px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;

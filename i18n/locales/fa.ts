@@ -34,6 +34,11 @@ export default {
   },
   pages: {
     collage: {
+      "panel": {
+        "toggle": "باز/بستن پنل",
+        "close": "بستن پنل",
+        "dock": "چسباندن پنل"
+      },
       "pip": {
         "select": "انتخاب PIP",
         "replace": "جایگزینی PIP",
@@ -190,8 +195,9 @@ export default {
         randomOrderDisabled: "ترتیب تصادفی برای لوپ/تکرار غیرفعال است تا توالی یکپارچه بماند.",
       },
       zoom: {
-        fit: "Fit",
-        actual: "Actual",
+        fit: "فیت",
+        actual: "اندازه واقعی",
+        "panTool": "ابزار جابه‌جایی"
       },
       layoutTools: {
         title: "ابزارهای چیدمان",

@@ -25,6 +25,7 @@ const {
   shuffleLayout,
   setLayoutConstraintMode,
   setCanvasAspectRatioLock,
+  toggleCanvasPanTool,
 
   selectedImageCell,
   handleCanvasPointerDown,
@@ -121,10 +122,17 @@ const {
   canvasZoom,
   canvasZoomMin,
   canvasZoomMax,
+  canvasPanToolEnabled,
+  isCanvasViewportPanning,
   canvasDisplayStyle,
+  canvasStageStyle,
   setCanvasZoom,
   setCanvasActualSize,
   fitCanvasToWrap,
+  handleCanvasWheel,
+  handleCanvasViewportPointerDown,
+  handleCanvasViewportPointerMove,
+  handleCanvasViewportPointerUp,
 
   downloadCanvas,
   copyCanvas,
@@ -170,11 +178,53 @@ const videoPresetOptions = [
   },
 ]
 
+const collagePanelDocked = ref(!unref(mini))
+const collagePanelOpen = ref(true)
+
+const collagePanelWidth = computed(() => (unref(mini) ? '300px' : '360px'))
+
+const collagePanelVisible = computed(() => unref(collagePanelOpen))
+
+const collagePanelColumnWidth = computed(() => {
+  if (!unref(collagePanelDocked)) return '0px'
+
+  return unref(collagePanelOpen) ? unref(collagePanelWidth) : '0px'
+})
+
 const collagePageGridAttrs = computed(() => ({
   p: 24,
-  cols: [unref(mini) ? '260px' : '360px', 'minmax(0, 1fr)', 'auto'],
+  cols: ['auto', unref(collagePanelColumnWidth), 'minmax(0, 1fr)'],
   gap: 8,
 }))
+
+function updateCollagePanelDocked(value: ElDropdownValue | boolean) {
+  collagePanelDocked.value = value === true
+
+  if (collagePanelDocked.value) {
+    collagePanelOpen.value = true
+  }
+}
+
+function toggleCollagePanelOpen() {
+  collagePanelOpen.value = !collagePanelOpen.value
+}
+
+function closeFloatingCollagePanel() {
+  if (collagePanelDocked.value) return
+
+  collagePanelOpen.value = false
+}
+
+watch(
+  mini,
+  (value) => {
+    if (value) {
+      collagePanelDocked.value = false
+      collagePanelOpen.value = false
+    }
+  },
+  { immediate: true },
+)
 
 const collageSidebarAttrs = {
   radius: 16,
@@ -239,7 +289,9 @@ const collageImageItemAttrs = {
 const collageImageActionsAttrs = {
   cols: 3,
   gap: 10,
-  bd: 'b8',
+  bg: 'surface',
+  br: 2,
+  bc: 'normal15',
   p: 8,
   radius: 80,
   class: 'post b0 zi50',
@@ -248,7 +300,9 @@ const collageImageActionsAttrs = {
 const collageVideoActionsAttrs = {
   cols: 2,
   gap: 10,
-  bd: 'b8',
+  bg: 'surface',
+  br: 2,
+  bc: 'normal15',
   p: 8,
   radius: 80,
   class: 'post b0 zi50',
@@ -399,7 +453,12 @@ function updateVideoPreset(value: ElDropdownValue) {
   <el-grid
     v-show="!mini || orientation === 'landscape'"
     type="main"
-    class="ofh w100 h100"
+    class="ofh w100 h100 collage-page-grid"
+    :class="{
+      'collage-page-grid--panel-docked': collagePanelDocked,
+      'collage-page-grid--floating-panel': !collagePanelDocked,
+      'collage-page-grid--panel-open': collagePanelVisible,
+    }"
     v-bind="collagePageGridAttrs"
     @drop="handleDrop"
     @dragover="handleDragOver"
@@ -408,14 +467,36 @@ function updateVideoPreset(value: ElDropdownValue) {
   >
     <!-- panel -->
     <el-flex
+      v-show="collagePanelVisible"
       type="aside"
-      class="ofha mxh100 w100 scrollbar-hidden"
+      class="collage-sidebar ofha mxh100 w100 scrollbar-hidden bg-surface"
       v-bind="collageSidebarAttrs">
       <!-- header -->
       <el-grid class="collage-sidebar__head" v-bind="collageSidebarHeadAttrs">
-        <el-text type="h1" :size="22" weight="700">
-          {{ $t('pages.collage.title') }}
-        </el-text>
+        <el-flex rules="rbc" :gap="10" class="w100">
+          <el-text type="h1" :size="22" weight="700">
+            {{ $t('pages.collage.title') }}
+          </el-text>
+
+          <el-flex rules="rcc" :gap="8">
+            <el-switch
+              size="mini"
+              :model-value="collagePanelDocked"
+              @update:model-value="updateCollagePanelDocked"
+            />
+
+            <el-button
+              v-if="!collagePanelDocked"
+              :label="$t('pages.collage.panel.close')"
+              icon="close-circle"
+              type="fab"
+              mode="flat"
+              :size="14"
+              :p="8"
+              @click="closeFloatingCollagePanel"
+            />
+          </el-flex>
+        </el-flex>
 
         <el-text type="p" :size="13" color="normal60">
           {{ $t('pages.collage.description') }}
@@ -1384,14 +1465,22 @@ function updateVideoPreset(value: ElDropdownValue) {
       <el-grid
         ref="canvasWrapRef"
         class="collage-canvas-wrap"
-        :class="{ 'collage-canvas-wrap--empty': !images?.length }"
+        :class="{
+          'collage-canvas-wrap--empty': !images?.length,
+          'collage-canvas-wrap--pan-tool': canvasPanToolEnabled,
+          'collage-canvas-wrap--panning': isCanvasViewportPanning,
+        }"
         :p="8"
-        @pointerdown.self="handleCanvasWrapPointerDown"
-        @contextmenu="handleCanvasWrapContextMenu"
         :radius="18"
         :br="1"
         bc="normal10"
-        place-items="start center"
+        @wheel="handleCanvasWheel"
+        @pointerdown.capture="handleCanvasViewportPointerDown"
+        @pointermove.capture="handleCanvasViewportPointerMove"
+        @pointerup.capture="handleCanvasViewportPointerUp"
+        @pointercancel.capture="handleCanvasViewportPointerUp"
+        @pointerdown.self="handleCanvasWrapPointerDown"
+        @contextmenu="handleCanvasWrapContextMenu"
       >
         <el-flex
           v-if="!images?.length"
@@ -1434,21 +1523,30 @@ function updateVideoPreset(value: ElDropdownValue) {
           />
         </el-flex>
 
-        <canvas
-          ref="canvasRef"
-          :style="canvasDisplayStyle"
-          @pointerdown="handleCanvasPointerDown"
-          @pointermove="handleCanvasPointerMove"
-          @pointerup="handleCanvasPointerUp"
-          @pointercancel="handleCanvasPointerUp"
-          @contextmenu="handleCanvasContextMenu"
-        />
-
         <div
-          v-if="activeMode === 'image' && selectedImageCell"
-          class="collage-selected-cell-overlay"
-          :style="selectedImageCellOverlayStyle"
-        />
+          v-show="images?.length"
+          class="collage-canvas-stage"
+          :style="canvasStageStyle"
+          @pointerdown.self="handleCanvasWrapPointerDown"
+          @contextmenu.self="handleCanvasWrapContextMenu"
+        >
+          <canvas
+            v-show="images?.length"
+            ref="canvasRef"
+            :style="canvasDisplayStyle"
+            @pointerdown="handleCanvasPointerDown"
+            @pointermove="handleCanvasPointerMove"
+            @pointerup="handleCanvasPointerUp"
+            @pointercancel="handleCanvasPointerUp"
+            @contextmenu="handleCanvasContextMenu"
+          />
+
+          <div
+            v-if="activeMode === 'image' && selectedImageCell"
+            class="collage-selected-cell-overlay"
+            :style="selectedImageCellOverlayStyle"
+          />
+        </div>
       </el-grid>
     </el-grid>
 
@@ -1460,6 +1558,17 @@ function updateVideoPreset(value: ElDropdownValue) {
       class="collage-canvas-options"
       :radius="8"
     >
+      <el-button
+        :size="14"
+        :p="8"
+        :label="$t('pages.collage.panel.toggle')"
+        icon="menu"
+        type="fab"
+        mode="flat"
+        :color="collagePanelVisible ? 'blue' : 'normal'"
+        @click="toggleCollagePanelOpen"
+      />
+
       <!-- zoom -->
       <el-flex rules="csc">
         <el-button
@@ -1480,6 +1589,17 @@ function updateVideoPreset(value: ElDropdownValue) {
           type="fab"
           mode="flat"
           @click="setCanvasActualSize"
+        />
+
+        <el-button
+          :size="14"
+          :p="8"
+          :label="$t('pages.collage.zoom.panTool')"
+          icon="mouse-circle"
+          type="fab"
+          mode="flat"
+          :color="canvasPanToolEnabled ? 'blue' : 'normal'"
+          @click="toggleCanvasPanTool"
         />
 
         <input
@@ -1589,6 +1709,44 @@ function updateVideoPreset(value: ElDropdownValue) {
 </template>
 
 <style scoped>
+.collage-page-grid {
+  position: relative;
+}
+
+.collage-canvas-options {
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.collage-sidebar {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.collage-workspace {
+  grid-column: 3;
+  grid-row: 1;
+}
+
+.collage-page-grid--floating-panel .collage-sidebar {
+  position: absolute;
+  inset-block: 0;
+  inset-inline-start: calc(0px);
+  z-index: 80;
+  width: min(360px, calc(100% - 112px));
+  height: calc(100% - 0px);
+  max-height: calc(100%);
+  background: var(--surface) !important;
+  border: 1px solid var(--normalText10);
+  box-shadow: 0 24px 90px var(--themeBlack35);
+  backdrop-filter: blur(18px);
+}
+
+.collage-page-grid--floating-panel:not(.collage-page-grid--panel-open) .collage-sidebar,
+.collage-page-grid--panel-docked:not(.collage-page-grid--panel-open) .collage-sidebar {
+  display: none !important;
+}
+
 .collage-file-input {
   display: none;
 }
@@ -1687,8 +1845,11 @@ function updateVideoPreset(value: ElDropdownValue) {
 
 .collage-canvas-wrap {
   position: relative;
+  display: block;
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
+  touch-action: none;
   background:
     linear-gradient(45deg, var(--normalText5) 25%, var(--normalText0) 25%),
     linear-gradient(-45deg, var(--normalText5) 25%, var(--normalText0) 25%),
@@ -1702,6 +1863,17 @@ function updateVideoPreset(value: ElDropdownValue) {
     -8px 0;
 }
 
+.collage-canvas-stage {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  width: max-content;
+  height: max-content;
+  padding: 48px;
+  box-sizing: border-box;
+}
+
 .collage-canvas-wrap canvas {
   display: block;
   flex: 0 0 auto;
@@ -1712,7 +1884,19 @@ function updateVideoPreset(value: ElDropdownValue) {
   box-shadow: 0 24px 80px var(--themeBlack25);
 }
 
+.collage-canvas-wrap--pan-tool,
+.collage-canvas-wrap--pan-tool canvas {
+  cursor: grab;
+}
+
+.collage-canvas-wrap--panning,
+.collage-canvas-wrap--panning canvas {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
 .collage-canvas-wrap--empty {
+  display: grid;
   place-items: center !important;
 }
 
@@ -1774,13 +1958,25 @@ function updateVideoPreset(value: ElDropdownValue) {
 }
 
 @media (max-width: 900px) {
-  .collage-page {
-    grid-template-columns: 1fr !important;
+  .collage-page-grid {
+    grid-template-columns: auto 0 minmax(0, 1fr) !important;
   }
 
-  .collage-sidebar,
-  .collage-workspace {
-    height: auto;
+  .collage-page-grid .collage-sidebar {
+    position: absolute;
+    inset-block: 24px;
+    inset-inline-start: calc(24px + 8px);
+    z-index: 80;
+    width: min(320px, calc(100% - 112px));
+    height: calc(100% - 48px);
+    max-height: calc(100% - 48px);
+    background: var(--surface) !important;
+    border: 1px solid var(--normalText10);
+    box-shadow: 0 24px 90px var(--themeBlack35);
+  }
+
+  .collage-page-grid:not(.collage-page-grid--panel-open) .collage-sidebar {
+    display: none !important;
   }
 
   .collage-workspace {

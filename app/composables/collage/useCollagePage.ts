@@ -114,12 +114,21 @@ export function useCollagePage() {
     canvasZoomMin,
     canvasZoomMax,
     canvasViewMode,
+    canvasPanToolEnabled,
+    isCanvasViewportPanning,
     canvasDisplayStyle,
+    canvasStageStyle,
     syncCanvasIntrinsicSize,
     setCanvasZoom,
     setCanvasActualSize,
     fitCanvasToWrap,
     reapplyCanvasView,
+    resetCanvasView,
+    handleCanvasWheel,
+    handleCanvasViewportPointerDown,
+    handleCanvasViewportPointerMove,
+    handleCanvasViewportPointerUp,
+    stopCanvasViewportPan,
   } = useCollageCanvasView(canvasRef)
 
   const activeMode = ref<CollageMode>('image')
@@ -428,6 +437,14 @@ export function useCollagePage() {
     )
   })
 
+  function getImageListSignature() {
+    return imagesApi.images.value
+      .map((image) => `${image.id}:${image.url}:${image.width}x${image.height}`)
+      .join('|')
+  }
+
+  let previousImageListSignature = getImageListSignature()
+
   function normalizeImageExportQuality(value = imageExportQuality.value) {
     return Math.max(30, Math.min(100, Math.round(value || 100)))
   }
@@ -568,6 +585,24 @@ export function useCollagePage() {
     setLayoutConstraintMode(
       layoutConstraintMode.value === 'controlled' ? 'free' : 'controlled',
     )
+  }
+
+  function toggleCanvasPanTool() {
+    canvasPanToolEnabled.value = !canvasPanToolEnabled.value
+
+    if (!canvasPanToolEnabled.value) {
+      stopCanvasViewportPan()
+    }
+  }
+
+  function toggleActiveMode() {
+    activeMode.value = activeMode.value === 'image' ? 'video' : 'image'
+
+    if (activeMode.value !== 'image') {
+      clearSelectedImageCell()
+    }
+
+    stopCanvasViewportPan()
   }
 
   async function replaceSelectedImage() {
@@ -979,6 +1014,25 @@ export function useCollagePage() {
           imagesApi.openFilePicker()
         },
       },
+      {
+        label: t('pages.collage.zoom.panTool'),
+        icon: 'mouse-circle',
+        active: canvasPanToolEnabled.value,
+        handler: () => {
+          toggleCanvasPanTool()
+        },
+      },
+      {
+        label:
+          activeMode.value === 'image'
+            ? t('pages.collage.outputMode.modes.video')
+            : t('pages.collage.outputMode.modes.image'),
+        icon: activeMode.value === 'image' ? 'video-play' : 'gallery',
+        description: t('pages.collage.outputMode.mode'),
+        handler: () => {
+          toggleActiveMode()
+        },
+      },
     ]
 
     if (activeMode.value === 'image') {
@@ -1068,8 +1122,7 @@ export function useCollagePage() {
     const { imageId, pip } = pipHit
 
     openPageContextMenu(event, {
-      minWidth: 320,
-      maxWidth: 'min(340px, calc(100vw - 24px))',
+      minWidth: 0,
       maxHeight: 'min(560px, calc(100vh - 24px))',
       closeOnScroll: false,
       component: CollagePipContextMenu,
@@ -1114,8 +1167,7 @@ export function useCollagePage() {
     )
 
     openPageContextMenu(event, {
-      minWidth: 300,
-      maxWidth: 'min(320px, calc(100vw - 24px))',
+      minWidth: 0,
       closeOnScroll: false,
       component: CollageCellContextMenu,
       props: {
@@ -1287,8 +1339,24 @@ export function useCollagePage() {
     async () => {
       if (activeMode.value !== 'image') return
 
+      const nextImageListSignature = getImageListSignature()
+      const imageListChanged =
+        nextImageListSignature !== previousImageListSignature
+
+      previousImageListSignature = nextImageListSignature
+
+      if (imageListChanged) {
+        clearSelectedImageCell()
+      }
+
       await rendererApi.renderCanvas()
-      await reapplyCanvasView()
+
+      if (imageListChanged) {
+        await resetCanvasView()
+      } else {
+        await reapplyCanvasView()
+      }
+
       await updateSelectedImageCellOverlaySoon()
     },
     {
@@ -1378,7 +1446,7 @@ export function useCollagePage() {
     window.addEventListener('keydown', handleCollageKeydown)
     window.addEventListener('resize', handleWindowResize)
     await rendererApi.renderCurrentMode()
-    await reapplyCanvasView()
+    await resetCanvasView()
     await updateSelectedImageCellOverlaySoon()
   })
 
@@ -1388,6 +1456,7 @@ export function useCollagePage() {
     window.removeEventListener('resize', handleWindowResize)
 
     rendererApi.cancelVideoPreviewRender()
+    stopCanvasViewportPan()
 
     if (imagePanRenderFrame !== null) {
       cancelAnimationFrame(imagePanRenderFrame)
@@ -1435,6 +1504,8 @@ export function useCollagePage() {
     setLayoutConstraintMode,
     setCanvasAspectRatioLock,
     toggleLayoutConstraintMode,
+    toggleCanvasPanTool,
+    toggleActiveMode,
 
     canExport,
     canExportImage,
@@ -1445,13 +1516,21 @@ export function useCollagePage() {
     canvasZoomMin,
     canvasZoomMax,
     canvasViewMode,
+    canvasPanToolEnabled,
+    isCanvasViewportPanning,
     canvasDisplayStyle,
+    canvasStageStyle,
 
     syncCanvasIntrinsicSize,
     setCanvasZoom,
     setCanvasActualSize,
     fitCanvasToWrap,
     reapplyCanvasView,
+    resetCanvasView,
+    handleCanvasWheel,
+    handleCanvasViewportPointerDown,
+    handleCanvasViewportPointerMove,
+    handleCanvasViewportPointerUp,
 
     ...imagesApi,
     ...overlayApi,

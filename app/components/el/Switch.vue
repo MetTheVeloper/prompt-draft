@@ -1,56 +1,21 @@
 <template>
-  <el-flex
-    rules="rsc"
-    class="crp"
-    role="switch"
-    tabindex="0"
-    :aria-checked="checked"
-    :aria-disabled="isDisabled"
-    @click.stop="handleClick"
-    @keydown.enter.prevent.stop="handleClick"
-    @keydown.space.prevent.stop="handleClick"
-  >
-    <div
-      v-if="(icon !== undefined || label !== undefined) && !$slots.label"
-      class="frsc fg100 fgp8"
-    >
-      <el-icon
-        v-if="icon"
-        :icon="icon"
-        :size="iconSize || 24"
-        :color="iconColor"
-      />
-      <el-text v-if="label" :size="size" :weight="400" class="fg100">
+  <el-flex v-bind="rootAttrs" @click.stop="handleClick" @keydown.enter.prevent.stop="handleClick"
+    @keydown.space.prevent.stop="handleClick">
+    <el-flex v-if="(icon !== undefined || label !== undefined) && !$slots.label" v-bind="labelWrapperAttrs">
+      <el-icon v-if="icon" :icon="icon" :size="resolvedIconSize" :color="iconColor" />
+
+      <el-text v-if="label" v-bind="labelAttrs">
         {{ label }}
       </el-text>
-    </div>
+    </el-flex>
 
-    <div v-if="$slots.label" class="fg100">
+    <el-flex v-if="$slots.label" v-bind="slotWrapperAttrs">
       <slot name="label" />
-    </div>
+    </el-flex>
 
-    <div
-      class="switch br64 frsc tne100"
-      :class="{
-        'o80 pen': isDisabled,
-        'bg-prim': checked,
-        'bg-normal40': !checked,
-        'wp44 mnwp44 hp22 pl2 pr2': size === undefined || size === 'default',
-        'wp28 mnwp28 hp16 pl2 pr2': size === 'mini',
-      }"
-    >
-      <div
-        class="bg-white br64 bsh4 tne200"
-        :class="{
-          'wp18 mnwp18 hp18': size === undefined || size === 'default',
-          'wp12 mnwp12 hp12': size === 'mini',
-          mr22: !checked && size !== 'mini',
-          mr12: !checked && size === 'mini',
-          ml22: checked && size !== 'mini',
-          ml12: checked && size === 'mini',
-        }"
-      />
-    </div>
+    <el-flex v-bind="switchButtonAttrs">
+      <el-flex v-bind="thumbAttrs" />
+    </el-flex>
   </el-flex>
 </template>
 
@@ -61,8 +26,9 @@ const props = defineProps({
     required: false,
   },
   size: {
-    type: [String, Number],
+    type: [Number, String],
     required: false,
+    default: 16,
   },
   value: {
     type: Boolean,
@@ -107,6 +73,108 @@ const checked = computed(() => {
 })
 
 const isDisabled = computed(() => !!props.disable || !!props.loading)
+
+const switchSize = computed(() => normalizeSize(props.size))
+
+const switchGeometry = computed(() => {
+  const padding = fixNumber(switchSize.value * 0.25)
+  const height = fixNumber(switchSize.value + (padding * 2))
+  const width = fixNumber(height * 1.75)
+  const thumbSize = fixNumber(switchSize.value)
+  const borderRadius = fixNumber(height)
+
+  return {
+    height,
+    padding,
+    width,
+    thumbSize,
+    borderRadius,
+  }
+})
+
+const resolvedIconSize = computed(() => props.iconSize || switchSize.value)
+
+const rootAttrs = computed(() => ({
+  rules: 'rsc',
+  role: 'switch',
+  tabindex: isDisabled.value ? -1 : 0,
+  'aria-checked': checked.value,
+  'aria-disabled': isDisabled.value,
+  class: ['switch-root', isDisabled.value ? 'o80' : 'crp'],
+  gap: fixNumber(switchSize.value * 0.5),
+  style: {
+    flexDirection: props.invert ? 'row-reverse' : 'row',
+  },
+}))
+
+const labelWrapperAttrs = computed(() => ({
+  rules: 'rsc',
+  class: 'fg100',
+  gap: fixNumber(switchSize.value * 0.5),
+}))
+
+const slotWrapperAttrs = computed(() => ({
+  rules: 'rsc',
+  class: 'fg100',
+}))
+
+const labelAttrs = computed(() => ({
+  size: switchSize.value,
+  weight: 400,
+  class: 'fg100',
+}))
+
+const switchButtonAttrs = computed(() => {
+  const { width, height, padding, borderRadius } = switchGeometry.value
+
+  return {
+    rules: 'rsc',
+    bg: checked.value ? 'prim' : 'normal40',
+    bc: checked.value ? 'prim' : 'normal40',
+    br: fixNumber(switchSize.value * 0.2),
+    radius: borderRadius,
+    p: padding,
+    class: ['switch-button', 'tne100', isDisabled.value ? 'o80 pen' : 'crp'],
+    'data-state': checked.value ? 'checked' : 'unchecked',
+    'data-loading': props.loading ? 'true' : 'false',
+    style: {
+      width: `${width}px`,
+      minWidth: `${width}px`,
+      minHeight: `${height}px`,
+      paddingInline: `${padding}px`,
+      boxSizing: 'border-box',
+      justifyContent: checked.value ? 'flex-end' : 'flex-start',
+      transition: 'background-color 160ms ease, border-color 160ms ease, opacity 160ms ease',
+    },
+  }
+})
+
+const thumbAttrs = computed(() => {
+  const { thumbSize } = switchGeometry.value
+
+  return {
+    bg: 'white',
+    radius: thumbSize,
+    class: 'switch-thumb bsh4',
+    style: {
+      width: `${thumbSize}px`,
+      minWidth: `${thumbSize}px`,
+      height: `${thumbSize}px`,
+      transition: 'transform 200ms ease',
+    },
+  }
+})
+
+function normalizeSize(value) {
+  if (value === 'mini') return 16
+  if (value === 'default') return 22
+
+  const parsed = Number.parseFloat(value)
+
+  if (!Number.isFinite(parsed) || parsed <= 0) return 16
+
+  return fixNumber(parsed)
+}
 
 function handleClick(event) {
   if (isDisabled.value) return

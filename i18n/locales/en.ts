@@ -34,6 +34,11 @@ export default {
   },
   pages: {
     collage: {
+      "panel": {
+        "toggle": "Toggle Panel",
+        "close": "Close",
+        "dock": "Dock Panel"
+      },
       "pip": {
         "select": "Select PIP",
         "replace": "Replace PIP",
@@ -193,6 +198,7 @@ export default {
       zoom: {
         fit: "Fit",
         actual: "Actual",
+        "panTool": "Pan tool"
       },
       layoutTools: {
         title: "Layout Tools",
