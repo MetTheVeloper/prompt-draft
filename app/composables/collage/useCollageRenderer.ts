@@ -8,10 +8,13 @@ import {
 
 import { createCollageLayout } from '~/utils/collage/layout'
 
+import { loadCollagePipImageFile } from '~/utils/collage/file'
+
 import { shuffleSimilarRatioCellImages } from '~/utils/collage/shuffle'
 
 import {
   drawImageInCell,
+  drawImagePip,
   drawRoundedRect,
   getImageCellDrawMetrics,
   normalizeImageCellPan,
@@ -21,7 +24,12 @@ import type {
   CollageCanvasAspectRatioLock,
   CollageImageFitMode,
   CollageImageItem,
+  CollageImagePip,
   CollageImageTransform,
+  CollagePipHitResult,
+  CollagePipPosition,
+  CollagePipRect,
+  CollagePipSize,
   CollageLayoutCell,
   CollageLayoutConstraintMode,
   CollageLayoutResult,
@@ -68,7 +76,6 @@ type UseCollageRendererOptions = {
   ) => void
 }
 
-
 const CANVAS_ASPECT_RATIO_VALUES: Record<
   Exclude<CollageCanvasAspectRatioLock, 'auto'>,
   number
@@ -102,11 +109,81 @@ function normalizeCellRadius(value: number) {
   return clamp(Math.round(value || 0), 0, 100)
 }
 
+const PIP_SIZE_RATIOS: Record<CollagePipSize, number> = {
+  small: 0.22,
+  medium: 0.32,
+  large: 0.42,
+}
+
+const PIP_SIZE_MAX: Record<CollagePipSize, number> = {
+  small: 120,
+  medium: 180,
+  large: 240,
+}
+
+function getPipMargin(cell: CollageLayoutCell) {
+  return clamp(Math.round(Math.min(cell.width, cell.height) * 0.045), 10, 28)
+}
+
+function getPipRect(
+  cell: CollageLayoutCell,
+  pip: CollageImagePip,
+): CollagePipRect {
+  const margin = getPipMargin(cell)
+  const minCellSide = Math.max(1, Math.min(cell.width, cell.height))
+  const maxAvailableSide = Math.max(1, minCellSide - margin * 2)
+  const targetSide = minCellSide * PIP_SIZE_RATIOS[pip.size]
+  const size = Math.round(
+    clamp(
+      targetSide,
+      Math.min(48, maxAvailableSide),
+      Math.min(PIP_SIZE_MAX[pip.size], maxAvailableSide),
+    ),
+  )
+
+  const left = cell.x + margin
+  const centerX = cell.x + cell.width / 2 - size / 2
+  const right = cell.x + cell.width - margin - size
+
+  const top = cell.y + margin
+  const centerY = cell.y + cell.height / 2 - size / 2
+  const bottom = cell.y + cell.height - margin - size
+
+  let x = right
+  let y = bottom
+
+  if (pip.position.endsWith('left')) x = left
+  else if (pip.position.endsWith('center')) x = centerX
+  else if (pip.position.endsWith('right')) x = right
+
+  if (pip.position.startsWith('top')) y = top
+  else if (pip.position.startsWith('center')) y = centerY
+  else if (pip.position.startsWith('bottom')) y = bottom
+
+  return {
+    x,
+    y,
+    width: size,
+    height: size,
+  }
+}
+
+function isPointInsideRect(x: number, y: number, rect: CollagePipRect) {
+  return (
+    x >= rect.x &&
+    x <= rect.x + rect.width &&
+    y >= rect.y &&
+    y <= rect.y + rect.height
+  )
+}
+
 export function useCollageRenderer(options: UseCollageRendererOptions) {
   const isRendering = ref(false)
   const lastImageLayout = ref<CollageLayoutResult | null>(null)
   const selectedImageCell = ref<CollageLayoutCell | null>(null)
   const imageTransforms = ref<Record<string, CollageImageTransform>>({})
+  const imagePips = ref<Record<string, CollageImagePip>>({})
+  const lastImagePipRects = ref<Record<string, CollagePipRect>>({})
 
   const previewInfo = ref({
     width: 0,
@@ -297,6 +374,43 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     return getImageCellAtCanvasPoint(point.x, point.y)
   }
 
+  function getImagePipAtCanvasPoint(
+    x: number,
+    y: number,
+  ): CollagePipHitResult | null {
+    const layout = lastImageLayout.value
+    if (!layout) return null
+
+    for (let index = layout.cells.length - 1; index >= 0; index--) {
+      const cell = layout.cells[index]
+      if (!cell) continue
+
+      const pip = imagePips.value[cell.image.id]
+      if (!pip) continue
+
+      const rect =
+        lastImagePipRects.value[cell.image.id] || getPipRect(cell, pip)
+
+      if (!isPointInsideRect(x, y, rect)) continue
+
+      return {
+        imageId: cell.image.id,
+        cell,
+        pip,
+        rect,
+      }
+    }
+
+    return null
+  }
+
+  function getImagePipAtPointerEvent(event: MouseEvent) {
+    const point = getCanvasPointFromPointerEvent(event)
+    if (!point) return null
+
+    return getImagePipAtCanvasPoint(point.x, point.y)
+  }
+
   function getImageCellByImageId(imageId: string) {
     return (
       lastImageLayout.value?.cells.find((cell) => cell.image.id === imageId) ||
@@ -387,22 +501,132 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     )
   }
 
-  function pruneImageTransforms() {
+  function getImagePip(imageId: string) {
+    return imagePips.value[imageId] || null
+  }
+
+  function hasImagePip(imageId: string) {
+    return !!imagePips.value[imageId]
+  }
+
+  async function setImagePipFromFile(imageId: string, file: File) {
+    if (!file.type.startsWith('image/')) return
+
+    const current = imagePips.value[imageId]
+    const loadedPip = await loadCollagePipImageFile(file)
+
+    imagePips.value = {
+      ...imagePips.value,
+      [imageId]: {
+        ...loadedPip,
+        position: current?.position || loadedPip.position,
+        size: current?.size || loadedPip.size,
+      },
+    }
+
+    if (current) {
+      URL.revokeObjectURL(current.url)
+    }
+  }
+
+  function setImagePipPosition(imageId: string, position: CollagePipPosition) {
+    const current = imagePips.value[imageId]
+    if (!current || current.position === position) return
+
+    imagePips.value = {
+      ...imagePips.value,
+      [imageId]: {
+        ...current,
+        position,
+      },
+    }
+  }
+
+  function setImagePipSize(imageId: string, size: CollagePipSize) {
+    const current = imagePips.value[imageId]
+    if (!current || current.size === size) return
+
+    imagePips.value = {
+      ...imagePips.value,
+      [imageId]: {
+        ...current,
+        size,
+      },
+    }
+  }
+
+  function removeImagePip(imageId: string) {
+    const current = imagePips.value[imageId]
+    if (!current) return
+
+    URL.revokeObjectURL(current.url)
+
+    const nextPips = { ...imagePips.value }
+    const nextRects = { ...lastImagePipRects.value }
+
+    delete nextPips[imageId]
+    delete nextRects[imageId]
+
+    imagePips.value = nextPips
+    lastImagePipRects.value = nextRects
+  }
+
+  function disposeImagePips() {
+    for (const pip of Object.values(imagePips.value)) {
+      URL.revokeObjectURL(pip.url)
+    }
+
+    imagePips.value = {}
+    lastImagePipRects.value = {}
+  }
+
+  function pruneImageState() {
     const availableIds = new Set(options.images.value.map((image) => image.id))
     const nextTransforms: Record<string, CollageImageTransform> = {}
-    let changed = false
+    const nextPips: Record<string, CollageImagePip> = {}
+    const nextRects: Record<string, CollagePipRect> = {}
+    let transformsChanged = false
+    let pipsChanged = false
+    let rectsChanged = false
 
     for (const [imageId, transform] of Object.entries(imageTransforms.value)) {
       if (!availableIds.has(imageId)) {
-        changed = true
+        transformsChanged = true
         continue
       }
 
       nextTransforms[imageId] = transform
     }
 
-    if (changed) {
+    for (const [imageId, pip] of Object.entries(imagePips.value)) {
+      if (!availableIds.has(imageId)) {
+        URL.revokeObjectURL(pip.url)
+        pipsChanged = true
+        continue
+      }
+
+      nextPips[imageId] = pip
+    }
+
+    for (const [imageId, rect] of Object.entries(lastImagePipRects.value)) {
+      if (!availableIds.has(imageId)) {
+        rectsChanged = true
+        continue
+      }
+
+      nextRects[imageId] = rect
+    }
+
+    if (transformsChanged) {
       imageTransforms.value = nextTransforms
+    }
+
+    if (pipsChanged) {
+      imagePips.value = nextPips
+    }
+
+    if (rectsChanged) {
+      lastImagePipRects.value = nextRects
     }
   }
 
@@ -452,7 +676,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     if (options.activeMode.value !== 'image') return
 
     stopVideoRenderer()
-    pruneImageTransforms()
+    pruneImageState()
 
     const canvas = options.canvasRef.value
     if (!canvas) return
@@ -469,11 +693,15 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     try {
       const layout = createCollageLayout({
         images: options.images.value,
-        padding: options.canvasDecorationsEnabled.value ? options.padding.value : 0,
+        padding: options.canvasDecorationsEnabled.value
+          ? options.padding.value
+          : 0,
         gap: options.canvasDecorationsEnabled.value ? options.gap.value : 0,
         layoutShuffleSeed: options.layoutShuffleSeed.value,
         constraintMode: options.layoutConstraintMode.value,
-        ratios: getCanvasAspectRatioCandidates(options.canvasAspectRatioLock.value),
+        ratios: getCanvasAspectRatioCandidates(
+          options.canvasAspectRatioLock.value,
+        ),
       })
 
       if (!layout) {
@@ -496,6 +724,7 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
         lastImageLayout.value = null
         selectedImageCell.value = null
+        lastImagePipRects.value = {}
 
         return
       }
@@ -558,6 +787,36 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
         ctx.restore()
       }
 
+      const nextPipRects: Record<string, CollagePipRect> = {}
+
+      for (const cell of renderedCells) {
+        const pip = imagePips.value[cell.image.id]
+        if (!pip) continue
+
+        const rect = getPipRect(cell, pip)
+        nextPipRects[cell.image.id] = rect
+
+        ctx.save()
+        drawRoundedRect(
+          ctx,
+          cell.x,
+          cell.y,
+          cell.width,
+          cell.height,
+          options.canvasDecorationsEnabled.value
+            ? normalizeCellRadius(options.cellRadius.value)
+            : 0,
+        )
+        ctx.clip()
+        drawImagePip(ctx, pip.image, rect.x, rect.y, rect.width, {
+          radius: Math.max(8, Math.min(18, rect.width * 0.12)),
+          shadow: true,
+        })
+        ctx.restore()
+      }
+
+      lastImagePipRects.value = nextPipRects
+
       const overlayCanvas = await options.createCompositeOverlayCanvas(
         canvas.width,
         canvas.height,
@@ -600,11 +859,15 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     lastImageLayout,
     selectedImageCell,
     imageTransforms,
+    imagePips,
+    lastImagePipRects,
 
     clearSelectedImageCell,
     getCanvasPointFromPointerEvent,
     getImageCellAtCanvasPoint,
     getImageCellAtPointerEvent,
+    getImagePipAtCanvasPoint,
+    getImagePipAtPointerEvent,
     getImageCellByImageId,
     handleCanvasPointerDown,
 
@@ -616,6 +879,13 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     toggleSelectedImageFitMode,
     resetImageTransform,
     resetSelectedImageTransform,
+    getImagePip,
+    hasImagePip,
+    setImagePipFromFile,
+    setImagePipPosition,
+    setImagePipSize,
+    removeImagePip,
+    disposeImagePips,
     panImageTransform,
 
     stopVideoRenderer,

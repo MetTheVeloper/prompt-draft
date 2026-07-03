@@ -21,6 +21,43 @@ export interface CollageImageItem {
 
 export type CollageImageFitMode = 'cover' | 'detail'
 
+export type CollagePipPosition =
+  | 'top-left'
+  | 'top-center'
+  | 'top-right'
+  | 'center-left'
+  | 'center-right'
+  | 'bottom-left'
+  | 'bottom-center'
+  | 'bottom-right'
+
+export type CollagePipSize = 'small' | 'medium' | 'large'
+
+export type CollageImagePip = {
+  file: File
+  name: string
+  url: string
+  width: number
+  height: number
+  image: HTMLImageElement
+  position: CollagePipPosition
+  size: CollagePipSize
+}
+
+export type CollagePipRect = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export type CollagePipHitResult = {
+  imageId: string
+  cell: CollageLayoutCell
+  pip: CollageImagePip
+  rect: CollagePipRect
+}
+
 export type CollageImageTransform = {
   fit: CollageImageFitMode
   panX: number
@@ -51,14 +88,7 @@ export type CollageMode = 'image' | 'video'
 export type CollageLayoutConstraintMode = 'controlled' | 'free'
 
 export type CollageCanvasAspectRatioLock =
-  | 'auto'
-  | '1:1'
-  | '16:9'
-  | '9:16'
-  | '2:1'
-  | '3:2'
-  | '3:1'
-  | '3:7'
+  'auto' | '1:1' | '16:9' | '9:16' | '2:1' | '3:2' | '3:1' | '3:7'
 
 export type BrandOverlayTheme = 'black' | 'white'
 

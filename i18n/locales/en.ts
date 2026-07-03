@@ -34,6 +34,30 @@ export default {
   },
   pages: {
     collage: {
+      "pip": {
+        "select": "Select PIP",
+        "replace": "Replace PIP",
+        "remove": "Remove PIP",
+        "selected": "PIP: {name}",
+        "description": "Small image overlay for this cell",
+        "position": "PIP position",
+        "size": "PIP size",
+        "positions": {
+          "topLeft": "Top left",
+          "topCenter": "Top center",
+          "topRight": "Top right",
+          "centerLeft": "Center left",
+          "centerRight": "Center right",
+          "bottomLeft": "Bottom left",
+          "bottomCenter": "Bottom center",
+          "bottomRight": "Bottom right"
+        },
+        "sizes": {
+          "small": "Small",
+          "medium": "Medium",
+          "large": "Large"
+        }
+      },
       imageFit: {
         mode: "Image display mode",
         cover: "Cover",

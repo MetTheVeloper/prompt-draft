@@ -32,6 +32,7 @@ const {
   handleCanvasPointerUp,
   handleCanvasContextMenu,
   handleCanvasWrapPointerDown,
+  handleCanvasWrapContextMenu,
   handlePageContextMenu,
 
   canExport,
@@ -1386,6 +1387,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         :class="{ 'collage-canvas-wrap--empty': !images?.length }"
         :p="8"
         @pointerdown.self="handleCanvasWrapPointerDown"
+        @contextmenu="handleCanvasWrapContextMenu"
         :radius="18"
         :br="1"
         bc="normal10"

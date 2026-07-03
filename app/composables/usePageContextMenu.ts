@@ -1,10 +1,14 @@
+import type { Component } from 'vue'
 import type { GlobalMenuItem } from '~/composables/useMenu'
 
 export type PageContextMenuOpenOptions = {
   items?: GlobalMenuItem[]
   fallbackItems?: GlobalMenuItem[]
+  component?: Component | null
+  props?: Record<string, any>
   minWidth?: number
   maxWidth?: number | string
+  maxHeight?: number | string
   closeOnScroll?: boolean
   zIndex?: number
 }
@@ -45,7 +49,7 @@ export function usePageContextMenu() {
       ? options.items
       : options.fallbackItems || []
 
-    if (!items.length) return false
+    if (!items.length && !options.component) return false
 
     event.preventDefault()
     event.stopPropagation()
@@ -56,10 +60,13 @@ export function usePageContextMenu() {
       options: {
         minWidth: options.minWidth ?? 220,
         maxWidth: options.maxWidth,
+        maxHeight: options.maxHeight,
         closeOnScroll: options.closeOnScroll ?? false,
         zIndex: options.zIndex,
       },
       items,
+      component: options.component || null,
+      props: options.props || {},
     })
 
     return true

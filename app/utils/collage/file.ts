@@ -1,6 +1,4 @@
-import type {
-  CollageImageItem,
-} from '~/types/collage'
+import type { CollageImageItem, CollageImagePip } from '~/types/collage'
 
 export function loadCollageImageFile(file: File): Promise<CollageImageItem> {
   return new Promise((resolve, reject) => {
@@ -28,20 +26,51 @@ export function loadCollageImageFile(file: File): Promise<CollageImageItem> {
   })
 }
 
+export function loadCollagePipImageFile(file: File): Promise<CollageImagePip> {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const image = new Image()
+
+    image.onload = () => {
+      resolve({
+        file,
+        name: file.name,
+        url,
+        width: image.naturalWidth,
+        height: image.naturalHeight,
+        image,
+        position: 'bottom-right',
+        size: 'small',
+      })
+    }
+
+    image.onerror = () => {
+      URL.revokeObjectURL(url)
+      reject(new Error(`Cannot load PIP image: ${file.name}`))
+    }
+
+    image.src = url
+  })
+}
+
 export function canvasToBlob(
   canvas: HTMLCanvasElement,
   type = 'image/png',
-  quality = 0.96
+  quality = 0.96,
 ): Promise<Blob> {
   return new Promise((resolve, reject) => {
-    canvas.toBlob((blob) => {
-      if (!blob) {
-        reject(new Error('Could not convert canvas to blob'))
-        return
-      }
+    canvas.toBlob(
+      (blob) => {
+        if (!blob) {
+          reject(new Error('Could not convert canvas to blob'))
+          return
+        }
 
-      resolve(blob)
-    }, type, quality)
+        resolve(blob)
+      },
+      type,
+      quality,
+    )
   })
 }
 

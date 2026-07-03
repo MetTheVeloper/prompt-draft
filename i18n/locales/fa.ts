@@ -34,6 +34,30 @@ export default {
   },
   pages: {
     collage: {
+      "pip": {
+        "select": "انتخاب PIP",
+        "replace": "جایگزینی PIP",
+        "remove": "حذف PIP",
+        "selected": "PIP: {name}",
+        "description": "تصویر کوچک روی این سلول",
+        "position": "موقعیت PIP",
+        "size": "اندازه PIP",
+        "positions": {
+          "topLeft": "بالا چپ",
+          "topCenter": "بالا وسط",
+          "topRight": "بالا راست",
+          "centerLeft": "وسط چپ",
+          "centerRight": "وسط راست",
+          "bottomLeft": "پایین چپ",
+          "bottomCenter": "پایین وسط",
+          "bottomRight": "پایین راست"
+        },
+        "sizes": {
+          "small": "کوچک",
+          "medium": "متوسط",
+          "large": "بزرگ"
+        }
+      },
       imageFit: {
         mode: "حالت نمایش تصویر",
         cover: "کاور",

@@ -1,8 +1,13 @@
 import type { GlobalMenuItem } from '~/composables/useMenu'
 
+import CollageCellContextMenu from '~/components/collage/CellContextMenu.vue'
+import CollagePipContextMenu from '~/components/collage/PipContextMenu.vue'
+
 import type {
   CollageCanvasAspectRatioLock,
   CollageImageFitMode,
+  CollagePipPosition,
+  CollagePipSize,
   CollageLayoutConstraintMode,
   CollageMode,
 } from '~/types/collage'
@@ -42,7 +47,6 @@ type PendingCellSelectionToggle = {
   imageId: string
 }
 
-
 type CollagePersistedSettings = {
   activeMode?: CollageMode
   brandOverlayEnabled?: boolean
@@ -63,16 +67,38 @@ const COLLAGE_LAYOUT_CONSTRAINT_MODE_OPTIONS: CollageLayoutConstraintMode[] = [
   'controlled',
   'free',
 ]
-const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS: CollageCanvasAspectRatioLock[] = [
-  'auto',
-  '1:1',
-  '16:9',
-  '9:16',
-  '2:1',
-  '3:2',
-  '3:1',
-  '3:7',
+const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS: CollageCanvasAspectRatioLock[] =
+  ['auto', '1:1', '16:9', '9:16', '2:1', '3:2', '3:1', '3:7']
+
+const COLLAGE_PIP_POSITION_OPTIONS: CollagePipPosition[] = [
+  'top-left',
+  'top-center',
+  'top-right',
+  'center-left',
+  'center-right',
+  'bottom-left',
+  'bottom-center',
+  'bottom-right',
 ]
+
+const COLLAGE_PIP_SIZE_OPTIONS: CollagePipSize[] = ['small', 'medium', 'large']
+
+const COLLAGE_PIP_POSITION_LABEL_KEYS: Record<CollagePipPosition, string> = {
+  'top-left': 'pages.collage.pip.positions.topLeft',
+  'top-center': 'pages.collage.pip.positions.topCenter',
+  'top-right': 'pages.collage.pip.positions.topRight',
+  'center-left': 'pages.collage.pip.positions.centerLeft',
+  'center-right': 'pages.collage.pip.positions.centerRight',
+  'bottom-left': 'pages.collage.pip.positions.bottomLeft',
+  'bottom-center': 'pages.collage.pip.positions.bottomCenter',
+  'bottom-right': 'pages.collage.pip.positions.bottomRight',
+}
+
+const COLLAGE_PIP_SIZE_LABEL_KEYS: Record<CollagePipSize, string> = {
+  small: 'pages.collage.pip.sizes.small',
+  medium: 'pages.collage.pip.sizes.medium',
+  large: 'pages.collage.pip.sizes.large',
+}
 
 export function useCollagePage() {
   const { orientation, mini } = useScreen()
@@ -112,7 +138,12 @@ export function useCollagePage() {
   const imageExportQuality = ref(100)
   const selectedImageCellOverlayStyle = ref<Record<string, string>>({})
 
-  function clampNumber(value: unknown, fallback: number, min: number, max: number) {
+  function clampNumber(
+    value: unknown,
+    fallback: number,
+    min: number,
+    max: number,
+  ) {
     const parsed = Number(value)
 
     if (!Number.isFinite(parsed)) return fallback
@@ -147,7 +178,12 @@ export function useCollagePage() {
 
       padding.value = clampNumber(settings.padding, padding.value, 0, 96)
       gap.value = clampNumber(settings.gap, gap.value, 0, 64)
-      cellRadius.value = clampNumber(settings.cellRadius, cellRadius.value, 0, 100)
+      cellRadius.value = clampNumber(
+        settings.cellRadius,
+        cellRadius.value,
+        0,
+        100,
+      )
       imageExportQuality.value = clampNumber(
         settings.imageExportQuality,
         imageExportQuality.value,
@@ -211,14 +247,12 @@ export function useCollagePage() {
 
   let imagePanState: CollageImagePanState | null = null
   let pendingCellSelectionToggle: PendingCellSelectionToggle | null = null
-  let lastCanvasClick:
-    | {
-        imageId: string
-        time: number
-        x: number
-        y: number
-      }
-    | null = null
+  let lastCanvasClick: {
+    imageId: string
+    time: number
+    x: number
+    y: number
+  } | null = null
   let imagePanRenderFrame: number | null = null
   let imagePanRenderRunning = false
   let imagePanRenderQueued = false
@@ -394,7 +428,6 @@ export function useCollagePage() {
     )
   })
 
-
   function normalizeImageExportQuality(value = imageExportQuality.value) {
     return Math.max(30, Math.min(100, Math.round(value || 100)))
   }
@@ -460,11 +493,7 @@ export function useCollagePage() {
     if (!canvas || !canExportImage.value) return
 
     const config = getImageExportConfig()
-    const blob = await createCanvasBlob(
-      canvas,
-      config.mimeType,
-      config.quality,
-    )
+    const blob = await createCanvasBlob(canvas, config.mimeType, config.quality)
 
     downloadImageBlob(
       blob,
@@ -548,16 +577,29 @@ export function useCollagePage() {
     imagesApi.openReplaceFilePicker(selectedCell.image.id)
   }
 
+  async function removeCollageImage(imageId: string) {
+    if (rendererApi.selectedImageCell.value?.image.id === imageId) {
+      clearSelectedImageCell()
+    }
+
+    rendererApi.resetImageTransform(imageId)
+    rendererApi.removeImagePip(imageId)
+
+    await imagesApi.removeImage(imageId)
+  }
+
+  async function clearCollageImages() {
+    clearSelectedImageCell()
+    rendererApi.disposeImagePips()
+
+    await imagesApi.clearImages()
+  }
+
   async function removeSelectedImage() {
     const selectedCell = rendererApi.selectedImageCell.value
     if (!selectedCell) return
 
-    const selectedImageId = selectedCell.image.id
-
-    clearSelectedImageCell()
-    rendererApi.resetImageTransform(selectedImageId)
-
-    await imagesApi.removeImage(selectedImageId)
+    await removeCollageImage(selectedCell.image.id)
   }
 
   async function toggleSelectedImageFitMode() {
@@ -565,6 +607,80 @@ export function useCollagePage() {
 
     await rendererApi.renderCanvas()
     await updateSelectedImageCellOverlaySoon()
+  }
+
+  function openImagePipFilePicker(imageId: string) {
+    if (!import.meta.client) return
+
+    const input = document.createElement('input')
+
+    input.type = 'file'
+    input.accept = 'image/*'
+    input.style.display = 'none'
+
+    let cleanupTimer: number | null = null
+
+    function cleanup() {
+      if (cleanupTimer !== null) {
+        window.clearTimeout(cleanupTimer)
+        cleanupTimer = null
+      }
+
+      input.remove()
+    }
+
+    input.addEventListener(
+      'change',
+      () => {
+        const file = input.files?.[0]
+
+        cleanup()
+
+        if (!file) return
+
+        void setImagePipFromFile(imageId, file)
+      },
+      { once: true },
+    )
+
+    document.body.appendChild(input)
+    input.click()
+
+    cleanupTimer = window.setTimeout(cleanup, 60_000)
+  }
+
+  async function setImagePipFromFile(imageId: string, file: File) {
+    await rendererApi.setImagePipFromFile(imageId, file)
+    await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
+  }
+
+  async function setImagePipPosition(
+    imageId: string,
+    position: CollagePipPosition,
+  ) {
+    rendererApi.setImagePipPosition(imageId, position)
+    await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
+  }
+
+  async function setImagePipSize(imageId: string, size: CollagePipSize) {
+    rendererApi.setImagePipSize(imageId, size)
+    await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
+  }
+
+  async function removeImagePip(imageId: string) {
+    rendererApi.removeImagePip(imageId)
+    await rendererApi.renderCanvas()
+    await updateSelectedImageCellOverlaySoon()
+  }
+
+  function selectPipForSelectedImage() {
+    const selectedCell = rendererApi.selectedImageCell.value
+    if (!selectedCell) return
+
+    openImagePipFilePicker(selectedCell.image.id)
   }
 
   function panSelectedImageWithKeyboard(event: KeyboardEvent) {
@@ -588,12 +704,14 @@ export function useCollagePage() {
 
     event.preventDefault()
 
-    if (rendererApi.panImageTransform(
-      selectedCell.image.id,
-      selectedCell,
-      deltaX,
-      deltaY,
-    )) {
+    if (
+      rendererApi.panImageTransform(
+        selectedCell.image.id,
+        selectedCell,
+        deltaX,
+        deltaY,
+      )
+    ) {
       scheduleImagePanRender()
     }
 
@@ -807,7 +925,49 @@ export function useCollagePage() {
     window.location.reload()
   }
 
-  function createBaseContextMenuItems(): GlobalMenuItem[] {
+  function createDefaultContextMenuItems(): GlobalMenuItem[] {
+    const hasImages = imagesApi.images.value.length > 0
+
+    return [
+      {
+        label: t('pages.collage.actions.save'),
+        icon: 'ram',
+        disabled: !canExportImage.value,
+        handler: () => {
+          void downloadCanvas()
+        },
+      },
+      {
+        label: t('pages.collage.actions.copy'),
+        icon: 'document-copy',
+        disabled: !canExportImage.value,
+        handler: () => {
+          void exportApi.copyCanvas()
+        },
+      },
+      {
+        label: t('pages.collage.actions.clear'),
+        icon: 'trash',
+        color: 'red',
+        disabled: !hasImages,
+        handler: () => {
+          void clearCollageImages()
+        },
+      },
+      {
+        divider: true,
+      },
+      {
+        label: t('pages.collage.actions.refreshPage'),
+        icon: 'refresh',
+        handler: () => {
+          refreshPage()
+        },
+      },
+    ]
+  }
+
+  function createWorkspaceContextMenuItems(): GlobalMenuItem[] {
     const hasImages = imagesApi.images.value.length > 0
     const hasMultipleImages = imagesApi.images.value.length > 1
 
@@ -819,13 +979,13 @@ export function useCollagePage() {
           imagesApi.openFilePicker()
         },
       },
-      {
-        divider: true,
-      },
     ]
 
     if (activeMode.value === 'image') {
       items.push(
+        {
+          divider: true,
+        },
         {
           label: t('pages.collage.layoutTools.shuffleSimilar'),
           icon: 'gallery',
@@ -862,55 +1022,36 @@ export function useCollagePage() {
             setLayoutConstraintMode('free')
           },
         },
-        {
-          divider: true,
-        },
-        {
-          label: t('pages.collage.actions.save'),
-          icon: 'ram',
-          disabled: !canExportImage.value,
-          handler: () => {
-            void downloadCanvas()
-          },
-        },
-        {
-          label: t('pages.collage.actions.copy'),
-          icon: 'document-copy',
-          disabled: !canExportImage.value,
-          handler: () => {
-            void exportApi.copyCanvas()
-          },
-        },
       )
-    } else {
-      items.push({
-        label: t('pages.collage.actions.exportMp4'),
-        icon: 'video-play',
-        disabled: !canExportVideo.value,
-        handler: () => {
-          void videoApi.exportSliderMp4()
-        },
-      })
     }
 
     items.push(
+      {
+        divider: true,
+      },
+      {
+        label: t('pages.collage.actions.save'),
+        icon: 'ram',
+        disabled: !canExportImage.value,
+        handler: () => {
+          void downloadCanvas()
+        },
+      },
+      {
+        label: t('pages.collage.actions.copy'),
+        icon: 'document-copy',
+        disabled: !canExportImage.value,
+        handler: () => {
+          void exportApi.copyCanvas()
+        },
+      },
       {
         label: t('pages.collage.actions.clear'),
         icon: 'trash',
         color: 'red',
         disabled: !hasImages,
         handler: () => {
-          imagesApi.clearImages()
-        },
-      },
-      {
-        divider: true,
-      },
-      {
-        label: t('pages.collage.actions.refreshPage'),
-        icon: 'refresh',
-        handler: () => {
-          refreshPage()
+          void clearCollageImages()
         },
       },
     )
@@ -918,90 +1059,109 @@ export function useCollagePage() {
     return items
   }
 
-  function createCanvasContextMenuItems(): GlobalMenuItem[] {
+  function openImagePipContextMenu(
+    event: MouseEvent,
+    pipHit: NonNullable<
+      ReturnType<typeof rendererApi.getImagePipAtPointerEvent>
+    >,
+  ) {
+    const { imageId, pip } = pipHit
+
+    openPageContextMenu(event, {
+      minWidth: 320,
+      maxWidth: 'min(340px, calc(100vw - 24px))',
+      maxHeight: 'min(560px, calc(100vh - 24px))',
+      closeOnScroll: false,
+      component: CollagePipContextMenu,
+      props: {
+        title: t('pages.collage.pip.selected', { name: pip.name }),
+        replaceLabel: t('pages.collage.pip.replace'),
+        removeLabel: t('pages.collage.pip.remove'),
+        positionLabel: t('pages.collage.pip.position'),
+        sizeLabel: t('pages.collage.pip.size'),
+        positionOptions: COLLAGE_PIP_POSITION_OPTIONS.map((position) => ({
+          value: position,
+          label: t(COLLAGE_PIP_POSITION_LABEL_KEYS[position]),
+          active: pip.position === position,
+        })),
+        sizeOptions: COLLAGE_PIP_SIZE_OPTIONS.map((size) => ({
+          value: size,
+          label: t(COLLAGE_PIP_SIZE_LABEL_KEYS[size]),
+          active: pip.size === size,
+        })),
+        onReplace: () => {
+          openImagePipFilePicker(imageId)
+        },
+        onRemove: () => {
+          void removeImagePip(imageId)
+        },
+        onSetPosition: (position: CollagePipPosition) => {
+          void setImagePipPosition(imageId, position)
+        },
+        onSetSize: (size: CollagePipSize) => {
+          void setImagePipSize(imageId, size)
+        },
+      },
+    })
+  }
+
+  function openImageCellContextMenu(event: MouseEvent) {
     const selectedCell = rendererApi.selectedImageCell.value
+    if (!selectedCell) return
 
-    const items: GlobalMenuItem[] = []
+    const selectedTransform = rendererApi.getImageTransform(
+      selectedCell.image.id,
+    )
 
-    if (selectedCell) {
-      items.push(
-        {
-          label: t('pages.collage.preview.selectedCell', {
-            name: selectedCell.image.name,
-          }),
-          icon: 'gallery',
-          disabled: true,
+    openPageContextMenu(event, {
+      minWidth: 300,
+      maxWidth: 'min(320px, calc(100vw - 24px))',
+      closeOnScroll: false,
+      component: CollageCellContextMenu,
+      props: {
+        title: selectedCell.image.name,
+        fitMode: selectedTransform.fit,
+        canReset: rendererApi.hasCustomImageTransform(selectedCell.image.id),
+        replaceLabel: t('pages.collage.actions.replaceImage'),
+        pipLabel: rendererApi.hasImagePip(selectedCell.image.id)
+          ? t('pages.collage.pip.replace')
+          : t('pages.collage.pip.select'),
+        coverLabel: t('pages.collage.imageFit.cover'),
+        detailLabel: t('pages.collage.imageFit.detail'),
+        resetLabel: t('pages.collage.imageFit.resetPosition'),
+        removeLabel: t('pages.collage.actions.removeImage'),
+        onReplace: () => {
+          void replaceSelectedImage()
         },
-        {
-          divider: true,
+        onSelectPip: () => {
+          selectPipForSelectedImage()
         },
-      )
+        onSetCover: () => {
+          void setSelectedImageFitMode('cover')
+        },
+        onSetDetail: () => {
+          void setSelectedImageFitMode('detail')
+        },
+        onReset: () => {
+          void resetSelectedImageTransform()
+        },
+        onRemove: () => {
+          void removeSelectedImage()
+        },
+      },
+    })
+  }
+
+  function openCanvasWorkspaceContextMenu(event: MouseEvent) {
+    if (activeMode.value === 'image') {
+      clearSelectedImageCell()
     }
 
-    if (selectedCell) {
-      items.push(
-        {
-          label: t('pages.collage.actions.replaceImage'),
-          icon: 'refresh-2',
-          handler: () => {
-            void replaceSelectedImage()
-          },
-        },
-        {
-          label: t('pages.collage.actions.removeImage'),
-          icon: 'trash',
-          color: 'red',
-          handler: () => {
-            void removeSelectedImage()
-          },
-        },
-        {
-          divider: true,
-        },
-      )
-    }
-
-    if (selectedCell) {
-      const selectedTransform = rendererApi.getImageTransform(
-        selectedCell.image.id,
-      )
-
-      items.push(
-        {
-          label: t('pages.collage.imageFit.cover'),
-          icon: 'gallery',
-          description: t('pages.collage.imageFit.mode'),
-          active: selectedTransform.fit === 'cover',
-          handler: () => {
-            void setSelectedImageFitMode('cover')
-          },
-        },
-        {
-          label: t('pages.collage.imageFit.detail'),
-          icon: 'scan',
-          description: t('pages.collage.imageFit.mode'),
-          active: selectedTransform.fit === 'detail',
-          handler: () => {
-            void setSelectedImageFitMode('detail')
-          },
-        },
-        {
-          label: t('pages.collage.imageFit.resetPosition'),
-          icon: 'rotate-left',
-          disabled: !rendererApi.hasCustomImageTransform(selectedCell.image.id),
-          handler: () => {
-            void resetSelectedImageTransform()
-          },
-        },
-        {
-          divider: true,
-        },
-      )
-    }
-
-    items.push(...createBaseContextMenuItems())
-
-    return items
+    openPageContextMenu(event, {
+      minWidth: 220,
+      closeOnScroll: false,
+      items: createWorkspaceContextMenuItems(),
+    })
   }
 
   function handleCanvasContextMenu(event: MouseEvent) {
@@ -1010,13 +1170,23 @@ export function useCollagePage() {
       return
     }
 
-    selectImageCell(rendererApi.getImageCellAtPointerEvent(event))
+    const pipHit = rendererApi.getImagePipAtPointerEvent(event)
 
-    openPageContextMenu(event, {
-      minWidth: 220,
-      closeOnScroll: false,
-      items: createCanvasContextMenuItems(),
-    })
+    if (pipHit) {
+      selectImageCell(pipHit.cell)
+      openImagePipContextMenu(event, pipHit)
+      return
+    }
+
+    const hitCell = rendererApi.getImageCellAtPointerEvent(event)
+
+    if (hitCell) {
+      selectImageCell(hitCell)
+      openImageCellContextMenu(event)
+      return
+    }
+
+    openCanvasWorkspaceContextMenu(event)
   }
 
   function handleCanvasWrapPointerDown(event: PointerEvent) {
@@ -1026,17 +1196,17 @@ export function useCollagePage() {
     clearSelectedImageCell()
   }
 
+  function handleCanvasWrapContextMenu(event: MouseEvent) {
+    openCanvasWorkspaceContextMenu(event)
+  }
+
   function handlePageContextMenu(event: MouseEvent) {
     if (shouldIgnorePageContextMenu(event)) return
-
-    if (activeMode.value === 'image') {
-      clearSelectedImageCell()
-    }
 
     openPageContextMenu(event, {
       minWidth: 220,
       closeOnScroll: false,
-      items: createBaseContextMenuItems(),
+      items: createDefaultContextMenuItems(),
       fallbackItems: [
         {
           label: t('pages.collage.actions.refreshPage'),
@@ -1178,7 +1348,6 @@ export function useCollagePage() {
     },
   )
 
-
   watch(
     [
       activeMode,
@@ -1236,6 +1405,7 @@ export function useCollagePage() {
       renderAfterRotateTimer = null
     }
 
+    rendererApi.disposeImagePips()
     imagesApi.disposeImages()
   })
 
@@ -1293,14 +1463,23 @@ export function useCollagePage() {
 
     replaceSelectedImage,
     removeSelectedImage,
+    removeCollageImage,
+    clearCollageImages,
     setSelectedImageFitMode,
     toggleSelectedImageFitMode,
     resetSelectedImageTransform,
+    openImagePipFilePicker,
+    setImagePipFromFile,
+    setImagePipPosition,
+    setImagePipSize,
+    removeImagePip,
+    selectPipForSelectedImage,
     handleCanvasPointerDown,
     handleCanvasPointerMove,
     handleCanvasPointerUp,
     handleCanvasContextMenu,
     handleCanvasWrapPointerDown,
+    handleCanvasWrapContextMenu,
     handlePageContextMenu,
 
     // Keep image API explicit after spreads so nothing can accidentally override it.
@@ -1313,8 +1492,8 @@ export function useCollagePage() {
     handleFileInput: imagesApi.handleFileInput,
     addFiles: imagesApi.addFiles,
     replaceImage: imagesApi.replaceImage,
-    removeImage: imagesApi.removeImage,
-    clearImages: imagesApi.clearImages,
+    removeImage: removeCollageImage,
+    clearImages: clearCollageImages,
     handleDrop: imagesApi.handleDrop,
     handleDragOver: imagesApi.handleDragOver,
     handleDragLeave: imagesApi.handleDragLeave,
