@@ -64,7 +64,7 @@
       </el-flex>
     </el-flex>
     <!-- tooltip -->
-    <el-tooltip :opened="(label || tooltip) && hover && buttonTooltip.show"
+    <el-tooltip :opened="(label && tooltip) && hover && buttonTooltip.show"
       :size="sizes.button.tooltip.label"
       :body="tooltip || label" :position="tooltipPosition" />
     <el-text

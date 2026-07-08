@@ -58,6 +58,7 @@ const props = withDefaults(
     supportVariables?: boolean;
     actions?: TextFieldActionsProp;
     actionLabel?: string;
+    size?: number | string;
 
     translationSource?: PromptTranslationSource;
     translationTarget?: PromptTranslationTarget;
@@ -74,6 +75,7 @@ const props = withDefaults(
     editorId: "",
     supportVariables: false,
     actionLabel: "Text actions",
+    size: 16,
 
     translationSource: "auto",
     translationTarget: "en",
@@ -141,6 +143,36 @@ const showActionButton = computed(() => {
 
 const canUseClipboard = computed(() => {
   return import.meta.client && Boolean(navigator?.clipboard);
+});
+
+const safeSize = computed(() => {
+  return Math.max(Number(props.size) || 16, 1);
+});
+
+function getFixedPixel(value: number) {
+  return `${fixNumber(value)}px`;
+}
+
+const hostStyle = computed<Record<string, string>>(() => {
+  const size = safeSize.value;
+
+  return {
+    "--el-text-field-font-size": getFixedPixel(size),
+    "--el-text-field-line-height": getFixedPixel(size * 1.45),
+    "--el-text-field-padding-block": getFixedPixel(size * 0.55),
+    "--el-text-field-padding-inline": getFixedPixel(size * 0.75),
+    "--el-text-field-radius": getFixedPixel(size * 0.75),
+    "--el-text-field-action-inset": getFixedPixel(size * 0.5),
+    "--el-text-field-action-space": getFixedPixel(size * 2.625),
+  };
+});
+
+const actionButtonSize = computed(() => {
+  return fixNumber(safeSize.value * 0.625);
+});
+
+const actionButtonPadding = computed(() => {
+  return fixNumber(safeSize.value * 0.5);
 });
 
 const safeHistoryLimit = computed(() => {
@@ -632,7 +664,7 @@ function openActionMenu(event: MouseEvent) {
     placement: "bottom-end",
     options: {
       closeOnScroll: false,
-      zIndex: 2200,
+      zIndex: 30000,
       minWidth: 180,
     },
     items: getActionMenuItems(),
@@ -662,7 +694,7 @@ function openContextActionMenu(event: MouseEvent) {
     event,
     options: {
       closeOnScroll: false,
-      zIndex: 2200,
+      zIndex: 30000,
       minWidth: 180,
     },
     items: getActionMenuItems(),
@@ -686,7 +718,7 @@ defineExpose({
     'el-text-field-host--textarea': type === 'textarea',
     'el-text-field-host--input': type !== 'textarea',
     'el-text-field-host--with-actions': showActionButton,
-  }">
+  }" :style="hostStyle">
     <textarea v-if="type === 'textarea'" ref="fieldRef"
       class="el-text-field el-text-field--textarea el-text-field-host__control" :value="textValue" :rows="rows"
       :placeholder="placeholder" :disabled="disabled" :readonly="readonly" v-bind="attrs" @focus="handleFocus"
@@ -700,7 +732,15 @@ defineExpose({
 
     <div v-if="showActionButton" ref="actionAnchorRef" class="el-text-field-host__actions" @pointerdown.prevent.stop
       @click.stop="openActionMenu">
-      <el-button :label="actionLabel" icon="more-vertical" type="fab" mode="flat" color="normal" :size="10" :p="8" />
+      <el-button
+        :label="actionLabel"
+        icon="more-vertical"
+        :tooltip="false"
+        type="fab"
+        mode="flat"
+        color="normal"
+        :size="actionButtonSize"
+        :p="actionButtonPadding" />
     </div>
   </div>
 </template>
@@ -709,21 +749,33 @@ defineExpose({
 .el-text-field-host {
   position: relative;
   width: 100%;
+  --el-text-field-font-size: 16px;
+  --el-text-field-line-height: 23.2px;
+  --el-text-field-padding-block: 8.8px;
+  --el-text-field-padding-inline: 12px;
+  --el-text-field-radius: 12px;
+  --el-text-field-action-inset: 8px;
+  --el-text-field-action-space: 42px;
 }
 
 .el-text-field-host__control {
   width: 100%;
+  font-size: var(--el-text-field-font-size);
+  line-height: var(--el-text-field-line-height);
+  padding-block: var(--el-text-field-padding-block);
+  padding-inline: var(--el-text-field-padding-inline);
+  border-radius: var(--el-text-field-radius);
 }
 
 .el-text-field-host--with-actions .el-text-field-host__control {
-  padding-inline-end: 42px;
+  padding-inline-end: var(--el-text-field-action-space);
 }
 
 .el-text-field-host__actions {
   position: absolute;
   z-index: 2;
-  inset-inline-end: 8px;
-  top: 8px;
+  inset-inline-end: var(--el-text-field-action-inset);
+  top: var(--el-text-field-action-inset);
   display: flex;
 }
 

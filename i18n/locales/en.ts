@@ -81,6 +81,24 @@ export default {
         empty: "No images have been added yet.",
       },
       brand: {
+        "mode": "Brand mode",
+        "modes": {
+          "overlay": "Overlay",
+          "footer": "Footer"
+        },
+        "footerAlign": "Footer alignment",
+        "footerPadding": "Footer padding: {value}px",
+        "footerAligns": {
+          "left": "Left",
+          "center": "Center",
+          "right": "Right"
+        },
+        "panelTitle": "Brand",
+        "groups": {
+          "mode": "Mode and placement",
+          "text": "Text",
+          "logo": "Logo and QR"
+        },
         title: "Brand Overlay",
         telegramPostId: "Telegram post ID",
         telegramPostIdPlaceholder: "e.g. 450",
@@ -113,7 +131,13 @@ export default {
         backgroundColor: "Background color",
         exportQuality: "Export Quality",
         decorationsEnabled: "Padding & Borders",
-        cellRadius: "Cell corner radius: {value}px"
+        cellRadius: "Cell corner radius: {value}px",
+        "outputSize": "Output size",
+        "outputSizes": {
+          "small": "Small",
+          "medium": "Medium",
+          "large": "Large"
+        }
       },
       preview: {
         grid: "Grid: {columns}×{rows}",
@@ -201,6 +225,10 @@ export default {
         "panTool": "Pan tool"
       },
       layoutTools: {
+        "aspectRatioOrientations": {
+          "vertical": "Vertical",
+          "horizontal": "Horizontal"
+        },
         title: "Layout Tools",
         shuffleSimilar: "Shuffle Similar Images",
         shuffleLayout: "Shuffle Layout",
@@ -2176,6 +2204,28 @@ export default {
   },
   create: {
     draft: {
+      download: "Download draft",
+      share: "Share draft",
+      shareText: "Prompt Draft JSON export",
+      importJson: "Import JSON",
+      exportJson: "Export JSON",
+      importModal: {
+        errorTitle: "Import failed",
+        errorDescription:
+          "The selected JSON file is not a valid Prompt Draft export. Please choose a draft or draft collection JSON file.",
+      },
+      titlePlaceholder: "Draft title...",
+      menu: "Drafts",
+      createNew: "Create new draft",
+      defaultTitle: "Draft {index}",
+      delete: "Delete draft",
+      deleteModal: {
+        title: "Delete draft?",
+        description: 'Delete "{title}" permanently? This action cannot be undone.',
+        lastDraftDescription:
+          'Delete "{title}" permanently? This is your only saved draft, so an empty draft will be created after deletion.',
+        confirm: "Delete draft",
+      },
       restoring: "Restoring draft...",
       saving: "Saving...",
       savedAt: "Saved at {time}",
@@ -3183,6 +3233,7 @@ export default {
       insertVariable: "Insert variable",
       actions: {
         close: "Close",
+        cancel: "Cancel",
       },
       title: {
         insertVariable: "Insert Variable",

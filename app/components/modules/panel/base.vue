@@ -785,8 +785,8 @@ onBeforeUnmount(() => {
           </el-flex>
           <!-- actions -->
           <el-flex rules="rcc" :class="mini ? 'w100' : ''">
-            <el-switch v-if="hasOverrideField" :class="mini ? 'fg100' : ''" :value="isCustomMode"
-              @click="isCustomMode = !isCustomMode" :label="t('panel.customMode')" />
+            <el-switch v-if="hasOverrideField" :class="mini ? 'fg100' : ''" :model-value="isCustomMode" :size="12"
+              @update:model-value="isCustomMode = $event" :label="t('panel.customMode')" />
             <el-button type="fab" :size="14" @click="clearModule" :disable="!hasAnyValue" mode="flat" :p="8"
               :label="isCustomMode ? t('panel.clearCustom') : t('panel.clear')" icon="trash" />
             <el-button type="fab" :size="14" @click="copyOutput" :disable="!output" :mode="isCopied ? 'flat' : 'normal'"

@@ -2,89 +2,10 @@
 const { t } = useI18n();
 const { mini } = useScreen();
 
-const { $menu } = useNuxtApp()
-
 import { usePromptTranslation } from "~/composables/prompt/usePromptTranslation";
 
 const { translateText } = usePromptTranslation();
 
-
-function openTestMenu(event: MouseEvent) {
-  $menu.open({
-    mode: 'dropdown',
-    anchor: event.currentTarget as HTMLElement,
-    placement: 'bottom-start',
-    options: {
-      closeOnScroll: false,
-    },
-    items: [
-      {
-        label: 'Edit',
-        icon: 'edit-2',
-        handler: () => console.log('edit'),
-      },
-      {
-        label: 'Duplicate',
-        icon: 'copy',
-        description: 'Make a duplicate',
-        handler: () => console.log('duplicate'),
-      },
-      {
-        divider: true,
-      },
-      {
-        label: 'Delete',
-        icon: 'trash',
-        color: 'red',
-        handler: () => console.log('delete'),
-      },
-    ],
-  })
-
-  console.log('menu state:', $menu.state.isOpen, $menu.state.menu)
-}
-
-function openTestContextMenu(event: MouseEvent) {
-  event.preventDefault()
-
-  $menu.open({
-    mode: 'point',
-    event,
-    options: {
-      closeOnScroll: false,
-    },
-    items: [
-      {
-        label: 'Point menu',
-        icon: 'mouse-circle',
-        description: 'Opened at cursor position',
-        active: true,
-        handler: () => console.log('point menu'),
-      },
-      {
-        label: 'Copy position',
-        icon: 'copy',
-        handler: () => {
-          console.log({
-            x: event.clientX,
-            y: event.clientY,
-          })
-        },
-      },
-      {
-        divider: true,
-      },
-      {
-        label: 'Close',
-        icon: 'close-circle',
-        color: 'red',
-        close: true,
-      },
-    ],
-  })
-
-  console.log('context menu state:', $menu.state.isOpen, $menu.state.menu)
-}
 
 async function testTranslation() {
   const result = await translateText({
@@ -119,10 +40,6 @@ onMounted(async () => {
         {{ t("home.description") }}
       </el-text>
       <el-divider />
-      <el-button label="Open menu" icon="more"
-        :size="16" mode="flat"
-        @contextmenu.prevent="openTestContextMenu"
-        @click="openTestMenu" />
       <el-button :size="16" :label="t('home.createPrompt')" icon="magicpen" to="/create" class="" />
       <el-button :size="14" :label="t('app.navigation.guide')" icon="message-question" to="/guide" color="normal"
         mode="flat" />

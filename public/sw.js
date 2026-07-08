@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v2'
+const CACHE_VERSION = 'v3'
 
 const APP_CACHE = `prompt-draft-app-${CACHE_VERSION}`
 const STATIC_CACHE = `prompt-draft-static-${CACHE_VERSION}`

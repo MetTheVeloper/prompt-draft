@@ -13,9 +13,20 @@ import {
 
 import { seededShuffle } from '~/utils/collage/shuffle'
 
+type CollageLayoutPadding = {
+  top: number
+  right: number
+  bottom: number
+  left: number
+}
+
+type CollageLayoutPaddingInput =
+  | number
+  | Partial<CollageLayoutPadding>
+
 type CollageLayoutContext = {
   images: CollageImageItem[]
-  padding: number
+  padding: CollageLayoutPadding
   gap: number
   maxSide: number
   constraintMode: CollageLayoutConstraintMode
@@ -43,9 +54,39 @@ function getCandidateRatios(mode: CollageLayoutConstraintMode) {
   return [...new Set(ratios.map((ratio) => Number(ratio.toFixed(4))))]
 }
 
+function normalizeLayoutPadding(
+  value: CollageLayoutPaddingInput,
+): CollageLayoutPadding {
+  if (typeof value === 'number') {
+    const normalized = Math.max(0, value || 0)
+
+    return {
+      top: normalized,
+      right: normalized,
+      bottom: normalized,
+      left: normalized,
+    }
+  }
+
+  return {
+    top: Math.max(0, value.top || 0),
+    right: Math.max(0, value.right || 0),
+    bottom: Math.max(0, value.bottom || 0),
+    left: Math.max(0, value.left || 0),
+  }
+}
+
+function getHorizontalPadding(context: CollageLayoutContext) {
+  return context.padding.left + context.padding.right
+}
+
+function getVerticalPadding(context: CollageLayoutContext) {
+  return context.padding.top + context.padding.bottom
+}
+
 export type CreateCollageLayoutOptions = {
   images: CollageImageItem[]
-  padding: number
+  padding: CollageLayoutPaddingInput
   gap: number
   maxSide?: number
   ratios?: number[]
@@ -66,7 +107,7 @@ export function createCollageLayout(
       layoutShuffleSeed > 0
         ? seededShuffle(options.images, layoutShuffleSeed)
         : options.images,
-    padding: options.padding,
+    padding: normalizeLayoutPadding(options.padding),
     gap: options.gap,
     maxSide: options.maxSide || COLLAGE_CANVAS_MAX_SIDE,
     constraintMode,
@@ -412,10 +453,10 @@ function createLayoutFromColumns(
 
   const canvasSize = getCanvasSizeFromRatio(context, ratio)
 
-  const innerX = context.padding
-  const innerY = context.padding
-  const innerWidth = canvasSize.width - context.padding * 2
-  const innerHeight = canvasSize.height - context.padding * 2
+  const innerX = context.padding.left
+  const innerY = context.padding.top
+  const innerWidth = canvasSize.width - getHorizontalPadding(context)
+  const innerHeight = canvasSize.height - getVerticalPadding(context)
 
   if (innerWidth <= 0 || innerHeight <= 0) return null
 
@@ -679,10 +720,10 @@ function createGridLayoutForRatio(
     const rows = Math.ceil(imageCount / columns)
 
     const innerWidth =
-      canvasSize.width - context.padding * 2 - context.gap * (columns - 1)
+      canvasSize.width - getHorizontalPadding(context) - context.gap * (columns - 1)
 
     const innerHeight =
-      canvasSize.height - context.padding * 2 - context.gap * (rows - 1)
+      canvasSize.height - getVerticalPadding(context) - context.gap * (rows - 1)
 
     if (innerWidth <= 0 || innerHeight <= 0) continue
 
@@ -695,8 +736,8 @@ function createGridLayoutForRatio(
 
       return {
         image,
-        x: context.padding + column * (cellWidth + context.gap),
-        y: context.padding + row * (cellHeight + context.gap),
+        x: context.padding.left + column * (cellWidth + context.gap),
+        y: context.padding.top + row * (cellHeight + context.gap),
         width: cellWidth,
         height: cellHeight,
       }
@@ -740,10 +781,10 @@ function createSideHeroLayoutsForRatio(
 
   const canvasSize = getCanvasSizeFromRatio(context, ratio)
 
-  const innerX = context.padding
-  const innerY = context.padding
-  const innerWidth = canvasSize.width - context.padding * 2
-  const innerHeight = canvasSize.height - context.padding * 2
+  const innerX = context.padding.left
+  const innerY = context.padding.top
+  const innerWidth = canvasSize.width - getHorizontalPadding(context)
+  const innerHeight = canvasSize.height - getVerticalPadding(context)
 
   if (innerWidth <= 0 || innerHeight <= 0) return result
 
@@ -848,10 +889,10 @@ function createSplitGroupLayoutsForRatio(
 
   const canvasSize = getCanvasSizeFromRatio(context, ratio)
 
-  const innerX = context.padding
-  const innerY = context.padding
-  const innerWidth = canvasSize.width - context.padding * 2
-  const innerHeight = canvasSize.height - context.padding * 2
+  const innerX = context.padding.left
+  const innerY = context.padding.top
+  const innerWidth = canvasSize.width - getHorizontalPadding(context)
+  const innerHeight = canvasSize.height - getVerticalPadding(context)
 
   if (innerWidth <= 0 || innerHeight <= 0) return result
 
@@ -959,10 +1000,10 @@ function createTreemapLayoutsForRatio(
   const canvasSize = getCanvasSizeFromRatio(context, ratio)
 
   const rootRect: TreemapRect = {
-    x: context.padding,
-    y: context.padding,
-    width: canvasSize.width - context.padding * 2,
-    height: canvasSize.height - context.padding * 2,
+    x: context.padding.left,
+    y: context.padding.top,
+    width: canvasSize.width - getHorizontalPadding(context),
+    height: canvasSize.height - getVerticalPadding(context),
   }
 
   if (rootRect.width <= 0 || rootRect.height <= 0) return result

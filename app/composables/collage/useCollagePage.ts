@@ -4,7 +4,11 @@ import CollageCellContextMenu from '~/components/collage/CellContextMenu.vue'
 import CollagePipContextMenu from '~/components/collage/PipContextMenu.vue'
 
 import type {
+  BrandFooterAlign,
+  BrandOverlayMode,
   CollageCanvasAspectRatioLock,
+  CollageCanvasAspectRatioOrientation,
+  CollageCanvasOutputSize,
   CollageImageFitMode,
   CollagePipPosition,
   CollagePipSize,
@@ -13,9 +17,13 @@ import type {
 } from '~/types/collage'
 
 import {
+  COLLAGE_CANVAS_ASPECT_RATIO_LOCK_VALUES,
+  COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_OPTIONS,
+  COLLAGE_CANVAS_OUTPUT_SIZE_VALUES,
   COLLAGE_DEFAULT_BACKGROUND_COLOR,
   COLLAGE_DEFAULT_GAP,
   COLLAGE_DEFAULT_PADDING,
+  normalizeCollageCanvasAspectRatioSetting,
 } from '~/constants/collage'
 
 import { useCollageImages } from '~/composables/collage/useCollageImages'
@@ -50,6 +58,9 @@ type PendingCellSelectionToggle = {
 type CollagePersistedSettings = {
   activeMode?: CollageMode
   brandOverlayEnabled?: boolean
+  brandOverlayMode?: BrandOverlayMode
+  brandFooterAlign?: BrandFooterAlign
+  brandFooterPadding?: number
   padding?: number
   gap?: number
   cellRadius?: number
@@ -57,18 +68,29 @@ type CollagePersistedSettings = {
   canvasDecorationsEnabled?: boolean
   layoutConstraintMode?: CollageLayoutConstraintMode
   canvasAspectRatioLock?: CollageCanvasAspectRatioLock
+  canvasAspectRatioOrientation?: CollageCanvasAspectRatioOrientation
+  canvasOutputSize?: CollageCanvasOutputSize
   imageExportQuality?: number
 }
 
 const COLLAGE_SETTINGS_STORAGE_KEY = 'prompt-draft:collage:settings:v1'
 
 const COLLAGE_MODE_OPTIONS: CollageMode[] = ['image', 'video']
+const BRAND_OVERLAY_MODE_OPTIONS: BrandOverlayMode[] = ['overlay', 'footer']
+const BRAND_FOOTER_ALIGN_OPTIONS: BrandFooterAlign[] = [
+  'left',
+  'center',
+  'right',
+]
 const COLLAGE_LAYOUT_CONSTRAINT_MODE_OPTIONS: CollageLayoutConstraintMode[] = [
   'controlled',
   'free',
 ]
-const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS: CollageCanvasAspectRatioLock[] =
-  ['auto', '1:1', '16:9', '9:16', '2:1', '3:2', '3:1', '3:7']
+const COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS = COLLAGE_CANVAS_OUTPUT_SIZE_VALUES
+const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS =
+  COLLAGE_CANVAS_ASPECT_RATIO_LOCK_VALUES
+const COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_VALUE_OPTIONS =
+  COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_OPTIONS
 
 const COLLAGE_PIP_POSITION_OPTIONS: CollagePipPosition[] = [
   'top-left',
@@ -144,6 +166,8 @@ export function useCollagePage() {
   const layoutShuffleSeed = ref(0)
   const layoutConstraintMode = ref<CollageLayoutConstraintMode>('controlled')
   const canvasAspectRatioLock = ref<CollageCanvasAspectRatioLock>('auto')
+  const canvasAspectRatioOrientation = ref<CollageCanvasAspectRatioOrientation>('vertical')
+  const canvasOutputSize = ref<CollageCanvasOutputSize>('large')
   const imageExportQuality = ref(100)
   const selectedImageCellOverlayStyle = ref<Record<string, string>>({})
 
@@ -181,6 +205,21 @@ export function useCollagePage() {
         brandOverlayEnabled.value = settings.brandOverlayEnabled
       }
 
+      if (BRAND_OVERLAY_MODE_OPTIONS.includes(settings.brandOverlayMode as BrandOverlayMode)) {
+        overlayApi.brandOverlayMode.value = settings.brandOverlayMode as BrandOverlayMode
+      }
+
+      if (BRAND_FOOTER_ALIGN_OPTIONS.includes(settings.brandFooterAlign as BrandFooterAlign)) {
+        overlayApi.brandFooterAlign.value = settings.brandFooterAlign as BrandFooterAlign
+      }
+
+      overlayApi.brandFooterPadding.value = clampNumber(
+        settings.brandFooterPadding,
+        overlayApi.brandFooterPadding.value,
+        0,
+        160,
+      )
+
       if (typeof settings.canvasDecorationsEnabled === 'boolean') {
         canvasDecorationsEnabled.value = settings.canvasDecorationsEnabled
       }
@@ -213,13 +252,22 @@ export function useCollagePage() {
           settings.layoutConstraintMode as CollageLayoutConstraintMode
       }
 
+      const normalizedCanvasAspectRatio = normalizeCollageCanvasAspectRatioSetting(
+        settings.canvasAspectRatioLock,
+        settings.canvasAspectRatioOrientation,
+      )
+
+      canvasAspectRatioLock.value =
+        normalizedCanvasAspectRatio.lock as CollageCanvasAspectRatioLock
+      canvasAspectRatioOrientation.value =
+        normalizedCanvasAspectRatio.orientation as CollageCanvasAspectRatioOrientation
+
       if (
-        COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS.includes(
-          settings.canvasAspectRatioLock as CollageCanvasAspectRatioLock,
+        COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS.includes(
+          settings.canvasOutputSize as CollageCanvasOutputSize,
         )
       ) {
-        canvasAspectRatioLock.value =
-          settings.canvasAspectRatioLock as CollageCanvasAspectRatioLock
+        canvasOutputSize.value = settings.canvasOutputSize as CollageCanvasOutputSize
       }
     } catch (error) {
       console.warn('[collage] Failed to restore persisted settings', error)
@@ -232,6 +280,9 @@ export function useCollagePage() {
     const settings: CollagePersistedSettings = {
       activeMode: activeMode.value,
       brandOverlayEnabled: brandOverlayEnabled.value,
+      brandOverlayMode: overlayApi.brandOverlayMode.value,
+      brandFooterAlign: overlayApi.brandFooterAlign.value,
+      brandFooterPadding: overlayApi.brandFooterPadding.value,
       padding: padding.value,
       gap: gap.value,
       cellRadius: cellRadius.value,
@@ -239,6 +290,8 @@ export function useCollagePage() {
       canvasDecorationsEnabled: canvasDecorationsEnabled.value,
       layoutConstraintMode: layoutConstraintMode.value,
       canvasAspectRatioLock: canvasAspectRatioLock.value,
+      canvasAspectRatioOrientation: canvasAspectRatioOrientation.value,
+      canvasOutputSize: canvasOutputSize.value,
       imageExportQuality: normalizeImageExportQuality(),
     }
 
@@ -252,7 +305,6 @@ export function useCollagePage() {
     }
   }
 
-  applyPersistedCollageSettings()
 
   let imagePanState: CollageImagePanState | null = null
   let pendingCellSelectionToggle: PendingCellSelectionToggle | null = null
@@ -345,13 +397,27 @@ export function useCollagePage() {
     activeMode,
   })
 
+  applyPersistedCollageSettings()
+
   async function createEnabledCompositeOverlayCanvas(
     canvasWidth: number,
     canvasHeight: number,
   ) {
     if (!brandOverlayEnabled.value) return null
+    if (overlayApi.brandOverlayMode.value !== 'overlay') return null
 
     return overlayApi.createCompositeOverlayCanvas(canvasWidth, canvasHeight)
+  }
+
+  async function createEnabledBrandFooterCanvas(
+    canvasWidth: number,
+    background: string,
+  ) {
+    if (!brandOverlayEnabled.value) return null
+    if (activeMode.value !== 'image') return null
+    if (overlayApi.brandOverlayMode.value !== 'footer') return null
+
+    return overlayApi.createBrandFooterCanvas(canvasWidth, background)
   }
 
   function drawEnabledOverlayCanvas(
@@ -401,6 +467,10 @@ export function useCollagePage() {
     layoutShuffleSeed,
     layoutConstraintMode,
     canvasAspectRatioLock,
+    canvasAspectRatioOrientation,
+    canvasOutputSize,
+    brandOverlayEnabled,
+    brandOverlayMode: overlayApi.brandOverlayMode,
 
     videoWidth: videoApi.videoWidth,
     videoHeight: videoApi.videoHeight,
@@ -414,6 +484,7 @@ export function useCollagePage() {
     getVideoSources: videoApi.getVideoSources,
 
     createCompositeOverlayCanvas: createEnabledCompositeOverlayCanvas,
+    createBrandFooterCanvas: createEnabledBrandFooterCanvas,
     drawOverlayCanvas: drawEnabledOverlayCanvas,
   })
 
@@ -565,9 +636,55 @@ export function useCollagePage() {
   }
 
   function setCanvasAspectRatioLock(lock: CollageCanvasAspectRatioLock) {
-    if (canvasAspectRatioLock.value === lock) return
+    const normalized = normalizeCollageCanvasAspectRatioSetting(
+      lock,
+      canvasAspectRatioOrientation.value,
+    )
 
-    canvasAspectRatioLock.value = lock
+    const nextLock = normalized.lock as CollageCanvasAspectRatioLock
+    const nextOrientation =
+      normalized.orientation as CollageCanvasAspectRatioOrientation
+
+    if (
+      canvasAspectRatioLock.value === nextLock &&
+      canvasAspectRatioOrientation.value === nextOrientation
+    ) {
+      return
+    }
+
+    canvasAspectRatioLock.value = nextLock
+    canvasAspectRatioOrientation.value = nextOrientation
+    clearSelectedImageCell()
+  }
+
+  function setCanvasAspectRatioOrientation(
+    orientation: CollageCanvasAspectRatioOrientation,
+  ) {
+    if (
+      !COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_VALUE_OPTIONS.includes(
+        orientation,
+      ) ||
+      canvasAspectRatioOrientation.value === orientation
+    ) {
+      return
+    }
+
+    canvasAspectRatioOrientation.value = orientation
+    clearSelectedImageCell()
+  }
+
+  function toggleCanvasAspectRatioOrientation() {
+    setCanvasAspectRatioOrientation(
+      canvasAspectRatioOrientation.value === 'vertical'
+        ? 'horizontal'
+        : 'vertical',
+    )
+  }
+
+  function setCanvasOutputSize(size: CollageCanvasOutputSize) {
+    if (canvasOutputSize.value === size) return
+
+    canvasOutputSize.value = size
     clearSelectedImageCell()
   }
 
@@ -1311,6 +1428,9 @@ export function useCollagePage() {
     [
       activeMode,
       brandOverlayEnabled,
+      overlayApi.brandOverlayMode,
+      overlayApi.brandFooterAlign,
+      overlayApi.brandFooterPadding,
       imagesApi.images,
       overlayApi.watermarkPosition,
       overlayApi.watermarkSize,
@@ -1335,6 +1455,8 @@ export function useCollagePage() {
       layoutShuffleSeed,
       layoutConstraintMode,
       canvasAspectRatioLock,
+      canvasAspectRatioOrientation,
+      canvasOutputSize,
     ],
     async () => {
       if (activeMode.value !== 'image') return
@@ -1379,6 +1501,9 @@ export function useCollagePage() {
     [
       activeMode,
       brandOverlayEnabled,
+      overlayApi.brandOverlayMode,
+      overlayApi.brandFooterAlign,
+      overlayApi.brandFooterPadding,
       imagesApi.images,
       videoApi.videoWidth,
       videoApi.videoHeight,
@@ -1420,6 +1545,9 @@ export function useCollagePage() {
     [
       activeMode,
       brandOverlayEnabled,
+      overlayApi.brandOverlayMode,
+      overlayApi.brandFooterAlign,
+      overlayApi.brandFooterPadding,
       padding,
       gap,
       cellRadius,
@@ -1427,6 +1555,8 @@ export function useCollagePage() {
       canvasDecorationsEnabled,
       layoutConstraintMode,
       canvasAspectRatioLock,
+      canvasAspectRatioOrientation,
+      canvasOutputSize,
       imageExportQuality,
     ],
     () => {
@@ -1497,12 +1627,17 @@ export function useCollagePage() {
     layoutShuffleSeed,
     layoutConstraintMode,
     canvasAspectRatioLock,
+    canvasAspectRatioOrientation,
+    canvasOutputSize,
     imageExportQuality,
     selectedImageCellOverlayStyle,
     shuffleSimilarImages,
     shuffleLayout,
     setLayoutConstraintMode,
     setCanvasAspectRatioLock,
+    setCanvasAspectRatioOrientation,
+    toggleCanvasAspectRatioOrientation,
+    setCanvasOutputSize,
     toggleLayoutConstraintMode,
     toggleCanvasPanTool,
     toggleActiveMode,

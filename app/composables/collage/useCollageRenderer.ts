@@ -8,6 +8,11 @@ import {
 
 import { createCollageLayout } from '~/utils/collage/layout'
 
+import {
+  COLLAGE_CANVAS_OUTPUT_SIZE_VALUE_MAP,
+  getCollageCanvasAspectRatioValue,
+} from '~/constants/collage'
+
 import { loadCollagePipImageFile } from '~/utils/collage/file'
 
 import { shuffleSimilarRatioCellImages } from '~/utils/collage/shuffle'
@@ -22,6 +27,9 @@ import {
 
 import type {
   CollageCanvasAspectRatioLock,
+  CollageCanvasAspectRatioOrientation,
+  CollageCanvasOutputSize,
+  BrandOverlayMode,
   CollageImageFitMode,
   CollageImageItem,
   CollageImagePip,
@@ -51,6 +59,10 @@ type UseCollageRendererOptions = {
   layoutShuffleSeed: Ref<number>
   layoutConstraintMode: Ref<CollageLayoutConstraintMode>
   canvasAspectRatioLock: Ref<CollageCanvasAspectRatioLock>
+  canvasAspectRatioOrientation: Ref<CollageCanvasAspectRatioOrientation>
+  canvasOutputSize: Ref<CollageCanvasOutputSize>
+  brandOverlayEnabled: Ref<boolean>
+  brandOverlayMode: Ref<BrandOverlayMode>
 
   videoWidth: Ref<number>
   videoHeight: Ref<number>
@@ -68,6 +80,11 @@ type UseCollageRendererOptions = {
     canvasHeight: number,
   ) => Promise<HTMLCanvasElement | null>
 
+  createBrandFooterCanvas: (
+    canvasWidth: number,
+    backgroundColor: string,
+  ) => Promise<HTMLCanvasElement | null>
+
   drawOverlayCanvas: (
     ctx: CanvasRenderingContext2D,
     canvasWidth: number,
@@ -76,23 +93,48 @@ type UseCollageRendererOptions = {
   ) => void
 }
 
-const CANVAS_ASPECT_RATIO_VALUES: Record<
-  Exclude<CollageCanvasAspectRatioLock, 'auto'>,
-  number
-> = {
-  '1:1': 1,
-  '16:9': 16 / 9,
-  '9:16': 9 / 16,
-  '2:1': 2 / 1,
-  '3:2': 3 / 2,
-  '3:1': 3 / 1,
-  '3:7': 3 / 7,
+
+
+function getCanvasOutputMaxSide(size: CollageCanvasOutputSize) {
+  return (
+    COLLAGE_CANVAS_OUTPUT_SIZE_VALUE_MAP[size] ||
+    COLLAGE_CANVAS_OUTPUT_SIZE_VALUE_MAP.large
+  )
 }
 
-function getCanvasAspectRatioCandidates(lock: CollageCanvasAspectRatioLock) {
-  if (lock === 'auto') return undefined
+function getCanvasAspectRatioCandidates(
+  lock: CollageCanvasAspectRatioLock,
+  orientation: CollageCanvasAspectRatioOrientation = 'vertical',
+) {
+  const ratio = getCollageCanvasAspectRatioValue(lock, orientation)
 
-  return [CANVAS_ASPECT_RATIO_VALUES[lock]]
+  if (!ratio) return undefined
+
+  return [ratio]
+}
+
+function getLockedCanvasSize(
+  lock: CollageCanvasAspectRatioLock,
+  maxSide = 1200,
+  orientation: CollageCanvasAspectRatioOrientation = 'vertical',
+) {
+  const ratio = getCollageCanvasAspectRatioValue(lock, orientation)
+
+  if (!ratio) return null
+
+  if (ratio >= 1) {
+    return {
+      width: maxSide,
+      height: Math.round(maxSide / ratio),
+      ratio,
+    }
+  }
+
+  return {
+    width: Math.round(maxSide * ratio),
+    height: maxSide,
+    ratio,
+  }
 }
 
 const DEFAULT_IMAGE_TRANSFORM: CollageImageTransform = {
@@ -691,22 +733,75 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
     }
 
     try {
+      const decorationPadding = options.canvasDecorationsEnabled.value
+        ? options.padding.value
+        : 0
+      const decorationGap = options.canvasDecorationsEnabled.value
+        ? options.gap.value
+        : 0
+      const shouldUseBrandFooter =
+        options.brandOverlayEnabled.value &&
+        options.brandOverlayMode.value === 'footer'
+      const layoutPadding = shouldUseBrandFooter
+        ? {
+            top: decorationPadding,
+            right: decorationPadding,
+            bottom: 0,
+            left: decorationPadding,
+          }
+        : decorationPadding
+      const canvasOutputMaxSide = getCanvasOutputMaxSide(options.canvasOutputSize.value)
+      const lockedCanvasSize = getLockedCanvasSize(
+        options.canvasAspectRatioLock.value,
+        canvasOutputMaxSide,
+        options.canvasAspectRatioOrientation.value,
+      )
+
+      let brandFooterCanvas: HTMLCanvasElement | null = null
+      let collageLayoutRatios = getCanvasAspectRatioCandidates(
+        options.canvasAspectRatioLock.value,
+        options.canvasAspectRatioOrientation.value,
+      )
+      let collageLayoutMaxSide: number | undefined = canvasOutputMaxSide
+      let finalCanvasWidth = 0
+      let finalCanvasHeight = 0
+      let collageOffsetX = 0
+      let collageOffsetY = 0
+
+      if (shouldUseBrandFooter && lockedCanvasSize) {
+        brandFooterCanvas = await options.createBrandFooterCanvas(
+          lockedCanvasSize.width,
+          options.backgroundColor.value,
+        )
+
+        const footerHeight = brandFooterCanvas?.height || 0
+        const collageAreaHeight = Math.max(
+          1,
+          lockedCanvasSize.height - footerHeight,
+        )
+        const collageAreaRatio = lockedCanvasSize.width / collageAreaHeight
+
+        collageLayoutRatios = [collageAreaRatio]
+        collageLayoutMaxSide = Math.max(lockedCanvasSize.width, collageAreaHeight)
+        finalCanvasWidth = lockedCanvasSize.width
+        finalCanvasHeight = lockedCanvasSize.height
+      }
+
       const layout = createCollageLayout({
         images: options.images.value,
-        padding: options.canvasDecorationsEnabled.value
-          ? options.padding.value
-          : 0,
-        gap: options.canvasDecorationsEnabled.value ? options.gap.value : 0,
+        padding: layoutPadding,
+        gap: decorationGap,
+        maxSide: collageLayoutMaxSide,
         layoutShuffleSeed: options.layoutShuffleSeed.value,
         constraintMode: options.layoutConstraintMode.value,
-        ratios: getCanvasAspectRatioCandidates(
-          options.canvasAspectRatioLock.value,
-        ),
+        ratios: collageLayoutRatios,
       })
 
       if (!layout) {
-        canvas.width = 1200
-        canvas.height = 1200
+        const canvasOutputMaxSide = getCanvasOutputMaxSide(options.canvasOutputSize.value)
+
+        canvas.width = canvasOutputMaxSide
+        canvas.height = canvasOutputMaxSide
 
         ctx.clearRect(0, 0, canvas.width, canvas.height)
         if (options.canvasDecorationsEnabled.value) {
@@ -729,8 +824,23 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
         return
       }
 
-      canvas.width = layout.width
-      canvas.height = layout.height
+      if (shouldUseBrandFooter && !lockedCanvasSize) {
+        brandFooterCanvas = await options.createBrandFooterCanvas(
+          layout.width,
+          options.backgroundColor.value,
+        )
+      }
+
+      if (!finalCanvasWidth || !finalCanvasHeight) {
+        finalCanvasWidth = layout.width
+        finalCanvasHeight = layout.height + (brandFooterCanvas?.height || 0)
+      }
+
+      collageOffsetX = Math.round((finalCanvasWidth - layout.width) / 2)
+      collageOffsetY = 0
+
+      canvas.width = finalCanvasWidth
+      canvas.height = finalCanvasHeight
 
       ctx.clearRect(0, 0, canvas.width, canvas.height)
 
@@ -741,10 +851,17 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
       const renderedCells = shuffleSimilarRatioCellImages(layout.cells, {
         seed: options.imageShuffleSeed.value,
-      })
+      }).map((cell) => ({
+        ...cell,
+        x: cell.x + collageOffsetX,
+        y: cell.y + collageOffsetY,
+      }))
 
       lastImageLayout.value = {
         ...layout,
+        width: canvas.width,
+        height: canvas.height,
+        ratio: canvas.width / Math.max(1, canvas.height),
         cells: renderedCells,
       }
 
@@ -817,24 +934,32 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
 
       lastImagePipRects.value = nextPipRects
 
-      const overlayCanvas = await options.createCompositeOverlayCanvas(
-        canvas.width,
-        canvas.height,
-      )
-
-      if (overlayCanvas) {
-        options.drawOverlayCanvas(
-          ctx,
+      if (brandFooterCanvas) {
+        ctx.drawImage(
+          brandFooterCanvas,
+          0,
+          canvas.height - brandFooterCanvas.height,
+        )
+      } else {
+        const overlayCanvas = await options.createCompositeOverlayCanvas(
           canvas.width,
           canvas.height,
-          overlayCanvas,
         )
+
+        if (overlayCanvas) {
+          options.drawOverlayCanvas(
+            ctx,
+            canvas.width,
+            canvas.height,
+            overlayCanvas,
+          )
+        }
       }
 
       previewInfo.value = {
-        width: layout.width,
-        height: layout.height,
-        ratio: layout.ratio,
+        width: canvas.width,
+        height: canvas.height,
+        ratio: canvas.width / Math.max(1, canvas.height),
         columns: layout.columns,
         rows: layout.rows,
       }

@@ -13,6 +13,152 @@ export const COLLAGE_LOGO_ASPECT_RATIO = 1024 / 244
 
 export const COLLAGE_CANVAS_MAX_SIDE = 2048
 
+export const COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS = [
+  { value: 'small', maxSide: 800 },
+  { value: 'medium', maxSide: 1200 },
+  { value: 'large', maxSide: 2048 },
+] as const
+
+export const COLLAGE_CANVAS_OUTPUT_SIZE_VALUES =
+  COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS.map((option) => option.value)
+
+export const COLLAGE_CANVAS_OUTPUT_SIZE_VALUE_MAP =
+  COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS.reduce(
+    (result, option) => {
+      result[option.value] = option.maxSide
+      return result
+    },
+    {} as Record<(typeof COLLAGE_CANVAS_OUTPUT_SIZE_OPTIONS)[number]['value'], number>,
+  )
+
+export const COLLAGE_CANVAS_ASPECT_RATIO_BASE_OPTIONS = [
+  '1:1',
+  '1:2',
+  '1:3',
+  '2:3',
+  '3:4',
+  '3:5',
+  '3:7',
+  '4:5',
+  '4:7',
+  '5:6',
+  '5:7',
+  '5:8',
+  '5:9',
+  '6:7',
+  '9:16',
+  '9:21',
+] as const
+
+export const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS = [
+  { value: 'auto', labelKey: 'pages.collage.layoutTools.canvasRatios.auto' },
+  ...COLLAGE_CANVAS_ASPECT_RATIO_BASE_OPTIONS.map((value) => ({
+    value,
+    label: value,
+  })),
+] as const
+
+export const COLLAGE_CANVAS_ASPECT_RATIO_LOCK_VALUES =
+  COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS.map((option) => option.value)
+
+export const COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_OPTIONS = [
+  'vertical',
+  'horizontal',
+] as const
+
+function parseCollageCanvasAspectRatio(value: string) {
+  const [rawWidth, rawHeight] = value.split(':')
+  const width = Number(rawWidth)
+  const height = Number(rawHeight)
+
+  if (!Number.isFinite(width) || !Number.isFinite(height)) return null
+  if (width <= 0 || height <= 0) return null
+
+  return {
+    width,
+    height,
+  }
+}
+
+export function normalizeCollageCanvasAspectRatioSetting(
+  value: unknown,
+  orientation: unknown = 'vertical',
+) {
+  if (value === 'auto') {
+    return {
+      lock: 'auto',
+      orientation: 'vertical' as const,
+    }
+  }
+
+  const normalizedOrientation =
+    orientation === 'horizontal' ? 'horizontal' : 'vertical'
+
+  if (typeof value !== 'string') {
+    return {
+      lock: 'auto',
+      orientation: normalizedOrientation,
+    }
+  }
+
+  if ((COLLAGE_CANVAS_ASPECT_RATIO_BASE_OPTIONS as readonly string[]).includes(value)) {
+    return {
+      lock: value,
+      orientation: normalizedOrientation,
+    }
+  }
+
+  const parsed = parseCollageCanvasAspectRatio(value)
+  if (!parsed) {
+    return {
+      lock: 'auto',
+      orientation: normalizedOrientation,
+    }
+  }
+
+  const verticalValue = `${Math.min(parsed.width, parsed.height)}:${Math.max(
+    parsed.width,
+    parsed.height,
+  )}`
+
+  if ((COLLAGE_CANVAS_ASPECT_RATIO_BASE_OPTIONS as readonly string[]).includes(verticalValue)) {
+    return {
+      lock: verticalValue,
+      orientation:
+        parsed.width > parsed.height
+          ? ('horizontal' as const)
+          : ('vertical' as const),
+    }
+  }
+
+  return {
+    lock: 'auto',
+    orientation: normalizedOrientation,
+  }
+}
+
+export function getCollageCanvasAspectRatioValue(
+  lock: string,
+  orientation: 'vertical' | 'horizontal' = 'vertical',
+) {
+  if (lock === 'auto') return null
+
+  const parsed = parseCollageCanvasAspectRatio(lock)
+  if (!parsed) return null
+
+  const shortSide = Math.min(parsed.width, parsed.height)
+  const longSide = Math.max(parsed.width, parsed.height)
+
+  if (shortSide <= 0 || longSide <= 0) return null
+
+  if (orientation === 'horizontal') {
+    return longSide / shortSide
+  }
+
+  return shortSide / longSide
+}
+
+
 export const COLLAGE_DEFAULT_BACKGROUND_COLOR = '#0b0b0f'
 
 export const COLLAGE_DEFAULT_PADDING = 24

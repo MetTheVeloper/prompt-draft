@@ -6,6 +6,8 @@ import type {
 
 import type {
   BrandOverlayTheme,
+  BrandOverlayMode,
+  BrandFooterAlign,
   CollageMode,
   CollageWatermarkPosition,
   OverlayInternalAlign,
@@ -46,6 +48,9 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
   const watermarkOpacity = ref(1)
 
   const brandOverlayTheme = ref<BrandOverlayTheme>('white')
+  const brandOverlayMode = ref<BrandOverlayMode>('overlay')
+  const brandFooterAlign = ref<BrandFooterAlign>('center')
+  const brandFooterPadding = ref(32)
   const telegramPostId = ref('')
   const brandOverlayGap = ref(14)
 
@@ -411,28 +416,17 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
     return overlayCanvas
   }
 
-  async function createCompositeOverlayCanvas(
-    canvasWidth: number,
-    canvasHeight: number
-  ) {
+  async function createOverlayGroupCanvas(config: {
+    maxWidth: number
+    align: OverlayInternalAlign
+  }) {
     const brandOverlay = await createBrandOverlayCanvas()
-    const align = getOverlayInternalAlign(watermarkPosition.value)
-
-    const margin = getOverlayMargin(canvasWidth, canvasHeight)
-    const safeArea = getActiveOverlaySafeArea()
-
-    const safeRect = getOverlaySafeAreaRect({
-      canvasWidth,
-      canvasHeight,
-      safeArea,
-      padding: margin,
-    })
 
     await ensureTextOverlayFontLoaded()
 
     const textOverlay = createTextOverlayCanvas({
-      maxWidth: safeRect.width * textOverlayMaxWidthRatio.value,
-      align,
+      maxWidth: config.maxWidth,
+      align: config.align,
     })
 
     if (!brandOverlay && !textOverlay) return null
@@ -452,13 +446,78 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
 
     ctx.clearRect(0, 0, groupWidth, groupHeight)
 
-    const textX = getAlignedChildX(groupWidth, textOverlay.width, align)
-    const brandX = getAlignedChildX(groupWidth, brandOverlay.width, align)
+    const textX = getAlignedChildX(groupWidth, textOverlay.width, config.align)
+    const brandX = getAlignedChildX(groupWidth, brandOverlay.width, config.align)
 
     ctx.drawImage(textOverlay, textX, 0)
     ctx.drawImage(brandOverlay, brandX, textOverlay.height + groupGap)
 
     return groupCanvas
+  }
+
+  async function createCompositeOverlayCanvas(
+    canvasWidth: number,
+    canvasHeight: number
+  ) {
+    const align = getOverlayInternalAlign(watermarkPosition.value)
+
+    const margin = getOverlayMargin(canvasWidth, canvasHeight)
+    const safeArea = getActiveOverlaySafeArea()
+
+    const safeRect = getOverlaySafeAreaRect({
+      canvasWidth,
+      canvasHeight,
+      safeArea,
+      padding: margin,
+    })
+
+    return createOverlayGroupCanvas({
+      maxWidth: safeRect.width * textOverlayMaxWidthRatio.value,
+      align,
+    })
+  }
+
+  async function createBrandFooterCanvas(
+    canvasWidth: number,
+    backgroundColor: string,
+  ) {
+    const padding = Math.max(0, Math.round(brandFooterPadding.value || 0))
+    const contentMaxWidth = Math.max(80, Math.round(canvasWidth - padding * 2))
+
+    const groupCanvas = await createOverlayGroupCanvas({
+      maxWidth: contentMaxWidth * textOverlayMaxWidthRatio.value,
+      align: brandFooterAlign.value,
+    })
+
+    if (!groupCanvas) return null
+
+    const footerWidth = Math.max(1, Math.round(canvasWidth))
+    const footerHeight = Math.max(1, groupCanvas.height + padding * 2)
+    const footerCanvas = document.createElement('canvas')
+    footerCanvas.width = footerWidth
+    footerCanvas.height = footerHeight
+
+    const ctx = footerCanvas.getContext('2d')
+    if (!ctx) return null
+
+    ctx.fillStyle = backgroundColor
+    ctx.fillRect(0, 0, footerWidth, footerHeight)
+
+    const availableWidth = Math.max(1, footerWidth - padding * 2)
+    const contentX =
+      brandFooterAlign.value === 'right'
+        ? footerWidth - padding - groupCanvas.width
+        : brandFooterAlign.value === 'center'
+          ? padding + (availableWidth - groupCanvas.width) / 2
+          : padding
+
+    ctx.drawImage(
+      groupCanvas,
+      Math.round(contentX),
+      padding,
+    )
+
+    return footerCanvas
   }
 
   function getOverlayRect(
@@ -524,6 +583,9 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
     watermarkPositions,
 
     brandOverlayTheme,
+    brandOverlayMode,
+    brandFooterAlign,
+    brandFooterPadding,
     telegramPostId,
     brandOverlayGap,
 
@@ -541,6 +603,7 @@ export function useCollageOverlay(options: UseCollageOverlayOptions) {
     getTextOverlayFontOptionValue,
 
     createCompositeOverlayCanvas,
+    createBrandFooterCanvas,
     drawOverlayCanvas,
   }
 }

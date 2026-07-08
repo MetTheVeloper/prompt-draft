@@ -87,10 +87,17 @@ export type CollageMode = 'image' | 'video'
 
 export type CollageLayoutConstraintMode = 'controlled' | 'free'
 
-export type CollageCanvasAspectRatioLock =
-  'auto' | '1:1' | '16:9' | '9:16' | '2:1' | '3:2' | '3:1' | '3:7'
+export type CollageCanvasAspectRatioLock = 'auto' | `${number}:${number}`
+
+export type CollageCanvasAspectRatioOrientation = 'vertical' | 'horizontal'
+
+export type CollageCanvasOutputSize = 'small' | 'medium' | 'large'
 
 export type BrandOverlayTheme = 'black' | 'white'
+
+export type BrandOverlayMode = 'overlay' | 'footer'
+
+export type BrandFooterAlign = 'left' | 'center' | 'right'
 
 export type VideoQualityPreset = 'compact' | 'balanced' | 'high'
 

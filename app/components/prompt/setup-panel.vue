@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { computed } from "vue";
-import type { ElDropdownItem, ElDropdownValue } from "~/types/dropdown";
+import { computed, reactive } from "vue";
+import type { ElDropdownValue } from "~/types/dropdown";
 import type { PromptKeyModule } from "../../modules/types";
 import type {
   ImageToImageSettings,
@@ -143,6 +143,20 @@ const generatedSubject = computed(() => {
   return buildPromptSubject(props.settings);
 });
 
+const coreFieldCount = computed(() => {
+  return props.settings.mode === "text_to_image" ? 2 : 1;
+});
+
+const coreFilledFieldCount = computed(() => {
+  const fields = [props.settings.idea];
+
+  if (props.settings.mode === "text_to_image") {
+    fields.push(props.settings.subject);
+  }
+
+  return fields.filter((value) => String(value || "").trim()).length;
+});
+
 function updateReferenceSubjectType(value: ElDropdownValue) {
   updateImageToImageSettings({
     referenceSubjectType: value as ReferenceSubjectType,
@@ -194,15 +208,6 @@ function updateSelectedModuleKeys(value: string[]) {
   emit("update:selectedModuleKeys", value);
 }
 
-function getInputValue(event: Event) {
-  const target = event.target as
-    | HTMLInputElement
-    | HTMLTextAreaElement
-    | HTMLSelectElement
-    | null;
-
-  return target?.value ?? "";
-}
 
 function getCheckedValue(event: Event) {
   const target = event.target as HTMLInputElement | null;
@@ -219,12 +224,92 @@ function updatePreserveValue(key: string, value: boolean) {
     [key]: value,
   } as Partial<ImageToImageSettings>);
 }
+
+type SetupPanelKey =
+  | "modules"
+  | "mode"
+  | "core"
+  | "imageReference"
+  | "output";
+
+const expandedPanels = reactive<Record<SetupPanelKey, boolean>>({
+  modules: true,
+  mode: false,
+  core: false,
+  imageReference: false,
+  output: false,
+});
+
+const setupRootAttrs = {
+  type: "section",
+  p: [0],
+  bg: "surface0",
+  radius: 28,
+  class: "w100 oh",
+} as const;
+
+const setupHeaderAttrs = {
+  p: [20, 20, 16, 20],
+  class: "w100",
+} as const;
+
+const setupPanelsWrapAttrs = {
+  gap: 12,
+} as const;
+
+const setupPanelAttrs = {
+  gap: 0,
+  radius: 18,
+  class: "w100",
+  br: 2,
+  bc: "normal10",
+  bg: "surface",
+} as const;
+
+const setupPanelHeaderAttrs = {
+  rules: "rbc",
+  p: 16,
+  gap: 8,
+} as const;
+
+const setupPanelBodyAttrs = {
+  gap: 12,
+  p: 14,
+} as const;
+
+const setupPanelIntroAttrs = {
+  rules: "ccs",
+  gap: 4,
+} as const;
+
+const setupFieldAttrs = {
+  type: "label",
+} as const;
+
+const setupFieldHeadAttrs = {
+  rules: "ccs",
+  gap: 4,
+  class: "mb8",
+} as const;
+
+function isPanelExpanded(panel: SetupPanelKey) {
+  return expandedPanels[panel];
+}
+
+function togglePanel(panel: SetupPanelKey) {
+  expandedPanels[panel] = !expandedPanels[panel];
+}
+
+function getPanelToggleSymbol(panel: SetupPanelKey) {
+  return isPanelExpanded(panel) ? "minus" : "add";
+}
+
 </script>
 
 <template>
-  <el-grid type="section" :p="[0]" :br="2" bc="normal10" bg="surface" :radius="28" class="w100 oh">
+  <el-grid v-bind="setupRootAttrs">
     <!-- Header -->
-    <el-grid :p="[20, 20, 16, 20]" class="w100" v-if="!mini">
+    <el-grid v-if="!mini" v-bind="setupHeaderAttrs">
       <el-text type="h2" :size="16" :weight="800" class="lh1">
         {{ t("promptSetup.title") }}
       </el-text>
@@ -233,80 +318,170 @@ function updatePreserveValue(key: string, value: boolean) {
         {{ t("promptSetup.description") }}
       </el-text>
     </el-grid>
-    <el-divider v-if="!mini" />
-    <!-- Key Modules -->
-    <el-grid :gap="12" :p="[16]">
-      <el-flex rules="ccs" :gap="4">
-        <el-flex rules="rbc" class="w100">
-          <el-text type="h3" :size="15" :weight="800" class="lh1" icon="element-4">
-            {{ t("create.modulesTitle") }}
-          </el-text>
 
-          <el-text marker="blue5" color="blue" :size="11" :weight="800">
-            {{ selectedModuleKeys.length }} / {{ modules.length }}
-          </el-text>
+    <el-grid v-bind="setupPanelsWrapAttrs">
+      <!-- Key Modules -->
+      <el-grid class="setup-panel" v-bind="setupPanelAttrs">
+        <el-flex
+          v-bind="setupPanelHeaderAttrs"
+          class="setup-panel__head crp"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('modules')"
+          @click="togglePanel('modules')"
+          @keydown.enter.prevent="togglePanel('modules')"
+          @keydown.space.prevent="togglePanel('modules')"
+        >
+          <el-flex v-bind="setupPanelIntroAttrs">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="element-4">
+              {{ t("create.modulesTitle") }}
+            </el-text>
+
+            <el-text :size="11" :weight="300" color="normal55" v-if="isPanelExpanded('modules')">
+              {{ t("create.modulesDescription") }}
+            </el-text>
+            <el-text
+              v-if="!isPanelExpanded('modules')"
+              :size="12"
+              :weight="700"
+              bg="blue"
+              :p="[4, 8]"
+              :radius="8"
+              color="white"
+            >
+              {{ selectedModuleKeys.length }} / {{ modules.length }}
+            </el-text>
+          </el-flex>
+
+          <el-flex rules="rce" :gap="8">
+            <el-icon :icon="getPanelToggleSymbol('modules')" :size="20" color="normal55" />
+          </el-flex>
         </el-flex>
 
-        <el-text :size="11" :weight="300" color="normal55">
-          {{ t("create.modulesDescription") }}
-        </el-text>
-      </el-flex>
+        <el-grid v-show="isPanelExpanded('modules')" v-bind="setupPanelBodyAttrs">
+          <PromptModuleSelector
+            :modules="modules"
+            :model-value="selectedModuleKeys"
+            embedded
+            hide-head
+            @update:model-value="updateSelectedModuleKeys"
+          />
+        </el-grid>
+      </el-grid>
 
-      <PromptModuleSelector :modules="modules" :model-value="selectedModuleKeys" embedded hide-head
-        @update:model-value="updateSelectedModuleKeys" />
-    </el-grid>
-
-    <el-divider />
-
-    <el-grid :gap="18" :p="[16]">
       <!-- Prompt Type -->
-      <el-grid :gap="12">
-        <el-flex rules="ccs" :gap="4">
-          <el-text type="h3" :size="15" :weight="800" class="lh1" icon="category">
-            {{ t("promptSetup.mode.title") }}
-          </el-text>
+      <el-grid class="setup-panel" v-bind="setupPanelAttrs">
+        <el-flex
+          v-bind="setupPanelHeaderAttrs"
+          class="setup-panel__head crp"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('mode')"
+          @click="togglePanel('mode')"
+          @keydown.enter.prevent="togglePanel('mode')"
+          @keydown.space.prevent="togglePanel('mode')"
+        >
+          <el-flex v-bind="setupPanelIntroAttrs">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="category">
+              {{ t("promptSetup.mode.title") }}
+            </el-text>
 
-          <el-text :size="11" :weight="300" color="normal55">
-            {{ t("promptSetup.mode.description") }}
-          </el-text>
+            <el-text :size="11" :weight="300" color="normal55" v-if="isPanelExpanded('mode')">
+              {{ t("promptSetup.mode.description") }}
+            </el-text>
+            <el-text
+              v-if="!isPanelExpanded('mode')"
+              :size="12"
+              :weight="700"
+              bg="blue"
+              :p="[4, 8]"
+              :radius="8"
+              color="white"
+            >
+              {{ t(`promptSetup.mode.options.${settings.mode}.label`) }}
+            </el-text>
+          </el-flex>
+
+          <el-flex rules="rce" :gap="8">
+            <el-icon :icon="getPanelToggleSymbol('mode')" :size="20" color="normal55" />
+          </el-flex>
         </el-flex>
 
-        <el-grid :gap="8">
-          <el-text type="label" v-for="mode in promptModes" :key="mode" class="crp db">
-            <el-flex rules="rsc" :gap="10" :p="[14]" :br="1" :radius="16"
-              :bc="settings.mode === mode ? 'blue45' : 'normal10'" :bg="settings.mode === mode ? 'blue5' : 'normal3'">
-              <input type="radio" name="prompt-mode" :checked="settings.mode === mode"
-                @change="updateSettings({ mode })" />
+        <el-grid v-show="isPanelExpanded('mode')" v-bind="setupPanelBodyAttrs">
+          <el-grid :gap="8">
+            <el-text type="label" v-for="mode in promptModes" :key="mode" class="crp db">
+              <el-flex
+                rules="rsc"
+                :gap="10"
+                :p="[14]"
+                :br="1"
+                :radius="16"
+                :bc="settings.mode === mode ? 'blue45' : 'normal10'"
+                :bg="settings.mode === mode ? 'blue5' : 'normal3'"
+              >
+                <input
+                  type="radio"
+                  name="prompt-mode"
+                  :checked="settings.mode === mode"
+                  @change="updateSettings({ mode })"
+                />
 
-              <el-flex rules="ccs" :gap="4">
-                <el-text :size="13" :weight="800" color="normal">
-                  {{ t(`promptSetup.mode.options.${mode}.label`) }}
-                </el-text>
+                <el-flex rules="ccs" :gap="4">
+                  <el-text :size="13" :weight="800" color="normal">
+                    {{ t(`promptSetup.mode.options.${mode}.label`) }}
+                  </el-text>
 
-                <el-text :size="11" :weight="300" color="normal55">
-                  {{ t(`promptSetup.mode.options.${mode}.description`) }}
-                </el-text>
+                  <el-text :size="11" :weight="300" color="normal55">
+                    {{ t(`promptSetup.mode.options.${mode}.description`) }}
+                  </el-text>
+                </el-flex>
               </el-flex>
-            </el-flex>
-          </el-text>
+            </el-text>
+          </el-grid>
         </el-grid>
       </el-grid>
 
       <!-- Core Context -->
-      <el-grid :gap="12">
-        <el-flex rules="ccs" :gap="4">
-          <el-text type="h3" :size="15" :weight="800" class="lh1" icon="document-text">
-            {{ t("promptSetup.core.title") }}
-          </el-text>
+      <el-grid class="setup-panel" v-bind="setupPanelAttrs">
+        <el-flex
+          v-bind="setupPanelHeaderAttrs"
+          class="setup-panel__head crp"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('core')"
+          @click="togglePanel('core')"
+          @keydown.enter.prevent="togglePanel('core')"
+          @keydown.space.prevent="togglePanel('core')"
+        >
+          <el-flex v-bind="setupPanelIntroAttrs">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="document-text">
+              {{ t("promptSetup.core.title") }}
+            </el-text>
 
-          <el-text :size="11" :weight="300" color="normal55">
-            {{ t("promptSetup.core.label") }}
-          </el-text>
+            <el-text :size="11" :weight="300" color="normal55" v-if="isPanelExpanded('core')">
+              {{ t("promptSetup.core.label") }}
+            </el-text>
+            <el-text
+              v-if="!isPanelExpanded('core')"
+              :size="12"
+              :weight="700"
+              bg="blue"
+              :p="[4, 8]"
+              :radius="8"
+              color="white"
+            >
+              {{ coreFilledFieldCount }} / {{ coreFieldCount }}
+            </el-text>
+          </el-flex>
+
+          <el-flex rules="rce" :gap="8">
+            <el-icon :icon="getPanelToggleSymbol('core')" :size="20" color="normal55" />
+          </el-flex>
         </el-flex>
 
-        <el-grid :gap="12">
-          <el-text type="label">
-            <el-flex rules="ccs" :gap="4" class="mb8">
+        <el-grid v-show="isPanelExpanded('core')" v-bind="setupPanelBodyAttrs">
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
               <el-text :size="13" :weight="800">
                 {{ t("promptSetup.idea.label") }}
               </el-text>
@@ -320,6 +495,7 @@ function updatePreserveValue(key: string, value: boolean) {
               :model-value="settings.idea"
               type="textarea"
               rows="4"
+              :size="14"
               :placeholder="t('promptSetup.idea.placeholder')"
               :editor-id="editorId('idea')"
               support-variables
@@ -327,8 +503,8 @@ function updatePreserveValue(key: string, value: boolean) {
             />
           </el-text>
 
-          <el-text type="label" v-if="settings.mode === 'text_to_image'">
-            <el-flex rules="ccs" :gap="4" class="mb8">
+          <el-text v-if="settings.mode === 'text_to_image'" v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
               <el-text :size="13" :weight="800">
                 {{ t("promptSetup.subject.label") }}
               </el-text>
@@ -338,236 +514,328 @@ function updatePreserveValue(key: string, value: boolean) {
               </el-text>
             </el-flex>
 
-            <el-text-field :model-value="settings.subject" type="text"
-              :placeholder="t('promptSetup.subject.placeholder')" :editor-id="editorId('subject')" support-variables
-              @update:model-value="updateSettings({ subject: $event })" />
+            <el-text-field
+              :model-value="settings.subject"
+              type="text"
+              :size="14"
+              :placeholder="t('promptSetup.subject.placeholder')"
+              :editor-id="editorId('subject')"
+              support-variables
+              @update:model-value="updateSettings({ subject: $event })"
+            />
           </el-text>
         </el-grid>
       </el-grid>
 
       <!-- Image Reference Settings -->
-      <el-grid v-if="settings.mode === 'image_to_image'" :gap="14">
-        <el-flex rules="ccs" :gap="4">
-          <el-text type="h3" :size="15" :weight="800" class="lh1" icon="image">
-            {{ t("promptSetup.imageToImage.title") }}
-          </el-text>
+      <el-grid v-if="settings.mode === 'image_to_image'" class="setup-panel" v-bind="setupPanelAttrs">
+        <el-flex
+          v-bind="setupPanelHeaderAttrs"
+          class="setup-panel__head crp"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('imageReference')"
+          @click="togglePanel('imageReference')"
+          @keydown.enter.prevent="togglePanel('imageReference')"
+          @keydown.space.prevent="togglePanel('imageReference')"
+        >
+          <el-flex v-bind="setupPanelIntroAttrs">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="image">
+              {{ t("promptSetup.imageToImage.title") }}
+            </el-text>
 
-          <el-text :size="11" :weight="300" color="normal55">
-            {{ t("promptSetup.imageToImage.description") }}
-          </el-text>
+            <el-text :size="11" :weight="300" color="normal55" v-if="isPanelExpanded('imageReference')">
+              {{ t("promptSetup.imageToImage.description") }}
+            </el-text>
+            <el-text
+              v-if="!isPanelExpanded('imageReference')"
+              :size="12"
+              :weight="700"
+              bg="blue"
+              :p="[4, 8]"
+              :radius="8"
+              color="white"
+            >
+              {{ t(`promptSetup.imageToImage.referenceSubjectType.options.${settings.imageToImage.referenceSubjectType}`) }}
+            </el-text>
+          </el-flex>
+
+          <el-flex rules="rce" :gap="8">
+            <el-icon :icon="getPanelToggleSymbol('imageReference')" :size="20" color="normal55" />
+          </el-flex>
         </el-flex>
 
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.imageToImage.referenceSubjectType.label") }}
-            </el-text>
+        <el-grid v-show="isPanelExpanded('imageReference')" v-bind="setupPanelBodyAttrs">
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.imageToImage.referenceSubjectType.label") }}
+              </el-text>
 
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.referenceSubjectType.description") }}
-            </el-text>
-          </el-flex>
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.referenceSubjectType.description") }}
+              </el-text>
+            </el-flex>
 
-          <el-dropdown
-            :model-value="settings.imageToImage.referenceSubjectType"
-            icon="add"
-            :items="referenceSubjectTypes"
-            :item-label="(subjectType) => t(`promptSetup.imageToImage.referenceSubjectType.options.${subjectType}`)"
-            :item-value="(subjectType) => subjectType"
-            @update:model-value="updateReferenceSubjectType"
-          />
-        </label>
-
-        <label v-if="settings.imageToImage.referenceSubjectType === 'custom'">
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.imageToImage.customSubject.label") }}
-            </el-text>
-
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.customSubject.description") }}
-            </el-text>
-          </el-flex>
-
-          <el-text-field :model-value="settings.imageToImage.customSubject" type="text"
-            :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')"
-            :editor-id="editorId('customSubject')" support-variables @update:model-value="
-              updateImageToImageSettings({
-                customSubject: $event,
-              })
-              " />
-        </label>
-
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.imageToImage.subjectDescription.label") }}
-            </el-text>
-
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.subjectDescription.description") }}
-            </el-text>
-          </el-flex>
-
-          <el-text-field :model-value="settings.imageToImage.subjectDescription" type="textarea" rows="3"
-            :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')"
-            :editor-id="editorId('subjectDescription')" support-variables @update:model-value="
-              updateImageToImageSettings({
-                subjectDescription: $event,
-              })
-              " />
-        </label>
-
-        <!-- Generated Subject -->
-        <el-grid :gap="6" :p="[12]" :radius="14" bg="normal5">
-          <el-text :size="12" :weight="800" color="normal70">
-            {{ t("promptSetup.imageToImage.generatedSubject.label") }}
+            <el-dropdown
+              :model-value="settings.imageToImage.referenceSubjectType"
+              icon="add"
+              :items="referenceSubjectTypes"
+              :item-label="(subjectType) => t(`promptSetup.imageToImage.referenceSubjectType.options.${subjectType}`)"
+              :item-value="(subjectType) => subjectType"
+              @update:model-value="updateReferenceSubjectType"
+            />
           </el-text>
 
-          <el-text :size="12" :weight="300" :color="generatedSubject ? 'normal75' : 'orange'" icon="magic-star"
-            :icon-color="generatedSubject ? 'blue' : 'orange'">
-            {{ generatedSubject || t("promptSetup.imageToImage.generatedSubject.empty") }}
+          <el-text v-if="settings.imageToImage.referenceSubjectType === 'custom'" v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.imageToImage.customSubject.label") }}
+              </el-text>
+
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.customSubject.description") }}
+              </el-text>
+            </el-flex>
+
+            <el-text-field
+              :model-value="settings.imageToImage.customSubject"
+              type="text"
+              :size="14"
+              :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')"
+              :editor-id="editorId('customSubject')"
+              support-variables
+              @update:model-value="
+                updateImageToImageSettings({
+                  customSubject: $event,
+                })
+              "
+            />
           </el-text>
-        </el-grid>
 
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.imageToImage.referenceUsage.label") }}
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.imageToImage.subjectDescription.label") }}
+              </el-text>
+
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.subjectDescription.description") }}
+              </el-text>
+            </el-flex>
+
+            <el-text-field
+              :model-value="settings.imageToImage.subjectDescription"
+              type="textarea"
+              rows="3"
+              :size="14"
+              :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')"
+              :editor-id="editorId('subjectDescription')"
+              support-variables
+              @update:model-value="
+                updateImageToImageSettings({
+                  subjectDescription: $event,
+                })
+              "
+            />
+          </el-text>
+
+          <!-- Generated Subject -->
+          <el-grid :gap="6" :p="[12]" :radius="14" bg="normal5">
+            <el-text :size="12" :weight="800" color="normal70">
+              {{ t("promptSetup.imageToImage.generatedSubject.label") }}
             </el-text>
 
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.referenceUsage.description") }}
+            <el-text
+              :size="12"
+              :weight="300"
+              :color="generatedSubject ? 'normal75' : 'orange'"
+              icon="magic-star"
+              :icon-color="generatedSubject ? 'blue' : 'orange'"
+            >
+              {{ generatedSubject || t("promptSetup.imageToImage.generatedSubject.empty") }}
             </el-text>
-          </el-flex>
+          </el-grid>
 
-          <el-dropdown
-            :model-value="settings.imageToImage.referenceUsage"
-            :items="referenceUsageOptions"
-            :item-label="(usage) => t(`promptSetup.imageToImage.referenceUsage.options.${usage}`)"
-            :item-value="(usage) => usage"
-            @update:model-value="updateReferenceUsage"
-          />
-        </label>
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.imageToImage.referenceUsage.label") }}
+              </el-text>
 
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.imageToImage.transformationStrength.label") }}
-            </el-text>
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.referenceUsage.description") }}
+              </el-text>
+            </el-flex>
 
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.transformationStrength.description") }}
-            </el-text>
-          </el-flex>
+            <el-dropdown
+              :model-value="settings.imageToImage.referenceUsage"
+              :items="referenceUsageOptions"
+              :item-label="(usage) => t(`promptSetup.imageToImage.referenceUsage.options.${usage}`)"
+              :item-value="(usage) => usage"
+              @update:model-value="updateReferenceUsage"
+            />
+          </el-text>
 
-          <el-dropdown
-            :model-value="settings.imageToImage.transformationStrength"
-            :items="transformationStrengthOptions"
-            :item-label="(strength) => t(`promptSetup.imageToImage.transformationStrength.options.${strength}`)"
-            :item-value="(strength) => strength"
-            @update:model-value="updateTransformationStrength"
-          />
-        </label>
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.imageToImage.transformationStrength.label") }}
+              </el-text>
 
-        <!-- Preserve Options -->
-        <el-grid :gap="10">
-          <el-flex rules="ccs" :gap="4">
-            <el-text type="h3" :size="14" :weight="800" class="lh1" icon="shield-tick">
-              {{ t("promptSetup.imageToImage.preserve.title") }}
-            </el-text>
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.transformationStrength.description") }}
+              </el-text>
+            </el-flex>
 
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.imageToImage.preserve.description") }}
-            </el-text>
-          </el-flex>
+            <el-dropdown
+              :model-value="settings.imageToImage.transformationStrength"
+              :items="transformationStrengthOptions"
+              :item-label="(strength) => t(`promptSetup.imageToImage.transformationStrength.options.${strength}`)"
+              :item-value="(strength) => strength"
+              @update:model-value="updateTransformationStrength"
+            />
+          </el-text>
 
-          <el-grid :gap="6">
-            <label v-for="option in preserveOptions" v-show="option.visible" :key="option.key" class="crp">
-              <el-flex rules="rsc" :gap="8" :p="[8, 10]" :radius="12"
-                :bg="getPreserveValue(option.key) ? 'blue5' : 'normal3'" :br="1"
-                :bc="getPreserveValue(option.key) ? 'blue25' : 'normal5'">
-                <input type="checkbox" :checked="getPreserveValue(option.key)"
-                  @change="updatePreserveValue(option.key, getCheckedValue($event))" />
+          <!-- Preserve Options -->
+          <el-grid :gap="10">
+            <el-flex v-bind="setupPanelIntroAttrs">
+              <el-text type="h3" :size="14" :weight="800" class="lh1" icon="shield-tick">
+                {{ t("promptSetup.imageToImage.preserve.title") }}
+              </el-text>
 
-                <el-text :size="12" :weight="500" :color="getPreserveValue(option.key) ? 'normal90' : 'normal65'">
-                  {{ option.label }}
-                </el-text>
-              </el-flex>
-            </label>
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.imageToImage.preserve.description") }}
+              </el-text>
+            </el-flex>
+
+            <el-grid :gap="6">
+              <label v-for="option in preserveOptions" v-show="option.visible" :key="option.key" class="crp">
+                <el-flex
+                  rules="rsc"
+                  :gap="8"
+                  :p="[8, 10]"
+                  :radius="12"
+                  :bg="getPreserveValue(option.key) ? 'blue5' : 'normal3'"
+                  :br="1"
+                  :bc="getPreserveValue(option.key) ? 'blue25' : 'normal5'"
+                >
+                  <input
+                    type="checkbox"
+                    :checked="getPreserveValue(option.key)"
+                    @change="updatePreserveValue(option.key, getCheckedValue($event))"
+                  />
+
+                  <el-text
+                    :size="12"
+                    :weight="500"
+                    :color="getPreserveValue(option.key) ? 'normal90' : 'normal65'"
+                  >
+                    {{ option.label }}
+                  </el-text>
+                </el-flex>
+              </label>
+            </el-grid>
           </el-grid>
         </el-grid>
       </el-grid>
 
       <!-- Output Constraints -->
-      <el-grid :gap="12">
-        <el-flex rules="ccs" :gap="4">
-          <el-text type="h3" :size="15" :weight="800" class="lh1" icon="setting-2">
-            {{ t("promptSetup.output.title") }}
-          </el-text>
+      <el-grid class="setup-panel" v-bind="setupPanelAttrs">
+        <el-flex
+          v-bind="setupPanelHeaderAttrs"
+          class="setup-panel__head crp"
+          role="button"
+          tabindex="0"
+          :aria-expanded="isPanelExpanded('output')"
+          @click="togglePanel('output')"
+          @keydown.enter.prevent="togglePanel('output')"
+          @keydown.space.prevent="togglePanel('output')">
+          <el-flex v-bind="setupPanelIntroAttrs">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="setting-2">
+              {{ t("promptSetup.output.title") }}
+            </el-text>
 
-          <el-text :size="11" :weight="300" color="normal55">
-            {{ t("promptSetup.output.label") }}
-          </el-text>
+            <el-text :size="11" :weight="300" color="normal55" v-if="isPanelExpanded('output')">
+              {{ t("promptSetup.output.label") }}
+            </el-text>
+            <el-text v-if="activeAspectRatioOption && !isPanelExpanded('output')"
+              :size="12" :weight="700" bg="blue" :p="[4, 8]" :radius="8" color="white">
+              {{ activeAspectRatioOption.ratio }}
+            </el-text>
+          </el-flex>
+
+          <el-flex rules="rce" :gap="8">
+            <el-icon :icon="getPanelToggleSymbol('output')" :size="20" color="normal55" />
+          </el-flex>
         </el-flex>
 
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.aspectRatio.label") }}
-            </el-text>
-
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.aspectRatio.description") }}
-            </el-text>
-          </el-flex>
-
-          <el-grid :gap="8">
-            <el-dropdown
-              :model-value="activeAspectRatioCategory"
-              :items="ASPECT_RATIO_GROUPS"
-              :item-label="(group) => t(group.labelKey)"
-              item-value="id"
-              @update:model-value="updateAspectRatioCategoryValue"
-            />
-            <el-dropdown
-              :model-value="settings.aspectRatio"
-              :items="activeAspectRatioOptions"
-              :item-label="(option) => `${t(option.labelKey)} — ${option.ratio}`"
-              :item-description="(option) => t(option.descriptionKey)"
-              item-value="value"
-              @update:model-value="updateAspectRatioDropdownValue"
-            />
-
-            <el-grid v-if="activeAspectRatioOption" :gap="4" :p="[10]" :radius="12" bg="normal5">
-              <el-text :size="11" :weight="700" color="normal70">
-                {{ activeAspectRatioOption.ratio }}
+        <el-grid v-show="isPanelExpanded('output')" v-bind="setupPanelBodyAttrs">
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.aspectRatio.label") }}
               </el-text>
 
-              <el-text :size="11" :weight="300" color="normal55">
-                {{ t(activeAspectRatioOption.descriptionKey) }}
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.aspectRatio.description") }}
               </el-text>
+            </el-flex>
+
+            <el-grid :gap="8">
+              <el-dropdown
+                :model-value="activeAspectRatioCategory"
+                :items="ASPECT_RATIO_GROUPS"
+                :item-label="(group) => t(group.labelKey)"
+                item-value="id"
+                @update:model-value="updateAspectRatioCategoryValue"
+              />
+
+              <el-dropdown
+                :model-value="settings.aspectRatio"
+                :items="activeAspectRatioOptions"
+                :item-label="(option) => `${t(option.labelKey)} — ${option.ratio}`"
+                :item-description="(option) => t(option.descriptionKey)"
+                item-value="value"
+                @update:model-value="updateAspectRatioDropdownValue"
+              />
+
+              <el-grid v-if="activeAspectRatioOption" :gap="4" :p="[10]" :radius="12" bg="normal5">
+                <el-text :size="11" :weight="700" color="normal70">
+                  {{ activeAspectRatioOption.ratio }}
+                </el-text>
+
+                <el-text :size="11" :weight="300" color="normal55">
+                  {{ t(activeAspectRatioOption.descriptionKey) }}
+                </el-text>
+              </el-grid>
             </el-grid>
-          </el-grid>
-        </label>
+          </el-text>
 
-        <label>
-          <el-flex rules="ccs" :gap="4" class="mb8">
-            <el-text :size="13" :weight="800">
-              {{ t("promptSetup.globalRules.label") }}
-            </el-text>
+          <el-text v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.globalRules.label") }}
+              </el-text>
 
-            <el-text :size="11" :weight="300" color="normal50">
-              {{ t("promptSetup.globalRules.description") }}
-            </el-text>
-          </el-flex>
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.globalRules.description") }}
+              </el-text>
+            </el-flex>
 
-          <el-text-field :model-value="settings.globalRules" type="textarea" rows="4"
-            :placeholder="t('promptSetup.globalRules.placeholder')" :editor-id="editorId('globalRules')"
-            support-variables @update:model-value="updateSettings({ globalRules: $event })" />
-        </label>
+            <el-text-field
+              :model-value="settings.globalRules"
+              type="textarea"
+              rows="4"
+              :size="14"
+              :placeholder="t('promptSetup.globalRules.placeholder')"
+              :editor-id="editorId('globalRules')"
+              support-variables
+              @update:model-value="updateSettings({ globalRules: $event })"
+            />
+          </el-text>
+        </el-grid>
       </el-grid>
-
     </el-grid>
   </el-grid>
 </template>

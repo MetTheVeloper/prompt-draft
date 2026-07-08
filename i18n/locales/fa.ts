@@ -81,6 +81,24 @@ export default {
         empty: "هنوز تصویری اضافه نشده است.",
       },
       brand: {
+        "mode": "نوع برند",
+        "modes": {
+          "overlay": "روی تصویر",
+          "footer": "نوار پایین"
+        },
+        "footerAlign": "چینش نوار پایین",
+        "footerPadding": "پدینگ نوار پایین: {value}px",
+        "footerAligns": {
+          "left": "چپ",
+          "center": "وسط",
+          "right": "راست"
+        },
+        "panelTitle": "برند",
+        "groups": {
+          "mode": "حالت و جایگاه",
+          "text": "متن",
+          "logo": "لوگو و QR"
+        },
         title: "لایه برند",
         telegramPostId: "شناسه پست تلگرام",
         telegramPostIdPlaceholder: "مثلا 450",
@@ -113,7 +131,13 @@ export default {
         backgroundColor: "رنگ پس‌زمینه",
         exportQuality: "کیفیت خروجی",
         decorationsEnabled: "فاصله و پس‌زمینه",
-        cellRadius: "گردی گوشه سلول‌ها: {value}px"
+        cellRadius: "گردی گوشه سلول‌ها: {value}px",
+        "outputSize": "ابعاد خروجی",
+        "outputSizes": {
+          "small": "کوچک",
+          "medium": "متوسط",
+          "large": "بزرگ"
+        }
       },
       preview: {
         grid: "گرید: {columns}×{rows}",
@@ -200,6 +224,10 @@ export default {
         "panTool": "ابزار جابه‌جایی"
       },
       layoutTools: {
+        "aspectRatioOrientations": {
+          "vertical": "عمودی",
+          "horizontal": "افقی"
+        },
         title: "ابزارهای چیدمان",
         shuffleSimilar: "شافل عکس‌های مشابه",
         shuffleLayout: "شافل چیدمان",
@@ -2162,6 +2190,28 @@ export default {
       output: "خروجی",
     },
     draft: {
+      download: "دانلود درفت",
+      share: "اشتراک‌گذاری درفت",
+      shareText: "خروجی JSON پرامپت درفت",
+      importJson: "ایمپورت JSON",
+      exportJson: "اکسپورت JSON",
+      importModal: {
+        errorTitle: "ایمپورت ناموفق بود",
+        errorDescription:
+          "فایل JSON انتخاب‌شده یک خروجی معتبر از Prompt Draft نیست. لطفاً فایل JSON یک درفت یا مجموعه درفت‌ها را انتخاب کن.",
+      },
+      titlePlaceholder: "عنوان درفت...",
+      menu: "درفت‌ها",
+      createNew: "ایجاد درفت جدید",
+      defaultTitle: "درفت {index}",
+      delete: "حذف درفت",
+      deleteModal: {
+        title: "حذف درفت؟",
+        description: 'درفت «{title}» برای همیشه حذف شود؟ این عملیات قابل بازگشت نیست.',
+        lastDraftDescription:
+          'درفت «{title}» برای همیشه حذف شود؟ این تنها درفت ذخیره‌شده‌ی شماست، بنابراین بعد از حذف، یک درفت خالی جدید ساخته می‌شود.',
+        confirm: "حذف درفت",
+      },
       restoring: "در حال بازیابی Draft...",
       saving: "در حال ذخیره...",
       savedAt: "ذخیره شد {time}",
@@ -3147,6 +3197,7 @@ export default {
       insertVariable: "درج وریبل",
       actions: {
         close: "بستن",
+        cancel: "لغو",
       },
       title: {
         insertVariable: "وارد کردن متغیر",
