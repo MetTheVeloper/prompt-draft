@@ -1,9 +1,9 @@
 <script setup lang="ts">
-import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
+import { computed, nextTick, onBeforeUnmount, onMounted, provide, reactive, ref, watch } from "vue";
 import { useDebounceFn } from "@vueuse/core";
 
 import { promptModules } from "../modules/registry";
-import type { ModuleValues } from "../modules/types";
+import type { ModuleValues, PromptVariable } from "../modules/types";
 import type {
   ModuleOutputMap,
   PromptOutputFormat,
@@ -15,12 +15,17 @@ import { validatePromptSettings } from "../utils/promptValidation";
 import PromptEditor from "../components/prompt/editor.vue";
 import PromptOutputPreview from "../components/prompt/output-preview.vue";
 import PromptSetupPanel from "../components/prompt/setup-panel.vue";
+import CreatePageContextMenu from "../components/create/CreatePageContextMenu.vue";
 import { useAppStore } from "~/store/app";
+import { usePageContextMenu } from "~/composables/usePageContextMenu";
+import { useVariablePickerModal } from "~/composables/prompt/useVariablePickerModal";
 import type { GlobalMenuItem } from "~/composables/useMenu";
 
 const { t, locale } = useI18n();
 const app = useAppStore();
 const { $menu, $modal } = useNuxtApp();
+const { openPageContextMenu } = usePageContextMenu();
+const { openVariablePicker } = useVariablePickerModal();
 type ModulePanelState = {
   isCustomMode?: boolean;
   activePresetId?: string | null;
@@ -30,6 +35,20 @@ const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
 const LEGACY_DRAFT_STORAGE_KEY = "prompt-draft:create-editor:v1";
 const DRAFT_JSON_MIME_TYPE = "application/json";
 const DRAFT_FILE_EXTENSION = "json";
+const CREATE_VARIABLES_MODULE_KEY = "variables";
+const CREATE_VARIABLES_CONTEXT_ACTION_KEY = "prompt-draft:create:variables-context-action";
+
+type CreateVariablesContextAction = {
+  id: number;
+  action: "create" | null;
+};
+
+const createVariablesContextAction = reactive<CreateVariablesContextAction>({
+  id: 0,
+  action: null,
+});
+
+provide(CREATE_VARIABLES_CONTEXT_ACTION_KEY, createVariablesContextAction);
 
 type PromptDraftSnapshot = {
   version: 1;
@@ -939,6 +958,49 @@ const globalOutput = computed(() => {
   );
 });
 
+function getPromptOutput(format: PromptOutputFormat) {
+  return compilePromptOutput(
+    selectedModules.value,
+    moduleOutputs.value,
+    promptSettings.value,
+    format
+  );
+}
+
+function canCopyPromptOutput(format: PromptOutputFormat) {
+  return Boolean(getPromptOutput(format).trim());
+}
+
+function removeSelectedModuleKey(moduleKey: string) {
+  if (!moduleKey || !selectedModuleKeys.value.includes(moduleKey)) return;
+
+  selectedModuleKeys.value = selectedModuleKeys.value.filter((key) => key !== moduleKey);
+
+  const nextModuleValues = { ...moduleValues.value };
+  delete nextModuleValues[moduleKey];
+  moduleValues.value = nextModuleValues;
+
+  const nextModulePanelStates = { ...modulePanelStates.value };
+  delete nextModulePanelStates[moduleKey];
+  modulePanelStates.value = nextModulePanelStates;
+
+  const nextModuleOutputs = { ...moduleOutputs.value };
+  delete nextModuleOutputs[moduleKey];
+  moduleOutputs.value = nextModuleOutputs;
+
+  moduleValidationIssues.value = moduleValidationIssues.value.filter((issue) => {
+    return issue.moduleKey !== moduleKey;
+  });
+}
+
+function handleRemoveKeyModuleEvent(event: Event) {
+  const moduleKey = (event as CustomEvent<{ moduleKey?: string }>).detail?.moduleKey;
+
+  if (typeof moduleKey !== "string") return;
+
+  removeSelectedModuleKey(moduleKey);
+}
+
 function updateModuleOutputs(outputs: ModuleOutputMap) {
   moduleOutputs.value = outputs;
 }
@@ -953,6 +1015,193 @@ const tabs = ref([
   {label: 'output', icon: 'note-text'},
 ]);
 const tab = ref({label: 'setup', icon: 'settings'});
+
+type LayoutPageContextMenuEventDetail = {
+  event?: MouseEvent;
+  routeName?: string | symbol | null;
+};
+
+function copyTextFallback(value: string) {
+  if (!import.meta.client) return;
+
+  const textarea = document.createElement("textarea");
+
+  textarea.value = value;
+  textarea.setAttribute("readonly", "");
+  textarea.style.position = "fixed";
+  textarea.style.top = "-9999px";
+  textarea.style.opacity = "0";
+
+  document.body.appendChild(textarea);
+  textarea.select();
+
+  try {
+    document.execCommand("copy");
+  } finally {
+    textarea.remove();
+  }
+}
+
+async function copyTextToClipboard(value: string) {
+  if (!import.meta.client) return;
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return;
+    } catch (error) {
+      console.warn("Clipboard API failed, using fallback:", error);
+    }
+  }
+
+  copyTextFallback(value);
+}
+
+async function copyPromptOutput(format: PromptOutputFormat) {
+  const output = getPromptOutput(format).trim();
+
+  if (!output) return;
+
+  await copyTextToClipboard(output);
+}
+
+function ensureVariablesModuleSelected() {
+  if (!selectedModuleKeys.value.includes(CREATE_VARIABLES_MODULE_KEY)) {
+    selectedModuleKeys.value = [
+      CREATE_VARIABLES_MODULE_KEY,
+      ...selectedModuleKeys.value,
+    ];
+  }
+
+  if (!moduleValues.value[CREATE_VARIABLES_MODULE_KEY]) {
+    moduleValues.value = {
+      ...moduleValues.value,
+      [CREATE_VARIABLES_MODULE_KEY]: {
+        variables: [],
+      },
+    };
+  }
+}
+
+function openEditorTab() {
+  const editorTab = tabs.value.find((item) => item.label === "editor");
+
+  if (editorTab) {
+    tab.value = editorTab;
+  }
+}
+
+function getCreatePageVariables() {
+  const value = moduleValues.value[CREATE_VARIABLES_MODULE_KEY]?.variables;
+
+  return Array.isArray(value) ? (value as PromptVariable[]) : [];
+}
+
+function requestVariablesFieldAction(action: CreateVariablesContextAction["action"]) {
+  ensureVariablesModuleSelected();
+  openEditorTab();
+
+  nextTick(() => {
+    createVariablesContextAction.action = action;
+    createVariablesContextAction.id += 1;
+  });
+}
+
+function openCreateVariableModalFromContextMenu() {
+  requestVariablesFieldAction("create");
+}
+
+function openVariablePickerFromContextMenu() {
+  ensureVariablesModuleSelected();
+  openEditorTab();
+
+  nextTick(() => {
+    openVariablePicker({
+      variables: getCreatePageVariables(),
+      force: true,
+      insertOnSelect: false,
+      closeOnSelect: false,
+    });
+  });
+}
+
+function refreshCreatePage() {
+  if (!import.meta.client) return;
+
+  saveDraft();
+  window.location.reload();
+}
+
+function getCreatePageContextMenuLabels() {
+  return {
+    draft: t("components.contextMenu.groups.draft"),
+    newDraft: t("create.draft.createNew"),
+    importDraft: t("create.draft.importJson"),
+    exportDraft: t("create.draft.exportJson"),
+    downloadDraft: t("create.draft.download"),
+    resetDraft: t("create.draft.clear"),
+    deleteDraft: t("create.draft.delete"),
+
+    copy: t("components.contextMenu.groups.copy"),
+    modular: t("create.outputFormats.modular"),
+    natural: t("create.outputFormats.natural"),
+    json: t("create.outputFormats.json"),
+
+    variables: t("components.contextMenu.groups.variables"),
+    createVariable: t("modules.variables.fields.variables.actions.create"),
+    showVariables: t("components.contextMenu.actions.showVariables"),
+
+    refreshPage: t("components.contextMenu.actions.refreshPage"),
+  };
+}
+
+function handleCreatePageContextMenu(event: MouseEvent) {
+  if (!app.ready) return false;
+
+  return openPageContextMenu(event, {
+    component: CreatePageContextMenu,
+    props: {
+      labels: getCreatePageContextMenuLabels(),
+      disabled: {
+        exportCollection: !canExportDraftCollection.value,
+        downloadDraft: !canExportActiveDraft.value,
+        resetDraft: !isDraftHydrated.value,
+        deleteDraft: !canDeleteActiveDraft.value,
+        copyModular: !canCopyPromptOutput("modular"),
+        copyNatural: !canCopyPromptOutput("natural"),
+        copyJson: !canCopyPromptOutput("json"),
+      },
+      onNewDraft: createNewDraft,
+      onImportDraft: openDraftImportPicker,
+      onExportCollection: exportDraftCollectionJson,
+      onDownloadDraft: downloadActiveDraftJson,
+      onResetDraft: clearDraft,
+      onDeleteDraft: openDeleteDraftModal,
+      onCopyModular: () => copyPromptOutput("modular"),
+      onCopyNatural: () => copyPromptOutput("natural"),
+      onCopyJson: () => copyPromptOutput("json"),
+      onCreateVariable: openCreateVariableModalFromContextMenu,
+      onShowVariables: openVariablePickerFromContextMenu,
+      onRefreshPage: refreshCreatePage,
+    },
+    minWidth: 340,
+    maxWidth: "calc(100vw - 24px)",
+    maxHeight: "calc(100vh - 24px)",
+    closeOnScroll: false,
+    zIndex: 2300,
+  });
+}
+
+function handleLayoutPageContextMenuEvent(event: Event) {
+  const detail = (event as CustomEvent<LayoutPageContextMenuEventDetail>).detail;
+  const mouseEvent = detail?.event;
+
+  if (!mouseEvent) return;
+
+  if (handleCreatePageContextMenu(mouseEvent)) {
+    event.preventDefault();
+  }
+}
 
 watch(
   [
@@ -1013,18 +1262,28 @@ onMounted(() => {
   restoreDraft();
 
   window.addEventListener("beforeunload", saveDraft);
+  window.addEventListener("prompt-draft:remove-key-module", handleRemoveKeyModuleEvent);
+  window.addEventListener("prompt-draft:open-page-context-menu", handleLayoutPageContextMenuEvent);
 });
 
 onBeforeUnmount(() => {
   saveDraft();
 
   window.removeEventListener("beforeunload", saveDraft);
+  window.removeEventListener("prompt-draft:remove-key-module", handleRemoveKeyModuleEvent);
+  window.removeEventListener("prompt-draft:open-page-context-menu", handleLayoutPageContextMenuEvent);
 });
 
 </script>
 
 <template>
-  <el-grid rules="csc" class="w100 por" :gap="24" style="max-width: 1400px" v-if="app.ready">
+  <el-grid
+    rules="csc"
+    class="w100 por"
+    :gap="24"
+    style="max-width: 1400px"
+    v-if="app.ready"
+    @contextmenu="handleCreatePageContextMenu">
     <input
       ref="draftJsonInputRef"
       type="file"
@@ -1135,7 +1394,7 @@ onBeforeUnmount(() => {
       <el-flex type="section" class="w100" v-show="!mini || mini && tab.label === 'editor'">
         <PromptEditor :modules="selectedModules" v-model:module-values="moduleValues"
           v-model:module-panel-states="modulePanelStates" @update:outputs="updateModuleOutputs"
-          @update:issues="updateModuleIssues" />
+          @update:issues="updateModuleIssues" @remove="removeSelectedModuleKey" @remove-module="removeSelectedModuleKey" />
       </el-flex>
 
       <el-flex type="aside" class="create-page__output" v-show="!mini || mini && tab.label === 'output'">

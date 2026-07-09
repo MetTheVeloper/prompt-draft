@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, inject, watch } from "vue";
 
 import type {
   ModuleField,
@@ -18,6 +18,13 @@ import {
 type VariableEditorController = {
   submit: () => boolean;
 };
+
+type CreateVariablesContextAction = {
+  id: number;
+  action: "create" | null;
+};
+
+const CREATE_VARIABLES_CONTEXT_ACTION_KEY = "prompt-draft:create:variables-context-action";
 
 import VariableEditorModal from "./VariableEditorModal.vue";
 
@@ -39,6 +46,12 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { mobile } = useScreen();
 const modal = useModal();
+const createVariablesContextAction = inject<CreateVariablesContextAction | null>(
+  CREATE_VARIABLES_CONTEXT_ACTION_KEY,
+  null,
+);
+
+let lastHandledContextActionId = 0;
 
 const variables = computed(() => {
   return Array.isArray(props.modelValue) ? props.modelValue : [];
@@ -307,6 +320,22 @@ function openDeleteConfirm(variable: PromptVariable, variableIndex: number) {
     },
   });
 }
+watch(
+  () => createVariablesContextAction?.id,
+  (actionId) => {
+    if (!actionId || actionId === lastHandledContextActionId) return;
+    if (props.moduleKey !== "variables" || props.field.id !== "variables") return;
+
+    lastHandledContextActionId = actionId;
+
+    if (createVariablesContextAction?.action === "create") {
+      openCreateModal();
+      createVariablesContextAction.action = null;
+    }
+  },
+  { immediate: true },
+);
+
 </script>
 
 <template>

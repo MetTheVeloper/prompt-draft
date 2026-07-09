@@ -1,7 +1,8 @@
-import { markRaw, reactive, shallowRef } from 'vue'
+import { markRaw, reactive } from 'vue'
 import type { Component } from 'vue'
 
 export type GlobalModalMessageType = 'success' | 'warning' | 'error' | 'info'
+export type GlobalModalId = string
 
 export type GlobalModalActionHelpers = {
   close: () => void
@@ -33,6 +34,7 @@ export type GlobalModalHeader = {
 
 export type GlobalModalOptions = {
   width?: number | string
+  maxHeight?: number | string
   closeOnBackdrop?: boolean
   closeOnEsc?: boolean
   persistent?: boolean
@@ -49,6 +51,12 @@ export type GlobalModalConfig = {
   props?: Record<string, any>
   actions?: GlobalModalAction[]
   options?: GlobalModalOptions
+}
+
+export type GlobalModalStackItem = Omit<GlobalModalConfig, 'component'> & {
+  id: GlobalModalId
+  component: Component | null
+  isOpen: boolean
 }
 
 export type GlobalMessageOptions = {
@@ -70,7 +78,8 @@ export type GlobalMessageOptions = {
 
 type GlobalModalState = {
   isOpen: boolean
-  modal: GlobalModalConfig | null
+  modal: GlobalModalStackItem | null
+  modals: GlobalModalStackItem[]
   version: number
 }
 
@@ -86,6 +95,7 @@ const defaultModal: Required<Omit<GlobalModalConfig, 'component'>> & {
   actions: [],
   options: {
     width: 594,
+    maxHeight: '80vh',
     closeOnBackdrop: true,
     closeOnEsc: true,
     persistent: false,
@@ -97,10 +107,11 @@ const defaultModal: Required<Omit<GlobalModalConfig, 'component'>> & {
 const state = reactive<GlobalModalState>({
   isOpen: false,
   modal: null,
+  modals: [],
   version: 0,
 })
 
-const activeComponent = shallowRef<Component | null>(null)
+let modalIdCounter = 0
 
 const messageTypes: Record<GlobalModalMessageType, {
   icon: string
@@ -133,6 +144,11 @@ function hasOwn(obj: object, key: string) {
   return Object.prototype.hasOwnProperty.call(obj, key)
 }
 
+function createModalId() {
+  modalIdCounter += 1
+  return `global-modal-${Date.now()}-${modalIdCounter}`
+}
+
 function normalizeDescriptions(config: Partial<GlobalModalConfig>) {
   if (Array.isArray(config.descriptions)) {
     return config.descriptions.filter(Boolean)
@@ -149,12 +165,21 @@ function normalizeDescriptions(config: Partial<GlobalModalConfig>) {
   return []
 }
 
-function normalizeModal(config: GlobalModalConfig = {}): GlobalModalConfig {
+function normalizeModal(
+  config: GlobalModalConfig = {},
+  id: GlobalModalId = createModalId(),
+  isOpen = true,
+): GlobalModalStackItem {
   return {
     ...defaultModal,
     ...config,
 
-    component: null,
+    id,
+    isOpen,
+
+    component: config.component
+      ? markRaw(config.component)
+      : null,
 
     description: config.description || '',
 
@@ -171,6 +196,22 @@ function normalizeModal(config: GlobalModalConfig = {}): GlobalModalConfig {
   }
 }
 
+function getOpenModals() {
+  return state.modals.filter((modal) => modal.isOpen)
+}
+
+function getTopModal() {
+  const openModals = getOpenModals()
+
+  return openModals[openModals.length - 1] || null
+}
+
+function syncState() {
+  state.isOpen = state.modals.some((modal) => modal.isOpen)
+  state.modal = getTopModal()
+  state.version += 1
+}
+
 function getMessageType(type?: string): GlobalModalMessageType {
   if (type && type in messageTypes) {
     return type as GlobalModalMessageType
@@ -179,77 +220,132 @@ function getMessageType(type?: string): GlobalModalMessageType {
   return 'info'
 }
 
+function resolveModalId(id?: GlobalModalId | null) {
+  return id || getTopModal()?.id || null
+}
+
+function findModalIndex(id?: GlobalModalId | null) {
+  const resolvedId = resolveModalId(id)
+
+  if (!resolvedId) return -1
+
+  return state.modals.findIndex((modal) => modal.id === resolvedId)
+}
+
 function open(config: GlobalModalConfig = {}) {
-  activeComponent.value = config.component
-    ? markRaw(config.component)
-    : null
+  const modal = normalizeModal(config)
 
-  state.modal = normalizeModal(config)
-  state.isOpen = true
-  state.version += 1
+  state.modals.push(modal)
+  syncState()
+
+  return modal.id
 }
 
-function close() {
-  state.isOpen = false
-  state.version += 1
+function close(id?: GlobalModalId | null) {
+  const index = findModalIndex(id)
+
+  if (index < 0) return
+  if (!state.modals[index].isOpen) return
+
+  state.modals[index].isOpen = false
+  syncState()
 }
 
-function clearAfterClose() {
-  if (state.isOpen) return
+function closeAll() {
+  let changed = false
 
-  state.modal = null
-  activeComponent.value = null
-  state.version += 1
+  state.modals.forEach((modal) => {
+    if (!modal.isOpen) return
+
+    modal.isOpen = false
+    changed = true
+  })
+
+  if (changed) {
+    syncState()
+  }
 }
 
-function update(config: Partial<GlobalModalConfig> = {}) {
-  if (!state.modal) return
+function clearAfterClose(id?: GlobalModalId | null) {
+  const beforeLength = state.modals.length
 
-  if (hasOwn(config, 'component')) {
-    activeComponent.value = config.component
-      ? markRaw(config.component)
-      : null
+  if (id) {
+    state.modals = state.modals.filter((modal) => {
+      return modal.id !== id || modal.isOpen
+    })
+  } else {
+    state.modals = state.modals.filter((modal) => modal.isOpen)
   }
 
-  state.modal = normalizeModal({
-    ...state.modal,
+  if (state.modals.length !== beforeLength) {
+    syncState()
+  }
+}
+
+function update(config: Partial<GlobalModalConfig> = {}, id?: GlobalModalId | null) {
+  const index = findModalIndex(id)
+
+  if (index < 0) return
+
+  const currentModal = state.modals[index]
+
+  const nextConfig: GlobalModalConfig = {
+    ...currentModal,
     ...config,
 
+    component: hasOwn(config, 'component')
+      ? config.component
+      : currentModal.component,
+
     header: hasOwn(config, 'header')
-      ? {
-          ...(state.modal.header || {}),
-          ...(config.header || {}),
-        }
-      : state.modal.header,
+      ? config.header === null
+        ? null
+        : {
+            ...(currentModal.header || {}),
+            ...(config.header || {}),
+          }
+      : currentModal.header,
 
     props: {
-      ...(state.modal.props || {}),
+      ...(currentModal.props || {}),
       ...(config.props || {}),
     },
 
     options: {
-      ...(state.modal.options || {}),
+      ...(currentModal.options || {}),
       ...(config.options || {}),
     },
 
     actions: hasOwn(config, 'actions')
       ? config.actions
-      : state.modal.actions,
+      : currentModal.actions,
 
     descriptions: hasOwn(config, 'descriptions')
       ? config.descriptions
-      : state.modal.descriptions,
+      : currentModal.descriptions,
 
     description: hasOwn(config, 'description')
       ? config.description
-      : state.modal.description,
-  })
+      : currentModal.description,
+  }
 
-  state.version += 1
+  state.modals[index] = normalizeModal(
+    nextConfig,
+    currentModal.id,
+    currentModal.isOpen,
+  )
+
+  syncState()
 }
 
-function getComponent() {
-  return activeComponent.value
+function getComponent(id?: GlobalModalId | null) {
+  const index = findModalIndex(id)
+
+  if (index >= 0) {
+    return state.modals[index].component
+  }
+
+  return getTopModal()?.component || null
 }
 
 function message(options: GlobalMessageOptions | string) {
@@ -299,9 +395,11 @@ const modalApi = {
   state,
   open,
   close,
+  closeAll,
   update,
   clearAfterClose,
   getComponent,
+  getTopModal,
   message,
 }
 

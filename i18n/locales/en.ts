@@ -34,34 +34,34 @@ export default {
   },
   pages: {
     collage: {
-      "panel": {
-        "toggle": "Toggle Panel",
-        "close": "Close",
-        "dock": "Dock Panel"
+      panel: {
+        toggle: "Toggle Panel",
+        close: "Close",
+        dock: "Dock Panel",
       },
-      "pip": {
-        "select": "Select PIP",
-        "replace": "Replace PIP",
-        "remove": "Remove PIP",
-        "selected": "PIP: {name}",
-        "description": "Small image overlay for this cell",
-        "position": "PIP position",
-        "size": "PIP size",
-        "positions": {
-          "topLeft": "Top left",
-          "topCenter": "Top center",
-          "topRight": "Top right",
-          "centerLeft": "Center left",
-          "centerRight": "Center right",
-          "bottomLeft": "Bottom left",
-          "bottomCenter": "Bottom center",
-          "bottomRight": "Bottom right"
+      pip: {
+        select: "Select PIP",
+        replace: "Replace PIP",
+        remove: "Remove PIP",
+        selected: "PIP: {name}",
+        description: "Small image overlay for this cell",
+        position: "PIP position",
+        size: "PIP size",
+        positions: {
+          topLeft: "Top left",
+          topCenter: "Top center",
+          topRight: "Top right",
+          centerLeft: "Center left",
+          centerRight: "Center right",
+          bottomLeft: "Bottom left",
+          bottomCenter: "Bottom center",
+          bottomRight: "Bottom right",
         },
-        "sizes": {
-          "small": "Small",
-          "medium": "Medium",
-          "large": "Large"
-        }
+        sizes: {
+          small: "Small",
+          medium: "Medium",
+          large: "Large",
+        },
       },
       imageFit: {
         mode: "Image display mode",
@@ -81,23 +81,23 @@ export default {
         empty: "No images have been added yet.",
       },
       brand: {
-        "mode": "Brand mode",
-        "modes": {
-          "overlay": "Overlay",
-          "footer": "Footer"
+        mode: "Brand mode",
+        modes: {
+          overlay: "Overlay",
+          footer: "Footer",
         },
-        "footerAlign": "Footer alignment",
-        "footerPadding": "Footer padding: {value}px",
-        "footerAligns": {
-          "left": "Left",
-          "center": "Center",
-          "right": "Right"
+        footerAlign: "Footer alignment",
+        footerPadding: "Footer padding: {value}px",
+        footerAligns: {
+          left: "Left",
+          center: "Center",
+          right: "Right",
         },
-        "panelTitle": "Brand",
-        "groups": {
-          "mode": "Mode and placement",
-          "text": "Text",
-          "logo": "Logo and QR"
+        panelTitle: "Brand",
+        groups: {
+          mode: "Mode and placement",
+          text: "Text",
+          logo: "Logo and QR",
         },
         title: "Brand Overlay",
         telegramPostId: "Telegram post ID",
@@ -132,12 +132,12 @@ export default {
         exportQuality: "Export Quality",
         decorationsEnabled: "Padding & Borders",
         cellRadius: "Cell corner radius: {value}px",
-        "outputSize": "Output size",
-        "outputSizes": {
-          "small": "Small",
-          "medium": "Medium",
-          "large": "Large"
-        }
+        outputSize: "Output size",
+        outputSizes: {
+          small: "Small",
+          medium: "Medium",
+          large: "Large",
+        },
       },
       preview: {
         grid: "Grid: {columns}×{rows}",
@@ -158,13 +158,13 @@ export default {
         exportMp4: "Export MP4",
         replaceImage: "Replace image",
         removeImage: "Remove image",
-        "refreshPage": "Refresh page"
+        refreshPage: "Refresh page",
       },
-      "emptyCanvas": {
-        "title": "Add images to start",
-        "description": "Drag and drop images here, paste from clipboard, or choose files below.",
-        "pasteHint": "You can paste copied images directly with Ctrl/⌘ + V.",
-        "action": "Add images"
+      emptyCanvas: {
+        title: "Add images to start",
+        description: "Drag and drop images here, paste from clipboard, or choose files below.",
+        pasteHint: "You can paste copied images directly with Ctrl/⌘ + V.",
+        action: "Add images",
       },
       outputMode: {
         title: "Output Mode",
@@ -222,12 +222,12 @@ export default {
       zoom: {
         fit: "Fit",
         actual: "Actual",
-        "panTool": "Pan tool"
+        panTool: "Pan tool",
       },
       layoutTools: {
-        "aspectRatioOrientations": {
-          "vertical": "Vertical",
-          "horizontal": "Horizontal"
+        aspectRatioOrientations: {
+          vertical: "Vertical",
+          horizontal: "Horizontal",
         },
         title: "Layout Tools",
         shuffleSimilar: "Shuffle Similar Images",
@@ -2129,6 +2129,13 @@ export default {
                 "Create at least one variable first, then you can insert it into prompt fields.",
               title: "No variables found",
             },
+            systemVariables: {
+              label: "System Variables",
+            },
+            sources: {
+              user: "User",
+              system: "System",
+            },
           },
           empty: {
             title: "No variables yet",
@@ -2153,6 +2160,7 @@ export default {
             invalidKey: "Invalid variable key.",
             reservedKey: "This key is reserved for internal typography tokens.",
             duplicateKey: "Duplicate variable key.",
+            systemKey: "This key is reserved by an active system variable.",
           },
         },
       },
@@ -3229,6 +3237,24 @@ export default {
     },
   },
   components: {
+    contextMenu: {
+      groups: {
+        draft: "Draft",
+        copy: "Copy",
+        variables: "Variables",
+      },
+      actions: {
+        expand: "Expand",
+        collapse: "Collapse",
+        resetSettings: "Reset settings",
+        enableCustomize: "Customize",
+        disableCustomize: "Disable customize",
+        copyOutput: "Copy output",
+        removeFromKeyModules: "Remove from key modules",
+        showVariables: "Show variables",
+        refreshPage: "Refresh page",
+      },
+    },
     modal: {
       insertVariable: "Insert variable",
       actions: {

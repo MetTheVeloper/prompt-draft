@@ -8,6 +8,14 @@ const { locale, setLocale } = useI18n();
 const app = useAppStore();
 const { mini } = useScreen();
 
+const emit = defineEmits<{
+  (event: "contextmenu", value: MouseEvent): void;
+}>();
+
+function handleHeaderContextMenu(event: MouseEvent) {
+  emit("contextmenu", event);
+}
+
 async function switchLanguage() {
   const nextLocale = locale.value === 'en' ? 'fa' : 'en'
 
@@ -18,7 +26,7 @@ async function switchLanguage() {
 
 <template>
   <el-flex v-if="app.ready" rules="rbc" type="header" :p="[8, 24]" :gap="16" :br="[0, 0, 1, 0]" bc="normal5"
-    bg="surface65" bd="b8" class="post t0 l0 r0 w100 zi200 app-header">
+    bg="surface65" bd="b8" class="post t0 l0 r0 w100 zi200 app-header" @contextmenu="handleHeaderContextMenu">
     <el-flex rules="rsc" type="link" to="/">
       <img :src="`img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp32" :alt="$t('app.title')" />
       <!-- <img :src="`img/logo_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp40" :alt="$t('app.title')" /> -->

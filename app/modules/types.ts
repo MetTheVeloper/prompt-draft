@@ -91,6 +91,7 @@ export type PromptVariableType =
   | 'object'
   | 'color'
   | 'custom'
+  | 'system'
 
 export type PromptVariable = {
   id: string

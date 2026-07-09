@@ -1,59 +1,78 @@
 <template>
   <ClientOnly>
     <Teleport to="body">
-      <Transition name="globalModalTransition" appear @after-leave="afterLeave">
-        <el-flex v-if="isOpen" rules="ccc" class="globalModal" :class="{ hasBlur: modalOptions.blur }">
-          <el-flex bg="surface25" class="globalModalBackdrop" @click="handleBackdropClick" />
+      <Transition
+        v-for="(stackModal, index) in modalStack"
+        :key="stackModal.id"
+        name="globalModalTransition"
+        appear
+        @after-leave="afterLeave(stackModal.id)">
+        <el-flex
+          v-if="stackModal.isOpen"
+          rules="ccc"
+          class="globalModal"
+          :class="{
+            hasBlur: getModalOptions(stackModal).blur,
+            isTop: isTopModal(stackModal),
+          }"
+          :style="getModalLayerStyle(index)">
+          <el-flex bg="surface25" class="globalModalBackdrop" @click="handleBackdropClick(stackModal)" />
 
           <el-flex rules="csc" bg="surface" class="globalModalBox bsh16" :br="2" :effect="{ color: 'normal5' }"
-            bc="normal15" :p="24" :radius="24" :style="boxStyle">
+            bc="normal15" :p="24" :radius="24" :style="getBoxStyle(stackModal)">
             <!-- header -->
-            <el-flex v-if="modal.header" rules="rbs" class="w100 globalModalHeader" :gap="16">
+            <el-flex v-if="stackModal.header" rules="rbs" class="w100 globalModalHeader" :gap="16">
               <el-flex rules="rsc" class="globalModalHeaderContent" :gap="12">
-                <el-icon v-if="headerIcon" :icon="headerIcon" :size="32" :color="headerColor" />
+                <el-icon v-if="getHeaderIcon(stackModal)" :icon="getHeaderIcon(stackModal)" :size="32" :color="getHeaderColor(stackModal)" />
 
                 <el-flex rules="css" :gap="2">
-                  <el-text :size="16" :weight="700" v-if="modal.header.title">
-                    {{ modal.header.title }}
+                  <el-text :size="16" :weight="700" v-if="stackModal.header.title">
+                    {{ stackModal.header.title }}
                   </el-text>
 
-                  <el-text :size="12" :weight="400" v-if="headerSubtitle">
-                    {{ headerSubtitle }}
+                  <el-text :size="12" :weight="400" v-if="getHeaderSubtitle(stackModal)">
+                    {{ getHeaderSubtitle(stackModal) }}
                   </el-text>
                 </el-flex>
               </el-flex>
 
-              <el-button v-if="showCloseButton" :label="t('components.modal.actions.close')"
+              <el-button v-if="showCloseButton(stackModal)" :label="t('components.modal.actions.close')"
                 icon="close-circle" :size="12" color="red" mode="flat" type="fab"
-                :disable="globalLoading" @click="handleCloseButton" />
+                :disable="isModalLoading(stackModal)" @click="handleCloseButton(stackModal)" />
             </el-flex>
 
-            <el-divider v-if="modal.header" class="mt8 mb8" />
+            <el-divider v-if="stackModal.header" class="mt8 mb8" />
 
-            <!-- custom component -->
-            <component v-if="activeComponent" :is="activeComponent" v-bind="modal.props" @close="modalApi.close" />
+            <el-flex rules="csc" class="w100 globalModalBody" :gap="8">
+              <!-- custom component -->
+              <component
+                v-if="getActiveComponent(stackModal)"
+                :is="getActiveComponent(stackModal)"
+                v-bind="stackModal.props"
+                @close="modalApi.close(stackModal.id)" />
 
-            <!-- default content -->
-            <el-flex v-else rules="ccs" class="w100" :gap="8">
-              <el-text :size="16" :weight="600" v-if="modal.title" class="title w100">
-                {{ modal.title }}
-              </el-text>
-
-              <el-flex v-if="modalDescriptions.length" rules="ccs" class="w100" :gap="0">
-                <el-text :size="14" :weight="400" color="normal75" v-for="(desc, index) in modalDescriptions"
-                  :key="index" class="desc w100">
-                  {{ desc }}
+              <!-- default content -->
+              <el-flex v-else rules="ccs" class="w100" :gap="8">
+                <el-text :size="16" :weight="600" v-if="stackModal.title" class="title w100">
+                  {{ stackModal.title }}
                 </el-text>
+
+                <el-flex v-if="getModalDescriptions(stackModal).length" rules="ccs" class="w100" :gap="0">
+                  <el-text :size="14" :weight="400" color="normal75" v-for="(desc, descIndex) in getModalDescriptions(stackModal)"
+                    :key="descIndex" class="desc w100">
+                    {{ desc }}
+                  </el-text>
+                </el-flex>
               </el-flex>
             </el-flex>
 
             <!-- actions -->
-            <el-flex v-if="modal.actions && modal.actions.length" rules="rsc" :gap="8"
+            <el-flex v-if="stackModal.actions && stackModal.actions.length" rules="rsc" :gap="8"
               class="w100 fw globalModalActions">
-              <el-button v-for="(action, index) in modal.actions" :key="index" :label="action.label"
+              <el-button v-for="(action, actionIndex) in stackModal.actions" :key="actionIndex" :label="action.label"
                 :icon="action.icon" :color="action.color || 'prim'" :size="action.size || 14"
-                :type="action.type" :mode="action.mode" :disable="isActionDisabled(action)" :p="[8, 12]" :radius="8"
-                @click="runAction(action)" />
+                :type="action.type" :mode="action.mode" :disable="isActionDisabled(action, stackModal)" :p="[8, 12]" :radius="8"
+                @click="runAction(action, stackModal)" />
             </el-flex>
           </el-flex>
         </el-flex>
@@ -64,7 +83,7 @@
 
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
-import type { GlobalModalAction } from '~/composables/useModal'
+import type { GlobalModalAction, GlobalModalConfig, GlobalModalStackItem } from '~/composables/useModal'
 
 const modalApi = useModal()
 const modalState = modalApi.state
@@ -73,32 +92,31 @@ const { t } = useI18n()
 
 const isOpen = computed(() => modalState.isOpen)
 
-const modal = computed(() => {
-  return modalState.modal || {
-    header: null,
-    title: '',
-    description: '',
-    descriptions: [],
-    props: {},
-    actions: [],
-    options: {},
-  }
+const modalStack = computed(() => {
+  modalState.version
+  return modalState.modals
 })
 
-const modalOptions = computed(() => {
+const topModal = computed(() => {
+  modalState.version
+  return modalApi.getTopModal()
+})
+
+function getModalOptions(modal: GlobalModalStackItem) {
   return {
     width: 594,
+    maxHeight: '80vh',
     closeOnBackdrop: true,
     closeOnEsc: true,
     persistent: false,
     blur: true,
     loading: false,
-    ...(modal.value.options || {}),
+    ...(modal.options || {}),
   }
-})
+}
 
-const modalDescriptions = computed(() => {
-  const descriptions = modal.value.descriptions
+function getModalDescriptions(modal: GlobalModalStackItem) {
+  const descriptions = modal.descriptions
 
   if (Array.isArray(descriptions)) {
     return descriptions.filter(Boolean)
@@ -108,52 +126,65 @@ const modalDescriptions = computed(() => {
     return [descriptions]
   }
 
-  if (typeof modal.value.description === 'string' && modal.value.description.trim()) {
-    return [modal.value.description]
+  if (typeof modal.description === 'string' && modal.description.trim()) {
+    return [modal.description]
   }
 
   return []
-})
+}
 
-const activeComponent = computed(() => {
+function getActiveComponent(modal: GlobalModalStackItem) {
   modalState.version
-  return modalApi.getComponent()
-})
+  return modalApi.getComponent(modal.id)
+}
 
-const boxStyle = computed(() => {
-  const width = modalOptions.value.width || 594
+function getBoxStyle(modal: GlobalModalStackItem) {
+  const modalOptions = getModalOptions(modal)
+  const width = modalOptions.width || 594
+  const maxHeight = modalOptions.maxHeight || '80vh'
 
   return {
     maxWidth: typeof width === 'number' ? `${width}px` : width,
+    maxHeight: typeof maxHeight === 'number' ? `${maxHeight}px` : maxHeight,
   }
-})
+}
 
-const showCloseButton = computed(() => {
-  if (!modal.value.header) return false
-  return modal.value.header.closeButton !== false
-})
+function getModalLayerStyle(index: number) {
+  return {
+    zIndex: 9999 + index * 20,
+  }
+}
 
-const headerIcon = computed(() => {
-  return modal.value.header?.icon || ''
-})
+function isTopModal(modal: GlobalModalStackItem) {
+  return topModal.value?.id === modal.id
+}
 
-const headerSubtitle = computed(() => {
-  return modal.value.header?.subtitle || modal.value.header?.desc || ''
-})
+function showCloseButton(modal: GlobalModalStackItem) {
+  if (!modal.header) return false
+  return modal.header.closeButton !== false
+}
 
-const headerColor = computed(() => {
-  return modal.value.header?.color || 'normal'
-})
+function getHeaderIcon(modal: GlobalModalStackItem) {
+  return modal.header?.icon || ''
+}
 
-const globalLoading = computed(() => {
-  const loading = modalOptions.value.loading
+function getHeaderSubtitle(modal: GlobalModalStackItem) {
+  return modal.header?.subtitle || modal.header?.desc || ''
+}
+
+function getHeaderColor(modal: GlobalModalStackItem) {
+  return modal.header?.color || 'normal'
+}
+
+function isModalLoading(modal: GlobalModalStackItem) {
+  const loading = getModalOptions(modal).loading
 
   if (typeof loading === 'function') {
     return loading()
   }
 
   return !!loading
-})
+}
 
 watch(isOpen, (value) => {
   if (typeof document === 'undefined') return
@@ -165,6 +196,10 @@ watch(isOpen, (value) => {
 
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
+
+  if (isOpen.value) {
+    document.body.classList.add('global-modal-open')
+  }
 })
 
 onBeforeUnmount(() => {
@@ -175,8 +210,8 @@ onBeforeUnmount(() => {
   }
 })
 
-function isActionDisabled(action: GlobalModalAction) {
-  if (globalLoading.value) return true
+function isActionDisabled(action: GlobalModalAction, modal: GlobalModalStackItem) {
+  if (isModalLoading(modal)) return true
 
   if (typeof action.disable === 'function') {
     return action.disable()
@@ -185,13 +220,13 @@ function isActionDisabled(action: GlobalModalAction) {
   return !!action.disable
 }
 
-async function runAction(action: GlobalModalAction) {
-  if (isActionDisabled(action)) return
+async function runAction(action: GlobalModalAction, modal: GlobalModalStackItem) {
+  if (isActionDisabled(action, modal)) return
 
   const helpers = {
-    close: modalApi.close,
-    update: modalApi.update,
-    modal: modalState.modal,
+    close: () => modalApi.close(modal.id),
+    update: (config: Partial<GlobalModalConfig>) => modalApi.update(config, modal.id),
+    modal,
   }
 
   try {
@@ -202,40 +237,51 @@ async function runAction(action: GlobalModalAction) {
     }
 
     if (action.close) {
-      modalApi.close()
+      modalApi.close(modal.id)
     }
   } catch (error) {
     console.error('[GlobalModal action error]', error)
   }
 }
 
-function handleCloseButton() {
-  if (globalLoading.value) return
-  modalApi.close()
+function handleCloseButton(modal: GlobalModalStackItem) {
+  if (isModalLoading(modal)) return
+  modalApi.close(modal.id)
 }
 
-function handleBackdropClick() {
-  if (globalLoading.value) return
-  if (modalOptions.value.persistent) return
-  if (!modalOptions.value.closeOnBackdrop) return
+function handleBackdropClick(modal: GlobalModalStackItem) {
+  if (!isTopModal(modal)) return
+  if (isModalLoading(modal)) return
 
-  modalApi.close()
+  const modalOptions = getModalOptions(modal)
+
+  if (modalOptions.persistent) return
+  if (!modalOptions.closeOnBackdrop) return
+
+  modalApi.close(modal.id)
 }
 
 function handleKeydown(event: KeyboardEvent) {
   if (!isOpen.value) return
   if (event.key !== 'Escape') return
-  if (globalLoading.value) return
-  if (modalOptions.value.persistent) return
-  if (!modalOptions.value.closeOnEsc) return
 
-  modalApi.close()
+  const modal = topModal.value
+
+  if (!modal) return
+  if (isModalLoading(modal)) return
+
+  const modalOptions = getModalOptions(modal)
+
+  if (modalOptions.persistent) return
+  if (!modalOptions.closeOnEsc) return
+
+  modalApi.close(modal.id)
 }
 
-function afterLeave() {
-  modalApi.clearAfterClose()
+function afterLeave(id: string) {
+  modalApi.clearAfterClose(id)
 
-  if (typeof document !== 'undefined') {
+  if (typeof document !== 'undefined' && !modalApi.state.isOpen) {
     document.body.classList.remove('global-modal-open')
   }
 }
@@ -245,7 +291,6 @@ function afterLeave() {
 .globalModal {
   position: fixed;
   inset: 0;
-  z-index: 9999;
 }
 
 .globalModalBackdrop {
@@ -261,10 +306,24 @@ function afterLeave() {
   position: relative;
   width: calc(100% - 64px);
   z-index: 2;
+  overflow: hidden;
 }
 
 .globalModalHeader {
   min-width: 0;
+  flex: 0 0 auto;
+}
+
+.globalModalBody {
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.globalModalActions {
+  flex: 0 0 auto;
 }
 
 /* Vue 3 transition classes */

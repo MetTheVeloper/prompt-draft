@@ -34,34 +34,34 @@ export default {
   },
   pages: {
     collage: {
-      "panel": {
-        "toggle": "باز/بستن پنل",
-        "close": "بستن پنل",
-        "dock": "چسباندن پنل"
+      panel: {
+        toggle: "باز/بستن پنل",
+        close: "بستن پنل",
+        dock: "چسباندن پنل",
       },
-      "pip": {
-        "select": "انتخاب PIP",
-        "replace": "جایگزینی PIP",
-        "remove": "حذف PIP",
-        "selected": "PIP: {name}",
-        "description": "تصویر کوچک روی این سلول",
-        "position": "موقعیت PIP",
-        "size": "اندازه PIP",
-        "positions": {
-          "topLeft": "بالا چپ",
-          "topCenter": "بالا وسط",
-          "topRight": "بالا راست",
-          "centerLeft": "وسط چپ",
-          "centerRight": "وسط راست",
-          "bottomLeft": "پایین چپ",
-          "bottomCenter": "پایین وسط",
-          "bottomRight": "پایین راست"
+      pip: {
+        select: "انتخاب PIP",
+        replace: "جایگزینی PIP",
+        remove: "حذف PIP",
+        selected: "PIP: {name}",
+        description: "تصویر کوچک روی این سلول",
+        position: "موقعیت PIP",
+        size: "اندازه PIP",
+        positions: {
+          topLeft: "بالا چپ",
+          topCenter: "بالا وسط",
+          topRight: "بالا راست",
+          centerLeft: "وسط چپ",
+          centerRight: "وسط راست",
+          bottomLeft: "پایین چپ",
+          bottomCenter: "پایین وسط",
+          bottomRight: "پایین راست",
         },
-        "sizes": {
-          "small": "کوچک",
-          "medium": "متوسط",
-          "large": "بزرگ"
-        }
+        sizes: {
+          small: "کوچک",
+          medium: "متوسط",
+          large: "بزرگ",
+        },
       },
       imageFit: {
         mode: "حالت نمایش تصویر",
@@ -81,23 +81,23 @@ export default {
         empty: "هنوز تصویری اضافه نشده است.",
       },
       brand: {
-        "mode": "نوع برند",
-        "modes": {
-          "overlay": "روی تصویر",
-          "footer": "نوار پایین"
+        mode: "نوع برند",
+        modes: {
+          overlay: "روی تصویر",
+          footer: "نوار پایین",
         },
-        "footerAlign": "چینش نوار پایین",
-        "footerPadding": "پدینگ نوار پایین: {value}px",
-        "footerAligns": {
-          "left": "چپ",
-          "center": "وسط",
-          "right": "راست"
+        footerAlign: "چینش نوار پایین",
+        footerPadding: "پدینگ نوار پایین: {value}px",
+        footerAligns: {
+          left: "چپ",
+          center: "وسط",
+          right: "راست",
         },
-        "panelTitle": "برند",
-        "groups": {
-          "mode": "حالت و جایگاه",
-          "text": "متن",
-          "logo": "لوگو و QR"
+        panelTitle: "برند",
+        groups: {
+          mode: "حالت و جایگاه",
+          text: "متن",
+          logo: "لوگو و QR",
         },
         title: "لایه برند",
         telegramPostId: "شناسه پست تلگرام",
@@ -132,12 +132,12 @@ export default {
         exportQuality: "کیفیت خروجی",
         decorationsEnabled: "فاصله و پس‌زمینه",
         cellRadius: "گردی گوشه سلول‌ها: {value}px",
-        "outputSize": "ابعاد خروجی",
-        "outputSizes": {
-          "small": "کوچک",
-          "medium": "متوسط",
-          "large": "بزرگ"
-        }
+        outputSize: "ابعاد خروجی",
+        outputSizes: {
+          small: "کوچک",
+          medium: "متوسط",
+          large: "بزرگ",
+        },
       },
       preview: {
         grid: "گرید: {columns}×{rows}",
@@ -158,13 +158,13 @@ export default {
         exportMp4: "خروجی MP4",
         replaceImage: "جایگزینی تصویر",
         removeImage: "حذف تصویر",
-        refreshPage: "رفرش صفحه"
+        refreshPage: "رفرش صفحه",
       },
-      "emptyCanvas": {
+      emptyCanvas: {
         title: "برای شروع تصویر اضافه کن",
         description: "تصاویر را اینجا بکش و رها کن، paste کن، یا از دکمه زیر انتخابشان کن.",
         pasteHint: "می‌توانی تصویر کپی‌شده را مستقیم با Ctrl/⌘ + V اضافه کنی.",
-        action: "افزودن تصویر"
+        action: "افزودن تصویر",
       },
       outputMode: {
         title: "حالت خروجی",
@@ -221,12 +221,12 @@ export default {
       zoom: {
         fit: "فیت",
         actual: "اندازه واقعی",
-        "panTool": "ابزار جابه‌جایی"
+        panTool: "ابزار جابه‌جایی",
       },
       layoutTools: {
-        "aspectRatioOrientations": {
-          "vertical": "عمودی",
-          "horizontal": "افقی"
+        aspectRatioOrientations: {
+          vertical: "عمودی",
+          horizontal: "افقی",
         },
         title: "ابزارهای چیدمان",
         shuffleSimilar: "شافل عکس‌های مشابه",
@@ -2109,6 +2109,13 @@ export default {
                 "اول حداقل یک متغیر بساز، بعد می‌تونی آن را داخل فیلدهای پرامپت وارد کنی.",
               title: "متغیری پیدا نشد",
             },
+            systemVariables: {
+              label: "متغیرهای سیستمی",
+            },
+            sources: {
+              user: "کاربر",
+              system: "سیستم",
+            },
           },
           empty: {
             title: "هنوز متغیری ساخته نشده",
@@ -2134,6 +2141,7 @@ export default {
             invalidKey: "کلید متغیر معتبر نیست.",
             reservedKey: "این کلید برای توکن‌های داخلی تایپوگرافی رزرو شده است.",
             duplicateKey: "کلید متغیر تکراری است.",
+            systemKey: "این کلید توسط یک متغیر سیستمی فعال رزرو شده است.",
           },
         },
       },
@@ -2207,9 +2215,9 @@ export default {
       delete: "حذف درفت",
       deleteModal: {
         title: "حذف درفت؟",
-        description: 'درفت «{title}» برای همیشه حذف شود؟ این عملیات قابل بازگشت نیست.',
+        description: "درفت «{title}» برای همیشه حذف شود؟ این عملیات قابل بازگشت نیست.",
         lastDraftDescription:
-          'درفت «{title}» برای همیشه حذف شود؟ این تنها درفت ذخیره‌شده‌ی شماست، بنابراین بعد از حذف، یک درفت خالی جدید ساخته می‌شود.',
+          "درفت «{title}» برای همیشه حذف شود؟ این تنها درفت ذخیره‌شده‌ی شماست، بنابراین بعد از حذف، یک درفت خالی جدید ساخته می‌شود.",
         confirm: "حذف درفت",
       },
       restoring: "در حال بازیابی Draft...",
@@ -3193,6 +3201,24 @@ export default {
     },
   },
   components: {
+    contextMenu: {
+      groups: {
+        draft: "درفت",
+        copy: "کپی",
+        variables: "متغیرها",
+      },
+      actions: {
+        expand: "باز کردن",
+        collapse: "بستن",
+        resetSettings: "بازنشانی تنظیمات",
+        enableCustomize: "فعال‌سازی سفارشی‌سازی",
+        disableCustomize: "غیرفعال‌سازی سفارشی‌سازی",
+        copyOutput: "کپی خروجی",
+        removeFromKeyModules: "حذف از ماژول‌های کلیدی",
+        showVariables: "نمایش متغیرها",
+        refreshPage: "رفرش صفحه",
+      },
+    },
     modal: {
       insertVariable: "درج وریبل",
       actions: {

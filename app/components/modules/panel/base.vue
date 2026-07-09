@@ -1,6 +1,7 @@
 <script setup lang="ts">
 
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from "vue";
+import type { GlobalMenuItem } from "~/composables/useMenu";
 
 import type {
   ElDropdownItem,
@@ -27,6 +28,7 @@ import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
+const { openPageContextMenu } = usePageContextMenu();
 
 const {
   setPromptVariables: setGlobalPromptVariables,
@@ -45,6 +47,7 @@ const emit = defineEmits<{
   (event: "update:panelState", value: ModulePanelState): void;
   (event: "update:output", value: string): void;
   (event: "update:issues", value: PromptValidationIssue[]): void;
+  (event: "remove", moduleKey: string): void;
 }>();
 
 type ModuleGroupView = {
@@ -437,6 +440,30 @@ function togglePanel() {
   isPanelExpanded.value = !isPanelExpanded.value;
 }
 
+function toggleCustomMode() {
+  if (!hasOverrideField.value) return;
+
+  isCustomMode.value = !isCustomMode.value;
+
+  if (isCustomMode.value) {
+    isPanelExpanded.value = true;
+  }
+}
+
+function removeModule() {
+  emit("remove", props.module.key);
+
+  if (!import.meta.client) return;
+
+  window.dispatchEvent(
+    new CustomEvent("prompt-draft:remove-key-module", {
+      detail: {
+        moduleKey: props.module.key,
+      },
+    }),
+  );
+}
+
 function isFieldFilled(field: ModuleField) {
   const value = values[field.id];
 
@@ -754,6 +781,64 @@ async function copyOutput() {
   }
 }
 
+const modulePanelContextMenuLabels = computed(() => ({
+  title: moduleTitle.value,
+  expand: t("components.contextMenu.actions.expand"),
+  collapse: t("components.contextMenu.actions.collapse"),
+  enableCustomize: t("components.contextMenu.actions.enableCustomize"),
+  disableCustomize: t("components.contextMenu.actions.disableCustomize"),
+  copyOutput: t("components.contextMenu.actions.copyOutput"),
+  remove: t("components.contextMenu.actions.removeFromKeyModules"),
+}));
+
+const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
+  const labels = modulePanelContextMenuLabels.value;
+
+  return [
+    {
+      type: "header",
+      label: labels.title,
+    },
+    {
+      label: isPanelExpanded.value ? labels.collapse : labels.expand,
+      icon: isPanelExpanded.value ? "minus" : "add",
+      handler: togglePanel,
+    },
+    {
+      label: isCustomMode.value ? labels.disableCustomize : labels.enableCustomize,
+      icon: "setting-2",
+      active: isCustomMode.value,
+      disabled: !hasOverrideField.value,
+      handler: toggleCustomMode,
+    },
+    {
+      type: "divider",
+    },
+    {
+      label: labels.copyOutput,
+      icon: "document-copy",
+      disabled: !output.value,
+      handler: copyOutput,
+    },
+    {
+      label: labels.remove,
+      icon: "trash",
+      color: "red",
+      handler: removeModule,
+    },
+  ];
+});
+
+function openModulePanelContextMenu(event: MouseEvent) {
+  openPageContextMenu(event, {
+    items: modulePanelContextMenuItems.value,
+    minWidth: 220,
+    maxWidth: 260,
+    closeOnScroll: false,
+    zIndex: 2300,
+  });
+}
+
 onBeforeUnmount(() => {
   if (props.module.key === "variables") {
     clearPromptVariables();
@@ -764,7 +849,7 @@ onBeforeUnmount(() => {
 
 <template>
   <el-grid type="section" :p="mobile ? 12 : mini ? 16 : 20" :br="2" :bc="!isPanelExpanded ? 'normal10' : 'blue50'"
-    :radius="mobile ? 16 : mini ? 24 : 32" bg="surface" :class="['w100']">
+    :radius="mobile ? 16 : mini ? 24 : 32" bg="surface" :class="['w100']" @contextmenu="openModulePanelContextMenu">
     <!-- module head -->
     <el-flex rules="csc" class="w100">
       <el-flex rules="ccs" class="w100">

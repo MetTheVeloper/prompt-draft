@@ -2,6 +2,7 @@
 import type { PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
+import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import {
   getAspectRatioPromptHint,
   getDefaultAspectRatioValue,
@@ -351,6 +352,92 @@ function getVariablesOutput(outputs: ModuleOutputMap) {
   return outputs[VARIABLES_MODULE_KEY]?.trim() || ''
 }
 
+function createSystemVariable(key: string, value: ModuleOutputValue) {
+  const stringValue =
+    typeof value === "string"
+      ? cleanText(value)
+      : JSON.stringify(value, null, 2)
+
+  return {
+    id: `system:${key}`,
+    key,
+    value: stringValue,
+    description: "Generated from active prompt settings or active module output.",
+    type: "system" as const,
+    enabled: Boolean(key.trim() && stringValue.trim()),
+  }
+}
+
+function getActiveSystemPromptVariables(
+  settings: PromptSettings,
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const variables = [
+    createSystemVariable("mode", modeToPromptText(settings.mode)),
+  ]
+
+  const subject = buildPromptSubject(settings)
+
+  if (settings.mode === "image_to_image") {
+    variables.push(createSystemVariable("reference", "attached reference image"))
+  }
+
+  if (settings.idea.trim()) {
+    variables.push(createSystemVariable("idea", settings.idea))
+  }
+
+  if (subject) {
+    variables.push(createSystemVariable("subject", subject))
+  }
+
+  if (settings.mode === "image_to_image") {
+    variables.push(
+      createSystemVariable(
+        "reference_usage",
+        referenceUsageToPromptText(settings.imageToImage.referenceUsage)
+      )
+    )
+
+    const preserveText = getPreservePromptText(settings)
+
+    if (preserveText) {
+      variables.push(createSystemVariable("preserve", preserveText))
+    }
+
+    variables.push(
+      createSystemVariable(
+        "transformation_strength",
+        transformationStrengthToPromptText(settings.imageToImage.transformationStrength)
+      )
+    )
+  }
+
+  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+
+  if (aspectRatioPromptHint.trim()) {
+    variables.push(createSystemVariable("aspect", aspectRatioPromptHint))
+  }
+
+  if (settings.globalRules.trim()) {
+    variables.push(createSystemVariable("rules", settings.globalRules))
+  }
+
+  moduleOutputs.forEach((item) => {
+    variables.push(createSystemVariable(item.key, item.output))
+  })
+
+  return variables.filter((variable) => variable.enabled)
+}
+
+function syncActiveSystemPromptVariables(
+  settings: PromptSettings,
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const { setSystemPromptVariables } = usePromptVariables()
+
+  setSystemPromptVariables(getActiveSystemPromptVariables(settings, moduleOutputs))
+}
+
 function compileModularOutput(
   settings: PromptSettings,
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
@@ -607,6 +694,8 @@ export function compilePromptOutput(
   const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
   const variablesOutput = getVariablesOutput(outputs)
 
+  syncActiveSystemPromptVariables(settings, moduleOutputs)
+
   const hasSettingsOutput =
     settings.idea.trim() ||
     buildPromptSubject(settings) ||
@@ -629,12 +718,12 @@ export function compilePromptOutput(
       getNaturalOptimizerOptions(settings)
     )
 
-    logNaturalOptimizerResult({
-      settings,
-      moduleOutputs,
-      rawOutput,
-      optimizedOutput
-    })
+    // logNaturalOptimizerResult({
+    //   settings,
+    //   moduleOutputs,
+    //   rawOutput,
+    //   optimizedOutput
+    // })
 
     return variablesOutput ? `${variablesOutput}\n\n${optimizedOutput}` : optimizedOutput
   }

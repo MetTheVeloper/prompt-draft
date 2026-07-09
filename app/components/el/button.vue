@@ -64,9 +64,11 @@
       </el-flex>
     </el-flex>
     <!-- tooltip -->
-    <el-tooltip :opened="(label && tooltip) && hover && buttonTooltip.show"
+    <el-tooltip
+      :opened="buttonTooltip.opened"
       :size="sizes.button.tooltip.label"
-      :body="tooltip || label" :position="tooltipPosition" />
+      :body="buttonTooltip.label"
+      :position="tooltipPosition" />
     <el-text
       v-if="false"
       :size="sizes.button.tooltip.label"
@@ -355,11 +357,21 @@ const buttonColor = computed(() => {
 
 // tooltip
 const buttonTooltip = computed(() => {
-  const show = props.tooltip !== undefined && buttonType.value.fab;
-  const label = props.tooltip || props.label;
+  const fallbackLabel = props.label !== undefined && props.label !== null
+    ? String(props.label)
+    : '';
+  const customTooltip = typeof props.tooltip === 'string'
+    ? props.tooltip
+    : props.tooltip === true
+      ? fallbackLabel
+      : '';
+  const label = customTooltip || fallbackLabel;
+  const show = buttonType.value.fab && !!label;
+
   return {
     show,
     label,
+    opened: show && hover.value,
   };
 });
 

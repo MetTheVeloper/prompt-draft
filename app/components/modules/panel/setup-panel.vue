@@ -370,14 +370,14 @@ function getSetupPanelContextMenuItems(panel: SetupPanelKey): GlobalMenuItem[] {
     },
     {
       label: expanded
-        ? t("components.contextMenu.actions.collapse")
-        : t("components.contextMenu.actions.expand"),
+        ? translate("components.contextMenu.actions.collapse", "Collapse")
+        : translate("components.contextMenu.actions.expand", "Expand"),
       icon: expanded ? "minus" : "add",
       handler: () => togglePanel(panel),
     },
     {
-      label: t("components.contextMenu.actions.resetSettings"),
-      icon: "refresh-2",
+      label: translate("components.contextMenu.actions.resetSettings", "Reset settings"),
+      icon: "refresh",
       color: "orange",
       handler: () => resetSetupPanel(panel),
     },
@@ -387,8 +387,8 @@ function getSetupPanelContextMenuItems(panel: SetupPanelKey): GlobalMenuItem[] {
 function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
   openPageContextMenu(event, {
     items: getSetupPanelContextMenuItems(panel),
-    minWidth: 220,
-    maxWidth: 260,
+    minWidth: 190,
+    maxWidth: 220,
     closeOnScroll: false,
     zIndex: 2300,
   });

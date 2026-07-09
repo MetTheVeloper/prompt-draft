@@ -103,7 +103,7 @@ const promptEditor = usePromptEditor();
 const modal = useModal();
 
 const { isTranslating, translateText } = usePromptTranslation();
-const { enabledPromptVariables, openVariablePicker } = useVariablePickerModal();
+const { hasInsertableVariables, openVariablePicker } = useVariablePickerModal();
 
 const selectedTranslationOption = ref("");
 
@@ -436,7 +436,7 @@ async function redoFieldChange() {
 
 function insertVariableAtCursor() {
   if (!shouldTrackEditor.value) return;
-  if (!enabledPromptVariables.value.length) return;
+  if (!hasInsertableVariables.value) return;
 
   syncPromptEditorFromField();
 
@@ -568,7 +568,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
       icon: "code",
       color: "blue",
       disabled: () =>
-        !shouldTrackEditor.value || !enabledPromptVariables.value.length,
+        !shouldTrackEditor.value || !hasInsertableVariables.value,
       handler: insertVariableAtCursor,
     });
 
@@ -735,7 +735,6 @@ defineExpose({
       <el-button
         :label="actionLabel"
         icon="more-vertical"
-        :tooltip="false"
         type="fab"
         mode="flat"
         color="normal"

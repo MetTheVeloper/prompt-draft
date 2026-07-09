@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive, ref } from "vue";
+import { computed, onBeforeUnmount, onMounted, reactive, ref } from "vue";
 import type { ElDropdownValue } from "~/types/dropdown";
+import type { GlobalModalAction } from "~/composables/useModal";
+
 type VariableEditorController = {
   submit: () => boolean;
+  canSubmit?: () => boolean;
 };
 import type {
   ModuleField,
@@ -18,6 +21,7 @@ import {
   isValidVariableKey,
   normalizeVariableKey,
 } from "../../../utils/promptVariables";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const props = withDefaults(
   defineProps<{
@@ -43,6 +47,8 @@ const emit = defineEmits<{
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const modalApi = useModal();
+const { activeSystemVariableKeys } = usePromptVariables();
 
 const submitAttempted = ref(false);
 const keyTouched = ref(false);
@@ -56,8 +62,19 @@ const draft = reactive<PromptVariable>({
   enabled: props.variable.enabled !== false,
 });
 
+
+function editorId(fieldKey: string) {
+  return `setup:${fieldKey}`;
+}
+
 const normalizedExistingKeys = computed(() => {
   return props.existingKeys
+    .map((key) => normalizeVariableKey(key))
+    .filter(Boolean);
+});
+
+const normalizedSystemVariableKeys = computed(() => {
+  return activeSystemVariableKeys.value
     .map((key) => normalizeVariableKey(key))
     .filter(Boolean);
 });
@@ -90,6 +107,13 @@ const keyIssue = computed(() => {
     return t("modules.variables.fields.variables.validation.reservedKey");
   }
 
+  if (normalizedSystemVariableKeys.value.includes(normalizedKey.value)) {
+    return translate(
+      "modules.variables.fields.variables.validation.systemKey",
+      "This key is already used by an active system variable."
+    );
+  }
+
   if (normalizedExistingKeys.value.includes(normalizedKey.value)) {
     return t("modules.variables.fields.variables.validation.duplicateKey");
   }
@@ -104,6 +128,12 @@ const shouldShowKeyIssue = computed(() => {
 const outputToken = computed(() => {
   return formatVariableToken(normalizedKey.value || "variable");
 });
+
+const canSubmitVariable = computed(() => {
+  return !keyIssue.value;
+});
+
+const originalActionDisables = new WeakMap<GlobalModalAction, GlobalModalAction["disable"]>();
 
 function translate(path: string, fallback = "") {
   const translated = t(path);
@@ -130,6 +160,7 @@ function normalizeDraftKey() {
   draft.key = key;
 
   if (!key || isReservedVariableKey(key)) return;
+  if (normalizedSystemVariableKeys.value.includes(key)) return;
 
   draft.key = createUniqueVariableKey(key, normalizedExistingKeys.value);
 }
@@ -160,13 +191,58 @@ function saveVariable() {
   return true;
 }
 
+function resolveOriginalActionDisabled(action: GlobalModalAction) {
+  const originalDisable = originalActionDisables.get(action);
+
+  if (typeof originalDisable === "function") {
+    return originalDisable();
+  }
+
+  return !!originalDisable;
+}
+
+function shouldPatchSubmitAction(action: GlobalModalAction) {
+  return typeof action.handler === "function" && action.close !== true;
+}
+
+function patchModalSubmitActions() {
+  const currentModal = modalApi.state.modal;
+
+  if (!currentModal?.actions?.length) return;
+  if (!currentModal.actions.some(shouldPatchSubmitAction)) return;
+
+  modalApi.update({
+    actions: currentModal.actions.map((action) => {
+      if (!shouldPatchSubmitAction(action)) return action;
+
+      originalActionDisables.set(action, action.disable);
+
+      return {
+        ...action,
+        disable: () => {
+          return resolveOriginalActionDisabled(action) || !canSubmitVariable.value;
+        },
+      };
+    }),
+  });
+}
+
 if (props.controller) {
   props.controller.submit = saveVariable;
+  props.controller.canSubmit = () => canSubmitVariable.value;
 }
+
+onMounted(() => {
+  patchModalSubmitActions();
+});
 
 onBeforeUnmount(() => {
   if (props.controller?.submit === saveVariable) {
     props.controller.submit = () => false;
+  }
+
+  if (props.controller?.canSubmit) {
+    delete props.controller.canSubmit;
   }
 });
 </script>
@@ -182,6 +258,7 @@ onBeforeUnmount(() => {
         <el-text-field
           v-model="draft.key"
           type="text"
+          :size="18"
           :placeholder="t('modules.variables.fields.variables.controls.key.placeholder')"
           @blur="normalizeDraftKey"
         />
@@ -211,6 +288,9 @@ onBeforeUnmount(() => {
         v-model="draft.value"
         type="textarea"
         rows="4"
+        :size="14"
+        :editor-id="editorId('variableValue')"
+        support-variables
         :placeholder="t('modules.variables.fields.variables.controls.value.placeholder')"
       />
     </label>
@@ -223,6 +303,7 @@ onBeforeUnmount(() => {
       <el-text-field
         v-model="draft.description"
         type="text"
+        :size="14"
         :placeholder="t('modules.variables.fields.variables.controls.description.placeholder')"
       />
     </label>

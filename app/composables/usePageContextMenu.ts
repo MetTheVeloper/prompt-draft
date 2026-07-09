@@ -11,6 +11,7 @@ export type PageContextMenuOpenOptions = {
   maxHeight?: number | string
   closeOnScroll?: boolean
   zIndex?: number
+  respectIgnoreSelector?: boolean
 }
 
 const DEFAULT_CONTEXT_MENU_IGNORE_SELECTOR = [
@@ -43,7 +44,7 @@ export function usePageContextMenu() {
     event: MouseEvent,
     options: PageContextMenuOpenOptions = {},
   ) {
-    if (shouldIgnorePageContextMenu(event)) return false
+    if ((options.respectIgnoreSelector ?? true) && shouldIgnorePageContextMenu(event)) return false
 
     const items = options.items?.length
       ? options.items
