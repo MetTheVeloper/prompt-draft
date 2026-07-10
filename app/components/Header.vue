@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { useAppStore } from "~/store/app";
 import { NAVIGATION } from '~/config/navigation'
+import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
+import AboutModal from '~/components/modals/about.vue'
 const route = useRoute();
 
 const { t, switchTheme } = useTheme();
-const { locale, setLocale } = useI18n();
+const { locale, setLocale, t: translate } = useI18n();
 const app = useAppStore();
 const { mini } = useScreen();
+const menu = useMenu();
+const modal = useModal();
+const toolsButtonRef = ref();
 
 const emit = defineEmits<{
   (event: "contextmenu", value: MouseEvent): void;
@@ -20,6 +25,69 @@ async function switchLanguage() {
   const nextLocale = locale.value === 'en' ? 'fa' : 'en'
 
   await setLocale(nextLocale)
+}
+
+function openImageConverterModal() {
+  modal.open({
+    header: {
+      icon: 'gallery-export',
+      title: translate('tools.imageConverter.title'),
+      subtitle: translate('tools.imageConverter.subtitle'),
+      closeButton: true,
+      color: 'prim',
+    },
+    component: ImageBatchConverter,
+    options: {
+      width: 720,
+      maxHeight: '85vh',
+      closeOnBackdrop: false,
+      closeOnEsc: true,
+      persistent: true,
+    },
+  })
+}
+
+function openAboutModal() {
+  modal.open({
+    header: {
+      icon: 'info-circle',
+      title: 'tools.about.title',
+      subtitle: 'tools.about.subtitle',
+      closeButton: true,
+      color: 'prim',
+    },
+    component: AboutModal,
+    options: {
+      width: 520,
+      maxHeight: '80vh',
+      closeOnBackdrop: true,
+      closeOnEsc: true,
+    },
+  })
+}
+
+function openToolsMenu() {
+  menu.open({
+    mode: 'dropdown',
+    anchor: toolsButtonRef.value,
+    placement: locale.value === 'fa' ? 'bottom-start' : 'bottom-end',
+    items: [
+      {
+        label: translate('app.tools.convert'),
+        icon: 'gallery-export',
+        handler: openImageConverterModal,
+      },
+      {
+        label: translate('app.tools.about'),
+        icon: 'info-circle',
+        handler: openAboutModal,
+      },
+    ],
+    options: {
+      minWidth: 180,
+      closeOnSelect: true,
+    },
+  })
 }
 
 </script>
@@ -40,6 +108,8 @@ async function switchLanguage() {
         :p="[8, 12]" />
     </el-flex>
     <el-flex rules="rcc">
+      <el-button ref="toolsButtonRef" :size="14" :p="8" mode="flat" type="fab" :label="$t('app.tools.menu')"
+        icon="more-vertical" @click="openToolsMenu" />
       <el-button :size="14" :p="8" mode="flat" type="fab" :label="$t('app.switchTheme')"
         :icon="t.theme.mode === 'dark' ? 'sun-1' : 'moon'" @click="switchTheme" />
       <el-button :size="14" :p="8" mode="flat" type="fab" :label="$t('app.switchLang')"

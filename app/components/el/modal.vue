@@ -18,7 +18,7 @@
           :style="getModalLayerStyle(index)">
           <el-flex bg="surface25" class="globalModalBackdrop" @click="handleBackdropClick(stackModal)" />
 
-          <el-flex rules="csc" bg="surface" class="globalModalBox bsh16" :br="2" :effect="{ color: 'normal5' }"
+          <el-flex rules="csc" bg="surface" class="globalModalBox bsh16" :br="2"
             bc="normal15" :p="24" :radius="24" :style="getBoxStyle(stackModal)">
             <!-- header -->
             <el-flex v-if="stackModal.header" rules="rbs" class="w100 globalModalHeader" :gap="16">

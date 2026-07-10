@@ -8,6 +8,11 @@ export default {
     },
     switchTheme: "تعویض تم",
     switchLang: "تغییر زبان",
+    tools: {
+      menu: "ابزارهای بیشتر",
+      convert: "تبدیل تصاویر",
+      about: "درباره برنامه",
+    },
   },
   pwa: {
     install: {
@@ -3198,6 +3203,60 @@ export default {
           },
         },
       },
+    },
+  },
+  tools: {
+    imageConverter: {
+      title: "تبدیل تصاویر",
+      subtitle: "تصاویر را آپلود کن، تنظیمات خروجی را انتخاب کن و همه فایل‌های تبدیل‌شده را به صورت ZIP دانلود کن.",
+      empty: {
+        title: "تصاویر را اینجا رها کن",
+        description: "تصاویر را داخل این بخش drag & drop کن، یا از دستگاهت فایل انتخاب کن.",
+        action: "انتخاب تصاویر",
+      },
+      selected: {
+        count: "{count} فایل انتخاب شده",
+        totalSize: "حجم کل: {size}",
+      },
+      actions: {
+        addMore: "افزودن فایل‌های بیشتر",
+        clearAll: "حذف همه",
+        viewFiles: "مشاهده‌ی فایل‌ها",
+        download: "دانلود ZIP",
+        downloading: "در حال آماده‌سازی ZIP...",
+      },
+      controls: {
+        format: "فرمت خروجی",
+        quality: "کیفیت خروجی",
+      },
+      formats: {
+        jpg: "JPG",
+        webp: "WebP",
+      },
+      qualityPercent: "{quality}٪",
+      status: {
+        converting: "در حال تبدیل تصاویر...",
+        zipping: "در حال ساخت فایل ZIP...",
+        completed: "تمام شد. دانلود فایل ZIP شروع شد.",
+        completedWithErrors: "تمام شد، اما {count} فایل قابل تبدیل نبود.",
+      },
+      messages: {
+        noFiles: "اول حداقل یک تصویر انتخاب کن.",
+        noImageFiles: "هیچ فایل تصویری قابل پشتیبانی انتخاب نشده است.",
+        exportFailed: "تبدیل تصاویر انتخاب‌شده انجام نشد. فایل‌های دیگری را امتحان کن یا تعداد فایل‌ها را کمتر کن.",
+      },
+      preview: {
+        title: "تصاویر انتخاب‌شده",
+        subtitle: "هر تصویری را که نمی‌خواهی در تبدیل نهایی باشد حذف کن.",
+        empty: "تصویری در لیست باقی نمانده است.",
+        remove: "حذف تصویر",
+      },
+    },
+    about: {
+      title: "درباره Prompt Draft",
+      subtitle: "یک معرفی کوتاه از برنامه.",
+      version: "نسخه {version}",
+      description: "Prompt Draft یک محیط ماژولار برای ساخت پرامپت‌های ساختاریافته‌ی تولید تصویر است که با ماژول‌های قابل استفاده مجدد، متغیرها، مدیریت درفت‌ها و ابزارهای کمکی کوچک، روند ایده‌پردازی و تولید پرامپت را سریع‌تر و منظم‌تر می‌کند.",
     },
   },
   components: {

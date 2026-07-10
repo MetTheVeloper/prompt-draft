@@ -8,6 +8,11 @@ export default {
     },
     switchTheme: "Switch Theme",
     switchLang: "Switch Language",
+    tools: {
+      menu: "More tools",
+      convert: "Convert",
+      about: "About",
+    },
   },
   pwa: {
     install: {
@@ -3234,6 +3239,60 @@ export default {
           },
         },
       },
+    },
+  },
+  tools: {
+    imageConverter: {
+      title: "Image Converter",
+      subtitle: "Upload images, choose output settings, and download all converted files as a ZIP.",
+      empty: {
+        title: "Drop images here",
+        description: "Drag and drop images into this area, or choose files from your device.",
+        action: "Choose images",
+      },
+      selected: {
+        count: "{count} selected files",
+        totalSize: "Total size: {size}",
+      },
+      actions: {
+        addMore: "Add more files",
+        clearAll: "Remove all",
+        viewFiles: "View files",
+        download: "Download ZIP",
+        downloading: "Preparing ZIP...",
+      },
+      controls: {
+        format: "Output format",
+        quality: "Output quality",
+      },
+      formats: {
+        jpg: "JPG",
+        webp: "WebP",
+      },
+      qualityPercent: "{quality}%",
+      status: {
+        converting: "Converting images...",
+        zipping: "Building ZIP file...",
+        completed: "Done. Your ZIP download has started.",
+        completedWithErrors: "Done, but {count} file(s) could not be converted.",
+      },
+      messages: {
+        noFiles: "Choose at least one image first.",
+        noImageFiles: "No supported image files were selected.",
+        exportFailed: "Could not convert the selected images. Try different files or a lower batch size.",
+      },
+      preview: {
+        title: "Selected images",
+        subtitle: "Remove any image you do not want to include in the conversion.",
+        empty: "No selected images left.",
+        remove: "Remove image",
+      },
+    },
+    about: {
+      title: "About Prompt Draft",
+      subtitle: "A compact overview of this app.",
+      version: "Version {version}",
+      description: "Prompt Draft is a modular prompt-building workspace for creating structured image-generation prompts with reusable modules, variables, draft management, and small utility tools for daily creative workflows.",
     },
   },
   components: {

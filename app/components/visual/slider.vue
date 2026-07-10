@@ -46,7 +46,7 @@ const props = withDefaults(defineProps<{
   opacity?: number
   startIndex?: number
 }>(), {
-  count: 47,
+  count: 94,
   basePath: '/slider',
   extension: 'webp',
   interval: 10000,
