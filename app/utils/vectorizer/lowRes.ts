@@ -9,6 +9,7 @@ import {
   rgbToHex,
   TRANSPARENT_INDEX,
 } from './colorQuantization'
+import type { ColorIndexArray } from './colorQuantization'
 
 type Rgb = {
   r: number
@@ -403,11 +404,15 @@ function resolveScaleFactor(
     return clamp(Math.round(settings.lowResScale), 1, 8)
   }
 
-  if (!contentBounds) return 1
+  if (!contentBounds) return settings.mode === 'upscale' ? 2 : 1
 
   const contentWidth = contentBounds.maxX - contentBounds.minX + 1
   const contentHeight = contentBounds.maxY - contentBounds.minY + 1
   const shortEdge = Math.max(1, Math.min(contentWidth, contentHeight))
+
+  if (settings.mode === 'upscale') {
+    return clamp(Math.ceil(1024 / shortEdge), 2, 8)
+  }
 
   if (shortEdge >= 220) return 1
 
@@ -649,7 +654,7 @@ function transitionPixelColor(
  * Transition pixels never become independent gray/fringe regions.
  */
 export function assignLowResTransitionOwnership(options: {
-  indexes: Uint8Array
+  indexes: ColorIndexArray
   pixels: Uint8ClampedArray
   transitionMask: Uint8Array | null
   palette: ImageVectorizerPaletteColor[]

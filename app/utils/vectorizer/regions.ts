@@ -1,5 +1,6 @@
 import type { ImageVectorizerBounds } from '~/types/imageVectorizer'
 import { TRANSPARENT_INDEX } from './colorQuantization'
+import type { ColorIndexArray } from './colorQuantization'
 
 export type VectorRegion = {
   id: number
@@ -79,7 +80,7 @@ function shouldAbsorbAttachedRegion(
 }
 
 function buildRegions(
-  indexes: Uint8Array,
+  indexes: ColorIndexArray,
   width: number,
   height: number,
 ) {
@@ -285,7 +286,7 @@ function summarizeKeptRegions(
 }
 
 export function findRegions(
-  indexes: Uint8Array,
+  indexes: ColorIndexArray,
   width: number,
   height: number,
   options: FindRegionsOptions,

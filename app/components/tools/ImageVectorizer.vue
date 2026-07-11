@@ -7,6 +7,7 @@ import {
 import type { GlobalMenuItem } from '~/composables/useMenu'
 import type {
   ImageVectorizerBackgroundPick,
+  ImageVectorizerMode,
   ImageVectorizerPaletteColor,
   ImageVectorizerSettings,
   ImageVectorizerSmoothMode,
@@ -19,7 +20,9 @@ import {
   serializeImageVectorizerConfig,
 } from '~/utils/vectorizer/config'
 
-const MAX_COLOR_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 12, 16, 24, 32]
+const VECTORIZE_COLOR_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 12, 16, 24, 32]
+const UPSCALE_COLOR_OPTIONS = [1, 2, 3, 4, 5, 6, 8, 12, 16, 24, 32, 64, 128, 256, 512]
+const MODE_OPTIONS: ImageVectorizerMode[] = ['vectorize', 'upscale']
 const LOW_RES_SCALE_OPTIONS = [0, 2, 4, 6, 8]
 const SMOOTH_MODE_OPTIONS: ImageVectorizerSmoothMode[] = ['pre', 'post', 'both']
 
@@ -41,6 +44,13 @@ const settingsHydrated = ref(false)
 const settings = reactive<ImageVectorizerSettings>({
   ...DEFAULT_IMAGE_VECTORIZER_SETTINGS,
 })
+
+const modeMaxColors = reactive<Record<ImageVectorizerMode, number>>({
+  vectorize: settings.maxColors,
+  upscale: 128,
+})
+
+const isUpscale = computed(() => settings.mode === 'upscale')
 
 const {
   source,
@@ -153,7 +163,6 @@ const paletteAttrs = {
 const summaryActionsAttrs = {
   rules: 'rsc',
   gap: 8,
-  class: 'image-vectorizer-summary-actions',
 }
 
 const controlsGridAttrs = computed(() => ({
@@ -206,8 +215,20 @@ const fabActionButtonAttrs = {
   p: 10,
 }
 
+const modeOptions = computed(() => {
+  return MODE_OPTIONS.map((value) => ({
+    value,
+    icon: value === 'vectorize' ? 'shapes' : 'maximize',
+    label: t(`tools.imageVectorizer.values.mode.${value}`),
+  }))
+})
+
 const maxColorOptions = computed(() => {
-  return MAX_COLOR_OPTIONS.map((count) => ({
+  const values = isUpscale.value
+    ? UPSCALE_COLOR_OPTIONS
+    : VECTORIZE_COLOR_OPTIONS
+
+  return values.map((count) => ({
     label: t('tools.imageVectorizer.values.colors', { count }),
     value: count,
     icon: 'color-swatch',
@@ -236,15 +257,41 @@ const smoothModeOptions = computed(() => {
   }))
 })
 
+function changeMode(nextMode: ImageVectorizerMode) {
+  if (nextMode === settings.mode) return
+
+  modeMaxColors[settings.mode] = settings.maxColors
+  settings.mode = nextMode
+  settings.maxColors = modeMaxColors[nextMode]
+
+  if (nextMode === 'upscale') {
+    settings.enhanceLowRes = true
+    settings.paletteOverrides = {}
+  }
+}
+
+const selectedMode = computed<ImageVectorizerMode>({
+  get() {
+    return settings.mode
+  },
+  set(value) {
+    if (MODE_OPTIONS.includes(value)) changeMode(value)
+  },
+})
+
 const selectedMaxColors = computed<number>({
   get() {
     return settings.maxColors
   },
   set(value) {
     const count = Number(value)
+    const options = isUpscale.value
+      ? UPSCALE_COLOR_OPTIONS
+      : VECTORIZE_COLOR_OPTIONS
 
-    if (MAX_COLOR_OPTIONS.includes(count)) {
+    if (options.includes(count)) {
       settings.maxColors = count
+      modeMaxColors[settings.mode] = count
     }
   },
 })
@@ -291,16 +338,21 @@ const sourceDetails = computed(() => {
 const outputDetails = computed(() => {
   if (!result.value) return ''
 
-  return t('tools.imageVectorizer.result.details', {
-    width: result.value.stats.outputWidth,
-    height: result.value.stats.outputHeight,
-    colors: result.value.stats.outputColorCount,
-    regions: result.value.stats.regionCount,
-  })
+  return t(
+    isUpscale.value
+      ? 'tools.imageVectorizer.result.upscaleDetails'
+      : 'tools.imageVectorizer.result.details',
+    {
+      width: result.value.stats.outputWidth,
+      height: result.value.stats.outputHeight,
+      colors: result.value.stats.outputColorCount,
+      regions: result.value.stats.regionCount,
+    },
+  )
 })
 
 const simplificationText = computed(() => {
-  if (!result.value) return ''
+  if (!result.value || isUpscale.value) return ''
 
   const before = result.value.stats.originalPointCount
   const after = result.value.stats.simplifiedPointCount
@@ -315,61 +367,83 @@ const simplificationText = computed(() => {
   })
 })
 
+const primaryDownloadLabel = computed(() => {
+  if (isLoading.value) {
+    return isUpscale.value
+      ? t('tools.imageVectorizer.actions.processingImage')
+      : t('tools.imageVectorizer.actions.processing')
+  }
+
+  return isUpscale.value
+    ? t('tools.imageVectorizer.actions.downloadPng')
+    : t('tools.imageVectorizer.actions.download')
+})
+
 
 const processingProgressLabel = computed(() => {
   return t(`tools.imageVectorizer.progress.${progress.value.stage}`)
 })
 
-const contextMenuItems = computed<GlobalMenuItem[]>(() => [
-  {
-    label: t('tools.imageVectorizer.contextMenu.downloadSvg'),
-    icon: 'receive-square',
-    disabled: () => !result.value || isLoading.value,
-    handler: () => downloadSvg(),
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.copySvg'),
-    icon: 'copy',
-    disabled: () => !result.value || isLoading.value,
-    handler: copySvgFromMenu,
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.downloadPng'),
-    icon: 'image',
-    disabled: () => !rasterBlob.value || isLoading.value,
-    handler: () => downloadPng(),
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.copyPng'),
-    icon: 'copy',
-    disabled: () => !rasterBlob.value || isLoading.value,
-    handler: copyPngFromMenu,
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.pasteImage'),
-    icon: 'gallery-add',
-    handler: pasteImageFromMenu,
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.removeImage'),
-    icon: 'trash',
-    color: 'red',
-    handler: clearSource,
-  },
-  {
-    type: 'divider',
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.copyConfig'),
-    icon: 'setting-2',
-    handler: copyConfigFromMenu,
-  },
-  {
-    label: t('tools.imageVectorizer.contextMenu.pasteConfig'),
-    icon: 'document',
-    handler: pasteConfigFromMenu,
-  },
-])
+const contextMenuItems = computed<GlobalMenuItem[]>(() => {
+  const items: GlobalMenuItem[] = []
+
+  if (!isUpscale.value) {
+    items.push(
+      {
+        label: t('tools.imageVectorizer.contextMenu.downloadSvg'),
+        icon: 'receive-square',
+        disabled: () => !result.value?.svg || isLoading.value,
+        handler: () => downloadSvg(),
+      },
+      {
+        label: t('tools.imageVectorizer.contextMenu.copySvg'),
+        icon: 'copy',
+        disabled: () => !result.value?.svg || isLoading.value,
+        handler: copySvgFromMenu,
+      },
+    )
+  }
+
+  items.push(
+    {
+      label: t('tools.imageVectorizer.contextMenu.downloadPng'),
+      icon: 'image',
+      disabled: () => !rasterBlob.value || isLoading.value,
+      handler: () => downloadPng(),
+    },
+    {
+      label: t('tools.imageVectorizer.contextMenu.copyPng'),
+      icon: 'copy',
+      disabled: () => !rasterBlob.value || isLoading.value,
+      handler: copyPngFromMenu,
+    },
+    {
+      label: t('tools.imageVectorizer.contextMenu.pasteImage'),
+      icon: 'gallery-add',
+      handler: pasteImageFromMenu,
+    },
+    {
+      label: t('tools.imageVectorizer.contextMenu.removeImage'),
+      icon: 'trash',
+      color: 'red',
+      handler: clearSource,
+    },
+    { type: 'divider' },
+    {
+      label: t('tools.imageVectorizer.contextMenu.copyConfig'),
+      icon: 'setting-2',
+      handler: copyConfigFromMenu,
+    },
+    {
+      label: t('tools.imageVectorizer.contextMenu.pasteConfig'),
+      icon: 'document',
+      handler: pasteConfigFromMenu,
+    },
+  )
+
+  return items
+})
+
 
 function formatBytes(bytes: number) {
   if (!bytes) return '0 B'
@@ -418,6 +492,8 @@ async function openPaletteColorPicker(
 ) {
   event.preventDefault()
   event.stopPropagation()
+
+  if (isUpscale.value) return
 
   const sourceHex = getPaletteSourceHex(paletteColor)
   const anchor = event.currentTarget as HTMLElement | null
@@ -700,7 +776,9 @@ async function processImage() {
   try {
     statusText.value = t('tools.imageVectorizer.status.processing')
     await process({ ...settings })
-    statusText.value = t('tools.imageVectorizer.status.ready')
+    statusText.value = t(isUpscale.value
+      ? 'tools.imageVectorizer.status.upscaleReady'
+      : 'tools.imageVectorizer.status.ready')
     lastStrictWarning.value = ''
   } catch (error) {
     handleProcessError(error)
@@ -789,6 +867,15 @@ function clearSource() {
   resetPaletteOverrides()
   isPickingBackground.value = false
   lastStrictWarning.value = ''
+}
+
+function handlePrimaryDownload() {
+  if (isUpscale.value) {
+    downloadPng()
+    return
+  }
+
+  downloadSvg()
 }
 
 async function copySvgFromMenu() {
@@ -922,6 +1009,26 @@ watch(
 )
 
 watch(
+  () => settings.maxColors,
+  (value) => {
+    modeMaxColors[settings.mode] = value
+  },
+)
+
+watch(
+  () => settings.mode,
+  (mode) => {
+    if (mode === 'upscale') {
+      settings.enhanceLowRes = true
+      settings.paletteOverrides = {}
+      settings.maxColors = Math.min(512, Math.max(1, settings.maxColors))
+    } else if (settings.maxColors > 32) {
+      settings.maxColors = modeMaxColors.vectorize
+    }
+  },
+)
+
+watch(
   () => settings.removeBackground,
   (enabled) => {
     if (!enabled) isPickingBackground.value = false
@@ -933,7 +1040,10 @@ onMounted(() => {
 
   if (storedSettings) {
     Object.assign(settings, storedSettings)
+    modeMaxColors[settings.mode] = settings.maxColors
   }
+
+  if (settings.mode === 'upscale') settings.enhanceLowRes = true
 
   window.addEventListener('paste', handleWindowPaste)
 
@@ -983,6 +1093,15 @@ onBeforeUnmount(() => {
         </el-text>
       </el-flex>
 
+      <el-dropdown
+        v-model="selectedMode"
+        :items="modeOptions"
+        icon="setting-2"
+        :placeholder="t('tools.imageVectorizer.controls.mode')"
+        :menu-options="{ zIndex: 40000 }"
+        class="image-vectorizer-mode"
+      />
+
       <el-button
         color="prim"
         icon="add"
@@ -1005,25 +1124,40 @@ onBeforeUnmount(() => {
               {{ sourceDetails }}
             </el-text>
 
-            <el-text :size="11" :weight="400" color="normal70" icon="color-swatch">
-              {{ t('tools.imageVectorizer.result.palette') }}
-            </el-text>
+            <template v-if="!isUpscale">
+              <el-text :size="11" :weight="400" color="normal70" icon="color-swatch">
+                {{ t('tools.imageVectorizer.result.palette') }}
+              </el-text>
 
-            <button
-              v-for="color in result.palette"
-              :key="color.sourceHex || color.hex"
-              type="button"
-              class="image-vectorizer-palette-color"
-              :title="getPaletteColorTitle(color)"
-              :aria-label="t('tools.imageVectorizer.actions.editPaletteColor', { color: color.hex })"
-              :style="{ backgroundColor: color.hex }"
-              @click.stop="openPaletteColorPicker($event, color)"
-              @contextmenu.stop.prevent="openPaletteColorPicker($event, color)"
-            />
+              <button
+                v-for="color in result.palette"
+                :key="color.sourceHex || color.hex"
+                type="button"
+                class="image-vectorizer-palette-color"
+                :title="getPaletteColorTitle(color)"
+                :aria-label="t('tools.imageVectorizer.actions.editPaletteColor', { color: color.hex })"
+                :style="{ backgroundColor: color.hex }"
+                @click.stop="openPaletteColorPicker($event, color)"
+                @contextmenu.stop.prevent="openPaletteColorPicker($event, color)"
+              />
+            </template>
+
+            <el-text v-else :size="11" :weight="500" color="normal70" icon="color-swatch">
+              {{ t('tools.imageVectorizer.result.outputColors', { count: result.stats.outputColorCount }) }}
+            </el-text>
           </el-flex>
         </el-flex>
 
         <el-flex v-bind="summaryActionsAttrs">
+          <el-dropdown
+            v-model="selectedMode"
+            :items="modeOptions"
+            icon="setting-2"
+            :placeholder="t('tools.imageVectorizer.controls.mode')"
+            :menu-options="{ zIndex: 40000 }"
+            class="image-vectorizer-mode"
+          />
+
           <el-button
             icon="refresh"
             color="prim"
@@ -1045,6 +1179,7 @@ onBeforeUnmount(() => {
       <el-grid v-bind="workspaceGridAttrs">
         <el-flex v-bind="previewPaneAttrs">
           <ImageVectorizerPreview
+            :mode="settings.mode"
             :source-url="sourceUrl"
             :source-name="sourceFile.name"
             :raster-url="rasterUrl"
@@ -1254,6 +1389,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-switch
+                v-if="!isUpscale"
                 v-model="settings.refineSvg"
                 :size="14"
                 icon="magic-star"
@@ -1261,8 +1397,19 @@ onBeforeUnmount(() => {
                 :label="t('tools.imageVectorizer.controls.refineSvg')"
               />
 
+              <el-switch
+                v-else
+                v-model="settings.refineImage"
+                :size="14"
+                icon="magic-star"
+                class="w100"
+                :label="t('tools.imageVectorizer.controls.refineImage')"
+              />
+
               <el-text :size="10" :weight="300" color="normal55">
-                {{ t('tools.imageVectorizer.controls.refineSvgHint') }}
+                {{ t(isUpscale
+                  ? 'tools.imageVectorizer.controls.refineImageHint'
+                  : 'tools.imageVectorizer.controls.refineSvgHint') }}
               </el-text>
             </el-flex>
 
@@ -1273,6 +1420,8 @@ onBeforeUnmount(() => {
                 icon="maximize"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.enhanceLowRes')"
+                :disable="isUpscale"
+                :disabled="isUpscale"
               />
 
               <el-text :size="10" :weight="300" color="normal55">
@@ -1330,15 +1479,18 @@ onBeforeUnmount(() => {
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
                 <el-text :size="12" :weight="500" color="normal75" icon="brush-2">
-                  {{ t('tools.imageVectorizer.controls.smooth') }}
+                  {{ t(isUpscale
+                    ? 'tools.imageVectorizer.controls.edgeSmooth'
+                    : 'tools.imageVectorizer.controls.smooth') }}
                 </el-text>
 
                 <el-text :size="11" :weight="600" color="blue">
-                  {{ settings.smooth }}%
+                  {{ isUpscale ? settings.edgeSmooth : settings.smooth }}%
                 </el-text>
               </el-flex>
 
               <input
+                v-if="!isUpscale"
                 v-model.number="settings.smooth"
                 class="image-vectorizer-range"
                 type="range"
@@ -1347,12 +1499,27 @@ onBeforeUnmount(() => {
                 step="1"
               />
 
+              <input
+                v-else
+                v-model.number="settings.edgeSmooth"
+                class="image-vectorizer-range"
+                type="range"
+                min="0"
+                max="100"
+                step="1"
+              />
+
               <el-text :size="10" :weight="300" color="normal55">
-                {{ t('tools.imageVectorizer.controls.smoothHint') }}
+                {{ t(isUpscale
+                  ? 'tools.imageVectorizer.controls.edgeSmoothHint'
+                  : 'tools.imageVectorizer.controls.smoothHint') }}
               </el-text>
             </el-flex>
 
-            <el-flex v-if="settings.enhanceLowRes" v-bind="secondaryControlCardAttrs">
+            <el-flex
+              v-if="!isUpscale && settings.enhanceLowRes"
+              v-bind="secondaryControlCardAttrs"
+            >
               <el-text :size="12" :weight="500" color="normal75" icon="path-square">
                 {{ t('tools.imageVectorizer.controls.smoothMode') }}
               </el-text>
@@ -1380,13 +1547,13 @@ onBeforeUnmount(() => {
           color="prim"
           icon="receive-square"
           class="image-vectorizer-download"
-          :label="isLoading ? t('tools.imageVectorizer.actions.processing') : t('tools.imageVectorizer.actions.download')"
+          :label="primaryDownloadLabel"
           :disable="isLoading || !result"
           :disabled="isLoading || !result"
           :effect="true"
           :size="14"
           :p="[12, 16]"
-          @click="downloadSvg()"
+          @click="handlePrimaryDownload"
         />
 
         <el-flex
@@ -1487,6 +1654,11 @@ onBeforeUnmount(() => {
 .image-vectorizer-summary-content {
   min-width: 0;
 }
+
+.image-vectorizer-mode {
+  min-width: 132px;
+}
+
 
 .image-vectorizer-workspace,
 .image-vectorizer-pane,

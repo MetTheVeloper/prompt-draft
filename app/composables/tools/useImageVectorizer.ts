@@ -192,11 +192,13 @@ export function useImageVectorizer() {
           }
 
           const nextRasterUrl = URL.createObjectURL(previewBlob)
-          const nextSvgUrl = URL.createObjectURL(
-            new Blob([response.result.svg], {
-              type: 'image/svg+xml;charset=utf-8',
-            }),
-          )
+          const nextSvgUrl = response.result.svg
+            ? URL.createObjectURL(
+                new Blob([response.result.svg], {
+                  type: 'image/svg+xml;charset=utf-8',
+                }),
+              )
+            : ''
 
           revokeUrl(rasterUrl.value)
           revokeUrl(svgUrl.value)
@@ -380,7 +382,7 @@ export function useImageVectorizer() {
       },
     })
     const request: ImageVectorizerWorkerRequest = {
-      type: 'vectorize',
+      type: 'process',
       id,
       width: currentSource.width,
       height: currentSource.height,
@@ -437,12 +439,15 @@ export function useImageVectorizer() {
   }
 
   function getOutputBaseName(fileName?: string) {
-    const sourceName = source.value?.file.name || 'vectorized-image'
+    const fallback = result.value?.mode === 'upscale'
+      ? 'upscaled-image'
+      : 'vectorized-image'
+    const sourceName = source.value?.file.name || fallback
 
     return (fileName || sourceName)
       .replace(/\.[^.]+$/, '')
       .replace(/[\\/:*?"<>|]+/g, '-')
-      .trim() || 'vectorized-image'
+      .trim() || fallback
   }
 
   function downloadBlob(blob: Blob, fileName: string) {
@@ -457,7 +462,7 @@ export function useImageVectorizer() {
   }
 
   function downloadSvg(fileName?: string) {
-    if (!result.value) return false
+    if (!result.value?.svg) return false
 
     const blob = new Blob([result.value.svg], {
       type: 'image/svg+xml;charset=utf-8',
@@ -470,12 +475,13 @@ export function useImageVectorizer() {
   function downloadPng(fileName?: string) {
     if (!rasterBlob.value) return false
 
-    downloadBlob(rasterBlob.value, `${getOutputBaseName(fileName)}.png`)
+    const suffix = result.value?.mode === 'upscale' ? '.upscaled.png' : '.reduced.png'
+    downloadBlob(rasterBlob.value, `${getOutputBaseName(fileName)}${suffix}`)
     return true
   }
 
   async function copySvgCode() {
-    if (!result.value) {
+    if (!result.value?.svg) {
       throw new ImageVectorizerProcessError(
         'NO_SVG_OUTPUT',
         'No SVG output is available to copy.',

@@ -1,5 +1,7 @@
 import type { ImageVectorizerPaletteColor } from '~/types/imageVectorizer'
 
+export type ColorIndexArray = Uint16Array
+
 type HistogramBin = {
   r: number
   g: number
@@ -13,17 +15,26 @@ type MutableColorCluster = HistogramBin & {
   sumB: number
 }
 
+type ColorBox = {
+  bins: HistogramBin[]
+  total: number
+  rangeR: number
+  rangeG: number
+  rangeB: number
+}
+
 export type QuantizedImage = {
-  indexes: Uint8Array
+  indexes: ColorIndexArray
   palette: ImageVectorizerPaletteColor[]
   detectedColorCount: number
 }
 
-const TRANSPARENT_INDEX = 255
-const MAX_DETECTED_CLUSTERS = 256
+const TRANSPARENT_INDEX = 0xffff
+const MAX_DETECTED_CLUSTERS = 1024
 const HISTOGRAM_BITS = 5
 const HISTOGRAM_SHIFT = 8 - HISTOGRAM_BITS
 const HISTOGRAM_MASK = (1 << HISTOGRAM_BITS) - 1
+const HISTOGRAM_SIZE = 1 << (HISTOGRAM_BITS * 3)
 
 export function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value))
@@ -63,8 +74,15 @@ export function colorDistanceSquared(
 export function toleranceToDistance(tolerance: number) {
   const normalized = clamp(tolerance, 0, 100) / 100
 
-  // 6 keeps exact PNG colors separate while 96 absorbs most JPEG ringing.
   return 6 + normalized * 90
+}
+
+function getHistogramKey(r: number, g: number, b: number) {
+  return (
+    (((r >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK) << (HISTOGRAM_BITS * 2)) |
+    (((g >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK) << HISTOGRAM_BITS) |
+    ((b >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK)
+  )
 }
 
 function buildHistogram(pixels: Uint8ClampedArray) {
@@ -81,12 +99,7 @@ function buildHistogram(pixels: Uint8ClampedArray) {
     const r = pixels[offset]
     const g = pixels[offset + 1]
     const b = pixels[offset + 2]
-
-    const key =
-      ((r >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK) << (HISTOGRAM_BITS * 2) |
-      ((g >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK) << HISTOGRAM_BITS |
-      ((b >> HISTOGRAM_SHIFT) & HISTOGRAM_MASK)
-
+    const key = getHistogramKey(r, g, b)
     const existing = bins.get(key)
 
     if (existing) {
@@ -107,8 +120,7 @@ function buildHistogram(pixels: Uint8ClampedArray) {
     }
   }
 
-  const minimumMeaningfulCount = Math.max(2, Math.floor(opaquePixelCount * 0.0002))
-
+  const minimumMeaningfulCount = Math.max(1, Math.floor(opaquePixelCount * 0.00005))
   const histogram: HistogramBin[] = []
 
   for (const bin of bins.values()) {
@@ -219,7 +231,7 @@ function weightedKMeans(histogram: HistogramBin[], count: number) {
   const desiredCount = clamp(Math.round(count), 1, histogram.length)
   let centers = chooseInitialCenters(histogram, desiredCount)
 
-  for (let iteration = 0; iteration < 12; iteration += 1) {
+  for (let iteration = 0; iteration < 10; iteration += 1) {
     const sums = centers.map(() => ({
       sumR: 0,
       sumG: 0,
@@ -247,25 +259,126 @@ function weightedKMeans(histogram: HistogramBin[], count: number) {
       target.count += bin.count
     }
 
-    const nextCenters: HistogramBin[] = []
-
-    for (let index = 0; index < sums.length; index += 1) {
-      const sum = sums[index]
-
-      if (!sum.count) continue
-
-      nextCenters.push({
+    centers = sums
+      .filter((sum) => sum.count > 0)
+      .map((sum) => ({
         r: sum.sumR / sum.count,
         g: sum.sumG / sum.count,
         b: sum.sumB / sum.count,
         count: sum.count,
-      })
-    }
-
-    centers = nextCenters
+      }))
   }
 
   return centers.sort((first, second) => second.count - first.count)
+}
+
+function createColorBox(bins: HistogramBin[]): ColorBox {
+  let minR = Number.POSITIVE_INFINITY
+  let minG = Number.POSITIVE_INFINITY
+  let minB = Number.POSITIVE_INFINITY
+  let maxR = Number.NEGATIVE_INFINITY
+  let maxG = Number.NEGATIVE_INFINITY
+  let maxB = Number.NEGATIVE_INFINITY
+  let total = 0
+
+  for (const bin of bins) {
+    minR = Math.min(minR, bin.r)
+    minG = Math.min(minG, bin.g)
+    minB = Math.min(minB, bin.b)
+    maxR = Math.max(maxR, bin.r)
+    maxG = Math.max(maxG, bin.g)
+    maxB = Math.max(maxB, bin.b)
+    total += bin.count
+  }
+
+  return {
+    bins,
+    total,
+    rangeR: maxR - minR,
+    rangeG: maxG - minG,
+    rangeB: maxB - minB,
+  }
+}
+
+function splitColorBox(box: ColorBox) {
+  if (box.bins.length <= 1) return null
+
+  const channel = box.rangeR >= box.rangeG && box.rangeR >= box.rangeB
+    ? 'r'
+    : box.rangeG >= box.rangeB
+      ? 'g'
+      : 'b'
+  const sorted = [...box.bins].sort((first, second) => first[channel] - second[channel])
+  const midpoint = box.total / 2
+  let accumulated = 0
+  let splitIndex = 1
+
+  for (let index = 0; index < sorted.length - 1; index += 1) {
+    accumulated += sorted[index].count
+
+    if (accumulated >= midpoint) {
+      splitIndex = index + 1
+      break
+    }
+  }
+
+  return [
+    createColorBox(sorted.slice(0, splitIndex)),
+    createColorBox(sorted.slice(splitIndex)),
+  ] as const
+}
+
+function medianCut(histogram: HistogramBin[], count: number) {
+  if (!histogram.length) return []
+
+  const desiredCount = clamp(Math.round(count), 1, histogram.length)
+  const boxes: ColorBox[] = [createColorBox(histogram)]
+
+  while (boxes.length < desiredCount) {
+    let bestIndex = -1
+    let bestScore = -1
+
+    for (let index = 0; index < boxes.length; index += 1) {
+      const box = boxes[index]
+
+      if (box.bins.length <= 1) continue
+
+      const range = Math.max(box.rangeR, box.rangeG, box.rangeB)
+      const score = range * Math.sqrt(box.total)
+
+      if (score > bestScore) {
+        bestScore = score
+        bestIndex = index
+      }
+    }
+
+    if (bestIndex < 0) break
+
+    const split = splitColorBox(boxes[bestIndex])
+
+    if (!split) break
+
+    boxes.splice(bestIndex, 1, split[0], split[1])
+  }
+
+  return boxes.map((box) => {
+    let sumR = 0
+    let sumG = 0
+    let sumB = 0
+
+    for (const bin of box.bins) {
+      sumR += bin.r * bin.count
+      sumG += bin.g * bin.count
+      sumB += bin.b * bin.count
+    }
+
+    return {
+      r: sumR / Math.max(1, box.total),
+      g: sumG / Math.max(1, box.total),
+      b: sumB / Math.max(1, box.total),
+      count: box.total,
+    }
+  }).sort((first, second) => second.count - first.count)
 }
 
 function mergeNearbyCenters(centers: HistogramBin[], tolerance: number) {
@@ -333,6 +446,13 @@ function nearestPaletteIndex(
   return bestIndex
 }
 
+export function findNearestPaletteIndex(
+  color: { r: number; g: number; b: number },
+  palette: Array<Pick<HistogramBin, 'r' | 'g' | 'b'>>,
+) {
+  return nearestPaletteIndex(color.r, color.g, color.b, palette as HistogramBin[])
+}
+
 export function quantizeImage(
   pixels: Uint8ClampedArray,
   maxColors: number,
@@ -342,25 +462,25 @@ export function quantizeImage(
 
   if (!histogram.length || !opaquePixelCount) {
     return {
-      indexes: new Uint8Array(pixels.length / 4).fill(TRANSPARENT_INDEX),
+      indexes: new Uint16Array(pixels.length / 4).fill(TRANSPARENT_INDEX),
       palette: [],
       detectedColorCount: 0,
     }
   }
 
   const detected = detectColorClusters(histogram, tolerance)
-  const detectedClusters = detected.clusters
-  const targetCount = clamp(Math.round(maxColors), 1, 32)
-
+  const targetCount = clamp(Math.round(maxColors), 1, 512)
   const quantizedCenters = detected.detectedColorCount <= targetCount
-    ? detectedClusters
-    : weightedKMeans(histogram, targetCount)
-
+    ? detected.clusters
+    : targetCount <= 32
+      ? weightedKMeans(histogram, targetCount)
+      : medianCut(histogram, targetCount)
   const finalCenters = mergeNearbyCenters(quantizedCenters, tolerance)
     .slice(0, targetCount)
-
-  const indexes = new Uint8Array(pixels.length / 4)
+  const indexes = new Uint16Array(pixels.length / 4)
   const counts = new Uint32Array(finalCenters.length)
+  const nearestCache = new Int32Array(HISTOGRAM_SIZE)
+  nearestCache.fill(-1)
 
   for (let pixelIndex = 0, offset = 0; offset < pixels.length; pixelIndex += 1, offset += 4) {
     if (pixels[offset + 3] < 16) {
@@ -368,12 +488,18 @@ export function quantizeImage(
       continue
     }
 
-    const paletteIndex = nearestPaletteIndex(
-      pixels[offset],
-      pixels[offset + 1],
-      pixels[offset + 2],
-      finalCenters,
-    )
+    const key = getHistogramKey(pixels[offset], pixels[offset + 1], pixels[offset + 2])
+    let paletteIndex = nearestCache[key]
+
+    if (paletteIndex < 0) {
+      paletteIndex = nearestPaletteIndex(
+        pixels[offset],
+        pixels[offset + 1],
+        pixels[offset + 2],
+        finalCenters,
+      )
+      nearestCache[key] = paletteIndex
+    }
 
     indexes[pixelIndex] = paletteIndex
     counts[paletteIndex] += 1
@@ -395,15 +521,6 @@ export function quantizeImage(
     palette,
     detectedColorCount: detected.detectedColorCount,
   }
-}
-
-export function findNearestPaletteIndex(
-  color: { r: number; g: number; b: number },
-  palette: ImageVectorizerPaletteColor[],
-) {
-  if (!palette.length) return -1
-
-  return nearestPaletteIndex(color.r, color.g, color.b, palette)
 }
 
 export { TRANSPARENT_INDEX }

@@ -5,12 +5,18 @@ import type {
   ImageVectorizerSettings,
 } from '~/types/imageVectorizer'
 import { detectBackground, removeEdgeConnectedBackground } from './background'
-import { hexToRgb, quantizeImage, TRANSPARENT_INDEX } from './colorQuantization'
+import {
+  hexToRgb,
+  quantizeImage,
+  TRANSPARENT_INDEX,
+} from './colorQuantization'
+import type { ColorIndexArray } from './colorQuantization'
 import { traceRegions } from './contours'
 import {
   assignLowResTransitionOwnership,
   enhanceLowResolutionImage,
 } from './lowRes'
+import { refineRasterGaps, smoothRasterEdges } from './rasterRefine'
 import { findRegions, resolveCropBounds } from './regions'
 import { generateSvg } from './svg'
 
@@ -64,7 +70,7 @@ function applyPaletteOverrides(
 }
 
 function recountPaletteUsage(
-  indexes: Uint8Array,
+  indexes: ColorIndexArray,
   palette: ReturnType<typeof quantizeImage>['palette'],
 ) {
   const counts = new Uint32Array(palette.length)
@@ -100,7 +106,7 @@ function scaleCropDown(
 }
 
 function collapseForegroundToSingleColor(options: {
-  indexes: Uint8Array
+  indexes: ColorIndexArray
   palette: ReturnType<typeof quantizeImage>['palette']
 }) {
   const { indexes, palette } = options
@@ -145,7 +151,7 @@ function collapseForegroundToSingleColor(options: {
 }
 
 function createRasterPreview(options: {
-  indexes: Uint8Array
+  indexes: ColorIndexArray
   labels: Int32Array
   palette: ReturnType<typeof quantizeImage>['palette']
   sourceWidth: number
@@ -153,7 +159,7 @@ function createRasterPreview(options: {
   backgroundIndex: number
   backgroundColor: string | null
   removeBackground: boolean
-  crop: ImageVectorizerResult['crop']
+  crop: ImageVectorizerBounds
 }) {
   const {
     indexes,
@@ -224,7 +230,7 @@ function createRasterPreview(options: {
   }
 }
 
-export function vectorizeImage(
+export function processImage(
   pixels: Uint8ClampedArray,
   width: number,
   height: number,
@@ -233,6 +239,7 @@ export function vectorizeImage(
 ) {
   const sourceWidth = width
   const sourceHeight = height
+  const isUpscale = settings.mode === 'upscale'
   const report = (percent: number, stage: ImageVectorizerProgress['stage']) => {
     onProgress?.({ percent, stage })
   }
@@ -246,24 +253,29 @@ export function vectorizeImage(
     )
   }
 
-  report(8, 'enhancing')
+  report(isUpscale ? 10 : 8, 'enhancing')
 
   const enhanced = enhanceLowResolutionImage(
     pixels,
     width,
     height,
-    settings,
+    {
+      ...settings,
+      enhanceLowRes: isUpscale ? true : settings.enhanceLowRes,
+    },
   )
 
   pixels = enhanced.pixels
   width = enhanced.width
   height = enhanced.height
 
-  report(24, 'quantizing')
+  report(isUpscale ? 28 : 24, 'quantizing')
 
+  const maxColorLimit = isUpscale ? 512 : 32
+  const minimumColors = settings.removeBackground ? 1 : 2
   const maxColors = Math.min(
-    32,
-    Math.max(1, Math.round(settings.removeBackground ? settings.maxColors : Math.max(2, settings.maxColors))),
+    maxColorLimit,
+    Math.max(minimumColors, Math.round(settings.maxColors)),
   )
   const quantized = quantizeImage(
     pixels,
@@ -296,7 +308,7 @@ export function vectorizeImage(
     )
   }
 
-  report(40, 'background')
+  report(isUpscale ? 44 : 40, 'background')
 
   const background = enhanced.backgroundWasCut
     ? {
@@ -335,26 +347,71 @@ export function vectorizeImage(
     })
   }
 
-  report(56, 'regions')
+  report(isUpscale ? 55 : 56, 'regions')
 
-  const regionAnalysis = findRegions(
+  const cleanupOptions = {
+    backgroundIndex: settings.removeBackground ? -1 : background.paletteIndex,
+    minRegionSize: settings.minRegionSize * enhanced.scaleFactor,
+    edgeCleanup: settings.edgeCleanup * enhanced.scaleFactor,
+    sourceScale: enhanced.scaleFactor,
+    removeBackground: settings.removeBackground,
+    removeEnclosedBackground: settings.removeEnclosedBackground,
+  }
+  const initialRegionAnalysis = findRegions(
     quantized.indexes,
     width,
     height,
-    {
-      backgroundIndex: settings.removeBackground ? -1 : background.paletteIndex,
-      minRegionSize: settings.minRegionSize * enhanced.scaleFactor,
-      edgeCleanup: settings.edgeCleanup * enhanced.scaleFactor,
-      sourceScale: enhanced.scaleFactor,
-      removeBackground: settings.removeBackground,
-      removeEnclosedBackground: settings.removeEnclosedBackground,
-    },
+    cleanupOptions,
   )
 
-  const outputPalette = applyPaletteOverrides(
-    quantized.palette,
-    settings.paletteOverrides,
-  )
+  let regionAnalysis = initialRegionAnalysis
+
+  if (isUpscale && settings.refineImage) {
+    report(65, 'refiningImage')
+    refineRasterGaps(
+      quantized.indexes,
+      width,
+      height,
+      enhanced.scaleFactor >= 6 ? 2 : 1,
+    )
+  }
+
+  if (isUpscale && settings.edgeSmooth > 0) {
+    report(76, 'smoothingEdges')
+    smoothRasterEdges(
+      quantized.indexes,
+      width,
+      height,
+      settings.edgeSmooth,
+    )
+  }
+
+  if (isUpscale && (settings.refineImage || settings.edgeSmooth > 0)) {
+    regionAnalysis = findRegions(
+      quantized.indexes,
+      width,
+      height,
+      {
+        ...cleanupOptions,
+        minRegionSize: 0,
+        edgeCleanup: 0,
+      },
+    )
+    regionAnalysis.removedRegionCount += initialRegionAnalysis.removedRegionCount
+  }
+
+  recountPaletteUsage(quantized.indexes, quantized.palette)
+
+  const outputPalette = isUpscale
+    ? quantized.palette.map((color) => ({
+        ...color,
+        hex: color.hex.toUpperCase(),
+        sourceHex: color.hex.toUpperCase(),
+      }))
+    : applyPaletteOverrides(
+        quantized.palette,
+        settings.paletteOverrides,
+      )
 
   const rasterCrop = resolveCropBounds(
     width,
@@ -363,37 +420,6 @@ export function vectorizeImage(
     settings.trimCanvas,
     settings.padding * enhanced.scaleFactor,
   )
-  const svgCrop = scaleCropDown(rasterCrop, enhanced.scaleFactor)
-
-  const traceSmooth = enhanced.scaleFactor > 1 && settings.enhanceLowRes && settings.smoothMode === 'post'
-    ? 0
-    : settings.smooth
-
-  report(72, 'tracing')
-
-  const traced = traceRegions(
-    regionAnalysis.regions,
-    regionAnalysis.labels,
-    width,
-    height,
-    traceSmooth,
-  )
-
-  report(86, 'svg')
-
-  const svg = generateSvg({
-    regions: traced.regions,
-    palette: outputPalette,
-    crop: rasterCrop,
-    backgroundColor: background.paletteIndex >= 0
-      ? outputPalette[background.paletteIndex]?.hex || background.color
-      : background.color,
-    removeBackground: settings.removeBackground,
-    refineSvg: settings.refineSvg,
-    smooth: settings.smooth,
-    smoothMode: settings.smoothMode,
-    sourceScale: enhanced.scaleFactor,
-  })
 
   const usedPaletteIndexes = new Set(
     regionAnalysis.regions.map((region) => region.paletteIndex),
@@ -407,28 +433,48 @@ export function vectorizeImage(
     return usedPaletteIndexes.has(paletteIndex)
   })
 
-  const result: ImageVectorizerResult = {
-    svg,
-    palette: visiblePalette,
-    backgroundColor: background.paletteIndex >= 0
-      ? outputPalette[background.paletteIndex]?.hex || background.color
-      : background.color,
-    crop: svgCrop,
-    stats: {
-      sourceWidth,
-      sourceHeight,
-      outputWidth: Math.round(svgCrop.width),
-      outputHeight: Math.round(svgCrop.height),
-      detectedColorCount: quantized.detectedColorCount,
-      outputColorCount: new Set(visiblePalette.map((color) => color.hex)).size,
-      regionCount: regionAnalysis.regions.length,
-      removedRegionCount: regionAnalysis.removedRegionCount,
-      originalPointCount: traced.originalPointCount,
-      simplifiedPointCount: traced.simplifiedPointCount,
-    },
+  let svg: string | null = null
+  let resultCrop = rasterCrop
+  let originalPointCount = 0
+  let simplifiedPointCount = 0
+
+  if (!isUpscale) {
+    const svgCrop = scaleCropDown(rasterCrop, enhanced.scaleFactor)
+    const traceSmooth = enhanced.scaleFactor > 1 && settings.enhanceLowRes && settings.smoothMode === 'post'
+      ? 0
+      : settings.smooth
+
+    report(72, 'tracing')
+
+    const traced = traceRegions(
+      regionAnalysis.regions,
+      regionAnalysis.labels,
+      width,
+      height,
+      traceSmooth,
+    )
+
+    report(86, 'svg')
+
+    svg = generateSvg({
+      regions: traced.regions,
+      palette: outputPalette,
+      crop: rasterCrop,
+      backgroundColor: background.paletteIndex >= 0
+        ? outputPalette[background.paletteIndex]?.hex || background.color
+        : background.color,
+      removeBackground: settings.removeBackground,
+      refineSvg: settings.refineSvg,
+      smooth: settings.smooth,
+      smoothMode: settings.smoothMode,
+      sourceScale: enhanced.scaleFactor,
+    })
+    resultCrop = svgCrop
+    originalPointCount = traced.originalPointCount
+    simplifiedPointCount = traced.simplifiedPointCount
   }
 
-  report(94, 'preview')
+  report(isUpscale ? 91 : 94, 'preview')
 
   const preview = createRasterPreview({
     indexes: quantized.indexes,
@@ -444,6 +490,32 @@ export function vectorizeImage(
     crop: rasterCrop,
   })
 
+  const result: ImageVectorizerResult = {
+    mode: settings.mode,
+    svg,
+    palette: visiblePalette,
+    backgroundColor: background.paletteIndex >= 0
+      ? outputPalette[background.paletteIndex]?.hex || background.color
+      : background.color,
+    crop: resultCrop,
+    stats: {
+      sourceWidth,
+      sourceHeight,
+      outputWidth: isUpscale
+        ? preview.width
+        : Math.round(resultCrop.width),
+      outputHeight: isUpscale
+        ? preview.height
+        : Math.round(resultCrop.height),
+      detectedColorCount: quantized.detectedColorCount,
+      outputColorCount: new Set(visiblePalette.map((color) => color.hex)).size,
+      regionCount: regionAnalysis.regions.length,
+      removedRegionCount: regionAnalysis.removedRegionCount,
+      originalPointCount,
+      simplifiedPointCount,
+    },
+  }
+
   report(98, 'finalizing')
 
   return {
@@ -451,3 +523,6 @@ export function vectorizeImage(
     preview,
   }
 }
+
+// Keep the old export name for local imports outside this patch.
+export const vectorizeImage = processImage

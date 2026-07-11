@@ -6,7 +6,7 @@ import type {
 } from '~/types/imageVectorizer'
 import {
   ImageVectorizerPipelineError,
-  vectorizeImage,
+  processImage,
 } from '~/utils/vectorizer/pipeline'
 
 const workerScope = self as unknown as DedicatedWorkerGlobalScope
@@ -14,10 +14,10 @@ const workerScope = self as unknown as DedicatedWorkerGlobalScope
 workerScope.onmessage = (event: MessageEvent<ImageVectorizerWorkerRequest>) => {
   const request = event.data
 
-  if (!request || request.type !== 'vectorize') return
+  if (!request || request.type !== 'process') return
 
   try {
-    const output = vectorizeImage(
+    const output = processImage(
       new Uint8ClampedArray(request.pixels),
       request.width,
       request.height,
@@ -34,7 +34,6 @@ workerScope.onmessage = (event: MessageEvent<ImageVectorizerWorkerRequest>) => {
     )
 
     const previewBuffer = output.preview.pixels.buffer
-
     const response: ImageVectorizerWorkerResponse = {
       type: 'success',
       id: request.id,
@@ -59,7 +58,7 @@ workerScope.onmessage = (event: MessageEvent<ImageVectorizerWorkerRequest>) => {
         code: pipelineError?.code || 'PROCESSING_FAILED',
         message: error instanceof Error
           ? error.message
-          : 'Image vectorization failed.',
+          : 'Image processing failed.',
         detectedColorCount: pipelineError?.detectedColorCount,
         maxColors: pipelineError?.maxColors,
       },

@@ -3272,8 +3272,6 @@ export default {
         editPaletteColor: "Change {color}",
         keepCurrentImage: "Keep current image",
         replaceWithClipboard: "Replace with clipboard",
-        processingImage: "Building PNG...",
-        downloadPng: "Download PNG",
       },
       contextMenu: {
         downloadSvg: "Download SVG",
@@ -3325,13 +3323,6 @@ export default {
         smoothMode: "Smooth stage",
         smoothModeHint:
           "Choose whether smoothing runs before downscaling, after downscaling, or in both stages when low-res enhancement is enabled.",
-        mode: "Tool mode",
-        refineImage: "Refine image",
-        refineImageHint:
-          "Fill narrow raster gaps and attach isolated seam pixels to their dominant neighboring regions.",
-        edgeSmooth: "Edge smoothness",
-        edgeSmoothHint:
-          "Smooth stair-step raster boundaries without blending the indexed colors together.",
       },
       values: {
         colors: "{count} colors",
@@ -3341,10 +3332,6 @@ export default {
           post: "Post smooth",
           both: "Both",
         },
-        mode: {
-          vectorize: "Vectorize",
-          upscale: "Upscale",
-        },
       },
       preview: {
         original: "Original",
@@ -3353,14 +3340,11 @@ export default {
         empty: "No image selected",
         pending: "The preview will appear after processing.",
         pickHint: "Click the background color in the original image.",
-        upscaled: "Upscaled preview",
       },
       result: {
         palette: "Detected palette",
         details: "SVG: {width} × {height}px · {colors} colors · {regions} regions",
         optimization: "Path points reduced from {before} to {after} ({percent}%).",
-        upscaleDetails: "PNG: {width} × {height}px · {colors} colors · {regions} regions",
-        outputColors: "{count} output colors",
       },
       status: {
         loading: "Loading image...",
@@ -3370,7 +3354,6 @@ export default {
         pngCopied: "Reduced-color PNG copied to the clipboard.",
         configCopied: "Vectorizer configuration copied to the clipboard.",
         configPasted: "Vectorizer configuration applied.",
-        upscaleReady: "The upscaled PNG is ready.",
       },
       messages: {
         unsupportedFile: "Choose a supported PNG, JPG, WebP, GIF, BMP, or AVIF image.",
@@ -3400,8 +3383,6 @@ export default {
         svg: "Generating SVG...",
         preview: "Rendering preview...",
         finalizing: "Finalizing...",
-        refiningImage: "Refining raster regions...",
-        smoothingEdges: "Smoothing raster edges...",
       },
     },
     imageConverter: {

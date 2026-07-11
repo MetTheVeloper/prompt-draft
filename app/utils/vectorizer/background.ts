@@ -6,6 +6,7 @@ import {
   toleranceToDistance,
   TRANSPARENT_INDEX,
 } from './colorQuantization'
+import type { ColorIndexArray } from './colorQuantization'
 
 export type BackgroundDetection = {
   paletteIndex: number
@@ -15,7 +16,7 @@ export type BackgroundDetection = {
 }
 
 export function detectBackground(
-  indexes: Uint8Array,
+  indexes: ColorIndexArray,
   width: number,
   height: number,
   palette: ImageVectorizerPaletteColor[],
@@ -90,7 +91,7 @@ export function detectBackground(
 }
 
 export function removeEdgeConnectedBackground(
-  indexes: Uint8Array,
+  indexes: ColorIndexArray,
   width: number,
   height: number,
   palette: ImageVectorizerPaletteColor[],

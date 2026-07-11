@@ -3236,8 +3236,6 @@ export default {
         editPaletteColor: "تغییر رنگ {color}",
         keepCurrentImage: "نگه داشتن تصویر فعلی",
         replaceWithClipboard: "جایگزینی با کلیپ‌بورد",
-        processingImage: "در حال ساخت PNG...",
-        downloadPng: "دانلود PNG",
       },
       contextMenu: {
         downloadSvg: "دانلود SVG",
@@ -3289,12 +3287,6 @@ export default {
         smoothMode: "مرحله نرم‌سازی",
         smoothModeHint:
           "مشخص کن وقتی بهبود تصویر کم‌رزولوشن فعال است، نرم‌سازی قبل از کاهش اندازه، بعد از کاهش اندازه یا در هر دو مرحله انجام شود.",
-        mode: "حالت ابزار",
-        refineImage: "اصلاح تصویر",
-        refineImageHint:
-          "شکاف‌های باریک پیکسلی را پر می‌کند و پیکسل‌های درز را به ناحیه‌ی مجاور غالب می‌چسباند.",
-        edgeSmooth: "نرمی لبه‌ها",
-        edgeSmoothHint: "لبه‌های پله‌ای تصویر را بدون ترکیب‌کردن رنگ‌های ایندکس‌شده نرم می‌کند.",
       },
       values: {
         colors: "{count} رنگ",
@@ -3304,10 +3296,6 @@ export default {
           post: "نرم‌سازی بعد",
           both: "هر دو",
         },
-        mode: {
-          vectorize: "تبدیل به وکتور",
-          upscale: "بزرگ‌نمایی هوشمند",
-        },
       },
       preview: {
         original: "تصویر اصلی",
@@ -3316,14 +3304,11 @@ export default {
         empty: "تصویری انتخاب نشده است",
         pending: "پیش‌نمایش بعد از پردازش نمایش داده می‌شود.",
         pickHint: "روی رنگ پس‌زمینه در تصویر اصلی کلیک کنید.",
-        upscaled: "پیش‌نمایش بزرگ‌شده",
       },
       result: {
         palette: "پالت تشخیص‌داده‌شده",
         details: "SVG: {width} × {height} پیکسل · {colors} رنگ · {regions} ناحیه",
         optimization: "تعداد نقاط مسیر از {before} به {after} کاهش یافت ({percent}٪).",
-        upscaleDetails: "PNG: {width} × {height}px · {colors} رنگ · {regions} ناحیه",
-        outputColors: "{count} رنگ خروجی",
       },
       status: {
         loading: "در حال بارگذاری تصویر...",
@@ -3333,7 +3318,6 @@ export default {
         pngCopied: "تصویر PNG کاهش‌رنگ‌یافته در کلیپ‌بورد کپی شد.",
         configCopied: "کانفیگ ابزار در کلیپ‌بورد کپی شد.",
         configPasted: "کانفیگ ابزار اعمال شد.",
-        upscaleReady: "فایل PNG بزرگ‌شده آماده است.",
       },
       messages: {
         unsupportedFile: "یک تصویر PNG، JPG، WebP، GIF، BMP یا AVIF معتبر انتخاب کنید.",
@@ -3364,8 +3348,6 @@ export default {
         svg: "در حال ساخت SVG...",
         preview: "در حال رندر پیش‌نمایش...",
         finalizing: "در حال نهایی‌سازی...",
-        refiningImage: "در حال اصلاح ناحیه‌های تصویر...",
-        smoothingEdges: "در حال نرم‌کردن لبه‌های تصویر...",
       },
     },
     imageConverter: {

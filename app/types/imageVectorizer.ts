@@ -1,3 +1,5 @@
+export type ImageVectorizerMode = 'vectorize' | 'upscale'
+
 export type ImageVectorizerSmoothMode = 'pre' | 'post' | 'both'
 
 export type ImageVectorizerProgressStage =
@@ -6,6 +8,8 @@ export type ImageVectorizerProgressStage =
   | 'quantizing'
   | 'background'
   | 'regions'
+  | 'refiningImage'
+  | 'smoothingEdges'
   | 'tracing'
   | 'svg'
   | 'preview'
@@ -17,6 +21,7 @@ export type ImageVectorizerProgress = {
 }
 
 export type ImageVectorizerSettings = {
+  mode: ImageVectorizerMode
   maxColors: number
   colorTolerance: number
   strictColorLimit: boolean
@@ -28,18 +33,21 @@ export type ImageVectorizerSettings = {
   edgeCleanup: number
   removeEnclosedBackground: boolean
   refineSvg: boolean
+  refineImage: boolean
   enhanceLowRes: boolean
   lowResScale: number
   lowResRecovery: number
   paletteOverrides: Record<string, string>
   smooth: number
   smoothMode: ImageVectorizerSmoothMode
+  edgeSmooth: number
 }
 
 export type ImageVectorizerConfigPayload = {
   type: 'prompt-draft.image-vectorizer-config'
-  version: 1
-  settings: ImageVectorizerSettings
+  version: 2
+  mode: ImageVectorizerMode
+  settings: Partial<Omit<ImageVectorizerSettings, 'mode'>>
 }
 
 export type ImageVectorizerPaletteColor = {
@@ -73,7 +81,8 @@ export type ImageVectorizerStats = {
 }
 
 export type ImageVectorizerResult = {
-  svg: string
+  mode: ImageVectorizerMode
+  svg: string | null
   palette: ImageVectorizerPaletteColor[]
   backgroundColor: string | null
   crop: ImageVectorizerBounds
@@ -81,7 +90,7 @@ export type ImageVectorizerResult = {
 }
 
 export type ImageVectorizerWorkerRequest = {
-  type: 'vectorize'
+  type: 'process'
   id: number
   width: number
   height: number

@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import type { ImageVectorizerBackgroundPick } from '~/types/imageVectorizer'
+import type {
+  ImageVectorizerBackgroundPick,
+  ImageVectorizerMode,
+} from '~/types/imageVectorizer'
 
 const props = withDefaults(
   defineProps<{
+    mode?: ImageVectorizerMode
     sourceUrl?: string
     sourceName?: string
     rasterUrl?: string
@@ -12,6 +16,7 @@ const props = withDefaults(
     backgroundColor?: string | null
   }>(),
   {
+    mode: 'vectorize',
     sourceUrl: '',
     sourceName: '',
     rasterUrl: '',
@@ -31,23 +36,42 @@ const { mini } = useScreen()
 const sourceCanvas = ref<HTMLCanvasElement | null>(null)
 const sourceLoadError = ref(false)
 
-const previewGridAttrs = computed(() => ({
-  cols: mini.value
-    ? 2
-    : 'minmax(0, 1fr) minmax(0, 2fr)',
-  rows: mini.value
-    ? 'auto auto'
-    : 'repeat(2, minmax(0, auto))',
-  areas: mini.value
-    ? ['source raster', 'vector vector']
-    : ['source vector', 'raster vector'],
-  gap: 12,
-  alignItems: 'stretch',
-  class: [
-    'image-vectorizer-preview',
-    { 'image-vectorizer-preview--compact': mini.value },
-  ],
-}))
+const isUpscale = computed(() => props.mode === 'upscale')
+
+const previewGridAttrs = computed(() => {
+  if (isUpscale.value) {
+    return {
+      cols: 2,
+      rows: 'auto',
+      areas: ['source raster'],
+      gap: 12,
+      alignItems: 'stretch',
+      class: [
+        'image-vectorizer-preview',
+        'image-vectorizer-preview--upscale',
+        { 'image-vectorizer-preview--compact': mini.value },
+      ],
+    }
+  }
+
+  return {
+    cols: mini.value
+      ? 2
+      : 'minmax(0, 1fr) minmax(0, 2fr)',
+    rows: mini.value
+      ? 'auto auto'
+      : 'repeat(2, minmax(0, auto))',
+    areas: mini.value
+      ? ['source raster', 'vector vector']
+      : ['source vector', 'raster vector'],
+    gap: 12,
+    alignItems: 'stretch',
+    class: [
+      'image-vectorizer-preview',
+      { 'image-vectorizer-preview--compact': mini.value },
+    ],
+  }
+})
 
 const previewCardBaseAttrs = {
   rules: 'csc',
@@ -95,6 +119,12 @@ const previewEmptyAttrs = {
   gap: 6,
   class: 'image-vectorizer-preview-empty',
 }
+
+const rasterTitle = computed(() => {
+  return isUpscale.value
+    ? t('tools.imageVectorizer.preview.upscaled')
+    : t('tools.imageVectorizer.preview.quantized')
+})
 
 function toHex(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)))
@@ -236,14 +266,14 @@ onMounted(drawSource)
 
     <el-flex v-bind="rasterCardAttrs">
       <el-text :size="12" :weight="500" icon="magic-star" marker="blue40">
-        {{ t('tools.imageVectorizer.preview.quantized') }}
+        {{ rasterTitle }}
       </el-text>
 
       <div class="image-vectorizer-preview-stage checkerboard">
         <img
           v-if="rasterUrl"
           :src="rasterUrl"
-          :alt="t('tools.imageVectorizer.preview.quantized')"
+          :alt="rasterTitle"
           class="image-vectorizer-preview-image"
         />
 
@@ -256,7 +286,7 @@ onMounted(drawSource)
       </div>
     </el-flex>
 
-    <el-flex v-bind="vectorCardAttrs">
+    <el-flex v-if="!isUpscale" v-bind="vectorCardAttrs">
       <el-text :size="12" :weight="500" icon="shapes" marker="blue40">
         {{ t('tools.imageVectorizer.preview.vector') }}
       </el-text>
@@ -315,6 +345,11 @@ onMounted(drawSource)
   max-height: 520px;
 }
 
+.image-vectorizer-preview--upscale .image-vectorizer-preview-stage {
+  min-height: 360px;
+  max-height: 680px;
+}
+
 .image-vectorizer-preview-stage {
   position: relative;
   width: 100%;
@@ -350,7 +385,7 @@ onMounted(drawSource)
   display: block;
   width: 100%;
   height: 100%;
-  max-height: 420px;
+  max-height: 680px;
   object-fit: contain;
 }
 
