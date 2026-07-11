@@ -350,7 +350,7 @@ export function quantizeImage(
 
   const detected = detectColorClusters(histogram, tolerance)
   const detectedClusters = detected.clusters
-  const targetCount = clamp(Math.round(maxColors), 2, 32)
+  const targetCount = clamp(Math.round(maxColors), 1, 32)
 
   const quantizedCenters = detected.detectedColorCount <= targetCount
     ? detectedClusters

@@ -28,8 +28,7 @@ onMounted(async () => {
   <el-grid :gap="0" :cols="1" rules="ccc" class="h100 w100">
     <visual-tile :count="94" :interval="2000" :transition-duration="5000" extension="webp" :edge-blur="400"
       :z-index="50" />
-    <tools-image-vectorizer class="zi100 bdb24" />
-    <el-flex rules="ccc" class="zi100 w100 h100" bg="surface45" bd="b0" :radius="0" :p="32" v-if="false">
+    <el-flex rules="ccc" class="zi100 w100 h100" bg="surface45" bd="b0" :radius="0" :p="32">
       <el-text type="span" :size="12" :weight="600" class="tc">
         {{ t("home.eyebrow") }}
       </el-text>

@@ -1,3 +1,21 @@
+export type ImageVectorizerSmoothMode = 'pre' | 'post' | 'both'
+
+export type ImageVectorizerProgressStage =
+  | 'preparing'
+  | 'enhancing'
+  | 'quantizing'
+  | 'background'
+  | 'regions'
+  | 'tracing'
+  | 'svg'
+  | 'preview'
+  | 'finalizing'
+
+export type ImageVectorizerProgress = {
+  percent: number
+  stage: ImageVectorizerProgressStage
+}
+
 export type ImageVectorizerSettings = {
   maxColors: number
   colorTolerance: number
@@ -7,7 +25,15 @@ export type ImageVectorizerSettings = {
   trimCanvas: boolean
   padding: number
   minRegionSize: number
+  edgeCleanup: number
+  removeEnclosedBackground: boolean
+  refineSvg: boolean
+  enhanceLowRes: boolean
+  lowResScale: number
+  lowResRecovery: number
+  paletteOverrides: Record<string, string>
   smooth: number
+  smoothMode: ImageVectorizerSmoothMode
 }
 
 export type ImageVectorizerConfigPayload = {
@@ -18,6 +44,7 @@ export type ImageVectorizerConfigPayload = {
 
 export type ImageVectorizerPaletteColor = {
   hex: string
+  sourceHex?: string
   r: number
   g: number
   b: number
@@ -73,6 +100,12 @@ export type ImageVectorizerWorkerSuccess = {
   }
 }
 
+export type ImageVectorizerWorkerProgress = {
+  type: 'progress'
+  id: number
+  progress: ImageVectorizerProgress
+}
+
 export type ImageVectorizerWorkerFailure = {
   type: 'error'
   id: number
@@ -85,6 +118,7 @@ export type ImageVectorizerWorkerFailure = {
 }
 
 export type ImageVectorizerWorkerResponse =
+  | ImageVectorizerWorkerProgress
   | ImageVectorizerWorkerSuccess
   | ImageVectorizerWorkerFailure
 

@@ -12,6 +12,11 @@ export const NAVIGATION = [
     icon: 'gallery',
   },
   {
+    name: 'vectorizer',
+    to: '/vectorizer',
+    icon: 'message-question',
+  },
+  {
     name: 'guide',
     to: '/guide',
     icon: 'message-question',

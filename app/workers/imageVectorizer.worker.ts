@@ -22,6 +22,15 @@ workerScope.onmessage = (event: MessageEvent<ImageVectorizerWorkerRequest>) => {
       request.width,
       request.height,
       request.settings,
+      (progress) => {
+        const response: ImageVectorizerWorkerResponse = {
+          type: 'progress',
+          id: request.id,
+          progress,
+        }
+
+        workerScope.postMessage(response)
+      },
     )
 
     const previewBuffer = output.preview.pixels.buffer

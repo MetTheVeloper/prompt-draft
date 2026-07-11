@@ -5,11 +5,13 @@ import {
   shallowRef,
 } from 'vue'
 import type {
+  ImageVectorizerProgress,
   ImageVectorizerResult,
   ImageVectorizerSettings,
   ImageVectorizerWorkerRequest,
   ImageVectorizerWorkerResponse,
 } from '~/types/imageVectorizer'
+import { normalizeImageVectorizerSettings } from '~/utils/vectorizer/config'
 
 const MAX_PROCESSING_EDGE = 2048
 
@@ -102,6 +104,10 @@ export function useImageVectorizer() {
   const rasterBlob = shallowRef<Blob | null>(null)
   const svgUrl = ref('')
   const isLoading = ref(false)
+  const progress = ref<ImageVectorizerProgress>({
+    percent: 0,
+    stage: 'preparing',
+  })
   const error = shallowRef<ImageVectorizerProcessError | null>(null)
 
   const worker = shallowRef<Worker | null>(null)
@@ -128,6 +134,13 @@ export function useImageVectorizer() {
 
       if (!pending) return
 
+      if (response.type === 'progress') {
+        if (response.id === activeRequestId) {
+          progress.value = response.progress
+        }
+        return
+      }
+
       pendingRequests.delete(response.id)
 
       if (response.type === 'error') {
@@ -148,6 +161,11 @@ export function useImageVectorizer() {
 
       try {
         if (response.id === activeRequestId) {
+          progress.value = {
+            percent: 99,
+            stage: 'finalizing',
+          }
+
           const previewCanvas = document.createElement('canvas')
           previewCanvas.width = response.preview.width
           previewCanvas.height = response.preview.height
@@ -167,6 +185,12 @@ export function useImageVectorizer() {
           context.putImageData(imageData, 0, 0)
 
           const previewBlob = await canvasToBlob(previewCanvas)
+
+          if (response.id !== activeRequestId) {
+            pending.resolve(response.result)
+            return
+          }
+
           const nextRasterUrl = URL.createObjectURL(previewBlob)
           const nextSvgUrl = URL.createObjectURL(
             new Blob([response.result.svg], {
@@ -182,6 +206,10 @@ export function useImageVectorizer() {
           svgUrl.value = nextSvgUrl
           result.value = response.result
           error.value = null
+          progress.value = {
+            percent: 100,
+            stage: 'finalizing',
+          }
           isLoading.value = false
         }
 
@@ -294,6 +322,32 @@ export function useImageVectorizer() {
     return source.value
   }
 
+  function cancelProcessing() {
+    if (!worker.value && !pendingRequests.size && !isLoading.value) return false
+
+    activeRequestId = ++requestCounter
+
+    const cancelledError = new ImageVectorizerProcessError(
+      'CANCELLED',
+      'Image vectorization was cancelled.',
+    )
+
+    for (const pending of pendingRequests.values()) {
+      pending.reject(cancelledError)
+    }
+
+    pendingRequests.clear()
+    worker.value?.terminate()
+    worker.value = null
+    isLoading.value = false
+    progress.value = {
+      percent: 0,
+      stage: 'preparing',
+    }
+
+    return true
+  }
+
   function process(settings: ImageVectorizerSettings) {
     const currentSource = source.value
 
@@ -306,27 +360,56 @@ export function useImageVectorizer() {
       )
     }
 
+    cancelProcessing()
+
     const id = ++requestCounter
     activeRequestId = id
     isLoading.value = true
+    progress.value = {
+      percent: 1,
+      stage: 'preparing',
+    }
     error.value = null
 
     const pixels = currentSource.pixels.slice().buffer
+    const workerSettings = normalizeImageVectorizerSettings({
+      ...settings,
+      backgroundColor: settings.backgroundColor || null,
+      paletteOverrides: {
+        ...settings.paletteOverrides,
+      },
+    })
     const request: ImageVectorizerWorkerRequest = {
       type: 'vectorize',
       id,
       width: currentSource.width,
       height: currentSource.height,
       pixels,
-      settings: {
-        ...settings,
-        backgroundColor: settings.backgroundColor || null,
-      },
+      settings: workerSettings,
     }
 
     return new Promise<ImageVectorizerResult>((resolve, reject) => {
       pendingRequests.set(id, { resolve, reject })
-      getWorker().postMessage(request, [pixels])
+
+      try {
+        getWorker().postMessage(request, [pixels])
+      } catch (caughtError) {
+        pendingRequests.delete(id)
+
+        const processError = new ImageVectorizerProcessError(
+          'WORKER_MESSAGE_FAILED',
+          caughtError instanceof Error
+            ? caughtError.message
+            : 'Could not send the vectorizer request to the worker.',
+        )
+
+        if (id === activeRequestId) {
+          error.value = processError
+          isLoading.value = false
+        }
+
+        reject(processError)
+      }
     })
   }
 
@@ -338,9 +421,15 @@ export function useImageVectorizer() {
     rasterUrl.value = ''
     rasterBlob.value = null
     svgUrl.value = ''
+    progress.value = {
+      percent: 0,
+      stage: 'preparing',
+    }
   }
 
   function reset() {
+    cancelProcessing()
+
     if (source.value) revokeUrl(source.value.url)
     source.value = null
     clearOutput()
@@ -464,20 +553,11 @@ export function useImageVectorizer() {
   }
 
   function cleanup() {
-    reset()
+    cancelProcessing()
 
-    for (const pending of pendingRequests.values()) {
-      pending.reject(
-        new ImageVectorizerProcessError(
-          'CANCELLED',
-          'Image vectorization was cancelled.',
-        ),
-      )
-    }
-
-    pendingRequests.clear()
-    worker.value?.terminate()
-    worker.value = null
+    if (source.value) revokeUrl(source.value.url)
+    source.value = null
+    clearOutput()
   }
 
   onBeforeUnmount(cleanup)
@@ -491,9 +571,11 @@ export function useImageVectorizer() {
     rasterBlob,
     svgUrl,
     isLoading,
+    progress,
     error,
     loadFile,
     process,
+    cancelProcessing,
     clearOutput,
     reset,
     downloadSvg,

@@ -7,7 +7,7 @@ export const useAppStore = defineStore('app', {
     project: null,
     settings: {
       mainSize: 14,
-      globalSize: 24,
+      globalSize: 14,
     },
     uiState: 'loading',
   }),

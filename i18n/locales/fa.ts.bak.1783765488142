@@ -3234,8 +3234,6 @@ export default {
         download: "دانلود SVG",
         processing: "در حال ساخت SVG...",
         editPaletteColor: "تغییر رنگ {color}",
-        keepCurrentImage: "نگه داشتن تصویر فعلی",
-        replaceWithClipboard: "جایگزینی با کلیپ‌بورد",
       },
       contextMenu: {
         downloadSvg: "دانلود SVG",
@@ -3284,18 +3282,10 @@ export default {
         lowResScale: "اسکیل کم‌رزولوشن",
         lowResScaleHint:
           "ورودی کم‌رزولوشن را قبل از trace کردن بزرگ‌تر می‌کند. مقدارهای بالاتر ممکن است بازیابی شکل‌ها را بهتر کنند اما کندتر هستند.",
-        smoothMode: "مرحله نرم‌سازی",
-        smoothModeHint:
-          "مشخص کن وقتی بهبود تصویر کم‌رزولوشن فعال است، نرم‌سازی قبل از کاهش اندازه، بعد از کاهش اندازه یا در هر دو مرحله انجام شود.",
       },
       values: {
         colors: "{count} رنگ",
         auto: "خودکار",
-        smoothMode: {
-          pre: "نرم‌سازی قبل",
-          post: "نرم‌سازی بعد",
-          both: "هر دو",
-        },
       },
       preview: {
         original: "تصویر اصلی",
@@ -3334,20 +3324,6 @@ export default {
         clipboardReadFailed: "خواندن اطلاعات از کلیپ‌بورد انجام نشد.",
         noClipboardImage: "تصویری داخل کلیپ‌بورد پیدا نشد.",
         invalidConfig: "محتوای کلیپ‌بورد یک کانفیگ معتبر برای ابزار تبدیل وکتور نیست.",
-        replaceClipboardImageTitle: "تصویر فعلی جایگزین شود؟",
-        replaceClipboardImageConfirm:
-          "پیست کردن تصویر جدید از کلیپ‌بورد، تصویر منبع فعلی و نتیجه‌ی فعلی آن را جایگزین می‌کند.",
-      },
-      progress: {
-        preparing: "در حال آماده‌سازی...",
-        enhancing: "در حال بهبود تصویر...",
-        quantizing: "در حال کوانتایز رنگ‌ها...",
-        background: "در حال تشخیص پس‌زمینه...",
-        regions: "در حال ساخت ناحیه‌ها...",
-        tracing: "در حال trace کردن شکل‌ها...",
-        svg: "در حال ساخت SVG...",
-        preview: "در حال رندر پیش‌نمایش...",
-        finalizing: "در حال نهایی‌سازی...",
       },
     },
     imageConverter: {

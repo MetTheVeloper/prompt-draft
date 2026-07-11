@@ -27,11 +27,74 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
-const { mobile } = useScreen()
+const { mini } = useScreen()
 const sourceCanvas = ref<HTMLCanvasElement | null>(null)
 const sourceLoadError = ref(false)
 
-const previewCols = computed(() => mobile.value ? 1 : 3)
+const previewGridAttrs = computed(() => ({
+  cols: mini.value
+    ? 2
+    : 'minmax(0, 1fr) minmax(0, 2fr)',
+  rows: mini.value
+    ? 'auto auto'
+    : 'repeat(2, minmax(0, auto))',
+  areas: mini.value
+    ? ['source raster', 'vector vector']
+    : ['source vector', 'raster vector'],
+  gap: 12,
+  alignItems: 'stretch',
+  class: [
+    'image-vectorizer-preview',
+    { 'image-vectorizer-preview--compact': mini.value },
+  ],
+}))
+
+const previewCardBaseAttrs = {
+  rules: 'csc',
+  gap: 8,
+  bg: 'normal5',
+  p: 12,
+  radius: 18,
+}
+
+const sourceCardAttrs = {
+  ...previewCardBaseAttrs,
+  style: { gridArea: 'source' },
+  class: [
+    'image-vectorizer-preview-card',
+    'image-vectorizer-preview-card--source',
+  ],
+}
+
+const rasterCardAttrs = {
+  ...previewCardBaseAttrs,
+  style: { gridArea: 'raster' },
+  class: [
+    'image-vectorizer-preview-card',
+    'image-vectorizer-preview-card--raster',
+  ],
+}
+
+const vectorCardAttrs = {
+  ...previewCardBaseAttrs,
+  style: { gridArea: 'vector' },
+  class: [
+    'image-vectorizer-preview-card',
+    'image-vectorizer-preview-card--vector',
+  ],
+}
+
+const previewHeaderAttrs = {
+  rules: 'rbc',
+  gap: 8,
+  class: 'w100',
+}
+
+const previewEmptyAttrs = {
+  rules: 'ccc',
+  gap: 6,
+  class: 'image-vectorizer-preview-empty',
+}
 
 function toHex(value: number) {
   return Math.max(0, Math.min(255, Math.round(value)))
@@ -118,9 +181,9 @@ onMounted(drawSource)
 </script>
 
 <template>
-  <el-grid :cols="previewCols" :gap="12" class="image-vectorizer-preview">
-    <el-flex rules="csc" :gap="8" bg="normal5" :p="12" :radius="18" class="image-vectorizer-preview-card">
-      <el-flex rules="rbc" :gap="8" class="w100">
+  <el-grid v-bind="previewGridAttrs">
+    <el-flex v-bind="sourceCardAttrs">
+      <el-flex v-bind="previewHeaderAttrs">
         <el-text :size="12" :weight="500" icon="image" marker="blue40">
           {{ t('tools.imageVectorizer.preview.original') }}
         </el-text>
@@ -148,7 +211,7 @@ onMounted(drawSource)
           @click="handleSourceClick"
         />
 
-        <el-flex v-if="!sourceUrl || sourceLoadError" rules="ccc" :gap="6" class="image-vectorizer-preview-empty">
+        <el-flex v-if="!sourceUrl || sourceLoadError" v-bind="previewEmptyAttrs">
           <el-icon icon="gallery" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ t('tools.imageVectorizer.preview.empty') }}
@@ -171,7 +234,7 @@ onMounted(drawSource)
       </div>
     </el-flex>
 
-    <el-flex rules="csc" :gap="8" bg="normal5" :p="12" :radius="18" class="image-vectorizer-preview-card">
+    <el-flex v-bind="rasterCardAttrs">
       <el-text :size="12" :weight="500" icon="magic-star" marker="blue40">
         {{ t('tools.imageVectorizer.preview.quantized') }}
       </el-text>
@@ -184,7 +247,7 @@ onMounted(drawSource)
           class="image-vectorizer-preview-image"
         />
 
-        <el-flex v-else rules="ccc" :gap="6" class="image-vectorizer-preview-empty">
+        <el-flex v-else v-bind="previewEmptyAttrs">
           <el-icon :icon="loading ? 'refresh-circle' : 'image'" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ loading ? t('tools.imageVectorizer.status.processing') : t('tools.imageVectorizer.preview.pending') }}
@@ -193,7 +256,7 @@ onMounted(drawSource)
       </div>
     </el-flex>
 
-    <el-flex rules="csc" :gap="8" bg="normal5" :p="12" :radius="18" class="image-vectorizer-preview-card">
+    <el-flex v-bind="vectorCardAttrs">
       <el-text :size="12" :weight="500" icon="shapes" marker="blue40">
         {{ t('tools.imageVectorizer.preview.vector') }}
       </el-text>
@@ -206,7 +269,7 @@ onMounted(drawSource)
           class="image-vectorizer-preview-image"
         />
 
-        <el-flex v-else rules="ccc" :gap="6" class="image-vectorizer-preview-empty">
+        <el-flex v-else v-bind="previewEmptyAttrs">
           <el-icon :icon="loading ? 'refresh-circle' : 'shapes'" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ loading ? t('tools.imageVectorizer.status.processing') : t('tools.imageVectorizer.preview.pending') }}
@@ -220,11 +283,36 @@ onMounted(drawSource)
 <style scoped>
 .image-vectorizer-preview {
   width: 100%;
+  min-width: 0;
+  align-self: start;
 }
 
 .image-vectorizer-preview-card {
   width: 100%;
   min-width: 0;
+  height: 100%;
+}
+
+.image-vectorizer-preview-card--vector .image-vectorizer-preview-stage {
+  flex: 1 1 auto;
+  min-height: 464px;
+  max-height: none;
+}
+
+.image-vectorizer-preview-card--vector .image-vectorizer-preview-image {
+  max-height: none;
+}
+
+.image-vectorizer-preview--compact .image-vectorizer-preview-stage {
+  min-height: 180px;
+  max-height: 320px;
+}
+
+.image-vectorizer-preview--compact
+  .image-vectorizer-preview-card--vector
+  .image-vectorizer-preview-stage {
+  min-height: 320px;
+  max-height: 520px;
 }
 
 .image-vectorizer-preview-stage {
@@ -274,6 +362,16 @@ onMounted(drawSource)
   min-height: 220px;
   width: 100%;
   text-align: center;
+}
+
+.image-vectorizer-preview--compact .image-vectorizer-preview-empty {
+  min-height: 180px;
+}
+
+.image-vectorizer-preview--compact
+  .image-vectorizer-preview-card--vector
+  .image-vectorizer-preview-empty {
+  min-height: 320px;
 }
 
 .image-vectorizer-preview-picker-hint {

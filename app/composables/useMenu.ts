@@ -13,6 +13,17 @@ export type GlobalMenuPlacement =
   | 'left-start'
   | 'left-end'
 
+export type GlobalMenuCloseReason =
+  | 'api'
+  | 'select'
+  | 'confirm'
+  | 'cancel'
+  | 'outside'
+  | 'escape'
+  | 'scroll'
+  | 'resize'
+  | 'replace'
+
 export type GlobalMenuAnchor =
   | HTMLElement
   | SVGElement
@@ -30,7 +41,7 @@ export type GlobalMenuPoint = {
 }
 
 export type GlobalMenuItemHelpers = {
-  close: () => void
+  close: (reason?: GlobalMenuCloseReason) => void
   update: (config: Partial<GlobalMenuConfig>) => void
   menu: GlobalMenuConfig | null
   item: GlobalMenuItem
@@ -91,6 +102,7 @@ export type GlobalMenuConfig = {
   props?: Record<string, any>
 
   options?: GlobalMenuOptions
+  onClose?: (reason: GlobalMenuCloseReason) => void
 }
 
 type GlobalMenuState = {
@@ -99,11 +111,7 @@ type GlobalMenuState = {
   version: number
 }
 
-const defaultMenu: Required<Omit<GlobalMenuConfig, 'event' | 'anchor' | 'component'>> & {
-  event: undefined
-  anchor: null
-  component: null
-} = {
+const defaultMenu: GlobalMenuConfig = {
   mode: 'point',
 
   event: undefined,
@@ -123,7 +131,7 @@ const defaultMenu: Required<Omit<GlobalMenuConfig, 'event' | 'anchor' | 'compone
     minWidth: undefined,
     maxWidth: undefined,
     maxHeight: undefined,
-    
+
     offset: 8,
     safePadding: 12,
 
@@ -138,6 +146,8 @@ const defaultMenu: Required<Omit<GlobalMenuConfig, 'event' | 'anchor' | 'compone
 
     zIndex: 1000,
   },
+
+  onClose: undefined,
 }
 
 const state = reactive<GlobalMenuState>({
@@ -254,6 +264,18 @@ function normalizeMenu(config: GlobalMenuConfig = {}): GlobalMenuConfig {
       ...defaultMenu.options,
       ...(config.options || {}),
     },
+
+    onClose: config.onClose,
+  }
+}
+
+function notifyClose(menu: GlobalMenuConfig | null, reason: GlobalMenuCloseReason) {
+  if (typeof menu?.onClose !== 'function') return
+
+  try {
+    menu.onClose(reason)
+  } catch (error) {
+    console.error('[useMenu] خطا در اجرای onClose منو:', error)
   }
 }
 
@@ -261,6 +283,14 @@ function open(config: GlobalMenuConfig = {}) {
   if (!hasMenuContent(config)) {
     console.warn('[useMenu] برای باز کردن منو، items یا component الزامی است.')
     return
+  }
+
+  if (state.isOpen && state.menu) {
+    const previousMenu = state.menu
+
+    state.isOpen = false
+    state.version += 1
+    notifyClose(previousMenu, 'replace')
   }
 
   activeComponent.value = config.component
@@ -272,9 +302,14 @@ function open(config: GlobalMenuConfig = {}) {
   state.version += 1
 }
 
-function close() {
+function close(reason: GlobalMenuCloseReason = 'api') {
+  if (!state.isOpen) return
+
+  const closingMenu = state.menu
+
   state.isOpen = false
   state.version += 1
+  notifyClose(closingMenu, reason)
 }
 
 function clear() {
@@ -339,6 +374,10 @@ function update(config: Partial<GlobalMenuConfig> = {}) {
     mode: hasOwn(config, 'mode')
       ? config.mode
       : state.menu.mode,
+
+    onClose: hasOwn(config, 'onClose')
+      ? config.onClose
+      : state.menu.onClose,
   }
 
   state.menu = normalizeMenu(nextConfig)
@@ -399,7 +438,7 @@ async function runItem(item: GlobalMenuItem) {
     state.menu.options?.closeOnSelect !== false
 
   if (shouldClose) {
-    close()
+    close('select')
   }
 }
 

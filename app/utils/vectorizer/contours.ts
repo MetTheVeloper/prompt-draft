@@ -7,7 +7,10 @@ export type VectorPoint = {
 }
 
 export type VectorContour = {
+  /** Conservative contour used by the exact smooth=0 polygon output. */
   points: VectorPoint[]
+  /** Dense contour retained for feature detection and validated curve fitting. */
+  densePoints: VectorPoint[]
   isHole: boolean
   signedArea: number
 }
@@ -173,6 +176,25 @@ function stitchContours(edges: BoundaryEdge[]) {
   }
 
   return contours
+}
+
+
+function removeDuplicatePoints(points: VectorPoint[]) {
+  const unique: VectorPoint[] = []
+
+  for (const point of points) {
+    const previous = unique[unique.length - 1]
+
+    if (!previous || !samePoint(previous, point)) {
+      unique.push(point)
+    }
+  }
+
+  if (unique.length > 1 && samePoint(unique[0], unique[unique.length - 1])) {
+    unique.pop()
+  }
+
+  return unique
 }
 
 function removeDuplicateAndCollinearPoints(points: VectorPoint[]) {
@@ -346,17 +368,11 @@ export function traceRegions(
   const normalizedSmooth = Math.max(0, Math.min(100, smooth)) / 100
   const scale = Math.max(1, Math.min(width, height))
 
-  // Keep this first simplification deliberately conservative. Its job is to
-  // collapse one-pixel staircase noise before adaptive line/curve fitting,
-  // not to reshape the contour. The later fitting stage owns smoothness.
+  // Primitive detection must see the same geometry at every non-zero smooth
+  // value. Smoothness is applied later only to curve-fitting tolerance.
   const simplifyTolerance = normalizedSmooth <= 0
     ? 0
-    : Math.min(
-        1.65,
-        0.85 +
-          normalizedSmooth * 0.55 +
-          Math.min(0.25, scale * 0.00015 * normalizedSmooth),
-      )
+    : Math.min(1.25, 0.92 + Math.min(0.28, scale * 0.00016))
 
   let originalPointCount = 0
   let simplifiedPointCount = 0
@@ -369,14 +385,16 @@ export function traceRegions(
       .map((rawPoints) => {
         originalPointCount += rawPoints.length
 
-        const clean = removeDuplicateAndCollinearPoints(rawPoints)
+        const densePoints = removeDuplicatePoints(rawPoints)
+        const clean = removeDuplicateAndCollinearPoints(densePoints)
         const points = simplifyClosedRing(clean, simplifyTolerance)
-        const area = signedArea(points)
+        const area = signedArea(densePoints)
 
         simplifiedPointCount += points.length
 
         return {
           points,
+          densePoints,
           isHole: area < 0,
           signedArea: area,
         }

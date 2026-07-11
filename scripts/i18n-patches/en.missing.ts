@@ -1,7 +1,11 @@
 export default {
-"modules.variables.fields.variables.picker.systemVariables.label": "System Variables",
-"modules.variables.fields.variables.picker.sources.user": "User",
-"modules.variables.fields.variables.picker.sources.system": "System",
-"modules.variables.fields.variables.validation.systemKey":
-"This key is reserved by an active system variable.",
+  "tools.imageVectorizer.progress.preparing": "Preparing...",
+  "tools.imageVectorizer.progress.enhancing": "Enhancing image...",
+  "tools.imageVectorizer.progress.quantizing": "Quantizing colors...",
+  "tools.imageVectorizer.progress.background": "Detecting background...",
+  "tools.imageVectorizer.progress.regions": "Building regions...",
+  "tools.imageVectorizer.progress.tracing": "Tracing shapes...",
+  "tools.imageVectorizer.progress.svg": "Generating SVG...",
+  "tools.imageVectorizer.progress.preview": "Rendering preview...",
+  "tools.imageVectorizer.progress.finalizing": "Finalizing...",
 }

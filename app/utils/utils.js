@@ -61,7 +61,7 @@ export function dimension(s) {
       a: fixNumber(size * 1),
     },
     header: {
-      height: fixNumber(size * 5),
+      height: fixNumber(size * 4),
       logo: fixNumber(size * 3),
       title: fixNumber(size * 1.75),
       time: fixNumber(size * 1),

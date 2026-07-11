@@ -25,16 +25,28 @@ export type AdaptiveClosedPath = {
 }
 
 type Vector = VectorPoint
+type AnchorKind = 'corner' | 'line' | 'helper'
 
 type Anchor = {
   index: number
-  isCorner: boolean
+  kind: AnchorKind
 }
 
 type CornerCandidate = {
   index: number
   position: number
   turn: number
+}
+
+type LineRun = {
+  startIndex: number
+  endIndex: number
+  length: number
+}
+
+type BezierError = {
+  errorSquared: number
+  splitIndex: number
 }
 
 const EPSILON = 1e-8
@@ -68,6 +80,10 @@ function dot(first: VectorPoint, second: VectorPoint) {
   return first.x * second.x + first.y * second.y
 }
 
+function cross(first: VectorPoint, second: VectorPoint) {
+  return first.x * second.y - first.y * second.x
+}
+
 function length(vector: VectorPoint) {
   return Math.hypot(vector.x, vector.y)
 }
@@ -79,9 +95,7 @@ function distance(first: VectorPoint, second: VectorPoint) {
 function normalize(vector: VectorPoint): VectorPoint {
   const vectorLength = length(vector)
 
-  if (vectorLength <= EPSILON) {
-    return { x: 0, y: 0 }
-  }
+  if (vectorLength <= EPSILON) return { x: 0, y: 0 }
 
   return {
     x: vector.x / vectorLength,
@@ -98,6 +112,21 @@ function negate(vector: VectorPoint): VectorPoint {
 
 function samePoint(first: VectorPoint, second: VectorPoint) {
   return first.x === second.x && first.y === second.y
+}
+
+function vectorAngleDegrees(first: VectorPoint, second: VectorPoint) {
+  const firstLength = length(first)
+  const secondLength = length(second)
+
+  if (firstLength <= EPSILON || secondLength <= EPSILON) return 0
+
+  const cosine = clamp(
+    dot(first, second) / (firstLength * secondLength),
+    -1,
+    1,
+  )
+
+  return Math.acos(cosine) * (180 / Math.PI)
 }
 
 function getBoundsDiagonal(points: VectorPoint[]) {
@@ -127,10 +156,7 @@ function buildArcPositions(points: VectorPoint[]) {
 
   perimeter += distance(points[points.length - 1], points[0])
 
-  return {
-    positions,
-    perimeter,
-  }
+  return { positions, perimeter }
 }
 
 function circularArcDistance(first: number, second: number, perimeter: number) {
@@ -193,20 +219,20 @@ function getInteriorAngleDegrees(
   return Math.acos(cosine) * (180 / Math.PI)
 }
 
-function findCornerAnchors(points: VectorPoint[], smooth: number): Anchor[] {
+/**
+ * Corner placement is intentionally independent from smoothness. Smoothness
+ * may reduce the number of curve commands, but it must never move a protected
+ * break or change the primitive segmentation of the contour.
+ */
+function findCornerAnchors(points: VectorPoint[]): Anchor[] {
   if (points.length < 4) return []
 
   const diagonal = Math.max(1, getBoundsDiagonal(points))
-  const normalizedSmooth = clamp(smooth, 0, 100) / 100
-  const longLookDistance = clamp(
-    diagonal * (0.0045 + normalizedSmooth * 0.0015),
-    3,
-    14,
-  )
+  const longLookDistance = clamp(diagonal * 0.0052, 3.5, 13)
   const shortLookDistance = Math.max(1.5, longLookDistance * 0.42)
   const minimumCornerTurn = 38
   const minimumShortTurn = 24
-  const minimumSeparation = Math.max(3, longLookDistance * 0.7)
+  const minimumSeparation = Math.max(3, longLookDistance * 0.72)
   const { positions, perimeter } = buildArcPositions(points)
   const candidates: CornerCandidate[] = []
 
@@ -247,8 +273,6 @@ function findCornerAnchors(points: VectorPoint[], smooth: number): Anchor[] {
       nextShort,
     )
 
-    // A real corner concentrates most of its direction change close to one
-    // anchor. A smooth curve accumulates that turn gradually over the window.
     if (
       longTurn >= minimumCornerTurn &&
       shortTurn >= minimumShortTurn &&
@@ -282,98 +306,8 @@ function findCornerAnchors(points: VectorPoint[], smooth: number): Anchor[] {
     .sort((first, second) => first.index - second.index)
     .map((candidate) => ({
       index: candidate.index,
-      isCorner: true,
+      kind: 'corner' as const,
     }))
-}
-
-function findNearestIndex(
-  points: VectorPoint[],
-  predicate: (point: VectorPoint) => number,
-) {
-  let bestIndex = 0
-  let bestValue = predicate(points[0])
-
-  for (let index = 1; index < points.length; index += 1) {
-    const value = predicate(points[index])
-
-    if (value < bestValue) {
-      bestValue = value
-      bestIndex = index
-    }
-  }
-
-  return bestIndex
-}
-
-function addHelperAnchors(points: VectorPoint[], anchors: Anchor[]) {
-  const byIndex = new Map<number, Anchor>()
-
-  for (const anchor of anchors) {
-    byIndex.set(anchor.index, anchor)
-  }
-
-  if (!anchors.length) {
-    const helperIndexes = [
-      findNearestIndex(points, (point) => point.x),
-      findNearestIndex(points, (point) => point.y),
-      findNearestIndex(points, (point) => -point.x),
-      findNearestIndex(points, (point) => -point.y),
-    ]
-
-    for (const index of helperIndexes) {
-      byIndex.set(index, {
-        index,
-        isCorner: false,
-      })
-    }
-  }
-
-  const { positions, perimeter } = buildArcPositions(points)
-  const desiredCount = byIndex.size === 1 ? 2 : Math.max(2, byIndex.size)
-
-  while (byIndex.size < desiredCount) {
-    const existing = [...byIndex.values()]
-    let bestIndex = -1
-    let bestDistance = -1
-
-    for (let index = 0; index < points.length; index += 1) {
-      if (byIndex.has(index)) continue
-
-      const nearestDistance = existing.reduce((minimum, anchor) => {
-        return Math.min(
-          minimum,
-          circularArcDistance(
-            positions[index],
-            positions[anchor.index],
-            perimeter,
-          ),
-        )
-      }, Number.POSITIVE_INFINITY)
-
-      if (nearestDistance > bestDistance) {
-        bestDistance = nearestDistance
-        bestIndex = index
-      }
-    }
-
-    if (bestIndex < 0) break
-
-    byIndex.set(bestIndex, {
-      index: bestIndex,
-      isCorner: false,
-    })
-  }
-
-  if (byIndex.size < 2 && points.length >= 2) {
-    byIndex.set(Math.floor(points.length / 2), {
-      index: Math.floor(points.length / 2),
-      isCorner: false,
-    })
-  }
-
-  return [...byIndex.values()].sort((first, second) => {
-    return first.index - second.index
-  })
 }
 
 function extractRingSegment(
@@ -398,24 +332,59 @@ function extractRingSegment(
   return segment
 }
 
-function pointLineDistance(
+function extractRingIndexes(length: number, startIndex: number, endIndex: number) {
+  const indexes = [startIndex]
+  let index = startIndex
+  let safety = 0
+
+  while (index !== endIndex && safety <= length) {
+    safety += 1
+    index = (index + 1) % length
+    indexes.push(index)
+  }
+
+  return indexes
+}
+
+function pointInfiniteLineDistance(
   point: VectorPoint,
   start: VectorPoint,
   end: VectorPoint,
 ) {
   const line = subtract(end, start)
-  const lineLengthSquared = dot(line, line)
+  const lineLength = length(line)
 
-  if (lineLengthSquared <= EPSILON) return distance(point, start)
+  if (lineLength <= EPSILON) return distance(point, start)
+
+  return Math.abs(cross(subtract(point, start), line)) / lineLength
+}
+
+function pointSegmentDistanceSquared(
+  point: VectorPoint,
+  start: VectorPoint,
+  end: VectorPoint,
+) {
+  const dx = end.x - start.x
+  const dy = end.y - start.y
+
+  if (Math.abs(dx) <= EPSILON && Math.abs(dy) <= EPSILON) {
+    const px = point.x - start.x
+    const py = point.y - start.y
+    return px * px + py * py
+  }
 
   const ratio = clamp(
-    dot(subtract(point, start), line) / lineLengthSquared,
+    ((point.x - start.x) * dx + (point.y - start.y) * dy) /
+      (dx * dx + dy * dy),
     0,
     1,
   )
-  const nearest = add(start, multiply(line, ratio))
+  const nearestX = start.x + ratio * dx
+  const nearestY = start.y + ratio * dy
+  const distanceX = point.x - nearestX
+  const distanceY = point.y - nearestY
 
-  return distance(point, nearest)
+  return distanceX * distanceX + distanceY * distanceY
 }
 
 function getMaximumLineDeviation(points: VectorPoint[]) {
@@ -428,52 +397,362 @@ function getMaximumLineDeviation(points: VectorPoint[]) {
   for (let index = 1; index < points.length - 1; index += 1) {
     maximum = Math.max(
       maximum,
-      pointLineDistance(points[index], start, end),
+      pointInfiniteLineDistance(points[index], start, end),
     )
   }
 
   return maximum
 }
 
-function getTotalTurnDegrees(points: VectorPoint[]) {
-  let total = 0
+function getPolylineLength(points: VectorPoint[]) {
+  let result = 0
 
-  for (let index = 1; index < points.length - 1; index += 1) {
-    const previousDirection = normalize(
-      subtract(points[index], points[index - 1]),
-    )
-    const nextDirection = normalize(
-      subtract(points[index + 1], points[index]),
-    )
-    const cosine = clamp(dot(previousDirection, nextDirection), -1, 1)
-
-    total += Math.acos(cosine) * (180 / Math.PI)
+  for (let index = 1; index < points.length; index += 1) {
+    result += distance(points[index - 1], points[index])
   }
 
-  return total
+  return result
 }
 
-function shouldFitAsLine(
+function simplifyOpenIndexed(
   points: VectorPoint[],
-  smooth: number,
-  diagonal: number,
-) {
-  if (points.length <= 2) return true
+  indexes: number[],
+  toleranceSquared: number,
+): number[] {
+  if (indexes.length <= 2) return indexes
 
-  const normalizedSmooth = clamp(smooth, 0, 100) / 100
-  const lineTolerance =
-    0.55 +
-    normalizedSmooth * 1.15 +
-    Math.min(0.75, diagonal * 0.00035 * normalizedSmooth)
-  const turnLimit = 16 + normalizedSmooth * 12
+  const firstIndex = indexes[0]
+  const lastIndex = indexes[indexes.length - 1]
+  const first = points[firstIndex]
+  const last = points[lastIndex]
+  let farthestPosition = -1
+  let farthestDistance = 0
+
+  for (let position = 1; position < indexes.length - 1; position += 1) {
+    const currentDistance = pointSegmentDistanceSquared(
+      points[indexes[position]],
+      first,
+      last,
+    )
+
+    if (currentDistance > farthestDistance) {
+      farthestDistance = currentDistance
+      farthestPosition = position
+    }
+  }
+
+  if (farthestPosition >= 0 && farthestDistance > toleranceSquared) {
+    const left = simplifyOpenIndexed(
+      points,
+      indexes.slice(0, farthestPosition + 1),
+      toleranceSquared,
+    )
+    const right = simplifyOpenIndexed(
+      points,
+      indexes.slice(farthestPosition),
+      toleranceSquared,
+    )
+
+    return [...left.slice(0, -1), ...right]
+  }
+
+  return [firstIndex, lastIndex]
+}
+
+function simplifyClosedRingIndexes(points: VectorPoint[], tolerance: number) {
+  if (points.length <= 4 || tolerance <= 0) {
+    return points.map((_, index) => index)
+  }
+
+  let firstIndex = 0
+
+  for (let index = 1; index < points.length; index += 1) {
+    if (
+      points[index].x < points[firstIndex].x ||
+      (
+        points[index].x === points[firstIndex].x &&
+        points[index].y < points[firstIndex].y
+      )
+    ) {
+      firstIndex = index
+    }
+  }
+
+  let oppositeIndex = firstIndex
+  let farthestDistance = -1
+  const firstPoint = points[firstIndex]
+
+  for (let index = 0; index < points.length; index += 1) {
+    const dx = points[index].x - firstPoint.x
+    const dy = points[index].y - firstPoint.y
+    const currentDistance = dx * dx + dy * dy
+
+    if (currentDistance > farthestDistance) {
+      farthestDistance = currentDistance
+      oppositeIndex = index
+    }
+  }
+
+  if (oppositeIndex === firstIndex) {
+    return points.map((_, index) => index)
+  }
+
+  const toleranceSquared = tolerance * tolerance
+  const firstHalf = simplifyOpenIndexed(
+    points,
+    extractRingIndexes(points.length, firstIndex, oppositeIndex),
+    toleranceSquared,
+  )
+  const secondHalf = simplifyOpenIndexed(
+    points,
+    extractRingIndexes(points.length, oppositeIndex, firstIndex),
+    toleranceSquared,
+  )
+
+  return [
+    ...firstHalf.slice(0, -1),
+    ...secondHalf.slice(0, -1),
+  ]
+}
+
+function simplifyOpenLine(points: VectorPoint[], tolerance: number) {
+  if (points.length <= 2 || tolerance <= 0) return points
+
+  const indexes = points.map((_, index) => index)
+  const simplifiedIndexes = simplifyOpenIndexed(
+    points,
+    indexes,
+    tolerance * tolerance,
+  )
+
+  return simplifiedIndexes.map((index) => points[index])
+}
+
+function getEndpointDirection(
+  points: VectorPoint[],
+  fromStart: boolean,
+  targetDistance: number,
+) {
+  if (points.length < 2) return { x: 0, y: 0 }
+
+  const anchor = fromStart ? points[0] : points[points.length - 1]
+  let accumulated = 0
+
+  if (fromStart) {
+    for (let index = 1; index < points.length; index += 1) {
+      accumulated += distance(points[index - 1], points[index])
+
+      if (accumulated >= targetDistance || index === points.length - 1) {
+        return normalize(subtract(points[index], anchor))
+      }
+    }
+  } else {
+    for (let index = points.length - 2; index >= 0; index -= 1) {
+      accumulated += distance(points[index + 1], points[index])
+
+      if (accumulated >= targetDistance || index === 0) {
+        return normalize(subtract(anchor, points[index]))
+      }
+    }
+  }
+
+  return { x: 0, y: 0 }
+}
+
+function isStableLineSegment(
+  points: VectorPoint[],
+  diagonal: number,
+  allowShort = false,
+) {
+  if (points.length < 2) return false
+
+  const start = points[0]
+  const end = points[points.length - 1]
+  const chord = subtract(end, start)
+  const chordLength = length(chord)
+  const minimumLength = allowShort
+    ? clamp(diagonal * 0.004, 5, 10)
+    : clamp(diagonal * 0.015, 14, 28)
+
+  if (chordLength < minimumLength) return false
+
+  const lineTolerance = 0.86 + Math.min(0.24, diagonal * 0.00018)
   const maximumDeviation = getMaximumLineDeviation(points)
 
-  if (maximumDeviation <= lineTolerance) return true
+  if (maximumDeviation > lineTolerance) return false
+
+  const polylineLength = getPolylineLength(points)
+
+  // A raster diagonal can be about sqrt(2) longer than its chord. Values well
+  // above this usually indicate a curved or reversing run rather than stairs.
+  if (polylineLength > chordLength * 1.48 + 2) return false
+
+  const tangentDistance = clamp(chordLength * 0.18, 3, 12)
+  const startDirection = getEndpointDirection(points, true, tangentDistance)
+  const endDirection = getEndpointDirection(points, false, tangentDistance)
+  const maximumEndpointAngle = allowShort ? 7 : 3.6
 
   return (
-    maximumDeviation <= lineTolerance * 1.35 &&
-    getTotalTurnDegrees(points) <= turnLimit
+    vectorAngleDegrees(startDirection, chord) <= maximumEndpointAngle &&
+    vectorAngleDegrees(endDirection, chord) <= maximumEndpointAngle
   )
+}
+
+function canMergeLineRuns(
+  points: VectorPoint[],
+  first: LineRun,
+  second: LineRun,
+  diagonal: number,
+) {
+  if (first.endIndex !== second.startIndex) return false
+
+  const firstDirection = subtract(
+    points[first.endIndex],
+    points[first.startIndex],
+  )
+  const secondDirection = subtract(
+    points[second.endIndex],
+    points[second.startIndex],
+  )
+
+  if (vectorAngleDegrees(firstDirection, secondDirection) > 3.2) return false
+
+  const combined = extractRingSegment(
+    points,
+    first.startIndex,
+    second.endIndex,
+  )
+
+  return isStableLineSegment(combined, diagonal)
+}
+
+/**
+ * Detect maximal straight runs on the dense contour before any curve fitting.
+ * Their boundaries become hard anchors, which prevents one cubic from trying
+ * to represent both the end of an arc and the following straight edge.
+ */
+function findLineRuns(points: VectorPoint[], diagonal: number): LineRun[] {
+  if (points.length < 4) return []
+
+  const featureTolerance = 0.72 + Math.min(0.18, diagonal * 0.00012)
+  const featureIndexes = simplifyClosedRingIndexes(points, featureTolerance)
+  const candidates: LineRun[] = []
+
+  for (let position = 0; position < featureIndexes.length; position += 1) {
+    const startIndex = featureIndexes[position]
+    const endIndex = featureIndexes[(position + 1) % featureIndexes.length]
+    const support = extractRingSegment(points, startIndex, endIndex)
+
+    if (!isStableLineSegment(support, diagonal)) continue
+
+    candidates.push({
+      startIndex,
+      endIndex,
+      length: distance(points[startIndex], points[endIndex]),
+    })
+  }
+
+  if (!candidates.length) return []
+
+  const merged: LineRun[] = []
+
+  for (const candidate of candidates) {
+    const previous = merged[merged.length - 1]
+
+    if (previous && canMergeLineRuns(points, previous, candidate, diagonal)) {
+      previous.endIndex = candidate.endIndex
+      previous.length = distance(
+        points[previous.startIndex],
+        points[previous.endIndex],
+      )
+    } else {
+      merged.push({ ...candidate })
+    }
+  }
+
+  if (merged.length > 1) {
+    const first = merged[0]
+    const last = merged[merged.length - 1]
+
+    if (canMergeLineRuns(points, last, first, diagonal)) {
+      first.startIndex = last.startIndex
+      first.length = distance(
+        points[first.startIndex],
+        points[first.endIndex],
+      )
+      merged.pop()
+    }
+  }
+
+  return merged
+}
+
+function findNearestIndex(
+  points: VectorPoint[],
+  predicate: (point: VectorPoint) => number,
+) {
+  let bestIndex = 0
+  let bestValue = predicate(points[0])
+
+  for (let index = 1; index < points.length; index += 1) {
+    const value = predicate(points[index])
+
+    if (value < bestValue) {
+      bestValue = value
+      bestIndex = index
+    }
+  }
+
+  return bestIndex
+}
+
+function mergeAnchors(
+  points: VectorPoint[],
+  corners: Anchor[],
+  lineRuns: LineRun[],
+) {
+  const byIndex = new Map<number, Anchor>()
+
+  for (const corner of corners) byIndex.set(corner.index, corner)
+
+  for (const run of lineRuns) {
+    for (const index of [run.startIndex, run.endIndex]) {
+      if (!byIndex.has(index)) {
+        byIndex.set(index, { index, kind: 'line' })
+      }
+    }
+  }
+
+  if (!byIndex.size) {
+    const helperIndexes = [
+      findNearestIndex(points, (point) => point.x),
+      findNearestIndex(points, (point) => point.y),
+      findNearestIndex(points, (point) => -point.x),
+      findNearestIndex(points, (point) => -point.y),
+    ]
+
+    for (const index of helperIndexes) {
+      byIndex.set(index, { index, kind: 'helper' })
+    }
+  }
+
+  if (byIndex.size === 1) {
+    const only = [...byIndex.values()][0]
+    byIndex.set((only.index + Math.floor(points.length / 2)) % points.length, {
+      index: (only.index + Math.floor(points.length / 2)) % points.length,
+      kind: 'helper',
+    })
+  }
+
+  return [...byIndex.values()].sort((first, second) => {
+    return first.index - second.index
+  })
+}
+
+function isExactLineRun(startIndex: number, endIndex: number, runs: LineRun[]) {
+  return runs.some((run) => {
+    return run.startIndex === startIndex && run.endIndex === endIndex
+  })
 }
 
 function chordLengthParameterize(points: VectorPoint[]) {
@@ -584,12 +863,7 @@ function generateBezier(
   }
 
   const chord = distance(start, end)
-  let polylineLength = 0
-
-  for (let index = 1; index < points.length; index += 1) {
-    polylineLength += distance(points[index - 1], points[index])
-  }
-
+  const polylineLength = getPolylineLength(points)
   const minimumAlpha = chord * 0.01
   const maximumAlpha = Math.max(chord, polylineLength) * 0.75
   const fallbackAlpha = chord / 3
@@ -615,11 +889,11 @@ function generateBezier(
   }
 }
 
-function computeMaximumBezierError(
+function computeForwardBezierError(
   points: VectorPoint[],
   segment: AdaptiveCurveSegment,
   parameters: number[],
-) {
+): BezierError {
   let splitIndex = Math.floor(points.length / 2)
   let maximumErrorSquared = 0
 
@@ -637,6 +911,59 @@ function computeMaximumBezierError(
   return {
     errorSquared: maximumErrorSquared,
     splitIndex,
+  }
+}
+
+function computeReverseBezierError(
+  points: VectorPoint[],
+  segment: AdaptiveCurveSegment,
+): BezierError {
+  let maximumErrorSquared = 0
+  let splitIndex = Math.floor(points.length / 2)
+  const sampleCount = clamp(Math.ceil(points.length * 0.65), 16, 48)
+
+  for (let sampleIndex = 1; sampleIndex < sampleCount; sampleIndex += 1) {
+    const point = evaluateCubic(segment, sampleIndex / sampleCount)
+    let nearestDistanceSquared = Number.POSITIVE_INFINITY
+    let nearestSegmentIndex = 0
+
+    for (let index = 0; index < points.length - 1; index += 1) {
+      const currentDistanceSquared = pointSegmentDistanceSquared(
+        point,
+        points[index],
+        points[index + 1],
+      )
+
+      if (currentDistanceSquared < nearestDistanceSquared) {
+        nearestDistanceSquared = currentDistanceSquared
+        nearestSegmentIndex = index
+      }
+    }
+
+    if (nearestDistanceSquared > maximumErrorSquared) {
+      maximumErrorSquared = nearestDistanceSquared
+      splitIndex = clamp(nearestSegmentIndex + 1, 1, points.length - 2)
+    }
+  }
+
+  return {
+    errorSquared: maximumErrorSquared,
+    splitIndex,
+  }
+}
+
+function createLinearCurve(
+  start: VectorPoint,
+  end: VectorPoint,
+): AdaptiveCurveSegment {
+  const chord = subtract(end, start)
+
+  return {
+    type: 'curve',
+    start,
+    control1: add(start, multiply(chord, 1 / 3)),
+    control2: add(start, multiply(chord, 2 / 3)),
+    end,
   }
 }
 
@@ -666,21 +993,40 @@ function fitCubicRecursive(
     leftTangent,
     rightTangent,
   )
-  const maximumError = computeMaximumBezierError(
+  const forwardError = computeForwardBezierError(
     points,
     segment,
     parameters,
   )
+  const reverseError = computeReverseBezierError(points, segment)
+  const reverseToleranceSquared = (
+    Math.sqrt(errorSquared) * 1.65 + 0.65
+  ) ** 2
 
-  if (maximumError.errorSquared <= errorSquared || depth >= 18) {
+  if (
+    forwardError.errorSquared <= errorSquared &&
+    reverseError.errorSquared <= reverseToleranceSquared
+  ) {
     return [segment]
   }
 
-  const splitIndex = clamp(
-    maximumError.splitIndex,
-    1,
-    points.length - 2,
-  )
+  if (depth >= 18) {
+    const safe: AdaptiveCurveSegment[] = []
+
+    for (let index = 1; index < points.length; index += 1) {
+      safe.push(createLinearCurve(points[index - 1], points[index]))
+    }
+
+    return safe
+  }
+
+  const forwardRatio = forwardError.errorSquared / Math.max(errorSquared, EPSILON)
+  const reverseRatio = reverseError.errorSquared /
+    Math.max(reverseToleranceSquared, EPSILON)
+  const requestedSplit = reverseRatio > forwardRatio
+    ? reverseError.splitIndex
+    : forwardError.splitIndex
+  const splitIndex = clamp(requestedSplit, 1, points.length - 2)
   const centerTangent = normalize(
     subtract(points[splitIndex - 1], points[splitIndex + 1]),
   )
@@ -710,8 +1056,12 @@ function getOutgoingTangent(
   anchor: Anchor,
   segmentPoints: VectorPoint[],
 ) {
-  if (anchor.isCorner || points.length < 3) {
-    return normalize(subtract(segmentPoints[1], segmentPoints[0]))
+  if (anchor.kind !== 'helper' || points.length < 3) {
+    return getEndpointDirection(
+      segmentPoints,
+      true,
+      clamp(getPolylineLength(segmentPoints) * 0.08, 2, 8),
+    )
   }
 
   const previous = points[(anchor.index - 1 + points.length) % points.length]
@@ -728,13 +1078,12 @@ function getIncomingTangent(
   anchor: Anchor,
   segmentPoints: VectorPoint[],
 ) {
-  if (anchor.isCorner || points.length < 3) {
-    return normalize(
-      subtract(
-        segmentPoints[segmentPoints.length - 2],
-        segmentPoints[segmentPoints.length - 1],
-      ),
-    )
+  if (anchor.kind !== 'helper' || points.length < 3) {
+    return negate(getEndpointDirection(
+      segmentPoints,
+      false,
+      clamp(getPolylineLength(segmentPoints) * 0.08, 2, 8),
+    ))
   }
 
   const previous = points[(anchor.index - 1 + points.length) % points.length]
@@ -751,6 +1100,71 @@ function getIncomingTangent(
     )
 }
 
+function shouldFlattenCurveToLine(
+  segment: AdaptiveCurveSegment,
+  diagonal: number,
+) {
+  const chord = subtract(segment.end, segment.start)
+  const chordLength = length(chord)
+
+  if (chordLength < 8) return false
+
+  const lineTolerance = 0.72 + Math.min(0.18, diagonal * 0.00012)
+  const startTangent = subtract(segment.control1, segment.start)
+  const endTangent = subtract(segment.end, segment.control2)
+
+  if (
+    vectorAngleDegrees(startTangent, chord) > 5 ||
+    vectorAngleDegrees(endTangent, chord) > 5
+  ) {
+    return false
+  }
+
+  if (
+    pointInfiniteLineDistance(
+      segment.control1,
+      segment.start,
+      segment.end,
+    ) > lineTolerance * 2.2 ||
+    pointInfiniteLineDistance(
+      segment.control2,
+      segment.start,
+      segment.end,
+    ) > lineTolerance * 2.2
+  ) {
+    return false
+  }
+
+  for (let index = 1; index < 12; index += 1) {
+    if (
+      pointInfiniteLineDistance(
+        evaluateCubic(segment, index / 12),
+        segment.start,
+        segment.end,
+      ) > lineTolerance
+    ) {
+      return false
+    }
+  }
+
+  return true
+}
+
+function auditFittedSegments(
+  segments: AdaptiveCurveSegment[],
+  diagonal: number,
+): AdaptivePathSegment[] {
+  return segments.map((segment) => {
+    if (!shouldFlattenCurveToLine(segment, diagonal)) return segment
+
+    return {
+      type: 'line',
+      start: segment.start,
+      end: segment.end,
+    }
+  })
+}
+
 export function fitAdaptiveClosedPath(
   points: VectorPoint[],
   smooth: number,
@@ -759,8 +1173,9 @@ export function fitAdaptiveClosedPath(
 
   const normalizedSmooth = clamp(smooth, 0, 100) / 100
   const diagonal = Math.max(1, getBoundsDiagonal(points))
-  const cornerAnchors = findCornerAnchors(points, smooth)
-  const anchors = addHelperAnchors(points, cornerAnchors)
+  const cornerAnchors = findCornerAnchors(points)
+  const lineRuns = findLineRuns(points, diagonal)
+  const anchors = mergeAnchors(points, cornerAnchors, lineRuns)
 
   if (anchors.length < 2) return null
 
@@ -769,32 +1184,41 @@ export function fitAdaptiveClosedPath(
     0.7 +
     normalizedSmooth * 1.8 +
     Math.min(0.65, diagonal * 0.0003 * normalizedSmooth)
+  const preparationTolerance = 1.02 + Math.min(0.28, diagonal * 0.00016)
 
   for (let index = 0; index < anchors.length; index += 1) {
     const startAnchor = anchors[index]
     const endAnchor = anchors[(index + 1) % anchors.length]
-    const segmentPoints = extractRingSegment(
+    const denseSegmentPoints = extractRingSegment(
       points,
       startAnchor.index,
       endAnchor.index,
     )
 
-    if (segmentPoints.length < 2) continue
+    if (denseSegmentPoints.length < 2) continue
 
-    const start = segmentPoints[0]
-    const end = segmentPoints[segmentPoints.length - 1]
+    const start = denseSegmentPoints[0]
+    const end = denseSegmentPoints[denseSegmentPoints.length - 1]
+    const isDetectedLine = isExactLineRun(
+      startAnchor.index,
+      endAnchor.index,
+      lineRuns,
+    )
 
     if (
-      normalizedSmooth <= 0 ||
-      shouldFitAsLine(segmentPoints, smooth, diagonal)
+      isDetectedLine ||
+      isStableLineSegment(denseSegmentPoints, diagonal, true)
     ) {
-      segments.push({
-        type: 'line',
-        start,
-        end,
-      })
+      segments.push({ type: 'line', start, end })
       continue
     }
+
+    const segmentPoints = simplifyOpenLine(
+      denseSegmentPoints,
+      preparationTolerance,
+    )
+
+    if (segmentPoints.length < 2) continue
 
     const leftTangent = getOutgoingTangent(
       points,
@@ -813,7 +1237,7 @@ export function fitAdaptiveClosedPath(
       curveError * curveError,
     )
 
-    segments.push(...fitted)
+    segments.push(...auditFittedSegments(fitted, diagonal))
   }
 
   if (!segments.length) return null

@@ -16,7 +16,15 @@ export const DEFAULT_IMAGE_VECTORIZER_SETTINGS: ImageVectorizerSettings = {
   trimCanvas: true,
   padding: 5,
   minRegionSize: 10,
+  edgeCleanup: 2,
+  removeEnclosedBackground: false,
+  refineSvg: false,
+  enhanceLowRes: false,
+  lowResScale: 0,
+  lowResRecovery: 60,
+  paletteOverrides: {},
   smooth: 18,
+  smoothMode: 'pre',
 }
 
 function clamp(value: number, min: number, max: number) {
@@ -46,6 +54,46 @@ function normalizeBoolean(value: unknown, fallback: boolean) {
   return typeof value === 'boolean' ? value : fallback
 }
 
+function normalizePaletteOverrides(
+  value: unknown,
+  fallback: Record<string, string>,
+) {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    return { ...fallback }
+  }
+
+  const normalized: Record<string, string> = {}
+
+  for (const [source, target] of Object.entries(value)) {
+    if (
+      typeof target !== 'string' ||
+      !/^#[\da-f]{6}$/i.test(source) ||
+      !/^#[\da-f]{6}$/i.test(target)
+    ) {
+      continue
+    }
+
+    const sourceHex = source.toUpperCase()
+    const targetHex = target.toUpperCase()
+
+    if (sourceHex !== targetHex) {
+      normalized[sourceHex] = targetHex
+    }
+  }
+
+  return normalized
+}
+
+
+function normalizeSmoothMode(
+  value: unknown,
+  fallback: ImageVectorizerSettings['smoothMode'],
+): ImageVectorizerSettings['smoothMode'] {
+  return value === 'pre' || value === 'post' || value === 'both'
+    ? value
+    : fallback
+}
+
 function normalizeBackgroundColor(
   value: unknown,
   fallback: string | null,
@@ -70,7 +118,7 @@ export function normalizeImageVectorizerSettings(
     : {}
 
   return {
-    maxColors: normalizeNumber(value.maxColors, fallback.maxColors, 2, 32),
+    maxColors: normalizeNumber(value.maxColors, fallback.maxColors, 1, 32),
     colorTolerance: normalizeNumber(
       value.colorTolerance,
       fallback.colorTolerance,
@@ -97,7 +145,43 @@ export function normalizeImageVectorizerSettings(
       0,
       100,
     ),
+    edgeCleanup: normalizeNumber(
+      value.edgeCleanup,
+      fallback.edgeCleanup,
+      0,
+      12,
+    ),
+    removeEnclosedBackground: normalizeBoolean(
+      value.removeEnclosedBackground,
+      fallback.removeEnclosedBackground,
+    ),
+    refineSvg: normalizeBoolean(
+      value.refineSvg,
+      fallback.refineSvg,
+    ),
+    enhanceLowRes: normalizeBoolean(
+      value.enhanceLowRes,
+      fallback.enhanceLowRes,
+    ),
+    lowResScale: normalizeNumber(
+      value.lowResScale,
+      fallback.lowResScale,
+      0,
+      8,
+      2,
+    ),
+    lowResRecovery: normalizeNumber(
+      value.lowResRecovery,
+      fallback.lowResRecovery,
+      0,
+      100,
+    ),
+    paletteOverrides: normalizePaletteOverrides(
+      value.paletteOverrides,
+      fallback.paletteOverrides,
+    ),
     smooth: normalizeNumber(value.smooth, fallback.smooth, 0, 100),
+    smoothMode: normalizeSmoothMode(value.smoothMode, fallback.smoothMode),
   }
 }
 
@@ -156,6 +240,13 @@ export function parseImageVectorizerConfig(raw: string) {
     'trimCanvas',
     'padding',
     'minRegionSize',
+    'edgeCleanup',
+    'removeEnclosedBackground',
+    'refineSvg',
+    'enhanceLowRes',
+    'lowResScale',
+    'lowResRecovery',
+    'paletteOverrides',
     'smooth',
   ]
   const hasKnownSetting = knownKeys.some((key) => key in candidate)

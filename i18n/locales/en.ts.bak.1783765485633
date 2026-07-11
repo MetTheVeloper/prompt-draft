@@ -3270,8 +3270,6 @@ export default {
         download: "Download SVG",
         processing: "Building SVG...",
         editPaletteColor: "Change {color}",
-        keepCurrentImage: "Keep current image",
-        replaceWithClipboard: "Replace with clipboard",
       },
       contextMenu: {
         downloadSvg: "Download SVG",
@@ -3320,18 +3318,10 @@ export default {
         lowResScale: "Low-Res Scale",
         lowResScaleHint:
           "Upscale low-resolution input before tracing. Higher values may improve shape recovery but can be slower.",
-        smoothMode: "Smooth stage",
-        smoothModeHint:
-          "Choose whether smoothing runs before downscaling, after downscaling, or in both stages when low-res enhancement is enabled.",
       },
       values: {
         colors: "{count} colors",
         auto: "Auto",
-        smoothMode: {
-          pre: "Pre smooth",
-          post: "Post smooth",
-          both: "Both",
-        },
       },
       preview: {
         original: "Original",
@@ -3369,20 +3359,6 @@ export default {
         clipboardReadFailed: "The clipboard could not be read.",
         noClipboardImage: "The clipboard does not contain an image.",
         invalidConfig: "The clipboard does not contain a valid Image Vectorizer configuration.",
-        replaceClipboardImageTitle: "Replace current image?",
-        replaceClipboardImageConfirm:
-          "Pasting a new clipboard image will replace the current source image and its current result.",
-      },
-      progress: {
-        preparing: "Preparing...",
-        enhancing: "Enhancing image...",
-        quantizing: "Quantizing colors...",
-        background: "Detecting background...",
-        regions: "Building regions...",
-        tracing: "Tracing shapes...",
-        svg: "Generating SVG...",
-        preview: "Rendering preview...",
-        finalizing: "Finalizing...",
       },
     },
     imageConverter: {

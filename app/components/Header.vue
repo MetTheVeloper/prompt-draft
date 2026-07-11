@@ -66,6 +66,10 @@ function openAboutModal() {
   })
 }
 
+function openVectorizer() {
+  navigateTo('/vectorizer')
+}
+
 function openToolsMenu() {
   menu.open({
     mode: 'dropdown',
@@ -75,11 +79,22 @@ function openToolsMenu() {
       {
         label: translate('app.tools.convert'),
         icon: 'gallery-export',
+        color: 'normal15',
         handler: openImageConverterModal,
+      },
+      {
+        label: translate('tools.imageVectorizer.title'),
+        icon: 'shapes',
+        color: 'normal15',
+        handler: openVectorizer,
+      },
+      {
+        type: 'divider',
       },
       {
         label: translate('app.tools.about'),
         icon: 'info-circle',
+        color: 'normal15',
         handler: openAboutModal,
       },
     ],
@@ -94,7 +109,9 @@ function openToolsMenu() {
 
 <template>
   <el-flex v-if="app.ready" rules="rbc" type="header" :p="[8, 24]" :gap="16" :br="[0, 0, 1, 0]" bc="normal5"
-    bg="surface65" bd="b8" class="post t0 l0 r0 w100 zi200 app-header" @contextmenu="handleHeaderContextMenu">
+    bg="surface65" bd="b8"
+    :class="['post t0 l0 r0 w100 zi200 app-header', `mnhp${dimension().header.height}`]"
+    @contextmenu="handleHeaderContextMenu">
     <el-flex rules="rsc" type="link" to="/">
       <img :src="`img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp32" :alt="$t('app.title')" />
       <!-- <img :src="`img/logo_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`" class="hp40" :alt="$t('app.title')" /> -->
@@ -102,18 +119,19 @@ function openToolsMenu() {
     <el-divider direction="vertical" :height="24" mode="dashed" :dash="4" :gap="2" color="prim" />
     <el-flex rules="rsc" class="fg100" :gap="8">
       <el-button v-for="item in NAVIGATION" :key="item.to" :to="item.to"
+        v-show="item.name !== 'vectorizer'"
         :color="route.name === item.name ? 'prim' : 'normal'" :effect="true"
         :mode="route.name === item.name ? 'normal' : 'flat'" :label="$t(`app.navigation.${item.name}`)"
         :icon="item.icon" :type="mini && route.name !== item.name ? 'fab' : 'default'" :gap="8" :size="12"
         :p="[8, 12]" />
     </el-flex>
     <el-flex rules="rcc">
-      <el-button ref="toolsButtonRef" :size="14" :p="8" mode="flat" type="fab" :label="$t('app.tools.menu')"
-        icon="more-vertical" @click="openToolsMenu" />
       <el-button :size="14" :p="8" mode="flat" type="fab" :label="$t('app.switchTheme')"
         :icon="t.theme.mode === 'dark' ? 'sun-1' : 'moon'" @click="switchTheme" />
       <el-button :size="14" :p="8" mode="flat" type="fab" :label="$t('app.switchLang')"
         :icon="locale === 'fa' ? 'en' : 'fa'" @click="switchLanguage" />
+      <el-button ref="toolsButtonRef" :size="14" :p="8" mode="flat" type="fab" :label="$t('app.tools.menu')"
+        icon="more-vertical" @click="openToolsMenu" />
     </el-flex>
   </el-flex>
 </template>

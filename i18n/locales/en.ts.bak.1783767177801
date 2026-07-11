@@ -3373,17 +3373,6 @@ export default {
         replaceClipboardImageConfirm:
           "Pasting a new clipboard image will replace the current source image and its current result.",
       },
-      progress: {
-        preparing: "Preparing...",
-        enhancing: "Enhancing image...",
-        quantizing: "Quantizing colors...",
-        background: "Detecting background...",
-        regions: "Building regions...",
-        tracing: "Tracing shapes...",
-        svg: "Generating SVG...",
-        preview: "Rendering preview...",
-        finalizing: "Finalizing...",
-      },
     },
     imageConverter: {
       title: "Image Converter",

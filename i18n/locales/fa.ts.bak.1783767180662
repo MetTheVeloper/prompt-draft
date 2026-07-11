@@ -3338,17 +3338,6 @@ export default {
         replaceClipboardImageConfirm:
           "پیست کردن تصویر جدید از کلیپ‌بورد، تصویر منبع فعلی و نتیجه‌ی فعلی آن را جایگزین می‌کند.",
       },
-      progress: {
-        preparing: "در حال آماده‌سازی...",
-        enhancing: "در حال بهبود تصویر...",
-        quantizing: "در حال کوانتایز رنگ‌ها...",
-        background: "در حال تشخیص پس‌زمینه...",
-        regions: "در حال ساخت ناحیه‌ها...",
-        tracing: "در حال trace کردن شکل‌ها...",
-        svg: "در حال ساخت SVG...",
-        preview: "در حال رندر پیش‌نمایش...",
-        finalizing: "در حال نهایی‌سازی...",
-      },
     },
     imageConverter: {
       title: "تبدیل تصاویر",

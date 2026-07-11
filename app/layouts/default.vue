@@ -13,7 +13,7 @@ const currentThemeMode = computed(() => {
 });
 
 const padding = computed(() => {
-  return route.name === "index" || route.name === "collage"
+  return route.name === "index" || route.name === "collage" || route.name === "vectorizer"
     ? 0
     : tablet.value
       ? 24
@@ -34,17 +34,62 @@ async function switchLanguage() {
   await setLocale(nextLocale);
 }
 
+function openVectorizer() {
+  navigateTo('/vectorizer')
+}
+
+import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
+
+const modal = useModal();
+
+function openImageConverterModal() {
+  modal.open({
+    header: {
+      icon: 'gallery-export',
+      title: t('tools.imageConverter.title'),
+      subtitle: t('tools.imageConverter.subtitle'),
+      closeButton: true,
+      color: 'prim',
+    },
+    component: ImageBatchConverter,
+    options: {
+      width: 720,
+      maxHeight: '85vh',
+      closeOnBackdrop: false,
+      closeOnEsc: true,
+      persistent: true,
+    },
+  })
+}
+
 const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
   return [
     {
       label: t("app.switchTheme"),
       icon: currentThemeMode.value === "dark" ? "sun-1" : "moon",
       handler: switchTheme,
+      color: 'normal15',
     },
     {
       label: t("app.switchLang"),
       icon: locale.value === "fa" ? "en" : "fa",
       handler: switchLanguage,
+      color: 'normal15',
+    },
+    {
+      type: "divider",
+    },
+    {
+      label: t("tools.imageConverter.title"),
+      icon: 'gallery-export',
+      handler: openImageConverterModal,
+      color: 'normal15',
+    },
+    {
+      label: t("tools.imageVectorizer.title"),
+      icon: 'shapes',
+      handler: openVectorizer,
+      color: 'normal15',
     },
     {
       type: "divider",
@@ -97,7 +142,10 @@ function handleLayoutContextMenu(event: MouseEvent) {
     <Header @contextmenu="openLayoutDefaultContextMenu" />
     <el-flex
       rules="csc"
-      class="w100 fg100 ofha"
+      :style="{
+        height: `calc(100vh - ${dimension().header.height}px)`,
+      }"
+      class="w100 ofha"
       :p="padding"
       @contextmenu="handleLayoutContextMenu">
       <slot />
