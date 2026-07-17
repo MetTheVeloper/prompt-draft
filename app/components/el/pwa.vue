@@ -12,9 +12,12 @@ type BeforeInstallPromptEvent = Event & {
 }
 
 const { t } = useI18n()
+const modal = useModal()
+const offlinePackage = useOfflinePackage()
 
 const DISMISS_DAYS = 3
 const DISMISS_KEY = 'prompt-draft:pwa-install-dismissed-until'
+const OFFLINE_PROMPT_KEY = 'prompt-draft:offline-package-prompted'
 
 const installPrompt = shallowRef<BeforeInstallPromptEvent | null>(null)
 
@@ -22,6 +25,7 @@ const isInstallable = ref(false)
 const isIosGuideVisible = ref(false)
 const isDismissed = ref(false)
 const isStandaloneMode = ref(false)
+const isMounted = ref(false)
 
 const shouldShowBanner = computed(() => {
   if (isNativeApp.value) return false
@@ -75,6 +79,100 @@ const getDismissedState = () => {
   return Date.now() < dismissedUntil
 }
 
+function hasPromptedForVersion(version: string) {
+  if (!import.meta.client) return false
+
+  try {
+    return sessionStorage.getItem(OFFLINE_PROMPT_KEY) === version
+  } catch {
+    return false
+  }
+}
+
+function markVersionPrompted(version: string) {
+  if (!import.meta.client) return
+
+  try {
+    sessionStorage.setItem(OFFLINE_PROMPT_KEY, version)
+  } catch {
+    // Storage can be unavailable in private browsing modes.
+  }
+}
+
+async function maybeOfferOfflinePackage() {
+  if (!isMounted.value) return
+  if (isNativeApp.value) return
+  if (!offlinePackage.state.isStandalone) return
+  if (!offlinePackage.state.online) return
+  if (!offlinePackage.state.checked) return
+  if (offlinePackage.state.ready) return
+
+  const hasCompleteCurrentCache = (
+    offlinePackage.state.totalFiles > 0 &&
+    offlinePackage.state.completedFiles >= offlinePackage.state.totalFiles &&
+    offlinePackage.state.progress >= 100
+  )
+
+  if (hasCompleteCurrentCache) return
+  if (offlinePackage.state.downloading) return
+  if (!offlinePackage.state.version) return
+  if (hasPromptedForVersion(offlinePackage.state.version)) return
+
+  markVersionPrompted(offlinePackage.state.version)
+
+  const isUpdate = offlinePackage.state.updateAvailable
+
+  modal.open({
+    header: {
+      icon: isUpdate ? 'refresh-2' : 'cloud-add',
+      title: isUpdate
+        ? t('pwa.offline.prompt.updateTitle')
+        : t('pwa.offline.prompt.title'),
+      subtitle: t('pwa.offline.prompt.subtitle'),
+      closeButton: true,
+      color: 'prim',
+    },
+    descriptions: [
+      isUpdate
+        ? t('pwa.offline.prompt.updateDescription', {
+            size: offlinePackage.formattedTotalSize.value,
+          })
+        : t('pwa.offline.prompt.description', {
+            size: offlinePackage.formattedTotalSize.value,
+          }),
+      t('pwa.offline.prompt.backgroundHint'),
+    ],
+    actions: [
+      {
+        label: isUpdate
+          ? t('pwa.offline.prompt.updateAction')
+          : t('pwa.offline.prompt.action'),
+        icon: 'cloud-add',
+        color: 'prim',
+        close: true,
+        handler: async () => {
+          const started = await offlinePackage.download()
+          return started
+        },
+      },
+      {
+        label: t('pwa.offline.prompt.later'),
+        icon: 'clock',
+        color: 'normal',
+        mode: 'flat',
+        close: true,
+      },
+    ],
+    options: {
+      width: 520,
+      closeOnBackdrop: true,
+      closeOnEsc: true,
+      persistent: false,
+      blur: true,
+    },
+  })
+}
+
 const dismissBanner = () => {
   const dismissedUntil = Date.now() + DISMISS_DAYS * 24 * 60 * 60 * 1000
 
@@ -101,7 +199,6 @@ const handleAppInstalled = () => {
   isInstallable.value = false
   isIosGuideVisible.value = false
   installPrompt.value = null
-  isStandaloneMode.value = true
 
   localStorage.removeItem(DISMISS_KEY)
 }
@@ -121,20 +218,78 @@ const handleInstallClick = async () => {
   installPrompt.value = null
 }
 
+watch(
+  () => [
+    offlinePackage.state.isStandalone,
+    offlinePackage.state.online,
+    offlinePackage.state.checked,
+    offlinePackage.state.ready,
+    offlinePackage.state.downloading,
+    offlinePackage.state.version,
+    offlinePackage.state.updateAvailable,
+  ],
+  () => {
+    void maybeOfferOfflinePackage()
+  },
+)
+
+watch(
+  () => offlinePackage.state.error,
+  (error) => {
+    if (!error || !isMounted.value) return
+    if (!offlinePackage.state.isStandalone) return
+
+    modal.open({
+      header: {
+        icon: 'warning-2',
+        title: t('pwa.offline.status.failed'),
+        closeButton: true,
+        color: 'orange',
+      },
+      descriptions: t('pwa.offline.status.failedDescription'),
+      actions: [
+        {
+          label: t('pwa.offline.status.retry'),
+          icon: 'refresh-2',
+          color: 'prim',
+          close: true,
+          disable: () => !offlinePackage.state.online,
+          handler: async () => offlinePackage.download(),
+        },
+        {
+          label: t('pwa.offline.prompt.later'),
+          icon: 'close-circle',
+          color: 'normal',
+          mode: 'flat',
+          close: true,
+        },
+      ],
+      options: {
+        width: 480,
+        closeOnBackdrop: true,
+        closeOnEsc: true,
+      },
+    })
+  },
+)
+
 onMounted(() => {
+  isMounted.value = true
   isNativeApp.value = Capacitor.isNativePlatform()
   isStandaloneMode.value = getIsStandalone()
 
-  if (isStandaloneMode.value) return
+  if (!isStandaloneMode.value) {
+    isDismissed.value = getDismissedState()
 
-  isDismissed.value = getDismissedState()
-
-  if (!isDismissed.value && getIsIos()) {
-    isIosGuideVisible.value = true
+    if (!isDismissed.value && getIsIos()) {
+      isIosGuideVisible.value = true
+    }
   }
 
   window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt)
   window.addEventListener('appinstalled', handleAppInstalled)
+
+  void maybeOfferOfflinePackage()
 })
 
 onUnmounted(() => {

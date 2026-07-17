@@ -1,27 +1,7 @@
 <script setup lang="ts">
-const { t } = useI18n();
-const { mini } = useScreen();
-
-import { usePromptTranslation } from "~/composables/prompt/usePromptTranslation";
-
-const { translateText } = usePromptTranslation();
-
-
-async function testTranslation() {
-  const result = await translateText({
-    text: "ساخت یک پوستر برای {app_name} با تیتر {title_1}",
-    source: "auto",
-    target: "en",
-    alternatives: 3,
-  });
-
-  console.log(result);
-}
-
-onMounted(async () => {
-  testTranslation();
-})
-
+const { t } = useI18n()
+const { mini } = useScreen()
+const offlinePackage = useOfflinePackage()
 </script>
 
 <template>
@@ -29,6 +9,16 @@ onMounted(async () => {
     <visual-tile :count="94" :interval="2000" :transition-duration="5000" extension="webp" :edge-blur="400"
       :z-index="50" />
     <el-flex rules="ccc" class="zi100 w100 h100" bg="surface45" bd="b0" :radius="0" :p="32">
+      <el-text
+        v-if="offlinePackage.state.isStandalone && !offlinePackage.state.online"
+        type="span"
+        :size="12"
+        :weight="700"
+        marker="orange40"
+        class="tc">
+        {{ t('pwa.offline.status.offlineMode') }}
+      </el-text>
+
       <el-text type="span" :size="12" :weight="600" class="tc">
         {{ t("home.eyebrow") }}
       </el-text>

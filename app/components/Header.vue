@@ -12,6 +12,27 @@ const { mini } = useScreen();
 const menu = useMenu();
 const modal = useModal();
 const toolsButtonRef = ref();
+const offlinePackage = useOfflinePackage();
+
+const offlineHeaderLabel = computed(() => {
+  if (offlinePackage.state.downloading) {
+    if (mini.value) return `${offlinePackage.state.progress}%`
+
+    return translate('pwa.offline.status.downloading', {
+      progress: offlinePackage.state.progress,
+    })
+  }
+
+  if (offlinePackage.state.isStandalone && !offlinePackage.state.online) {
+    return translate('pwa.offline.status.offlineMode')
+  }
+
+  return ''
+})
+
+const offlineHeaderMarker = computed(() => {
+  return offlinePackage.state.downloading ? 'prim40' : 'orange40'
+})
 
 const emit = defineEmits<{
   (event: "contextmenu", value: MouseEvent): void;
@@ -125,6 +146,15 @@ function openToolsMenu() {
         :icon="item.icon" :type="mini && route.name !== item.name ? 'fab' : 'default'" :gap="8" :size="12"
         :p="[8, 12]" />
     </el-flex>
+    <el-text
+      v-if="offlineHeaderLabel"
+      type="span"
+      :size="mini ? 10 : 11"
+      :weight="700"
+      :marker="offlineHeaderMarker"
+      :style="{ whiteSpace: 'nowrap' }">
+      {{ offlineHeaderLabel }}
+    </el-text>
     <el-flex rules="rcc">
       <el-button :size="14" :p="8" mode="flat" type="fab" :label="$t('app.switchTheme')"
         :icon="t.theme.mode === 'dark' ? 'sun-1' : 'moon'" @click="switchTheme" />

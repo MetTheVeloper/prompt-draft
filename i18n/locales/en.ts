@@ -16,6 +16,31 @@ export default {
     },
   },
   pwa: {
+    offline: {
+      prompt: {
+        title: "Use Prompt Draft offline",
+        updateTitle: "Update offline version",
+        subtitle: "Offline package",
+        description:
+          "Download all required app files ({size}) so Prompt Draft can work without an internet connection.",
+        updateDescription:
+          "A new offline version is available ({size}). Download it to keep offline mode up to date.",
+        backgroundHint:
+          "The download runs in the background, and you can keep using the app while it finishes.",
+        action: "Download for offline use",
+        updateAction: "Update offline version",
+        later: "Not now",
+      },
+      status: {
+        downloading: "Offline download · {progress}%",
+        offlineMode: "You are using offline mode.",
+        ready: "Ready for offline use",
+        failed: "Offline download failed",
+        failedDescription:
+          "Some files could not be downloaded. Check your connection and try again.",
+        retry: "Try again",
+      },
+    },
     install: {
       android: {
         title: "Install app",
