@@ -48,6 +48,7 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(request.url)
 
   if (url.origin !== self.location.origin) return
+  if (isLocalDevelopment(url)) return
 
   if (isControlFile(url)) {
     event.respondWith(networkFirst(request, RUNTIME_CACHE))
@@ -623,6 +624,14 @@ function isControlFile(url) {
   return (
     url.pathname === '/sw.js' ||
     url.pathname === OFFLINE_MANIFEST_URL
+  )
+}
+
+function isLocalDevelopment(url) {
+  return (
+    url.hostname === 'localhost' ||
+    url.hostname === '127.0.0.1' ||
+    url.hostname === '[::1]'
   )
 }
 

@@ -1,10 +1,25 @@
 import { Capacitor } from '@capacitor/core'
 import { initializeOfflinePackage } from '~/composables/useOfflinePackage'
 
-export default defineNuxtPlugin(() => {
+export default defineNuxtPlugin(async () => {
   if (!import.meta.client) return
   if (Capacitor.isNativePlatform()) return
   if (!('serviceWorker' in navigator)) return
+
+  if (import.meta.dev) {
+    const registrations = await navigator.serviceWorker.getRegistrations()
+    const hadController = !!navigator.serviceWorker.controller
+
+    await Promise.all(
+      registrations.map(registration => registration.unregister()),
+    )
+
+    if (hadController) {
+      window.location.reload()
+    }
+
+    return
+  }
 
   async function registerServiceWorker() {
     try {
