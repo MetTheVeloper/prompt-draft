@@ -50,6 +50,9 @@ const boxStyle = computed(() => {
   const options = getOptions()
   const anchorRect = getAnchorRect()
   const safePadding = options.safePadding ?? 12
+  const defaultMaxHeight = currentMenu?.mode === 'point'
+    ? '50vh'
+    : `calc(100vh - ${safePadding * 2}px)`
 
   const style: Record<string, string | number> = {
     left: `${position.left}px`,
@@ -58,7 +61,7 @@ const boxStyle = computed(() => {
     visibility: position.ready ? 'visible' : 'hidden',
     opacity: position.ready ? 1 : 0,
     maxWidth: toCssSize(options.maxWidth) || `calc(100vw - ${safePadding * 2}px)`,
-    maxHeight: toCssSize(options.maxHeight) || `calc(100vh - ${safePadding * 2}px)`,
+    maxHeight: toCssSize(options.maxHeight) || defaultMaxHeight,
     overflowY: 'auto',
   }
 
