@@ -134,20 +134,22 @@ export function drawImagePip(
   image: HTMLImageElement,
   x: number,
   y: number,
-  size: number,
+  width: number,
+  height: number,
   options: ImagePipDrawOptions = {},
 ) {
   const radius = Math.max(0, options.radius ?? 16)
+  const shortSide = Math.min(width, height)
 
   ctx.save()
 
   if (options.shadow !== false) {
     ctx.shadowColor = 'rgba(0, 0, 0, 0.28)'
-    ctx.shadowBlur = Math.max(10, size * 0.08)
+    ctx.shadowBlur = Math.max(10, shortSide * 0.08)
     ctx.shadowOffsetX = 0
-    ctx.shadowOffsetY = Math.max(3, size * 0.035)
+    ctx.shadowOffsetY = Math.max(3, shortSide * 0.035)
 
-    drawRoundedRect(ctx, x, y, size, size, radius)
+    drawRoundedRect(ctx, x, y, width, height, radius)
     ctx.fillStyle = 'rgba(0, 0, 0, 0.12)'
     ctx.fill()
   }
@@ -157,21 +159,17 @@ export function drawImagePip(
   ctx.shadowOffsetX = 0
   ctx.shadowOffsetY = 0
 
-  drawRoundedRect(ctx, x, y, size, size, radius)
+  drawRoundedRect(ctx, x, y, width, height, radius)
   ctx.clip()
 
-  drawImageInCell(ctx, image, x, y, size, size, {
-    fit: 'cover',
-    panX: 0,
-    panY: 0,
-  })
+  ctx.drawImage(image, x, y, width, height)
 
   ctx.restore()
 
   ctx.save()
-  drawRoundedRect(ctx, x, y, size, size, radius)
+  drawRoundedRect(ctx, x, y, width, height, radius)
   ctx.strokeStyle = 'rgba(255, 255, 255, 0.55)'
-  ctx.lineWidth = Math.max(1, Math.min(3, size * 0.018))
+  ctx.lineWidth = Math.max(1, Math.min(3, shortSide * 0.018))
   ctx.stroke()
   ctx.restore()
 }

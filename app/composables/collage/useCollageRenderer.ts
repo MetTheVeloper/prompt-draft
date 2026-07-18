@@ -173,23 +173,44 @@ function getPipRect(
 ): CollagePipRect {
   const margin = getPipMargin(cell)
   const minCellSide = Math.max(1, Math.min(cell.width, cell.height))
-  const maxAvailableSide = Math.max(1, minCellSide - margin * 2)
+  const maxAvailableWidth = Math.max(1, cell.width - margin * 2)
+  const maxAvailableHeight = Math.max(1, cell.height - margin * 2)
+  const maxAvailableShortSide = Math.min(
+    maxAvailableWidth,
+    maxAvailableHeight,
+  )
   const targetSide = minCellSide * PIP_SIZE_RATIOS[pip.size]
-  const size = Math.round(
+  const shortSide = Math.round(
     clamp(
       targetSide,
-      Math.min(48, maxAvailableSide),
-      Math.min(PIP_SIZE_MAX[pip.size], maxAvailableSide),
+      Math.min(48, maxAvailableShortSide),
+      Math.min(PIP_SIZE_MAX[pip.size], maxAvailableShortSide),
     ),
   )
 
+  const imageWidth = Math.max(1, pip.width || pip.image.naturalWidth || 1)
+  const imageHeight = Math.max(1, pip.height || pip.image.naturalHeight || 1)
+  const aspectRatio = imageWidth / imageHeight
+
+  let width = aspectRatio >= 1 ? shortSide * aspectRatio : shortSide
+  let height = aspectRatio >= 1 ? shortSide : shortSide / aspectRatio
+
+  const fitScale = Math.min(
+    1,
+    maxAvailableWidth / width,
+    maxAvailableHeight / height,
+  )
+
+  width *= fitScale
+  height *= fitScale
+
   const left = cell.x + margin
-  const centerX = cell.x + cell.width / 2 - size / 2
-  const right = cell.x + cell.width - margin - size
+  const centerX = cell.x + cell.width / 2 - width / 2
+  const right = cell.x + cell.width - margin - width
 
   const top = cell.y + margin
-  const centerY = cell.y + cell.height / 2 - size / 2
-  const bottom = cell.y + cell.height - margin - size
+  const centerY = cell.y + cell.height / 2 - height / 2
+  const bottom = cell.y + cell.height - margin - height
 
   let x = right
   let y = bottom
@@ -205,8 +226,8 @@ function getPipRect(
   return {
     x,
     y,
-    width: size,
-    height: size,
+    width,
+    height,
   }
 }
 
@@ -925,8 +946,10 @@ export function useCollageRenderer(options: UseCollageRendererOptions) {
             : 0,
         )
         ctx.clip()
-        drawImagePip(ctx, pip.image, rect.x, rect.y, rect.width, {
-          radius: Math.max(8, Math.min(18, rect.width * 0.12)),
+        const pipShortSide = Math.min(rect.width, rect.height)
+
+        drawImagePip(ctx, pip.image, rect.x, rect.y, rect.width, rect.height, {
+          radius: Math.max(8, Math.min(18, pipShortSide * 0.12)),
           shadow: true,
         })
         ctx.restore()
