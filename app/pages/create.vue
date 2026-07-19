@@ -921,6 +921,8 @@ function openDraftMenu(event: MouseEvent) {
       closeOnScroll: false,
       zIndex: 2200,
       minWidth: 220,
+      maxWidth: 320,
+      maxHeight: '50vh',
     },
     items,
   });
@@ -1185,8 +1187,8 @@ function handleCreatePageContextMenu(event: MouseEvent) {
       onRefreshPage: refreshCreatePage,
     },
     minWidth: 340,
-    maxWidth: "calc(100vw - 24px)",
-    maxHeight: "calc(100vh - 24px)",
+    maxWidth: "calc(100vw - 80px)",
+    maxHeight: "200px",
     closeOnScroll: false,
     zIndex: 2300,
   });

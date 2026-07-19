@@ -64,7 +64,7 @@ async function handleItemClick(item: GlobalMenuItem) {
 
       <el-flex v-else-if="isHeader(item)" rules="rsc" class="globalMenuHeader w100" :p="[8, 10]">
         <el-text :size="11" :weight="600" color="normal45" :icon="item.icon">
-          {{ item.label }}
+          {{ stringShortner(item.label, 16) }}
         </el-text>
       </el-flex>
 
