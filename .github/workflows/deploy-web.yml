@@ -1,0 +1,77 @@
+name: Deploy Web to ArvanCloud
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-web-production
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    name: Generate and deploy static website
+    runs-on: ubuntu-latest
+    environment: production
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.6.0 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Generate Nuxt static output
+        run: pnpm generate
+
+      - name: Validate generated output
+        run: test -f .output/public/index.html
+
+      - name: Validate deployment configuration
+        env:
+          ARVAN_S3_ENDPOINT: ${{ secrets.ARVAN_S3_ENDPOINT }}
+          ARVAN_S3_REGION: ${{ secrets.ARVAN_S3_REGION }}
+          ARVAN_S3_BUCKET: ${{ secrets.ARVAN_S3_BUCKET }}
+          ARVAN_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          ARVAN_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+        run: |
+          test -n "$ARVAN_S3_ENDPOINT"
+          test -n "$ARVAN_S3_REGION"
+          test -n "$ARVAN_S3_BUCKET"
+          test -n "$ARVAN_ACCESS_KEY_ID"
+          test -n "$ARVAN_SECRET_ACCESS_KEY"
+
+      - name: Deploy to ArvanCloud Object Storage
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.ARVAN_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.ARVAN_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ${{ secrets.ARVAN_S3_REGION }}
+          AWS_EC2_METADATA_DISABLED: "true"
+          ARVAN_S3_ENDPOINT: ${{ secrets.ARVAN_S3_ENDPOINT }}
+          ARVAN_S3_BUCKET: ${{ secrets.ARVAN_S3_BUCKET }}
+        run: |
+          aws configure set default.s3.addressing_style path
+
+          aws s3api head-bucket \
+            --bucket "$ARVAN_S3_BUCKET" \
+            --endpoint-url "$ARVAN_S3_ENDPOINT"
+
+          aws s3 sync .output/public/ "s3://$ARVAN_S3_BUCKET/" \
+            --endpoint-url "$ARVAN_S3_ENDPOINT" \
+            --acl public-read \
+            --only-show-errors

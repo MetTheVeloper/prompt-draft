@@ -16,7 +16,7 @@ const offlinePackage = useOfflinePackage()
         :weight="700"
         marker="orange40"
         class="tc">
-        {{ t('pwa.offline.status.offlineMode') }}
+        {{ t('pwa.offline.status.offlineMode') }} test
       </el-text>
 
       <el-text type="span" :size="12" :weight="600" class="tc">
