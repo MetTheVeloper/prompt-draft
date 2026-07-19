@@ -16,11 +16,11 @@ const offlinePackage = useOfflinePackage()
         :weight="700"
         marker="orange40"
         class="tc">
-        {{ t('pwa.offline.status.offlineMode') }} test
+        {{ t('pwa.offline.status.offlineMode') }}
       </el-text>
 
       <el-text type="span" :size="12" :weight="600" class="tc">
-        {{ t("home.eyebrow") }}
+        {{ t("home.eyebrow") }} test
       </el-text>
       <el-text type="h1" :size="mini ? 40 : 64" :weight="800" effect="glitch" marker="normal50" color="surface"
         class="tc">
