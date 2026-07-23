@@ -20,7 +20,7 @@ const offlinePackage = useOfflinePackage()
       </el-text>
 
       <el-text type="span" :size="12" :weight="600" class="tc">
-        {{ t("home.eyebrow") }} test
+        {{ t("home.eyebrow") }}
       </el-text>
       <el-text type="h1" :size="mini ? 40 : 64" :weight="800" effect="glitch" marker="normal50" color="surface"
         class="tc">
