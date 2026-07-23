@@ -370,7 +370,6 @@ function createSystemVariable(key: string, value: ModuleOutputValue) {
 
 function getActiveSystemPromptVariables(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
   const variables = [
     createSystemVariable("mode", modeToPromptText(settings.mode)),
@@ -422,20 +421,15 @@ function getActiveSystemPromptVariables(
     variables.push(createSystemVariable("rules", settings.globalRules))
   }
 
-  moduleOutputs.forEach((item) => {
-    variables.push(createSystemVariable(item.key, item.output))
-  })
-
   return variables.filter((variable) => variable.enabled)
 }
 
 function syncActiveSystemPromptVariables(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
   const { setSystemPromptVariables } = usePromptVariables()
 
-  setSystemPromptVariables(getActiveSystemPromptVariables(settings, moduleOutputs))
+  setSystemPromptVariables(getActiveSystemPromptVariables(settings))
 }
 
 function compileModularOutput(
@@ -694,7 +688,7 @@ export function compilePromptOutput(
   const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
   const variablesOutput = getVariablesOutput(outputs)
 
-  syncActiveSystemPromptVariables(settings, moduleOutputs)
+  syncActiveSystemPromptVariables(settings)
 
   const hasSettingsOutput =
     settings.idea.trim() ||

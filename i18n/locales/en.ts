@@ -1981,10 +1981,17 @@ export default {
           label: "Text Groups",
           actions: {
             addGroup: "Add Group",
+            cancel: "Cancel",
+            create: "Create",
+            save: "Save",
+            confirmDelete: "Delete",
           },
           block: {
             actions: {
               remove: "Remove Text",
+              edit: "Edit text",
+              moveUp: "Move up",
+              moveDown: "Move down",
             },
             controls: {
               additionalDescription: {
@@ -1996,6 +2003,10 @@ export default {
               },
               fontStyle: {
                 label: "Font Style",
+                groups: {
+                  presets: "Font presets",
+                  variables: "Font variables",
+                },
               },
               fontWeight: {
                 label: "Font Weight",
@@ -2031,12 +2042,18 @@ export default {
             validation: {
               requiredTextEmpty: "Text content is required.",
             },
+            modal: {
+              createTitle: "Create text",
+              editTitle: "Edit text",
+              stableKey: "Stable typography text key",
+            },
           },
           count: "{count} text groups",
           group: {
             actions: {
               addText: "Add Text",
               remove: "Remove Group",
+              edit: "Edit group",
             },
             controls: {
               additionalDescription: {
@@ -2058,12 +2075,39 @@ export default {
               },
               positionPreset: {
                 label: "Position Preset",
+                groups: {
+                  presets: "Preset positions",
+                  layout: "Layout regions",
+                  custom: "Custom",
+                },
+                custom: "Custom position",
+                missingRegion: "Missing layout region",
               },
               writingDirection: {
                 label: "Writing Direction",
               },
+              customPositionDescription: {
+                label: "Custom Position Description",
+                placeholder:
+                  "Describe the custom position, placement logic, orbit path, spacing, or layout behavior for this text group...",
+              },
+              customGroupPurpose: {
+                label: "Custom group purpose",
+              },
             },
             textBlocksTitle: "Text Blocks",
+            list: {
+              textCount: "{count} texts",
+              customPosition: "Custom position",
+            },
+            emptyTexts: "No text has been added to this group yet.",
+            modal: {
+              createTitle: "Create text group",
+              editTitle: "Edit text group",
+              deleteTitle: "Delete text group",
+              deleteDescription: "The text group and all of its text items will be removed.",
+              stableKey: "Stable typography group key",
+            },
           },
           title: "Typography Groups",
           empty: {
@@ -2118,6 +2162,7 @@ export default {
             reference: "Reference",
             subject: "Subject",
             text: "Text",
+            font: "Font",
           },
           actions: {
             add: "Add Variable",
@@ -2167,6 +2212,10 @@ export default {
               user: "User",
               system: "System",
             },
+            tabs: {
+              user: "User",
+              system: "System",
+            },
           },
           empty: {
             title: "No variables yet",
@@ -2203,6 +2252,271 @@ export default {
         },
       },
       title: "Variables",
+    },
+    layout: {
+      description:
+        "Define layout structure, composition, visual hierarchy, density, and reusable regions for the final image.",
+      fields: {
+        composition: {
+          description: "Choose how the main visual areas are arranged inside the canvas.",
+          label: "Composition",
+          options: {
+            asymmetric_editorial: "Asymmetric Editorial",
+            centered_stack: "Centered Stack",
+            comic_panels: "Comic Panels",
+            freeform: "Freeform",
+            full_bleed: "Full Bleed",
+            image_with_bottom_panel: "Image with Bottom Panel",
+            image_with_side_panel: "Image with Side Panel",
+            layered_collage: "Layered Collage",
+            modular_grid: "Modular Grid",
+            single_focal: "Single Focal",
+            split_horizontal: "Split Horizontal",
+            split_vertical: "Split Vertical",
+          },
+        },
+        density: {
+          description:
+            "Control how much visual information, spacing, and content should appear in the layout.",
+          label: "Density",
+          options: {
+            balanced: "Balanced",
+            dense: "Dense",
+            maximal: "Maximal",
+            sparse: "Sparse",
+          },
+        },
+        hierarchy: {
+          description:
+            "Define which content type should feel most important in the final composition.",
+          label: "Hierarchy",
+          options: {
+            balanced: "Balanced",
+            image_dominant: "Image Dominant",
+            information_dominant: "Information Dominant",
+            product_dominant: "Product Dominant",
+            text_dominant: "Text Dominant",
+          },
+        },
+        layoutType: {
+          description: "Select the overall layout format or design use case.",
+          label: "Layout Type",
+          options: {
+            banner: "Banner",
+            business_card: "Business Card",
+            collage: "Collage",
+            comic_page: "Comic Page",
+            cover: "Cover",
+            custom: "Custom",
+            editorial_page: "Editorial Page",
+            poster: "Poster",
+            presentation_slide: "Presentation Slide",
+            product_sheet: "Product Sheet",
+            social_post: "Social Post",
+          },
+        },
+        regions: {
+          actions: {
+            add: "Add Region",
+            moveDown: "Move Down",
+            moveUp: "Move Up",
+            remove: "Remove",
+            apply: "Apply",
+            cancel: "Cancel",
+            delete: "Delete",
+            duplicate: "Duplicate",
+            edit: "Edit",
+            visualBuilder: "Visual Builder",
+            confirmDelete: "Delete Region",
+            create: "Create Region",
+            save: "Save",
+          },
+          builderDescription:
+            "Add and arrange layout regions with roles, coordinates, layers, alignment, and fit behavior.",
+          builderTitle: "Region Builder",
+          contentKey: "Content Key",
+          coordinates: {
+            height: "Height",
+            width: "Width",
+            x: "X",
+            y: "Y",
+          },
+          defaultName: "Region",
+          description:
+            "Define custom layout regions and control where each type of content should appear.",
+          empty: {
+            description:
+              "Create layout regions to define where text, images, logos, backgrounds, and other content should appear.",
+            title: "No layout regions yet",
+          },
+          fit: {
+            contain: "Contain",
+            cover: "Cover",
+            fill: "Fill",
+            natural: "Natural",
+            none: "None",
+          },
+          horizontalAlign: {
+            center: "Center",
+            end: "End",
+            start: "Start",
+            stretch: "Stretch",
+            none: "None",
+          },
+          label: "Regions",
+          layer: "Layer",
+          name: "Name",
+          overflow: {
+            hidden: "Hidden",
+            visible: "Visible",
+            none: "None",
+          },
+          roles: {
+            background: "Background",
+            badge: "Badge",
+            cta: "CTA",
+            custom: "Custom",
+            decoration: "Decoration",
+            empty_space: "Empty Space",
+            hero_image: "Hero Image",
+            logo: "Logo",
+            metadata: "Metadata",
+            supporting_image: "Supporting Image",
+            text: "Text",
+            none: "None",
+          },
+          verticalAlign: {
+            center: "Center",
+            end: "End",
+            start: "Start",
+            stretch: "Stretch",
+            none: "None",
+          },
+          list: {
+            title: "Region List",
+            description: "Review, edit, duplicate, reorder, or remove layout regions.",
+            layer: "Layer {layer}",
+            bounds: "x {x} · y {y} · w {width} · h {height}",
+            contentKey: "{key}",
+            contentKeyEmpty: "No content key assigned",
+          },
+          visualBuilder: {
+            grid: {
+              apply: "Apply Grid",
+              columns: "Columns",
+              description: "Set the grid size used for drawing and snapping visual layout regions.",
+              rows: "Rows",
+              title: "Builder Grid",
+              pendingChange: "Grid changes are pending",
+            },
+            hint: "Draw or select cells on the grid to define a layout region visually.",
+            modal: {
+              subtitle: "Create and adjust layout regions directly on a visual grid.",
+              title: "Visual Region Builder",
+            },
+            regionCount: "{count} regions",
+            selectionSummary: "{count} cells selected",
+            tools: {
+              draw: "Draw",
+              select: "Select",
+            },
+            gridReset: {
+              confirm: "Apply Grid Reset",
+              description:
+                "Changing the grid size will reset the current visual builder selection and may affect existing region placement.",
+              subtitle: "Review the new grid size before applying it.",
+              title: "Reset Builder Grid?",
+            },
+          },
+          controls: {
+            contentKey: {
+              label: "Content Key",
+              placeholder: "Enter a variable key or content reference...",
+            },
+            description: {
+              label: "Description",
+              placeholder: "Describe what this region should contain or how it should behave...",
+            },
+            fit: {
+              label: "Fit",
+            },
+            geometry: {
+              description:
+                "Set the region position, size, and layer using normalized layout values.",
+              height: "Height",
+              layer: "Layer",
+              title: "Geometry",
+              width: "Width",
+              x: "X",
+              y: "Y",
+            },
+            horizontalAlign: {
+              label: "Horizontal Align",
+            },
+            name: {
+              label: "Name",
+              placeholder: "Region name...",
+            },
+            overflow: {
+              label: "Overflow",
+            },
+            role: {
+              label: "Role",
+            },
+            verticalAlign: {
+              label: "Vertical Align",
+            },
+            customRole: {
+              label: "Custom Role",
+              placeholder: "Describe the custom role of this region...",
+            },
+          },
+          modal: {
+            createTitle: "Create Region",
+            deleteDescription:
+              "This region will be removed from the layout. This action cannot be undone.",
+            deleteTitle: "Delete Region",
+            editorSubtitle:
+              "Configure the region role, content, geometry, alignment, fit, and overflow behavior.",
+            editTitle: "Edit Region",
+          },
+          validation: {
+            invalidGeometry:
+              "Region geometry is invalid. Check the X, Y, width, and height values.",
+            customRoleRequired: "Custom role is required when the region role is set to custom.",
+          },
+        },
+        extraDetails: {
+          description:
+            "Add global layout notes such as spacing, visual flow, composition rules, margins, safe areas, or custom placement behavior.",
+          label: "Extra Details",
+          placeholder:
+            "Describe any global layout rules, spacing notes, safe areas, margins, visual flow, or custom placement behavior...",
+        },
+      },
+      groups: {
+        advanced: {
+          description: "Fine-tune density, hierarchy, and advanced layout behavior.",
+          title: "Advanced Layout",
+        },
+        regions: {
+          description:
+            "Create custom regions for text, images, logos, backgrounds, and other layout elements.",
+          title: "Layout Regions",
+        },
+        structure: {
+          description: "Choose the main layout type, composition style, and overall structure.",
+          title: "Layout Structure",
+        },
+      },
+      title: "Layout",
+      schema: {
+        actions: {
+          copied: "Copied",
+          copy: "Copy",
+          copyJson: "Copy JSON",
+        },
+      },
     },
   },
   panel: {

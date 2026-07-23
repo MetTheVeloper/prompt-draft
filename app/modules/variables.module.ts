@@ -1,4 +1,4 @@
-import type { PromptKeyModule } from "./types";
+import type { PromptKeyModule } from "./types"
 
 const variableTypeOptions = [
   {
@@ -27,11 +27,16 @@ const variableTypeOptions = [
     tags: ["variable", "color"],
   },
   {
+    value: "font",
+    promptText: "font or lettering style reference",
+    tags: ["variable", "font", "typography"],
+  },
+  {
     value: "custom",
     promptText: "custom value",
     tags: ["variable", "custom"],
   },
-];
+]
 
 export const VariablesModule: PromptKeyModule = {
   key: "variables",
@@ -54,7 +59,7 @@ export const VariablesModule: PromptKeyModule = {
       },
       config: {
         typeOptions: variableTypeOptions,
-        reservedPatterns: ["text_*", "text_group_*"],
+        reservedPatterns: ["text_*", "text_group_*", "layout_region_*"],
         supportVariables: false,
       },
     },
@@ -65,4 +70,4 @@ export const VariablesModule: PromptKeyModule = {
     removeDuplicates: false,
     ignoreEmpty: true,
   },
-};
+}

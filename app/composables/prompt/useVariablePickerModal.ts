@@ -1,44 +1,116 @@
-import VariablePickerModal from "~/components/modals/VariablePickerModal.vue";
-import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
-import type { PromptVariable } from "~/modules/types";
+import VariablePickerModal from "~/components/modals/VariablePickerModal.vue"
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables"
+import type {
+  PromptVariable,
+  PromptVariableGroup,
+} from "~/modules/types"
 
-type VariablePickerModalOpenOptions = {
-  variables?: PromptVariable[];
-  systemVariables?: PromptVariable[];
-  force?: boolean;
-  insertOnSelect?: boolean;
-  closeOnSelect?: boolean;
-  onSelect?: (variable: PromptVariable) => void;
-};
+export type VariablePickerModalOpenOptions = {
+  groups?: PromptVariableGroup[]
+  variables?: PromptVariable[]
+  systemVariables?: PromptVariable[]
+  groupIds?: string[]
+  excludeKeys?: string[]
+  force?: boolean
+  insertOnSelect?: boolean
+  closeOnSelect?: boolean
+  onSelect?: (variable: PromptVariable) => void
+}
 
-function hasVisibleVariables(variables: PromptVariable[]) {
-  return variables.some((variable) => {
-    return variable.enabled !== false && !!String(variable.key || "").trim();
-  });
+function hasVisibleVariables(groups: PromptVariableGroup[]) {
+  return groups.some((group) => {
+    return group.variables.some((variable) => {
+      return variable.enabled !== false && Boolean(variable.key?.trim())
+    })
+  })
+}
+
+function cloneGroups(groups: PromptVariableGroup[]) {
+  return groups.map((group) => ({
+    ...group,
+    variables: group.variables.map((variable) => ({ ...variable })),
+  }))
 }
 
 export function useVariablePickerModal() {
-  const { t } = useI18n();
-  const modal = useModal();
+  const { t } = useI18n()
+  const modal = useModal()
   const {
     enabledPromptVariables,
     enabledSystemPromptVariables,
+    enabledModuleVariableGroups,
+    variableGroups,
     hasInsertableVariables,
-  } = usePromptVariables();
+  } = usePromptVariables()
+
+  function resolveGroups(options: VariablePickerModalOpenOptions) {
+    let groups: PromptVariableGroup[]
+
+    if (Array.isArray(options.groups)) {
+      groups = cloneGroups(options.groups)
+    } else if (
+      Array.isArray(options.variables) ||
+      Array.isArray(options.systemVariables)
+    ) {
+      groups = []
+
+      const userVariables = Array.isArray(options.variables)
+        ? options.variables
+        : enabledPromptVariables.value
+
+      const systemVariables = Array.isArray(options.systemVariables)
+        ? options.systemVariables
+        : enabledSystemPromptVariables.value
+
+      if (userVariables.length) {
+        groups.push({
+          id: "user",
+          labelKey: "modules.variables.fields.variables.picker.tabs.user",
+          label: "User",
+          order: 0,
+          source: "user",
+          variables: userVariables,
+        })
+      }
+
+      if (systemVariables.length) {
+        groups.push({
+          id: "system",
+          labelKey: "modules.variables.fields.variables.picker.tabs.system",
+          label: "System",
+          order: 999,
+          source: "system",
+          variables: systemVariables,
+        })
+      }
+    } else {
+      groups = cloneGroups(variableGroups.value)
+    }
+
+    const allowedGroups = Array.isArray(options.groupIds)
+      ? new Set(options.groupIds)
+      : null
+
+    const excludedKeys = new Set(
+      (options.excludeKeys || []).map((key) => key.trim().toLowerCase()),
+    )
+
+    return groups
+      .filter((group) => !allowedGroups || allowedGroups.has(group.id))
+      .map((group) => ({
+        ...group,
+        variables: group.variables.filter((variable) => {
+          return !excludedKeys.has(variable.key.trim().toLowerCase())
+        }),
+      }))
+      .filter((group) => group.variables.length > 0)
+  }
 
   function openVariablePicker(options: VariablePickerModalOpenOptions = {}) {
-    const variables = Array.isArray(options.variables)
-      ? options.variables
-      : enabledPromptVariables.value;
+    const groups = resolveGroups(options)
 
-    const systemVariables = Array.isArray(options.systemVariables)
-      ? options.systemVariables
-      : enabledSystemPromptVariables.value;
-
-    const hasVariables = hasVisibleVariables(variables) || hasVisibleVariables(systemVariables);
-
-    if (!options.force && !hasInsertableVariables.value) return false;
-    if (!options.force && !hasVariables) return false;
+    if (!options.force && !hasInsertableVariables.value) return false
+    if (!options.force && !hasVisibleVariables(groups)) return false
 
     modal.open({
       header: {
@@ -49,27 +121,28 @@ export function useVariablePickerModal() {
       },
       component: VariablePickerModal,
       props: {
-        variables,
-        systemVariables,
+        groups,
         insertOnSelect: options.insertOnSelect !== false,
         closeOnSelect: options.closeOnSelect !== false,
         onSelect: options.onSelect,
       },
       options: {
-        width: 560,
+        width: 640,
         closeOnBackdrop: true,
         closeOnEsc: true,
         blur: true,
       },
-    });
+    })
 
-    return true;
+    return true
   }
 
   return {
     enabledPromptVariables,
     enabledSystemPromptVariables,
+    enabledModuleVariableGroups,
+    variableGroups,
     hasInsertableVariables,
     openVariablePicker,
-  };
+  }
 }

@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { reactive, watch } from "vue";
+import { onBeforeUnmount, reactive, watch } from "vue";
 import type { ModuleValues, PromptKeyModule } from "../../modules/types";
 import { createDefaultModuleValues } from "../../utils/compileModules";
-import type { ModuleOutputMap } from "../../utils/compilePrompt";
+import type {
+  ModuleOutputMap,
+  ModuleOutputValue,
+} from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
 
 const { t } = useI18n();
+const { setModuleVariableGroups, clearModuleVariableGroups } = usePromptVariables();
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -18,6 +24,7 @@ const props = withDefaults(
     modules: PromptKeyModule[];
     moduleValues?: Record<string, ModuleValues>;
     modulePanelStates?: Record<string, ModulePanelState>;
+    aspectRatio?: string;
   }>(),
   {
     moduleValues: () => ({}),
@@ -61,7 +68,7 @@ function updateModulePanelState(moduleKey: string, state: ModulePanelState) {
   });
 }
 
-function updateModuleOutput(moduleKey: string, output: string) {
+function updateModuleOutput(moduleKey: string, output: ModuleOutputValue) {
   moduleOutputs[moduleKey] = output;
   emitOutputs();
 }
@@ -70,6 +77,31 @@ function updateModuleIssues(moduleKey: string, issues: PromptValidationIssue[]) 
   moduleIssues[moduleKey] = issues;
   emitIssues();
 }
+
+watch(
+  [
+    () => props.modules,
+    () => props.moduleValues,
+    () => ({ ...moduleOutputs }),
+  ],
+  () => {
+    setModuleVariableGroups(
+      buildModuleVariableGroups(
+        props.modules,
+        props.moduleValues,
+        moduleOutputs,
+      ),
+    );
+  },
+  {
+    immediate: true,
+    deep: true,
+  },
+);
+
+onBeforeUnmount(() => {
+  clearModuleVariableGroups();
+});
 
 watch(
   () => props.modules.map((module) => module.key),
@@ -134,6 +166,7 @@ watch(
         :module="module"
         :model-value="moduleValues[module.key]"
         :panel-state="modulePanelStates[module.key]"
+        :aspect-ratio="aspectRatio"
         @update:model-value="updateModuleValues(module.key, $event)"
         @update:panel-state="updateModulePanelState(module.key, $event)"
         @update:output="updateModuleOutput(module.key, $event)"

@@ -1,3 +1,5 @@
+import type { LayoutRegion, LayoutRegionsState } from "./layout.types"
+
 // app/modules/types.ts
 export type ModuleFieldWidth = "half" | "full";
 
@@ -52,6 +54,11 @@ export type TypographyDistribution =
   | "spaced"
   | "scattered";
 
+export type TypographyGroupPositionSource =
+  | "preset"
+  | "layout_region"
+  | "custom";
+
 export type TypographyTextBlock = {
   id?: string;
   layerName: string;
@@ -72,7 +79,9 @@ export type TypographyTextGroup = {
   groupName: string;
   groupPurpose?: string;
   customGroupPurpose?: string;
+  positionSource?: TypographyGroupPositionSource;
   positionPreset?: string;
+  layoutRegionId?: string;
   customPositionDescription?: string;
   direction?: TypographyTextDirection;
   writingDirection?: TypographyWritingDirection;
@@ -85,35 +94,62 @@ export type TypographyTextGroup = {
 export type ModuleFieldConfig = Record<string, unknown>;
 
 export type PromptVariableType =
-  | 'text'
-  | 'subject'
-  | 'reference'
-  | 'object'
-  | 'color'
-  | 'custom'
-  | 'system'
+  | "text"
+  | "subject"
+  | "reference"
+  | "object"
+  | "color"
+  | "font"
+  | "custom"
+  | "system";
+
+export type PromptVariableSource = "user" | "module" | "system";
+
+export type PromptVariableEntityType =
+  | "setup"
+  | "module"
+  | "region"
+  | "text_group"
+  | "text";
 
 export type PromptVariable = {
-  id: string
-  key: string
-  value: string
-  description?: string
-  type?: PromptVariableType
-  enabled: boolean
-}
+  id: string;
+  key: string;
+  value: string;
+  label?: string;
+  description?: string;
+  type?: PromptVariableType;
+  enabled: boolean;
+  source?: PromptVariableSource;
+  moduleKey?: string;
+  entityType?: PromptVariableEntityType;
+  entityId?: string;
+  parentId?: string;
+};
+
+export type PromptVariableGroup = {
+  id: string;
+  label?: string;
+  labelKey?: string;
+  icon?: string;
+  order?: number;
+  source: PromptVariableSource;
+  variables: PromptVariable[];
+};
 
 export type ModuleFieldType =
-  | 'text'
-  | 'textarea'
-  | 'colorAssignments'
-  | 'textGroups'
-  | 'variables'
-  | 'select'
-  | 'multiSelect'
-  | 'checkbox'
-  | 'color'
-  | 'number'
-  | 'range'
+  | "text"
+  | "textarea"
+  | "layoutRegions"
+  | "colorAssignments"
+  | "textGroups"
+  | "variables"
+  | "select"
+  | "multiSelect"
+  | "checkbox"
+  | "color"
+  | "number"
+  | "range";
 
 export type ModuleFieldValue =
   | string
@@ -122,11 +158,13 @@ export type ModuleFieldValue =
   | string[]
   | TypographyTextGroup[]
   | PromptVariable[]
+  | LayoutRegion[]
+  | LayoutRegionsState
   | Record<string, unknown>[]
   | null
-  | undefined
+  | undefined;
 
-export type ModuleValues = Record<string, ModuleFieldValue>
+export type ModuleValues = Record<string, ModuleFieldValue>;
 
 export interface ModuleOption extends ModuleFieldOption {
   order?: number;
@@ -146,58 +184,58 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: 'input' | 'textarea' | 'select' | 'multiSelect' | 'segmented' | 'checkbox' | 'slider' | 'color' | 'colorAssignments' | 'textGroups' | 'variables'
-  placeholder?: string
-  rows?: number
-  width?: 'full' | 'half' | 'third'
-  clearable?: boolean
-  searchable?: boolean
-  multiple?: boolean
-  min?: number
-  max?: number
-  step?: number
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "textGroups" | "variables" | "layoutRegions";
+  placeholder?: string;
+  rows?: number;
+  width?: "full" | "half" | "third";
+  clearable?: boolean;
+  searchable?: boolean;
+  multiple?: boolean;
+  min?: number;
+  max?: number;
+  step?: number;
 
-  optionLayout?: ModuleFieldOptionLayout
-  compatibility?: ModuleFieldCompatibilityConfig
+  optionLayout?: ModuleFieldOptionLayout;
+  compatibility?: ModuleFieldCompatibilityConfig;
 }
 
 export interface ModuleField {
-  id: string
-  type: ModuleFieldType
-  default?: ModuleFieldValue
-  group?: string
-  order?: number
-  options?: ModuleOption[]
-  isOverride?: boolean
-  promptText?: string
-  ui?: ModuleFieldUiConfig
-  config?: ModuleFieldConfig
+  id: string;
+  type: ModuleFieldType;
+  default?: ModuleFieldValue;
+  group?: string;
+  order?: number;
+  options?: ModuleOption[];
+  isOverride?: boolean;
+  promptText?: string;
+  ui?: ModuleFieldUiConfig;
+  config?: ModuleFieldConfig;
 }
 
 export interface ModuleGroup {
-  id: string
-  order?: number
-  defaultOpen?: boolean
+  id: string;
+  order?: number;
+  defaultOpen?: boolean;
 }
 
 export interface ModulePreset {
-  id: string
-  order?: number
-  values: ModuleValues
+  id: string;
+  order?: number;
+  values: ModuleValues;
 }
 
 export interface ModuleCompileConfig {
-  separator?: string
-  removeDuplicates?: boolean
-  ignoreEmpty?: boolean
-  overrideField?: string
+  separator?: string;
+  removeDuplicates?: boolean;
+  ignoreEmpty?: boolean;
+  overrideField?: string;
 }
 
 export interface PromptKeyModule {
-  key: string
-  icon?: string
-  groups?: Record<string, ModuleGroup>
-  fields: Record<string, ModuleField>
-  presets?: Record<string, ModulePreset>
-  compile?: ModuleCompileConfig
+  key: string;
+  icon?: string;
+  groups?: Record<string, ModuleGroup>;
+  fields: Record<string, ModuleField>;
+  presets?: Record<string, ModulePreset>;
+  compile?: ModuleCompileConfig;
 }

@@ -1394,7 +1394,7 @@ onBeforeUnmount(() => {
       </el-flex>
 
       <el-flex type="section" class="w100" v-show="!mini || mini && tab.label === 'editor'">
-        <PromptEditor :modules="selectedModules" v-model:module-values="moduleValues"
+        <PromptEditor :modules="selectedModules" :aspect-ratio="promptSettings.aspectRatio" v-model:module-values="moduleValues"
           v-model:module-panel-states="modulePanelStates" @update:outputs="updateModuleOutputs"
           @update:issues="updateModuleIssues" @remove="removeSelectedModuleKey" @remove-module="removeSelectedModuleKey" />
       </el-flex>

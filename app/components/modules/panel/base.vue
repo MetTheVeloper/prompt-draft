@@ -15,6 +15,17 @@ import type {
   PromptKeyModule,
   PromptVariable,
 } from "../../../modules/types";
+import type { LayoutRegionsState } from "../../../modules/layout.types";
+import { normalizeLayoutRegionsState } from "../../../utils/layoutRegions";
+import LayoutRegionsField from "../layout/LayoutRegionsField.vue";
+import LayoutSchemaPreviewModal from "../layout/LayoutSchemaPreviewModal.vue";
+import type { ModuleOutputValue } from "../../../utils/compilePrompt";
+import {
+  copyLayoutSchemaBlobToClipboard,
+  createLayoutSchemaBlob,
+  createLayoutSchemaFilename,
+  downloadLayoutSchemaBlob,
+} from "../../../utils/layoutSchema";
 
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
 
@@ -29,6 +40,7 @@ import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
 const { openPageContextMenu } = usePageContextMenu();
+const modal = useModal();
 
 const {
   setPromptVariables: setGlobalPromptVariables,
@@ -40,12 +52,13 @@ const props = defineProps<{
   module: PromptKeyModule;
   modelValue?: ModuleValues;
   panelState?: ModulePanelState;
+  aspectRatio?: string;
 }>();
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: ModuleValues): void;
   (event: "update:panelState", value: ModulePanelState): void;
-  (event: "update:output", value: string): void;
+  (event: "update:output", value: ModuleOutputValue): void;
   (event: "update:issues", value: PromptValidationIssue[]): void;
   (event: "remove", moduleKey: string): void;
 }>();
@@ -147,6 +160,8 @@ watch(
 );
 
 const isCopied = ref(false);
+const isLayoutSchemaCopied = ref(false);
+const isLayoutSchemaBusy = ref(false);
 const isCustomMode = ref(false);
 const isPanelExpanded = ref(false);
 const activePresetId = ref<string | null>(null);
@@ -298,6 +313,46 @@ const output = computed(() => {
   }
 
   return compileModule(props.module, effectiveValues.value);
+});
+
+const isLayoutModule = computed(() => props.module.key === "layout");
+
+const layoutRegionsState = computed(() => {
+  return normalizeLayoutRegionsState(values.regions);
+});
+
+const hasLayoutRegions = computed(() => {
+  return isLayoutModule.value && layoutRegionsState.value.regions.length > 0;
+});
+
+const isPrimaryCopyDisabled = computed(() => {
+  if (isLayoutModule.value) {
+    return !hasLayoutRegions.value || isLayoutSchemaBusy.value;
+  }
+
+  return !output.value;
+});
+
+const isPrimaryCopied = computed(() => {
+  return isLayoutModule.value
+    ? isLayoutSchemaCopied.value
+    : isCopied.value;
+});
+
+const primaryCopyLabel = computed(() => {
+  if (!isLayoutModule.value) {
+    return isCopied.value ? t("panel.copied") : t("panel.copy");
+  }
+
+  return isLayoutSchemaCopied.value
+    ? t("modules.layout.schema.actions.copied")
+    : t("modules.layout.schema.actions.copy");
+});
+
+const primaryCopyIcon = computed(() => {
+  if (isPrimaryCopied.value) return "tick";
+
+  return isLayoutModule.value ? "grid-5" : "document-copy";
 });
 
 const isCustomOverride = computed(() => {
@@ -467,6 +522,10 @@ function removeModule() {
 function isFieldFilled(field: ModuleField) {
   const value = values[field.id];
 
+
+  if (field.type === "layoutRegions") {
+    return normalizeLayoutRegionsState(value).regions.length > 0;
+  }
   if (Array.isArray(value)) {
     return value.length > 0;
   }
@@ -486,6 +545,10 @@ function getGroupFilledCount(group: ModuleGroupView) {
   return group.fields.filter(isFieldFilled).length;
 }
 
+function getLayoutRegionsValue(fieldId: string): LayoutRegionsState {
+  return normalizeLayoutRegionsState(values[fieldId]);
+}
+
 function fieldClasses(field: ModuleField) {
   const fieldWidth = field.ui?.width || "half";
 
@@ -497,6 +560,7 @@ function fieldClasses(field: ModuleField) {
       field.type === "multiSelect" ||
       field.type === "textGroups" ||
       field.type === "variables" ||
+      field.type === "layoutRegions" ||
       isCategorizedSelect(field),
     "module-panel__field--half": fieldWidth !== "full",
     "module-panel__field--checkbox": field.type === "checkbox",
@@ -744,6 +808,7 @@ function groupColumns(group: ModuleGroupView) {
       field.type === "multiSelect" ||
       field.type === "textGroups" ||
       field.type === "colorAssignments" ||
+      field.type === "layoutRegions" ||
       isCategorizedSelect(field)
     );
   });
@@ -766,11 +831,15 @@ function clearModule() {
   activePresetId.value = null;
 }
 
+function getModuleOutputText(value: ModuleOutputValue) {
+  return typeof value === "string" ? value : JSON.stringify(value, null, 2);
+}
+
 async function copyOutput() {
   if (!output.value) return;
 
   try {
-    await navigator.clipboard.writeText(output.value);
+    await navigator.clipboard.writeText(getModuleOutputText(output.value));
     isCopied.value = true;
 
     window.setTimeout(() => {
@@ -781,6 +850,145 @@ async function copyOutput() {
   }
 }
 
+async function createCurrentLayoutSchemaBlob() {
+  return createLayoutSchemaBlob({
+    regions: layoutRegionsState.value,
+    aspectRatioValue: props.aspectRatio,
+  });
+}
+
+function openLayoutSchemaPreview(blob: Blob) {
+  const imageUrl = URL.createObjectURL(blob);
+  let isDisposed = false;
+
+  function disposeImageUrl() {
+    if (isDisposed) return;
+
+    isDisposed = true;
+    URL.revokeObjectURL(imageUrl);
+  }
+
+  modal.open({
+    header: {
+      icon: "grid-5",
+      title: t("modules.layout.schema.preview.title"),
+      subtitle: t("modules.layout.schema.preview.subtitle"),
+      color: "blue",
+    },
+    component: LayoutSchemaPreviewModal,
+    props: {
+      imageUrl,
+      alt: t("modules.layout.schema.preview.alt"),
+      onDispose: disposeImageUrl,
+    },
+    actions: [
+      {
+        label: t("modules.layout.schema.actions.close"),
+        icon: "close-circle",
+        color: "normal",
+        mode: "flat",
+        close: true,
+      },
+      {
+        label: t("modules.layout.schema.actions.download"),
+        icon: "import-2",
+        color: "orange",
+        mode: "flat",
+        handler: () => {
+          downloadLayoutSchemaBlob(blob, createLayoutSchemaFilename());
+        },
+      },
+      {
+        label: t("modules.layout.schema.actions.copy"),
+        icon: "grid-5",
+        color: "prim",
+        close: true,
+        handler: async () => {
+          try {
+            await copyLayoutSchemaBlobToClipboard(blob);
+            isLayoutSchemaCopied.value = true;
+
+            window.setTimeout(() => {
+              isLayoutSchemaCopied.value = false;
+            }, 1500);
+
+            return true;
+          } catch (error) {
+            console.error("Layout schema copy failed:", error);
+            return false;
+          }
+        },
+      },
+    ],
+    options: {
+      width: mobile.value ? "calc(100% - 24px)" : 820,
+      maxHeight: "92vh",
+      closeOnBackdrop: true,
+    },
+  });
+}
+
+async function copyLayoutSchema() {
+  if (!hasLayoutRegions.value || isLayoutSchemaBusy.value) return;
+
+  isLayoutSchemaBusy.value = true;
+
+  try {
+    const blob = await createCurrentLayoutSchemaBlob();
+
+    try {
+      await copyLayoutSchemaBlobToClipboard(blob);
+      isLayoutSchemaCopied.value = true;
+
+      window.setTimeout(() => {
+        isLayoutSchemaCopied.value = false;
+      }, 1500);
+    } catch (error) {
+      console.warn("Direct layout schema copy is unavailable:", error);
+      openLayoutSchemaPreview(blob);
+    }
+  } catch (error) {
+    console.error("Layout schema rendering failed:", error);
+
+    modal.message({
+      type: "error",
+      message: t("modules.layout.schema.errors.render"),
+    });
+  } finally {
+    isLayoutSchemaBusy.value = false;
+  }
+}
+
+async function downloadLayoutSchema() {
+  if (!hasLayoutRegions.value || isLayoutSchemaBusy.value) return;
+
+  isLayoutSchemaBusy.value = true;
+
+  try {
+    const blob = await createCurrentLayoutSchemaBlob();
+
+    downloadLayoutSchemaBlob(blob, createLayoutSchemaFilename());
+  } catch (error) {
+    console.error("Layout schema rendering failed:", error);
+
+    modal.message({
+      type: "error",
+      message: t("modules.layout.schema.errors.render"),
+    });
+  } finally {
+    isLayoutSchemaBusy.value = false;
+  }
+}
+
+function runPrimaryCopyAction() {
+  if (isLayoutModule.value) {
+    copyLayoutSchema();
+    return;
+  }
+
+  copyOutput();
+}
+
 const modulePanelContextMenuLabels = computed(() => ({
   title: moduleTitle.value,
   expand: t("components.contextMenu.actions.expand"),
@@ -788,13 +996,14 @@ const modulePanelContextMenuLabels = computed(() => ({
   enableCustomize: t("components.contextMenu.actions.enableCustomize"),
   disableCustomize: t("components.contextMenu.actions.disableCustomize"),
   copyOutput: t("components.contextMenu.actions.copyOutput"),
+  copyLayoutSchema: t("modules.layout.schema.actions.copy"),
+  downloadLayoutSchema: t("modules.layout.schema.actions.download"),
   remove: t("components.contextMenu.actions.removeFromKeyModules"),
 }));
 
 const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
   const labels = modulePanelContextMenuLabels.value;
-
-  return [
+  const items: GlobalMenuItem[] = [
     {
       type: "header",
       label: labels.title,
@@ -814,19 +1023,46 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     {
       type: "divider",
     },
-    {
+  ];
+
+  if (isLayoutModule.value) {
+    items.push(
+      {
+        label: labels.copyLayoutSchema,
+        icon: "grid-5",
+        disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value,
+        handler: copyLayoutSchema,
+      },
+      {
+        label: labels.downloadLayoutSchema,
+        icon: "import-2",
+        disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value,
+        handler: downloadLayoutSchema,
+      },
+      {
+        label: labels.copyOutput,
+        icon: "document-copy",
+        disabled: !output.value,
+        handler: copyOutput,
+      },
+    );
+  } else {
+    items.push({
       label: labels.copyOutput,
       icon: "document-copy",
       disabled: !output.value,
       handler: copyOutput,
-    },
-    {
-      label: labels.remove,
-      icon: "trash",
-      color: "red",
-      handler: removeModule,
-    },
-  ];
+    });
+  }
+
+  items.push({
+    label: labels.remove,
+    icon: "trash",
+    color: "red",
+    handler: removeModule,
+  });
+
+  return items;
 });
 
 function openModulePanelContextMenu(event: MouseEvent) {
@@ -874,9 +1110,17 @@ onBeforeUnmount(() => {
               @update:model-value="isCustomMode = $event" :label="t('panel.customMode')" />
             <el-button type="fab" :size="14" @click="clearModule" :disable="!hasAnyValue" mode="flat" :p="8"
               :label="isCustomMode ? t('panel.clearCustom') : t('panel.clear')" icon="trash" />
-            <el-button type="fab" :size="14" @click="copyOutput" :disable="!output" :mode="isCopied ? 'flat' : 'normal'"
-              color="prim" :p="8" :label="isCopied ? t('panel.copied') : t('panel.copy')"
-              :icon="isCopied ? 'tick' : 'document-copy'" />
+            <el-button
+              type="fab"
+              :size="14"
+              @click="runPrimaryCopyAction"
+              :disable="isPrimaryCopyDisabled"
+              :mode="isPrimaryCopied ? 'flat' : 'normal'"
+              color="prim"
+              :p="8"
+              :label="primaryCopyLabel"
+              :icon="primaryCopyIcon"
+            />
             <el-button type="fab" :size="14" @click="togglePanel" mode="flat" color="prim" :p="8"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
               :icon="!isPanelExpanded ? 'arrow-down-1' : 'arrow-up'" />
@@ -893,7 +1137,7 @@ onBeforeUnmount(() => {
         </el-flex>
         <el-divider mode="dashed" :dash="4" :gap="2" class="mt12 mb12" />
         <el-text type="span" :size="12" :color="output ? 'normal50' : 'red80'" v-if="!isPanelExpanded">
-          {{ output ? output : t("panel.emptyOutput") }}
+          {{ output ? getModuleOutputText(output) : t("panel.emptyOutput") }}
         </el-text>
       </el-flex>
     </el-flex>
@@ -1059,6 +1303,14 @@ onBeforeUnmount(() => {
             <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]"
               :field="field" :module-key="module.key" />
 
+            <LayoutRegionsField
+              v-else-if="field.type === 'layoutRegions'"
+              :model-value="getLayoutRegionsValue(field.id)"
+              :field="field"
+              :aspect-ratio="aspectRatio"
+              @update:model-value="values[field.id] = $event"
+            />
+
             <input v-else-if="field.type === 'number'" v-model.number="values[field.id]" type="number"
               :min="field.ui?.min" :max="field.ui?.max" :step="field.ui?.step"
               :placeholder="fieldPlaceholder(field.id)" />
@@ -1099,9 +1351,32 @@ onBeforeUnmount(() => {
               {{ moduleTitle }}
             </el-text>
           </el-flex>
-          <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'tick' : 'document-copy'"
-            color="prim" :mode="isCopied ? 'flat' : 'normal'" @click="copyOutput" :disable="!output" :size="12" :gap="8"
-            :type="mini ? 'fab' : 'normal'" :p="mini ? [8] : [8, 12]" />
+          <el-flex rules="rcc" :gap="6">
+            <el-button
+              v-if="isLayoutModule"
+              type="fab"
+              mode="flat"
+              icon="document-copy"
+              :label="t('modules.layout.schema.actions.copyJson')"
+              :disable="!output"
+              :size="12"
+              :p="[8]"
+              @click="copyOutput"
+            />
+
+            <el-button
+              :label="primaryCopyLabel"
+              :icon="primaryCopyIcon"
+              color="prim"
+              :mode="isPrimaryCopied ? 'flat' : 'normal'"
+              @click="runPrimaryCopyAction"
+              :disable="isPrimaryCopyDisabled"
+              :size="12"
+              :gap="8"
+              :type="mini ? 'fab' : 'normal'"
+              :p="mini ? [8] : [8, 12]"
+            />
+          </el-flex>
         </el-flex>
         <el-divider />
         <el-text :size="14" :weight="300" color="normal85" v-if="output">

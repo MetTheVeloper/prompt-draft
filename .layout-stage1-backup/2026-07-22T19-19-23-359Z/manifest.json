@@ -1,0 +1,11 @@
+{
+  "createdAt": "2026-07-22T19:19:23.411Z",
+  "projectRoot": "G:\\ZADAK\\prompt-draft",
+  "files": [
+    "app/modules/types.ts",
+    "app/modules/registry.ts",
+    "app/utils/compileModules.ts",
+    "app/components/modules/panel/base.vue",
+    "app/components/prompt/editor.vue"
+  ]
+}

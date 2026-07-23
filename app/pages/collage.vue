@@ -1302,7 +1302,7 @@ function updateVideoPreset(value: ElDropdownValue) {
   width: min(360px, calc(100% - 112px));
   height: calc(100% - 0px);
   max-height: calc(100%);
-  background: var(--surface) !important;
+  background: var(--themeSurface) !important;
   border: 1px solid var(--normalText10);
   box-shadow: 0 24px 90px var(--themeBlack35);
   backdrop-filter: blur(18px);
@@ -1536,7 +1536,7 @@ function updateVideoPreset(value: ElDropdownValue) {
     width: min(320px, calc(100% - 112px));
     height: calc(100% - 48px);
     max-height: calc(100% - 48px);
-    background: var(--surface) !important;
+    background: var(--themeSurface) !important;
     border: 1px solid var(--normalText10);
     box-shadow: 0 24px 90px var(--themeBlack35);
   }

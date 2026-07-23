@@ -9,6 +9,13 @@ import type {
   TypographyTextGroup,
 } from "../modules/types";
 import { formatPromptVariableDefinitions } from "./promptVariables";
+import { compileLayoutModule } from "./compileLayout";
+import {
+  getLayoutRegionVariableToken,
+  getTypographyGroupVariableToken,
+  getTypographyTextVariableToken,
+  isStructuralVariableToken,
+} from "./structuralVariables";
 
 function isEmptyValue(value: ModuleFieldValue) {
   if (value === null || value === undefined) return true;
@@ -122,6 +129,10 @@ function resolveConfigPromptText(
     return customValue?.trim() || "";
   }
 
+  if (isStructuralVariableToken(cleanedValue)) {
+    return cleanedValue;
+  }
+
   return getConfigOptionPromptText(field, key, cleanedValue);
 }
 
@@ -145,7 +156,19 @@ function quoteTypographyText(value: string) {
   return `"${cleanPromptPart(value).replace(/"/g, '\\"')}"`;
 }
 
-// 
+//
+function compactRecord(value: Record<string, unknown>) {
+  return Object.fromEntries(
+    Object.entries(value).filter(([, item]) => {
+      if (item === undefined || item === null || item === "") return false;
+      if (typeof item === "object" && !Array.isArray(item)) {
+        return Object.keys(item as Record<string, unknown>).length > 0;
+      }
+      return true;
+    }),
+  );
+}
+
 function serializeTypographyTextBlock(
   field: ModuleField,
   block: TypographyTextBlock,
@@ -154,41 +177,65 @@ function serializeTypographyTextBlock(
 
   if (!text) return null;
 
-  return {
-    content: text,
+  const typography = compactRecord({
+    fontStyle: resolveConfigPromptText(
+      field,
+      "fontStyleOptions",
+      block.fontStyle,
+      block.customFontStyle,
+    ) || undefined,
+    fontSize: resolveConfigPromptText(
+      field,
+      "fontSizeOptions",
+      block.fontSize,
+      block.customFontSize,
+    ) || undefined,
+    fontWeight: resolveConfigPromptText(
+      field,
+      "fontWeightOptions",
+      block.fontWeight,
+      block.customFontWeight,
+    ) || undefined,
+  });
 
+  return compactRecord({
+    id: block.id || undefined,
+    key: getTypographyTextVariableToken(block),
+    content: text,
     purpose: resolveConfigPromptText(
       field,
       "textPurposeOptions",
       block.purpose,
       block.customPurpose,
     ) || undefined,
-
-    typography: {
-      fontStyle: resolveConfigPromptText(
-        field,
-        "fontStyleOptions",
-        block.fontStyle,
-        block.customFontStyle,
-      ) || undefined,
-
-      fontSize: resolveConfigPromptText(
-        field,
-        "fontSizeOptions",
-        block.fontSize,
-        block.customFontSize,
-      ) || undefined,
-
-      fontWeight: resolveConfigPromptText(
-        field,
-        "fontWeightOptions",
-        block.fontWeight,
-        block.customFontWeight,
-      ) || undefined,
-    },
-
+    typography,
     description: block.additionalDescription?.trim() || undefined,
-  };
+  });
+}
+
+function serializeTypographyPosition(
+  field: ModuleField,
+  group: TypographyTextGroup,
+) {
+  if (group.positionSource === "layout_region" && group.layoutRegionId) {
+    return {
+      region: getLayoutRegionVariableToken(group.layoutRegionId),
+    };
+  }
+
+  if (group.positionSource === "custom" || group.positionPreset === "custom") {
+    const custom = group.customPositionDescription?.trim();
+    return custom ? { custom } : {};
+  }
+
+  const preset = resolveConfigPromptText(
+    field,
+    "positionPresetOptions",
+    group.positionPreset,
+    group.customPositionDescription,
+  );
+
+  return preset ? { preset } : {};
 }
 
 function serializeTypographyTextGroup(
@@ -202,53 +249,43 @@ function serializeTypographyTextGroup(
 
   if (!texts.length) return null;
 
-  return {
+  const layout = compactRecord({
+    direction: resolveConfigPromptText(
+      field,
+      "directionOptions",
+      group.direction,
+    ) || undefined,
+    writingDirection: resolveConfigPromptText(
+      field,
+      "writingDirectionOptions",
+      group.writingDirection,
+    ) || undefined,
+    alignment: resolveConfigPromptText(
+      field,
+      "alignmentOptions",
+      group.alignment,
+    ) || undefined,
+    distribution: resolveConfigPromptText(
+      field,
+      "distributionOptions",
+      group.distribution,
+    ) || undefined,
+  });
+
+  return compactRecord({
+    id: group.id || undefined,
+    key: getTypographyGroupVariableToken(group),
     purpose: resolveConfigPromptText(
       field,
       "groupPurposeOptions",
       group.groupPurpose,
       group.customGroupPurpose,
     ) || undefined,
-
-    position: {
-      preset: resolveConfigPromptText(
-        field,
-        "positionPresetOptions",
-        group.positionPreset,
-        group.customPositionDescription,
-      ) || undefined,
-    },
-
-    layout: {
-      direction: resolveConfigPromptText(
-        field,
-        "directionOptions",
-        group.direction,
-      ) || undefined,
-
-      writingDirection: resolveConfigPromptText(
-        field,
-        "writingDirectionOptions",
-        group.writingDirection,
-      ) || undefined,
-
-      alignment: resolveConfigPromptText(
-        field,
-        "alignmentOptions",
-        group.alignment,
-      ) || undefined,
-
-      distribution: resolveConfigPromptText(
-        field,
-        "distributionOptions",
-        group.distribution,
-      ) || undefined,
-    },
-
+    position: serializeTypographyPosition(field, group),
+    layout,
     description: group.additionalDescription?.trim() || undefined,
-
     texts,
-  };
+  });
 }
 
 function serializeTypographyField(
@@ -267,7 +304,6 @@ function serializeTypographyField(
 
   return {
     groups,
-
     renderRules: {
       accuracy,
       renderTextValuesOnly: true,
@@ -275,7 +311,7 @@ function serializeTypographyField(
     },
   };
 }
-// 
+//
 
 function compileVariablesModule(values: ModuleValues): string {
   return formatPromptVariableDefinitions(values.variables);
@@ -311,21 +347,20 @@ function compileTypographyModule(
       ? cleanPromptPart(values.extraDetails)
       : "";
 
+  const serialized = textGroupsField
+    ? serializeTypographyField(
+        textGroupsField,
+        values.textGroups,
+        textAccuracy,
+      )
+    : null;
+
+  if (!serialized?.groups.length) {
+    return "";
+  }
+
   return {
-    groups: textGroupsField
-      ? serializeTypographyField(
-          textGroupsField,
-          values.textGroups,
-          textAccuracy,
-        )?.groups || []
-      : [],
-
-    renderRules: {
-      accuracy: textAccuracy,
-      renderTextValuesOnly: true,
-      preserveSpelling: true,
-    },
-
+    ...serialized,
     extraDetails: extraDetails || undefined,
   };
 }
@@ -415,6 +450,7 @@ function compileField(field: ModuleField, value: ModuleFieldValue) {
 
   if (Array.isArray(value)) {
     return value
+      .filter((item): item is string => typeof item === "string")
       .map((item) => getOptionPromptText(field, item))
       .filter(Boolean)
       .join(", ");
@@ -476,6 +512,10 @@ export function compileModule(
 
   if (module.key === "typography") {
     return compileTypographyModule(module, values);
+  }
+
+  if (module.key === "layout") {
+    return compileLayoutModule(module, values);
   }
   const fields = Object.values(module.fields);
 

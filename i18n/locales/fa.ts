@@ -36,8 +36,7 @@ export default {
         offlineMode: "در حال استفاده از حالت آفلاین هستید.",
         ready: "آماده استفاده آفلاین",
         failed: "دانلود نسخه آفلاین ناموفق بود",
-        failedDescription:
-          "بعضی فایل‌ها دانلود نشدند. اتصال اینترنت را بررسی کن و دوباره تلاش کن.",
+        failedDescription: "بعضی فایل‌ها دانلود نشدند. اتصال اینترنت را بررسی کن و دوباره تلاش کن.",
         retry: "تلاش دوباره",
       },
     },
@@ -1961,10 +1960,17 @@ export default {
           label: "گروه‌های متنی",
           actions: {
             addGroup: "افزودن گروه",
+            cancel: "لغو",
+            create: "ساخت",
+            save: "ذخیره",
+            confirmDelete: "حذف",
           },
           block: {
             actions: {
               remove: "حذف متن",
+              edit: "ویرایش متن",
+              moveUp: "انتقال به بالا",
+              moveDown: "انتقال به پایین",
             },
             controls: {
               additionalDescription: {
@@ -1977,6 +1983,10 @@ export default {
               },
               fontStyle: {
                 label: "استایل فونت",
+                groups: {
+                  presets: "پریست‌های فونت",
+                  variables: "متغیرهای فونت",
+                },
               },
               fontWeight: {
                 label: "وزن فونت",
@@ -2012,12 +2022,18 @@ export default {
             validation: {
               requiredTextEmpty: "محتوای متن الزامی است.",
             },
+            modal: {
+              createTitle: "ساخت متن",
+              editTitle: "ویرایش متن",
+              stableKey: "کلید پایدار متن تایپوگرافی",
+            },
           },
           count: "{count} گروه متنی",
           group: {
             actions: {
               addText: "افزودن متن",
               remove: "حذف گروه",
+              edit: "ویرایش گروه",
             },
             controls: {
               additionalDescription: {
@@ -2039,12 +2055,39 @@ export default {
               },
               positionPreset: {
                 label: "جایگاه",
+                groups: {
+                  presets: "جایگاه‌های آماده",
+                  layout: "ناحیه‌های چیدمان",
+                  custom: "سفارشی",
+                },
+                custom: "جایگاه سفارشی",
+                missingRegion: "ناحیه چیدمان پیدا نشد",
               },
               writingDirection: {
                 label: "جهت نوشتار",
               },
+              customPositionDescription: {
+                label: "توضیح جایگاه سفارشی",
+                placeholder:
+                  "جایگاه سفارشی، منطق قرارگیری، مسیر مداری، فاصله‌گذاری یا رفتار چیدمان این گروه متنی را توضیح بده...",
+              },
+              customGroupPurpose: {
+                label: "هدف سفارشی گروه",
+              },
             },
             textBlocksTitle: "بلاک‌های متن",
+            list: {
+              textCount: "{count} متن",
+              customPosition: "جایگاه سفارشی",
+            },
+            emptyTexts: "هنوز متنی به این گروه اضافه نشده است.",
+            modal: {
+              createTitle: "ساخت گروه متنی",
+              editTitle: "ویرایش گروه متنی",
+              deleteTitle: "حذف گروه متنی",
+              deleteDescription: "این گروه متنی و همه متن‌های داخل آن حذف می‌شوند.",
+              stableKey: "کلید پایدار گروه تایپوگرافی",
+            },
           },
           title: "گروه‌های تایپوگرافی",
           empty: {
@@ -2098,6 +2141,7 @@ export default {
             reference: "رفرنس",
             subject: "سوژه",
             text: "متن",
+            font: "فونت",
           },
           actions: {
             add: "افزودن متغیر",
@@ -2147,6 +2191,10 @@ export default {
               user: "کاربر",
               system: "سیستم",
             },
+            tabs: {
+              user: "کاربر",
+              system: "سیستم",
+            },
           },
           empty: {
             title: "هنوز متغیری ساخته نشده",
@@ -2183,6 +2231,266 @@ export default {
         },
       },
       title: "متغیرها",
+    },
+    layout: {
+      description:
+        "ساختار چیدمان، ترکیب‌بندی، سلسله‌مراتب بصری، تراکم و ناحیه‌های قابل استفاده در تصویر نهایی را تعریف کن.",
+      fields: {
+        composition: {
+          description: "مشخص کن بخش‌های اصلی تصویر چطور داخل کنوس چیده شوند.",
+          label: "ترکیب‌بندی",
+          options: {
+            asymmetric_editorial: "ادیتوریال نامتقارن",
+            centered_stack: "چیدمان مرکزی لایه‌ای",
+            comic_panels: "پنل‌های کمیک",
+            freeform: "آزاد",
+            full_bleed: "تمام‌صفحه",
+            image_with_bottom_panel: "تصویر با پنل پایینی",
+            image_with_side_panel: "تصویر با پنل کناری",
+            layered_collage: "کلاژ لایه‌ای",
+            modular_grid: "گرید ماژولار",
+            single_focal: "نقطه کانونی واحد",
+            split_horizontal: "تقسیم افقی",
+            split_vertical: "تقسیم عمودی",
+          },
+        },
+        density: {
+          description: "مشخص کن چه مقدار اطلاعات بصری، فاصله‌گذاری و محتوا در چیدمان دیده شود.",
+          label: "تراکم",
+          options: {
+            balanced: "متعادل",
+            dense: "متراکم",
+            maximal: "حداکثری",
+            sparse: "خلوت",
+          },
+        },
+        hierarchy: {
+          description: "مشخص کن کدام نوع محتوا در ترکیب‌بندی نهایی مهم‌تر و غالب‌تر باشد.",
+          label: "سلسله‌مراتب",
+          options: {
+            balanced: "متعادل",
+            image_dominant: "غلبه تصویر",
+            information_dominant: "غلبه اطلاعات",
+            product_dominant: "غلبه محصول",
+            text_dominant: "غلبه متن",
+          },
+        },
+        layoutType: {
+          description: "فرمت کلی چیدمان یا کاربرد طراحی را انتخاب کن.",
+          label: "نوع چیدمان",
+          options: {
+            banner: "بنر",
+            business_card: "کارت ویزیت",
+            collage: "کلاژ",
+            comic_page: "صفحه کمیک",
+            cover: "کاور",
+            custom: "سفارشی",
+            editorial_page: "صفحه ادیتوریال",
+            poster: "پوستر",
+            presentation_slide: "اسلاید ارائه",
+            product_sheet: "شیت محصول",
+            social_post: "پست شبکه اجتماعی",
+          },
+        },
+        regions: {
+          actions: {
+            add: "افزودن ناحیه",
+            moveDown: "انتقال به پایین",
+            moveUp: "انتقال به بالا",
+            remove: "حذف",
+            apply: "اعمال",
+            cancel: "لغو",
+            delete: "حذف",
+            duplicate: "کپی‌کردن",
+            edit: "ویرایش",
+            visualBuilder: "سازنده بصری",
+            confirmDelete: "حذف ناحیه",
+            create: "ساخت ناحیه",
+            save: "ذخیره",
+          },
+          builderDescription:
+            "ناحیه‌های چیدمان را با نقش، مختصات، لایه، تراز و رفتار جاگیری اضافه و تنظیم کن.",
+          builderTitle: "سازنده ناحیه",
+          contentKey: "کلید محتوا",
+          coordinates: {
+            height: "ارتفاع",
+            width: "عرض",
+            x: "X",
+            y: "Y",
+          },
+          defaultName: "ناحیه",
+          description:
+            "ناحیه‌های سفارشی چیدمان را تعریف کن و مشخص کن هر نوع محتوا کجا نمایش داده شود.",
+          empty: {
+            description:
+              "ناحیه‌های چیدمان بساز تا مشخص کنی متن، تصویر، لوگو، پس‌زمینه و دیگر محتواها کجا نمایش داده شوند.",
+            title: "هنوز ناحیه‌ای ساخته نشده",
+          },
+          fit: {
+            contain: "جا دادن",
+            cover: "پوشش کامل",
+            fill: "پر کردن",
+            natural: "طبیعی",
+            none: "هیچ‌کدام",
+          },
+          horizontalAlign: {
+            center: "وسط",
+            end: "انتها",
+            start: "ابتدا",
+            stretch: "کشیده",
+            none: "هیچ‌کدام",
+          },
+          label: "ناحیه‌ها",
+          layer: "لایه",
+          name: "نام",
+          overflow: {
+            hidden: "مخفی",
+            visible: "نمایان",
+            none: "هیچ‌کدام",
+          },
+          roles: {
+            background: "پس‌زمینه",
+            badge: "بج",
+            cta: "فراخوان اقدام",
+            custom: "سفارشی",
+            decoration: "تزئینات",
+            empty_space: "فضای خالی",
+            hero_image: "تصویر اصلی",
+            logo: "لوگو",
+            metadata: "متادیتا",
+            supporting_image: "تصویر پشتیبان",
+            text: "متن",
+            none: "هیچ‌کدام",
+          },
+          verticalAlign: {
+            center: "وسط",
+            end: "انتها",
+            start: "ابتدا",
+            stretch: "کشیده",
+            none: "هیچ‌کدام",
+          },
+          list: {
+            title: "لیست محدوده‌ها",
+            description: "مدیریت محدوده‌های لایوت.",
+            layer: "لایه‌ی {layer}",
+            bounds: "x {x} · y {y} · w {width} · h {height}",
+            contentKey: "{key}",
+            contentKeyEmpty: "کلید ثبت نشده",
+          },
+          visualBuilder: {
+            grid: {
+              apply: "اعمال گرید",
+              columns: "ستون‌ها",
+              description:
+                "اندازه گریدی را مشخص کن که برای رسم و چسباندن ناحیه‌های بصری چیدمان استفاده می‌شود.",
+              rows: "ردیف‌ها",
+              title: "گرید سازنده",
+              pendingChange: "تغییرات گرید در انتظار اعمال است",
+            },
+            hint: "روی گرید سلول‌ها را رسم یا انتخاب کن تا ناحیه چیدمان را به‌صورت بصری تعریف کنی.",
+            modal: {
+              subtitle: "ناحیه‌های چیدمان را مستقیم روی یک گرید بصری بساز و تنظیم کن.",
+              title: "سازنده بصری ناحیه",
+            },
+            regionCount: "{count} ناحیه",
+            selectionSummary: "{count} سلول انتخاب شده",
+            tools: {
+              draw: "رسم",
+              select: "انتخاب",
+            },
+            gridReset: {
+              confirm: "اعمال ریست گرید",
+              description:
+                "تغییر اندازه گرید، انتخاب فعلی در سازنده بصری را ریست می‌کند و ممکن است روی جای‌گذاری ناحیه‌های موجود اثر بگذارد.",
+              subtitle: "قبل از اعمال، اندازه جدید گرید را بررسی کن.",
+              title: "گرید سازنده ریست شود؟",
+            },
+          },
+          controls: {
+            contentKey: {
+              label: "کلید محتوا",
+              placeholder: "کلید متغیر یا رفرنس محتوا را وارد کن...",
+            },
+            description: {
+              label: "توضیح",
+              placeholder: "توضیح بده این ناحیه چه محتوایی داشته باشد یا چطور رفتار کند...",
+            },
+            fit: {
+              label: "جاگیری",
+            },
+            geometry: {
+              description: "جایگاه، اندازه و لایه ناحیه را با مقدارهای نرمال‌شده چیدمان تنظیم کن.",
+              height: "ارتفاع",
+              layer: "لایه",
+              title: "هندسه",
+              width: "عرض",
+              x: "X",
+              y: "Y",
+            },
+            horizontalAlign: {
+              label: "تراز افقی",
+            },
+            name: {
+              label: "نام",
+              placeholder: "نام ناحیه...",
+            },
+            overflow: {
+              label: "سرریز",
+            },
+            role: {
+              label: "نقش",
+            },
+            verticalAlign: {
+              label: "تراز عمودی",
+            },
+            customRole: {
+              label: "نقش سفارشی",
+              placeholder: "نقش سفارشی این ناحیه را توضیح بده...",
+            },
+          },
+          modal: {
+            createTitle: "ساخت ناحیه",
+            deleteDescription:
+              "این ناحیه از چیدمان حذف می‌شود و امکان برگشت این عملیات وجود ندارد.",
+            deleteTitle: "حذف ناحیه",
+            editorSubtitle: "نقش، محتوا، هندسه، تراز، جاگیری و رفتار سرریز ناحیه را تنظیم کن.",
+            editTitle: "ویرایش ناحیه",
+          },
+          validation: {
+            invalidGeometry: "هندسه ناحیه معتبر نیست. مقدارهای X، Y، عرض و ارتفاع را بررسی کن.",
+            customRoleRequired: "وقتی نقش ناحیه روی سفارشی است، وارد کردن نقش سفارشی الزامی است.",
+          },
+        },
+        extraDetails: {
+          description:
+            "نکته‌های کلی چیدمان را اضافه کن؛ مثل فاصله‌گذاری، جریان بصری، قوانین ترکیب‌بندی، حاشیه‌ها، safe area یا رفتار جای‌گذاری سفارشی.",
+          label: "جزئیات تکمیلی",
+          placeholder:
+            "هر قانون کلی برای چیدمان، فاصله‌گذاری، safe area، حاشیه، جریان بصری یا رفتار جای‌گذاری سفارشی را توضیح بده...",
+        },
+      },
+      groups: {
+        advanced: {
+          description: "تراکم، سلسله‌مراتب و رفتارهای پیشرفته چیدمان را دقیق‌تر تنظیم کن.",
+          title: "چیدمان پیشرفته",
+        },
+        regions: {
+          description: "ناحیه‌های سفارشی برای متن، تصویر، لوگو، پس‌زمینه و دیگر عناصر چیدمان بساز.",
+          title: "ناحیه‌های چیدمان",
+        },
+        structure: {
+          description: "نوع اصلی چیدمان، سبک ترکیب‌بندی و ساختار کلی را انتخاب کن.",
+          title: "ساختار چیدمان",
+        },
+      },
+      title: "چیدمان",
+      schema: {
+        actions: {
+          copied: "کپی شد",
+          copy: "کپی",
+          copyJson: "کپی JSON",
+        },
+      },
     },
   },
   panel: {

@@ -15,9 +15,15 @@ import { CameraModule } from './camera.module'
 import { ColorPaletteModule } from './colorPalette.module'
 import { TypographyModule } from './typography.module'
 import { VariablesModule } from './variables.module'
+import { LayoutModule } from './layout.module'
+
+const developmentModules = import.meta.dev
+  ? [LayoutModule]
+  : []
 
 export const promptModules = [
   VariablesModule,
+  ...developmentModules,
   StyleModule,
   DeformationModule,
   FramingModule,

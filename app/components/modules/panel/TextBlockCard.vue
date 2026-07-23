@@ -265,7 +265,7 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
   padding: 10px;
   border: 1px solid var(--normalText10);
   border-radius: 12px;
-  background: var(--surface);
+  background: var(--themeSurface);
 }
 
 .text-block-card--empty {

@@ -1,116 +1,150 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
-import type { PromptVariable } from "~/modules/types";
+import { computed, ref, watch } from "vue"
+import type {
+  PromptVariable,
+  PromptVariableGroup,
+} from "~/modules/types"
+import { usePromptEditor } from "~/composables/prompt/usePromptEditor"
 
-import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
-
-type VariablePickerSource = "user" | "system";
-
-type PickerVariable = PromptVariable & {
-  source: VariablePickerSource;
-};
-
-const { t } = useI18n();
+const { t } = useI18n()
 
 const props = withDefaults(
   defineProps<{
-    variables: PromptVariable[];
-    systemVariables?: PromptVariable[];
-    insertOnSelect?: boolean;
-    closeOnSelect?: boolean;
-    onSelect?: (variable: PromptVariable) => void;
+    groups: PromptVariableGroup[]
+    insertOnSelect?: boolean
+    closeOnSelect?: boolean
+    onSelect?: (variable: PromptVariable) => void
   }>(),
   {
-    systemVariables: () => [],
+    groups: () => [],
     insertOnSelect: true,
     closeOnSelect: true,
-  }
-);
+  },
+)
 
 const emit = defineEmits<{
-  close: [];
-}>();
+  close: []
+}>()
 
-const search = ref("");
-const showSystemVariables = ref(!props.variables.length && props.systemVariables.length > 0);
-const { insertVariable } = usePromptEditor();
+const search = ref("")
+const activeGroupId = ref("")
+const { insertVariable } = usePromptEditor()
 
-const hasSystemVariables = computed(() => props.systemVariables.length > 0);
+const visibleGroups = computed(() => {
+  return props.groups
+    .map((group) => ({
+      ...group,
+      variables: group.variables.filter((variable) => {
+        return variable.enabled !== false && Boolean(variable.key?.trim())
+      }),
+    }))
+    .filter((group) => group.variables.length > 0)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+})
 
-const pickerVariables = computed<PickerVariable[]>(() => {
-  const sourceVariables = showSystemVariables.value
-    ? props.systemVariables
-    : props.variables;
+watch(
+  visibleGroups,
+  (groups) => {
+    if (groups.some((group) => group.id === activeGroupId.value)) return
+    activeGroupId.value = groups[0]?.id || ""
+  },
+  { immediate: true },
+)
 
-  const source: VariablePickerSource = showSystemVariables.value
-    ? "system"
-    : "user";
-
-  return sourceVariables.map((variable) => ({
-    ...variable,
-    source,
-  }));
-});
+const activeGroup = computed(() => {
+  return visibleGroups.value.find((group) => {
+    return group.id === activeGroupId.value
+  })
+})
 
 const filteredVariables = computed(() => {
-  const query = search.value.trim().toLowerCase();
+  const query = search.value.trim().toLowerCase()
+  const variables = activeGroup.value?.variables || []
 
-  return pickerVariables.value.filter((variable) => {
-    if (variable.enabled === false) return false;
-    if (!variable.key?.trim()) return false;
+  if (!query) return variables
 
-    if (!query) return true;
-
+  return variables.filter((variable) => {
     return [
       variable.key,
+      variable.label || "",
       variable.value,
       variable.description || "",
       variable.type || "",
-      variable.source,
+      variable.entityType || "",
     ]
       .join(" ")
       .toLowerCase()
-      .includes(query);
-  });
-});
+      .includes(query)
+  })
+})
 
 const canSelectVariable = computed(() => {
-  return props.insertOnSelect || typeof props.onSelect === "function";
-});
+  return props.insertOnSelect || typeof props.onSelect === "function"
+})
+
+function translate(path: string | undefined, fallback: string) {
+  if (!path) return fallback
+  const translated = t(path)
+  return translated === path ? fallback : translated
+}
+
+function groupLabel(group: PromptVariableGroup) {
+  return translate(group.labelKey, group.label || group.id)
+}
 
 function token(variable: PromptVariable) {
-  return `{${variable.key}}`;
+  return `{${variable.key}}`
 }
 
-function shouldSpanColumns(variable: PickerVariable) {
-  return token(variable).length > 16;
+function shouldSpanColumns(variable: PromptVariable) {
+  return token(variable).length > 16 || variable.entityType === "region"
 }
 
-function variableTypeLabel(variable: PickerVariable) {
-  if (variable.source === "system") {
-    return t("modules.variables.fields.variables.picker.sources.system");
+function humanize(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (char) => char.toUpperCase())
+}
+
+function variableTypeLabel(variable: PromptVariable) {
+  if (variable.entityType && variable.entityType !== "module") {
+    return humanize(variable.entityType)
   }
 
-  return variable.type || t("modules.variables.fields.variables.picker.sources.user");
+  return humanize(variable.type || variable.source || "variable")
 }
 
 function select(variable: PromptVariable) {
-  if (!canSelectVariable.value) return;
+  if (!canSelectVariable.value) return
 
-  props.onSelect?.(variable);
+  props.onSelect?.(variable)
 
   if (props.insertOnSelect) {
-    insertVariable(variable.key);
+    insertVariable(variable.key)
   }
 
   if (props.closeOnSelect) {
-    emit("close");
+    emit("close")
   }
 }
 </script>
 
 <template>
   <el-flex rules="ccs" class="w100 variable-picker" :gap="12">
+    <div class="variable-picker__tabs">
+      <el-button
+        v-for="group in visibleGroups"
+        :key="group.id"
+        :label="groupLabel(group)"
+        :icon="group.icon"
+        :mode="activeGroupId === group.id ? 'normal' : 'flat'"
+        :color="activeGroupId === group.id ? 'prim' : 'normal'"
+        :size="11"
+        :p="[7, 10]"
+        @click="activeGroupId = group.id"
+      />
+    </div>
+
     <input
       v-model="search"
       type="text"
@@ -118,16 +152,11 @@ function select(variable: PromptVariable) {
       :placeholder="t('modules.variables.fields.variables.picker.search.placeholder')"
       autofocus
     />
-    <el-switch
-      v-if="hasSystemVariables" :model-value="showSystemVariables" @update:model-value="showSystemVariables = $event"
-      :invert="true"
-      :size="12"
-      :label="t('modules.variables.fields.variables.picker.systemVariables.label')" />
 
     <el-grid v-if="filteredVariables.length" :cols="2" class="w100" :gap="8">
       <el-flex
         v-for="variable in filteredVariables"
-        :key="`${variable.source}:${variable.id || variable.key}`"
+        :key="`${activeGroupId}:${variable.id || variable.key}`"
         type="button"
         rules="rsc"
         bg="normal5"
@@ -143,12 +172,13 @@ function select(variable: PromptVariable) {
             'is-selectable crp chpen': canSelectVariable,
           },
         ]"
-        @click="select(variable)">
-        <el-flex rules="ccs" class="fg100" :gap="0">
-          <el-flex rules="rsc">
+        @click="select(variable)"
+      >
+        <el-flex rules="ccs" class="fg100" :gap="1">
+          <el-flex rules="rsc" :gap="6">
             <el-text
               type="span"
-              :size="16"
+              :size="14"
               :weight="700"
               color="white"
               marker="blue35"
@@ -157,16 +187,27 @@ function select(variable: PromptVariable) {
             >
               {{ token(variable) }}
             </el-text>
-            <el-text class="variable-picker__type" :size="10" :class="`is-${variable.source}`">
+
+            <el-text class="variable-picker__type" :size="9">
               {{ variableTypeLabel(variable) }}
             </el-text>
           </el-flex>
+
           <el-text
-            :size="12"
+            v-if="variable.label && variable.label !== variable.key"
+            :size="11"
+            :weight="600"
+          >
+            {{ variable.label }}
+          </el-text>
+
+          <el-text
+            :size="11"
             :weight="400"
             class="frsc variable-picker__value"
-            :title="variable.value">
-            {{ stringShortner(variable.value, shouldSpanColumns(variable) ? 56 : 24) }}
+            :title="variable.value"
+          >
+            {{ stringShortner(variable.value, shouldSpanColumns(variable) ? 72 : 32) }}
           </el-text>
         </el-flex>
       </el-flex>
@@ -188,27 +229,27 @@ function select(variable: PromptVariable) {
   min-width: 0;
 }
 
-.variable-picker__search {
+.variable-picker__tabs {
+  display: flex;
+  gap: 6px;
   width: 100%;
+  padding-bottom: 4px;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
 
-.variable-picker__system-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
+.variable-picker__tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.variable-picker__search {
   width: 100%;
-  cursor: pointer;
-  user-select: none;
 }
 
 .variable-picker__item {
   width: 100%;
   padding: 10px 12px;
   text-align: left;
-}
-
-.variable-picker__item.is-selectable {
-  cursor: pointer;
 }
 
 .variable-picker__item.is-selectable:hover {
@@ -234,18 +275,22 @@ function select(variable: PromptVariable) {
   border-radius: 999px;
   background: var(--normalText10);
   color: var(--normalText60);
-  font-size: 10px;
   white-space: nowrap;
-}
-
-.variable-picker__type.is-system {
-  background: var(--themeBlue15);
-  color: var(--themeBlue75);
 }
 
 .variable-picker__empty {
   padding: 20px;
   border: 1px dashed var(--normalText15);
   border-radius: 14px;
+}
+
+@media (max-width: 640px) {
+  .variable-picker :deep(.elGrid) {
+    grid-template-columns: 1fr !important;
+  }
+
+  .variable-picker__item.is-wide {
+    grid-column: auto;
+  }
 }
 </style>

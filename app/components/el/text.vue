@@ -1,7 +1,6 @@
 <template>
   <el-flex rules="rcc" class="por" :gap="fixNumber(size * 0.5)">
     <div class="poa zi5 t50 txt-normal0" :style="markerStyle([-5, 5])" v-if="marker">
-      {{}}
     </div>
     <div
       class="poa zi5 t50 txt-normal0"
