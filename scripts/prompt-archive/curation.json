@@ -1,0 +1,594 @@
+{
+  "version": 1,
+  "tagOverrides": {
+    "6": [
+      "portrait",
+      "illustration",
+      "image-to-image"
+    ],
+    "14": [
+      "cartoon",
+      "illustration",
+      "image-to-image"
+    ],
+    "20": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "surreal",
+      "image-to-image"
+    ],
+    "26": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "cartoon",
+      "gothic",
+      "image-to-image"
+    ],
+    "31": [
+      "3d",
+      "sculpture",
+      "cartoon",
+      "vintage",
+      "image-to-image"
+    ],
+    "39": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "graffiti",
+      "cartoon",
+      "image-to-image"
+    ],
+    "51": [
+      "3d",
+      "cartoon",
+      "fashion",
+      "surreal",
+      "image-to-image"
+    ],
+    "60": [
+      "cartoon",
+      "animation-style",
+      "gothic",
+      "illustration",
+      "image-to-image"
+    ],
+    "66": [
+      "portrait",
+      "sculpture",
+      "fashion",
+      "image-to-image"
+    ],
+    "70": [
+      "3d",
+      "animation-style",
+      "cinematic",
+      "image-to-image"
+    ],
+    "83": [
+      "3d",
+      "sculpture",
+      "animation-style",
+      "gothic",
+      "image-to-image"
+    ],
+    "90": [
+      "3d",
+      "sculpture",
+      "graffiti",
+      "image-to-image"
+    ],
+    "96": [
+      "portrait",
+      "gothic",
+      "fashion",
+      "photography",
+      "image-to-image"
+    ],
+    "104": [
+      "3d",
+      "pixel-art",
+      "game-style",
+      "image-to-image"
+    ],
+    "115": [
+      "poster",
+      "vintage",
+      "illustration",
+      "image-to-image"
+    ],
+    "120": [
+      "portrait",
+      "vintage",
+      "illustration",
+      "editorial",
+      "image-to-image"
+    ],
+    "130": [
+      "portrait",
+      "anime",
+      "illustration",
+      "cinematic",
+      "image-to-image"
+    ],
+    "137": [
+      "3d",
+      "cinematic",
+      "image-to-image"
+    ],
+    "143": [
+      "3d",
+      "cinematic",
+      "image-to-image"
+    ],
+    "149": [
+      "3d",
+      "lego",
+      "image-to-image"
+    ],
+    "156": [
+      "portrait",
+      "surreal",
+      "image-to-image"
+    ],
+    "165": [
+      "poster",
+      "cinematic",
+      "photography",
+      "image-to-image"
+    ],
+    "172": [
+      "portrait",
+      "gothic",
+      "vintage",
+      "photography",
+      "cinematic",
+      "image-to-image"
+    ],
+    "177": [
+      "portrait",
+      "gothic",
+      "vintage",
+      "photography",
+      "cinematic",
+      "image-to-image"
+    ],
+    "182": [
+      "portrait",
+      "cartoon",
+      "animation-style",
+      "image-to-image"
+    ],
+    "189": [
+      "cartoon",
+      "animation-style",
+      "image-to-image"
+    ],
+    "197": [
+      "cartoon",
+      "animation-style",
+      "image-to-image"
+    ],
+    "203": [
+      "3d",
+      "cartoon",
+      "game-style",
+      "image-to-image"
+    ],
+    "208": [
+      "portrait",
+      "photography",
+      "game-style",
+      "cinematic",
+      "image-to-image"
+    ],
+    "217": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "cartoon",
+      "gothic",
+      "image-to-image"
+    ],
+    "224": [
+      "cartoon",
+      "illustration",
+      "surreal",
+      "image-to-image"
+    ],
+    "230": [
+      "3d",
+      "cartoon",
+      "illustration",
+      "image-to-image"
+    ],
+    "238": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "image-to-image"
+    ],
+    "244": [
+      "anime",
+      "animation-style",
+      "illustration",
+      "image-to-image"
+    ],
+    "249": [
+      "poster",
+      "cartoon",
+      "illustration",
+      "game-style",
+      "image-to-image"
+    ],
+    "254": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "260": [
+      "poster",
+      "illustration",
+      "game-style",
+      "cinematic",
+      "image-to-image"
+    ],
+    "265": [
+      "animation-style",
+      "illustration",
+      "image-to-image"
+    ],
+    "271": [
+      "portrait",
+      "animation-style",
+      "illustration",
+      "image-to-image"
+    ],
+    "277": [
+      "poster",
+      "3d",
+      "game-style",
+      "image-to-image"
+    ],
+    "284": [
+      "3d",
+      "game-style",
+      "cinematic",
+      "image-to-image"
+    ],
+    "291": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "299": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "cartoon",
+      "image-to-image"
+    ],
+    "307": [
+      "avatar",
+      "cartoon",
+      "illustration",
+      "graffiti",
+      "image-to-image"
+    ],
+    "313": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "321": [
+      "avatar",
+      "pixel-art",
+      "game-style",
+      "image-to-image"
+    ],
+    "328": [
+      "pixel-art",
+      "game-style",
+      "image-to-image"
+    ],
+    "333": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "341": [
+      "avatar",
+      "cartoon",
+      "illustration",
+      "image-to-image"
+    ],
+    "351": [
+      "3d",
+      "sculpture",
+      "surreal",
+      "image-to-image"
+    ],
+    "357": [
+      "portrait",
+      "3d",
+      "sculpture",
+      "image-to-image"
+    ],
+    "371": [
+      "image-to-image"
+    ],
+    "378": [
+      "image-to-image"
+    ],
+    "386": [
+      "product",
+      "sculpture",
+      "photography",
+      "image-to-image"
+    ],
+    "387": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "401": [
+      "photography",
+      "image-to-image"
+    ],
+    "409": [
+      "cartoon",
+      "animation-style",
+      "vintage",
+      "cinematic",
+      "image-to-image"
+    ],
+    "413": [
+      "cartoon",
+      "animation-style",
+      "vintage",
+      "cinematic",
+      "image-to-image"
+    ],
+    "416": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "419": [
+      "poster",
+      "image-to-image"
+    ],
+    "426": [
+      "portrait",
+      "3d",
+      "cartoon",
+      "image-to-image"
+    ],
+    "429": [
+      "cartoon",
+      "animation-style",
+      "illustration",
+      "image-to-image"
+    ],
+    "430": [
+      "sculpture",
+      "fashion",
+      "surreal",
+      "image-to-image"
+    ],
+    "434": [
+      "illustration",
+      "image-to-image"
+    ],
+    "435": [
+      "illustration",
+      "surreal",
+      "image-to-image"
+    ],
+    "439": [
+      "photography",
+      "surreal",
+      "image-to-image"
+    ],
+    "441": [
+      "poster",
+      "fashion",
+      "editorial",
+      "photography",
+      "image-to-image"
+    ],
+    "443": [
+      "photography",
+      "cinematic",
+      "image-to-image"
+    ],
+    "445": [
+      "product",
+      "photography",
+      "image-to-image"
+    ],
+    "449": [
+      "poster",
+      "product",
+      "photography",
+      "image-to-image"
+    ],
+    "451": [
+      "cartoon",
+      "image-to-image"
+    ],
+    "452": [
+      "product",
+      "fashion",
+      "photography",
+      "image-to-image"
+    ],
+    "457": [
+      "poster",
+      "cinematic",
+      "photography",
+      "image-to-image"
+    ],
+    "461": [
+      "3d",
+      "fashion",
+      "editorial",
+      "surreal",
+      "image-to-image"
+    ],
+    "465": [
+      "cartoon",
+      "pixel-art",
+      "image-to-image"
+    ],
+    "466": [
+      "portrait",
+      "3d",
+      "cinematic",
+      "image-to-image"
+    ],
+    "467": [
+      "poster",
+      "editorial",
+      "illustration",
+      "text-to-image"
+    ],
+    "468": [
+      "poster",
+      "illustration",
+      "graffiti",
+      "vintage",
+      "image-to-image"
+    ],
+    "473": [
+      "3d",
+      "sculpture",
+      "image-to-image"
+    ],
+    "474": [
+      "portrait",
+      "cartoon",
+      "illustration",
+      "image-to-image"
+    ],
+    "475": [
+      "portrait",
+      "3d",
+      "cartoon",
+      "image-to-image"
+    ],
+    "476": [
+      "sculpture",
+      "cartoon",
+      "animation-style",
+      "image-to-image"
+    ],
+    "477": [
+      "sculpture",
+      "cartoon",
+      "animation-style",
+      "image-to-image"
+    ],
+    "478": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "479": [
+      "3d",
+      "cartoon",
+      "anime",
+      "image-to-image"
+    ],
+    "481": [
+      "poster",
+      "3d",
+      "cartoon",
+      "anime",
+      "image-to-image"
+    ],
+    "482": [
+      "cartoon",
+      "illustration",
+      "vintage",
+      "image-to-image"
+    ],
+    "485": [
+      "photography",
+      "image-to-image"
+    ],
+    "486": [
+      "fashion",
+      "editorial",
+      "photography",
+      "image-to-image"
+    ],
+    "487": [
+      "photography",
+      "image-to-image"
+    ],
+    "490": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "492": [
+      "portrait",
+      "fashion",
+      "photography",
+      "image-to-image"
+    ],
+    "497": [
+      "photography",
+      "image-to-image"
+    ],
+    "501": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "502": [
+      "anime",
+      "animation-style",
+      "vintage",
+      "illustration",
+      "image-to-image"
+    ],
+    "503": [
+      "poster",
+      "illustration",
+      "image-to-image"
+    ],
+    "506": [
+      "portrait",
+      "editorial",
+      "photography",
+      "image-to-image"
+    ],
+    "507": [
+      "illustration",
+      "vintage",
+      "image-to-image"
+    ],
+    "510": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ],
+    "511": [
+      "portrait",
+      "photography",
+      "image-to-image"
+    ]
+  },
+  "excludeImages": {
+    "6": [
+      "/prompts/6/01.webp"
+    ],
+    "20": [
+      "/prompts/20/01.webp"
+    ]
+  }
+}

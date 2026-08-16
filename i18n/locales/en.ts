@@ -6,6 +6,7 @@ export default {
       collage: "Collage",
       guide: "Guides",
       vectorizer: "Vectorizer",
+      prompts: "Prompts",
     },
     switchTheme: "Switch Theme",
     switchLang: "Switch Language",
@@ -3826,6 +3827,355 @@ export default {
       title: {
         insertVariable: "Insert Variable",
         insertVariableSubtitle: "Choose a variable and insert it into the active prompt field.",
+      },
+    },
+  },
+  prompts: {
+    title: "Prompt archive",
+    description: "Browse prompts published on the Prompt Draft Telegram channel.",
+    total: "{count} prompts",
+    results: "{count} results",
+    loading: "Loading prompt archive...",
+    search: {
+      placeholder: "Search title, prompt, tag or ID...",
+    },
+    filters: {
+      model: "Model",
+      tag: "Tag",
+      sort: "Sort",
+      allModels: "All models",
+      allTags: "All tags",
+      clear: "Clear filters",
+    },
+    sort: {
+      newest: "Newest first",
+      oldest: "Oldest first",
+    },
+    models: {
+      dallE: "DALL·E",
+      gptImage1: "GPT-Image-1",
+    },
+    card: {
+      noPreview: "No preview",
+      imageCount: "{count} images",
+    },
+    actions: {
+      telegram: "View on Telegram",
+      view: "View prompt",
+    },
+    empty: {
+      title: "No prompts found",
+      description: "Try a different search term or clear the active filters.",
+    },
+    error: {
+      title: "Could not load the prompt archive",
+      retry: "Try again",
+    },
+    loadMore: "Load more ({count} remaining)",
+    view: {
+      grid: "Grid view",
+      list: "List view",
+    },
+    items: {
+      "6": {
+        title: "Melancholic Expressionist Portrait",
+      },
+      "14": {
+        title: "Childlike Hand-Drawn Troll Meme",
+      },
+      "20": {
+        title: "Pop-Surreal Sculpture Portrait",
+      },
+      "26": {
+        title: "3D Gothic Character",
+      },
+      "31": {
+        title: "Retro-Futurist Resin Sculpture",
+      },
+      "39": {
+        title: "Graffiti Copper Sculpture",
+      },
+      "51": {
+        title: "Surreal Fashion Art Doll",
+      },
+      "60": {
+        title: "Gothic 2D Animation",
+      },
+      "66": {
+        title: "Fashion Plaster Bust",
+      },
+      "70": {
+        title: "Cinematic Painted 3D Character",
+      },
+      "83": {
+        title: "Coraline-Style Stop-Motion",
+      },
+      "90": {
+        title: "Colorful Resin Sculpture",
+      },
+      "96": {
+        title: "Gothic Raven Portrait",
+      },
+      "104": {
+        title: "3D Minecraft Character",
+      },
+      "115": {
+        title: "1950s Advertising Poster",
+      },
+      "120": {
+        title: "1950s Magazine Portrait",
+      },
+      "130": {
+        title: "Dystopian Anime Portrait",
+      },
+      "137": {
+        title: "Neon Cyberpunk Man",
+      },
+      "143": {
+        title: "Neon Cyberpunk Woman",
+      },
+      "149": {
+        title: "3D LEGO World",
+      },
+      "156": {
+        title: "Mysterious Horned Character",
+      },
+      "165": {
+        title: "The Rings of Power Poster",
+      },
+      "172": {
+        title: "Victorian Gothic Portrait",
+      },
+      "177": {
+        title: "Male Victorian Gothic Portrait",
+      },
+      "182": {
+        title: "Family Guy Portrait",
+      },
+      "189": {
+        title: "South Park Paper Character",
+      },
+      "197": {
+        title: "Rick and Morty Character",
+      },
+      "203": {
+        title: "Clash Royale Archer Queen",
+      },
+      "208": {
+        title: "Realistic Archer Queen",
+      },
+      "217": {
+        title: "Cinematic 3D Gothic Character",
+      },
+      "224": {
+        title: "GeoToon Geometric Character",
+      },
+      "230": {
+        title: "Pastel Fantasy 3D Character",
+      },
+      "238": {
+        title: "3D Medusa Character",
+      },
+      "244": {
+        title: "Spirited Away Anime Style",
+      },
+      "249": {
+        title: "GTA San Andreas Poster",
+      },
+      "254": {
+        title: "Imam Reza Shrine Souvenir Portrait",
+      },
+      "260": {
+        title: "GTA VI Poster",
+      },
+      "265": {
+        title: "Full-Body Wolfwalkers Character",
+      },
+      "271": {
+        title: "Wolfwalkers Portrait",
+      },
+      "277": {
+        title: "Red Dead Redemption Poster",
+      },
+      "284": {
+        title: "Red Dead Redemption II Character",
+      },
+      "291": {
+        title: "Studio Pet Portrait",
+      },
+      "299": {
+        title: "Cartoon Resin Sculpture",
+      },
+      "307": {
+        title: "Neon Graffiti Avatar",
+      },
+      "313": {
+        title: "Iranian 3×4 ID Photo",
+      },
+      "321": {
+        title: "64-Bit Pixel Avatar",
+      },
+      "328": {
+        title: "Full-Body 32-Bit Pixel Character",
+      },
+      "333": {
+        title: "Studio Passport Photo",
+      },
+      "341": {
+        title: "Pastel Flat Avatar",
+      },
+      "351": {
+        title: "Elongated Clay Figurine",
+      },
+      "357": {
+        title: "Resin Sculpture Close-Up",
+      },
+      "371": {
+        title: "Style-Matched Santa Hat",
+      },
+      "378": {
+        title: "Full Santa Makeover",
+      },
+      "386": {
+        title: "Ceramic Object from a Child's Sketch",
+      },
+      "387": {
+        title: "Add a Partner to Photo",
+      },
+      "401": {
+        title: "Custom Realistic Scene",
+      },
+      "409": {
+        title: "Live-Action Vintage Cartoon Character",
+      },
+      "413": {
+        title: "Live-Action Tom & Jerry Style",
+      },
+      "416": {
+        title: "Professional LinkedIn Headshot",
+      },
+      "419": {
+        title: "Professional YouTube Thumbnail",
+      },
+      "426": {
+        title: "3D Punk Character",
+      },
+      "429": {
+        title: "Distorted Geometric 2D Character",
+      },
+      "430": {
+        title: "Grotesque Caricature Sculpture",
+      },
+      "434": {
+        title: "Geometric Pen-and-Ink Illustration",
+      },
+      "435": {
+        title: "Surreal Childlike Drawing",
+      },
+      "439": {
+        title: "Realistic Organic Surreal Portrait",
+      },
+      "441": {
+        title: "Vogue Magazine Cover",
+      },
+      "443": {
+        title: "Extreme Bodybuilder Portrait",
+      },
+      "445": {
+        title: "E-Commerce Product Photo",
+      },
+      "449": {
+        title: "Product Advertising Poster",
+      },
+      "451": {
+        title: "Felt Marionette Doll",
+      },
+      "452": {
+        title: "Virtual Clothing Try-On",
+      },
+      "457": {
+        title: "Personalized Cinematic Poster",
+      },
+      "461": {
+        title: "3D Fashion Caricature",
+      },
+      "465": {
+        title: "Crouching 2D Pixel Character",
+      },
+      "466": {
+        title: "Cinematic CGI Portrait",
+      },
+      "467": {
+        title: "Book Cover from Text",
+      },
+      "468": {
+        title: "Japanese Street-Art Poster",
+      },
+      "473": {
+        title: "Handcrafted Bamboo Sculpture",
+      },
+      "474": {
+        title: "Watercolor Cartoon Character",
+      },
+      "475": {
+        title: "Studio 3D Cartoon Character",
+      },
+      "476": {
+        title: "Wallace & Gromit Claymation Character",
+      },
+      "477": {
+        title: "Claymation Mirror Selfie",
+      },
+      "478": {
+        title: "Overhead Candid Portrait",
+      },
+      "479": {
+        title: "Aluminum One Piece Character",
+      },
+      "481": {
+        title: "One Piece Magic Fruit Poster",
+      },
+      "482": {
+        title: "Elongated Pop-Art Character",
+      },
+      "485": {
+        title: "Selfie in a Reference Location",
+      },
+      "486": {
+        title: "Object-Filled Pool Fashion Editorial",
+      },
+      "487": {
+        title: "Paparazzi Window Portrait",
+      },
+      "490": {
+        title: "3×3 Expression Test Grid",
+      },
+      "492": {
+        title: "3×3 Expression & Hairstyle Grid",
+      },
+      "497": {
+        title: "Everyday Life in a Historical Era",
+      },
+      "501": {
+        title: "Couple Walking Through Flowers",
+      },
+      "502": {
+        title: "Classic 80s–90s Anime",
+      },
+      "503": {
+        title: "Persian Miniature Poster",
+      },
+      "506": {
+        title: "Fine-Art Butterfly Portrait",
+      },
+      "507": {
+        title: "Personalized Tarot Card",
+      },
+      "510": {
+        title: "Casual Two-Person Portrait",
+      },
+      "511": {
+        title: "Natural LinkedIn Portrait",
       },
     },
   },

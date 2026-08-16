@@ -1,5 +1,5 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "channel": "prompt_draft",
   "updatedAt": "2026-08-16",
   "modelHistory": [
@@ -24,7 +24,8 @@
   "items": [
     {
       "id": 6,
-      "title": "تبدیل تصویر شما به شخص افسرده‌ی الکل به دست، به سبک اسکپرسیونیسم",
+      "titleKey": "prompts.items.6.title",
+      "sourceTitle": "تبدیل تصویر شما به شخص افسرده‌ی الکل به دست، به سبک اسکپرسیونیسم",
       "publishedAt": "2025-04-17T21:46:40+03:30",
       "telegramUrl": "https://t.me/prompt_draft/6",
       "model": {
@@ -34,7 +35,6 @@
         ]
       },
       "images": [
-        "/prompts/6/01.webp",
         "/prompts/6/02.webp"
       ],
       "prompt": "{ \"transformation\": \"abstract_expressionist_portrait\", \"base_style\": \"illustrative_sketch_mixed_media\", \"subject\": { \"pose\": \"original_image\", \"expression\": \"tired_detached\", \"gaze_direction\": \"direct\", \"preserve\": [\"face_shape\", \"body_structure\", \"hair_structure\", \"identity\", \"clothes\"] }, \"art_style\": { \"line_quality\": \"loose_and_gain_dynamic_continuous\", \"color_blocks\": \"irregular_flat_wash\", \"contour\": [ \"exaggerated_facial_features\", \"exaggerated_bigger_eyes\", \"exaggerated_bigger_nose\"], \"layering\": \"overlapping_faces_and_lines\", \"background\": \"plain_minimal_solid_white\" }, \"color_mode\": \"muted_pastel_with_bursts_of_yellow_orange\", \"texture\": { \"type\": \"paper_like_grain\", \"black _strokes_width\": \"random_per_brush_presure\", \"visible_brush_strokes\": true }, \"composition\": { \"focus_area\": \"face_and_upper_body_with_hand\", \"props\": [\"wine_glass\"], \"gesture\": [\"holding_glass_relaxed\"] }, \"mood\": \"melancholic_dreamlike_fuzzy\", \"typical\": \"creepy\", \"exaggeration\": \"muscles\", \"finish\": \"modern_illustration_magazine_aesthetic\", \"purpose\": \"artistic_stylization_with_psychological_illness_depth\" }",
@@ -46,7 +46,8 @@
     },
     {
       "id": 14,
-      "title": "تبدیل عکس به میم ترول دست‌کشیده‌ی کودکانه",
+      "titleKey": "prompts.items.14.title",
+      "sourceTitle": "تبدیل عکس به میم ترول دست‌کشیده‌ی کودکانه",
       "publishedAt": "2025-04-20T12:53:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/14",
       "model": {
@@ -58,13 +59,15 @@
       "images": [],
       "prompt": "{ \"transform\": \"hand_drawn_troll_meme_conversion_draw_by_5_year_old_kid\", \"similar_to\": \"old_internet_meme\", \"base_style\": \"felt-tip-pen_linear_black_white_sketch_drawn_by_amateur_kid\", \"subject\": { \"pose\": \"head_and_shoulders\", \"expression\": \"preserve_original\", \"facial_features_exaggeration\": [\"bold_and_thick_hand_drawn_distortion\", \"unequal_eyes_size\", \"wider_nose\"], \"outline\": \"felt-tip-pen_handdrawn_bold_lines\", \"preserve\": [\"identity\", \"face_expression\"] }, \"art_style\": { \"lighting\": \"none\", \"color\": [\"black\", \"white\"], \"detail\": \"thick_line_without_shades_felt-tip-pen\", \"texture\": \"thick_felt-tip-pen_like_drawing\" }, \"environment\": { \"location\": \"plain_white_background\" }, \"composition\": { \"focus\": \"face_centered\", \"angle\": \"slight_low_angle\", \"crop\": \"close_up\" }, \"mood\": \"same_as_input\", \"output\": { \"ratio\": \"1:1\", \"res\": \"1920x1920\", \"format\": \"PNG\" } }",
       "tags": [
-        "photography",
-        "image-generation"
+        "cartoon",
+        "illustration",
+        "image-to-image"
       ]
     },
     {
       "id": 20,
-      "title": "تبدیل ریحانا به زنیکه‌ی خفن چش سفید چوبی",
+      "titleKey": "prompts.items.20.title",
+      "sourceTitle": "تبدیل ریحانا به زنیکه‌ی خفن چش سفید چوبی",
       "publishedAt": "2025-04-27T00:13:28+03:30",
       "telegramUrl": "https://t.me/prompt_draft/20",
       "model": {
@@ -74,7 +77,6 @@
         ]
       },
       "images": [
-        "/prompts/20/01.webp",
         "/prompts/20/02.webp"
       ],
       "prompt": "Prompt: “Transform this photo into a hyper-realistic 3D pop-surrealism sculpture portrait of the subject, preserving the person’s facial features, expression and silhouette. exaggeration on facial features size and form. Render as if carved in fused resin / fiberglass panels, then painted in a distressed palette automatically extracted from the reference image (select the 4–12 most dominant hues) arranged in sharp geometric blocks and stenciled circles. Emphasize visible cracks, chipped paint edges and subtle wood-grain texture beneath the surface. Use bold, cel-shaded contour lines around the eyes, lips and jaw (30–55px thickness) and leave the eyes as pure white hollows for a dramatic surreal effect. Soft, even studio lighting with slight warm tint, shallow depth of field, high detail in surface imperfections, cinematic composition. Face expression must show a dead-inside character, 9:16, centered, surrounded by free space, ultra-realistic style, preserve body shape and gestures and face details.”",
@@ -82,16 +84,14 @@
         "portrait",
         "3d",
         "sculpture",
-        "cartoon",
-        "cinematic",
-        "photography",
         "surreal",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 26,
-      "title": "تبدیل شما به کارکترهای تیم برتون (cartoon gothic)",
+      "titleKey": "prompts.items.26.title",
+      "sourceTitle": "تبدیل شما به کارکترهای تیم برتون (cartoon gothic)",
       "publishedAt": "2025-04-30T15:38:51+03:30",
       "telegramUrl": "https://t.me/prompt_draft/26",
       "model": {
@@ -111,13 +111,13 @@
         "sculpture",
         "cartoon",
         "gothic",
-        "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 31,
-      "title": "تبدیل عکس به مجسمه‌ی رزینی کارتونی رتروفیوچریستی دهه ۱۹۵۰",
+      "titleKey": "prompts.items.31.title",
+      "sourceTitle": "تبدیل عکس به مجسمه‌ی رزینی کارتونی رتروفیوچریستی دهه ۱۹۵۰",
       "publishedAt": "2025-05-02T15:33:33+03:30",
       "telegramUrl": "https://t.me/prompt_draft/31",
       "model": {
@@ -136,13 +136,13 @@
         "sculpture",
         "cartoon",
         "vintage",
-        "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 39,
-      "title": "تبدیل شما، CJ و رونالدینیو به یه مجسمه‌ی مسی که داره از خنده پاره میشه و دندونای طلایی داره",
+      "titleKey": "prompts.items.39.title",
+      "sourceTitle": "تبدیل شما، CJ و رونالدینیو به یه مجسمه‌ی مسی که داره از خنده پاره میشه و دندونای طلایی داره",
       "publishedAt": "2025-05-02T16:46:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/39",
       "model": {
@@ -158,17 +158,18 @@
       ],
       "prompt": "convert this to A close-up 3D copper sculpture of the same person in the reference photo, stylized in a semi-cartoon, graffiti-pop-art style. The sculpture shows a joyful face with exaggerated facial features, especially the oversized smile and real metallic gold teeth. The head is tilted slightly back in a front-facing pose, shot from a very low angle to show power and confidence. The face and neck are painted with bold, vivid graffiti-style colors — yellow, blue, red, green — with dynamic brush strokes, splashes, and abstract shapes. The original outfit and accessories from the photo are fully preserved on the sculpture. Rendered like a studio photo: 9:16 aspect ratio, fish-eye macro lens focused on the middle of the face, with radial blur around edges. Add glitch and noise effects as post-processing. The copper surface must be visible under the paint, with realistic reflections and texture.",
       "tags": [
+        "portrait",
         "3d",
         "sculpture",
-        "cartoon",
-        "photography",
         "graffiti",
-        "image-generation"
+        "cartoon",
+        "image-to-image"
       ]
     },
     {
       "id": 51,
-      "title": "تبدیل به عروسک واقعی",
+      "titleKey": "prompts.items.51.title",
+      "sourceTitle": "تبدیل به عروسک واقعی",
       "publishedAt": "2025-09-13T16:47:34+03:30",
       "telegramUrl": "https://t.me/prompt_draft/51",
       "model": {
@@ -183,8 +184,8 @@
       ],
       "prompt": "High-fashion art doll aesthetic, porcelain-like smooth skin with glossy finish, hyper-exaggerated proportions including elongated neck, oversized head, thin stylized limbs, delicate sculpted facial features. Cartoon elegance with fashion-doll exaggeration, plush and knitted fabric materials for clothing, embroidered textile details, polished ceramic and plastic surface qualities. Cinematic studio-like lighting emphasizing sculptural depth and surreal doll-like presence. Preserve all identity details from the input image — including facial structure, unique features, body shape, age, gender, hairstyle, clothing type, pose, camera angle, and character placement in the frame — and translate them faithfully into this stylized art-doll form without altering composition or individuality",
       "tags": [
+        "3d",
         "cartoon",
-        "cinematic",
         "fashion",
         "surreal",
         "image-to-image"
@@ -192,7 +193,8 @@
     },
     {
       "id": 60,
-      "title": "تبدیل عکس به سبک انیمیشن دو بعدی مغازه‌ی خودکشی",
+      "titleKey": "prompts.items.60.title",
+      "sourceTitle": "تبدیل عکس به سبک انیمیشن دو بعدی مغازه‌ی خودکشی",
       "publishedAt": "2025-09-14T18:51:42+03:30",
       "telegramUrl": "https://t.me/prompt_draft/60",
       "model": {
@@ -209,18 +211,17 @@
       ],
       "prompt": "Darkly whimsical 2D animation style, gothic-comedy mood, muted earthy colors with splashes of bright reds and greens. Characters elongated and caricature-like, pale faces, expressive large eyes, melancholic yet humorous expressions. Hand-painted look with visible brush strokes, paper-like textures, vintage European interiors and streets filled with quirky objects. Lighting dim and moody with soft shadows. Feels like traditional hand-drawn animation mixed with stop-motion charm, textured and imperfect. Negative: photorealism, glossy 3D render, Pixar style, anime kawaii, vector clean lines, children’s cartoon, overly bright palette",
       "tags": [
-        "3d",
         "cartoon",
-        "anime",
-        "vintage",
+        "animation-style",
         "gothic",
-        "photography",
-        "image-generation"
+        "illustration",
+        "image-to-image"
       ]
     },
     {
       "id": 66,
-      "title": "پرامپت 66",
+      "titleKey": "prompts.items.66.title",
+      "sourceTitle": "پرامپت 66",
       "publishedAt": "2025-09-17T10:52:52+03:30",
       "telegramUrl": "https://t.me/prompt_draft/66",
       "model": {
@@ -235,19 +236,16 @@
       ],
       "prompt": "Use provided photo, preserve identity, gender, mood, age and accessories and Macro photography of a small handcrafted white plaster bust sculpture (head and elongated neck only), unpainted, smooth yet textured plaster surface. Stylized in high-fashion art doll aesthetic with hyper-exaggerated proportions: oversized head, elongated neck, thin elegant forms, delicate sculpted facial features. Cartoon-like elegance with fashion-doll surreal exaggeration. Placed front-facing on a clean plaster cubic stand, centered in frame, surrounded by free space. Plain white background, cinematic studio-like lighting emphasizing sculptural depth and polished plaster qualities. Ultra-realistic macro capture, frontal view. Aspect ratio 3:4 vertical.",
       "tags": [
+        "portrait",
         "sculpture",
-        "cartoon",
-        "cinematic",
         "fashion",
-        "photography",
-        "surreal",
-        "identity-preserving",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 70,
-      "title": "پرامپت 70",
+      "titleKey": "prompts.items.70.title",
+      "sourceTitle": "پرامپت 70",
       "publishedAt": "2025-10-01T14:59:13+03:30",
       "telegramUrl": "https://t.me/prompt_draft/70",
       "model": {
@@ -262,16 +260,15 @@
       "prompt": "convert my photo to this style:\nOverall Style: Cinematic 3D Animation with a \"Painted Look.\" The final output must resemble a fully rendered 3D model where the textures and lighting are applied to look like a detailed 2D painting, avoiding flat, purely 2D results.\n​Color Palette: A bipartite contrast of high saturation and low saturation. Upper City: Rich golds, ivory, and clean blues. Lower City: Gritty, desaturated dark greens, brown ochres, and hazy purples. Use neon-saturated color pops (pink/blue) for magic and key details.\n​Character Exaggeration: Highly stylized and geometric forms with exaggerated, angular silhouettes and elongated limbs. Faces feature large, emotive eyes and prominent bones for intense, dramatic expression.\n​Texturing and Details: 2D painted textures applied to a 3D surface. Textures must show visible brushstrokes and fine, realistic wear (frayed cloth, rust, chipped paint) for a tangible, hand-crafted feel.\n​Cinematography (Angles and Lenses): Dynamic and cinematic. Utilize wide-angle establishing shots, dramatic close-ups, and frequent Dutch angles. Use deep depth of field and sharp rack focus to guide the eye.\n​Vibe: Gritty, epic, and highly emotional. The mood is tense, complex, and mature, blending large-scale conflict with intimate, character-driven drama.\n​Technical Specs (3D Mesh & Complexity): High-detail polygonal mesh rendered with medium to low polygon count for smooth, stylized surfaces, ensuring a clear, stylized 3D model base. The final rendering should focus on stylized depth and dimensionality over photorealistic complexity.",
       "tags": [
         "3d",
-        "cartoon",
+        "animation-style",
         "cinematic",
-        "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 83,
-      "title": "تبدیل عکس به سبک استاپ‌موشن Coraline",
+      "titleKey": "prompts.items.83.title",
+      "sourceTitle": "تبدیل عکس به سبک استاپ‌موشن Coraline",
       "publishedAt": "2025-10-03T14:47:00+03:30",
       "telegramUrl": "https://t.me/prompt_draft/83",
       "model": {
@@ -288,19 +285,17 @@
       ],
       "prompt": "\"style\": {\n\"look\": \"Stop-motion miniature aesthetic with physically plausible 3D shading, not a painting or 2D illustration\",\n\"handcrafted\": \"Visible stitches, seams, and fiber textures; slight surface imperfections and edge wear\",\n\"palette\": \"Cool blue-teal vs warm tungsten contrast; desaturated midtones; moody theatrical shadows\"\n},\n\"materials\": {\n\"skin\": \"Painted silicone/latex with matte finish; faint faceplate seam suggestion; tiny freckles or pores as paint specks\",\n\"hair\": \"Converted to yarn or felted fibers that match the input color and style (strand clumping, slight fuzz/pilling)\",\n\"clothing\": \"Same design/colors as input image, reinterpreted as stitched cotton/denim/wool with visible hems and topstitching\",\n\"accessories\": \"Replicate all input accessories in miniature craft materials (painted wood, metal brads, thread, felt)\"\n},\n\"character\": {\n\"preserve_identity\": \"Maintain the same face geometry, skin tone, hairstyle, clothing and accessories from the input\",\n\"exaggeration\": {\n\"head_scale\": \"Slightly oversized (≈1.15x the natural proportion)\",\n\"limbs\": \"Elongated and slender; delicate hands\",\n\"features\": \"Small triangular nose, subtle lips; lightly defined brows (embroidered or painted)\"\n},\n\"eyes\": {\n\"type\": \"Sewn-on button eyes\",\n\"spec\": \"Matte black (or dark glossy resin) 2-hole or 4-hole buttons, stitched with thread in an X or || pattern; shallow indentations from thread tension; minimal specular highlight\",\n\"note\": \"No visible iris or sclera; ensure the buttons match face scale and sit correctly on the sockets\"\n}\n},\n\"camera\": {\n\"framing\": \"Portrait, waist-up or tighter; character centered\",\n\"lens\": \"Macro-ish 50–80mm equivalent with shallow depth of field; slight vignette\",\n\"scale_cues\": \"Overscaled wood grain, fabric fibers, and hand-painted textures to reinforce miniature scale\",\n\"lighting\": \"Practical tungsten key with soft rim light; cool moonlight fill from window; crisp puppet shadows\"\n},\n\"background\": {\n\"environment\": \"Crooked, whimsical interior with hand-painted wallpaper, tilted frames, stitched or patched props; optional rainy window and thread/spool motifs\",\n\"focus\": \"Softened/defocused background to keep attention on the character\",\n\"depth\": \"Layered set pieces to enhance parallax and 3D feel\"\n},\n\"vibe\": {\n\"tone\": \"Dark yet whimsical; playful gothic charm with a faintly eerie, surreal mood\",\n\"emotion\": \"Curious, brave, slightly uneasy\"\n},\n\"constraints\": {\n\"preserve_from_input\": [\"face\", \"hairstyle and color\", \"clothing design and colors\", \"all accessories\"],\n\"must_have\": [\"button eyes as specified\", \"stop-motion 3D miniature look\"],\n\"avoid\": [\"2D illustration, painterly brushstrokes, anime/comic style, photoreal human eyes, airbrushed plastic look\"]\n},\n\"output\": {\n\"size\": \"1536x2048\",\n\"aspect_ratio\": \"3:4\",\n\"orientation\": \"portrait\",\n\"n\": 1\n}\n}",
       "tags": [
-        "portrait",
         "3d",
         "sculpture",
-        "cartoon",
-        "anime",
+        "animation-style",
         "gothic",
-        "photography",
-        "illustration"
+        "image-to-image"
       ]
     },
     {
       "id": 90,
-      "title": "تبدیل عکس به مجسمه‌ی رزینی رنگی پنگی",
+      "titleKey": "prompts.items.90.title",
+      "sourceTitle": "تبدیل عکس به مجسمه‌ی رزینی رنگی پنگی",
       "publishedAt": "2025-10-04T12:24:40+03:30",
       "telegramUrl": "https://t.me/prompt_draft/90",
       "model": {
@@ -318,18 +313,16 @@
       ],
       "prompt": "convert my photo to A hyper-realistic 3D resin sculpture photographed in real life. The statue is stylized with exaggerated proportions — expressive eyes, elongated neck, dynamic body forms. Resin surface is painted with bold neon pigments, halftone textures, glitch-like gradients, and graffiti-inspired patterns, blending glossy resin with comic textures. Lighting creates deep shadows and vibrant highlights, emphasizing physical depth and material shine. Shot with expressive angles (Dutch tilt, fisheye), 3:4 portrait format, cinematic studio photography",
       "tags": [
-        "portrait",
         "3d",
         "sculpture",
-        "cinematic",
-        "photography",
         "graffiti",
         "image-to-image"
       ]
     },
     {
       "id": 96,
-      "title": "تبدیل عکس شما به کلاغ سیاه گاتیک و چشم سفید 🐦‍⬛",
+      "titleKey": "prompts.items.96.title",
+      "sourceTitle": "تبدیل عکس شما به کلاغ سیاه گاتیک و چشم سفید 🐦‍⬛",
       "publishedAt": "2025-10-06T14:17:48+03:30",
       "telegramUrl": "https://t.me/prompt_draft/96",
       "model": {
@@ -347,7 +340,6 @@
       "prompt": "Apply full matte black foundation on all visible skin (face, hands, body). Transform the clothing into gothic raven-inspired fashion with dark fabrics, leather textures, feathers, and metallic details. The makeup should be completely black, dramatic, and artistic. Set the background to pure black studio lighting. Make the character’s eyes entirely white without pupils, resembling smooth white marble. Add dramatic rim lighting from behind to create glowing edges that separate the character from the dark background. Final output: a high-quality gothic raven concept portrait with all-black makeup and clothing, 3:4 aspect portrait",
       "tags": [
         "portrait",
-        "cartoon",
         "gothic",
         "fashion",
         "photography",
@@ -356,7 +348,8 @@
     },
     {
       "id": 104,
-      "title": "تبدیل عکس به کارکترهای ماینکرفت",
+      "titleKey": "prompts.items.104.title",
+      "sourceTitle": "تبدیل عکس به کارکترهای ماینکرفت",
       "publishedAt": "2025-10-07T10:22:01+03:30",
       "telegramUrl": "https://t.me/prompt_draft/104",
       "model": {
@@ -375,16 +368,15 @@
       "prompt": "transform photo into a Minimal 3D voxel-style character made from a few simple blocks. The head is formed by 2–3 cubes with pixelated facial features drawn directly on the front faces. The body, arms, and legs are built from rectangular boxes or short cylinders with clean edges and flat colors. Simple cubic geometry without curves or smooth transitions. Flat pixel textures for skin and clothes, no shading or gradients. Natural earthy color palette (greens, browns, blues, grays) under soft daylight. A pure Minecraft-style blocky aesthetic with clear volume, simple proportions, and minimal detail",
       "tags": [
         "3d",
-        "cartoon",
         "pixel-art",
-        "photography",
         "game-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 115,
-      "title": "تبدیل عکس به پوستر تبلیغاتی وینتیج دهه ۱۹۵۰",
+      "titleKey": "prompts.items.115.title",
+      "sourceTitle": "تبدیل عکس به پوستر تبلیغاتی وینتیج دهه ۱۹۵۰",
       "publishedAt": "2025-10-12T11:44:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/115",
       "model": {
@@ -402,19 +394,16 @@
       ],
       "prompt": "Transform my portrait into a 1950s American magazine illustration style. Retro advertising art, vibrant yet slightly faded colors, realistic painting with halftone print texture, nostalgic vintage look, smooth brush strokes, extract color palette and temperature from input photo, smiling expression, mid-century commercial illustration. Add a random vintage product appropriate to the scene in the character’s hands. Design the scene as a full advertising poster from that era, including the product’s brand name and a catchy slogan written in a 1950s magazine font style. The text should look printed, integrated naturally into the poster layout, include vintage typography layout, classic advertising composition, paper grain and halftone dots. with worn paper texture and subtle ink fading. portrait aspect 3:4",
       "tags": [
-        "portrait",
         "poster",
-        "cartoon",
         "vintage",
-        "product",
-        "photography",
         "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 120,
-      "title": "تبدیل عکس به پرتره مجله‌ای وینتیج دهه‌ی ۵۰ میلادی",
+      "titleKey": "prompts.items.120.title",
+      "sourceTitle": "تبدیل عکس به پرتره مجله‌ای وینتیج دهه‌ی ۵۰ میلادی",
       "publishedAt": "2025-10-12T12:19:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/120",
       "model": {
@@ -432,16 +421,15 @@
       "tags": [
         "portrait",
         "vintage",
-        "editorial",
-        "photography",
         "illustration",
-        "identity-preserving",
+        "editorial",
         "image-to-image"
       ]
     },
     {
       "id": 130,
-      "title": "تبدیل عکس به پرتره‌ی انیمه‌ای صنعتی دیستوپیایی",
+      "titleKey": "prompts.items.130.title",
+      "sourceTitle": "تبدیل عکس به پرتره‌ی انیمه‌ای صنعتی دیستوپیایی",
       "publishedAt": "2025-10-13T15:45:49+03:30",
       "telegramUrl": "https://t.me/prompt_draft/130",
       "model": {
@@ -459,16 +447,16 @@
       "prompt": "use my photo and create a ‌Dirty industrial Anime-style portrait of a me in a decayed, dystopian cityscape. The character stands amid tall, crumbling industrial buildings covered with pipes, steam vents, and flickering neon signs in kanji. The atmosphere is dense with dark graze magical fog, dust, and dim golden light reflecting on wet streets. The art style is detailed yet stylized — clean anime lines with textured shadows and painterly grunge surfaces. The color palette shifts toward muted greens, rusty browns, and yellow-gray haze, with occasional glowing neon accents. The expression is serious and weary, giving a sense of mystery and resilience. The background shows a chaotic world of metal scaffolding, smoke, and crooked power lines fading into smog. The lighting is cinematic, with rim highlights and dramatic contrast, evoking a dark fantasy tone blended with urban decay. Render with 2D anime cell shading enhanced by rough textures and atmospheric depth. ‌Make sure the character has an accurate and carefully designed anime-style face, and push them into the abyss of existential loneliness. ‌Make the pupils smaller compared to the eyes themselves, giving a subtle sense of emotional void. ‌Add slight signs of suffering on the character’s face, but keep their overall look rough and in harmony with the harsh atmosphere around them. ‌For the outfit, take inspiration from post-apocalyptic mob designs — based on dark, muted tones of black, white, green, yellow, brown, and red, resembling the 1980s punk outlaws in leather jackets",
       "tags": [
         "portrait",
-        "cartoon",
         "anime",
+        "illustration",
         "cinematic",
-        "photography",
         "image-to-image"
       ]
     },
     {
       "id": 137,
-      "title": "تبدیل تصویر به شخصیت زن سایبرپانکی در دنیای آینده‌نگر نئون",
+      "titleKey": "prompts.items.137.title",
+      "sourceTitle": "تبدیل تصویر به شخصیت زن سایبرپانکی در دنیای آینده‌نگر نئون",
       "publishedAt": "2025-10-14T17:46:30+03:30",
       "telegramUrl": "https://t.me/prompt_draft/137",
       "model": {
@@ -490,16 +478,15 @@
       ],
       "prompt": "Transform me into a futuristic cyberpunk man standing in a neon-lit rainy street, holding a high-tech random weapon with confidence. Keep his original hair color, preserve horns and wide smile, also cover eyes with hairs just like provided photo.\nOutfit: wearing a dark tactical bomber jacket made of synthetic leather and carbon-fiber materials, with a glowing neon-blue high-tech collar and mechanical modules integrated along the arms. The jacket features panel-like armor sections and heavy stitching, blending rugged military design with sleek futuristic style. Underneath, a dark graphic T-shirt adds a streetwear touch.\nBody: shows subtle cybernetic enhancements — mechanical seams along the neck and temples, small metallic implants and glowing circuits tracing under the skin, emphasizing a human–machine hybrid look.\nScene: a rain-soaked cyberpunk city illuminated by vivid magenta, blue, and amber holographic lights reflecting off the wet pavement. Lighting: ultra-realistic cinematic 3D render, strong contrast between deep shadows and neon glow, rain particles visible in light beams.\nStyle: high-resolution photorealistic cinematic shot, atmosphere inspired by Cyberpunk 2077 poster aesthetic.",
       "tags": [
-        "poster",
         "3d",
         "cinematic",
-        "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 143,
-      "title": "تبدیل تصویر به شخصیت زن سایبرپانکی در دنیای آینده‌نگر نئون",
+      "titleKey": "prompts.items.143.title",
+      "sourceTitle": "تبدیل تصویر به شخصیت زن سایبرپانکی در دنیای آینده‌نگر نئون",
       "publishedAt": "2025-10-14T17:48:12+03:30",
       "telegramUrl": "https://t.me/prompt_draft/143",
       "model": {
@@ -519,13 +506,13 @@
       "tags": [
         "3d",
         "cinematic",
-        "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 149,
-      "title": "پرامپت 149",
+      "titleKey": "prompts.items.149.title",
+      "sourceTitle": "پرامپت 149",
       "publishedAt": "2025-10-16T10:24:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/149",
       "model": {
@@ -541,16 +528,14 @@
       "prompt": "transform my photo into a colorful 3D lego-style world, where both the character and background look entirely built from shiny plastic lego bricks; the face and body should resemble lego minifigures with minimal expressions and simple shapes; lighting should be bright and glossy to emphasize the plastic material; keep the person’s facial features and colors recognizable within the lego design.",
       "tags": [
         "3d",
-        "cartoon",
-        "photography",
         "lego",
-        "animation-style",
         "image-to-image"
       ]
     },
     {
       "id": 156,
-      "title": "تبدیل به همرزم گراس",
+      "titleKey": "prompts.items.156.title",
+      "sourceTitle": "تبدیل به همرزم گراس",
       "publishedAt": "2025-10-16T13:52:45+03:30",
       "telegramUrl": "https://t.me/prompt_draft/156",
       "model": {
@@ -566,12 +551,15 @@
       ],
       "prompt": "transformation: keep everything else unchanged; hair fully covering the eyes and forehead; exaggerated wide smile showing teeth; red, bony-textured horns on the head, seamlessly integrated into the scalp; surrounded by open space to preserve all visual details.",
       "tags": [
-        "image-generation"
+        "portrait",
+        "surreal",
+        "image-to-image"
       ]
     },
     {
       "id": 165,
-      "title": "تبدیل عکس به پوستر سریال The Rings of Power",
+      "titleKey": "prompts.items.165.title",
+      "sourceTitle": "تبدیل عکس به پوستر سریال The Rings of Power",
       "publishedAt": "2025-10-20T00:59:45+03:30",
       "telegramUrl": "https://t.me/prompt_draft/165",
       "model": {
@@ -590,17 +578,15 @@
       "prompt": "Transform the person into a majestic fantasy character inspired by ancient mythic realms, captured from a perfectly frontal camera angle. The character stands at the center of the frame, facing directly toward the viewer with cinematic symmetry and realistic depth of field.\nCreate the image in ultra-realistic, high-resolution cinematic style, not painting or illustration. Use natural skin texture, realistic lighting, and physically accurate materials. The lighting should be dramatic and directional, with soft golden highlights and deep shadows that define the contours of the face and armor.\nChange the person’s hair to realistic long, flowing golden-blonde or silver tones, styled smoothly in an elegant elven-inspired fashion. The hair should reflect light naturally, with visible strands and realistic depth.\nClothing should be made of real fabric and metal materials — dark velvet, embroidered gold threads, and matte metallic armor details. Textures must look tangible and physically correct.\nThe background should be realistic and atmospheric, resembling a dimly lit forest or mystical environment with cinematic blur and volumetric light.\nIf the person appears feminine, one hand should be raised slightly forward, holding a glowing ring that emits soft light. If the person appears masculine, both hands remain relaxed beside the body, with a confident and intense gaze directly at the camera.\nAt the bottom of the image, include realistic golden title typography reading “THE LORD OF THE RINGS: THE RINGS OF POWER”, styled exactly like an official cinematic poster with metallic shine, engraved texture, and symmetrical layout.",
       "tags": [
         "poster",
-        "cartoon",
         "cinematic",
-        "fashion",
         "photography",
-        "illustration",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 172,
-      "title": "تبدیل تصویر شما به پرتره‌ای واقع‌گرایانه در سبک گوتیک ویکتوریایی",
+      "titleKey": "prompts.items.172.title",
+      "sourceTitle": "تبدیل تصویر شما به پرتره‌ای واقع‌گرایانه در سبک گوتیک ویکتوریایی",
       "publishedAt": "2025-10-21T00:10:09+03:30",
       "telegramUrl": "https://t.me/prompt_draft/172",
       "model": {
@@ -618,16 +604,17 @@
       "prompt": "use my photo and create an Ultra-realistic portrait photography of an elegant person standing symmetrical front view, holding a single black rose. in a dark, misty Victorian garden with cold green tones and dense foliage. Shot from the waist up, with cinematic natural lighting and shallow depth of field. The subject wears luxurious black velvet and lace clothing with subtle metallic details, and a vintage black Victorian hat adorned with dark feathers, lace, and satin ribbons. Pale flawless porcelain skin, deep expressive eyes with dark gothic makeup and dramatic eyeliner, soft contouring, and slightly shadowed lips. Morning fog drifts through the background; light filters gently through the leaves, creating a mysterious, aristocratic, and hauntingly beautiful atmosphere.",
       "tags": [
         "portrait",
-        "cinematic",
-        "vintage",
         "gothic",
+        "vintage",
         "photography",
+        "cinematic",
         "image-to-image"
       ]
     },
     {
       "id": 177,
-      "title": "تبدیل تصویر شما به پرتره‌ی واقع گرایانه در سبک گوتیک ویکتوریایی نسخه‌ی آقایون چون قبلی همه رو زن میسازه",
+      "titleKey": "prompts.items.177.title",
+      "sourceTitle": "تبدیل تصویر شما به پرتره‌ی واقع گرایانه در سبک گوتیک ویکتوریایی نسخه‌ی آقایون چون قبلی همه رو زن میسازه",
       "publishedAt": "2025-10-21T11:05:20+03:30",
       "telegramUrl": "https://t.me/prompt_draft/177",
       "model": {
@@ -645,16 +632,17 @@
       "prompt": "use my photo and create an Ultra-realistic portrait photography of an elegant Victorian gentleman (while preserving age and facial features and accessories) symmetrical front view, standing in a dark, misty garden with cold green tones and dense foliage. Shot from the waist up with cinematic natural lighting and shallow depth of field. The man wears a long black velvet Victorian coat with a high collar, a dark silk waistcoat, and a classic white shirt with a black satin cravat. A vintage black top hat adorned with subtle metallic details and dark feathers rests on his head. His skin is pale and flawless with a cool undertone, deep and intense eyes with minimal gothic shading, and a calm, mysterious expression. Gentle fog drifts through the background as light filters through the leaves, creating a refined, hauntingly beautiful, and aristocratic atmosphere",
       "tags": [
         "portrait",
-        "cinematic",
-        "vintage",
         "gothic",
+        "vintage",
         "photography",
+        "cinematic",
         "image-to-image"
       ]
     },
     {
       "id": 182,
-      "title": "پرامپت 182",
+      "titleKey": "prompts.items.182.title",
+      "sourceTitle": "پرامپت 182",
       "publishedAt": "2025-10-21T12:24:22+03:30",
       "telegramUrl": "https://t.me/prompt_draft/182",
       "model": {
@@ -670,14 +658,14 @@
       "tags": [
         "portrait",
         "cartoon",
-        "photography",
         "animation-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 189,
-      "title": "تبدیل عکس به کاراکتر کاغذی South Park",
+      "titleKey": "prompts.items.189.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر کاغذی South Park",
       "publishedAt": "2025-10-23T11:05:32+03:30",
       "telegramUrl": "https://t.me/prompt_draft/189",
       "model": {
@@ -696,14 +684,14 @@
       "prompt": "transform into a A flat 2D cut-out south park cartoon style with bright saturated colors, simple geometric shapes, and minimal shading. Characters have round white eyes, small bodies, and limited movements. Everything looks paper-like and handmade, with flat textures and no gradients. Use bold outlines and vivid background colors to enhance the comedic, simple tone. ignore original pose and make it stand, symmetrical front view with neutral pose. resembling a south park character.",
       "tags": [
         "cartoon",
-        "photography",
         "animation-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 197,
-      "title": "تبدیل به سبک انیمیشن ریک اند مورتی",
+      "titleKey": "prompts.items.197.title",
+      "sourceTitle": "تبدیل به سبک انیمیشن ریک اند مورتی",
       "publishedAt": "2025-11-03T02:08:23+03:30",
       "telegramUrl": "https://t.me/prompt_draft/197",
       "model": {
@@ -721,18 +709,15 @@
       ],
       "prompt": "prompt: 'Transform the same person from the input photo — keeping full facial identity, hairstyle, and expression — into a confident upper-body character illustrated in the *Rick and Morty* universe. The pose shows confidence and energy, as if the character is about to deliver a clever or sarcastic line. The background features a random alien planet from a random galaxy — surreal terrain, colorful skies, and strange cosmic details — with Rick’s signature glowing green interdimensional portal swirling behind the character. The environment should feel absurd, vibrant, and full of weird life forms or floating objects typical of the show’s worlds.\n\nArt style details for *Rick and Morty*:\n\n* Thick, bold black outlines around characters and shapes.\n* Flat, saturated color palette with bright and unnatural hues (mint greens, magentas, purples, acid blues).\n* Soft cell shading using only one darker tone per color region for depth.\n* Simple gradients or minimal shadow layers for the background.\n* White highlights on eyes and skin for cartoon lighting.\n* Exaggerated facial features and slightly off-proportion anatomy in classic *Rick and Morty* fashion.\n* Comedic sci-fi surrealism in design — chaotic but fun composition.',\nstyle: 'Rick and Morty animation style — confident upper-body portrait with surreal galactic background and green portal'",
       "tags": [
-        "portrait",
         "cartoon",
-        "fashion",
-        "photography",
-        "surreal",
         "animation-style",
         "image-to-image"
       ]
     },
     {
       "id": 203,
-      "title": "تبدیل عکس به Archer Queen از Clash Royale",
+      "titleKey": "prompts.items.203.title",
+      "sourceTitle": "تبدیل عکس به Archer Queen از Clash Royale",
       "publishedAt": "2025-11-05T21:42:50+03:30",
       "telegramUrl": "https://t.me/prompt_draft/203",
       "model": {
@@ -748,19 +733,16 @@
       ],
       "prompt": "idea: Transform the same person from the input photo — preserving their full facial identity, gender, hairstyle color, haircut, hair type, and recognizable facial features — into the Archer Queen character from Clash Royale, adapted to the game’s stylized 3D cinematic look.\nrole play name: Archer Queen\nrole play vibe: royal, fearless, precise, and graceful hunter\nrole play details:\nBody: fit and athletic with confident heroic posture; Clash Royale stylized anatomy — slightly enlarged head (10–15%) and smooth proportions.\nOutfit: dark green short tunic with golden trims, purple sash tied at the waist, and metallic wrist bracers with soft reflections.\nCape: flowing forest-green royal cape that extends behind the shoulders with subtle weight and motion.\nCrown: golden crown with rounded studs resting naturally on the head — clean, sculpted, and non-reflective metal finish.\nHair: stylized sculpted mass — smooth, minimal strand detail, following the person’s real hairstyle shape, color, and volume but simplified in Clash Royale form.\nFace: keep original face form but simplified stylized realism — smooth skin surface with soft transitions, slightly larger eyes, reduced pore and texture detail, and gentle cartoon-level expressiveness while preserving identity and gender.\nWeapon: large mechanical crossbow of wood and silver metal, gold-tipped bolt loaded; held firmly with both hands in aiming stance.\nAccessories: a quiver with red-feathered arrows on the back.\nFeet: barefoot with soft stylized toes, consistent with Clash Royale cinematic style.\nscene:\nArcher Queen stands confidently on a stone arena platform surrounded by misty forest and fluttering royal banners. Cinematic lighting — warm golden key light and cool rim light — emphasizes the stylized materials, armor, and clean sculpted forms.\nstyle:\nClash Royale cinematic stylized 3D realism — simplified geometry, clean sculpted shapes, smooth skin shaders without realistic pores, controlled reflections, and vivid fantasy color grading. Avoid hyper-realistic texturing or photoreal lighting.\noutput: portrait aspect 9:16",
       "tags": [
-        "portrait",
         "3d",
         "cartoon",
-        "cinematic",
-        "photography",
         "game-style",
-        "identity-preserving",
         "image-to-image"
       ]
     },
     {
       "id": 208,
-      "title": "تبدیل به آرچر کوئین دنیای واقعی — ژست هدف‌گیری",
+      "titleKey": "prompts.items.208.title",
+      "sourceTitle": "تبدیل به آرچر کوئین دنیای واقعی — ژست هدف‌گیری",
       "publishedAt": "2025-11-05T22:52:51+03:30",
       "telegramUrl": "https://t.me/prompt_draft/208",
       "model": {
@@ -776,18 +758,16 @@
       "prompt": "idea: Transform the same person from the input photo (boy) — preserving their full facial identity, gender, hairstyle color, haircut, hair type, and recognizable facial features — into a real-life cosplay version of the Archer Queen from Clash Royale, posed in an aiming stance toward the viewer as if targeting the camera, styled like a cinematic Halloween costume photoshoot.\n\nrole play name: Real-world Archer Queen (Aiming Pose)\n\nrole play vibe: fearless, precise, royal, and focused — moment before releasing the shot\n\nrole play details:\n\nBody: same body and proportions as the input person; slightly crouched aiming stance, shoulders angled forward, one leg slightly bent for balance.\n\nOutfit: realistic cosplay costume — short dark-green tunic made of cotton or linen with gold embroidered trims, purple sash tied firmly at the waist, and metallic wrist bracers made of brushed aluminum or painted EVA foam.\n\nCape: heavy forest-green velvet cape flowing behind due to movement, showing slight dynamic fold and weight.\n\nCrown: golden metallic-looking crown with rounded studs, made of sculpted resin or painted metal, resting above the person’s real hair naturally.\n\nHair: same as the person’s original hairstyle and color, styled naturally beneath the crown, lightly flowing with movement.\n\nFace: fully realistic face — natural human expression preserved, with focused eyes and subtle tension in brows, representing aiming concentration. Cinematic light enhances facial features.\n\nWeapon: real handcrafted wooden crossbow replica with visible bolts and polished metallic details; held under the left arm while aiming directly toward the camera. One hand grips the handle, the other steadies the loaded golden-tipped bolt.\n\nAccessories: leather quiver with red-feathered arrows visible behind the shoulder.\n\nFeet: barefoot or skin-toned foot covers for realism and fidelity to the original character.\n\nscene: Indoor studio setup with solid purple background, shallow depth of field. Key light focused on the Archer Queen’s face and weapon, with a soft rim light separating the figure from the backdrop. The shot captures the tension of aiming — arrow pointed directly at the lens, cinematic and immersive like a movie poster.\n\nstyle: Real-world cinematic cosplay photography — realistic materials (fabric, leather, metal, wood), professional lighting, balanced exposure. No stylization or 3D look. The final image should feel like a real human in a high-end costume photoshoot, inspired by Clash Royale’s Archer Queen. the face and identity must completely resembling the person in input photo.\n\noutput: portrait aspect 9:16",
       "tags": [
         "portrait",
-        "poster",
-        "3d",
-        "sculpture",
-        "cartoon",
-        "cinematic",
         "photography",
-        "game-style"
+        "game-style",
+        "cinematic",
+        "image-to-image"
       ]
     },
     {
       "id": 217,
-      "title": "یه آپدیت رو نورپردازی و کادربندی این پرامپت (تبدیل به کارکتر گاثیک تیم برتون) دادم بد نشده به نظرم",
+      "titleKey": "prompts.items.217.title",
+      "sourceTitle": "یه آپدیت رو نورپردازی و کادربندی این پرامپت (تبدیل به کارکتر گاثیک تیم برتون) دادم بد نشده به نظرم",
       "publishedAt": "2025-11-07T21:24:11+03:30",
       "telegramUrl": "https://t.me/prompt_draft/217",
       "model": {
@@ -809,13 +789,13 @@
         "sculpture",
         "cartoon",
         "gothic",
-        "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 224,
-      "title": "تبدیل عکس به کارکتر هندسی - GeoToon",
+      "titleKey": "prompts.items.224.title",
+      "sourceTitle": "تبدیل عکس به کارکتر هندسی - GeoToon",
       "publishedAt": "2025-11-08T19:04:19+03:30",
       "telegramUrl": "https://t.me/prompt_draft/224",
       "model": {
@@ -831,9 +811,7 @@
       ],
       "prompt": "prompt: \"convert the provided photo into a stylized floating head illustration, keeping only the head without neck or body. The face should be simplified into geometric, blocky shapes with exaggerated features (large eyes, small mouth, simplified nose). Use soft digital brush textures and painterly shading with visible color planes. The expression should match the emotion of the input image but reinterpreted in a surreal, playful tone. Keep the background pure white with a centered floating head.\"\nstyle: \"PLUTON DURAK minimal painterly 3D-flat hybrid style — soft gradient colors, matte textures, geometric forms, surreal floating head composition, visible brush strokes, cartoonish emotional exaggeration.\"\ncomposition: \"head floating in the center on a white background, no body or neck, front or 3/4 angle depending on input, soft directional lighting from one side for subtle shading, clean composition with strong silhouette.\"",
       "tags": [
-        "3d",
         "cartoon",
-        "photography",
         "illustration",
         "surreal",
         "image-to-image"
@@ -841,7 +819,8 @@
     },
     {
       "id": 230,
-      "title": "تبدیل تصویر شما و محیطی که توش هستید به کاراکتر سه‌بعدی تمام‌قد در سبک فانتزی پاستلی",
+      "titleKey": "prompts.items.230.title",
+      "sourceTitle": "تبدیل تصویر شما و محیطی که توش هستید به کاراکتر سه‌بعدی تمام‌قد در سبک فانتزی پاستلی",
       "publishedAt": "2025-11-09T22:34:22+03:30",
       "telegramUrl": "https://t.me/prompt_draft/230",
       "model": {
@@ -858,18 +837,16 @@
       ],
       "prompt": "prompt:\n\n\"Transform the provided photo into a full-body 3D stylized character illustration set within the same environment captured in the input image. The background, lighting mood, and spatial composition should naturally reflect and reinterpret the real-world scene from the photo — whether it’s a forest, street, beach, room, or any other setting — recreated in the same visual tone and color harmony. The character must always appear full-body, standing naturally facing directly toward the camera regardless of the original pose in the input photo. The camera view and overall scene must be rendered in an isometric perspective, creating a balanced and dimensional composition without visible convergence lines. The atmosphere should remain dreamy, minimalist, and clean, with bright, balanced lighting that harmonizes with the original scene’s tones. The ground should appear softly reflective, with a subtle shadow under the character to anchor it naturally. Materials should have a semi-matte, rubbery or clay-like look, preserving a tactile, toy-like aesthetic. The feet wear designed with color tones directly sampled from the dominant hues present in the input image — ensuring perfect color harmony with the outfit and overall scene.\"\n\nstyle:\n\n\"3D cute stylized full-body illustration with pastel palette, toy-like materials, and gentle lighting inspired by collectible designer figures.\"\n\ncomposition:\n\n\"Full-body 9:16 vertical portrait, centered framing, isometric camera view, subject facing directly forward, medium distance, with evenly diffused light and soft depth of field that keeps the environment softly blurred while maintaining focus on the entire character and shoes.\"",
       "tags": [
-        "portrait",
         "3d",
-        "sculpture",
         "cartoon",
-        "photography",
         "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 238,
-      "title": "تبدیل عکس به کاراکتر سه‌بعدی مدوسا",
+      "titleKey": "prompts.items.238.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر سه‌بعدی مدوسا",
       "publishedAt": "2025-11-11T05:27:57+03:30",
       "telegramUrl": "https://t.me/prompt_draft/238",
       "model": {
@@ -890,15 +867,13 @@
         "portrait",
         "3d",
         "sculpture",
-        "cartoon",
-        "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 244,
-      "title": "تبدیل به سبک انیمه‌ی شهر اشباح",
+      "titleKey": "prompts.items.244.title",
+      "sourceTitle": "تبدیل به سبک انیمه‌ی شهر اشباح",
       "publishedAt": "2025-11-13T10:54:31+03:30",
       "telegramUrl": "https://t.me/prompt_draft/244",
       "model": {
@@ -913,16 +888,16 @@
       ],
       "prompt": "prompt:\n\"Transform the provided image into a detailed anime-style scene inspired by Spirited Away (Sen to Chihiro no Kamikakushi). Preserve all recognizable elements, characters, and background features from the input image, but reinterpret them through the visual and emotional language of Studio Ghibli’s world.\nThe environment should feel dreamlike and nostalgic — infused with warm, painterly lighting, misty air, and lush nature blending with whimsical architecture. Use soft watercolor-like textures, hand-painted shading, and subtle film grain to emulate traditional cel animation.\nIntegrate the magical ambience typical of Spirited Away: glowing lanterns, gentle steam drifting through the scene, reflections on wet stone paths, and a faint golden light from distant bathhouse windows. Colors should be slightly desaturated yet rich and harmonious — emerald greens, faded reds, pale yellows, and sky blues.\nKeep the atmosphere emotionally immersive — a blend of mystery, serenity, and quiet wonder — as if the scene exists between the human world and the spirit realm. Lighting should feel natural but enchanted, with visible ambient glow and soft highlights that make every surface breathe with life.\"\nstyle:\n\"Studio Ghibli traditional anime aesthetic — hand-painted watercolor backgrounds, soft cel-shaded characters, warm cinematic lighting, nostalgic and magical tone inspired by Spirited Away (2001).\"\ncomposition:\n\"Faithfully match the framing and perspective of the input image. Apply a balanced, cinematic camera view with gentle depth-of-field, warm rim light, and layered background elements to evoke Ghibli’s painterly depth. Use a 3:4 or 16:9 ratio depending on the source, maintaining all key details while transforming them into the Spirited Away universe.\"",
       "tags": [
-        "cartoon",
         "anime",
-        "cinematic",
+        "animation-style",
         "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 249,
-      "title": "پرامپت 249",
+      "titleKey": "prompts.items.249.title",
+      "sourceTitle": "پرامپت 249",
       "publishedAt": "2025-11-15T01:10:32+03:30",
       "telegramUrl": "https://t.me/prompt_draft/249",
       "model": {
@@ -937,18 +912,17 @@
       ],
       "prompt": "prompt: \"Preserve the identity, facial structure, and key recognizable features of the input person. Transform the subject into an official-style GTA San Andreas poster illustration — bold cel-shaded look, thick black outlines, graphic comic rendering, saturated colors, and glossy highlights. (include iconic GTA poster elements: lowrider cars, palm trees, silhouettes of fences and power lines, graffiti tags, helicopters with spotlights, street signs like 'Grove St', police chase action, gang-style clothing, jewelry, sunglasses, and dramatic urban lighting). Ensure the subject feels like a major character from the GTA universe, with dynamic framing and strong attitude. full height\"\nstyle: \"GTA San Andreas cover art — cel-shaded illustration, thick contour lines, high saturation, sharp contrast, glossy comic highlights, urban gang-era aesthetic.\"\ncomposition: \"Portrait 9:16, centered subject, medium-close or full-figure framing depending on input, dynamic poster-style layout with layered GTA elements behind the character (cars, graffiti walls, palm trees, helicopters, street signs). Clean vertical symmetry, strong directional lighting, and bold graphic separation between foreground character and stylized background.\"",
       "tags": [
-        "portrait",
         "poster",
         "cartoon",
         "illustration",
-        "graffiti",
         "game-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 254,
-      "title": "تبدیل عکس به سبک عکاسی بازاری در حیاط حرم امام رضا (ع)",
+      "titleKey": "prompts.items.254.title",
+      "sourceTitle": "تبدیل عکس به سبک عکاسی بازاری در حیاط حرم امام رضا (ع)",
       "publishedAt": "2025-11-15T20:44:46+03:30",
       "telegramUrl": "https://t.me/prompt_draft/254",
       "model": {
@@ -966,13 +940,13 @@
       "tags": [
         "portrait",
         "photography",
-        "identity-preserving",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 260,
-      "title": "تبدیل عکس به پوسترهای GTA VI",
+      "titleKey": "prompts.items.260.title",
+      "sourceTitle": "تبدیل عکس به پوسترهای GTA VI",
       "publishedAt": "2025-11-16T18:38:42+03:30",
       "telegramUrl": "https://t.me/prompt_draft/260",
       "model": {
@@ -989,18 +963,16 @@
       "prompt": "**\"Preserve the identity, facial structure, hairstyle, and all recognizable features of the input person. Transform the subject into a modern GTA VI–style character with a semi-realistic Miami atmosphere. Use smooth shading, polished gradients, clean outlines, and a pastel–neon color palette inspired by Miami sunsets (turquoise, pink, peach, purple, and warm orange highlights).\n\nPlace the character in a cinematic Miami environment featuring elements such as the skyline, neon sunset, palm trees, ocean reflections, docks, luxury boats or jet skis, and stylish sports cars. Include subtle environmental storytelling elements that suit the Miami vibe. Lighting should feel dramatic yet clean, combining warm sunlight with soft neon reflections.\n\nIntegrate visual cues inspired by modern GTA poster art: a glowing horizon disk, glossy reflections, subtle grain texture, and strong graphic silhouettes. Style the outfit to match the Miami setting (streetwear, light tactical wear, or fashionable casual clothing) while keeping the original body type.\n\nThe final artwork should look like an official GTA VI promotional poster, with the input person reimagined as a main character in a stylish, high-end Miami narrative. Highly detailed, cinematic, colorful, and polished.\"**",
       "tags": [
         "poster",
-        "cartoon",
-        "cinematic",
-        "fashion",
-        "photography",
         "illustration",
         "game-style",
-        "image-generation"
+        "cinematic",
+        "image-to-image"
       ]
     },
     {
       "id": 265,
-      "title": "تبدیل عکس به سبک انیمیشن wolfwalker",
+      "titleKey": "prompts.items.265.title",
+      "sourceTitle": "تبدیل عکس به سبک انیمیشن wolfwalker",
       "publishedAt": "2025-11-18T10:01:30+03:30",
       "telegramUrl": "https://t.me/prompt_draft/265",
       "model": {
@@ -1015,19 +987,15 @@
       ],
       "prompt": "Preserve all core identity elements of the person in the input image: facial structure, bone proportions, eye shape, nose, lips, eyebrows, skin tone, hair color, recognizable silhouette, and overall character personality. Do NOT alter identity — only reinterpret it in the Wolfwalkers style.\nIgnore the original pose completely. Re-pose the character in a dynamic, expressive Wolfwalkers-style stance — energetic, adventurous, slightly exaggerated posture with flowing lines and rhythmic body movement similar to Robyn and Mebh from the film. Maintain a full-body character design with strong silhouette clarity.\nApply the authentic Wolfwalkers facial aesthetic with high fidelity: • large circular expressive eyes with bright glowing irises • simplified but sharp eyebrow shapes with Celtic curvature • soft triangular or heart-shaped facial taper • strong cheek contour arcs • subtle asymmetry for charm • minimal nose detail, stylized nose bridge • clear hand-drawn ink-like outlines • watercolor-style shading and textured brush patterns across the face\nTransform the clothing from the input photo into Wolfwalkers-style wardrobe: • medieval/Celtic-inspired tunics, layered fabrics, belts, cloaks, boots • simple geometric shapes • earthy warm color palette • hand-drawn textured patterns • stylized cloth folds and silhouette exaggeration Keep the colors loosely connected to the original clothing but redesigned into the world of Wolfwalkers.\nPlace the character inside the mystical Wolfwalkers forest environment: • swirling organic trees • enchanted fog layers • high-contrast warm/cold lighting • watercolor-like textures • Celtic visual motifs hidden in foliage • dynamic atmosphere with glowing particles\nStylization rules: • strong bold outlines (Cartoon Saloon style) • flowing curves and rhythmic shapes • flat watercolor shadows + textured highlights • expressive lines around eyes and cheeks • hair reinterpreted with layered contour-line curves\nTechnical rules: • maintain identity and likeness clearly • maintain original lighting direction if possible • fully 2D illustrated look • no 3D rendering, no realism • no extra accessories unless part of Wolfwalkers costume language\nFinal output: a fully illustrated Wolfwalkers-style character portrait in the mystical forest, with a new dynamic pose inspired by characters from the film, preserving identity but re-stylized completely into the aesthetic universe of Wolfwalkers",
       "tags": [
-        "portrait",
-        "3d",
-        "cartoon",
-        "anime",
-        "photography",
-        "illustration",
         "animation-style",
-        "identity-preserving"
+        "illustration",
+        "image-to-image"
       ]
     },
     {
       "id": 271,
-      "title": "تبدیل عکس به سبک Wolfwalkers",
+      "titleKey": "prompts.items.271.title",
+      "sourceTitle": "تبدیل عکس به سبک Wolfwalkers",
       "publishedAt": "2025-11-18T14:12:01+03:30",
       "telegramUrl": "https://t.me/prompt_draft/271",
       "model": {
@@ -1044,18 +1012,15 @@
       "prompt": "**“Preserve all core identity elements of the person in the input image: facial structure, bone proportions, eye shape, nose, lips, eyebrows, skin tone, hair color, recognizable silhouette, and overall personality. Do NOT alter identity — only reinterpret it in the Wolfwalkers style.\nIgnore the original pose completely. Re-pose the character in a dynamic Wolfwalkers-style close-up composition, focusing on the face, head, shoulders, and upper torso. Capture expressive posture and emotional energy similar to Robyn and Mebh from the film.\nApply the authentic Wolfwalkers facial aesthetic with high fidelity: • large circular expressive eyes with bright glowing irises • simplified but sharp eyebrow shapes with Celtic curvature • soft triangular or heart-shaped facial taper • strong cheek contour arcs • subtle asymmetry for charm • minimal stylized nose detail • clean hand-drawn ink-like outlines • watercolor-style shading and textured brush patterns across the face\nTransform the clothing visible in the frame into Wolfwalkers-style wardrobe: • medieval/Celtic-inspired tunic collar shapes, layered fabrics, simple geometric folds • earthy warm color palette • hand-drawn textured patterns Colors should loosely connect to the input clothing while being redesigned for a Wolfwalkers character.\nPlace the character in a close-up background of the mystical Wolfwalkers forest: • swirling organic tree shapes blurred in depth • enchanted fog layers and warm/cold lighting contrast • watercolor textures with Celtic visual motifs subtly integrated • glowing atmospheric particles\nStylization rules: • bold Cartoon Saloon-style outlines • flowing curves and rhythmic shapes • flat watercolor shadows + textured highlights • expressive contour lines around the eyes and cheeks • hair redrawn with layered contour-line curves\nTechnical rules: • output must be close-up only • maintain identity and likeness clearly • maintain the original lighting direction if possible • fully 2D illustrated look (no 3D) • no extra accessories unless consistent with Wolfwalkers costume language\nFinal output: a close-up Wolfwalkers-style illustrated portrait of the character, set in the mystical forest, with an expressive new pose and full facial stylization, preserving identity but fully integrated into the Wolfwalkers aesthetic universe.”**",
       "tags": [
         "portrait",
-        "3d",
-        "cartoon",
-        "anime",
-        "photography",
-        "illustration",
         "animation-style",
-        "identity-preserving"
+        "illustration",
+        "image-to-image"
       ]
     },
     {
       "id": 277,
-      "title": "تبدیل عکس به پوستر Red Dead Redemption",
+      "titleKey": "prompts.items.277.title",
+      "sourceTitle": "تبدیل عکس به پوستر Red Dead Redemption",
       "publishedAt": "2025-11-20T12:07:24+03:30",
       "telegramUrl": "https://t.me/prompt_draft/277",
       "model": {
@@ -1074,16 +1039,14 @@
       "tags": [
         "poster",
         "3d",
-        "cartoon",
-        "photography",
-        "illustration",
         "game-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 284,
-      "title": "دیگه برای red dead redemption",
+      "titleKey": "prompts.items.284.title",
+      "sourceTitle": "دیگه برای red dead redemption",
       "publishedAt": "2025-11-20T19:09:01+03:30",
       "telegramUrl": "https://t.me/prompt_draft/284",
       "model": {
@@ -1103,17 +1066,15 @@
       "prompt": "Transform the input photo into a semi-realistic 3D western scene with the exact visual language of the red dead redemption ii: natural skin tones, controlled warm–neutral color palette, realistic CGI-style rendering similar to high-end game cinematics — NOT painterly, NOT oil-like, NOT overly warm. Keep the person’s exact facial identity, facial structure, eyes, nose, lips, skin tone, and hairstyle. Ignore the input pose, clothing, and background completely.\nPose: character standing in a confident forward-facing stance, body straight with a slight angle, right hand holding a long wooden rifle resting across the right shoulder, left arm relaxed down. Serious expression, no smile.\nOutfit: worn dark-brown leather coat, slightly aged but not overly distressed; muted plaid shirt; brown neckerchief; blue denim pants; leather belt with bullets; holster and revolver. Materials must look realistic with subtle dirt and dust, not stylized brushstrokes.\nEnvironment: wide open western landscape with dry grasses, red-earth soil, distant mountains. Lighting: late-afternoon sunlight with balanced warmth, soft neutral highlights, and natural contrast — avoid orange/yellow over-warm tones. Sky: soft warm clouds with neutral highlights, not heavily saturated.\nRendering style: realistic 3D shading, game-cinematic quality, defined materials, natural micro-textures. Avoid painterly strokes, soft oil textures, excessive warmth, sepia tones, or stylized illustration.\nCamera & Framing: wide with 16:9 aspect ratio, cinematic composition, medium-shot framing (from thigh to head), subject centered, rifle clearly visible across the shoulder, shallow depth of field. Colors must stay close to realistic western daylight a cold afternoon.",
       "tags": [
         "3d",
-        "cartoon",
-        "cinematic",
-        "photography",
-        "illustration",
         "game-style",
+        "cinematic",
         "image-to-image"
       ]
     },
     {
       "id": 291,
-      "title": "تبدیل عکس pet به تصاویر با کیفیت استودیویی",
+      "titleKey": "prompts.items.291.title",
+      "sourceTitle": "تبدیل عکس pet به تصاویر با کیفیت استودیویی",
       "publishedAt": "2025-11-21T12:55:12+03:30",
       "telegramUrl": "https://t.me/prompt_draft/291",
       "model": {
@@ -1137,7 +1098,8 @@
     },
     {
       "id": 299,
-      "title": "تبدیل عکس به مجسمه‌ی رزینی سه‌بعدی با فرم کارتونی",
+      "titleKey": "prompts.items.299.title",
+      "sourceTitle": "تبدیل عکس به مجسمه‌ی رزینی سه‌بعدی با فرم کارتونی",
       "publishedAt": "2025-11-23T14:46:55+03:30",
       "telegramUrl": "https://t.me/prompt_draft/299",
       "model": {
@@ -1155,14 +1117,13 @@
         "3d",
         "sculpture",
         "cartoon",
-        "cinematic",
-        "photography",
         "image-to-image"
       ]
     },
     {
       "id": 307,
-      "title": "تبدیل عکس به آواتار گرفیتی",
+      "titleKey": "prompts.items.307.title",
+      "sourceTitle": "تبدیل عکس به آواتار گرفیتی",
       "publishedAt": "2025-11-24T19:11:58+03:30",
       "telegramUrl": "https://t.me/prompt_draft/307",
       "model": {
@@ -1184,15 +1145,15 @@
       "tags": [
         "avatar",
         "cartoon",
-        "photography",
         "illustration",
         "graffiti",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 313,
-      "title": "پرامپت 313",
+      "titleKey": "prompts.items.313.title",
+      "sourceTitle": "پرامپت 313",
       "publishedAt": "2025-11-25T21:19:29+03:30",
       "telegramUrl": "https://t.me/prompt_draft/313",
       "model": {
@@ -1215,7 +1176,8 @@
     },
     {
       "id": 321,
-      "title": "ساخت آواتار چهره‌ی پیکسلی 64-bit",
+      "titleKey": "prompts.items.321.title",
+      "sourceTitle": "ساخت آواتار چهره‌ی پیکسلی 64-bit",
       "publishedAt": "2025-11-27T18:46:32+03:30",
       "telegramUrl": "https://t.me/prompt_draft/321",
       "model": {
@@ -1234,14 +1196,14 @@
       "tags": [
         "avatar",
         "pixel-art",
-        "vintage",
-        "identity-preserving",
-        "image-generation"
+        "game-style",
+        "image-to-image"
       ]
     },
     {
       "id": 328,
-      "title": "پرامپت 328",
+      "titleKey": "prompts.items.328.title",
+      "sourceTitle": "پرامپت 328",
       "publishedAt": "2025-11-27T19:48:02+03:30",
       "telegramUrl": "https://t.me/prompt_draft/328",
       "model": {
@@ -1257,17 +1219,15 @@
       ],
       "prompt": "Transform my photo into a Minimalist 32-bit pixel art, centered composition, clean white background, retro gaming aesthetic, limited color palette, sharp pixelated edges, blocky geometric forms, arcade game style, iconic and simple design, easily recognizable, digital art, pixel perfect, nostalgic gaming atmosphere. full body, stand in a confident pose, preserve identity, preserve hair color. output must be portrait stand 9:16 aspect ratio.",
       "tags": [
-        "portrait",
         "pixel-art",
-        "vintage",
-        "photography",
-        "identity-preserving",
+        "game-style",
         "image-to-image"
       ]
     },
     {
       "id": 333,
-      "title": "تبدیل عکس با هر زاویه و کیفیت به عکس پاسپورت استودیویی",
+      "titleKey": "prompts.items.333.title",
+      "sourceTitle": "تبدیل عکس با هر زاویه و کیفیت به عکس پاسپورت استودیویی",
       "publishedAt": "2025-11-29T12:22:19+03:30",
       "telegramUrl": "https://t.me/prompt_draft/333",
       "model": {
@@ -1291,7 +1251,8 @@
     },
     {
       "id": 341,
-      "title": "ساخت آواتار کارتونی فلت با رنگ‌های پاستلی",
+      "titleKey": "prompts.items.341.title",
+      "sourceTitle": "ساخت آواتار کارتونی فلت با رنگ‌های پاستلی",
       "publishedAt": "2025-12-07T15:36:23+03:30",
       "telegramUrl": "https://t.me/prompt_draft/341",
       "model": {
@@ -1312,13 +1273,14 @@
       "tags": [
         "avatar",
         "cartoon",
-        "identity-preserving",
-        "image-generation"
+        "illustration",
+        "image-to-image"
       ]
     },
     {
       "id": 351,
-      "title": "پرامپت 351",
+      "titleKey": "prompts.items.351.title",
+      "sourceTitle": "پرامپت 351",
       "publishedAt": "2025-12-08T12:30:53+03:30",
       "telegramUrl": "https://t.me/prompt_draft/351",
       "model": {
@@ -1337,16 +1299,16 @@
       ],
       "prompt": "GOAL: Transform the input person into a stylized figurine with the same sculptural aesthetic as the reference: elongated proportions, smooth clay-like surfaces, and a soft fabric-draping feel—while preserving the person’s identity, facial structure, and silhouette.\nSTYLE: Clay-sculpture character with exaggerated slim anatomy, elongated limbs, minimal carved facial details, large almond-shaped eyes, subtle freckles, matte ceramic texture, warm monochrome palette. Draped cloth wrapping the body with soft realistic folds. Slightly surreal, delicate, calm mood. Soft studio lighting from one side.\nKEEP FROM INPUT: Identity, face shape, hairstyle silhouette, accessories (if any), overall pose direction. Do NOT change gender or age impression.\nFIXED ELEMENTS: Sculpted clay surface, elongated stylized proportions, fabric-like wrapping around body, smooth gradients, warm earthy tones, soft background.\nNEGATIVE / LIMITS: No realism, no harsh shadows, no busy textures, no sci-fi elements, no modern clothing, no extra props, no background details.\nDETAIL LEVEL: Highly stylized, clean, minimal textures, refined drapery folds.",
       "tags": [
+        "3d",
         "sculpture",
-        "cartoon",
         "surreal",
-        "identity-preserving",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 357,
-      "title": "تبدیل به مجسمه‌ی رزینی (نسخه‌ی کلوزآپ)",
+      "titleKey": "prompts.items.357.title",
+      "sourceTitle": "تبدیل به مجسمه‌ی رزینی (نسخه‌ی کلوزآپ)",
       "publishedAt": "2025-12-09T08:58:14+03:30",
       "telegramUrl": "https://t.me/prompt_draft/357",
       "model": {
@@ -1366,15 +1328,13 @@
         "portrait",
         "3d",
         "sculpture",
-        "cinematic",
-        "photography",
-        "game-style",
         "image-to-image"
       ]
     },
     {
       "id": 371,
-      "title": "ساخت آواتار کریسمس (اضافه کردن کلاه سانتا روی هر تصویری به سبک خود تصویر)",
+      "titleKey": "prompts.items.371.title",
+      "sourceTitle": "ساخت آواتار کریسمس (اضافه کردن کلاه سانتا روی هر تصویری به سبک خود تصویر)",
       "publishedAt": "2025-12-10T23:50:36+03:30",
       "telegramUrl": "https://t.me/prompt_draft/371",
       "model": {
@@ -1392,15 +1352,13 @@
       ],
       "prompt": "Goal:\nAdd a Santa hat on the head of the subject (person or animal) in the input image, matching the original art style.\nPrompt:\nAdd a Santa hat perfectly fitted on the subject’s head, matching the exact style, rendering quality, colors, lighting, and texture of the input image (whether illustration or hyper-real). Preserve all identity features, facial structure, body form, composition, and original scene. No added elements, no extra props. Keep the hat consistent with the image’s material style (painted if painting, realistic if photo). Detailed, clean integration.",
       "tags": [
-        "avatar",
-        "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 378,
-      "title": "پرامپت 378",
+      "titleKey": "prompts.items.378.title",
+      "sourceTitle": "پرامپت 378",
       "publishedAt": "2025-12-11T12:37:12+03:30",
       "telegramUrl": "https://t.me/prompt_draft/378",
       "model": {
@@ -1417,14 +1375,13 @@
       ],
       "prompt": "Goal: Add a Santa hat + full Santa beard and mustache to the subject (person or animal) while preserving identity, age, gender and the original art style.\n\nPrompt:\nAdd a classic Santa hat, a long fluffy white Santa beard, and a thick curled mustache seamlessly onto the subject’s face and head. Match the exact art style, texture, lighting, brushwork, and rendering quality of the input image (whether illustration or hyper-real). Keep all identity features, facial proportions, body shape, composition, colors, and scene unchanged. The additions must fit naturally, follow the head angle, mouth situation and blend cleanly with the original medium. No extra Christmas elements.\n\nNegative / Limits:\nNo altering identity or expression; no new props; no background changes; no stylization beyond the image’s own style. Only add the hat, beard, and mustache",
       "tags": [
-        "illustration",
-        "identity-preserving",
         "image-to-image"
       ]
     },
     {
       "id": 386,
-      "title": "تبدیل اسکچ کودکانه به اشیاء سفالی واقعی",
+      "titleKey": "prompts.items.386.title",
+      "sourceTitle": "تبدیل اسکچ کودکانه به اشیاء سفالی واقعی",
       "publishedAt": "2025-12-14T00:20:26+03:30",
       "telegramUrl": "https://t.me/prompt_draft/386",
       "model": {
@@ -1444,16 +1401,16 @@
       ],
       "prompt": "subject: (عنوان سوژه)\nmaterials: (توصیف جنس بخش‌های مختلف)\nPrompt: Transform the input image (a child’s hand-drawn sketch of a ceramic object) into a realistic, studio-photographed ceramic product. Preserve the original idea, shape, proportions intent, and all key elements from the drawing. Gently correct only logical drawing errors (such as incorrect perspective, inconsistent thickness, or impossible connections) while staying as close as possible to the child’s concept.\nStyle the object as a real, handmade ceramic piece with kiln-fired ceramic colors and textures, matching the detected materials and construction. Keep the design simple and faithful; do not add new features or decorations not present in the drawing.\nThe object is placed on the ground and photographed in a clean studio setup with a pure white background. Soft, natural studio lighting, realistic shadows, sharp focus, high realism.\nConstraints / Negative instructions:\nDo not redesign or reinterpret the concept\nDo not add extra parts, patterns, or colors\nDo not stylize, cartoonize, or exaggerate\nDo not change the subject identity or function\nDetails: realistic, handcrafted ceramic, studio photography Aspect ratio: 9:16",
       "tags": [
-        "sculpture",
-        "cartoon",
         "product",
+        "sculpture",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 387,
-      "title": "تبدیل عکس یک نفره به عکس دو نفره",
+      "titleKey": "prompts.items.387.title",
+      "sourceTitle": "تبدیل عکس یک نفره به عکس دو نفره",
       "publishedAt": "2025-12-18T23:02:48+03:30",
       "telegramUrl": "https://t.me/prompt_draft/387",
       "model": {
@@ -1473,15 +1430,14 @@
       "prompt": "Goal: Add a compatible partner next to the person in the input image without altering the original image in any way.Preserve Input Exactly: The original person, their face, body, pose, expression, clothing, lighting, colors, camera angle, and composition must remain 100% unchanged. Do not modify, retouch, enhance, or reinterpret the input subject.Partner Addition: Introduce one additional person placed naturally beside the original subject, with realistic scale, perspective, and depth that matches the scene.Partner Design Rules:Derive the partner’s gender expression, age range, style, personality, and overall character strictly from the visual traits, mood, fashion, and vibe of the original subject.Clothing, grooming, and attitude must feel complementary and context-appropriate, not identical or distracting.The partner should visually belong to the same world, time, and social context as the original subject.Lighting & Integration: Match the exact lighting direction, color temperature, shadows, and environmental conditions of the input image so the added partner blends seamlessly.Composition: Maintain the original framing and balance; only extend the scene enough to fit the partner naturally without cropping or shifting the original subject.Style & Detail Level: Photorealistic, high-fidelity, consistent texture and sharpness with the input image.Negative Instructions: Do not change the original person, do not add extra people, props, symbols, text, effects, or background alterations. No stylization, no filters, no facial changes.\noutput: always portrait aspect ratio 9:16",
       "tags": [
         "portrait",
-        "cartoon",
-        "fashion",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 401,
-      "title": "ساخت صحنه‌ی واقعی مورد نظر شما",
+      "titleKey": "prompts.items.401.title",
+      "sourceTitle": "ساخت صحنه‌ی واقعی مورد نظر شما",
       "publishedAt": "2025-12-28T11:10:15+03:30",
       "telegramUrl": "https://t.me/prompt_draft/401",
       "model": {
@@ -1499,15 +1455,14 @@
       ],
       "prompt": "location = {توصیف مکان مورد نظرتون}\n\npose = {توصیف حالت بدن/ژست/فعالیت در حال انجام مورد نظرتون}\n\nmood = {حالت چهره/مود/فضای مورد نظرتون}\n\nclothes = {لباس مورد نظرتون (اگه میخواید لباس خودتون باشه این خط رو کلا پاک کنید)}\n\nGenerate an image using ONLY the facial identity and clothes from the input photo.\n\nIgnore the original body pose, posture, camera angle, and framing of the input image.\n\nDepict the person in a input image in a suitable pos related to {location} and {mood}\n\nThe camera viewpoint must clearly imply {location} and {mood}.\n\nPlace the person naturally at {location}.\n\nAdjust body pose and gesture to fit the {location} and {mood}, regardless of the input pose.\n\nFacial expression must be {mood} regardless of the input expression.\n\nVisual style: ultra realistic, realism, 8k quality, motion blur and handshake effect.\n\nCharacteristics: soft focus, muted contrast, natural color shifts, imperfect exposure.\n\nAspect ratio: 9:16 (vertical).",
       "tags": [
-        "cartoon",
-        "fashion",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 409,
-      "title": "تبدیل عکس به کاراکتر کارتونی وینتیج با اجرای واقعی",
+      "titleKey": "prompts.items.409.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر کارتونی وینتیج با اجرای واقعی",
       "publishedAt": "2026-05-31T11:55:04+03:30",
       "telegramUrl": "https://t.me/prompt_draft/409",
       "model": {
@@ -1524,15 +1479,16 @@
       "prompt": "Transform the subject into a stylized 1940s-inspired vintage cartoon character with playful elastic animation aesthetics, exaggerated expressions, rounded features, and whimsical motion energy.\nReimagine the character as a fully practical real-world cinematic setup using handcrafted materials, physical props, painted textures, theatrical makeup, sculpted costume elements, fabric-based cartoon forms, and retro animation-inspired set design.\nThe character should have:\nexaggerated cartoon facial expressions\nsoft elastic proportions\nvintage slapstick animation energy\nexpressive eyes and playful pose\nstylized retro cartoon hairstyle reinterpretation\nEnvironment: A physically built cartoon-inspired studio environment with warped practical scenery, painted perspective illusions, oversized props, retro animation atmosphere, and tactile handcrafted textures.\nLighting: cinematic studio lighting, whimsical highlights, soft dramatic shadows, polished film look\nStyle: retro American animation inspired aesthetic, practical effects filmmaking, cinematic fantasy realism, handcrafted cartoon illusion\nShot: dynamic cinematic framing, shallow depth of field, highly detailed practical textures\nAspect ratio: 9:16",
       "tags": [
         "cartoon",
-        "cinematic",
+        "animation-style",
         "vintage",
-        "photography",
-        "image-generation"
+        "cinematic",
+        "image-to-image"
       ]
     },
     {
       "id": 413,
-      "title": "تبدیل عکس به کاراکتر کارتونی کلاسیک با اجرای واقعی",
+      "titleKey": "prompts.items.413.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر کارتونی کلاسیک با اجرای واقعی",
       "publishedAt": "2026-05-31T12:51:58+03:30",
       "telegramUrl": "https://t.me/prompt_draft/413",
       "model": {
@@ -1549,15 +1505,16 @@
       "prompt": "Transform the entire subject into a cartoon form inspired by Tom and Jerry, including the face, features, and proportions, with exaggerated classic cartoon aesthetics. Then, recreate that cartoon appearance using real-world materials, practical effects, and physical environments.\n{style} = Tom and Jerry inspired, elastic cartoon forms, playful vintage animation energy, exaggerated motion aesthetics, fully materialized in real-world textures\n{appearance} = all facial features, forms, and body proportions transformed into classic cartoon style first, then recreated using physical materials, fabric, props, makeup, paint, and practical set design\n{expression} = exaggerated playful cartoon expression\n{background} = real-world environment stylized with physical cartoon-like distortions and vintage animation atmosphere\n{lighting} = cinematic studio lighting with whimsical highlights\n{framing} = dynamic cinematic shot\n{aspect} = 9:16",
       "tags": [
         "cartoon",
-        "cinematic",
+        "animation-style",
         "vintage",
-        "photography",
-        "image-generation"
+        "cinematic",
+        "image-to-image"
       ]
     },
     {
       "id": 416,
-      "title": "ساخت تصویر مناسب پروفایل LinkedIn",
+      "titleKey": "prompts.items.416.title",
+      "sourceTitle": "ساخت تصویر مناسب پروفایل LinkedIn",
       "publishedAt": "2026-05-31T13:15:47+03:30",
       "telegramUrl": "https://t.me/prompt_draft/416",
       "model": {
@@ -1574,16 +1531,14 @@
       "prompt": "Preserve the same person and identity from the uploaded image, including facial structure, hairstyle, skin tone, body proportions, and recognizable features. Create a polished professional LinkedIn portrait in a modern corporate photography style.\nDress the subject in smart business attire appropriate for a professional profile photo. Natural confident expression, relaxed posture, direct eye contact, clean grooming, subtle realistic makeup and skin texture. Preserve realistic hair detail and authentic facial texture.\nEnvironment: minimal modern office or soft neutral studio background with elegant depth and clean composition, no distracting objects.\nLighting: soft cinematic portrait lighting, professional studio quality, balanced highlights and shadows, realistic skin rendering.\nStyle: high-end corporate headshot photography, realistic materials, shallow depth of field, premium DSLR look, ultra clean and professional aesthetic.\nFraming: chest-up portrait, centered composition, LinkedIn-ready profile framing.\nAspect ratio: 4:5\nFinal constraint: Preserve the same person and identity from the uploaded image. Do not generate a different person.",
       "tags": [
         "portrait",
-        "avatar",
-        "cinematic",
         "photography",
-        "illustration",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 419,
-      "title": "ساخت Thumbnail یوتیوب — نسخه ساده و پیشرفته",
+      "titleKey": "prompts.items.419.title",
+      "sourceTitle": "ساخت Thumbnail یوتیوب — نسخه ساده و پیشرفته",
       "publishedAt": "2026-06-01T17:49:00+03:30",
       "telegramUrl": "https://t.me/prompt_draft/419",
       "model": {
@@ -1598,7 +1553,6 @@
       "prompt": "Create a professional YouTube thumbnail.\n\n{Subject} = person from input image\n{text} = [عنوان اصلی ویدئو]\n{subtext} = [زیرنویس / توضیحات کوتاه]\n\n{expression} = automatically inferred from thumbnail concept\n{style} = automatically inferred from thumbnail concept\n{elements} = automatically generated based on the topic and text\n{layout} = professional YouTube thumbnail composition\n{focus} = automatically inferred focal point\n{lighting} = automatically inferred cinematic lighting\n{font} = automatically selected based on the thumbnail concept\n{color_palette} = automatically selected based on the thumbnail concept\n{attention elements} = automatically generated click-driving accents\n\n{rules} = professional YouTube thumbnail composition, instantly readable at small size, clear focal hierarchy, bold visual separation, high contrast subject isolation, clean negative space for text readability, emotionally engaging framing, cinematic color contrast, strong depth layering, click-worthy composition, minimal clutter\n\n{aspect} = 16:9",
       "tags": [
         "poster",
-        "cinematic",
         "image-to-image"
       ],
       "variants": [
@@ -1614,7 +1568,8 @@
     },
     {
       "id": 426,
-      "title": "تبدیل عکس به کارکتر سه بعدی پانک",
+      "titleKey": "prompts.items.426.title",
+      "sourceTitle": "تبدیل عکس به کارکتر سه بعدی پانک",
       "publishedAt": "2026-06-04T14:34:10+03:30",
       "telegramUrl": "https://t.me/prompt_draft/426",
       "model": {
@@ -1633,14 +1588,13 @@
         "portrait",
         "3d",
         "cartoon",
-        "photography",
-        "illustration",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 429,
-      "title": "تبدیل عکس به سبکی که نمی‌دونم دقیقا باید واسش چه تایتلی انتخاب کنم ولی واقعا خفن شده",
+      "titleKey": "prompts.items.429.title",
+      "sourceTitle": "تبدیل عکس به سبکی که نمی‌دونم دقیقا باید واسش چه تایتلی انتخاب کنم ولی واقعا خفن شده",
       "publishedAt": "2026-06-08T00:28:52+03:30",
       "telegramUrl": "https://t.me/prompt_draft/429",
       "model": {
@@ -1654,14 +1608,16 @@
       ],
       "prompt": "Transform the attached reference image featuring the person in the attached reference image into ultra exaggerated 2d animation, transform all form into weird and deformed forms to create a strang artwork. Strictly follow the attached reference image. Preserve the person's identity. Use an extreme creative transformation. Apply minimalist angular 2D animation aesthetic, bold graphic silhouettes, sharp geometric forms, strong stylization, high-end digital illustration, geometric shape language with simplified structured forms, flat color fields, minimal shading, bold graphic visual treatment with clear stylized readability, brushed directional surface texture, rich detailed texture variation, visible brush marks, and stylized paint splatter details. Use a 9:16 aspect ratio.",
       "tags": [
-        "photography",
+        "cartoon",
+        "animation-style",
         "illustration",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 430,
-      "title": "تبدیل عکس به مجسمه‌ی کاریکاتوری گروتسک",
+      "titleKey": "prompts.items.430.title",
+      "sourceTitle": "تبدیل عکس به مجسمه‌ی کاریکاتوری گروتسک",
       "publishedAt": "2026-06-08T11:02:23+03:30",
       "telegramUrl": "https://t.me/prompt_draft/430",
       "model": {
@@ -1678,13 +1634,14 @@
       "tags": [
         "sculpture",
         "fashion",
-        "photography",
+        "surreal",
         "image-to-image"
       ]
     },
     {
       "id": 434,
-      "title": "تبدیل عکس به تصویرسازی بلوکی قلم‌و‌مرکب",
+      "titleKey": "prompts.items.434.title",
+      "sourceTitle": "تبدیل عکس به تصویرسازی بلوکی قلم‌و‌مرکب",
       "publishedAt": "2026-06-10T10:01:26+03:30",
       "telegramUrl": "https://t.me/prompt_draft/434",
       "model": {
@@ -1698,15 +1655,14 @@
       ],
       "prompt": "Transform the attached reference image featuring the person in the attached reference image. Strictly follow the attached reference image. Preserve the person's identity. Use an extreme creative transformation. Apply extreme stylization, highly exaggerated visual identity, pen and ink illustration, geometric shape language with simplified structured forms, visible hand-painted surface variation and expressive brush marks, handcrafted artistic feel with tactile visual character, all deformation must use block-based volumetric construction. Squared limbs, cuboid torso, simplified blocky head shape, rigid posture, and toy-like architectural body proportions, the framing must use a symmetrical layout. Balance the subject and surrounding elements evenly on both sides, creating a stable, iconic, formal, and and visually controlled image. Use a 4:5 aspect ratio.",
       "tags": [
-        "cartoon",
-        "photography",
         "illustration",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 435,
-      "title": "تبدیل عکس به نقاشی مدادرنگی کودکانه‌ی سورئال",
+      "titleKey": "prompts.items.435.title",
+      "sourceTitle": "تبدیل عکس به نقاشی مدادرنگی کودکانه‌ی سورئال",
       "publishedAt": "2026-06-10T11:17:24+03:30",
       "telegramUrl": "https://t.me/prompt_draft/435",
       "model": {
@@ -1723,7 +1679,6 @@
       ],
       "prompt": "Transform the attached reference image featuring the person into a surreal childlike drawing. Use the attached reference image as loose visual inspiration and allow a strong creative reinterpretation. Apply a naive childlike drawing style with amateur colored-pencil artwork and a handmade feel. Use strange simplified anatomy, geometric simplified forms, a minimalist visual treatment, restrained detail, and a bold graphic look with clear stylized readability. Keep the stylization controlled, with moderate exaggeration rather than chaotic distortion.\n\nThe surreal effect must be clearly visible through impossible body construction. Limb displacement and anti-gravity deformation are mandatory. The arms, legs, or other body parts must appear visibly floating, spatially offset, unnaturally repositioned, or disconnected in balance while still remaining readable as part of the figure. The posture must feel lifted and gravity-defying. Normal anatomical logic and normal gravitational behavior must be clearly broken. The final image must convey dreamlike suspended energy and surreal spatial disorientation.\n\nThe background should resemble original background from attached photo but depict a dreamlike sky environment Include surreal suspended objects. all appearing weightless and floating in the night atmosphere.\n\nUse a 4:5 aspect ratio.",
       "tags": [
-        "photography",
         "illustration",
         "surreal",
         "image-to-image"
@@ -1731,7 +1686,8 @@
     },
     {
       "id": 439,
-      "title": "نسخه‌ی واقع‌گرایانه‌ی نقاشی مدادرنگی کودکانه‌ی سورئال",
+      "titleKey": "prompts.items.439.title",
+      "sourceTitle": "نسخه‌ی واقع‌گرایانه‌ی نقاشی مدادرنگی کودکانه‌ی سورئال",
       "publishedAt": "2026-06-10T12:20:05+03:30",
       "telegramUrl": "https://t.me/prompt_draft/439",
       "model": {
@@ -1746,14 +1702,14 @@
       "prompt": "Transform the attached reference image featuring the person into a surreal studio photo realism, fluid natural forms, subtle stylization, minimalist visual treatment, clean polished finish, abstract stylization, forms significantly simplified or deconstructed, studio photography, fluid organic forms with graceful continuous curves, minimalist visual treatment, simple forms and restrained detail, luxury visual style, premium polished aesthetic.\n\nignore original pose, the pose must suggest turning or twisting in motion. Use exaggerated rotational body flow, directional energy, and an active silhouette that feels caught mid-movement.\n\nignore original expression, the expression must feel alien and slightly unreadable. Keep the face emotionally ambiguous, subtly strange, and clearly nonhuman while remaining visually coherent.\n\nThe surreal effect must be clearly visible through impossible body construction. Limb displacement and anti-gravity deformation are mandatory. The arms, legs, or other body parts must appear visibly floating, spatially offset, unnaturally repositioned, or disconnected in balance while still remaining readable as part of the figure. The posture must feel lifted and gravity-defying. Normal anatomical logic and normal gravitational behavior must be clearly broken. The final image must convey dreamlike suspended energy and surreal spatial disorientation.\n\nThe background should resemble original background from attached photo but depict a dreamlike sky environment Include surreal suspended objects. all appearing weightless and floating in the night atmosphere.\n\nUse a 16:10 aspect ratio.",
       "tags": [
         "photography",
-        "illustration",
         "surreal",
         "image-to-image"
       ]
     },
     {
       "id": 441,
-      "title": "ساخت جلد مجله‌ی VOGUE",
+      "titleKey": "prompts.items.441.title",
+      "sourceTitle": "ساخت جلد مجله‌ی VOGUE",
       "publishedAt": "2026-06-13T11:21:38+03:30",
       "telegramUrl": "https://t.me/prompt_draft/441",
       "model": {
@@ -1767,10 +1723,7 @@
       ],
       "prompt": "Transform the attached reference image featuring the person in the attached reference image into VOGUE magazine cover. Preserve the main reference while allowing controlled stylistic changes. Preserve the person's identity. Use an extreme creative transformation. Apply cinematic realistic image style, film-like atmosphere, detailed natural rendering, subtle stylization, minimal exaggeration, photo_real, clean polished aesthetic, the expression must feel like a dramatic model face. Use strong visual presence, composed emotional restraint, and refined intensity suited for editorial portraiture, seated on the floor in a high-fashion editorial pose, elegant body lines, controlled posture, dramatic fashion-model presence, the hair must be styled into twin tails. Use two clearly separated tied sections, playful symmetry, and a cute energetic feminine silhouette, extravagant Met Gala-inspired couture outfit, sculptural silhouette, luxurious fabric, avant-garde details, dramatic runway-level styling, inspired by original outfit in attached photo, seamless velvet studio backdrop, rich fabric texture, premium editorial atmosphere, clean magazine-cover composition. choose an {animal} suitable for person character and add several standing {animal} beside the model, arranged tastefully as luxury fashion-set props. pick backdrop color suitable and inspired by attached photo color palette, the lighting must be flattering and polished. Smooth facial illumination, soft highlights, reduced harsh shadows, refined skin or surface rendering, and and a clean premium portrait feel. Use a 9:16 aspect ratio.",
       "tags": [
-        "portrait",
         "poster",
-        "cartoon",
-        "cinematic",
         "fashion",
         "editorial",
         "photography",
@@ -1779,7 +1732,8 @@
     },
     {
       "id": 443,
-      "title": "تبدیل شما به قهرمان مستر المپیا",
+      "titleKey": "prompts.items.443.title",
+      "sourceTitle": "تبدیل شما به قهرمان مستر المپیا",
       "publishedAt": "2026-06-14T12:22:18+03:30",
       "telegramUrl": "https://t.me/prompt_draft/443",
       "model": {
@@ -1793,15 +1747,15 @@
       ],
       "prompt": "Transform the attached reference image featuring the person in the attached reference image based on this idea: Turn the person in the attached image into a massive, funny, unrealistically muscular bodybuilder taking a mirror selfie in a gym, while preserving identity. Strictly follow the attached reference image. Preserve the person's identity. Use an extreme creative transformation. Apply cinematic realistic image style, film-like atmosphere, detailed natural rendering, subtle stylization, minimal exaggeration, realistic photo look, believable skin, natural facial detail, photo-real rendering, polished commercial fitness photography feel, photo_real, clean polished aesthetic, grotesque humorous exaggeration, body should be impossibly muscular and comically overbuilt while still looking like a realistic gym selfie, the framing must show the subject from roughly the knees or thighs up. Include body posture, outfit structure, hand placement, and environmental context while keeping the subject dominant, mirror selfie framing, subject standing in front of a gym mirror, body clearly visible, phone visible in one hand, strong focus on upper-body mass and physique, the expression must follow grotesque comic exaggeration. Use an overstated grin, exaggerated facial tension, humorous distortion, and a satirical personality-driven facial energy, standing in front of the mirror, one hand holding the phone, the other arm flexed or slightly posed to emphasize the huge muscles, confident bodybuilding posture, fitted sleeveless gym wear that exposes the chest, shoulders, arms, and abs clearly, bodybuilding gym interior, large wall mirror, gym machines, dumbbells, weight racks, realistic indoor fitness environment, the lighting must come strongly from above. Create downward shadows, sculptural facial or object definition, and a dramatic overhead-lit visual effect, smartphone camera look, casual snapshot style, smartphone mirror selfie, hand-held phone visible, realistic phone-camera perspective, casual social-media gym selfie feeling, slight skin sheen, subtle sweat, defined skin texture, and realistic fitness-photo surface detail. Use a 4:5 aspect ratio. Follow these rules: transform the person into a comically massive and unrealistically muscular bodybuilder. The output must look like a realistic mirror selfie in a gym, with visible phone, mirror reflection, and gym equipment in the background.",
       "tags": [
-        "cinematic",
         "photography",
-        "identity-preserving",
-        "image-generation"
+        "cinematic",
+        "image-to-image"
       ]
     },
     {
       "id": 445,
-      "title": "تبدیل عکس محصول به یه عکس تر و تمیز و حرفه‌ای برای عزیزایی که آنلاین شاپ دارن",
+      "titleKey": "prompts.items.445.title",
+      "sourceTitle": "تبدیل عکس محصول به یه عکس تر و تمیز و حرفه‌ای برای عزیزایی که آنلاین شاپ دارن",
       "publishedAt": "2026-06-14T15:37:08+03:30",
       "telegramUrl": "https://t.me/prompt_draft/445",
       "model": {
@@ -1818,7 +1772,6 @@
       ],
       "prompt": "Transform a product in the attached reference image based on this idea: Turn the product in the attached image into a professional studio product photo for e-commerce use. Strictly follow the attached reference image. Preserve the main subject, the main color impression, and visible materials and surface details. Use a balanced transformation. Apply minimal exaggeration; cinematic realistic image style, photo_real; the framing must place the subject clearly in the center of the image; detailed natural rendering, clean polished aesthetic; film-like atmosphere, subtle stylization. Maintain balanced negative space around the subject and create a stable, direct, easy-to-read composition, clean seamless studio background, suitable for and related to attached photo, the lighting must resemble a large softbox setup. Broad soft highlights, gentle shadow edges, controlled reflections, and a professional commercial studio atmosphere, deep focus camera look, and everything in sharp focus. Use a 3:4 aspect ratio.",
       "tags": [
-        "cinematic",
         "product",
         "photography",
         "image-to-image"
@@ -1826,7 +1779,8 @@
     },
     {
       "id": 449,
-      "title": "ساخت پوستر تبلیغاتی خام (بدون متن) از یه محصول",
+      "titleKey": "prompts.items.449.title",
+      "sourceTitle": "ساخت پوستر تبلیغاتی خام (بدون متن) از یه محصول",
       "publishedAt": "2026-06-14T16:44:31+03:30",
       "telegramUrl": "https://t.me/prompt_draft/449",
       "model": {
@@ -1843,12 +1797,13 @@
         "poster",
         "product",
         "photography",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 451,
-      "title": "تبدیل شما و عزیزانتون به عروسک نمدی که میشه از بالا با طناب کنترلش کرد",
+      "titleKey": "prompts.items.451.title",
+      "sourceTitle": "تبدیل شما و عزیزانتون به عروسک نمدی که میشه از بالا با طناب کنترلش کرد",
       "publishedAt": "2026-06-15T23:35:32+03:30",
       "telegramUrl": "https://t.me/prompt_draft/451",
       "model": {
@@ -1868,7 +1823,8 @@
     },
     {
       "id": 452,
-      "title": "ساخت پیشنمایش پرو لباس بوتیک/مزون",
+      "titleKey": "prompts.items.452.title",
+      "sourceTitle": "ساخت پیشنمایش پرو لباس بوتیک/مزون",
       "publishedAt": "2026-06-16T18:06:05+03:30",
       "telegramUrl": "https://t.me/prompt_draft/452",
       "model": {
@@ -1885,17 +1841,16 @@
       ],
       "prompt": "Image Transformation Prompt:\n\n{mode} = image to image\n\n{reference_1} = first attached image is the clothing product image\n{reference_2} = second attached image is the model image\n\n{idea} = Create a realistic boutique fashion preview showing the clothing from {reference_1} worn by the model from {reference_2}.\n\n{subject} = the clothing product from the first image displayed on the model from the second image\n\n{reference_usage} = strictly follow both reference images\n\n{preserve} = exact clothing identity, garment design, fabric, color, pattern, cut, silhouette, details, model identity, facial features, body type\n\n{priority} = garment identity must be more important than model identity; the result must function as a clothing preview, not a fashion portrait\n\n{outfit} = fully replace the model’s original outfit with the clothing from {reference_1}; the worn result must look natural, accurate, and properly fitted on the model\n\n{pose} = ignore the original model pose; use a natural boutique fashion pose that best presents the garment clearly\n\n{framing} = adapt framing to the garment type: if the clothing is a crop top, shirt, blouse, jacket, or other upper-body item, use a half-body or upper-body framing; if the clothing is a long dress, gown, abaya, coat, or one-piece full-length garment, use a full-body framing so the entire garment is visible\n\n{background} = simple polished fashion environment suitable for the garment type, with a clean and elegant boutique mood, using a harmonious color palette derived from both reference images; keep the background minimal and non-distracting\n\n{lighting} = soft fashion studio lighting, clear garment visibility, accurate fabric texture, natural shadows, controlled highlights\n\n{style} = realistic boutique fashion photography, clean premium clothing preview, natural garment integration, polished commercial finish\n\n{rules} = this preview is for a boutique or online fashion shop; the clothing must completely replace the model’s original outfit; preserve the garment and model identity accurately; do not redesign the clothing; avoid explicit, sexualized, or provocative presentation; keep the final image clean, elegant, safe, and suitable for commercial boutique use\n\n{aspect} = 4:5",
       "tags": [
-        "portrait",
         "product",
         "fashion",
         "photography",
-        "game-style",
         "image-to-image"
       ]
     },
     {
       "id": 457,
-      "title": "تبدیل عکس به پوستر سینمایی",
+      "titleKey": "prompts.items.457.title",
+      "sourceTitle": "تبدیل عکس به پوستر سینمایی",
       "publishedAt": "2026-06-16T22:18:14+03:30",
       "telegramUrl": "https://t.me/prompt_draft/457",
       "model": {
@@ -1912,9 +1867,7 @@
       ],
       "prompt": "{mode} = image to image\n\n{reference} = attached reference image\n\n{subject} = person in the attached reference image\n\n{reference_usage} = strictly follow the attached reference image\n\n{preserve} = main subject, recognizable identity\n\n{transformation_strength} = extreme creative transformation  \n\n{idea} = Analyze the subject’s overall visual vibe, styling, posture, facial energy, and the atmosphere of the input image, then creatively assign a cinematic cultural-archetype setting. Based on that chosen archetype, generate matching traditional or regional-inspired clothing, a culturally resonant location, a geographically fitting animal companion, a region-inspired nickname, and a local-style title, then combine everything into a cinematic character poster.\n\n{style} = cinematic realistic photography, film-like atmosphere, detailed natural rendering, subtle stylization, polished poster aesthetic\n\n{framing} = wide contextual portrait, captured from farther away, with the subject clearly placed inside the surrounding environment\n\n{pose} = ignore the original pose, body angle, and face angle from the reference image. Create a new pose that best fits the selected cinematic archetype and works well with the companion animal and environment. The pose should feel natural, visually strong, and varied across different outputs, with a composed cinematic body language and a suitable head angle chosen by the system.\n\n{expression} = focused and determined, locked-in eyes, controlled mouth, emotionally committed presence\n\n{outfit} = traditional or regionally inspired clothing matching the selected cinematic archetype\n\n{background} = a location related to the selected cultural or geographic archetype\n\n{animal} = an animal companion naturally associated with the selected region or environment\n\n{lighting} = soft evenly diffused light, gentle shadows, smooth transitions, calm natural atmosphere\n\n{camera} = Sony A7S III low-light optimized digital camera look\n\n{colorPalette} = a palette inspired by the selected region, local landscape, and traditional cultural colors\n\n{typography} = include a region-inspired nickname and title as elegant poster text, integrated cleanly into the composition\n\n{rules} = preserve the person's recognizable facial identity while strongly transforming the outfit, setting, companion animal, and overall poster concept into a surprising cinematic archetype\n\n{aspect} = 9:16",
       "tags": [
-        "portrait",
         "poster",
-        "cartoon",
         "cinematic",
         "photography",
         "image-to-image"
@@ -1922,7 +1875,8 @@
     },
     {
       "id": 461,
-      "title": "تبدیل عکس به کاریکاتور فشن پلاستیکی با لباس سنتی",
+      "titleKey": "prompts.items.461.title",
+      "sourceTitle": "تبدیل عکس به کاریکاتور فشن پلاستیکی با لباس سنتی",
       "publishedAt": "2026-06-17T13:11:25+03:30",
       "telegramUrl": "https://t.me/prompt_draft/461",
       "model": {
@@ -1937,16 +1891,16 @@
       "prompt": "{mode} = image to image {reference} = attached reference image {subject} = person in the attached reference image {reference_usage} = preserve the main reference while allowing controlled stylistic changes {preserve} = preserve the person's identity {transformation_strength} = balanced transformation.\n{style} = grotesque humorous fashion caricature sketch, satirical editorial energy, exaggerated anatomy, extreme stylization, highly exaggerated visual identity, high-quality 3D render, elongated forms, extended proportions and vertical emphasis, rich surface textures and tactile visual impression, handcrafted artistic feel with tactile visual character {deformation} = all deformation must create a soft flexible body structure. Smooth curved anatomy, relaxed stretched limbs, gentle warped proportions, and a lightweight playful pose with no harsh angles. {expression} = the expression must feel lonely and distant. Keep the face quiet, the emotional tone withdrawn, and the eyes carrying a sense of separation or solitude. {pose} = the pose must feel shy or inward. Use smaller body language, softer posture, partial self-protection, and a gentle reserved physical presence. {outfit} = the outfit must be inspired by traditional or ethnic clothing. Use recognizable cultural patterns, textures, and structured wearable design appropriate for identity and context. {lighting} = the lighting must guide attention directly to the subject. Keep the main figure brighter or more clearly illuminated than the surroundings while maintaining natural visual balance. {texture} = molded plastic material, fine grainy surface texture, coarse rough surface texture\n\n{aspect} = 9:16",
       "tags": [
         "3d",
-        "cartoon",
         "fashion",
         "editorial",
-        "photography",
+        "surreal",
         "image-to-image"
       ]
     },
     {
       "id": 465,
-      "title": "تبدیل عکس به کارکتر پیکسلی 2D نشسته با ژست چمباتمه (کفتری استایل)",
+      "titleKey": "prompts.items.465.title",
+      "sourceTitle": "تبدیل عکس به کارکتر پیکسلی 2D نشسته با ژست چمباتمه (کفتری استایل)",
       "publishedAt": "2026-06-18T11:02:33+03:30",
       "telegramUrl": "https://t.me/prompt_draft/465",
       "model": {
@@ -1962,13 +1916,13 @@
       "tags": [
         "cartoon",
         "pixel-art",
-        "photography",
         "image-to-image"
       ]
     },
     {
       "id": 466,
-      "title": "تبدیل به پرتره‌ی سینمایی CGI",
+      "titleKey": "prompts.items.466.title",
+      "sourceTitle": "تبدیل به پرتره‌ی سینمایی CGI",
       "publishedAt": "2026-06-20T09:34:54+03:30",
       "telegramUrl": "https://t.me/prompt_draft/466",
       "model": {
@@ -1984,17 +1938,14 @@
       "tags": [
         "portrait",
         "3d",
-        "cartoon",
         "cinematic",
-        "fashion",
-        "editorial",
-        "photography",
         "image-to-image"
       ]
     },
     {
       "id": 467,
-      "title": "ساخت جلد کتاب/جزوه با استفاده از فقط اطلاعات متنی",
+      "titleKey": "prompts.items.467.title",
+      "sourceTitle": "ساخت جلد کتاب/جزوه با استفاده از فقط اطلاعات متنی",
       "publishedAt": "2026-06-24T12:16:38+03:30",
       "telegramUrl": "https://t.me/prompt_draft/467",
       "model": {
@@ -2008,7 +1959,6 @@
       ],
       "prompt": "{book_title_part_1} = \"بخش اول عنوان\"\n{book_title_part_2} = \"بخش دوم عنوان\"\n{author_name} = \"نویسنده\"\n{publication} = \"انتشارات\"\n{colors} = تم رنگی مورد نظرتون\n{main_style} = استایل کلی مورد نظرتون\n\n{mode} = text to image\n{idea} = a simple minimalistic book cover based on the provided title\n{aspect} = book cover layout, portrait 2:3 ratio, readable title area and clear cover design hierarchy\n\n{visual_concept} = infer the main cover illustration from {book_title_part_1} and {book_title_part_2}; create a symbolic editorial visual that matches the meaning, mood, and tone of the provided title\n\n{composition} = minimal editorial book cover layout with a stable center-left typography block, a separate main illustration area, clear negative space, and controlled visual hierarchy\n\n{layout} = title typography positioned in the center-left area; main illustration positioned separately from the title area; author and publication positioned in the lower-left area; preserve clean spacing between typography and illustration\n\n{style} = interpret {main_style} as the primary visual language for the entire book cover; apply it consistently to the main illustration, typography treatment, graphic elements, texture, finish, and overall mood; keep the result cohesive, readable, polished, and suitable for a minimal editorial book cover\n\n{colorPalette} = interpret {colors} as the main color direction; expand it into a balanced cover palette for background, main illustration, typography, and graphic elements; preserve strong readability, clean contrast, visual hierarchy, and a cohesive mood across the entire artwork\n\n{typography} = Typography group {text_group_1}: book title showing \"{book_title_part_1}\" and \"{book_title_part_2}\" as one grouped typography unit, positioned in the center-left area, arranged in a vertical column, start aligned, with compact spacing and highest visual priority; {text_1}: \"{book_title_part_1}\", caption role, elegant serif typography, large text size, regular 400 font weight; {text_2}: \"{book_title_part_2}\", main title role, handwritten lettering, huge text size, regular 400 font weight. Typography group {text_group_2}: positioned in the bottom-left area as a secondary typography unit, arranged in a vertical column, start aligned, with compact spacing; {text_3}: \"{author_name}\", author role, bold display typography, small text size, regular 400 font weight. Typography group {text_group_3}: positioned below the author in the bottom-left area as the footer typography unit, arranged in a vertical column, start aligned, with compact spacing; {text_4}: \"{publication}\", publication role, small text size, bold 700 font weight\n\n{typography_rules} = render all quoted typography text exactly as written with correct spelling and no extra letters; only render the quoted text values as visible typography; do not render variable names, layer names, group names, purposes, notes, field labels, or descriptions as visible text\n\n{layout_rules} = keep typography groups separated; preserve the order of title, author, and publication; preserve clear hierarchy between text groups; keep the title group start aligned; keep all readable text flat, clean, and legible; preserve clear spacing between text groups and the main illustration",
       "tags": [
-        "portrait",
         "poster",
         "editorial",
         "illustration",
@@ -2017,7 +1967,8 @@
     },
     {
       "id": 468,
-      "title": "ساخت پوستر استریت آرت ژاپنی",
+      "titleKey": "prompts.items.468.title",
+      "sourceTitle": "ساخت پوستر استریت آرت ژاپنی",
       "publishedAt": "2026-06-24T22:37:43+03:30",
       "telegramUrl": "https://t.me/prompt_draft/468",
       "model": {
@@ -2034,17 +1985,16 @@
       "prompt": "{person}: attached photo;\n{name}: \"اینجا اسمتون رو بنویسید\";\n{main_color}: رنگ اصلی پوستر;\n{color_1}: رنگ فرعی اول;\n{color_2}: رنگ فرعی دوم;\n{color_3}: رنگ فرعی سوم;\n{tattoo}: توصیف طرح تتو;\n{tattoo_position}: جای تتو;\n{favorite_food}: AI-selected random food that visually suits {person}'s personality, vibe, and overall character;\n\n{idea} = Bold graphic illustration poster design, Japanese street art meets vintage propaganda aesthetic, centered powerful roaring giant {person} head snarling aggressively with teeth bared, pink tongue visible, intense glowing eyes with {tattoo} positioned {tattoo_position}, thick bold {color_2} outlines, flat color blocks with zero gradients, subtle halftone dot texture throughout like vintage silkscreen print, reconstruct the face as a vertical, front-facing, symmetrical view regardless of the original face angle in the input image, fierce expressive pose facing camera directly, {color_1} iconic eye patches exaggerated and stylized, fluffy ear details, fangs and sharp teeth emphasized\n\n{color_palette} = {main_color} as main poster color, {color_1} skin or fur base color with {color_2} patches around eyes and ears, hot magenta pink tongue and mouth interior, {color_3} glowing eyes, {color_2} accent highlights on hair edges and cheek markings, cream white for fangs, grainy film-noise texture over everything like old poster print, slight color registration offset creating authentic silkscreen bleed\n\n{typography} = at the bottom-center of the poster, large bold Japanese kanji typography showing {name} translated to Japanese in chunky hand-drawn style with {color_1} color and {color_2} offset shadow, slightly tilted\n\n{top_right_corner} = tiny anatomical skeleton diagram of {person} silhouette in {color_1}, with small technical Japanese label text beside it, blueprint diagram style\n\n{bottom_left_corner} = three small square icons stacked vertically with minimalist symbols — heart, crossed bones, symbolic {favorite_food} — in {color_1} outlined squares with tiny related Japanese characters underneath\n\n{overal_texture} = heavy grain, slight print registration offset creating subtle color bleed edges, authentic vintage screenprint feel, slightly imperfect like handmade poster, 70s Japanese underground poster aesthetic, high contrast punchy colors, badass kaiju energy, graphic design masterpiece.\n\n{aspect_ratio} = 9:16",
       "tags": [
         "poster",
-        "cartoon",
-        "vintage",
-        "photography",
         "illustration",
         "graffiti",
+        "vintage",
         "image-to-image"
       ]
     },
     {
       "id": 473,
-      "title": "تبدیل عکس به مجسمه‌ی دست ساز بامبویی",
+      "titleKey": "prompts.items.473.title",
+      "sourceTitle": "تبدیل عکس به مجسمه‌ی دست ساز بامبویی",
       "publishedAt": "2026-06-28T16:47:35+03:30",
       "telegramUrl": "https://t.me/prompt_draft/473",
       "model": {
@@ -2058,19 +2008,15 @@
       ],
       "prompt": "{mode} = image to image\n{reference} = attached reference image\n{subject} = person in the attached reference image\n{reference_usage} = use the attached reference image as loose visual inspiration\n{preserve} = preserve the person's identity\n{transformation_strength} = extreme creative transformation\n{aspect} = portrait poster layout, 3:7 ratio \n\n{style} = handcrafted bamboo sculpture style, soft carved forms, extreme stylization, highly exaggerated visual identity, high-quality 3D render, rich tactile surface character\n\n{deformation} = deform the entire subject as if carved from bent bamboo. The body, face, and all facial features must be visibly deformed: twisted rigid anatomy, grain-following stretched forms, curved solid limbs, carved facial planes, and distorted eyes, nose, mouth, and hair structure with a handcrafted material-driven look\n\n{pose} = dramatic asymmetrical fashion pose, tilted hips or shoulders, bold silhouette, striking editorial body language with deliberate imbalance\n\n{effects} = soft dreamy focus\n\n{texture} = bamboo material, fibrous tactile surface, visible grain, handmade imperfections, subtle brush marks, small scratches, fine cracks, highly detailed surface texture, painted bamboo surfaces with colors derived from the corresponding areas of the input image",
       "tags": [
-        "portrait",
-        "poster",
         "3d",
         "sculpture",
-        "cartoon",
-        "fashion",
-        "editorial",
-        "photography"
+        "image-to-image"
       ]
     },
     {
       "id": 474,
-      "title": "تبدیل عکس به کاراکتر کارتونی اسکچ آبرنگی",
+      "titleKey": "prompts.items.474.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر کارتونی اسکچ آبرنگی",
       "publishedAt": "2026-06-29T13:06:56+03:30",
       "telegramUrl": "https://t.me/prompt_draft/474",
       "model": {
@@ -2085,16 +2031,15 @@
       "prompt": "{mode} = image to image\n\n{reference} = attached reference image\n\n{subject} = person in the attached reference image\n\n{style} = exaggerated adult sci-fi cartoon character design rendered as loose dynamic ink pen sketch, chaotic precise linework, heavy cross-hatching, warm watercolor accents, minimalist emotional portrait {reference_usage} = use the reference photo for identity cues only, not for realistic anatomy or facial proportions\n\n{preserve} = recognizable identity, hairstyle impression, clothing/accessory identity, overall character vibe\n\n{deformation} = replace realistic human anatomy with exaggerated adult sci-fi cartoon character construction: oversized rounded head, long thin neck, simplified bean-like skull shape, large uneven circular eyes with tiny dot pupils, small simple nose, wide irregular mouth, simplified teeth, angular cheek and jaw shapes, thin rubbery limbs, simplified hands, awkward asymmetrical body geometry; prioritize this cartoon form language over the original photo proportions while keeping the person recognizable\n\n{rules} = maintain the loose ink pen sketch and warm watercolor wash rendering, but do not keep realistic facial anatomy; the image must feel like a stylized animated character redrawn in expressive contemporary ink line art, not a realistic portrait sketch\n\n{reference_usage} = match the reference photo while allowing artistic sketch transformation\n\n{aspect} = 3:7\n\n{deformation_rate} = 80%\n\n{pose} = profile perspective, inspired by original pose\n\n{appearance} = preserve original appearances and accessories\n\n{color} = face and forearm selectively washed with warm orange and amber watercolor;\n\n{background} = plain minimalist off-white textured watercolor paper, clean negative space\n\n{composition} = expressive portrait, detailed but minimal, emotional contemporary artwork",
       "tags": [
         "portrait",
-        "avatar",
         "cartoon",
-        "photography",
         "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 475,
-      "title": "تبدیل عکس به کاراکتر کارتونی سه‌بعدی استودیویی",
+      "titleKey": "prompts.items.475.title",
+      "sourceTitle": "تبدیل عکس به کاراکتر کارتونی سه‌بعدی استودیویی",
       "publishedAt": "2026-06-29T13:30:52+03:30",
       "telegramUrl": "https://t.me/prompt_draft/475",
       "model": {
@@ -2109,17 +2054,15 @@
       "prompt": "{mode} = image to image\n\n{reference} = attached reference image\n\n{subject} = person in the attached reference image\n\n{style} = exaggerated adult sci-fi cartoon character design rendered as a realistic 3D studio character, high-detail materials, physically based rendering, clean polished surfaces, subtle skin texture, realistic fabric and accessory detail, premium character render in a white studio environment {reference_usage} = use the reference photo for identity cues only, not for realistic anatomy or facial proportions\n\n{preserve} = recognizable identity, hairstyle impression, clothing/accessory identity, overall character vibe\n\n{deformation} = replace realistic human anatomy with exaggerated adult sci-fi cartoon character construction: oversized rounded head, long thin neck, simplified bean-like skull shape, large uneven circular eyes with tiny dot pupils, small simple nose, wide irregular mouth, simplified teeth, angular cheek and jaw shapes, thin rubbery limbs, simplified hands, awkward asymmetrical body geometry; prioritize this cartoon form language over the original photo proportions while keeping the person recognizable\n\n{rules} = maintain the exaggerated adult sci-fi cartoon deformation, but render it as a believable realistic 3D character; do not keep sketch, ink, watercolor, or paper-based rendering; the image must feel like a stylized studio-rendered 3D character, not a realistic portrait and not a hand-drawn illustration\n\n{reference_usage} = match the reference photo while allowing artistic 3D character transformation\n\n{aspect} = 3:7\n\n{deformation_rate} = 80%\n\n{pose} = profile perspective, inspired by original pose\n\n{appearance} = preserve original appearances and accessories\n\n{color} = use natural material colors derived from the original image, with subtle warm tonal emphasis on the face and forearm\n\n{background} = seamless plain white studio background, clean negative space, soft studio floor contact\n\n{composition} = expressive portrait, detailed but minimal, premium studio character render",
       "tags": [
         "portrait",
-        "avatar",
         "3d",
         "cartoon",
-        "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 476,
-      "title": "تبدیل به کارکتر Claymation به سبک «والاس و گرومیت",
+      "titleKey": "prompts.items.476.title",
+      "sourceTitle": "تبدیل به کارکتر Claymation به سبک «والاس و گرومیت",
       "publishedAt": "2026-07-04T12:52:52+03:30",
       "telegramUrl": "https://t.me/prompt_draft/476",
       "model": {
@@ -2133,17 +2076,16 @@
       ],
       "prompt": "Create a handcrafted stop-motion clay character with exaggerated friendly facial construction using provided photo.\n\n{orginial_expression} = detect expression of person in provided photo.\n\n{style} = handmade stop-motion clay puppet, tactile plasticine surface, soft fingerprints, rounded sculpted forms, miniature studio craftsmanship\n\n{head} = simple tall thin rounded cylinder head, smooth, soft vertical volume, slightly flattened front face plane, friendly asymmetrical handmade shape\n\n{face_structure} = features grouped tightly on the front of the head, oversized central nose area, soft cheek mass, minimal anatomical realism\n\n{nose} = ultra simplify original nose then create a bulbous oval nose, protruding forward from the center of the face, softly blended bridge, thin-rounded nostril-free form, matte clay surface\n\n{mouth} = extremely wide crescent mouth, stretched beyond natural face width, thick rounded clay lips, dark hollow interior, chunky square uneven teeth, replaceable sculpted mouth-shape feeling, mouth rules are very important and main part of character-layout-system, do not ignore it\n\n{ears} = simple round protruding side ears, low placement, thick soft rim, shallow thumb-pressed inner bowl, no realistic ear anatomy\n\n{eyes} = big round white ping-pong-ball-like eyes, close together, black pin-dot pupils, simple clay brow folds for {orginial_expression}\n\n{expression} = make {orginial_expression} exaggerated, raised brows, comic {orginial_expression} energy\n\n{rules} = avoid realistic facial anatomy, avoid sharp nose bridge, avoid thin lips, avoid detailed ears, keep every form soft, chunky, handmade, and readable from distance, {typography} = a very tiny (5% of screen width) with opacity 50 subtitle showing \"@Prompt_Draft\" at bottom-left of poster with a thin DM Sans font \n\n{aspect_ratio} = 4:7",
       "tags": [
-        "poster",
         "sculpture",
         "cartoon",
-        "photography",
         "animation-style",
-        "image-generation"
+        "image-to-image"
       ]
     },
     {
       "id": 477,
-      "title": "تبدیل به کارکتر Claymation به سبک «والاس و گرومیت» (نسخه ایستاده جلوی آینه)",
+      "titleKey": "prompts.items.477.title",
+      "sourceTitle": "تبدیل به کارکتر Claymation به سبک «والاس و گرومیت» (نسخه ایستاده جلوی آینه)",
       "publishedAt": "2026-07-04T20:02:44+03:30",
       "telegramUrl": "https://t.me/prompt_draft/477",
       "model": {
@@ -2157,7 +2099,6 @@
       ],
       "prompt": "{subject} = person in the attached reference image\n{original_expression} = original\n{subject} expression\n{mode} = image to image\n{reference} = attached reference image\n\n{idea} = standing in front of a mirror, looking at their own reflection\n\n{reference_usage} = strictly follow the attached reference image\n{transformation_strength} = strong stylized transformation\n\n{deformation} = {head} = simple tall thin rounded cylinder head, smooth, soft vertical volume, slightly flattened front face plane, friendly asymmetrical handmade shape\n\n{face_structure} = features grouped tightly on the front of the head, oversized central nose area, soft cheek mass, minimal anatomical realism\n\n{nose} = ultra simplify original nose then create a bulbous oval nose, protruding forward from the center of the face, softly blended bridge, thin-rounded nostril-free form, matte clay surface\n\n{mouth} = extremely wide crescent mouth, stretched beyond natural face width, thick rounded clay lips, dark hollow interior, chunky square uneven teeth, replaceable sculpted mouth-shape feeling, mouth rules are very important and main part of character-layout-system, do not ignore it\n\n{ears} = simple round protruding side ears, low placement, thick soft rim, shallow thumb-pressed inner bowl, no realistic ear anatomy\n\n{eyes} = big round white ping-pong-ball-like eyes, close together, black pin-dot pupils, simple clay brow folds for\n{orginial_expression}\n{framing} = focus tightly on the character’s reflection in the mirror; keep the actual character in the foreground with their back to the camera, softly blurred and only minimally visible {typography} = a very tiny (5% of screen width) with opacity 50 subtitle showing \"@Prompt_Draft\" at bottom-left of poster with a thin DM Sans font\n\n{aspect} = 3:5",
       "tags": [
-        "poster",
         "sculpture",
         "cartoon",
         "animation-style",
@@ -2166,7 +2107,8 @@
     },
     {
       "id": 478,
-      "title": "تبدیل عکس به پرتره‌ی ناگهانی از بالا",
+      "titleKey": "prompts.items.478.title",
+      "sourceTitle": "تبدیل عکس به پرتره‌ی ناگهانی از بالا",
       "publishedAt": "2026-07-08T09:00:33+03:30",
       "telegramUrl": "https://t.me/prompt_draft/478",
       "model": {
@@ -2181,14 +2123,14 @@
       "prompt": "{person} = the person in the attached image\n{location} = ai-generated location based on {person}'s vibe\n{elements} = environmental and natural elements extracted from {location}\n{channel} = \"@Prompt_Draft\"\n{mode} = image to image\n{reference} = attached reference image\n{idea} = A drone image captured from a true vertical nadir angle directly above {person}'s head. {person} stands in {location}, exactly centered in the image. The scene captures the exact moment {person} suddenly notices something above and lifts only the head straight upward, while the rest of the body remains neutral and still. The face is turned straight upward and the eyes look directly into the camera lens.\n{subject} = person in the attached reference image\n{reference_usage} = strictly follow the attached reference image\n{transformation_strength} = extreme creative transformation\n{aspect} = portrait layout, 4:5 ratio\n{rules} = The camera must be positioned exactly meters above the top of {person}'s head, looking straight down on a perfectly vertical 90-degree axis. The camera must be perpendicular to the main visible surface of {location}. {person} must be exactly in the center of the frame. The scene must capture the instant {person} suddenly looks up: only the head and gaze react upward, while the overall body posture, arms, and hands remain completely neutral and natural.\n{style} = realistic, artistic, lens distortion on photo corners\n{framing} = Use a perfectly symmetrical true top-down composition. Position {person} exactly at the geometric center of the frame, with equal negative space and visual balance on the left and right and on the top and bottom. The camera view must be a strict nadir view from directly overhead, with no diagonal drift, no tilt, no perspective skew, and no off-center framing. Arrange the {elements} so the whole composition feels centered, stable, and symmetrical around {person}.\n{pose} = Ignore the original pose. Place {person} standing upright inside {location}, directly under the camera. The body posture must remain completely neutral and still, with the shoulders level, the arms relaxed, and the hands in a neutral natural resting position close to the body, without any dramatic spread or expressive gesture. Show the exact moment {person} suddenly notices something directly above. Only the head should react: the top of the head must sit exactly on the camera axis, the chin lifted, the face turned fully straight upward, and the eyes looking directly into the lens. Preserve the identity, outfit, and visible accessories.\n{background} = Build the entire background from {location}. Use {elements} as the visible environmental details, keeping them clearly readable from a true vertical top-down view.\n{camera} = 4K drone camera, true vertical nadir shot from exactly 5 meters above {person}'s head, optical axis perfectly perpendicular to the main visible surface of {location}, no camera tilt, no diagonal overhead angle.\n{typography} = {\n\"groups\": [\n{\n\"purpose\": \"serving as the credits area\",\n\"position\": {\n\"preset\": \"in the bottom-left area\"\n},\n\"layout\": {\n\"direction\": \"arranged in a vertical column\",\n\"alignment\": \"start aligned\",\n\"distribution\": \"with compact spacing\"\n},\n\"texts\": [\n{\n\"content\": \"{channel}\",\n\"purpose\": \"as a footer note\",\n\"typography\": {\n\"fontStyle\": \"handwritten lettering\",\n\"fontSize\": \"very tiny (about 3~5 percent of artwork width)\",\n\"fontWeight\": \"medium 500 font weight\"\n}\n}\n]\n}\n],\n\"renderRules\": {\n\"accuracy\": \"exact\",\n\"renderTextValuesOnly\": true,\n\"preserveSpelling\": true\n}\n}\n{effects} = analog film grain, nostalgic texture and noise, vintage film look, muted color and aged texture, light leak effect, colorful accidental illumination, glitch distortion, erratic visual digital artifacts, balanced effect intensity, moderate impact",
       "tags": [
         "portrait",
-        "vintage",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 479,
-      "title": "تبدیل به کارکتر سه بعدی آلومینیومی به سبک وان پیس",
+      "titleKey": "prompts.items.479.title",
+      "sourceTitle": "تبدیل به کارکتر سه بعدی آلومینیومی به سبک وان پیس",
       "publishedAt": "2026-07-13T09:01:11+03:30",
       "telegramUrl": "https://t.me/prompt_draft/479",
       "model": {
@@ -2205,15 +2147,13 @@
         "3d",
         "cartoon",
         "anime",
-        "product",
-        "editorial",
-        "game-style",
         "image-to-image"
       ]
     },
     {
       "id": 481,
-      "title": "ساخت پوستر میوه‌ی جادویی با کاراکتر سه‌بعدی آلومینیومی",
+      "titleKey": "prompts.items.481.title",
+      "sourceTitle": "ساخت پوستر میوه‌ی جادویی با کاراکتر سه‌بعدی آلومینیومی",
       "publishedAt": "2026-07-13T13:06:19+03:30",
       "telegramUrl": "https://t.me/prompt_draft/481",
       "model": {
@@ -2231,13 +2171,13 @@
         "3d",
         "cartoon",
         "anime",
-        "game-style",
         "image-to-image"
       ]
     },
     {
       "id": 482,
-      "title": "تبدیل به کارکتر کشیده‌ی پاپ آرت",
+      "titleKey": "prompts.items.482.title",
+      "sourceTitle": "تبدیل به کارکتر کشیده‌ی پاپ آرت",
       "publishedAt": "2026-07-13T18:00:21+03:30",
       "telegramUrl": "https://t.me/prompt_draft/482",
       "model": {
@@ -2252,16 +2192,15 @@
       "prompt": "{mode} = image to image\n{reference} = attached reference image\n{subject} = person in the attached reference image\n{reference_usage} = use the attached reference image as loose visual inspiration\n{transformation_strength} = extreme creative transformation\n{aspect} = vertical mobile layout, 9:16 ratio\n{rules} = preserve safe margins to avoid cropping subject details\n{style} = retro comic book illustration, bold black outlines, graphic contrast, stylized pop-art energy, strong stylization, notable exaggeration in form, high-end digital illustration, geometric shape language with simplified structured forms, bold comic-book treatment with halftone shading and clean black outlines, bold graphic visual treatment with clear stylized readability\n{deformation} = reshape the head and face without nose into an extremely tall, very narrow vertical rectangle with softly rounded edges and corners. Make the neck equally narrow and exactly the same width as the head, seamlessly connected to it as one continuous elongated form. Create perfectly circular, spherical eyes with thick prominent eyelashes and half-open eyelids. Reduce the mouth to a short, thin horizontal line that remains strictly contained within the narrow width of the face and never extends beyond its side edges. Keep the ears small and simplified while loosely retaining the recognizable shape of the original ears. Merge the hair and eyebrows into a single unified graphic shape that clearly preserves the distinctive visual identity, silhouette, and directional flow of the original hair and eyebrows. Reshape the entire body into a very tall, extremely narrow and slender rectangular form with soft rounded edges and corners.\n{expression} = the expression must feel theatrically distorted. Use strong visible exaggeration in the brows, eyes, or mouth, with stage-like emotional overstatement and graphic readability.\n{pose} = the pose must feel elongated and elegant. Stretch the posture vertically, refine the line of the neck and limbs, and create a graceful editorial silhouette with controlled sophistication.\n{background} = the background must feel open and breathable. Large areas of negative space, restrained visual content, soft clean edges, and a lightweight uncluttered environment suitable for modern editorial or product-focused imagery.",
       "tags": [
         "cartoon",
-        "vintage",
-        "product",
-        "editorial",
         "illustration",
+        "vintage",
         "image-to-image"
       ]
     },
     {
       "id": 485,
-      "title": "ساخت سلفی در لوکیشن مورد نظر خودتون",
+      "titleKey": "prompts.items.485.title",
+      "sourceTitle": "ساخت سلفی در لوکیشن مورد نظر خودتون",
       "publishedAt": "2026-07-17T20:57:06+03:30",
       "telegramUrl": "https://t.me/prompt_draft/485",
       "model": {
@@ -2275,15 +2214,14 @@
       ],
       "prompt": "{location} = second input image {mood} = \"location-appropriate mood\" {mode} = image to image {reference} = attached reference image {idea} = Create a handheld selfie of {subject} at {location}, with the facial expression and emotional tone guided by {mood}. {subject} = person in the attached reference image. {preserve} = main subject, identity, outfit and visible accessories {transformation_strength} = subtle {aspect} = 9:16 ratio {rules} = Use the second input image only as the location reference. Ignore original pose and facial expression of {subject}. Preserve every recognizable and distinctive location detail in {location}. If the location reference is not naturally framed or positioned for a selfie, reinterpret the scene into a believable selfie-friendly composition while preserving the environment’s identity, perspective logic, and spatial coherence. Choose a natural and visually appropriate placement for {subject} inside {location}. The facial expression, emotional energy, and overall mood of {subject} must be guided by {mood} and should feel naturally aligned with the {location}. Preserve natural anatomy and coherent spatial integration. {subject} must be lit by the environmental lighting conditions of the location reference so the person and setting feel naturally unified, with believable shadows, color temperature, reflections, depth, and contact with the environment. {style} = subtle stylization, minimal exaggeration, authentic casual mobile-phone selfie rather than a polished or staged photoshoot, clean polished aesthetic {framing} = the framing must feel wider and more environmental. Include more surrounding space, stronger perspective depth, visible context while keeping {subject} readable, believable arm's-length selfie crop with {subject} clearly visible in the foreground and enough of {location} visible to establish the setting and retain its distinctive details. Keep the framing wider and more environmental, with believable front-camera perspective and natural walking momentum. {pose} = walking motion. Use natural forward body flow, alternating limb rhythm, grounded movement, believable sense of motion through the stance. Ignore the pose of {subject}. Create a natural handheld selfie pose captured while walking, with one arm extended toward the camera, subtle body movement, believable balance, anatomically correct hands and limbs. The pose should feel naturally compatible with the selected position inside {location}. {lighting} = the lighting must be mostly ambient and low-contrast. Soft overall visibility, subtle depth, minimal harsh shadow, and a quiet balanced look that keeps the scene clean and readable., Derive the lighting direction, color temperature, exposure behavior, shadow softness, ambient bounce, and overall mood from {location}. Illuminate {subject} according to the visible light sources and atmosphere of the second input image so the result feels naturally captured on-site and fully coherent with the environment. {camera} = smartphone camera look, casual snapshot style, Handheld front-camera selfie capture at arm's length with subtle real-world perspective, slight natural imperfection, and believable mobile-phone image characteristics. The image should feel captured while walking, with mild handheld instability and realistic phone-camera behavior. Keep the phone itself outside the frame unless naturally visible. {effects} = motion blur, directional streaks indicating movement, subtle handheld feel slight motion blur, small amount of natural camera shake, consistent with a selfie captured, subtle effect intensity",
       "tags": [
-        "cartoon",
         "photography",
-        "identity-preserving",
         "image-to-image"
       ]
     },
     {
       "id": 486,
-      "title": "تبدیل عکس شما، به شمای ولو شده تو استخر پر شده از اشیای مورد نظرتون",
+      "titleKey": "prompts.items.486.title",
+      "sourceTitle": "تبدیل عکس شما، به شمای ولو شده تو استخر پر شده از اشیای مورد نظرتون",
       "publishedAt": "2026-07-20T13:47:34+03:30",
       "telegramUrl": "https://t.me/prompt_draft/486",
       "model": {
@@ -2300,13 +2238,13 @@
         "fashion",
         "editorial",
         "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 487,
-      "title": "ساخت تصویر ثبت شده از دور، نشسته پشت پنجره",
+      "titleKey": "prompts.items.487.title",
+      "sourceTitle": "ساخت تصویر ثبت شده از دور، نشسته پشت پنجره",
       "publishedAt": "2026-07-21T19:39:25+03:30",
       "telegramUrl": "https://t.me/prompt_draft/487",
       "model": {
@@ -2326,7 +2264,8 @@
     },
     {
       "id": 490,
-      "title": "ساخت گرید 3×3 و 9 حالت متفاوت اکسپرشن (تست اکسپرشن)",
+      "titleKey": "prompts.items.490.title",
+      "sourceTitle": "ساخت گرید 3×3 و 9 حالت متفاوت اکسپرشن (تست اکسپرشن)",
       "publishedAt": "2026-07-24T14:27:46+03:30",
       "telegramUrl": "https://t.me/prompt_draft/490",
       "model": {
@@ -2341,14 +2280,14 @@
       "prompt": "{expressions} = neutral and attentive; genuine joy; restrained sadness; intense anger; fear and alarm; sudden surprise; clear disgust; suspicion and distrust; quiet confidence\n\n{mode} = image to image {reference} = attached reference image {idea} = Create a 3x3 acting expression test grid featuring {subject}, with one distinct facial performance from {expressions} in each of the nine equal-sized portrait cells. {subject} = person in the attached reference image, person in the attached reference image {reference_usage} = strictly follow the attached reference image {preserve} = preserve the main subject, preserve the person's identity, preserve the outfit and visible accessories, preserve visible materials and surface details {transformation_strength} = balanced transformation {aspect} = 3:5 {rules} = Ignore the pose and camera angle from the input reference image. In all nine cells, place the subject at exactly eye level and directly facing the camera, using the same straight-on three-quarter portrait framing. Preserve the subject's recognizable facial identity, age cues, skin characteristics, hairstyle, outfit, and natural anatomy while changing only the facial performance for each assigned expression. Keep all nine cells equal in size and visually consistent. Do not add text, labels, logos, watermarks, props, decorative borders, or extra people. {style} = subtle stylization, minimal exaggeration, Use a raw, clinical actor casting and expression-test aesthetic, like a professional contact sheet rather than a polished beauty campaign., studio photography, minimalist visual treatment, simple forms and restrained detail, clean polished aesthetic {background} = the background must be a clean seamless surface with no visible clutter. Smooth uninterrupted color, minimal spatial detail, soft tonal variation, and a simple studio-like emptiness that keeps full attention on the main subject., Every grid cell must use the same simple pure-white studio background with no props, scenery, gradients, or visible texture. {lighting} = the lighting must resemble direct camera flash. Bright frontal illumination, crisp shadows, strong subject pop, and a raw spontaneous photographic feeling., Use direct on-camera-style harsh flash consistently in every cell, with crisp contrast and honest facial detail. {camera} = portrait lens look, flattering subject proportions, Use a fixed camera position and consistent focal length, exposure, focus, and distance for all nine portraits. {colorPalette} = Render the complete image strictly in black and white with a neutral grayscale tonal range, clean whites, deep blacks, and no color tint.",
       "tags": [
         "portrait",
-        "cartoon",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 492,
-      "title": "ساخت گرید 3×3 و 9 حالت اکسپرشن + رنگ و مدل مو",
+      "titleKey": "prompts.items.492.title",
+      "sourceTitle": "ساخت گرید 3×3 و 9 حالت اکسپرشن + رنگ و مدل مو",
       "publishedAt": "2026-07-24T19:39:37+03:30",
       "telegramUrl": "https://t.me/prompt_draft/492",
       "model": {
@@ -2365,14 +2304,14 @@
       "tags": [
         "portrait",
         "fashion",
-        "editorial",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 497,
-      "title": "ساخت لحظه‌ای از زندگی روزمره‎ی شما در دوران تاریخی مورد نظرتون",
+      "titleKey": "prompts.items.497.title",
+      "sourceTitle": "ساخت لحظه‌ای از زندگی روزمره‎ی شما در دوران تاریخی مورد نظرتون",
       "publishedAt": "2026-07-29T11:51:47+03:30",
       "telegramUrl": "https://t.me/prompt_draft/497",
       "model": {
@@ -2386,15 +2325,14 @@
       ],
       "prompt": "{idea} = Show {subject} naturally performing {era_life_scenario} in {era}.\n{subject} = person in the attached image\n\n{era} = \"Medieval Europe\"\n{era_life_scenario} = Create one plausible everyday-life scenario for {subject} in {era}, based on visible identity, apparent age, and personality; assign an ordinary role and one specific activity.\n{era_outfit} = Ignore {subject}'s original outfit; search the internet and choose common everyday clothing from {era}, adapted to {era_life_scenario}.\n{era_hairstyle} = Ignore {subject}'s original haircut; search the internet and choose a common hairstyle from {era}, suitable for {era_life_scenario}.\n\n{mode} = image to image\n{preserve} = recognizable identity, face, skin characteristics, and apparent age\n{aspect} = portrait 5:7\n{style} = imperfect candid documentary photography, unpolished and low-fidelity\n{hair} = {era_hairstyle}\n{outfit} = {era_outfit}\n{scene} = {era_life_scenario}\n{lighting} = natural available light\n{camera} = distant observer, extreme telephoto zoom, compressed perspective, candid mid-action framing\n{effects} = slight handheld shake, mild motion blur, soft focus, edge warping, chromatic aberration, subtle vignetting and grain\n{rules} = Ignore the original pose, expression, outfit, hairstyle, background, and lighting. No posing, looking at the camera, commemorative portrait, ceremony, fantasy, anachronisms, modern objects, text, logos, polished sharpness, or pristine modern image quality.",
       "tags": [
-        "portrait",
-        "cartoon",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 501,
-      "title": "شماره یک کاپلی ساده نه عجیب غریب و فضایی",
+      "titleKey": "prompts.items.501.title",
+      "sourceTitle": "شماره یک کاپلی ساده نه عجیب غریب و فضایی",
       "publishedAt": "2026-08-01T13:10:43+03:30",
       "telegramUrl": "https://t.me/prompt_draft/501",
       "model": {
@@ -2408,16 +2346,15 @@
       ],
       "prompt": "{mode} = text to image {idea} = Create a candid photograph of a couple walking together through a flower field in daylight. The girl is holding {flower} as a bouquet already received as a gift, and she is walking closely beside the boy in a natural intimate moment. {subject} = input images (one photo of the boy and one photo of the girl) {aspect} = 9:16 ratio {rules} = Use both input people as the couple. The girl must be holding the bouquet while walking beside the boy. They must be walking together, not posing stiffly, not standing still, and not in a city street. The bouquet must clearly read as a gift already received. Preserve a believable spontaneous romantic moment. Keep anatomy, hands, walking motion, couple interaction, bouquet structure, clothing, flowers, and environmental details physically plausible. Avoid hard fashion posing, studio lighting, or direct eye contact with the camera. {style} = soft candid romantic photography, natural daylight, dreamy realism, intimate lifestyle-photo mood, slightly cinematic and airy {framing} = low-angle full-body-to-three-quarter framing from within the flowers, immersive foreground blur, open sky visible above, natural candid composition, the couple placed centrally with a spacious airy background {pose} = natural couple walking motion through the flower field, bodies close together, both slightly leaning toward each other, the girl holding {flower}, both turning their faces toward one another in a tender shared moment, relaxed mid-step movement {expression} = soft affectionate expressions, gentle smiles, calm romantic mood, warm emotional connection {background} = open flower field filled with soft pink blossoms, bright daytime sky, scattered clouds, breezy natural outdoor atmosphere, dreamy floral foreground and background depth {lighting} = bright natural daylight, soft sunlit atmosphere, gentle highlights, clean outdoor illumination, airy and romantic tone {camera} = low-angle perspective, shallow depth of field, soft foreground blur from nearby flowers, natural lens rendering, slightly dreamy focus falloff {flower} = AI-generated bouquet related to the girl subject identity",
       "tags": [
-        "cinematic",
-        "fashion",
+        "portrait",
         "photography",
-        "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 502,
-      "title": "تغییر گرافیک تصویر به سبک انیمه کلاسیک دهه ۸۰-۹۰",
+      "titleKey": "prompts.items.502.title",
+      "sourceTitle": "تغییر گرافیک تصویر به سبک انیمه کلاسیک دهه ۸۰-۹۰",
       "publishedAt": "2026-08-05T21:04:39+03:30",
       "telegramUrl": "https://t.me/prompt_draft/502",
       "model": {
@@ -2431,8 +2368,8 @@
       ],
       "prompt": "{mode} = image to image\n{idea} = Transform the entire input image into a true retro Japanese anime frame from the late 1980s to early 1990s.\n{subject} = person in the attached reference image\n{aspect} = same as input image\n{style} = authentic late-1980s to early-1990s Japanese TV-anime / OVA aesthetics applied to the whole image, including both subject and background; hand-drawn anime linework; period-correct character stylization; larger simplified expressive eyes; minimal nose and mouth detail; graphic facial construction; stylized hair masses; clean silhouette readability; flatter color application; classic cel-animation look; limited shade steps; crisp cel shading; simple painted background treatment; cohesive retro-anime scene design; nostalgic color styling; subtle VHS scan lines; faint analog noise; slight blur softness; mild color bleed; light tape wear; gentle image degradation; the final result should read as a genuine retro anime still, not a modern digital anime illustration",
       "tags": [
-        "cartoon",
         "anime",
+        "animation-style",
         "vintage",
         "illustration",
         "image-to-image"
@@ -2440,7 +2377,8 @@
     },
     {
       "id": 503,
-      "title": "ساخت پوستر مینیاتور ایرانی با تصویر شما",
+      "titleKey": "prompts.items.503.title",
+      "sourceTitle": "ساخت پوستر مینیاتور ایرانی با تصویر شما",
       "publishedAt": "2026-08-05T23:41:27+03:30",
       "telegramUrl": "https://t.me/prompt_draft/503",
       "model": {
@@ -2456,14 +2394,14 @@
       "prompt": "{mode} = image to image {art} = Iranian miniature; classical Persian miniature painting aesthetics; manuscript-illustration look; strong stylization; severe facial deformation; elongated elegant anatomy; almond-shaped eyes; thin arched eyebrows; slender elongated nose; small delicate lips; tiny stylized mouth; pale smooth face treatment; decorative costume patterns; flat spatial logic; ornamental flora; arabesque and khatai motifs; gold-accent detailing; poetic courtly atmosphere; intricate miniature-like linework; refined textile ornament; illuminated manuscript feeling; Persian miniature border frame {poster_scenario} = Reimagine the subject as a poetic courtly figure inside an idealized Persian garden poster scene, surrounded by flowering branches, cypress forms, birds, patterned ground, stylized clouds, and hints of Persian architecture, arranged like a manuscript-page composition with a decorative framed border {idea} = Transform the input image into a vertical poster in {art}, using the input only as loose inspiration. The result must not remain closely faithful to the original photo. Reference usage should be free and interpretive, and the stylization level must be intense. {face_transformation} = Fully convert the face into {art} conventions. The facial deformation is critical: reshape the face, eyes, eyebrows, nose, lips, and mouth completely into miniature style. Use miniature-style facial construction rather than realistic likeness. The output should preserve only a light essence of the subject, not a near-photographic match. {composition} = Ignore the original background completely. Create a fully new staged poster composition based on {poster_scenario}. Use a clear central figure placement suited to a Persian miniature poster, with elegant pose design, flowing garments, ornamental negative space, and a visually balanced manuscript-like arrangement. {motifs} = Add abundant {art} visual motifs throughout the poster: floral patterns, vegetal ornament, Persian textile motifs, decorative borders, miniature foliage, stylized rocks or garden elements, birds, patterned garments, and illuminated ornamental details {frame} = Surround the poster with a distinctly Iranian miniature frame: ornate manuscript-style border, decorative margin design, refined inner panel, and elegant page-like framing integrated into the overall artwork {aspect} = 9:16 {rules} = Use the input image only as inspiration for the person. Do not preserve the original background. Do not aim for realistic anatomy, realistic facial proportions, or photo fidelity. Prioritize miniature-style deformation, ornamental design, poster clarity, and cohesive Persian miniature aesthetics. The final image must read as a fully designed Iranian miniature poster, not as a photo with a style filter. Do not include any text, poetry, calligraphy, captions, or written elements anywhere in the image. {final_prompt} = Create a 9:16 poster from the input image in {art}. Use the person in the input only as loose inspiration and reinterpret them with strong stylization. Apply {face_transformation}. Ignore the original background and build a new poster composition using {poster_scenario}. Add {motifs}. Include {frame}. The final result should feel like a fully designed Persian miniature poster page with severe miniature-style deformation, rich ornament, and a clearly fabricated composition.",
       "tags": [
         "poster",
-        "photography",
         "illustration",
         "image-to-image"
       ]
     },
     {
       "id": 506,
-      "title": "پرتره‌ی پروانه‌ای",
+      "titleKey": "prompts.items.506.title",
+      "sourceTitle": "پرتره‌ی پروانه‌ای",
       "publishedAt": "2026-08-07T22:23:29+03:30",
       "telegramUrl": "https://t.me/prompt_draft/506",
       "model": {
@@ -2478,17 +2416,15 @@
       "prompt": "{idea} = Transform the input image into a dreamy fine-art beauty portrait with butterflies as the main visual motif. Create a refined editorial artwork where the butterflies feel intentionally chosen for the subject’s identity, softness, and visual energy, and naturally arranged across the face.\n{subject} = person in the attached reference image\n{mode} = image to image\n{reference_usage} = medium-loose reference; preserve identity, freely restage the artwork\n{preserve} = recognizable identity; facial structure; age impression; skin tone family; feminine softness\n{aspect} = portrait 9:16\n{framing} = tight vertical close portrait; upper chest to above head; centered face; intimate composition\n{pose} = near front-facing; slightly lifted chin; relaxed shoulders; one hand softly raised beside the face; elegant fingers\n{expression} = serene dreamy mood; eyes fully closed; lips softly parted; minimal tension\n{butterfly} = select elegant light-toned butterflies matched to {subject}'s identity and image cues; place them around the closed-eye and cheek area in a balanced asymmetrical arrangement; natural scale, contact, depth, and shadow interaction; fully coherent with {framing}, {pose}, {expression}, and {style}\n{lighting} = warm directional sunlight; hard-edged cinematic shadows; bold shadow bands across face, hand, neck, and upper body; glowing highlights; amber, honey, caramel, cream palette\n{background} = plain warm brown background; minimal and unobtrusive\n{style} = fine-art beauty photography; editorial portrait; cinematic naturalism; luminous natural skin; soft loose wavy hair; sharp face-and-butterfly focus; polished organic finish\n{rules} = no text; no busy background; no clutter; no excessive surrealism; no oversized butterflies; maintain tasteful realism and natural integration",
       "tags": [
         "portrait",
-        "cinematic",
         "editorial",
         "photography",
-        "surreal",
-        "identity-preserving",
         "image-to-image"
       ]
     },
     {
       "id": 507,
-      "title": "ساخت کارت تاروت با عکس شما",
+      "titleKey": "prompts.items.507.title",
+      "sourceTitle": "ساخت کارت تاروت با عکس شما",
       "publishedAt": "2026-08-07T22:52:53+03:30",
       "telegramUrl": "https://t.me/prompt_draft/507",
       "model": {
@@ -2503,16 +2439,15 @@
       ],
       "prompt": "{tarot_card} = Select one canonical Rider-Waite-Smith Major Arcana card that best matches {subject}'s visible identity, facial character, demeanor, visual energy, and presence. Prefer a human or anthropomorphic, fully clothed central figure when suitable. Use the exact canonical English title and keep the selection consistent.\n\n{tarot_number} = Derive the selected card's canonical number automatically: 0 for THE FOOL; Roman numeral I–XXI for all others. Keep it consistent with {tarot_card}.\n\n{mode} = image to image\n\n{idea} = Recast {subject} as the central figure of {tarot_card}, recreating its complete canonical composition.\n\n{subject} = person in the attached reference image\n\n{reference_usage} = loose reference; free identity inspiration\n\n{transformation_strength} = extreme\n\n{aspect} = portrait 11:19\n\n{style} = authentic early-20th-century Rider-Waite-Smith illustration; ink-and-wash; extreme stylization; hand-drawn black contours; flat printed colors; simplified forms; period-correct symbolism\n\n{face_transformation} = Fully rebuild {subject}'s face in authentic Rider-Waite-Smith visual language. Preserve only recognizable identity cues; convert facial structure, eyes, brows, nose, lips, skin planes, proportions, shading, and linework into simplified hand-drawn tarot illustration. Flat painted facial planes, strong ink contours, minimal modeling, period-correct stylization. No photorealistic or semi-realistic facial rendering.\n\n{framing} = complete uncropped tarot-card layout; full border visible; centered canonical composition; safe margins for number and title\n\n{expression} = selected card's canonical expression and gaze, adapted to {subject}'s identity essence\n\n{pose} = selected card's canonical pose, gestures, orientation, and object interaction\n\n{outfit} = selected card's canonical symbolic costume, accessories, and props; replace any nude or partially nude figure with opaque period-appropriate robes or drapery while preserving silhouette and symbolism\n\n{background} = selected card's complete canonical environment and essential symbolic elements\n\n{lighting} = flat painterly illumination; minimal modeled shading; no photographic lighting\n\n{typography} = Place only {tarot_number} at the top and the exact {tarot_card} title at the bottom; period-correct uppercase serif lettering; fully legible\n\n{texture} = matte card stock; fine paper grain; subtle antique print texture; restrained ink irregularity\n\n{modesty_rule} = All human figures must be clearly adult and fully clothed. Replace canonical nudity or exposed intimate areas with opaque period-appropriate garments without altering the card's pose, symbolism, or composition.\n\n{rules} = Ignore the input pose, outfit, background, lighting, framing, and color scheme. Preserve only {subject}'s identity essence. Recreate the selected card faithfully. No photorealistic elements, modern objects, logos, watermarks, extra text, cropped borders, duplicated figures, or missing essential symbols.",
       "tags": [
-        "portrait",
-        "cartoon",
-        "photography",
         "illustration",
+        "vintage",
         "image-to-image"
       ]
     },
     {
       "id": 510,
-      "title": "ساخت عکس دو نفره، یه چیزی تو این مایه‌ها",
+      "titleKey": "prompts.items.510.title",
+      "sourceTitle": "ساخت عکس دو نفره، یه چیزی تو این مایه‌ها",
       "publishedAt": "2026-08-10T15:08:46+03:30",
       "telegramUrl": "https://t.me/prompt_draft/510",
       "model": {
@@ -2527,14 +2462,14 @@
       "prompt": "{idea} = Combine two separate input people into a single two-person portrait with the same overall vibe as the reference: a casual youthful duo photo with a relaxed posed-candid feel. Rebuild the scene as a believable two-shot where the boy and girl stand close together in a confident friendly pose, captured like a real camera snapshot rather than a polished studio image.\n\n{subject_boy} = person in the first attached reference image\n\n{subject_girl} = person in the second attached reference image\n\n{mode} = image to image\n\n{reference_usage} = no-loose reference; preserve both identities, freely restage pose, composition, clothing styling, and snapshot presentation\n\n{preserve} = recognizable identity of both subjects; facial structure; age impression; skin tone family; overall visual essence\n\n{aspect} = portrait 5:8\n\n{framing} = vertical two-person portrait; medium-full framing; both subjects fully visible from about mid-thigh upward; centered duo composition; enough space around both bodies to show pose clearly\n\n{pose_boy} = standing in a relaxed confident pose; body facing forward; head slightly tilted; arms folded or loosely crossed; shoulders relaxed; casual posture with easy presence\n\n{pose_girl} = standing close beside the boy; one arm resting naturally across or over his shoulder; other hand placed on her own hip; body facing forward; confident casual stance\n\n{interaction} = the two subjects should stand close with natural familiarity; the girl’s arm connection to the boy must feel anatomically correct and relaxed; spacing should feel intimate but casual, like close friends posing together for a quick photo\n\n{expression} = boy with a soft relaxed smile or subtle smirk; girl with a calm confident expression; both looking toward the camera; overall mood casual, youthful, effortless, and slightly playful\n\n{camera_effect} = real camera snapshot look; direct on-camera flash; slight candid nightlife feel; subtle film-like grain; mild low-light softness; visible digital date stamp on the image; authentic point-and-shoot photo aesthetic\n\n{lighting} = direct flash illumination on both subjects; bright frontal highlights; slightly harsh flash falloff; dark surrounding environment; strong separation between lit subjects and dim background\n\n{background} = dark minimal nighttime background; mostly black or very dim surroundings; a few small distant lights allowed; no detailed environment competing with the subjects\n\n{style} = candid flash photography; casual youthful portraiture; natural styling; believable real-photo rendering; slight retro point-and-shoot vibe; subtle grain; mild low-light imperfection; spontaneous social-photo energy\n\n{rules} = no text except the date stamp; no busy background; no extra people; no collage look; maintain logical anatomy and natural limb connections; the girl’s arm over the boy’s shoulder must be physically plausible; preserve clear visibility of both faces; keep the snapshot effect authentic and the date stamp readable but unobtrusive",
       "tags": [
         "portrait",
-        "vintage",
         "photography",
         "image-to-image"
       ]
     },
     {
       "id": 511,
-      "title": "ساخت تصویر پروفایل LinkedIn — نسخه دوم",
+      "titleKey": "prompts.items.511.title",
+      "sourceTitle": "ساخت تصویر پروفایل LinkedIn — نسخه دوم",
       "publishedAt": "2026-08-12T11:33:35+03:30",
       "telegramUrl": "https://t.me/prompt_draft/511",
       "model": {
@@ -2549,9 +2484,7 @@
       "prompt": "{idea} = Create a professional LinkedIn profile portrait of {subject}.\n\n{subject} = person in the attached reference image\n\n{mode} = image to image\n\n{reference_usage} = strict identity reference, but ignore original expressions, pose and framin\n\n{transformation_strength} = balanced\n\n{preserve} = recognizable identity; facial structure; age impression; skin tone; hairstyle; defining facial features\n\n{aspect} = 1:1\n\n{style} = professional LinkedIn headshot photography; subtle stylization; clean finish; polished natural realism; realistic skin texture\n\n{framing} = head-and-shoulders; eye-level professional portrait crop; face approximately 60% of frame; balanced headroom and shoulder space; circular-profile-crop safe\n\n{expression} = soft natural expression; mild; approachable; composed; relaxed facial tension; subtle professional confidence\n\n{pose} = distinct professional portrait pose selected from the required web search; tailored to {subject}; natural; confident; workplace-appropriate; relaxed shoulders; believable body and hand placement\n\n{outfit} = formal business attire; completely redesigned garments; dominant colors and color relationships derived only from {subject}'s original clothing; polished workplace tailoring\n\n{background} = credible modern workplace or office environment; clean; visually secondary; soft blur; no readable text or distracting branding\n\n{lighting} = soft diffused light; natural flattering facial illumination; soft catchlights; balanced skin tone; gentle subject separation\n\n{camera} = portrait lens; natural facial proportions; crisp eye focus; restrained depth-of-field falloff\n\n{rules} = Before each generation, perform exactly one web search for current professional portrait or LinkedIn pose references and select one strong, distinctive pose suitable for {subject}. Ignore the input pose, facial expression, garment design, composition, background, and lighting. Show one person only. No text, logos, watermarks, or distracting branding.",
       "tags": [
         "portrait",
-        "avatar",
         "photography",
-        "illustration",
         "image-to-image"
       ]
     }

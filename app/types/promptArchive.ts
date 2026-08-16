@@ -11,7 +11,8 @@ export type PromptArchiveVariant = {
 
 export type PromptArchiveItem = {
   id: number
-  title: string
+  titleKey: string
+  sourceTitle: string
   publishedAt: string
   telegramUrl: string
   model: {

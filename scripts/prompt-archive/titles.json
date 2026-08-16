@@ -1,0 +1,406 @@
+{
+  "schemaVersion": 1,
+  "keyPattern": "prompts.items.{id}.title",
+  "items": {
+    "6": {
+      "fa": "پرتره اکسپرسیونیستی مالیخولیایی",
+      "en": "Melancholic Expressionist Portrait"
+    },
+    "14": {
+      "fa": "میم ترول کودکانه دست‌کشیده",
+      "en": "Childlike Hand-Drawn Troll Meme"
+    },
+    "20": {
+      "fa": "پرتره مجسمه‌ای پاپ‌سورئال",
+      "en": "Pop-Surreal Sculpture Portrait"
+    },
+    "26": {
+      "fa": "کاراکتر گوتیک سه‌بعدی",
+      "en": "3D Gothic Character"
+    },
+    "31": {
+      "fa": "مجسمه رزینی رتروفیوچریستی",
+      "en": "Retro-Futurist Resin Sculpture"
+    },
+    "39": {
+      "fa": "مجسمه مسی گرافیتی",
+      "en": "Graffiti Copper Sculpture"
+    },
+    "51": {
+      "fa": "عروسک فشن سورئال",
+      "en": "Surreal Fashion Art Doll"
+    },
+    "60": {
+      "fa": "انیمیشن دوبعدی گوتیک",
+      "en": "Gothic 2D Animation"
+    },
+    "66": {
+      "fa": "نیم‌تنه گچی فشن",
+      "en": "Fashion Plaster Bust"
+    },
+    "70": {
+      "fa": "کاراکتر سه‌بعدی نقاشی‌شده سینمایی",
+      "en": "Cinematic Painted 3D Character"
+    },
+    "83": {
+      "fa": "استاپ‌موشن کورالاین",
+      "en": "Coraline-Style Stop-Motion"
+    },
+    "90": {
+      "fa": "مجسمه رزینی رنگارنگ",
+      "en": "Colorful Resin Sculpture"
+    },
+    "96": {
+      "fa": "پرتره کلاغ گوتیک",
+      "en": "Gothic Raven Portrait"
+    },
+    "104": {
+      "fa": "کاراکتر ماینکرفت سه‌بعدی",
+      "en": "3D Minecraft Character"
+    },
+    "115": {
+      "fa": "پوستر تبلیغاتی دهه ۱۹۵۰",
+      "en": "1950s Advertising Poster"
+    },
+    "120": {
+      "fa": "پرتره مجله‌ای دهه ۱۹۵۰",
+      "en": "1950s Magazine Portrait"
+    },
+    "130": {
+      "fa": "پرتره انیمه دیستوپیایی",
+      "en": "Dystopian Anime Portrait"
+    },
+    "137": {
+      "fa": "مرد سایبرپانک نئونی",
+      "en": "Neon Cyberpunk Man"
+    },
+    "143": {
+      "fa": "زن سایبرپانک نئونی",
+      "en": "Neon Cyberpunk Woman"
+    },
+    "149": {
+      "fa": "دنیای لگویی سه‌بعدی",
+      "en": "3D LEGO World"
+    },
+    "156": {
+      "fa": "کاراکتر شاخ‌دار مرموز",
+      "en": "Mysterious Horned Character"
+    },
+    "165": {
+      "fa": "پوستر The Rings of Power",
+      "en": "The Rings of Power Poster"
+    },
+    "172": {
+      "fa": "پرتره گوتیک ویکتوریایی",
+      "en": "Victorian Gothic Portrait"
+    },
+    "177": {
+      "fa": "پرتره گوتیک ویکتوریایی مردانه",
+      "en": "Male Victorian Gothic Portrait"
+    },
+    "182": {
+      "fa": "پرتره Family Guy",
+      "en": "Family Guy Portrait"
+    },
+    "189": {
+      "fa": "کاراکتر کاغذی South Park",
+      "en": "South Park Paper Character"
+    },
+    "197": {
+      "fa": "کاراکتر Rick and Morty",
+      "en": "Rick and Morty Character"
+    },
+    "203": {
+      "fa": "آرچر کوئین Clash Royale",
+      "en": "Clash Royale Archer Queen"
+    },
+    "208": {
+      "fa": "آرچر کوئین رئالیستیک",
+      "en": "Realistic Archer Queen"
+    },
+    "217": {
+      "fa": "کاراکتر گوتیک سه‌بعدی سینمایی",
+      "en": "Cinematic 3D Gothic Character"
+    },
+    "224": {
+      "fa": "کاراکتر هندسی GeoToon",
+      "en": "GeoToon Geometric Character"
+    },
+    "230": {
+      "fa": "کاراکتر سه‌بعدی فانتزی پاستلی",
+      "en": "Pastel Fantasy 3D Character"
+    },
+    "238": {
+      "fa": "کاراکتر سه‌بعدی مدوسا",
+      "en": "3D Medusa Character"
+    },
+    "244": {
+      "fa": "انیمه شهر اشباح",
+      "en": "Spirited Away Anime Style"
+    },
+    "249": {
+      "fa": "پوستر GTA San Andreas",
+      "en": "GTA San Andreas Poster"
+    },
+    "254": {
+      "fa": "عکس بازاری حرم امام رضا",
+      "en": "Imam Reza Shrine Souvenir Portrait"
+    },
+    "260": {
+      "fa": "پوستر GTA VI",
+      "en": "GTA VI Poster"
+    },
+    "265": {
+      "fa": "کاراکتر تمام‌قد Wolfwalkers",
+      "en": "Full-Body Wolfwalkers Character"
+    },
+    "271": {
+      "fa": "پرتره Wolfwalkers",
+      "en": "Wolfwalkers Portrait"
+    },
+    "277": {
+      "fa": "پوستر Red Dead Redemption",
+      "en": "Red Dead Redemption Poster"
+    },
+    "284": {
+      "fa": "کاراکتر Red Dead Redemption II",
+      "en": "Red Dead Redemption II Character"
+    },
+    "291": {
+      "fa": "پرتره استودیویی حیوان خانگی",
+      "en": "Studio Pet Portrait"
+    },
+    "299": {
+      "fa": "مجسمه رزینی کارتونی",
+      "en": "Cartoon Resin Sculpture"
+    },
+    "307": {
+      "fa": "آواتار گرافیتی نئونی",
+      "en": "Neon Graffiti Avatar"
+    },
+    "313": {
+      "fa": "عکس پرسنلی ایرانی ۳×۴",
+      "en": "Iranian 3×4 ID Photo"
+    },
+    "321": {
+      "fa": "آواتار پیکسلی 64-bit",
+      "en": "64-Bit Pixel Avatar"
+    },
+    "328": {
+      "fa": "کاراکتر پیکسلی 32-bit تمام‌قد",
+      "en": "Full-Body 32-Bit Pixel Character"
+    },
+    "333": {
+      "fa": "عکس پاسپورت استودیویی",
+      "en": "Studio Passport Photo"
+    },
+    "341": {
+      "fa": "آواتار فلت پاستلی",
+      "en": "Pastel Flat Avatar"
+    },
+    "351": {
+      "fa": "فیگور سفالی کشیده",
+      "en": "Elongated Clay Figurine"
+    },
+    "357": {
+      "fa": "کلوزآپ مجسمه رزینی",
+      "en": "Resin Sculpture Close-Up"
+    },
+    "371": {
+      "fa": "کلاه سانتا هماهنگ با تصویر",
+      "en": "Style-Matched Santa Hat"
+    },
+    "378": {
+      "fa": "گریم کامل بابانوئل",
+      "en": "Full Santa Makeover"
+    },
+    "386": {
+      "fa": "سفال واقعی از نقاشی کودکانه",
+      "en": "Ceramic Object from a Child's Sketch"
+    },
+    "387": {
+      "fa": "افزودن پارتنر به عکس",
+      "en": "Add a Partner to Photo"
+    },
+    "401": {
+      "fa": "صحنه واقعی سفارشی",
+      "en": "Custom Realistic Scene"
+    },
+    "409": {
+      "fa": "کاراکتر کارتونی وینتیج واقعی",
+      "en": "Live-Action Vintage Cartoon Character"
+    },
+    "413": {
+      "fa": "تام و جری با اجرای واقعی",
+      "en": "Live-Action Tom & Jerry Style"
+    },
+    "416": {
+      "fa": "هدشات حرفه‌ای LinkedIn",
+      "en": "Professional LinkedIn Headshot"
+    },
+    "419": {
+      "fa": "تامبنیل حرفه‌ای YouTube",
+      "en": "Professional YouTube Thumbnail"
+    },
+    "426": {
+      "fa": "کاراکتر پانک سه‌بعدی",
+      "en": "3D Punk Character"
+    },
+    "429": {
+      "fa": "کاراکتر دوبعدی هندسی دفرمه",
+      "en": "Distorted Geometric 2D Character"
+    },
+    "430": {
+      "fa": "مجسمه کاریکاتوری گروتسک",
+      "en": "Grotesque Caricature Sculpture"
+    },
+    "434": {
+      "fa": "تصویرسازی هندسی قلم‌ومرکب",
+      "en": "Geometric Pen-and-Ink Illustration"
+    },
+    "435": {
+      "fa": "نقاشی کودکانه سورئال",
+      "en": "Surreal Childlike Drawing"
+    },
+    "439": {
+      "fa": "پرتره سورئال ارگانیک رئالیستیک",
+      "en": "Realistic Organic Surreal Portrait"
+    },
+    "441": {
+      "fa": "جلد مجله Vogue",
+      "en": "Vogue Magazine Cover"
+    },
+    "443": {
+      "fa": "بدنساز فوق‌عضلانی",
+      "en": "Extreme Bodybuilder Portrait"
+    },
+    "445": {
+      "fa": "عکس محصول فروشگاهی",
+      "en": "E-Commerce Product Photo"
+    },
+    "449": {
+      "fa": "پوستر تبلیغاتی محصول",
+      "en": "Product Advertising Poster"
+    },
+    "451": {
+      "fa": "عروسک نمدی خیمه‌شب‌بازی",
+      "en": "Felt Marionette Doll"
+    },
+    "452": {
+      "fa": "پیش‌نمایش پرو لباس",
+      "en": "Virtual Clothing Try-On"
+    },
+    "457": {
+      "fa": "پوستر سینمایی شخصی",
+      "en": "Personalized Cinematic Poster"
+    },
+    "461": {
+      "fa": "کاریکاتور فشن سه‌بعدی",
+      "en": "3D Fashion Caricature"
+    },
+    "465": {
+      "fa": "کاراکتر پیکسلی چمباتمه‌زده",
+      "en": "Crouching 2D Pixel Character"
+    },
+    "466": {
+      "fa": "پرتره سینمایی CGI",
+      "en": "Cinematic CGI Portrait"
+    },
+    "467": {
+      "fa": "جلد کتاب از اطلاعات متنی",
+      "en": "Book Cover from Text"
+    },
+    "468": {
+      "fa": "پوستر استریت‌آرت ژاپنی",
+      "en": "Japanese Street-Art Poster"
+    },
+    "473": {
+      "fa": "مجسمه بامبویی دست‌ساز",
+      "en": "Handcrafted Bamboo Sculpture"
+    },
+    "474": {
+      "fa": "کاراکتر کارتونی آبرنگی",
+      "en": "Watercolor Cartoon Character"
+    },
+    "475": {
+      "fa": "کاراکتر کارتونی سه‌بعدی استودیویی",
+      "en": "Studio 3D Cartoon Character"
+    },
+    "476": {
+      "fa": "کاراکتر Claymation والاس و گرومیت",
+      "en": "Wallace & Gromit Claymation Character"
+    },
+    "477": {
+      "fa": "سلفی آینه‌ای Claymation",
+      "en": "Claymation Mirror Selfie"
+    },
+    "478": {
+      "fa": "پرتره ناگهانی از بالا",
+      "en": "Overhead Candid Portrait"
+    },
+    "479": {
+      "fa": "کاراکتر آلومینیومی وان پیس",
+      "en": "Aluminum One Piece Character"
+    },
+    "481": {
+      "fa": "پوستر میوه جادویی وان پیس",
+      "en": "One Piece Magic Fruit Poster"
+    },
+    "482": {
+      "fa": "کاراکتر پاپ‌آرت کشیده",
+      "en": "Elongated Pop-Art Character"
+    },
+    "485": {
+      "fa": "سلفی در لوکیشن مرجع",
+      "en": "Selfie in a Reference Location"
+    },
+    "486": {
+      "fa": "ادیتوریال فشن در استخر اشیا",
+      "en": "Object-Filled Pool Fashion Editorial"
+    },
+    "487": {
+      "fa": "پرتره پاپاراتزی پشت پنجره",
+      "en": "Paparazzi Window Portrait"
+    },
+    "490": {
+      "fa": "گرید تست اکسپرشن ۳×۳",
+      "en": "3×3 Expression Test Grid"
+    },
+    "492": {
+      "fa": "گرید اکسپرشن و مدل مو ۳×۳",
+      "en": "3×3 Expression & Hairstyle Grid"
+    },
+    "497": {
+      "fa": "زندگی روزمره در دوران تاریخی",
+      "en": "Everyday Life in a Historical Era"
+    },
+    "501": {
+      "fa": "زوج در دشت گل",
+      "en": "Couple Walking Through Flowers"
+    },
+    "502": {
+      "fa": "انیمه کلاسیک دهه ۸۰ و ۹۰",
+      "en": "Classic 80s–90s Anime"
+    },
+    "503": {
+      "fa": "پوستر مینیاتور ایرانی",
+      "en": "Persian Miniature Poster"
+    },
+    "506": {
+      "fa": "پرتره پروانه‌ای فاین‌آرت",
+      "en": "Fine-Art Butterfly Portrait"
+    },
+    "507": {
+      "fa": "کارت تاروت شخصی",
+      "en": "Personalized Tarot Card"
+    },
+    "510": {
+      "fa": "پرتره دونفره کژوال",
+      "en": "Casual Two-Person Portrait"
+    },
+    "511": {
+      "fa": "پرتره طبیعی LinkedIn",
+      "en": "Natural LinkedIn Portrait"
+    }
+  }
+}
