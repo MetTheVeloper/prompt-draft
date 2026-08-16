@@ -1,0 +1,58 @@
+--- a/app/config/navigation.ts
++++ b/app/config/navigation.ts
+@@ -7,6 +7,11 @@
+     icon: 'magicpen',
+   },
+   {
++    name: 'prompts',
++    to: '/prompts',
++    icon: 'gallery',
++  },
++  {
+     name: 'collage',
+     to: '/collage',
+     icon: 'gallery',
+--- a/scripts/generate-offline-manifest.ts
++++ b/scripts/generate-offline-manifest.ts
+@@ -12,6 +12,12 @@
+   '.DS_Store',
+ ])
+ 
++// Prompt gallery previews are intentionally excluded from the installable
++// offline package. The service worker still runtime-caches viewed WebP files.
++const excludedDirectoryPrefixes = [
++  'prompts/',
++]
++
+ type OfflineAsset = {
+   url: string
+   size: number
+@@ -38,6 +44,19 @@
+   return files
+ }
+ 
++function toRelativePublicPath(filePath: string) {
++  return relative(outputDirectory, filePath).split(sep).join('/')
++}
++
++function shouldExclude(filePath: string) {
++  const relativePath = toRelativePublicPath(filePath)
++
++  return (
++    excludedFiles.has(relativePath) ||
++    excludedDirectoryPrefixes.some(prefix => relativePath.startsWith(prefix))
++  )
++}
++
+ function toPublicUrl(filePath: string) {
+   const relativePath = relative(outputDirectory, filePath)
+   const segments = relativePath.split(sep).map(segment => encodeURIComponent(segment))
+@@ -60,7 +79,7 @@
+ 
+ async function main() {
+   const files = (await collectFiles(outputDirectory))
+-    .filter(filePath => !excludedFiles.has(relative(outputDirectory, filePath)))
++    .filter(filePath => !shouldExclude(filePath))
+ 
+   const assets = await Promise.all(files.map(createAsset))
+   assets.sort((a, b) => a.url.localeCompare(b.url))

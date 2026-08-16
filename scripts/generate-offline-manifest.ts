@@ -12,6 +12,12 @@ const excludedFiles = new Set([
   '.DS_Store',
 ])
 
+// Prompt gallery previews are intentionally excluded from the installable
+// offline package. The service worker still runtime-caches viewed WebP files.
+const excludedDirectoryPrefixes = [
+  'prompts/',
+]
+
 type OfflineAsset = {
   url: string
   size: number
@@ -38,6 +44,19 @@ async function collectFiles(directory: string): Promise<string[]> {
   return files
 }
 
+function toRelativePublicPath(filePath: string) {
+  return relative(outputDirectory, filePath).split(sep).join('/')
+}
+
+function shouldExclude(filePath: string) {
+  const relativePath = toRelativePublicPath(filePath)
+
+  return (
+    excludedFiles.has(relativePath) ||
+    excludedDirectoryPrefixes.some(prefix => relativePath.startsWith(prefix))
+  )
+}
+
 function toPublicUrl(filePath: string) {
   const relativePath = relative(outputDirectory, filePath)
   const segments = relativePath.split(sep).map(segment => encodeURIComponent(segment))
@@ -60,7 +79,7 @@ async function createAsset(filePath: string): Promise<OfflineAsset> {
 
 async function main() {
   const files = (await collectFiles(outputDirectory))
-    .filter(filePath => !excludedFiles.has(relative(outputDirectory, filePath)))
+    .filter(filePath => !shouldExclude(filePath))
 
   const assets = await Promise.all(files.map(createAsset))
   assets.sort((a, b) => a.url.localeCompare(b.url))

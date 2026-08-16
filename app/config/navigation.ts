@@ -7,6 +7,11 @@ export const NAVIGATION = [
     icon: 'magicpen',
   },
   {
+    name: 'prompts',
+    to: '/prompts',
+    icon: 'gallery',
+  },
+  {
     name: 'collage',
     to: '/collage',
     icon: 'gallery',
