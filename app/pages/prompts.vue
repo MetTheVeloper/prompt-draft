@@ -61,6 +61,7 @@ const filteredItems = computed(() => {
       item.prompt,
       ...item.tags,
     ].join(' '))
+
     return haystack.includes(query)
   })
 
@@ -128,6 +129,7 @@ function openTelegram(item: PromptArchiveItem) {
             <el-text type="h1" :size="mini ? 24 : 32" :weight="800">
               {{ t('prompts.title') }}
             </el-text>
+
             <el-text type="p" :size="13" color="normal60">
               {{ t('prompts.description') }}
             </el-text>
@@ -204,7 +206,14 @@ function openTelegram(item: PromptArchiveItem) {
             @click="clearFilters"
           />
 
-          <el-flex rules="rcc" :gap="4" :p="4" :radius="12" :br="1" bc="normal10" bg="normal5">
+          <el-flex
+            rules="rcc"
+            :gap="4"
+            :p="4"
+            :radius="12"
+            :br="1"
+            bc="normal10"
+            bg="normal5">
             <el-button
               type="fab"
               :label="t('prompts.view.grid')"
@@ -215,6 +224,7 @@ function openTelegram(item: PromptArchiveItem) {
               :p="8"
               @click="viewMode = 'grid'"
             />
+
             <el-button
               type="fab"
               :label="t('prompts.view.list')"
@@ -236,7 +246,9 @@ function openTelegram(item: PromptArchiveItem) {
         :gap="8"
         :p="40">
         <el-icon icon="refresh-2" :size="28" color="prim" />
-        <el-text :size="13" color="normal60">{{ t('prompts.loading') }}</el-text>
+        <el-text :size="13" color="normal60">
+          {{ t('prompts.loading') }}
+        </el-text>
       </el-flex>
 
       <el-flex
@@ -248,7 +260,10 @@ function openTelegram(item: PromptArchiveItem) {
         :radius="16"
         bg="red5">
         <el-icon icon="danger" :size="30" color="red" />
-        <el-text :size="14" :weight="700">{{ t('prompts.error.title') }}</el-text>
+        <el-text :size="14" :weight="700">
+          {{ t('prompts.error.title') }}
+        </el-text>
+
         <el-button
           :label="t('prompts.error.retry')"
           icon="refresh-2"
@@ -268,32 +283,38 @@ function openTelegram(item: PromptArchiveItem) {
         :radius="16"
         bg="normal5">
         <el-icon icon="search-status" :size="36" color="normal40" />
-        <el-text :size="15" :weight="800">{{ t('prompts.empty.title') }}</el-text>
-        <el-text :size="12" color="normal55" class="tc">{{ t('prompts.empty.description') }}</el-text>
+        <el-text :size="15" :weight="800">
+          {{ t('prompts.empty.title') }}
+        </el-text>
+
+        <el-text :size="12" color="normal55" class="tc">
+          {{ t('prompts.empty.description') }}
+        </el-text>
       </el-flex>
 
       <template v-else>
-        <el-grid v-if="viewMode === 'grid'" :cols="cardColumns" :gap="14" class="w100">
-          <prompts-prompt-card
+        <el-grid
+          :cols="viewMode === 'grid' ? cardColumns : 1"
+          :gap="viewMode === 'grid' ? 14 : 8"
+          class="w100">
+          <prompts-prompt-item
             v-for="item in visibleItems"
             :key="item.id"
             :item="item"
+            :view="viewMode"
             @telegram="openTelegram"
           />
         </el-grid>
 
-        <el-grid v-else :cols="1" :gap="8" class="w100">
-          <prompts-prompt-list-item
-            v-for="item in visibleItems"
-            :key="item.id"
-            :item="item"
-            @telegram="openTelegram"
-          />
-        </el-grid>
-
-        <el-flex v-if="canLoadMore" rules="ccc" class="w100" :p="8">
+        <el-flex
+          v-if="canLoadMore"
+          rules="ccc"
+          class="w100"
+          :p="8">
           <el-button
-            :label="t('prompts.loadMore', { count: filteredItems.length - visibleItems.length })"
+            :label="t('prompts.loadMore', {
+              count: filteredItems.length - visibleItems.length,
+            })"
             icon="arrow-down"
             mode="flat"
             color="normal"
