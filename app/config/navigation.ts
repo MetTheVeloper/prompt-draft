@@ -9,7 +9,7 @@ export const NAVIGATION = [
   {
     name: 'prompts',
     to: '/prompts',
-    icon: 'gallery',
+    icon: 'code',
   },
   {
     name: 'collage',

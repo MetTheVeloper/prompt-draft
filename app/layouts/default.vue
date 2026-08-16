@@ -7,13 +7,25 @@ const { mobile, tablet } = useScreen();
 const route = useRoute();
 const { openPageContextMenu } = usePageContextMenu();
 
-
 const currentThemeMode = computed(() => {
   return unref(theme)?.theme?.mode || "dark";
 });
 
+const promptDetailMode = computed(() => {
+  return (
+    route.name === "prompts" &&
+    typeof route.query.id === "string" &&
+    route.query.id.trim().length > 0
+  );
+});
+
 const padding = computed(() => {
-  return route.name === "index" || route.name === "collage" || route.name === "vectorizer"
+  return (
+    route.name === "index" ||
+    route.name === "collage" ||
+    route.name === "vectorizer" ||
+    promptDetailMode.value
+  )
     ? 0
     : tablet.value
       ? 24
@@ -140,6 +152,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
     rules="csc"
     :class="['por ofha hvh100', `d${locale === 'en' ? 'ltr' : 'rtl'}`]">
     <Header @contextmenu="openLayoutDefaultContextMenu" />
+
     <el-flex
       rules="csc"
       :style="{
@@ -150,6 +163,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
       @contextmenu="handleLayoutContextMenu">
       <slot />
     </el-flex>
+
     <el-pwa />
   </el-flex>
 </template>

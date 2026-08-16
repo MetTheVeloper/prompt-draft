@@ -4,6 +4,7 @@ import type {
   PromptArchiveModel,
 } from '~/types/promptArchive'
 
+const route = useRoute()
 const { t } = useI18n()
 const { mobile, tablet, mini } = useScreen()
 const archive = usePromptArchive()
@@ -14,6 +15,42 @@ const tagFilter = ref('all')
 const sortMode = ref<'newest' | 'oldest'>('newest')
 const viewMode = ref<'grid' | 'list'>('grid')
 const visibleCount = ref(24)
+
+const hasDetailQuery = computed(() => {
+  return typeof route.query.id === 'string' && route.query.id.trim().length > 0
+})
+
+const detailId = computed(() => {
+  if (!hasDetailQuery.value) return null
+  const value = Number(route.query.id)
+  return Number.isInteger(value) ? value : null
+})
+
+const activeItem = computed(() => {
+  if (detailId.value == null) return null
+  return archive.items.value.find(item => item.id === detailId.value) || null
+})
+
+const activeItemIndex = computed(() => {
+  if (!activeItem.value) return -1
+  return archive.items.value.findIndex(item => item.id === activeItem.value?.id)
+})
+
+const previousItem = computed(() => {
+  if (activeItemIndex.value <= 0) return null
+  return archive.items.value[activeItemIndex.value - 1] || null
+})
+
+const nextItem = computed(() => {
+  if (
+    activeItemIndex.value < 0 ||
+    activeItemIndex.value >= archive.items.value.length - 1
+  ) {
+    return null
+  }
+
+  return archive.items.value[activeItemIndex.value + 1] || null
+})
 
 const cardColumns = computed(() => {
   if (mobile.value) return 1
@@ -48,8 +85,16 @@ const normalizedSearch = computed(() => normalizeText(searchQuery.value))
 
 const filteredItems = computed(() => {
   const result = archive.items.value.filter((item) => {
-    if (modelFilter.value !== 'all' && item.model.previewGeneratedWith !== modelFilter.value) return false
-    if (tagFilter.value !== 'all' && !item.tags.includes(tagFilter.value)) return false
+    if (
+      modelFilter.value !== 'all' &&
+      item.model.previewGeneratedWith !== modelFilter.value
+    ) {
+      return false
+    }
+
+    if (tagFilter.value !== 'all' && !item.tags.includes(tagFilter.value)) {
+      return false
+    }
 
     const query = normalizedSearch.value
     if (!query) return true
@@ -68,7 +113,10 @@ const filteredItems = computed(() => {
   return result.sort((first, second) => {
     const firstTime = new Date(first.publishedAt).getTime()
     const secondTime = new Date(second.publishedAt).getTime()
-    return sortMode.value === 'oldest' ? firstTime - secondTime : secondTime - firstTime
+
+    return sortMode.value === 'oldest'
+      ? firstTime - secondTime
+      : secondTime - firstTime
   })
 })
 
@@ -81,6 +129,12 @@ const hasActiveFilters = computed(() => {
     tagFilter.value !== 'all' ||
     sortMode.value !== 'newest'
 })
+
+useHead(() => ({
+  title: activeItem.value
+    ? `${t(activeItem.value.titleKey)} · Prompt Draft`
+    : t('prompts.title'),
+}))
 
 watch([searchQuery, modelFilter, tagFilter, sortMode], () => {
   visibleCount.value = 24
@@ -121,8 +175,81 @@ function openTelegram(item: PromptArchiveItem) {
 </script>
 
 <template>
-  <el-flex rules="csc" class="prompts-page w100 h100 ofya">
-    <el-flex rules="csc" class="prompts-page__content w100" :gap="20" :p="mobile ? 0 : 4">
+  <template v-if="hasDetailQuery">
+    <el-flex
+      v-if="archive.pending.value && !archive.items.value.length"
+      rules="ccc"
+      class="w100 h100"
+      :gap="8"
+      :p="40">
+      <el-icon icon="refresh-2" :size="30" color="prim" />
+      <el-text :size="13" color="normal60">
+        {{ t('prompts.loading') }}
+      </el-text>
+    </el-flex>
+
+    <el-flex
+      v-else-if="archive.error.value"
+      rules="ccc"
+      class="w100 h100"
+      :gap="10"
+      :p="32">
+      <el-icon icon="danger" :size="34" color="red" />
+      <el-text :size="15" :weight="800">
+        {{ t('prompts.error.title') }}
+      </el-text>
+      <el-button
+        :label="t('prompts.error.retry')"
+        icon="refresh-2"
+        mode="flat"
+        color="red"
+        :size="12"
+        @click="archive.load({ force: true })"
+      />
+    </el-flex>
+
+    <prompts-prompt-detail
+      v-else-if="activeItem"
+      :item="activeItem"
+      :previous-item="previousItem"
+      :next-item="nextItem"
+      @telegram="openTelegram"
+    />
+
+    <el-flex
+      v-else
+      rules="ccc"
+      class="w100 h100"
+      :gap="10"
+      :p="32">
+      <el-icon icon="search-status" :size="42" color="normal35" />
+      <el-text type="h1" :size="mini ? 24 : 32" :weight="900">
+        {{ t('prompts.detail.notFoundTitle') }}
+      </el-text>
+      <el-text type="p" :size="13" color="normal55" class="tc">
+        {{ t('prompts.detail.notFoundDescription') }}
+      </el-text>
+      <el-button
+        to="/prompts"
+        :label="t('prompts.detail.back')"
+        icon="arrow-left"
+        mode="flat"
+        color="prim"
+        :size="12"
+        :p="[9, 12]"
+      />
+    </el-flex>
+  </template>
+
+  <el-flex
+    v-else
+    rules="csc"
+    class="prompts-page w100 h100 ofya">
+    <el-flex
+      rules="csc"
+      class="prompts-page__content w100"
+      :gap="20"
+      :p="mobile ? 0 : 4">
       <el-grid :gap="8" class="w100">
         <el-flex rules="rbc" :gap="12" wrap>
           <el-grid :gap="4">
@@ -263,7 +390,6 @@ function openTelegram(item: PromptArchiveItem) {
         <el-text :size="14" :weight="700">
           {{ t('prompts.error.title') }}
         </el-text>
-
         <el-button
           :label="t('prompts.error.retry')"
           icon="refresh-2"
@@ -286,7 +412,6 @@ function openTelegram(item: PromptArchiveItem) {
         <el-text :size="15" :weight="800">
           {{ t('prompts.empty.title') }}
         </el-text>
-
         <el-text :size="12" color="normal55" class="tc">
           {{ t('prompts.empty.description') }}
         </el-text>
