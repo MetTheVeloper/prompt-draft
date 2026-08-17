@@ -3,7 +3,7 @@ import path from 'node:path'
 
 const ROOT = process.cwd()
 const OUT = path.join(ROOT, '.icon-migration-audit.json')
-const SKIP_DIRS = new Set(['.git', 'node_modules', '.nuxt', '.output', 'dist', 'android'])
+const SKIP_DIRS = new Set(['.git', 'node_modules', '.nuxt', '.output', 'dist', 'android', '_layout-stage2-payload'])
 const TEXT_EXTENSIONS = new Set(['.vue', '.ts', '.js', '.mjs', '.cjs', '.css', '.scss', '.json', '.md'])
 
 async function walk(dir) {
@@ -25,7 +25,7 @@ function lineNumber(text, index) {
 function collectMatches(text, relativePath) {
   const found = []
   const patterns = [
-    { kind: 'template-static', re: /\bicon\s*=\s*(["'])([^"']+)\1/g },
+    { kind: 'template-static', re: /(?<!:)\bicon\s*=\s*(["'])([^"']+)\1/g },
     { kind: 'object-static', re: /\bicon\s*:\s*(["'])([^"']+)\1/g },
     { kind: 'template-bound-static', re: /\b:icon\s*=\s*(["'])\s*(["'])([^"']+)\2\s*\1/g, valueIndex: 3 },
     { kind: 'mode-static', re: /\b(?:iconMode|mode)\s*[:=]\s*(["'])(vuesax|material)\1/g },
@@ -53,6 +53,7 @@ const legacyReferences = []
 for (const absolute of files) {
   if (absolute === OUT) continue
   const relativePath = path.relative(ROOT, absolute).split(path.sep).join('/')
+  if (relativePath.startsWith('scripts/material-symbols-')) continue
   const text = await fs.readFile(absolute, 'utf8')
   usages.push(...collectMatches(text, relativePath))
 
