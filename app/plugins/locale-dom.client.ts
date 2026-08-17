@@ -9,13 +9,31 @@ export default defineNuxtPlugin((nuxtApp) => {
       : value.value
   }
 
+  function getLocalesValue() {
+    const value = i18n.locales
+
+    return Array.isArray(value)
+      ? value
+      : value?.value || []
+  }
+
   function getLocaleMeta(value: string) {
-    const normalizedLocale = String(value || 'fa').split('-')[0]
-    const isFa = normalizedLocale === 'fa'
+    const normalizedLocale = String(value || 'en').split('-')[0]
+    const localeMeta = getLocalesValue().find((item: any) => {
+      if (typeof item === 'string') return item === normalizedLocale
+      return item?.code === normalizedLocale
+    })
+
+    if (typeof localeMeta === 'object' && localeMeta) {
+      return {
+        lang: localeMeta.language || localeMeta.code || normalizedLocale,
+        dir: localeMeta.dir === 'rtl' ? 'rtl' : 'ltr',
+      }
+    }
 
     return {
-      lang: isFa ? 'fa' : 'en',
-      dir: isFa ? 'rtl' : 'ltr',
+      lang: normalizedLocale,
+      dir: normalizedLocale === 'fa' || normalizedLocale === 'ar' ? 'rtl' : 'ltr',
     }
   }
 
