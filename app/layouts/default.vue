@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { GlobalMenuItem } from "~/composables/useMenu";
 
-const { t, locale, setLocale } = useI18n();
+const { t, locale, locales, localeProperties, setLocale } = useI18n();
 const { t: theme, switchTheme } = useTheme();
 const { mobile, tablet } = useScreen();
 const route = useRoute();
@@ -9,6 +9,37 @@ const { openPageContextMenu } = usePageContextMenu();
 
 const currentThemeMode = computed(() => {
   return unref(theme)?.theme?.mode || "dark";
+});
+
+const localeCodes = computed(() => {
+  return locales.value
+    .map((item) => typeof item === "string" ? item : item.code)
+    .filter(Boolean);
+});
+
+const nextLocaleCode = computed(() => {
+  const codes = localeCodes.value;
+  if (!codes.length) return "en";
+
+  const currentIndex = codes.indexOf(locale.value);
+  return codes[(currentIndex + 1 + codes.length) % codes.length] || codes[0];
+});
+
+const nextLocaleName = computed(() => {
+  const nextCode = nextLocaleCode.value;
+  const item = locales.value.find((localeItem) => {
+    return typeof localeItem === "string"
+      ? localeItem === nextCode
+      : localeItem.code === nextCode;
+  });
+
+  return typeof item === "string"
+    ? item.toUpperCase()
+    : item?.name || nextCode.toUpperCase();
+});
+
+const layoutDirection = computed(() => {
+  return localeProperties.value?.dir === "rtl" ? "rtl" : "ltr";
 });
 
 const promptDetailMode = computed(() => {
@@ -41,9 +72,7 @@ function refreshPage() {
 }
 
 async function switchLanguage() {
-  const nextLocale = locale.value === "en" ? "fa" : "en";
-
-  await setLocale(nextLocale);
+  await setLocale(nextLocaleCode.value);
 }
 
 function openVectorizer() {
@@ -84,6 +113,7 @@ const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: t("app.switchLang"),
+      description: nextLocaleName.value,
       icon: "language",
       handler: switchLanguage,
       color: 'normal15',
@@ -150,7 +180,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
     :gap="0"
     bg="background"
     rules="csc"
-    :class="['por ofha hvh100', `d${locale === 'en' ? 'ltr' : 'rtl'}`]">
+    :class="['por ofha hvh100', `d${layoutDirection}`]">
     <Header @contextmenu="openLayoutDefaultContextMenu" />
 
     <el-flex
