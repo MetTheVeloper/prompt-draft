@@ -23,6 +23,10 @@ const menu = computed(() => {
   return menuApi.state.menu
 })
 
+const isDrawer = computed(() => {
+  return menu.value?.mode === 'drawer'
+})
+
 function toCssSize(value?: number | string) {
   if (typeof value === 'number') return `${value}px`
 
@@ -32,6 +36,10 @@ function toCssSize(value?: number | string) {
 function getOptions() {
   return menu.value?.options || {}
 }
+
+const drawerSide = computed(() => {
+  return getOptions().drawerSide || 'right'
+})
 
 function getAnchor() {
   return menu.value?.anchor as GlobalMenuResolvedAnchor
@@ -50,9 +58,41 @@ const boxStyle = computed(() => {
   const options = getOptions()
   const anchorRect = getAnchorRect()
   const safePadding = options.safePadding ?? 12
-  const defaultMaxHeight = currentMenu?.mode === 'point'
-    ? '50vh'
-    : `calc(100vh - ${safePadding * 2}px)`
+
+  if (currentMenu?.mode === 'drawer') {
+    const width =
+      toCssSize(options.width) ||
+      'min(86vw, 340px)'
+
+    const style: Record<string, string | number> = {
+      top: '0px',
+      bottom: '0px',
+      zIndex: 1,
+      visibility: position.ready ? 'visible' : 'hidden',
+      opacity: position.ready ? 1 : 0,
+      width,
+      maxWidth: toCssSize(options.maxWidth) || 'min(92vw, 380px)',
+      maxHeight: toCssSize(options.maxHeight) || '100vh',
+      overflowY: 'auto',
+    }
+
+    if (options.minWidth) {
+      style.minWidth = toCssSize(options.minWidth) || ''
+    }
+
+    if (drawerSide.value === 'left') {
+      style.left = '0px'
+    } else {
+      style.right = '0px'
+    }
+
+    return style
+  }
+
+  const defaultMaxHeight =
+    currentMenu?.mode === 'point'
+      ? '50vh'
+      : `calc(100vh - ${safePadding * 2}px)`
 
   const style: Record<string, string | number> = {
     left: `${position.left}px`,
@@ -60,8 +100,12 @@ const boxStyle = computed(() => {
     zIndex: 1,
     visibility: position.ready ? 'visible' : 'hidden',
     opacity: position.ready ? 1 : 0,
-    maxWidth: toCssSize(options.maxWidth) || `calc(100vw - ${safePadding * 2}px)`,
-    maxHeight: toCssSize(options.maxHeight) || defaultMaxHeight,
+    maxWidth:
+      toCssSize(options.maxWidth) ||
+      `calc(100vw - ${safePadding * 2}px)`,
+    maxHeight:
+      toCssSize(options.maxHeight) ||
+      defaultMaxHeight,
     overflowY: 'auto',
   }
 
@@ -87,12 +131,22 @@ const rootStyle = computed(() => {
 
   return {
     zIndex: options.zIndex ?? 1000,
+    '--global-menu-drawer-shift':
+      drawerSide.value === 'left'
+        ? '-100%'
+        : '100%',
   }
 })
 
 const layerStyle = computed(() => {
   return {
     zIndex: 0,
+    background: isDrawer.value
+      ? 'rgb(0 0 0 / 32%)'
+      : 'transparent',
+    backdropFilter: isDrawer.value
+      ? 'blur(2px)'
+      : 'none',
   }
 })
 
@@ -206,37 +260,72 @@ function flipDropdownPlacement(
   const viewportHeight = window.innerHeight
 
   const hasSpaceBelow =
-    anchorRect.bottom + offset + menuHeight <= viewportHeight - safePadding
+    anchorRect.bottom + offset + menuHeight <=
+    viewportHeight - safePadding
 
   const hasSpaceAbove =
-    anchorRect.top - offset - menuHeight >= safePadding
+    anchorRect.top - offset - menuHeight >=
+    safePadding
 
   const hasSpaceRight =
-    anchorRect.right + offset + menuWidth <= viewportWidth - safePadding
+    anchorRect.right + offset + menuWidth <=
+    viewportWidth - safePadding
 
   const hasSpaceLeft =
-    anchorRect.left - offset - menuWidth >= safePadding
+    anchorRect.left - offset - menuWidth >=
+    safePadding
 
-  if (placement.startsWith('bottom') && !hasSpaceBelow && hasSpaceAbove) {
-    return placement.replace('bottom', 'top') as GlobalMenuPlacement
+  if (
+    placement.startsWith('bottom') &&
+    !hasSpaceBelow &&
+    hasSpaceAbove
+  ) {
+    return placement.replace(
+      'bottom',
+      'top',
+    ) as GlobalMenuPlacement
   }
 
-  if (placement.startsWith('top') && !hasSpaceAbove && hasSpaceBelow) {
-    return placement.replace('top', 'bottom') as GlobalMenuPlacement
+  if (
+    placement.startsWith('top') &&
+    !hasSpaceAbove &&
+    hasSpaceBelow
+  ) {
+    return placement.replace(
+      'top',
+      'bottom',
+    ) as GlobalMenuPlacement
   }
 
-  if (placement.startsWith('right') && !hasSpaceRight && hasSpaceLeft) {
-    return placement.replace('right', 'left') as GlobalMenuPlacement
+  if (
+    placement.startsWith('right') &&
+    !hasSpaceRight &&
+    hasSpaceLeft
+  ) {
+    return placement.replace(
+      'right',
+      'left',
+    ) as GlobalMenuPlacement
   }
 
-  if (placement.startsWith('left') && !hasSpaceLeft && hasSpaceRight) {
-    return placement.replace('left', 'right') as GlobalMenuPlacement
+  if (
+    placement.startsWith('left') &&
+    !hasSpaceLeft &&
+    hasSpaceRight
+  ) {
+    return placement.replace(
+      'left',
+      'right',
+    ) as GlobalMenuPlacement
   }
 
   return placement
 }
 
-function getDropdownPosition(menuWidth: number, menuHeight: number) {
+function getDropdownPosition(
+  menuWidth: number,
+  menuHeight: number,
+) {
   const anchorRect = getAnchorRect()
 
   if (!anchorRect) {
@@ -251,7 +340,9 @@ function getDropdownPosition(menuWidth: number, menuHeight: number) {
   const viewportWidth = window.innerWidth
   const viewportHeight = window.innerHeight
 
-  const preferredPlacement = currentMenu?.placement || 'bottom-start'
+  const preferredPlacement =
+    currentMenu?.placement ||
+    'bottom-start'
 
   const placement = flipDropdownPlacement(
     preferredPlacement,
@@ -287,12 +378,24 @@ async function updatePosition() {
   position.ready = false
 
   await nextTick()
-  await new Promise(resolve => requestAnimationFrame(resolve))
+
+  if (isDrawer.value) {
+    position.left = 0
+    position.top = 0
+    position.ready = true
+    return
+  }
+
+  await new Promise(resolve =>
+    requestAnimationFrame(resolve),
+  )
 
   const box = menuBox.value
 
   if (!box) {
-    console.warn('[el-global-menu] menuBox ref is null')
+    console.warn(
+      '[el-global-menu] menuBox ref is null',
+    )
 
     position.left = menu.value?.x || 12
     position.top = menu.value?.y || 12
@@ -308,8 +411,14 @@ async function updatePosition() {
 
   const nextPosition =
     menu.value?.mode === 'dropdown'
-      ? getDropdownPosition(menuWidth, menuHeight)
-      : getPointPosition(menuWidth, menuHeight)
+      ? getDropdownPosition(
+          menuWidth,
+          menuHeight,
+        )
+      : getPointPosition(
+          menuWidth,
+          menuHeight,
+        )
 
   position.left = nextPosition.left
   position.top = nextPosition.top
@@ -368,7 +477,10 @@ function handleScroll(event: Event) {
 }
 
 watch(
-  () => [menuApi.state.isOpen, menuApi.state.version],
+  () => [
+    menuApi.state.isOpen,
+    menuApi.state.version,
+  ],
   async () => {
     if (isOpen.value) {
       await updatePosition()
@@ -386,13 +498,21 @@ watch(
 onMounted(() => {
   window.addEventListener('keydown', handleKeydown)
   window.addEventListener('resize', handleResize)
-  window.addEventListener('scroll', handleScroll, true)
+  window.addEventListener(
+    'scroll',
+    handleScroll,
+    true,
+  )
 })
 
 onBeforeUnmount(() => {
   window.removeEventListener('keydown', handleKeydown)
   window.removeEventListener('resize', handleResize)
-  window.removeEventListener('scroll', handleScroll, true)
+  window.removeEventListener(
+    'scroll',
+    handleScroll,
+    true,
+  )
 
   menuApi.clear()
 })
@@ -401,7 +521,11 @@ onBeforeUnmount(() => {
 <template>
   <ClientOnly>
     <Teleport to="#teleports">
-      <Transition name="globalMenuTransition" @after-leave="menuApi.clearAfterClose">
+      <Transition
+        :name="isDrawer
+          ? 'globalDrawerTransition'
+          : 'globalMenuTransition'"
+        @after-leave="menuApi.clearAfterClose">
         <div
           v-if="isOpen"
           class="globalMenuRoot"
@@ -410,24 +534,41 @@ onBeforeUnmount(() => {
           @pointerdown.stop
           @click.stop
           @contextmenu.prevent.stop>
+
           <div
             class="globalMenuLayer"
+            :class="{
+              'globalMenuLayer--drawer': isDrawer,
+            }"
             :style="layerStyle"
             @pointerdown.stop
             @click.stop="closeByOutside"
             @contextmenu="handleLayerContextMenu">
           </div>
 
-          <div ref="menuBox"
+          <div
+            ref="menuBox"
             class="globalMenuBox bg-surface brs2 bc-normal25"
+            :class="{
+              'globalMenuBox--drawer': isDrawer,
+            }"
             data-el-overlay="menu-box"
             :style="boxStyle"
             @pointerdown.stop
             @click.stop
             @contextmenu="handleBoxContextMenu">
-            <component :is="activeComponent" v-if="activeComponent" v-bind="menu?.props || {}" @close="menuApi.close" />
 
-            <el-menu-list v-else :items="menu?.items || []" />
+            <component
+              :is="activeComponent"
+              v-if="activeComponent"
+              v-bind="menu?.props || {}"
+              @close="menuApi.close"
+            />
+
+            <el-menu-list
+              v-else
+              :items="menu?.items || []"
+            />
           </div>
         </div>
       </Transition>
@@ -450,6 +591,10 @@ onBeforeUnmount(() => {
   pointer-events: auto;
 }
 
+.globalMenuLayer--drawer {
+  touch-action: none;
+}
+
 .globalMenuBox {
   position: fixed;
   width: max-content;
@@ -458,6 +603,12 @@ onBeforeUnmount(() => {
   box-shadow: 0 18px 60px rgb(0 0 0 / 40%);
   overflow: hidden;
   pointer-events: auto;
+}
+
+.globalMenuBox--drawer {
+  border-radius: 0;
+  overscroll-behavior: contain;
+  box-shadow: 0 0 70px rgb(0 0 0 / 34%);
 }
 
 .globalMenuTransition-enter-active,
@@ -477,5 +628,35 @@ onBeforeUnmount(() => {
 .globalMenuTransition-leave-from {
   opacity: 1;
   transform: translateY(0) scale(1);
+}
+
+.globalDrawerTransition-enter-active,
+.globalDrawerTransition-leave-active {
+  transition: opacity 0.22s ease;
+}
+
+.globalDrawerTransition-enter-active .globalMenuBox--drawer,
+.globalDrawerTransition-leave-active .globalMenuBox--drawer {
+  transition: transform 0.28s cubic-bezier(.22, .8, .24, 1);
+}
+
+.globalDrawerTransition-enter-from,
+.globalDrawerTransition-leave-to {
+  opacity: 0;
+}
+
+.globalDrawerTransition-enter-from .globalMenuBox--drawer,
+.globalDrawerTransition-leave-to .globalMenuBox--drawer {
+  transform: translateX(var(--global-menu-drawer-shift));
+}
+
+.globalDrawerTransition-enter-to,
+.globalDrawerTransition-leave-from {
+  opacity: 1;
+}
+
+.globalDrawerTransition-enter-to .globalMenuBox--drawer,
+.globalDrawerTransition-leave-from .globalMenuBox--drawer {
+  transform: translateX(0);
 }
 </style>

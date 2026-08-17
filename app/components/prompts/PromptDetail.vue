@@ -14,6 +14,7 @@ const emit = defineEmits<{
 const { t, locale } = useI18n()
 const { mobile, tablet, mini } = useScreen()
 
+const rootRef = ref<HTMLElement | null>(null)
 const activePromptKey = ref('main')
 const copied = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
@@ -98,9 +99,15 @@ const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-l
 
 watch(
   () => props.item.id,
-  () => {
+  async () => {
     activePromptKey.value = 'main'
     copied.value = false
+
+    await nextTick()
+
+    requestAnimationFrame(() => {
+      scrollDetailToTop()
+    })
   },
 )
 
@@ -110,6 +117,28 @@ onBeforeUnmount(() => {
 
 function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
+}
+
+function scrollDetailToTop() {
+  if (!import.meta.client) return
+
+  const scrollContainer = rootRef.value?.closest<HTMLElement>('.ofha')
+
+  if (scrollContainer) {
+    scrollContainer.scrollTo({
+      top: 0,
+      left: 0,
+      behavior: 'smooth',
+    })
+
+    return
+  }
+
+  window.scrollTo({
+    top: 0,
+    left: 0,
+    behavior: 'smooth',
+  })
 }
 
 function detailUrl(item: PromptArchiveItem) {
@@ -179,12 +208,25 @@ async function copyPrompt() {
 </script>
 
 <template>
-  <div class="prompt-detail w100 por">
-    <visual-slider v-if="hasCanvasSlider" :sources="item.images" :interval="4200" :transition-duration="2400"
-      :edge-blur="320" :random="false" :z-index="0" :opacity="1" :start-index="1" />
+  <div ref="rootRef" class="prompt-detail w100 por">
+    <visual-slider
+      v-if="hasCanvasSlider"
+      :sources="item.images"
+      :interval="4200"
+      :transition-duration="2400"
+      :edge-blur="320"
+      :random="false"
+      :z-index="0"
+      :opacity="1"
+      :start-index="1"
+    />
 
     <div v-else-if="coverImage" class="prompt-detail__static-bg">
-      <img :src="coverImage" :alt="localizedTitle" class="prompt-detail__static-image" />
+      <img
+        :src="coverImage"
+        :alt="localizedTitle"
+        class="prompt-detail__static-image"
+      />
     </div>
 
     <div v-else class="prompt-detail__fallback-bg" />
@@ -192,91 +234,200 @@ async function copyPrompt() {
     <div class="prompt-detail__cinema-overlay" />
     <div class="prompt-detail__grain" />
 
-    <section class="prompt-detail__hero w100 por zi20" :style="heroStyle">
-      <el-flex rules="rbc" class="prompt-detail__topbar w100" :gap="12" :p="contentPadding">
-        <el-button type="fab" to="/prompts" :label="t('prompts.detail.back')" :icon="backIcon" mode="flat" color="white"
-          text-color="white" icon-color="white" :size="13" :p="10" />
+    <section
+      class="prompt-detail__hero w100 por zi20"
+      :style="heroStyle">
+      <el-flex
+        rules="rbc"
+        class="prompt-detail__topbar w100"
+        :gap="12"
+        :p="contentPadding">
+        <el-button
+          type="fab"
+          to="/prompts"
+          :label="t('prompts.detail.back')"
+          :icon="backIcon"
+          mode="flat"
+          color="white"
+          text-color="white"
+          icon-color="white"
+          :size="13"
+          :p="10"
+        />
 
         <el-flex rules="rcc" :gap="16" wrap>
-          <el-text :size="18" :weight="800" :p="[2, 5]" :radius="100" marker="white" color="blue" class="wsnw">
+          <el-text
+            :size="18"
+            :weight="800"
+            :p="[2, 5]"
+            :radius="100"
+            marker="white"
+            color="blue"
+            class="wsnw">
             #{{ item.id }}
           </el-text>
 
-          <el-text :size="16" :weight="800" :p="[2, 5]" :radius="100" :marker="modelMarker" color="white" class="wsnw">
+          <el-text
+            :size="16"
+            :weight="800"
+            :p="[2, 5]"
+            :radius="100"
+            :marker="modelMarker"
+            color="white"
+            class="wsnw">
             {{ modelLabel }}
           </el-text>
         </el-flex>
       </el-flex>
 
-      <el-flex rules="cbs" class="prompt-detail__hero-content w100" :gap="18" :p="contentPadding">
+
+      <el-flex
+        rules="cbs"
+        class="prompt-detail__hero-content w100"
+        :gap="18"
+        :p="contentPadding">
         <el-flex rules="rsc" :gap="16" wrap class="w100">
-          <el-text v-for="tag in item.tags" :key="tag" :size="10" :p="[2, 5]" :radius="100"
-            marker="surface50" class="wsnw">
+          <el-text
+            v-for="tag in item.tags"
+            :key="tag"
+            :size="10"
+            :p="[2, 5]"
+            :radius="100"
+            marker="surface50"
+            class="wsnw">
             {{ formatTag(tag) }}
           </el-text>
         </el-flex>
 
-        <el-text type="h1" :size="heroTitleSize" :weight="600"
+        <el-text
+          type="h1"
+          :size="heroTitleSize"
+          :weight="600"
           effect="glitch">
           {{ localizedTitle }}
         </el-text>
 
-        <el-flex rules="rsc" class="prompt-detail__meta w100" :gap="mobile ? 10 : 18" wrap>
-          <el-text :size="mobile ? 10 : 12" icon="calendar-1" icon-color="normal50">
+        <el-flex
+          rules="rsc"
+          class="prompt-detail__meta w100"
+          :gap="mobile ? 10 : 18"
+          wrap>
+          <el-text
+            :size="mobile ? 10 : 12"
+            icon="calendar-1"
+            icon-color="normal50">
             {{ formattedDate }}
           </el-text>
 
-          <el-text :size="mobile ? 10 : 12" icon="gallery" icon-color="normal50">
+          <el-text
+            :size="mobile ? 10 : 12"
+            icon="gallery"
+            icon-color="normal50">
             {{ t('prompts.detail.previewCount', { count: item.images.length }) }}
           </el-text>
 
-          <el-text :size="mobile ? 10 : 12" icon="magicpen" icon-color="normal50">
+          <el-text
+            :size="mobile ? 10 : 12"
+            icon="magicpen"
+            icon-color="normal50">
             {{ t('prompts.detail.readyToUse') }}
           </el-text>
         </el-flex>
 
         <el-flex rules="rsc" :gap="8" wrap class="w100">
-          <el-button :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-            :icon="copied ? 'tick-circle' : 'copy'" :color="copied ? 'green' : 'normal'"
-            mode="outline" :size="12" :p="[8, 14]" @click="copyPrompt" />
+          <el-button
+            :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
+            :icon="copied ? 'tick-circle' : 'copy'"
+            :color="copied ? 'green' : 'normal'"
+            mode="outline"
+            :size="12"
+            :p="[8, 14]"
+            @click="copyPrompt"
+          />
 
-          <el-button :label="t('prompts.detail.openTelegram')" icon="send-2" color="blue" :size="14" :p="[10, 14]"
-            @click="openTelegram" />
+          <el-button
+            :label="t('prompts.detail.openTelegram')"
+            icon="send-2"
+            color="blue"
+            :size="14"
+            :p="[10, 14]"
+            @click="openTelegram"
+          />
         </el-flex>
       </el-flex>
 
-      <el-flex rules="rcc" class="prompt-detail__scroll-cue" :gap="6">
-
-        <el-button :label="t('prompts.detail.explorePrompt')" icon="arrow-down" mode="flat"
+      <el-flex
+        rules="rcc"
+        class="prompt-detail__scroll-cue"
+        :gap="6">
+        <el-button
+          :label="t('prompts.detail.explorePrompt')"
+          icon="arrow-down"
+          mode="flat"
           :invert="true"
-          :size="14" :p="8" @click="scrollToPrompt" />
+          :size="14"
+          :p="8"
+          @click="scrollToPrompt"
+        />
       </el-flex>
     </section>
 
-    <section id="prompt-detail-content" class="prompt-detail__content por zi20">
-      <el-grid :cols="promptSectionCols" :gap="mobile ? 18 : 28" class="prompt-detail__content-grid w100"
+    <section
+      id="prompt-detail-content"
+      class="prompt-detail__content por zi20">
+      <el-grid
+        :cols="promptSectionCols"
+        :gap="mobile ? 18 : 28"
+        class="prompt-detail__content-grid w100"
         :p="contentPadding">
-        <el-flex rules="ccs" class="prompt-detail__intro w100" :gap="16">
-          <el-text :size="10" :weight="800" marker="prim" color="white" class="wsnw">
+        <el-flex
+          rules="ccs"
+          class="prompt-detail__intro w100"
+          :gap="16">
+          <el-text
+            :size="10"
+            :weight="800"
+            marker="prim"
+            color="white"
+            class="wsnw">
             {{ t('prompts.detail.promptEyebrow') }}
           </el-text>
 
-          <el-text type="h2" :size="mobile ? 18 : 24" :weight="600" class="prompt-detail__section-title">
+          <el-text
+            type="h2"
+            :size="mobile ? 18 : 24"
+            :weight="600"
+            class="prompt-detail__section-title">
             {{ t('prompts.detail.promptTitle').toUpperCase() }}
           </el-text>
 
-          <el-text type="p" :size="mobile ? 12 : 14" class="prompt-detail__intro-copy">
+          <el-text
+            type="p"
+            :size="mobile ? 12 : 14"
+            class="prompt-detail__intro-copy">
             {{ t('prompts.detail.promptDescription') }}
           </el-text>
 
           <el-divider />
         </el-flex>
 
-        <el-flex rules="csc" class="prompt-detail__prompt-panel w100" :gap="0" :radius="mobile ? 18 : 24" :br="1"
+        <el-flex
+          rules="csc"
+          class="prompt-detail__prompt-panel w100"
+          :gap="0"
+          :radius="mobile ? 18 : 24"
+          :br="1"
           bc="normal25">
-          <el-flex rules="rbc" class="prompt-detail__prompt-toolbar w100" :gap="10" :p="mobile ? 12 : 16">
+          <el-flex
+            rules="rbc"
+            class="prompt-detail__prompt-toolbar w100"
+            :gap="10"
+            :p="mobile ? 12 : 16">
             <el-flex rules="rsc" :gap="8" wrap class="fg100">
-              <el-text :size="10" :weight="800" class="wsnw">
+              <el-text
+                :size="10"
+                :weight="800"
+                class="wsnw">
                 {{ t('prompts.detail.promptLabel') }}
               </el-text>
 
@@ -285,56 +436,110 @@ async function copyPrompt() {
               </el-text>
             </el-flex>
 
-            <el-button type="fab" :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-              :icon="copied ? 'tick-circle' : 'copy'" :color="copied ? 'green' : 'normal'"
-              :size="12" :p="8" @click="copyPrompt" />
+            <el-button
+              type="fab"
+              :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
+              :icon="copied ? 'tick-circle' : 'copy'"
+              :color="copied ? 'green' : 'normal'"
+              :size="12"
+              :p="8"
+              @click="copyPrompt"
+            />
           </el-flex>
 
-          <el-flex v-if="promptOptions.length > 1" rules="rsc" class="prompt-detail__variants w100" :gap="6"
-            :p="[0, mobile ? 12 : 16, mobile ? 12 : 16, mobile ? 12 : 16]" wrap>
-            <el-button v-for="option in promptOptions" :key="option.key" :label="option.label"
-              :size="10" :p="[7, 9]"
-              @click="activePromptKey = option.key" />
+          <el-flex
+            v-if="promptOptions.length > 1"
+            rules="rsc"
+            class="prompt-detail__variants w100"
+            :gap="6"
+            :p="[0, mobile ? 12 : 16, mobile ? 12 : 16, mobile ? 12 : 16]"
+            wrap>
+            <el-button
+              v-for="option in promptOptions"
+              :key="option.key"
+              :label="option.label"
+              :size="10"
+              :p="[7, 9]"
+              @click="activePromptKey = option.key"
+            />
           </el-flex>
 
           <el-flex rules="csc" class="prompt-detail__prompt-copy">
             <pre>{{ activePrompt?.prompt }}</pre>
           </el-flex>
 
-          <el-flex rules="rbc" class="prompt-detail__prompt-footer w100" :gap="8" :p="mobile ? 12 : 16" wrap>
+          <el-flex
+            rules="rbc"
+            class="prompt-detail__prompt-footer w100"
+            :gap="8"
+            :p="mobile ? 12 : 16"
+            wrap>
             <el-text :size="10" color="normal65">
               {{ t('prompts.detail.modelNote', { model: modelLabel }) }}
             </el-text>
 
-            <el-button :label="t('prompts.detail.openTelegram')" icon="send-2" mode="flat" color="blue" :size="11"
-              :p="[8, 10]" @click="openTelegram" />
+            <el-button
+              :label="t('prompts.detail.openTelegram')"
+              icon="send-2"
+              mode="flat"
+              color="blue"
+              :size="11"
+              :p="[8, 10]"
+              @click="openTelegram"
+            />
           </el-flex>
         </el-flex>
       </el-grid>
 
-      <el-grid v-if="previousItem || nextItem"
+      <el-grid
+        v-if="previousItem || nextItem"
         :br="[1, 0, 0, 0]"
         bc="normal15"
         :cols="2"
-        :gap="1" class="w100">
-        <el-flex v-if="previousItem" type="link" :to="detailUrl(previousItem)" rules="ccs"
-          class="prompt-detail__nav-item w100" :gap="8" :p="mobile ? 18 : 28">
-          <el-text :size="12" icon="arrow-left" icon-color="blue">
+        :gap="1"
+        class="w100">
+        <el-flex
+          v-if="previousItem"
+          type="link"
+          :to="detailUrl(previousItem)"
+          rules="ccs"
+          class="prompt-detail__nav-item w100"
+          :gap="8"
+          :p="mobile ? 18 : 28">
+          <el-text
+            :size="12"
+            icon="arrow-left"
+            icon-color="blue">
             {{ t('prompts.detail.previous') }}
           </el-text>
 
-          <el-text type="h3" :size="mobile ? 14 : 18" :weight="400">
+          <el-text
+            type="h3"
+            :size="mobile ? 14 : 18"
+            :weight="400">
             {{ t(previousItem.titleKey) }}
           </el-text>
         </el-flex>
 
-        <el-flex v-if="nextItem" type="link" :to="detailUrl(nextItem)" rules="cce" class="prompt-detail__nav-item w100"
-          :gap="8" :p="mobile ? 18 : 28">
-          <el-text :size="12" icon="arrow-right" icon-color="blue">
+        <el-flex
+          v-if="nextItem"
+          type="link"
+          :to="detailUrl(nextItem)"
+          rules="cce"
+          class="prompt-detail__nav-item w100"
+          :gap="8"
+          :p="mobile ? 18 : 28">
+          <el-text
+            :size="12"
+            icon="arrow-right"
+            icon-color="blue">
             {{ t('prompts.detail.next') }}
           </el-text>
 
-          <el-text type="h3" :size="mobile ? 14 : 18" :weight="400">
+          <el-text
+            type="h3"
+            :size="mobile ? 14 : 18"
+            :weight="400">
             {{ t(nextItem.titleKey) }}
           </el-text>
         </el-flex>
@@ -415,7 +620,7 @@ async function copyPrompt() {
   line-height: 0.78;
   font-weight: 900;
   letter-spacing: -0.08em;
-  color: rgba(255, 255, 255, .055);
+  color: rgba(255,255,255,.055);
   user-select: none;
   pointer-events: none;
 }
@@ -433,7 +638,7 @@ async function copyPrompt() {
   line-height: 0.92;
   letter-spacing: -0.045em;
   text-wrap: balance;
-  text-shadow: 0 10px 50px rgba(0, 0, 0, .32);
+  text-shadow: 0 10px 50px rgba(0,0,0,.32);
 }
 
 .prompt-detail__meta {
@@ -520,7 +725,7 @@ async function copyPrompt() {
 }
 
 .prompt-detail__navigation {
-  border-top: 1px solid rgba(255, 255, 255, .08);
+  border-top: 1px solid rgba(255,255,255,.08);
 }
 
 .prompt-detail__nav-item {

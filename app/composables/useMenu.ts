@@ -1,7 +1,7 @@
 import { markRaw, reactive, shallowRef } from 'vue'
 import type { Component, ComponentPublicInstance } from 'vue'
 
-export type GlobalMenuMode = 'point' | 'dropdown'
+export type GlobalMenuMode = 'point' | 'dropdown' | 'drawer'
 export type GlobalMenuItemType = 'item' | 'divider' | 'header'
 export type GlobalMenuPlacement =
   | 'bottom-start'
@@ -12,6 +12,8 @@ export type GlobalMenuPlacement =
   | 'right-end'
   | 'left-start'
   | 'left-end'
+
+export type GlobalMenuDrawerSide = 'left' | 'right'
 
 export type GlobalMenuCloseReason =
   | 'api'
@@ -83,6 +85,8 @@ export type GlobalMenuOptions = {
 
   matchAnchorWidth?: boolean
 
+  drawerSide?: GlobalMenuDrawerSide
+
   zIndex?: number
 }
 
@@ -143,6 +147,8 @@ const defaultMenu: GlobalMenuConfig = {
     closeOnSelect: true,
 
     matchAnchorWidth: false,
+
+    drawerSide: 'right',
 
     zIndex: 1000,
   },
@@ -218,7 +224,10 @@ function getPointFromConfig(config: GlobalMenuConfig): GlobalMenuPoint {
   }
 }
 
-function inferMenuMode(config: GlobalMenuConfig, anchor: GlobalMenuResolvedAnchor): GlobalMenuMode {
+function inferMenuMode(
+  config: GlobalMenuConfig,
+  anchor: GlobalMenuResolvedAnchor,
+): GlobalMenuMode {
   if (config.mode) return config.mode
 
   if (anchor) return 'dropdown'
@@ -269,7 +278,10 @@ function normalizeMenu(config: GlobalMenuConfig = {}): GlobalMenuConfig {
   }
 }
 
-function notifyClose(menu: GlobalMenuConfig | null, reason: GlobalMenuCloseReason) {
+function notifyClose(
+  menu: GlobalMenuConfig | null,
+  reason: GlobalMenuCloseReason,
+) {
   if (typeof menu?.onClose !== 'function') return
 
   try {
@@ -416,7 +428,14 @@ function isItemDisabled(item: GlobalMenuItem) {
 }
 
 async function runItem(item: GlobalMenuItem) {
-  if (!state.menu || !item || !isInteractiveItem(item) || isItemDisabled(item)) return
+  if (
+    !state.menu ||
+    !item ||
+    !isInteractiveItem(item) ||
+    isItemDisabled(item)
+  ) {
+    return
+  }
 
   let result: void | boolean
 
