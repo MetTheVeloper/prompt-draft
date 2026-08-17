@@ -232,7 +232,7 @@ onBeforeUnmount(() => {
 
     <el-grid :gap="8" class="w100">
       <el-flex rules="ccs" :gap="2">
-        <el-text :size="12" :weight="700" icon="grid-5">
+        <el-text :size="12" :weight="700" icon="grid_view">
           {{ t("modules.layout.fields.regions.controls.geometry.title") }}
         </el-text>
 
@@ -339,7 +339,7 @@ onBeforeUnmount(() => {
       v-if="submitAttempted && customRoleIssue"
       :size="11"
       color="orange"
-      icon="danger"
+      icon="warning"
       icon-color="orange"
     >
       {{ customRoleIssue }}
@@ -349,7 +349,7 @@ onBeforeUnmount(() => {
       v-if="submitAttempted && geometryIssue"
       :size="11"
       color="orange"
-      icon="danger"
+      icon="warning"
       icon-color="orange"
     >
       {{ geometryIssue }}

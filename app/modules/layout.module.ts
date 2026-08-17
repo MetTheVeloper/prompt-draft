@@ -3,7 +3,7 @@ import { DEFAULT_LAYOUT_GRID_SIZE } from "../utils/layoutRegions"
 
 export const LayoutModule = {
   key: "layout",
-  icon: "grid-5",
+  icon: "grid_view",
 
   groups: {
     structure: {

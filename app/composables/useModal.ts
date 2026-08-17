@@ -119,22 +119,22 @@ const messageTypes: Record<GlobalModalMessageType, {
   color: string
 }> = {
   success: {
-    icon: 'tick-circle',
+    icon: 'check_circle',
     title: 'modal.titles.success',
     color: 'green',
   },
   warning: {
-    icon: 'warning-2',
+    icon: 'warning',
     title: 'modal.titles.warning',
     color: 'orange',
   },
   error: {
-    icon: 'close-circle',
+    icon: 'cancel',
     title: 'modal.titles.error',
     color: 'red',
   },
   info: {
-    icon: 'info-circle',
+    icon: 'info',
     title: 'modal.titles.info',
     color: 'blue',
   },

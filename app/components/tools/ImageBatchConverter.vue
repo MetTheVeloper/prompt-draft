@@ -36,7 +36,7 @@ const formatOptions = computed(() => [
   {
     label: t('tools.imageConverter.formats.webp'),
     value: 'webp',
-    icon: 'gallery',
+    icon: 'photo_library',
   },
   {
     label: t('tools.imageConverter.formats.jpg'),
@@ -49,7 +49,7 @@ const qualityOptions = computed(() => {
   return QUALITY_OPTIONS.map((quality) => ({
     label: t('tools.imageConverter.qualityPercent', { quality }),
     value: quality,
-    icon: 'magic-star',
+    icon: 'auto_awesome',
   }))
 })
 
@@ -210,7 +210,7 @@ function clearAll() {
 function openFilesModal() {
   modal.open({
     header: {
-      icon: 'gallery',
+      icon: 'photo_library',
       title: t('tools.imageConverter.preview.title'),
       subtitle: t('tools.imageConverter.preview.subtitle'),
       closeButton: true,
@@ -480,10 +480,10 @@ onBeforeUnmount(() => {
     />
 
     <el-flex v-if="!items.length" rules="ccc" :gap="16" :p="28" bg="normal5" :radius="22" class="image-batch-converter-empty">
-      <el-icon icon="gallery-add" :size="34" />
+      <el-icon icon="add_photo_alternate" :size="34" />
 
       <el-flex rules="ccc" :gap="6">
-        <el-text :size="16" :weight="600" icon="gallery-add" marker="blue40">
+        <el-text :size="16" :weight="600" icon="add_photo_alternate" marker="blue40">
           {{ $t('tools.imageConverter.empty.title') }}
         </el-text>
         <el-text :size="13" :weight="300" color="normal70" class="image-batch-converter-empty-description">
@@ -503,10 +503,10 @@ onBeforeUnmount(() => {
 
     <el-flex v-else rules="csc" :gap="18">
       <el-flex rules="csc" :gap="6" bg="normal5" :p="18" :radius="20" class="image-batch-converter-summary">
-        <el-text :size="18" :weight="700" icon="gallery" marker="blue40">
+        <el-text :size="18" :weight="700" icon="photo_library" marker="blue40">
           {{ selectedCountText }}
         </el-text>
-        <el-text :size="13" :weight="300" color="normal70" icon="folder-open">
+        <el-text :size="13" :weight="300" color="normal70" icon="folder_open">
           {{ totalSizeText }}
         </el-text>
       </el-flex>
@@ -522,7 +522,7 @@ onBeforeUnmount(() => {
         />
 
         <el-button
-          icon="gallery"
+          icon="photo_library"
           mode="flat"
           color="prim"
           :label="$t('tools.imageConverter.actions.viewFiles')"
@@ -532,7 +532,7 @@ onBeforeUnmount(() => {
         />
 
         <el-button
-          icon="trash"
+          icon="delete"
           mode="flat"
           color="red"
           :label="$t('tools.imageConverter.actions.clearAll')"
@@ -545,28 +545,28 @@ onBeforeUnmount(() => {
 
     <el-grid :cols="controlsCols" :gap="12" class="image-batch-converter-controls">
       <el-flex rules="csc" :gap="8" class="image-batch-converter-control">
-        <el-text :size="12" :weight="400" color="normal70" icon="setting-2" marker="blue40">
+        <el-text :size="12" :weight="400" color="normal70" icon="tune" marker="blue40">
           {{ $t('tools.imageConverter.controls.format') }}
         </el-text>
 
         <el-dropdown
           v-model="selectedOutputFormat"
           :items="formatOptions"
-          icon="gallery"
+          icon="photo_library"
           :placeholder="$t('tools.imageConverter.controls.format')"
           :menu-options="{ zIndex: 40000 }"
         />
       </el-flex>
 
       <el-flex rules="csc" :gap="8" class="image-batch-converter-control">
-        <el-text :size="12" :weight="400" color="normal70" icon="magic-star" marker="blue40">
+        <el-text :size="12" :weight="400" color="normal70" icon="auto_awesome" marker="blue40">
           {{ $t('tools.imageConverter.controls.quality') }}
         </el-text>
 
         <el-dropdown
           v-model="selectedOutputQuality"
           :items="qualityOptions"
-          icon="magic-star"
+          icon="auto_awesome"
           :placeholder="$t('tools.imageConverter.controls.quality')"
           :menu-options="{ zIndex: 40000 }"
         />
@@ -576,7 +576,7 @@ onBeforeUnmount(() => {
     <el-flex rules="csc" :gap="6" class="image-batch-converter-download-area">
       <el-button
         color="prim"
-        icon="receive-square"
+        icon="download"
         class="image-batch-converter-download"
         :label="isConverting ? $t('tools.imageConverter.actions.downloading') : $t('tools.imageConverter.actions.download')"
         :disable="isConverting || !items.length"
@@ -592,7 +592,7 @@ onBeforeUnmount(() => {
         :size="10"
         :weight="300"
         color="normal60"
-        icon="chart-square"
+        icon="analytics"
         marker="blue40"
         class="image-batch-converter-optimization"
       >

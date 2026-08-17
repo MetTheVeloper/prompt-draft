@@ -462,7 +462,7 @@ const fields: Record<string, ModuleField> = {
 
 export const TypographyModule: PromptKeyModule = {
   key: "typography",
-  icon: "text",
+  icon: "text_fields",
   groups: {
     core: { id: "core", order: 1, defaultOpen: true },
     advanced: { id: "advanced", order: 2, defaultOpen: false },

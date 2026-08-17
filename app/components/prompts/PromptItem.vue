@@ -168,7 +168,7 @@ const telegramButtonAttrs = computed(() => {
     class: isGrid.value ? 'fg100' : undefined,
     type: isGrid.value ? 'normal' : 'fab',
     label: t('prompts.actions.telegram'),
-    icon: 'send-2',
+    icon: 'send',
     color: 'blue',
     size: 12,
     p: isGrid.value ? [10, 12] : mobile.value ? 8 : 9,
@@ -180,7 +180,7 @@ const viewButtonAttrs = computed(() => {
     type: 'fab',
     to: detailUrl.value,
     label: t('prompts.actions.view'),
-    icon: 'eye',
+    icon: 'visibility',
     mode: 'flat',
     color: 'normal',
     size: 12,
@@ -215,7 +215,7 @@ function openTelegram() {
         class="w100 h100"
         bg="normal5">
         <el-icon
-          icon="gallery-slash"
+          icon="hide_image"
           :size="isGrid ? 42 : mobile ? 22 : 28"
           color="normal30"
         />
@@ -270,7 +270,7 @@ function openTelegram() {
           <el-text
             :size="11"
             color="normal50"
-            icon="calendar-1">
+            icon="calendar_month">
             {{ formattedDate }}
           </el-text>
 
@@ -278,7 +278,7 @@ function openTelegram() {
             v-if="item.images.length"
             :size="11"
             color="normal50"
-            icon="gallery">
+            icon="photo_library">
             {{ t('prompts.card.imageCount', { count: item.images.length }) }}
           </el-text>
         </el-flex>

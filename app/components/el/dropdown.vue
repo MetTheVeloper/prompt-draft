@@ -316,7 +316,7 @@ function createClearItem(): GlobalMenuItem {
   return {
     type: 'item',
     label: props.placeholder,
-    icon: 'close-circle',
+    icon: 'cancel',
     value: props.emptyValue,
     active: !hasValue.value,
     handler: () => {
@@ -451,7 +451,7 @@ function handleKeydown(event: KeyboardEvent) {
       :effect="{ color: hasValue ? 'normal25' : 'blue50' }" :disable="disabled" :radius="10" :p="[12, 10]"
       @click="openDropdown">
       <template #iconafter>
-        <el-icon icon="arrow-down" :size="12" color="normal" />
+        <el-icon icon="arrow_downward" :size="12" color="normal" />
       </template>
     </el-button>
   </div>

@@ -64,15 +64,15 @@ function handleDuplicate() {
         {{ valuePreview }}
       </el-text> -->
 
-      <el-text v-if="issue" :size="10" color="orange" icon="danger" icon-color="orange">
+      <el-text v-if="issue" :size="10" color="orange" icon="warning" icon-color="orange">
         {{ issue }}
       </el-text>
     </el-flex>
     <el-flex rules="rcc" bg="blue0" :gap="6">
-      <el-button type="fab" mode="flat" color="blue" icon="copy" :label="duplicateLabel" :size="12" :p="4"
+      <el-button type="fab" mode="flat" color="blue" icon="content_copy" :label="duplicateLabel" :size="12" :p="4"
         @click.stop="handleDuplicate" />
 
-      <el-button type="fab" mode="outline" :br="1" color="red" icon="trash" :label="deleteLabel" :size="12" :p="4"
+      <el-button type="fab" mode="outline" :br="1" color="red" icon="delete" :label="deleteLabel" :size="12" :p="4"
         @click.stop="handleDelete" />
     </el-flex>
   </el-flex>

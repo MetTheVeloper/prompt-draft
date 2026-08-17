@@ -357,7 +357,7 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
             @click="toggleColorAssignment(item.assignmentIndex)"
             @keydown.enter.prevent="toggleColorAssignment(item.assignmentIndex)"
             @keydown.space.prevent="toggleColorAssignment(item.assignmentIndex)">
-            <el-text :size="14" :weight="300" icon="color-swatch">
+            <el-text :size="14" :weight="300" icon="palette">
               {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", {index: item.assignmentIndex + 1}) }}
             </el-text>
 
@@ -367,7 +367,7 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
                   : 'arrow-down-2'
                 " :size="14" class="module-field__assignment-toggle-icon" />
 
-              <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="trash" :p="8"
+              <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="delete" :p="8"
                 @click.stop="removeColorAssignment(item.assignmentIndex)" mode="flat" color="red" type="fab"
                 :size="14" />
             </el-flex>
@@ -426,7 +426,7 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
                   "
                 />
   
-                <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="trash" :p="8"
+                <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="delete" :p="8"
                   @click="removeColorAssignmentColor(item.assignmentIndex, colorIndex)" mode="flat" color="red" type="fab"
                   :size="14" />
               </el-flex>

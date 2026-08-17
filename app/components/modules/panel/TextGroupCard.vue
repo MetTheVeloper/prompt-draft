@@ -281,7 +281,7 @@ function removeTextBlock(blockIndex: number) {
     <el-divider mode="dashed" :dash="4" :gap="2" />
 
     <el-flex rules="rbc" class="w100">
-      <el-text :size="13" :weight="600" icon="text">
+      <el-text :size="13" :weight="600" icon="text_fields">
         {{ t("modules.typography.fields.textGroups.group.textBlocksTitle") }}
       </el-text>
 

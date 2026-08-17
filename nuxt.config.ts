@@ -34,7 +34,7 @@ export default defineNuxtConfig({
   },
 
   css: [
-    "material-symbols/index.css",
+    "~/assets/css/material-symbols.css",
     "~/assets/css/zkit.scss",
     // '~/assets/css/scss.scss',
     "~/assets/css/style.css",

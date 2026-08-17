@@ -404,7 +404,7 @@ const poseStyleOptions = [
 
 export const PoseModule: PromptKeyModule = {
   key: "pose",
-  icon: "user-edit",
+  icon: "manage_accounts",
 
   groups: {
     core: {

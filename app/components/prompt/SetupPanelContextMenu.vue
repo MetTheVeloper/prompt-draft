@@ -103,7 +103,7 @@ const menuGroups = computed<SetupPanelContextMenuGroup[]>(() => [
             actionKey: "onReset",
             disabledKey: "reset",
             attrs: {
-              icon: "refresh-2",
+              icon: "refresh",
               color: "orange15",
               textColor: "normal",
             },
@@ -154,7 +154,7 @@ async function runItem(item: SetupPanelContextMenuItem) {
 <template>
   <el-grid v-bind="menuGridAttrs">
     <el-grid v-bind="headerAttrs">
-      <el-icon icon="setting-2" :size="15" color="normal55" />
+      <el-icon icon="tune" :size="15" color="normal55" />
 
       <el-text v-bind="titleAttrs">
         {{ labels.title }}

@@ -490,7 +490,7 @@ function updateVideoPreset(value: ElDropdownValue) {
 <template>
   <el-flex rules="ccc" v-if="orientation === 'portrait' && mini" class="w100 h100" :radius="24" :br="1" bt="d" bd="b4"
     bc="red">
-    <el-icon :size="80" color="normal50" icon="rotate-left" />
+    <el-icon :size="80" color="normal50" icon="rotate_left" />
     <el-text :size="14" color="normal80">
       {{ $t('pages.collage.rotateYourPhone') }}
     </el-text>
@@ -514,7 +514,7 @@ function updateVideoPreset(value: ElDropdownValue) {
           <el-flex rules="rcc" :gap="8">
             <el-switch size="mini" :model-value="collagePanelDocked" @update:model-value="updateCollagePanelDocked" />
 
-            <el-button v-if="!collagePanelDocked" :label="$t('pages.collage.panel.close')" icon="close-circle"
+            <el-button v-if="!collagePanelDocked" :label="$t('pages.collage.panel.close')" icon="cancel"
               type="fab" mode="flat" :size="14" :p="8" @click="closeFloatingCollagePanel" />
           </el-flex>
         </el-flex>
@@ -527,7 +527,7 @@ function updateVideoPreset(value: ElDropdownValue) {
       <el-grid class="collage-panel" v-bind="collagePanelAttrs" :gap="0" bd="b8">
         <el-flex v-bind="collagePanelHeaderAttrs" v-if="false" class="collage-panel__head" role="button" tabindex="0"
           :aria-expanded="isPanelExpanded('outputMode')">
-          <el-text :size="14" weight="700" icon="setting-2">
+          <el-text :size="14" weight="700" icon="tune">
             {{ $t('pages.collage.outputMode.title') }}
           </el-text>
         </el-flex>
@@ -549,7 +549,7 @@ function updateVideoPreset(value: ElDropdownValue) {
 
       <el-flex v-bind="collageDropzoneAttrs" class="collage-dropzone"
         :class="{ 'collage-dropzone--active': isDragging }" @click="openFilePicker">
-        <el-icon icon="gallery-add" :size="40" color="blue" />
+        <el-icon icon="add_photo_alternate" :size="40" color="blue" />
 
         <el-text :size="15" weight="700">
           {{ $t('pages.collage.dropzone.title') }}
@@ -564,7 +564,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-flex v-bind="collagePanelHeaderAttrs" class="collage-panel__head" role="button" tabindex="0"
           :aria-expanded="isPanelExpanded('images')" @click="togglePanel('images')"
           @keydown.enter.prevent="togglePanel('images')" @keydown.space.prevent="togglePanel('images')">
-          <el-text :size="14" weight="700" icon="gallery">
+          <el-text :size="14" weight="700" icon="photo_library">
             {{ $t('pages.collage.images.title') }}
           </el-text>
 
@@ -594,7 +594,7 @@ function updateVideoPreset(value: ElDropdownValue) {
               </el-grid>
 
               <el-button class="poa t50 l50 trnsxy-50" :label="$t('pages.collage.actions.remove')" :size="12"
-                mode="flat" bd="b8" type="fab" color="red" icon="trash" @click="removeImage(item.id)" />
+                mode="flat" bd="b8" type="fab" color="red" icon="delete" @click="removeImage(item.id)" />
             </el-flex>
           </el-grid>
 
@@ -611,7 +611,7 @@ function updateVideoPreset(value: ElDropdownValue) {
           :aria-expanded="brandOverlayEnabled && isPanelExpanded('brand')" @click="toggleExpandablePanel('brand')"
           @keydown.enter.prevent="toggleExpandablePanel('brand')"
           @keydown.space.prevent="toggleExpandablePanel('brand')">
-          <el-text :size="14" weight="700" icon="drop">
+          <el-text :size="14" weight="700" icon="water_drop">
             {{ $t('pages.collage.brand.panelTitle') }}
           </el-text>
 
@@ -796,7 +796,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-flex v-bind="collagePanelHeaderAttrs" class="collage-panel__head" role="button" tabindex="0"
           :aria-expanded="isPanelExpanded('canvas')" @click="togglePanel('canvas')"
           @keydown.enter.prevent="togglePanel('canvas')" @keydown.space.prevent="togglePanel('canvas')">
-          <el-text :size="14" weight="700" icon="grid-1">
+          <el-text :size="14" weight="700" icon="grid_view">
             {{ $t('pages.collage.canvas.title') }}
           </el-text>
 
@@ -874,7 +874,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-flex v-bind="collagePanelHeaderAttrs" class="collage-panel__head" role="button" tabindex="0"
           :aria-expanded="isPanelExpanded('layoutTools')" @click="togglePanel('layoutTools')"
           @keydown.enter.prevent="togglePanel('layoutTools')" @keydown.space.prevent="togglePanel('layoutTools')">
-          <el-text :size="14" weight="700" icon="gallery">
+          <el-text :size="14" weight="700" icon="photo_library">
             {{ $t('pages.collage.layoutTools.title') }}
           </el-text>
 
@@ -887,11 +887,11 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-grid v-show="isPanelExpanded('layoutTools')" v-bind="collagePanelBodyAttrs">
           <el-grid :cols="2" :gap="8">
             <el-button :label="$t('pages.collage.layoutTools.shuffleSimilar')" :size="12" :p="[10, 12]" type="fab"
-              mode="outline" color="normal" :bc="['blue25']" icon="gallery" :disable="images.length < 2"
+              mode="outline" color="normal" :bc="['blue25']" icon="photo_library" :disable="images.length < 2"
               @click="shuffleSimilarImages" />
 
             <el-button :label="$t('pages.collage.layoutTools.shuffleLayout')" :size="12" :p="[10, 12]" type="fab"
-              mode="outline" color="normal" :bc="['blue25']" icon="grid-1" :disable="images.length < 2"
+              mode="outline" color="normal" :bc="['blue25']" icon="grid_view" :disable="images.length < 2"
               @click="shuffleLayout" />
           </el-grid>
 
@@ -927,7 +927,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-flex v-bind="collagePanelHeaderAttrs" class="collage-panel__head" role="button" tabindex="0"
           :aria-expanded="isPanelExpanded('video')" @click="togglePanel('video')"
           @keydown.enter.prevent="togglePanel('video')" @keydown.space.prevent="togglePanel('video')">
-          <el-text :size="14" weight="700" icon="video-play">
+          <el-text :size="14" weight="700" icon="play_circle">
             {{ $t('pages.collage.video.title') }}
           </el-text>
 
@@ -1018,7 +1018,7 @@ function updateVideoPreset(value: ElDropdownValue) {
               }}
             </el-text>
 
-            <el-text type="span" :size="24" icon="clock-1" weight="700" color="normal90">
+            <el-text type="span" :size="24" icon="schedule" weight="700" color="normal90">
               {{ videoDurationLabel }}
             </el-text>
           </el-flex>
@@ -1091,13 +1091,13 @@ function updateVideoPreset(value: ElDropdownValue) {
       </el-grid>
 
       <el-grid v-if="activeMode === 'image'" v-bind="collageImageActionsAttrs">
-        <el-button :label="$t('pages.collage.actions.save')" :p="[12, 24]" :size="14" type="fab" icon="ram" color="prim"
+        <el-button :label="$t('pages.collage.actions.save')" :p="[12, 24]" :size="14" type="fab" icon="memory" color="prim"
           tooltip-position="top" :disable="!canExportImage" @click="downloadCanvas" />
 
-        <el-button :label="$t('pages.collage.actions.copy')" :p="[12, 24]" :size="14" type="fab" icon="document-copy"
+        <el-button :label="$t('pages.collage.actions.copy')" :p="[12, 24]" :size="14" type="fab" icon="file_copy"
           color="prim" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
 
-        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="delete"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="red" :disable="!images?.length"
           @click="clearImages" />
       </el-grid>
@@ -1106,16 +1106,16 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-button :label="isRecordingVideo
             ? $t('pages.collage.actions.recording')
             : $t('pages.collage.actions.exportWebm')
-          " :p="[12, 24]" :size="14" type="fab" v-if="false" icon="video-play" color="prim" tooltip-position="top"
+          " :p="[12, 24]" :size="14" type="fab" v-if="false" icon="play_circle" color="prim" tooltip-position="top"
           :disable="!canExportVideo" @click="exportSliderVideo" />
 
         <el-button :label="isExportingMp4
             ? $t('pages.collage.actions.exportingMp4')
             : $t('pages.collage.actions.exportMp4')
-          " :p="[12, 24]" :size="14" type="fab" icon="video-play" color="prim" tooltip-position="top"
+          " :p="[12, 24]" :size="14" type="fab" icon="play_circle" color="prim" tooltip-position="top"
           :disable="!canExportVideo" @click="exportSliderMp4" />
 
-        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="delete"
           tooltip-position="top" :p="[12, 24]" :size="14" mode="flat" color="normal10"
           :disable="!images?.length || isRecordingVideo" @click="clearImages" />
       </el-grid>
@@ -1187,7 +1187,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-flex v-if="!images?.length" rules="ccc" :gap="8" :p="28" :radius="24" :br="1" bc="normal15" bg="surface"
           class="collage-canvas-empty-state" role="button" tabindex="0" @click.stop="openFilePicker"
           @keydown.enter.prevent="openFilePicker" @keydown.space.prevent="openFilePicker">
-          <el-icon icon="gallery-add" :size="56" color="blue" />
+          <el-icon icon="add_photo_alternate" :size="56" color="blue" />
 
           <el-text :size="18" weight="700">
             {{ $t('pages.collage.emptyCanvas.title') }}
@@ -1201,7 +1201,7 @@ function updateVideoPreset(value: ElDropdownValue) {
             {{ $t('pages.collage.emptyCanvas.pasteHint') }}
           </el-text>
 
-          <el-button :label="$t('pages.collage.emptyCanvas.action')" icon="gallery-add" type="fab" color="prim"
+          <el-button :label="$t('pages.collage.emptyCanvas.action')" icon="add_photo_alternate" type="fab" color="prim"
             :size="13" :p="[10, 18]" @click.stop="openFilePicker" />
         </el-flex>
 
@@ -1225,13 +1225,13 @@ function updateVideoPreset(value: ElDropdownValue) {
 
       <!-- zoom -->
       <el-flex rules="csc">
-        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.fit')" icon="maximize-3" type="fab" mode="flat"
+        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.fit')" icon="fullscreen" type="fab" mode="flat"
           @click="fitCanvasToWrap" />
 
-        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.actual')" icon="scan" type="fab" mode="flat"
+        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.actual')" icon="document_scanner" type="fab" mode="flat"
           @click="setCanvasActualSize" />
 
-        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.panTool')" icon="mouse-circle" type="fab"
+        <el-button :size="14" :p="8" :label="$t('pages.collage.zoom.panTool')" icon="mouse" type="fab"
           mode="flat" :color="canvasPanToolEnabled ? 'blue' : 'normal'" @click="toggleCanvasPanTool" />
 
         <input class="vertical-range" type="range" :min="canvasZoomMin" :max="canvasZoomMax" :value="canvasZoom" @input="
@@ -1242,13 +1242,13 @@ function updateVideoPreset(value: ElDropdownValue) {
       </el-flex>
 
       <el-grid v-if="activeMode === 'image'" :cols="1" :gap="10">
-        <el-button :label="$t('pages.collage.actions.save')" :p="[8]" :size="14" type="fab" icon="ram" color="prim"
+        <el-button :label="$t('pages.collage.actions.save')" :p="[8]" :size="14" type="fab" icon="memory" color="prim"
           tooltip-position="top" :disable="!canExportImage" @click="downloadCanvas" />
 
         <el-button :label="$t('pages.collage.actions.copy')" :p="[8]" :size="14" mode="flat" type="fab"
-          icon="document-copy" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
+          icon="file_copy" tooltip-position="top" :disable="!canExportImage" @click="copyCanvas" />
 
-        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="delete"
           tooltip-position="top" :p="[8]" :size="14" mode="flat" color="red" :disable="!images?.length"
           @click="clearImages" />
       </el-grid>
@@ -1257,16 +1257,16 @@ function updateVideoPreset(value: ElDropdownValue) {
         <el-button :label="isRecordingVideo
             ? $t('pages.collage.actions.recording')
             : $t('pages.collage.actions.exportWebm')
-          " :p="[8]" :size="14" type="fab" v-if="false" icon="video-play" color="prim" tooltip-position="top"
+          " :p="[8]" :size="14" type="fab" v-if="false" icon="play_circle" color="prim" tooltip-position="top"
           :disable="!canExportVideo" @click="exportSliderVideo" />
 
         <el-button :label="isExportingMp4
             ? $t('pages.collage.actions.exportingMp4')
             : $t('pages.collage.actions.exportMp4')
-          " :p="[8]" :size="14" type="fab" icon="video-play" color="prim" tooltip-position="top"
+          " :p="[8]" :size="14" type="fab" icon="play_circle" color="prim" tooltip-position="top"
           :disable="!canExportVideo" @click="exportSliderMp4" />
 
-        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="trash"
+        <el-button :label="$t('pages.collage.actions.clear')" class="collage-actions__danger" type="fab" icon="delete"
           tooltip-position="top" :p="[8]" :size="14" mode="flat" color="normal10"
           :disable="!images?.length || isRecordingVideo" @click="clearImages" />
       </el-grid>

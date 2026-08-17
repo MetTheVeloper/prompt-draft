@@ -870,7 +870,7 @@ function openLayoutSchemaPreview(blob: Blob) {
 
   modal.open({
     header: {
-      icon: "grid-5",
+      icon: "grid_view",
       title: t("modules.layout.schema.preview.title"),
       subtitle: t("modules.layout.schema.preview.subtitle"),
       color: "blue",
@@ -884,14 +884,14 @@ function openLayoutSchemaPreview(blob: Blob) {
     actions: [
       {
         label: t("modules.layout.schema.actions.close"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: t("modules.layout.schema.actions.download"),
-        icon: "import-2",
+        icon: "upload_file",
         color: "orange",
         mode: "flat",
         handler: () => {
@@ -900,7 +900,7 @@ function openLayoutSchemaPreview(blob: Blob) {
       },
       {
         label: t("modules.layout.schema.actions.copy"),
-        icon: "grid-5",
+        icon: "grid_view",
         color: "prim",
         close: true,
         handler: async () => {
@@ -1015,7 +1015,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: isCustomMode.value ? labels.disableCustomize : labels.enableCustomize,
-      icon: "setting-2",
+      icon: "tune",
       active: isCustomMode.value,
       disabled: !hasOverrideField.value,
       handler: toggleCustomMode,
@@ -1029,19 +1029,19 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     items.push(
       {
         label: labels.copyLayoutSchema,
-        icon: "grid-5",
+        icon: "grid_view",
         disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value,
         handler: copyLayoutSchema,
       },
       {
         label: labels.downloadLayoutSchema,
-        icon: "import-2",
+        icon: "upload_file",
         disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value,
         handler: downloadLayoutSchema,
       },
       {
         label: labels.copyOutput,
-        icon: "document-copy",
+        icon: "file_copy",
         disabled: !output.value,
         handler: copyOutput,
       },
@@ -1049,7 +1049,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
   } else {
     items.push({
       label: labels.copyOutput,
-      icon: "document-copy",
+      icon: "file_copy",
       disabled: !output.value,
       handler: copyOutput,
     });
@@ -1057,7 +1057,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
 
   items.push({
     label: labels.remove,
-    icon: "trash",
+    icon: "delete",
     color: "red",
     handler: removeModule,
   });
@@ -1109,7 +1109,7 @@ onBeforeUnmount(() => {
             <el-switch v-if="hasOverrideField" :class="mini ? 'fg100' : ''" :model-value="isCustomMode" :size="12"
               @update:model-value="isCustomMode = $event" :label="t('panel.customMode')" />
             <el-button type="fab" :size="14" @click="clearModule" :disable="!hasAnyValue" mode="flat" :p="8"
-              :label="isCustomMode ? t('panel.clearCustom') : t('panel.clear')" icon="trash" />
+              :label="isCustomMode ? t('panel.clearCustom') : t('panel.clear')" icon="delete" />
             <el-button
               type="fab"
               :size="14"
@@ -1130,7 +1130,7 @@ onBeforeUnmount(() => {
           <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
             {{ moduleTitle.toUpperCase() }}
           </el-text>
-          <el-text type="p" :size="14" :weight="200" icon="info-circle" color="normal60" icon-color="normal50"
+          <el-text type="p" :size="14" :weight="200" icon="info" color="normal60" icon-color="normal50"
             v-if="moduleDescription">
             {{ moduleDescription }}
           </el-text>
@@ -1152,7 +1152,7 @@ onBeforeUnmount(() => {
                 {{ t("panel.presets") }}
               </el-text>
               <el-text marker="blue15" :size="12" color="white" icon-color="white" :weight="300" v-if="activePresetId"
-                icon="tick">
+                icon="check">
                 {{ t("panel.presetSelected") }}
               </el-text>
             </el-flex>
@@ -1203,7 +1203,7 @@ onBeforeUnmount(() => {
           :placeholder="fieldPlaceholder(overrideField.id)" :editor-id="promptEditorId(overrideField.id, 'override')"
           support-variables />
 
-        <el-text v-if="!customOverrideValue" :size="12" icon="danger" icon-color="orange" :weight="300" color="orange">
+        <el-text v-if="!customOverrideValue" :size="12" icon="warning" icon-color="orange" :weight="300" color="orange">
           {{ t("panel.customOverrideEmpty") }}
         </el-text>
       </el-grid>
@@ -1224,7 +1224,7 @@ onBeforeUnmount(() => {
               </el-text>
             </el-flex>
 
-            <el-text :size="12" class="w100" color="normal45" icon-color="normal55" icon="info-circle"
+            <el-text :size="12" class="w100" color="normal45" icon-color="normal55" icon="info"
               v-if="groupDescription(group.id)">
               {{ groupDescription(group.id) }}
             </el-text>
@@ -1321,11 +1321,11 @@ onBeforeUnmount(() => {
             <el-text-field v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)"
               :editor-id="promptEditorId(field.id)" support-variables />
 
-            <el-text :size="10" icon="info-circle" v-if="field.type === 'multiSelect'">
+            <el-text :size="10" icon="info" v-if="field.type === 'multiSelect'">
               {{ t("panel.multiSelectHint") }}
             </el-text>
             <el-text v-for="warning in getFieldCompatibilityWarnings(field)" :key="warning.value" :size="10"
-              icon="danger" icon-color="orange" color="orange" :weight="300">
+              icon="warning" icon-color="orange" color="orange" :weight="300">
               {{ compatibilityWarningLabel(warning.key) }}
             </el-text>
           </el-grid>
@@ -1356,7 +1356,7 @@ onBeforeUnmount(() => {
               v-if="isLayoutModule"
               type="fab"
               mode="flat"
-              icon="document-copy"
+              icon="file_copy"
               :label="t('modules.layout.schema.actions.copyJson')"
               :disable="!output"
               :size="12"

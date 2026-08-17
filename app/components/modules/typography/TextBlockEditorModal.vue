@@ -312,7 +312,7 @@ onBeforeUnmount(() => {
       v-if="submitAttempted && textIssue"
       :size="11"
       color="orange"
-      icon="danger"
+      icon="warning"
       icon-color="orange"
     >
       {{ textIssue }}

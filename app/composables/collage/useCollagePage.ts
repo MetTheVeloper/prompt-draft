@@ -1083,7 +1083,7 @@ export function useCollagePage() {
     return [
       {
         label: t('pages.collage.actions.save'),
-        icon: 'ram',
+        icon: 'memory',
         disabled: !canExportImage.value,
         handler: () => {
           void downloadCanvas()
@@ -1091,7 +1091,7 @@ export function useCollagePage() {
       },
       {
         label: t('pages.collage.actions.copy'),
-        icon: 'document-copy',
+        icon: 'file_copy',
         disabled: !canExportImage.value,
         handler: () => {
           void exportApi.copyCanvas()
@@ -1099,7 +1099,7 @@ export function useCollagePage() {
       },
       {
         label: t('pages.collage.actions.clear'),
-        icon: 'trash',
+        icon: 'delete',
         color: 'red',
         disabled: !hasImages,
         handler: () => {
@@ -1126,14 +1126,14 @@ export function useCollagePage() {
     const items: GlobalMenuItem[] = [
       {
         label: t('pages.collage.dropzone.title'),
-        icon: 'gallery-add',
+        icon: 'add_photo_alternate',
         handler: () => {
           imagesApi.openFilePicker()
         },
       },
       {
         label: t('pages.collage.zoom.panTool'),
-        icon: 'mouse-circle',
+        icon: 'mouse',
         active: canvasPanToolEnabled.value,
         handler: () => {
           toggleCanvasPanTool()
@@ -1159,7 +1159,7 @@ export function useCollagePage() {
         },
         {
           label: t('pages.collage.layoutTools.shuffleSimilar'),
-          icon: 'gallery',
+          icon: 'photo_library',
           description: 'Shift + S',
           disabled: !hasMultipleImages,
           handler: () => {
@@ -1168,7 +1168,7 @@ export function useCollagePage() {
         },
         {
           label: t('pages.collage.layoutTools.shuffleLayout'),
-          icon: 'grid-1',
+          icon: 'grid_view',
           description: 'Shift + L',
           disabled: !hasMultipleImages,
           handler: () => {
@@ -1177,7 +1177,7 @@ export function useCollagePage() {
         },
         {
           label: t('pages.collage.layoutTools.constraintModes.controlled'),
-          icon: 'setting-2',
+          icon: 'tune',
           description: t('pages.collage.layoutTools.constraintMode'),
           active: layoutConstraintMode.value === 'controlled',
           handler: () => {
@@ -1186,7 +1186,7 @@ export function useCollagePage() {
         },
         {
           label: t('pages.collage.layoutTools.constraintModes.free'),
-          icon: 'setting-2',
+          icon: 'tune',
           description: t('pages.collage.layoutTools.constraintMode'),
           active: layoutConstraintMode.value === 'free',
           handler: () => {
@@ -1202,7 +1202,7 @@ export function useCollagePage() {
       },
       {
         label: t('pages.collage.actions.save'),
-        icon: 'ram',
+        icon: 'memory',
         disabled: !canExportImage.value,
         handler: () => {
           void downloadCanvas()
@@ -1210,7 +1210,7 @@ export function useCollagePage() {
       },
       {
         label: t('pages.collage.actions.copy'),
-        icon: 'document-copy',
+        icon: 'file_copy',
         disabled: !canExportImage.value,
         handler: () => {
           void exportApi.copyCanvas()
@@ -1218,7 +1218,7 @@ export function useCollagePage() {
       },
       {
         label: t('pages.collage.actions.clear'),
-        icon: 'trash',
+        icon: 'delete',
         color: 'red',
         disabled: !hasImages,
         handler: () => {

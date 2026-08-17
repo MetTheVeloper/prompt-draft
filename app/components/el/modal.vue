@@ -37,7 +37,7 @@
               </el-flex>
 
               <el-button v-if="showCloseButton(stackModal)" :label="t('components.modal.actions.close')"
-                icon="close-circle" :size="12" color="red" mode="flat" type="fab"
+                icon="cancel" :size="12" color="red" mode="flat" type="fab"
                 :disable="isModalLoading(stackModal)" @click="handleCloseButton(stackModal)" />
             </el-flex>
 

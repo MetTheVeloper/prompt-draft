@@ -182,7 +182,7 @@ function openTelegram(item: PromptArchiveItem) {
       class="w100 h100"
       :gap="8"
       :p="40">
-      <el-icon icon="refresh-2" :size="30" color="prim" />
+      <el-icon icon="refresh" :size="30" color="prim" />
       <el-text :size="13" color="normal60">
         {{ t('prompts.loading') }}
       </el-text>
@@ -194,13 +194,13 @@ function openTelegram(item: PromptArchiveItem) {
       class="w100 h100"
       :gap="10"
       :p="32">
-      <el-icon icon="danger" :size="34" color="red" />
+      <el-icon icon="warning" :size="34" color="red" />
       <el-text :size="15" :weight="800">
         {{ t('prompts.error.title') }}
       </el-text>
       <el-button
         :label="t('prompts.error.retry')"
-        icon="refresh-2"
+        icon="refresh"
         mode="flat"
         color="red"
         :size="12"
@@ -222,7 +222,7 @@ function openTelegram(item: PromptArchiveItem) {
       class="w100 h100"
       :gap="10"
       :p="32">
-      <el-icon icon="search-status" :size="42" color="normal35" />
+      <el-icon icon="search" :size="42" color="normal35" />
       <el-text type="h1" :size="mini ? 24 : 32" :weight="900">
         {{ t('prompts.detail.notFoundTitle') }}
       </el-text>
@@ -232,7 +232,7 @@ function openTelegram(item: PromptArchiveItem) {
       <el-button
         to="/prompts"
         :label="t('prompts.detail.back')"
-        icon="arrow-left"
+        icon="arrow_left"
         mode="flat"
         color="prim"
         :size="12"
@@ -325,7 +325,7 @@ function openTelegram(item: PromptArchiveItem) {
           <el-button
             v-if="hasActiveFilters"
             :label="t('prompts.filters.clear')"
-            icon="close-circle"
+            icon="cancel"
             mode="flat"
             color="normal"
             :size="11"
@@ -344,7 +344,7 @@ function openTelegram(item: PromptArchiveItem) {
             <el-button
               type="fab"
               :label="t('prompts.view.grid')"
-              icon="element-3"
+              icon="dashboard"
               :mode="viewMode === 'grid' ? 'normal' : 'flat'"
               :color="viewMode === 'grid' ? 'prim' : 'normal'"
               :size="12"
@@ -355,7 +355,7 @@ function openTelegram(item: PromptArchiveItem) {
             <el-button
               type="fab"
               :label="t('prompts.view.list')"
-              icon="row-horizontal"
+              icon="view_list"
               :mode="viewMode === 'list' ? 'normal' : 'flat'"
               :color="viewMode === 'list' ? 'prim' : 'normal'"
               :size="12"
@@ -372,7 +372,7 @@ function openTelegram(item: PromptArchiveItem) {
         class="w100 fg100"
         :gap="8"
         :p="40">
-        <el-icon icon="refresh-2" :size="28" color="prim" />
+        <el-icon icon="refresh" :size="28" color="prim" />
         <el-text :size="13" color="normal60">
           {{ t('prompts.loading') }}
         </el-text>
@@ -386,13 +386,13 @@ function openTelegram(item: PromptArchiveItem) {
         :p="32"
         :radius="16"
         bg="red5">
-        <el-icon icon="danger" :size="30" color="red" />
+        <el-icon icon="warning" :size="30" color="red" />
         <el-text :size="14" :weight="700">
           {{ t('prompts.error.title') }}
         </el-text>
         <el-button
           :label="t('prompts.error.retry')"
-          icon="refresh-2"
+          icon="refresh"
           mode="flat"
           color="red"
           :size="12"
@@ -408,7 +408,7 @@ function openTelegram(item: PromptArchiveItem) {
         :p="40"
         :radius="16"
         bg="normal5">
-        <el-icon icon="search-status" :size="36" color="normal40" />
+        <el-icon icon="search" :size="36" color="normal40" />
         <el-text :size="15" :weight="800">
           {{ t('prompts.empty.title') }}
         </el-text>
@@ -440,7 +440,7 @@ function openTelegram(item: PromptArchiveItem) {
             :label="t('prompts.loadMore', {
               count: filteredItems.length - visibleItems.length,
             })"
-            icon="arrow-down"
+            icon="arrow_downward"
             mode="flat"
             color="normal"
             :size="12"

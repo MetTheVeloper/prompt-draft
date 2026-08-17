@@ -504,7 +504,7 @@ const expressionStyleOptions = [
 
 export const ExpressionModule: PromptKeyModule = {
   key: "expression",
-  icon: "smileys",
+  icon: "sentiment_satisfied",
 
   groups: {
     core: {

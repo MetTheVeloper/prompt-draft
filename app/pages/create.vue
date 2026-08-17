@@ -603,7 +603,7 @@ function openDeleteDraftModal() {
 
   $modal.open({
     header: {
-      icon: "trash",
+      icon: "delete",
       title: t("create.draft.deleteModal.title"),
       subtitle: title,
       color: "red",
@@ -614,7 +614,7 @@ function openDeleteDraftModal() {
     actions: [
       {
         label: t("create.draft.deleteModal.confirm"),
-        icon: "trash",
+        icon: "delete",
         color: "red",
         close: true,
         handler: () => {
@@ -623,7 +623,7 @@ function openDeleteDraftModal() {
       },
       {
         label: t("components.modal.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -762,7 +762,7 @@ function getSafeImportedCollection(value: unknown): PromptDraftCollection | null
 function openDraftImportErrorModal() {
   $modal.open({
     header: {
-      icon: "danger",
+      icon: "warning",
       title: t("create.draft.importModal.errorTitle"),
       color: "red",
     },
@@ -770,7 +770,7 @@ function openDraftImportErrorModal() {
     actions: [
       {
         label: t("components.modal.actions.close"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -867,13 +867,13 @@ function getDraftMenuItems(): GlobalMenuItem[] {
     },
     {
       label: t("create.draft.importJson"),
-      icon: "import-2",
+      icon: "upload_file",
       color: "blue",
       handler: openDraftImportPicker,
     },
     {
       label: t("create.draft.exportJson"),
-      icon: "export-3",
+      icon: "download",
       color: "orange",
       disabled: () => !canExportDraftCollection.value,
       handler: exportDraftCollectionJson,
@@ -892,7 +892,7 @@ function getDraftMenuItems(): GlobalMenuItem[] {
     items.push({
       label: draft.title || getDefaultDraftTitle(index),
       description: formatDraftDate(draft.updatedAt),
-      icon: "note-text",
+      icon: "description",
       active: isActive,
       handler: () => selectDraft(draft.id),
     });
@@ -1012,9 +1012,9 @@ function updateModuleIssues(issues: PromptValidationIssue[]) {
 }
 const { mini, mobile } = useScreen();
 const tabs = ref([
-  {label: 'setup', icon: 'setting-2'},
+  {label: 'setup', icon: 'tune'},
   {label: 'editor', icon: 'edit'},
-  {label: 'output', icon: 'note-text'},
+  {label: 'output', icon: 'description'},
 ]);
 const tab = ref({label: 'setup', icon: 'settings'});
 
@@ -1310,7 +1310,7 @@ onBeforeUnmount(() => {
               :type="mini ? 'fab' : 'normal'"
               color="orange"
               :label="mini ? '' : t('create.draft.menu')"
-              icon="note-text" />
+              icon="description" />
           </el-flex>
           <!-- actions -->
           <el-flex rules="rbc" :class="['w100 tne100', draftSaveStatus === 'saving' ? 'pen flg100' : '']">
@@ -1328,7 +1328,7 @@ onBeforeUnmount(() => {
                   mode="flat"
                   color="orange"
                   :label="t('create.draft.clear')"
-                  icon="refresh-2" />
+                  icon="refresh" />
                 <el-button
                   @click="openDeleteDraftModal"
                   :size="12"
@@ -1337,7 +1337,7 @@ onBeforeUnmount(() => {
                   mode="flat"
                   color="red"
                   :label="t('create.draft.delete')"
-                  icon="trash"
+                  icon="delete"
                   :disable="!canDeleteActiveDraft" />
               </el-flex>
             </el-flex>
@@ -1352,7 +1352,7 @@ onBeforeUnmount(() => {
                   mode="flat"
                   color="normal"
                   :label="t('create.draft.download')"
-                  icon="import-2"
+                  icon="download"
                   :disable="!canExportActiveDraft" />
                 <el-button
                   @click="shareActiveDraftJson"
@@ -1361,7 +1361,7 @@ onBeforeUnmount(() => {
                   mode="flat"
                   color="blue"
                   :label="t('create.draft.share')"
-                  icon="share-1"
+                  icon="share"
                   :disable="!canExportActiveDraft" />
               </el-flex>
             </el-flex>

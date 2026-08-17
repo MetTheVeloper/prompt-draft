@@ -76,7 +76,7 @@ const intensityOptions = [
 
 export const EffectsModule: PromptKeyModule = {
   key: "effects",
-  icon: "magic-star",
+  icon: "auto_awesome",
 
   groups: {
     core: { id: "core", order: 10, defaultOpen: true },

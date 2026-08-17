@@ -684,7 +684,7 @@ const deformationStyleOptions = [
 
 export const DeformationModule: PromptKeyModule = {
   key: "deformation",
-  icon: "forward-item",
+  icon: "transform",
 
   groups: {
     core: {

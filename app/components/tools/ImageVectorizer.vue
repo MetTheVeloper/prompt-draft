@@ -231,7 +231,7 @@ const maxColorOptions = computed(() => {
   return values.map((count) => ({
     label: t('tools.imageVectorizer.values.colors', { count }),
     value: count,
-    icon: 'color-swatch',
+    icon: 'palette',
   }))
 })
 
@@ -241,7 +241,7 @@ const lowResScaleOptions = computed(() => {
       ? t('tools.imageVectorizer.values.auto')
       : `${value}x`,
     value,
-    icon: 'maximize',
+    icon: 'fullscreen',
   }))
 })
 
@@ -391,13 +391,13 @@ const contextMenuItems = computed<GlobalMenuItem[]>(() => {
     items.push(
       {
         label: t('tools.imageVectorizer.contextMenu.downloadSvg'),
-        icon: 'receive-square',
+        icon: 'download',
         disabled: () => !result.value?.svg || isLoading.value,
         handler: () => downloadSvg(),
       },
       {
         label: t('tools.imageVectorizer.contextMenu.copySvg'),
-        icon: 'copy',
+        icon: 'content_copy',
         disabled: () => !result.value?.svg || isLoading.value,
         handler: copySvgFromMenu,
       },
@@ -413,30 +413,30 @@ const contextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: t('tools.imageVectorizer.contextMenu.copyPng'),
-      icon: 'copy',
+      icon: 'content_copy',
       disabled: () => !rasterBlob.value || isLoading.value,
       handler: copyPngFromMenu,
     },
     {
       label: t('tools.imageVectorizer.contextMenu.pasteImage'),
-      icon: 'gallery-add',
+      icon: 'add_photo_alternate',
       handler: pasteImageFromMenu,
     },
     {
       label: t('tools.imageVectorizer.contextMenu.removeImage'),
-      icon: 'trash',
+      icon: 'delete',
       color: 'red',
       handler: clearSource,
     },
     { type: 'divider' },
     {
       label: t('tools.imageVectorizer.contextMenu.copyConfig'),
-      icon: 'setting-2',
+      icon: 'tune',
       handler: copyConfigFromMenu,
     },
     {
       label: t('tools.imageVectorizer.contextMenu.pasteConfig'),
-      icon: 'document',
+      icon: 'description',
       handler: pasteConfigFromMenu,
     },
   )
@@ -594,7 +594,7 @@ function confirmClipboardReplacement() {
 
     modal.open({
       header: {
-        icon: 'warning-2',
+        icon: 'warning',
         title: t('tools.imageVectorizer.messages.replaceClipboardImageTitle'),
         color: 'orange',
         closeButton: false,
@@ -613,7 +613,7 @@ function confirmClipboardReplacement() {
         {
           label: t('tools.imageVectorizer.actions.replaceWithClipboard'),
           color: 'orange',
-          icon: 'gallery-add',
+          icon: 'add_photo_alternate',
           close: true,
           handler: () => {
             finish(true)
@@ -1079,7 +1079,7 @@ onBeforeUnmount(() => {
       <el-icon icon="shapes" :size="36" />
 
       <el-flex v-bind="emptyContentAttrs">
-        <el-text :size="16" :weight="600" icon="gallery-add">
+        <el-text :size="16" :weight="600" icon="add_photo_alternate">
           {{ t('tools.imageVectorizer.empty.title') }}
         </el-text>
 
@@ -1096,7 +1096,7 @@ onBeforeUnmount(() => {
       <el-dropdown
         v-model="selectedMode"
         :items="modeOptions"
-        icon="setting-2"
+        icon="tune"
         :placeholder="t('tools.imageVectorizer.controls.mode')"
         :menu-options="{ zIndex: 40000 }"
         class="image-vectorizer-mode"
@@ -1120,12 +1120,12 @@ onBeforeUnmount(() => {
           </el-text>
 
           <el-flex v-if="result" v-bind="paletteAttrs">
-            <el-text :size="11" :weight="300" color="normal65" icon="document">
+            <el-text :size="11" :weight="300" color="normal65" icon="description">
               {{ sourceDetails }}
             </el-text>
 
             <template v-if="!isUpscale">
-              <el-text :size="11" :weight="400" color="normal70" icon="color-swatch">
+              <el-text :size="11" :weight="400" color="normal70" icon="palette">
                 {{ t('tools.imageVectorizer.result.palette') }}
               </el-text>
 
@@ -1142,7 +1142,7 @@ onBeforeUnmount(() => {
               />
             </template>
 
-            <el-text v-else :size="11" :weight="500" color="normal70" icon="color-swatch">
+            <el-text v-else :size="11" :weight="500" color="normal70" icon="palette">
               {{ t('tools.imageVectorizer.result.outputColors', { count: result.stats.outputColorCount }) }}
             </el-text>
           </el-flex>
@@ -1152,7 +1152,7 @@ onBeforeUnmount(() => {
           <el-dropdown
             v-model="selectedMode"
             :items="modeOptions"
-            icon="setting-2"
+            icon="tune"
             :placeholder="t('tools.imageVectorizer.controls.mode')"
             :menu-options="{ zIndex: 40000 }"
             class="image-vectorizer-mode"
@@ -1167,7 +1167,7 @@ onBeforeUnmount(() => {
           />
 
           <el-button
-            icon="trash"
+            icon="delete"
             color="red"
             :label="t('tools.imageVectorizer.actions.clear')"
             v-bind="fabActionButtonAttrs"
@@ -1194,14 +1194,14 @@ onBeforeUnmount(() => {
         <el-flex v-bind="controlsPaneAttrs">
           <el-grid v-bind="controlsGridAttrs">
             <el-flex v-bind="primaryControlCardAttrs">
-              <el-text :size="12" :weight="500" color="normal75" icon="color-swatch">
+              <el-text :size="12" :weight="500" color="normal75" icon="palette">
                 {{ t('tools.imageVectorizer.controls.maxColors') }}
               </el-text>
 
               <el-dropdown
                 v-model="selectedMaxColors"
                 :items="maxColorOptions"
-                icon="color-swatch"
+                icon="palette"
                 :placeholder="t('tools.imageVectorizer.controls.maxColors')"
                 :menu-options="{ zIndex: 40000 }"
               />
@@ -1215,7 +1215,7 @@ onBeforeUnmount(() => {
               <el-switch
                 v-model="settings.strictColorLimit"
                 :size="14"
-                icon="warning-2"
+                icon="warning"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.strictColorLimit')"
               />
@@ -1229,14 +1229,14 @@ onBeforeUnmount(() => {
               <el-switch
                 v-model="settings.removeBackground"
                 :size="14"
-                icon="eraser"
+                icon="ink_eraser"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.removeBackground')"
               />
 
               <el-flex v-bind="backgroundActionsAttrs">
                 <el-button
-                  icon="color-swatch"
+                  icon="palette"
                   mode="flat"
                   color="prim"
                   :label="isPickingBackground ? t('tools.imageVectorizer.actions.cancelPicker') : t('tools.imageVectorizer.actions.pickBackground')"
@@ -1275,7 +1275,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="magic-star">
+                <el-text :size="12" :weight="500" color="normal75" icon="auto_awesome">
                   {{ t('tools.imageVectorizer.controls.colorTolerance') }}
                 </el-text>
 
@@ -1300,7 +1300,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="maximize">
+                <el-text :size="12" :weight="500" color="normal75" icon="fullscreen">
                   {{ t('tools.imageVectorizer.controls.padding') }}
                 </el-text>
 
@@ -1323,7 +1323,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="filter-remove">
+                <el-text :size="12" :weight="500" color="normal75" icon="filter_alt_off">
                   {{ t('tools.imageVectorizer.controls.minRegionSize') }}
                 </el-text>
 
@@ -1348,7 +1348,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="brush-2">
+                <el-text :size="12" :weight="500" color="normal75" icon="brush">
                   {{ t('tools.imageVectorizer.controls.edgeCleanup') }}
                 </el-text>
 
@@ -1375,7 +1375,7 @@ onBeforeUnmount(() => {
               <el-switch
                 v-model="settings.removeEnclosedBackground"
                 :size="14"
-                icon="forbidden-2"
+                icon="block"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.removeEnclosedBackground')"
                 :disable="!settings.removeBackground"
@@ -1392,7 +1392,7 @@ onBeforeUnmount(() => {
                 v-if="!isUpscale"
                 v-model="settings.refineSvg"
                 :size="14"
-                icon="magic-star"
+                icon="auto_awesome"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.refineSvg')"
               />
@@ -1401,7 +1401,7 @@ onBeforeUnmount(() => {
                 v-else
                 v-model="settings.refineImage"
                 :size="14"
-                icon="magic-star"
+                icon="auto_awesome"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.refineImage')"
               />
@@ -1417,7 +1417,7 @@ onBeforeUnmount(() => {
               <el-switch
                 v-model="settings.enhanceLowRes"
                 :size="14"
-                icon="maximize"
+                icon="fullscreen"
                 class="w100"
                 :label="t('tools.imageVectorizer.controls.enhanceLowRes')"
                 :disable="isUpscale"
@@ -1430,14 +1430,14 @@ onBeforeUnmount(() => {
             </el-flex>
 
             <el-flex v-bind="secondaryControlCardAttrs">
-              <el-text :size="12" :weight="500" color="normal75" icon="maximize">
+              <el-text :size="12" :weight="500" color="normal75" icon="fullscreen">
                 {{ t('tools.imageVectorizer.controls.lowResScale') }}
               </el-text>
 
               <el-dropdown
                 v-model="selectedLowResScale"
                 :items="lowResScaleOptions"
-                icon="maximize"
+                icon="fullscreen"
                 :placeholder="t('tools.imageVectorizer.controls.lowResScale')"
                 :menu-options="{ zIndex: 40000 }"
                 :disable="!settings.enhanceLowRes"
@@ -1451,7 +1451,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="brush-2">
+                <el-text :size="12" :weight="500" color="normal75" icon="brush">
                   {{ t('tools.imageVectorizer.controls.lowResRecovery') }}
                 </el-text>
 
@@ -1478,7 +1478,7 @@ onBeforeUnmount(() => {
 
             <el-flex v-bind="secondaryControlCardAttrs">
               <el-flex v-bind="controlHeaderAttrs">
-                <el-text :size="12" :weight="500" color="normal75" icon="brush-2">
+                <el-text :size="12" :weight="500" color="normal75" icon="brush">
                   {{ t(isUpscale
                     ? 'tools.imageVectorizer.controls.edgeSmooth'
                     : 'tools.imageVectorizer.controls.smooth') }}
@@ -1520,14 +1520,14 @@ onBeforeUnmount(() => {
               v-if="!isUpscale && settings.enhanceLowRes"
               v-bind="secondaryControlCardAttrs"
             >
-              <el-text :size="12" :weight="500" color="normal75" icon="path-square">
+              <el-text :size="12" :weight="500" color="normal75" icon="polyline">
                 {{ t('tools.imageVectorizer.controls.smoothMode') }}
               </el-text>
 
               <el-dropdown
                 v-model="selectedSmoothMode"
                 :items="smoothModeOptions"
-                icon="path-square"
+                icon="polyline"
                 :placeholder="t('tools.imageVectorizer.controls.smoothMode')"
                 :menu-options="{ zIndex: 40000 }"
                 :disable="!settings.enhanceLowRes"
@@ -1545,7 +1545,7 @@ onBeforeUnmount(() => {
       <el-flex v-bind="downloadAreaAttrs">
         <el-button
           color="prim"
-          icon="receive-square"
+          icon="download"
           class="image-vectorizer-download"
           :label="primaryDownloadLabel"
           :disable="isLoading || !result"

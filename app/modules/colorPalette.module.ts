@@ -257,7 +257,7 @@ const fields: Record<string, ModuleField> = {
 
 export const ColorPaletteModule: PromptKeyModule = {
   key: "colorPalette",
-  icon: "color-swatch",
+  icon: "palette",
   groups: {
     core: { id: "core", order: 1, defaultOpen: true },
     advanced: { id: "advanced", order: 2, defaultOpen: false },

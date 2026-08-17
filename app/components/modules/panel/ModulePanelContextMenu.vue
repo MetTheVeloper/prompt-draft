@@ -109,7 +109,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
   {
     key: "panel",
     label: props.labels.title,
-    icon: "component",
+    icon: "widgets",
     iconColor: "normal55",
     rows: [
       {
@@ -147,7 +147,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
   {
     key: "output",
     label: props.labels.copyOutput,
-    icon: "document-copy",
+    icon: "file_copy",
     iconColor: "normal55",
     rows: [
       {
@@ -161,7 +161,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
             actionKey: "onCopyOutput",
             disabledKey: "copyOutput",
             attrs: {
-              icon: "document-copy",
+              icon: "file_copy",
               color: "prim",
             },
           },
@@ -183,7 +183,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
             actionKey: "onRemove",
             disabledKey: "remove",
             attrs: {
-              icon: "trash",
+              icon: "delete",
               color: "red",
             },
           },

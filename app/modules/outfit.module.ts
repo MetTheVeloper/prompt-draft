@@ -172,7 +172,7 @@ const outfitStyleOptions = [
 
 export const OutfitModule: PromptKeyModule = {
   key: "outfit",
-  icon: "clipboard",
+  icon: "content_paste",
 
   groups: {
     core: {

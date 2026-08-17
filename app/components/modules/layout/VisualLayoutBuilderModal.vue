@@ -496,7 +496,7 @@ function applyGridChange() {
 
   modal.open({
     header: {
-      icon: "warning-2",
+      icon: "warning",
       title: t("modules.layout.fields.regions.visualBuilder.gridReset.title"),
       subtitle: t("modules.layout.fields.regions.visualBuilder.gridReset.subtitle"),
       color: "orange",
@@ -507,7 +507,7 @@ function applyGridChange() {
     actions: [
       {
         label: t("modules.layout.fields.regions.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -516,7 +516,7 @@ function applyGridChange() {
         label: t(
           "modules.layout.fields.regions.visualBuilder.gridReset.confirm",
         ),
-        icon: "refresh-2",
+        icon: "refresh",
         color: "orange",
         close: true,
         handler: resetGrid,
@@ -639,7 +639,7 @@ onBeforeUnmount(() => {
     <el-grid :cols="mobile ? 1 : ['1fr', 'auto']" :gap="10" class="w100">
       <el-flex rules="rsc" :gap="6" class="w100">
         <el-button
-          icon="edit-2"
+          icon="edit"
           :mode="activeTool === 'select' ? 'normal' : 'flat'"
           :color="activeTool === 'select' ? 'prim' : 'normal'"
           :label="t('modules.layout.fields.regions.visualBuilder.tools.select')"
@@ -647,7 +647,7 @@ onBeforeUnmount(() => {
         />
 
         <el-button
-          icon="add-circle"
+          icon="add_circle"
           :mode="activeTool === 'draw' ? 'normal' : 'flat'"
           :color="activeTool === 'draw' ? 'prim' : 'normal'"
           :label="t('modules.layout.fields.regions.visualBuilder.tools.draw')"
@@ -683,7 +683,7 @@ onBeforeUnmount(() => {
         </label>
 
         <el-button
-          icon="refresh-2"
+          icon="refresh"
           mode="flat"
           color="orange"
           :disable="!hasPendingGridChange"
@@ -697,7 +697,7 @@ onBeforeUnmount(() => {
       v-if="hasPendingGridChange"
       :size="10"
       color="orange"
-      icon="warning-2"
+      icon="warning"
       icon-color="orange"
     >
       {{ t("modules.layout.fields.regions.visualBuilder.grid.pendingChange") }}
@@ -778,7 +778,7 @@ onBeforeUnmount(() => {
             <el-button
               type="fab"
               mode="flat"
-              icon="copy"
+              icon="content_copy"
               :size="10"
               :p="4"
               :label="t('modules.layout.fields.regions.actions.duplicate')"
@@ -789,7 +789,7 @@ onBeforeUnmount(() => {
               type="fab"
               mode="flat"
               color="red"
-              icon="trash"
+              icon="delete"
               :size="10"
               :p="4"
               :label="t('modules.layout.fields.regions.actions.delete')"
@@ -813,7 +813,7 @@ onBeforeUnmount(() => {
     </el-flex>
 
     <el-flex :rules="mobile ? 'ccs' : 'rbc'" class="w100" :gap="8">
-      <el-text :size="10" color="normal50" icon="info-circle">
+      <el-text :size="10" color="normal50" icon="info">
         {{ t("modules.layout.fields.regions.visualBuilder.hint") }}
       </el-text>
 

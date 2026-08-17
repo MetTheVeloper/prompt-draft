@@ -1269,7 +1269,7 @@ const finishOptions = [
 
 export const StyleModule = {
   key: "style",
-  icon: "magicpen",
+  icon: "auto_fix_high",
 
   groups: {
     core: {

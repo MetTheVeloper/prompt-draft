@@ -149,7 +149,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
   {
     key: "draft",
     labelKey: "draft",
-    icon: "note-text",
+    icon: "description",
     iconColor: "normal50",
     rows: [
       {
@@ -172,7 +172,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             labelKey: "importDraft",
             actionKey: "onImportDraft",
             attrs: {
-              icon: "import-2",
+              icon: "upload_file",
               color: "blue10",
               textColor: 'normal',
             },
@@ -183,7 +183,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onExportCollection",
             disabledKey: "exportCollection",
             attrs: {
-              icon: "export-3",
+              icon: "download",
               color: "blue10",
               textColor: 'normal',
             },
@@ -194,7 +194,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onDownloadDraft",
             disabledKey: "downloadDraft",
             attrs: {
-              icon: "import-2",
+              icon: "upload_file",
               color: "orange15",
               textColor: 'normal',
             },
@@ -205,7 +205,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onResetDraft",
             disabledKey: "resetDraft",
             attrs: {
-              icon: "refresh-2",
+              icon: "refresh",
               color: "orange",
             },
           },
@@ -215,7 +215,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onDeleteDraft",
             disabledKey: "deleteDraft",
             attrs: {
-              icon: "trash",
+              icon: "delete",
               color: "red",
             },
           },
@@ -226,7 +226,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
   {
     key: "copy",
     labelKey: "copy",
-    icon: "copy",
+    icon: "content_copy",
     iconColor: "normal50",
     rows: [
       {
@@ -240,7 +240,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onCopyModular",
             disabledKey: "copyModular",
             attrs: {
-              icon: "note-text",
+              icon: "description",
               color: "blue10",
               textColor: "normal",
             },
@@ -251,7 +251,7 @@ const menuGroups: CreatePageContextMenuGroup[] = [
             actionKey: "onCopyNatural",
             disabledKey: "copyNatural",
             attrs: {
-              icon: "text",
+              icon: "text_fields",
               color: "blue10",
               textColor: "normal",
             },

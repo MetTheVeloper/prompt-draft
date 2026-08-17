@@ -1,0 +1,16 @@
+{
+  "invalid": [
+    {
+      "file": "app/components/el/Switch.vue",
+      "value": "icon"
+    },
+    {
+      "file": "app/components/el/button.vue",
+      "value": "icon"
+    },
+    {
+      "file": "app/components/el/text.vue",
+      "value": "icon"
+    }
+  ]
+}

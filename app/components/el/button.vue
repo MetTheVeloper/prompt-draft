@@ -134,7 +134,7 @@ const props = defineProps({
   },
   iconMode: {
     type: String,
-    default: 'vuesax',
+    default: 'symbols',
   },
   iconSize: {
     type: Number,

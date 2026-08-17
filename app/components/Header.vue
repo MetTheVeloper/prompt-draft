@@ -89,7 +89,7 @@ function openLanguageMenu() {
 function openImageConverterModal() {
   modal.open({
     header: {
-      icon: 'gallery-export',
+      icon: 'image',
       title: translate('tools.imageConverter.title'),
       subtitle: translate('tools.imageConverter.subtitle'),
       closeButton: true,
@@ -109,7 +109,7 @@ function openImageConverterModal() {
 function openAboutModal() {
   modal.open({
     header: {
-      icon: 'info-circle',
+      icon: 'info',
       title: 'tools.about.title',
       subtitle: 'tools.about.subtitle',
       closeButton: true,
@@ -137,7 +137,7 @@ function openToolsMenu() {
     items: [
       {
         label: translate('app.tools.convert'),
-        icon: 'gallery-export',
+        icon: 'image',
         color: 'normal15',
         handler: openImageConverterModal,
       },
@@ -152,7 +152,7 @@ function openToolsMenu() {
       },
       {
         label: translate('app.tools.about'),
-        icon: 'info-circle',
+        icon: 'info',
         color: 'normal15',
         handler: openAboutModal,
       },
@@ -198,7 +198,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: translate('app.tools.convert'),
-      icon: 'gallery-export',
+      icon: 'image',
       color: 'normal15',
       handler: openImageConverterModal,
     },
@@ -210,7 +210,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: translate('app.tools.about'),
-      icon: 'info-circle',
+      icon: 'info',
       color: 'normal15',
       handler: openAboutModal,
     },
@@ -323,7 +323,7 @@ function openMobileMenu() {
         mode="flat"
         type="fab"
         :label="$t('app.switchLang')"
-        icon="global"
+        icon="language"
         @click="openLanguageMenu"
       />
 
@@ -334,7 +334,7 @@ function openMobileMenu() {
         mode="flat"
         type="fab"
         :label="$t('app.tools.menu')"
-        icon="more-vertical"
+        icon="more_vert"
         @click="openMobileMenu"
       />
 
@@ -346,7 +346,7 @@ function openMobileMenu() {
         mode="flat"
         type="fab"
         :label="$t('app.tools.menu')"
-        icon="more-vertical"
+        icon="more_vert"
         @click="openToolsMenu"
       />
     </el-flex>

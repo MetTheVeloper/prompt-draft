@@ -539,7 +539,7 @@ const hairTextureOptions = [
 
 export const HairModule: PromptKeyModule = {
   key: "hair",
-  icon: "wind-2",
+  icon: "air",
 
   groups: {
     core: { id: "core", order: 10, defaultOpen: true },

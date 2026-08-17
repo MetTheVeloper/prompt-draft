@@ -18,8 +18,8 @@ const { mini } = useScreen();
         {{ t("home.description") }}
       </el-text>
       <el-divider />
-      <el-button :size="16" :label="t('home.createPrompt')" icon="magicpen" to="/create" />
-      <el-button :size="14" :label="t('app.navigation.guide')" icon="message-question" to="/guide" color="normal"
+      <el-button :size="16" :label="t('home.createPrompt')" icon="auto_fix_high" to="/create" />
+      <el-button :size="14" :label="t('app.navigation.guide')" icon="help" to="/guide" color="normal"
         mode="flat" />
     </el-flex>
   </el-grid>

@@ -227,7 +227,7 @@ function openVariableModal(variableIndex?: number) {
     actions: [
       {
         label: t("modules.variables.fields.variables.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -284,7 +284,7 @@ function openDeleteConfirm(variable: PromptVariable, variableIndex: number) {
 
   modal.open({
     header: {
-      icon: "trash",
+      icon: "delete",
       title: t("modules.variables.fields.variables.modal.deleteTitle"),
       subtitle: token,
       color: "red",
@@ -300,14 +300,14 @@ function openDeleteConfirm(variable: PromptVariable, variableIndex: number) {
     actions: [
       {
         label: t("modules.variables.fields.variables.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: t("modules.variables.fields.variables.actions.confirmDelete"),
-        icon: "trash",
+        icon: "delete",
         color: "red",
         close: true,
         handler: () => {

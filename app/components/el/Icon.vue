@@ -38,7 +38,7 @@ const props = withDefaults(
   }>(),
   {
     color: "normal",
-    mode: "vuesax",
+    mode: "symbols",
     variant: "outlined",
     weight: 400,
     fill: 0,

@@ -1,123 +1,141 @@
 {
-  "generatedAt": "2026-08-17T11:59:07.501Z",
-  "totalUsages": 576,
-  "uniqueStaticIconValues": 116,
+  "generatedAt": "2026-08-17T11:59:46.046Z",
+  "totalUsages": 575,
+  "uniqueStaticIconValues": 134,
   "values": [
     "action.icon",
     "activeModule.icon",
     "add",
     "add-circle",
-    "arrow-down",
+    "add_circle",
+    "add_photo_alternate",
+    "air",
+    "analytics",
     "arrow-down-1",
-    "arrow-left",
-    "arrow-right",
     "arrow-up",
+    "arrow_downward",
+    "arrow_left",
+    "arrow_right",
+    "arrow_upward",
+    "auto_awesome",
     "auto_fix_high",
     "backIcon",
+    "block",
     "box",
+    "brush",
     "brush-2",
-    "calendar-1",
+    "calendar_month",
     "camera",
+    "cancel",
     "cancelIcon",
     "category",
-    "chart-square",
+    "check",
+    "check_box",
+    "check_circle",
     "clipboard",
-    "clock",
-    "clock-1",
+    "close",
     "close-circle",
-    "close-simple",
-    "cloud-add",
+    "cloud_upload",
     "code",
     "color-swatch",
     "component",
     "confirmIcon",
+    "content_copy",
+    "content_paste",
     "copy",
     "crop",
     "danger",
-    "document",
+    "dashboard",
+    "delete",
+    "description",
     "document-copy",
-    "document-text",
-    "drop",
+    "document_scanner",
+    "download",
     "edit",
     "edit-2",
-    "element-3",
-    "element-4",
-    "eraser",
     "export-3",
-    "eye",
-    "filter-remove",
-    "folder-open",
-    "forbidden-2",
+    "file_copy",
+    "filter_alt_off",
+    "folder_open",
     "forward-item",
-    "gallery",
-    "gallery-add",
-    "gallery-export",
-    "gallery-remove",
-    "gallery-slash",
+    "fullscreen",
     "getHeaderIcon(stackModal)",
-    "global",
-    "grid-1",
     "grid-5",
+    "grid_view",
     "group.icon",
     "help",
+    "hide_image",
     "icon",
     "icon-name",
     "image",
     "import-2",
+    "info",
     "info-circle",
-    "information",
+    "ink_eraser",
     "issueIcon(issue)",
     "item.icon",
     "lamp",
-    "like-1",
+    "language",
+    "lightbulb",
     "magic-star",
     "magicpen",
-    "maximize",
-    "maximize-3",
+    "manage_accounts",
+    "memory",
     "menu",
-    "message-question",
-    "mobile",
     "module.icon",
     "more",
-    "more-vertical",
+    "more_vert",
+    "mouse",
     "mouse-circle",
     "note-text",
-    "path-square",
+    "palette",
+    "person",
     "photo_library",
+    "play_circle",
+    "polyline",
     "primaryCopyIcon",
-    "ram",
-    "receive-square",
     "redo",
     "refresh",
     "refresh-2",
-    "rotate-left",
-    "row-horizontal",
-    "scan",
-    "search-status",
+    "remove",
+    "rotate_left",
+    "schedule",
+    "search",
+    "select_all",
     "selectedIcon",
-    "send-2",
+    "send",
+    "sentiment_satisfied",
     "setting",
     "setting-2",
     "settings",
     "shapes",
+    "share",
     "share-1",
-    "shield-tick",
     "slash",
+    "smartphone",
     "smileys",
     "star",
     "tb.icon",
     "text",
-    "text-block",
+    "text_fields",
+    "thumb_up",
     "tick",
     "tick-circle",
-    "tick-square",
+    "transform",
     "translate",
     "trash",
+    "tune",
     "undo",
+    "upload_file",
     "user",
     "user-edit",
-    "video-play",
+    "verified_user",
+    "view_list",
+    "visibility",
+    "warning",
     "warning-2",
+    "water_drop",
+    "widgets",
     "wind-2"
   ],
   "usages": [
@@ -930,64 +948,64 @@
       "file": "app/components/collage/CellContextMenu.vue",
       "line": 78,
       "kind": "template-static",
-      "value": "gallery",
-      "context": ":p=\"10\"> <el-flex v-if=\"shortTitle\" rules=\"rsc\" :gap=\"8\" :p=\"[2, 4]\"> <el-icon icon=\"gallery\" :size=\"16\" color=\"normal55\" /> <el-text class=\"collage-cell-context-menu__title\" :s"
+      "value": "photo_library",
+      "context": ":p=\"10\"> <el-flex v-if=\"shortTitle\" rules=\"rsc\" :gap=\"8\" :p=\"[2, 4]\"> <el-icon icon=\"photo_library\" :size=\"16\" color=\"normal55\" /> <el-text class=\"collage-cell-context-menu__title\" :s"
     },
     {
       "file": "app/components/collage/CellContextMenu.vue",
       "line": 87,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "lage-cell-context-menu__row\" :gap=\"8\"> <el-button :label=\"pipLabel\" icon=\"gallery-add\" mode=\"flat\" color=\"blue\" :size=\"13\" :p=\"[8, 10]\""
+      "value": "add_photo_alternate",
+      "context": "lage-cell-context-menu__row\" :gap=\"8\"> <el-button :label=\"pipLabel\" icon=\"add_photo_alternate\" mode=\"flat\" color=\"blue\" :size=\"13\" :p=\"[8, 10]\""
     },
     {
       "file": "app/components/collage/CellContextMenu.vue",
       "line": 108,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "ection=\"vertical\" :height=\"16\" /> <el-button :label=\"replaceLabel\" icon=\"refresh-2\" type=\"fab\" mode=\"flat\" color=\"normal\" :size=\"13\""
+      "value": "refresh",
+      "context": "ection=\"vertical\" :height=\"16\" /> <el-button :label=\"replaceLabel\" icon=\"refresh\" type=\"fab\" mode=\"flat\" color=\"normal\" :size=\"13\""
     },
     {
       "file": "app/components/collage/CellContextMenu.vue",
       "line": 119,
       "kind": "template-static",
-      "value": "rotate-left",
-      "context": "@click=\"run(onReplace)\" /> <el-button :label=\"resetLabel\" icon=\"rotate-left\" type=\"fab\" mode=\"flat\" color=\"normal\" :disable=\"!canReset"
+      "value": "rotate_left",
+      "context": "@click=\"run(onReplace)\" /> <el-button :label=\"resetLabel\" icon=\"rotate_left\" type=\"fab\" mode=\"flat\" color=\"normal\" :disable=\"!canReset"
     },
     {
       "file": "app/components/collage/CellContextMenu.vue",
       "line": 131,
       "kind": "template-static",
-      "value": "trash",
-      "context": "@click=\"run(onReset)\" /> <el-button :label=\"removeLabel\" icon=\"trash\" type=\"fab\" mode=\"flat\" color=\"red\" :size=\"13\" :p="
+      "value": "delete",
+      "context": "@click=\"run(onReset)\" /> <el-button :label=\"removeLabel\" icon=\"delete\" type=\"fab\" mode=\"flat\" color=\"red\" :size=\"13\" :p="
     },
     {
       "file": "app/components/collage/PipContextMenu.vue",
       "line": 124,
       "kind": "template-static",
-      "value": "gallery",
-      "context": ":p=\"10\"> <el-flex v-if=\"shortTitle\" rules=\"rsc\" :gap=\"8\" :p=\"[2, 4]\"> <el-icon icon=\"gallery\" :size=\"16\" color=\"normal55\" /> <el-text class=\"collage-pip-context-menu__title\" :si"
+      "value": "photo_library",
+      "context": ":p=\"10\"> <el-flex v-if=\"shortTitle\" rules=\"rsc\" :gap=\"8\" :p=\"[2, 4]\"> <el-icon icon=\"photo_library\" :size=\"16\" color=\"normal55\" /> <el-text class=\"collage-pip-context-menu__title\" :si"
     },
     {
       "file": "app/components/collage/PipContextMenu.vue",
       "line": 133,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "</el-flex> <el-grid :gap=\"0\"> <el-button :label=\"replaceLabel\" icon=\"refresh-2\" rules=\"rsc\" :effect=\"{ color: 'normal15' }\" mode=\"flat\" c"
+      "value": "refresh",
+      "context": "</el-flex> <el-grid :gap=\"0\"> <el-button :label=\"replaceLabel\" icon=\"refresh\" rules=\"rsc\" :effect=\"{ color: 'normal15' }\" mode=\"flat\" c"
     },
     {
       "file": "app/components/collage/PipContextMenu.vue",
       "line": 145,
       "kind": "template-static",
-      "value": "trash",
-      "context": "@click=\"run(onReplace)\" /> <el-button :label=\"removeLabel\" icon=\"trash\" rules=\"rsc\" :effect=\"{ color: 'red25' }\" mode=\"flat\" colo"
+      "value": "delete",
+      "context": "@click=\"run(onReplace)\" /> <el-button :label=\"removeLabel\" icon=\"delete\" rules=\"rsc\" :effect=\"{ color: 'red25' }\" mode=\"flat\" colo"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 152,
       "kind": "object-static",
-      "value": "note-text",
-      "context": "Groups: CreatePageContextMenuGroup[] = [ { key: \"draft\", labelKey: \"draft\", icon: \"note-text\", iconColor: \"normal50\", rows: [ { key: \"draft-file\", cols:"
+      "value": "description",
+      "context": "Groups: CreatePageContextMenuGroup[] = [ { key: \"draft\", labelKey: \"draft\", icon: \"description\", iconColor: \"normal50\", rows: [ { key: \"draft-file\", cols:"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
@@ -1000,57 +1018,57 @@
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 175,
       "kind": "object-static",
-      "value": "import-2",
-      "context": "\"importDraft\", actionKey: \"onImportDraft\", attrs: { icon: \"import-2\", color: \"blue10\", textColor: 'normal', },"
+      "value": "upload_file",
+      "context": "\"importDraft\", actionKey: \"onImportDraft\", attrs: { icon: \"upload_file\", color: \"blue10\", textColor: 'normal', },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 186,
       "kind": "object-static",
-      "value": "export-3",
-      "context": "lection\", disabledKey: \"exportCollection\", attrs: { icon: \"export-3\", color: \"blue10\", textColor: 'normal', },"
+      "value": "download",
+      "context": "lection\", disabledKey: \"exportCollection\", attrs: { icon: \"download\", color: \"blue10\", textColor: 'normal', },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 197,
       "kind": "object-static",
-      "value": "import-2",
-      "context": "nloadDraft\", disabledKey: \"downloadDraft\", attrs: { icon: \"import-2\", color: \"orange15\", textColor: 'normal', },"
+      "value": "upload_file",
+      "context": "nloadDraft\", disabledKey: \"downloadDraft\", attrs: { icon: \"upload_file\", color: \"orange15\", textColor: 'normal', },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 208,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "\"onResetDraft\", disabledKey: \"resetDraft\", attrs: { icon: \"refresh-2\", color: \"orange\", }, }, { key:"
+      "value": "refresh",
+      "context": "\"onResetDraft\", disabledKey: \"resetDraft\", attrs: { icon: \"refresh\", color: \"orange\", }, }, { key:"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 218,
       "kind": "object-static",
-      "value": "trash",
-      "context": "nDeleteDraft\", disabledKey: \"deleteDraft\", attrs: { icon: \"trash\", color: \"red\", }, }, ], }, ], },"
+      "value": "delete",
+      "context": "nDeleteDraft\", disabledKey: \"deleteDraft\", attrs: { icon: \"delete\", color: \"red\", }, }, ], }, ], },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 229,
       "kind": "object-static",
-      "value": "copy",
-      "context": "}, ], }, ], }, { key: \"copy\", labelKey: \"copy\", icon: \"copy\", iconColor: \"normal50\", rows: [ { key: \"copy-format\", cols:"
+      "value": "content_copy",
+      "context": "}, ], }, ], }, { key: \"copy\", labelKey: \"copy\", icon: \"content_copy\", iconColor: \"normal50\", rows: [ { key: \"copy-format\", cols:"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 243,
       "kind": "object-static",
-      "value": "note-text",
-      "context": "nCopyModular\", disabledKey: \"copyModular\", attrs: { icon: \"note-text\", color: \"blue10\", textColor: \"normal\", },"
+      "value": "description",
+      "context": "nCopyModular\", disabledKey: \"copyModular\", attrs: { icon: \"description\", color: \"blue10\", textColor: \"normal\", },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
       "line": 254,
       "kind": "object-static",
-      "value": "text",
-      "context": "nCopyNatural\", disabledKey: \"copyNatural\", attrs: { icon: \"text\", color: \"blue10\", textColor: \"normal\", },"
+      "value": "text_fields",
+      "context": "nCopyNatural\", disabledKey: \"copyNatural\", attrs: { icon: \"text_fields\", color: \"blue10\", textColor: \"normal\", },"
     },
     {
       "file": "app/components/create/CreatePageContextMenu.vue",
@@ -1126,8 +1144,8 @@
       "file": "app/components/el/dropdown.vue",
       "line": 319,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "arItem(): GlobalMenuItem { return { type: 'item', label: props.placeholder, icon: 'close-circle', value: props.emptyValue, active: !hasValue.value, handler: () => { emi"
+      "value": "cancel",
+      "context": "arItem(): GlobalMenuItem { return { type: 'item', label: props.placeholder, icon: 'cancel', value: props.emptyValue, active: !hasValue.value, handler: () => { emi"
     },
     {
       "file": "app/components/el/dropdown.vue",
@@ -1140,15 +1158,8 @@
       "file": "app/components/el/dropdown.vue",
       "line": 454,
       "kind": "template-static",
-      "value": "arrow-down",
-      "context": "\" :p=\"[12, 10]\" @click=\"openDropdown\"> <template #iconafter> <el-icon icon=\"arrow-down\" :size=\"12\" color=\"normal\" /> </template> </el-button> </div> </template> <st"
-    },
-    {
-      "file": "app/components/el/Icon.vue",
-      "line": 41,
-      "kind": "mode-static",
-      "value": "vuesax",
-      "context": "0 | 1; grade?: number; opticalSize?: number; }>(), { color: \"normal\", mode: \"vuesax\", variant: \"outlined\", weight: 400, fill: 0, grade: 0, }, ); const app"
+      "value": "arrow_downward",
+      "context": "\" :p=\"[12, 10]\" @click=\"openDropdown\"> <template #iconafter> <el-icon icon=\"arrow_downward\" :size=\"12\" color=\"normal\" /> </template> </el-button> </div> </template> <st"
     },
     {
       "file": "app/components/el/menu-list.vue",
@@ -1182,8 +1193,8 @@
       "file": "app/components/el/modal.vue",
       "line": 40,
       "kind": "template-static",
-      "value": "close-circle",
-      "context": "showCloseButton(stackModal)\" :label=\"t('components.modal.actions.close')\" icon=\"close-circle\" :size=\"12\" color=\"red\" mode=\"flat\" type=\"fab\" :disable=\"isModalLoading(st"
+      "value": "cancel",
+      "context": "showCloseButton(stackModal)\" :label=\"t('components.modal.actions.close')\" icon=\"cancel\" :size=\"12\" color=\"red\" mode=\"flat\" type=\"fab\" :disable=\"isModalLoading(st"
     },
     {
       "file": "app/components/el/modal.vue",
@@ -1196,57 +1207,57 @@
       "file": "app/components/el/pwa.vue",
       "line": 150,
       "kind": "object-static",
-      "value": "cloud-add",
-      "context": "t('pwa.offline.prompt.updateAction') : t('pwa.offline.prompt.action'), icon: 'cloud-add', color: 'prim', close: true, handler: async () => { con"
+      "value": "cloud_upload",
+      "context": "t('pwa.offline.prompt.updateAction') : t('pwa.offline.prompt.action'), icon: 'cloud_upload', color: 'prim', close: true, handler: async () => { con"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 160,
       "kind": "object-static",
-      "value": "clock",
-      "context": "started }, }, { label: t('pwa.offline.prompt.later'), icon: 'clock', color: 'normal', mode: 'flat', close: true, }, ],"
+      "value": "schedule",
+      "context": "started }, }, { label: t('pwa.offline.prompt.later'), icon: 'schedule', color: 'normal', mode: 'flat', close: true, }, ],"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 244,
       "kind": "object-static",
-      "value": "warning-2",
-      "context": "if (!offlinePackage.state.isStandalone) return modal.open({ header: { icon: 'warning-2', title: t('pwa.offline.status.failed'), closeButton: true, color:"
+      "value": "warning",
+      "context": "if (!offlinePackage.state.isStandalone) return modal.open({ header: { icon: 'warning', title: t('pwa.offline.status.failed'), closeButton: true, color:"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 253,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "n'), actions: [ { label: t('pwa.offline.status.retry'), icon: 'refresh-2', color: 'prim', close: true, disable: () => !offlinePackage"
+      "value": "refresh",
+      "context": "n'), actions: [ { label: t('pwa.offline.status.retry'), icon: 'refresh', color: 'prim', close: true, disable: () => !offlinePackage"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 261,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ownload(), }, { label: t('pwa.offline.prompt.later'), icon: 'close-circle', color: 'normal', mode: 'flat', close: true, },"
+      "value": "cancel",
+      "context": "ownload(), }, { label: t('pwa.offline.prompt.later'), icon: 'cancel', color: 'normal', mode: 'flat', close: true, },"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 334,
       "kind": "template-static",
-      "value": "mobile",
-      "context": "c\" :gap=\"8\" class=\"w100\"> <el-button v-if=\"isInstallable\" :size=\"14\" color=\"prim\" icon=\"mobile\" :label=\"t('pwa.install.android.action')\" @click=\"handleInstallClick\" />"
+      "value": "smartphone",
+      "context": "c\" :gap=\"8\" class=\"w100\"> <el-button v-if=\"isInstallable\" :size=\"14\" color=\"prim\" icon=\"smartphone\" :label=\"t('pwa.install.android.action')\" @click=\"handleInstallClick\" />"
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 337,
       "kind": "template-static",
-      "value": "like-1",
-      "context": ".action')\" @click=\"handleInstallClick\" /> <el-button v-else :size=\"14\" icon=\"like-1\" :label=\"t('pwa.install.ios.action')\" @click=\"dismissBanner\" /> <el-button :size="
+      "value": "thumb_up",
+      "context": ".action')\" @click=\"handleInstallClick\" /> <el-button v-else :size=\"14\" icon=\"thumb_up\" :label=\"t('pwa.install.ios.action')\" @click=\"dismissBanner\" /> <el-button :size="
     },
     {
       "file": "app/components/el/pwa.vue",
       "line": 339,
       "kind": "template-static",
-      "value": "close-simple",
-      "context": "el=\"t('pwa.install.ios.action')\" @click=\"dismissBanner\" /> <el-button :size=\"14\" icon=\"close-simple\" :label=\"t('pwa.install.actions.close')\" mode=\"flat\" color=\"red\" @click=\"dismiss"
+      "value": "close",
+      "context": "el=\"t('pwa.install.ios.action')\" @click=\"dismissBanner\" /> <el-button :size=\"14\" icon=\"close\" :label=\"t('pwa.install.actions.close')\" mode=\"flat\" color=\"red\" @click=\"dismiss"
     },
     {
       "file": "app/components/el/Switch.vue",
@@ -1266,15 +1277,15 @@
       "file": "app/components/el/text-field.vue",
       "line": 512,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ion.value = value; }, }, actions: [ { label: \"بستن\", icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "ion.value = value; }, }, actions: [ { label: \"بستن\", icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/el/text-field.vue",
       "line": 519,
       "kind": "object-static",
-      "value": "tick-circle",
-      "context": "close: true, }, { label: \"استفاده از ترجمه انتخاب‌شده\", icon: \"tick-circle\", color: \"blue\", mode: \"normal\", close: true, disable: ()"
+      "value": "check_circle",
+      "context": "close: true, }, { label: \"استفاده از ترجمه انتخاب‌شده\", icon: \"check_circle\", color: \"blue\", mode: \"normal\", close: true, disable: ()"
     },
     {
       "file": "app/components/el/text-field.vue",
@@ -1294,22 +1305,22 @@
       "file": "app/components/el/text-field.vue",
       "line": 592,
       "kind": "object-static",
-      "value": "copy",
-      "context": "ivider(items); } if (hasAction(\"copy\")) { items.push({ label: \"Copy\", icon: \"copy\", disabled: () => !hasValue.value || !canUseClipboard.value, handler: copyFiel"
+      "value": "content_copy",
+      "context": "ivider(items); } if (hasAction(\"copy\")) { items.push({ label: \"Copy\", icon: \"content_copy\", disabled: () => !hasValue.value || !canUseClipboard.value, handler: copyFiel"
     },
     {
       "file": "app/components/el/text-field.vue",
       "line": 601,
       "kind": "object-static",
-      "value": "clipboard",
-      "context": "nt, }); } if (hasAction(\"paste\")) { items.push({ label: \"Paste\", icon: \"clipboard\", disabled: () => isLocked.value || !canUseClipboard.value, handler: pasteClip"
+      "value": "content_paste",
+      "context": "nt, }); } if (hasAction(\"paste\")) { items.push({ label: \"Paste\", icon: \"content_paste\", disabled: () => isLocked.value || !canUseClipboard.value, handler: pasteClip"
     },
     {
       "file": "app/components/el/text-field.vue",
       "line": 610,
       "kind": "object-static",
-      "value": "text-block",
-      "context": "); } if (hasAction(\"selectAll\")) { items.push({ label: \"Select all\", icon: \"text-block\", disabled: () => !hasValue.value, handler: selectAllContent, }); } i"
+      "value": "select_all",
+      "context": "); } if (hasAction(\"selectAll\")) { items.push({ label: \"Select all\", icon: \"select_all\", disabled: () => !hasValue.value, handler: selectAllContent, }); } i"
     },
     {
       "file": "app/components/el/text-field.vue",
@@ -1329,15 +1340,15 @@
       "file": "app/components/el/text-field.vue",
       "line": 643,
       "kind": "object-static",
-      "value": "trash",
-      "context": "asAction(\"clear\")) { addDivider(items); items.push({ label: \"Clear\", icon: \"trash\", color: \"red\", disabled: () => isLocked.value || !hasValue.value, handl"
+      "value": "delete",
+      "context": "asAction(\"clear\")) { addDivider(items); items.push({ label: \"Clear\", icon: \"delete\", color: \"red\", disabled: () => isLocked.value || !hasValue.value, handl"
     },
     {
       "file": "app/components/el/text-field.vue",
       "line": 737,
       "kind": "template-static",
-      "value": "more-vertical",
-      "context": "@click.stop=\"openActionMenu\"> <el-button :label=\"actionLabel\" icon=\"more-vertical\" type=\"fab\" mode=\"flat\" color=\"normal\" :size=\"actionButton"
+      "value": "more_vert",
+      "context": "@click.stop=\"openActionMenu\"> <el-button :label=\"actionLabel\" icon=\"more_vert\" type=\"fab\" mode=\"flat\" color=\"normal\" :size=\"actionButton"
     },
     {
       "file": "app/components/el/text.vue",
@@ -1357,22 +1368,22 @@
       "file": "app/components/Header.vue",
       "line": 92,
       "kind": "object-static",
-      "value": "gallery-export",
-      "context": "e, }, }) } function openImageConverterModal() { modal.open({ header: { icon: 'gallery-export', title: translate('tools.imageConverter.title'), subtitle: translate('tools.i"
+      "value": "image",
+      "context": "e, }, }) } function openImageConverterModal() { modal.open({ header: { icon: 'image', title: translate('tools.imageConverter.title'), subtitle: translate('tools.i"
     },
     {
       "file": "app/components/Header.vue",
       "line": 112,
       "kind": "object-static",
-      "value": "info-circle",
-      "context": "tent: true, }, }) } function openAboutModal() { modal.open({ header: { icon: 'info-circle', title: 'tools.about.title', subtitle: 'tools.about.subtitle', closeBut"
+      "value": "info",
+      "context": "tent: true, }, }) } function openAboutModal() { modal.open({ header: { icon: 'info', title: 'tools.about.title', subtitle: 'tools.about.subtitle', closeBut"
     },
     {
       "file": "app/components/Header.vue",
       "line": 140,
       "kind": "object-static",
-      "value": "gallery-export",
-      "context": "'bottom-end', items: [ { label: translate('app.tools.convert'), icon: 'gallery-export', color: 'normal15', handler: openImageConverterModal, }, {"
+      "value": "image",
+      "context": "'bottom-end', items: [ { label: translate('app.tools.convert'), icon: 'image', color: 'normal15', handler: openImageConverterModal, }, {"
     },
     {
       "file": "app/components/Header.vue",
@@ -1385,15 +1396,15 @@
       "file": "app/components/Header.vue",
       "line": 155,
       "kind": "object-static",
-      "value": "info-circle",
-      "context": "type: 'divider', }, { label: translate('app.tools.about'), icon: 'info-circle', color: 'normal15', handler: openAboutModal, }, ], options:"
+      "value": "info",
+      "context": "type: 'divider', }, { label: translate('app.tools.about'), icon: 'info', color: 'normal15', handler: openAboutModal, }, ], options:"
     },
     {
       "file": "app/components/Header.vue",
       "line": 201,
       "kind": "object-static",
-      "value": "gallery-export",
-      "context": "{ type: 'divider', }, { label: translate('app.tools.convert'), icon: 'gallery-export', color: 'normal15', handler: openImageConverterModal, }, { labe"
+      "value": "image",
+      "context": "{ type: 'divider', }, { label: translate('app.tools.convert'), icon: 'image', color: 'normal15', handler: openImageConverterModal, }, { labe"
     },
     {
       "file": "app/components/Header.vue",
@@ -1406,8 +1417,8 @@
       "file": "app/components/Header.vue",
       "line": 213,
       "kind": "object-static",
-      "value": "info-circle",
-      "context": "handler: openVectorizer, }, { label: translate('app.tools.about'), icon: 'info-circle', color: 'normal15', handler: openAboutModal, }, ] }) function openMobi"
+      "value": "info",
+      "context": "handler: openVectorizer, }, { label: translate('app.tools.about'), icon: 'info', color: 'normal15', handler: openAboutModal, }, ] }) function openMobi"
     },
     {
       "file": "app/components/Header.vue",
@@ -1420,22 +1431,22 @@
       "file": "app/components/Header.vue",
       "line": 326,
       "kind": "template-static",
-      "value": "global",
-      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.switchLang')\" icon=\"global\" @click=\"openLanguageMenu\" /> <el-button v-if=\"mobile\""
+      "value": "language",
+      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.switchLang')\" icon=\"language\" @click=\"openLanguageMenu\" /> <el-button v-if=\"mobile\""
     },
     {
       "file": "app/components/Header.vue",
       "line": 337,
       "kind": "template-static",
-      "value": "more-vertical",
-      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.tools.menu')\" icon=\"more-vertical\" @click=\"openMobileMenu\" /> <el-button v-else ref=\"to"
+      "value": "more_vert",
+      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.tools.menu')\" icon=\"more_vert\" @click=\"openMobileMenu\" /> <el-button v-else ref=\"to"
     },
     {
       "file": "app/components/Header.vue",
       "line": 349,
       "kind": "template-static",
-      "value": "more-vertical",
-      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.tools.menu')\" icon=\"more-vertical\" @click=\"openToolsMenu\" /> </el-flex> </el-flex> </template> <style>"
+      "value": "more_vert",
+      "context": "=\"8\" mode=\"flat\" type=\"fab\" :label=\"$t('app.tools.menu')\" icon=\"more_vert\" @click=\"openToolsMenu\" /> </el-flex> </el-flex> </template> <style>"
     },
     {
       "file": "app/components/modals/VariablePickerModal.vue",
@@ -1448,85 +1459,85 @@
       "file": "app/components/modules/layout/LayoutRegionEditorModal.vue",
       "line": 235,
       "kind": "template-static",
-      "value": "grid-5",
-      "context": "ss=\"w100\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"12\" :weight=\"700\" icon=\"grid-5\"> {{ t(\"modules.layout.fields.regions.controls.geometry.title\") }} </el-"
+      "value": "grid_view",
+      "context": "ss=\"w100\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"12\" :weight=\"700\" icon=\"grid_view\"> {{ t(\"modules.layout.fields.regions.controls.geometry.title\") }} </el-"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionEditorModal.vue",
       "line": 342,
       "kind": "template-static",
-      "value": "danger",
-      "context": "v-if=\"submitAttempted && customRoleIssue\" :size=\"11\" color=\"orange\" icon=\"danger\" icon-color=\"orange\" > {{ customRoleIssue }} </el-text> <el-text"
+      "value": "warning",
+      "context": "v-if=\"submitAttempted && customRoleIssue\" :size=\"11\" color=\"orange\" icon=\"warning\" icon-color=\"orange\" > {{ customRoleIssue }} </el-text> <el-text"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionEditorModal.vue",
       "line": 352,
       "kind": "template-static",
-      "value": "danger",
-      "context": "v-if=\"submitAttempted && geometryIssue\" :size=\"11\" color=\"orange\" icon=\"danger\" icon-color=\"orange\" > {{ geometryIssue }} </el-text> </form> </temp"
+      "value": "warning",
+      "context": "v-if=\"submitAttempted && geometryIssue\" :size=\"11\" color=\"orange\" icon=\"warning\" icon-color=\"orange\" > {{ geometryIssue }} </el-text> </form> </temp"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 188,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 218,
       "kind": "object-static",
-      "value": "grid-5",
-      "context": "outBuilderController = { submit: () => false, } modal.open({ header: { icon: \"grid-5\", title: t(\"modules.layout.fields.regions.visualBuilder.modal.title\"), subtitl"
+      "value": "grid_view",
+      "context": "outBuilderController = { submit: () => false, } modal.open({ header: { icon: \"grid_view\", title: t(\"modules.layout.fields.regions.visualBuilder.modal.title\"), subtitl"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 237,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 244,
       "kind": "object-static",
-      "value": "tick-circle",
-      "context": "}, { label: t(\"modules.layout.fields.regions.actions.apply\"), icon: \"tick-circle\", color: \"prim\", close: true, disable: () => { return co"
+      "value": "check_circle",
+      "context": "}, { label: t(\"modules.layout.fields.regions.actions.apply\"), icon: \"check_circle\", color: \"prim\", close: true, disable: () => { return co"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 304,
       "kind": "object-static",
-      "value": "trash",
-      "context": "displayName = regionDisplayName(region, regionIndex) modal.open({ header: { icon: \"trash\", title: t(\"modules.layout.fields.regions.modal.deleteTitle\"), subtitle: displ"
+      "value": "delete",
+      "context": "displayName = regionDisplayName(region, regionIndex) modal.open({ header: { icon: \"delete\", title: t(\"modules.layout.fields.regions.modal.deleteTitle\"), subtitle: displ"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 318,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 325,
       "kind": "object-static",
-      "value": "trash",
-      "context": "{ label: t(\"modules.layout.fields.regions.actions.confirmDelete\"), icon: \"trash\", color: \"red\", close: true, handler: () => removeRegion(regionInd"
+      "value": "delete",
+      "context": "{ label: t(\"modules.layout.fields.regions.actions.confirmDelete\"), icon: \"delete\", color: \"red\", close: true, handler: () => removeRegion(regionInd"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 342,
       "kind": "template-static",
-      "value": "grid-5",
-      "context": ":gap=\"8\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"13\" :weight=\"700\" icon=\"grid-5\"> {{ t(\"modules.layout.fields.regions.list.title\") }} </el-text>"
+      "value": "grid_view",
+      "context": ":gap=\"8\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"13\" :weight=\"700\" icon=\"grid_view\"> {{ t(\"modules.layout.fields.regions.list.title\") }} </el-text>"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 360,
       "kind": "template-static",
-      "value": "grid-5",
-      "context": "bile ? 'w100' : ''\"> <el-button :class=\"mobile ? 'w100' : ''\" icon=\"grid-5\" mode=\"flat\" color=\"blue\" :label=\"t('modules.layout.fields.r"
+      "value": "grid_view",
+      "context": "bile ? 'w100' : ''\"> <el-button :class=\"mobile ? 'w100' : ''\" icon=\"grid_view\" mode=\"flat\" color=\"blue\" :label=\"t('modules.layout.fields.r"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
@@ -1539,8 +1550,8 @@
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 392,
       "kind": "template-static",
-      "value": "component",
-      "context": "<el-flex rules=\"rsc\" :gap=\"6\" class=\"w100\"> <el-text :size=\"12\" :weight=\"700\" icon=\"component\"> {{ regionDisplayName(region, regionIndex) }} </el-text>"
+      "value": "widgets",
+      "context": "<el-flex rules=\"rsc\" :gap=\"6\" class=\"w100\"> <el-text :size=\"12\" :weight=\"700\" icon=\"widgets\"> {{ regionDisplayName(region, regionIndex) }} </el-text>"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
@@ -1553,36 +1564,36 @@
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 428,
       "kind": "template-static",
-      "value": "arrow-up",
-      "context": "0' : ''\"> <el-button type=\"fab\" mode=\"flat\" icon=\"arrow-up\" :disable=\"regionIndex === 0\" :label=\"t('modules.layout.fields.reg"
+      "value": "arrow_upward",
+      "context": "0' : ''\"> <el-button type=\"fab\" mode=\"flat\" icon=\"arrow_upward\" :disable=\"regionIndex === 0\" :label=\"t('modules.layout.fields.reg"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 437,
       "kind": "template-static",
-      "value": "arrow-down-1",
-      "context": "/> <el-button type=\"fab\" mode=\"flat\" icon=\"arrow-down-1\" :disable=\"regionIndex === regions.length - 1\" :label=\"t('modules."
+      "value": "arrow_downward",
+      "context": "/> <el-button type=\"fab\" mode=\"flat\" icon=\"arrow_downward\" :disable=\"regionIndex === regions.length - 1\" :label=\"t('modules."
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 446,
       "kind": "template-static",
-      "value": "copy",
-      "context": "/> <el-button type=\"fab\" mode=\"flat\" icon=\"copy\" :label=\"t('modules.layout.fields.regions.actions.duplicate')\" @cl"
+      "value": "content_copy",
+      "context": "/> <el-button type=\"fab\" mode=\"flat\" icon=\"content_copy\" :label=\"t('modules.layout.fields.regions.actions.duplicate')\" @cl"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 455,
       "kind": "template-static",
-      "value": "edit-2",
-      "context": "utton type=\"fab\" mode=\"flat\" color=\"blue\" icon=\"edit-2\" :label=\"t('modules.layout.fields.regions.actions.edit')\" @click=\""
+      "value": "edit",
+      "context": "utton type=\"fab\" mode=\"flat\" color=\"blue\" icon=\"edit\" :label=\"t('modules.layout.fields.regions.actions.edit')\" @click=\""
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
       "line": 464,
       "kind": "template-static",
-      "value": "trash",
-      "context": "button type=\"fab\" mode=\"flat\" color=\"red\" icon=\"trash\" :label=\"t('modules.layout.fields.regions.actions.delete')\" @click"
+      "value": "delete",
+      "context": "button type=\"fab\" mode=\"flat\" color=\"red\" icon=\"delete\" :label=\"t('modules.layout.fields.regions.actions.delete')\" @click"
     },
     {
       "file": "app/components/modules/layout/LayoutRegionsField.vue",
@@ -1595,148 +1606,148 @@
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 499,
       "kind": "object-static",
-      "value": "warning-2",
-      "context": "egions.value.length) { resetGrid() return } modal.open({ header: { icon: \"warning-2\", title: t(\"modules.layout.fields.regions.visualBuilder.gridReset.title\"), sub"
+      "value": "warning",
+      "context": "egions.value.length) { resetGrid() return } modal.open({ header: { icon: \"warning\", title: t(\"modules.layout.fields.regions.visualBuilder.gridReset.title\"), sub"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 510,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "ions: [ { label: t(\"modules.layout.fields.regions.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 519,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "\"modules.layout.fields.regions.visualBuilder.gridReset.confirm\", ), icon: \"refresh-2\", color: \"orange\", close: true, handler: resetGrid, }, ]"
+      "value": "refresh",
+      "context": "\"modules.layout.fields.regions.visualBuilder.gridReset.confirm\", ), icon: \"refresh\", color: \"orange\", close: true, handler: resetGrid, }, ]"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 642,
       "kind": "template-static",
-      "value": "edit-2",
-      "context": "ss=\"w100\"> <el-flex rules=\"rsc\" :gap=\"6\" class=\"w100\"> <el-button icon=\"edit-2\" :mode=\"activeTool === 'select' ? 'normal' : 'flat'\" :color=\"activeToo"
+      "value": "edit",
+      "context": "ss=\"w100\"> <el-flex rules=\"rsc\" :gap=\"6\" class=\"w100\"> <el-button icon=\"edit\" :mode=\"activeTool === 'select' ? 'normal' : 'flat'\" :color=\"activeToo"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 650,
       "kind": "template-static",
-      "value": "add-circle",
-      "context": "lect')\" @click=\"activeTool = 'select'\" /> <el-button icon=\"add-circle\" :mode=\"activeTool === 'draw' ? 'normal' : 'flat'\" :color=\"activeTool"
+      "value": "add_circle",
+      "context": "lect')\" @click=\"activeTool = 'select'\" /> <el-button icon=\"add_circle\" :mode=\"activeTool === 'draw' ? 'normal' : 'flat'\" :color=\"activeTool"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 686,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "pendingRows = Number($event)\" /> </label> <el-button icon=\"refresh-2\" mode=\"flat\" color=\"orange\" :disable=\"!hasPendingGridChange\""
+      "value": "refresh",
+      "context": "pendingRows = Number($event)\" /> </label> <el-button icon=\"refresh\" mode=\"flat\" color=\"orange\" :disable=\"!hasPendingGridChange\""
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 700,
       "kind": "template-static",
-      "value": "warning-2",
-      "context": "<el-text v-if=\"hasPendingGridChange\" :size=\"10\" color=\"orange\" icon=\"warning-2\" icon-color=\"orange\" > {{ t(\"modules.layout.fields.regions.visualBuilder.g"
+      "value": "warning",
+      "context": "<el-text v-if=\"hasPendingGridChange\" :size=\"10\" color=\"orange\" icon=\"warning\" icon-color=\"orange\" > {{ t(\"modules.layout.fields.regions.visualBuilder.g"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 781,
       "kind": "template-static",
-      "value": "copy",
-      "context": "> <el-button type=\"fab\" mode=\"flat\" icon=\"copy\" :size=\"10\" :p=\"4\" :label=\"t('modules.layout.fie"
+      "value": "content_copy",
+      "context": "> <el-button type=\"fab\" mode=\"flat\" icon=\"content_copy\" :size=\"10\" :p=\"4\" :label=\"t('modules.layout.fie"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 792,
       "kind": "template-static",
-      "value": "trash",
-      "context": "type=\"fab\" mode=\"flat\" color=\"red\" icon=\"trash\" :size=\"10\" :p=\"4\" :label=\"t('modules.layout.fie"
+      "value": "delete",
+      "context": "type=\"fab\" mode=\"flat\" color=\"red\" icon=\"delete\" :size=\"10\" :p=\"4\" :label=\"t('modules.layout.fie"
     },
     {
       "file": "app/components/modules/layout/VisualLayoutBuilderModal.vue",
       "line": 816,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": "mobile ? 'ccs' : 'rbc'\" class=\"w100\" :gap=\"8\"> <el-text :size=\"10\" color=\"normal50\" icon=\"info-circle\"> {{ t(\"modules.layout.fields.regions.visualBuilder.hint\") }} </el-text>"
+      "value": "info",
+      "context": "mobile ? 'ccs' : 'rbc'\" class=\"w100\" :gap=\"8\"> <el-text :size=\"10\" color=\"normal50\" icon=\"info\"> {{ t(\"modules.layout.fields.regions.visualBuilder.hint\") }} </el-text>"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 873,
       "kind": "object-static",
-      "value": "grid-5",
-      "context": "sposed = true; URL.revokeObjectURL(imageUrl); } modal.open({ header: { icon: \"grid-5\", title: t(\"modules.layout.schema.preview.title\"), subtitle: t(\"modules.layout"
+      "value": "grid_view",
+      "context": "sposed = true; URL.revokeObjectURL(imageUrl); } modal.open({ header: { icon: \"grid_view\", title: t(\"modules.layout.schema.preview.title\"), subtitle: t(\"modules.layout"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 887,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": ", actions: [ { label: t(\"modules.layout.schema.actions.close\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": ", actions: [ { label: t(\"modules.layout.schema.actions.close\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 894,
       "kind": "object-static",
-      "value": "import-2",
-      "context": "rue, }, { label: t(\"modules.layout.schema.actions.download\"), icon: \"import-2\", color: \"orange\", mode: \"flat\", handler: () => { downlo"
+      "value": "upload_file",
+      "context": "rue, }, { label: t(\"modules.layout.schema.actions.download\"), icon: \"upload_file\", color: \"orange\", mode: \"flat\", handler: () => { downlo"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 903,
       "kind": "object-static",
-      "value": "grid-5",
-      "context": "}, }, { label: t(\"modules.layout.schema.actions.copy\"), icon: \"grid-5\", color: \"prim\", close: true, handler: async () => { try"
+      "value": "grid_view",
+      "context": "}, }, { label: t(\"modules.layout.schema.actions.copy\"), icon: \"grid_view\", color: \"prim\", close: true, handler: async () => { try"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1018,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "label: isCustomMode.value ? labels.disableCustomize : labels.enableCustomize, icon: \"setting-2\", active: isCustomMode.value, disabled: !hasOverrideField.value, handler"
+      "value": "tune",
+      "context": "label: isCustomMode.value ? labels.disableCustomize : labels.enableCustomize, icon: \"tune\", active: isCustomMode.value, disabled: !hasOverrideField.value, handler"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1032,
       "kind": "object-static",
-      "value": "grid-5",
-      "context": "utModule.value) { items.push( { label: labels.copyLayoutSchema, icon: \"grid-5\", disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value, handler:"
+      "value": "grid_view",
+      "context": "utModule.value) { items.push( { label: labels.copyLayoutSchema, icon: \"grid_view\", disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value, handler:"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1038,
       "kind": "object-static",
-      "value": "import-2",
-      "context": "r: copyLayoutSchema, }, { label: labels.downloadLayoutSchema, icon: \"import-2\", disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value, handler:"
+      "value": "upload_file",
+      "context": "r: copyLayoutSchema, }, { label: labels.downloadLayoutSchema, icon: \"upload_file\", disabled: !hasLayoutRegions.value || isLayoutSchemaBusy.value, handler:"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1044,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "handler: downloadLayoutSchema, }, { label: labels.copyOutput, icon: \"document-copy\", disabled: !output.value, handler: copyOutput, }, ); } else {"
+      "value": "file_copy",
+      "context": "handler: downloadLayoutSchema, }, { label: labels.copyOutput, icon: \"file_copy\", disabled: !output.value, handler: copyOutput, }, ); } else {"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1052,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "Output, }, ); } else { items.push({ label: labels.copyOutput, icon: \"document-copy\", disabled: !output.value, handler: copyOutput, }); } items.push({"
+      "value": "file_copy",
+      "context": "Output, }, ); } else { items.push({ label: labels.copyOutput, icon: \"file_copy\", disabled: !output.value, handler: copyOutput, }); } items.push({"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1060,
       "kind": "object-static",
-      "value": "trash",
-      "context": "lue, handler: copyOutput, }); } items.push({ label: labels.remove, icon: \"trash\", color: \"red\", handler: removeModule, }); return items; }); function openMo"
+      "value": "delete",
+      "context": "lue, handler: copyOutput, }); } items.push({ label: labels.remove, icon: \"delete\", color: \"red\", handler: removeModule, }); return items; }); function openMo"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1112,
       "kind": "template-static",
-      "value": "trash",
-      "context": "t\" :p=\"8\" :label=\"isCustomMode ? t('panel.clearCustom') : t('panel.clear')\" icon=\"trash\" /> <el-button type=\"fab\" :size=\"14\""
+      "value": "delete",
+      "context": "t\" :p=\"8\" :label=\"isCustomMode ? t('panel.clearCustom') : t('panel.clear')\" icon=\"delete\" /> <el-button type=\"fab\" :size=\"14\""
     },
     {
       "file": "app/components/modules/panel/base.vue",
@@ -1756,15 +1767,15 @@
       "file": "app/components/modules/panel/base.vue",
       "line": 1133,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": "oUpperCase() }} </el-text> <el-text type=\"p\" :size=\"14\" :weight=\"200\" icon=\"info-circle\" color=\"normal60\" icon-color=\"normal50\" v-if=\"moduleDescription\">"
+      "value": "info",
+      "context": "oUpperCase() }} </el-text> <el-text type=\"p\" :size=\"14\" :weight=\"200\" icon=\"info\" color=\"normal60\" icon-color=\"normal50\" v-if=\"moduleDescription\">"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1155,
       "kind": "template-static",
-      "value": "tick",
-      "context": "\"12\" color=\"white\" icon-color=\"white\" :weight=\"300\" v-if=\"activePresetId\" icon=\"tick\"> {{ t(\"panel.presetSelected\") }} </el-text> </e"
+      "value": "check",
+      "context": "\"12\" color=\"white\" icon-color=\"white\" :weight=\"300\" v-if=\"activePresetId\" icon=\"check\"> {{ t(\"panel.presetSelected\") }} </el-text> </e"
     },
     {
       "file": "app/components/modules/panel/base.vue",
@@ -1777,15 +1788,15 @@
       "file": "app/components/modules/panel/base.vue",
       "line": 1206,
       "kind": "template-static",
-      "value": "danger",
-      "context": "\" support-variables /> <el-text v-if=\"!customOverrideValue\" :size=\"12\" icon=\"danger\" icon-color=\"orange\" :weight=\"300\" color=\"orange\"> {{ t(\"panel.customOverrideEmp"
+      "value": "warning",
+      "context": "\" support-variables /> <el-text v-if=\"!customOverrideValue\" :size=\"12\" icon=\"warning\" icon-color=\"orange\" :weight=\"300\" color=\"orange\"> {{ t(\"panel.customOverrideEmp"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1227,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": "lex> <el-text :size=\"12\" class=\"w100\" color=\"normal45\" icon-color=\"normal55\" icon=\"info-circle\" v-if=\"groupDescription(group.id)\"> {{ groupDescription(group."
+      "value": "info",
+      "context": "lex> <el-text :size=\"12\" class=\"w100\" color=\"normal45\" icon-color=\"normal55\" icon=\"info\" v-if=\"groupDescription(group.id)\"> {{ groupDescription(group."
     },
     {
       "file": "app/components/modules/panel/base.vue",
@@ -1798,22 +1809,22 @@
       "file": "app/components/modules/panel/base.vue",
       "line": 1324,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": "ditor-id=\"promptEditorId(field.id)\" support-variables /> <el-text :size=\"10\" icon=\"info-circle\" v-if=\"field.type === 'multiSelect'\"> {{ t(\"panel.multiSelectHint\") }}"
+      "value": "info",
+      "context": "ditor-id=\"promptEditorId(field.id)\" support-variables /> <el-text :size=\"10\" icon=\"info\" v-if=\"field.type === 'multiSelect'\"> {{ t(\"panel.multiSelectHint\") }}"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1328,
       "kind": "template-static",
-      "value": "danger",
-      "context": "ng in getFieldCompatibilityWarnings(field)\" :key=\"warning.value\" :size=\"10\" icon=\"danger\" icon-color=\"orange\" color=\"orange\" :weight=\"300\"> {{ compatibilityWarningLa"
+      "value": "warning",
+      "context": "ng in getFieldCompatibilityWarnings(field)\" :key=\"warning.value\" :size=\"10\" icon=\"warning\" icon-color=\"orange\" color=\"orange\" :weight=\"300\"> {{ compatibilityWarningLa"
     },
     {
       "file": "app/components/modules/panel/base.vue",
       "line": 1359,
       "kind": "template-static",
-      "value": "document-copy",
-      "context": "v-if=\"isLayoutModule\" type=\"fab\" mode=\"flat\" icon=\"document-copy\" :label=\"t('modules.layout.schema.actions.copyJson')\" :disable"
+      "value": "file_copy",
+      "context": "v-if=\"isLayoutModule\" type=\"fab\" mode=\"flat\" icon=\"file_copy\" :label=\"t('modules.layout.schema.actions.copyJson')\" :disable"
     },
     {
       "file": "app/components/modules/panel/base.vue",
@@ -1826,50 +1837,50 @@
       "file": "app/components/modules/panel/ColorAssignmentsField.vue",
       "line": 360,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "ggleColorAssignment(item.assignmentIndex)\"> <el-text :size=\"14\" :weight=\"300\" icon=\"color-swatch\"> {{ t(\"modules.colorPalette.fields.paletteAssignments.ruleTitle\", {index: i"
+      "value": "palette",
+      "context": "ggleColorAssignment(item.assignmentIndex)\"> <el-text :size=\"14\" :weight=\"300\" icon=\"palette\"> {{ t(\"modules.colorPalette.fields.paletteAssignments.ruleTitle\", {index: i"
     },
     {
       "file": "app/components/modules/panel/ColorAssignmentsField.vue",
       "line": 370,
       "kind": "template-static",
-      "value": "trash",
-      "context": "<el-button :label=\"t('modules.colorPalette.fields.paletteAssignments.actions.remove')\" icon=\"trash\" :p=\"8\" @click.stop=\"removeColorAssignment(item.assignmentIndex)\" mode=\"fl"
+      "value": "delete",
+      "context": "<el-button :label=\"t('modules.colorPalette.fields.paletteAssignments.actions.remove')\" icon=\"delete\" :p=\"8\" @click.stop=\"removeColorAssignment(item.assignmentIndex)\" mode=\"fl"
     },
     {
       "file": "app/components/modules/panel/ColorAssignmentsField.vue",
       "line": 429,
       "kind": "template-static",
-      "value": "trash",
-      "context": "<el-button :label=\"t('modules.colorPalette.fields.paletteAssignments.actions.remove')\" icon=\"trash\" :p=\"8\" @click=\"removeColorAssignmentColor(item.assignmentIndex, colorIn"
+      "value": "delete",
+      "context": "<el-button :label=\"t('modules.colorPalette.fields.paletteAssignments.actions.remove')\" icon=\"delete\" :p=\"8\" @click=\"removeColorAssignmentColor(item.assignmentIndex, colorIn"
     },
     {
       "file": "app/components/modules/panel/ModulePanelContextMenu.vue",
       "line": 112,
       "kind": "object-static",
-      "value": "component",
-      "context": "PanelContextMenuGroup[]>(() => [ { key: \"panel\", label: props.labels.title, icon: \"component\", iconColor: \"normal55\", rows: [ { key: \"panel-actions\", col"
+      "value": "widgets",
+      "context": "PanelContextMenuGroup[]>(() => [ { key: \"panel\", label: props.labels.title, icon: \"widgets\", iconColor: \"normal55\", rows: [ { key: \"panel-actions\", col"
     },
     {
       "file": "app/components/modules/panel/ModulePanelContextMenu.vue",
       "line": 150,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "], }, ], }, { key: \"output\", label: props.labels.copyOutput, icon: \"document-copy\", iconColor: \"normal55\", rows: [ { key: \"output-actions\", co"
+      "value": "file_copy",
+      "context": "], }, ], }, { key: \"output\", label: props.labels.copyOutput, icon: \"file_copy\", iconColor: \"normal55\", rows: [ { key: \"output-actions\", co"
     },
     {
       "file": "app/components/modules/panel/ModulePanelContextMenu.vue",
       "line": 164,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "\"onCopyOutput\", disabledKey: \"copyOutput\", attrs: { icon: \"document-copy\", color: \"prim\", }, }, ], }, ], },"
+      "value": "file_copy",
+      "context": "\"onCopyOutput\", disabledKey: \"copyOutput\", attrs: { icon: \"file_copy\", color: \"prim\", }, }, ], }, ], },"
     },
     {
       "file": "app/components/modules/panel/ModulePanelContextMenu.vue",
       "line": 186,
       "kind": "object-static",
-      "value": "trash",
-      "context": "ionKey: \"onRemove\", disabledKey: \"remove\", attrs: { icon: \"trash\", color: \"red\", }, }, ], }, ], },"
+      "value": "delete",
+      "context": "ionKey: \"onRemove\", disabledKey: \"remove\", attrs: { icon: \"delete\", color: \"red\", }, }, ], }, ], },"
     },
     {
       "file": "app/components/modules/panel/ModulePanelContextMenu.vue",
@@ -1889,8 +1900,8 @@
       "file": "app/components/modules/panel/setup-panel.vue",
       "line": 426,
       "kind": "template-static",
-      "value": "element-4",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"element-4\"> {{ t(\"create.modulesTitle\") }} </el-text> <el-tex"
+      "value": "widgets",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"widgets\"> {{ t(\"create.modulesTitle\") }} </el-text> <el-tex"
     },
     {
       "file": "app/components/modules/panel/setup-panel.vue",
@@ -1903,8 +1914,8 @@
       "file": "app/components/modules/panel/setup-panel.vue",
       "line": 547,
       "kind": "template-static",
-      "value": "document-text",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"document-text\"> {{ t(\"promptSetup.core.title\") }} </el-text> <el-"
+      "value": "description",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"description\"> {{ t(\"promptSetup.core.title\") }} </el-text> <el-"
     },
     {
       "file": "app/components/modules/panel/setup-panel.vue",
@@ -1924,92 +1935,92 @@
       "file": "app/components/modules/panel/setup-panel.vue",
       "line": 743,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "eight=\"300\" :color=\"generatedSubject ? 'normal75' : 'orange'\" icon=\"magic-star\" :icon-color=\"generatedSubject ? 'blue' : 'orange'\" >"
+      "value": "auto_awesome",
+      "context": "eight=\"300\" :color=\"generatedSubject ? 'normal75' : 'orange'\" icon=\"auto_awesome\" :icon-color=\"generatedSubject ? 'blue' : 'orange'\" >"
     },
     {
       "file": "app/components/modules/panel/setup-panel.vue",
       "line": 793,
       "kind": "template-static",
-      "value": "shield-tick",
-      "context": "upPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"14\" :weight=\"800\" class=\"lh1\" icon=\"shield-tick\"> {{ t(\"promptSetup.imageToImage.preserve.title\") }} </el-te"
+      "value": "verified_user",
+      "context": "upPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"14\" :weight=\"800\" class=\"lh1\" icon=\"verified_user\"> {{ t(\"promptSetup.imageToImage.preserve.title\") }} </el-te"
     },
     {
       "file": "app/components/modules/panel/setup-panel.vue",
       "line": 845,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"setting-2\"> {{ t(\"promptSetup.output.title\") }} </el-text> <e"
+      "value": "tune",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"tune\"> {{ t(\"promptSetup.output.title\") }} </el-text> <e"
     },
     {
       "file": "app/components/modules/panel/TextBlockCard.vue",
       "line": 93,
       "kind": "template-static",
-      "value": "danger",
-      "context": "</el-text> <el-text v-if=\"!modelValue.text?.trim()\" :size=\"10\" color=\"orange\" icon=\"danger\" icon-color=\"orange\"> {{ t(\"modules.typography.fields.textGroups.block.validatio"
+      "value": "warning",
+      "context": "</el-text> <el-text v-if=\"!modelValue.text?.trim()\" :size=\"10\" color=\"orange\" icon=\"warning\" icon-color=\"orange\"> {{ t(\"modules.typography.fields.textGroups.block.validatio"
     },
     {
       "file": "app/components/modules/panel/TextGroupCard.vue",
       "line": 284,
       "kind": "template-static",
-      "value": "text",
-      "context": "ap=\"2\" /> <el-flex rules=\"rbc\" class=\"w100\"> <el-text :size=\"13\" :weight=\"600\" icon=\"text\"> {{ t(\"modules.typography.fields.textGroups.group.textBlocksTitle\") }} </el"
+      "value": "text_fields",
+      "context": "ap=\"2\" /> <el-flex rules=\"rbc\" class=\"w100\"> <el-text :size=\"13\" :weight=\"600\" icon=\"text_fields\"> {{ t(\"modules.typography.fields.textGroups.group.textBlocksTitle\") }} </el"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 169,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 237,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 265,
       "kind": "object-static",
-      "value": "trash",
-      "context": "group = groups.value[groupIndex] if (!group) return modal.open({ header: { icon: \"trash\", title: t(\"modules.typography.fields.textGroups.group.modal.deleteTitle\"), su"
+      "value": "delete",
+      "context": "group = groups.value[groupIndex] if (!group) return modal.open({ header: { icon: \"delete\", title: t(\"modules.typography.fields.textGroups.group.modal.deleteTitle\"), su"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 276,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 283,
       "kind": "object-static",
-      "value": "trash",
-      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.confirmDelete\"), icon: \"trash\", color: \"red\", close: true, handler: () => { commit(gro"
+      "value": "delete",
+      "context": "{ label: t(\"modules.typography.fields.textGroups.actions.confirmDelete\"), icon: \"delete\", color: \"red\", close: true, handler: () => { commit(gro"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 324,
       "kind": "template-static",
-      "value": "text",
-      "context": ":gap=\"12\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"13\" :weight=\"700\" icon=\"text\"> {{ t(\"modules.typography.fields.textGroups.title\") }} </el-text>"
+      "value": "text_fields",
+      "context": ":gap=\"12\"> <el-flex rules=\"ccs\" :gap=\"2\"> <el-text :size=\"13\" :weight=\"700\" icon=\"text_fields\"> {{ t(\"modules.typography.fields.textGroups.title\") }} </el-text>"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 334,
       "kind": "template-static",
-      "value": "add-circle",
-      "context": "utton :label=\"t('modules.typography.fields.textGroups.actions.addGroup')\" icon=\"add-circle\" color=\"prim\" :size=\"11\" :p=\"[8, 11]\" @click=\"openGroupEdi"
+      "value": "add_circle",
+      "context": "utton :label=\"t('modules.typography.fields.textGroups.actions.addGroup')\" icon=\"add_circle\" color=\"prim\" :size=\"11\" :p=\"[8, 11]\" @click=\"openGroupEdi"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 348,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": "s=\"text-groups-field__empty\" :gap=\"4\" > <el-text :size=\"13\" :weight=\"600\" icon=\"info-circle\"> {{ t(\"modules.typography.fields.textGroups.empty.title\") }} </el-text>"
+      "value": "info",
+      "context": "s=\"text-groups-field__empty\" :gap=\"4\" > <el-text :size=\"13\" :weight=\"600\" icon=\"info\"> {{ t(\"modules.typography.fields.textGroups.empty.title\") }} </el-text>"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
@@ -2022,57 +2033,57 @@
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 393,
       "kind": "template-static",
-      "value": "edit-2",
-      "context": "groupIndex)\" /> <el-button type=\"fab\" icon=\"edit-2\" :label=\"t('modules.typography.fields.textGroups.group.actions.edit')\""
+      "value": "edit",
+      "context": "groupIndex)\" /> <el-button type=\"fab\" icon=\"edit\" :label=\"t('modules.typography.fields.textGroups.group.actions.edit')\""
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 402,
       "kind": "template-static",
-      "value": "trash",
-      "context": "groupIndex)\" /> <el-button type=\"fab\" icon=\"trash\" :label=\"t('modules.typography.fields.textGroups.group.actions.remove')\""
+      "value": "delete",
+      "context": "groupIndex)\" /> <el-button type=\"fab\" icon=\"delete\" :label=\"t('modules.typography.fields.textGroups.group.actions.remove')\""
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 419,
       "kind": "template-static",
-      "value": "info-circle",
-      "context": ":gap=\"6\" class=\"text-groups-field__texts-empty\" > <el-icon icon=\"info-circle\" :size=\"12\" color=\"normal45\" /> <el-text :size=\"10\" color=\"normal45\">"
+      "value": "info",
+      "context": ":gap=\"6\" class=\"text-groups-field__texts-empty\" > <el-icon icon=\"info\" :size=\"12\" color=\"normal45\" /> <el-text :size=\"10\" color=\"normal45\">"
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 458,
       "kind": "template-static",
-      "value": "arrow-up",
-      "context": "rules=\"rcc\" :gap=\"2\"> <el-button type=\"fab\" icon=\"arrow-up\" :label=\"t('modules.typography.fields.textGroups.block.actions.moveUp')\""
+      "value": "arrow_upward",
+      "context": "rules=\"rcc\" :gap=\"2\"> <el-button type=\"fab\" icon=\"arrow_upward\" :label=\"t('modules.typography.fields.textGroups.block.actions.moveUp')\""
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 468,
       "kind": "template-static",
-      "value": "arrow-down",
-      "context": "-1)\" /> <el-button type=\"fab\" icon=\"arrow-down\" :label=\"t('modules.typography.fields.textGroups.block.actions.moveDown')\""
+      "value": "arrow_downward",
+      "context": "-1)\" /> <el-button type=\"fab\" icon=\"arrow_downward\" :label=\"t('modules.typography.fields.textGroups.block.actions.moveDown')\""
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 478,
       "kind": "template-static",
-      "value": "edit-2",
-      "context": "1)\" /> <el-button type=\"fab\" icon=\"edit-2\" :label=\"t('modules.typography.fields.textGroups.block.actions.edit')\""
+      "value": "edit",
+      "context": "1)\" /> <el-button type=\"fab\" icon=\"edit\" :label=\"t('modules.typography.fields.textGroups.block.actions.edit')\""
     },
     {
       "file": "app/components/modules/panel/TextGroupsField.vue",
       "line": 487,
       "kind": "template-static",
-      "value": "trash",
-      "context": "ex)\" /> <el-button type=\"fab\" icon=\"trash\" :label=\"t('modules.typography.fields.textGroups.block.actions.remove')\""
+      "value": "delete",
+      "context": "ex)\" /> <el-button type=\"fab\" icon=\"delete\" :label=\"t('modules.typography.fields.textGroups.block.actions.remove')\""
     },
     {
       "file": "app/components/modules/panel/TranslationOptionsModal.vue",
       "line": 39,
       "kind": "template-static",
-      "value": "document-text",
-      "context": ":radius=\"12\" :br=\"1\" bc=\"normal15\" bg=\"normal5\"> <el-text :size=\"12\" :weight=\"600\" icon=\"document-text\"> متن اصلی </el-text> <el-text class=\"translation-options-modal__text"
+      "value": "description",
+      "context": ":radius=\"12\" :br=\"1\" bc=\"normal15\" bg=\"normal5\"> <el-text :size=\"12\" :weight=\"600\" icon=\"description\"> متن اصلی </el-text> <el-text class=\"translation-options-modal__text"
     },
     {
       "file": "app/components/modules/panel/TranslationOptionsModal.vue",
@@ -2085,43 +2096,43 @@
       "file": "app/components/modules/panel/TranslationOptionsModal.vue",
       "line": 63,
       "kind": "template-static",
-      "value": "tick-circle",
-      "context": "{{ option }} </el-text> <el-icon v-if=\"currentValue === option\" icon=\"tick-circle\" color=\"blue\" :size=\"18\" /> </el-flex> </el-grid> </el-grid> </template> <sty"
+      "value": "check_circle",
+      "context": "{{ option }} </el-text> <el-icon v-if=\"currentValue === option\" icon=\"check_circle\" color=\"blue\" :size=\"18\" /> </el-flex> </el-grid> </el-grid> </template> <sty"
     },
     {
       "file": "app/components/modules/typography/TextBlockEditorModal.vue",
       "line": 315,
       "kind": "template-static",
-      "value": "danger",
-      "context": "ext v-if=\"submitAttempted && textIssue\" :size=\"11\" color=\"orange\" icon=\"danger\" icon-color=\"orange\" > {{ textIssue }} </el-text> </form> </template"
+      "value": "warning",
+      "context": "ext v-if=\"submitAttempted && textIssue\" :size=\"11\" color=\"orange\" icon=\"warning\" icon-color=\"orange\" > {{ textIssue }} </el-text> </form> </template"
     },
     {
       "file": "app/components/modules/variables/VariableChip.vue",
       "line": 67,
       "kind": "template-static",
-      "value": "danger",
-      "context": "luePreview }} </el-text> --> <el-text v-if=\"issue\" :size=\"10\" color=\"orange\" icon=\"danger\" icon-color=\"orange\"> {{ issue }} </el-text> </el-flex> <el-flex rul"
+      "value": "warning",
+      "context": "luePreview }} </el-text> --> <el-text v-if=\"issue\" :size=\"10\" color=\"orange\" icon=\"warning\" icon-color=\"orange\"> {{ issue }} </el-text> </el-flex> <el-flex rul"
     },
     {
       "file": "app/components/modules/variables/VariableChip.vue",
       "line": 72,
       "kind": "template-static",
-      "value": "copy",
-      "context": "lex rules=\"rcc\" bg=\"blue0\" :gap=\"6\"> <el-button type=\"fab\" mode=\"flat\" color=\"blue\" icon=\"copy\" :label=\"duplicateLabel\" :size=\"12\" :p=\"4\" @click.stop=\"handleDuplicate\" />"
+      "value": "content_copy",
+      "context": "lex rules=\"rcc\" bg=\"blue0\" :gap=\"6\"> <el-button type=\"fab\" mode=\"flat\" color=\"blue\" icon=\"content_copy\" :label=\"duplicateLabel\" :size=\"12\" :p=\"4\" @click.stop=\"handleDuplicate\" />"
     },
     {
       "file": "app/components/modules/variables/VariableChip.vue",
       "line": 75,
       "kind": "template-static",
-      "value": "trash",
-      "context": "stop=\"handleDuplicate\" /> <el-button type=\"fab\" mode=\"outline\" :br=\"1\" color=\"red\" icon=\"trash\" :label=\"deleteLabel\" :size=\"12\" :p=\"4\" @click.stop=\"handleDelete\" /> </el-fle"
+      "value": "delete",
+      "context": "stop=\"handleDuplicate\" /> <el-button type=\"fab\" mode=\"outline\" :br=\"1\" color=\"red\" icon=\"delete\" :label=\"deleteLabel\" :size=\"12\" :p=\"4\" @click.stop=\"handleDelete\" /> </el-fle"
     },
     {
       "file": "app/components/modules/variables/VariableEditorModal.vue",
       "line": 319,
       "kind": "template-static",
-      "value": "danger",
-      "context": "</el-text> </label> <el-text v-if=\"shouldShowKeyIssue\" :size=\"11\" color=\"orange\" icon=\"danger\" icon-color=\"orange\"> {{ keyIssue }} </el-text> <el-text v-else :size=\"11\""
+      "value": "warning",
+      "context": "</el-text> </label> <el-text v-if=\"shouldShowKeyIssue\" :size=\"11\" color=\"orange\" icon=\"warning\" icon-color=\"orange\"> {{ keyIssue }} </el-text> <el-text v-else :size=\"11\""
     },
     {
       "file": "app/components/modules/variables/VariableEditorModal.vue",
@@ -2134,29 +2145,29 @@
       "file": "app/components/modules/variables/VariablesField.vue",
       "line": 230,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "[ { label: t(\"modules.variables.fields.variables.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "[ { label: t(\"modules.variables.fields.variables.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/variables/VariablesField.vue",
       "line": 287,
       "kind": "object-static",
-      "value": "trash",
-      "context": "number) { const token = getVariableToken(variable); modal.open({ header: { icon: \"trash\", title: t(\"modules.variables.fields.variables.modal.deleteTitle\"), subtitle:"
+      "value": "delete",
+      "context": "number) { const token = getVariableToken(variable); modal.open({ header: { icon: \"delete\", title: t(\"modules.variables.fields.variables.modal.deleteTitle\"), subtitle:"
     },
     {
       "file": "app/components/modules/variables/VariablesField.vue",
       "line": 303,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "[ { label: t(\"modules.variables.fields.variables.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, {"
+      "value": "cancel",
+      "context": "[ { label: t(\"modules.variables.fields.variables.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, {"
     },
     {
       "file": "app/components/modules/variables/VariablesField.vue",
       "line": 310,
       "kind": "object-static",
-      "value": "trash",
-      "context": "{ label: t(\"modules.variables.fields.variables.actions.confirmDelete\"), icon: \"trash\", color: \"red\", close: true, handler: () => { removeProm"
+      "value": "delete",
+      "context": "{ label: t(\"modules.variables.fields.variables.actions.confirmDelete\"), icon: \"delete\", color: \"red\", close: true, handler: () => { removeProm"
     },
     {
       "file": "app/components/modules/variables/VariablesField.vue",
@@ -2176,8 +2187,8 @@
       "file": "app/components/prompt/editor.vue",
       "line": 178,
       "kind": "template-static",
-      "value": "slash",
-      "context": "el-flex rules=\"ccc\" v-else :p=\"32\" :radius=\"24\" :br=\"1\" bt=\"d\" bc=\"red25\"> <el-icon icon=\"slash\" :size=\"80\" color=\"red50\" class=\"mb24\" /> <el-text type=\"h1\" :size=\"20\" :weight=\"80"
+      "value": "remove",
+      "context": "el-flex rules=\"ccc\" v-else :p=\"32\" :radius=\"24\" :br=\"1\" bt=\"d\" bc=\"red25\"> <el-icon icon=\"remove\" :size=\"80\" color=\"red50\" class=\"mb24\" /> <el-text type=\"h1\" :size=\"20\" :weight=\"80"
     },
     {
       "file": "app/components/prompt/module-selector.vue",
@@ -2197,15 +2208,15 @@
       "file": "app/components/prompt/setup-panel.vue",
       "line": 380,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "anel), }, { label: t(\"components.contextMenu.actions.resetSettings\"), icon: \"refresh-2\", color: \"orange\", handler: () => resetSetupPanel(panel), }, ]; } funct"
+      "value": "refresh",
+      "context": "anel), }, { label: t(\"components.contextMenu.actions.resetSettings\"), icon: \"refresh\", color: \"orange\", handler: () => resetSetupPanel(panel), }, ]; } funct"
     },
     {
       "file": "app/components/prompt/setup-panel.vue",
       "line": 426,
       "kind": "template-static",
-      "value": "element-4",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"element-4\"> {{ t(\"create.modulesTitle\") }} </el-text> <el-tex"
+      "value": "widgets",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"widgets\"> {{ t(\"create.modulesTitle\") }} </el-text> <el-tex"
     },
     {
       "file": "app/components/prompt/setup-panel.vue",
@@ -2218,8 +2229,8 @@
       "file": "app/components/prompt/setup-panel.vue",
       "line": 547,
       "kind": "template-static",
-      "value": "document-text",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"document-text\"> {{ t(\"promptSetup.core.title\") }} </el-text> <el-"
+      "value": "description",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"description\"> {{ t(\"promptSetup.core.title\") }} </el-text> <el-"
     },
     {
       "file": "app/components/prompt/setup-panel.vue",
@@ -2239,36 +2250,36 @@
       "file": "app/components/prompt/setup-panel.vue",
       "line": 743,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "eight=\"300\" :color=\"generatedSubject ? 'normal75' : 'orange'\" icon=\"magic-star\" :icon-color=\"generatedSubject ? 'blue' : 'orange'\" >"
+      "value": "auto_awesome",
+      "context": "eight=\"300\" :color=\"generatedSubject ? 'normal75' : 'orange'\" icon=\"auto_awesome\" :icon-color=\"generatedSubject ? 'blue' : 'orange'\" >"
     },
     {
       "file": "app/components/prompt/setup-panel.vue",
       "line": 793,
       "kind": "template-static",
-      "value": "shield-tick",
-      "context": "upPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"14\" :weight=\"800\" class=\"lh1\" icon=\"shield-tick\"> {{ t(\"promptSetup.imageToImage.preserve.title\") }} </el-te"
+      "value": "verified_user",
+      "context": "upPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"14\" :weight=\"800\" class=\"lh1\" icon=\"verified_user\"> {{ t(\"promptSetup.imageToImage.preserve.title\") }} </el-te"
     },
     {
       "file": "app/components/prompt/setup-panel.vue",
       "line": 845,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"setting-2\"> {{ t(\"promptSetup.output.title\") }} </el-text> <e"
+      "value": "tune",
+      "context": "etupPanelIntroAttrs\"> <el-text type=\"h3\" :size=\"15\" :weight=\"800\" class=\"lh1\" icon=\"tune\"> {{ t(\"promptSetup.output.title\") }} </el-text> <e"
     },
     {
       "file": "app/components/prompt/SetupPanelContextMenu.vue",
       "line": 106,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "ctionKey: \"onReset\", disabledKey: \"reset\", attrs: { icon: \"refresh-2\", color: \"orange15\", textColor: \"normal\", },"
+      "value": "refresh",
+      "context": "ctionKey: \"onReset\", disabledKey: \"reset\", attrs: { icon: \"refresh\", color: \"orange15\", textColor: \"normal\", },"
     },
     {
       "file": "app/components/prompt/SetupPanelContextMenu.vue",
       "line": 157,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "ate> <el-grid v-bind=\"menuGridAttrs\"> <el-grid v-bind=\"headerAttrs\"> <el-icon icon=\"setting-2\" :size=\"15\" color=\"normal55\" /> <el-text v-bind=\"titleAttrs\"> {{ labels.tit"
+      "value": "tune",
+      "context": "ate> <el-grid v-bind=\"menuGridAttrs\"> <el-grid v-bind=\"headerAttrs\"> <el-icon icon=\"tune\" :size=\"15\" color=\"normal55\" /> <el-text v-bind=\"titleAttrs\"> {{ labels.tit"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
@@ -2281,134 +2292,134 @@
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 317,
       "kind": "template-static",
-      "value": "calendar-1",
-      "context": ": 18\" wrap> <el-text :size=\"mobile ? 10 : 12\" icon=\"calendar-1\" icon-color=\"normal50\"> {{ formattedDate }} </el-text>"
+      "value": "calendar_month",
+      "context": ": 18\" wrap> <el-text :size=\"mobile ? 10 : 12\" icon=\"calendar_month\" icon-color=\"normal50\"> {{ formattedDate }} </el-text>"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 324,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "</el-text> <el-text :size=\"mobile ? 10 : 12\" icon=\"gallery\" icon-color=\"normal50\"> {{ t('prompts.detail.previewCount', { coun"
+      "value": "photo_library",
+      "context": "</el-text> <el-text :size=\"mobile ? 10 : 12\" icon=\"photo_library\" icon-color=\"normal50\"> {{ t('prompts.detail.previewCount', { coun"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 331,
       "kind": "template-static",
-      "value": "magicpen",
-      "context": "</el-text> <el-text :size=\"mobile ? 10 : 12\" icon=\"magicpen\" icon-color=\"normal50\"> {{ t('prompts.detail.readyToUse') }}"
+      "value": "auto_fix_high",
+      "context": "</el-text> <el-text :size=\"mobile ? 10 : 12\" icon=\"auto_fix_high\" icon-color=\"normal50\"> {{ t('prompts.detail.readyToUse') }}"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 350,
       "kind": "template-static",
-      "value": "send-2",
-      "context": "> <el-button :label=\"t('prompts.detail.openTelegram')\" icon=\"send-2\" color=\"blue\" :size=\"14\" :p=\"[10, 14]\" @cl"
+      "value": "send",
+      "context": "> <el-button :label=\"t('prompts.detail.openTelegram')\" icon=\"send\" color=\"blue\" :size=\"14\" :p=\"[10, 14]\" @cl"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 365,
       "kind": "template-static",
-      "value": "arrow-down",
-      "context": "ap=\"6\"> <el-button :label=\"t('prompts.detail.explorePrompt')\" icon=\"arrow-down\" mode=\"flat\" :invert=\"true\" :size=\"14\" :p=\"8\""
+      "value": "arrow_downward",
+      "context": "ap=\"6\"> <el-button :label=\"t('prompts.detail.explorePrompt')\" icon=\"arrow_downward\" mode=\"flat\" :invert=\"true\" :size=\"14\" :p=\"8\""
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 483,
       "kind": "template-static",
-      "value": "send-2",
-      "context": "<el-button :label=\"t('prompts.detail.openTelegram')\" icon=\"send-2\" mode=\"flat\" color=\"blue\" :size=\"11\""
+      "value": "send",
+      "context": "<el-button :label=\"t('prompts.detail.openTelegram')\" icon=\"send\" mode=\"flat\" color=\"blue\" :size=\"11\""
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 511,
       "kind": "template-static",
-      "value": "arrow-left",
-      "context": "8\" :p=\"mobile ? 18 : 28\"> <el-text :size=\"12\" icon=\"arrow-left\" icon-color=\"blue\"> {{ t('prompts.detail.previous') }} <"
+      "value": "arrow_left",
+      "context": "8\" :p=\"mobile ? 18 : 28\"> <el-text :size=\"12\" icon=\"arrow_left\" icon-color=\"blue\"> {{ t('prompts.detail.previous') }} <"
     },
     {
       "file": "app/components/prompts/PromptDetail.vue",
       "line": 534,
       "kind": "template-static",
-      "value": "arrow-right",
-      "context": "8\" :p=\"mobile ? 18 : 28\"> <el-text :size=\"12\" icon=\"arrow-right\" icon-color=\"blue\"> {{ t('prompts.detail.next') }} </el-"
+      "value": "arrow_right",
+      "context": "8\" :p=\"mobile ? 18 : 28\"> <el-text :size=\"12\" icon=\"arrow_right\" icon-color=\"blue\"> {{ t('prompts.detail.next') }} </el-"
     },
     {
       "file": "app/components/prompts/PromptItem.vue",
       "line": 171,
       "kind": "object-static",
-      "value": "send-2",
-      "context": "type: isGrid.value ? 'normal' : 'fab', label: t('prompts.actions.telegram'), icon: 'send-2', color: 'blue', size: 12, p: isGrid.value ? [10, 12] : mobile.value ? 8 : 9,"
+      "value": "send",
+      "context": "type: isGrid.value ? 'normal' : 'fab', label: t('prompts.actions.telegram'), icon: 'send', color: 'blue', size: 12, p: isGrid.value ? [10, 12] : mobile.value ? 8 : 9,"
     },
     {
       "file": "app/components/prompts/PromptItem.vue",
       "line": 183,
       "kind": "object-static",
-      "value": "eye",
-      "context": "urn { type: 'fab', to: detailUrl.value, label: t('prompts.actions.view'), icon: 'eye', mode: 'flat', color: 'normal', size: 12, p: isGrid.value ? 10 : mobile.v"
+      "value": "visibility",
+      "context": "urn { type: 'fab', to: detailUrl.value, label: t('prompts.actions.view'), icon: 'visibility', mode: 'flat', color: 'normal', size: 12, p: isGrid.value ? 10 : mobile.v"
     },
     {
       "file": "app/components/prompts/PromptItem.vue",
       "line": 218,
       "kind": "template-static",
-      "value": "gallery-slash",
-      "context": "rules=\"ccc\" class=\"w100 h100\" bg=\"normal5\"> <el-icon icon=\"gallery-slash\" :size=\"isGrid ? 42 : mobile ? 22 : 28\" color=\"normal30\" />"
+      "value": "hide_image",
+      "context": "rules=\"ccc\" class=\"w100 h100\" bg=\"normal5\"> <el-icon icon=\"hide_image\" :size=\"isGrid ? 42 : mobile ? 22 : 28\" color=\"normal30\" />"
     },
     {
       "file": "app/components/prompts/PromptItem.vue",
       "line": 273,
       "kind": "template-static",
-      "value": "calendar-1",
-      "context": "wrap> <el-text :size=\"11\" color=\"normal50\" icon=\"calendar-1\"> {{ formattedDate }} </el-text> <el-text v-i"
+      "value": "calendar_month",
+      "context": "wrap> <el-text :size=\"11\" color=\"normal50\" icon=\"calendar_month\"> {{ formattedDate }} </el-text> <el-text v-i"
     },
     {
       "file": "app/components/prompts/PromptItem.vue",
       "line": 281,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "v-if=\"item.images.length\" :size=\"11\" color=\"normal50\" icon=\"gallery\"> {{ t('prompts.card.imageCount', { count: item.images.length }) }}"
+      "value": "photo_library",
+      "context": "v-if=\"item.images.length\" :size=\"11\" color=\"normal50\" icon=\"photo_library\"> {{ t('prompts.card.imageCount', { count: item.images.length }) }}"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 39,
       "kind": "object-static",
-      "value": "gallery",
-      "context": "ted(() => [ { label: t('tools.imageConverter.formats.webp'), value: 'webp', icon: 'gallery', }, { label: t('tools.imageConverter.formats.jpg'), value: 'jpg', icon: '"
+      "value": "photo_library",
+      "context": "ted(() => [ { label: t('tools.imageConverter.formats.webp'), value: 'webp', icon: 'photo_library', }, { label: t('tools.imageConverter.formats.jpg'), value: 'jpg', icon: '"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 44,
       "kind": "object-static",
       "value": "image",
-      "context": "allery', }, { label: t('tools.imageConverter.formats.jpg'), value: 'jpg', icon: 'image', }, ]) const qualityOptions = computed(() => { return QUALITY_OPTIONS.map((quality)"
+      "context": "ibrary', }, { label: t('tools.imageConverter.formats.jpg'), value: 'jpg', icon: 'image', }, ]) const qualityOptions = computed(() => { return QUALITY_OPTIONS.map((quality)"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 52,
       "kind": "object-static",
-      "value": "magic-star",
-      "context": "label: t('tools.imageConverter.qualityPercent', { quality }), value: quality, icon: 'magic-star', })) }) const selectedOutputFormat = computed<ImageConverterFormat>({ get() { re"
+      "value": "auto_awesome",
+      "context": "label: t('tools.imageConverter.qualityPercent', { quality }), value: quality, icon: 'auto_awesome', })) }) const selectedOutputFormat = computed<ImageConverterFormat>({ get() { re"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 213,
       "kind": "object-static",
-      "value": "gallery",
-      "context": "resetConversionResult() } function openFilesModal() { modal.open({ header: { icon: 'gallery', title: t('tools.imageConverter.preview.title'), subtitle: t('tools.imageConv"
+      "value": "photo_library",
+      "context": "resetConversionResult() } function openFilesModal() { modal.open({ header: { icon: 'photo_library', title: t('tools.imageConverter.preview.title'), subtitle: t('tools.imageConv"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 483,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "16\" :p=\"28\" bg=\"normal5\" :radius=\"22\" class=\"image-batch-converter-empty\"> <el-icon icon=\"gallery-add\" :size=\"34\" /> <el-flex rules=\"ccc\" :gap=\"6\"> <el-text :size=\"16\" :weight=\""
+      "value": "add_photo_alternate",
+      "context": "16\" :p=\"28\" bg=\"normal5\" :radius=\"22\" class=\"image-batch-converter-empty\"> <el-icon icon=\"add_photo_alternate\" :size=\"34\" /> <el-flex rules=\"ccc\" :gap=\"6\"> <el-text :size=\"16\" :weight=\""
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 486,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "e=\"34\" /> <el-flex rules=\"ccc\" :gap=\"6\"> <el-text :size=\"16\" :weight=\"600\" icon=\"gallery-add\" marker=\"blue40\"> {{ $t('tools.imageConverter.empty.title') }} </el-text"
+      "value": "add_photo_alternate",
+      "context": "e=\"34\" /> <el-flex rules=\"ccc\" :gap=\"6\"> <el-text :size=\"16\" :weight=\"600\" icon=\"add_photo_alternate\" marker=\"blue40\"> {{ $t('tools.imageConverter.empty.title') }} </el-text"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
@@ -2421,15 +2432,15 @@
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 506,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "ius=\"20\" class=\"image-batch-converter-summary\"> <el-text :size=\"18\" :weight=\"700\" icon=\"gallery\" marker=\"blue40\"> {{ selectedCountText }} </el-text> <el-text :s"
+      "value": "photo_library",
+      "context": "ius=\"20\" class=\"image-batch-converter-summary\"> <el-text :size=\"18\" :weight=\"700\" icon=\"photo_library\" marker=\"blue40\"> {{ selectedCountText }} </el-text> <el-text :s"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 509,
       "kind": "template-static",
-      "value": "folder-open",
-      "context": "ountText }} </el-text> <el-text :size=\"13\" :weight=\"300\" color=\"normal70\" icon=\"folder-open\"> {{ totalSizeText }} </el-text> </el-flex> <el-flex rules="
+      "value": "folder_open",
+      "context": "ountText }} </el-text> <el-text :size=\"13\" :weight=\"300\" color=\"normal70\" icon=\"folder_open\"> {{ totalSizeText }} </el-text> </el-flex> <el-flex rules="
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
@@ -2442,99 +2453,99 @@
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 525,
       "kind": "template-static",
-      "value": "gallery",
-      "context": ":p=\"[9, 12]\" @click=\"openFilePicker\" /> <el-button icon=\"gallery\" mode=\"flat\" color=\"prim\" :label=\"$t('tools.imageConverter.a"
+      "value": "photo_library",
+      "context": ":p=\"[9, 12]\" @click=\"openFilePicker\" /> <el-button icon=\"photo_library\" mode=\"flat\" color=\"prim\" :label=\"$t('tools.imageConverter.a"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 535,
       "kind": "template-static",
-      "value": "trash",
-      "context": ":p=\"[9, 12]\" @click=\"openFilesModal\" /> <el-button icon=\"trash\" mode=\"flat\" color=\"red\" :label=\"$t('tools.imageConverter.ac"
+      "value": "delete",
+      "context": ":p=\"[9, 12]\" @click=\"openFilesModal\" /> <el-button icon=\"delete\" mode=\"flat\" color=\"red\" :label=\"$t('tools.imageConverter.ac"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 548,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "mage-batch-converter-control\"> <el-text :size=\"12\" :weight=\"400\" color=\"normal70\" icon=\"setting-2\" marker=\"blue40\"> {{ $t('tools.imageConverter.controls.format') }} </el-"
+      "value": "tune",
+      "context": "mage-batch-converter-control\"> <el-text :size=\"12\" :weight=\"400\" color=\"normal70\" icon=\"tune\" marker=\"blue40\"> {{ $t('tools.imageConverter.controls.format') }} </el-"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 555,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "pdown v-model=\"selectedOutputFormat\" :items=\"formatOptions\" icon=\"gallery\" :placeholder=\"$t('tools.imageConverter.controls.format')\" :menu-optio"
+      "value": "photo_library",
+      "context": "pdown v-model=\"selectedOutputFormat\" :items=\"formatOptions\" icon=\"photo_library\" :placeholder=\"$t('tools.imageConverter.controls.format')\" :menu-optio"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 562,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "mage-batch-converter-control\"> <el-text :size=\"12\" :weight=\"400\" color=\"normal70\" icon=\"magic-star\" marker=\"blue40\"> {{ $t('tools.imageConverter.controls.quality') }} </el"
+      "value": "auto_awesome",
+      "context": "mage-batch-converter-control\"> <el-text :size=\"12\" :weight=\"400\" color=\"normal70\" icon=\"auto_awesome\" marker=\"blue40\"> {{ $t('tools.imageConverter.controls.quality') }} </el"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 569,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "own v-model=\"selectedOutputQuality\" :items=\"qualityOptions\" icon=\"magic-star\" :placeholder=\"$t('tools.imageConverter.controls.quality')\" :menu-opti"
+      "value": "auto_awesome",
+      "context": "own v-model=\"selectedOutputQuality\" :items=\"qualityOptions\" icon=\"auto_awesome\" :placeholder=\"$t('tools.imageConverter.controls.quality')\" :menu-opti"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 579,
       "kind": "template-static",
-      "value": "receive-square",
-      "context": "lass=\"image-batch-converter-download-area\"> <el-button color=\"prim\" icon=\"receive-square\" class=\"image-batch-converter-download\" :label=\"isConverting ? $t('tools.i"
+      "value": "download",
+      "context": "lass=\"image-batch-converter-download-area\"> <el-button color=\"prim\" icon=\"download\" class=\"image-batch-converter-download\" :label=\"isConverting ? $t('tools.i"
     },
     {
       "file": "app/components/tools/ImageBatchConverter.vue",
       "line": 595,
       "kind": "template-static",
-      "value": "chart-square",
-      "context": "timizationText\" :size=\"10\" :weight=\"300\" color=\"normal60\" icon=\"chart-square\" marker=\"blue40\" class=\"image-batch-converter-optimization\" >"
+      "value": "analytics",
+      "context": "timizationText\" :size=\"10\" :weight=\"300\" color=\"normal60\" icon=\"analytics\" marker=\"blue40\" class=\"image-batch-converter-optimization\" >"
     },
     {
       "file": "app/components/tools/ImageConverterFilesModal.vue",
       "line": 41,
       "kind": "template-static",
-      "value": "trash",
-      "context": "file-remove\" type=\"fab\" mode=\"normal\" color=\"red\" icon=\"trash\" :size=\"18\" :p=\"10\" :label=\"$t('tools.imageConverter.preview"
+      "value": "delete",
+      "context": "file-remove\" type=\"fab\" mode=\"normal\" color=\"red\" icon=\"delete\" :size=\"18\" :p=\"10\" :label=\"$t('tools.imageConverter.preview"
     },
     {
       "file": "app/components/tools/ImageConverterFilesModal.vue",
       "line": 51,
       "kind": "template-static",
-      "value": "gallery-remove",
-      "context": "<el-flex v-else rules=\"ccc\" :gap=\"10\" :p=\"24\" bg=\"normal5\" :radius=\"18\"> <el-icon icon=\"gallery-remove\" :size=\"28\" /> <el-text :size=\"13\" :weight=\"400\"> {{ $t('tools.imageConverte"
+      "value": "delete",
+      "context": "<el-flex v-else rules=\"ccc\" :gap=\"10\" :p=\"24\" bg=\"normal5\" :radius=\"18\"> <el-icon icon=\"delete\" :size=\"28\" /> <el-text :size=\"13\" :weight=\"400\"> {{ $t('tools.imageConverte"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 234,
       "kind": "object-static",
-      "value": "color-swatch",
-      "context": "({ label: t('tools.imageVectorizer.values.colors', { count }), value: count, icon: 'color-swatch', })) }) const lowResScaleOptions = computed(() => { return LOW_RES_SCALE_OPTIONS.map"
+      "value": "palette",
+      "context": "({ label: t('tools.imageVectorizer.values.colors', { count }), value: count, icon: 'palette', })) }) const lowResScaleOptions = computed(() => { return LOW_RES_SCALE_OPTIONS.map"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 244,
       "kind": "object-static",
-      "value": "maximize",
-      "context": "=== 0 ? t('tools.imageVectorizer.values.auto') : `${value}x`, value, icon: 'maximize', })) }) const smoothModeOptions = computed(() => { return SMOOTH_MODE_OPTIONS.map((v"
+      "value": "fullscreen",
+      "context": "=== 0 ? t('tools.imageVectorizer.values.auto') : `${value}x`, value, icon: 'fullscreen', })) }) const smoothModeOptions = computed(() => { return SMOOTH_MODE_OPTIONS.map((v"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 394,
       "kind": "object-static",
-      "value": "receive-square",
-      "context": ".push( { label: t('tools.imageVectorizer.contextMenu.downloadSvg'), icon: 'receive-square', disabled: () => !result.value?.svg || isLoading.value, handler: () => do"
+      "value": "download",
+      "context": ".push( { label: t('tools.imageVectorizer.contextMenu.downloadSvg'), icon: 'download', disabled: () => !result.value?.svg || isLoading.value, handler: () => do"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 400,
       "kind": "object-static",
-      "value": "copy",
-      "context": ", }, { label: t('tools.imageVectorizer.contextMenu.copySvg'), icon: 'copy', disabled: () => !result.value?.svg || isLoading.value, handler: copySvgF"
+      "value": "content_copy",
+      "context": ", }, { label: t('tools.imageVectorizer.contextMenu.copySvg'), icon: 'content_copy', disabled: () => !result.value?.svg || isLoading.value, handler: copySvgF"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
@@ -2547,50 +2558,50 @@
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 416,
       "kind": "object-static",
-      "value": "copy",
-      "context": "oadPng(), }, { label: t('tools.imageVectorizer.contextMenu.copyPng'), icon: 'copy', disabled: () => !rasterBlob.value || isLoading.value, handler: copyPngFromMe"
+      "value": "content_copy",
+      "context": "oadPng(), }, { label: t('tools.imageVectorizer.contextMenu.copyPng'), icon: 'content_copy', disabled: () => !rasterBlob.value || isLoading.value, handler: copyPngFromMe"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 422,
       "kind": "object-static",
-      "value": "gallery-add",
-      "context": "mMenu, }, { label: t('tools.imageVectorizer.contextMenu.pasteImage'), icon: 'gallery-add', handler: pasteImageFromMenu, }, { label: t('tools.imageVectorizer.co"
+      "value": "add_photo_alternate",
+      "context": "mMenu, }, { label: t('tools.imageVectorizer.contextMenu.pasteImage'), icon: 'add_photo_alternate', handler: pasteImageFromMenu, }, { label: t('tools.imageVectorizer.co"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 427,
       "kind": "object-static",
-      "value": "trash",
-      "context": "Menu, }, { label: t('tools.imageVectorizer.contextMenu.removeImage'), icon: 'trash', color: 'red', handler: clearSource, }, { type: 'divider' }, {"
+      "value": "delete",
+      "context": "Menu, }, { label: t('tools.imageVectorizer.contextMenu.removeImage'), icon: 'delete', color: 'red', handler: clearSource, }, { type: 'divider' }, {"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 434,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "'divider' }, { label: t('tools.imageVectorizer.contextMenu.copyConfig'), icon: 'setting-2', handler: copyConfigFromMenu, }, { label: t('tools.imageVectorizer.co"
+      "value": "tune",
+      "context": "'divider' }, { label: t('tools.imageVectorizer.contextMenu.copyConfig'), icon: 'tune', handler: copyConfigFromMenu, }, { label: t('tools.imageVectorizer.co"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 439,
       "kind": "object-static",
-      "value": "document",
-      "context": "Menu, }, { label: t('tools.imageVectorizer.contextMenu.pasteConfig'), icon: 'document', handler: pasteConfigFromMenu, }, ) return items }) function formatBytes"
+      "value": "description",
+      "context": "Menu, }, { label: t('tools.imageVectorizer.contextMenu.pasteConfig'), icon: 'description', handler: pasteConfigFromMenu, }, ) return items }) function formatBytes"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 597,
       "kind": "object-static",
-      "value": "warning-2",
-      "context": "settled = true resolve(value) } modal.open({ header: { icon: 'warning-2', title: t('tools.imageVectorizer.messages.replaceClipboardImageTitle'), c"
+      "value": "warning",
+      "context": "settled = true resolve(value) } modal.open({ header: { icon: 'warning', title: t('tools.imageVectorizer.messages.replaceClipboardImageTitle'), c"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 616,
       "kind": "object-static",
-      "value": "gallery-add",
-      "context": "ools.imageVectorizer.actions.replaceWithClipboard'), color: 'orange', icon: 'gallery-add', close: true, handler: () => { finish(true) },"
+      "value": "add_photo_alternate",
+      "context": "ools.imageVectorizer.actions.replaceWithClipboard'), color: 'orange', icon: 'add_photo_alternate', close: true, handler: () => { finish(true) },"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
@@ -2603,15 +2614,15 @@
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1082,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "/> <el-flex v-bind=\"emptyContentAttrs\"> <el-text :size=\"16\" :weight=\"600\" icon=\"gallery-add\"> {{ t('tools.imageVectorizer.empty.title') }} </el-text> <el-t"
+      "value": "add_photo_alternate",
+      "context": "/> <el-flex v-bind=\"emptyContentAttrs\"> <el-text :size=\"16\" :weight=\"600\" icon=\"add_photo_alternate\"> {{ t('tools.imageVectorizer.empty.title') }} </el-text> <el-t"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1099,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "> <el-dropdown v-model=\"selectedMode\" :items=\"modeOptions\" icon=\"setting-2\" :placeholder=\"t('tools.imageVectorizer.controls.mode')\" :menu-options=\"{"
+      "value": "tune",
+      "context": "> <el-dropdown v-model=\"selectedMode\" :items=\"modeOptions\" icon=\"tune\" :placeholder=\"t('tools.imageVectorizer.controls.mode')\" :menu-options=\"{"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
@@ -2631,29 +2642,29 @@
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1123,
       "kind": "template-static",
-      "value": "document",
-      "context": "lt\" v-bind=\"paletteAttrs\"> <el-text :size=\"11\" :weight=\"300\" color=\"normal65\" icon=\"document\"> {{ sourceDetails }} </el-text> <template v-if=\"!i"
+      "value": "description",
+      "context": "lt\" v-bind=\"paletteAttrs\"> <el-text :size=\"11\" :weight=\"300\" color=\"normal65\" icon=\"description\"> {{ sourceDetails }} </el-text> <template v-if=\"!i"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1128,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "plate v-if=\"!isUpscale\"> <el-text :size=\"11\" :weight=\"400\" color=\"normal70\" icon=\"color-swatch\"> {{ t('tools.imageVectorizer.result.palette') }} </el-text>"
+      "value": "palette",
+      "context": "plate v-if=\"!isUpscale\"> <el-text :size=\"11\" :weight=\"400\" color=\"normal70\" icon=\"palette\"> {{ t('tools.imageVectorizer.result.palette') }} </el-text>"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1145,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "</template> <el-text v-else :size=\"11\" :weight=\"500\" color=\"normal70\" icon=\"color-swatch\"> {{ t('tools.imageVectorizer.result.outputColors', { count: result.stats.ou"
+      "value": "palette",
+      "context": "</template> <el-text v-else :size=\"11\" :weight=\"500\" color=\"normal70\" icon=\"palette\"> {{ t('tools.imageVectorizer.result.outputColors', { count: result.stats.ou"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1155,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "-dropdown v-model=\"selectedMode\" :items=\"modeOptions\" icon=\"setting-2\" :placeholder=\"t('tools.imageVectorizer.controls.mode')\" :menu-opt"
+      "value": "tune",
+      "context": "-dropdown v-model=\"selectedMode\" :items=\"modeOptions\" icon=\"tune\" :placeholder=\"t('tools.imageVectorizer.controls.mode')\" :menu-opt"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
@@ -2666,43 +2677,43 @@
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1170,
       "kind": "template-static",
-      "value": "trash",
-      "context": "Attrs\" @click=\"openFilePicker\" /> <el-button icon=\"trash\" color=\"red\" :label=\"t('tools.imageVectorizer.actions.clear')\""
+      "value": "delete",
+      "context": "Attrs\" @click=\"openFilePicker\" /> <el-button icon=\"delete\" color=\"red\" :label=\"t('tools.imageVectorizer.actions.clear')\""
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1197,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "rimaryControlCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"color-swatch\"> {{ t('tools.imageVectorizer.controls.maxColors') }} </el-t"
+      "value": "palette",
+      "context": "rimaryControlCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"palette\"> {{ t('tools.imageVectorizer.controls.maxColors') }} </el-t"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1204,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "v-model=\"selectedMaxColors\" :items=\"maxColorOptions\" icon=\"color-swatch\" :placeholder=\"t('tools.imageVectorizer.controls.maxColors')\""
+      "value": "palette",
+      "context": "v-model=\"selectedMaxColors\" :items=\"maxColorOptions\" icon=\"palette\" :placeholder=\"t('tools.imageVectorizer.controls.maxColors')\""
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1218,
       "kind": "template-static",
-      "value": "warning-2",
-      "context": "v-model=\"settings.strictColorLimit\" :size=\"14\" icon=\"warning-2\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.st"
+      "value": "warning",
+      "context": "v-model=\"settings.strictColorLimit\" :size=\"14\" icon=\"warning\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.st"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1232,
       "kind": "template-static",
-      "value": "eraser",
-      "context": "v-model=\"settings.removeBackground\" :size=\"14\" icon=\"eraser\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
+      "value": "ink_eraser",
+      "context": "v-model=\"settings.removeBackground\" :size=\"14\" icon=\"ink_eraser\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1239,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": "<el-flex v-bind=\"backgroundActionsAttrs\"> <el-button icon=\"color-swatch\" mode=\"flat\" color=\"prim\" :label=\"is"
+      "value": "palette",
+      "context": "<el-flex v-bind=\"backgroundActionsAttrs\"> <el-button icon=\"palette\" mode=\"flat\" color=\"prim\" :label=\"is"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
@@ -2722,106 +2733,106 @@
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1278,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"magic-star\"> {{ t('tools.imageVectorizer.controls.colorTolerance') }}"
+      "value": "auto_awesome",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"auto_awesome\"> {{ t('tools.imageVectorizer.controls.colorTolerance') }}"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1303,
       "kind": "template-static",
-      "value": "maximize",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"maximize\"> {{ t('tools.imageVectorizer.controls.padding') }} </el"
+      "value": "fullscreen",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"fullscreen\"> {{ t('tools.imageVectorizer.controls.padding') }} </el"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1326,
       "kind": "template-static",
-      "value": "filter-remove",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"filter-remove\"> {{ t('tools.imageVectorizer.controls.minRegionSize') }}"
+      "value": "filter_alt_off",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"filter_alt_off\"> {{ t('tools.imageVectorizer.controls.minRegionSize') }}"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1351,
       "kind": "template-static",
-      "value": "brush-2",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush-2\"> {{ t('tools.imageVectorizer.controls.edgeCleanup') }}"
+      "value": "brush",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush\"> {{ t('tools.imageVectorizer.controls.edgeCleanup') }}"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1378,
       "kind": "template-static",
-      "value": "forbidden-2",
-      "context": "v-model=\"settings.removeEnclosedBackground\" :size=\"14\" icon=\"forbidden-2\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
+      "value": "block",
+      "context": "v-model=\"settings.removeEnclosedBackground\" :size=\"14\" icon=\"block\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1395,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "\" v-model=\"settings.refineSvg\" :size=\"14\" icon=\"magic-star\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
+      "value": "auto_awesome",
+      "context": "\" v-model=\"settings.refineSvg\" :size=\"14\" icon=\"auto_awesome\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1404,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "v-model=\"settings.refineImage\" :size=\"14\" icon=\"magic-star\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
+      "value": "auto_awesome",
+      "context": "v-model=\"settings.refineImage\" :size=\"14\" icon=\"auto_awesome\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.re"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1420,
       "kind": "template-static",
-      "value": "maximize",
-      "context": "v-model=\"settings.enhanceLowRes\" :size=\"14\" icon=\"maximize\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.en"
+      "value": "fullscreen",
+      "context": "v-model=\"settings.enhanceLowRes\" :size=\"14\" icon=\"fullscreen\" class=\"w100\" :label=\"t('tools.imageVectorizer.controls.en"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1433,
       "kind": "template-static",
-      "value": "maximize",
-      "context": "ondaryControlCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"maximize\"> {{ t('tools.imageVectorizer.controls.lowResScale') }} </el"
+      "value": "fullscreen",
+      "context": "ondaryControlCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"fullscreen\"> {{ t('tools.imageVectorizer.controls.lowResScale') }} </el"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1440,
       "kind": "template-static",
-      "value": "maximize",
-      "context": "v-model=\"selectedLowResScale\" :items=\"lowResScaleOptions\" icon=\"maximize\" :placeholder=\"t('tools.imageVectorizer.controls.lowResScale')\""
+      "value": "fullscreen",
+      "context": "v-model=\"selectedLowResScale\" :items=\"lowResScaleOptions\" icon=\"fullscreen\" :placeholder=\"t('tools.imageVectorizer.controls.lowResScale')\""
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1454,
       "kind": "template-static",
-      "value": "brush-2",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush-2\"> {{ t('tools.imageVectorizer.controls.lowResRecovery') }}"
+      "value": "brush",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush\"> {{ t('tools.imageVectorizer.controls.lowResRecovery') }}"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1481,
       "kind": "template-static",
-      "value": "brush-2",
-      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush-2\"> {{ t(isUpscale ? 'tools.imageVectorizer.controls.e"
+      "value": "brush",
+      "context": "=\"controlHeaderAttrs\"> <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"brush\"> {{ t(isUpscale ? 'tools.imageVectorizer.controls.e"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1523,
       "kind": "template-static",
-      "value": "path-square",
-      "context": "CardAttrs\" > <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"path-square\"> {{ t('tools.imageVectorizer.controls.smoothMode') }} </el-"
+      "value": "polyline",
+      "context": "CardAttrs\" > <el-text :size=\"12\" :weight=\"500\" color=\"normal75\" icon=\"polyline\"> {{ t('tools.imageVectorizer.controls.smoothMode') }} </el-"
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1530,
       "kind": "template-static",
-      "value": "path-square",
-      "context": "v-model=\"selectedSmoothMode\" :items=\"smoothModeOptions\" icon=\"path-square\" :placeholder=\"t('tools.imageVectorizer.controls.smoothMode')\""
+      "value": "polyline",
+      "context": "v-model=\"selectedSmoothMode\" :items=\"smoothModeOptions\" icon=\"polyline\" :placeholder=\"t('tools.imageVectorizer.controls.smoothMode')\""
     },
     {
       "file": "app/components/tools/ImageVectorizer.vue",
       "line": 1548,
       "kind": "template-static",
-      "value": "receive-square",
-      "context": "<el-flex v-bind=\"downloadAreaAttrs\"> <el-button color=\"prim\" icon=\"receive-square\" class=\"image-vectorizer-download\" :label=\"primaryDownloadLabel\""
+      "value": "download",
+      "context": "<el-flex v-bind=\"downloadAreaAttrs\"> <el-button color=\"prim\" icon=\"download\" class=\"image-vectorizer-download\" :label=\"primaryDownloadLabel\""
     },
     {
       "file": "app/components/tools/ImageVectorizerPreview.vue",
@@ -2834,22 +2845,22 @@
       "file": "app/components/tools/ImageVectorizerPreview.vue",
       "line": 245,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "-flex v-if=\"!sourceUrl || sourceLoadError\" v-bind=\"previewEmptyAttrs\"> <el-icon icon=\"gallery\" :size=\"26\" color=\"normal50\" /> <el-text :size=\"11\" :weight=\"300\" color=\"normal6"
+      "value": "photo_library",
+      "context": "-flex v-if=\"!sourceUrl || sourceLoadError\" v-bind=\"previewEmptyAttrs\"> <el-icon icon=\"photo_library\" :size=\"26\" color=\"normal50\" /> <el-text :size=\"11\" :weight=\"300\" color=\"normal6"
     },
     {
       "file": "app/components/tools/ImageVectorizerPreview.vue",
       "line": 260,
       "kind": "template-static",
-      "value": "color-swatch",
-      "context": ":p=\"8\" :radius=\"12\" > <el-text :size=\"10\" :weight=\"500\" icon=\"color-swatch\"> {{ t('tools.imageVectorizer.preview.pickHint') }} </el-text>"
+      "value": "palette",
+      "context": ":p=\"8\" :radius=\"12\" > <el-text :size=\"10\" :weight=\"500\" icon=\"palette\"> {{ t('tools.imageVectorizer.preview.pickHint') }} </el-text>"
     },
     {
       "file": "app/components/tools/ImageVectorizerPreview.vue",
       "line": 268,
       "kind": "template-static",
-      "value": "magic-star",
-      "context": "/el-flex> <el-flex v-bind=\"rasterCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" icon=\"magic-star\" marker=\"blue40\"> {{ rasterTitle }} </el-text> <div class=\"image-vect"
+      "value": "auto_awesome",
+      "context": "/el-flex> <el-flex v-bind=\"rasterCardAttrs\"> <el-text :size=\"12\" :weight=\"500\" icon=\"auto_awesome\" marker=\"blue40\"> {{ rasterTitle }} </el-text> <div class=\"image-vect"
     },
     {
       "file": "app/components/tools/ImageVectorizerPreview.vue",
@@ -2862,22 +2873,22 @@
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1086,
       "kind": "object-static",
-      "value": "ram",
-      "context": ".length > 0 return [ { label: t('pages.collage.actions.save'), icon: 'ram', disabled: !canExportImage.value, handler: () => { void downloa"
+      "value": "memory",
+      "context": ".length > 0 return [ { label: t('pages.collage.actions.save'), icon: 'memory', disabled: !canExportImage.value, handler: () => { void downloa"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1094,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "vas() }, }, { label: t('pages.collage.actions.copy'), icon: 'document-copy', disabled: !canExportImage.value, handler: () => { void exportA"
+      "value": "file_copy",
+      "context": "vas() }, }, { label: t('pages.collage.actions.copy'), icon: 'file_copy', disabled: !canExportImage.value, handler: () => { void exportA"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1102,
       "kind": "object-static",
-      "value": "trash",
-      "context": "as() }, }, { label: t('pages.collage.actions.clear'), icon: 'trash', color: 'red', disabled: !hasImages, handler: () => { v"
+      "value": "delete",
+      "context": "as() }, }, { label: t('pages.collage.actions.clear'), icon: 'delete', color: 'red', disabled: !hasImages, handler: () => { v"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
@@ -2890,64 +2901,64 @@
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1129,
       "kind": "object-static",
-      "value": "gallery-add",
-      "context": "s: GlobalMenuItem[] = [ { label: t('pages.collage.dropzone.title'), icon: 'gallery-add', handler: () => { imagesApi.openFilePicker() }, },"
+      "value": "add_photo_alternate",
+      "context": "s: GlobalMenuItem[] = [ { label: t('pages.collage.dropzone.title'), icon: 'add_photo_alternate', handler: () => { imagesApi.openFilePicker() }, },"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1136,
       "kind": "object-static",
-      "value": "mouse-circle",
-      "context": "ker() }, }, { label: t('pages.collage.zoom.panTool'), icon: 'mouse-circle', active: canvasPanToolEnabled.value, handler: () => { toggleCan"
+      "value": "mouse",
+      "context": "ker() }, }, { label: t('pages.collage.zoom.panTool'), icon: 'mouse', active: canvasPanToolEnabled.value, handler: () => { toggleCan"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1162,
       "kind": "object-static",
-      "value": "gallery",
-      "context": "}, { label: t('pages.collage.layoutTools.shuffleSimilar'), icon: 'gallery', description: 'Shift + S', disabled: !hasMultipleImages, ha"
+      "value": "photo_library",
+      "context": "}, { label: t('pages.collage.layoutTools.shuffleSimilar'), icon: 'photo_library', description: 'Shift + S', disabled: !hasMultipleImages, ha"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1171,
       "kind": "object-static",
-      "value": "grid-1",
-      "context": "}, { label: t('pages.collage.layoutTools.shuffleLayout'), icon: 'grid-1', description: 'Shift + L', disabled: !hasMultipleImages, ha"
+      "value": "grid_view",
+      "context": "}, { label: t('pages.collage.layoutTools.shuffleLayout'), icon: 'grid_view', description: 'Shift + L', disabled: !hasMultipleImages, ha"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1180,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "{ label: t('pages.collage.layoutTools.constraintModes.controlled'), icon: 'setting-2', description: t('pages.collage.layoutTools.constraintMode'), active:"
+      "value": "tune",
+      "context": "{ label: t('pages.collage.layoutTools.constraintModes.controlled'), icon: 'tune', description: t('pages.collage.layoutTools.constraintMode'), active:"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1189,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "{ label: t('pages.collage.layoutTools.constraintModes.free'), icon: 'setting-2', description: t('pages.collage.layoutTools.constraintMode'), active:"
+      "value": "tune",
+      "context": "{ label: t('pages.collage.layoutTools.constraintModes.free'), icon: 'tune', description: t('pages.collage.layoutTools.constraintMode'), active:"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1205,
       "kind": "object-static",
-      "value": "ram",
-      "context": "divider: true, }, { label: t('pages.collage.actions.save'), icon: 'ram', disabled: !canExportImage.value, handler: () => { void downloa"
+      "value": "memory",
+      "context": "divider: true, }, { label: t('pages.collage.actions.save'), icon: 'memory', disabled: !canExportImage.value, handler: () => { void downloa"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1213,
       "kind": "object-static",
-      "value": "document-copy",
-      "context": "vas() }, }, { label: t('pages.collage.actions.copy'), icon: 'document-copy', disabled: !canExportImage.value, handler: () => { void exportA"
+      "value": "file_copy",
+      "context": "vas() }, }, { label: t('pages.collage.actions.copy'), icon: 'file_copy', disabled: !canExportImage.value, handler: () => { void exportA"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
       "line": 1221,
       "kind": "object-static",
-      "value": "trash",
-      "context": "as() }, }, { label: t('pages.collage.actions.clear'), icon: 'trash', color: 'red', disabled: !hasImages, handler: () => { v"
+      "value": "delete",
+      "context": "as() }, }, { label: t('pages.collage.actions.clear'), icon: 'delete', color: 'red', disabled: !hasImages, handler: () => { v"
     },
     {
       "file": "app/composables/collage/useCollagePage.ts",
@@ -2960,15 +2971,15 @@
       "file": "app/composables/prompt/usePromptVariables.ts",
       "line": 104,
       "kind": "object-static",
-      "value": "user",
-      "context": "ey: \"modules.variables.fields.variables.picker.tabs.user\", label: \"User\", icon: \"user\", order: 0, source: \"user\", variables: enabledPromptVariables.valu"
+      "value": "person",
+      "context": "ey: \"modules.variables.fields.variables.picker.tabs.user\", label: \"User\", icon: \"person\", order: 0, source: \"user\", variables: enabledPromptVariables.valu"
     },
     {
       "file": "app/composables/prompt/usePromptVariables.ts",
       "line": 118,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "\"modules.variables.fields.variables.picker.tabs.system\", label: \"System\", icon: \"setting-2\", order: 999, source: \"system\", variables: enabledSystemPromptVari"
+      "value": "tune",
+      "context": "\"modules.variables.fields.variables.picker.tabs.system\", label: \"System\", icon: \"tune\", order: 999, source: \"system\", variables: enabledSystemPromptVari"
     },
     {
       "file": "app/composables/prompt/useVariablePickerModal.ts",
@@ -2981,64 +2992,64 @@
       "file": "app/composables/useModal.ts",
       "line": 122,
       "kind": "object-static",
-      "value": "tick-circle",
-      "context": "odalMessageType, { icon: string title: string color: string }> = { success: { icon: 'tick-circle', title: 'modal.titles.success', color: 'green', }, warning: { icon: 'warn"
+      "value": "check_circle",
+      "context": "odalMessageType, { icon: string title: string color: string }> = { success: { icon: 'check_circle', title: 'modal.titles.success', color: 'green', }, warning: { icon: 'warn"
     },
     {
       "file": "app/composables/useModal.ts",
       "line": 127,
       "kind": "object-static",
-      "value": "warning-2",
-      "context": "ick-circle', title: 'modal.titles.success', color: 'green', }, warning: { icon: 'warning-2', title: 'modal.titles.warning', color: 'orange', }, error: { icon: 'close"
+      "value": "warning",
+      "context": "eck_circle', title: 'modal.titles.success', color: 'green', }, warning: { icon: 'warning', title: 'modal.titles.warning', color: 'orange', }, error: { icon: 'cance"
     },
     {
       "file": "app/composables/useModal.ts",
       "line": 132,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "'warning-2', title: 'modal.titles.warning', color: 'orange', }, error: { icon: 'close-circle', title: 'modal.titles.error', color: 'red', }, info: { icon: 'info-circle"
+      "value": "cancel",
+      "context": "n: 'warning', title: 'modal.titles.warning', color: 'orange', }, error: { icon: 'cancel', title: 'modal.titles.error', color: 'red', }, info: { icon: 'info',"
     },
     {
       "file": "app/composables/useModal.ts",
       "line": 137,
       "kind": "object-static",
-      "value": "info-circle",
-      "context": "on: 'close-circle', title: 'modal.titles.error', color: 'red', }, info: { icon: 'info-circle', title: 'modal.titles.info', color: 'blue', }, } function hasOwn(obj: object,"
+      "value": "info",
+      "context": "icon: 'cancel', title: 'modal.titles.error', color: 'red', }, info: { icon: 'info', title: 'modal.titles.info', color: 'blue', }, } function hasOwn(obj: object,"
     },
     {
       "file": "app/composables/useToast.ts",
       "line": 41,
       "kind": "template-static",
-      "value": "information",
-      "context": "clearTimeout(toastTimer) toastTimer = null } let color = 'blue' let icon = 'information' switch (mode) { case 'success': color = 'green' icon = 'tick-s"
+      "value": "info",
+      "context": "clearTimeout(toastTimer) toastTimer = null } let color = 'blue' let icon = 'info' switch (mode) { case 'success': color = 'green' icon = 'check_"
     },
     {
       "file": "app/composables/useToast.ts",
       "line": 46,
       "kind": "template-static",
-      "value": "tick-square",
-      "context": "'information' switch (mode) { case 'success': color = 'green' icon = 'tick-square' break case 'error': color = 'red' icon = 'warning-2'"
+      "value": "check_box",
+      "context": "icon = 'info' switch (mode) { case 'success': color = 'green' icon = 'check_box' break case 'error': color = 'red' icon = 'warning'"
     },
     {
       "file": "app/composables/useToast.ts",
       "line": 51,
       "kind": "template-static",
-      "value": "warning-2",
-      "context": "icon = 'tick-square' break case 'error': color = 'red' icon = 'warning-2' break case 'warning': color = 'orange' icon = 'warning-2'"
+      "value": "warning",
+      "context": "icon = 'check_box' break case 'error': color = 'red' icon = 'warning' break case 'warning': color = 'orange' icon = 'warning'"
     },
     {
       "file": "app/composables/useToast.ts",
       "line": 56,
       "kind": "template-static",
-      "value": "warning-2",
-      "context": "icon = 'warning-2' break case 'warning': color = 'orange' icon = 'warning-2' break case 'info': default: color = 'blue' icon = 'i"
+      "value": "warning",
+      "context": "icon = 'warning' break case 'warning': color = 'orange' icon = 'warning' break case 'info': default: color = 'blue' icon = 'i"
     },
     {
       "file": "app/composables/useToast.ts",
       "line": 62,
       "kind": "template-static",
-      "value": "information",
-      "context": "arning-2' break case 'info': default: color = 'blue' icon = 'information' break } toastData.value = { mode, msg, duration,"
+      "value": "info",
+      "context": "'warning' break case 'info': default: color = 'blue' icon = 'info' break } toastData.value = { mode, msg, duration,"
     },
     {
       "file": "app/config/navigation.ts",
@@ -3079,15 +3090,15 @@
       "file": "app/layouts/default.vue",
       "line": 60,
       "kind": "object-static",
-      "value": "gallery-export",
-      "context": "al = useModal(); function openImageConverterModal() { modal.open({ header: { icon: 'gallery-export', title: t('tools.imageConverter.title'), subtitle: t('tools.imageConverter.su"
+      "value": "image",
+      "context": "al = useModal(); function openImageConverterModal() { modal.open({ header: { icon: 'image', title: t('tools.imageConverter.title'), subtitle: t('tools.imageConverter.su"
     },
     {
       "file": "app/layouts/default.vue",
       "line": 96,
       "kind": "object-static",
-      "value": "gallery-export",
-      "context": "{ type: \"divider\", }, { label: t(\"tools.imageConverter.title\"), icon: 'gallery-export', handler: openImageConverterModal, color: 'normal15', }, { labe"
+      "value": "image",
+      "context": "{ type: \"divider\", }, { label: t(\"tools.imageConverter.title\"), icon: 'image', handler: openImageConverterModal, color: 'normal15', }, { labe"
     },
     {
       "file": "app/layouts/default.vue",
@@ -3100,8 +3111,8 @@
       "file": "app/layouts/default.vue",
       "line": 111,
       "kind": "object-static",
-      "value": "refresh-2",
-      "context": "ivider\", }, { label: t(\"components.contextMenu.actions.refreshPage\"), icon: \"refresh-2\", color: \"blue\", handler: refreshPage, }, ]; }); function openLayoutDef"
+      "value": "refresh",
+      "context": "ivider\", }, { label: t(\"components.contextMenu.actions.refreshPage\"), icon: \"refresh\", color: \"blue\", handler: refreshPage, }, ]; }); function openLayoutDef"
     },
     {
       "file": "app/modules/background.module.ts",
@@ -3121,29 +3132,29 @@
       "file": "app/modules/colorPalette.module.ts",
       "line": 260,
       "kind": "object-static",
-      "value": "color-swatch",
-      "context": "}, }, }; export const ColorPaletteModule: PromptKeyModule = { key: \"colorPalette\", icon: \"color-swatch\", groups: { core: { id: \"core\", order: 1, defaultOpen: true }, advanced: { id: \""
+      "value": "palette",
+      "context": "}, }, }; export const ColorPaletteModule: PromptKeyModule = { key: \"colorPalette\", icon: \"palette\", groups: { core: { id: \"core\", order: 1, defaultOpen: true }, advanced: { id: \""
     },
     {
       "file": "app/modules/deformation.module.ts",
       "line": 687,
       "kind": "object-static",
-      "value": "forward-item",
-      "context": "c\"], }, ]; export const DeformationModule: PromptKeyModule = { key: \"deformation\", icon: \"forward-item\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
+      "value": "transform",
+      "context": "c\"], }, ]; export const DeformationModule: PromptKeyModule = { key: \"deformation\", icon: \"transform\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
     },
     {
       "file": "app/modules/effects.module.ts",
       "line": 79,
       "kind": "object-static",
-      "value": "magic-star",
-      "context": "c stylization\" }, ]; export const EffectsModule: PromptKeyModule = { key: \"effects\", icon: \"magic-star\", groups: { core: { id: \"core\", order: 10, defaultOpen: true }, advanced: { id:"
+      "value": "auto_awesome",
+      "context": "c stylization\" }, ]; export const EffectsModule: PromptKeyModule = { key: \"effects\", icon: \"auto_awesome\", groups: { core: { id: \"core\", order: 10, defaultOpen: true }, advanced: { id:"
     },
     {
       "file": "app/modules/expression.module.ts",
       "line": 507,
       "kind": "object-static",
-      "value": "smileys",
-      "context": "man\"], }, ]; export const ExpressionModule: PromptKeyModule = { key: \"expression\", icon: \"smileys\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
+      "value": "sentiment_satisfied",
+      "context": "man\"], }, ]; export const ExpressionModule: PromptKeyModule = { key: \"expression\", icon: \"sentiment_satisfied\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
     },
     {
       "file": "app/modules/framing.module.ts",
@@ -3156,57 +3167,57 @@
       "file": "app/modules/hair.module.ts",
       "line": 542,
       "kind": "object-static",
-      "value": "wind-2",
-      "context": "[\"hair\", \"texture\"], })); export const HairModule: PromptKeyModule = { key: \"hair\", icon: \"wind-2\", groups: { core: { id: \"core\", order: 10, defaultOpen: true }, advanced: { id:"
+      "value": "air",
+      "context": "[\"hair\", \"texture\"], })); export const HairModule: PromptKeyModule = { key: \"hair\", icon: \"air\", groups: { core: { id: \"core\", order: 10, defaultOpen: true }, advanced: { id:"
     },
     {
       "file": "app/modules/layout.module.ts",
       "line": 6,
       "kind": "object-static",
-      "value": "grid-5",
-      "context": "ID_SIZE } from \"../utils/layoutRegions\" export const LayoutModule = { key: \"layout\", icon: \"grid-5\", groups: { structure: { id: \"structure\", order: 10, defaultOpen:"
+      "value": "grid_view",
+      "context": "ID_SIZE } from \"../utils/layoutRegions\" export const LayoutModule = { key: \"layout\", icon: \"grid_view\", groups: { structure: { id: \"structure\", order: 10, defaultOpen:"
     },
     {
       "file": "app/modules/lighting.module.ts",
       "line": 473,
       "kind": "object-static",
-      "value": "lamp",
-      "context": "\"poetic\"], }, ]; export const LightingModule: PromptKeyModule = { key: \"lighting\", icon: \"lamp\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
+      "value": "lightbulb",
+      "context": "\"poetic\"], }, ]; export const LightingModule: PromptKeyModule = { key: \"lighting\", icon: \"lightbulb\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
     },
     {
       "file": "app/modules/outfit.module.ts",
       "line": 175,
       "kind": "object-static",
-      "value": "clipboard",
-      "context": "l\", \"knight\"], }, ]; export const OutfitModule: PromptKeyModule = { key: \"outfit\", icon: \"clipboard\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
+      "value": "content_paste",
+      "context": "l\", \"knight\"], }, ]; export const OutfitModule: PromptKeyModule = { key: \"outfit\", icon: \"content_paste\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
     },
     {
       "file": "app/modules/pose.module.ts",
       "line": 407,
       "kind": "object-static",
-      "value": "user-edit",
-      "context": "\", \"interaction\"], }, ]; export const PoseModule: PromptKeyModule = { key: \"pose\", icon: \"user-edit\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
+      "value": "manage_accounts",
+      "context": "\", \"interaction\"], }, ]; export const PoseModule: PromptKeyModule = { key: \"pose\", icon: \"manage_accounts\", groups: { core: { id: \"core\", order: 10, defaultOpen: true,"
     },
     {
       "file": "app/modules/style.module.ts",
       "line": 1272,
       "kind": "object-static",
-      "value": "magicpen",
-      "context": "yWarnings.mediumMismatch\", }, }, ]; export const StyleModule = { key: \"style\", icon: \"magicpen\", groups: { core: { id: \"core\", order: 10, defaultOpen: false,"
+      "value": "auto_fix_high",
+      "context": "yWarnings.mediumMismatch\", }, }, ]; export const StyleModule = { key: \"style\", icon: \"auto_fix_high\", groups: { core: { id: \"core\", order: 10, defaultOpen: false,"
     },
     {
       "file": "app/modules/texture.module.ts",
       "line": 1827,
       "kind": "object-static",
-      "value": "brush-2",
-      "context": "ion\", }, }, ]; export const TextureModule: PromptKeyModule = { key: \"texture\", icon: \"brush-2\", groups: { material: { id: \"material\", order: 1, defaultOpen: true }, surface:"
+      "value": "brush",
+      "context": "ion\", }, }, ]; export const TextureModule: PromptKeyModule = { key: \"texture\", icon: \"brush\", groups: { material: { id: \"material\", order: 1, defaultOpen: true }, surface:"
     },
     {
       "file": "app/modules/typography.module.ts",
       "line": 465,
       "kind": "object-static",
-      "value": "text",
-      "context": "}, }, }; export const TypographyModule: PromptKeyModule = { key: \"typography\", icon: \"text\", groups: { core: { id: \"core\", order: 1, defaultOpen: true }, advanced: { id: \""
+      "value": "text_fields",
+      "context": "}, }, }; export const TypographyModule: PromptKeyModule = { key: \"typography\", icon: \"text_fields\", groups: { core: { id: \"core\", order: 1, defaultOpen: true }, advanced: { id: \""
     },
     {
       "file": "app/modules/variables.module.ts",
@@ -3219,162 +3230,162 @@
       "file": "app/pages/[...slug].vue",
       "line": 21,
       "kind": "template-static",
-      "value": "magicpen",
-      "context": "el-text> <el-divider /> <el-button :size=\"16\" :label=\"t('home.createPrompt')\" icon=\"magicpen\" to=\"/create\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"mess"
+      "value": "auto_fix_high",
+      "context": "el-text> <el-divider /> <el-button :size=\"16\" :label=\"t('home.createPrompt')\" icon=\"auto_fix_high\" to=\"/create\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"help"
     },
     {
       "file": "app/pages/[...slug].vue",
       "line": 22,
       "kind": "template-static",
-      "value": "message-question",
-      "context": "\"magicpen\" to=\"/create\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"message-question\" to=\"/guide\" color=\"normal\" mode=\"flat\" /> </el-flex> </el-grid> </template>"
+      "value": "help",
+      "context": "_fix_high\" to=\"/create\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"help\" to=\"/guide\" color=\"normal\" mode=\"flat\" /> </el-flex> </el-grid> </template>"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 493,
       "kind": "template-static",
-      "value": "rotate-left",
-      "context": "radius=\"24\" :br=\"1\" bt=\"d\" bd=\"b4\" bc=\"red\"> <el-icon :size=\"80\" color=\"normal50\" icon=\"rotate-left\" /> <el-text :size=\"14\" color=\"normal80\"> {{ $t('pages.collage.rotateYourPhone')"
+      "value": "rotate_left",
+      "context": "radius=\"24\" :br=\"1\" bt=\"d\" bd=\"b4\" bc=\"red\"> <el-icon :size=\"80\" color=\"normal50\" icon=\"rotate_left\" /> <el-text :size=\"14\" color=\"normal80\"> {{ $t('pages.collage.rotateYourPhone')"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 517,
       "kind": "template-static",
-      "value": "close-circle",
-      "context": "<el-button v-if=\"!collagePanelDocked\" :label=\"$t('pages.collage.panel.close')\" icon=\"close-circle\" type=\"fab\" mode=\"flat\" :size=\"14\" :p=\"8\" @click=\"closeFloatingCollagePanel\""
+      "value": "cancel",
+      "context": "<el-button v-if=\"!collagePanelDocked\" :label=\"$t('pages.collage.panel.close')\" icon=\"cancel\" type=\"fab\" mode=\"flat\" :size=\"14\" :p=\"8\" @click=\"closeFloatingCollagePanel\""
     },
     {
       "file": "app/pages/collage.vue",
       "line": 530,
       "kind": "template-static",
-      "value": "setting-2",
-      "context": "aria-expanded=\"isPanelExpanded('outputMode')\"> <el-text :size=\"14\" weight=\"700\" icon=\"setting-2\"> {{ $t('pages.collage.outputMode.title') }} </el-text> </el"
+      "value": "tune",
+      "context": "aria-expanded=\"isPanelExpanded('outputMode')\"> <el-text :size=\"14\" weight=\"700\" icon=\"tune\"> {{ $t('pages.collage.outputMode.title') }} </el-text> </el"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 552,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "ss=\"{ 'collage-dropzone--active': isDragging }\" @click=\"openFilePicker\"> <el-icon icon=\"gallery-add\" :size=\"40\" color=\"blue\" /> <el-text :size=\"15\" weight=\"700\"> {{ $t('pa"
+      "value": "add_photo_alternate",
+      "context": "ss=\"{ 'collage-dropzone--active': isDragging }\" @click=\"openFilePicker\"> <el-icon icon=\"add_photo_alternate\" :size=\"40\" color=\"blue\" /> <el-text :size=\"15\" weight=\"700\"> {{ $t('pa"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 567,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "keydown.space.prevent=\"togglePanel('images')\"> <el-text :size=\"14\" weight=\"700\" icon=\"gallery\"> {{ $t('pages.collage.images.title') }} </el-text> <el-f"
+      "value": "photo_library",
+      "context": "keydown.space.prevent=\"togglePanel('images')\"> <el-text :size=\"14\" weight=\"700\" icon=\"photo_library\"> {{ $t('pages.collage.images.title') }} </el-text> <el-f"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 597,
       "kind": "template-static",
-      "value": "trash",
-      "context": "e.actions.remove')\" :size=\"12\" mode=\"flat\" bd=\"b8\" type=\"fab\" color=\"red\" icon=\"trash\" @click=\"removeImage(item.id)\" /> </el-flex> </el-grid> <"
+      "value": "delete",
+      "context": "e.actions.remove')\" :size=\"12\" mode=\"flat\" bd=\"b8\" type=\"fab\" color=\"red\" icon=\"delete\" @click=\"removeImage(item.id)\" /> </el-flex> </el-grid> <"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 614,
       "kind": "template-static",
-      "value": "drop",
-      "context": "pace.prevent=\"toggleExpandablePanel('brand')\"> <el-text :size=\"14\" weight=\"700\" icon=\"drop\"> {{ $t('pages.collage.brand.panelTitle') }} </el-text> <"
+      "value": "water_drop",
+      "context": "pace.prevent=\"toggleExpandablePanel('brand')\"> <el-text :size=\"14\" weight=\"700\" icon=\"water_drop\"> {{ $t('pages.collage.brand.panelTitle') }} </el-text> <"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 799,
       "kind": "template-static",
-      "value": "grid-1",
-      "context": "keydown.space.prevent=\"togglePanel('canvas')\"> <el-text :size=\"14\" weight=\"700\" icon=\"grid-1\"> {{ $t('pages.collage.canvas.title') }} </el-text> <el-i"
+      "value": "grid_view",
+      "context": "keydown.space.prevent=\"togglePanel('canvas')\"> <el-text :size=\"14\" weight=\"700\" icon=\"grid_view\"> {{ $t('pages.collage.canvas.title') }} </el-text> <el-i"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 877,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "wn.space.prevent=\"togglePanel('layoutTools')\"> <el-text :size=\"14\" weight=\"700\" icon=\"gallery\"> {{ $t('pages.collage.layoutTools.title') }} </el-text>"
+      "value": "photo_library",
+      "context": "wn.space.prevent=\"togglePanel('layoutTools')\"> <el-text :size=\"14\" weight=\"700\" icon=\"photo_library\"> {{ $t('pages.collage.layoutTools.title') }} </el-text>"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 890,
       "kind": "template-static",
-      "value": "gallery",
-      "context": "12\" :p=\"[10, 12]\" type=\"fab\" mode=\"outline\" color=\"normal\" :bc=\"['blue25']\" icon=\"gallery\" :disable=\"images.length < 2\" @click=\"shuffleSimilarImages\" />"
+      "value": "photo_library",
+      "context": "12\" :p=\"[10, 12]\" type=\"fab\" mode=\"outline\" color=\"normal\" :bc=\"['blue25']\" icon=\"photo_library\" :disable=\"images.length < 2\" @click=\"shuffleSimilarImages\" />"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 894,
       "kind": "template-static",
-      "value": "grid-1",
-      "context": "12\" :p=\"[10, 12]\" type=\"fab\" mode=\"outline\" color=\"normal\" :bc=\"['blue25']\" icon=\"grid-1\" :disable=\"images.length < 2\" @click=\"shuffleLayout\" /> </el-grid>"
+      "value": "grid_view",
+      "context": "12\" :p=\"[10, 12]\" type=\"fab\" mode=\"outline\" color=\"normal\" :bc=\"['blue25']\" icon=\"grid_view\" :disable=\"images.length < 2\" @click=\"shuffleLayout\" /> </el-grid>"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 930,
       "kind": "template-static",
-      "value": "video-play",
-      "context": "@keydown.space.prevent=\"togglePanel('video')\"> <el-text :size=\"14\" weight=\"700\" icon=\"video-play\"> {{ $t('pages.collage.video.title') }} </el-text> <el-ic"
+      "value": "play_circle",
+      "context": "@keydown.space.prevent=\"togglePanel('video')\"> <el-text :size=\"14\" weight=\"700\" icon=\"play_circle\"> {{ $t('pages.collage.video.title') }} </el-text> <el-ic"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1021,
       "kind": "template-static",
-      "value": "clock-1",
-      "context": "}) }} </el-text> <el-text type=\"span\" :size=\"24\" icon=\"clock-1\" weight=\"700\" color=\"normal90\"> {{ videoDurationLabel }} </el-te"
+      "value": "schedule",
+      "context": "}) }} </el-text> <el-text type=\"span\" :size=\"24\" icon=\"schedule\" weight=\"700\" color=\"normal90\"> {{ videoDurationLabel }} </el-te"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1094,
       "kind": "template-static",
-      "value": "ram",
-      "context": "<el-button :label=\"$t('pages.collage.actions.save')\" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"ram\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"download"
+      "value": "memory",
+      "context": "<el-button :label=\"$t('pages.collage.actions.save')\" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"memory\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"download"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1097,
       "kind": "template-static",
-      "value": "document-copy",
-      "context": "<el-button :label=\"$t('pages.collage.actions.copy')\" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"document-copy\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"copyCanv"
+      "value": "file_copy",
+      "context": "<el-button :label=\"$t('pages.collage.actions.copy')\" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"file_copy\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"copyCanv"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1100,
       "kind": "template-static",
-      "value": "trash",
-      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"trash\" tooltip-position=\"top\" :p=\"[12, 24]\" :size=\"14\" mode=\"flat\" color=\"red\" :disabl"
+      "value": "delete",
+      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"delete\" tooltip-position=\"top\" :p=\"[12, 24]\" :size=\"14\" mode=\"flat\" color=\"red\" :disabl"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1109,
       "kind": "template-static",
-      "value": "video-play",
-      "context": "collage.actions.exportWebm') \" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" v-if=\"false\" icon=\"video-play\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
+      "value": "play_circle",
+      "context": "collage.actions.exportWebm') \" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" v-if=\"false\" icon=\"play_circle\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1115,
       "kind": "template-static",
-      "value": "video-play",
-      "context": ": $t('pages.collage.actions.exportMp4') \" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"video-play\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
+      "value": "play_circle",
+      "context": ": $t('pages.collage.actions.exportMp4') \" :p=\"[12, 24]\" :size=\"14\" type=\"fab\" icon=\"play_circle\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1118,
       "kind": "template-static",
-      "value": "trash",
-      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"trash\" tooltip-position=\"top\" :p=\"[12, 24]\" :size=\"14\" mode=\"flat\" color=\"normal10\""
+      "value": "delete",
+      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"delete\" tooltip-position=\"top\" :p=\"[12, 24]\" :size=\"14\" mode=\"flat\" color=\"normal10\""
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1190,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "nter.prevent=\"openFilePicker\" @keydown.space.prevent=\"openFilePicker\"> <el-icon icon=\"gallery-add\" :size=\"56\" color=\"blue\" /> <el-text :size=\"18\" weight=\"700\"> {{ $t"
+      "value": "add_photo_alternate",
+      "context": "nter.prevent=\"openFilePicker\" @keydown.space.prevent=\"openFilePicker\"> <el-icon icon=\"add_photo_alternate\" :size=\"56\" color=\"blue\" /> <el-text :size=\"18\" weight=\"700\"> {{ $t"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1204,
       "kind": "template-static",
-      "value": "gallery-add",
-      "context": "</el-text> <el-button :label=\"$t('pages.collage.emptyCanvas.action')\" icon=\"gallery-add\" type=\"fab\" color=\"prim\" :size=\"13\" :p=\"[10, 18]\" @click.stop=\"openFilePicker\""
+      "value": "add_photo_alternate",
+      "context": "</el-text> <el-button :label=\"$t('pages.collage.emptyCanvas.action')\" icon=\"add_photo_alternate\" type=\"fab\" color=\"prim\" :size=\"13\" :p=\"[10, 18]\" @click.stop=\"openFilePicker\""
     },
     {
       "file": "app/pages/collage.vue",
@@ -3387,99 +3398,99 @@
       "file": "app/pages/collage.vue",
       "line": 1228,
       "kind": "template-static",
-      "value": "maximize-3",
-      "context": "x rules=\"csc\"> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.fit')\" icon=\"maximize-3\" type=\"fab\" mode=\"flat\" @click=\"fitCanvasToWrap\" /> <el-button :size=\"1"
+      "value": "fullscreen",
+      "context": "x rules=\"csc\"> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.fit')\" icon=\"fullscreen\" type=\"fab\" mode=\"flat\" @click=\"fitCanvasToWrap\" /> <el-button :size=\"1"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1231,
       "kind": "template-static",
-      "value": "scan",
-      "context": "ToWrap\" /> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.actual')\" icon=\"scan\" type=\"fab\" mode=\"flat\" @click=\"setCanvasActualSize\" /> <el-button :siz"
+      "value": "document_scanner",
+      "context": "ToWrap\" /> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.actual')\" icon=\"document_scanner\" type=\"fab\" mode=\"flat\" @click=\"setCanvasActualSize\" /> <el-button :siz"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1234,
       "kind": "template-static",
-      "value": "mouse-circle",
-      "context": "lSize\" /> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.panTool')\" icon=\"mouse-circle\" type=\"fab\" mode=\"flat\" :color=\"canvasPanToolEnabled ? 'blue' : 'normal'\" @click"
+      "value": "mouse",
+      "context": "lSize\" /> <el-button :size=\"14\" :p=\"8\" :label=\"$t('pages.collage.zoom.panTool')\" icon=\"mouse\" type=\"fab\" mode=\"flat\" :color=\"canvasPanToolEnabled ? 'blue' : 'normal'\" @click"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1245,
       "kind": "template-static",
-      "value": "ram",
-      "context": "<el-button :label=\"$t('pages.collage.actions.save')\" :p=\"[8]\" :size=\"14\" type=\"fab\" icon=\"ram\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"download"
+      "value": "memory",
+      "context": "<el-button :label=\"$t('pages.collage.actions.save')\" :p=\"[8]\" :size=\"14\" type=\"fab\" icon=\"memory\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"download"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1249,
       "kind": "template-static",
-      "value": "document-copy",
-      "context": "l=\"$t('pages.collage.actions.copy')\" :p=\"[8]\" :size=\"14\" mode=\"flat\" type=\"fab\" icon=\"document-copy\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"copyCanvas\" /> <el-but"
+      "value": "file_copy",
+      "context": "l=\"$t('pages.collage.actions.copy')\" :p=\"[8]\" :size=\"14\" mode=\"flat\" type=\"fab\" icon=\"file_copy\" tooltip-position=\"top\" :disable=\"!canExportImage\" @click=\"copyCanvas\" /> <el-but"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1251,
       "kind": "template-static",
-      "value": "trash",
-      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"trash\" tooltip-position=\"top\" :p=\"[8]\" :size=\"14\" mode=\"flat\" color=\"red\" :disable=\"!i"
+      "value": "delete",
+      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"delete\" tooltip-position=\"top\" :p=\"[8]\" :size=\"14\" mode=\"flat\" color=\"red\" :disable=\"!i"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1260,
       "kind": "template-static",
-      "value": "video-play",
-      "context": "ages.collage.actions.exportWebm') \" :p=\"[8]\" :size=\"14\" type=\"fab\" v-if=\"false\" icon=\"video-play\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
+      "value": "play_circle",
+      "context": "ages.collage.actions.exportWebm') \" :p=\"[8]\" :size=\"14\" type=\"fab\" v-if=\"false\" icon=\"play_circle\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1266,
       "kind": "template-static",
-      "value": "video-play",
-      "context": ": $t('pages.collage.actions.exportMp4') \" :p=\"[8]\" :size=\"14\" type=\"fab\" icon=\"video-play\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
+      "value": "play_circle",
+      "context": ": $t('pages.collage.actions.exportMp4') \" :p=\"[8]\" :size=\"14\" type=\"fab\" icon=\"play_circle\" color=\"prim\" tooltip-position=\"top\" :disable=\"!canExportVideo\" @click=\"exportSl"
     },
     {
       "file": "app/pages/collage.vue",
       "line": 1269,
       "kind": "template-static",
-      "value": "trash",
-      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"trash\" tooltip-position=\"top\" :p=\"[8]\" :size=\"14\" mode=\"flat\" color=\"normal10\""
+      "value": "delete",
+      "context": "ton :label=\"$t('pages.collage.actions.clear')\" class=\"collage-actions__danger\" type=\"fab\" icon=\"delete\" tooltip-position=\"top\" :p=\"[8]\" :size=\"14\" mode=\"flat\" color=\"normal10\""
     },
     {
       "file": "app/pages/create.vue",
       "line": 606,
       "kind": "object-static",
-      "value": "trash",
-      "context": "const isLastDraft = savedDrafts.value.length <= 1; $modal.open({ header: { icon: \"trash\", title: t(\"create.draft.deleteModal.title\"), subtitle: title, color: \"r"
+      "value": "delete",
+      "context": "const isLastDraft = savedDrafts.value.length <= 1; $modal.open({ header: { icon: \"delete\", title: t(\"create.draft.deleteModal.title\"), subtitle: title, color: \"r"
     },
     {
       "file": "app/pages/create.vue",
       "line": 617,
       "kind": "object-static",
-      "value": "trash",
-      "context": "}), actions: [ { label: t(\"create.draft.deleteModal.confirm\"), icon: \"trash\", color: \"red\", close: true, handler: () => { deleteDraf"
+      "value": "delete",
+      "context": "}), actions: [ { label: t(\"create.draft.deleteModal.confirm\"), icon: \"delete\", color: \"red\", close: true, handler: () => { deleteDraf"
     },
     {
       "file": "app/pages/create.vue",
       "line": 626,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "}, }, { label: t(\"components.modal.actions.cancel\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, ],"
+      "value": "cancel",
+      "context": "}, }, { label: t(\"components.modal.actions.cancel\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, ],"
     },
     {
       "file": "app/pages/create.vue",
       "line": 765,
       "kind": "object-static",
-      "value": "danger",
-      "context": "rafts, }; } function openDraftImportErrorModal() { $modal.open({ header: { icon: \"danger\", title: t(\"create.draft.importModal.errorTitle\"), color: \"red\", }, de"
+      "value": "warning",
+      "context": "rafts, }; } function openDraftImportErrorModal() { $modal.open({ header: { icon: \"warning\", title: t(\"create.draft.importModal.errorTitle\"), color: \"red\", }, de"
     },
     {
       "file": "app/pages/create.vue",
       "line": 773,
       "kind": "object-static",
-      "value": "close-circle",
-      "context": "ion\"), actions: [ { label: t(\"components.modal.actions.close\"), icon: \"close-circle\", color: \"normal\", mode: \"flat\", close: true, }, ],"
+      "value": "cancel",
+      "context": "ion\"), actions: [ { label: t(\"components.modal.actions.close\"), icon: \"cancel\", color: \"normal\", mode: \"flat\", close: true, }, ],"
     },
     {
       "file": "app/pages/create.vue",
@@ -3492,85 +3503,85 @@
       "file": "app/pages/create.vue",
       "line": 870,
       "kind": "object-static",
-      "value": "import-2",
-      "context": "handler: createNewDraft, }, { label: t(\"create.draft.importJson\"), icon: \"import-2\", color: \"blue\", handler: openDraftImportPicker, }, { label: t(\""
+      "value": "upload_file",
+      "context": "handler: createNewDraft, }, { label: t(\"create.draft.importJson\"), icon: \"upload_file\", color: \"blue\", handler: openDraftImportPicker, }, { label: t(\""
     },
     {
       "file": "app/pages/create.vue",
       "line": 876,
       "kind": "object-static",
-      "value": "export-3",
-      "context": "ler: openDraftImportPicker, }, { label: t(\"create.draft.exportJson\"), icon: \"export-3\", color: \"orange\", disabled: () => !canExportDraftCollection.value, hand"
+      "value": "download",
+      "context": "ler: openDraftImportPicker, }, { label: t(\"create.draft.exportJson\"), icon: \"download\", color: \"orange\", disabled: () => !canExportDraftCollection.value, hand"
     },
     {
       "file": "app/pages/create.vue",
       "line": 895,
       "kind": "object-static",
-      "value": "note-text",
-      "context": "| getDefaultDraftTitle(index), description: formatDraftDate(draft.updatedAt), icon: \"note-text\", active: isActive, handler: () => selectDraft(draft.id), }); }); ret"
+      "value": "description",
+      "context": "| getDefaultDraftTitle(index), description: formatDraftDate(draft.updatedAt), icon: \"description\", active: isActive, handler: () => selectDraft(draft.id), }); }); ret"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1015,
       "kind": "object-static",
-      "value": "setting-2",
-      "context": "e = issues; } const { mini, mobile } = useScreen(); const tabs = ref([ {label: 'setup', icon: 'setting-2'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'note-text'}, ]); const ta"
+      "value": "tune",
+      "context": "e = issues; } const { mini, mobile } = useScreen(); const tabs = ref([ {label: 'setup', icon: 'tune'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'description'}, ]); const"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1016,
       "kind": "object-static",
       "value": "edit",
-      "context": "seScreen(); const tabs = ref([ {label: 'setup', icon: 'setting-2'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'note-text'}, ]); const tab = ref({label: 'setup', icon: 'set"
+      "context": "} = useScreen(); const tabs = ref([ {label: 'setup', icon: 'tune'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'description'}, ]); const tab = ref({label: 'setup', icon: 's"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1017,
       "kind": "object-static",
-      "value": "note-text",
-      "context": "abel: 'setup', icon: 'setting-2'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'note-text'}, ]); const tab = ref({label: 'setup', icon: 'settings'}); type LayoutPageContextMenuEve"
+      "value": "description",
+      "context": "{label: 'setup', icon: 'tune'}, {label: 'editor', icon: 'edit'}, {label: 'output', icon: 'description'}, ]); const tab = ref({label: 'setup', icon: 'settings'}); type LayoutPageContextMenuEve"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1019,
       "kind": "object-static",
       "value": "settings",
-      "context": "on: 'edit'}, {label: 'output', icon: 'note-text'}, ]); const tab = ref({label: 'setup', icon: 'settings'}); type LayoutPageContextMenuEventDetail = { event?: MouseEvent; routeName?: string"
+      "context": ": 'edit'}, {label: 'output', icon: 'description'}, ]); const tab = ref({label: 'setup', icon: 'settings'}); type LayoutPageContextMenuEventDetail = { event?: MouseEvent; routeName?: string"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1313,
       "kind": "template-static",
-      "value": "note-text",
-      "context": "color=\"orange\" :label=\"mini ? '' : t('create.draft.menu')\" icon=\"note-text\" /> </el-flex> <!-- actions --> <el-flex rules=\"rbc\" :class="
+      "value": "description",
+      "context": "color=\"orange\" :label=\"mini ? '' : t('create.draft.menu')\" icon=\"description\" /> </el-flex> <!-- actions --> <el-flex rules=\"rbc\" :class="
     },
     {
       "file": "app/pages/create.vue",
       "line": 1331,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "color=\"orange\" :label=\"t('create.draft.clear')\" icon=\"refresh-2\" /> <el-button @click=\"openDeleteDraftModal\""
+      "value": "refresh",
+      "context": "color=\"orange\" :label=\"t('create.draft.clear')\" icon=\"refresh\" /> <el-button @click=\"openDeleteDraftModal\""
     },
     {
       "file": "app/pages/create.vue",
       "line": 1340,
       "kind": "template-static",
-      "value": "trash",
-      "context": "color=\"red\" :label=\"t('create.draft.delete')\" icon=\"trash\" :disable=\"!canDeleteActiveDraft\" /> </el-flex>"
+      "value": "delete",
+      "context": "color=\"red\" :label=\"t('create.draft.delete')\" icon=\"delete\" :disable=\"!canDeleteActiveDraft\" /> </el-flex>"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1355,
       "kind": "template-static",
-      "value": "import-2",
-      "context": "color=\"normal\" :label=\"t('create.draft.download')\" icon=\"import-2\" :disable=\"!canExportActiveDraft\" /> <el-button"
+      "value": "download",
+      "context": "color=\"normal\" :label=\"t('create.draft.download')\" icon=\"download\" :disable=\"!canExportActiveDraft\" /> <el-button"
     },
     {
       "file": "app/pages/create.vue",
       "line": 1364,
       "kind": "template-static",
-      "value": "share-1",
-      "context": "color=\"blue\" :label=\"t('create.draft.share')\" icon=\"share-1\" :disable=\"!canExportActiveDraft\" /> </el-flex>"
+      "value": "share",
+      "context": "color=\"blue\" :label=\"t('create.draft.share')\" icon=\"share\" :disable=\"!canExportActiveDraft\" /> </el-flex>"
     },
     {
       "file": "app/pages/create.vue",
@@ -3590,8 +3601,8 @@
       "file": "app/pages/guide.vue",
       "line": 197,
       "kind": "template-static",
-      "value": "arrow-left",
-      "context": "d=\"b4\" class=\"w100 crp post t0 zi200\" @click=\"backToModuleList\"> <el-icon icon=\"arrow-left\" :size=\"18\" color=\"normal70\" /> <el-text :size=\"13\" weight=\"700\" color=\"normal70\""
+      "value": "arrow_left",
+      "context": "d=\"b4\" class=\"w100 crp post t0 zi200\" @click=\"backToModuleList\"> <el-icon icon=\"arrow_left\" :size=\"18\" color=\"normal70\" /> <el-text :size=\"13\" weight=\"700\" color=\"normal70\""
     },
     {
       "file": "app/pages/guide.vue",
@@ -3611,106 +3622,106 @@
       "file": "app/pages/index.vue",
       "line": 33,
       "kind": "template-static",
-      "value": "magicpen",
-      "context": "el-divider class=\"mxwp200\" /> <el-button :size=\"16\" :label=\"t('home.createPrompt')\" icon=\"magicpen\" to=\"/create\" class=\"\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" i"
+      "value": "auto_fix_high",
+      "context": "el-divider class=\"mxwp200\" /> <el-button :size=\"16\" :label=\"t('home.createPrompt')\" icon=\"auto_fix_high\" to=\"/create\" class=\"\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" i"
     },
     {
       "file": "app/pages/index.vue",
       "line": 34,
       "kind": "template-static",
-      "value": "message-question",
-      "context": "\" to=\"/create\" class=\"\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"message-question\" to=\"/guide\" color=\"normal\" mode=\"flat\" /> </el-flex> </el-grid> </template>"
+      "value": "help",
+      "context": "\" to=\"/create\" class=\"\" /> <el-button :size=\"14\" :label=\"t('app.navigation.guide')\" icon=\"help\" to=\"/guide\" color=\"normal\" mode=\"flat\" /> </el-flex> </el-grid> </template>"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 185,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "h\" rules=\"ccc\" class=\"w100 h100\" :gap=\"8\" :p=\"40\"> <el-icon icon=\"refresh-2\" :size=\"30\" color=\"prim\" /> <el-text :size=\"13\" color=\"normal60\"> {{ t('prom"
+      "value": "refresh",
+      "context": "h\" rules=\"ccc\" class=\"w100 h100\" :gap=\"8\" :p=\"40\"> <el-icon icon=\"refresh\" :size=\"30\" color=\"prim\" /> <el-text :size=\"13\" color=\"normal60\"> {{ t('prom"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 197,
       "kind": "template-static",
-      "value": "danger",
-      "context": "\" rules=\"ccc\" class=\"w100 h100\" :gap=\"10\" :p=\"32\"> <el-icon icon=\"danger\" :size=\"34\" color=\"red\" /> <el-text :size=\"15\" :weight=\"800\"> {{ t('prompts."
+      "value": "warning",
+      "context": "\" rules=\"ccc\" class=\"w100 h100\" :gap=\"10\" :p=\"32\"> <el-icon icon=\"warning\" :size=\"34\" color=\"red\" /> <el-text :size=\"15\" :weight=\"800\"> {{ t('prompts."
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 203,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "') }} </el-text> <el-button :label=\"t('prompts.error.retry')\" icon=\"refresh-2\" mode=\"flat\" color=\"red\" :size=\"12\" @click=\"archive.load({"
+      "value": "refresh",
+      "context": "') }} </el-text> <el-button :label=\"t('prompts.error.retry')\" icon=\"refresh\" mode=\"flat\" color=\"red\" :size=\"12\" @click=\"archive.load({"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 225,
       "kind": "template-static",
-      "value": "search-status",
-      "context": "e rules=\"ccc\" class=\"w100 h100\" :gap=\"10\" :p=\"32\"> <el-icon icon=\"search-status\" :size=\"42\" color=\"normal35\" /> <el-text type=\"h1\" :size=\"mini ? 24 : 32\" :weight=\"9"
+      "value": "search",
+      "context": "e rules=\"ccc\" class=\"w100 h100\" :gap=\"10\" :p=\"32\"> <el-icon icon=\"search\" :size=\"42\" color=\"normal35\" /> <el-text type=\"h1\" :size=\"mini ? 24 : 32\" :weight=\"9"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 235,
       "kind": "template-static",
-      "value": "arrow-left",
-      "context": "<el-button to=\"/prompts\" :label=\"t('prompts.detail.back')\" icon=\"arrow-left\" mode=\"flat\" color=\"prim\" :size=\"12\" :p=\"[9, 12]\" />"
+      "value": "arrow_left",
+      "context": "<el-button to=\"/prompts\" :label=\"t('prompts.detail.back')\" icon=\"arrow_left\" mode=\"flat\" color=\"prim\" :size=\"12\" :p=\"[9, 12]\" />"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 328,
       "kind": "template-static",
-      "value": "close-circle",
-      "context": "v-if=\"hasActiveFilters\" :label=\"t('prompts.filters.clear')\" icon=\"close-circle\" mode=\"flat\" color=\"normal\" :size=\"11\" :p="
+      "value": "cancel",
+      "context": "v-if=\"hasActiveFilters\" :label=\"t('prompts.filters.clear')\" icon=\"cancel\" mode=\"flat\" color=\"normal\" :size=\"11\" :p="
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 347,
       "kind": "template-static",
-      "value": "element-3",
-      "context": "tton type=\"fab\" :label=\"t('prompts.view.grid')\" icon=\"element-3\" :mode=\"viewMode === 'grid' ? 'normal' : 'flat'\" :color=\"viewM"
+      "value": "dashboard",
+      "context": "tton type=\"fab\" :label=\"t('prompts.view.grid')\" icon=\"dashboard\" :mode=\"viewMode === 'grid' ? 'normal' : 'flat'\" :color=\"viewM"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 358,
       "kind": "template-static",
-      "value": "row-horizontal",
-      "context": "tton type=\"fab\" :label=\"t('prompts.view.list')\" icon=\"row-horizontal\" :mode=\"viewMode === 'list' ? 'normal' : 'flat'\" :color=\"viewM"
+      "value": "view_list",
+      "context": "tton type=\"fab\" :label=\"t('prompts.view.list')\" icon=\"view_list\" :mode=\"viewMode === 'list' ? 'normal' : 'flat'\" :color=\"viewM"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 375,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "rules=\"ccc\" class=\"w100 fg100\" :gap=\"8\" :p=\"40\"> <el-icon icon=\"refresh-2\" :size=\"28\" color=\"prim\" /> <el-text :size=\"13\" color=\"normal60\"> {{ t('"
+      "value": "refresh",
+      "context": "rules=\"ccc\" class=\"w100 fg100\" :gap=\"8\" :p=\"40\"> <el-icon icon=\"refresh\" :size=\"28\" color=\"prim\" /> <el-text :size=\"13\" color=\"normal60\"> {{ t('"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 389,
       "kind": "template-static",
-      "value": "danger",
-      "context": ":gap=\"10\" :p=\"32\" :radius=\"16\" bg=\"red5\"> <el-icon icon=\"danger\" :size=\"30\" color=\"red\" /> <el-text :size=\"14\" :weight=\"700\"> {{ t('prom"
+      "value": "warning",
+      "context": ":gap=\"10\" :p=\"32\" :radius=\"16\" bg=\"red5\"> <el-icon icon=\"warning\" :size=\"30\" color=\"red\" /> <el-text :size=\"14\" :weight=\"700\"> {{ t('prom"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 395,
       "kind": "template-static",
-      "value": "refresh-2",
-      "context": "</el-text> <el-button :label=\"t('prompts.error.retry')\" icon=\"refresh-2\" mode=\"flat\" color=\"red\" :size=\"12\" @click=\"archiv"
+      "value": "refresh",
+      "context": "</el-text> <el-button :label=\"t('prompts.error.retry')\" icon=\"refresh\" mode=\"flat\" color=\"red\" :size=\"12\" @click=\"archiv"
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 411,
       "kind": "template-static",
-      "value": "search-status",
-      "context": ":gap=\"8\" :p=\"40\" :radius=\"16\" bg=\"normal5\"> <el-icon icon=\"search-status\" :size=\"36\" color=\"normal40\" /> <el-text :size=\"15\" :weight=\"800\"> {{ t("
+      "value": "search",
+      "context": ":gap=\"8\" :p=\"40\" :radius=\"16\" bg=\"normal5\"> <el-icon icon=\"search\" :size=\"36\" color=\"normal40\" /> <el-text :size=\"15\" :weight=\"800\"> {{ t("
     },
     {
       "file": "app/pages/prompts.vue",
       "line": 443,
       "kind": "template-static",
-      "value": "arrow-down",
-      "context": "count: filteredItems.length - visibleItems.length, })\" icon=\"arrow-down\" mode=\"flat\" color=\"normal\" :size=\"12\" :p="
+      "value": "arrow_downward",
+      "context": "count: filteredItems.length - visibleItems.length, })\" icon=\"arrow_downward\" mode=\"flat\" color=\"normal\" :size=\"12\" :p="
     },
     {
       "file": "docs/color-picker.md",
@@ -4155,31 +4166,6 @@
     }
   ],
   "legacyReferences": [
-    {
-      "file": "app/assets/css/style.css",
-      "line": 96,
-      "term": "vuesax"
-    },
-    {
-      "file": "app/assets/css/style.css",
-      "line": 98,
-      "term": "font-family: 'zkit'"
-    },
-    {
-      "file": "app/assets/css/style.css",
-      "line": 328,
-      "term": "font-family: 'zkit'"
-    },
-    {
-      "file": "app/components/el/button.vue",
-      "line": 137,
-      "term": "vuesax"
-    },
-    {
-      "file": "app/components/el/Icon.vue",
-      "line": 41,
-      "term": "vuesax"
-    },
     {
       "file": "scripts/material-symbols-audit.mjs",
       "line": 31,

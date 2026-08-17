@@ -470,7 +470,7 @@ const lightingStyleOptions = [
 
 export const LightingModule: PromptKeyModule = {
   key: "lighting",
-  icon: "lamp",
+  icon: "lightbulb",
 
   groups: {
     core: {

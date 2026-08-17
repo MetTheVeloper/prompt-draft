@@ -314,21 +314,21 @@ async function copyPrompt() {
           wrap>
           <el-text
             :size="mobile ? 10 : 12"
-            icon="calendar-1"
+            icon="calendar_month"
             icon-color="normal50">
             {{ formattedDate }}
           </el-text>
 
           <el-text
             :size="mobile ? 10 : 12"
-            icon="gallery"
+            icon="photo_library"
             icon-color="normal50">
             {{ t('prompts.detail.previewCount', { count: item.images.length }) }}
           </el-text>
 
           <el-text
             :size="mobile ? 10 : 12"
-            icon="magicpen"
+            icon="auto_fix_high"
             icon-color="normal50">
             {{ t('prompts.detail.readyToUse') }}
           </el-text>
@@ -347,7 +347,7 @@ async function copyPrompt() {
 
           <el-button
             :label="t('prompts.detail.openTelegram')"
-            icon="send-2"
+            icon="send"
             color="blue"
             :size="14"
             :p="[10, 14]"
@@ -362,7 +362,7 @@ async function copyPrompt() {
         :gap="6">
         <el-button
           :label="t('prompts.detail.explorePrompt')"
-          icon="arrow-down"
+          icon="arrow_downward"
           mode="flat"
           :invert="true"
           :size="14"
@@ -480,7 +480,7 @@ async function copyPrompt() {
 
             <el-button
               :label="t('prompts.detail.openTelegram')"
-              icon="send-2"
+              icon="send"
               mode="flat"
               color="blue"
               :size="11"
@@ -508,7 +508,7 @@ async function copyPrompt() {
           :p="mobile ? 18 : 28">
           <el-text
             :size="12"
-            icon="arrow-left"
+            icon="arrow_left"
             icon-color="blue">
             {{ t('prompts.detail.previous') }}
           </el-text>
@@ -531,7 +531,7 @@ async function copyPrompt() {
           :p="mobile ? 18 : 28">
           <el-text
             :size="12"
-            icon="arrow-right"
+            icon="arrow_right"
             icon-color="blue">
             {{ t('prompts.detail.next') }}
           </el-text>

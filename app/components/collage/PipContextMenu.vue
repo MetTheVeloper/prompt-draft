@@ -121,7 +121,7 @@ function getSizeIconSize(size: CollagePipSize) {
 <template>
   <el-grid class="collage-pip-context-menu" :gap="10" :p="10">
     <el-flex v-if="shortTitle" rules="rsc" :gap="8" :p="[2, 4]">
-      <el-icon icon="gallery" :size="16" color="normal55" />
+      <el-icon icon="photo_library" :size="16" color="normal55" />
       <el-text class="collage-pip-context-menu__title" :size="12" color="normal60">
         {{ shortTitle }}
       </el-text>
@@ -130,7 +130,7 @@ function getSizeIconSize(size: CollagePipSize) {
     <el-grid :gap="0">
       <el-button
         :label="replaceLabel"
-        icon="refresh-2"
+        icon="refresh"
         rules="rsc"
         :effect="{ color: 'normal15' }"
         mode="flat"
@@ -142,7 +142,7 @@ function getSizeIconSize(size: CollagePipSize) {
 
       <el-button
         :label="removeLabel"
-        icon="trash"
+        icon="delete"
         rules="rsc"
         :effect="{ color: 'red25' }"
         mode="flat"

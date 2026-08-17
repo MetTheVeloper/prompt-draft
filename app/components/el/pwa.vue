@@ -147,7 +147,7 @@ async function maybeOfferOfflinePackage() {
         label: isUpdate
           ? t('pwa.offline.prompt.updateAction')
           : t('pwa.offline.prompt.action'),
-        icon: 'cloud-add',
+        icon: 'cloud_upload',
         color: 'prim',
         close: true,
         handler: async () => {
@@ -157,7 +157,7 @@ async function maybeOfferOfflinePackage() {
       },
       {
         label: t('pwa.offline.prompt.later'),
-        icon: 'clock',
+        icon: 'schedule',
         color: 'normal',
         mode: 'flat',
         close: true,
@@ -241,7 +241,7 @@ watch(
 
     modal.open({
       header: {
-        icon: 'warning-2',
+        icon: 'warning',
         title: t('pwa.offline.status.failed'),
         closeButton: true,
         color: 'orange',
@@ -250,7 +250,7 @@ watch(
       actions: [
         {
           label: t('pwa.offline.status.retry'),
-          icon: 'refresh-2',
+          icon: 'refresh',
           color: 'prim',
           close: true,
           disable: () => !offlinePackage.state.online,
@@ -258,7 +258,7 @@ watch(
         },
         {
           label: t('pwa.offline.prompt.later'),
-          icon: 'close-circle',
+          icon: 'cancel',
           color: 'normal',
           mode: 'flat',
           close: true,
@@ -331,12 +331,12 @@ onUnmounted(() => {
       </el-grid>
 
       <el-flex rules="rec" :gap="8" class="w100">
-        <el-button v-if="isInstallable" :size="14" color="prim" icon="mobile" :label="t('pwa.install.android.action')"
+        <el-button v-if="isInstallable" :size="14" color="prim" icon="smartphone" :label="t('pwa.install.android.action')"
           @click="handleInstallClick" />
 
-        <el-button v-else :size="14" icon="like-1" :label="t('pwa.install.ios.action')" @click="dismissBanner" />
+        <el-button v-else :size="14" icon="thumb_up" :label="t('pwa.install.ios.action')" @click="dismissBanner" />
 
-        <el-button :size="14" icon="close-simple" :label="t('pwa.install.actions.close')" mode="flat" color="red"
+        <el-button :size="14" icon="close" :label="t('pwa.install.actions.close')" mode="flat" color="red"
           @click="dismissBanner" />
       </el-flex>
     </el-flex>

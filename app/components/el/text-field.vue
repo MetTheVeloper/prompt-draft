@@ -509,14 +509,14 @@ async function translateFieldContent() {
     actions: [
       {
         label: "بستن",
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: "استفاده از ترجمه انتخاب‌شده",
-        icon: "tick-circle",
+        icon: "check_circle",
         color: "blue",
         mode: "normal",
         close: true,
@@ -589,7 +589,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
   if (hasAction("copy")) {
     items.push({
       label: "Copy",
-      icon: "copy",
+      icon: "content_copy",
       disabled: () => !hasValue.value || !canUseClipboard.value,
       handler: copyFieldContent,
     });
@@ -598,7 +598,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
   if (hasAction("paste")) {
     items.push({
       label: "Paste",
-      icon: "clipboard",
+      icon: "content_paste",
       disabled: () => isLocked.value || !canUseClipboard.value,
       handler: pasteClipboardContent,
     });
@@ -607,7 +607,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
   if (hasAction("selectAll")) {
     items.push({
       label: "Select all",
-      icon: "text-block",
+      icon: "select_all",
       disabled: () => !hasValue.value,
       handler: selectAllContent,
     });
@@ -640,7 +640,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
     items.push({
       label: "Clear",
-      icon: "trash",
+      icon: "delete",
       color: "red",
       disabled: () => isLocked.value || !hasValue.value,
       handler: clearContent,
@@ -734,7 +734,7 @@ defineExpose({
       @click.stop="openActionMenu">
       <el-button
         :label="actionLabel"
-        icon="more-vertical"
+        icon="more_vert"
         type="fab"
         mode="flat"
         color="normal"

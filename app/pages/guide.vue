@@ -194,7 +194,7 @@ function backToModuleList() {
       :radius="16" bg="surface">
       <el-flex v-if="mobile" rules="rsc" :gap="8" :p="[8, 10]" :radius="12" bg="normal10" bd="b4"
         class="w100 crp post t0 zi200" @click="backToModuleList">
-        <el-icon icon="arrow-left" :size="18" color="normal70" />
+        <el-icon icon="arrow_left" :size="18" color="normal70" />
 
         <el-text :size="13" weight="700" color="normal70">
           {{ $t('guide.common.backToModules') }}

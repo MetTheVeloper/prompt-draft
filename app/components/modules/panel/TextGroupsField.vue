@@ -166,7 +166,7 @@ function openGroupEditor(groupIndex?: number) {
     actions: [
       {
         label: t("modules.typography.fields.textGroups.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -234,7 +234,7 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
     actions: [
       {
         label: t("modules.typography.fields.textGroups.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -262,7 +262,7 @@ function removeGroup(groupIndex: number) {
 
   modal.open({
     header: {
-      icon: "trash",
+      icon: "delete",
       title: t("modules.typography.fields.textGroups.group.modal.deleteTitle"),
       subtitle: group.groupName,
       color: "red",
@@ -273,14 +273,14 @@ function removeGroup(groupIndex: number) {
     actions: [
       {
         label: t("modules.typography.fields.textGroups.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: t("modules.typography.fields.textGroups.actions.confirmDelete"),
-        icon: "trash",
+        icon: "delete",
         color: "red",
         close: true,
         handler: () => {
@@ -321,7 +321,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
   <el-grid class="text-groups-field" :gap="12">
     <el-flex rules="rbc" class="w100" :gap="12">
       <el-flex rules="ccs" :gap="2">
-        <el-text :size="13" :weight="700" icon="text">
+        <el-text :size="13" :weight="700" icon="text_fields">
           {{ t("modules.typography.fields.textGroups.title") }}
         </el-text>
         <el-text :size="10" color="normal45">
@@ -331,7 +331,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
 
       <el-button
         :label="t('modules.typography.fields.textGroups.actions.addGroup')"
-        icon="add-circle"
+        icon="add_circle"
         color="prim"
         :size="11"
         :p="[8, 11]"
@@ -345,7 +345,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
       class="text-groups-field__empty"
       :gap="4"
     >
-      <el-text :size="13" :weight="600" icon="info-circle">
+      <el-text :size="13" :weight="600" icon="info">
         {{ t("modules.typography.fields.textGroups.empty.title") }}
       </el-text>
       <el-text :size="11" color="normal45">
@@ -390,7 +390,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
             />
             <el-button
               type="fab"
-              icon="edit-2"
+              icon="edit"
               :label="t('modules.typography.fields.textGroups.group.actions.edit')"
               :size="11"
               :p="6"
@@ -399,7 +399,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
             />
             <el-button
               type="fab"
-              icon="trash"
+              icon="delete"
               :label="t('modules.typography.fields.textGroups.group.actions.remove')"
               :size="11"
               :p="6"
@@ -416,7 +416,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
           :gap="6"
           class="text-groups-field__texts-empty"
         >
-          <el-icon icon="info-circle" :size="12" color="normal45" />
+          <el-icon icon="info" :size="12" color="normal45" />
           <el-text :size="10" color="normal45">
             {{ t("modules.typography.fields.textGroups.group.emptyTexts") }}
           </el-text>
@@ -455,7 +455,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
             <el-flex rules="rcc" :gap="2">
               <el-button
                 type="fab"
-                icon="arrow-up"
+                icon="arrow_upward"
                 :label="t('modules.typography.fields.textGroups.block.actions.moveUp')"
                 :size="10"
                 :p="5"
@@ -465,7 +465,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
               />
               <el-button
                 type="fab"
-                icon="arrow-down"
+                icon="arrow_downward"
                 :label="t('modules.typography.fields.textGroups.block.actions.moveDown')"
                 :size="10"
                 :p="5"
@@ -475,7 +475,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
               />
               <el-button
                 type="fab"
-                icon="edit-2"
+                icon="edit"
                 :label="t('modules.typography.fields.textGroups.block.actions.edit')"
                 :size="10"
                 :p="5"
@@ -484,7 +484,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
               />
               <el-button
                 type="fab"
-                icon="trash"
+                icon="delete"
                 :label="t('modules.typography.fields.textGroups.block.actions.remove')"
                 :size="10"
                 :p="5"

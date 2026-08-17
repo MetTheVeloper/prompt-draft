@@ -1824,7 +1824,7 @@ const imperfectionOptions = [
 
 export const TextureModule: PromptKeyModule = {
   key: "texture",
-  icon: "brush-2",
+  icon: "brush",
   groups: {
     material: { id: "material", order: 1, defaultOpen: true },
     surface: { id: "surface", order: 2, defaultOpen: false },

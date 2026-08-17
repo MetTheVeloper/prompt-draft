@@ -38,7 +38,7 @@ function removeItem(id: string) {
           type="fab"
           mode="normal"
           color="red"
-          icon="trash"
+          icon="delete"
           :size="18"
           :p="10"
           :label="$t('tools.imageConverter.preview.remove')"
@@ -48,7 +48,7 @@ function removeItem(id: string) {
     </div>
 
     <el-flex v-else rules="ccc" :gap="10" :p="24" bg="normal5" :radius="18">
-      <el-icon icon="gallery-remove" :size="28" />
+      <el-icon icon="delete" :size="28" />
       <el-text :size="13" :weight="400">
         {{ $t('tools.imageConverter.preview.empty') }}
       </el-text>

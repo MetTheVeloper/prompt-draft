@@ -175,7 +175,7 @@ watch(
     </el-flex>
 
     <el-flex rules="ccc" v-else :p="32" :radius="24" :br="1" bt="d" bc="red25">
-      <el-icon icon="slash" :size="80" color="red50" class="mb24" />
+      <el-icon icon="remove" :size="80" color="red50" class="mb24" />
 
       <el-text type="h1" :size="20" :weight="800" color="normal" class="tc">
         {{ t("promptEditor.emptyTitle") }}

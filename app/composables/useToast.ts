@@ -38,28 +38,28 @@ export const useToast = () => {
     }
 
     let color = 'blue'
-    let icon = 'information'
+    let icon = 'info'
 
     switch (mode) {
       case 'success':
         color = 'green'
-        icon = 'tick-square'
+        icon = 'check_box'
         break
 
       case 'error':
         color = 'red'
-        icon = 'warning-2'
+        icon = 'warning'
         break
 
       case 'warning':
         color = 'orange'
-        icon = 'warning-2'
+        icon = 'warning'
         break
 
       case 'info':
       default:
         color = 'blue'
-        icon = 'information'
+        icon = 'info'
         break
     }
 

@@ -36,7 +36,7 @@ function selectOption(option: string) {
 <template>
   <el-grid class="w100 translation-options-modal" :gap="16">
     <el-grid :gap="8" :p="12" :radius="12" :br="1" bc="normal15" bg="normal5">
-      <el-text :size="12" :weight="600" icon="document-text">
+      <el-text :size="12" :weight="600" icon="description">
         متن اصلی
       </el-text>
 
@@ -60,7 +60,7 @@ function selectOption(option: string) {
           {{ option }}
         </el-text>
 
-        <el-icon v-if="currentValue === option" icon="tick-circle" color="blue" :size="18" />
+        <el-icon v-if="currentValue === option" icon="check_circle" color="blue" :size="18" />
       </el-flex>
     </el-grid>
   </el-grid>

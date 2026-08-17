@@ -57,7 +57,7 @@ const modal = useModal();
 function openImageConverterModal() {
   modal.open({
     header: {
-      icon: 'gallery-export',
+      icon: 'image',
       title: t('tools.imageConverter.title'),
       subtitle: t('tools.imageConverter.subtitle'),
       closeButton: true,
@@ -93,7 +93,7 @@ const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: t("tools.imageConverter.title"),
-      icon: 'gallery-export',
+      icon: 'image',
       handler: openImageConverterModal,
       color: 'normal15',
     },
@@ -108,7 +108,7 @@ const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: t("components.contextMenu.actions.refreshPage"),
-      icon: "refresh-2",
+      icon: "refresh",
       color: "blue",
       handler: refreshPage,
     },

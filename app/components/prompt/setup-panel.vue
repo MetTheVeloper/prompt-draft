@@ -377,7 +377,7 @@ function getSetupPanelContextMenuItems(panel: SetupPanelKey): GlobalMenuItem[] {
     },
     {
       label: t("components.contextMenu.actions.resetSettings"),
-      icon: "refresh-2",
+      icon: "refresh",
       color: "orange",
       handler: () => resetSetupPanel(panel),
     },
@@ -423,7 +423,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
           @keydown.space.prevent="togglePanel('modules')"
         >
           <el-flex v-bind="setupPanelIntroAttrs">
-            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="element-4">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="widgets">
               {{ t("create.modulesTitle") }}
             </el-text>
 
@@ -544,7 +544,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
           @keydown.space.prevent="togglePanel('core')"
         >
           <el-flex v-bind="setupPanelIntroAttrs">
-            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="document-text">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="description">
               {{ t("promptSetup.core.title") }}
             </el-text>
 
@@ -740,7 +740,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
               :size="12"
               :weight="300"
               :color="generatedSubject ? 'normal75' : 'orange'"
-              icon="magic-star"
+              icon="auto_awesome"
               :icon-color="generatedSubject ? 'blue' : 'orange'"
             >
               {{ generatedSubject || t("promptSetup.imageToImage.generatedSubject.empty") }}
@@ -790,7 +790,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
           <!-- Preserve Options -->
           <el-grid :gap="10">
             <el-flex v-bind="setupPanelIntroAttrs">
-              <el-text type="h3" :size="14" :weight="800" class="lh1" icon="shield-tick">
+              <el-text type="h3" :size="14" :weight="800" class="lh1" icon="verified_user">
                 {{ t("promptSetup.imageToImage.preserve.title") }}
               </el-text>
 
@@ -842,7 +842,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
           @keydown.enter.prevent="togglePanel('output')"
           @keydown.space.prevent="togglePanel('output')">
           <el-flex v-bind="setupPanelIntroAttrs">
-            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="setting-2">
+            <el-text type="h3" :size="15" :weight="800" class="lh1" icon="tune">
               {{ t("promptSetup.output.title") }}
             </el-text>
 

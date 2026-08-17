@@ -242,7 +242,7 @@ onMounted(drawSource)
         />
 
         <el-flex v-if="!sourceUrl || sourceLoadError" v-bind="previewEmptyAttrs">
-          <el-icon icon="gallery" :size="26" color="normal50" />
+          <el-icon icon="photo_library" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ t('tools.imageVectorizer.preview.empty') }}
           </el-text>
@@ -257,7 +257,7 @@ onMounted(drawSource)
           :p="8"
           :radius="12"
         >
-          <el-text :size="10" :weight="500" icon="color-swatch">
+          <el-text :size="10" :weight="500" icon="palette">
             {{ t('tools.imageVectorizer.preview.pickHint') }}
           </el-text>
         </el-flex>
@@ -265,7 +265,7 @@ onMounted(drawSource)
     </el-flex>
 
     <el-flex v-bind="rasterCardAttrs">
-      <el-text :size="12" :weight="500" icon="magic-star" marker="blue40">
+      <el-text :size="12" :weight="500" icon="auto_awesome" marker="blue40">
         {{ rasterTitle }}
       </el-text>
 

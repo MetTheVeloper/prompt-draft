@@ -185,7 +185,7 @@ function openRegionEditor(regionIndex?: number) {
     actions: [
       {
         label: t("modules.layout.fields.regions.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
@@ -215,7 +215,7 @@ function openVisualBuilder() {
 
   modal.open({
     header: {
-      icon: "grid-5",
+      icon: "grid_view",
       title: t("modules.layout.fields.regions.visualBuilder.modal.title"),
       subtitle: t(
         "modules.layout.fields.regions.visualBuilder.modal.subtitle",
@@ -234,14 +234,14 @@ function openVisualBuilder() {
     actions: [
       {
         label: t("modules.layout.fields.regions.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: t("modules.layout.fields.regions.actions.apply"),
-        icon: "tick-circle",
+        icon: "check_circle",
         color: "prim",
         close: true,
         disable: () => {
@@ -301,7 +301,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
 
   modal.open({
     header: {
-      icon: "trash",
+      icon: "delete",
       title: t("modules.layout.fields.regions.modal.deleteTitle"),
       subtitle: displayName,
       color: "red",
@@ -315,14 +315,14 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
     actions: [
       {
         label: t("modules.layout.fields.regions.actions.cancel"),
-        icon: "close-circle",
+        icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
         label: t("modules.layout.fields.regions.actions.confirmDelete"),
-        icon: "trash",
+        icon: "delete",
         color: "red",
         close: true,
         handler: () => removeRegion(regionIndex),
@@ -339,7 +339,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
   <el-grid class="layout-regions-field w100" :gap="12">
     <el-flex :rules="mobile ? 'ccs' : 'rbc'" class="w100" :gap="8">
       <el-flex rules="ccs" :gap="2">
-        <el-text :size="13" :weight="700" icon="grid-5">
+        <el-text :size="13" :weight="700" icon="grid_view">
           {{ t("modules.layout.fields.regions.list.title") }}
         </el-text>
 
@@ -357,7 +357,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
       <el-flex :rules="mobile ? 'ccs' : 'rcc'" :gap="6" :class="mobile ? 'w100' : ''">
         <el-button
           :class="mobile ? 'w100' : ''"
-          icon="grid-5"
+          icon="grid_view"
           mode="flat"
           color="blue"
           :label="t('modules.layout.fields.regions.actions.visualBuilder')"
@@ -389,7 +389,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
       >
         <el-flex rules="ccs" :gap="3" class="layout-regions-field__item-content">
           <el-flex rules="rsc" :gap="6" class="w100">
-            <el-text :size="12" :weight="700" icon="component">
+            <el-text :size="12" :weight="700" icon="widgets">
               {{ regionDisplayName(region, regionIndex) }}
             </el-text>
 
@@ -425,7 +425,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
           <el-button
             type="fab"
             mode="flat"
-            icon="arrow-up"
+            icon="arrow_upward"
             :disable="regionIndex === 0"
             :label="t('modules.layout.fields.regions.actions.moveUp')"
             @click="moveRegion(regionIndex, -1)"
@@ -434,7 +434,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
           <el-button
             type="fab"
             mode="flat"
-            icon="arrow-down-1"
+            icon="arrow_downward"
             :disable="regionIndex === regions.length - 1"
             :label="t('modules.layout.fields.regions.actions.moveDown')"
             @click="moveRegion(regionIndex, 1)"
@@ -443,7 +443,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
           <el-button
             type="fab"
             mode="flat"
-            icon="copy"
+            icon="content_copy"
             :label="t('modules.layout.fields.regions.actions.duplicate')"
             @click="duplicateRegion(regionIndex)"
           />
@@ -452,7 +452,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
             type="fab"
             mode="flat"
             color="blue"
-            icon="edit-2"
+            icon="edit"
             :label="t('modules.layout.fields.regions.actions.edit')"
             @click="openRegionEditor(regionIndex)"
           />
@@ -461,7 +461,7 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
             type="fab"
             mode="flat"
             color="red"
-            icon="trash"
+            icon="delete"
             :label="t('modules.layout.fields.regions.actions.delete')"
             @click="openDeleteConfirm(region, regionIndex)"
           />

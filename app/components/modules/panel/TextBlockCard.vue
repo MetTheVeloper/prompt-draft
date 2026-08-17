@@ -90,7 +90,7 @@ function updateBlockField<K extends keyof TypographyTextBlock>(
           {{ modelValue.layerName || '{text_' + (blockIndex + 1) + '}' }}
         </el-text>
 
-        <el-text v-if="!modelValue.text?.trim()" :size="10" color="orange" icon="danger" icon-color="orange">
+        <el-text v-if="!modelValue.text?.trim()" :size="10" color="orange" icon="warning" icon-color="orange">
           {{ t("modules.typography.fields.textGroups.block.validation.requiredTextEmpty") }}
         </el-text>
       </el-flex>

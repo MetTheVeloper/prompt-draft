@@ -316,7 +316,7 @@ onBeforeUnmount(() => {
       </el-text>
     </label>
 
-    <el-text v-if="shouldShowKeyIssue" :size="11" color="orange" icon="danger" icon-color="orange">
+    <el-text v-if="shouldShowKeyIssue" :size="11" color="orange" icon="warning" icon-color="orange">
       {{ keyIssue }}
     </el-text>
 
