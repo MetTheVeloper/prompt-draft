@@ -4,7 +4,7 @@ export const NAVIGATION = [
   {
     name: 'create',
     to: '/create',
-    icon: 'magicpen',
+    icon: 'auto_fix_high',
   },
   {
     name: 'prompts',
@@ -14,16 +14,16 @@ export const NAVIGATION = [
   {
     name: 'collage',
     to: '/collage',
-    icon: 'gallery',
+    icon: 'photo_library',
   },
   {
     name: 'vectorizer',
     to: '/vectorizer',
-    icon: 'message-question',
+    icon: 'shapes',
   },
   {
     name: 'guide',
     to: '/guide',
-    icon: 'message-question',
+    icon: 'help',
   },
 ] as const
