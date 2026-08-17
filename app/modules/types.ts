@@ -224,11 +224,20 @@ export interface ModulePreset {
   values: ModuleValues;
 }
 
+export interface ModulePresetUiConfig {
+  component?: "chips" | "select";
+  group?: string;
+  order?: number;
+  allowNone?: boolean;
+  resetOnNone?: boolean;
+}
+
 export interface ModuleCompileConfig {
   separator?: string;
   removeDuplicates?: boolean;
   ignoreEmpty?: boolean;
   overrideField?: string;
+  fieldOrder?: string[];
 }
 
 export interface PromptKeyModule {
@@ -237,5 +246,6 @@ export interface PromptKeyModule {
   groups?: Record<string, ModuleGroup>;
   fields: Record<string, ModuleField>;
   presets?: Record<string, ModulePreset>;
+  presetUi?: ModulePresetUiConfig;
   compile?: ModuleCompileConfig;
 }
