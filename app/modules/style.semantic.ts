@@ -1,4 +1,8 @@
-import type { ModuleFieldOption, PromptKeyModule } from "./types";
+import type {
+  ModuleFieldOption,
+  ModuleValues,
+  PromptKeyModule,
+} from "./types";
 import { StyleModule as BaseStyleModule } from "./style.module";
 
 type PromptTextOverrides = Record<string, string>;
@@ -13,12 +17,15 @@ function applyPromptTextOverrides(
   }));
 }
 
-// Stage 1 semantic cleanup.
-//
-// The legacy field id `preset` is intentionally preserved for saved-draft / JSON
-// compatibility. Semantically, this field now acts as an aesthetic anchor only.
-// Module presets remain recipes that populate fields; each field is responsible
-// only for its own prompt signal.
+function migratePresetValues(values: ModuleValues): ModuleValues {
+  const { preset, ...rest } = values;
+
+  return {
+    ...rest,
+    aesthetic: preset,
+  };
+}
+
 const aestheticPromptText: PromptTextOverrides = {
   "3d_cartoon": "stylized 3D cartoon aesthetic",
   anime_cover: "anime illustration aesthetic",
@@ -60,7 +67,8 @@ const stylizationPromptText: PromptTextOverrides = {
   controlled: "controlled stylization with moderate transformation",
   strong: "strong stylization with clearly transformed forms",
   extreme: "extreme stylization with radically transformed forms",
-  abstract: "abstract stylization with substantially simplified or deconstructed forms",
+  abstract:
+    "abstract stylization with substantially simplified or deconstructed forms",
 };
 
 const shapePromptText: PromptTextOverrides = {
@@ -93,51 +101,65 @@ const finishPromptText: PromptTextOverrides = {
   glossy: "high-gloss reflective finish",
 };
 
+const { preset: legacyAestheticField, ...baseFields } = BaseStyleModule.fields;
+
+const semanticPresets = Object.fromEntries(
+  Object.entries(BaseStyleModule.presets || {}).map(([key, preset]) => [
+    key,
+    {
+      ...preset,
+      values: migratePresetValues(preset.values),
+    },
+  ]),
+);
+
 export const StyleModule = {
   ...BaseStyleModule,
   fields: {
-    ...BaseStyleModule.fields,
-    preset: {
-      ...BaseStyleModule.fields.preset,
+    aesthetic: {
+      ...legacyAestheticField,
+      id: "aesthetic",
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.preset.options,
+        legacyAestheticField.options,
         aestheticPromptText,
       ),
     },
+    ...baseFields,
     medium: {
-      ...BaseStyleModule.fields.medium,
+      ...baseFields.medium,
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.medium.options,
+        baseFields.medium.options,
         mediumPromptText,
       ),
     },
     stylizationLevel: {
-      ...BaseStyleModule.fields.stylizationLevel,
+      ...baseFields.stylizationLevel,
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.stylizationLevel.options,
+        baseFields.stylizationLevel.options,
         stylizationPromptText,
       ),
     },
     shapeLanguage: {
-      ...BaseStyleModule.fields.shapeLanguage,
+      ...baseFields.shapeLanguage,
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.shapeLanguage.options,
+        baseFields.shapeLanguage.options,
         shapePromptText,
       ),
     },
     visualTreatment: {
-      ...BaseStyleModule.fields.visualTreatment,
+      ...baseFields.visualTreatment,
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.visualTreatment.options,
+        baseFields.visualTreatment.options,
         treatmentPromptText,
       ),
     },
     finish: {
-      ...BaseStyleModule.fields.finish,
+      ...baseFields.finish,
       options: applyPromptTextOverrides(
-        BaseStyleModule.fields.finish.options,
+        baseFields.finish.options,
         finishPromptText,
       ),
     },
   },
+  presets: semanticPresets,
 } satisfies PromptKeyModule;
