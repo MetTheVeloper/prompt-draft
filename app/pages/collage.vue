@@ -375,7 +375,7 @@ function updateBrandOverlayEnabled(value: ElDropdownValue | boolean) {
 }
 
 function getPanelToggleSymbol(panel: CollagePanelKey) {
-  return isPanelExpanded(panel) ? 'minus' : 'add'
+  return isPanelExpanded(panel) ? 'remove' : 'add'
 }
 
 const textOverlayFontDropdownOptions = computed(() => {
@@ -1126,7 +1126,7 @@ function updateVideoPreset(value: ElDropdownValue) {
         bc="normal10" bg="normal5">
         <div class="poa t0 l0 b0 bg-blue15" v-if="isExportingMp4" :style="{ width: `${mp4ExportProgress}%` }"></div>
         <el-flex rules="ccs" :gap="0">
-          <el-text :size="14" weight="700" localize :icon="activeMode === 'video' ? 'video' : 'gallery'">
+          <el-text :size="14" weight="700" localize :icon="activeMode === 'video' ? 'videocam' : 'image'">
             {{ previewInfo.width }}×{{ previewInfo.height }}
           </el-text>
           <el-flex rules="rsc" :gap="16">

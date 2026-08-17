@@ -312,7 +312,7 @@ function openMobileMenu() {
         mode="flat"
         type="fab"
         :label="$t('app.switchTheme')"
-        :icon="t.theme.mode === 'dark' ? 'sun-1' : 'moon'"
+        :icon="t.theme.mode === 'dark' ? 'light_mode' : 'dark_mode'"
         @click="switchTheme"
       />
 

@@ -350,9 +350,9 @@ const primaryCopyLabel = computed(() => {
 });
 
 const primaryCopyIcon = computed(() => {
-  if (isPrimaryCopied.value) return "tick";
+  if (isPrimaryCopied.value) return "check";
 
-  return isLayoutModule.value ? "grid-5" : "document-copy";
+  return "content_copy";
 });
 
 const isCustomOverride = computed(() => {
@@ -1123,7 +1123,7 @@ onBeforeUnmount(() => {
             />
             <el-button type="fab" :size="14" @click="togglePanel" mode="flat" color="prim" :p="8"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
-              :icon="!isPanelExpanded ? 'arrow-down-1' : 'arrow-up'" />
+              :icon="!isPanelExpanded ? 'expand_more' : 'expand_less'" />
           </el-flex>
         </el-flex>
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
