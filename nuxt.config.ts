@@ -109,6 +109,24 @@ export default defineNuxtConfig({
         language: "fa-IR",
         dir: "rtl",
       },
+      {
+        code: "zh",
+        name: "简体中文",
+        language: "zh-CN",
+        dir: "ltr",
+      },
+      {
+        code: "ar",
+        name: "العربية",
+        language: "ar",
+        dir: "rtl",
+      },
+      {
+        code: "ru",
+        name: "Русский",
+        language: "ru-RU",
+        dir: "ltr",
+      },
     ],
   },
 });
