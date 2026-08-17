@@ -26,7 +26,7 @@ export default defineNuxtPlugin((nuxtApp) => {
 
     if (typeof localeMeta === 'object' && localeMeta) {
       return {
-        lang: localeMeta.language || localeMeta.code || normalizedLocale,
+        lang: localeMeta.code || normalizedLocale,
         dir: localeMeta.dir === 'rtl' ? 'rtl' : 'ltr',
       }
     }
