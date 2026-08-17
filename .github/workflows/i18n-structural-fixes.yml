@@ -1,0 +1,313 @@
+name: Apply multilingual structural fixes
+
+on:
+  push:
+    branches:
+      - feat/i18n-multilingual
+    paths:
+      - .github/workflows/i18n-structural-fixes.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/i18n-multilingual
+          fetch-depth: 0
+
+      - name: Patch locale-aware behavior
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          def replace(path, old, new, expected=None):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              count = text.count(old)
+              if expected is not None and count != expected:
+                  raise SystemExit(f'{path}: expected {expected} occurrences, got {count}: {old!r}')
+              if not count:
+                  raise SystemExit(f'{path}: pattern not found: {old!r}')
+              p.write_text(text.replace(old, new), encoding='utf-8')
+              print(f'{path}: {count} replacement(s)')
+
+          # Create page dates/times should follow the active locale metadata, not fa/en only.
+          replace(
+              'app/pages/create.vue',
+              'const { t, locale } = useI18n();',
+              'const { t, locale, localeProperties } = useI18n();\n\nconst localeLanguage = computed(() => localeProperties.value?.language || locale.value);',
+              1,
+          )
+          replace(
+              'app/pages/create.vue',
+              'locale.value === "fa" ? "fa-IR" : "en-US",',
+              'localeLanguage.value,',
+              1,
+          )
+          replace(
+              'app/pages/create.vue',
+              'date.toLocaleTimeString(locale.value === "fa" ? "fa-IR" : "en-US", {',
+              'date.toLocaleTimeString(localeLanguage.value, {',
+              1,
+          )
+
+          # Prompt list dates should follow locale metadata.
+          replace(
+              'app/components/prompts/PromptItem.vue',
+              'const { t, locale } = useI18n()',
+              'const { t, locale, localeProperties } = useI18n()',
+              1,
+          )
+          replace(
+              'app/components/prompts/PromptItem.vue',
+              "locale.value === 'fa' ? 'fa-IR' : 'en-US',",
+              "localeProperties.value?.language || locale.value,",
+              1,
+          )
+
+          # Prompt detail dates and navigation direction should follow RTL metadata.
+          replace(
+              'app/components/prompts/PromptDetail.vue',
+              'const { t, locale } = useI18n()',
+              'const { t, locale, localeProperties } = useI18n()',
+              1,
+          )
+          replace(
+              'app/components/prompts/PromptDetail.vue',
+              "locale.value === 'fa' ? 'fa-IR' : 'en-US',",
+              "localeProperties.value?.language || locale.value,",
+              1,
+          )
+          replace(
+              'app/components/prompts/PromptDetail.vue',
+              "const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')",
+              "const backIcon = computed(() => localeProperties.value?.dir === 'rtl' ? 'arrow_forward' : 'arrow_back')",
+              1,
+          )
+
+          # el-text: support Arabic-Indic digits when localize=true while preserving
+          # the existing Persian digit behavior and normalizing non-RTL locales.
+          path = Path('app/components/el/text.vue')
+          text = path.read_text(encoding='utf-8')
+          old = '''const toPersianDigits = (str) => {
+  return str.replace(/\\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+};
+
+const toEnglishDigits = (str) => {
+  return str.replace(/[۰-۹]/g, (d) => "0123456789"["۰۱۲۳۴۵۶۷۸۹".indexOf(d)]);
+};'''
+          new = '''const toEnglishDigits = (str) => {
+  return str
+    .replace(/[۰-۹]/g, (d) => "0123456789"["۰۱۲۳۴۵۶۷۸۹".indexOf(d)])
+    .replace(/[٠-٩]/g, (d) => "0123456789"["٠١٢٣٤٥٦٧٨٩".indexOf(d)]);
+};
+
+const toPersianDigits = (str) => {
+  return toEnglishDigits(str).replace(/\\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+};
+
+const toArabicDigits = (str) => {
+  return toEnglishDigits(str).replace(/\\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
+};'''
+          if text.count(old) != 1:
+              raise SystemExit('app/components/el/text.vue: digit helper block mismatch')
+          text = text.replace(old, new, 1)
+
+          old = '''      if (locale.value === "fa") {
+        if (props.localize) {
+          text = toPersianDigits(text);
+        }
+      } else {
+        text = toEnglishDigits(text);
+      }'''
+          new = '''      if (locale.value === "fa") {
+        if (props.localize) {
+          text = toPersianDigits(text);
+        }
+      } else if (locale.value === "ar") {
+        text = props.localize ? toArabicDigits(text) : toEnglishDigits(text);
+      } else {
+        text = toEnglishDigits(text);
+      }'''
+          if text.count(old) != 1:
+              raise SystemExit('app/components/el/text.vue: localizedText block mismatch')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          # Use an explicit system CJK stack; Arabic shares the existing offline
+          # Persian/Vazirmatn family, and Cyrillic uses the OS UI stack.
+          path = Path('app/assets/css/app.scss')
+          text = path.read_text(encoding='utf-8')
+          marker = '''html[lang='fa'],
+html[lang='ar'] {
+  --app-font-family: 'persian', 'Vazirmatn', system-ui, sans-serif;
+}
+'''
+          addition = marker + '''
+html[lang='zh'] {
+  --app-font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+
+html[lang='ru'] {
+  --app-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+'''
+          if marker not in text:
+              raise SystemExit('app/assets/css/app.scss: locale font marker missing')
+          path.write_text(text.replace(marker, addition, 1), encoding='utf-8')
+          PY
+
+      - name: Add permanent locale validator
+        run: |
+          cat > scripts/validate-i18n.ts <<'TS'
+          import en from '../i18n/locales/en'
+          import fa from '../i18n/locales/fa'
+          import zh from '../i18n/locales/zh'
+          import ar from '../i18n/locales/ar'
+          import ru from '../i18n/locales/ru'
+
+          type Messages = Record<string, unknown>
+
+          function flatten(value: Messages, prefix = '', out: Record<string, string> = {}) {
+            for (const [key, child] of Object.entries(value)) {
+              const path = prefix ? `${prefix}.${key}` : key
+
+              if (typeof child === 'string') {
+                out[path] = child
+                continue
+              }
+
+              if (child && typeof child === 'object' && !Array.isArray(child)) {
+                flatten(child as Messages, path, out)
+              }
+            }
+
+            return out
+          }
+
+          const source = flatten(en as Messages)
+          const sourceKeys = Object.keys(source).sort()
+          const interpolationPattern = /\{[^{}]+\}/g
+
+          function interpolationTokens(value: string) {
+            return [...(value.match(interpolationPattern) || [])].sort()
+          }
+
+          function validateLocale(code: string, messages: Messages) {
+            const target = flatten(messages)
+            const targetKeys = Object.keys(target).sort()
+            const missing = sourceKeys.filter(key => !(key in target))
+            const extra = targetKeys.filter(key => !(key in source))
+            const interpolationErrors = sourceKeys.filter(key => {
+              if (!(key in target)) return false
+              return interpolationTokens(source[key]).join('|') !== interpolationTokens(target[key]).join('|')
+            })
+
+            console.log(`[i18n] ${code}: ${targetKeys.length} strings`)
+
+            if (missing.length) console.error(`[i18n] ${code}: missing keys`, missing.slice(0, 30))
+            if (extra.length) console.error(`[i18n] ${code}: extra keys`, extra.slice(0, 30))
+            if (interpolationErrors.length) {
+              console.error(`[i18n] ${code}: interpolation mismatches`, interpolationErrors.slice(0, 30))
+            }
+
+            return missing.length === 0 && extra.length === 0 && interpolationErrors.length === 0
+          }
+
+          const locales: Record<string, Messages> = {
+            fa: fa as Messages,
+            zh: zh as Messages,
+            ar: ar as Messages,
+            ru: ru as Messages,
+          }
+
+          const ok = Object.entries(locales).every(([code, messages]) => validateLocale(code, messages))
+
+          if (!ok) process.exit(1)
+          console.log(`[i18n] OK: all locales match canonical en.ts (${sourceKeys.length} strings)`)
+          TS
+
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          path = Path('package.json')
+          data = json.loads(path.read_text(encoding='utf-8'))
+          scripts = data.setdefault('scripts', {})
+          scripts['i18n:validate'] = 'tsx scripts/validate-i18n.ts'
+          path.write_text(json.dumps(data, indent=2, ensure_ascii=False) + '\n', encoding='utf-8')
+          PY
+
+      - name: Document locale maintenance
+        run: |
+          cat > docs/i18n.md <<'MD'
+          # Internationalization
+
+          Prompt Draft uses `@nuxtjs/i18n`. English is the canonical translation source and the application currently ships with five locales:
+
+          | Code | Language | Direction | Translation file |
+          | --- | --- | --- | --- |
+          | `en` | English | LTR | `i18n/locales/en.ts` |
+          | `fa` | فارسی | RTL | `i18n/locales/fa.ts` |
+          | `zh` | 简体中文 | LTR | `i18n/locales/zh.ts` |
+          | `ar` | العربية | RTL | `i18n/locales/ar.ts` |
+          | `ru` | Русский | LTR | `i18n/locales/ru.ts` |
+
+          ## Source of truth
+
+          `i18n/locales/en.ts` is the canonical key tree. New translation keys should be added there first and then mirrored into every other locale without changing key names, nesting, or interpolation tokens such as `{count}`, `{name}`, `{size}`, and `{progress}`.
+
+          Locale metadata (`code`, display `name`, BCP-47 `language`, and `dir`) is registered in `nuxt.config.ts`. Locale message modules are registered in `i18n/i18n.config.ts`.
+
+          ## Direction and DOM metadata
+
+          `app/plugins/locale-dom.client.ts` synchronizes `lang` and `dir` on `html`, `body`, and `#teleports` from the configured locale metadata. Components should use `localeProperties.dir` when behavior depends on direction. Do not use checks such as `locale === 'fa'` to infer RTL; both Persian and Arabic are RTL.
+
+          When formatting dates or times, prefer `localeProperties.language` (falling back to the locale code) instead of binary `fa-IR` / `en-US` branches.
+
+          ## Fonts
+
+          The default Latin UI stack remains the project default. Persian and Arabic use the existing local `persian` / `Vazirmatn` stack. Simplified Chinese and Russian use system UI stacks so their native scripts render consistently without adding another large webfont package.
+
+          ## Validation
+
+          Run:
+
+          ```bash
+          pnpm i18n:validate
+          ```
+
+          The validator compares `fa`, `zh`, `ar`, and `ru` against canonical `en.ts`. It fails when a locale has missing or extra keys or when interpolation tokens differ.
+
+          A production build should also be run after translation changes:
+
+          ```bash
+          pnpm generate
+          ```
+
+          ## Existing patch workflow
+
+          `scripts/merge-i18n.ts` already accepts a locale through `--locale`, so the same patch workflow can be used for any of the five translation files. Keep locale patch files scoped to values only and validate after merging.
+          MD
+
+      - name: Validate patch
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.6.0 --activate
+          pnpm install --frozen-lockfile
+          pnpm i18n:validate
+          git diff --check
+
+          echo 'Remaining locale-specific comparisons (review list):'
+          grep -RInE "locale(\.value)?[[:space:]]*(===|!==)[[:space:]]*['\"](en|fa)['\"]" app --include='*.vue' --include='*.ts' || true
+
+      - name: Commit and remove temporary workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app package.json scripts/validate-i18n.ts docs/i18n.md
+          git rm .github/workflows/i18n-structural-fixes.yml
+          git commit -m "refactor(i18n): make locale behavior multilingual"
+          git push origin HEAD:feat/i18n-multilingual
