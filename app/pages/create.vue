@@ -21,7 +21,9 @@ import { usePageContextMenu } from "~/composables/usePageContextMenu";
 import { useVariablePickerModal } from "~/composables/prompt/useVariablePickerModal";
 import type { GlobalMenuItem } from "~/composables/useMenu";
 
-const { t, locale } = useI18n();
+const { t, locale, localeProperties } = useI18n();
+
+const localeLanguage = computed(() => localeProperties.value?.language || locale.value);
 const app = useAppStore();
 const { $menu, $modal } = useNuxtApp();
 const { openPageContextMenu } = usePageContextMenu();
@@ -117,7 +119,7 @@ const draftSaveLabel = computed(() => {
 
   if (lastSavedAt.value) {
     const time = new Date(lastSavedAt.value).toLocaleTimeString(
-      locale.value === "fa" ? "fa-IR" : "en-US",
+      localeLanguage.value,
       {
         hour: "2-digit",
         minute: "2-digit",
@@ -191,7 +193,7 @@ function formatDraftDate(value?: string | null) {
 
   if (Number.isNaN(date.getTime())) return "";
 
-  return date.toLocaleTimeString(locale.value === "fa" ? "fa-IR" : "en-US", {
+  return date.toLocaleTimeString(localeLanguage.value, {
     hour: "2-digit",
     minute: "2-digit",
   });

@@ -176,12 +176,18 @@ import { useSlots } from "vue";
 
 const slots = useSlots();
 
-const toPersianDigits = (str) => {
-  return str.replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+const toEnglishDigits = (str) => {
+  return str
+    .replace(/[۰-۹]/g, (d) => "0123456789"["۰۱۲۳۴۵۶۷۸۹".indexOf(d)])
+    .replace(/[٠-٩]/g, (d) => "0123456789"["٠١٢٣٤٥٦٧٨٩".indexOf(d)]);
 };
 
-const toEnglishDigits = (str) => {
-  return str.replace(/[۰-۹]/g, (d) => "0123456789"["۰۱۲۳۴۵۶۷۸۹".indexOf(d)]);
+const toPersianDigits = (str) => {
+  return toEnglishDigits(str).replace(/\d/g, (d) => "۰۱۲۳۴۵۶۷۸۹"[d]);
+};
+
+const toArabicDigits = (str) => {
+  return toEnglishDigits(str).replace(/\d/g, (d) => "٠١٢٣٤٥٦٧٨٩"[d]);
 };
 
 const { locale } = useI18n();
@@ -198,6 +204,8 @@ const localizedText = computed(() => {
         if (props.localize) {
           text = toPersianDigits(text);
         }
+      } else if (locale.value === "ar") {
+        text = props.localize ? toArabicDigits(text) : toEnglishDigits(text);
       } else {
         text = toEnglishDigits(text);
       }

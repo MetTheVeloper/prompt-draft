@@ -7,7 +7,8 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate && tsx scripts/generate-offline-manifest.ts",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "i18n:validate": "tsx scripts/validate-i18n.ts"
   },
   "dependencies": {
     "@capacitor-community/media": "^9.1.0",

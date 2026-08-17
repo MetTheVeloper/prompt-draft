@@ -7,6 +7,14 @@ html[lang='ar'] {
   --app-font-family: 'persian', 'Vazirmatn', system-ui, sans-serif;
 }
 
+html[lang='zh'] {
+  --app-font-family: system-ui, -apple-system, 'Segoe UI', 'Microsoft YaHei', 'PingFang SC', sans-serif;
+}
+
+html[lang='ru'] {
+  --app-font-family: system-ui, -apple-system, 'Segoe UI', sans-serif;
+}
+
 html,
 body,
 #__nuxt,

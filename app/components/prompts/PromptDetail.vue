@@ -11,7 +11,7 @@ const emit = defineEmits<{
   (event: 'telegram', item: PromptArchiveItem): void
 }>()
 
-const { t, locale } = useI18n()
+const { t, locale, localeProperties } = useI18n()
 const { mobile, tablet, mini } = useScreen()
 
 const rootRef = ref<HTMLElement | null>(null)
@@ -86,7 +86,7 @@ const formattedDate = computed(() => {
   if (Number.isNaN(date.getTime())) return props.item.publishedAt
 
   return new Intl.DateTimeFormat(
-    locale.value === 'fa' ? 'fa-IR' : 'en-US',
+    localeProperties.value?.language || locale.value,
     {
       year: 'numeric',
       month: 'long',
@@ -95,7 +95,7 @@ const formattedDate = computed(() => {
   ).format(date)
 })
 
-const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')
+const backIcon = computed(() => localeProperties.value?.dir === 'rtl' ? 'arrow_forward' : 'arrow_back')
 
 watch(
   () => props.item.id,

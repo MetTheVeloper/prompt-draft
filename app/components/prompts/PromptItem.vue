@@ -17,7 +17,7 @@ const emit = defineEmits<{
   (event: 'telegram', item: PromptArchiveItem): void
 }>()
 
-const { t, locale } = useI18n()
+const { t, locale, localeProperties } = useI18n()
 const { mobile } = useScreen()
 
 const isGrid = computed(() => props.view === 'grid')
@@ -54,7 +54,7 @@ const formattedDate = computed(() => {
   if (Number.isNaN(date.getTime())) return props.item.publishedAt
 
   return new Intl.DateTimeFormat(
-    locale.value === 'fa' ? 'fa-IR' : 'en-US',
+    localeProperties.value?.language || locale.value,
     {
       year: 'numeric',
       month: 'short',
