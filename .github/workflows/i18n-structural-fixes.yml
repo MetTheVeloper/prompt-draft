@@ -23,8 +23,29 @@ jobs:
         with:
           node-version: 22
 
-      - name: Apply structural patch
-        run: python scripts/_i18n-structural-patch.py
+      - name: Correct patch script and apply it
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/_i18n-structural-patch.py')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              'replace("app/pages/create.vue", \'locale.value === "fa" ? "fa-IR" : "en-US",\', \'localeLanguage.value,\', 1)',
+              'replace("app/pages/create.vue", \'locale.value === "fa" ? "fa-IR" : "en-US",\', \'localeLanguage.value,\', 2)',
+              1,
+          )
+          obsolete = '''replace(
+              "app/pages/create.vue",
+              'date.toLocaleTimeString(locale.value === "fa" ? "fa-IR" : "en-US", {',
+              'date.toLocaleTimeString(localeLanguage.value, {',
+              1,
+          )
+          '''
+          if obsolete not in text:
+              raise SystemExit('obsolete create date patch block not found')
+          path.write_text(text.replace(obsolete, '', 1), encoding='utf-8')
+          PY
+          python scripts/_i18n-structural-patch.py
 
       - name: Validate locale structure
         run: |
