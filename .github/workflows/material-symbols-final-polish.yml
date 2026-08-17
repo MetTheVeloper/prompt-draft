@@ -75,6 +75,7 @@ jobs:
               ('icon: isPanelExpanded.value ? "remove" : "add",', 'icon: isPanelExpanded.value ? "expand_less" : "expand_more",'),
               (":icon=\"isGroupOpen(group) ? 'remove' : 'add'\"", ":icon=\"isGroupOpen(group) ? 'expand_less' : 'expand_more'\""),
               (":icon=\"activePresetId === preset.id ? 'check' : 'component'\"", ":icon=\"activePresetId === preset.id ? 'check' : 'widgets'\""),
+              (":icon=\"!output ? 'danger' : 'archive-tick'\"", ":icon=\"!output ? 'error' : 'task_alt'\""),
           ])
 
           patch('app/components/el/Icon.vue', [
@@ -99,6 +100,10 @@ jobs:
               ("'refresh-2'", "'refresh'"),
               ("'cloud-add'", "'cloud_upload'"),
           ])
+          patch('app/components/el/color-picker.vue', [
+              ("'tick-circle'", "'check_circle'"),
+              ("'close-circle'", "'cancel'"),
+          ])
           patch('app/components/tools/ImageVectorizerPreview.vue', [("'refresh-circle'", "'refresh'")])
           patch('app/components/tools/ImageVectorizer.vue', [
               ("'maximize'", "'fullscreen'"),
@@ -120,15 +125,20 @@ jobs:
                   ('"add-circle"', '"add_circle"'),
                   ('"tick-circle"', '"check_circle"'),
               ])
+
+          backup = Path('app/components/modules/panel/base.vue.before-layout-region-fix')
+          if backup.exists():
+              backup.unlink()
+              print(f'deleted {backup}')
           PY
 
-          if grep -RInE "['\"](danger|warning-2|archive-tick|document-text|tick-circle|arrow-up|arrow-down-1|close-circle|edit-2|add-circle|refresh-2|cloud-add|refresh-circle|forward-item|backward-item|path-square)['\"]" app; then
+          if grep -RInE "['\"](warning-2|archive-tick|document-text|tick-circle|arrow-up|arrow-down-1|close-circle|edit-2|add-circle|refresh-2|cloud-add|refresh-circle|forward-item|backward-item|path-square)['\"]" app; then
             echo "Residual distinctive legacy icon id found"
             exit 1
           fi
 
-          if grep -RInE "icon[^\n]*(copy|component|maximize)" app; then
-            echo "Review ambiguous legacy icon id above"
+          if grep -RInE "icon.*['\"](danger|archive-tick|copy|component|maximize)['\"]" app --include='*.vue' --include='*.ts'; then
+            echo "Residual ambiguous legacy icon id found in icon context"
             exit 1
           fi
 
@@ -141,7 +151,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add app docs/material-symbols.md
+          git add -A app docs/material-symbols.md
           git rm .github/workflows/material-symbols-final-polish.yml
           git commit -m "fix(icons): finish Material Symbols polish"
           git push origin HEAD:feat/material-symbols-migration
