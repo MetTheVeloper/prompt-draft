@@ -60,7 +60,7 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add app package.json scripts/validate-i18n.ts docs/i18n.md
-          git rm scripts/_i18n-structural-patch.py
+          git rm -f scripts/_i18n-structural-patch.py
           git rm .github/workflows/i18n-structural-fixes.yml
           git commit -m "refactor(i18n): make locale behavior multilingual"
           git push origin HEAD:feat/i18n-multilingual
