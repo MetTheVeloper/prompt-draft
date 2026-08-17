@@ -1,0 +1,117 @@
+name: Material Symbols expression hotfix
+
+on:
+  push:
+    branches:
+      - feat/material-symbols-migration
+    paths:
+      - .github/workflows/material-symbols-expression-hotfix.yml
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/material-symbols-migration
+          fetch-depth: 0
+
+      - name: Patch legacy ids in icon expressions across app
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+
+          root = Path('app')
+          exts = {'.vue', '.ts', '.js', '.tsx', '.jsx'}
+          replacements = {
+              'video-play': 'play_circle',
+              'gallery': 'image',
+              'minus': 'remove',
+              'document-copy': 'content_copy',
+              'tick': 'check',
+              'sun-1': 'light_mode',
+              'moon': 'dark_mode',
+          }
+          token_re = re.compile(r"(?P<q>['\"])(?P<name>video-play|gallery|minus|document-copy|tick|sun-1|moon)(?P=q)")
+
+          changed = []
+          patched = []
+          residual_icon_lines = []
+          all_remaining = []
+
+          for path in [p for p in root.rglob('*') if p.suffix in exts]:
+              lines = path.read_text(encoding='utf-8').splitlines(keepends=True)
+              new_lines = []
+              file_changed = False
+
+              for number, line in enumerate(lines, 1):
+                  # Any line participating in an icon assignment/expression is eligible,
+                  # including TS object properties such as icon: condition ? 'x' : 'y'.
+                  if re.search(r'\bicon\b|:icon\b|icon=', line, re.I):
+                      def sub(m):
+                          nonlocal_file = None
+                          name = m.group('name')
+                          patched.append((str(path), number, name, replacements[name]))
+                          return f"{m.group('q')}{replacements[name]}{m.group('q')}"
+                      next_line = token_re.sub(sub, line)
+                      if next_line != line:
+                          file_changed = True
+                      line = next_line
+                  new_lines.append(line)
+
+              text = ''.join(new_lines)
+              if file_changed:
+                  path.write_text(text, encoding='utf-8')
+                  changed.append(str(path))
+
+          # Audit every remaining targeted token. Icon-related leftovers fail the run;
+          # non-icon leftovers are printed for manual review so unrelated domain values are not mutated.
+          for path in [p for p in root.rglob('*') if p.suffix in exts]:
+              for number, line in enumerate(path.read_text(encoding='utf-8').splitlines(), 1):
+                  matches = list(token_re.finditer(line))
+                  if not matches:
+                      continue
+                  names = [m.group('name') for m in matches]
+                  all_remaining.append((str(path), number, names, line.strip()))
+                  if re.search(r'\bicon\b|:icon\b|icon=', line, re.I):
+                      residual_icon_lines.append((str(path), number, names, line.strip()))
+
+          print('PATCHED ICON EXPRESSIONS:')
+          for path, number, old, new in patched:
+              print(f'  {path}:{number}: {old} -> {new}')
+
+          print('\nCHANGED FILES:')
+          for path in sorted(set(changed)):
+              print(f'  {path}')
+
+          print('\nREMAINING TARGET TOKENS OUTSIDE ICON LINES:')
+          for row in all_remaining:
+              print(f'  {row[0]}:{row[1]}: {row[2]} :: {row[3]}')
+
+          if residual_icon_lines:
+              print('\nERROR: TARGETED LEGACY IDS STILL USED ON ICON LINES')
+              for row in residual_icon_lines:
+                  print(row)
+              raise SystemExit(1)
+
+          if not patched:
+              raise SystemExit('No icon-expression replacements found')
+          PY
+
+          git diff --check
+          git diff -- app
+
+      - name: Commit patch and remove workflow
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app
+          git rm .github/workflows/material-symbols-expression-hotfix.yml
+          git commit -m "fix(icons): correct legacy ids in icon expressions"
+          git push origin HEAD:feat/material-symbols-migration
