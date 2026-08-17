@@ -19,208 +19,120 @@ jobs:
           ref: feat/material-symbols-migration
           fetch-depth: 0
 
-      - name: Apply final icon fixes and global audit
+      - name: Apply requested fixes and dynamic legacy sweep
         shell: bash
         run: |
           python - <<'PY'
           from pathlib import Path
           import re
-          import urllib.request
 
-          def read(path):
-              return Path(path).read_text(encoding='utf-8')
+          def patch(path, pairs):
+              p = Path(path)
+              text = p.read_text(encoding='utf-8')
+              original = text
+              for old, new in pairs:
+                  text = text.replace(old, new)
+              if text != original:
+                  p.write_text(text, encoding='utf-8')
+                  print(path)
 
-          def write(path, text):
-              Path(path).write_text(text, encoding='utf-8')
+          patch('app/components/prompt/output-preview.vue', [
+              ('return issue.level === "error" ? "danger" : "warning-2";', 'return issue.level === "error" ? "error" : "warning";'),
+              (":icon=\"hasBlockingIssues ? 'danger' : 'warning-2'\"", ":icon=\"hasBlockingIssues ? 'error' : 'warning'\""),
+              (":icon=\"output ? 'archive-tick' : 'document-text'\"", ":icon=\"output ? 'task_alt' : 'description'\""),
+          ])
 
-          def replace(path, old, new, minimum=1):
-              text = read(path)
-              count = text.count(old)
-              if count < minimum:
-                  raise SystemExit(f'{path}: expected at least {minimum} occurrence(s) of {old!r}, found {count}')
-              text = text.replace(old, new)
-              write(path, text)
-              print(f'{path}: {count} replacement(s)')
+          patch('app/layouts/default.vue', [
+              ('icon: locale.value === "fa" ? "en" : "fa",', 'icon: "language",'),
+          ])
 
-          # Output validation/status icons: remove remaining legacy identifiers.
-          path = 'app/components/prompt/output-preview.vue'
-          replace(path, 'return issue.level === "error" ? "danger" : "warning-2";', 'return issue.level === "error" ? "error" : "warning";')
-          replace(path, ":icon=\"hasBlockingIssues ? 'danger' : 'warning-2'\"", ":icon=\"hasBlockingIssues ? 'error' : 'warning'\"")
-          replace(path, ":icon=\"output ? 'archive-tick' : 'document-text'\"", ":icon=\"output ? 'task_alt' : 'description'\"")
-
-          # Default page context menu language icon must be a real Material Symbol.
-          replace(
-              'app/layouts/default.vue',
-              'icon: locale.value === "fa" ? "en" : "fa",',
-              'icon: "language",',
+          header_path = Path('app/components/Header.vue')
+          header = header_path.read_text(encoding='utf-8')
+          header, count = re.subn(
+              r'(<el-button\s+v-if="mobile"[\s\S]*?\bicon=")more_vert("[\s\S]*?@click="openMobileMenu")',
+              r'\1menu\2',
+              header,
+              count=1,
           )
-
-          # Header: desktop keeps vertical overflow; mobile uses the hamburger menu glyph.
-          header_path = 'app/components/Header.vue'
-          header = read(header_path)
-          mobile_pattern = re.compile(r'(<el-button\s+v-if="mobile"[\s\S]*?\bicon=")more_vert("[\s\S]*?@click="openMobileMenu")')
-          header, count = mobile_pattern.subn(r'\1menu\2', header, count=1)
           if count != 1:
-              raise SystemExit(f'{header_path}: failed to patch mobile menu icon, matches={count}')
-          write(header_path, header)
+              raise SystemExit(f'Expected one mobile more_vert button, found {count}')
+          header_path.write_text(header, encoding='utf-8')
 
-          # Setup panels: use the same chevron semantics as module panels.
-          for setup_path in [
+          for path in [
               'app/components/prompt/setup-panel.vue',
               'app/components/modules/panel/setup-panel.vue',
           ]:
-              replace(
-                  setup_path,
-                  'return isPanelExpanded(panel) ? "remove" : "add";',
-                  'return isPanelExpanded(panel) ? "expand_less" : "expand_more";',
-              )
-              replace(
-                  setup_path,
-                  'icon: expanded ? "remove" : "add",',
-                  'icon: expanded ? "expand_less" : "expand_more",',
-              )
+              patch(path, [
+                  ('return isPanelExpanded(panel) ? "remove" : "add";', 'return isPanelExpanded(panel) ? "expand_less" : "expand_more";'),
+                  ('icon: expanded ? "remove" : "add",', 'icon: expanded ? "expand_less" : "expand_more",'),
+              ])
 
-          # Collage collapsible boxes: same chevron semantics.
-          replace(
-              'app/pages/collage.vue',
-              "return isPanelExpanded(panel) ? 'remove' : 'add'",
-              "return isPanelExpanded(panel) ? 'expand_less' : 'expand_more'",
-          )
+          patch('app/pages/collage.vue', [
+              ("return isPanelExpanded(panel) ? 'remove' : 'add'", "return isPanelExpanded(panel) ? 'expand_less' : 'expand_more'"),
+          ])
 
-          # Any remaining expand/collapse UI in base.vue should use chevrons too.
-          base_path = 'app/components/modules/panel/base.vue'
-          base = read(base_path)
-          base = base.replace(
-              'icon: isPanelExpanded.value ? "remove" : "add",',
-              'icon: isPanelExpanded.value ? "expand_less" : "expand_more",',
-          )
-          base = base.replace(
-              ":icon=\"isGroupOpen(group) ? 'remove' : 'add'\"",
-              ":icon=\"isGroupOpen(group) ? 'expand_less' : 'expand_more'\"",
-          )
-          write(base_path, base)
+          patch('app/components/modules/panel/base.vue', [
+              ('icon: isPanelExpanded.value ? "remove" : "add",', 'icon: isPanelExpanded.value ? "expand_less" : "expand_more",'),
+              (":icon=\"isGroupOpen(group) ? 'remove' : 'add'\"", ":icon=\"isGroupOpen(group) ? 'expand_less' : 'expand_more'\""),
+              (":icon=\"activePresetId === preset.id ? 'check' : 'component'\"", ":icon=\"activePresetId === preset.id ? 'check' : 'widgets'\""),
+          ])
 
-          # Material Symbols default family: Rounded.
-          replace(
-              'app/components/el/Icon.vue',
-              'variant: "outlined",',
-              'variant: "rounded",',
-          )
-          replace(
-              'docs/material-symbols.md',
-              "variant = 'outlined'",
-              "variant = 'rounded'",
-          )
-          replace(
-              'docs/material-symbols.md',
-              'default outlined/400 style',
-              'default rounded/400 style',
-          )
+          patch('app/components/el/Icon.vue', [
+              ('variant: "outlined",', 'variant: "rounded",'),
+          ])
+          patch('docs/material-symbols.md', [
+              ("variant = 'outlined'", "variant = 'rounded'"),
+              ('default outlined/400 style', 'default rounded/400 style'),
+          ])
 
-          # Targeted global cleanup for legacy icon identifiers in icon-related lines/helpers.
-          legacy_map = {
-              'danger': 'error',
-              'warning-2': 'warning',
-              'archive-tick': 'task_alt',
-              'document-text': 'description',
-              'minus': 'remove',
-              'document-copy': 'content_copy',
-              'tick': 'check',
-              'video-play': 'play_circle',
-              'sun-1': 'light_mode',
-              'moon': 'dark_mode',
-          }
-          token_re = re.compile(r"(?P<q>['\"])(?P<name>" + '|'.join(map(re.escape, legacy_map)) + r")(?P=q)")
-          app_files = [p for p in Path('app').rglob('*') if p.suffix in {'.vue', '.ts', '.js', '.tsx', '.jsx'}]
+          patch('app/composables/useModal.ts', [("'tick-circle'", "'check_circle'")])
+          patch('app/components/prompt/SetupPanelContextMenu.vue', [
+              ('"arrow-up"', '"expand_less"'),
+              ('"arrow-down-1"', '"expand_more"'),
+          ])
+          patch('app/components/modules/panel/ModulePanelContextMenu.vue', [
+              ('"arrow-up"', '"expand_less"'),
+              ('"arrow-down-1"', '"expand_more"'),
+              ('"close-circle"', '"cancel"'),
+          ])
+          patch('app/components/el/pwa.vue', [
+              ("'refresh-2'", "'refresh'"),
+              ("'cloud-add'", "'cloud_upload'"),
+          ])
+          patch('app/components/tools/ImageVectorizerPreview.vue', [("'refresh-circle'", "'refresh'")])
+          patch('app/components/tools/ImageVectorizer.vue', [
+              ("'maximize'", "'fullscreen'"),
+              ("'forward-item'", "'first_page'"),
+              ("'backward-item'", "'last_page'"),
+              ("'path-square'", "'polyline'"),
+          ])
+          patch('app/components/prompts/PromptDetail.vue', [
+              (":icon=\"copied ? 'tick-circle' : 'copy'\"", ":icon=\"copied ? 'check_circle' : 'content_copy'\""),
+          ])
 
-          for p in app_files:
-              lines = p.read_text(encoding='utf-8').splitlines(keepends=True)
-              changed = False
-              in_icon_helper = False
-              depth = 0
-              for i, line in enumerate(lines):
-                  if re.search(r'function\s+\w*(?:Icon|Symbol)\w*\s*\(', line, re.I):
-                      in_icon_helper = True
-                      depth = 0
-                  icon_line = bool(re.search(r'\bicon\b|:icon\b|icon=', line, re.I))
-                  if icon_line or in_icon_helper:
-                      def sub(m):
-                          nonlocal_dummy = None
-                          name = m.group('name')
-                          return f"{m.group('q')}{legacy_map[name]}{m.group('q')}"
-                      next_line = token_re.sub(sub, line)
-                      if next_line != line:
-                          lines[i] = next_line
-                          changed = True
-                  if in_icon_helper:
-                      depth += line.count('{') - line.count('}')
-                      if depth <= 0 and '{' in line:
-                          in_icon_helper = False
-              if changed:
-                  p.write_text(''.join(lines), encoding='utf-8')
-
-          # Verify against Google's official Material Symbols codepoints.
-          url = 'https://raw.githubusercontent.com/google/material-design-icons/master/variablefont/MaterialSymbolsOutlined%5BFILL%2CGRAD%2Copsz%2Cwght%5D.codepoints'
-          with urllib.request.urlopen(url, timeout=30) as response:
-              codepoints = {
-                  line.split()[0]
-                  for line in response.read().decode('utf-8').splitlines()
-                  if line.strip()
-              }
-
-          candidate_re = re.compile(r"['\"]([a-z][a-z0-9_\-]*)['\"]")
-          invalid = []
-          for p in app_files:
-              lines = p.read_text(encoding='utf-8').splitlines()
-              in_icon_helper = False
-              depth = 0
-              for n, line in enumerate(lines, 1):
-                  if re.search(r'function\s+\w*(?:Icon|Symbol)\w*\s*\(', line, re.I):
-                      in_icon_helper = True
-                      depth = 0
-
-                  icon_line = bool(re.search(r'(?<![\w-])icon\s*[:=]|:icon\s*=|\bicon=', line, re.I))
-                  if icon_line or in_icon_helper:
-                      for candidate in candidate_re.findall(line):
-                          # Ignore non-icon literals commonly present on a mixed line.
-                          if candidate in {'true', 'false', 'normal', 'flat', 'default', 'fab'}:
-                              continue
-                          if candidate not in codepoints:
-                              invalid.append((str(p), n, candidate, line.strip()))
-
-                  if in_icon_helper:
-                      depth += line.count('{') - line.count('}')
-                      if depth <= 0 and '{' in line:
-                          in_icon_helper = False
-
-          # Specific structural assertions requested in this polish pass.
-          header = read(header_path)
-          if not re.search(r'<el-button\s+v-if="mobile"[\s\S]*?icon="menu"[\s\S]*?@click="openMobileMenu"', header):
-              raise SystemExit('Header mobile menu is not using icon="menu"')
-          if not re.search(r'<el-button\s+v-else[\s\S]*?icon="more_vert"[\s\S]*?@click="openToolsMenu"', header):
-              raise SystemExit('Header desktop tools menu is not using icon="more_vert"')
-
-          if 'variant: "rounded",' not in read('app/components/el/Icon.vue'):
-              raise SystemExit('el-icon default variant is not rounded')
-
-          for setup_path in [
-              'app/components/prompt/setup-panel.vue',
-              'app/components/modules/panel/setup-panel.vue',
-              'app/pages/collage.vue',
+          for path in [
+              'app/components/modules/panel/TextGroupsField.vue',
+              'app/components/modules/variables/VariablesField.vue',
+              'app/components/modules/layout/LayoutRegionsField.vue',
           ]:
-              text = read(setup_path)
-              if re.search(r'isPanelExpanded\([^\n]+\)\s*\?\s*["\']remove["\']\s*:\s*["\']add["\']', text):
-                  raise SystemExit(f'{setup_path}: legacy +/- expand/collapse semantics remain')
-
-          if invalid:
-              print('\nINVALID MATERIAL SYMBOL CANDIDATES:')
-              for row in invalid:
-                  print(f'{row[0]}:{row[1]}: {row[2]} :: {row[3]}')
-              raise SystemExit('Found icon candidates that do not resolve to official Material Symbols')
-
-          print(f'Official-symbol audit passed across {len(app_files)} active source files.')
+              patch(path, [
+                  ('"edit-2"', '"edit"'),
+                  ('"add-circle"', '"add_circle"'),
+                  ('"tick-circle"', '"check_circle"'),
+              ])
           PY
 
+          if grep -RInE "['\"](danger|warning-2|archive-tick|document-text|tick-circle|arrow-up|arrow-down-1|close-circle|edit-2|add-circle|refresh-2|cloud-add|refresh-circle|forward-item|backward-item|path-square)['\"]" app; then
+            echo "Residual distinctive legacy icon id found"
+            exit 1
+          fi
+
+          if grep -RInE "icon[^\n]*(copy|component|maximize)" app; then
+            echo "Review ambiguous legacy icon id above"
+            exit 1
+          fi
+
+          node scripts/material-symbols-final-validate.mjs
           git diff --check
           git diff -- app docs/material-symbols.md
 
