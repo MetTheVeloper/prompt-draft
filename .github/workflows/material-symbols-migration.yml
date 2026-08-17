@@ -69,8 +69,8 @@ jobs:
           npx --yes playwright@1.58.2 screenshot --browser=chromium --device="Desktop Chrome" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/guide /tmp/material-symbols-smoke/guide-desktop.png
           npx --yes playwright@1.58.2 screenshot --browser=chromium --device="Desktop Chrome" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/vectorizer /tmp/material-symbols-smoke/vectorizer-desktop.png
 
-          npx --yes playwright@1.58.2 screenshot --browser=chromium --device="iPhone 13" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/create /tmp/material-symbols-smoke/create-mobile.png
-          npx --yes playwright@1.58.2 screenshot --browser=chromium --device="iPhone 13" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/prompts /tmp/material-symbols-smoke/prompts-mobile.png
+          npx --yes playwright@1.58.2 screenshot --browser=chromium --viewport-size="390,844" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/create /tmp/material-symbols-smoke/create-mobile.png
+          npx --yes playwright@1.58.2 screenshot --browser=chromium --viewport-size="390,844" --full-page --wait-for-timeout=1500 http://127.0.0.1:4173/prompts /tmp/material-symbols-smoke/prompts-mobile.png
 
           cat /tmp/material-symbols-serve.log
 
