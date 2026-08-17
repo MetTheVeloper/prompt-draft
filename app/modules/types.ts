@@ -230,8 +230,6 @@ export interface ModulePresetUiConfig {
   order?: number;
   allowNone?: boolean;
   resetOnNone?: boolean;
-  resetBeforeApply?: boolean;
-  preserveFields?: string[];
 }
 
 export interface ModuleCompileConfig {
