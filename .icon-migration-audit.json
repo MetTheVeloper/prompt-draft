@@ -1,6 +1,6 @@
 {
-  "generatedAt": "2026-08-17T11:56:52.725Z",
-  "totalUsages": 575,
+  "generatedAt": "2026-08-17T11:59:07.501Z",
+  "totalUsages": 576,
   "uniqueStaticIconValues": 116,
   "values": [
     "action.icon",
@@ -4145,6 +4145,13 @@
       "kind": "template-static",
       "value": "code",
       "context": "leport to=\"body\"> <el-button v-if=\"showFab\" label=\"Insert variable\" icon=\"code\" type=\"fab\" color=\"prim\" tooltip-position=\"left\" :size=\"16\""
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 186,
+      "kind": "mode-static",
+      "value": "vuesax",
+      "context": "nts/el/Icon.vue') let icon = await fs.readFile(iconPath, 'utf8') icon = icon.replace('mode: \"vuesax\",', 'mode: \"symbols\",') await fs.writeFile(iconPath, icon) } function collectLiteralIco"
     }
   ],
   "legacyReferences": [
@@ -4212,6 +4219,31 @@
       "file": "scripts/material-symbols-audit.mjs",
       "line": 59,
       "term": "material-icons"
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 130,
+      "term": "vuesax"
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 131,
+      "term": "vuesax"
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 145,
+      "term": "vuesax"
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 162,
+      "term": "Iconsax"
+    },
+    {
+      "file": "scripts/material-symbols-migrate.mjs",
+      "line": 186,
+      "term": "vuesax"
     }
   ]
 }
