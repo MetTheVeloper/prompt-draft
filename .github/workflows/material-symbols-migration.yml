@@ -1,4 +1,4 @@
-name: Material Symbols Migration Audit
+name: Material Symbols Migration
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  audit:
+  migrate:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
@@ -24,17 +24,44 @@ jobs:
         with:
           node-version: 22
 
-      - name: Generate icon inventory
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.6.0 --activate
+
+      - name: Install temporary font source
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Migrate active icon source
+        run: node scripts/material-symbols-migrate.mjs
+
+      - name: Vendor Material Symbols variable fonts
+        run: |
+          mkdir -p public/fonts/material-symbols
+          cp node_modules/material-symbols/material-symbols-outlined.woff2 public/fonts/material-symbols/material-symbols-outlined.woff2
+          cp node_modules/material-symbols/material-symbols-rounded.woff2 public/fonts/material-symbols/material-symbols-rounded.woff2
+          cp node_modules/material-symbols/material-symbols-sharp.woff2 public/fonts/material-symbols/material-symbols-sharp.woff2
+
+      - name: Remove temporary font package
+        run: pnpm remove material-symbols
+
+      - name: Verify lockfile
+        run: pnpm install --frozen-lockfile
+
+      - name: Refresh migration audit
         run: node scripts/material-symbols-audit.mjs
 
-      - name: Commit audit output
+      - name: Validate generated application
+        run: pnpm generate
+
+      - name: Commit migration result
         run: |
-          if git diff --quiet -- .icon-migration-audit.json && git ls-files --error-unmatch .icon-migration-audit.json >/dev/null 2>&1; then
-            echo "No audit changes."
-            exit 0
-          fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .icon-migration-audit.json
-          git commit -m "chore(icons): refresh migration audit [skip ci]"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "No migration changes."
+            exit 0
+          fi
+          git commit -m "refactor(icons): migrate active UI to Material Symbols [skip ci]"
           git push origin HEAD:feat/material-symbols-migration
