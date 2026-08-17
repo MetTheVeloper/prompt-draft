@@ -1,4 +1,4 @@
-name: Material Symbols Migration
+name: Material Symbols Final Verification
 
 on:
   push:
@@ -6,10 +6,10 @@ on:
       - feat/material-symbols-migration
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  migrate:
+  verify:
     if: ${{ !contains(github.event.head_commit.message, '[skip ci]') }}
     runs-on: ubuntu-latest
     steps:
@@ -29,39 +29,14 @@ jobs:
           corepack enable
           corepack prepare pnpm@11.6.0 --activate
 
-      - name: Install temporary font source
-        run: pnpm install --no-frozen-lockfile
-
-      - name: Migrate active icon source
-        run: node scripts/material-symbols-migrate.mjs
-
-      - name: Vendor Material Symbols variable fonts
-        run: |
-          mkdir -p public/fonts/material-symbols
-          cp node_modules/material-symbols/material-symbols-outlined.woff2 public/fonts/material-symbols/material-symbols-outlined.woff2
-          cp node_modules/material-symbols/material-symbols-rounded.woff2 public/fonts/material-symbols/material-symbols-rounded.woff2
-          cp node_modules/material-symbols/material-symbols-sharp.woff2 public/fonts/material-symbols/material-symbols-sharp.woff2
-
-      - name: Remove temporary font package
-        run: pnpm remove material-symbols
-
-      - name: Verify lockfile
+      - name: Install exact dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Refresh migration audit
-        run: node scripts/material-symbols-audit.mjs
+      - name: Validate active icon source
+        run: node scripts/material-symbols-final-validate.mjs
 
-      - name: Validate generated application
+      - name: Generate application and offline manifest
         run: pnpm generate
 
-      - name: Commit migration result
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
-          if git diff --cached --quiet; then
-            echo "No migration changes."
-            exit 0
-          fi
-          git commit -m "refactor(icons): migrate active UI to Material Symbols [skip ci]"
-          git push origin HEAD:feat/material-symbols-migration
+      - name: Validate offline font coverage
+        run: node scripts/material-symbols-final-validate.mjs --offline
