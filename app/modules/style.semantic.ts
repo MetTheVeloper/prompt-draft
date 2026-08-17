@@ -17,6 +17,16 @@ function applyPromptTextOverrides(
   }));
 }
 
+function mediumOption(
+  value: string,
+  category: string,
+  categoryLabel: string,
+  promptText: string,
+  tags: string[],
+): ModuleFieldOption {
+  return { value, category, categoryLabel, promptText, tags };
+}
+
 const aestheticOptions: ModuleFieldOption[] = [
   { value: "3d_cartoon", promptText: "stylized 3D cartoon aesthetic", tags: ["3d", "cartoon"] },
   { value: "anime", promptText: "anime visual aesthetic", tags: ["anime", "illustration"] },
@@ -70,53 +80,117 @@ const aestheticOptions: ModuleFieldOption[] = [
   { value: "etching", promptText: "etched print aesthetic", tags: ["etching", "print"] },
 ];
 
-const mediumPromptText: PromptTextOverrides = {
-  digital_illustration: "digital illustration",
-  digital_painting: "digital painting",
-  vector_illustration: "vector illustration",
-  three_d_render: "3D render",
-  cgi: "CGI rendering",
-  photography: "photography",
-};
+const mediumOptions: ModuleFieldOption[] = [
+  mediumOption("digital_illustration", "digital_cg", "Digital / CG", "digital illustration", ["digital", "illustration"]),
+  mediumOption("digital_painting", "digital_cg", "Digital / CG", "digital painting", ["digital", "painting"]),
+  mediumOption("vector_illustration", "digital_cg", "Digital / CG", "vector illustration", ["vector", "illustration"]),
+  mediumOption("three_d_render", "digital_cg", "Digital / CG", "3D render", ["3d", "render"]),
+  mediumOption("cgi", "digital_cg", "Digital / CG", "CGI rendering", ["cgi", "render"]),
+  mediumOption("low_poly_render", "digital_cg", "Digital / CG", "low-poly 3D render", ["low-poly", "3d"]),
+  mediumOption("pixel_art_digital", "digital_cg", "Digital / CG", "digital pixel art", ["pixel-art", "digital"]),
+
+  mediumOption("pencil_drawing", "drawing", "Drawing", "pencil drawing", ["pencil", "drawing"]),
+  mediumOption("colored_pencil_drawing", "drawing", "Drawing", "colored pencil drawing", ["colored-pencil", "drawing"]),
+  mediumOption("charcoal_drawing", "drawing", "Drawing", "charcoal drawing", ["charcoal", "drawing"]),
+  mediumOption("ink_drawing", "drawing", "Drawing", "ink drawing", ["ink", "drawing"]),
+  mediumOption("pen_and_ink", "drawing", "Drawing", "pen-and-ink illustration", ["pen", "ink"]),
+  mediumOption("marker_render", "drawing", "Drawing", "marker rendering", ["marker", "drawing"]),
+  mediumOption("pastel_drawing", "drawing", "Drawing", "pastel drawing", ["pastel", "drawing"]),
+
+  mediumOption("watercolor_painting", "painting", "Painting", "watercolor painting", ["watercolor", "painting"]),
+  mediumOption("gouache_painting", "painting", "Painting", "gouache painting", ["gouache", "painting"]),
+  mediumOption("oil_painting", "painting", "Painting", "oil painting", ["oil", "painting"]),
+  mediumOption("acrylic_painting", "painting", "Painting", "acrylic painting", ["acrylic", "painting"]),
+  mediumOption("ink_and_wash", "painting", "Painting", "ink-and-wash painting", ["ink", "wash", "painting"]),
+
+  mediumOption("screen_print", "printmaking", "Printmaking", "screen print", ["screen-print", "printmaking"]),
+  mediumOption("risograph_print", "printmaking", "Printmaking", "risograph print", ["risograph", "printmaking"]),
+  mediumOption("linocut_print", "printmaking", "Printmaking", "linocut print", ["linocut", "printmaking"]),
+  mediumOption("woodcut_print", "printmaking", "Printmaking", "woodcut print", ["woodcut", "printmaking"]),
+  mediumOption("woodblock_print", "printmaking", "Printmaking", "woodblock print", ["woodblock", "printmaking"]),
+  mediumOption("etching_print", "printmaking", "Printmaking", "etched print", ["etching", "printmaking"]),
+
+  mediumOption("photography", "photography", "Photography", "photography", ["photo", "realistic"]),
+  mediumOption("photomontage", "photography", "Photography", "photomontage", ["photo", "montage"]),
+
+  mediumOption("paper_cutout", "paper_craft", "Paper / Craft", "paper cutout artwork", ["paper", "cutout"]),
+  mediumOption("paper_collage", "paper_craft", "Paper / Craft", "paper collage", ["paper", "collage"]),
+  mediumOption("mixed_media_collage", "paper_craft", "Paper / Craft", "mixed-media collage", ["mixed-media", "collage"]),
+  mediumOption("paper_craft", "paper_craft", "Paper / Craft", "handmade paper craft", ["paper", "craft"]),
+  mediumOption("origami_art", "paper_craft", "Paper / Craft", "origami paper art", ["origami", "paper"]),
+
+  mediumOption("clay_modeling", "sculpture_object", "Sculpture / Object", "hand-modeled clay", ["clay", "handmade"]),
+  mediumOption("ceramic_art", "sculpture_object", "Sculpture / Object", "ceramic artwork", ["ceramic", "handmade"]),
+  mediumOption("plasticine_modeling", "sculpture_object", "Sculpture / Object", "hand-modeled plasticine", ["plasticine", "handmade"]),
+  mediumOption("papier_mache_craft", "sculpture_object", "Sculpture / Object", "papier-mâché craft", ["papier-mache", "handmade"]),
+  mediumOption("handmade_model", "sculpture_object", "Sculpture / Object", "handmade model", ["model", "handmade"]),
+
+  mediumOption("textile_craft", "textile_handmade", "Textile / Handmade", "textile craft", ["textile", "handmade"]),
+  mediumOption("felt_craft", "textile_handmade", "Textile / Handmade", "felt craft", ["felt", "handmade"]),
+  mediumOption("plush_textile_craft", "textile_handmade", "Textile / Handmade", "plush textile craft", ["plush", "textile"]),
+  mediumOption("stitched_textile_art", "textile_handmade", "Textile / Handmade", "stitched textile artwork", ["stitched", "textile"]),
+];
 
 const stylizationPromptText: PromptTextOverrides = {
   subtle: "subtle stylization with minimal transformation",
   controlled: "controlled stylization with moderate transformation",
   strong: "strong stylization with clearly transformed forms",
   extreme: "extreme stylization with radically transformed forms",
-  abstract:
-    "abstract stylization with substantially simplified or deconstructed forms",
+  abstract: "abstract stylization with substantially simplified or deconstructed forms",
 };
 
-const shapePromptText: PromptTextOverrides = {
-  soft_rounded: "soft rounded forms with smooth contours",
-  geometric: "geometric shape language with simplified structured forms",
-  fluid: "fluid organic forms with graceful continuous curves",
-  blocky: "block-built forms with simplified volumetric masses",
-  elongated: "elongated forms with extended proportions and vertical emphasis",
-  angular: "sharp angular forms with crisp edges",
-};
+const shapeOptions: ModuleFieldOption[] = [
+  { value: "soft_rounded", promptText: "soft rounded forms with smooth contours", tags: ["soft", "rounded"] },
+  { value: "geometric", promptText: "geometric forms with simplified structured geometry", tags: ["geometric", "structured"] },
+  { value: "fluid", promptText: "fluid organic forms with continuous curves", tags: ["fluid", "organic"] },
+  { value: "blocky", promptText: "blocky forms with simplified squared geometry", tags: ["blocky", "squared"] },
+  { value: "elongated", promptText: "elongated forms with extended proportions", tags: ["elongated", "extended"] },
+  { value: "angular", promptText: "sharp angular forms with crisp edges", tags: ["angular", "sharp"] },
+  { value: "irregular", promptText: "irregular asymmetric forms with uneven contours", tags: ["irregular", "asymmetric"] },
+  { value: "faceted", promptText: "faceted planar forms with distinct angular breaks", tags: ["faceted", "planar"] },
+];
 
-const treatmentPromptText: PromptTextOverrides = {
-  cel_shaded: "cel-shaded surfaces with crisp graphic separation",
-  flat_graphic: "flat color fields, bold graphic silhouettes, minimal shading",
-  ink_watercolor: "expressive ink lines and irregular watercolor washes",
-  halftone_comic: "comic-book treatment with halftone shading and black outlines",
-  hand_painted: "visible hand-painted surface variation and expressive brush marks",
-  paper_cutout: "flat cut-paper construction with simple layered shapes",
-  minimalist: "minimalist visual treatment with simple forms and restrained detail",
-  textured: "rich surface texture with a tactile visual impression",
-};
+const lineworkOptions: ModuleFieldOption[] = [
+  { value: "clean_fine", promptText: "clean fine linework", tags: ["clean", "fine"] },
+  { value: "clean_contour", promptText: "clean contour linework with controlled edges", tags: ["contour", "clean"] },
+  { value: "bold_contour", promptText: "bold contour linework", tags: ["bold", "contour"] },
+  { value: "expressive_ink", promptText: "expressive variable-width ink linework", tags: ["ink", "expressive"] },
+  { value: "loose_sketch", promptText: "loose sketch linework", tags: ["loose", "sketch"] },
+  { value: "calligraphic", promptText: "fluid calligraphic linework", tags: ["calligraphic", "fluid"] },
+  { value: "technical", promptText: "precise technical linework", tags: ["technical", "precise"] },
+  { value: "engraved_hatch", promptText: "fine engraved hatch linework", tags: ["engraved", "hatch"] },
+  { value: "relief_cut", promptText: "bold relief-cut linework", tags: ["relief", "print"] },
+];
 
-const finishPromptText: PromptTextOverrides = {
-  clean: "clean, polished finish",
-  premium: "refined, premium finish",
-  handcrafted: "handcrafted finish with tactile variation",
-  graphic: "bold graphic finish",
-  rough: "rough, sketchy, imperfect finish",
-  matte: "soft matte finish with minimal reflection",
-  glossy: "high-gloss reflective finish",
-};
+const treatmentOptions: ModuleFieldOption[] = [
+  { value: "cel_shaded", promptText: "cel-shaded rendering with discrete tonal bands", tags: ["cel-shaded", "graphic"] },
+  { value: "flat_graphic", promptText: "flat graphic rendering with minimal tonal modeling", tags: ["flat", "graphic"] },
+  { value: "ink_watercolor", promptText: "transparent watercolor washes with ink accents", tags: ["ink", "watercolor"] },
+  { value: "halftone_comic", promptText: "halftone tonal treatment", tags: ["halftone", "comic"] },
+  { value: "painterly", promptText: "painterly rendering with visible brushwork", tags: ["painterly", "brush"] },
+  { value: "paper_cutout", promptText: "layered cut-paper treatment with clearly separated shapes", tags: ["paper", "cutout"] },
+  { value: "layered_collage", promptText: "layered collage assembly with visibly overlapping fragments", tags: ["collage", "layered"] },
+  { value: "soft_blended", promptText: "softly blended tonal transitions", tags: ["soft", "blended"] },
+  { value: "stippled", promptText: "stippled tonal treatment built from fine dots", tags: ["stippled", "dots"] },
+];
+
+const detailLevelOptions: ModuleFieldOption[] = [
+  { value: "minimal", promptText: "minimal visual detail", tags: ["minimal"] },
+  { value: "simplified", promptText: "simplified detail with reduced visual complexity", tags: ["simplified"] },
+  { value: "balanced", promptText: "balanced level of visual detail", tags: ["balanced"] },
+  { value: "intricate", promptText: "intricate fine detail", tags: ["intricate", "fine"] },
+  { value: "dense", promptText: "dense layered visual detail", tags: ["dense", "layered"] },
+];
+
+const finishOptions: ModuleFieldOption[] = [
+  { value: "clean", promptText: "clean, polished finish", tags: ["clean", "polished"] },
+  { value: "refined", promptText: "refined finish with precise surface control", tags: ["refined", "precise"] },
+  { value: "handcrafted", promptText: "handcrafted finish with visible handmade variation", tags: ["handcrafted", "handmade"] },
+  { value: "rough", promptText: "rough, imperfect finish", tags: ["rough", "imperfect"] },
+  { value: "matte", promptText: "matte finish with minimal reflection", tags: ["matte"] },
+  { value: "satin", promptText: "satin finish with a soft restrained sheen", tags: ["satin"] },
+  { value: "glossy", promptText: "high-gloss reflective finish", tags: ["glossy", "reflective"] },
+];
 
 const { preset: _legacyAestheticField, ...baseFields } = BaseStyleModule.fields;
 
@@ -127,10 +201,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "3d_cartoon",
       medium: "three_d_render",
-      stylizationLevel: "strong",
       shapeLanguage: "soft_rounded",
       visualTreatment: "cel_shaded",
-      finish: "clean",
     },
   },
   premium_vinyl: {
@@ -139,10 +211,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "vinyl_toy",
       medium: "three_d_render",
-      stylizationLevel: "controlled",
-      shapeLanguage: "soft_rounded",
-      visualTreatment: "",
-      finish: "premium",
+      finish: "refined",
     },
   },
   handmade_clay: {
@@ -150,10 +219,7 @@ const presets: Record<string, ModulePreset> = {
     order: 30,
     values: {
       aesthetic: "claymation",
-      medium: "clay_sculpture",
-      stylizationLevel: "controlled",
-      shapeLanguage: "fluid",
-      visualTreatment: "hand_painted",
+      medium: "clay_modeling",
       finish: "handcrafted",
     },
   },
@@ -163,10 +229,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "cinematic_realism",
       medium: "photography",
-      stylizationLevel: "subtle",
-      shapeLanguage: "",
-      visualTreatment: "",
-      finish: "clean",
     },
   },
   geometric_flat: {
@@ -175,10 +237,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "geometric_illustration",
       medium: "vector_illustration",
-      stylizationLevel: "strong",
       shapeLanguage: "geometric",
       visualTreatment: "flat_graphic",
-      finish: "graphic",
     },
   },
   retro_comic_pop: {
@@ -187,10 +247,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "retro_comic",
       medium: "digital_illustration",
-      stylizationLevel: "strong",
-      shapeLanguage: "geometric",
+      linework: "bold_contour",
       visualTreatment: "halftone_comic",
-      finish: "graphic",
     },
   },
   expressive_caricature_ink: {
@@ -199,21 +257,15 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "caricature_sketch",
       medium: "ink_drawing",
-      stylizationLevel: "extreme",
-      shapeLanguage: "fluid",
-      visualTreatment: "ink_watercolor",
-      finish: "rough",
+      linework: "expressive_ink",
     },
   },
-  primitive_cut_paper: {
-    id: "primitive_cut_paper",
+  handmade_cut_paper: {
+    id: "handmade_cut_paper",
     order: 80,
     values: {
       aesthetic: "cut_paper",
       medium: "paper_cutout",
-      stylizationLevel: "strong",
-      shapeLanguage: "geometric",
-      visualTreatment: "paper_cutout",
       finish: "handcrafted",
     },
   },
@@ -223,10 +275,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "angular_animation",
       medium: "digital_illustration",
-      stylizationLevel: "strong",
       shapeLanguage: "angular",
       visualTreatment: "flat_graphic",
-      finish: "graphic",
     },
   },
   naive_childlike: {
@@ -235,10 +285,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "childlike_drawing",
       medium: "colored_pencil_drawing",
-      stylizationLevel: "strong",
-      shapeLanguage: "",
-      visualTreatment: "hand_painted",
-      finish: "rough",
+      linework: "loose_sketch",
+      detailLevel: "simplified",
     },
   },
   watercolor_ink: {
@@ -247,10 +295,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "watercolor_illustration",
       medium: "watercolor_painting",
-      stylizationLevel: "controlled",
-      shapeLanguage: "fluid",
-      visualTreatment: "ink_watercolor",
-      finish: "handcrafted",
+      linework: "expressive_ink",
     },
   },
   crafted_paper_collage: {
@@ -259,9 +304,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "paper_collage",
       medium: "paper_collage",
-      stylizationLevel: "controlled",
-      shapeLanguage: "blocky",
-      visualTreatment: "paper_cutout",
+      visualTreatment: "layered_collage",
       finish: "handcrafted",
     },
   },
@@ -271,10 +314,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "low_poly",
       medium: "low_poly_render",
-      stylizationLevel: "strong",
-      shapeLanguage: "geometric",
-      visualTreatment: "minimalist",
-      finish: "clean",
+      shapeLanguage: "faceted",
     },
   },
   pixel_art: {
@@ -283,10 +323,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "pixel_art",
       medium: "pixel_art_digital",
-      stylizationLevel: "strong",
-      shapeLanguage: "blocky",
-      visualTreatment: "minimalist",
-      finish: "graphic",
     },
   },
   risograph_graphic: {
@@ -295,10 +331,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "risograph",
       medium: "risograph_print",
-      stylizationLevel: "controlled",
-      shapeLanguage: "geometric",
-      visualTreatment: "flat_graphic",
-      finish: "graphic",
     },
   },
   expressive_ink_sketch: {
@@ -307,10 +339,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "ink_sketch",
       medium: "ink_drawing",
-      stylizationLevel: "controlled",
-      shapeLanguage: "fluid",
-      visualTreatment: "ink_watercolor",
-      finish: "rough",
+      linework: "loose_sketch",
     },
   },
   cinematic_cgi: {
@@ -319,10 +348,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "cinematic_cgi",
       medium: "cgi",
-      stylizationLevel: "controlled",
-      shapeLanguage: "soft_rounded",
-      visualTreatment: "hand_painted",
-      finish: "premium",
     },
   },
   photo_realism: {
@@ -331,10 +356,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "photo_realism",
       medium: "photography",
-      stylizationLevel: "subtle",
-      shapeLanguage: "",
-      visualTreatment: "",
-      finish: "clean",
     },
   },
   papier_mache: {
@@ -342,10 +363,7 @@ const presets: Record<string, ModulePreset> = {
     order: 190,
     values: {
       aesthetic: "papier_mache",
-      medium: "paper_mache_sculpture",
-      stylizationLevel: "strong",
-      shapeLanguage: "angular",
-      visualTreatment: "minimalist",
+      medium: "papier_mache_craft",
       finish: "handcrafted",
     },
   },
@@ -354,10 +372,7 @@ const presets: Record<string, ModulePreset> = {
     order: 200,
     values: {
       aesthetic: "plush_textile",
-      medium: "plush_toy",
-      stylizationLevel: "strong",
-      shapeLanguage: "soft_rounded",
-      visualTreatment: "minimalist",
+      medium: "plush_textile_craft",
       finish: "handcrafted",
     },
   },
@@ -367,10 +382,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "woodcut",
       medium: "woodcut_print",
-      stylizationLevel: "strong",
-      shapeLanguage: "angular",
-      visualTreatment: "flat_graphic",
-      finish: "rough",
+      linework: "relief_cut",
     },
   },
   marker_illustration: {
@@ -379,10 +391,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "marker_illustration",
       medium: "marker_render",
-      stylizationLevel: "controlled",
-      shapeLanguage: "geometric",
-      visualTreatment: "hand_painted",
-      finish: "clean",
     },
   },
   art_deco_graphic: {
@@ -391,10 +399,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "art_deco",
       medium: "vector_illustration",
-      stylizationLevel: "controlled",
       shapeLanguage: "geometric",
-      visualTreatment: "flat_graphic",
-      finish: "premium",
     },
   },
   bauhaus_graphic: {
@@ -403,10 +408,8 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "bauhaus",
       medium: "vector_illustration",
-      stylizationLevel: "strong",
       shapeLanguage: "geometric",
       visualTreatment: "flat_graphic",
-      finish: "graphic",
     },
   },
   mid_century_graphic: {
@@ -415,10 +418,7 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "mid_century_modern",
       medium: "digital_illustration",
-      stylizationLevel: "controlled",
-      shapeLanguage: "geometric",
       visualTreatment: "flat_graphic",
-      finish: "clean",
     },
   },
   storybook_watercolor: {
@@ -427,10 +427,6 @@ const presets: Record<string, ModulePreset> = {
     values: {
       aesthetic: "storybook",
       medium: "watercolor_painting",
-      stylizationLevel: "controlled",
-      shapeLanguage: "soft_rounded",
-      visualTreatment: "hand_painted",
-      finish: "handcrafted",
     },
   },
   ukiyo_e_print: {
@@ -438,11 +434,8 @@ const presets: Record<string, ModulePreset> = {
     order: 270,
     values: {
       aesthetic: "ukiyo_e",
-      medium: "ink_and_wash",
-      stylizationLevel: "controlled",
-      shapeLanguage: "fluid",
-      visualTreatment: "",
-      finish: "clean",
+      medium: "woodblock_print",
+      linework: "clean_contour",
     },
   },
 };
@@ -467,39 +460,82 @@ export const StyleModule = {
     ...baseFields,
     medium: {
       ...baseFields.medium,
+      default: "",
       order: 20,
-      options: applyPromptTextOverrides(
-        baseFields.medium.options,
-        mediumPromptText,
-      ),
+      options: mediumOptions,
+      ui: {
+        ...baseFields.medium.ui,
+        optionLayout: "categorized",
+        clearable: true,
+        width: "full",
+      },
     },
     stylizationLevel: {
       ...baseFields.stylizationLevel,
+      default: "",
+      order: 10,
       options: applyPromptTextOverrides(
         baseFields.stylizationLevel.options,
         stylizationPromptText,
       ),
+      ui: {
+        ...baseFields.stylizationLevel.ui,
+        clearable: true,
+      },
     },
     shapeLanguage: {
       ...baseFields.shapeLanguage,
-      options: applyPromptTextOverrides(
-        baseFields.shapeLanguage.options,
-        shapePromptText,
-      ),
+      default: "",
+      order: 20,
+      options: shapeOptions,
+    },
+    linework: {
+      id: "linework",
+      type: "select",
+      default: "",
+      group: "modifiers",
+      order: 25,
+      options: lineworkOptions,
+      ui: {
+        component: "select",
+        clearable: true,
+        width: "half",
+      },
     },
     visualTreatment: {
       ...baseFields.visualTreatment,
-      options: applyPromptTextOverrides(
-        baseFields.visualTreatment.options,
-        treatmentPromptText,
-      ),
+      default: "",
+      order: 30,
+      options: treatmentOptions,
+      ui: {
+        ...baseFields.visualTreatment.ui,
+        clearable: true,
+        compatibility: undefined,
+      },
+    },
+    detailLevel: {
+      id: "detailLevel",
+      type: "select",
+      default: "",
+      group: "modifiers",
+      order: 35,
+      options: detailLevelOptions,
+      ui: {
+        component: "select",
+        clearable: true,
+        width: "half",
+      },
     },
     finish: {
       ...baseFields.finish,
-      options: applyPromptTextOverrides(
-        baseFields.finish.options,
-        finishPromptText,
-      ),
+      default: "",
+      order: 40,
+      options: finishOptions,
+      ui: {
+        ...baseFields.finish.ui,
+        clearable: true,
+        compatibility: undefined,
+      },
     },
   },
   presets,
@@ -509,6 +545,8 @@ export const StyleModule = {
     order: 0,
     allowNone: true,
     resetOnNone: true,
+    resetBeforeApply: true,
+    preserveFields: ["extraDetails"],
   },
   compile: {
     ...BaseStyleModule.compile,
@@ -517,7 +555,9 @@ export const StyleModule = {
       "medium",
       "stylizationLevel",
       "shapeLanguage",
+      "linework",
       "visualTreatment",
+      "detailLevel",
       "finish",
       "extraDetails",
     ],
