@@ -218,7 +218,7 @@ const fabActionButtonAttrs = {
 const modeOptions = computed(() => {
   return MODE_OPTIONS.map((value) => ({
     value,
-    icon: value === 'vectorize' ? 'shapes' : 'maximize',
+    icon: value === 'vectorize' ? 'shapes' : 'fullscreen',
     label: t(`tools.imageVectorizer.values.mode.${value}`),
   }))
 })
@@ -249,10 +249,10 @@ const smoothModeOptions = computed(() => {
   return SMOOTH_MODE_OPTIONS.map((value) => ({
     value,
     icon: value === 'pre'
-      ? 'forward-item'
+      ? 'first_page'
       : value === 'post'
-        ? 'backward-item'
-        : 'path-square',
+        ? 'last_page'
+        : 'polyline',
     label: t(`tools.imageVectorizer.values.smoothMode.${value}`),
   }))
 })

@@ -334,7 +334,7 @@ function openMobileMenu() {
         mode="flat"
         type="fab"
         :label="$t('app.tools.menu')"
-        icon="more_vert"
+        icon="menu"
         @click="openMobileMenu"
       />
 

@@ -309,7 +309,7 @@ function togglePanel(panel: SetupPanelKey) {
 }
 
 function getPanelToggleSymbol(panel: SetupPanelKey) {
-  return isPanelExpanded(panel) ? "remove" : "add";
+  return isPanelExpanded(panel) ? "expand_less" : "expand_more";
 }
 
 function getSetupPanelTitle(panel: SetupPanelKey) {
@@ -372,7 +372,7 @@ function getSetupPanelContextMenuItems(panel: SetupPanelKey): GlobalMenuItem[] {
       label: expanded
         ? t("components.contextMenu.actions.collapse")
         : t("components.contextMenu.actions.expand"),
-      icon: expanded ? "remove" : "add",
+      icon: expanded ? "expand_less" : "expand_more",
       handler: () => togglePanel(panel),
     },
     {

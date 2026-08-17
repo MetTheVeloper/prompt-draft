@@ -337,7 +337,7 @@ async function copyPrompt() {
         <el-flex rules="rsc" :gap="8" wrap class="w100">
           <el-button
             :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-            :icon="copied ? 'tick-circle' : 'copy'"
+            :icon="copied ? 'check_circle' : 'content_copy'"
             :color="copied ? 'green' : 'normal'"
             mode="outline"
             :size="12"
@@ -439,7 +439,7 @@ async function copyPrompt() {
             <el-button
               type="fab"
               :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-              :icon="copied ? 'tick-circle' : 'copy'"
+              :icon="copied ? 'check_circle' : 'content_copy'"
               :color="copied ? 'green' : 'normal'"
               :size="12"
               :p="8"

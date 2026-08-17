@@ -155,7 +155,7 @@ function openRegionEditor(regionIndex?: number) {
 
   modal.open({
     header: {
-      icon: isEdit ? "edit-2" : "add-circle",
+      icon: isEdit ? "edit" : "add_circle",
       title: isEdit
         ? t("modules.layout.fields.regions.modal.editTitle", {
             name: displayName,
@@ -194,7 +194,7 @@ function openRegionEditor(regionIndex?: number) {
         label: isEdit
           ? t("modules.layout.fields.regions.actions.save")
           : t("modules.layout.fields.regions.actions.create"),
-        icon: isEdit ? "tick-circle" : "add-circle",
+        icon: isEdit ? "check_circle" : "add_circle",
         color: "prim",
         close: true,
         handler: () => controller.submit(),

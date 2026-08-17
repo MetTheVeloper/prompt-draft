@@ -375,7 +375,7 @@ function updateBrandOverlayEnabled(value: ElDropdownValue | boolean) {
 }
 
 function getPanelToggleSymbol(panel: CollagePanelKey) {
-  return isPanelExpanded(panel) ? 'remove' : 'add'
+  return isPanelExpanded(panel) ? 'expand_less' : 'expand_more'
 }
 
 const textOverlayFontDropdownOptions = computed(() => {

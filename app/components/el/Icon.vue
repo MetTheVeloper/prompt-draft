@@ -39,7 +39,7 @@ const props = withDefaults(
   {
     color: "normal",
     mode: "symbols",
-    variant: "outlined",
+    variant: "rounded",
     weight: 400,
     fill: 0,
     grade: 0,

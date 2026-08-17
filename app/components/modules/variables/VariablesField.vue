@@ -195,7 +195,7 @@ function openVariableModal(variableIndex?: number) {
 
   modal.open({
     header: {
-      icon: isEdit ? "edit-2" : "add-circle",
+      icon: isEdit ? "edit" : "add_circle",
       title: isEdit
         ? t("modules.variables.fields.variables.modal.editTitle", { token })
         : t("modules.variables.fields.variables.modal.createTitle"),
@@ -236,7 +236,7 @@ function openVariableModal(variableIndex?: number) {
         label: isEdit
           ? t("modules.variables.fields.variables.actions.save")
           : t("modules.variables.fields.variables.actions.create"),
-        icon: isEdit ? "tick-circle" : "add-circle",
+        icon: isEdit ? "check_circle" : "add_circle",
         color: "prim",
         close: true,
         handler: () => {

@@ -95,7 +95,7 @@ function issueColor(issue: PromptValidationIssue) {
 }
 
 function issueIcon(issue: PromptValidationIssue) {
-  return issue.level === "error" ? "danger" : "warning-2";
+  return issue.level === "error" ? "error" : "warning";
 }
 
 async function copyOutput() {
@@ -177,7 +177,7 @@ async function copyOutput() {
       <!-- Validation -->
       <el-grid v-if="issues.length" :gap="10" :radius="16">
         <el-flex rules="ccs" :gap="4">
-          <el-text type="h3" :size="14" :weight="800" class="lh1" :icon="hasBlockingIssues ? 'danger' : 'warning-2'"
+          <el-text type="h3" :size="14" :weight="800" class="lh1" :icon="hasBlockingIssues ? 'error' : 'warning'"
             :color="hasBlockingIssues ? 'red' : 'orange'" :icon-color="hasBlockingIssues ? 'red' : 'orange'">
             {{ t("validation.title") }}
           </el-text>
@@ -203,7 +203,7 @@ async function copyOutput() {
         :bg="output ? 'normal3' : 'normal5'">
         <el-flex rules="rbc" class="w100">
           <el-flex rules="rsc" :gap="8">
-            <el-text type="h3" :size="14" :weight="800" class="lh1" :icon="output ? 'archive-tick' : 'document-text'"
+            <el-text type="h3" :size="14" :weight="800" class="lh1" :icon="output ? 'task_alt' : 'description'"
               :color="output ? 'normal' : 'normal45'" :icon-color="output ? 'blue' : 'normal45'">
               {{ t(`create.outputFormats.${format}`) }}
             </el-text>

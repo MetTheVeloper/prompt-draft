@@ -375,7 +375,7 @@ function message(options: GlobalMessageOptions | string) {
       {
         label: finalOptions.actionLabel || 'modal.actions.ok',
         color: finalOptions.actionColor || typeConfig.color,
-        icon: finalOptions.actionIcon || 'tick-circle',
+        icon: finalOptions.actionIcon || 'check_circle',
         size: finalOptions.actionSize || 16,
         close: true,
       },

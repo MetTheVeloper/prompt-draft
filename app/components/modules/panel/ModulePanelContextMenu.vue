@@ -122,7 +122,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
             label: props.isExpanded ? props.labels.collapse : props.labels.expand,
             actionKey: "onToggleExpand",
             attrs: {
-              icon: props.isExpanded ? "arrow-up" : "arrow-down-1",
+              icon: props.isExpanded ? "expand_less" : "expand_more",
               color: "blue10",
               textColor: "normal",
             },
@@ -135,7 +135,7 @@ const menuGroups = computed<ModulePanelContextMenuGroup[]>(() => [
             actionKey: "onToggleCustomize",
             disabledKey: "toggleCustomize",
             attrs: {
-              icon: props.isCustomMode ? "close-circle" : "edit",
+              icon: props.isCustomMode ? "cancel" : "edit",
               color: "blue10",
               textColor: "normal",
             },

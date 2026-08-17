@@ -33,7 +33,7 @@ opticalSize?: number
 Defaults:
 
 ```ts
-variant = 'outlined'
+variant = 'rounded'
 weight = 400
 fill = 0
 grade = 0
@@ -153,7 +153,7 @@ A single legacy identifier did not always map globally when context required a d
 1. Choose an official Material Symbols ligature name.
 2. Pass it to the existing icon API (`<el-icon>`, `<el-button icon>`, `<el-text icon>`, menu/config `icon` fields, etc.).
 3. Do not edit font files, generate an icon font, add an alias to `<el-icon />`, or add a CDN dependency.
-4. Use `variant`, `fill`, `weight`, `grade`, or `opticalSize` only when the default outlined/400 style is not appropriate.
+4. Use `variant`, `fill`, `weight`, `grade`, or `opticalSize` only when the default rounded/400 style is not appropriate.
 
 This keeps the icon path simple:
 

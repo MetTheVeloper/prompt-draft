@@ -92,7 +92,7 @@ const menuGroups = computed<SetupPanelContextMenuGroup[]>(() => [
             label: props.isExpanded ? props.labels.collapse : props.labels.expand,
             actionKey: "onToggle",
             attrs: {
-              icon: props.isExpanded ? "arrow-up" : "arrow-down-1",
+              icon: props.isExpanded ? "expand_less" : "expand_more",
               color: "blue10",
               textColor: "normal",
             },

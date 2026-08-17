@@ -278,7 +278,7 @@ onMounted(drawSource)
         />
 
         <el-flex v-else v-bind="previewEmptyAttrs">
-          <el-icon :icon="loading ? 'refresh-circle' : 'image'" :size="26" color="normal50" />
+          <el-icon :icon="loading ? 'refresh' : 'image'" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ loading ? t('tools.imageVectorizer.status.processing') : t('tools.imageVectorizer.preview.pending') }}
           </el-text>
@@ -300,7 +300,7 @@ onMounted(drawSource)
         />
 
         <el-flex v-else v-bind="previewEmptyAttrs">
-          <el-icon :icon="loading ? 'refresh-circle' : 'shapes'" :size="26" color="normal50" />
+          <el-icon :icon="loading ? 'refresh' : 'shapes'" :size="26" color="normal50" />
           <el-text :size="11" :weight="300" color="normal60">
             {{ loading ? t('tools.imageVectorizer.status.processing') : t('tools.imageVectorizer.preview.pending') }}
           </el-text>

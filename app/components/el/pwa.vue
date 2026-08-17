@@ -124,7 +124,7 @@ async function maybeOfferOfflinePackage() {
 
   modal.open({
     header: {
-      icon: isUpdate ? 'refresh-2' : 'cloud-add',
+      icon: isUpdate ? 'refresh' : 'cloud_upload',
       title: isUpdate
         ? t('pwa.offline.prompt.updateTitle')
         : t('pwa.offline.prompt.title'),

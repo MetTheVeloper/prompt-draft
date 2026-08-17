@@ -172,8 +172,8 @@ const props = withDefaults(
     presetsLabel: 'Presets',
     confirmLabel: 'Apply',
     cancelLabel: 'Cancel',
-    confirmIcon: 'tick-circle',
-    cancelIcon: 'close-circle',
+    confirmIcon: 'check_circle',
+    cancelIcon: 'cancel',
     width: 280,
   },
 )

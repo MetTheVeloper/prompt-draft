@@ -1010,7 +1010,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: isPanelExpanded.value ? labels.collapse : labels.expand,
-      icon: isPanelExpanded.value ? "remove" : "add",
+      icon: isPanelExpanded.value ? "expand_less" : "expand_more",
       handler: togglePanel,
     },
     {
@@ -1166,7 +1166,7 @@ onBeforeUnmount(() => {
           <el-text v-for="preset in presetItems" :key="preset.id" :size="14" class="pl8 pr8 pt4 pb4 crp"
             :title="presetDescription(preset.id)" @click="applyPreset(preset.id)"
             :marker="activePresetId === preset.id ? 'blue' : 'surface5'"
-            :icon="activePresetId === preset.id ? 'check' : 'component'"
+            :icon="activePresetId === preset.id ? 'check' : 'widgets'"
             :icon-color="activePresetId === preset.id ? 'white' : 'normal50'"
             :color="activePresetId === preset.id ? 'white' : 'normal80'">
             {{ presetLabel(preset.id) }}
@@ -1214,7 +1214,7 @@ onBeforeUnmount(() => {
         <el-flex rules="rsc" class="w100" @click="toggleGroup(group.id)">
           <el-flex rules="csc" class="w100 chpen crp" :gap="4">
             <el-flex rules="rbc" class="w100">
-              <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'remove' : 'add'">
+              <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'expand_less' : 'expand_more'">
                 {{ groupTitle(group.id) }}
               </el-text>
 
@@ -1344,7 +1344,7 @@ onBeforeUnmount(() => {
         <el-flex rules="rbc" class="w100">
           <el-flex rules="rsc" :gap="16">
             <el-text type="h3" :size="16" :weight="600" class="lh1" :color="!output ? 'orange' : 'normal'"
-              :icon-color="!output ? 'orange' : 'normal'" :icon="!output ? 'danger' : 'archive-tick'">
+              :icon-color="!output ? 'orange' : 'normal'" :icon="!output ? 'error' : 'task_alt'">
               {{ t("panel.compiledOutput") }}
             </el-text>
             <el-text marker="primary" color="white" class="wsnw" :size="mobile ? 10 : mini ? 12 : 14" :weight="300">

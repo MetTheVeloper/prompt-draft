@@ -84,7 +84,7 @@ const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: t("app.switchLang"),
-      icon: locale.value === "fa" ? "en" : "fa",
+      icon: "language",
       handler: switchLanguage,
       color: 'normal15',
     },

@@ -140,7 +140,7 @@ function openGroupEditor(groupIndex?: number) {
 
   modal.open({
     header: {
-      icon: isEdit ? "edit-2" : "add-circle",
+      icon: isEdit ? "edit" : "add_circle",
       title: isEdit
         ? t("modules.typography.fields.textGroups.group.modal.editTitle")
         : t("modules.typography.fields.textGroups.group.modal.createTitle"),
@@ -175,7 +175,7 @@ function openGroupEditor(groupIndex?: number) {
         label: isEdit
           ? t("modules.typography.fields.textGroups.actions.save")
           : t("modules.typography.fields.textGroups.actions.create"),
-        icon: isEdit ? "tick-circle" : "add-circle",
+        icon: isEdit ? "check_circle" : "add_circle",
         color: "prim",
         close: true,
         handler: () => controller.submit(),
@@ -205,7 +205,7 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
 
   modal.open({
     header: {
-      icon: isEdit ? "edit-2" : "add-circle",
+      icon: isEdit ? "edit" : "add_circle",
       title: isEdit
         ? t("modules.typography.fields.textGroups.block.modal.editTitle")
         : t("modules.typography.fields.textGroups.block.modal.createTitle"),
@@ -243,7 +243,7 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
         label: isEdit
           ? t("modules.typography.fields.textGroups.actions.save")
           : t("modules.typography.fields.textGroups.actions.create"),
-        icon: isEdit ? "tick-circle" : "add-circle",
+        icon: isEdit ? "check_circle" : "add_circle",
         color: "prim",
         close: true,
         handler: () => controller.submit(),
