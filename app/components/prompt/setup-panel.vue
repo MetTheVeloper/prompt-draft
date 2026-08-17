@@ -309,7 +309,7 @@ function togglePanel(panel: SetupPanelKey) {
 }
 
 function getPanelToggleSymbol(panel: SetupPanelKey) {
-  return isPanelExpanded(panel) ? "minus" : "add";
+  return isPanelExpanded(panel) ? "remove" : "add";
 }
 
 function getSetupPanelTitle(panel: SetupPanelKey) {

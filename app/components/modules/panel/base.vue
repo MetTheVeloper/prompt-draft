@@ -1166,7 +1166,7 @@ onBeforeUnmount(() => {
           <el-text v-for="preset in presetItems" :key="preset.id" :size="14" class="pl8 pr8 pt4 pb4 crp"
             :title="presetDescription(preset.id)" @click="applyPreset(preset.id)"
             :marker="activePresetId === preset.id ? 'blue' : 'surface5'"
-            :icon="activePresetId === preset.id ? 'tick' : 'component'"
+            :icon="activePresetId === preset.id ? 'check' : 'component'"
             :icon-color="activePresetId === preset.id ? 'white' : 'normal50'"
             :color="activePresetId === preset.id ? 'white' : 'normal80'">
             {{ presetLabel(preset.id) }}
@@ -1214,7 +1214,7 @@ onBeforeUnmount(() => {
         <el-flex rules="rsc" class="w100" @click="toggleGroup(group.id)">
           <el-flex rules="csc" class="w100 chpen crp" :gap="4">
             <el-flex rules="rbc" class="w100">
-              <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'minus' : 'add'">
+              <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'remove' : 'add'">
                 {{ groupTitle(group.id) }}
               </el-text>
 

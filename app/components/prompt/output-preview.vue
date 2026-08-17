@@ -155,7 +155,7 @@ async function copyOutput() {
           </el-text>
         </el-flex>
 
-        <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'tick' : 'document-copy'"
+        <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'check' : 'content_copy'"
           :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="normal" :size="12" :gap="8" :p="[8, 12]"
           @click="copyOutput" />
       </el-flex>
@@ -209,7 +209,7 @@ async function copyOutput() {
             </el-text>
           </el-flex>
 
-          <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'tick' : 'document-copy'"
+          <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'check' : 'content_copy'"
             :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="prim" :size="12" :gap="8" :p="[8, 12]"
             @click="copyOutput" />
         </el-flex>
