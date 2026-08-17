@@ -1,6 +1,7 @@
 import type {
   ModuleFieldOption,
   ModulePreset,
+  ModuleValues,
   PromptKeyModule,
 } from "./types";
 import { StyleModule as BaseStyleModule } from "./style.module";
@@ -192,252 +193,170 @@ const finishOptions: ModuleFieldOption[] = [
   { value: "glossy", promptText: "high-gloss reflective finish", tags: ["glossy", "reflective"] },
 ];
 
+const STYLE_PRESET_DEFAULTS: ModuleValues = {
+  aesthetic: "",
+  medium: "",
+  stylizationLevel: "",
+  shapeLanguage: "",
+  linework: "",
+  visualTreatment: "",
+  detailLevel: "",
+  finish: "",
+};
+
+function stylePreset(
+  id: string,
+  order: number,
+  values: Partial<ModuleValues>,
+): ModulePreset {
+  return {
+    id,
+    order,
+    values: {
+      ...STYLE_PRESET_DEFAULTS,
+      ...values,
+    },
+  };
+}
+
 const { preset: _legacyAestheticField, ...baseFields } = BaseStyleModule.fields;
 
 const presets: Record<string, ModulePreset> = {
-  soft_3d_cartoon: {
-    id: "soft_3d_cartoon",
-    order: 10,
-    values: {
-      aesthetic: "3d_cartoon",
-      medium: "three_d_render",
-      shapeLanguage: "soft_rounded",
-      visualTreatment: "cel_shaded",
-    },
-  },
-  premium_vinyl: {
-    id: "premium_vinyl",
-    order: 20,
-    values: {
-      aesthetic: "vinyl_toy",
-      medium: "three_d_render",
-      finish: "refined",
-    },
-  },
-  handmade_clay: {
-    id: "handmade_clay",
-    order: 30,
-    values: {
-      aesthetic: "claymation",
-      medium: "clay_modeling",
-      finish: "handcrafted",
-    },
-  },
-  cinematic_realism: {
-    id: "cinematic_realism",
-    order: 40,
-    values: {
-      aesthetic: "cinematic_realism",
-      medium: "photography",
-    },
-  },
-  geometric_flat: {
-    id: "geometric_flat",
-    order: 50,
-    values: {
-      aesthetic: "geometric_illustration",
-      medium: "vector_illustration",
-      shapeLanguage: "geometric",
-      visualTreatment: "flat_graphic",
-    },
-  },
-  retro_comic_pop: {
-    id: "retro_comic_pop",
-    order: 60,
-    values: {
-      aesthetic: "retro_comic",
-      medium: "digital_illustration",
-      linework: "bold_contour",
-      visualTreatment: "halftone_comic",
-    },
-  },
-  expressive_caricature_ink: {
-    id: "expressive_caricature_ink",
-    order: 70,
-    values: {
-      aesthetic: "caricature_sketch",
-      medium: "ink_drawing",
-      linework: "expressive_ink",
-    },
-  },
-  handmade_cut_paper: {
-    id: "handmade_cut_paper",
-    order: 80,
-    values: {
-      aesthetic: "cut_paper",
-      medium: "paper_cutout",
-      finish: "handcrafted",
-    },
-  },
-  angular_2d: {
-    id: "angular_2d",
-    order: 90,
-    values: {
-      aesthetic: "angular_animation",
-      medium: "digital_illustration",
-      shapeLanguage: "angular",
-      visualTreatment: "flat_graphic",
-    },
-  },
-  naive_childlike: {
-    id: "naive_childlike",
-    order: 100,
-    values: {
-      aesthetic: "childlike_drawing",
-      medium: "colored_pencil_drawing",
-      linework: "loose_sketch",
-      detailLevel: "simplified",
-    },
-  },
-  watercolor_ink: {
-    id: "watercolor_ink",
-    order: 110,
-    values: {
-      aesthetic: "watercolor_illustration",
-      medium: "watercolor_painting",
-      linework: "expressive_ink",
-    },
-  },
-  crafted_paper_collage: {
-    id: "crafted_paper_collage",
-    order: 120,
-    values: {
-      aesthetic: "paper_collage",
-      medium: "paper_collage",
-      visualTreatment: "layered_collage",
-      finish: "handcrafted",
-    },
-  },
-  low_poly: {
-    id: "low_poly",
-    order: 130,
-    values: {
-      aesthetic: "low_poly",
-      medium: "low_poly_render",
-      shapeLanguage: "faceted",
-    },
-  },
-  pixel_art: {
-    id: "pixel_art",
-    order: 140,
-    values: {
-      aesthetic: "pixel_art",
-      medium: "pixel_art_digital",
-    },
-  },
-  risograph_graphic: {
-    id: "risograph_graphic",
-    order: 150,
-    values: {
-      aesthetic: "risograph",
-      medium: "risograph_print",
-    },
-  },
-  expressive_ink_sketch: {
-    id: "expressive_ink_sketch",
-    order: 160,
-    values: {
-      aesthetic: "ink_sketch",
-      medium: "ink_drawing",
-      linework: "loose_sketch",
-    },
-  },
-  cinematic_cgi: {
-    id: "cinematic_cgi",
-    order: 170,
-    values: {
-      aesthetic: "cinematic_cgi",
-      medium: "cgi",
-    },
-  },
-  photo_realism: {
-    id: "photo_realism",
-    order: 180,
-    values: {
-      aesthetic: "photo_realism",
-      medium: "photography",
-    },
-  },
-  papier_mache: {
-    id: "papier_mache",
-    order: 190,
-    values: {
-      aesthetic: "papier_mache",
-      medium: "papier_mache_craft",
-      finish: "handcrafted",
-    },
-  },
-  plush_textile: {
-    id: "plush_textile",
-    order: 200,
-    values: {
-      aesthetic: "plush_textile",
-      medium: "plush_textile_craft",
-      finish: "handcrafted",
-    },
-  },
-  woodcut_graphic: {
-    id: "woodcut_graphic",
-    order: 210,
-    values: {
-      aesthetic: "woodcut",
-      medium: "woodcut_print",
-      linework: "relief_cut",
-    },
-  },
-  marker_illustration: {
-    id: "marker_illustration",
-    order: 220,
-    values: {
-      aesthetic: "marker_illustration",
-      medium: "marker_render",
-    },
-  },
-  art_deco_graphic: {
-    id: "art_deco_graphic",
-    order: 230,
-    values: {
-      aesthetic: "art_deco",
-      medium: "vector_illustration",
-      shapeLanguage: "geometric",
-    },
-  },
-  bauhaus_graphic: {
-    id: "bauhaus_graphic",
-    order: 240,
-    values: {
-      aesthetic: "bauhaus",
-      medium: "vector_illustration",
-      shapeLanguage: "geometric",
-      visualTreatment: "flat_graphic",
-    },
-  },
-  mid_century_graphic: {
-    id: "mid_century_graphic",
-    order: 250,
-    values: {
-      aesthetic: "mid_century_modern",
-      medium: "digital_illustration",
-      visualTreatment: "flat_graphic",
-    },
-  },
-  storybook_watercolor: {
-    id: "storybook_watercolor",
-    order: 260,
-    values: {
-      aesthetic: "storybook",
-      medium: "watercolor_painting",
-    },
-  },
-  ukiyo_e_print: {
-    id: "ukiyo_e_print",
-    order: 270,
-    values: {
-      aesthetic: "ukiyo_e",
-      medium: "woodblock_print",
-      linework: "clean_contour",
-    },
-  },
+  soft_3d_cartoon: stylePreset("soft_3d_cartoon", 10, {
+    aesthetic: "3d_cartoon",
+    medium: "three_d_render",
+    shapeLanguage: "soft_rounded",
+    visualTreatment: "cel_shaded",
+  }),
+  premium_vinyl: stylePreset("premium_vinyl", 20, {
+    aesthetic: "vinyl_toy",
+    medium: "three_d_render",
+    finish: "refined",
+  }),
+  handmade_clay: stylePreset("handmade_clay", 30, {
+    aesthetic: "claymation",
+    medium: "clay_modeling",
+    finish: "handcrafted",
+  }),
+  cinematic_realism: stylePreset("cinematic_realism", 40, {
+    aesthetic: "cinematic_realism",
+    medium: "photography",
+  }),
+  geometric_flat: stylePreset("geometric_flat", 50, {
+    aesthetic: "geometric_illustration",
+    medium: "vector_illustration",
+    shapeLanguage: "geometric",
+    visualTreatment: "flat_graphic",
+  }),
+  retro_comic_pop: stylePreset("retro_comic_pop", 60, {
+    aesthetic: "retro_comic",
+    medium: "digital_illustration",
+    linework: "bold_contour",
+    visualTreatment: "halftone_comic",
+  }),
+  expressive_caricature_ink: stylePreset("expressive_caricature_ink", 70, {
+    aesthetic: "caricature_sketch",
+    medium: "ink_drawing",
+    linework: "expressive_ink",
+  }),
+  handmade_cut_paper: stylePreset("handmade_cut_paper", 80, {
+    aesthetic: "cut_paper",
+    medium: "paper_cutout",
+    finish: "handcrafted",
+  }),
+  angular_2d: stylePreset("angular_2d", 90, {
+    aesthetic: "angular_animation",
+    medium: "digital_illustration",
+    shapeLanguage: "angular",
+    visualTreatment: "flat_graphic",
+  }),
+  naive_childlike: stylePreset("naive_childlike", 100, {
+    aesthetic: "childlike_drawing",
+    medium: "colored_pencil_drawing",
+    linework: "loose_sketch",
+    detailLevel: "simplified",
+  }),
+  watercolor_ink: stylePreset("watercolor_ink", 110, {
+    aesthetic: "watercolor_illustration",
+    medium: "watercolor_painting",
+    linework: "expressive_ink",
+  }),
+  crafted_paper_collage: stylePreset("crafted_paper_collage", 120, {
+    aesthetic: "paper_collage",
+    medium: "paper_collage",
+    visualTreatment: "layered_collage",
+    finish: "handcrafted",
+  }),
+  low_poly: stylePreset("low_poly", 130, {
+    aesthetic: "low_poly",
+    medium: "low_poly_render",
+    shapeLanguage: "faceted",
+  }),
+  pixel_art: stylePreset("pixel_art", 140, {
+    aesthetic: "pixel_art",
+    medium: "pixel_art_digital",
+  }),
+  risograph_graphic: stylePreset("risograph_graphic", 150, {
+    aesthetic: "risograph",
+    medium: "risograph_print",
+  }),
+  expressive_ink_sketch: stylePreset("expressive_ink_sketch", 160, {
+    aesthetic: "ink_sketch",
+    medium: "ink_drawing",
+    linework: "loose_sketch",
+  }),
+  cinematic_cgi: stylePreset("cinematic_cgi", 170, {
+    aesthetic: "cinematic_cgi",
+    medium: "cgi",
+  }),
+  photo_realism: stylePreset("photo_realism", 180, {
+    aesthetic: "photo_realism",
+    medium: "photography",
+  }),
+  papier_mache: stylePreset("papier_mache", 190, {
+    aesthetic: "papier_mache",
+    medium: "papier_mache_craft",
+    finish: "handcrafted",
+  }),
+  plush_textile: stylePreset("plush_textile", 200, {
+    aesthetic: "plush_textile",
+    medium: "plush_textile_craft",
+    finish: "handcrafted",
+  }),
+  woodcut_graphic: stylePreset("woodcut_graphic", 210, {
+    aesthetic: "woodcut",
+    medium: "woodcut_print",
+    linework: "relief_cut",
+  }),
+  marker_illustration: stylePreset("marker_illustration", 220, {
+    aesthetic: "marker_illustration",
+    medium: "marker_render",
+  }),
+  art_deco_graphic: stylePreset("art_deco_graphic", 230, {
+    aesthetic: "art_deco",
+    medium: "vector_illustration",
+    shapeLanguage: "geometric",
+  }),
+  bauhaus_graphic: stylePreset("bauhaus_graphic", 240, {
+    aesthetic: "bauhaus",
+    medium: "vector_illustration",
+    shapeLanguage: "geometric",
+    visualTreatment: "flat_graphic",
+  }),
+  mid_century_graphic: stylePreset("mid_century_graphic", 250, {
+    aesthetic: "mid_century_modern",
+    medium: "digital_illustration",
+    visualTreatment: "flat_graphic",
+  }),
+  storybook_watercolor: stylePreset("storybook_watercolor", 260, {
+    aesthetic: "storybook",
+    medium: "watercolor_painting",
+  }),
+  ukiyo_e_print: stylePreset("ukiyo_e_print", 270, {
+    aesthetic: "ukiyo_e",
+    medium: "woodblock_print",
+    linework: "clean_contour",
+  }),
 };
 
 export const StyleModule = {
@@ -545,8 +464,6 @@ export const StyleModule = {
     order: 0,
     allowNone: true,
     resetOnNone: true,
-    resetBeforeApply: true,
-    preserveFields: ["extraDetails"],
   },
   compile: {
     ...BaseStyleModule.compile,
