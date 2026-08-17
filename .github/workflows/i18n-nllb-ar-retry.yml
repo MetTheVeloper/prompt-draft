@@ -1,0 +1,134 @@
+name: Retry Arabic translation refinement
+
+on:
+  push:
+    branches:
+      - feat/i18n-multilingual
+    paths:
+      - .github/workflows/i18n-nllb-ar-retry.yml
+
+permissions:
+  contents: write
+  actions: read
+
+jobs:
+  translate-ar:
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/i18n-multilingual
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Export English source locale
+        run: |
+          npx --yes tsx@4.22.4 -e "import en from './i18n/locales/en.ts'; process.stdout.write(JSON.stringify(en))" > /tmp/en.json
+
+      - name: Install NLLB runtime
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install torch --index-url https://download.pytorch.org/whl/cpu
+          python -m pip install "transformers==4.49.0" sentencepiece
+
+      - name: Extract canonical translation program
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          import textwrap
+
+          workflow = Path('.github/workflows/i18n-nllb-refine.yml').read_text(encoding='utf-8')
+          match = re.search(r"python - <<'PY'\n(?P<body>.*?)\n          PY", workflow, re.S)
+          if not match:
+              raise SystemExit('Could not extract NLLB translation program from canonical workflow')
+          Path('/tmp/translate.py').write_text(textwrap.dedent(match.group('body')), encoding='utf-8')
+          PY
+
+      - name: Refine Arabic translation
+        env:
+          TARGET_LOCALE: ar
+          TARGET_LANG: arb_Arab
+        run: python /tmp/translate.py
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: refined-ar
+          path: i18n/locales/ar.ts
+          if-no-files-found: error
+
+  integrate:
+    needs: translate-ar
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feat/i18n-multilingual
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Enable pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@11.6.0 --activate
+
+      - name: Download refined Arabic from this run
+        uses: actions/download-artifact@v4
+        with:
+          name: refined-ar
+          path: /tmp/ar
+
+      - name: Reuse refined Chinese from previous run
+        uses: actions/download-artifact@v4
+        with:
+          name: refined-zh
+          path: /tmp/zh
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: MetTheVeloper/prompt-draft
+          run-id: 32038362514
+
+      - name: Reuse refined Russian from previous run
+        uses: actions/download-artifact@v4
+        with:
+          name: refined-ru
+          path: /tmp/ru
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          repository: MetTheVeloper/prompt-draft
+          run-id: 32038362514
+
+      - name: Replace refined locale files
+        run: |
+          cp /tmp/zh/zh.ts i18n/locales/zh.ts
+          cp /tmp/ar/ar.ts i18n/locales/ar.ts
+          cp /tmp/ru/ru.ts i18n/locales/ru.ts
+
+      - name: Install exact dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Validate locale parity
+        run: pnpm i18n:validate
+
+      - name: Production build
+        run: pnpm generate
+
+      - name: Commit refined translations and clean temporary tooling
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          rm -f i18n/locales/*.bak.*
+          git add -A i18n/locales
+          git rm .github/workflows/i18n-nllb-refine.yml
+          git rm .github/workflows/i18n-nllb-ar-retry.yml
+          git commit -m "fix(i18n): finalize Chinese Arabic and Russian translations"
+          git push origin HEAD:feat/i18n-multilingual
