@@ -231,6 +231,29 @@ const presetItems = computed<ModulePreset[]>(() => {
   );
 });
 
+const inlinePresetGroupId = computed(() => {
+  if (props.module.presetUi?.component !== "select") return "";
+
+  return props.module.presetUi.group || "";
+});
+
+const presetDropdownItems = computed<ElDropdownItem[]>(() => {
+  const items: ElDropdownItem[] = presetItems.value.map((preset) => ({
+    value: preset.id,
+    label: presetLabel(preset.id),
+    description: presetDescription(preset.id),
+  }));
+
+  if (props.module.presetUi?.allowNone !== false) {
+    items.unshift({
+      value: "",
+      label: t("panel.none"),
+    });
+  }
+
+  return items;
+});
+
 const groupedFields = computed<ModuleGroupView[]>(() => {
   const groupMap = new Map<string, ModuleField[]>();
 
@@ -765,6 +788,27 @@ function optionCategoryLabel(field: ModuleField, categoryValue: string, fallback
   );
 }
 
+function moduleValuesEqual(a: unknown, b: unknown) {
+  if (a === b) return true;
+
+  try {
+    return JSON.stringify(a) === JSON.stringify(b);
+  } catch {
+    return false;
+  }
+}
+
+function presetMatchesCurrentValues(presetKey: string) {
+  const presetValues = getModulePresetValues(props.module, presetKey);
+  const entries = Object.entries(presetValues);
+
+  if (!entries.length) return false;
+
+  return entries.every(([key, value]) => {
+    return moduleValuesEqual(values[key], value);
+  });
+}
+
 function applyPreset(presetKey: string) {
   const presetValues = getModulePresetValues(props.module, presetKey);
 
@@ -776,6 +820,50 @@ function applyPreset(presetKey: string) {
   isCustomMode.value = false;
   isPanelExpanded.value = true;
 }
+
+function clearActivePreset(resetValues = false) {
+  if (resetValues) {
+    const defaults = createDefaultModuleValues(props.module);
+
+    normalFields.value.forEach((field) => {
+      values[field.id] = defaults[field.id] ?? "";
+    });
+  }
+
+  activePresetId.value = null;
+}
+
+function handlePresetSelect(value: ElDropdownValue) {
+  const presetKey = String(value ?? "");
+
+  if (!presetKey) {
+    clearActivePreset(props.module.presetUi?.resetOnNone === true);
+    return;
+  }
+
+  if (!props.module.presets?.[presetKey]) return;
+
+  applyPreset(presetKey);
+}
+
+function isInlinePresetGroup(groupId: string) {
+  return inlinePresetGroupId.value === groupId && presetItems.value.length > 0;
+}
+
+watch(
+  values,
+  () => {
+    if (isSyncingValues.value) return;
+
+    const presetKey = activePresetId.value;
+    if (!presetKey) return;
+
+    if (!presetMatchesCurrentValues(presetKey)) {
+      activePresetId.value = null;
+    }
+  },
+  { deep: true },
+);
 
 watch(
   () => String(values.preset ?? ""),
@@ -1142,9 +1230,8 @@ onBeforeUnmount(() => {
       </el-flex>
     </el-flex>
     <el-grid :gap="12" v-show="isPanelExpanded" class="w100">
-      <!-- preset -->
-      <el-grid v-if="!isCustomMode && presetItems.length">
-        <!-- header -->
+      <!-- standalone preset chips for modules that have not opted into inline preset UI -->
+      <el-grid v-if="!isCustomMode && presetItems.length && !inlinePresetGroupId">
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
             <el-flex rules="rbc" class="w100">
@@ -1232,6 +1319,26 @@ onBeforeUnmount(() => {
         </el-flex>
 
         <el-grid v-if="isGroupOpen(group)" :cols="groupColumns(group)">
+          <el-grid v-if="isInlinePresetGroup(group.id)" :br="1" :radius="12" bc="normal5" :p="12" :gap="24">
+            <el-flex rules="ccs" :gap="0">
+              <el-text :size="14" :weight="400" icon="widgets">
+                {{ t("panel.presets") }}
+              </el-text>
+              <el-text :size="10" color="normal45">
+                {{ t("panel.presetsDescription") }}
+              </el-text>
+            </el-flex>
+
+            <el-dropdown
+              :model-value="activePresetId || ''"
+              :items="presetDropdownItems"
+              item-label="label"
+              item-value="value"
+              :clearable="false"
+              @update:model-value="handlePresetSelect"
+            />
+          </el-grid>
+
           <el-grid v-for="field in group.fields" :key="field.id" :br="1" :radius="12" bc="normal5" :p="12"
             :class="fieldClasses(field)" :gap="24">
             <el-flex rules="ccs" :gap="0">
