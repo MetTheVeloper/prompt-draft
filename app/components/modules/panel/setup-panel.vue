@@ -372,7 +372,7 @@ function getSetupPanelContextMenuItems(panel: SetupPanelKey): GlobalMenuItem[] {
       label: expanded
         ? translate("components.contextMenu.actions.collapse", "Collapse")
         : translate("components.contextMenu.actions.expand", "Expand"),
-      icon: expanded ? "minus" : "add",
+      icon: expanded ? "remove" : "add",
       handler: () => togglePanel(panel),
     },
     {

@@ -1144,7 +1144,7 @@ export function useCollagePage() {
           activeMode.value === 'image'
             ? t('pages.collage.outputMode.modes.video')
             : t('pages.collage.outputMode.modes.image'),
-        icon: activeMode.value === 'image' ? 'video-play' : 'gallery',
+        icon: activeMode.value === 'image' ? 'play_circle' : 'image',
         description: t('pages.collage.outputMode.mode'),
         handler: () => {
           toggleActiveMode()

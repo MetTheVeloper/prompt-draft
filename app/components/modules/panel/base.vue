@@ -1010,7 +1010,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     },
     {
       label: isPanelExpanded.value ? labels.collapse : labels.expand,
-      icon: isPanelExpanded.value ? "minus" : "add",
+      icon: isPanelExpanded.value ? "remove" : "add",
       handler: togglePanel,
     },
     {

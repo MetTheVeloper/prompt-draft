@@ -78,7 +78,7 @@ const layoutContextMenuItems = computed<GlobalMenuItem[]>(() => {
   return [
     {
       label: t("app.switchTheme"),
-      icon: currentThemeMode.value === "dark" ? "sun-1" : "moon",
+      icon: currentThemeMode.value === "dark" ? "light_mode" : "dark_mode",
       handler: switchTheme,
       color: 'normal15',
     },
