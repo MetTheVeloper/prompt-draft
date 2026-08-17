@@ -261,7 +261,7 @@ async function copyPrompt() {
             {{ t('prompts.detail.promptEyebrow') }}
           </el-text>
 
-          <el-text type="h2" :size="mobile ? 28 : 42" :weight="400" class="prompt-detail__section-title">
+          <el-text type="h2" :size="mobile ? 18 : 24" :weight="600" class="prompt-detail__section-title">
             {{ t('prompts.detail.promptTitle').toUpperCase() }}
           </el-text>
 
@@ -273,7 +273,7 @@ async function copyPrompt() {
         </el-flex>
 
         <el-flex rules="csc" class="prompt-detail__prompt-panel w100" :gap="0" :radius="mobile ? 18 : 24" :br="1"
-          bc="white15">
+          bc="normal25">
           <el-flex rules="rbc" class="prompt-detail__prompt-toolbar w100" :gap="10" :p="mobile ? 12 : 16">
             <el-flex rules="rsc" :gap="8" wrap class="fg100">
               <el-text :size="10" :weight="800" class="wsnw">
@@ -286,7 +286,7 @@ async function copyPrompt() {
             </el-flex>
 
             <el-button type="fab" :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-              :icon="copied ? 'tick-circle' : 'copy'" :color="copied ? 'green' : 'white'"
+              :icon="copied ? 'tick-circle' : 'copy'" :color="copied ? 'green' : 'normal'"
               :size="12" :p="8" @click="copyPrompt" />
           </el-flex>
 
@@ -302,7 +302,7 @@ async function copyPrompt() {
           </el-flex>
 
           <el-flex rules="rbc" class="prompt-detail__prompt-footer w100" :gap="8" :p="mobile ? 12 : 16" wrap>
-            <el-text :size="12">
+            <el-text :size="10" color="normal65">
               {{ t('prompts.detail.modelNote', { model: modelLabel }) }}
             </el-text>
 
