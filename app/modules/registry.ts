@@ -1,6 +1,6 @@
 // app/modules/registry.ts
 import type { PromptKeyModule } from './types'
-import { StyleModule } from './style.module'
+import { StyleModule } from './style.semantic'
 import { TextureModule } from './texture.module'
 import { DeformationModule } from './deformation.module'
 import { BackgroundModule } from './background.module'
