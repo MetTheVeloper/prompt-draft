@@ -38,33 +38,32 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 
 ---
 
-## Setup ↔ Framing — preserve composition conflict
+## Camera ↔ Framing — viewpoint semantics embedded in camera presets
 
 ### Status
 Open
 
 ### Problem
-In image-to-image mode, Setup can request:
+The current Camera module still mixes capture-device/lens semantics with framing and viewpoint instructions. Examples include camera presets that imply top-down, frontal, sweeping perspective, close-up capture, or dramatic composition.
 
-```text
-preserve original composition
-```
+The refactored Framing module now owns:
 
-while Framing can simultaneously request a new shot size, subject placement, frame balance, composition feature, view angle, or view direction.
+- shot size,
+- subject placement,
+- frame balance and composition features,
+- view angle,
+- view direction,
+- crop safety.
 
-These instructions can directly conflict. Crop-safety-only Framing does not necessarily conflict.
+Camera should not silently redefine those axes.
 
-### Why this is not being auto-resolved yet
-Silently dropping Setup's preservation rule would make generated output diverge from visible editor state. Keeping both can produce contradictory prompts. The correct behavior should be explicit and user-visible.
+### Required follow-up
+During the Camera semantic refactor:
 
-### Preferred direction
-Add cross-module validation or precedence semantics at the prompt level rather than inside Framing.
-
-A likely rule to evaluate:
-
-- Warn when `preserveComposition` is enabled and Framing contains composition-changing fields.
-- Do not warn when Framing only contains crop-safety constraints.
-- Let the user resolve the tension unless testing proves one side should automatically take precedence.
+1. Separate camera body/device intent from lens and depth-of-field behavior.
+2. Remove framing/view-angle/view-direction instructions from camera prompt text unless they are intrinsic and unavoidable to the capture device.
+3. Avoid composition or aesthetic wording such as `dramatic composition` inside Camera.
+4. Test Camera + Framing together to ensure the two modules combine without competing viewpoint instructions.
 
 ---
 
