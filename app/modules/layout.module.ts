@@ -1,5 +1,6 @@
 import type { PromptKeyModule } from "./types"
 import { DEFAULT_LAYOUT_GRID_SIZE } from "../utils/layoutRegions"
+import { layoutTemplates } from "./layout.templates"
 
 export const LayoutModule = {
   key: "layout",
@@ -34,7 +35,7 @@ export const LayoutModule = {
       type: "select",
       group: "structure",
       order: 10,
-      default: "poster",
+      default: "",
       options: [
         { value: "poster", promptText: "poster layout" },
         { value: "banner", promptText: "banner layout" },
@@ -50,34 +51,7 @@ export const LayoutModule = {
       ],
       ui: {
         component: "select",
-        clearable: false,
-        width: "half",
-      },
-    },
-
-    composition: {
-      id: "composition",
-      type: "select",
-      group: "structure",
-      order: 20,
-      default: "single_focal",
-      options: [
-        { value: "single_focal", promptText: "single focal composition" },
-        { value: "centered_stack", promptText: "centered stacked composition" },
-        { value: "split_vertical", promptText: "vertical split composition" },
-        { value: "split_horizontal", promptText: "horizontal split composition" },
-        { value: "image_with_side_panel", promptText: "image with side information panel" },
-        { value: "image_with_bottom_panel", promptText: "image with bottom information panel" },
-        { value: "modular_grid", promptText: "modular grid composition" },
-        { value: "asymmetric_editorial", promptText: "asymmetric editorial composition" },
-        { value: "layered_collage", promptText: "layered collage composition" },
-        { value: "comic_panels", promptText: "multi-panel comic composition" },
-        { value: "full_bleed", promptText: "full-bleed composition" },
-        { value: "freeform", promptText: "freeform composition" },
-      ],
-      ui: {
-        component: "select",
-        clearable: false,
+        clearable: true,
         width: "half",
       },
     },
@@ -86,8 +60,8 @@ export const LayoutModule = {
       id: "density",
       type: "select",
       group: "structure",
-      order: 30,
-      default: "balanced",
+      order: 20,
+      default: "",
       options: [
         { value: "sparse", promptText: "sparse visual density" },
         { value: "balanced", promptText: "balanced visual density" },
@@ -96,27 +70,7 @@ export const LayoutModule = {
       ],
       ui: {
         component: "select",
-        clearable: false,
-        width: "half",
-      },
-    },
-
-    hierarchy: {
-      id: "hierarchy",
-      type: "select",
-      group: "structure",
-      order: 40,
-      default: "balanced",
-      options: [
-        { value: "image_dominant", promptText: "image-dominant hierarchy" },
-        { value: "text_dominant", promptText: "text-dominant hierarchy" },
-        { value: "balanced", promptText: "balanced image and text hierarchy" },
-        { value: "product_dominant", promptText: "product-dominant hierarchy" },
-        { value: "information_dominant", promptText: "information-dominant hierarchy" },
-      ],
-      ui: {
-        component: "select",
-        clearable: false,
+        clearable: true,
         width: "half",
       },
     },
@@ -165,6 +119,15 @@ export const LayoutModule = {
         width: "full",
       },
     },
+  },
+
+  presets: layoutTemplates,
+
+  presetUi: {
+    component: "select",
+    group: "structure",
+    allowNone: true,
+    resetOnNone: false,
   },
 
   compile: {
