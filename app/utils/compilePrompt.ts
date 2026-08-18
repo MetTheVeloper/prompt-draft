@@ -1,6 +1,7 @@
 // app/utils/compilePrompt.ts
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
+import { compileLayoutNaturalSentence } from './compileLayoutNatural'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
@@ -94,7 +95,7 @@ function getOrderedModuleOutputs(
     })
     .filter(Boolean) as Array<{
       key: string
-      output: string
+      output: ModuleOutputValue
     }>
 }
 
@@ -334,7 +335,7 @@ function getModuleNaturalParts(
   const parts = moduleOutputs
     .filter((item) => typeof item.output === "string")
     .flatMap((item) => {
-      return item.output
+      return (item.output as string)
         .split(",")
         .map(cleanNaturalPart)
         .filter(Boolean)
@@ -352,6 +353,16 @@ function getModuleNaturalParts(
     seen.add(normalized)
     return true
   })
+}
+
+function getLayoutNaturalSentence(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const layoutOutput = moduleOutputs.find((item) => item.key === "layout")?.output
+
+  if (!layoutOutput || typeof layoutOutput === "string") return ""
+
+  return compileLayoutNaturalSentence(layoutOutput)
 }
 
 function getVariablesOutput(outputs: ModuleOutputMap) {
@@ -559,6 +570,7 @@ function compileNaturalOutput(
   const aspectRatio = cleanNaturalPart(getAspectRatioRatio(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
   const moduleParts = getModuleNaturalParts(moduleOutputs)
+  const layoutSentence = getLayoutNaturalSentence(moduleOutputs)
   const sentences: string[] = []
 
   if (settings.mode === 'image_to_image') {
@@ -602,6 +614,10 @@ function compileNaturalOutput(
     }
 
     sentences.push(`${intro}.`)
+  }
+
+  if (layoutSentence) {
+    sentences.push(layoutSentence)
   }
 
   if (moduleParts.length) {
