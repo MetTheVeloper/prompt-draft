@@ -119,15 +119,13 @@ export function compileLayoutModule(
     return ""
   }
 
+  const layoutType = getOptionPromptText(module, "layoutType", values.layoutType)
+  const density = getOptionPromptText(module, "density", values.density)
   const extraDetails = cleanText(values.extraDetails)
 
   return {
-    type: getOptionPromptText(module, "layoutType", values.layoutType) || undefined,
-    composition:
-      getOptionPromptText(module, "composition", values.composition) || undefined,
-    density: getOptionPromptText(module, "density", values.density) || undefined,
-    hierarchy:
-      getOptionPromptText(module, "hierarchy", values.hierarchy) || undefined,
+    ...(layoutType ? { type: layoutType } : {}),
+    ...(density ? { density } : {}),
     coordinateSystem: "normalized values from 0 to 1",
     regions: regionState.regions.map(serializeRegion),
     ...(extraDetails ? { extraDetails } : {}),
