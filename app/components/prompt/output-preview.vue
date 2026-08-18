@@ -87,6 +87,18 @@ function validationMessage(issue: PromptValidationIssue) {
     return t("validation.ideaEmpty");
   }
 
+  if (issue.code === "undefined_variable_reference") {
+    return t("validation.undefinedVariableReference", {
+      token: issue.token || `{${issue.variableKey || "variable"}}`,
+    });
+  }
+
+  if (issue.code === "unused_variable") {
+    return t("validation.unusedVariable", {
+      token: issue.token || `{${issue.variableKey || "variable"}}`,
+    });
+  }
+
   if (issue.code === "framing_preserve_composition_conflict") {
     return t("validation.framingPreserveCompositionConflict");
   }
@@ -214,7 +226,7 @@ async function copyOutput() {
           </el-flex>
 
           <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'check' : 'content_copy'"
-            :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="prim" :size="12" :gap="8" :p="[8, 14]"
+            :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="prim" :size="12" :gap="8" :p="[8, 12]"
             @click="copyOutput" />
         </el-flex>
 
