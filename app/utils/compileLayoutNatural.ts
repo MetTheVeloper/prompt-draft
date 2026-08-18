@@ -49,7 +49,7 @@ function formatAlignment(value: unknown) {
     vertical ? `vertical ${vertical}` : "",
   ].filter(Boolean)
 
-  return parts.length ? `alignment: ${parts.join(", ")}` : ""
+  return parts.length ? `content alignment: ${parts.join(", ")}` : ""
 }
 
 function formatRegion(
@@ -68,9 +68,10 @@ function formatRegion(
   const fit = cleanText(value.fit)
   const overflow = cleanText(value.overflow)
   const description = cleanText(value.description)
-  const layer = Number.isFinite(Number(value.layer))
-    ? Number(value.layer).toString()
-    : index.toString()
+  const hasLayer =
+    Object.prototype.hasOwnProperty.call(value, "layer") &&
+    Number.isFinite(Number(value.layer))
+  const layer = hasLayer ? Number(value.layer).toString() : ""
 
   const details = [
     key && referencedRegionKeys.has(key) ? `key: ${key}` : "",
@@ -78,10 +79,10 @@ function formatRegion(
     contentKey ? `content: ${contentKey}` : "",
     bounds ? `bounds: ${bounds}` : "",
     alignment,
-    fit ? `fit: ${fit}` : "",
-    overflow ? `overflow: ${overflow}` : "",
-    `layer: ${layer}`,
-    description ? `description: ${description}` : "",
+    fit ? `content fit: ${fit}` : "",
+    overflow ? `content overflow: ${overflow}` : "",
+    layer ? `layer: ${layer}` : "",
+    description ? `instructions: ${description}` : "",
   ].filter(Boolean)
 
   return `• ${name} (${details.join("; ")}).`
