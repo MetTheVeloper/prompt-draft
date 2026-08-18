@@ -87,6 +87,10 @@ function validationMessage(issue: PromptValidationIssue) {
     return t("validation.ideaEmpty");
   }
 
+  if (issue.code === "framing_preserve_composition_conflict") {
+    return t("validation.framingPreserveCompositionConflict");
+  }
+
   return t("validation.unknown");
 }
 
@@ -210,7 +214,7 @@ async function copyOutput() {
           </el-flex>
 
           <el-button :label="isCopied ? t('panel.copied') : t('panel.copy')" :icon="isCopied ? 'check' : 'content_copy'"
-            :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="prim" :size="12" :gap="8" :p="[8, 12]"
+            :disable="!canCopy" :mode="isCopied ? 'flat' : 'normal'" color="prim" :size="12" :gap="8" :p="[8, 14]"
             @click="copyOutput" />
         </el-flex>
 
