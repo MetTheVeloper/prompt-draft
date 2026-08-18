@@ -64,12 +64,24 @@ function roundCoordinate(value: unknown) {
   return Math.round((number + Number.EPSILON) * 100) / 100
 }
 
+function getLayoutRegionRole(region: LayoutRegion) {
+  if (region.role === "none") return ""
+
+  if (region.role === "custom") {
+    return cleanText(region.customRole)
+  }
+
+  return region.role.replace(/_/g, " ")
+}
+
 function createLayoutRegionVariable(
   region: LayoutRegion,
   index: number,
 ): PromptVariable {
   const key = getLayoutRegionVariableKey(region.id)
   const label = cleanText(region.name) || `Region ${index + 1}`
+  const name = cleanText(region.name) || `region_${index + 1}`
+  const role = getLayoutRegionRole(region)
 
   return {
     id: `layout:${region.id}`,
@@ -78,8 +90,8 @@ function createLayoutRegionVariable(
     value: serializeValue({
       id: region.id,
       key: `{${key}}`,
-      name: label,
-      role: region.role !== "none" ? region.role : undefined,
+      name,
+      role: role || undefined,
       contentKey: cleanText(region.contentKey) || undefined,
       bounds: {
         x: roundCoordinate(region.x),
