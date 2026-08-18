@@ -154,25 +154,21 @@ const viewDirectionOptions: ModuleFieldOption[] = [
     value: "frontal",
     promptText: "frontal view of the subject",
     tags: ["framing", "frontal", "direction"],
-    appliesTo: ["person", "animal", "object", "product", "vehicle", "building"],
   },
   {
     value: "three_quarter",
     promptText: "three-quarter view of the subject",
     tags: ["framing", "three-quarter", "direction"],
-    appliesTo: ["person", "animal", "object", "product", "vehicle", "building"],
   },
   {
     value: "profile",
     promptText: "side-profile view of the subject",
     tags: ["framing", "profile", "side-view", "direction"],
-    appliesTo: ["person", "animal", "object", "product", "vehicle", "building"],
   },
   {
     value: "rear",
     promptText: "rear view of the subject",
     tags: ["framing", "rear", "back-view", "direction"],
-    appliesTo: ["person", "animal", "object", "product", "vehicle", "building"],
   },
 ]
 
