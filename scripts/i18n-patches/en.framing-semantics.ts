@@ -4,7 +4,7 @@ export default {
 
   "modules.framing.groups.composition.title": "Frame Composition",
   "modules.framing.groups.composition.description":
-    "Define how much of the subject is visible and where it sits inside the frame.",
+    "Define subject coverage, placement, balance, and compositional features inside the frame.",
 
   "modules.framing.groups.view.title": "View",
   "modules.framing.groups.view.description":
@@ -32,13 +32,13 @@ export default {
   "modules.framing.fields.shotSize.options.head_and_shoulders": "Head & Shoulders",
   "modules.framing.fields.shotSize.options.bust": "Bust",
   "modules.framing.fields.shotSize.options.medium_subject": "Medium Subject",
-  "modules.framing.fields.shotSize.options.three_quarter_subject": "Three-Quarter Subject",
+  "modules.framing.fields.shotSize.options.three_quarter_subject": "Most of Subject",
   "modules.framing.fields.shotSize.options.full_subject": "Full Subject",
   "modules.framing.fields.shotSize.options.wide_full_subject": "Wide Full Subject",
 
   "modules.framing.fields.subjectPlacement.label": "Subject Placement",
   "modules.framing.fields.subjectPlacement.description":
-    "Choose where the subject or primary focal subject sits within the frame.",
+    "Choose the primary placement strategy for the subject or focal subject inside the frame.",
   "modules.framing.fields.subjectPlacement.placeholder": "Select subject placement",
   "modules.framing.fields.subjectPlacement.options.centered": "Centered",
   "modules.framing.fields.subjectPlacement.options.off_center": "Off Center",
@@ -46,17 +46,22 @@ export default {
   "modules.framing.fields.subjectPlacement.options.upper_frame": "Upper Frame",
   "modules.framing.fields.subjectPlacement.options.lower_frame": "Lower Frame",
   "modules.framing.fields.subjectPlacement.options.edge_weighted": "Edge Weighted",
-  "modules.framing.fields.subjectPlacement.options.negative_space": "Negative Space",
 
-  "modules.framing.fields.composition.label": "Composition Structure",
-  "modules.framing.fields.composition.description":
-    "Choose the dominant geometric organization of the frame without applying an aesthetic style.",
-  "modules.framing.fields.composition.placeholder": "Select composition structure",
-  "modules.framing.fields.composition.options.symmetrical": "Symmetrical",
-  "modules.framing.fields.composition.options.asymmetrical": "Asymmetrical",
-  "modules.framing.fields.composition.options.dynamic_diagonal": "Dynamic Diagonal",
-  "modules.framing.fields.composition.options.layered_depth": "Layered Depth",
-  "modules.framing.fields.composition.options.isolated_subject": "Isolated Subject",
+  "modules.framing.fields.balance.label": "Frame Balance",
+  "modules.framing.fields.balance.description":
+    "Choose whether the overall frame balance is symmetrical or asymmetrical.",
+  "modules.framing.fields.balance.placeholder": "Select frame balance",
+  "modules.framing.fields.balance.options.symmetrical": "Symmetrical",
+  "modules.framing.fields.balance.options.asymmetrical": "Asymmetrical",
+
+  "modules.framing.fields.compositionFeatures.label": "Composition Features",
+  "modules.framing.fields.compositionFeatures.description":
+    "Add compatible compositional features that can coexist with the selected placement and balance.",
+  "modules.framing.fields.compositionFeatures.placeholder": "Select composition features",
+  "modules.framing.fields.compositionFeatures.options.negative_space": "Negative Space",
+  "modules.framing.fields.compositionFeatures.options.dynamic_diagonal": "Dynamic Diagonal",
+  "modules.framing.fields.compositionFeatures.options.layered_depth": "Layered Depth",
+  "modules.framing.fields.compositionFeatures.options.isolated_subject": "Isolated Subject",
 
   "modules.framing.fields.viewAngle.label": "View Angle",
   "modules.framing.fields.viewAngle.description":
@@ -73,9 +78,9 @@ export default {
   "modules.framing.fields.viewDirection.description":
     "Choose the direction from which the subject is seen. This describes viewpoint rather than forcing a body pose.",
   "modules.framing.fields.viewDirection.placeholder": "Select view direction",
-  "modules.framing.fields.viewDirection.options.frontal": "Frontal",
+  "modules.framing.fields.viewDirection.options.frontal": "Front",
   "modules.framing.fields.viewDirection.options.three_quarter": "Three-Quarter",
-  "modules.framing.fields.viewDirection.options.profile": "Profile",
+  "modules.framing.fields.viewDirection.options.profile": "Side",
   "modules.framing.fields.viewDirection.options.rear": "Rear",
 
   "modules.framing.fields.cropSafety.label": "Protected Crop Areas",
@@ -87,6 +92,10 @@ export default {
   "modules.framing.fields.cropSafety.options.hands": "Hands",
   "modules.framing.fields.cropSafety.options.silhouette": "Complete Silhouette",
   "modules.framing.fields.cropSafety.options.safe_margin": "Safe Margin",
+  "modules.framing.fields.cropSafety.compatibilityWarnings.handsNeedMoreCoverage":
+    "This crop is usually too tight to keep the hands fully visible. Choose a wider shot or remove Hands from crop safety.",
+  "modules.framing.fields.cropSafety.compatibilityWarnings.silhouetteNeedsFullSubject":
+    "Complete Silhouette conflicts with a partial or close crop. Use Full Subject or Wide Full Subject if the whole silhouette must remain visible.",
 
   "modules.framing.fields.extraDetails.label": "Extra Framing Details",
   "modules.framing.fields.extraDetails.description":
