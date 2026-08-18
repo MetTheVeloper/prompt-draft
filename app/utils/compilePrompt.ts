@@ -1,7 +1,7 @@
 // app/utils/compilePrompt.ts
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
-import { compileLayoutNaturalSentence } from './compileLayoutNatural'
+import { compileLayoutNaturalBlock } from './compileLayoutNatural'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
@@ -355,14 +355,52 @@ function getModuleNaturalParts(
   })
 }
 
-function getLayoutNaturalSentence(
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
+}
+
+function getReferencedLayoutRegionKeys(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  layoutOutput: Record<string, unknown>,
+) {
+  const referenceText = moduleOutputs
+    .filter((item) => item.key !== 'layout')
+    .map((item) =>
+      typeof item.output === 'string'
+        ? item.output
+        : JSON.stringify(item.output)
+    )
+    .join('\n')
+
+  const referencedRegionKeys = new Set<string>()
+  const regions = Array.isArray(layoutOutput.regions) ? layoutOutput.regions : []
+
+  regions.forEach((region) => {
+    if (!isRecord(region)) return
+
+    const key = typeof region.key === 'string' ? region.key.trim() : ''
+
+    if (key && referenceText.includes(key)) {
+      referencedRegionKeys.add(key)
+    }
+  })
+
+  return referencedRegionKeys
+}
+
+function getLayoutNaturalBlock(
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
-  const layoutOutput = moduleOutputs.find((item) => item.key === "layout")?.output
+  const layoutOutput = moduleOutputs.find((item) => item.key === 'layout')?.output
 
-  if (!layoutOutput || typeof layoutOutput === "string") return ""
+  if (!layoutOutput || typeof layoutOutput === 'string') return ''
 
-  return compileLayoutNaturalSentence(layoutOutput)
+  return compileLayoutNaturalBlock(layoutOutput, {
+    referencedRegionKeys: getReferencedLayoutRegionKeys(
+      moduleOutputs,
+      layoutOutput,
+    ),
+  })
 }
 
 function getVariablesOutput(outputs: ModuleOutputMap) {
@@ -553,7 +591,7 @@ function compileModularOutput(
     const value =
       typeof item.output === "string"
         ? item.output
-        : JSON.stringify(item.output, null, 2)
+        : JSON.stringify(item.output)
 
     parts.push(`{${item.key}} = ${value}`)
   })
@@ -570,7 +608,6 @@ function compileNaturalOutput(
   const aspectRatio = cleanNaturalPart(getAspectRatioRatio(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
   const moduleParts = getModuleNaturalParts(moduleOutputs)
-  const layoutSentence = getLayoutNaturalSentence(moduleOutputs)
   const sentences: string[] = []
 
   if (settings.mode === 'image_to_image') {
@@ -614,10 +651,6 @@ function compileNaturalOutput(
     }
 
     sentences.push(`${intro}.`)
-  }
-
-  if (layoutSentence) {
-    sentences.push(layoutSentence)
   }
 
   if (moduleParts.length) {
@@ -771,6 +804,7 @@ export function compilePromptOutput(
 
   if (format === 'natural') {
     const rawOutput = compileNaturalOutput(settings, moduleOutputs)
+    const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
@@ -784,7 +818,11 @@ export function compilePromptOutput(
     //   optimizedOutput
     // })
 
-    return variablesOutput ? `${variablesOutput}\n\n${optimizedOutput}` : optimizedOutput
+    const naturalOutput = [optimizedOutput, layoutBlock]
+      .filter(Boolean)
+      .join('\n\n')
+
+    return variablesOutput ? `${variablesOutput}\n\n${naturalOutput}` : naturalOutput
   }
 
   return compileModularOutput(settings, moduleOutputs, variablesOutput)
