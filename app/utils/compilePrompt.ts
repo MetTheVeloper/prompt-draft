@@ -2,6 +2,7 @@
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { compileLayoutNaturalBlock } from './compileLayoutNatural'
+import { compileTypographyNaturalBlock } from './compileTypographyNatural'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
@@ -401,6 +402,18 @@ function getLayoutNaturalBlock(
       layoutOutput,
     ),
   })
+}
+
+function getTypographyNaturalBlock(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const typographyOutput = moduleOutputs.find(
+    (item) => item.key === 'typography'
+  )?.output
+
+  if (!typographyOutput || typeof typographyOutput === 'string') return ''
+
+  return compileTypographyNaturalBlock(typographyOutput)
 }
 
 function getVariablesOutput(outputs: ModuleOutputMap) {
@@ -805,6 +818,7 @@ export function compilePromptOutput(
   if (format === 'natural') {
     const rawOutput = compileNaturalOutput(settings, moduleOutputs)
     const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
+    const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
@@ -818,7 +832,7 @@ export function compilePromptOutput(
     //   optimizedOutput
     // })
 
-    const naturalOutput = [optimizedOutput, layoutBlock]
+    const naturalOutput = [optimizedOutput, layoutBlock, typographyBlock]
       .filter(Boolean)
       .join('\n\n')
 
