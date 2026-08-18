@@ -33,7 +33,7 @@ const APPLY_GROUP_ORDER: ApplyGroup[] = [
 const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   transformation: 7,
   style: 5,
-  framing: 5,
+  framing: 20,
   pose: 4,
   outfit: 3,
   background: 5,
@@ -177,6 +177,16 @@ function detectApplyGroup(value: string): ApplyGroup {
     return 'transformation'
   }
 
+  // Known Framing phrases that contain words such as "background" or "margin"
+  // must be classified before the broader Background detector below.
+  if (
+    /layered foreground midground background composition|additional margin around the visible subject area/.test(
+      text
+    )
+  ) {
+    return 'framing'
+  }
+
   if (
     /background|backdrop|environment|interior|exterior|scene|studio background|seamless|wall mirror|mirror|gym|machines|dumbbells|weight racks|location/.test(
       text
@@ -202,7 +212,7 @@ function detectApplyGroup(value: string): ApplyGroup {
   }
 
   if (
-    /framing|composition|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical|negative space/.test(
+    /framing|frame composition|frame balance|subject placement|rule of thirds|off center|upper frame|lower frame|edge weighted|negative space|low angle view|high angle view|top down view|worms eye view|birds eye view|front view|frontal view|three quarter view|side view|profile view|rear view|within the frame|safe margin|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical/.test(
       text
     )
   ) {

@@ -6,6 +6,10 @@ import type {
 } from "~/modules/types"
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor"
 
+type InsertablePromptVariable = PromptVariable & {
+  insertable?: boolean
+}
+
 const { t } = useI18n()
 
 const props = withDefaults(
@@ -35,7 +39,12 @@ const visibleGroups = computed(() => {
     .map((group) => ({
       ...group,
       variables: group.variables.filter((variable) => {
-        return variable.enabled !== false && Boolean(variable.key?.trim())
+        const candidate = variable as InsertablePromptVariable
+
+        return (
+          Boolean(candidate.key?.trim()) &&
+          (candidate.insertable === true || candidate.enabled !== false)
+        )
       }),
     }))
     .filter((group) => group.variables.length > 0)
@@ -112,6 +121,15 @@ function variableTypeLabel(variable: PromptVariable) {
   }
 
   return humanize(variable.type || variable.source || "variable")
+}
+
+function variablePreview(variable: PromptVariable) {
+  if (!variable.value?.trim()) return "—"
+
+  return stringShortner(
+    variable.value,
+    shouldSpanColumns(variable) ? 72 : 32,
+  )
 }
 
 function select(variable: PromptVariable) {
@@ -205,9 +223,9 @@ function select(variable: PromptVariable) {
             :size="11"
             :weight="400"
             class="frsc variable-picker__value"
-            :title="variable.value"
+            :title="variable.value || undefined"
           >
-            {{ stringShortner(variable.value, shouldSpanColumns(variable) ? 72 : 32) }}
+            {{ variablePreview(variable) }}
           </el-text>
         </el-flex>
       </el-flex>

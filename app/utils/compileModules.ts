@@ -486,6 +486,27 @@ function uniquePromptParts(parts: string[]) {
   });
 }
 
+function sortModuleFieldsForCompile(module: PromptKeyModule, fields: ModuleField[]) {
+  const explicitOrder = module.compile?.fieldOrder || [];
+
+  if (!explicitOrder.length) {
+    return [...fields].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  }
+
+  const rank = new Map(explicitOrder.map((fieldId, index) => [fieldId, index]));
+
+  return [...fields].sort((a, b) => {
+    const aRank = rank.get(a.id);
+    const bRank = rank.get(b.id);
+
+    if (aRank !== undefined && bRank !== undefined) return aRank - bRank;
+    if (aRank !== undefined) return -1;
+    if (bRank !== undefined) return 1;
+
+    return (a.order ?? 0) - (b.order ?? 0);
+  });
+}
+
 export function createDefaultModuleValues(
   module: PromptKeyModule,
 ): ModuleValues {
@@ -517,6 +538,7 @@ export function compileModule(
   if (module.key === "layout") {
     return compileLayoutModule(module, values);
   }
+
   const fields = Object.values(module.fields);
 
   const overrideFieldId =
@@ -531,9 +553,10 @@ export function compileModule(
     }
   }
 
-  const sortedFields = fields
-    .filter((field) => !field.isOverride)
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+  const sortedFields = sortModuleFieldsForCompile(
+    module,
+    fields.filter((field) => !field.isOverride),
+  );
 
   let parts = sortedFields
     .map((field) => compileField(field, values[field.id]))

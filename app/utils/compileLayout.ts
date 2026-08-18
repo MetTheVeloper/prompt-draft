@@ -65,19 +65,71 @@ function getRegionAlignment(region: LayoutRegion) {
   }
 }
 
-function serializeRegion(region: LayoutRegion, index: number) {
+function getRegionFit(region: LayoutRegion) {
+  if (!region.fit || region.fit === "none") return ""
+
+  const map: Record<Exclude<NonNullable<LayoutRegion["fit"]>, "none">, string> = {
+    cover: "cover",
+    contain: "contain",
+    fill: "stretch",
+    natural: "intrinsic",
+  }
+
+  return map[region.fit]
+}
+
+function getRegionOverflow(region: LayoutRegion) {
+  if (!region.overflow || region.overflow === "none") return ""
+
+  return region.overflow === "hidden" ? "clip" : "visible"
+}
+
+function regionsOverlap(a: LayoutRegion, b: LayoutRegion) {
+  const aRight = a.x + a.width
+  const aBottom = a.y + a.height
+  const bRight = b.x + b.width
+  const bBottom = b.y + b.height
+
+  return (
+    a.x < bRight &&
+    aRight > b.x &&
+    a.y < bBottom &&
+    aBottom > b.y
+  )
+}
+
+function getLayeredRegionIndexes(regions: LayoutRegion[]) {
+  const indexes = new Set<number>()
+
+  for (let aIndex = 0; aIndex < regions.length; aIndex += 1) {
+    for (let bIndex = aIndex + 1; bIndex < regions.length; bIndex += 1) {
+      const a = regions[aIndex]
+      const b = regions[bIndex]
+
+      if (!a || !b || !regionsOverlap(a, b)) continue
+
+      const aLayer = Number.isFinite(Number(a.layer)) ? Number(a.layer) : aIndex
+      const bLayer = Number.isFinite(Number(b.layer)) ? Number(b.layer) : bIndex
+
+      if (aLayer === bLayer) continue
+
+      indexes.add(aIndex)
+      indexes.add(bIndex)
+    }
+  }
+
+  return indexes
+}
+
+function serializeRegion(
+  region: LayoutRegion,
+  index: number,
+  includeLayer: boolean,
+) {
   const role = getRegionRole(region)
   const alignment = getRegionAlignment(region)
-  const fit =
-    region.fit && region.fit !== "none"
-      ? region.fit
-      : ""
-
-  const overflow =
-    region.overflow && region.overflow !== "none"
-      ? region.overflow
-      : ""
-
+  const fit = getRegionFit(region)
+  const overflow = getRegionOverflow(region)
   const contentKey = cleanText(region.contentKey)
   const description = cleanText(region.description)
 
@@ -96,9 +148,13 @@ function serializeRegion(region: LayoutRegion, index: number) {
     ...(alignment ? { alignment } : {}),
     ...(fit ? { fit } : {}),
     ...(overflow ? { overflow } : {}),
-    layer: Number.isFinite(Number(region.layer))
-      ? Number(region.layer)
-      : index,
+    ...(includeLayer
+      ? {
+          layer: Number.isFinite(Number(region.layer))
+            ? Number(region.layer)
+            : index,
+        }
+      : {}),
     ...(description ? { description } : {}),
   }
 }
@@ -119,17 +175,18 @@ export function compileLayoutModule(
     return ""
   }
 
+  const layoutType = getOptionPromptText(module, "layoutType", values.layoutType)
+  const density = getOptionPromptText(module, "density", values.density)
   const extraDetails = cleanText(values.extraDetails)
+  const layeredRegionIndexes = getLayeredRegionIndexes(regionState.regions)
 
   return {
-    type: getOptionPromptText(module, "layoutType", values.layoutType) || undefined,
-    composition:
-      getOptionPromptText(module, "composition", values.composition) || undefined,
-    density: getOptionPromptText(module, "density", values.density) || undefined,
-    hierarchy:
-      getOptionPromptText(module, "hierarchy", values.hierarchy) || undefined,
+    ...(layoutType ? { type: layoutType } : {}),
+    ...(density ? { density } : {}),
     coordinateSystem: "normalized values from 0 to 1",
-    regions: regionState.regions.map(serializeRegion),
+    regions: regionState.regions.map((region, index) =>
+      serializeRegion(region, index, layeredRegionIndexes.has(index)),
+    ),
     ...(extraDetails ? { extraDetails } : {}),
   }
 }

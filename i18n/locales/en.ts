@@ -394,6 +394,13 @@ export default {
             vinyl_toy_model: "Vinyl Toy Model",
             watercolor_painting: "Watercolor Painting",
             woodcut_print: "Woodcut Print",
+            woodblock_print: "Woodblock Print",
+            clay_modeling: "Clay Modeling",
+            ceramic_art: "Ceramic Art",
+            plasticine_modeling: "Plasticine Modeling",
+            papier_mache_craft: "Papier-Mâché Craft",
+            textile_craft: "Textile Craft",
+            plush_textile_craft: "Plush Textile Craft",
           },
         },
         stylizationLevel: {
@@ -419,6 +426,8 @@ export default {
             blocky: "Blocky",
             angular: "Angular",
             elongated: "Elongated",
+            irregular: "Irregular / Asymmetric",
+            faceted: "Faceted / Planar",
           },
         },
         visualTreatment: {
@@ -431,12 +440,16 @@ export default {
           options: {
             cel_shaded: "Cel Shaded",
             flat_graphic: "Flat Graphic",
-            halftone_comic: "Halftone Comic",
+            halftone_comic: "Halftone",
             hand_painted: "Hand Painted",
-            ink_watercolor: "Ink & Watercolor",
+            ink_watercolor: "Ink + Watercolor",
             minimalist: "Minimalist",
-            paper_cutout: "Paper Cutout",
+            paper_cutout: "Layered Cut Paper",
             textured: "Textured",
+            painterly: "Painterly",
+            layered_collage: "Layered Collage",
+            soft_blended: "Soft Blended",
+            stippled: "Stippled",
           },
           placeholder: "Select visual treatment",
         },
@@ -456,6 +469,8 @@ export default {
             glossy: "Glossy",
             matte: "Matte",
             rough: "Rough",
+            refined: "Refined",
+            satin: "Satin",
           },
         },
         extraDetails: {
@@ -469,11 +484,99 @@ export default {
             "If filled, this text becomes the final style output and all other fields are ignored.",
           placeholder: "Write a complete custom style description...",
         },
+        aesthetic: {
+          label: "Aesthetic",
+          description:
+            "Choose the core visual aesthetic without defining the subject or output purpose.",
+          placeholder: "Select an aesthetic",
+          options: {
+            "3d_cartoon": "3D Cartoon",
+            anime: "Anime",
+            cinematic_realism: "Cinematic Realism",
+            claymation: "Claymation",
+            vinyl_toy: "Vinyl Toy",
+            geometric_illustration: "Geometric Illustration",
+            cut_paper: "Cut Paper",
+            retro_comic: "Retro Comic",
+            caricature_sketch: "Caricature Sketch",
+            angular_animation: "Angular 2D Animation",
+            childlike_drawing: "Childlike Drawing",
+            low_poly: "Low-Poly",
+            watercolor_illustration: "Watercolor Illustration",
+            paper_collage: "Paper Collage",
+            pixel_art: "Pixel Art",
+            risograph: "Risograph",
+            ink_sketch: "Ink Sketch",
+            cinematic_cgi: "Cinematic CGI",
+            photo_realism: "Photo Realism",
+            papier_mache: "Papier-Mâché",
+            plush_textile: "Plush Textile",
+            woodcut: "Woodcut",
+            marker_illustration: "Marker Illustration",
+            art_deco: "Art Deco",
+            art_nouveau: "Art Nouveau",
+            bauhaus: "Bauhaus",
+            swiss_international: "Swiss International Style",
+            mid_century_modern: "Mid-Century Modern",
+            constructivist: "Constructivist",
+            memphis: "Memphis Design",
+            retro_futurist: "Retro-Futurist",
+            brutalist_graphic: "Brutalist Graphic",
+            minimal_geometric: "Minimal Geometric",
+            pop_art: "Pop Art",
+            op_art: "Op Art",
+            psychedelic: "Psychedelic",
+            surrealist: "Surrealist",
+            cubist: "Cubist",
+            expressionist: "Expressionist",
+            impressionist: "Impressionist",
+            fauvist: "Fauvist",
+            pointillist: "Pointillist",
+            ukiyo_e: "Ukiyo-e",
+            folk_art: "Folk Art",
+            storybook: "Storybook Illustration",
+            gothic_illustration: "Gothic Illustration",
+            vintage_scientific: "Vintage Scientific Illustration",
+            screenprint_graphic: "Screen-Print Graphic",
+            linocut: "Linocut",
+            etching: "Etching",
+          },
+        },
+        linework: {
+          label: "Linework",
+          description:
+            "Control the visual character of drawn or defined lines without changing the subject.",
+          placeholder: "Select linework",
+          options: {
+            clean_fine: "Clean Fine",
+            clean_contour: "Clean Contour",
+            bold_contour: "Bold Contour",
+            expressive_ink: "Expressive Ink",
+            loose_sketch: "Loose Sketch",
+            calligraphic: "Calligraphic",
+            technical: "Technical",
+            engraved_hatch: "Engraved Hatch",
+            relief_cut: "Relief-Cut",
+          },
+        },
+        detailLevel: {
+          label: "Detail Level",
+          description:
+            "Control visual detail density independently from the aesthetic, medium, and composition.",
+          placeholder: "Select detail level",
+          options: {
+            minimal: "Minimal",
+            simplified: "Simplified",
+            balanced: "Balanced",
+            intricate: "Intricate",
+            dense: "Dense",
+          },
+        },
       },
       presets: {
         soft_3d_cartoon: {
           label: "Soft 3D Cartoon",
-          description: "A polished stylized 3D cartoon look with soft rounded forms.",
+          description: "3D cartoon styling with cel-shaded rendering.",
         },
         premium_vinyl_character: {
           label: "Premium Vinyl Character",
@@ -499,8 +602,7 @@ export default {
         },
         crafted_paper_collage: {
           label: "Crafted Paper Collage",
-          description:
-            "A handcrafted paper collage style with layered construction, blocky forms, and a tactile finish.",
+          description: "Paper collage with layered fragments and a handcrafted finish.",
         },
         geometric_editorial_portrait: {
           label: "Geometric Editorial Portrait",
@@ -576,6 +678,120 @@ export default {
           label: "Woodcut Editorial",
           description:
             "A woodcut editorial style with angular graphic forms, strong stylization, and a rough print-like finish.",
+        },
+        premium_vinyl: {
+          label: "Premium Vinyl",
+          description: "Vinyl-toy aesthetic rendered in 3D with a refined finish.",
+        },
+        handmade_clay: {
+          label: "Handmade Clay",
+          description: "Claymation aesthetic using hand-modeled clay with a handcrafted finish.",
+        },
+        cinematic_realism: {
+          label: "Cinematic Realism",
+          description: "Cinematic realism anchored in photographic rendering.",
+        },
+        geometric_flat: {
+          label: "Geometric Flat Illustration",
+          description: "Geometric vector illustration with flat graphic rendering.",
+        },
+        retro_comic_pop: {
+          label: "Retro Comic Pop",
+          description: "Retro comic illustration with bold contours and halftone treatment.",
+        },
+        expressive_caricature_ink: {
+          label: "Expressive Caricature Ink",
+          description: "Caricature sketch aesthetic with expressive ink linework.",
+        },
+        primitive_cut_paper: {
+          label: "Primitive Cut Paper",
+          description:
+            "Layered cut-paper construction with simplified geometric forms and handcrafted finish.",
+        },
+        angular_2d: {
+          label: "Angular 2D Animation",
+          description: "Angular 2D styling with flat graphic rendering.",
+        },
+        naive_childlike: {
+          label: "Naive Childlike",
+          description: "Childlike colored-pencil drawing with loose lines and simplified detail.",
+        },
+        watercolor_ink: {
+          label: "Watercolor & Ink",
+          description: "Watercolor illustration with expressive variable-width ink linework.",
+        },
+        low_poly: {
+          label: "Low-Poly",
+          description:
+            "Low-poly aesthetic using low-poly 3D rendering without forcing a form language.",
+        },
+        pixel_art: {
+          label: "Pixel Art",
+          description:
+            "Pixel-art aesthetic using digital pixel-art rendering without forced detail or form assumptions.",
+        },
+        risograph_graphic: {
+          label: "Risograph Graphic",
+          description: "Risograph aesthetic using risograph print as the production medium.",
+        },
+        expressive_ink_sketch: {
+          label: "Expressive Ink Sketch",
+          description: "Ink-sketch aesthetic with loose sketch linework.",
+        },
+        cinematic_cgi: {
+          label: "Cinematic CGI",
+          description:
+            "Cinematic CGI aesthetic using CGI rendering without forced form or finish choices.",
+        },
+        photo_realism: {
+          label: "Photo Realism",
+          description:
+            "Photorealistic aesthetic using photography with no automatic stylization, form, or finish assumptions.",
+        },
+        papier_mache: {
+          label: "Papier-Mâché",
+          description: "Papier-mâché aesthetic using papier-mâché craft with a handcrafted finish.",
+        },
+        plush_textile: {
+          label: "Plush Textile",
+          description:
+            "Plush textile aesthetic using plush textile craft with a handcrafted finish.",
+        },
+        woodcut_graphic: {
+          label: "Woodcut Graphic",
+          description: "Woodcut aesthetic using woodcut printing and bold relief-cut linework.",
+        },
+        marker_illustration: {
+          label: "Marker Illustration",
+          description:
+            "Marker illustration aesthetic using marker rendering without extra structural assumptions.",
+        },
+        art_deco_graphic: {
+          label: "Art Deco Graphic",
+          description:
+            "Art Deco aesthetic rendered as vector illustration without forcing a form language.",
+        },
+        bauhaus_graphic: {
+          label: "Bauhaus Graphic",
+          description: "Bauhaus vector styling with flat graphic rendering.",
+        },
+        mid_century_graphic: {
+          label: "Mid-Century Graphic",
+          description: "Mid-century modern illustration with flat graphic rendering.",
+        },
+        storybook_watercolor: {
+          label: "Storybook Watercolor",
+          description:
+            "Storybook illustration aesthetic rendered in watercolor without forced form assumptions.",
+        },
+        ukiyo_e_print: {
+          label: "Ukiyo-e Print",
+          description: "Ukiyo-e aesthetic using woodblock printing with clean contour linework.",
+        },
+        handmade_cut_paper: {
+          label: "Handmade Cut Paper",
+          description:
+            "Cut-paper aesthetic using paper cutout construction and a handcrafted finish.",
         },
       },
     },
@@ -1217,7 +1433,7 @@ export default {
     framing: {
       title: "Framing",
       description:
-        "Controls shot size, subject placement, camera angle, composition, crop rules, and layout intent.",
+        "Control how the subject is covered, placed, viewed, composed, and safely cropped inside the image frame. Camera optics, artifact layout, body pose, and visual style are handled by their own modules.",
       groups: {
         core: {
           title: "Framing",
@@ -1225,11 +1441,26 @@ export default {
         },
         advanced: {
           title: "Advanced Details",
-          description: "Add optional extra framing details without replacing the generated output.",
+          description:
+            "Add optional framing instructions that are not covered by the structured controls.",
         },
         override: {
           title: "Custom Override",
-          description: "Replace the generated framing output with your own text.",
+          description: "Replace the generated framing output with your own framing text.",
+        },
+        composition: {
+          title: "Frame Composition",
+          description:
+            "Define subject coverage, placement, balance, and compositional features inside the frame.",
+        },
+        view: {
+          title: "View",
+          description:
+            "Define the viewing angle and the direction from which the subject is seen, without changing lens characteristics or body pose.",
+        },
+        crop: {
+          title: "Crop Safety",
+          description: "Protect important subject areas from unintended cropping.",
         },
       },
       fields: {
@@ -1301,14 +1532,125 @@ export default {
           },
         },
         extraDetails: {
-          label: "Extra Details",
-          description: "Add optional extra framing details without replacing the generated output.",
-          placeholder: "Add extra framing details...",
+          label: "Extra Framing Details",
+          description:
+            "Add only framing-specific instructions that are not already expressed by the controls above.",
+          placeholder: "Add optional framing details...",
         },
         customText: {
-          label: "Custom Override",
-          description: "Write your own framing instructions and replace the generated output.",
+          label: "Custom Framing Text",
+          description: "Write your own framing text and replace the generated framing output.",
           placeholder: "Write your custom framing text...",
+        },
+        shotSize: {
+          label: "Shot Size",
+          description: "Choose how much of the subject should be visible inside the frame.",
+          placeholder: "Select shot size",
+          options: {
+            detail: "Detail",
+            extreme_close_up: "Extreme Close-Up",
+            close_up: "Close-Up",
+            head_and_shoulders: "Head & Shoulders",
+            bust: "Bust",
+            medium_subject: "Medium Subject",
+            three_quarter_subject: "Most of Subject",
+            full_subject: "Full Subject",
+            wide_full_subject: "Wide Full Subject",
+          },
+        },
+        subjectPlacement: {
+          label: "Subject Placement",
+          description:
+            "Choose the primary placement strategy for the subject or focal subject inside the frame.",
+          placeholder: "Select subject placement",
+          options: {
+            centered: "Centered",
+            off_center: "Off Center",
+            rule_of_thirds: "Rule of Thirds",
+            upper_frame: "Upper Frame",
+            lower_frame: "Lower Frame",
+            edge_weighted: "Edge Weighted",
+            negative_space: "Negative Space",
+          },
+        },
+        composition: {
+          label: "Composition Structure",
+          description:
+            "Choose the dominant geometric organization of the frame without applying an aesthetic style.",
+          placeholder: "Select composition structure",
+          options: {
+            symmetrical: "Symmetrical",
+            asymmetrical: "Asymmetrical",
+            dynamic_diagonal: "Dynamic Diagonal",
+            layered_depth: "Layered Depth",
+            isolated_subject: "Isolated Subject",
+          },
+        },
+        viewAngle: {
+          label: "View Angle",
+          description:
+            "Choose the vertical or overhead angle from which the subject is viewed. Lens and camera characteristics remain separate.",
+          placeholder: "Select view angle",
+          options: {
+            eye_level: "Eye Level",
+            low_angle: "Low Angle",
+            high_angle: "High Angle",
+            top_down: "Top Down",
+            worms_eye: "Worm's-Eye",
+            birds_eye: "Bird's-Eye",
+          },
+        },
+        viewDirection: {
+          label: "View Direction",
+          description:
+            "Choose the direction from which the subject is seen. This describes viewpoint rather than forcing a body pose.",
+          placeholder: "Select view direction",
+          options: {
+            frontal: "Front",
+            three_quarter: "Three-Quarter",
+            profile: "Side",
+            rear: "Rear",
+          },
+        },
+        cropSafety: {
+          label: "Protected Crop Areas",
+          description:
+            "Select subject areas that should remain fully visible and protected from unintended cropping.",
+          placeholder: "Select protected areas",
+          options: {
+            important_details: "Important Details",
+            face: "Face",
+            hands: "Hands",
+            silhouette: "Complete Silhouette",
+            safe_margin: "Safe Margin",
+          },
+          compatibilityWarnings: {
+            handsNeedMoreCoverage:
+              "This crop is usually too tight to keep the hands fully visible. Choose a wider shot or remove Hands from crop safety.",
+            silhouetteNeedsFullSubject:
+              "Complete Silhouette conflicts with a partial or close crop. Use Full Subject or Wide Full Subject if the whole silhouette must remain visible.",
+          },
+        },
+        balance: {
+          label: "Frame Balance",
+          description: "Choose whether the overall frame balance is symmetrical or asymmetrical.",
+          placeholder: "Select frame balance",
+          options: {
+            symmetrical: "Symmetrical",
+            asymmetrical: "Asymmetrical",
+          },
+        },
+        compositionFeatures: {
+          label: "Composition Features",
+          description:
+            "Add compatible compositional features that can coexist with the selected placement and balance.",
+          placeholder: "Select composition features",
+          options: {
+            negative_space: "Negative Space",
+            dynamic_diagonal: "Dynamic Diagonal",
+            layered_depth: "Layered Depth",
+            isolated_subject: "Isolated Subject",
+          },
         },
       },
     },
@@ -2256,7 +2598,7 @@ export default {
     },
     layout: {
       description:
-        "Define layout structure, composition, visual hierarchy, density, and reusable regions for the final image.",
+        "Define an exact multi-region canvas structure for artifacts such as posters, cards, collages, editorial pages, and presentation layouts.",
       fields: {
         composition: {
           description: "Choose how the main visual areas are arranged inside the canvas.",
@@ -2278,7 +2620,7 @@ export default {
         },
         density: {
           description:
-            "Control how much visual information, spacing, and content should appear in the layout.",
+            "Optionally describe the overall visual density of the finished layout without changing its region geometry.",
           label: "Density",
           options: {
             balanced: "Balanced",
@@ -2286,6 +2628,7 @@ export default {
             maximal: "Maximal",
             sparse: "Sparse",
           },
+          placeholder: "Select visual density",
         },
         hierarchy: {
           description:
@@ -2300,7 +2643,8 @@ export default {
           },
         },
         layoutType: {
-          description: "Select the overall layout format or design use case.",
+          description:
+            "Optionally identify the kind of multi-region artifact being constructed. This does not change region geometry.",
           label: "Layout Type",
           options: {
             banner: "Banner",
@@ -2315,6 +2659,7 @@ export default {
             product_sheet: "Product Sheet",
             social_post: "Social Post",
           },
+          placeholder: "Select an artifact type",
         },
         regions: {
           actions: {
@@ -2344,7 +2689,7 @@ export default {
           },
           defaultName: "Region",
           description:
-            "Define custom layout regions and control where each type of content should appear.",
+            "Define exact canvas regions, content bindings, and optional container behavior.",
           empty: {
             description:
               "Create layout regions to define where text, images, logos, backgrounds, and other content should appear.",
@@ -2353,8 +2698,8 @@ export default {
           fit: {
             contain: "Contain",
             cover: "Cover",
-            fill: "Fill",
-            natural: "Natural",
+            fill: "Stretch to fill",
+            natural: "Intrinsic size",
             none: "None",
           },
           horizontalAlign: {
@@ -2368,8 +2713,8 @@ export default {
           layer: "Layer",
           name: "Name",
           overflow: {
-            hidden: "Hidden",
-            visible: "Visible",
+            hidden: "Clip at region bounds",
+            visible: "Allow overflow",
             none: "None",
           },
           roles: {
@@ -2431,41 +2776,41 @@ export default {
           },
           controls: {
             contentKey: {
-              label: "Content Key",
-              placeholder: "Enter a variable key or content reference...",
+              label: "Content binding",
+              placeholder: "Insert a variable or content token",
             },
             description: {
-              label: "Description",
-              placeholder: "Describe what this region should contain or how it should behave...",
+              label: "Region instructions",
+              placeholder: "Optional region-specific layout instructions",
             },
             fit: {
-              label: "Fit",
+              label: "Content fit",
             },
             geometry: {
               description:
-                "Set the region position, size, and layer using normalized layout values.",
+                "Use normalized geometry from 0 to 1. Layer order only affects regions that overlap.",
               height: "Height",
-              layer: "Layer",
+              layer: "Layer order",
               title: "Geometry",
               width: "Width",
               x: "X",
               y: "Y",
             },
             horizontalAlign: {
-              label: "Horizontal Align",
+              label: "Horizontal content alignment",
             },
             name: {
               label: "Name",
               placeholder: "Region name...",
             },
             overflow: {
-              label: "Overflow",
+              label: "Content overflow",
             },
             role: {
-              label: "Role",
+              label: "Region role",
             },
             verticalAlign: {
-              label: "Vertical Align",
+              label: "Vertical content alignment",
             },
             customRole: {
               label: "Custom Role",
@@ -2506,7 +2851,8 @@ export default {
           title: "Layout Regions",
         },
         structure: {
-          description: "Choose the main layout type, composition style, and overall structure.",
+          description:
+            "Optionally describe the artifact and start from a structural region template.",
           title: "Layout Structure",
         },
       },
@@ -2517,6 +2863,276 @@ export default {
           copy: "Copy",
           copyJson: "Copy JSON",
         },
+      },
+      presets: {
+        full_bleed: {
+          label: "Template · Full bleed",
+          description: "Start with one region covering the entire canvas.",
+        },
+        split_vertical: {
+          label: "Template · Vertical split",
+          description: "Start with two equal side-by-side regions.",
+        },
+        split_horizontal: {
+          label: "Template · Horizontal split",
+          description: "Start with two equal stacked regions.",
+        },
+        side_panel: {
+          label: "Template · Side panel",
+          description: "Start with one large main region and a narrower side region.",
+        },
+        bottom_panel: {
+          label: "Template · Bottom panel",
+          description: "Start with one large main region and a shorter bottom region.",
+        },
+        modular_grid: {
+          label: "Template · Modular grid",
+          description: "Start with a four-region two-by-two grid.",
+        },
+        feature_support: {
+          label: "Template · Feature + support",
+          description: "Start with one large feature region and two smaller supporting regions.",
+        },
+        centered_stack: {
+          label: "Template · Centered stack",
+          description: "Start with top, center, and bottom regions with a dominant center area.",
+        },
+        layered_overlap: {
+          label: "Template · Layered overlap",
+          description: "Start with three overlapping regions on separate layers.",
+        },
+      },
+    },
+    form: {
+      title: "Form",
+      description:
+        "Controls form language, proportions, and intentional geometric transformation without defining the visual style.",
+      groups: {
+        core: {
+          title: "Core Form",
+          description: "Define the structural language and proportional behavior of visible forms.",
+        },
+        transformation: {
+          title: "Form Transformation",
+          description:
+            "Apply an intentional structural transformation only when the default form needs to be overridden.",
+        },
+        advanced: {
+          title: "Advanced Details",
+          description:
+            "Optional form-specific instructions that do not fit the structured controls.",
+        },
+        override: {
+          title: "Custom Form",
+          description: "Replace the compiled Form output with a complete custom form instruction.",
+        },
+      },
+      fields: {
+        formLanguage: {
+          label: "Form Language",
+          description:
+            "Control geometry, contour behavior, and structural character without defining visual style.",
+          placeholder: "Select a form language",
+          options: {
+            soft_rounded: "Soft Rounded",
+            geometric: "Geometric",
+            fluid_organic: "Fluid Organic",
+            blocky: "Blocky",
+            angular: "Angular",
+            irregular: "Irregular / Asymmetric",
+            faceted: "Faceted / Planar",
+            biomorphic: "Biomorphic",
+            monolithic: "Monolithic",
+            branching: "Branching",
+            ribbon_like: "Ribbon-Like",
+            crystalline: "Crystalline",
+            layered: "Layered",
+            cellular: "Cellular",
+            radial: "Radial",
+            modular_letterforms: "Modular Letterforms",
+            ribbon_letterforms: "Ribbon Letterforms",
+            inflated_letterforms: "Inflated Letterforms",
+            interlocking_letterforms: "Interlocking Letterforms",
+            terraced_environment: "Terraced Environment",
+            stratified_environment: "Stratified Environment",
+            eroded_environment: "Eroded Environment",
+            dendritic_environment: "Dendritic Environment",
+            streamlined_animal: "Streamlined Animal",
+            segmented_animal: "Segmented Animal",
+            armored_animal: "Armored Animal",
+            serpentine_animal: "Serpentine Animal",
+          },
+        },
+        proportions: {
+          label: "Proportions",
+          description:
+            "Control relative scale and mass distribution without changing the subject identity.",
+          placeholder: "Select proportions",
+          categories: {
+            general: "General Proportions",
+            person: "Person Proportions",
+            typography: "Typography Proportions",
+            scene: "Scene / Environment Proportions",
+            animal: "Animal Proportions",
+          },
+          options: {
+            balanced: "Balanced",
+            elongated: "Elongated",
+            compact: "Compact",
+            wide: "Wide",
+            tapered: "Tapered",
+            top_heavy: "Top Heavy",
+            bottom_heavy: "Bottom Heavy",
+            asymmetric: "Asymmetric",
+            oversized_elements: "Oversized Elements",
+            chibi: "Chibi",
+            fashion_elongated: "Fashion Elongated",
+            oversized_head: "Oversized Head",
+            compact_mascot: "Compact Mascot",
+            long_limb_narrow_torso: "Long Limbs / Narrow Torso",
+            graduated_scale: "Graduated Scale",
+            nested_scale: "Nested Scale",
+            slender_elongated: "Slender Elongated",
+            compact_short_limb: "Compact / Short Limb",
+            long_torso_short_legs: "Long Torso / Short Legs",
+            short_torso_long_legs: "Short Torso / Long Legs",
+            broad_shoulders_narrow_hips: "Broad Shoulders / Narrow Hips",
+            narrow_shoulders_wide_hips: "Narrow Shoulders / Wide Hips",
+            oversized_hands_feet: "Oversized Hands / Feet",
+            type_condensed: "Condensed Letterforms",
+            type_expanded: "Expanded Letterforms",
+            type_tall_narrow: "Tall / Narrow Letterforms",
+            type_squat_wide: "Squat / Wide Letterforms",
+            type_variable_scale: "Variable Letterform Scale",
+            scene_towering: "Towering Masses",
+            scene_low_spreading: "Low / Spreading Masses",
+            scene_narrow_vertical: "Narrow / Vertical Forms",
+            scene_broad_horizontal: "Broad / Horizontal Forms",
+            scene_scale_gradient: "Environmental Scale Gradient",
+            animal_long_body_short_limbs: "Long Body / Short Limbs",
+            animal_long_legged: "Long-Legged",
+            animal_compact_stocky: "Compact / Stocky",
+            animal_large_head_small_body: "Large Head / Small Body",
+            animal_long_neck: "Long Neck",
+            animal_tapered_body: "Tapered Body",
+          },
+        },
+        transformation: {
+          label: "Transformation",
+          description:
+            "Apply a deliberate form transformation. General options work across subjects; specialized options appear for the active subject type.",
+          placeholder: "Select a transformation",
+          categories: {
+            elastic: "Elastic / Squash & Stretch",
+            volume: "Volume / Compression",
+            warp: "Warp / Flow",
+            structural: "Structural",
+            surreal: "Surreal / Experimental",
+            personCaricature: "Person / Caricature",
+            personElastic: "Person / Elastic Anatomy",
+            personConstructed: "Person / Constructed Anatomy",
+            personCreature: "Creature / Hybrid Anatomy",
+            personGrotesque: "Person / Grotesque",
+            typography: "Typography / Letterform",
+            scene: "Scene / Environment",
+            animal: "Animal / Anatomy",
+          },
+          options: {
+            stretch: "Stretch",
+            squash: "Squash",
+            elastic_bend: "Elastic Bend",
+            compress: "Compress",
+            inflate: "Inflate",
+            flatten: "Flatten",
+            twist: "Twist",
+            warp: "Warp",
+            melt: "Melt / Droop",
+            fold: "Fold",
+            fragment: "Fragment",
+            offset_segments: "Offset Segments",
+            fractured_planes: "Fractured Planes",
+            directional_smear: "Directional Smear",
+            impossible_geometry: "Impossible Geometry",
+            biomorphic_growth: "Biomorphic Growth",
+            grotesque_caricature: "Grotesque Caricature",
+            fashion_caricature: "Fashion Caricature",
+            facial_exaggeration: "Facial Exaggeration",
+            personality_asymmetry: "Personality Asymmetry",
+            rubber_hose_anatomy: "Rubber-Hose Anatomy",
+            spring_loaded_anatomy: "Spring-Loaded Anatomy",
+            balloon_anatomy: "Balloon Anatomy",
+            squashed_compact_anatomy: "Squashed Compact Anatomy",
+            marionette_anatomy: "Marionette Anatomy",
+            mannequin_anatomy: "Mannequin Anatomy",
+            cuboid_anatomy: "Cuboid Anatomy",
+            faceted_anatomy: "Faceted Anatomy",
+            insectoid_anatomy: "Insectoid Anatomy",
+            creature_hybrid: "Creature Hybrid",
+            alien_elongation: "Alien Elongation",
+            grotesque_misshapen: "Grotesque Misshapen",
+            distorted_elegance: "Distorted Elegance",
+            radical_silhouette: "Radical Silhouette",
+            pinch: "Pinch",
+            bulge: "Bulge",
+            ripple: "Ripple",
+            spiral: "Spiral",
+            perforate: "Perforate",
+            interweave: "Interweave",
+            elegant_caricature: "Elegant Caricature",
+            anatomical_asymmetry: "Anatomical Asymmetry",
+            pinched_torso: "Pinched Torso",
+            limb_taper: "Limb Taper",
+            type_arc_bend: "Arc-Bent Letterforms",
+            type_wave: "Wave Letterforms",
+            type_inflate: "Inflated Letterforms",
+            type_pinch: "Pinched Letterforms",
+            type_fold: "Folded Letterforms",
+            type_interlock: "Interlocking Letterforms",
+            type_fragment: "Fragmented Letterforms",
+            type_twist: "Twisted Letterforms",
+            scene_terrain_fold: "Terrain Fold",
+            scene_sweeping_warp: "Sweeping Environmental Warp",
+            scene_floating_masses: "Floating Land Masses",
+            scene_strata_shift: "Strata Shift",
+            scene_crystalline_growth: "Crystalline Growth",
+            scene_erosion_cut: "Erosion Cut",
+            scene_gravity_droop: "Gravity Droop",
+            scene_inverted_landform: "Inverted Landform",
+            animal_serpentine_elongation: "Serpentine Elongation",
+            animal_multi_limb: "Multi-Limb",
+            animal_armored_segmentation: "Armored Segmentation",
+            animal_spine_growth: "Spine Growth",
+            animal_limb_reduction: "Limb Reduction",
+            animal_appendage_expansion: "Appendage Expansion",
+          },
+        },
+        transformationStrength: {
+          label: "Form Transformation Strength",
+          description:
+            "Control how strongly the selected Form transformation changes the subject's structure.",
+          placeholder: "Select form transformation strength",
+          options: {
+            subtle: "Subtle",
+            moderate: "Moderate",
+            strong: "Strong",
+            extreme: "Extreme",
+          },
+        },
+        extraDetails: {
+          label: "Extra Form Details",
+          description:
+            "Add optional form-specific instructions that are not covered by the structured fields.",
+          placeholder: "Add optional form details...",
+        },
+        customText: {
+          label: "Custom Form Output",
+          description: "Overrides all Form fields when Custom mode is active.",
+          placeholder: "Write a complete custom form instruction...",
+        },
+      },
+      compatibility: {
+        transformationProportionConflict:
+          "This transformation pulls against the selected proportions. The combination is allowed, but may produce a less predictable hybrid form.",
       },
     },
   },
@@ -2549,6 +3165,8 @@ export default {
     statusPreset: "Preset applied",
     statusCustom: "Custom override",
     statusCustomEmpty: "Custom empty",
+    subjectOptionMismatch:
+      "This selection is specialized for another subject type. It is preserved until you change or clear it.",
   },
   home: {
     eyebrow: "Prompt Generator",
@@ -3015,7 +3633,7 @@ export default {
       },
       referenceUsage: {
         label: "Reference Usage",
-        description: "Control how strongly the output should follow the reference image.",
+        description: "Control how closely the output should follow the reference image overall.",
         options: {
           strict: "Strict Reference",
           balanced: "Balanced Reference",
@@ -3023,8 +3641,9 @@ export default {
         },
       },
       transformationStrength: {
-        label: "Transformation Strength",
-        description: "Control how far the result can move away from the reference image.",
+        label: "Reference Transformation Strength",
+        description:
+          "Control how strongly the overall result may transform away from the reference image. This is separate from Form Transformation Strength.",
         options: {
           subtle: "Subtle",
           balanced: "Balanced",
@@ -3047,6 +3666,24 @@ export default {
         },
       },
     },
+    subjectType: {
+      label: "Subject Type",
+      description:
+        "Optional context used to surface relevant module controls. It is not injected into the prompt by itself.",
+      options: {
+        unspecified: "General / Unspecified",
+        person: "Person",
+        object: "Object",
+        animal: "Animal",
+        building: "Building / Architecture",
+        product: "Product",
+        vehicle: "Vehicle",
+        scene: "Scene / Environment",
+        typography: "Typography",
+        abstract: "Abstract",
+        custom: "Custom",
+      },
+    },
   },
   promptEditor: {
     emptyTitle: "No modules selected",
@@ -3067,6 +3704,12 @@ export default {
       "Reference Subject Type is set to Custom, but Custom Subject is empty. Add a custom subject or choose another subject type.",
     ideaEmpty: "Add an idea to make the prompt more specific and easier to control.",
     unknown: "Something needs to be fixed before copying the output.",
+    framingPreserveCompositionConflict:
+      "Framing requests a new composition or viewpoint while Setup is preserving the original composition. Review one of these settings to avoid conflicting instructions.",
+    undefinedVariableReference:
+      "{token} is referenced in the prompt but is not defined as an active user variable.",
+    unusedVariable:
+      "{token} is defined but is not currently referenced by the active prompt output.",
   },
   guide: {
     title: "Module Guide",

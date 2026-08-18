@@ -1,10 +1,13 @@
 // app/utils/compilePrompt.ts
-import type { PromptKeyModule } from '../modules/types'
+import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
+import { compileLayoutNaturalBlock } from './compileLayoutNatural'
+import { compileTypographyNaturalBlock } from './compileTypographyNatural'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
+import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
 import {
-  getAspectRatioPromptHint,
+  getAspectRatioRatio,
   getDefaultAspectRatioValue,
 } from "../constants/aspectRatios";
 
@@ -16,24 +19,13 @@ export type PromptOutputFormat = 'modular' | 'natural' | 'json'
 
 export type PromptMode = 'text_to_image' | 'image_to_image'
 
-export type ReferenceSubjectType =
-  | 'person'
-  | 'object'
-  | 'animal'
-  | 'building'
-  | 'product'
-  | 'vehicle'
-  | 'scene'
-  | 'custom'
+export type PromptSubjectType = ModuleSubjectType
 
 export type ReferenceUsage = 'strict' | 'balanced' | 'loose'
 
 export type TransformationStrength = 'subtle' | 'balanced' | 'strong' | 'extreme'
 
 export type ImageToImageSettings = {
-  referenceSubjectType: ReferenceSubjectType
-  customSubject: string
-  subjectDescription: string
   referenceUsage: ReferenceUsage
   transformationStrength: TransformationStrength
   preserveMainSubject: boolean
@@ -50,6 +42,7 @@ export type PromptSettings = {
   mode: PromptMode
   idea: string
   subject: string
+  subjectType: PromptSubjectType
   aspectRatio: string
   globalRules: string
   imageToImage: ImageToImageSettings
@@ -60,12 +53,10 @@ export function createDefaultPromptSettings(): PromptSettings {
     mode: 'image_to_image',
     idea: '',
     subject: '',
+    subjectType: 'unspecified',
     aspectRatio: getDefaultAspectRatioValue(),
     globalRules: '',
     imageToImage: {
-      referenceSubjectType: 'person',
-      customSubject: '',
-      subjectDescription: '',
       referenceUsage: 'balanced',
       transformationStrength: 'balanced',
       preserveMainSubject: true,
@@ -105,7 +96,7 @@ function getOrderedModuleOutputs(
     })
     .filter(Boolean) as Array<{
       key: string
-      output: string
+      output: ModuleOutputValue
     }>
 }
 
@@ -166,23 +157,35 @@ function modeToPromptText(mode: PromptMode) {
   return 'text to image'
 }
 
-function referenceSubjectTypeToText(type: ReferenceSubjectType) {
-  const map: Record<ReferenceSubjectType, string> = {
-    person: 'person in the attached reference image',
-    object: 'object in the attached reference image',
-    animal: 'animal in the attached reference image',
-    building: 'building or architectural subject in the attached reference image',
-    product: 'product in the attached reference image',
-    vehicle: 'vehicle in the attached reference image',
-    scene: 'scene or environment in the attached reference image',
-    custom: 'subject in the attached reference image'
+function subjectTypeToText(type: PromptSubjectType) {
+  const map: Record<PromptSubjectType, string> = {
+    unspecified: '',
+    person: 'person',
+    object: 'object',
+    animal: 'animal',
+    building: 'building or architectural subject',
+    product: 'product',
+    vehicle: 'vehicle',
+    scene: 'scene or environment',
+    typography: 'typography',
+    abstract: 'abstract forms',
+    custom: ''
   }
 
   return map[type]
 }
 
-function referenceSubjectTypeToNaturalText(type: ReferenceSubjectType) {
-  const map: Record<ReferenceSubjectType, string> = {
+function subjectTypeToReferenceText(type: PromptSubjectType) {
+  const subjectTypeText = subjectTypeToText(type)
+
+  return subjectTypeText
+    ? `${subjectTypeText} in {reference}`
+    : 'subject in {reference}'
+}
+
+function subjectTypeToNaturalReferenceText(type: PromptSubjectType) {
+  const map: Record<PromptSubjectType, string> = {
+    unspecified: 'the subject in the attached reference image',
     person: 'the person in the attached reference image',
     object: 'the object in the attached reference image',
     animal: 'the animal in the attached reference image',
@@ -190,6 +193,8 @@ function referenceSubjectTypeToNaturalText(type: ReferenceSubjectType) {
     product: 'the product in the attached reference image',
     vehicle: 'the vehicle in the attached reference image',
     scene: 'the scene or environment in the attached reference image',
+    typography: 'the typography in the attached reference image',
+    abstract: 'the abstract forms in the attached reference image',
     custom: 'the subject in the attached reference image'
   }
 
@@ -197,43 +202,39 @@ function referenceSubjectTypeToNaturalText(type: ReferenceSubjectType) {
 }
 
 export function buildPromptSubject(settings: PromptSettings) {
+  const subjectDetails = cleanText(settings.subject)
+  const subjectType = settings.subjectType || 'unspecified'
+
   if (settings.mode === 'text_to_image') {
-    return cleanText(settings.subject)
+    return subjectDetails || subjectTypeToText(subjectType)
   }
 
-  const imageSettings = settings.imageToImage
+  if (subjectType === 'custom') {
+    return subjectDetails
+      ? `${subjectDetails} in {reference}`
+      : subjectTypeToReferenceText('custom')
+  }
 
-  const baseSubject =
-    imageSettings.referenceSubjectType === 'custom'
-      ? cleanText(imageSettings.customSubject) ||
-      referenceSubjectTypeToText('custom')
-      : referenceSubjectTypeToText(imageSettings.referenceSubjectType)
+  const baseSubject = subjectTypeToReferenceText(subjectType)
 
-  const description = cleanText(imageSettings.subjectDescription)
-
-  return [baseSubject, description].filter(Boolean).join(', ')
+  return [baseSubject, subjectDetails].filter(Boolean).join(', ')
 }
 
 function buildNaturalSubject(settings: PromptSettings) {
+  const subjectDetails = cleanNaturalPart(settings.subject)
+  const subjectType = settings.subjectType || 'unspecified'
+
   if (settings.mode === 'text_to_image') {
-    return cleanNaturalPart(settings.subject)
+    return subjectDetails || subjectTypeToText(subjectType)
   }
 
-  const imageSettings = settings.imageToImage
-  const description = cleanNaturalPart(imageSettings.subjectDescription)
-
-  if (description) {
-    return addIndefiniteArticle(description)
+  if (subjectType === 'custom' && subjectDetails) {
+    return `${subjectDetails} in the attached reference image`
   }
 
-  if (imageSettings.referenceSubjectType === 'custom') {
-    return (
-      cleanNaturalPart(imageSettings.customSubject) ||
-      referenceSubjectTypeToNaturalText('custom')
-    )
-  }
+  const baseSubject = subjectTypeToNaturalReferenceText(subjectType)
 
-  return referenceSubjectTypeToNaturalText(imageSettings.referenceSubjectType)
+  return [baseSubject, subjectDetails].filter(Boolean).join(', ')
 }
 
 function referenceUsageToPromptText(usage: ReferenceUsage) {
@@ -274,52 +275,59 @@ function getPreserveParts(settings: PromptSettings) {
   const parts: string[] = []
 
   if (imageSettings.preserveMainSubject) {
-    parts.push('the main subject')
+    parts.push('main subject')
   }
 
   if (
-    imageSettings.referenceSubjectType === 'person' &&
+    settings.subjectType === 'person' &&
     imageSettings.preserveIdentity
   ) {
-    parts.push("the person's identity")
+    parts.push("person's identity")
   }
 
   if (imageSettings.preservePose) {
-    parts.push('the pose')
+    parts.push('pose')
   }
 
   if (
-    imageSettings.referenceSubjectType === 'person' &&
+    settings.subjectType === 'person' &&
     imageSettings.preserveOutfit
   ) {
-    parts.push('the outfit and visible accessories')
+    parts.push('outfit and visible accessories')
   }
 
   if (imageSettings.preserveComposition) {
-    parts.push('the original composition')
+    parts.push('original composition')
   }
 
   if (imageSettings.preserveColors) {
-    parts.push('the main color impression')
+    parts.push('main color impression')
   }
 
   if (imageSettings.preserveMaterials) {
-    parts.push('visible materials and surface details')
+    parts.push('materials and surface details')
   }
 
   if (imageSettings.preserveLighting) {
-    parts.push('the original lighting and mood')
+    parts.push('original lighting and mood')
   }
 
   return parts
 }
 
+function getNaturalPreserveParts(settings: PromptSettings) {
+  return getPreserveParts(settings).map((part) => {
+    if (part === "person's identity") return "the person's identity"
+    if (part === 'materials and surface details') {
+      return 'visible materials and surface details'
+    }
+
+    return `the ${part}`
+  })
+}
+
 function getPreservePromptText(settings: PromptSettings) {
-  const preserveParts = getPreserveParts(settings)
-
-  if (!preserveParts.length) return ''
-
-  return preserveParts.map((part) => `preserve ${part}`).join(', ')
+  return getPreserveParts(settings).join(', ')
 }
 
 function getModuleNaturalParts(
@@ -328,7 +336,7 @@ function getModuleNaturalParts(
   const parts = moduleOutputs
     .filter((item) => typeof item.output === "string")
     .flatMap((item) => {
-      return item.output
+      return (item.output as string)
         .split(",")
         .map(cleanNaturalPart)
         .filter(Boolean)
@@ -348,11 +356,76 @@ function getModuleNaturalParts(
   })
 }
 
-function getVariablesOutput(outputs: ModuleOutputMap) {
-  return outputs[VARIABLES_MODULE_KEY]?.trim() || ''
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
-function createSystemVariable(key: string, value: ModuleOutputValue) {
+function getReferencedLayoutRegionKeys(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  layoutOutput: Record<string, unknown>,
+) {
+  const referenceText = moduleOutputs
+    .filter((item) => item.key !== 'layout')
+    .map((item) =>
+      typeof item.output === 'string'
+        ? item.output
+        : JSON.stringify(item.output)
+    )
+    .join('\n')
+
+  const referencedRegionKeys = new Set<string>()
+  const regions = Array.isArray(layoutOutput.regions) ? layoutOutput.regions : []
+
+  regions.forEach((region) => {
+    if (!isRecord(region)) return
+
+    const key = typeof region.key === 'string' ? region.key.trim() : ''
+
+    if (key && referenceText.includes(key)) {
+      referencedRegionKeys.add(key)
+    }
+  })
+
+  return referencedRegionKeys
+}
+
+function getLayoutNaturalBlock(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const layoutOutput = moduleOutputs.find((item) => item.key === 'layout')?.output
+
+  if (!layoutOutput || typeof layoutOutput === 'string') return ''
+
+  return compileLayoutNaturalBlock(layoutOutput, {
+    referencedRegionKeys: getReferencedLayoutRegionKeys(
+      moduleOutputs,
+      layoutOutput,
+    ),
+  })
+}
+
+function getTypographyNaturalBlock(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+) {
+  const typographyOutput = moduleOutputs.find(
+    (item) => item.key === 'typography'
+  )?.output
+
+  if (!typographyOutput || typeof typographyOutput === 'string') return ''
+
+  return compileTypographyNaturalBlock(typographyOutput)
+}
+
+function getVariablesOutput(outputs: ModuleOutputMap) {
+  const output = outputs[VARIABLES_MODULE_KEY]
+  return typeof output === 'string' ? output.trim() : ''
+}
+
+function createSystemVariable(
+  key: string,
+  value: ModuleOutputValue,
+  options: { insertable?: boolean } = {}
+) {
   const stringValue =
     typeof value === "string"
       ? cleanText(value)
@@ -364,64 +437,95 @@ function createSystemVariable(key: string, value: ModuleOutputValue) {
     value: stringValue,
     description: "Generated from active prompt settings or active module output.",
     type: "system" as const,
+    source: "system" as const,
+    entityType: "setup" as const,
     enabled: Boolean(key.trim() && stringValue.trim()),
+    insertable: options.insertable,
   }
 }
 
-function getActiveSystemPromptVariables(
+function getSystemPromptVariables(
   settings: PromptSettings,
 ) {
   const variables = [
-    createSystemVariable("mode", modeToPromptText(settings.mode)),
+    createSystemVariable("mode", modeToPromptText(settings.mode), {
+      insertable: false,
+    }),
   ]
 
   const subject = buildPromptSubject(settings)
 
   if (settings.mode === "image_to_image") {
-    variables.push(createSystemVariable("reference", "attached reference image"))
+    variables.push(
+      createSystemVariable("reference", "attached reference image", {
+        insertable: true,
+      })
+    )
   }
 
   if (settings.idea.trim()) {
-    variables.push(createSystemVariable("idea", settings.idea))
+    variables.push(
+      createSystemVariable("idea", settings.idea, {
+        insertable: true,
+      })
+    )
   }
 
   if (subject) {
-    variables.push(createSystemVariable("subject", subject))
+    variables.push(
+      createSystemVariable("subject", subject, {
+        insertable: true,
+      })
+    )
   }
 
   if (settings.mode === "image_to_image") {
     variables.push(
       createSystemVariable(
         "reference_usage",
-        referenceUsageToPromptText(settings.imageToImage.referenceUsage)
+        referenceUsageToPromptText(settings.imageToImage.referenceUsage),
+        { insertable: false }
       )
     )
 
     const preserveText = getPreservePromptText(settings)
 
     if (preserveText) {
-      variables.push(createSystemVariable("preserve", preserveText))
+      variables.push(
+        createSystemVariable("preserve", preserveText, {
+          insertable: false,
+        })
+      )
     }
 
     variables.push(
       createSystemVariable(
         "transformation_strength",
-        transformationStrengthToPromptText(settings.imageToImage.transformationStrength)
+        transformationStrengthToPromptText(settings.imageToImage.transformationStrength),
+        { insertable: false }
       )
     )
   }
 
-  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+  const aspectRatio = getAspectRatioRatio(settings.aspectRatio)
 
-  if (aspectRatioPromptHint.trim()) {
-    variables.push(createSystemVariable("aspect", aspectRatioPromptHint))
+  if (aspectRatio.trim()) {
+    variables.push(
+      createSystemVariable("aspect", aspectRatio, {
+        insertable: true,
+      })
+    )
   }
 
   if (settings.globalRules.trim()) {
-    variables.push(createSystemVariable("rules", settings.globalRules))
+    variables.push(
+      createSystemVariable("rules", settings.globalRules, {
+        insertable: true,
+      })
+    )
   }
 
-  return variables.filter((variable) => variable.enabled)
+  return variables
 }
 
 function syncActiveSystemPromptVariables(
@@ -429,7 +533,13 @@ function syncActiveSystemPromptVariables(
 ) {
   const { setSystemPromptVariables } = usePromptVariables()
 
-  setSystemPromptVariables(getActiveSystemPromptVariables(settings))
+  setSystemPromptVariables(getSystemPromptVariables(settings))
+}
+
+function syncActivePromptSubjectContext(settings: PromptSettings) {
+  const { setSubjectType } = usePromptSubjectContext()
+
+  setSubjectType(settings.subjectType || 'unspecified')
 }
 
 function compileModularOutput(
@@ -480,10 +590,10 @@ function compileModularOutput(
     )
   }
 
-  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+  const aspectRatio = getAspectRatioRatio(settings.aspectRatio)
 
-  if (aspectRatioPromptHint.trim()) {
-    parts.push(`{aspect} = ${cleanText(aspectRatioPromptHint)}`)
+  if (aspectRatio.trim()) {
+    parts.push(`{aspect} = ${cleanText(aspectRatio)}`)
   }
 
   if (settings.globalRules.trim()) {
@@ -494,7 +604,7 @@ function compileModularOutput(
     const value =
       typeof item.output === "string"
         ? item.output
-        : JSON.stringify(item.output, null, 2)
+        : JSON.stringify(item.output)
 
     parts.push(`{${item.key}} = ${value}`)
   })
@@ -508,7 +618,7 @@ function compileNaturalOutput(
 ) {
   const idea = normalizeTransformationIdea(settings.idea)
   const subject = buildNaturalSubject(settings)
-  const aspectRatio = cleanNaturalPart(getAspectRatioPromptHint(settings.aspectRatio))
+  const aspectRatio = cleanNaturalPart(getAspectRatioRatio(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
   const moduleParts = getModuleNaturalParts(moduleOutputs)
   const sentences: string[] = []
@@ -531,7 +641,7 @@ function compileNaturalOutput(
     sentences.push(`${intro}.`)
     sentences.push(referenceUsageToNaturalSentence(settings.imageToImage.referenceUsage))
 
-    const preserveParts = getPreserveParts(settings)
+    const preserveParts = getNaturalPreserveParts(settings)
 
     if (preserveParts.length) {
       sentences.push(`Preserve ${naturalJoin(preserveParts)}.`)
@@ -591,7 +701,8 @@ function compileJsonOutput(
     mode: settings.mode,
     idea: settings.idea.trim(),
     subject: buildPromptSubject(settings),
-    aspectRatio: getAspectRatioPromptHint(settings.aspectRatio).trim(),
+    subjectType: settings.subjectType,
+    aspectRatio: getAspectRatioRatio(settings.aspectRatio).trim(),
     aspectRatioValue: settings.aspectRatio.trim(),
     globalRules: settings.globalRules.trim(),
     modules
@@ -606,9 +717,8 @@ function compileJsonOutput(
       ...baseOutput,
       reference: {
         source: 'attached reference image',
-        subjectType: settings.imageToImage.referenceSubjectType,
-        customSubject: settings.imageToImage.customSubject.trim(),
-        subjectDescription: settings.imageToImage.subjectDescription.trim(),
+        subjectType: settings.subjectType,
+        subject: settings.subject.trim(),
         referenceUsage: settings.imageToImage.referenceUsage,
         transformationStrength: settings.imageToImage.transformationStrength,
         preserve: getPreserveParts(settings)
@@ -628,7 +738,7 @@ function getNaturalOptimizerOptions(settings: PromptSettings) {
         : undefined,
     referenceSubjectType:
       settings.mode === 'image_to_image'
-        ? settings.imageToImage.referenceSubjectType
+        ? settings.subjectType
         : undefined
   }
 }
@@ -688,6 +798,7 @@ export function compilePromptOutput(
   const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
   const variablesOutput = getVariablesOutput(outputs)
 
+  syncActivePromptSubjectContext(settings)
   syncActiveSystemPromptVariables(settings)
 
   const hasSettingsOutput =
@@ -706,6 +817,8 @@ export function compilePromptOutput(
 
   if (format === 'natural') {
     const rawOutput = compileNaturalOutput(settings, moduleOutputs)
+    const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
+    const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
@@ -719,7 +832,11 @@ export function compilePromptOutput(
     //   optimizedOutput
     // })
 
-    return variablesOutput ? `${variablesOutput}\n\n${optimizedOutput}` : optimizedOutput
+    const naturalOutput = [optimizedOutput, layoutBlock, typographyBlock]
+      .filter(Boolean)
+      .join('\n\n')
+
+    return variablesOutput ? `${variablesOutput}\n\n${naturalOutput}` : naturalOutput
   }
 
   return compileModularOutput(settings, moduleOutputs, variablesOutput)

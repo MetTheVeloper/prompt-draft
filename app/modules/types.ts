@@ -7,6 +7,19 @@ export type ModuleFieldOptionLayout = "default" | "categorized";
 
 export type ModuleFieldCompatibilityMode = "sort-and-hint";
 
+export type ModuleSubjectType =
+  | "unspecified"
+  | "person"
+  | "object"
+  | "animal"
+  | "building"
+  | "product"
+  | "vehicle"
+  | "scene"
+  | "typography"
+  | "abstract"
+  | "custom";
+
 export type ModuleOptionCompatibility = {
   preferredTags?: string[];
   supportedTags?: string[];
@@ -28,6 +41,12 @@ export type ModuleFieldOption = {
   category?: string;
   categoryLabel?: string;
   categoryLabelKey?: string;
+
+  /**
+   * Optional subject applicability metadata used by module editors.
+   * Omit it (or include "*") for universally applicable options.
+   */
+  appliesTo?: Array<ModuleSubjectType | "*">;
 
   compatibility?: ModuleOptionCompatibility;
 };
@@ -224,11 +243,20 @@ export interface ModulePreset {
   values: ModuleValues;
 }
 
+export interface ModulePresetUiConfig {
+  component?: "chips" | "select";
+  group?: string;
+  order?: number;
+  allowNone?: boolean;
+  resetOnNone?: boolean;
+}
+
 export interface ModuleCompileConfig {
   separator?: string;
   removeDuplicates?: boolean;
   ignoreEmpty?: boolean;
   overrideField?: string;
+  fieldOrder?: string[];
 }
 
 export interface PromptKeyModule {
@@ -237,5 +265,6 @@ export interface PromptKeyModule {
   groups?: Record<string, ModuleGroup>;
   fields: Record<string, ModuleField>;
   presets?: Record<string, ModulePreset>;
+  presetUi?: ModulePresetUiConfig;
   compile?: ModuleCompileConfig;
 }

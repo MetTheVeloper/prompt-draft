@@ -4,6 +4,10 @@ import type {
   PromptVariableGroup,
 } from "~/modules/types"
 
+type InsertablePromptVariable = PromptVariable & {
+  insertable?: boolean
+}
+
 const promptVariables = ref<PromptVariable[]>([])
 const systemPromptVariables = ref<PromptVariable[]>([])
 const moduleVariableGroups = ref<PromptVariableGroup[]>([])
@@ -41,6 +45,19 @@ function enabledVariables(variables: PromptVariable[]) {
   })
 }
 
+function insertableVariables(variables: PromptVariable[]) {
+  return variables.filter((variable) => {
+    const candidate = variable as InsertablePromptVariable
+    const hasKey = Boolean(candidate.key?.trim())
+
+    if (!hasKey) return false
+    if (candidate.insertable === true) return true
+    if (candidate.insertable === false) return false
+
+    return candidate.enabled !== false && Boolean(candidate.value?.trim())
+  })
+}
+
 export function usePromptVariables() {
   const enabledPromptVariables = computed(() => {
     return enabledVariables(promptVariables.value)
@@ -48,6 +65,10 @@ export function usePromptVariables() {
 
   const enabledSystemPromptVariables = computed(() => {
     return enabledVariables(systemPromptVariables.value)
+  })
+
+  const insertableSystemPromptVariables = computed(() => {
+    return insertableVariables(systemPromptVariables.value)
   })
 
   const enabledModuleVariableGroups = computed(() => {
@@ -110,7 +131,7 @@ export function usePromptVariables() {
 
     groups.push(...enabledModuleVariableGroups.value)
 
-    if (enabledSystemPromptVariables.value.length) {
+    if (insertableSystemPromptVariables.value.length) {
       groups.push({
         id: "system",
         labelKey: "modules.variables.fields.variables.picker.tabs.system",
@@ -118,7 +139,7 @@ export function usePromptVariables() {
         icon: "tune",
         order: 999,
         source: "system",
-        variables: enabledSystemPromptVariables.value,
+        variables: insertableSystemPromptVariables.value,
       })
     }
 
@@ -175,6 +196,7 @@ export function usePromptVariables() {
     moduleVariableGroups,
     enabledPromptVariables,
     enabledSystemPromptVariables,
+    insertableSystemPromptVariables,
     enabledModuleVariableGroups,
     enabledModulePromptVariables,
     enabledPromptVariableKeys,

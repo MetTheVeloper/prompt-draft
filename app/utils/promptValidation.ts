@@ -11,6 +11,7 @@ export type PromptValidationIssueCode =
   | 'idea_empty'
   | 'undefined_variable_reference'
   | 'unused_variable'
+  | 'framing_preserve_composition_conflict'
 
 export interface PromptValidationIssue {
   id: string
@@ -22,8 +23,32 @@ export interface PromptValidationIssue {
   token?: string
 }
 
+const FRAMING_CROP_SAFETY_ONLY_PARTS = new Set([
+  'preserve important subject details within the frame',
+  'preserve the face fully within the frame',
+  'preserve the hands fully within the frame',
+  'preserve the complete readable silhouette within the frame',
+  'keep additional margin around the visible subject area',
+])
+
 function isEmpty(value: string) {
   return !value.trim()
+}
+
+function framingChangesComposition(outputs?: ModuleOutputMap) {
+  const output = outputs?.framing
+
+  if (!output) return false
+  if (typeof output !== 'string') return true
+
+  const parts = output
+    .split(',')
+    .map((part) => part.trim().toLowerCase())
+    .filter(Boolean)
+
+  if (!parts.length) return false
+
+  return parts.some((part) => !FRAMING_CROP_SAFETY_ONLY_PARTS.has(part))
 }
 
 export function validatePromptSettings(
@@ -49,8 +74,8 @@ export function validatePromptSettings(
 
   if (
     settings.mode === 'image_to_image' &&
-    settings.imageToImage.referenceSubjectType === 'custom' &&
-    isEmpty(settings.imageToImage.customSubject)
+    settings.subjectType === 'custom' &&
+    subjectIsEmpty
   ) {
     issues.push({
       id: 'setup:custom_subject_empty',
@@ -70,6 +95,19 @@ export function validatePromptSettings(
     })
   }
 
+  if (
+    settings.mode === 'image_to_image' &&
+    settings.imageToImage.preserveComposition &&
+    framingChangesComposition(outputs)
+  ) {
+    issues.push({
+      id: 'setup:framing_preserve_composition_conflict',
+      code: 'framing_preserve_composition_conflict',
+      level: 'warning',
+      moduleKey: 'framing',
+    })
+  }
+
   if (outputs) {
     issues.push(...validateVariableReferencesFromOutputs(outputs))
   }
@@ -80,14 +118,20 @@ export function validatePromptSettings(
 function validateVariableReferencesFromOutputs(
   outputs: ModuleOutputMap
 ): PromptValidationIssue[] {
-  const variablesOutput = outputs[VARIABLES_MODULE_KEY]?.trim() || ''
+  const variablesOutput =
+    typeof outputs[VARIABLES_MODULE_KEY] === 'string'
+      ? outputs[VARIABLES_MODULE_KEY].trim()
+      : ''
+
   const definedKeys = new Set(
     parseVariableDefinitions(variablesOutput).map((variable) => variable.key)
   )
 
   const textsToScan = Object.entries(outputs)
     .filter(([key]) => key !== VARIABLES_MODULE_KEY)
-    .map(([, output]) => output)
+    .map(([, output]) =>
+      typeof output === 'string' ? output : JSON.stringify(output)
+    )
 
   const references = new Set(
     textsToScan.flatMap((text) => extractVariableReferences(text))

@@ -936,7 +936,7 @@ const selectedModules = computed(() => {
 
 const globalValidationIssues = computed<PromptValidationIssue[]>(() => {
   const issues: PromptValidationIssue[] = [
-    ...validatePromptSettings(promptSettings.value),
+    ...validatePromptSettings(promptSettings.value, moduleOutputs.value),
     ...moduleValidationIssues.value,
   ];
 

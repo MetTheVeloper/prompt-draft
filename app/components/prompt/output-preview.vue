@@ -87,6 +87,22 @@ function validationMessage(issue: PromptValidationIssue) {
     return t("validation.ideaEmpty");
   }
 
+  if (issue.code === "undefined_variable_reference") {
+    return t("validation.undefinedVariableReference", {
+      token: issue.token || `{${issue.variableKey || "variable"}}`,
+    });
+  }
+
+  if (issue.code === "unused_variable") {
+    return t("validation.unusedVariable", {
+      token: issue.token || `{${issue.variableKey || "variable"}}`,
+    });
+  }
+
+  if (issue.code === "framing_preserve_composition_conflict") {
+    return t("validation.framingPreserveCompositionConflict");
+  }
+
   return t("validation.unknown");
 }
 
