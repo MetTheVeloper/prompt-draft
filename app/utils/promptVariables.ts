@@ -5,6 +5,7 @@ export const VARIABLES_MODULE_KEY = "variables";
 export const VARIABLE_TOKEN_PATTERN = /\{([a-z][a-zA-Z0-9_]*)\}/g;
 
 export const RESERVED_VARIABLE_KEY_PATTERNS = [
+  /^layout_region_[a-zA-Z0-9_]*$/,
   /^text_[a-zA-Z0-9_]*$/,
   /^text_group_[a-zA-Z0-9_]*$/,
 ];
