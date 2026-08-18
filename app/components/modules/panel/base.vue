@@ -36,6 +36,7 @@ import {
 } from "../../../utils/compileModules";
 
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { usePromptSubjectContext } from "~/composables/prompt/usePromptSubjectContext";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
@@ -46,7 +47,7 @@ const {
   setPromptVariables: setGlobalPromptVariables,
   clearPromptVariables,
 } = usePromptVariables();
-
+const { subjectType } = usePromptSubjectContext();
 
 const props = defineProps<{
   module: PromptKeyModule;
@@ -464,7 +465,6 @@ watch(
   }
 );
 
-
 function translate(path: string, fallback = "") {
   const translated = t(path);
 
@@ -545,7 +545,6 @@ function removeModule() {
 function isFieldFilled(field: ModuleField) {
   const value = values[field.id];
 
-
   if (field.type === "layoutRegions") {
     return normalizeLayoutRegionsState(value).regions.length > 0;
   }
@@ -591,8 +590,32 @@ function fieldClasses(field: ModuleField) {
   };
 }
 
-function getRawFieldOptions(field: ModuleField) {
+function getAllRawFieldOptions(field: ModuleField) {
   return (field.options || []) as SelectOption[];
+}
+
+function isOptionSelected(field: ModuleField, option: SelectOption) {
+  const currentValue = values[field.id];
+
+  if (Array.isArray(currentValue)) {
+    return currentValue.includes(option.value);
+  }
+
+  return String(currentValue ?? "") === option.value;
+}
+
+function isOptionApplicableToSubject(option: SelectOption) {
+  const appliesTo = option.appliesTo || [];
+
+  if (!appliesTo.length || appliesTo.includes("*")) return true;
+
+  return appliesTo.includes(subjectType.value);
+}
+
+function getRawFieldOptions(field: ModuleField) {
+  return getAllRawFieldOptions(field).filter((option) => {
+    return isOptionApplicableToSubject(option) || isOptionSelected(field, option);
+  });
 }
 
 function getFieldDependency(field: ModuleField) {
@@ -685,7 +708,7 @@ function isOptionDiscouraged(field: ModuleField, option: SelectOption) {
 
 function getSelectedOptions(field: ModuleField) {
   const currentValue = values[field.id];
-  const options = getRawFieldOptions(field);
+  const options = getAllRawFieldOptions(field);
 
   if (Array.isArray(currentValue)) {
     return options.filter((option) => currentValue.includes(option.value));
@@ -698,6 +721,12 @@ function getSelectedOptions(field: ModuleField) {
   const selectedOption = options.find((option) => option.value === stringValue);
 
   return selectedOption ? [selectedOption] : [];
+}
+
+function getSubjectApplicabilityWarnings(field: ModuleField) {
+  return getSelectedOptions(field)
+    .filter((option) => !isOptionApplicableToSubject(option))
+    .map((option) => ({ value: option.value }));
 }
 
 function getFieldCompatibilityWarnings(field: ModuleField) {
@@ -756,7 +785,20 @@ function getSelectedOption(field: ModuleField) {
 function getActiveOptionCategory(field: ModuleField) {
   const selectedOption = getSelectedOption(field);
 
-  return selectedOptionCategories[field.id] || selectedOption?.category || "";
+  if (selectedOption?.category) {
+    return selectedOption.category;
+  }
+
+  const preferredCategory = selectedOptionCategories[field.id] || "";
+
+  if (
+    preferredCategory &&
+    getFieldOptions(field).some((option) => option.category === preferredCategory)
+  ) {
+    return preferredCategory;
+  }
+
+  return "";
 }
 
 function getVisibleCategorizedOptions(field: ModuleField) {
@@ -1386,7 +1428,7 @@ onBeforeUnmount(() => {
             />
 
             <select v-else-if="field.type === 'multiSelect'" v-model="values[field.id]" multiple>
-              <option v-for="option in field.options" :key="option.value" :value="option.value"
+              <option v-for="option in getFieldOptions(field)" :key="option.value" :value="option.value"
                 :disabled="option.disabled">
                 {{ optionLabel(field.id, option.value) }}
               </option>
@@ -1434,6 +1476,10 @@ onBeforeUnmount(() => {
             <el-text v-for="warning in getFieldCompatibilityWarnings(field)" :key="warning.value" :size="10"
               icon="warning" icon-color="orange" color="orange" :weight="300">
               {{ compatibilityWarningLabel(warning.key) }}
+            </el-text>
+            <el-text v-for="warning in getSubjectApplicabilityWarnings(field)" :key="`subject:${warning.value}`" :size="10"
+              icon="warning" icon-color="orange" color="orange" :weight="300">
+              {{ t("panel.subjectOptionMismatch") }}
             </el-text>
           </el-grid>
         </el-grid>
