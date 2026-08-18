@@ -1,3 +1,7 @@
+export type CompileLayoutNaturalOptions = {
+  referencedRegionKeys?: ReadonlySet<string>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
@@ -14,22 +18,24 @@ function cleanText(value: unknown) {
     .replace(/,\s*$/, "")
 }
 
-function formatCoordinate(value: unknown) {
+function formatPercentage(value: unknown) {
   const number = Number(value)
 
-  if (!Number.isFinite(number)) return "0"
+  if (!Number.isFinite(number)) return "0%"
 
-  return Number(number.toFixed(4)).toString()
+  const percentage = Number((number * 100).toFixed(2))
+
+  return `${percentage}%`
 }
 
 function formatBounds(value: unknown) {
   if (!isRecord(value)) return ""
 
   return [
-    `x ${formatCoordinate(value.x)}`,
-    `y ${formatCoordinate(value.y)}`,
-    `width ${formatCoordinate(value.width)}`,
-    `height ${formatCoordinate(value.height)}`,
+    `x: ${formatPercentage(value.x)}`,
+    `y: ${formatPercentage(value.y)}`,
+    `width: ${formatPercentage(value.width)}`,
+    `height: ${formatPercentage(value.height)}`,
   ].join(", ")
 }
 
@@ -43,10 +49,14 @@ function formatAlignment(value: unknown) {
     vertical ? `vertical ${vertical}` : "",
   ].filter(Boolean)
 
-  return parts.length ? `alignment ${parts.join(", ")}` : ""
+  return parts.length ? `alignment: ${parts.join(", ")}` : ""
 }
 
-function formatRegion(value: unknown, index: number) {
+function formatRegion(
+  value: unknown,
+  index: number,
+  referencedRegionKeys: ReadonlySet<string>,
+) {
   if (!isRecord(value)) return ""
 
   const name = cleanText(value.name) || `region ${index + 1}`
@@ -63,25 +73,31 @@ function formatRegion(value: unknown, index: number) {
     : index.toString()
 
   const details = [
-    key ? `key ${key}` : "",
-    role ? `role ${role}` : "",
-    contentKey ? `content ${contentKey}` : "",
-    bounds ? `bounds ${bounds}` : "",
+    key && referencedRegionKeys.has(key) ? `key: ${key}` : "",
+    role ? `role: ${role}` : "",
+    contentKey ? `content: ${contentKey}` : "",
+    bounds ? `bounds: ${bounds}` : "",
     alignment,
-    fit ? `fit ${fit}` : "",
-    overflow ? `overflow ${overflow}` : "",
-    `layer ${layer}`,
-    description ? `description ${description}` : "",
+    fit ? `fit: ${fit}` : "",
+    overflow ? `overflow: ${overflow}` : "",
+    `layer: ${layer}`,
+    description ? `description: ${description}` : "",
   ].filter(Boolean)
 
-  return `${name} (${details.join(", ")})`
+  return `• ${name} (${details.join("; ")}).`
 }
 
-export function compileLayoutNaturalSentence(
+export function compileLayoutNaturalBlock(
   output: Record<string, unknown>,
+  options: CompileLayoutNaturalOptions = {},
 ) {
+  const referencedRegionKeys = options.referencedRegionKeys || new Set<string>()
   const regions = Array.isArray(output.regions)
-    ? output.regions.map(formatRegion).filter(Boolean)
+    ? output.regions
+        .map((region, index) =>
+          formatRegion(region, index, referencedRegionKeys),
+        )
+        .filter(Boolean)
     : []
 
   if (!regions.length) return ""
@@ -90,18 +106,29 @@ export function compileLayoutNaturalSentence(
   const density = cleanText(output.density)
   const extraDetails = cleanText(output.extraDetails)
 
-  const qualifiers = [
-    type ? `artifact type ${type}` : "",
-    density ? `density ${density}` : "",
-  ].filter(Boolean)
+  let intro = "Use a structured layout."
 
-  const prefix = qualifiers.length
-    ? `Use a structured layout with ${qualifiers.join(" and ")}`
-    : "Use a structured layout"
+  if (type && density) {
+    intro = `Use a ${type} with ${density}.`
+  } else if (type) {
+    intro = `Use a ${type}.`
+  } else if (density) {
+    intro = `Use a structured layout with ${density}.`
+  }
 
-  const extra = extraDetails
-    ? ` Additional layout instructions: ${extraDetails}.`
-    : ""
+  const lines = [
+    intro,
+    "Interpret all region bounds as percentages from 0% to 100%.",
+    "",
+    "Regions:",
+    ...regions,
+  ]
 
-  return `${prefix}. Interpret all region bounds as normalized coordinates from 0 to 1. Regions: ${regions.join("; ")}.${extra}`
+  if (extraDetails) {
+    lines.push("", `Additional layout instructions: ${extraDetails}.`)
+  }
+
+  return lines.join("\n")
 }
+
+export const compileLayoutNaturalSentence = compileLayoutNaturalBlock
