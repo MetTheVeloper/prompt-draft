@@ -33,7 +33,7 @@ const APPLY_GROUP_ORDER: ApplyGroup[] = [
 const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   transformation: 7,
   style: 5,
-  framing: 5,
+  framing: 12,
   pose: 4,
   outfit: 3,
   background: 5,
@@ -202,7 +202,7 @@ function detectApplyGroup(value: string): ApplyGroup {
   }
 
   if (
-    /framing|composition|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical|negative space/.test(
+    /framing|frame composition|subject placement|rule of thirds|off center|upper frame|lower frame|edge weighted|negative space|low angle view|high angle view|top down view|worms eye view|birds eye view|frontal view|three quarter view|profile view|rear view|within the frame|safe margin|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical/.test(
       text
     )
   ) {
