@@ -49,8 +49,8 @@ export function validatePromptSettings(
 
   if (
     settings.mode === 'image_to_image' &&
-    settings.imageToImage.referenceSubjectType === 'custom' &&
-    isEmpty(settings.imageToImage.customSubject)
+    settings.subjectType === 'custom' &&
+    subjectIsEmpty
   ) {
     issues.push({
       id: 'setup:custom_subject_empty',
