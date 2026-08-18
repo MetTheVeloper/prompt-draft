@@ -107,7 +107,7 @@ export default {
   "modules.form.fields.transformation.categories.personCaricature": "Person / Caricature",
   "modules.form.fields.transformation.categories.personElastic": "Person / Elastic Anatomy",
   "modules.form.fields.transformation.categories.personConstructed": "Person / Constructed Anatomy",
-  "modules.form.fields.transformation.categories.personCreature": "Person / Creature Shift",
+  "modules.form.fields.transformation.categories.personCreature": "Creature / Hybrid Anatomy",
   "modules.form.fields.transformation.categories.personGrotesque": "Person / Grotesque",
   "modules.form.fields.transformation.categories.typography": "Typography / Letterform",
   "modules.form.fields.transformation.categories.scene": "Scene / Environment",
