@@ -33,7 +33,7 @@ const APPLY_GROUP_ORDER: ApplyGroup[] = [
 const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   transformation: 7,
   style: 5,
-  framing: 12,
+  framing: 20,
   pose: 4,
   outfit: 3,
   background: 5,
