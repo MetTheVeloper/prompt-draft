@@ -273,52 +273,59 @@ function getPreserveParts(settings: PromptSettings) {
   const parts: string[] = []
 
   if (imageSettings.preserveMainSubject) {
-    parts.push('the main subject')
+    parts.push('main subject')
   }
 
   if (
     settings.subjectType === 'person' &&
     imageSettings.preserveIdentity
   ) {
-    parts.push("the person's identity")
+    parts.push("person's identity")
   }
 
   if (imageSettings.preservePose) {
-    parts.push('the pose')
+    parts.push('pose')
   }
 
   if (
     settings.subjectType === 'person' &&
     imageSettings.preserveOutfit
   ) {
-    parts.push('the outfit and visible accessories')
+    parts.push('outfit and visible accessories')
   }
 
   if (imageSettings.preserveComposition) {
-    parts.push('the original composition')
+    parts.push('original composition')
   }
 
   if (imageSettings.preserveColors) {
-    parts.push('the main color impression')
+    parts.push('main color impression')
   }
 
   if (imageSettings.preserveMaterials) {
-    parts.push('visible materials and surface details')
+    parts.push('materials and surface details')
   }
 
   if (imageSettings.preserveLighting) {
-    parts.push('the original lighting and mood')
+    parts.push('original lighting and mood')
   }
 
   return parts
 }
 
+function getNaturalPreserveParts(settings: PromptSettings) {
+  return getPreserveParts(settings).map((part) => {
+    if (part === "person's identity") return "the person's identity"
+    if (part === 'materials and surface details') {
+      return 'visible materials and surface details'
+    }
+
+    return `the ${part}`
+  })
+}
+
 function getPreservePromptText(settings: PromptSettings) {
-  const preserveParts = getPreserveParts(settings)
-
-  if (!preserveParts.length) return ''
-
-  return preserveParts.map((part) => `preserve ${part}`).join(', ')
+  return getPreserveParts(settings).join(', ')
 }
 
 function getModuleNaturalParts(
@@ -572,7 +579,7 @@ function compileNaturalOutput(
     sentences.push(`${intro}.`)
     sentences.push(referenceUsageToNaturalSentence(settings.imageToImage.referenceUsage))
 
-    const preserveParts = getPreserveParts(settings)
+    const preserveParts = getNaturalPreserveParts(settings)
 
     if (preserveParts.length) {
       sentences.push(`Preserve ${naturalJoin(preserveParts)}.`)
