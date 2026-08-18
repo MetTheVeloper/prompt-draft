@@ -5,7 +5,7 @@ import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVaria
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
 import {
-  getAspectRatioPromptHint,
+  getAspectRatioRatio,
   getDefaultAspectRatioValue,
 } from "../constants/aspectRatios";
 
@@ -155,22 +155,30 @@ function modeToPromptText(mode: PromptMode) {
   return 'text to image'
 }
 
-function subjectTypeToReferenceText(type: PromptSubjectType) {
+function subjectTypeToText(type: PromptSubjectType) {
   const map: Record<PromptSubjectType, string> = {
-    unspecified: 'subject in the attached reference image',
-    person: 'person in the attached reference image',
-    object: 'object in the attached reference image',
-    animal: 'animal in the attached reference image',
-    building: 'building or architectural subject in the attached reference image',
-    product: 'product in the attached reference image',
-    vehicle: 'vehicle in the attached reference image',
-    scene: 'scene or environment in the attached reference image',
-    typography: 'typography in the attached reference image',
-    abstract: 'abstract forms in the attached reference image',
-    custom: 'subject in the attached reference image'
+    unspecified: '',
+    person: 'person',
+    object: 'object',
+    animal: 'animal',
+    building: 'building or architectural subject',
+    product: 'product',
+    vehicle: 'vehicle',
+    scene: 'scene or environment',
+    typography: 'typography',
+    abstract: 'abstract forms',
+    custom: ''
   }
 
   return map[type]
+}
+
+function subjectTypeToReferenceText(type: PromptSubjectType) {
+  const subjectTypeText = subjectTypeToText(type)
+
+  return subjectTypeText
+    ? `${subjectTypeText} in {reference}`
+    : 'subject in {reference}'
 }
 
 function subjectTypeToNaturalReferenceText(type: PromptSubjectType) {
@@ -193,38 +201,36 @@ function subjectTypeToNaturalReferenceText(type: PromptSubjectType) {
 
 export function buildPromptSubject(settings: PromptSettings) {
   const subjectDetails = cleanText(settings.subject)
+  const subjectType = settings.subjectType || 'unspecified'
 
   if (settings.mode === 'text_to_image') {
-    return subjectDetails
+    return subjectDetails || subjectTypeToText(subjectType)
   }
 
-  if (settings.subjectType === 'custom') {
+  if (subjectType === 'custom') {
     return subjectDetails
-      ? `${subjectDetails} in the attached reference image`
+      ? `${subjectDetails} in {reference}`
       : subjectTypeToReferenceText('custom')
   }
 
-  const baseSubject = subjectTypeToReferenceText(
-    settings.subjectType || 'unspecified'
-  )
+  const baseSubject = subjectTypeToReferenceText(subjectType)
 
   return [baseSubject, subjectDetails].filter(Boolean).join(', ')
 }
 
 function buildNaturalSubject(settings: PromptSettings) {
   const subjectDetails = cleanNaturalPart(settings.subject)
+  const subjectType = settings.subjectType || 'unspecified'
 
   if (settings.mode === 'text_to_image') {
-    return subjectDetails
+    return subjectDetails || subjectTypeToText(subjectType)
   }
 
-  if (settings.subjectType === 'custom' && subjectDetails) {
+  if (subjectType === 'custom' && subjectDetails) {
     return `${subjectDetails} in the attached reference image`
   }
 
-  const baseSubject = subjectTypeToNaturalReferenceText(
-    settings.subjectType || 'unspecified'
-  )
+  const baseSubject = subjectTypeToNaturalReferenceText(subjectType)
 
   return [baseSubject, subjectDetails].filter(Boolean).join(', ')
 }
@@ -396,11 +402,13 @@ function getSystemPromptVariables(
     )
   }
 
-  variables.push(
-    createSystemVariable("subject", subject, {
-      insertable: true,
-    })
-  )
+  if (subject) {
+    variables.push(
+      createSystemVariable("subject", subject, {
+        insertable: true,
+      })
+    )
+  }
 
   if (settings.mode === "image_to_image") {
     variables.push(
@@ -430,11 +438,11 @@ function getSystemPromptVariables(
     )
   }
 
-  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+  const aspectRatio = getAspectRatioRatio(settings.aspectRatio)
 
-  if (aspectRatioPromptHint.trim()) {
+  if (aspectRatio.trim()) {
     variables.push(
-      createSystemVariable("aspect", aspectRatioPromptHint, {
+      createSystemVariable("aspect", aspectRatio, {
         insertable: true,
       })
     )
@@ -513,10 +521,10 @@ function compileModularOutput(
     )
   }
 
-  const aspectRatioPromptHint = getAspectRatioPromptHint(settings.aspectRatio)
+  const aspectRatio = getAspectRatioRatio(settings.aspectRatio)
 
-  if (aspectRatioPromptHint.trim()) {
-    parts.push(`{aspect} = ${cleanText(aspectRatioPromptHint)}`)
+  if (aspectRatio.trim()) {
+    parts.push(`{aspect} = ${cleanText(aspectRatio)}`)
   }
 
   if (settings.globalRules.trim()) {
@@ -541,7 +549,7 @@ function compileNaturalOutput(
 ) {
   const idea = normalizeTransformationIdea(settings.idea)
   const subject = buildNaturalSubject(settings)
-  const aspectRatio = cleanNaturalPart(getAspectRatioPromptHint(settings.aspectRatio))
+  const aspectRatio = cleanNaturalPart(getAspectRatioRatio(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
   const moduleParts = getModuleNaturalParts(moduleOutputs)
   const sentences: string[] = []
@@ -625,7 +633,7 @@ function compileJsonOutput(
     idea: settings.idea.trim(),
     subject: buildPromptSubject(settings),
     subjectType: settings.subjectType,
-    aspectRatio: getAspectRatioPromptHint(settings.aspectRatio).trim(),
+    aspectRatio: getAspectRatioRatio(settings.aspectRatio).trim(),
     aspectRatioValue: settings.aspectRatio.trim(),
     globalRules: settings.globalRules.trim(),
     modules
