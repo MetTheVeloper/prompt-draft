@@ -1,6 +1,6 @@
-import type { PromptKeyModule } from "./types"
+import type { ModuleFieldOption, PromptKeyModule } from "./types"
 
-const shotSizeOptions = [
+const shotSizeOptions: ModuleFieldOption[] = [
   {
     value: "detail",
     promptText: "detail-focused framing",
@@ -50,7 +50,7 @@ const shotSizeOptions = [
   },
 ]
 
-const subjectPlacementOptions = [
+const subjectPlacementOptions: ModuleFieldOption[] = [
   {
     value: "centered",
     promptText: "centered subject placement",
@@ -88,7 +88,7 @@ const subjectPlacementOptions = [
   },
 ]
 
-const compositionOptions = [
+const compositionOptions: ModuleFieldOption[] = [
   {
     value: "symmetrical",
     promptText: "symmetrical frame composition",
@@ -116,7 +116,7 @@ const compositionOptions = [
   },
 ]
 
-const viewAngleOptions = [
+const viewAngleOptions: ModuleFieldOption[] = [
   {
     value: "eye_level",
     promptText: "eye-level view",
@@ -149,7 +149,7 @@ const viewAngleOptions = [
   },
 ]
 
-const viewDirectionOptions = [
+const viewDirectionOptions: ModuleFieldOption[] = [
   {
     value: "frontal",
     promptText: "frontal view of the subject",
@@ -176,7 +176,7 @@ const viewDirectionOptions = [
   },
 ]
 
-const cropSafetyOptions = [
+const cropSafetyOptions: ModuleFieldOption[] = [
   {
     value: "important_details",
     promptText: "preserve important subject details within the frame",
