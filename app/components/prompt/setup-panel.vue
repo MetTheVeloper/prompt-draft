@@ -154,10 +154,18 @@ const generatedSubject = computed(() => {
   return buildPromptSubject(props.settings);
 });
 
+const usesGeneratedSubjectFallback = computed(() => {
+  return (
+    props.settings.mode === "text_to_image" &&
+    !props.settings.subject.trim() &&
+    Boolean(generatedSubject.value)
+  );
+});
+
 const coreFieldCount = computed(() => 2);
 
 const coreFilledFieldCount = computed(() => {
-  return [props.settings.idea, props.settings.subject].filter((value) => {
+  return [props.settings.idea, generatedSubject.value].filter((value) => {
     return String(value || "").trim();
   }).length;
 });
@@ -639,7 +647,13 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
             />
           </el-text>
 
-          <el-grid v-if="settings.mode === 'image_to_image'" :gap="6" :p="[12]" :radius="14" bg="normal5">
+          <el-grid
+            v-if="settings.mode === 'image_to_image' || usesGeneratedSubjectFallback"
+            :gap="6"
+            :p="[12]"
+            :radius="14"
+            bg="normal5"
+          >
             <el-text :size="12" :weight="800" color="normal70">
               {{ t("promptSetup.imageToImage.generatedSubject.label") }}
             </el-text>
