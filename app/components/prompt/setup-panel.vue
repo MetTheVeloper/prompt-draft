@@ -7,6 +7,7 @@ import type {
   ImageToImageSettings,
   PromptMode,
   PromptSettings,
+  PromptSubjectType,
   ReferenceSubjectType,
   ReferenceUsage,
   TransformationStrength,
@@ -48,6 +49,20 @@ const emit = defineEmits<{
 }>();
 
 const promptModes: PromptMode[] = ["text_to_image", "image_to_image"];
+
+const promptSubjectTypes: PromptSubjectType[] = [
+  "unspecified",
+  "person",
+  "object",
+  "animal",
+  "building",
+  "product",
+  "vehicle",
+  "scene",
+  "typography",
+  "abstract",
+  "custom",
+];
 
 const referenceSubjectTypes: ReferenceSubjectType[] = [
   "person",
@@ -164,6 +179,12 @@ const coreFilledFieldCount = computed(() => {
 
   return fields.filter((value) => String(value || "").trim()).length;
 });
+
+function updatePromptSubjectType(value: ElDropdownValue) {
+  updateSettings({
+    subjectType: value as PromptSubjectType,
+  });
+}
 
 function updateReferenceSubjectType(value: ElDropdownValue) {
   updateImageToImageSettings({
@@ -343,6 +364,7 @@ function resetSetupPanel(panel: SetupPanelKey) {
     updateSettings({
       idea: defaults.idea,
       subject: defaults.subject,
+      subjectType: defaults.subjectType,
     });
     return;
   }
@@ -590,6 +612,26 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
               :editor-id="editorId('idea')"
               support-variables
               @update:model-value="updateSettings({ idea: $event })"
+            />
+          </el-text>
+
+          <el-text v-if="settings.mode === 'text_to_image'" v-bind="setupFieldAttrs">
+            <el-flex v-bind="setupFieldHeadAttrs">
+              <el-text :size="13" :weight="800">
+                {{ t("promptSetup.subjectType.label") }}
+              </el-text>
+
+              <el-text :size="11" :weight="300" color="normal50">
+                {{ t("promptSetup.subjectType.description") }}
+              </el-text>
+            </el-flex>
+
+            <el-dropdown
+              :model-value="settings.subjectType || 'unspecified'"
+              :items="promptSubjectTypes"
+              :item-label="(subjectType) => t(`promptSetup.subjectType.options.${subjectType}`)"
+              :item-value="(subjectType) => subjectType"
+              @update:model-value="updatePromptSubjectType"
             />
           </el-text>
 
