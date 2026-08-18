@@ -2,7 +2,7 @@
 import type { PromptKeyModule } from './types'
 import { StyleModule } from './style.semantic'
 import { TextureModule } from './texture.module'
-import { DeformationModule } from './deformation.module'
+import { FormModule } from './form.module'
 import { BackgroundModule } from './background.module'
 import { LightingModule } from './lighting.module'
 import { FramingModule } from './framing.module'
@@ -21,7 +21,7 @@ export const promptModules = [
   VariablesModule,
   LayoutModule,
   StyleModule,
-  DeformationModule,
+  FormModule,
   FramingModule,
   ExpressionModule,
   PoseModule,
