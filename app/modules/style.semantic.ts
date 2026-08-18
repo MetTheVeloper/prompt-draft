@@ -47,7 +47,7 @@ const aestheticOptions: ModuleFieldOption[] = [
   { value: "risograph", promptText: "risograph visual aesthetic", tags: ["risograph", "print"] },
   { value: "ink_sketch", promptText: "expressive ink sketch aesthetic", tags: ["ink", "sketch"] },
   { value: "cinematic_cgi", promptText: "cinematic CGI aesthetic", tags: ["cgi", "cinematic"] },
-  { value: "photo_realism", promptText: "photorealistic visual aesthetic", tags: ["photo", "realistic"] },
+  { value: "photo_realism", promptText: "photorealistic aesthetic", tags: ["photo", "realistic"] },
   { value: "papier_mache", promptText: "papier-mâché handcrafted aesthetic", tags: ["papier-mache", "handcrafted"] },
   { value: "plush_textile", promptText: "plush textile aesthetic", tags: ["plush", "textile"] },
   { value: "woodcut", promptText: "woodcut visual aesthetic", tags: ["woodcut", "print"] },
@@ -140,17 +140,6 @@ const stylizationPromptText: PromptTextOverrides = {
   abstract: "abstract stylization with substantially simplified or deconstructed forms",
 };
 
-const shapeOptions: ModuleFieldOption[] = [
-  { value: "soft_rounded", promptText: "soft rounded forms with smooth contours", tags: ["soft", "rounded"] },
-  { value: "geometric", promptText: "geometric forms with simplified structured geometry", tags: ["geometric", "structured"] },
-  { value: "fluid", promptText: "fluid organic forms with continuous curves", tags: ["fluid", "organic"] },
-  { value: "blocky", promptText: "blocky forms with simplified squared geometry", tags: ["blocky", "squared"] },
-  { value: "elongated", promptText: "elongated forms with extended proportions", tags: ["elongated", "extended"] },
-  { value: "angular", promptText: "sharp angular forms with crisp edges", tags: ["angular", "sharp"] },
-  { value: "irregular", promptText: "irregular asymmetric forms with uneven contours", tags: ["irregular", "asymmetric"] },
-  { value: "faceted", promptText: "faceted planar forms with distinct angular breaks", tags: ["faceted", "planar"] },
-];
-
 const lineworkOptions: ModuleFieldOption[] = [
   { value: "clean_fine", promptText: "clean fine linework", tags: ["clean", "fine"] },
   { value: "clean_contour", promptText: "clean contour linework with controlled edges", tags: ["contour", "clean"] },
@@ -164,13 +153,13 @@ const lineworkOptions: ModuleFieldOption[] = [
 ];
 
 const treatmentOptions: ModuleFieldOption[] = [
-  { value: "cel_shaded", promptText: "cel-shaded rendering with discrete tonal bands", tags: ["cel-shaded", "graphic"] },
-  { value: "flat_graphic", promptText: "flat graphic rendering with minimal tonal modeling", tags: ["flat", "graphic"] },
+  { value: "cel_shaded", promptText: "cel-shaded rendering with clear tonal separation", tags: ["cel-shaded", "graphic"] },
+  { value: "flat_graphic", promptText: "flat graphic rendering with restrained tonal variation", tags: ["flat", "graphic"] },
   { value: "ink_watercolor", promptText: "transparent watercolor washes with ink accents", tags: ["ink", "watercolor"] },
   { value: "halftone_comic", promptText: "halftone tonal treatment", tags: ["halftone", "comic"] },
   { value: "painterly", promptText: "painterly rendering with visible brushwork", tags: ["painterly", "brush"] },
   { value: "paper_cutout", promptText: "layered cut-paper treatment with clearly separated shapes", tags: ["paper", "cutout"] },
-  { value: "layered_collage", promptText: "layered collage assembly with visibly overlapping fragments", tags: ["collage", "layered"] },
+  { value: "layered_collage", promptText: "layered collage assembly with overlapping fragments", tags: ["collage", "layered"] },
   { value: "soft_blended", promptText: "softly blended tonal transitions", tags: ["soft", "blended"] },
   { value: "stippled", promptText: "stippled tonal treatment built from fine dots", tags: ["stippled", "dots"] },
 ];
@@ -186,7 +175,7 @@ const detailLevelOptions: ModuleFieldOption[] = [
 const finishOptions: ModuleFieldOption[] = [
   { value: "clean", promptText: "clean, polished finish", tags: ["clean", "polished"] },
   { value: "refined", promptText: "refined finish with precise surface control", tags: ["refined", "precise"] },
-  { value: "handcrafted", promptText: "handcrafted finish with visible handmade variation", tags: ["handcrafted", "handmade"] },
+  { value: "handcrafted", promptText: "handcrafted finish with tactile variation", tags: ["handcrafted", "handmade"] },
   { value: "rough", promptText: "rough, imperfect finish", tags: ["rough", "imperfect"] },
   { value: "matte", promptText: "matte finish with minimal reflection", tags: ["matte"] },
   { value: "satin", promptText: "satin finish with a soft restrained sheen", tags: ["satin"] },
@@ -197,7 +186,6 @@ const STYLE_PRESET_DEFAULTS: ModuleValues = {
   aesthetic: "",
   medium: "",
   stylizationLevel: "",
-  shapeLanguage: "",
   linework: "",
   visualTreatment: "",
   detailLevel: "",
@@ -219,13 +207,16 @@ function stylePreset(
   };
 }
 
-const { preset: _legacyAestheticField, ...baseFields } = BaseStyleModule.fields;
+const {
+  preset: _legacyAestheticField,
+  shapeLanguage: _legacyShapeLanguageField,
+  ...baseFields
+} = BaseStyleModule.fields;
 
 const presets: Record<string, ModulePreset> = {
   soft_3d_cartoon: stylePreset("soft_3d_cartoon", 10, {
     aesthetic: "3d_cartoon",
     medium: "three_d_render",
-    shapeLanguage: "soft_rounded",
     visualTreatment: "cel_shaded",
   }),
   premium_vinyl: stylePreset("premium_vinyl", 20, {
@@ -245,7 +236,6 @@ const presets: Record<string, ModulePreset> = {
   geometric_flat: stylePreset("geometric_flat", 50, {
     aesthetic: "geometric_illustration",
     medium: "vector_illustration",
-    shapeLanguage: "geometric",
     visualTreatment: "flat_graphic",
   }),
   retro_comic_pop: stylePreset("retro_comic_pop", 60, {
@@ -267,7 +257,6 @@ const presets: Record<string, ModulePreset> = {
   angular_2d: stylePreset("angular_2d", 90, {
     aesthetic: "angular_animation",
     medium: "digital_illustration",
-    shapeLanguage: "angular",
     visualTreatment: "flat_graphic",
   }),
   naive_childlike: stylePreset("naive_childlike", 100, {
@@ -290,7 +279,6 @@ const presets: Record<string, ModulePreset> = {
   low_poly: stylePreset("low_poly", 130, {
     aesthetic: "low_poly",
     medium: "low_poly_render",
-    shapeLanguage: "faceted",
   }),
   pixel_art: stylePreset("pixel_art", 140, {
     aesthetic: "pixel_art",
@@ -335,12 +323,10 @@ const presets: Record<string, ModulePreset> = {
   art_deco_graphic: stylePreset("art_deco_graphic", 230, {
     aesthetic: "art_deco",
     medium: "vector_illustration",
-    shapeLanguage: "geometric",
   }),
   bauhaus_graphic: stylePreset("bauhaus_graphic", 240, {
     aesthetic: "bauhaus",
     medium: "vector_illustration",
-    shapeLanguage: "geometric",
     visualTreatment: "flat_graphic",
   }),
   mid_century_graphic: stylePreset("mid_century_graphic", 250, {
@@ -402,18 +388,12 @@ export const StyleModule = {
         clearable: true,
       },
     },
-    shapeLanguage: {
-      ...baseFields.shapeLanguage,
-      default: "",
-      order: 20,
-      options: shapeOptions,
-    },
     linework: {
       id: "linework",
       type: "select",
       default: "",
       group: "modifiers",
-      order: 25,
+      order: 20,
       options: lineworkOptions,
       ui: {
         component: "select",
@@ -437,7 +417,7 @@ export const StyleModule = {
       type: "select",
       default: "",
       group: "modifiers",
-      order: 35,
+      order: 40,
       options: detailLevelOptions,
       ui: {
         component: "select",
@@ -448,7 +428,7 @@ export const StyleModule = {
     finish: {
       ...baseFields.finish,
       default: "",
-      order: 40,
+      order: 50,
       options: finishOptions,
       ui: {
         ...baseFields.finish.ui,
@@ -471,7 +451,6 @@ export const StyleModule = {
       "aesthetic",
       "medium",
       "stylizationLevel",
-      "shapeLanguage",
       "linework",
       "visualTreatment",
       "detailLevel",
