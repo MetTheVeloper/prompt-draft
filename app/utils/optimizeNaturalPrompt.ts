@@ -177,6 +177,16 @@ function detectApplyGroup(value: string): ApplyGroup {
     return 'transformation'
   }
 
+  // Known Framing phrases that contain words such as "background" or "margin"
+  // must be classified before the broader Background detector below.
+  if (
+    /layered foreground midground background composition|additional margin around the visible subject area/.test(
+      text
+    )
+  ) {
+    return 'framing'
+  }
+
   if (
     /background|backdrop|environment|interior|exterior|scene|studio background|seamless|wall mirror|mirror|gym|machines|dumbbells|weight racks|location/.test(
       text
