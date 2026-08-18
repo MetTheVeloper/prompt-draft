@@ -4,49 +4,49 @@ const shotSizeOptions: ModuleFieldOption[] = [
   {
     value: "detail",
     promptText: "detail-focused framing",
-    tags: ["framing", "detail", "close"],
+    tags: ["framing", "detail", "close", "tight-crop"],
   },
   {
     value: "extreme_close_up",
     promptText: "extreme close-up framing",
-    tags: ["framing", "extreme-close-up", "detail"],
+    tags: ["framing", "extreme-close-up", "detail", "tight-crop"],
   },
   {
     value: "close_up",
     promptText: "close-up framing",
-    tags: ["framing", "close-up"],
+    tags: ["framing", "close-up", "tight-crop"],
   },
   {
     value: "head_and_shoulders",
     promptText: "head-and-shoulders framing",
-    tags: ["framing", "portrait", "head", "shoulders"],
+    tags: ["framing", "portrait", "head", "shoulders", "portrait-crop"],
     appliesTo: ["person"],
   },
   {
     value: "bust",
     promptText: "bust framing",
-    tags: ["framing", "portrait", "bust"],
+    tags: ["framing", "portrait", "bust", "upper-body-crop"],
     appliesTo: ["person"],
   },
   {
     value: "medium_subject",
     promptText: "medium subject framing",
-    tags: ["framing", "medium", "subject"],
+    tags: ["framing", "medium", "subject", "partial-crop"],
   },
   {
     value: "three_quarter_subject",
-    promptText: "three-quarter subject framing",
-    tags: ["framing", "three-quarter", "subject"],
+    promptText: "most of the subject visible within the frame",
+    tags: ["framing", "subject", "mostly-visible"],
   },
   {
     value: "full_subject",
     promptText: "full-subject framing",
-    tags: ["framing", "full-subject", "complete"],
+    tags: ["framing", "full-subject", "complete", "full-visible"],
   },
   {
     value: "wide_full_subject",
     promptText: "wide full-subject framing with surrounding space",
-    tags: ["framing", "full-subject", "wide", "space"],
+    tags: ["framing", "full-subject", "wide", "space", "full-visible", "safe-space"],
   },
 ]
 
@@ -81,23 +81,26 @@ const subjectPlacementOptions: ModuleFieldOption[] = [
     promptText: "edge-weighted subject placement",
     tags: ["framing", "edge", "asymmetry", "placement"],
   },
-  {
-    value: "negative_space",
-    promptText: "subject placement with intentional negative space",
-    tags: ["framing", "negative-space", "placement"],
-  },
 ]
 
-const compositionOptions: ModuleFieldOption[] = [
+const balanceOptions: ModuleFieldOption[] = [
   {
     value: "symmetrical",
-    promptText: "symmetrical frame composition",
-    tags: ["framing", "symmetrical", "composition"],
+    promptText: "symmetrical frame balance",
+    tags: ["framing", "symmetrical", "balance"],
   },
   {
     value: "asymmetrical",
-    promptText: "asymmetrical frame composition",
-    tags: ["framing", "asymmetrical", "composition"],
+    promptText: "asymmetrical frame balance",
+    tags: ["framing", "asymmetrical", "balance"],
+  },
+]
+
+const compositionFeatureOptions: ModuleFieldOption[] = [
+  {
+    value: "negative_space",
+    promptText: "intentional negative space around the subject",
+    tags: ["framing", "negative-space", "composition"],
   },
   {
     value: "dynamic_diagonal",
@@ -152,8 +155,8 @@ const viewAngleOptions: ModuleFieldOption[] = [
 const viewDirectionOptions: ModuleFieldOption[] = [
   {
     value: "frontal",
-    promptText: "frontal view of the subject",
-    tags: ["framing", "frontal", "direction"],
+    promptText: "front view of the subject",
+    tags: ["framing", "front", "direction"],
   },
   {
     value: "three_quarter",
@@ -162,8 +165,8 @@ const viewDirectionOptions: ModuleFieldOption[] = [
   },
   {
     value: "profile",
-    promptText: "side-profile view of the subject",
-    tags: ["framing", "profile", "side-view", "direction"],
+    promptText: "side view of the subject",
+    tags: ["framing", "side-view", "direction"],
   },
   {
     value: "rear",
@@ -183,22 +186,46 @@ const cropSafetyOptions: ModuleFieldOption[] = [
     promptText: "preserve the face fully within the frame",
     tags: ["framing", "crop", "face", "safe"],
     appliesTo: ["person", "animal"],
+    compatibility: {
+      preferredTags: ["tight-crop", "portrait-crop", "upper-body-crop"],
+    },
   },
   {
     value: "hands",
     promptText: "preserve the hands fully within the frame",
     tags: ["framing", "crop", "hands", "safe"],
     appliesTo: ["person"],
+    compatibility: {
+      preferredTags: ["partial-crop", "mostly-visible", "full-visible"],
+      discouragedTags: ["tight-crop", "portrait-crop"],
+      warningKey:
+        "modules.framing.fields.cropSafety.compatibilityWarnings.handsNeedMoreCoverage",
+    },
   },
   {
     value: "silhouette",
     promptText: "preserve the complete readable silhouette within the frame",
     tags: ["framing", "crop", "silhouette", "safe"],
+    compatibility: {
+      preferredTags: ["full-visible"],
+      discouragedTags: [
+        "tight-crop",
+        "portrait-crop",
+        "upper-body-crop",
+        "partial-crop",
+        "mostly-visible",
+      ],
+      warningKey:
+        "modules.framing.fields.cropSafety.compatibilityWarnings.silhouetteNeedsFullSubject",
+    },
   },
   {
     value: "safe_margin",
-    promptText: "keep additional safe margin around the subject",
+    promptText: "keep additional margin around the visible subject area",
     tags: ["framing", "crop", "margin", "safe"],
+    compatibility: {
+      preferredTags: ["safe-space", "full-visible"],
+    },
   },
 ]
 
@@ -265,16 +292,30 @@ export const FramingModule = {
       },
     },
 
-    composition: {
-      id: "composition",
+    balance: {
+      id: "balance",
       type: "select",
       default: "",
       group: "composition",
       order: 30,
-      options: compositionOptions,
+      options: balanceOptions,
       ui: {
         component: "select",
         searchable: true,
+        clearable: true,
+        width: "half",
+      },
+    },
+
+    compositionFeatures: {
+      id: "compositionFeatures",
+      type: "multiSelect",
+      default: [],
+      group: "composition",
+      order: 40,
+      options: compositionFeatureOptions,
+      ui: {
+        component: "multiSelect",
         clearable: true,
         width: "full",
       },
@@ -321,6 +362,10 @@ export const FramingModule = {
         component: "multiSelect",
         clearable: true,
         width: "full",
+        compatibility: {
+          dependsOn: "shotSize",
+          mode: "sort-and-hint",
+        },
       },
     },
 
@@ -356,7 +401,8 @@ export const FramingModule = {
     fieldOrder: [
       "shotSize",
       "subjectPlacement",
-      "composition",
+      "balance",
+      "compositionFeatures",
       "viewAngle",
       "viewDirection",
       "cropSafety",
