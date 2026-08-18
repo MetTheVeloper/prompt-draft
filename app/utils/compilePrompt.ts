@@ -3,6 +3,7 @@ import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
+import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
 import {
   getAspectRatioPromptHint,
   getDefaultAspectRatioValue,
@@ -436,6 +437,16 @@ function syncActiveSystemPromptVariables(
   setSystemPromptVariables(getActiveSystemPromptVariables(settings))
 }
 
+function syncActivePromptSubjectContext(settings: PromptSettings) {
+  const { setSubjectType } = usePromptSubjectContext()
+
+  setSubjectType(
+    settings.mode === 'image_to_image'
+      ? settings.imageToImage.referenceSubjectType
+      : settings.subjectType || 'unspecified'
+  )
+}
+
 function compileModularOutput(
   settings: PromptSettings,
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
@@ -696,6 +707,7 @@ export function compilePromptOutput(
   const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
   const variablesOutput = getVariablesOutput(outputs)
 
+  syncActivePromptSubjectContext(settings)
   syncActiveSystemPromptVariables(settings)
 
   const hasSettingsOutput =
