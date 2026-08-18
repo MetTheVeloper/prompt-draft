@@ -1,8 +1,12 @@
 import type {
   ModuleFieldOption,
+  ModuleOptionCompatibility,
   ModuleSubjectType,
   PromptKeyModule,
 } from "./types";
+
+const PROPORTION_CONFLICT_WARNING =
+  "modules.form.compatibility.transformationProportionConflict";
 
 function option(
   value: string,
@@ -12,6 +16,7 @@ function option(
     category?: string;
     categoryLabelKey?: string;
     appliesTo?: Array<ModuleSubjectType | "*">;
+    compatibility?: ModuleOptionCompatibility;
   } = {},
 ): ModuleFieldOption {
   return {
@@ -73,6 +78,106 @@ const formLanguageOptions: ModuleFieldOption[] = [
     "branching form language with extending interconnected forms",
     ["branching", "organic"],
   ),
+  option(
+    "ribbon_like",
+    "ribbon-like form language with broad continuous bands",
+    ["ribbon", "flowing"],
+  ),
+  option(
+    "crystalline",
+    "crystalline form language with repeated angular facets",
+    ["crystalline", "faceted"],
+  ),
+  option(
+    "layered",
+    "layered form language built from stacked overlapping masses",
+    ["layered", "stacked"],
+  ),
+  option(
+    "cellular",
+    "cellular form language built from clustered repeated units",
+    ["cellular", "repeated"],
+  ),
+  option(
+    "radial",
+    "radial form language with structures extending around central axes",
+    ["radial", "branching"],
+  ),
+
+  option(
+    "modular_letterforms",
+    "modular letterform language built from repeated geometric units",
+    ["typography", "modular", "geometric"],
+    { appliesTo: ["typography"] },
+  ),
+  option(
+    "ribbon_letterforms",
+    "ribbon-like letterforms built from continuous folded strokes",
+    ["typography", "ribbon", "flowing"],
+    { appliesTo: ["typography"] },
+  ),
+  option(
+    "inflated_letterforms",
+    "inflated letterforms with rounded volumetric strokes",
+    ["typography", "inflated", "rounded"],
+    { appliesTo: ["typography"] },
+  ),
+  option(
+    "interlocking_letterforms",
+    "interlocking letterforms with structurally woven stroke connections",
+    ["typography", "interlocking", "woven"],
+    { appliesTo: ["typography"] },
+  ),
+
+  option(
+    "terraced_environment",
+    "terraced environmental form language with stepped layered masses",
+    ["scene", "terraced", "layered"],
+    { appliesTo: ["scene"] },
+  ),
+  option(
+    "stratified_environment",
+    "stratified environmental form language with stacked structural layers",
+    ["scene", "stratified", "layered"],
+    { appliesTo: ["scene"] },
+  ),
+  option(
+    "eroded_environment",
+    "eroded environmental form language with carved irregular contours",
+    ["scene", "eroded", "irregular"],
+    { appliesTo: ["scene"] },
+  ),
+  option(
+    "dendritic_environment",
+    "dendritic environmental form language with branching channel-like structures",
+    ["scene", "dendritic", "branching"],
+    { appliesTo: ["scene"] },
+  ),
+
+  option(
+    "streamlined_animal",
+    "streamlined animal form language with smooth tapered contours",
+    ["animal", "streamlined", "tapered"],
+    { appliesTo: ["animal"] },
+  ),
+  option(
+    "segmented_animal",
+    "segmented animal form language with articulated repeating body sections",
+    ["animal", "segmented", "articulated"],
+    { appliesTo: ["animal"] },
+  ),
+  option(
+    "armored_animal",
+    "armored animal form language with overlapping plate-like body sections",
+    ["animal", "armored", "layered"],
+    { appliesTo: ["animal"] },
+  ),
+  option(
+    "serpentine_animal",
+    "serpentine animal form language with continuous elongated body flow",
+    ["animal", "serpentine", "elongated"],
+    { appliesTo: ["animal"] },
+  ),
 ];
 
 const proportionOptions: ModuleFieldOption[] = [
@@ -87,7 +192,7 @@ const proportionOptions: ModuleFieldOption[] = [
   ),
   option(
     "elongated",
-    "elongated proportions with extended vertical emphasis",
+    "elongated proportions with extended overall form",
     ["elongated"],
     {
       category: "general",
@@ -157,10 +262,28 @@ const proportionOptions: ModuleFieldOption[] = [
       categoryLabelKey: "modules.form.fields.proportions.categories.general",
     },
   ),
+  option(
+    "graduated_scale",
+    "graduated proportions with elements changing progressively in scale",
+    ["graduated", "scale"],
+    {
+      category: "general",
+      categoryLabelKey: "modules.form.fields.proportions.categories.general",
+    },
+  ),
+  option(
+    "nested_scale",
+    "nested proportions with smaller forms contained within larger masses",
+    ["nested", "scale"],
+    {
+      category: "general",
+      categoryLabelKey: "modules.form.fields.proportions.categories.general",
+    },
+  ),
 
   option(
     "chibi",
-    "chibi proportions with an oversized head, compact body, and short simplified limbs",
+    "chibi proportions with an oversized head, compact body, and short limbs",
     ["person", "chibi", "compact"],
     {
       category: "person",
@@ -169,9 +292,9 @@ const proportionOptions: ModuleFieldOption[] = [
     },
   ),
   option(
-    "fashion_elongated",
-    "fashion-elongated proportions with long limbs, a narrow torso, and extended vertical balance",
-    ["person", "fashion", "elongated"],
+    "slender_elongated",
+    "slender elongated proportions with long limbs and a narrow torso",
+    ["person", "slender", "elongated", "long-limbed"],
     {
       category: "person",
       categoryLabelKey: "modules.form.fields.proportions.categories.person",
@@ -181,7 +304,7 @@ const proportionOptions: ModuleFieldOption[] = [
   option(
     "oversized_head",
     "an oversized head-to-body ratio with a compact supporting body",
-    ["person", "head", "oversized"],
+    ["person", "head", "oversized", "compact"],
     {
       category: "person",
       categoryLabelKey: "modules.form.fields.proportions.categories.person",
@@ -189,9 +312,9 @@ const proportionOptions: ModuleFieldOption[] = [
     },
   ),
   option(
-    "compact_mascot",
-    "compact mascot-like proportions with rounded body mass and short limbs",
-    ["person", "mascot", "compact"],
+    "compact_short_limb",
+    "compact body proportions with short limbs and concentrated central mass",
+    ["person", "compact", "short-limbed"],
     {
       category: "person",
       categoryLabelKey: "modules.form.fields.proportions.categories.person",
@@ -201,11 +324,224 @@ const proportionOptions: ModuleFieldOption[] = [
   option(
     "long_limb_narrow_torso",
     "long-limbed proportions with a narrow torso and extended body rhythm",
-    ["person", "long-limbed", "narrow"],
+    ["person", "long-limbed", "narrow", "elongated"],
     {
       category: "person",
       categoryLabelKey: "modules.form.fields.proportions.categories.person",
       appliesTo: ["person"],
+    },
+  ),
+  option(
+    "long_torso_short_legs",
+    "a long torso paired with shortened leg proportions",
+    ["person", "long-torso", "short-limbed"],
+    {
+      category: "person",
+      categoryLabelKey: "modules.form.fields.proportions.categories.person",
+      appliesTo: ["person"],
+    },
+  ),
+  option(
+    "short_torso_long_legs",
+    "a short torso paired with elongated leg proportions",
+    ["person", "short-torso", "long-limbed", "elongated"],
+    {
+      category: "person",
+      categoryLabelKey: "modules.form.fields.proportions.categories.person",
+      appliesTo: ["person"],
+    },
+  ),
+  option(
+    "broad_shoulders_narrow_hips",
+    "broad shoulder proportions tapering toward narrower hips",
+    ["person", "broad-shoulders", "tapered"],
+    {
+      category: "person",
+      categoryLabelKey: "modules.form.fields.proportions.categories.person",
+      appliesTo: ["person"],
+    },
+  ),
+  option(
+    "narrow_shoulders_wide_hips",
+    "narrow shoulder proportions expanding toward wider hips",
+    ["person", "wide-hips", "bottom-heavy"],
+    {
+      category: "person",
+      categoryLabelKey: "modules.form.fields.proportions.categories.person",
+      appliesTo: ["person"],
+    },
+  ),
+  option(
+    "oversized_hands_feet",
+    "oversized hand and foot proportions relative to the body",
+    ["person", "oversized", "extremities"],
+    {
+      category: "person",
+      categoryLabelKey: "modules.form.fields.proportions.categories.person",
+      appliesTo: ["person"],
+    },
+  ),
+
+  option(
+    "type_condensed",
+    "condensed letterform proportions with narrow glyph width",
+    ["typography", "condensed", "narrow"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.proportions.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_expanded",
+    "expanded letterform proportions with broad glyph width",
+    ["typography", "expanded", "wide"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.proportions.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_tall_narrow",
+    "tall narrow letterform proportions with extended vertical strokes",
+    ["typography", "tall", "narrow", "elongated"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.proportions.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_squat_wide",
+    "squat wide letterform proportions with compressed height and broad width",
+    ["typography", "squat", "wide", "compact"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.proportions.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_variable_scale",
+    "variable letterform proportions with deliberately mixed glyph scale",
+    ["typography", "variable", "scale"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.proportions.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+
+  option(
+    "scene_towering",
+    "towering environmental proportions with tall dominant physical masses",
+    ["scene", "towering", "elongated"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.proportions.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_low_spreading",
+    "low spreading environmental proportions with broad shallow masses",
+    ["scene", "low", "wide"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.proportions.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_narrow_vertical",
+    "narrow vertical environmental proportions with slender rising forms",
+    ["scene", "narrow", "elongated"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.proportions.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_broad_horizontal",
+    "broad horizontal environmental proportions with extended low forms",
+    ["scene", "wide", "horizontal"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.proportions.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_scale_gradient",
+    "graduated environmental proportions with masses progressing from small to large",
+    ["scene", "graduated", "scale"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.proportions.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+
+  option(
+    "animal_long_body_short_limbs",
+    "an elongated body paired with short limb proportions",
+    ["animal", "long-body", "short-limbed", "elongated"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_long_legged",
+    "long-legged animal proportions with elevated body height",
+    ["animal", "long-limbed", "elongated"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_compact_stocky",
+    "compact stocky animal proportions with concentrated body mass",
+    ["animal", "compact", "stocky"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_large_head_small_body",
+    "a large head-to-body ratio with a smaller supporting body",
+    ["animal", "oversized", "head", "compact"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_long_neck",
+    "an elongated neck proportion relative to the torso mass",
+    ["animal", "long-neck", "elongated"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_tapered_body",
+    "animal body proportions tapering from a broad front mass toward a narrower rear form",
+    ["animal", "tapered"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.proportions.categories.animal",
+      appliesTo: ["animal"],
     },
   ),
 ];
@@ -213,8 +549,8 @@ const proportionOptions: ModuleFieldOption[] = [
 const transformationOptions: ModuleFieldOption[] = [
   option(
     "stretch",
-    "stretched form transformation",
-    ["stretch", "elastic"],
+    "stretched form",
+    ["stretch", "elastic", "elongated"],
     {
       category: "elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.elastic",
@@ -222,8 +558,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "squash",
-    "squashed form transformation",
-    ["squash", "elastic"],
+    "squashed form",
+    ["squash", "elastic", "compact"],
     {
       category: "elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.elastic",
@@ -231,8 +567,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "elastic_bend",
-    "soft elastic bending with continuous flexible form transitions",
-    ["elastic", "bend"],
+    "elastic bending with continuous flexible curvature",
+    ["elastic", "bend", "fluid"],
     {
       category: "elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.elastic",
@@ -241,8 +577,8 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "compress",
-    "compressed form transformation",
-    ["compressed", "volume"],
+    "compressed form",
+    ["compressed", "volume", "compact"],
     {
       category: "volume",
       categoryLabelKey: "modules.form.fields.transformation.categories.volume",
@@ -250,8 +586,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "inflate",
-    "inflated form transformation with expanded rounded volume",
-    ["inflated", "volume"],
+    "inflated form with expanded volume",
+    ["inflated", "volume", "wide"],
     {
       category: "volume",
       categoryLabelKey: "modules.form.fields.transformation.categories.volume",
@@ -259,8 +595,26 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "flatten",
-    "flattened planar form transformation with reduced depth",
+    "flattened form with reduced depth",
     ["flattened", "planar"],
+    {
+      category: "volume",
+      categoryLabelKey: "modules.form.fields.transformation.categories.volume",
+    },
+  ),
+  option(
+    "pinch",
+    "pinched form with localized narrowing",
+    ["pinch", "narrow", "tapered"],
+    {
+      category: "volume",
+      categoryLabelKey: "modules.form.fields.transformation.categories.volume",
+    },
+  ),
+  option(
+    "bulge",
+    "localized bulging with expanded form mass",
+    ["bulge", "volume", "wide"],
     {
       category: "volume",
       categoryLabelKey: "modules.form.fields.transformation.categories.volume",
@@ -269,7 +623,7 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "twist",
-    "twisted form transformation with rotational flow",
+    "twisted form with rotational curvature",
     ["twist", "warp"],
     {
       category: "warp",
@@ -278,7 +632,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "warp",
-    "warped form transformation with smoothly displaced structure",
+    "warped form with displaced structure",
     ["warp", "distort"],
     {
       category: "warp",
@@ -287,7 +641,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "melt",
-    "melting form transformation with downward drooping collapse",
+    "melting form with downward droop",
     ["melt", "droop"],
     {
       category: "warp",
@@ -296,8 +650,26 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "fold",
-    "folded form transformation with bending planar sections",
-    ["fold", "bend"],
+    "folded form with articulated bends",
+    ["fold", "bend", "planar"],
+    {
+      category: "warp",
+      categoryLabelKey: "modules.form.fields.transformation.categories.warp",
+    },
+  ),
+  option(
+    "ripple",
+    "rippled form with repeated wave-like deformation",
+    ["ripple", "wave", "fluid"],
+    {
+      category: "warp",
+      categoryLabelKey: "modules.form.fields.transformation.categories.warp",
+    },
+  ),
+  option(
+    "spiral",
+    "spiraled form with continuous rotational winding",
+    ["spiral", "twist", "flow"],
     {
       category: "warp",
       categoryLabelKey: "modules.form.fields.transformation.categories.warp",
@@ -306,7 +678,7 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "fragment",
-    "fragmented form transformation with separated structural pieces",
+    "fragmented form with separated structural pieces",
     ["fragment", "structural"],
     {
       category: "structural",
@@ -315,8 +687,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "offset_segments",
-    "offset segmented form transformation with displaced connected sections",
-    ["segmented", "offset"],
+    "offset segmented form with displaced structural sections",
+    ["segmented", "offset", "structural"],
     {
       category: "structural",
       categoryLabelKey: "modules.form.fields.transformation.categories.structural",
@@ -324,8 +696,26 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "fractured_planes",
-    "fractured-plane transformation with shifted angular sections",
-    ["fractured", "planes"],
+    "fractured planar form with shifted angular sections",
+    ["fractured", "planes", "structural"],
+    {
+      category: "structural",
+      categoryLabelKey: "modules.form.fields.transformation.categories.structural",
+    },
+  ),
+  option(
+    "perforate",
+    "perforated form with deliberate structural voids",
+    ["perforated", "voids", "structural"],
+    {
+      category: "structural",
+      categoryLabelKey: "modules.form.fields.transformation.categories.structural",
+    },
+  ),
+  option(
+    "interweave",
+    "interwoven form with crossing structural bands",
+    ["interwoven", "structural", "ribbon"],
     {
       category: "structural",
       categoryLabelKey: "modules.form.fields.transformation.categories.structural",
@@ -334,8 +724,8 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "directional_smear",
-    "directional smeared form transformation with trailing stretched shapes",
-    ["smear", "directional"],
+    "directionally smeared form with trailing stretched shapes",
+    ["smear", "directional", "elongated"],
     {
       category: "surreal",
       categoryLabelKey: "modules.form.fields.transformation.categories.surreal",
@@ -343,7 +733,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "impossible_geometry",
-    "physically impossible form geometry with readable impossible connections",
+    "impossible geometry with coherent impossible connections",
     ["impossible", "surreal"],
     {
       category: "surreal",
@@ -352,8 +742,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "biomorphic_growth",
-    "biomorphic growth transformation with uneven organic extensions",
-    ["biomorphic", "growth"],
+    "biomorphic growth with uneven organic extensions",
+    ["biomorphic", "growth", "organic"],
     {
       category: "surreal",
       categoryLabelKey: "modules.form.fields.transformation.categories.surreal",
@@ -362,8 +752,8 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "grotesque_caricature",
-    "grotesque humorous anatomical exaggeration with intentionally awkward proportions and expressive facial distortion",
-    ["person", "caricature", "grotesque"],
+    "grotesque anatomical exaggeration with awkward proportional imbalance",
+    ["person", "caricature", "grotesque", "asymmetric"],
     {
       category: "person_caricature",
       categoryLabelKey: "modules.form.fields.transformation.categories.personCaricature",
@@ -371,9 +761,9 @@ const transformationOptions: ModuleFieldOption[] = [
     },
   ),
   option(
-    "fashion_caricature",
-    "fashion-caricature anatomy with elongated limbs, dramatic facial planes, and stylized body balance",
-    ["person", "caricature", "fashion"],
+    "elegant_caricature",
+    "elegant anatomical exaggeration with elongated proportions and sharpened facial planes",
+    ["person", "caricature", "elegant", "elongated"],
     {
       category: "person_caricature",
       categoryLabelKey: "modules.form.fields.transformation.categories.personCaricature",
@@ -382,8 +772,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "facial_exaggeration",
-    "facial-focused exaggeration with enlarged features, stretched cheeks or jaw, and altered head proportions",
-    ["person", "face", "exaggeration"],
+    "facial exaggeration with enlarged features and altered head proportions",
+    ["person", "face", "exaggeration", "oversized"],
     {
       category: "person_caricature",
       categoryLabelKey: "modules.form.fields.transformation.categories.personCaricature",
@@ -391,8 +781,8 @@ const transformationOptions: ModuleFieldOption[] = [
     },
   ),
   option(
-    "personality_asymmetry",
-    "personality-driven anatomical asymmetry with uneven balance, unusual stance, and exaggerated proportional rhythm",
+    "anatomical_asymmetry",
+    "anatomical asymmetry with uneven proportional balance",
     ["person", "asymmetry", "caricature"],
     {
       category: "person_caricature",
@@ -403,8 +793,8 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "rubber_hose_anatomy",
-    "rubber-hose anatomy with flexible jointless limbs and rounded elastic bends",
-    ["person", "rubber-hose", "elastic"],
+    "rubber-hose anatomy with flexible jointless limbs and rounded bends",
+    ["person", "rubber-hose", "elastic", "rounded"],
     {
       category: "person_elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.personElastic",
@@ -413,8 +803,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "spring_loaded_anatomy",
-    "spring-loaded anatomy with extended limbs, compressed body sections, and visible elastic tension",
-    ["person", "spring", "elastic"],
+    "spring-loaded anatomy with elongated limbs and compressed body sections",
+    ["person", "spring", "elastic", "elongated"],
     {
       category: "person_elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.personElastic",
@@ -423,8 +813,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "balloon_anatomy",
-    "inflated balloon-like anatomy with swollen rounded volumes and puffed limbs",
-    ["person", "inflated", "balloon"],
+    "inflated anatomy with rounded body volumes and puffed limbs",
+    ["person", "inflated", "balloon", "wide"],
     {
       category: "person_elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.personElastic",
@@ -433,19 +823,24 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "squashed_compact_anatomy",
-    "squashed compact anatomy with shortened proportions and compressed body mass",
-    ["person", "squashed", "compact"],
+    "squashed compact anatomy with shortened body proportions",
+    ["person", "squashed", "compact", "short-limbed"],
     {
       category: "person_elastic",
       categoryLabelKey: "modules.form.fields.transformation.categories.personElastic",
       appliesTo: ["person"],
+      compatibility: {
+        preferredTags: ["compact", "chibi", "short-limbed"],
+        discouragedTags: ["elongated", "long-limbed", "slender"],
+        warningKey: PROPORTION_CONFLICT_WARNING,
+      },
     },
   ),
 
   option(
     "marionette_anatomy",
-    "marionette-like anatomy with clearly jointed limbs, segmented body construction, and suspended awkward proportions",
-    ["person", "marionette", "jointed"],
+    "marionette-like anatomy with jointed limbs and segmented body construction",
+    ["person", "marionette", "jointed", "segmented"],
     {
       category: "person_constructed",
       categoryLabelKey: "modules.form.fields.transformation.categories.personConstructed",
@@ -454,8 +849,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "mannequin_anatomy",
-    "mannequin-like simplified anatomy with artificial proportions and rigid body segmentation",
-    ["person", "mannequin", "segmented"],
+    "mannequin-like anatomy with simplified rigid segmentation",
+    ["person", "mannequin", "segmented", "rigid"],
     {
       category: "person_constructed",
       categoryLabelKey: "modules.form.fields.transformation.categories.personConstructed",
@@ -464,7 +859,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "cuboid_anatomy",
-    "cuboid anatomy with squared limbs, block-based body sections, and rigid structural proportions",
+    "cuboid anatomy with squared limbs and block-built body sections",
     ["person", "cuboid", "blocky"],
     {
       category: "person_constructed",
@@ -474,7 +869,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "faceted_anatomy",
-    "faceted anatomy rebuilt from sharp planes and simplified polygonal body structure",
+    "faceted anatomy built from sharp planar body sections",
     ["person", "faceted", "polygonal"],
     {
       category: "person_constructed",
@@ -485,7 +880,7 @@ const transformationOptions: ModuleFieldOption[] = [
 
   option(
     "insectoid_anatomy",
-    "insectoid anatomical transformation with thin segmented limbs, sharp joints, and nonhuman proportion balance",
+    "insectoid anatomy with segmented limbs and articulated joints",
     ["person", "animal", "insectoid", "segmented"],
     {
       category: "person_creature",
@@ -495,7 +890,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "creature_hybrid",
-    "creature-like anatomical transformation with nonhuman proportion balance and altered limb structure",
+    "hybridized anatomy with altered limb structure and nonhuman proportional balance",
     ["person", "animal", "creature", "hybrid"],
     {
       category: "person_creature",
@@ -505,19 +900,24 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "alien_elongation",
-    "alien-like anatomical elongation with unfamiliar body balance and extended nonhuman proportions",
-    ["person", "alien", "elongated"],
+    "alien-like anatomical elongation with extended nonhuman proportions",
+    ["person", "alien", "elongated", "long-limbed"],
     {
       category: "person_creature",
       categoryLabelKey: "modules.form.fields.transformation.categories.personCreature",
       appliesTo: ["person"],
+      compatibility: {
+        preferredTags: ["elongated", "long-limbed", "slender"],
+        discouragedTags: ["compact", "chibi", "short-limbed", "stocky"],
+        warningKey: PROPORTION_CONFLICT_WARNING,
+      },
     },
   ),
 
   option(
     "grotesque_misshapen",
-    "grotesque misshapen anatomy with irregular proportions, intentional asymmetry, and unstable physical balance",
-    ["person", "grotesque", "misshapen"],
+    "grotesque misshapen anatomy with irregular proportions and deliberate asymmetry",
+    ["person", "grotesque", "misshapen", "asymmetric"],
     {
       category: "person_grotesque",
       categoryLabelKey: "modules.form.fields.transformation.categories.personGrotesque",
@@ -526,8 +926,8 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "distorted_elegance",
-    "elegant but subtly uncanny anatomy with long proportions and controlled imbalance",
-    ["person", "grotesque", "elegant"],
+    "elongated elegant anatomy with controlled uncanny imbalance",
+    ["person", "grotesque", "elegant", "elongated"],
     {
       category: "person_grotesque",
       categoryLabelKey: "modules.form.fields.transformation.categories.personGrotesque",
@@ -536,7 +936,7 @@ const transformationOptions: ModuleFieldOption[] = [
   ),
   option(
     "radical_silhouette",
-    "radical anatomical silhouette transformation with strongly altered body width, length, and mass distribution",
+    "radically altered anatomical silhouette with redistributed body width, length, and mass",
     ["person", "silhouette", "radical"],
     {
       category: "person_grotesque",
@@ -544,13 +944,261 @@ const transformationOptions: ModuleFieldOption[] = [
       appliesTo: ["person"],
     },
   ),
+  option(
+    "pinched_torso",
+    "pinched torso anatomy with narrowed central body mass",
+    ["person", "pinched", "narrow"],
+    {
+      category: "person_grotesque",
+      categoryLabelKey: "modules.form.fields.transformation.categories.personGrotesque",
+      appliesTo: ["person"],
+    },
+  ),
+  option(
+    "limb_taper",
+    "tapered limb anatomy with progressively narrowing extremities",
+    ["person", "limb", "tapered"],
+    {
+      category: "person_grotesque",
+      categoryLabelKey: "modules.form.fields.transformation.categories.personGrotesque",
+      appliesTo: ["person"],
+    },
+  ),
+
+  option(
+    "type_arc_bend",
+    "letterforms bent along a smooth structural arc",
+    ["typography", "bend", "arc"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_wave",
+    "letterforms distorted into repeating wave curvature",
+    ["typography", "wave", "fluid"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_inflate",
+    "inflated letterforms with expanded rounded stroke volume",
+    ["typography", "inflated", "rounded", "wide"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_pinch",
+    "pinched letterforms with localized stroke narrowing",
+    ["typography", "pinch", "narrow"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_fold",
+    "folded letterforms with articulated planar bends",
+    ["typography", "fold", "planar"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_interlock",
+    "interlocking letterforms with structural overlap between glyph forms",
+    ["typography", "interlock", "structural"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_fragment",
+    "fragmented letterforms with separated glyph sections",
+    ["typography", "fragment", "structural"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+  option(
+    "type_twist",
+    "twisted letterform strokes with controlled rotational deformation",
+    ["typography", "twist", "warp"],
+    {
+      category: "typography",
+      categoryLabelKey: "modules.form.fields.transformation.categories.typography",
+      appliesTo: ["typography"],
+    },
+  ),
+
+  option(
+    "scene_terrain_fold",
+    "environmental masses folded into large layered ridges",
+    ["scene", "fold", "layered"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_sweeping_warp",
+    "environmental forms warped into sweeping continuous curves",
+    ["scene", "warp", "fluid"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_floating_masses",
+    "environmental masses separated into floating structural islands",
+    ["scene", "floating", "fragment"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_strata_shift",
+    "stratified environmental layers offset into displaced terraces",
+    ["scene", "stratified", "offset"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_crystalline_growth",
+    "crystalline environmental growth with expanding faceted structures",
+    ["scene", "crystalline", "growth", "faceted"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_erosion_cut",
+    "erosion-like transformation with carved channels and recessed masses",
+    ["scene", "erosion", "carved"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_gravity_droop",
+    "environmental forms drooping downward under exaggerated gravity",
+    ["scene", "droop", "gravity"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+  option(
+    "scene_inverted_landform",
+    "inverted environmental geometry with overhanging and reversed structural masses",
+    ["scene", "inverted", "surreal"],
+    {
+      category: "scene",
+      categoryLabelKey: "modules.form.fields.transformation.categories.scene",
+      appliesTo: ["scene"],
+    },
+  ),
+
+  option(
+    "animal_serpentine_elongation",
+    "serpentine anatomical elongation with continuous body curvature",
+    ["animal", "serpentine", "elongated", "long-body"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+      compatibility: {
+        preferredTags: ["elongated", "long-body", "long-neck"],
+        discouragedTags: ["compact", "stocky"],
+        warningKey: PROPORTION_CONFLICT_WARNING,
+      },
+    },
+  ),
+  option(
+    "animal_multi_limb",
+    "multilimbed anatomical transformation with additional articulated appendages",
+    ["animal", "multi-limb", "segmented"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_armored_segmentation",
+    "animal anatomy segmented into overlapping plate-like body sections",
+    ["animal", "armored", "segmented"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_spine_growth",
+    "spine-like structural growth extending along the body silhouette",
+    ["animal", "spines", "growth"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_limb_reduction",
+    "reduced limb anatomy with shortened or minimized appendages",
+    ["animal", "limb", "reduced", "compact"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
+  option(
+    "animal_appendage_expansion",
+    "expanded major appendage forms with broader structural span",
+    ["animal", "appendage", "expanded", "wide"],
+    {
+      category: "animal",
+      categoryLabelKey: "modules.form.fields.transformation.categories.animal",
+      appliesTo: ["animal"],
+    },
+  ),
 ];
 
 const transformationStrengthOptions: ModuleFieldOption[] = [
-  option("subtle", "subtle transformation intensity", ["subtle"]),
-  option("moderate", "moderate transformation intensity", ["moderate"]),
-  option("strong", "strong transformation intensity", ["strong"]),
-  option("extreme", "extreme transformation intensity", ["extreme"]),
+  option("subtle", "subtle form transformation", ["subtle"]),
+  option("moderate", "moderate form transformation", ["moderate"]),
+  option("strong", "strong form transformation", ["strong"]),
+  option("extreme", "extreme form transformation", ["extreme"]),
 ];
 
 export const FormModule: PromptKeyModule = {
@@ -625,6 +1273,10 @@ export const FormModule: PromptKeyModule = {
         searchable: true,
         clearable: true,
         width: "full",
+        compatibility: {
+          dependsOn: "proportions",
+          mode: "sort-and-hint",
+        },
       },
     },
 
