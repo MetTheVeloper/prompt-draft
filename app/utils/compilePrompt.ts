@@ -1,5 +1,5 @@
 // app/utils/compilePrompt.ts
-import type { PromptKeyModule } from '../modules/types'
+import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
@@ -15,6 +15,8 @@ export type ModuleOutputMap = Record<string, ModuleOutputValue>
 export type PromptOutputFormat = 'modular' | 'natural' | 'json'
 
 export type PromptMode = 'text_to_image' | 'image_to_image'
+
+export type PromptSubjectType = ModuleSubjectType
 
 export type ReferenceSubjectType =
   | 'person'
@@ -50,6 +52,7 @@ export type PromptSettings = {
   mode: PromptMode
   idea: string
   subject: string
+  subjectType: PromptSubjectType
   aspectRatio: string
   globalRules: string
   imageToImage: ImageToImageSettings
@@ -60,6 +63,7 @@ export function createDefaultPromptSettings(): PromptSettings {
     mode: 'image_to_image',
     idea: '',
     subject: '',
+    subjectType: 'unspecified',
     aspectRatio: getDefaultAspectRatioValue(),
     globalRules: '',
     imageToImage: {
@@ -591,6 +595,10 @@ function compileJsonOutput(
     mode: settings.mode,
     idea: settings.idea.trim(),
     subject: buildPromptSubject(settings),
+    subjectType:
+      settings.mode === 'image_to_image'
+        ? settings.imageToImage.referenceSubjectType
+        : settings.subjectType,
     aspectRatio: getAspectRatioPromptHint(settings.aspectRatio).trim(),
     aspectRatioValue: settings.aspectRatio.trim(),
     globalRules: settings.globalRules.trim(),
