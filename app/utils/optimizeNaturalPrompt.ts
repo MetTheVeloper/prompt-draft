@@ -202,7 +202,7 @@ function detectApplyGroup(value: string): ApplyGroup {
   }
 
   if (
-    /framing|frame composition|subject placement|rule of thirds|off center|upper frame|lower frame|edge weighted|negative space|low angle view|high angle view|top down view|worms eye view|birds eye view|frontal view|three quarter view|profile view|rear view|within the frame|safe margin|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical/.test(
+    /framing|frame composition|frame balance|subject placement|rule of thirds|off center|upper frame|lower frame|edge weighted|negative space|low angle view|high angle view|top down view|worms eye view|birds eye view|front view|frontal view|three quarter view|side view|profile view|rear view|within the frame|safe margin|centered|isolated|spacing|visibility|foreground|midground|background layers|dominant|full product|clear full|symmetrical/.test(
       text
     )
   ) {
