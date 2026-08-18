@@ -8,7 +8,6 @@ import type {
   PromptMode,
   PromptSettings,
   PromptSubjectType,
-  ReferenceSubjectType,
   ReferenceUsage,
   TransformationStrength,
 } from "../../utils/compilePrompt";
@@ -61,17 +60,6 @@ const promptSubjectTypes: PromptSubjectType[] = [
   "scene",
   "typography",
   "abstract",
-  "custom",
-];
-
-const referenceSubjectTypes: ReferenceSubjectType[] = [
-  "person",
-  "object",
-  "animal",
-  "building",
-  "product",
-  "vehicle",
-  "scene",
   "custom",
 ];
 
@@ -166,29 +154,17 @@ const generatedSubject = computed(() => {
   return buildPromptSubject(props.settings);
 });
 
-const coreFieldCount = computed(() => {
-  return props.settings.mode === "text_to_image" ? 2 : 1;
-});
+const coreFieldCount = computed(() => 2);
 
 const coreFilledFieldCount = computed(() => {
-  const fields = [props.settings.idea];
-
-  if (props.settings.mode === "text_to_image") {
-    fields.push(props.settings.subject);
-  }
-
-  return fields.filter((value) => String(value || "").trim()).length;
+  return [props.settings.idea, props.settings.subject].filter((value) => {
+    return String(value || "").trim();
+  }).length;
 });
 
 function updatePromptSubjectType(value: ElDropdownValue) {
   updateSettings({
     subjectType: value as PromptSubjectType,
-  });
-}
-
-function updateReferenceSubjectType(value: ElDropdownValue) {
-  updateImageToImageSettings({
-    referenceSubjectType: value as ReferenceSubjectType,
   });
 }
 
@@ -213,7 +189,7 @@ function updateAspectRatioDropdownValue(value: ElDropdownValue) {
 }
 
 const isPersonReference = computed(() => {
-  return props.settings.imageToImage.referenceSubjectType === "person";
+  return props.settings.subjectType === "person";
 });
 
 function updateSettings(patch: Partial<PromptSettings>) {
@@ -236,7 +212,6 @@ function updateImageToImageSettings(patch: Partial<ImageToImageSettings>) {
 function updateSelectedModuleKeys(value: string[]) {
   emit("update:selectedModuleKeys", value);
 }
-
 
 function getCheckedValue(event: Event) {
   const target = event.target as HTMLInputElement | null;
@@ -615,7 +590,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
             />
           </el-text>
 
-          <el-text v-if="settings.mode === 'text_to_image'" v-bind="setupFieldAttrs">
+          <el-text v-bind="setupFieldAttrs">
             <el-flex v-bind="setupFieldHeadAttrs">
               <el-text :size="13" :weight="800">
                 {{ t("promptSetup.subjectType.label") }}
@@ -635,27 +610,50 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
             />
           </el-text>
 
-          <el-text v-if="settings.mode === 'text_to_image'" v-bind="setupFieldAttrs">
+          <el-text v-bind="setupFieldAttrs">
             <el-flex v-bind="setupFieldHeadAttrs">
               <el-text :size="13" :weight="800">
-                {{ t("promptSetup.subject.label") }}
+                {{ settings.mode === 'image_to_image'
+                  ? t("promptSetup.imageToImage.subjectDescription.label")
+                  : t("promptSetup.subject.label") }}
               </el-text>
 
               <el-text :size="11" :weight="300" color="normal50">
-                {{ t("promptSetup.subject.description") }}
+                {{ settings.mode === 'image_to_image'
+                  ? t("promptSetup.imageToImage.subjectDescription.description")
+                  : t("promptSetup.subject.description") }}
               </el-text>
             </el-flex>
 
             <el-text-field
               :model-value="settings.subject"
-              type="text"
+              :type="settings.mode === 'image_to_image' ? 'textarea' : 'text'"
+              :rows="settings.mode === 'image_to_image' ? 3 : 1"
               :size="14"
-              :placeholder="t('promptSetup.subject.placeholder')"
+              :placeholder="settings.mode === 'image_to_image'
+                ? t('promptSetup.imageToImage.subjectDescription.placeholder')
+                : t('promptSetup.subject.placeholder')"
               :editor-id="editorId('subject')"
               support-variables
               @update:model-value="updateSettings({ subject: $event })"
             />
           </el-text>
+
+          <el-grid v-if="settings.mode === 'image_to_image'" :gap="6" :p="[12]" :radius="14" bg="normal5">
+            <el-text :size="12" :weight="800" color="normal70">
+              {{ t("promptSetup.imageToImage.generatedSubject.label") }}
+            </el-text>
+
+            <el-text
+              :size="12"
+              :weight="300"
+              :color="generatedSubject ? 'normal75' : 'orange'"
+              icon="auto_awesome"
+              :icon-color="generatedSubject ? 'blue' : 'orange'"
+            >
+              {{ generatedSubject || t("promptSetup.imageToImage.generatedSubject.empty") }}
+            </el-text>
+          </el-grid>
         </el-grid>
       </el-grid>
 
@@ -688,7 +686,7 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
               :radius="8"
               color="white"
             >
-              {{ t(`promptSetup.imageToImage.referenceSubjectType.options.${settings.imageToImage.referenceSubjectType}`) }}
+              {{ t(`promptSetup.imageToImage.referenceUsage.options.${settings.imageToImage.referenceUsage}`) }}
             </el-text>
           </el-flex>
 
@@ -698,97 +696,6 @@ function openSetupPanelContextMenu(event: MouseEvent, panel: SetupPanelKey) {
         </el-flex>
 
         <el-grid v-show="isPanelExpanded('imageReference')" v-bind="setupPanelBodyAttrs">
-          <el-text v-bind="setupFieldAttrs">
-            <el-flex v-bind="setupFieldHeadAttrs">
-              <el-text :size="13" :weight="800">
-                {{ t("promptSetup.imageToImage.referenceSubjectType.label") }}
-              </el-text>
-
-              <el-text :size="11" :weight="300" color="normal50">
-                {{ t("promptSetup.imageToImage.referenceSubjectType.description") }}
-              </el-text>
-            </el-flex>
-
-            <el-dropdown
-              :model-value="settings.imageToImage.referenceSubjectType"
-              icon="add"
-              :items="referenceSubjectTypes"
-              :item-label="(subjectType) => t(`promptSetup.imageToImage.referenceSubjectType.options.${subjectType}`)"
-              :item-value="(subjectType) => subjectType"
-              @update:model-value="updateReferenceSubjectType"
-            />
-          </el-text>
-
-          <el-text v-if="settings.imageToImage.referenceSubjectType === 'custom'" v-bind="setupFieldAttrs">
-            <el-flex v-bind="setupFieldHeadAttrs">
-              <el-text :size="13" :weight="800">
-                {{ t("promptSetup.imageToImage.customSubject.label") }}
-              </el-text>
-
-              <el-text :size="11" :weight="300" color="normal50">
-                {{ t("promptSetup.imageToImage.customSubject.description") }}
-              </el-text>
-            </el-flex>
-
-            <el-text-field
-              :model-value="settings.imageToImage.customSubject"
-              type="text"
-              :size="14"
-              :placeholder="t('promptSetup.imageToImage.customSubject.placeholder')"
-              :editor-id="editorId('customSubject')"
-              support-variables
-              @update:model-value="
-                updateImageToImageSettings({
-                  customSubject: $event,
-                })
-              "
-            />
-          </el-text>
-
-          <el-text v-bind="setupFieldAttrs">
-            <el-flex v-bind="setupFieldHeadAttrs">
-              <el-text :size="13" :weight="800">
-                {{ t("promptSetup.imageToImage.subjectDescription.label") }}
-              </el-text>
-
-              <el-text :size="11" :weight="300" color="normal50">
-                {{ t("promptSetup.imageToImage.subjectDescription.description") }}
-              </el-text>
-            </el-flex>
-
-            <el-text-field
-              :model-value="settings.imageToImage.subjectDescription"
-              type="textarea"
-              rows="3"
-              :size="14"
-              :placeholder="t('promptSetup.imageToImage.subjectDescription.placeholder')"
-              :editor-id="editorId('subjectDescription')"
-              support-variables
-              @update:model-value="
-                updateImageToImageSettings({
-                  subjectDescription: $event,
-                })
-              "
-            />
-          </el-text>
-
-          <!-- Generated Subject -->
-          <el-grid :gap="6" :p="[12]" :radius="14" bg="normal5">
-            <el-text :size="12" :weight="800" color="normal70">
-              {{ t("promptSetup.imageToImage.generatedSubject.label") }}
-            </el-text>
-
-            <el-text
-              :size="12"
-              :weight="300"
-              :color="generatedSubject ? 'normal75' : 'orange'"
-              icon="auto_awesome"
-              :icon-color="generatedSubject ? 'blue' : 'orange'"
-            >
-              {{ generatedSubject || t("promptSetup.imageToImage.generatedSubject.empty") }}
-            </el-text>
-          </el-grid>
-
           <el-text v-bind="setupFieldAttrs">
             <el-flex v-bind="setupFieldHeadAttrs">
               <el-text :size="13" :weight="800">
