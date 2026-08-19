@@ -83,10 +83,10 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 ## Lighting — legacy `lightingStyle` migration
 
 ### Status
-Open
+Open — deferred migration task; the new Lighting semantic schema itself is closed.
 
 ### Problem
-The Lighting semantic refactor replaces the old `lightingStyle` mega-select with a structured multi-source rig:
+The Lighting semantic refactor replaced the old `lightingStyle` mega-select with a structured multi-source rig:
 
 ```text
 lightSources[]
@@ -135,7 +135,7 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 Open
 
 ### Problem
-Generic `multiSelect` fields currently render with a native HTML `<select multiple>` control. Framing now uses multi-select for Composition Features and Crop Safety, which makes the visual inconsistency more noticeable next to the project component system.
+Generic `multiSelect` fields currently render with a native HTML `<select multiple>` control. Framing now uses multi-select for Composition Features and Crop Safety, and Lighting source features intentionally follow the same convention so all of them can migrate together when the project gets a custom multi-select component.
 
 ### Required follow-up
 Replace the native control with the project dropdown/menu component while preserving:
