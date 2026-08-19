@@ -1,12 +1,12 @@
 # Stage 10 — Color Palette Semantics
 
-Status: **Implementation ready for validation**
+Status: **Semantically closed**
 
 ## Goal
 
 Refactor Color Palette without discarding its useful original model: define a palette and assign it to semantic parts of the image.
 
-The new contract is:
+The final contract is:
 
 > Color Palette defines editable base-color palettes and assigns those palettes to semantic targets. It does not own illumination color, material/surface appearance, scene content, or visual style.
 
@@ -25,7 +25,7 @@ Color Palette
 │       ├── Typography Texts
 │       ├── User Subject Variables
 │       ├── User Object Variables
-│       └── Custom Target
+│       └── Custom Targets[]
 ├── Extra Details
 └── Custom Override
 ```
@@ -92,19 +92,15 @@ Dynamic targets appear only when semantically colorable entities are available:
 
 Layout regions are intentionally not color targets because a region is a spatial container, not an unambiguous colorable entity.
 
+Custom targets are created outside the target selector and stored as explicit rule targets. More than one custom target may coexist in the same palette rule.
+
 ## Reference safety
 
 Dynamic targets store stable reference metadata (`variableId` or `entityId`) plus their token/label snapshot.
 
-If the referenced entity disappears, the rule is preserved and the target appears as a disabled Missing Reference option. User intent is never silently deleted.
+If the referenced entity disappears, the rule is preserved and the target appears as a disabled Missing Reference item. User intent is never silently deleted.
 
-Typography targets compile with both a human label and structural token, for example:
-
-```text
-typography text "Title" ({text_title})
-```
-
-This keeps Natural output understandable even though Typography's natural serializer does not normally print structural tokens.
+Typography targets use a human-readable entity label in the selector while retaining the structural token as reference metadata and description.
 
 ## Multi-target rules
 
@@ -113,6 +109,27 @@ A single palette can target multiple entities.
 `Overall Image` is exclusive only inside the same rule. A later, more specific rule may intentionally override the overall palette for one target.
 
 Exact duplicate targets across multiple rules produce an advisory warning but are not blocked.
+
+## Shared multi-select component
+
+Stage 10 exposed a reusable product-level UI need: native HTML multi-select controls were no longer adequate for grouped semantic references, mobile-friendly selection, persistent menu state, or rich item descriptions.
+
+A shared `el-multi-select` component was introduced on top of the existing `useMenu()` / dropdown infrastructure.
+
+It now supports:
+
+- click-to-toggle selection without Ctrl/Cmd,
+- grouped items,
+- descriptions,
+- disabled/missing items,
+- active/check state,
+- clear behavior,
+- exclusive values such as `Overall`,
+- keeping the menu open while toggling multiple selections.
+
+All generic `field.type === "multiSelect"` rendering in `base.vue` now uses the shared component. Lighting Features and Color Palette targets were migrated to it as well.
+
+The old review-backlog item for native multi-select UI was removed after validation.
 
 ## Compile contract
 
@@ -148,33 +165,51 @@ presetId + colors[] + targets[]
 
 Old preset-only assignments receive the new concrete preset swatches.
 
-## Validation checklist
+## Validation results
 
-Before closing Stage 10, test at least:
+The user exercised the Stage 10 validation matrix in the real editor and reported successful behavior across the full test pack.
 
-1. preset → Overall Image
-2. preset → Outfit + Accent Elements
-3. custom literal palette → Background
-4. mixed literal + Color Variable palette
-5. palette → user Subject variable
-6. palette → user Object variable
-7. palette → Typography Group
-8. palette → individual Typography Text
-9. broad Typography palette + specific Text override
-10. deleted/missing referenced target remains visible as Missing
-11. duplicate exact target shows warning without blocking
-12. Modular and Natural outputs preserve palette ↔ target relationships
-13. `pnpm generate` succeeds
+Confirmed cases include:
+
+1. generic multi-select click/toggle behavior
+2. `Overall` exclusivity
+3. Typography Group/Text dynamic targets
+4. user `subject` and `object` variable targets
+5. mixed literal + Color Variable palettes
+6. preset → editable swatches / detach behavior
+7. multiple Custom Targets
+8. Missing Reference preservation
+9. duplicate exact-target warning without blocking
+10. Lighting Features regression after shared multi-select migration
+11. generic `base.vue` multi-select migration
+12. shared multi-select reopen/toggle/clear behavior
+13. Modular/Natural palette ↔ target relationship preservation
+
+Representative verified output:
+
+```text
+custom color palette (#d92626 / #f5dbdb) assigned to user target "hero" ({hero});
+forest green-and-earth palette (#213B2B / #496342 / #6F5A3A / #9A7B55 / #C4B08A) assigned to user target "car" ({car})
+```
+
+Natural output preserved both palette/target relationships while Typography and user variables remained independent semantic blocks.
 
 ## Files introduced/changed
 
 - `app/modules/colorPalette.module.ts`
 - `app/modules/types.ts`
 - `app/components/modules/panel/ColorAssignmentsField.vue`
+- `app/components/el/multi-select.vue`
+- `app/components/modules/panel/base.vue`
+- `app/components/modules/lighting/LightSourcesField.vue`
 - `app/utils/compileColorPalette.ts`
 - `app/utils/compileModules.ts`
 - `app/utils/optimizeNaturalPrompt.ts`
 - `scripts/i18n-patches/en.color-palette-semantics.ts`
 - `scripts/i18n-patches/fa.semantic-refactor.todo.ts`
 
-Stage 10 stays open until the validation checklist is exercised with real Modular/Natural output.
+## Closure
+
+Stage 10 is semantically closed after real UI, reference, compiler, Modular/Natural, and shared multi-select validation.
+
+Reopen Color Palette only if later Texture/cross-module testing reveals a concrete semantic conflict rather than for theoretical micro-polishing.
