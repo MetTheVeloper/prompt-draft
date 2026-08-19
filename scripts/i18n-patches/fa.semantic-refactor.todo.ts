@@ -17,6 +17,7 @@ import layout from "./en.layout-semantics"
 import layoutRegions from "./en.layout-region-semantics"
 import framing from "./en.framing-semantics"
 import framingCrossModule from "./en.framing-cross-module"
+import camera from "./en.camera-semantics"
 
 export default {
   ...style,
@@ -26,4 +27,5 @@ export default {
   ...layoutRegions,
   ...framing,
   ...framingCrossModule,
+  ...camera,
 } as const
