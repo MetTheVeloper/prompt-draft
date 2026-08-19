@@ -10,6 +10,8 @@ import type {
 } from "../modules/types";
 import { formatPromptVariableDefinitions } from "./promptVariables";
 import { compileLayoutModule } from "./compileLayout";
+import { compileLightingModule } from "./compileLighting";
+import { compileColorPaletteModule } from "./compileColorPalette";
 import {
   getLayoutRegionVariableToken,
   getTypographyGroupVariableToken,
@@ -28,49 +30,12 @@ function cleanPromptPart(value: string) {
   return value.trim().replace(/\s+/g, " ");
 }
 
-type ColorAssignmentItem = {
-  mode?: "preset" | "custom";
-  preset?: string;
-  colors?: string[];
-  usage?: string;
-};
-
 function humanizeValue(value: string) {
-  return value.replace(/[_-]+/g, " ").replace(/\s+/g, " ").trim().toLowerCase();
-}
-
-function formatList(items: string[]) {
-  const cleanedItems = items.map((item) => item.trim()).filter(Boolean);
-
-  if (cleanedItems.length === 0) return "";
-  if (cleanedItems.length === 1) return cleanedItems[0];
-  if (cleanedItems.length === 2)
-    return `${cleanedItems[0]} and ${cleanedItems[1]}`;
-
-  return `${cleanedItems.slice(0, -1).join(", ")}, and ${cleanedItems[cleanedItems.length - 1]
-    }`;
-}
-
-function colorUsageToPromptText(value?: string) {
-  const map: Record<string, string> = {
-    overall: "the overall image",
-    background: "the background",
-    subject: "the main subject",
-    outfit: "the outfit",
-    hair: "the hair",
-    lighting: "the lighting mood",
-    accents: "the graphic accents",
-  };
-
-  return map[value || "overall"] || humanizeValue(value || "overall");
-}
-
-function isColorAssignmentItem(value: unknown): value is ColorAssignmentItem {
-  if (!value || typeof value !== "object" || Array.isArray(value)) {
-    return false;
-  }
-
-  return true;
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .toLowerCase();
 }
 
 function cloneModuleFieldValue(value: ModuleFieldValue): ModuleFieldValue {
@@ -152,11 +117,6 @@ function isTypographyTextGroup(value: unknown): value is TypographyTextGroup {
   return true;
 }
 
-function quoteTypographyText(value: string) {
-  return `"${cleanPromptPart(value).replace(/"/g, '\\"')}"`;
-}
-
-//
 function compactRecord(value: Record<string, unknown>) {
   return Object.fromEntries(
     Object.entries(value).filter(([, item]) => {
@@ -178,36 +138,40 @@ function serializeTypographyTextBlock(
   if (!text) return null;
 
   const typography = compactRecord({
-    fontStyle: resolveConfigPromptText(
-      field,
-      "fontStyleOptions",
-      block.fontStyle,
-      block.customFontStyle,
-    ) || undefined,
-    fontSize: resolveConfigPromptText(
-      field,
-      "fontSizeOptions",
-      block.fontSize,
-      block.customFontSize,
-    ) || undefined,
-    fontWeight: resolveConfigPromptText(
-      field,
-      "fontWeightOptions",
-      block.fontWeight,
-      block.customFontWeight,
-    ) || undefined,
+    fontStyle:
+      resolveConfigPromptText(
+        field,
+        "fontStyleOptions",
+        block.fontStyle,
+        block.customFontStyle,
+      ) || undefined,
+    fontSize:
+      resolveConfigPromptText(
+        field,
+        "fontSizeOptions",
+        block.fontSize,
+        block.customFontSize,
+      ) || undefined,
+    fontWeight:
+      resolveConfigPromptText(
+        field,
+        "fontWeightOptions",
+        block.fontWeight,
+        block.customFontWeight,
+      ) || undefined,
   });
 
   return compactRecord({
     id: block.id || undefined,
     key: getTypographyTextVariableToken(block),
     content: text,
-    purpose: resolveConfigPromptText(
-      field,
-      "textPurposeOptions",
-      block.purpose,
-      block.customPurpose,
-    ) || undefined,
+    purpose:
+      resolveConfigPromptText(
+        field,
+        "textPurposeOptions",
+        block.purpose,
+        block.customPurpose,
+      ) || undefined,
     typography,
     description: block.additionalDescription?.trim() || undefined,
   });
@@ -250,37 +214,42 @@ function serializeTypographyTextGroup(
   if (!texts.length) return null;
 
   const layout = compactRecord({
-    direction: resolveConfigPromptText(
-      field,
-      "directionOptions",
-      group.direction,
-    ) || undefined,
-    writingDirection: resolveConfigPromptText(
-      field,
-      "writingDirectionOptions",
-      group.writingDirection,
-    ) || undefined,
-    alignment: resolveConfigPromptText(
-      field,
-      "alignmentOptions",
-      group.alignment,
-    ) || undefined,
-    distribution: resolveConfigPromptText(
-      field,
-      "distributionOptions",
-      group.distribution,
-    ) || undefined,
+    direction:
+      resolveConfigPromptText(
+        field,
+        "directionOptions",
+        group.direction,
+      ) || undefined,
+    writingDirection:
+      resolveConfigPromptText(
+        field,
+        "writingDirectionOptions",
+        group.writingDirection,
+      ) || undefined,
+    alignment:
+      resolveConfigPromptText(
+        field,
+        "alignmentOptions",
+        group.alignment,
+      ) || undefined,
+    distribution:
+      resolveConfigPromptText(
+        field,
+        "distributionOptions",
+        group.distribution,
+      ) || undefined,
   });
 
   return compactRecord({
     id: group.id || undefined,
     key: getTypographyGroupVariableToken(group),
-    purpose: resolveConfigPromptText(
-      field,
-      "groupPurposeOptions",
-      group.groupPurpose,
-      group.customGroupPurpose,
-    ) || undefined,
+    purpose:
+      resolveConfigPromptText(
+        field,
+        "groupPurposeOptions",
+        group.groupPurpose,
+        group.customGroupPurpose,
+      ) || undefined,
     position: serializeTypographyPosition(field, group),
     layout,
     description: group.additionalDescription?.trim() || undefined,
@@ -311,7 +280,6 @@ function serializeTypographyField(
     },
   };
 }
-//
 
 function compileVariablesModule(values: ModuleValues): string {
   return formatPromptVariableDefinitions(values.variables);
@@ -365,55 +333,12 @@ function compileTypographyModule(
   };
 }
 
-function compileColorAssignmentsField(
-  field: ModuleField,
-  value: ModuleFieldValue,
-) {
-  if (!Array.isArray(value)) return "";
-
-  const assignments = value.filter(isColorAssignmentItem);
-
-  const parts = assignments
-    .map((assignment) => {
-      const usageText = colorUsageToPromptText(assignment.usage);
-
-      if (assignment.mode === "custom") {
-        const colors = (assignment.colors || [])
-          .map((color) => color.trim())
-          .filter(Boolean);
-
-        if (!colors.length) return "";
-
-        return `use a custom color palette based on ${formatList(
-          colors,
-        )} for ${usageText}`;
-      }
-
-      const preset = assignment.preset?.trim();
-
-      if (!preset) return "";
-
-      const presetPromptText = getOptionPromptText(field, preset);
-      const presetText =
-        presetPromptText === preset ? humanizeValue(preset) : presetPromptText;
-
-      return `use ${presetText} for ${usageText}`;
-    })
-    .filter(Boolean);
-
-  return parts.join(", ");
-}
-
 function humanizeFieldId(value: string) {
   return value
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
     .replace(/[_-]+/g, " ")
     .trim()
     .toLowerCase();
-}
-
-function isHexColor(value: string) {
-  return /^#(?:[0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i.test(value);
 }
 
 function compileColorField(field: ModuleField, value: ModuleFieldValue) {
@@ -424,11 +349,6 @@ function compileColorField(field: ModuleField, value: ModuleFieldValue) {
   if (!colorValue) return "";
 
   const fieldName = humanizeFieldId(field.id);
-
-  if (isHexColor(colorValue)) {
-    return `the ${fieldName} must be ${colorValue}`;
-  }
-
   return `the ${fieldName} must be ${colorValue}`;
 }
 
@@ -439,10 +359,6 @@ function getOptionPromptText(field: ModuleField, value: string) {
 
 function compileField(field: ModuleField, value: ModuleFieldValue) {
   if (isEmptyValue(value)) return "";
-
-  if (field.type === "colorAssignments") {
-    return compileColorAssignmentsField(field, value);
-  }
 
   if (field.type === "color") {
     return compileColorField(field, value);
@@ -486,14 +402,19 @@ function uniquePromptParts(parts: string[]) {
   });
 }
 
-function sortModuleFieldsForCompile(module: PromptKeyModule, fields: ModuleField[]) {
+function sortModuleFieldsForCompile(
+  module: PromptKeyModule,
+  fields: ModuleField[],
+) {
   const explicitOrder = module.compile?.fieldOrder || [];
 
   if (!explicitOrder.length) {
     return [...fields].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
   }
 
-  const rank = new Map(explicitOrder.map((fieldId, index) => [fieldId, index]));
+  const rank = new Map(
+    explicitOrder.map((fieldId, index) => [fieldId, index]),
+  );
 
   return [...fields].sort((a, b) => {
     const aRank = rank.get(a.id);
@@ -537,6 +458,14 @@ export function compileModule(
 
   if (module.key === "layout") {
     return compileLayoutModule(module, values);
+  }
+
+  if (module.key === "lighting") {
+    return compileLightingModule(module, values);
+  }
+
+  if (module.key === "colorPalette") {
+    return compileColorPaletteModule(module, values);
   }
 
   const fields = Object.values(module.fields);
