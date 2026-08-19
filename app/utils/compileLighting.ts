@@ -54,13 +54,7 @@ function getFieldOptionPromptText(field: ModuleField | undefined, value: unknown
 }
 
 function formatFeatureList(items: string[]) {
-  const values = items.map(cleanPromptPart).filter(Boolean);
-
-  if (!values.length) return "";
-  if (values.length === 1) return values[0];
-  if (values.length === 2) return `${values[0]} and ${values[1]}`;
-
-  return `${values.slice(0, -1).join(", ")} and ${values[values.length - 1]}`;
+  return items.map(cleanPromptPart).filter(Boolean).join(" and ");
 }
 
 function isLightingSource(value: unknown): value is LightingSource {
