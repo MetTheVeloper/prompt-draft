@@ -99,6 +99,24 @@ export type ColorPaletteRule = {
   targets: ColorPaletteTarget[];
 };
 
+/**
+ * A complete material/surface specification assigned to one or more semantic
+ * targets. Targets intentionally reuse the same stable reference contract as
+ * Color Palette because both modules address colorable/material-capable
+ * entities without owning those entities themselves.
+ */
+export type MaterialAssignment = {
+  id?: string;
+  presetId?: string;
+  material?: string;
+  finish?: string;
+  surfaceTexture?: string;
+  opticalCharacter?: string;
+  textureProminence?: string;
+  conditions?: string[];
+  targets: ColorPaletteTarget[];
+};
+
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
 
 export type TypographyTextDirection = "row" | "column";
@@ -209,6 +227,7 @@ export type ModuleFieldType =
   | "textarea"
   | "layoutRegions"
   | "colorAssignments"
+  | "materialAssignments"
   | "lightSources"
   | "textGroups"
   | "variables"
@@ -226,6 +245,7 @@ export type ModuleFieldValue =
   | string[]
   | LightingSource[]
   | ColorPaletteRule[]
+  | MaterialAssignment[]
   | TypographyTextGroup[]
   | PromptVariable[]
   | LayoutRegion[]
@@ -254,7 +274,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
