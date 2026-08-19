@@ -143,7 +143,8 @@ function normalizeTarget(value: unknown): ColorPaletteTarget | null {
 function normalizeAssignment(value: unknown, index: number): MaterialAssignment | null {
   if (!isRecord(value)) return null;
 
-  const targets = Array.isArray(value.targets)
+  const hasExplicitTargets = Array.isArray(value.targets);
+  const targets = hasExplicitTargets
     ? value.targets
         .map(normalizeTarget)
         .filter((target): target is ColorPaletteTarget => Boolean(target))
@@ -166,7 +167,7 @@ function normalizeAssignment(value: unknown, index: number): MaterialAssignment 
     conditions: Array.isArray(value.conditions)
       ? value.conditions.filter((item): item is string => typeof item === "string")
       : [],
-    targets: targets.length
+    targets: hasExplicitTargets
       ? targets
       : [{ kind: "builtin", value: "all_surfaces" }],
   };
@@ -594,13 +595,12 @@ function removeTarget(index: number, targetToRemove: ColorPaletteTarget) {
 }
 
 function optionLabel(axis: string, option: ModuleFieldOption) {
-  const legacyAxis = axis === "material" ? "material" : "materialAssignments";
-  const legacyPath =
+  const path =
     axis === "material"
       ? `modules.texture.fields.material.options.${option.value}`
       : `modules.texture.fields.materialAssignments.${axis}.options.${option.value}`;
 
-  return translate(legacyPath, humanize(option.value));
+  return translate(path, humanize(option.value));
 }
 
 function optionItems(axis: string, options: ModuleFieldOption[]) {
