@@ -8,6 +8,7 @@ import type {
 } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
+import ModulesPanelLighting from "../modules/panel/lighting.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
 
@@ -76,6 +77,10 @@ function updateModuleOutput(moduleKey: string, output: ModuleOutputValue) {
 function updateModuleIssues(moduleKey: string, issues: PromptValidationIssue[]) {
   moduleIssues[moduleKey] = issues;
   emitIssues();
+}
+
+function getModulePanel(module: PromptKeyModule) {
+  return module.key === "lighting" ? ModulesPanelLighting : ModulesPanelBase;
 }
 
 watch(
@@ -160,7 +165,8 @@ watch(
 <template>
   <section class="prompt-editor">
     <el-flex rules="csc" v-if="modules.length" class="w100" :gap="16">
-      <ModulesPanelBase
+      <component
+        :is="getModulePanel(module)"
         v-for="module in modules"
         :key="module.key"
         :module="module"
