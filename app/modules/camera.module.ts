@@ -1,306 +1,220 @@
-import type { PromptKeyModule } from "./types";
+import type {
+  ModuleFieldOption,
+  ModulePreset,
+  ModuleValues,
+  PromptKeyModule,
+} from "./types";
 
-const cameraOptions = [
-  // 1. General
-  {
-    value: "macro_lens",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "macro lens look, detailed close-up capture",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "fisheye_lens",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "fisheye lens distortion, wide circular perspective",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "wide_angle_lens",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "wide-angle lens look, expansive field of view",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "ultra_wide_angle",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "ultra wide-angle lens look, exaggerated perspective",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "telephoto_compression",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "telephoto lens compression, shallow depth, focused subject",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "portrait_lens",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "portrait lens look, flattering subject proportions",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "shallow_dof",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "shallow depth-of-field, blurred background, focused subject",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "deep_focus",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "deep focus camera look, everything in sharp focus",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "documentary_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "documentary style camera, realistic capture",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "cinematic_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "cinematic camera look, dramatic composition and feel",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "handheld_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "handheld camera feel, slight motion and realism",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "security_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "security camera perspective, top-down surveillance look",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "webcam_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "webcam camera look, frontal and casual",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "smartphone_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "smartphone camera look, casual snapshot style",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "action_camera",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "action camera look, immersive and dynamic",
-    tags: ["camera", "general"],
-  },
-  {
-    value: "aerial_drone",
-    category: "general",
-    categoryLabel: "General",
-    promptText: "aerial drone camera, top-down or sweeping perspective",
-    tags: ["camera", "general"],
-  },
+function option(
+  value: string,
+  promptText: string,
+  tags: string[] = [],
+  config: { category?: string; categoryLabelKey?: string } = {},
+): ModuleFieldOption {
+  return { value, promptText, tags, ...config };
+}
 
-  // 2. Analog Cameras
-  {
-    value: "polaroid_sx70",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText:
-      "Polaroid SX-70 instant camera look, nostalgic instant photo feel",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "kodak_disposable",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Kodak disposable camera look, casual retro style",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "canon_ae1",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Canon AE-1 film camera look, classic 35mm photo style",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "nikon_f3",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Nikon F3 film camera look, professional vintage photo style",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "pentax_k1000",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText:
-      "Pentax K1000 film camera look, classic student film camera style",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "leica_m6",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Leica M6 rangefinder look, crisp and refined film photography",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "hasselblad_500c",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText:
-      "Hasselblad 500C/M medium-format look, high-quality classic photography",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "rolleiflex",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText:
-      "Rolleiflex twin-lens reflex camera look, square medium-format aesthetic",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "contax_t2",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Contax T2 compact film camera look, stylish analog snapshot",
-    tags: ["camera", "analog"],
-  },
-  {
-    value: "lomography",
-    category: "analog",
-    categoryLabel: "Analog Cameras",
-    promptText: "Lomography film camera look, experimental vintage style",
-    tags: ["camera", "analog"],
-  },
+const captureCategories = {
+  genericDigital: "modules.camera.fields.captureSystem.categories.genericDigital",
+  genericFilm: "modules.camera.fields.captureSystem.categories.genericFilm",
+  integrated: "modules.camera.fields.captureSystem.categories.integrated",
+  analogModels: "modules.camera.fields.captureSystem.categories.analogModels",
+  digitalModels: "modules.camera.fields.captureSystem.categories.digitalModels",
+} as const;
 
-  // 3. Digital Cameras
-  {
-    value: "canon_eos_r5",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Canon EOS R5 digital camera look, high resolution DSLR style",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "nikon_z8",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "Nikon Z8 digital camera look, modern full-frame mirrorless style",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "sony_a7r_iv",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "Sony A7R IV digital camera look, high-detail mirrorless capture",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "sony_a7s_iii",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Sony A7S III low-light optimized digital camera look",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "fujifilm_x100v",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Fujifilm X100V digital camera look, compact premium style",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "fujifilm_gfx_100s",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Fujifilm GFX 100S medium-format digital look",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "leica_q2",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Leica Q2 digital camera look, full-frame compact aesthetic",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "leica_sl2",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText: "Leica SL2 digital camera look, professional mirrorless style",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "hasselblad_x2d",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "Hasselblad X2D medium-format digital look, ultra-high-res capture",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "red_komodo",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "RED Komodo cinematic digital camera look, compact cinema camera style",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "arri_alexa",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "ARRI Alexa digital cinema camera look, professional cinematic capture",
-    tags: ["camera", "digital"],
-  },
-  {
-    value: "blackmagic_pocket",
-    category: "digital",
-    categoryLabel: "Digital Cameras",
-    promptText:
-      "Blackmagic Pocket Cinema Camera look, portable cinema camera style",
-    tags: ["camera", "digital"],
-  },
+const captureSystemOptions: ModuleFieldOption[] = [
+  option("digital_full_frame", "full-frame digital camera capture system", ["camera", "digital", "full-frame"], { category: "genericDigital", categoryLabelKey: captureCategories.genericDigital }),
+  option("digital_aps_c", "APS-C digital camera capture system", ["camera", "digital", "aps-c"], { category: "genericDigital", categoryLabelKey: captureCategories.genericDigital }),
+  option("digital_medium_format", "medium-format digital camera capture system", ["camera", "digital", "medium-format"], { category: "genericDigital", categoryLabelKey: captureCategories.genericDigital }),
+  option("digital_cinema", "digital cinema camera capture system", ["camera", "digital", "cinema"], { category: "genericDigital", categoryLabelKey: captureCategories.genericDigital }),
+
+  option("film_35mm", "35mm film camera capture system", ["camera", "film", "35mm"], { category: "genericFilm", categoryLabelKey: captureCategories.genericFilm }),
+  option("film_medium_format", "medium-format film camera capture system", ["camera", "film", "medium-format"], { category: "genericFilm", categoryLabelKey: captureCategories.genericFilm }),
+  option("instant_film", "instant-film camera capture system", ["camera", "film", "instant"], { category: "genericFilm", categoryLabelKey: captureCategories.genericFilm }),
+
+  option("smartphone", "smartphone camera capture system", ["camera", "digital", "integrated"], { category: "integrated", categoryLabelKey: captureCategories.integrated }),
+  option("webcam", "webcam capture system", ["camera", "digital", "integrated"], { category: "integrated", categoryLabelKey: captureCategories.integrated }),
+  option("security_camera", "security-camera capture system", ["camera", "digital", "fixed"], { category: "integrated", categoryLabelKey: captureCategories.integrated }),
+  option("action_camera", "action-camera capture system", ["camera", "digital", "integrated"], { category: "integrated", categoryLabelKey: captureCategories.integrated }),
+  option("aerial_drone", "aerial-drone camera capture system", ["camera", "digital", "integrated"], { category: "integrated", categoryLabelKey: captureCategories.integrated }),
+
+  option("polaroid_sx70", "Polaroid SX-70 instant-film camera capture system", ["camera", "film", "instant"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("kodak_disposable", "Kodak disposable 35mm film camera capture system", ["camera", "film", "35mm", "fixed-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("canon_ae1", "Canon AE-1 35mm film camera capture system", ["camera", "film", "35mm", "interchangeable-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("nikon_f3", "Nikon F3 35mm film camera capture system", ["camera", "film", "35mm", "interchangeable-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("pentax_k1000", "Pentax K1000 35mm film camera capture system", ["camera", "film", "35mm", "interchangeable-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("leica_m6", "Leica M6 35mm rangefinder camera capture system", ["camera", "film", "35mm", "rangefinder"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("hasselblad_500c", "Hasselblad 500C/M medium-format film camera capture system", ["camera", "film", "medium-format", "interchangeable-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("rolleiflex", "Rolleiflex medium-format twin-lens-reflex camera capture system", ["camera", "film", "medium-format", "twin-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("contax_t2", "Contax T2 compact 35mm film camera capture system", ["camera", "film", "35mm", "fixed-lens"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+  option("lomography", "Lomography compact film-camera capture system", ["camera", "film", "experimental"], { category: "analogModels", categoryLabelKey: captureCategories.analogModels }),
+
+  option("canon_eos_r5", "Canon EOS R5 full-frame digital camera capture system", ["camera", "digital", "full-frame", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("nikon_z8", "Nikon Z8 full-frame digital camera capture system", ["camera", "digital", "full-frame", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("sony_a7r_iv", "Sony A7R IV full-frame digital camera capture system", ["camera", "digital", "full-frame", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("sony_a7s_iii", "Sony A7S III full-frame digital camera capture system", ["camera", "digital", "full-frame", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("fujifilm_x100v", "Fujifilm X100V APS-C fixed-lens digital camera capture system", ["camera", "digital", "aps-c", "fixed-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("fujifilm_gfx_100s", "Fujifilm GFX 100S medium-format digital camera capture system", ["camera", "digital", "medium-format", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("leica_q2", "Leica Q2 full-frame fixed-lens digital camera capture system", ["camera", "digital", "full-frame", "fixed-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("leica_sl2", "Leica SL2 full-frame digital camera capture system", ["camera", "digital", "full-frame", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("hasselblad_x2d", "Hasselblad X2D medium-format digital camera capture system", ["camera", "digital", "medium-format", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("red_komodo", "RED Komodo digital cinema camera capture system", ["camera", "digital", "cinema", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("arri_alexa", "ARRI Alexa digital cinema camera capture system", ["camera", "digital", "cinema", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
+  option("blackmagic_pocket", "Blackmagic Pocket Cinema Camera capture system", ["camera", "digital", "cinema", "interchangeable-lens"], { category: "digitalModels", categoryLabelKey: captureCategories.digitalModels }),
 ];
 
-export const CameraModule: PromptKeyModule = {
+const captureResponseOptions: ModuleFieldOption[] = [
+  option("neutral_digital", "neutral digital camera sensor capture response", ["camera", "digital", "neutral"]),
+  option("high_resolution_digital", "high-resolution digital camera sensor response with fine microdetail", ["camera", "digital", "high-resolution"]),
+  option("low_light_digital", "high-sensitivity digital camera sensor response with restrained noise and preserved low-tone detail", ["camera", "digital", "high-sensitivity"]),
+  option("xtrans_digital", "Fujifilm X-Trans digital camera sensor color and tonal response", ["camera", "digital", "x-trans"]),
+  option("medium_format_digital", "medium-format digital camera sensor response with smooth tonal gradation", ["camera", "digital", "medium-format"]),
+  option("cinema_digital", "digital cinema camera sensor response with broad tonal latitude and smooth bright-tone roll-off", ["camera", "digital", "cinema"]),
+  option("film_35mm", "35mm film camera capture response with organic grain and gradual tonal roll-off", ["camera", "film", "35mm", "grain"]),
+  option("consumer_film", "consumer 35mm film camera capture response with visible grain and limited tonal latitude", ["camera", "film", "35mm", "grain"]),
+  option("medium_format_film", "medium-format film camera capture response with fine grain and smooth tonal gradation", ["camera", "film", "medium-format", "grain"]),
+  option("instant_film", "instant-film camera capture response with limited dynamic range and soft tonal transitions", ["camera", "film", "instant"]),
+  option("experimental_film", "experimental film camera capture response with irregular color and grain behavior", ["camera", "film", "experimental", "grain"]),
+  option("compressed_digital", "compressed digital camera capture response with reduced tonal latitude and visible processing", ["camera", "digital", "compressed"]),
+];
+
+const lensProfileOptions: ModuleFieldOption[] = [
+  option("macro", "macro-lens optics with close-focus capability", ["camera", "lens", "macro"]),
+  option("fisheye", "fisheye lens optics with pronounced barrel distortion and curved field rendering", ["camera", "lens", "fisheye", "distortion"]),
+  option("ultra_wide", "ultra-wide-angle lens optics with strong perspective expansion", ["camera", "lens", "ultra-wide"]),
+  option("wide_angle", "wide-angle lens optics with expanded field of view", ["camera", "lens", "wide-angle"]),
+  option("standard", "standard-lens optics with natural perspective", ["camera", "lens", "standard"]),
+  option("short_telephoto", "short-telephoto lens optics with mild perspective compression", ["camera", "lens", "short-telephoto"]),
+  option("telephoto", "telephoto lens optics with strong perspective compression", ["camera", "lens", "telephoto"]),
+  option("fixed_23mm_wide", "fixed 23mm wide-normal lens optics", ["camera", "lens", "fixed", "23mm"]),
+  option("fixed_28mm_wide", "fixed 28mm wide-angle lens optics", ["camera", "lens", "fixed", "28mm"]),
+  option("simple_fixed_wide", "simple fixed wide-angle lens optics with visible optical imperfections", ["camera", "lens", "fixed", "simple"]),
+  option("integral_instant_lens", "integral instant-camera lens optics with moderate softness and simple optical rendering", ["camera", "lens", "instant", "fixed"]),
+  option("twin_lens_medium_format", "medium-format twin-lens-reflex optical character", ["camera", "lens", "medium-format", "twin-lens"]),
+];
+
+const focusDepthOptions: ModuleFieldOption[] = [
+  option("shallow", "shallow depth of field", ["camera", "focus", "shallow"]),
+  option("moderate", "moderate depth of field", ["camera", "focus", "moderate"]),
+  option("deep", "deep depth of field", ["camera", "focus", "deep"]),
+  option("fixed_focus_deep", "fixed-focus camera behavior with broadly deep depth of field", ["camera", "focus", "fixed-focus", "deep"]),
+  option("critical_focus", "precise critical-focus camera rendering", ["camera", "focus", "critical"]),
+];
+
+const captureBehaviorOptions: ModuleFieldOption[] = [
+  option("tripod_stable", "stable tripod-mounted camera capture", ["camera", "capture", "stable", "tripod"]),
+  option("handheld_subtle", "subtle handheld camera instability with restrained micro-shake", ["camera", "capture", "handheld", "subtle"]),
+  option("handheld_active", "active handheld camera capture with visible recording instability", ["camera", "capture", "handheld", "active"]),
+  option("stabilized", "stabilized camera capture with reduced micro-shake", ["camera", "capture", "stabilized"]),
+  option("fixed_mounted", "fixed mounted-camera capture", ["camera", "capture", "fixed"]),
+];
+
+function cameraPreset(
+  id: string,
+  order: number,
+  values: Partial<ModuleValues>,
+): ModulePreset {
+  return {
+    id,
+    order,
+    values: {
+      captureSystem: "",
+      captureResponse: "",
+      lensProfile: "",
+      focusDepth: "",
+      captureBehavior: "",
+      ...values,
+    },
+  };
+}
+
+const cameraPresets: Record<string, ModulePreset> = {
+  polaroid_sx70: cameraPreset("polaroid_sx70", 100, {
+    captureSystem: "polaroid_sx70",
+    captureResponse: "instant_film",
+    lensProfile: "integral_instant_lens",
+    focusDepth: "moderate",
+  }),
+  kodak_disposable: cameraPreset("kodak_disposable", 110, {
+    captureSystem: "kodak_disposable",
+    captureResponse: "consumer_film",
+    lensProfile: "simple_fixed_wide",
+    focusDepth: "fixed_focus_deep",
+  }),
+  canon_ae1: cameraPreset("canon_ae1", 120, { captureSystem: "canon_ae1", captureResponse: "film_35mm" }),
+  nikon_f3: cameraPreset("nikon_f3", 130, { captureSystem: "nikon_f3", captureResponse: "film_35mm" }),
+  pentax_k1000: cameraPreset("pentax_k1000", 140, { captureSystem: "pentax_k1000", captureResponse: "film_35mm" }),
+  leica_m6: cameraPreset("leica_m6", 150, { captureSystem: "leica_m6", captureResponse: "film_35mm" }),
+  hasselblad_500c: cameraPreset("hasselblad_500c", 160, { captureSystem: "hasselblad_500c", captureResponse: "medium_format_film" }),
+  rolleiflex: cameraPreset("rolleiflex", 170, {
+    captureSystem: "rolleiflex",
+    captureResponse: "medium_format_film",
+    lensProfile: "twin_lens_medium_format",
+    focusDepth: "moderate",
+  }),
+  contax_t2: cameraPreset("contax_t2", 180, {
+    captureSystem: "contax_t2",
+    captureResponse: "film_35mm",
+    lensProfile: "fixed_28mm_wide",
+    focusDepth: "moderate",
+  }),
+  lomography: cameraPreset("lomography", 190, {
+    captureSystem: "lomography",
+    captureResponse: "experimental_film",
+    lensProfile: "simple_fixed_wide",
+  }),
+
+  canon_eos_r5: cameraPreset("canon_eos_r5", 200, { captureSystem: "canon_eos_r5", captureResponse: "high_resolution_digital" }),
+  nikon_z8: cameraPreset("nikon_z8", 210, { captureSystem: "nikon_z8", captureResponse: "neutral_digital" }),
+  sony_a7r_iv: cameraPreset("sony_a7r_iv", 220, { captureSystem: "sony_a7r_iv", captureResponse: "high_resolution_digital" }),
+  sony_a7s_iii: cameraPreset("sony_a7s_iii", 230, { captureSystem: "sony_a7s_iii", captureResponse: "low_light_digital" }),
+  fujifilm_x100v: cameraPreset("fujifilm_x100v", 240, {
+    captureSystem: "fujifilm_x100v",
+    captureResponse: "xtrans_digital",
+    lensProfile: "fixed_23mm_wide",
+  }),
+  fujifilm_gfx_100s: cameraPreset("fujifilm_gfx_100s", 250, { captureSystem: "fujifilm_gfx_100s", captureResponse: "medium_format_digital" }),
+  leica_q2: cameraPreset("leica_q2", 260, {
+    captureSystem: "leica_q2",
+    captureResponse: "neutral_digital",
+    lensProfile: "fixed_28mm_wide",
+  }),
+  leica_sl2: cameraPreset("leica_sl2", 270, { captureSystem: "leica_sl2", captureResponse: "neutral_digital" }),
+  hasselblad_x2d: cameraPreset("hasselblad_x2d", 280, { captureSystem: "hasselblad_x2d", captureResponse: "medium_format_digital" }),
+  red_komodo: cameraPreset("red_komodo", 290, { captureSystem: "red_komodo", captureResponse: "cinema_digital" }),
+  arri_alexa: cameraPreset("arri_alexa", 300, { captureSystem: "arri_alexa", captureResponse: "cinema_digital" }),
+  blackmagic_pocket: cameraPreset("blackmagic_pocket", 310, { captureSystem: "blackmagic_pocket", captureResponse: "cinema_digital" }),
+};
+
+export const CameraModule = {
   key: "camera",
   icon: "camera",
 
   groups: {
-    core: { id: "core", order: 10, defaultOpen: true },
-    advanced: { id: "advanced", order: 20, defaultOpen: false },
-    override: { id: "override", order: 30, defaultOpen: false },
+    capture: { id: "capture", order: 10, defaultOpen: true },
+    optics: { id: "optics", order: 20, defaultOpen: true },
+    behavior: { id: "behavior", order: 30, defaultOpen: false },
+    advanced: { id: "advanced", order: 40, defaultOpen: false },
+    override: { id: "override", order: 50, defaultOpen: false },
+  },
+
+  presets: cameraPresets,
+  presetUi: {
+    component: "select",
+    group: "capture",
+    order: 5,
+    allowNone: true,
+    resetOnNone: true,
   },
 
   fields: {
-    cameraStyle: {
-      id: "cameraStyle",
+    captureSystem: {
+      id: "captureSystem",
       type: "select",
-      group: "core",
+      default: "",
+      group: "capture",
       order: 10,
-      options: cameraOptions,
+      options: captureSystemOptions,
       ui: {
         component: "select",
         optionLayout: "categorized",
@@ -309,9 +223,46 @@ export const CameraModule: PromptKeyModule = {
         width: "full",
       },
     },
+    captureResponse: {
+      id: "captureResponse",
+      type: "select",
+      default: "",
+      group: "capture",
+      order: 20,
+      options: captureResponseOptions,
+      ui: { component: "select", searchable: true, clearable: true, width: "full" },
+    },
+    lensProfile: {
+      id: "lensProfile",
+      type: "select",
+      default: "",
+      group: "optics",
+      order: 10,
+      options: lensProfileOptions,
+      ui: { component: "select", searchable: true, clearable: true, width: "half" },
+    },
+    focusDepth: {
+      id: "focusDepth",
+      type: "select",
+      default: "",
+      group: "optics",
+      order: 20,
+      options: focusDepthOptions,
+      ui: { component: "select", searchable: true, clearable: true, width: "half" },
+    },
+    captureBehavior: {
+      id: "captureBehavior",
+      type: "select",
+      default: "",
+      group: "behavior",
+      order: 10,
+      options: captureBehaviorOptions,
+      ui: { component: "select", searchable: true, clearable: true, width: "full" },
+    },
     extraDetails: {
       id: "extraDetails",
       type: "textarea",
+      default: "",
       group: "advanced",
       order: 10,
       ui: { component: "textarea", rows: 3, width: "full" },
@@ -319,6 +270,7 @@ export const CameraModule: PromptKeyModule = {
     customText: {
       id: "customText",
       type: "textarea",
+      default: "",
       group: "override",
       order: 10,
       isOverride: true,
@@ -327,9 +279,17 @@ export const CameraModule: PromptKeyModule = {
   },
 
   compile: {
+    fieldOrder: [
+      "captureSystem",
+      "captureResponse",
+      "lensProfile",
+      "focusDepth",
+      "captureBehavior",
+      "extraDetails",
+    ],
     separator: ", ",
     removeDuplicates: true,
     ignoreEmpty: true,
     overrideField: "customText",
   },
-};
+} satisfies PromptKeyModule;
