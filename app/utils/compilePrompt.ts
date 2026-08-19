@@ -404,6 +404,48 @@ function getLayoutNaturalBlock(
   })
 }
 
+function getReferencedTypographyKeys(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  typographyOutput: Record<string, unknown>,
+) {
+  const referenceText = moduleOutputs
+    .filter((item) => item.key !== 'typography')
+    .map((item) =>
+      typeof item.output === 'string'
+        ? item.output
+        : JSON.stringify(item.output)
+    )
+    .join('\n')
+
+  const referencedGroupKeys = new Set<string>()
+  const referencedTextKeys = new Set<string>()
+  const groups = Array.isArray(typographyOutput.groups) ? typographyOutput.groups : []
+
+  groups.forEach((group) => {
+    if (!isRecord(group)) return
+
+    const groupKey = typeof group.key === 'string' ? group.key.trim() : ''
+    if (groupKey && referenceText.includes(groupKey)) {
+      referencedGroupKeys.add(groupKey)
+    }
+
+    const texts = Array.isArray(group.texts) ? group.texts : []
+    texts.forEach((text) => {
+      if (!isRecord(text)) return
+
+      const textKey = typeof text.key === 'string' ? text.key.trim() : ''
+      if (textKey && referenceText.includes(textKey)) {
+        referencedTextKeys.add(textKey)
+      }
+    })
+  })
+
+  return {
+    referencedGroupKeys,
+    referencedTextKeys,
+  }
+}
+
 function getTypographyNaturalBlock(
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
@@ -413,7 +455,10 @@ function getTypographyNaturalBlock(
 
   if (!typographyOutput || typeof typographyOutput === 'string') return ''
 
-  return compileTypographyNaturalBlock(typographyOutput)
+  return compileTypographyNaturalBlock(
+    typographyOutput,
+    getReferencedTypographyKeys(moduleOutputs, typographyOutput),
+  )
 }
 
 function getVariablesOutput(outputs: ModuleOutputMap) {
