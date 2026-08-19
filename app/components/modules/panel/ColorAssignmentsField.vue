@@ -1,196 +1,122 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref, watch } from "vue";
 import type { ElDropdownValue } from "~/types/dropdown";
 import type {
+  ColorPaletteRule,
+  ColorPaletteSwatch,
+  ColorPaletteTarget,
   ModuleField,
   ModuleFieldOption,
+  PromptVariable,
 } from "../../../modules/types";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const {
+  enabledPromptVariables,
+  enabledModuleVariableGroups,
+} = usePromptVariables();
 
 const props = withDefaults(
   defineProps<{
     field: ModuleField;
-    modelValue?: ColorAssignmentItem[];
+    modelValue?: ColorPaletteRule[];
   }>(),
   {
     modelValue: () => [],
-  }
+  },
 );
 
 const emit = defineEmits<{
-  (event: "update:modelValue", value: ColorAssignmentItem[]): void;
+  (event: "update:modelValue", value: ColorPaletteRule[]): void;
 }>();
 
-const colorAssignmentModeOptions: ColorAssignmentMode[] = [
-  "preset",
-  "custom",
-];
+type DropdownItem = {
+  value: string;
+  label: string;
+  description?: string;
+  group?: string;
+  groupLabel?: string;
+  disabled?: boolean;
+};
 
-const colorAssignmentUsageOptions: ColorAssignmentUsage[] = [
+type TargetOption = {
+  value: string;
+  label: string;
+  description?: string;
+  target: ColorPaletteTarget;
+};
+
+type ColorAssignmentLayoutItem =
+  | {
+      type: "assignment";
+      key: string;
+      assignment: ColorPaletteRule;
+      assignmentIndex: number;
+      weight: number;
+    }
+  | {
+      type: "add";
+      key: string;
+      weight: number;
+    };
+
+const builtinTargetValues = [
   "overall",
   "background",
   "subject",
   "outfit",
   "hair",
-  "lighting",
+  "typography",
   "accents",
-];
+] as const;
 
-type ColorAssignmentMode = "preset" | "custom";
+const collapsedRuleIds = ref<string[]>([]);
 
-type ColorAssignmentUsage =
-  | "overall"
-  | "background"
-  | "subject"
-  | "outfit"
-  | "hair"
-  | "lighting"
-  | "accents";
-
-type ColorAssignmentItem = {
-  mode: ColorAssignmentMode;
-  preset: string;
-  colors: string[];
-  usage: ColorAssignmentUsage;
-};
-
-type ColorAssignmentLayoutItem =
-  | {
-    type: "assignment";
-    key: string;
-    assignment: ColorAssignmentItem;
-    assignmentIndex: number;
-    weight: number;
-  }
-  | {
-    type: "add";
-    key: string;
-    weight: number;
-  };
-
-const assignments = computed(() => {
-  return Array.isArray(props.modelValue) ? props.modelValue : [];
-});
-
-const assignmentColumns = computed(() => {
-  return getColorAssignmentColumns(mobile.value);
-});
-
-const collapsedAssignmentIndexes = ref<number[]>([]);
-
-function isColorAssignmentExpanded(assignmentIndex: number) {
-  return !collapsedAssignmentIndexes.value.includes(assignmentIndex);
+function translate(path: string, fallback = "") {
+  const translated = t(path);
+  return translated === path ? fallback : translated;
 }
 
-function toggleColorAssignment(assignmentIndex: number) {
-  if (collapsedAssignmentIndexes.value.includes(assignmentIndex)) {
-    collapsedAssignmentIndexes.value = collapsedAssignmentIndexes.value.filter(
-      (index) => index !== assignmentIndex
-    );
-
-    return;
-  }
-
-  collapsedAssignmentIndexes.value = [
-    ...collapsedAssignmentIndexes.value,
-    assignmentIndex,
-  ];
+function humanize(value: string) {
+  return value
+    .replace(/[_-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim()
+    .replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function createColorAssignment(): ColorAssignmentItem {
-  return {
-    mode: "preset",
-    preset: "",
-    colors: [],
-    usage: "overall",
-  };
+function createId(prefix: string) {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function setAssignments(nextAssignments: ColorAssignmentItem[]) {
-  emit("update:modelValue", nextAssignments);
+function variableToken(variable: PromptVariable) {
+  return `{${variable.key}}`;
 }
 
-function addColorAssignment() {
-  setAssignments([...assignments.value, createColorAssignment()]);
+function getColorPalettePresetOptions() {
+  return props.field.options || [];
 }
 
-function removeColorAssignment(assignmentIndex: number) {
-  setAssignments(
-    assignments.value.filter((_, index) => index !== assignmentIndex)
-  );
+function getColorPalettePresetCategories() {
+  const categories = new Map<string, string>();
+
+  getColorPalettePresetOptions().forEach((option) => {
+    if (!option.category) return;
+    categories.set(option.category, option.categoryLabel || option.category);
+  });
+
+  return Array.from(categories.entries()).map(([value, label]) => ({
+    value,
+    label,
+  }));
 }
 
-function updateColorAssignmentMode(
-  assignmentIndex: number,
-  value: ElDropdownValue,
-) {
-  const mode = String(value || "preset") as ColorAssignmentMode;
-
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
-
-  if (!current) return;
-
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    mode,
-    preset: mode === "preset" ? current.preset : "",
-    colors: mode === "custom" ? current.colors || [] : [],
-  };
-
-  setAssignments(nextAssignments);
-}
-
-function updateColorAssignmentUsage(
-  assignmentIndex: number,
-  value: ElDropdownValue,
-) {
-  const usage = String(value || "overall") as ColorAssignmentUsage;
-
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
-
-  if (!current) return;
-
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    usage,
-  };
-
-  setAssignments(nextAssignments);
-}
-
-function updateColorAssignmentPreset(
-  assignmentIndex: number,
-  value: ElDropdownValue,
-) {
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
-
-  if (!current) return;
-
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    preset: String(value || ""),
-  };
-
-  setAssignments(nextAssignments);
-}
-
-function addColorAssignmentColor(assignmentIndex: number) {
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
-
-  if (!current) return;
-
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    colors: [...(current.colors || []), "#000000"],
-  };
-
-  setAssignments(nextAssignments);
+function getColorPalettePresetsByCategory(category: string) {
+  return getColorPalettePresetOptions().filter((option) => {
+    return option.category === category;
+  });
 }
 
 function getColorPalettePresetDropdownOptions() {
@@ -209,111 +135,698 @@ function getColorPalettePresetDropdownOptions() {
   });
 }
 
-function removeColorAssignmentColor(
-  assignmentIndex: number,
-  colorIndex: number
-) {
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
+function colorPalettePresetLabel(option: ModuleFieldOption) {
+  return humanize(option.value);
+}
 
-  if (!current) return;
+function presetOption(presetId?: string) {
+  return getColorPalettePresetOptions().find((option) => {
+    return option.value === presetId;
+  });
+}
 
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    colors: (current.colors || []).filter((_, index) => index !== colorIndex),
+function literalSwatch(value = "#000000", id = createId("color")): ColorPaletteSwatch {
+  return {
+    id,
+    kind: "literal",
+    value,
   };
+}
+
+function normalizeSwatch(
+  value: unknown,
+  ruleIndex: number,
+  colorIndex: number,
+): ColorPaletteSwatch | null {
+  if (typeof value === "string") {
+    return literalSwatch(value, `color-${ruleIndex + 1}-${colorIndex + 1}`);
+  }
+
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const item = value as Partial<ColorPaletteSwatch>;
+  if (item.kind !== "literal" && item.kind !== "variable") return null;
+  if (typeof item.value !== "string") return null;
+
+  return {
+    id: item.id || `color-${ruleIndex + 1}-${colorIndex + 1}`,
+    kind: item.kind,
+    value: item.value,
+    variableId: item.variableId,
+    token: item.token,
+    label: item.label,
+  };
+}
+
+function normalizeTarget(value: unknown): ColorPaletteTarget | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const item = value as Partial<ColorPaletteTarget>;
+  if (
+    item.kind !== "builtin" &&
+    item.kind !== "user_variable" &&
+    item.kind !== "typography_group" &&
+    item.kind !== "typography_text" &&
+    item.kind !== "custom"
+  ) {
+    return null;
+  }
+
+  if (typeof item.value !== "string") return null;
+
+  return {
+    kind: item.kind,
+    value: item.value,
+    variableId: item.variableId,
+    entityId: item.entityId,
+    token: item.token,
+    label: item.label,
+    parentLabel: item.parentLabel,
+  };
+}
+
+function legacyTarget(value: unknown): ColorPaletteTarget {
+  const usage = typeof value === "string" && value.trim() ? value.trim() : "overall";
+
+  if (builtinTargetValues.includes(usage as (typeof builtinTargetValues)[number])) {
+    return {
+      kind: "builtin",
+      value: usage,
+    };
+  }
+
+  return {
+    kind: "custom",
+    value: usage === "lighting" ? "lighting (legacy color target)" : usage,
+  };
+}
+
+function normalizeRule(value: unknown, ruleIndex: number): ColorPaletteRule | null {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
+
+  const item = value as Record<string, unknown>;
+  const presetId =
+    typeof item.presetId === "string"
+      ? item.presetId
+      : typeof item.preset === "string"
+        ? item.preset
+        : "";
+
+  const rawColors = Array.isArray(item.colors) ? item.colors : [];
+  let colors = rawColors
+    .map((color, colorIndex) => normalizeSwatch(color, ruleIndex, colorIndex))
+    .filter((color): color is ColorPaletteSwatch => Boolean(color));
+
+  if (!colors.length && presetId) {
+    colors = (presetOption(presetId)?.colors || []).map((color, colorIndex) => {
+      return literalSwatch(color, `color-${ruleIndex + 1}-${colorIndex + 1}`);
+    });
+  }
+
+  const rawTargets = Array.isArray(item.targets) ? item.targets : [];
+  const targets = rawTargets.length
+    ? rawTargets
+        .map(normalizeTarget)
+        .filter((target): target is ColorPaletteTarget => Boolean(target))
+    : [legacyTarget(item.usage)];
+
+  return {
+    id:
+      typeof item.id === "string" && item.id.trim()
+        ? item.id
+        : `color-rule-${ruleIndex + 1}`,
+    presetId: presetId || undefined,
+    colors,
+    targets,
+  };
+}
+
+function normalizeRules(value: unknown) {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .map(normalizeRule)
+    .filter((rule): rule is ColorPaletteRule => Boolean(rule));
+}
+
+const assignments = computed(() => normalizeRules(props.modelValue));
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    const source = Array.isArray(value) ? value : [];
+    const normalized = normalizeRules(source);
+
+    if (JSON.stringify(source) !== JSON.stringify(normalized)) {
+      emit("update:modelValue", normalized);
+    }
+  },
+  { immediate: true, deep: true },
+);
+
+function setAssignments(nextAssignments: ColorPaletteRule[]) {
+  emit("update:modelValue", nextAssignments);
+}
+
+function ruleId(rule: ColorPaletteRule, index: number) {
+  return rule.id || `color-rule-${index + 1}`;
+}
+
+function isColorAssignmentExpanded(rule: ColorPaletteRule, assignmentIndex: number) {
+  return !collapsedRuleIds.value.includes(ruleId(rule, assignmentIndex));
+}
+
+function toggleColorAssignment(rule: ColorPaletteRule, assignmentIndex: number) {
+  const id = ruleId(rule, assignmentIndex);
+
+  if (collapsedRuleIds.value.includes(id)) {
+    collapsedRuleIds.value = collapsedRuleIds.value.filter((item) => item !== id);
+    return;
+  }
+
+  collapsedRuleIds.value = [...collapsedRuleIds.value, id];
+}
+
+function createColorAssignment(): ColorPaletteRule {
+  return {
+    id: createId("color-rule"),
+    colors: [],
+    targets: [{ kind: "builtin", value: "overall" }],
+  };
+}
+
+function addColorAssignment() {
+  setAssignments([...assignments.value, createColorAssignment()]);
+}
+
+function removeColorAssignment(assignmentIndex: number) {
+  const current = assignments.value[assignmentIndex];
+  if (current?.id) {
+    collapsedRuleIds.value = collapsedRuleIds.value.filter((id) => id !== current.id);
+  }
+
+  setAssignments(assignments.value.filter((_, index) => index !== assignmentIndex));
+}
+
+function updateRule(
+  assignmentIndex: number,
+  patch: Partial<ColorPaletteRule>,
+) {
+  const nextAssignments = assignments.value.map((assignment, index) => {
+    return index === assignmentIndex
+      ? { ...assignment, ...patch }
+      : assignment;
+  });
 
   setAssignments(nextAssignments);
+}
+
+function detachPreset(rule: ColorPaletteRule) {
+  return rule.presetId ? { ...rule, presetId: undefined } : rule;
+}
+
+function updateColorAssignmentPreset(
+  assignmentIndex: number,
+  value: ElDropdownValue,
+) {
+  const current = assignments.value[assignmentIndex];
+  if (!current) return;
+
+  const presetId = String(value || "");
+  if (!presetId) {
+    updateRule(assignmentIndex, { presetId: undefined });
+    return;
+  }
+
+  const option = presetOption(presetId);
+  if (!option) return;
+
+  updateRule(assignmentIndex, {
+    presetId,
+    colors: (option.colors || []).map((color) => literalSwatch(color)),
+  });
+}
+
+function addColorAssignmentColor(assignmentIndex: number) {
+  const current = assignments.value[assignmentIndex];
+  if (!current) return;
+
+  const detached = detachPreset(current);
+  updateRule(assignmentIndex, {
+    presetId: detached.presetId,
+    colors: [...detached.colors, literalSwatch()],
+  });
+}
+
+function removeColorAssignmentColor(
+  assignmentIndex: number,
+  colorIndex: number,
+) {
+  const current = assignments.value[assignmentIndex];
+  if (!current) return;
+
+  const detached = detachPreset(current);
+  updateRule(assignmentIndex, {
+    presetId: detached.presetId,
+    colors: detached.colors.filter((_, index) => index !== colorIndex),
+  });
+}
+
+function updateSwatch(
+  assignmentIndex: number,
+  colorIndex: number,
+  swatch: ColorPaletteSwatch,
+) {
+  const current = assignments.value[assignmentIndex];
+  if (!current) return;
+
+  const detached = detachPreset(current);
+  const colors = [...detached.colors];
+  colors[colorIndex] = swatch;
+
+  updateRule(assignmentIndex, {
+    presetId: detached.presetId,
+    colors,
+  });
 }
 
 function updateColorAssignmentColorValue(
   assignmentIndex: number,
   colorIndex: number,
-  value: string
+  value: string,
 ) {
-  const nextAssignments = [...assignments.value];
-  const current = nextAssignments[assignmentIndex];
+  const current = assignments.value[assignmentIndex];
+  const swatch = current?.colors[colorIndex];
+  if (!swatch) return;
 
-  if (!current) return;
-
-  const colors = [...(current.colors || [])];
-
-  colors[colorIndex] = value;
-
-  nextAssignments[assignmentIndex] = {
-    ...current,
-    colors,
-  };
-
-  setAssignments(nextAssignments);
+  updateSwatch(assignmentIndex, colorIndex, {
+    ...swatch,
+    kind: "literal",
+    value,
+    variableId: undefined,
+    token: undefined,
+    label: undefined,
+  });
 }
 
 function updateColorAssignmentColor(
   assignmentIndex: number,
   colorIndex: number,
-  event: Event
+  event: Event,
 ) {
   const target = event.target as HTMLInputElement | null;
-
   updateColorAssignmentColorValue(
     assignmentIndex,
     colorIndex,
-    target?.value || ""
+    target?.value || "#000000",
   );
 }
 
-function getColorPalettePresetOptions() {
-  return props.field.options || [];
-}
-
-function getColorPalettePresetCategories() {
-  const categories = new Map<string, string>();
-
-  getColorPalettePresetOptions().forEach((option) => {
-    if (!option.category) return;
-
-    categories.set(option.category, option.categoryLabel || option.category);
+const colorVariables = computed(() => {
+  return enabledPromptVariables.value.filter((variable) => {
+    return variable.type === "color";
   });
+});
 
-  return Array.from(categories.entries()).map(([value, label]) => ({
-    value,
-    label,
-  }));
+function swatchSourceValue(swatch: ColorPaletteSwatch) {
+  if (swatch.kind !== "variable") return "literal";
+  return `variable:${swatch.variableId || swatch.token || swatch.value}`;
 }
 
-function getColorPalettePresetsByCategory(category: string) {
-  return getColorPalettePresetOptions().filter((option) => {
-    return option.category === category;
-  });
-}
+function swatchSourceItems(swatch: ColorPaletteSwatch): DropdownItem[] {
+  const manualLabel = translate(
+    "modules.colorPalette.fields.paletteAssignments.colors.groups.manual",
+    "Manual",
+  );
+  const variableLabel = translate(
+    "modules.colorPalette.fields.paletteAssignments.colors.groups.variables",
+    "Color Variables",
+  );
 
-function colorPalettePresetLabel(option: ModuleFieldOption) {
-  return option.value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
-}
+  const items: DropdownItem[] = [
+    {
+      value: "literal",
+      label: translate(
+        "modules.colorPalette.fields.paletteAssignments.colors.literal",
+        "Custom Color",
+      ),
+      group: "manual",
+      groupLabel: manualLabel,
+    },
+    ...colorVariables.value.map((variable) => ({
+      value: `variable:${variable.id}`,
+      label: variableToken(variable),
+      description: variable.value,
+      group: "variable",
+      groupLabel: variableLabel,
+    })),
+  ];
 
-function getColorAssignmentWeight(assignment: ColorAssignmentItem) {
-  if (assignment.mode === "custom") {
-    const colorCount = Math.max(assignment.colors?.length || 0, 1);
-
-    return 132 + colorCount * 44;
+  if (
+    swatch.kind === "variable" &&
+    swatch.variableId &&
+    !colorVariables.value.some((variable) => variable.id === swatch.variableId)
+  ) {
+    items.push({
+      value: `variable:${swatch.variableId}`,
+      label: `${translate("modules.colorPalette.fields.paletteAssignments.missing", "Missing")} — ${swatch.token || swatch.label || swatch.value}`,
+      description: swatch.token || swatch.value,
+      group: "variable",
+      groupLabel: variableLabel,
+      disabled: true,
+    });
   }
 
-  return 132;
+  return items;
 }
+
+function updateSwatchSource(
+  assignmentIndex: number,
+  colorIndex: number,
+  value: ElDropdownValue,
+) {
+  const current = assignments.value[assignmentIndex];
+  const swatch = current?.colors[colorIndex];
+  if (!swatch) return;
+
+  const selected = String(value || "literal");
+
+  if (selected === "literal") {
+    updateSwatch(assignmentIndex, colorIndex, {
+      id: swatch.id,
+      kind: "literal",
+      value: swatch.kind === "literal" ? swatch.value : "#000000",
+    });
+    return;
+  }
+
+  if (!selected.startsWith("variable:")) return;
+
+  const variableId = selected.slice("variable:".length);
+  const variable = colorVariables.value.find((item) => item.id === variableId);
+  if (!variable) return;
+
+  const token = variableToken(variable);
+  updateSwatch(assignmentIndex, colorIndex, {
+    id: swatch.id,
+    kind: "variable",
+    value: token,
+    variableId: variable.id,
+    token,
+    label: variable.label || variable.key,
+  });
+}
+
+function normalizePickerColor(value: string) {
+  return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : "#000000";
+}
+
+const typographyVariables = computed(() => {
+  const group = enabledModuleVariableGroups.value.find((item) => {
+    return item.id === "typography";
+  });
+
+  return group?.variables || [];
+});
+
+const typographyGroupVariables = computed(() => {
+  return typographyVariables.value.filter((variable) => {
+    return variable.entityType === "text_group";
+  });
+});
+
+const typographyTextVariables = computed(() => {
+  return typographyVariables.value.filter((variable) => {
+    return variable.entityType === "text";
+  });
+});
+
+const userTargetVariables = computed(() => {
+  return enabledPromptVariables.value.filter((variable) => {
+    return variable.type === "subject" || variable.type === "object";
+  });
+});
+
+function encodeReference(value: string) {
+  return encodeURIComponent(value);
+}
+
+function decodeReference(value: string) {
+  return decodeURIComponent(value);
+}
+
+function targetOptionValue(target: ColorPaletteTarget) {
+  if (target.kind === "builtin") return `builtin:${target.value}`;
+  if (target.kind === "custom") return "custom";
+  if (target.kind === "user_variable") {
+    return `user_variable:${encodeReference(target.variableId || target.value)}`;
+  }
+  if (target.kind === "typography_group") {
+    return `typography_group:${encodeReference(target.entityId || target.value)}`;
+  }
+  return `typography_text:${encodeReference(target.entityId || target.value)}`;
+}
+
+const builtinTargetOptions = computed<TargetOption[]>(() => {
+  return builtinTargetValues.map((value) => ({
+    value: `builtin:${value}`,
+    label: translate(
+      `modules.colorPalette.fields.paletteAssignments.targets.builtin.${value}`,
+      humanize(value),
+    ),
+    target: {
+      kind: "builtin",
+      value,
+    },
+  }));
+});
+
+const typographyGroupTargetOptions = computed<TargetOption[]>(() => {
+  return typographyGroupVariables.value.map((variable) => ({
+    value: `typography_group:${encodeReference(variable.entityId || variable.id)}`,
+    label: variable.label || variableToken(variable),
+    description: variableToken(variable),
+    target: {
+      kind: "typography_group",
+      value: variableToken(variable),
+      entityId: variable.entityId || variable.id,
+      token: variableToken(variable),
+      label: variable.label || variable.key,
+    },
+  }));
+});
+
+const typographyTextTargetOptions = computed<TargetOption[]>(() => {
+  return typographyTextVariables.value.map((variable) => {
+    const parent = typographyGroupVariables.value.find((groupVariable) => {
+      return groupVariable.entityId === variable.parentId;
+    });
+
+    return {
+      value: `typography_text:${encodeReference(variable.entityId || variable.id)}`,
+      label: variable.label || variableToken(variable),
+      description: variableToken(variable),
+      target: {
+        kind: "typography_text" as const,
+        value: variableToken(variable),
+        entityId: variable.entityId || variable.id,
+        token: variableToken(variable),
+        label: variable.label || variable.key,
+        parentLabel: parent?.label,
+      },
+    };
+  });
+});
+
+const userTargetOptions = computed<TargetOption[]>(() => {
+  return userTargetVariables.value.map((variable) => ({
+    value: `user_variable:${encodeReference(variable.id)}`,
+    label: variableToken(variable),
+    description: variable.value,
+    target: {
+      kind: "user_variable",
+      value: variableToken(variable),
+      variableId: variable.id,
+      token: variableToken(variable),
+      label: variable.label || variable.key,
+    },
+  }));
+});
+
+const customTargetOption = computed<TargetOption>(() => ({
+  value: "custom",
+  label: translate(
+    "modules.colorPalette.fields.paletteAssignments.targets.custom",
+    "Custom Target",
+  ),
+  target: {
+    kind: "custom",
+    value: "",
+  },
+}));
+
+const allTargetOptions = computed(() => [
+  ...builtinTargetOptions.value,
+  ...typographyGroupTargetOptions.value,
+  ...typographyTextTargetOptions.value,
+  ...userTargetOptions.value,
+  customTargetOption.value,
+]);
+
+function targetSelectValues(rule: ColorPaletteRule) {
+  return rule.targets.map(targetOptionValue);
+}
+
+function targetFromSelection(
+  selection: string,
+  currentRule: ColorPaletteRule,
+): ColorPaletteTarget | null {
+  if (selection === "custom") {
+    return (
+      currentRule.targets.find((target) => target.kind === "custom") || {
+        kind: "custom",
+        value: "",
+      }
+    );
+  }
+
+  const option = allTargetOptions.value.find((item) => item.value === selection);
+  if (option) return { ...option.target };
+
+  const [kind, encoded = ""] = selection.split(":");
+  const reference = decodeReference(encoded);
+  const existing = currentRule.targets.find((target) => {
+    if (kind === "user_variable" && target.kind === "user_variable") {
+      return (target.variableId || target.value) === reference;
+    }
+
+    if (kind === "typography_group" && target.kind === "typography_group") {
+      return (target.entityId || target.value) === reference;
+    }
+
+    if (kind === "typography_text" && target.kind === "typography_text") {
+      return (target.entityId || target.value) === reference;
+    }
+
+    return false;
+  });
+
+  return existing ? { ...existing } : null;
+}
+
+function updateColorAssignmentTargets(assignmentIndex: number, event: Event) {
+  const select = event.target as HTMLSelectElement | null;
+  const current = assignments.value[assignmentIndex];
+  if (!select || !current) return;
+
+  let values = Array.from(select.selectedOptions).map((option) => option.value);
+  const overallValue = "builtin:overall";
+  const currentHadOverall = current.targets.some((target) => {
+    return target.kind === "builtin" && target.value === "overall";
+  });
+
+  if (values.includes(overallValue) && values.length > 1) {
+    values = currentHadOverall
+      ? values.filter((value) => value !== overallValue)
+      : [overallValue];
+  }
+
+  const targets = values
+    .map((value) => targetFromSelection(value, current))
+    .filter((target): target is ColorPaletteTarget => Boolean(target));
+
+  updateRule(assignmentIndex, { targets });
+}
+
+function updateCustomTarget(assignmentIndex: number, value: string) {
+  const current = assignments.value[assignmentIndex];
+  if (!current) return;
+
+  updateRule(assignmentIndex, {
+    targets: current.targets.map((target) => {
+      return target.kind === "custom" ? { ...target, value } : target;
+    }),
+  });
+}
+
+function customTargetValue(rule: ColorPaletteRule) {
+  return rule.targets.find((target) => target.kind === "custom")?.value || "";
+}
+
+function hasCustomTarget(rule: ColorPaletteRule) {
+  return rule.targets.some((target) => target.kind === "custom");
+}
+
+function isTargetOptionAvailable(value: string) {
+  return allTargetOptions.value.some((option) => option.value === value);
+}
+
+function missingTargetOptions(rule: ColorPaletteRule): TargetOption[] {
+  return rule.targets
+    .map((target) => ({
+      value: targetOptionValue(target),
+      target,
+    }))
+    .filter(({ value, target }) => {
+      return target.kind !== "custom" && !isTargetOptionAvailable(value);
+    })
+    .map(({ value, target }) => ({
+      value,
+      label: `${translate("modules.colorPalette.fields.paletteAssignments.missing", "Missing")} — ${target.label || target.token || target.value}`,
+      description: target.token || target.value,
+      target,
+    }));
+}
+
+function targetIdentity(target: ColorPaletteTarget) {
+  if (target.kind === "builtin") return `builtin:${target.value}`;
+  if (target.kind === "custom") {
+    return target.value.trim() ? `custom:${target.value.trim().toLowerCase()}` : "";
+  }
+  if (target.kind === "user_variable") {
+    return `user:${target.variableId || target.token || target.value}`;
+  }
+  return `${target.kind}:${target.entityId || target.token || target.value}`;
+}
+
+const targetConflictCounts = computed(() => {
+  const counts = new Map<string, number>();
+
+  assignments.value.forEach((rule) => {
+    rule.targets.forEach((target) => {
+      const key = targetIdentity(target);
+      if (!key) return;
+      counts.set(key, (counts.get(key) || 0) + 1);
+    });
+  });
+
+  return counts;
+});
+
+function hasTargetConflict(rule: ColorPaletteRule) {
+  return rule.targets.some((target) => {
+    const key = targetIdentity(target);
+    return key ? (targetConflictCounts.value.get(key) || 0) > 1 : false;
+  });
+}
+
+function getColorAssignmentWeight(assignment: ColorPaletteRule) {
+  return 190 + Math.max(assignment.colors.length, 1) * 48;
+}
+
+const assignmentColumns = computed(() => {
+  return getColorAssignmentColumns(mobile.value);
+});
 
 function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem[][] {
   const assignmentItems: ColorAssignmentLayoutItem[] = assignments.value.map(
     (assignment, assignmentIndex) => ({
       type: "assignment",
-      key: `${props.field.id}-assignment-${assignmentIndex}`,
+      key: ruleId(assignment, assignmentIndex),
       assignment,
       assignmentIndex,
       weight: getColorAssignmentWeight(assignment),
-    })
+    }),
   );
 
   const items: ColorAssignmentLayoutItem[] = [
@@ -325,122 +838,323 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
     },
   ];
 
-  if (isMobile) {
-    return [items];
-  }
+  if (isMobile) return [items];
 
   const columns: ColorAssignmentLayoutItem[][] = [[], []];
   const columnWeights = [0, 0];
 
   items.forEach((item) => {
     const targetColumn = columnWeights[0] <= columnWeights[1] ? 0 : 1;
-
     columns[targetColumn].push(item);
     columnWeights[targetColumn] += item.weight + 16;
   });
 
   return columns;
 }
+
+function ruleSummary(rule: ColorPaletteRule) {
+  return translate(
+    "modules.colorPalette.fields.paletteAssignments.ruleSummary",
+    `${rule.colors.length} colors · ${rule.targets.length} targets`,
+  )
+    .replace("{colors}", String(rule.colors.length))
+    .replace("{targets}", String(rule.targets.length));
+}
 </script>
 
 <template>
   <el-grid rules="csc" :gap="8" :cols="mobile ? 1 : 2" align-items="start">
-    <el-flex v-for="(column, columnIndex) in assignmentColumns" :key="`${field.id}-assignment-column-${columnIndex}`"
-      rules="csc" :gap="16" class="w100">
+    <el-flex
+      v-for="(column, columnIndex) in assignmentColumns"
+      :key="`${field.id}-assignment-column-${columnIndex}`"
+      rules="csc"
+      :gap="16"
+      class="w100"
+    >
       <template v-for="item in column" :key="item.key">
-        <el-grid v-if="item.type === 'assignment'" :radius="24" :br="2"
-          :bc="isColorAssignmentExpanded(item.assignmentIndex) ? 'blue45' : 'normal10'"
-          :p="12" :gap="12"
-          class="module-field__assignment-card w100">
-          <!-- header -->
-          <el-flex rules="rbc" :gap="8" class="crp" role="button" tabindex="0"
-            @click="toggleColorAssignment(item.assignmentIndex)"
-            @keydown.enter.prevent="toggleColorAssignment(item.assignmentIndex)"
-            @keydown.space.prevent="toggleColorAssignment(item.assignmentIndex)">
-            <el-text :size="14" :weight="300" icon="palette">
-              {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", {index: item.assignmentIndex + 1}) }}
-            </el-text>
+        <el-grid
+          v-if="item.type === 'assignment'"
+          :radius="24"
+          :br="2"
+          :bc="isColorAssignmentExpanded(item.assignment, item.assignmentIndex) ? 'blue45' : 'normal10'"
+          :p="12"
+          :gap="12"
+          class="module-field__assignment-card w100"
+        >
+          <el-flex
+            rules="rbc"
+            :gap="8"
+            class="crp"
+            role="button"
+            tabindex="0"
+            @click="toggleColorAssignment(item.assignment, item.assignmentIndex)"
+            @keydown.enter.prevent="toggleColorAssignment(item.assignment, item.assignmentIndex)"
+            @keydown.space.prevent="toggleColorAssignment(item.assignment, item.assignmentIndex)"
+          >
+            <el-flex rules="ccs" :gap="1">
+              <el-text :size="14" :weight="300" icon="palette">
+                {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", { index: item.assignmentIndex + 1 }) }}
+              </el-text>
+              <el-text :size="9" color="normal45">
+                {{ ruleSummary(item.assignment) }}
+              </el-text>
+            </el-flex>
 
             <el-flex rules="rcc" :gap="6">
-              <el-icon :icon="isColorAssignmentExpanded(item.assignmentIndex)
-                  ? 'arrow-up-2'
-                  : 'arrow-down-2'
-                " :size="14" class="module-field__assignment-toggle-icon" />
-
-              <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="delete" :p="8"
-                @click.stop="removeColorAssignment(item.assignmentIndex)" mode="flat" color="red" type="fab"
-                :size="14" />
+              <el-icon
+                :icon="isColorAssignmentExpanded(item.assignment, item.assignmentIndex) ? 'arrow-up-2' : 'arrow-down-2'"
+                :size="14"
+              />
+              <el-button
+                :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')"
+                icon="delete"
+                :p="8"
+                @click.stop="removeColorAssignment(item.assignmentIndex)"
+                mode="flat"
+                color="red"
+                type="fab"
+                :size="14"
+              />
             </el-flex>
           </el-flex>
-          <!-- options -->
-          <el-grid class="w100" v-show="isColorAssignmentExpanded(item.assignmentIndex)">
-            <el-grid :cols="mobile ? 1 : 2" :gap="8">
-              <el-dropdown
-                :model-value="item.assignment.mode"
-                :items="colorAssignmentModeOptions"
-                :item-label="(mode) => t(`modules.colorPalette.fields.paletteAssignments.modes.${mode}`)"
-                :item-value="(mode) => mode"
-                @update:model-value="updateColorAssignmentMode(item.assignmentIndex, $event)"
-              />
-  
-              <el-dropdown
-                :model-value="item.assignment.usage"
-                :items="colorAssignmentUsageOptions"
-                :item-label="(usage) => t(`modules.colorPalette.fields.paletteAssignments.usages.${usage}`)"
-                :item-value="(usage) => usage"
-                @update:model-value="updateColorAssignmentUsage(item.assignmentIndex, $event)"
-              />
-            </el-grid>
-  
-            <div v-if="item.assignment.mode === 'preset'" class="module-field__assignment-body">
-              <el-dropdown
-                :model-value="item.assignment.preset || ''"
-                :items="getColorPalettePresetDropdownOptions()"
-                :item-label="(option) => colorPalettePresetLabel(option)"
-                item-value="value"
-                item-group="category"
-                :item-group-label="(option) => option.categoryLabel || option.category || ''"
-                :placeholder="t('panel.none')"
-                clearable
-                @update:model-value="updateColorAssignmentPreset(item.assignmentIndex, $event)"
-              />
-            </div>
-  
-            <el-flex v-else rules="csc" :gap="8" class="module-field__assignment-body">
-              <el-flex v-for="(color, colorIndex) in item.assignment.colors"
-                :key="`${field.id}-${item.assignmentIndex}-${colorIndex}`" rules="rbc" :gap="8"
-                class="module-field__color-row">
-                <input type="color" :value="color"
-                  @input="updateColorAssignmentColor(item.assignmentIndex, colorIndex, $event)" />
-  
-                <el-text-field
-                  :model-value="color"
-                  type="text"
-                  :placeholder="t('modules.colorPalette.fields.paletteAssignments.controls.color.placeholder')"
-                  @update:model-value="
-                    updateColorAssignmentColorValue(
-                      item.assignmentIndex,
-                      colorIndex,
-                      $event
-                    )
-                  "
+
+          <el-grid
+            v-show="isColorAssignmentExpanded(item.assignment, item.assignmentIndex)"
+            :gap="12"
+            class="w100"
+          >
+            <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
+              <label class="module-field__control">
+                <el-text :size="10" color="normal50">
+                  {{ translate("modules.colorPalette.fields.paletteAssignments.preset.label", "Palette Preset") }}
+                </el-text>
+                <el-dropdown
+                  :model-value="item.assignment.presetId || ''"
+                  :items="getColorPalettePresetDropdownOptions()"
+                  :item-label="(option) => colorPalettePresetLabel(option)"
+                  item-value="value"
+                  item-group="category"
+                  :item-group-label="(option) => option.categoryLabel || option.category || ''"
+                  :placeholder="t('panel.none')"
+                  clearable
+                  @update:model-value="updateColorAssignmentPreset(item.assignmentIndex, $event)"
                 />
-  
-                <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')" icon="delete" :p="8"
-                  @click="removeColorAssignmentColor(item.assignmentIndex, colorIndex)" mode="flat" color="red" type="fab"
-                  :size="14" />
+              </label>
+
+              <label class="module-field__control">
+                <el-text :size="10" color="normal50">
+                  {{ translate("modules.colorPalette.fields.paletteAssignments.targets.label", "Apply To") }}
+                </el-text>
+                <select
+                  class="module-field__target-select"
+                  multiple
+                  :value="targetSelectValues(item.assignment)"
+                  @change="updateColorAssignmentTargets(item.assignmentIndex, $event)"
+                >
+                  <optgroup
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.general', 'General')"
+                  >
+                    <option
+                      v-for="option in builtinTargetOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }}
+                    </option>
+                  </optgroup>
+
+                  <optgroup
+                    v-if="typographyGroupTargetOptions.length"
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.typographyGroups', 'Typography Groups')"
+                  >
+                    <option
+                      v-for="option in typographyGroupTargetOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }} · {{ option.description }}
+                    </option>
+                  </optgroup>
+
+                  <optgroup
+                    v-if="typographyTextTargetOptions.length"
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.typographyTexts', 'Typography Texts')"
+                  >
+                    <option
+                      v-for="option in typographyTextTargetOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }} · {{ option.description }}
+                    </option>
+                  </optgroup>
+
+                  <optgroup
+                    v-if="userTargetOptions.length"
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.userVariables', 'User Subject / Object Variables')"
+                  >
+                    <option
+                      v-for="option in userTargetOptions"
+                      :key="option.value"
+                      :value="option.value"
+                    >
+                      {{ option.label }} · {{ option.description }}
+                    </option>
+                  </optgroup>
+
+                  <optgroup
+                    v-if="missingTargetOptions(item.assignment).length"
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.missing', 'Missing References')"
+                  >
+                    <option
+                      v-for="option in missingTargetOptions(item.assignment)"
+                      :key="option.value"
+                      :value="option.value"
+                      disabled
+                    >
+                      {{ option.label }}
+                    </option>
+                  </optgroup>
+
+                  <optgroup
+                    :label="translate('modules.colorPalette.fields.paletteAssignments.targets.groups.custom', 'Custom')"
+                  >
+                    <option value="custom">
+                      {{ customTargetOption.label }}
+                    </option>
+                  </optgroup>
+                </select>
+              </label>
+            </el-grid>
+
+            <el-text
+              v-if="hasTargetConflict(item.assignment)"
+              :size="10"
+              color="orange"
+              icon="warning"
+              icon-color="orange"
+            >
+              {{ translate(
+                "modules.colorPalette.fields.paletteAssignments.warnings.duplicateTarget",
+                "Another palette rule also targets at least one of these exact elements. Both rules are kept."
+              ) }}
+            </el-text>
+
+            <label
+              v-if="hasCustomTarget(item.assignment)"
+              class="module-field__control"
+            >
+              <el-text :size="10" color="normal50">
+                {{ translate("modules.colorPalette.fields.paletteAssignments.targets.customLabel", "Custom target") }}
+              </el-text>
+              <el-text-field
+                :model-value="customTargetValue(item.assignment)"
+                type="text"
+                support-variables
+                :placeholder="translate('modules.colorPalette.fields.paletteAssignments.targets.customPlaceholder', 'Example: dragon costume scales')"
+                @update:model-value="updateCustomTarget(item.assignmentIndex, $event)"
+              />
+            </label>
+
+            <el-flex rules="csc" :gap="8" class="module-field__assignment-body">
+              <el-flex rules="rbc" :gap="8" class="w100">
+                <el-text :size="11" :weight="600" icon="color-swatch">
+                  {{ translate("modules.colorPalette.fields.paletteAssignments.colors.label", "Palette Colors") }}
+                </el-text>
+                <el-text :size="9" color="normal45">
+                  {{ translate(
+                    "modules.colorPalette.fields.paletteAssignments.colors.description",
+                    "Preset colors stay editable and can be replaced with Color variables."
+                  ) }}
+                </el-text>
               </el-flex>
-  
-              <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.addColor')" mode="outline"
-                color="blue" :size="14" :p="[8, 12]" class="w100"
-                @click="addColorAssignmentColor(item.assignmentIndex)" />
+
+              <el-flex
+                v-for="(swatch, colorIndex) in item.assignment.colors"
+                :key="swatch.id || `${item.key}-color-${colorIndex}`"
+                rules="rbc"
+                :gap="8"
+                class="module-field__color-row"
+              >
+                <el-dropdown
+                  class="module-field__color-source"
+                  :model-value="swatchSourceValue(swatch)"
+                  :items="swatchSourceItems(swatch)"
+                  item-label="label"
+                  item-value="value"
+                  item-description="description"
+                  item-group="group"
+                  item-group-label="groupLabel"
+                  item-disabled="disabled"
+                  @update:model-value="updateSwatchSource(item.assignmentIndex, colorIndex, $event)"
+                />
+
+                <template v-if="swatch.kind === 'literal'">
+                  <input
+                    type="color"
+                    :value="normalizePickerColor(swatch.value)"
+                    @input="updateColorAssignmentColor(item.assignmentIndex, colorIndex, $event)"
+                  />
+                  <el-text-field
+                    :model-value="swatch.value"
+                    type="text"
+                    :placeholder="t('modules.colorPalette.fields.paletteAssignments.controls.color.placeholder')"
+                    @update:model-value="updateColorAssignmentColorValue(item.assignmentIndex, colorIndex, $event)"
+                  />
+                </template>
+
+                <el-flex v-else rules="ccs" :gap="0" class="fg100 minw0">
+                  <el-text marker="blue15" color="blue" :size="11" :weight="700">
+                    {{ swatch.token || swatch.value }}
+                  </el-text>
+                  <el-text :size="9" color="normal45">
+                    {{ colorVariables.find((variable) => variable.id === swatch.variableId)?.value || swatch.label || translate('modules.colorPalette.fields.paletteAssignments.missing', 'Missing') }}
+                  </el-text>
+                </el-flex>
+
+                <el-button
+                  :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')"
+                  icon="delete"
+                  :p="8"
+                  @click="removeColorAssignmentColor(item.assignmentIndex, colorIndex)"
+                  mode="flat"
+                  color="red"
+                  type="fab"
+                  :size="14"
+                />
+              </el-flex>
+
+              <el-button
+                :label="t('modules.colorPalette.fields.paletteAssignments.actions.addColor')"
+                mode="outline"
+                color="blue"
+                :size="14"
+                :p="[8, 12]"
+                class="w100"
+                @click="addColorAssignmentColor(item.assignmentIndex)"
+              />
             </el-flex>
           </el-grid>
         </el-grid>
 
-        <el-flex v-else rules="ccc" :radius="24" :br="2" :p="12" :gap="12" bc="normal10" class="w100">
-          <el-button :label="t('modules.colorPalette.fields.paletteAssignments.actions.addAssignment')" color="blue"
-            :size="14" :p="[8, 12]" class="w100" @click="addColorAssignment" />
+        <el-flex
+          v-else
+          rules="ccc"
+          :radius="24"
+          :br="2"
+          :p="12"
+          :gap="12"
+          bc="normal10"
+          class="w100"
+        >
+          <el-button
+            :label="t('modules.colorPalette.fields.paletteAssignments.actions.addAssignment')"
+            color="blue"
+            :size="14"
+            :p="[8, 12]"
+            class="w100"
+            @click="addColorAssignment"
+          />
         </el-flex>
       </template>
     </el-flex>
@@ -452,12 +1166,37 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
   align-self: start;
 }
 
-.module-field__assignment-body {
+.module-field__assignment-body,
+.module-field__control,
+.module-field__color-row {
   width: 100%;
 }
 
-.module-field__color-row {
+.module-field__control {
+  display: grid;
+  gap: 5px;
+}
+
+.module-field__target-select {
   width: 100%;
+  min-height: 132px;
+  padding: 8px 10px;
+  border: 1px solid rgba(127, 127, 127, 0.2);
+  border-radius: 12px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+}
+
+.module-field__target-select option,
+.module-field__target-select optgroup {
+  background: var(--background-color, white);
+  color: inherit;
+}
+
+.module-field__color-source {
+  width: min(190px, 36%);
+  min-width: 130px;
 }
 
 .module-field__color-row input[type="color"] {
@@ -466,10 +1205,5 @@ function getColorAssignmentColumns(isMobile: boolean): ColorAssignmentLayoutItem
   height: 38px;
   padding: 3px;
   border-radius: 10px;
-}
-
-.module-field__color-input {
-  min-width: 0;
-  flex: 1;
 }
 </style>
