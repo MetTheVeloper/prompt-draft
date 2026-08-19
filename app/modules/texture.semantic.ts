@@ -10,8 +10,39 @@ import { TextureModule as LegacyTextureModule } from "./texture.module";
  * that catalog while replacing the old global field architecture around it.
  * The legacy module is not registered after this refactor; it acts only as the
  * temporary catalog source until the catalog is extracted to its own file.
+ *
+ * Compound legacy values that smuggle one of the new orthogonal axes back into
+ * Material are intentionally excluded here. They can be reconstructed with
+ * independent fields instead (for example glass + frosted optical character).
  */
-const materialOptions = LegacyTextureModule.fields.material.options || [];
+const legacyMaterialOptions = LegacyTextureModule.fields.material.options || [];
+const excludedLegacyMaterialValues = new Set([
+  "molded_plastic",
+  "frosted_glass",
+  "stained_glass",
+]);
+
+const materialOptions: ModuleFieldOption[] = [
+  {
+    value: "plastic",
+    category: "vinyl_plastic",
+    categoryLabel: "Vinyl / Plastic",
+    categoryLabelKey: "modules.texture.categories.vinyl_plastic",
+    promptText: "plastic material",
+    tags: [
+      "plastic",
+      "synthetic",
+      "rigid",
+      "opaque",
+      "smooth-friendly",
+      "gloss-friendly",
+    ],
+  },
+  ...legacyMaterialOptions.filter(
+    (option) => !excludedLegacyMaterialValues.has(option.value),
+  ),
+];
+
 const legacyConditionOptions = LegacyTextureModule.fields.imperfections.options || [];
 
 function option(
