@@ -12,6 +12,7 @@ import { formatPromptVariableDefinitions } from "./promptVariables";
 import { compileLayoutModule } from "./compileLayout";
 import { compileLightingModule } from "./compileLighting";
 import { compileColorPaletteModule } from "./compileColorPalette";
+import { compileTextureModule } from "./compileTexture";
 import {
   getLayoutRegionVariableToken,
   getTypographyGroupVariableToken,
@@ -466,6 +467,10 @@ export function compileModule(
 
   if (module.key === "colorPalette") {
     return compileColorPaletteModule(module, values);
+  }
+
+  if (module.key === "texture") {
+    return compileTextureModule(module, values);
   }
 
   const fields = Object.values(module.fields);
