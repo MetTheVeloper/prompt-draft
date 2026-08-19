@@ -43,7 +43,9 @@ const maxSources = computed(() => {
 });
 
 const sources = computed(() => {
-  return Array.isArray(props.modelValue) ? props.modelValue.slice(0, maxSources.value) : [];
+  return Array.isArray(props.modelValue)
+    ? props.modelValue.slice(0, maxSources.value)
+    : [];
 });
 
 const canAddSource = computed(() => sources.value.length < maxSources.value);
@@ -155,6 +157,12 @@ function updateSource(index: number, patch: Partial<LightingSource>) {
   setSources(next);
 }
 
+function normalizeCustomColor(value?: string) {
+  const cleaned = String(value || "").trim();
+
+  return /^#[0-9a-f]{6}$/i.test(cleaned) ? cleaned : "#ffffff";
+}
+
 function updateSourceValue(
   index: number,
   key: LightingSourceSelectKey,
@@ -165,7 +173,10 @@ function updateSourceValue(
   if (key === "color") {
     updateSource(index, {
       color: nextValue,
-      customColor: nextValue === "custom" ? sources.value[index]?.customColor || "" : "",
+      customColor:
+        nextValue === "custom"
+          ? normalizeCustomColor(sources.value[index]?.customColor)
+          : "",
     });
     return;
   }
@@ -175,21 +186,24 @@ function updateSourceValue(
   });
 }
 
-function toggleFeature(index: number, feature: string) {
-  const current = sources.value[index];
+function updateSourceFeatures(index: number, event: Event) {
+  const target = event.target as HTMLSelectElement | null;
 
-  if (!current) return;
+  if (!target) return;
 
-  const features = Array.isArray(current.features) ? current.features : [];
-  const nextFeatures = features.includes(feature)
-    ? features.filter((item) => item !== feature)
-    : [...features, feature];
-
-  updateSource(index, { features: nextFeatures });
+  updateSource(index, {
+    features: Array.from(target.selectedOptions).map((option) => option.value),
+  });
 }
 
-function isFeatureSelected(source: LightingSource, feature: string) {
-  return Array.isArray(source.features) && source.features.includes(feature);
+function updateCustomColor(index: number, event: Event) {
+  const target = event.target as HTMLInputElement | null;
+
+  if (!target) return;
+
+  updateSource(index, {
+    customColor: normalizeCustomColor(target.value),
+  });
 }
 
 function sourceId(source: LightingSource, index: number) {
@@ -218,16 +232,33 @@ function sourceTitle(source: LightingSource, index: number) {
   });
 }
 
-function sourceFilledCount(source: LightingSource) {
+function sourceFilledCount(index: number) {
+  const source = sources.value[index];
+
+  if (!source) return 0;
+
   let count = 0;
 
-  if (source.role) count += 1;
-  if (source.sourceType) count += 1;
-  if (source.direction) count += 1;
-  if (source.quality) count += 1;
-  if (source.intensity) count += 1;
-  if (source.color && (source.color !== "custom" || source.customColor?.trim())) count += 1;
-  if (source.features?.length) count += 1;
+  const scalarValues = [
+    source.role,
+    source.sourceType,
+    source.direction,
+    source.quality,
+    source.intensity,
+  ];
+
+  count += scalarValues.filter((value) => String(value || "").trim()).length;
+
+  if (
+    source.color &&
+    (source.color !== "custom" || String(source.customColor || "").trim())
+  ) {
+    count += 1;
+  }
+
+  if (Array.isArray(source.features) && source.features.length) {
+    count += 1;
+  }
 
   return count;
 }
@@ -295,7 +326,7 @@ function sourceFilledCount(source: LightingSource) {
               {{ sourceTitle(source, index) }}
             </el-text>
             <el-text :size="10" color="normal45">
-              {{ sourceFilledCount(source) }} / 7 {{ t("panel.fieldsFilled") }}
+              {{ sourceFilledCount(index) }} / 7 {{ t("panel.fieldsFilled") }}
             </el-text>
           </el-flex>
         </el-flex>
@@ -387,33 +418,30 @@ function sourceFilledCount(source: LightingSource) {
 
         <el-grid v-if="source.color === 'custom'" :gap="6" class="w100">
           <el-text :size="10" color="normal45">{{ t("modules.lighting.fields.lightSources.color.customLabel") }}</el-text>
-          <el-text-field
-            :model-value="source.customColor || ''"
-            :placeholder="t('modules.lighting.fields.lightSources.color.customPlaceholder')"
-            @update:model-value="updateSource(index, { customColor: String($event || '') })"
+          <input
+            type="color"
+            :value="normalizeCustomColor(source.customColor)"
+            @input="updateCustomColor(index, $event)"
           />
         </el-grid>
 
         <el-grid :gap="8" class="w100" :style="mobile ? '' : 'grid-column: 1 / -1'">
           <el-text :size="10" color="normal45">{{ t("modules.lighting.fields.lightSources.features.label") }}</el-text>
-          <el-flex rules="rsc" class="fw" :gap="6">
-            <el-text
+          <select
+            multiple
+            :value="source.features || []"
+            @change="updateSourceFeatures(index, $event)"
+          >
+            <option
               v-for="feature in featureOptions()"
               :key="feature.value"
-              :size="11"
-              :weight="400"
-              class="crp"
-              :p="[5, 8]"
-              :radius="12"
-              :marker="isFeatureSelected(source, feature.value) ? 'blue' : 'normal5'"
-              :color="isFeatureSelected(source, feature.value) ? 'white' : 'normal70'"
-              :icon="isFeatureSelected(source, feature.value) ? 'check' : 'add'"
-              :icon-color="isFeatureSelected(source, feature.value) ? 'white' : 'normal45'"
-              @click="toggleFeature(index, feature.value)"
+              :value="feature.value"
+              :selected="source.features?.includes(feature.value)"
+              :disabled="feature.disabled"
             >
               {{ optionLabel("features", feature.value) }}
-            </el-text>
-          </el-flex>
+            </option>
+          </select>
         </el-grid>
       </el-grid>
     </el-grid>
