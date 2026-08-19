@@ -265,7 +265,7 @@ const groupedFields = computed<ModuleGroupView[]>(() => {
       groupMap.set(groupId, []);
     }
 
-    groupMap.get(groupId)?.push(field);
+    groupMap.get(group.id)?.push(field);
   });
 
   const definedGroups = Object.values(props.module.groups || {}).map((group) => {
@@ -755,10 +755,6 @@ function isCategorizedSelect(field: ModuleField) {
   return field.type === "select" && field.ui?.optionLayout === "categorized";
 }
 
-function isCategorizedMultiSelect(field: ModuleField) {
-  return field.ui?.component === 'multiSelect' && field.ui?.optionLayout === 'categorized';
-}
-
 function getFieldOptionCategories(field: ModuleField) {
   const categories = new Map<string, string>();
 
@@ -811,14 +807,6 @@ function getVisibleCategorizedOptions(field: ModuleField) {
   });
 }
 
-function handleOptionCategoryChange(field: ModuleField, event: Event) {
-  const target = event.target as HTMLSelectElement;
-  const nextCategory = target.value;
-
-  selectedOptionCategories[field.id] = nextCategory;
-  values[field.id] = "";
-}
-
 function optionCategoryLabel(field: ModuleField, categoryValue: string, fallback: string) {
   if (fallback.startsWith("modules.")) {
     return translate(fallback, categoryValue);
@@ -828,6 +816,14 @@ function optionCategoryLabel(field: ModuleField, categoryValue: string, fallback
     `${moduleI18nBase.value}.fields.${field.id}.categories.${categoryValue}`,
     fallback
   );
+}
+
+function multiSelectOptionGroupLabel(field: ModuleField, option: SelectOption) {
+  const category = option.category || "";
+  if (!category) return "";
+
+  const fallback = option.categoryLabelKey || option.categoryLabel || category;
+  return optionCategoryLabel(field, category, fallback);
 }
 
 function moduleValuesEqual(a: unknown, b: unknown) {
@@ -1216,11 +1212,9 @@ onBeforeUnmount(() => {
 <template>
   <el-grid type="section" :p="mobile ? 12 : mini ? 16 : 20" :br="2" :bc="!isPanelExpanded ? 'normal10' : 'blue50'"
     :radius="mobile ? 16 : mini ? 24 : 32" bg="surface" :class="['w100']" @contextmenu="openModulePanelContextMenu">
-    <!-- module head -->
     <el-flex rules="csc" class="w100">
       <el-flex rules="ccs" class="w100">
         <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100">
-          <!-- key module label and fill state -->
           <el-flex rules="rcc" :gap="16">
             <el-text type="span" marker="blue5" color="blue" :size="12" :weight="700">
               {{ t("panel.keyModule") }}
@@ -1234,7 +1228,6 @@ onBeforeUnmount(() => {
               {{ t("panel.fieldsFilled") }}
             </el-text>
           </el-flex>
-          <!-- actions -->
           <el-flex rules="rcc" :class="mini ? 'w100' : ''">
             <el-switch v-if="hasOverrideField" :class="mini ? 'fg100' : ''" :model-value="isCustomMode" :size="12"
               @update:model-value="isCustomMode = $event" :label="t('panel.customMode')" />
@@ -1272,7 +1265,6 @@ onBeforeUnmount(() => {
       </el-flex>
     </el-flex>
     <el-grid :gap="12" v-show="isPanelExpanded" class="w100">
-      <!-- standalone preset chips for modules that have not opted into inline preset UI -->
       <el-grid v-if="!isCustomMode && presetItems.length && !inlinePresetGroupId">
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
@@ -1303,11 +1295,9 @@ onBeforeUnmount(() => {
         </el-flex>
       </el-grid>
 
-      <!-- custom override -->
       <el-grid rules="csc" :br="1" :p="16" :radius="[16]" :bc="!customOverrideValue ? 'orange25' : 'normal15'"
         :bg="!customOverrideValue ? 'orange5' : 'normal5'" v-if="isCustomMode && overrideField"
         :class="{ 'module-panel__custom-card--empty': !customOverrideValue }">
-        <!-- header -->
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
             <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="8">
@@ -1337,7 +1327,6 @@ onBeforeUnmount(() => {
         </el-text>
       </el-grid>
 
-      <!-- groups -->
       <el-grid :p="12" :br="1" :radius="16" :bc="!isGroupOpen(group) ? 'normal10' : 'blue50'"
         v-for="group in groupedFields" v-show="!isCustomMode" :key="group.id">
         <el-flex rules="rsc" class="w100" @click="toggleGroup(group.id)">
@@ -1427,12 +1416,18 @@ onBeforeUnmount(() => {
               :clearable="field.ui?.clearable !== false"
             />
 
-            <select v-else-if="field.type === 'multiSelect'" v-model="values[field.id]" multiple>
-              <option v-for="option in getFieldOptions(field)" :key="option.value" :value="option.value"
-                :disabled="option.disabled">
-                {{ optionLabel(field.id, option.value) }}
-              </option>
-            </select>
+            <el-multi-select
+              v-else-if="field.type === 'multiSelect'"
+              v-model="values[field.id]"
+              :items="getFieldOptions(field)"
+              :item-label="(option) => optionLabel(field.id, option.value)"
+              item-value="value"
+              item-disabled="disabled"
+              :item-group="(option) => option.category || ''"
+              :item-group-label="(option) => multiSelectOptionGroupLabel(field, option)"
+              :placeholder="t('panel.none')"
+              :clearable="field.ui?.clearable !== false"
+            />
 
             <el-text-field v-else-if="field.type === 'textarea'" v-model="values[field.id]" type="textarea"
               :rows="field.ui?.rows || 3" :placeholder="fieldPlaceholder(field.id)"
@@ -1470,9 +1465,6 @@ onBeforeUnmount(() => {
             <el-text-field v-else v-model="values[field.id]" type="text" :placeholder="fieldPlaceholder(field.id)"
               :editor-id="promptEditorId(field.id)" support-variables />
 
-            <el-text :size="10" icon="info" v-if="field.type === 'multiSelect'">
-              {{ t("panel.multiSelectHint") }}
-            </el-text>
             <el-text v-for="warning in getFieldCompatibilityWarnings(field)" :key="warning.value" :size="10"
               icon="warning" icon-color="orange" color="orange" :weight="300">
               {{ compatibilityWarningLabel(warning.key) }}
