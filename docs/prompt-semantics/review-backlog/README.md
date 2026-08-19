@@ -126,3 +126,53 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 3. Run migration during local-storage and imported JSON hydration.
 4. Remove stale `lightingStyle` after successful migration.
 5. Test old Lighting drafts across save/export/import round trips.
+
+---
+
+## Texture — legacy global field migration and catalog extraction
+
+### Status
+Open — Stage 11 uses the new relational schema; legacy draft migration is deferred until validation is complete.
+
+### Problem
+The previous Texture module stored one global material/surface description across fields such as:
+
+```text
+material
+surface
+detailLevel
+imperfections
+```
+
+Stage 11 replaces that global model with repeated `materialAssignments[]`, where each assignment contains orthogonal material/surface properties plus semantic targets. Existing saved/imported drafts may still contain only the old global fields.
+
+The old `texture.module.ts` also contains a large useful material catalog. The refactored module temporarily imports that legacy module only as a catalog source while the new registered implementation lives in `texture.semantic.ts`.
+
+### Exact concepts that can migrate later
+Several old values map cleanly:
+
+- `material` → assignment `material`,
+- matte / glossy / high-gloss surface values → `finish`,
+- smooth / brushed / rough / porous / grainy / fibrous / woven → `surfaceTexture`,
+- translucent / frosted → `opticalCharacter`,
+- subtle / visible / rich / highly-detailed detail levels → `textureProminence`,
+- scratches / cracks / dents / chips / dust / weathering / stains / fading / wrinkles / peeling / corrosion → `conditions`.
+
+Old global Texture semantics can generally target `All Scene Surfaces`, but that migration should be explicit rather than silently inferred before validation.
+
+### Values requiring policy
+Some old values were semantically misplaced or bundled multiple axes:
+
+- `brush_marks` belongs to Surface Texture / surface treatment,
+- `roughness` belongs to Surface Texture rather than imperfections,
+- `paint_splatter` is closer to Effects/decorative treatment than material condition,
+- the old `painterly_surface` preset mixed Style semantics with plastic material assumptions,
+- the old non-empty default `material: vinyl` should not be recreated in the new schema.
+
+### Required follow-up
+
+1. Validate the new Material Assignment schema with fresh drafts.
+2. Define and test a legacy global-field → one-assignment migration table.
+3. Apply migration during local-storage and imported JSON hydration.
+4. Extract the material catalog from legacy `texture.module.ts` into a neutral catalog file.
+5. Remove the legacy module implementation once catalog extraction and migration are verified.
