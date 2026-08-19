@@ -80,6 +80,55 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 
 ---
 
+## Lighting — legacy `lightingStyle` migration
+
+### Status
+Open
+
+### Problem
+The Lighting semantic refactor replaces the old `lightingStyle` mega-select with a structured multi-source rig:
+
+```text
+lightSources[]
+ambientLevel
+overallContrast
+```
+
+Each source independently stores role, source type, direction, quality, intensity, light color, and lighting-native features. Older drafts can still contain only `lightingStyle`, which no longer maps one-to-one to the new schema.
+
+### Exact concepts that can be migrated later
+Several old values have clean Lighting destinations or preset equivalents, for example:
+
+- soft diffused / window / overcast / studio / softbox lighting → Lighting presets,
+- top light / underlight / side light / backlight → source direction,
+- hard / soft lighting → source quality,
+- direct flash → source type + direction + quality/intensity recipe,
+- warm / cool / neon / dual-tone lighting → source color recipes,
+- rim / edge / separation lighting → source role / source-local features,
+- high-key / low-key / chiaroscuro → global contrast + source recipes.
+
+### Values requiring explicit policy
+Several old Lighting values bundled illumination with concepts now owned elsewhere:
+
+- fog / mist / smoke / dust / rain content → Background / Effects,
+- bloom and post-process glow → Effects,
+- glossy / reflective surface assumptions → Texture,
+- cinematic / anime / comic / painterly / claymation style assumptions → Style,
+- product / commercial / portrait use-case wording → purpose/context rather than Lighting.
+
+Automatic migration must not reintroduce these removed assumptions merely to preserve old prose.
+
+### Required follow-up
+Before the semantic-refactor branch is treated as migration-safe for existing user drafts:
+
+1. Define a legacy `lightingStyle` → preset/field migration table for clean values.
+2. Define an explicit discard/preservation policy for cross-module pollution.
+3. Run migration during local-storage and imported JSON hydration.
+4. Remove stale `lightingStyle` after successful migration.
+5. Test old Lighting drafts across save/export/import round trips.
+
+---
+
 ## Module panel — native multi-select UI
 
 ### Status
