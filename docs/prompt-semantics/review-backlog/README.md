@@ -38,32 +38,45 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 
 ---
 
-## Camera ↔ Framing — viewpoint semantics embedded in camera presets
+## Camera — legacy `cameraStyle` migration
 
 ### Status
 Open
 
 ### Problem
-The current Camera module still mixes capture-device/lens semantics with framing and viewpoint instructions. Examples include camera presets that imply top-down, frontal, sweeping perspective, close-up capture, or dramatic composition.
+The Camera semantic refactor replaced the old `cameraStyle` mega-select with independent fields:
 
-The refactored Framing module now owns:
+```text
+captureSystem
+captureResponse
+lensProfile
+focusDepth
+captureBehavior
+```
 
-- shot size,
-- subject placement,
-- frame balance and composition features,
-- view angle,
-- view direction,
-- crop safety.
+Specific camera names now act as editable state presets rather than prose options. Older saved/imported drafts may still contain only `cameraStyle`, which no longer contributes to compiled Camera output.
 
-Camera should not silently redefine those axes.
+### Exact legacy concepts that can be migrated later
+Several old values have direct semantic destinations, for example:
+
+- macro / fisheye / wide / ultra-wide / telephoto values → `lensProfile`
+- shallow DOF / deep focus → `focusDepth`
+- handheld camera → `captureBehavior`
+- specific analog/digital camera models → the corresponding Camera preset / capture system
+
+### Values requiring explicit policy
+Some legacy values bundled Camera semantics with Framing, Style, or contextual assumptions, including documentary/cinematic camera, security camera, webcam, smartphone, action camera, and aerial drone wording.
+
+The new Camera module intentionally does not restore old top-down, frontal, dramatic-composition, or generic aesthetic assumptions merely to preserve text.
 
 ### Required follow-up
-During the Camera semantic refactor:
+Before the semantic-refactor branch is treated as migration-safe for existing user drafts:
 
-1. Separate camera body/device intent from lens and depth-of-field behavior.
-2. Remove framing/view-angle/view-direction instructions from camera prompt text unless they are intrinsic and unavoidable to the capture device.
-3. Avoid composition or aesthetic wording such as `dramatic composition` inside Camera.
-4. Test Camera + Framing together to ensure the two modules combine without competing viewpoint instructions.
+1. Define a legacy `cameraStyle` migration table for exact one-axis mappings.
+2. Decide how to preserve or discard polluted legacy semantics without silently changing Framing or Style.
+3. Run migration during both local-storage hydration and imported JSON hydration.
+4. Remove stale `cameraStyle` after successful migration.
+5. Test old Camera drafts across save/export/import round trips.
 
 ---
 
