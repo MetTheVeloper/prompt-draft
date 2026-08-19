@@ -3,7 +3,6 @@ import type {
   ColorPaletteSwatch,
   ColorPaletteTarget,
   ModuleField,
-  ModuleFieldOption,
   ModuleValues,
   PromptKeyModule,
 } from "../modules/types";
