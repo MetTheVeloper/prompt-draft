@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, and Camera work.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, and Lighting work.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -557,6 +557,23 @@ Examples:
 
 Do not flatten meaningful relationships merely to make all modules look alike.
 
+## Repeated relational entities
+
+A module may keep structured/repeated state even when its final module output is a string.
+
+When several repeated entities each have properties that must remain associated, preserve each entity boundary through compilation rather than flattening all properties into global lists.
+
+Example principle from Lighting:
+
+```text
+red + camera-left  → one light-source relationship
+blue + camera-right → another light-source relationship
+```
+
+Flattening this into independent global lists of colors and directions would lose meaning.
+
+Also distinguish properties that belong to each repeated entity from properties that are genuinely global to the whole module. A bounded repeated-entity model is preferable when it materially improves prompt control without turning the editor into an unrestricted simulator.
+
 ---
 
 # 18. Every structured module needs an explicit Natural strategy
@@ -1030,6 +1047,39 @@ Key lessons:
 - high-confidence physical mismatches can use advisory compatibility hints without blocking creative combinations,
 - Natural classification must protect legitimate Camera words such as distortion, grain, detail and tonal response from being reassigned to other semantic groups.
 
+## Lighting
+
+Lighting established a clean universal illumination model that works across realistic and stylized outputs without owning the visual style itself.
+
+Final conceptual model:
+
+```text
+Global Lighting
+├─ Ambient Level
+└─ Overall Contrast
+
+Light Sources [max 3]
+├─ Role
+├─ Source Type
+├─ Direction
+├─ Quality
+├─ Intensity
+├─ Light Color
+└─ Lighting Features
+```
+
+Key lessons:
+
+- repeated semantic entities should remain bounded when their properties must stay associated,
+- source-local properties and scene-global properties should not be duplicated across the same axis,
+- a bounded repeated-entity model can add substantial expressive power without becoming an unrestricted simulator,
+- illumination color belongs to Lighting while base object/image palette belongs to Color Palette,
+- flash is an illumination source and therefore Lighting-owned rather than Camera-owned,
+- visible volumetric beams can be Lighting-owned without automatically creating fog/smoke/dust scene content,
+- presets can be multi-entity state recipes as long as each source remains editable and relationships remain explicit,
+- dedicated editors should still follow generic field-type conventions where practical so later component-system upgrades remain straightforward,
+- Natural/Modular testing must verify relationships, not only the presence of individual words.
+
 ---
 
 # 30. Recommended remaining module order
@@ -1037,26 +1087,20 @@ Key lessons:
 Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
 
 ```text
-1. Lighting
-2. Color Palette + Texture
-3. Pose + Expression
-4. Background + Effects
-5. Hair + Outfit
-6. remaining smaller modules / final cross-module audit
+1. Color Palette + Texture
+2. Pose + Expression
+3. Background + Effects
+4. Hair + Outfit
+5. remaining smaller modules / final cross-module audit
 ```
 
-Why Lighting is next:
+Why Color Palette + Texture is next:
 
-- Camera is now semantically closed, so the Camera ↔ Lighting boundary can be audited from a stable capture model.
-- Lighting has a strong boundary with Camera, Color Palette, Texture and Background.
-- Refactoring Lighting now prevents illumination semantics from leaking into capture response, surface/color behavior, or environment semantics.
-
-Why Color Palette + Texture should be audited together:
-
-- both affect visible surface/color behavior,
-- Texture interacts with material and light response,
-- Color Palette interacts with lighting color/mood,
-- their boundary is easier to define together than independently.
+- Lighting is now semantically closed, so illumination color and light-response boundaries can be audited from a stable owner,
+- both modules affect visible color/surface behavior and currently contain concepts that can blur material identity, surface finish, palette assignment and light response,
+- Texture interacts with material and how surfaces respond visually to light,
+- Color Palette controls base color relationships but must not redefine illumination color now owned by Lighting,
+- auditing them together makes the Color Palette ↔ Texture ↔ Lighting boundary easier to define than treating either module in isolation.
 
 Pose + Expression are naturally related but should remain independent body-vs-face controls.
 
