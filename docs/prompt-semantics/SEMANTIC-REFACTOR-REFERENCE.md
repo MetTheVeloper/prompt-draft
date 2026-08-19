@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, and Framing work.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, and Camera work.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -318,6 +318,15 @@ Preset lifecycle rules:
 - manual edits should detach a preset according to the generic preset lifecycle,
 - cross-module preset coupling should be avoided unless real testing proves it necessary.
 
+When a named preset represents a real system with replaceable parts, populate only the components intrinsic to that preset. Leave replaceable components neutral rather than inventing them.
+
+Example principle from Camera:
+
+```text
+fixed-lens camera preset        → may populate Lens Profile
+interchangeable-lens body preset → should leave Lens Profile neutral
+```
+
 ---
 
 # 10. Semantic data, context metadata and application state
@@ -486,6 +495,22 @@ Examples discovered during refactor work:
 
 When an option keeps growing to express unrelated behavior, stop expanding the wording and inspect the architecture.
 
+A system capability also must not silently imply the conditions under which that capability is commonly used.
+
+Example:
+
+```text
+high-sensitivity camera response
+```
+
+must not automatically become:
+
+```text
+low-light scene
+```
+
+unless low-light illumination is independently selected. Capability and operating context are separate semantic decisions.
+
 ---
 
 # 16. Compile order is separate from UI order
@@ -613,6 +638,8 @@ Do not silently disable either module.
 A useful warning explains that the selected instructions may compete while preserving the user's state.
 
 Do not warn merely because a combination is unusual. Creative tension can be intentional.
+
+For real-world system/configuration modules, restrict compatibility hints to high-confidence physical mismatches. Do not turn the editor into a strict hardware configurator when intentional simulation or creative borrowing remains useful.
 
 ---
 
@@ -980,6 +1007,29 @@ Key lessons:
 - prompt-level conflicts should use validation rather than silent overrides,
 - Natural optimizer classification and item limits must be tested explicitly.
 
+## Camera
+
+Camera established a clean boundary between how a view is composed and how that unchanged view is physically recorded.
+
+Final conceptual axes:
+
+```text
+Capture System
+Capture Response
+Lens Profile
+Focus & Depth
+Capture Behavior
+```
+
+Key lessons:
+
+- named hardware/device choices work best as editable state recipes rather than prose bundles,
+- presets should populate only intrinsic components; replaceable components remain neutral,
+- capture-system capability must not imply scene conditions such as lighting,
+- optical behavior belongs to Camera while viewpoint/composition belongs to Framing,
+- high-confidence physical mismatches can use advisory compatibility hints without blocking creative combinations,
+- Natural classification must protect legitimate Camera words such as distortion, grain, detail and tonal response from being reassigned to other semantic groups.
+
 ---
 
 # 30. Recommended remaining module order
@@ -987,25 +1037,19 @@ Key lessons:
 Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
 
 ```text
-1. Camera
-2. Lighting
-3. Color Palette + Texture
-4. Pose + Expression
-5. Background + Effects
-6. Hair + Outfit
-7. remaining smaller modules / final cross-module audit
+1. Lighting
+2. Color Palette + Texture
+3. Pose + Expression
+4. Background + Effects
+5. Hair + Outfit
+6. remaining smaller modules / final cross-module audit
 ```
 
-Why Camera is next:
+Why Lighting is next:
 
-- Framing is now clean and exposes the remaining Camera overlap clearly.
-- Legacy Camera options still smuggle viewpoint/composition semantics such as top-down, frontal or dramatic-composition behavior.
-- Cleaning Camera now stabilizes the Camera ↔ Framing ↔ Setup boundary before Lighting introduces another adjacent capture-related concern.
-
-Why Lighting follows:
-
+- Camera is now semantically closed, so the Camera ↔ Lighting boundary can be audited from a stable capture model.
 - Lighting has a strong boundary with Camera, Color Palette, Texture and Background.
-- Refactoring it immediately after Camera prevents optical/capture semantics from being mixed with illumination semantics.
+- Refactoring Lighting now prevents illumination semantics from leaking into capture response, surface/color behavior, or environment semantics.
 
 Why Color Palette + Texture should be audited together:
 
