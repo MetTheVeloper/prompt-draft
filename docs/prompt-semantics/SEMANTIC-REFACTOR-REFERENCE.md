@@ -1106,3 +1106,51 @@ For every major addition ask:
 > Does this materially improve a user's ability to create a better prompt, or does it mainly make the architecture more elaborate?
 
 Prefer product value over architectural novelty.
+
+---
+
+# 33. Mandatory module-intent discovery question
+
+Before auditing a new key module in a new conversation, ask the user one explicit discovery question before proposing the refactor architecture:
+
+> What was your original goal and idea when you created this module? What problem did you want it to solve for the user?
+
+Treat the answer as first-class design context alongside the current code, compiler behavior and neighboring module boundaries.
+
+The existing implementation shows what the module became; the user's answer explains what the module was intended to achieve. Both are needed before deciding what should be preserved, split, moved or removed.
+
+Do not skip this question merely because the current schema appears understandable. It is especially valuable when old implementations contain semantic pollution that hides the original product intent.
+
+---
+
+# 34. The canonical reference must improve after every closed module
+
+After a module is fully tested, approved by the user and closed with its semantic checkpoint, automatically perform a short lessons audit before moving to the next module.
+
+Ask internally:
+
+> Did this module teach us a reusable semantic, compiler, validation, migration, testing, translation, UX or architectural lesson that is not already captured in this canonical reference?
+
+If yes:
+
+1. add the reusable lesson to `docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md`,
+2. keep it general enough to guide future modules rather than documenting only one implementation detail,
+3. update the completed-stage lessons when the module establishes an important precedent,
+4. avoid duplicating guidance that the reference already contains,
+5. make this reference update part of the module's closure workflow, immediately after or alongside the checkpoint.
+
+If the module teaches nothing materially new, do not add filler merely to make the document longer.
+
+This file is therefore a **living canonical reference**. It should become stronger module by module so that a new semantic-refactor conversation can begin from the accumulated project knowledge without requiring manual transfer of prior chat context.
+
+---
+
+# 35. Wizard UX is a post-refactor product stage
+
+A simplified Wizard/Guided UI is intentionally deferred until the semantic refactor of all key modules is complete.
+
+The current advanced editor remains the semantic engine and power-user interface. A future Wizard should ask simpler high-level questions and translate the user's answers into the same underlying module state rather than introducing a separate prompt-generation architecture.
+
+Do not begin Wizard implementation during the remaining module refactors unless the user explicitly changes this priority.
+
+After all key-module semantic refactors and the final cross-module audit are complete, revisit the Wizard as a dedicated product/UX stage.
