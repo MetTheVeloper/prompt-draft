@@ -2,6 +2,8 @@ export default {
   "modules.texture.title": "Texture / Material",
   "modules.texture.description": "Define material and surface properties, then assign them to semantic targets.",
 
+  "modules.texture.fields.material.options.plastic": "Plastic",
+
   "modules.texture.fields.materialAssignments.label": "Material Assignments",
   "modules.texture.fields.materialAssignments.description": "Build reusable material and surface specifications and assign each one to the scene entities it should affect.",
   "modules.texture.fields.materialAssignments.assignmentTitle": "Material Assignment {index}",
@@ -127,4 +129,6 @@ export default {
   "modules.texture.presets.polished_marble.description": "Smooth high-gloss marble with visible surface character.",
   "modules.texture.presets.matte_rubber.label": "Matte Rubber",
   "modules.texture.presets.matte_rubber.description": "Clean opaque rubber with a smooth matte surface.",
+
+  "validation.texturePreserveMaterialsConflict": "Texture / Material requests material or surface changes while Setup is preserving the original materials and surface details. Review one of these settings to avoid conflicting instructions.",
 } as const
