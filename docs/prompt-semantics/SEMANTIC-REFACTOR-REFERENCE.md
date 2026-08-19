@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, and Lighting work.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, and Color Palette work.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -428,6 +428,25 @@ Renaming a Layout region or Typography group must not break references.
 
 Generated structural namespaces must be reserved so user variables cannot collide with them.
 
+## Typed semantic references
+
+Variable and structural-reference types are semantic contracts, not merely UI labels.
+
+Only expose a dynamic reference in a field when its type is meaningful for that role.
+
+Examples from Color Palette:
+
+```text
+Color variable          → reusable palette value
+Subject/Object variable → reusable color target
+Typography Group/Text   → structural color target
+Layout Region           → not automatically a color target
+```
+
+Do not make every variable selectable everywhere merely because a token exists. Filter reference catalogs by semantic compatibility.
+
+Store stable IDs alongside token/label snapshots so missing references can remain visible instead of silently deleting user intent.
+
 ---
 
 # 13. Structural tokens in output
@@ -573,6 +592,26 @@ blue + camera-right → another light-source relationship
 Flattening this into independent global lists of colors and directions would lose meaning.
 
 Also distinguish properties that belong to each repeated entity from properties that are genuinely global to the whole module. A bounded repeated-entity model is preferable when it materially improves prompt control without turning the editor into an unrestricted simulator.
+
+## Relational assignment rules
+
+When a module assigns a value set to one or more semantic targets, the rule itself is the semantic unit.
+
+Example principle from Color Palette:
+
+```text
+palette A → outfit + accents
+palette B → {hero}
+```
+
+Do not flatten palettes and targets into separate global lists. Preserve every rule as a self-contained clause through compilation.
+
+A useful relational-rule model should:
+
+- keep value data and target references together,
+- allow broad-to-specific ordering when overrides are meaningful,
+- preserve missing target references instead of silently mutating state,
+- use advisory warnings for duplicate exact targets rather than blocking intentional creative overlap.
 
 ---
 
@@ -1080,6 +1119,36 @@ Key lessons:
 - dedicated editors should still follow generic field-type conventions where practical so later component-system upgrades remain straightforward,
 - Natural/Modular testing must verify relationships, not only the presence of individual words.
 
+## Color Palette
+
+Color Palette preserved its original useful product idea while turning it into a reference-aware relational system.
+
+Final conceptual model:
+
+```text
+Palette Rules[]
+├─ Preset → editable swatches
+├─ Colors[]
+│  ├─ Literal Color
+│  └─ User Color Variable
+└─ Apply To[]
+   ├─ Built-in targets
+   ├─ Typography Group/Text references
+   ├─ User Subject/Object references
+   └─ Custom targets
+```
+
+Key lessons:
+
+- a preset can populate editable literal state instead of compiling a prose bundle,
+- variable types should be treated as semantic contracts when building dynamic reference catalogs,
+- structural/user references should store stable identity plus token/label snapshots so missing references remain recoverable,
+- relational assignment rules must keep values and targets linked through Modular and Natural compilation,
+- broad-to-specific rule ordering is useful when intentional overrides are part of the domain,
+- dynamic target selection should expose only semantically compatible entities rather than every available variable,
+- creation actions such as Custom Target should remain distinct from selecting an existing target,
+- a reusable component-system control should replace native UI when multiple modules share the same semantic interaction pattern.
+
 ---
 
 # 30. Recommended remaining module order
@@ -1087,20 +1156,20 @@ Key lessons:
 Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
 
 ```text
-1. Color Palette + Texture
+1. Texture
 2. Pose + Expression
 3. Background + Effects
 4. Hair + Outfit
 5. remaining smaller modules / final cross-module audit
 ```
 
-Why Color Palette + Texture is next:
+Why Texture is next:
 
-- Lighting is now semantically closed, so illumination color and light-response boundaries can be audited from a stable owner,
-- both modules affect visible color/surface behavior and currently contain concepts that can blur material identity, surface finish, palette assignment and light response,
-- Texture interacts with material and how surfaces respond visually to light,
-- Color Palette controls base color relationships but must not redefine illumination color now owned by Lighting,
-- auditing them together makes the Color Palette ↔ Texture ↔ Lighting boundary easier to define than treating either module in isolation.
+- Color Palette is now semantically closed, so base-color ownership is stable,
+- Lighting is already closed, so illumination color and light-source behavior are stable,
+- Texture can now be audited against two fixed neighbors rather than guessing where color or light-response semantics belong,
+- the current Texture schema mixes material identity, surface finish, microtexture, optical/transmission behavior, detail and imperfections,
+- clarifying Texture now will stabilize the remaining Style ↔ Texture and Lighting ↔ Texture boundaries before smaller subject-detail modules are refactored.
 
 Pose + Expression are naturally related but should remain independent body-vs-face controls.
 
