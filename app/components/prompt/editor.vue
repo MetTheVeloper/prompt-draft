@@ -9,6 +9,7 @@ import type {
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
+import ModulesPanelTexture from "../modules/panel/texture.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
 
@@ -80,7 +81,9 @@ function updateModuleIssues(moduleKey: string, issues: PromptValidationIssue[]) 
 }
 
 function getModulePanel(module: PromptKeyModule) {
-  return module.key === "lighting" ? ModulesPanelLighting : ModulesPanelBase;
+  if (module.key === "lighting") return ModulesPanelLighting;
+  if (module.key === "texture") return ModulesPanelTexture;
+  return ModulesPanelBase;
 }
 
 watch(
