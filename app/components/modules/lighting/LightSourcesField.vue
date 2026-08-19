@@ -186,13 +186,9 @@ function updateSourceValue(
   });
 }
 
-function updateSourceFeatures(index: number, event: Event) {
-  const target = event.target as HTMLSelectElement | null;
-
-  if (!target) return;
-
+function updateSourceFeatures(index: number, values: ElDropdownValue[]) {
   updateSource(index, {
-    features: Array.from(target.selectedOptions).map((option) => option.value),
+    features: values.map((value) => String(value)),
   });
 }
 
@@ -427,21 +423,15 @@ function sourceFilledCount(index: number) {
 
         <el-grid :gap="8" class="w100" :style="mobile ? '' : 'grid-column: 1 / -1'">
           <el-text :size="10" color="normal45">{{ t("modules.lighting.fields.lightSources.features.label") }}</el-text>
-          <select
-            multiple
-            :value="source.features || []"
-            @change="updateSourceFeatures(index, $event)"
-          >
-            <option
-              v-for="feature in featureOptions()"
-              :key="feature.value"
-              :value="feature.value"
-              :selected="source.features?.includes(feature.value)"
-              :disabled="feature.disabled"
-            >
-              {{ optionLabel("features", feature.value) }}
-            </option>
-          </select>
+          <el-multi-select
+            :model-value="source.features || []"
+            :items="featureOptions()"
+            :item-label="(feature) => optionLabel('features', feature.value)"
+            item-value="value"
+            item-disabled="disabled"
+            :placeholder="t('panel.none')"
+            @update:model-value="updateSourceFeatures(index, $event)"
+          />
         </el-grid>
       </el-grid>
     </el-grid>
