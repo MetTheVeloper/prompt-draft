@@ -1,3 +1,8 @@
+type TypographyNaturalOptions = {
+  referencedGroupKeys?: Set<string>
+  referencedTextKeys?: Set<string>
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
 }
@@ -50,15 +55,20 @@ function formatTextTypography(value: unknown) {
   ].filter(Boolean).join(", ")
 }
 
-function formatTextBlock(value: unknown) {
+function formatTextBlock(
+  value: unknown,
+  options: TypographyNaturalOptions,
+) {
   if (!isRecord(value)) return ""
 
   const content = quoteExactText(value.content)
   if (!content) return ""
 
+  const key = cleanText(value.key)
   const purpose = cleanText(value.purpose)
   const typography = formatTextTypography(value.typography)
   const description = cleanText(value.description)
+  const shouldExposeKey = Boolean(key && options.referencedTextKeys?.has(key))
 
   const details = [
     purpose ? `purpose: ${purpose}` : "",
@@ -66,18 +76,24 @@ function formatTextBlock(value: unknown) {
     description ? `description: ${description}` : "",
   ].filter(Boolean)
 
-  return `  ◦ ${content}${details.length ? ` (${details.join("; ")})` : ""}.`
+  const prefix = shouldExposeKey ? `${key}: ` : ""
+  return `  ◦ ${prefix}${content}${details.length ? ` (${details.join("; ")})` : ""}.`
 }
 
-function formatGroup(value: unknown, index: number) {
+function formatGroup(
+  value: unknown,
+  index: number,
+  options: TypographyNaturalOptions,
+) {
   if (!isRecord(value)) return [] as string[]
 
+  const key = cleanText(value.key)
   const purpose = cleanText(value.purpose)
   const position = formatPosition(value.position)
   const layout = formatGroupLayout(value.layout)
   const description = cleanText(value.description)
   const texts = Array.isArray(value.texts)
-    ? value.texts.map(formatTextBlock).filter(Boolean)
+    ? value.texts.map((item) => formatTextBlock(item, options)).filter(Boolean)
     : []
 
   if (!texts.length) return [] as string[]
@@ -89,7 +105,9 @@ function formatGroup(value: unknown, index: number) {
     description ? `description: ${description}` : "",
   ].filter(Boolean)
 
-  const header = `• Group ${index + 1}${details.length ? ` (${details.join("; ")})` : ""}:`
+  const shouldExposeKey = Boolean(key && options.referencedGroupKeys?.has(key))
+  const keySuffix = shouldExposeKey ? ` ${key}` : ""
+  const header = `• Group ${index + 1}${keySuffix}${details.length ? ` (${details.join("; ")})` : ""}:`
 
   return [header, ...texts]
 }
@@ -121,9 +139,10 @@ function formatRenderRules(value: unknown) {
 
 export function compileTypographyNaturalBlock(
   output: Record<string, unknown>,
+  options: TypographyNaturalOptions = {},
 ) {
   const groups = Array.isArray(output.groups)
-    ? output.groups.flatMap(formatGroup)
+    ? output.groups.flatMap((group, index) => formatGroup(group, index, options))
     : []
 
   if (!groups.length) return ""
