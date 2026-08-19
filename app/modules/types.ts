@@ -37,6 +37,7 @@ export type ModuleFieldOption = {
   promptText?: string;
   disabled?: boolean;
   tags?: string[];
+  colors?: string[];
 
   category?: string;
   categoryLabel?: string;
@@ -61,6 +62,41 @@ export type LightingSource = {
   color?: string;
   customColor?: string;
   features?: string[];
+};
+
+export type ColorPaletteSwatchKind = "literal" | "variable";
+
+export type ColorPaletteSwatch = {
+  id?: string;
+  kind: ColorPaletteSwatchKind;
+  value: string;
+  variableId?: string;
+  token?: string;
+  label?: string;
+};
+
+export type ColorPaletteTargetKind =
+  | "builtin"
+  | "user_variable"
+  | "typography_group"
+  | "typography_text"
+  | "custom";
+
+export type ColorPaletteTarget = {
+  kind: ColorPaletteTargetKind;
+  value: string;
+  variableId?: string;
+  entityId?: string;
+  token?: string;
+  label?: string;
+  parentLabel?: string;
+};
+
+export type ColorPaletteRule = {
+  id?: string;
+  presetId?: string;
+  colors: ColorPaletteSwatch[];
+  targets: ColorPaletteTarget[];
 };
 
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
@@ -189,6 +225,7 @@ export type ModuleFieldValue =
   | boolean
   | string[]
   | LightingSource[]
+  | ColorPaletteRule[]
   | TypographyTextGroup[]
   | PromptVariable[]
   | LayoutRegion[]
