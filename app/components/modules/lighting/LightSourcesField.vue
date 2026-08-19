@@ -24,11 +24,15 @@ const emit = defineEmits<{
   (event: "update:modelValue", value: LightingSource[]): void;
 }>();
 
-const collapsedIds = ref<string[]>([]);
+type LightingSourceSelectKey =
+  | "role"
+  | "sourceType"
+  | "direction"
+  | "quality"
+  | "intensity"
+  | "color";
 
-const sources = computed(() => {
-  return Array.isArray(props.modelValue) ? props.modelValue.slice(0, maxSources.value) : [];
-});
+const collapsedIds = ref<string[]>([]);
 
 const maxSources = computed(() => {
   const configured = Number(props.field.config?.maxSources || 3);
@@ -36,6 +40,10 @@ const maxSources = computed(() => {
   if (!Number.isFinite(configured)) return 3;
 
   return Math.max(1, Math.min(3, configured));
+});
+
+const sources = computed(() => {
+  return Array.isArray(props.modelValue) ? props.modelValue.slice(0, maxSources.value) : [];
 });
 
 const canAddSource = computed(() => sources.value.length < maxSources.value);
@@ -46,7 +54,11 @@ function configOptions(key: string) {
   if (!Array.isArray(value)) return [];
 
   return value.filter((item): item is ModuleFieldOption => {
-    return Boolean(item && typeof item === "object" && typeof item.value === "string");
+    return Boolean(
+      item &&
+      typeof item === "object" &&
+      typeof (item as ModuleFieldOption).value === "string"
+    );
   });
 }
 
@@ -145,7 +157,7 @@ function updateSource(index: number, patch: Partial<LightingSource>) {
 
 function updateSourceValue(
   index: number,
-  key: keyof LightingSource,
+  key: LightingSourceSelectKey,
   value: ElDropdownValue,
 ) {
   const nextValue = String(value ?? "");
