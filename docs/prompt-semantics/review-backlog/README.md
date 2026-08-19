@@ -126,23 +126,3 @@ Before the semantic-refactor branch is treated as migration-safe for existing us
 3. Run migration during local-storage and imported JSON hydration.
 4. Remove stale `lightingStyle` after successful migration.
 5. Test old Lighting drafts across save/export/import round trips.
-
----
-
-## Module panel — native multi-select UI
-
-### Status
-Open
-
-### Problem
-Generic `multiSelect` fields currently render with a native HTML `<select multiple>` control. Framing now uses multi-select for Composition Features and Crop Safety, and Lighting source features intentionally follow the same convention so all of them can migrate together when the project gets a custom multi-select component.
-
-### Required follow-up
-Replace the native control with the project dropdown/menu component while preserving:
-
-- multi-value selection,
-- subject applicability filtering,
-- compatibility sorting and warnings,
-- clear/remove behavior,
-- mobile behavior,
-- existing module field API.
