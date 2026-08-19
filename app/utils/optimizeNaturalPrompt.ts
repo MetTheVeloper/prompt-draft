@@ -8,6 +8,7 @@ export type NaturalOptimizeOptions = {
 type ApplyGroup =
   | 'transformation'
   | 'style'
+  | 'color'
   | 'framing'
   | 'pose'
   | 'outfit'
@@ -20,6 +21,7 @@ type ApplyGroup =
 const APPLY_GROUP_ORDER: ApplyGroup[] = [
   'transformation',
   'style',
+  'color',
   'framing',
   'pose',
   'outfit',
@@ -33,6 +35,7 @@ const APPLY_GROUP_ORDER: ApplyGroup[] = [
 const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   transformation: 7,
   style: 5,
+  color: 10,
   framing: 20,
   pose: 4,
   outfit: 3,
@@ -178,6 +181,13 @@ function detectApplyGroup(value: string): ApplyGroup {
     )
   ) {
     return 'camera'
+  }
+
+  // Color Palette emits self-contained relational clauses. Recognize those
+  // before target words such as background, outfit, typography, or subject can
+  // misclassify the palette under the target module's semantic budget.
+  if (/palette .* assigned to|color palette .* assigned to/.test(text)) {
+    return 'color'
   }
 
   if (
