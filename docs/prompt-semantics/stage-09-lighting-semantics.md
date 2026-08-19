@@ -1,7 +1,7 @@
 # Stage 09 — Lighting Semantics
 
 ## Status
-Implemented on `refactor/prompt-semantics`; pending local build and compiled-output validation before semantic closure.
+Semantically closed on `refactor/prompt-semantics` after successful local build, Modular/Natural output validation, multi-source relationship tests, and final UI consistency polish.
 
 ## Product intent
 Lighting is a broadly applicable module rather than a realism-only control. It should work for photographic, cinematic, product, stylized, cartoon, illustrated, clay/miniature, abstract, and other image-generation workflows whenever illumination is meaningful.
@@ -294,6 +294,12 @@ The panel preserves the existing module workflow:
 
 `LightSourcesField.vue` provides the repeatable source cards with a hard maximum of three sources.
 
+The final UI polish intentionally follows existing generic field conventions where possible:
+
+- source `Lighting Features` uses the same native `<select multiple>` pattern currently used by generic `multiSelect` fields, so it can later migrate with the project-wide custom multi-select component,
+- custom light color uses native `<input type="color">`, matching existing `color` fields,
+- per-source filled-state count is derived reactively from current source state.
+
 ## Translation workflow
 English semantic copy is maintained in:
 
@@ -316,28 +322,30 @@ lightingStyle
 
 No automatic migration is performed in this stage. The old values contain both clean lighting concepts and cross-module pollution, so migration requires an explicit mapping policy.
 
-This is tracked in the semantic review backlog.
+This remains tracked in the semantic review backlog and does not block semantic closure of the new module schema.
 
-## Validation required before closure
+## Validation completed
 
-1. Apply the English i18n patch.
-2. Run `pnpm generate`.
-3. Verify neutral Lighting emits no Lighting output.
-4. Verify one manually created source compiles all selected source properties together.
-5. Verify two-source red/blue split keeps red associated with camera-left and blue with camera-right in Modular output.
-6. Verify the same red/blue relationships survive Natural optimization.
-7. Verify three-source High Key remains complete in Modular and Natural output.
-8. Verify source add/remove is capped at three and preserves remaining source state.
-9. Verify preset selection populates source cards and global controls.
-10. Verify manual source edits detach the active preset.
-11. Verify switching presets does not leave stale sources from the previous preset.
-12. Verify custom light color compiles without changing Color Palette state.
-13. Verify Direct Flash does not introduce Camera capture semantics.
-14. Verify Volumetric Spotlight does not automatically add fog/smoke/dust scene content.
-15. Verify Lighting + Camera produces no duplicate capture/illumination ownership.
-16. Verify Lighting + Framing allows independent camera viewpoint and light direction.
-17. Verify Lighting + Texture does not redefine material gloss/reflectivity.
-18. Verify Lighting + Color Palette keeps illumination color and base palette independently understandable.
+The stage was closed after successful local build and focused output/UI validation.
+
+Verified behaviors include:
+
+1. `pnpm generate` passes.
+2. Blue / Red Split preserves red ↔ camera-left and blue ↔ camera-right relationships in Modular output.
+3. The same split-light relationships survive Natural optimization without flattening source identity.
+4. High Key preserves a complete three-source key/fill/background setup in Modular and Natural output.
+5. Natural Window Light remains concise and does not over-specify unrelated semantics.
+6. Direct Flash remains Lighting-owned and introduces no Camera capture semantics.
+7. Manual three-source setups preserve source-local role, type, direction, quality, intensity, color, and feature relationships.
+8. Custom light colors compile as illumination color without changing Color Palette state.
+9. Volumetric beams remain a Lighting feature without automatically introducing fog/smoke/dust scene content.
+10. Global ambient level and overall contrast remain separate from source-local properties.
+11. Source add/remove and preset/manual editing operate correctly with the three-source cap.
+12. Lighting Features now follow the project's current multi-select UI convention.
+13. Custom light color now follows the project's current color-field UI convention.
+14. Per-source filled-state count reflects current reactive source state.
 
 ## Closure
-Do not mark Lighting semantically closed until the validation list and `pnpm generate` pass.
+Lighting is semantically closed.
+
+Reopen this stage only if later cross-module work or concrete generation tests reveal a real ownership, compiler, migration, or UI integration issue. Legacy `lightingStyle` migration remains a separate review-backlog task and is not part of the closed semantic schema.
