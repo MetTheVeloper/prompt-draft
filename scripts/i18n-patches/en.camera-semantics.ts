@@ -78,6 +78,8 @@ export default {
   "modules.camera.fields.captureResponse.options.instant_film": "Instant Film",
   "modules.camera.fields.captureResponse.options.experimental_film": "Experimental Film",
   "modules.camera.fields.captureResponse.options.compressed_digital": "Compressed Digital",
+  "modules.camera.fields.captureResponse.compatibilityWarnings.systemMismatch":
+    "This capture response is not a typical physical match for the selected capture system. The combination is still allowed for intentional creative use.",
 
   "modules.camera.fields.lensProfile.label": "Lens Profile",
   "modules.camera.fields.lensProfile.description":
@@ -92,9 +94,12 @@ export default {
   "modules.camera.fields.lensProfile.options.telephoto": "Telephoto",
   "modules.camera.fields.lensProfile.options.fixed_23mm_wide": "Fixed 23mm Wide-Normal",
   "modules.camera.fields.lensProfile.options.fixed_28mm_wide": "Fixed 28mm Wide",
+  "modules.camera.fields.lensProfile.options.fixed_38mm": "Fixed 38mm",
   "modules.camera.fields.lensProfile.options.simple_fixed_wide": "Simple Fixed Wide",
   "modules.camera.fields.lensProfile.options.integral_instant_lens": "Integral Instant-Camera Lens",
   "modules.camera.fields.lensProfile.options.twin_lens_medium_format": "Medium-Format Twin-Lens",
+  "modules.camera.fields.lensProfile.compatibilityWarnings.systemMismatch":
+    "This lens profile is not a typical physical match for the selected capture system. The combination is still allowed for intentional creative use.",
 
   "modules.camera.fields.focusDepth.label": "Focus & Depth",
   "modules.camera.fields.focusDepth.description":
@@ -157,7 +162,7 @@ export default {
   "modules.camera.presets.leica_m6.description": "Leica M6 35mm rangefinder-body recipe; lens and focus remain independently editable.",
   "modules.camera.presets.hasselblad_500c.description": "Hasselblad 500C/M medium-format film capture recipe.",
   "modules.camera.presets.rolleiflex.description": "Rolleiflex medium-format twin-lens-reflex capture recipe with fixed-system optical character.",
-  "modules.camera.presets.contax_t2.description": "Contax T2 compact 35mm film capture recipe with its fixed-lens optical character.",
+  "modules.camera.presets.contax_t2.description": "Contax T2 compact 35mm film capture recipe with its fixed 38mm optical character.",
   "modules.camera.presets.lomography.description": "Experimental compact-film capture recipe without imposing viewpoint or composition.",
   "modules.camera.presets.canon_eos_r5.description": "Canon EOS R5 full-frame digital capture recipe; lens and focus remain independently editable.",
   "modules.camera.presets.nikon_z8.description": "Nikon Z8 full-frame digital capture recipe; lens and focus remain independently editable.",
