@@ -42,7 +42,7 @@ const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   background: 5,
   lighting: 5,
   camera: 12,
-  texture: 5,
+  texture: 10,
   other: 8
 }
 
@@ -188,6 +188,16 @@ function detectApplyGroup(value: string): ApplyGroup {
   // misclassify the palette under the target module's semantic budget.
   if (/palette .* assigned to|color palette .* assigned to/.test(text)) {
     return 'color'
+  }
+
+  // Texture/Material emits the same kind of relational assignment clauses.
+  // Recognize material/surface ownership before target words such as
+  // background, outfit, typography, or subject can steal the clause.
+  if (
+    /assigned to/.test(text) &&
+    /material|finish|surface texture|texture prominence|material behavior|surface condition|surface scratches|surface cracks|weathered surface|corroded|oxidized/.test(text)
+  ) {
+    return 'texture'
   }
 
   if (
