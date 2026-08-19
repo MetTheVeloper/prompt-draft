@@ -38,7 +38,7 @@ const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   outfit: 3,
   background: 5,
   lighting: 5,
-  camera: 5,
+  camera: 12,
   texture: 5,
   other: 8
 }
@@ -168,6 +168,17 @@ function parseApplyParts(sentence: string) {
 
 function detectApplyGroup(value: string): ApplyGroup {
   const text = normalizeText(value)
+
+  // Camera capture semantics must be recognized before generic words such as
+  // distortion, grain, detail, or tonal behavior can send them to another
+  // semantic group.
+  if (
+    /camera capture system|camera sensor|camera capture response|film camera capture response|instant film camera capture response|lens optics|macro lens optics|fisheye lens optics|depth of field|fixed focus camera behavior|critical focus camera rendering|tripod mounted camera capture|handheld camera|stabilized camera capture|mounted camera capture/.test(
+      text
+    )
+  ) {
+    return 'camera'
+  }
 
   if (
     /bodybuilder|muscular|muscle|physique|biceps|triceps|abs|chest|shoulders|grotesque|exaggeration|exaggerated|comically|unrealistic|impossibly|absurd|deformation|distortion/.test(
