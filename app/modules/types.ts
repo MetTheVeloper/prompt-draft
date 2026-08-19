@@ -51,6 +51,18 @@ export type ModuleFieldOption = {
   compatibility?: ModuleOptionCompatibility;
 };
 
+export type LightingSource = {
+  id?: string;
+  role?: string;
+  sourceType?: string;
+  direction?: string;
+  quality?: string;
+  intensity?: string;
+  color?: string;
+  customColor?: string;
+  features?: string[];
+};
+
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
 
 export type TypographyTextDirection = "row" | "column";
@@ -161,6 +173,7 @@ export type ModuleFieldType =
   | "textarea"
   | "layoutRegions"
   | "colorAssignments"
+  | "lightSources"
   | "textGroups"
   | "variables"
   | "select"
@@ -175,6 +188,7 @@ export type ModuleFieldValue =
   | number
   | boolean
   | string[]
+  | LightingSource[]
   | TypographyTextGroup[]
   | PromptVariable[]
   | LayoutRegion[]
@@ -203,7 +217,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
