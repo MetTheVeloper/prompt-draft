@@ -20,6 +20,7 @@ import framingCrossModule from "./en.framing-cross-module"
 import camera from "./en.camera-semantics"
 import lighting from "./en.lighting-semantics"
 import colorPalette from "./en.color-palette-semantics"
+import texture from "./en.texture-semantics"
 
 export default {
   ...style,
@@ -32,4 +33,5 @@ export default {
   ...camera,
   ...lighting,
   ...colorPalette,
+  ...texture,
 } as const
