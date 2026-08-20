@@ -81,6 +81,7 @@ export type SemanticTargetKind =
   | "builtin"
   | "module_output"
   | "user_variable"
+  | "system_variable"
   | "typography_group"
   | "typography_text"
   | "custom";
@@ -128,6 +129,40 @@ export type MaterialAssignment = {
   conditions?: string[];
   targets: SemanticTargetRef[];
   exceptions?: SemanticTargetRef[];
+};
+
+/**
+ * A physical body configuration assigned to one or more semantic subjects.
+ * Target identity is shared; pose payload semantics remain local to Pose.
+ */
+export type PoseAssignment = {
+  id?: string;
+  presetId?: string;
+  basePosture?: string;
+  torsoPosture?: string;
+  weightBalance?: string;
+  bodyTension?: string;
+  locomotion?: string;
+  gestures?: string[];
+  interactionDetails?: string;
+  additionalDetails?: string;
+  targets: SemanticTargetRef[];
+};
+
+/**
+ * A visible facial-expression specification assigned to semantic subjects.
+ * Target identity is shared; expression payload semantics remain local here.
+ */
+export type ExpressionAssignment = {
+  id?: string;
+  presetId?: string;
+  coreExpression?: string;
+  intensity?: string;
+  eyeState?: string;
+  browState?: string;
+  mouthState?: string;
+  additionalDetails?: string;
+  targets: SemanticTargetRef[];
 };
 
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
@@ -242,6 +277,8 @@ export type ModuleFieldType =
   | "layoutRegions"
   | "colorAssignments"
   | "materialAssignments"
+  | "poseAssignments"
+  | "expressionAssignments"
   | "lightSources"
   | "textGroups"
   | "variables"
@@ -260,6 +297,8 @@ export type ModuleFieldValue =
   | LightingSource[]
   | ColorPaletteRule[]
   | MaterialAssignment[]
+  | PoseAssignment[]
+  | ExpressionAssignment[]
   | TypographyTextGroup[]
   | PromptVariable[]
   | LayoutRegion[]
@@ -288,7 +327,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
