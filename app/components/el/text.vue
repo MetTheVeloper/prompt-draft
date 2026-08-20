@@ -153,7 +153,7 @@ const updateGlitchEffect = () => {
     randomInt(0, 10) * 5,
     randomInt(0, 10) * 5,
   ];
-  glitchTextShadow.value = `${steps[0]}px 0 0 var(--themeRed${alphas[0]}), ${steps[1]}px 0px 0 var(--themeRed${alphas[1]}), ${steps[2]}px 0 0 var(--themeBlue${alphas[2]}), ${steps[3]}px 0px var(--themeBlue${alphas[3]})`;
+  glitchTextShadow.value = `${steps[0]}px 0 0 var(--themeRed${alphas[0]}), ${steps[1]}px 0px 0 var(--themeRed${alphas[1]}), ${steps[2]}px 0 0 var(--themeBlue${alphas[2]}), ${steps[3]}px 0px 0 var(--themeBlue${alphas[3]})`;
 };
 
 watch(
