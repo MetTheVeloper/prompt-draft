@@ -13,6 +13,7 @@ export type PromptValidationIssueCode =
   | 'unused_variable'
   | 'framing_preserve_composition_conflict'
   | 'texture_preserve_materials_conflict'
+  | 'pose_preserve_pose_conflict'
 
 export interface PromptValidationIssue {
   id: string
@@ -60,6 +61,15 @@ function framingChangesComposition(outputs?: ModuleOutputMap) {
 
 function textureChangesMaterials(outputs?: ModuleOutputMap) {
   const output = outputs?.texture
+
+  if (!output) return false
+  if (typeof output !== 'string') return true
+
+  return Boolean(output.trim())
+}
+
+function poseChangesPose(outputs?: ModuleOutputMap) {
+  const output = outputs?.pose
 
   if (!output) return false
   if (typeof output !== 'string') return true
@@ -134,6 +144,19 @@ export function validatePromptSettings(
       code: 'texture_preserve_materials_conflict',
       level: 'warning',
       moduleKey: 'texture',
+    })
+  }
+
+  if (
+    settings.mode === 'image_to_image' &&
+    settings.imageToImage.preservePose &&
+    poseChangesPose(outputs)
+  ) {
+    issues.push({
+      id: 'setup:pose_preserve_pose_conflict',
+      code: 'pose_preserve_pose_conflict',
+      level: 'warning',
+      moduleKey: 'pose',
     })
   }
 
