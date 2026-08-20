@@ -16,6 +16,7 @@ import { compileTextureModule } from "./compileTexture";
 import { compilePoseModule } from "./compilePose";
 import { compileExpressionModule } from "./compileExpression";
 import { compileBackgroundModule } from "./compileBackground";
+import { compileEffectsModule } from "./compileEffects";
 import {
   getLayoutRegionVariableToken,
   getTypographyGroupVariableToken,
@@ -486,6 +487,10 @@ export function compileModule(
 
   if (module.key === "background") {
     return compileBackgroundModule(module, values);
+  }
+
+  if (module.key === "effects") {
+    return compileEffectsModule(module, values);
   }
 
   const fields = Object.values(module.fields);

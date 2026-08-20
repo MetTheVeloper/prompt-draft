@@ -2,6 +2,8 @@ import en from './locales/en'
 import fa from './locales/fa'
 import backgroundEn from './locales/background.en'
 import backgroundFa from './locales/background.fa'
+import effectsEn from './locales/effects.en'
+import effectsFa from './locales/effects.fa'
 
 export default defineI18nConfig(() => ({
   legacy: false,
@@ -14,6 +16,7 @@ export default defineI18nConfig(() => ({
       modules: {
         ...en.modules,
         background: backgroundEn,
+        effects: effectsEn,
       },
     },
     fa: {
@@ -21,6 +24,7 @@ export default defineI18nConfig(() => ({
       modules: {
         ...fa.modules,
         background: backgroundFa,
+        effects: effectsFa,
       },
     },
   },

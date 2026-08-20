@@ -64,6 +64,14 @@ export type LightingSource = {
   features?: string[];
 };
 
+export type EffectLayer = {
+  id?: string;
+  effectType?: string;
+  customEffect?: string;
+  intensity?: string;
+  details?: string;
+};
+
 export type ColorPaletteSwatchKind = "literal" | "variable";
 
 export type ColorPaletteSwatch = {
@@ -280,6 +288,7 @@ export type ModuleFieldType =
   | "poseAssignments"
   | "expressionAssignments"
   | "lightSources"
+  | "effectLayers"
   | "textGroups"
   | "variables"
   | "select"
@@ -295,6 +304,7 @@ export type ModuleFieldValue =
   | boolean
   | string[]
   | LightingSource[]
+  | EffectLayer[]
   | ColorPaletteRule[]
   | MaterialAssignment[]
   | PoseAssignment[]
@@ -327,7 +337,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "lightSources" | "effectLayers" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
