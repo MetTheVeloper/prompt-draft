@@ -1,218 +1,236 @@
 // app/modules/colorPalette.module.ts
-import type { PromptKeyModule, ModuleField } from "./types";
+import type { ModuleField, ModuleFieldOption, PromptKeyModule } from "./types";
 
-const colorPaletteAssignmentsOptions = [
+function palette(
+  value: string,
+  category: string,
+  categoryLabel: string,
+  promptText: string,
+  colors: string[],
+  tags: string[] = [],
+): ModuleFieldOption {
+  return {
+    value,
+    category,
+    categoryLabel,
+    promptText,
+    colors,
+    tags: ["palette", ...tags],
+  };
+}
+
+const colorPaletteAssignmentsOptions: ModuleFieldOption[] = [
   // General / Balanced
-  {
-    value: "monochrome_black_and_white",
-    category: "general",
-    categoryLabel: "General / Balanced",
-    promptText:
-      "monochrome black and white palette with strong tonal contrast, clean grayscale structure, and a timeless graphic visual mood",
-    tags: ["palette", "general", "monochrome", "black-and-white"],
-  },
-  {
-    value: "grayscale_neutral_palette",
-    category: "general",
-    categoryLabel: "General / Balanced",
-    promptText:
-      "grayscale neutral palette with soft tonal variation, balanced contrast, and restrained colorless visual harmony",
-    tags: ["palette", "general", "grayscale", "neutral"],
-  },
-  {
-    value: "soft_pastel_palette",
-    category: "general",
-    categoryLabel: "General / Balanced",
-    promptText:
-      "soft pastel palette with gentle low-saturation colors, airy visual mood, and delicate harmonious color balance",
-    tags: ["palette", "general", "pastel", "soft"],
-  },
-  {
-    value: "warm_earthy_palette",
-    category: "general",
-    categoryLabel: "General / Balanced",
-    promptText:
-      "warm earthy palette with natural browns, muted oranges, soft beige tones, and grounded organic color harmony",
-    tags: ["palette", "general", "warm", "earthy"],
-  },
-  {
-    value: "cool_muted_palette",
-    category: "general",
-    categoryLabel: "General / Balanced",
-    promptText:
-      "cool muted palette with restrained blues, soft grays, desaturated tones, and calm understated color mood",
-    tags: ["palette", "general", "cool", "muted"],
-  },
+  palette(
+    "monochrome_black_and_white",
+    "general",
+    "General / Balanced",
+    "black-and-white monochrome palette",
+    ["#0B0B0B", "#F5F5F5", "#8A8A8A"],
+    ["general", "monochrome", "black-and-white"],
+  ),
+  palette(
+    "grayscale_neutral_palette",
+    "general",
+    "General / Balanced",
+    "neutral grayscale palette",
+    ["#242424", "#666666", "#A8A8A8", "#E6E6E6"],
+    ["general", "grayscale", "neutral"],
+  ),
+  palette(
+    "soft_pastel_palette",
+    "general",
+    "General / Balanced",
+    "soft pastel palette",
+    ["#F6C7D0", "#F5D6A4", "#C9E4DE", "#C7D7F2", "#D8C8EA"],
+    ["general", "pastel", "soft"],
+  ),
+  palette(
+    "warm_earthy_palette",
+    "general",
+    "General / Balanced",
+    "warm earthy palette",
+    ["#6B4F3A", "#A66A3F", "#C98B5A", "#D8B08C", "#E7D7C5"],
+    ["general", "warm", "earthy"],
+  ),
+  palette(
+    "cool_muted_palette",
+    "general",
+    "General / Balanced",
+    "cool muted palette",
+    ["#40556A", "#6F8493", "#9AA9B3", "#C4CDD2"],
+    ["general", "cool", "muted"],
+  ),
 
-  // Cinematic
-  {
-    value: "teal_and_orange_palette",
-    category: "cinematic",
-    categoryLabel: "Cinematic",
-    promptText:
-      "teal and orange cinematic palette with warm highlights, cool shadows, and strong film-like color contrast",
-    tags: ["palette", "cinematic", "teal", "orange"],
-  },
-  {
-    value: "desaturated_cinematic_palette",
-    category: "cinematic",
-    categoryLabel: "Cinematic",
-    promptText:
-      "desaturated cinematic palette with restrained color intensity, muted film tones, and serious atmospheric mood",
-    tags: ["palette", "cinematic", "desaturated", "film"],
-  },
-  {
-    value: "moody_blue_gray_palette",
-    category: "cinematic",
-    categoryLabel: "Cinematic",
-    promptText:
-      "moody blue-gray palette with cool shadow tones, subdued contrast, and dramatic cinematic atmosphere",
-    tags: ["palette", "cinematic", "blue-gray", "moody"],
-  },
-  {
-    value: "golden_sunset_palette",
-    category: "cinematic",
-    categoryLabel: "Cinematic",
-    promptText:
-      "golden sunset palette with warm amber light, soft orange highlights, and nostalgic cinematic warmth",
-    tags: ["palette", "cinematic", "golden", "sunset"],
-  },
+  // Cinematic — category is for discovery only; prompt semantics remain color-only.
+  palette(
+    "teal_and_orange_palette",
+    "cinematic",
+    "Cinematic",
+    "teal-and-orange palette",
+    ["#0F6B78", "#2D8C91", "#D9792B", "#F2B36D"],
+    ["cinematic", "teal", "orange"],
+  ),
+  palette(
+    "desaturated_cinematic_palette",
+    "cinematic",
+    "Cinematic",
+    "desaturated neutral color palette",
+    ["#4E5860", "#73786F", "#9B8E7E", "#C1B6A5"],
+    ["cinematic", "desaturated", "muted"],
+  ),
+  palette(
+    "moody_blue_gray_palette",
+    "cinematic",
+    "Cinematic",
+    "deep blue-gray palette",
+    ["#1F2D3A", "#3E5265", "#6D7F8E", "#A9B4BC"],
+    ["cinematic", "blue-gray"],
+  ),
+  palette(
+    "golden_sunset_palette",
+    "cinematic",
+    "Cinematic",
+    "golden amber-and-orange palette",
+    ["#7C3F24", "#C96A2B", "#E8A23A", "#F2C879"],
+    ["cinematic", "golden", "orange"],
+  ),
 
   // Neon / Stylized
-  {
-    value: "neon_purple_and_yellow",
-    category: "neon_stylized",
-    categoryLabel: "Neon / Stylized",
-    promptText:
-      "neon purple and yellow palette with electric contrast, vibrant stylized energy, and bold futuristic color impact",
-    tags: ["palette", "neon", "purple", "yellow"],
-  },
-  {
-    value: "cyber_blue_and_magenta",
-    category: "neon_stylized",
-    categoryLabel: "Neon / Stylized",
-    promptText:
-      "cyber blue and magenta palette with intense digital contrast, futuristic glow, and high-energy cyberpunk color mood",
-    tags: ["palette", "neon", "cyber", "blue", "magenta"],
-  },
-  {
-    value: "electric_green_and_black",
-    category: "neon_stylized",
-    categoryLabel: "Neon / Stylized",
-    promptText:
-      "electric green and black palette with sharp luminous accents, dark contrast, and intense digital visual character",
-    tags: ["palette", "neon", "green", "black"],
-  },
-  {
-    value: "vivid_pop_palette",
-    category: "neon_stylized",
-    categoryLabel: "Neon / Stylized",
-    promptText:
-      "vivid pop palette with bright saturated colors, playful contrast, and bold graphic color presence",
-    tags: ["palette", "stylized", "vivid", "pop"],
-  },
+  palette(
+    "neon_purple_and_yellow",
+    "neon_stylized",
+    "Neon / Stylized",
+    "neon purple-and-yellow palette",
+    ["#7A24FF", "#B238FF", "#F4FF3A", "#FFF36A"],
+    ["neon", "purple", "yellow"],
+  ),
+  palette(
+    "cyber_blue_and_magenta",
+    "neon_stylized",
+    "Neon / Stylized",
+    "electric blue-and-magenta palette",
+    ["#00A8FF", "#176BFF", "#D200FF", "#FF2FB3"],
+    ["neon", "blue", "magenta"],
+  ),
+  palette(
+    "electric_green_and_black",
+    "neon_stylized",
+    "Neon / Stylized",
+    "electric green-and-black palette",
+    ["#0A0A0A", "#1B1B1B", "#42FF47", "#B8FF2C"],
+    ["neon", "green", "black"],
+  ),
+  palette(
+    "vivid_pop_palette",
+    "neon_stylized",
+    "Neon / Stylized",
+    "vivid saturated pop palette",
+    ["#FF3B5C", "#FF9F1C", "#FFD93D", "#38D9A9", "#4D7CFE"],
+    ["stylized", "vivid", "pop"],
+  ),
 
-  // Luxury / Elegant
-  {
-    value: "gold_and_black_luxury_palette",
-    category: "luxury",
-    categoryLabel: "Luxury / Elegant",
-    promptText:
-      "gold and black luxury palette with premium contrast, elegant dark grounding, and refined high-end visual mood",
-    tags: ["palette", "luxury", "gold", "black"],
-  },
-  {
-    value: "ivory_and_champagne_palette",
-    category: "luxury",
-    categoryLabel: "Luxury / Elegant",
-    promptText:
-      "ivory and champagne palette with soft premium warmth, elegant neutral brightness, and refined luxury atmosphere",
-    tags: ["palette", "luxury", "ivory", "champagne"],
-  },
-  {
-    value: "emerald_and_gold_palette",
-    category: "luxury",
-    categoryLabel: "Luxury / Elegant",
-    promptText:
-      "emerald and gold palette with rich jewel tones, elegant metallic warmth, and premium decorative color harmony",
-    tags: ["palette", "luxury", "emerald", "gold"],
-  },
-  {
-    value: "deep_burgundy_luxury_palette",
-    category: "luxury",
-    categoryLabel: "Luxury / Elegant",
-    promptText:
-      "deep burgundy luxury palette with rich red wine tones, dark elegant contrast, and sophisticated premium mood",
-    tags: ["palette", "luxury", "burgundy", "deep"],
-  },
+  // Luxury / Elegant — category names are UI discovery metadata only.
+  palette(
+    "gold_and_black_luxury_palette",
+    "luxury",
+    "Luxury / Elegant",
+    "gold-and-black palette",
+    ["#0B0B0B", "#2A2418", "#C7A64A", "#F0D37A"],
+    ["gold", "black"],
+  ),
+  palette(
+    "ivory_and_champagne_palette",
+    "luxury",
+    "Luxury / Elegant",
+    "ivory-and-champagne palette",
+    ["#FFF8E7", "#EAD8B0", "#D7BD8C", "#B99865"],
+    ["ivory", "champagne"],
+  ),
+  palette(
+    "emerald_and_gold_palette",
+    "luxury",
+    "Luxury / Elegant",
+    "emerald-and-gold palette",
+    ["#0B3D2E", "#146B4A", "#C6A15B", "#F0D58A"],
+    ["emerald", "gold"],
+  ),
+  palette(
+    "deep_burgundy_luxury_palette",
+    "luxury",
+    "Luxury / Elegant",
+    "deep burgundy palette",
+    ["#3D0E1B", "#6E1F32", "#9A4351", "#C9898F"],
+    ["burgundy", "deep"],
+  ),
 
   // Nature
-  {
-    value: "forest_green_and_earth_tones",
-    category: "nature",
-    categoryLabel: "Nature",
-    promptText:
-      "forest green and earth tone palette with natural greens, organic browns, muted botanical colors, and grounded nature-inspired harmony",
-    tags: ["palette", "nature", "forest", "earth"],
-  },
-  {
-    value: "ocean_blue_palette",
-    category: "nature",
-    categoryLabel: "Nature",
-    promptText:
-      "ocean blue palette with aquatic blues, soft cyan depth, calm coastal tones, and refreshing natural color atmosphere",
-    tags: ["palette", "nature", "ocean", "blue"],
-  },
-  {
-    value: "desert_sand_palette",
-    category: "nature",
-    categoryLabel: "Nature",
-    promptText:
-      "desert sand palette with warm beige, dusty tan, muted clay tones, and dry natural sunlit color harmony",
-    tags: ["palette", "nature", "desert", "sand"],
-  },
-  {
-    value: "autumn_foliage_palette",
-    category: "nature",
-    categoryLabel: "Nature",
-    promptText:
-      "autumn foliage palette with burnt orange, deep red, golden yellow, and earthy seasonal color warmth",
-    tags: ["palette", "nature", "autumn", "foliage"],
-  },
+  palette(
+    "forest_green_and_earth_tones",
+    "nature",
+    "Nature",
+    "forest green-and-earth palette",
+    ["#213B2B", "#496342", "#6F5A3A", "#9A7B55", "#C4B08A"],
+    ["nature", "forest", "earth"],
+  ),
+  palette(
+    "ocean_blue_palette",
+    "nature",
+    "Nature",
+    "ocean-blue palette",
+    ["#123B5D", "#1D6A8D", "#38A1C4", "#8FD3E8"],
+    ["nature", "ocean", "blue"],
+  ),
+  palette(
+    "desert_sand_palette",
+    "nature",
+    "Nature",
+    "desert-sand palette",
+    ["#8A6847", "#B99265", "#D7B98E", "#E9D8BC"],
+    ["nature", "desert", "sand"],
+  ),
+  palette(
+    "autumn_foliage_palette",
+    "nature",
+    "Nature",
+    "autumn foliage palette",
+    ["#7A2E1F", "#B34A24", "#D77A24", "#E5B33F", "#6A4A2F"],
+    ["nature", "autumn", "foliage"],
+  ),
 
   // Candy / Playful
-  {
-    value: "candy_pastel_palette",
-    category: "candy_playful",
-    categoryLabel: "Candy / Playful",
-    promptText:
-      "candy pastel palette with sweet soft colors, playful brightness, and cheerful lighthearted visual charm",
-    tags: ["palette", "candy", "pastel", "playful"],
-  },
-  {
-    value: "toy_like_primary_colors",
-    category: "candy_playful",
-    categoryLabel: "Candy / Playful",
-    promptText:
-      "toy-like primary color palette with bold red, blue, yellow, and simple playful graphic color clarity",
-    tags: ["palette", "toy", "primary-colors", "playful"],
-  },
-  {
-    value: "bubblegum_pink_palette",
-    category: "candy_playful",
-    categoryLabel: "Candy / Playful",
-    promptText:
-      "bubblegum pink palette with bright sweet pink tones, cute playful energy, and cheerful pop color mood",
-    tags: ["palette", "pink", "bubblegum", "playful"],
-  },
-  {
-    value: "rainbow_playful_palette",
-    category: "candy_playful",
-    categoryLabel: "Candy / Playful",
-    promptText:
-      "rainbow playful palette with multiple bright colors, cheerful variety, and energetic joyful visual rhythm",
-    tags: ["palette", "rainbow", "playful", "colorful"],
-  },
+  palette(
+    "candy_pastel_palette",
+    "candy_playful",
+    "Candy / Playful",
+    "candy pastel palette",
+    ["#FFB7D5", "#FFD7A8", "#FFF2A8", "#BDEBD7", "#BFD7FF", "#D7C3FF"],
+    ["candy", "pastel"],
+  ),
+  palette(
+    "toy_like_primary_colors",
+    "candy_playful",
+    "Candy / Playful",
+    "primary red-blue-yellow palette",
+    ["#E63946", "#F2C94C", "#2F6BFF", "#F8F8F5"],
+    ["primary-colors"],
+  ),
+  palette(
+    "bubblegum_pink_palette",
+    "candy_playful",
+    "Candy / Playful",
+    "bubblegum-pink palette",
+    ["#FF4FA3", "#FF80BE", "#FFB3D5", "#FFE1EF"],
+    ["pink", "bubblegum"],
+  ),
+  palette(
+    "rainbow_playful_palette",
+    "candy_playful",
+    "Candy / Playful",
+    "bright rainbow palette",
+    ["#F94144", "#F8961E", "#F9C74F", "#43AA8B", "#4D90FE", "#8E5AD7"],
+    ["rainbow", "colorful"],
+  ),
 ];
 
 const fields: Record<string, ModuleField> = {
@@ -231,6 +249,7 @@ const fields: Record<string, ModuleField> = {
   extraDetails: {
     id: "extraDetails",
     type: "textarea",
+    default: "",
     group: "advanced",
     order: 20,
     promptText: "",
@@ -243,6 +262,7 @@ const fields: Record<string, ModuleField> = {
   customText: {
     id: "customText",
     type: "textarea",
+    default: "",
     group: "override",
     order: 30,
     isOverride: true,
@@ -268,5 +288,6 @@ export const ColorPaletteModule: PromptKeyModule = {
     separator: ", ",
     removeDuplicates: true,
     overrideField: "customText",
+    fieldOrder: ["paletteAssignments", "extraDetails"],
   },
 };

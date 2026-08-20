@@ -37,6 +37,7 @@ export type ModuleFieldOption = {
   promptText?: string;
   disabled?: boolean;
   tags?: string[];
+  colors?: string[];
 
   category?: string;
   categoryLabel?: string;
@@ -49,6 +50,119 @@ export type ModuleFieldOption = {
   appliesTo?: Array<ModuleSubjectType | "*">;
 
   compatibility?: ModuleOptionCompatibility;
+};
+
+export type LightingSource = {
+  id?: string;
+  role?: string;
+  sourceType?: string;
+  direction?: string;
+  quality?: string;
+  intensity?: string;
+  color?: string;
+  customColor?: string;
+  features?: string[];
+};
+
+export type ColorPaletteSwatchKind = "literal" | "variable";
+
+export type ColorPaletteSwatch = {
+  id?: string;
+  kind: ColorPaletteSwatchKind;
+  value: string;
+  variableId?: string;
+  token?: string;
+  label?: string;
+};
+
+export type SemanticTargetCapability = "color" | "material";
+
+export type SemanticTargetKind =
+  | "builtin"
+  | "module_output"
+  | "user_variable"
+  | "system_variable"
+  | "typography_group"
+  | "typography_text"
+  | "custom";
+
+/**
+ * Stable reference shared by every relational assignment module. The target
+ * owns only identity/presentation metadata; Color, Material, and future
+ * assignment modules keep their own payload semantics outside this contract.
+ */
+export type SemanticTargetRef = {
+  kind: SemanticTargetKind;
+  value: string;
+  variableId?: string;
+  entityId?: string;
+  moduleKey?: string;
+  token?: string;
+  label?: string;
+  parentLabel?: string;
+};
+
+/** @deprecated Use SemanticTargetRef for new assignment features. */
+export type ColorPaletteTarget = SemanticTargetRef;
+
+export type ColorPaletteRule = {
+  id?: string;
+  presetId?: string;
+  colors: ColorPaletteSwatch[];
+  targets: SemanticTargetRef[];
+  exceptions?: SemanticTargetRef[];
+};
+
+/**
+ * A complete material/surface specification assigned to one or more semantic
+ * targets. Material semantics stay local to Texture; only the relational scope
+ * contract is shared with other assignment-driven modules.
+ */
+export type MaterialAssignment = {
+  id?: string;
+  presetId?: string;
+  material?: string;
+  finish?: string;
+  surfaceTexture?: string;
+  opticalCharacter?: string;
+  textureProminence?: string;
+  conditions?: string[];
+  targets: SemanticTargetRef[];
+  exceptions?: SemanticTargetRef[];
+};
+
+/**
+ * A physical body configuration assigned to one or more semantic subjects.
+ * Target identity is shared; pose payload semantics remain local to Pose.
+ */
+export type PoseAssignment = {
+  id?: string;
+  presetId?: string;
+  basePosture?: string;
+  torsoPosture?: string;
+  weightBalance?: string;
+  bodyTension?: string;
+  locomotion?: string;
+  gestures?: string[];
+  interactionDetails?: string;
+  additionalDetails?: string;
+  targets: SemanticTargetRef[];
+};
+
+/**
+ * A visible facial-expression specification assigned to semantic subjects.
+ * Target identity is shared; expression payload semantics remain local here.
+ */
+export type ExpressionAssignment = {
+  id?: string;
+  presetId?: string;
+  coreExpression?: string;
+  intensity?: string;
+  eyeState?: string;
+  browState?: string;
+  mouthState?: string;
+  additionalDetails?: string;
+  targets: SemanticTargetRef[];
 };
 
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
@@ -144,6 +258,7 @@ export type PromptVariable = {
   entityType?: PromptVariableEntityType;
   entityId?: string;
   parentId?: string;
+  semanticCapabilities?: SemanticTargetCapability[];
 };
 
 export type PromptVariableGroup = {
@@ -161,6 +276,10 @@ export type ModuleFieldType =
   | "textarea"
   | "layoutRegions"
   | "colorAssignments"
+  | "materialAssignments"
+  | "poseAssignments"
+  | "expressionAssignments"
+  | "lightSources"
   | "textGroups"
   | "variables"
   | "select"
@@ -175,6 +294,11 @@ export type ModuleFieldValue =
   | number
   | boolean
   | string[]
+  | LightingSource[]
+  | ColorPaletteRule[]
+  | MaterialAssignment[]
+  | PoseAssignment[]
+  | ExpressionAssignment[]
   | TypographyTextGroup[]
   | PromptVariable[]
   | LayoutRegion[]
@@ -203,7 +327,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "lightSources" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
@@ -259,6 +383,11 @@ export interface ModuleCompileConfig {
   fieldOrder?: string[];
 }
 
+export interface ModuleSemanticTargetConfig {
+  exposeOutput?: boolean;
+  capabilities: SemanticTargetCapability[];
+}
+
 export interface PromptKeyModule {
   key: string;
   icon?: string;
@@ -267,4 +396,5 @@ export interface PromptKeyModule {
   presets?: Record<string, ModulePreset>;
   presetUi?: ModulePresetUiConfig;
   compile?: ModuleCompileConfig;
+  semanticTargets?: ModuleSemanticTargetConfig;
 }

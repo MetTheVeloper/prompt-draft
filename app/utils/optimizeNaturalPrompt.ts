@@ -8,6 +8,7 @@ export type NaturalOptimizeOptions = {
 type ApplyGroup =
   | 'transformation'
   | 'style'
+  | 'color'
   | 'framing'
   | 'pose'
   | 'outfit'
@@ -20,6 +21,7 @@ type ApplyGroup =
 const APPLY_GROUP_ORDER: ApplyGroup[] = [
   'transformation',
   'style',
+  'color',
   'framing',
   'pose',
   'outfit',
@@ -33,13 +35,14 @@ const APPLY_GROUP_ORDER: ApplyGroup[] = [
 const APPLY_GROUP_LIMITS: Record<ApplyGroup, number> = {
   transformation: 7,
   style: 5,
+  color: 10,
   framing: 20,
   pose: 4,
   outfit: 3,
   background: 5,
   lighting: 5,
-  camera: 5,
-  texture: 5,
+  camera: 12,
+  texture: 10,
   other: 8
 }
 
@@ -168,6 +171,34 @@ function parseApplyParts(sentence: string) {
 
 function detectApplyGroup(value: string): ApplyGroup {
   const text = normalizeText(value)
+
+  // Camera capture semantics must be recognized before generic words such as
+  // distortion, grain, detail, or tonal behavior can send them to another
+  // semantic group.
+  if (
+    /camera capture system|camera sensor|camera capture response|film camera capture response|instant film camera capture response|lens optics|macro lens optics|fisheye lens optics|depth of field|fixed focus camera behavior|critical focus camera rendering|tripod mounted camera capture|handheld camera|stabilized camera capture|mounted camera capture/.test(
+      text
+    )
+  ) {
+    return 'camera'
+  }
+
+  // Color Palette emits self-contained relational clauses. Recognize those
+  // before target words such as background, outfit, typography, or subject can
+  // misclassify the palette under the target module's semantic budget.
+  if (/palette .* assigned to|color palette .* assigned to/.test(text)) {
+    return 'color'
+  }
+
+  // Texture/Material emits the same kind of relational assignment clauses.
+  // Recognize material/surface ownership before target words such as
+  // background, outfit, typography, or subject can steal the clause.
+  if (
+    /assigned to/.test(text) &&
+    /material|finish|surface texture|texture prominence|material behavior|surface condition|surface scratches|surface cracks|weathered surface|corroded|oxidized/.test(text)
+  ) {
+    return 'texture'
+  }
 
   if (
     /bodybuilder|muscular|muscle|physique|biceps|triceps|abs|chest|shoulders|grotesque|exaggeration|exaggerated|comically|unrealistic|impossibly|absurd|deformation|distortion/.test(

@@ -12,6 +12,8 @@ export type PromptValidationIssueCode =
   | 'undefined_variable_reference'
   | 'unused_variable'
   | 'framing_preserve_composition_conflict'
+  | 'texture_preserve_materials_conflict'
+  | 'pose_preserve_pose_conflict'
 
 export interface PromptValidationIssue {
   id: string
@@ -35,6 +37,12 @@ function isEmpty(value: string) {
   return !value.trim()
 }
 
+function hasOutput(value: unknown) {
+  if (value === undefined || value === null) return false
+  if (typeof value === 'string') return Boolean(value.trim())
+  return typeof value === 'object' && Object.keys(value).length > 0
+}
+
 function framingChangesComposition(outputs?: ModuleOutputMap) {
   const output = outputs?.framing
 
@@ -49,6 +57,24 @@ function framingChangesComposition(outputs?: ModuleOutputMap) {
   if (!parts.length) return false
 
   return parts.some((part) => !FRAMING_CROP_SAFETY_ONLY_PARTS.has(part))
+}
+
+function textureChangesMaterials(outputs?: ModuleOutputMap) {
+  const output = outputs?.texture
+
+  if (!output) return false
+  if (typeof output !== 'string') return true
+
+  return Boolean(output.trim())
+}
+
+function poseChangesPose(outputs?: ModuleOutputMap) {
+  const output = outputs?.pose
+
+  if (!output) return false
+  if (typeof output !== 'string') return true
+
+  return Boolean(output.trim())
 }
 
 export function validatePromptSettings(
@@ -108,6 +134,32 @@ export function validatePromptSettings(
     })
   }
 
+  if (
+    settings.mode === 'image_to_image' &&
+    settings.imageToImage.preserveMaterials &&
+    textureChangesMaterials(outputs)
+  ) {
+    issues.push({
+      id: 'setup:texture_preserve_materials_conflict',
+      code: 'texture_preserve_materials_conflict',
+      level: 'warning',
+      moduleKey: 'texture',
+    })
+  }
+
+  if (
+    settings.mode === 'image_to_image' &&
+    settings.imageToImage.preservePose &&
+    poseChangesPose(outputs)
+  ) {
+    issues.push({
+      id: 'setup:pose_preserve_pose_conflict',
+      code: 'pose_preserve_pose_conflict',
+      level: 'warning',
+      moduleKey: 'pose',
+    })
+  }
+
   if (outputs) {
     issues.push(...validateVariableReferencesFromOutputs(outputs))
   }
@@ -127,6 +179,12 @@ function validateVariableReferencesFromOutputs(
     parseVariableDefinitions(variablesOutput).map((variable) => variable.key)
   )
 
+  const definedModuleKeys = new Set(
+    Object.entries(outputs)
+      .filter(([key, output]) => key !== VARIABLES_MODULE_KEY && hasOutput(output))
+      .map(([key]) => key)
+  )
+
   const textsToScan = Object.entries(outputs)
     .filter(([key]) => key !== VARIABLES_MODULE_KEY)
     .map(([, output]) =>
@@ -141,6 +199,7 @@ function validateVariableReferencesFromOutputs(
 
   references.forEach((key) => {
     if (isReservedVariableKey(key)) return
+    if (definedModuleKeys.has(key)) return
 
     if (!definedKeys.has(key)) {
       issues.push({
