@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref, watch } from "vue";
+import { computed, nextTick, ref, watch } from "vue";
 import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   SemanticTargetCapability,
@@ -52,6 +52,38 @@ function sameTargetList(first: SemanticTargetRef[], second: SemanticTargetRef[])
   return JSON.stringify(first) === JSON.stringify(second);
 }
 
+async function emitScopeChanges(
+  nextTargets: SemanticTargetRef[],
+  nextExceptions: SemanticTargetRef[],
+  order: "targets-first" | "exceptions-first" = "targets-first",
+) {
+  const targets = cloneTargets(nextTargets);
+  const exceptions = cloneTargets(nextExceptions);
+  const targetsChanged = !sameTargetList(targets, props.modelValue);
+  const exceptionsChanged = !sameTargetList(exceptions, props.exceptions);
+
+  if (!targetsChanged && !exceptionsChanged) return;
+
+  const emitTargets = () => emit("update:modelValue", targets);
+  const emitExceptions = () => emit("update:exceptions", exceptions);
+
+  if (targetsChanged && exceptionsChanged) {
+    if (order === "targets-first") {
+      emitTargets();
+      await nextTick();
+      emitExceptions();
+    } else {
+      emitExceptions();
+      await nextTick();
+      emitTargets();
+    }
+    return;
+  }
+
+  if (targetsChanged) emitTargets();
+  if (exceptionsChanged) emitExceptions();
+}
+
 watch(
   [
     () => props.modelValue,
@@ -62,13 +94,7 @@ watch(
     const upgradedTargets = catalog.upgradeTargets(props.modelValue);
     const upgradedExceptions = catalog.upgradeTargets(props.exceptions);
 
-    if (!sameTargetList(upgradedTargets, props.modelValue)) {
-      emit("update:modelValue", cloneTargets(upgradedTargets));
-    }
-
-    if (!sameTargetList(upgradedExceptions, props.exceptions)) {
-      emit("update:exceptions", cloneTargets(upgradedExceptions));
-    }
+    void emitScopeChanges(upgradedTargets, upgradedExceptions);
   },
   { immediate: true, deep: true },
 );
@@ -132,23 +158,17 @@ function updateApply(values: ElDropdownValue[]) {
   );
   const custom = hasExclusive ? [] : customTargets.value;
   const nextTargets = [...selected, ...custom];
+  const nextExceptions = removeExactConflicts(props.exceptions, nextTargets);
 
-  emit("update:modelValue", cloneTargets(nextTargets));
-  emit(
-    "update:exceptions",
-    cloneTargets(removeExactConflicts(props.exceptions, nextTargets)),
-  );
+  void emitScopeChanges(nextTargets, nextExceptions, "targets-first");
 }
 
 function updateExceptions(values: ElDropdownValue[]) {
   const selected = catalog.resolveSelections(values, props.exceptions);
   const nextExceptions = [...selected, ...customExceptions.value];
+  const nextTargets = removeExactConflicts(props.modelValue, nextExceptions);
 
-  emit("update:exceptions", cloneTargets(nextExceptions));
-  emit(
-    "update:modelValue",
-    cloneTargets(removeExactConflicts(props.modelValue, nextExceptions)),
-  );
+  void emitScopeChanges(nextTargets, nextExceptions, "exceptions-first");
 }
 
 function addCustomTarget() {
@@ -169,12 +189,10 @@ function addCustomTarget() {
       target.value === props.exclusiveValue
     );
   });
+  const nextTargets = [...targets, next];
+  const nextExceptions = removeExactConflicts(props.exceptions, [next]);
 
-  emit("update:modelValue", [...cloneTargets(targets), next]);
-  emit(
-    "update:exceptions",
-    cloneTargets(removeExactConflicts(props.exceptions, [next])),
-  );
+  void emitScopeChanges(nextTargets, nextExceptions, "targets-first");
   customTargetDraft.value = "";
 }
 
@@ -189,11 +207,10 @@ function addCustomException() {
     return;
   }
 
-  emit("update:exceptions", [...cloneTargets(props.exceptions), next]);
-  emit(
-    "update:modelValue",
-    cloneTargets(removeExactConflicts(props.modelValue, [next])),
-  );
+  const nextExceptions = [...props.exceptions, next];
+  const nextTargets = removeExactConflicts(props.modelValue, [next]);
+
+  void emitScopeChanges(nextTargets, nextExceptions, "exceptions-first");
   customExceptionDraft.value = "";
 }
 
