@@ -5,7 +5,6 @@ import { createDefaultModuleValues } from "../../utils/compileModules";
 import type {
   ModuleOutputMap,
   ModuleOutputValue,
-  PromptMode,
 } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
@@ -29,12 +28,10 @@ const props = withDefaults(
     moduleValues?: Record<string, ModuleValues>;
     modulePanelStates?: Record<string, ModulePanelState>;
     aspectRatio?: string;
-    promptMode?: PromptMode;
   }>(),
   {
     moduleValues: () => ({}),
     modulePanelStates: () => ({}),
-    promptMode: "text_to_image",
   }
 );
 
@@ -183,7 +180,6 @@ watch(
         :model-value="moduleValues[module.key]"
         :panel-state="modulePanelStates[module.key]"
         :aspect-ratio="aspectRatio"
-        :prompt-mode="promptMode"
         @update:model-value="updateModuleValues(module.key, $event)"
         @update:panel-state="updateModulePanelState(module.key, $event)"
         @update:output="updateModuleOutput(module.key, $event)"
