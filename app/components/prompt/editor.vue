@@ -5,11 +5,13 @@ import { createDefaultModuleValues } from "../../utils/compileModules";
 import type {
   ModuleOutputMap,
   ModuleOutputValue,
+  PromptMode,
 } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
 import ModulesPanelTexture from "../modules/panel/texture.vue";
+import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
 
@@ -27,10 +29,12 @@ const props = withDefaults(
     moduleValues?: Record<string, ModuleValues>;
     modulePanelStates?: Record<string, ModulePanelState>;
     aspectRatio?: string;
+    promptMode?: PromptMode;
   }>(),
   {
     moduleValues: () => ({}),
     modulePanelStates: () => ({}),
+    promptMode: "text_to_image",
   }
 );
 
@@ -83,6 +87,9 @@ function updateModuleIssues(moduleKey: string, issues: PromptValidationIssue[]) 
 function getModulePanel(module: PromptKeyModule) {
   if (module.key === "lighting") return ModulesPanelLighting;
   if (module.key === "texture") return ModulesPanelTexture;
+  if (module.key === "pose" || module.key === "expression") {
+    return ModulesPanelSubjectAssignments;
+  }
   return ModulesPanelBase;
 }
 
@@ -176,6 +183,7 @@ watch(
         :model-value="moduleValues[module.key]"
         :panel-state="modulePanelStates[module.key]"
         :aspect-ratio="aspectRatio"
+        :prompt-mode="promptMode"
         @update:model-value="updateModuleValues(module.key, $event)"
         @update:panel-state="updateModulePanelState(module.key, $event)"
         @update:output="updateModuleOutput(module.key, $event)"
