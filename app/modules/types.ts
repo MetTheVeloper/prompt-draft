@@ -75,35 +75,47 @@ export type ColorPaletteSwatch = {
   label?: string;
 };
 
-export type ColorPaletteTargetKind =
+export type SemanticTargetCapability = "color" | "material";
+
+export type SemanticTargetKind =
   | "builtin"
+  | "module_output"
   | "user_variable"
   | "typography_group"
   | "typography_text"
   | "custom";
 
-export type ColorPaletteTarget = {
-  kind: ColorPaletteTargetKind;
+/**
+ * Stable reference shared by every relational assignment module. The target
+ * owns only identity/presentation metadata; Color, Material, and future
+ * assignment modules keep their own payload semantics outside this contract.
+ */
+export type SemanticTargetRef = {
+  kind: SemanticTargetKind;
   value: string;
   variableId?: string;
   entityId?: string;
+  moduleKey?: string;
   token?: string;
   label?: string;
   parentLabel?: string;
 };
 
+/** @deprecated Use SemanticTargetRef for new assignment features. */
+export type ColorPaletteTarget = SemanticTargetRef;
+
 export type ColorPaletteRule = {
   id?: string;
   presetId?: string;
   colors: ColorPaletteSwatch[];
-  targets: ColorPaletteTarget[];
+  targets: SemanticTargetRef[];
+  exceptions?: SemanticTargetRef[];
 };
 
 /**
  * A complete material/surface specification assigned to one or more semantic
- * targets. Targets intentionally reuse the same stable reference contract as
- * Color Palette because both modules address colorable/material-capable
- * entities without owning those entities themselves.
+ * targets. Material semantics stay local to Texture; only the relational scope
+ * contract is shared with other assignment-driven modules.
  */
 export type MaterialAssignment = {
   id?: string;
@@ -114,7 +126,8 @@ export type MaterialAssignment = {
   opticalCharacter?: string;
   textureProminence?: string;
   conditions?: string[];
-  targets: ColorPaletteTarget[];
+  targets: SemanticTargetRef[];
+  exceptions?: SemanticTargetRef[];
 };
 
 export type TypographyTextAccuracy = "flexible" | "readable" | "exact";
@@ -210,6 +223,7 @@ export type PromptVariable = {
   entityType?: PromptVariableEntityType;
   entityId?: string;
   parentId?: string;
+  semanticCapabilities?: SemanticTargetCapability[];
 };
 
 export type PromptVariableGroup = {
@@ -330,6 +344,11 @@ export interface ModuleCompileConfig {
   fieldOrder?: string[];
 }
 
+export interface ModuleSemanticTargetConfig {
+  exposeOutput?: boolean;
+  capabilities: SemanticTargetCapability[];
+}
+
 export interface PromptKeyModule {
   key: string;
   icon?: string;
@@ -338,4 +357,5 @@ export interface PromptKeyModule {
   presets?: Record<string, ModulePreset>;
   presetUi?: ModulePresetUiConfig;
   compile?: ModuleCompileConfig;
+  semanticTargets?: ModuleSemanticTargetConfig;
 }
