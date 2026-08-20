@@ -30,7 +30,8 @@
       :style="textStyle"
       v-bind="urlMode ? { to } : {}"
     >
-      <template v-for="(node, i) in getLocalizedText()" :key="i">
+      <slot v-if="!localize" />
+      <template v-else v-for="(node, i) in getLocalizedText()" :key="i">
         <component :is="node" />
       </template>
     </component>
@@ -152,7 +153,7 @@ const updateGlitchEffect = () => {
     randomInt(0, 10) * 5,
     randomInt(0, 10) * 5,
   ];
-  glitchTextShadow.value = `${steps[0]}px 0 0 var(--themeRed${alphas[0]}), ${steps[1]}px 0px 0 var(--themeRed${alphas[1]}), ${steps[2]}px 0 0 var(--themeBlue${alphas[2]}), ${steps[3]}px 0px 0 var(--themeBlue${alphas[3]})`;
+  glitchTextShadow.value = `${steps[0]}px 0 0 var(--themeRed${alphas[0]}), ${steps[1]}px 0px 0 var(--themeRed${alphas[1]}), ${steps[2]}px 0 0 var(--themeBlue${alphas[2]}), ${steps[3]}px 0px var(--themeBlue${alphas[3]})`;
 };
 
 watch(
@@ -190,14 +191,11 @@ function getLocalizedText() {
   const nodes = slots.default?.() || [];
 
   return nodes.map((node) => {
-    // فقط text node ها رو تغییر بده
     if (typeof node.children === "string") {
       let text = node.children;
 
       if (locale.value === "fa") {
-        if (props.localize) {
-          text = toPersianDigits(text);
-        }
+        text = toPersianDigits(text);
       } else {
         text = toEnglishDigits(text);
       }
