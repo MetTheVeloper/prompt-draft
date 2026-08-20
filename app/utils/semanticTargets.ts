@@ -28,6 +28,7 @@ export function normalizeSemanticTarget(value: unknown): SemanticTargetRef | nul
     item.kind !== "builtin" &&
     item.kind !== "module_output" &&
     item.kind !== "user_variable" &&
+    item.kind !== "system_variable" &&
     item.kind !== "typography_group" &&
     item.kind !== "typography_text" &&
     item.kind !== "custom"
@@ -73,6 +74,10 @@ export function semanticTargetIdentity(target: SemanticTargetRef) {
 
   if (target.kind === "user_variable") {
     return `user:${target.variableId || target.token || target.value}`;
+  }
+
+  if (target.kind === "system_variable") {
+    return `system:${target.variableId || target.token || target.value}`;
   }
 
   return `${target.kind}:${target.entityId || target.token || target.value}`;
@@ -138,6 +143,7 @@ export function semanticTargetUiLabel(
 
   if (
     target.kind === "user_variable" ||
+    target.kind === "system_variable" ||
     target.kind === "typography_group" ||
     target.kind === "typography_text"
   ) {
