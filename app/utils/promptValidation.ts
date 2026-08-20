@@ -36,6 +36,12 @@ function isEmpty(value: string) {
   return !value.trim()
 }
 
+function hasOutput(value: unknown) {
+  if (value === undefined || value === null) return false
+  if (typeof value === 'string') return Boolean(value.trim())
+  return typeof value === 'object' && Object.keys(value).length > 0
+}
+
 function framingChangesComposition(outputs?: ModuleOutputMap) {
   const output = outputs?.framing
 
@@ -150,6 +156,12 @@ function validateVariableReferencesFromOutputs(
     parseVariableDefinitions(variablesOutput).map((variable) => variable.key)
   )
 
+  const definedModuleKeys = new Set(
+    Object.entries(outputs)
+      .filter(([key, output]) => key !== VARIABLES_MODULE_KEY && hasOutput(output))
+      .map(([key]) => key)
+  )
+
   const textsToScan = Object.entries(outputs)
     .filter(([key]) => key !== VARIABLES_MODULE_KEY)
     .map(([, output]) =>
@@ -164,6 +176,7 @@ function validateVariableReferencesFromOutputs(
 
   references.forEach((key) => {
     if (isReservedVariableKey(key)) return
+    if (definedModuleKeys.has(key)) return
 
     if (!definedKeys.has(key)) {
       issues.push({
