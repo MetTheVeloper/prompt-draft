@@ -10,13 +10,28 @@ import {
   normalizeSemanticTargets,
 } from "./semanticTargets";
 
+const EXPRESSION_KEYWORDS: Record<string, Record<string, string>> = {
+  mouthState: {
+    neutral: "neutral mouth",
+    slight_smile: "slight smile",
+    smile: "smile",
+    broad_smile: "broad smile",
+    smirk: "smirk",
+    frown: "frown",
+    open: "open mouth",
+    gritted_teeth: "gritted teeth",
+    pursed_lips: "pursed lips",
+  },
+};
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function keyword(value?: string) {
+function keyword(axis: string, value?: string) {
   const cleaned = value?.trim();
-  return cleaned ? humanizeSemanticValue(cleaned).toLowerCase() : "";
+  if (!cleaned) return "";
+  return EXPRESSION_KEYWORDS[axis]?.[cleaned] || humanizeSemanticValue(cleaned).toLowerCase();
 }
 
 function normalizeAssignments(value: unknown): ExpressionAssignment[] {
@@ -46,11 +61,15 @@ export function compileExpressionAssignment(
   if (!scope) return "";
 
   const parts = [
-    assignment.coreExpression ? `${keyword(assignment.coreExpression)} expression` : "",
-    assignment.intensity ? `${keyword(assignment.intensity)} intensity` : "",
-    assignment.eyeState ? `${keyword(assignment.eyeState)} eyes` : "",
-    assignment.browState ? `${keyword(assignment.browState)} brows` : "",
-    assignment.mouthState ? keyword(assignment.mouthState) : "",
+    assignment.coreExpression
+      ? `${keyword("coreExpression", assignment.coreExpression)} expression`
+      : "",
+    assignment.intensity
+      ? `${keyword("intensity", assignment.intensity)} intensity`
+      : "",
+    assignment.eyeState ? `${keyword("eyeState", assignment.eyeState)} eyes` : "",
+    assignment.browState ? `${keyword("browState", assignment.browState)} brows` : "",
+    keyword("mouthState", assignment.mouthState),
     cleanSemanticText(assignment.additionalDetails),
   ].filter(Boolean);
 
