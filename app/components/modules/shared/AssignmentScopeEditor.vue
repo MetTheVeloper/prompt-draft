@@ -6,7 +6,10 @@ import type {
   SemanticTargetRef,
 } from "~/modules/types";
 import type { SemanticBuiltinTargetDefinition } from "~/utils/semanticTargets";
-import { semanticTargetIdentity } from "~/utils/semanticTargets";
+import {
+  sameSemanticTargetList,
+  semanticTargetIdentity,
+} from "~/utils/semanticTargets";
 import { useSemanticTargetCatalog } from "~/composables/prompt/useSemanticTargetCatalog";
 
 const props = withDefaults(
@@ -48,10 +51,6 @@ function identities(value: SemanticTargetRef[]) {
   return new Set(value.map(semanticTargetIdentity).filter(Boolean));
 }
 
-function sameTargetList(first: SemanticTargetRef[], second: SemanticTargetRef[]) {
-  return JSON.stringify(first) === JSON.stringify(second);
-}
-
 async function emitScopeChanges(
   nextTargets: SemanticTargetRef[],
   nextExceptions: SemanticTargetRef[],
@@ -59,8 +58,8 @@ async function emitScopeChanges(
 ) {
   const targets = cloneTargets(nextTargets);
   const exceptions = cloneTargets(nextExceptions);
-  const targetsChanged = !sameTargetList(targets, props.modelValue);
-  const exceptionsChanged = !sameTargetList(exceptions, props.exceptions);
+  const targetsChanged = !sameSemanticTargetList(targets, props.modelValue);
+  const exceptionsChanged = !sameSemanticTargetList(exceptions, props.exceptions);
 
   if (!targetsChanged && !exceptionsChanged) return;
 
