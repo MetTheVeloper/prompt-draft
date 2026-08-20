@@ -21,6 +21,7 @@ import camera from "./en.camera-semantics"
 import lighting from "./en.lighting-semantics"
 import colorPalette from "./en.color-palette-semantics"
 import texture from "./en.texture-semantics"
+import semanticAssignmentScope from "./en.semantic-assignment-scope"
 
 export default {
   ...style,
@@ -34,4 +35,5 @@ export default {
   ...lighting,
   ...colorPalette,
   ...texture,
+  ...semanticAssignmentScope,
 } as const
