@@ -1,5 +1,7 @@
 import en from './locales/en'
 import fa from './locales/fa'
+import backgroundEn from './locales/background.en'
+import backgroundFa from './locales/background.fa'
 
 export default defineI18nConfig(() => ({
   legacy: false,
@@ -7,7 +9,19 @@ export default defineI18nConfig(() => ({
   fallbackLocale: 'en',
 
   messages: {
-    en,
-    fa,
+    en: {
+      ...en,
+      modules: {
+        ...en.modules,
+        background: backgroundEn,
+      },
+    },
+    fa: {
+      ...fa,
+      modules: {
+        ...fa.modules,
+        background: backgroundFa,
+      },
+    },
   },
 }))

@@ -342,6 +342,17 @@ export interface ModuleFieldUiConfig {
   compatibility?: ModuleFieldCompatibilityConfig;
 }
 
+export interface ModuleFieldCustomInputConfig {
+  /** Option value that activates the inline custom input. Defaults to "custom". */
+  optionValue?: string;
+
+  /**
+   * Companion key used inside ModuleValues. Defaults to `${field.id}Custom`.
+   * The companion value is persisted with the module and participates in import/export.
+   */
+  valueKey?: string;
+}
+
 export interface ModuleField {
   id: string;
   type: ModuleFieldType;
@@ -351,6 +362,7 @@ export interface ModuleField {
   options?: ModuleOption[];
   isOverride?: boolean;
   promptText?: string;
+  customInput?: ModuleFieldCustomInputConfig;
   ui?: ModuleFieldUiConfig;
   config?: ModuleFieldConfig;
 }
