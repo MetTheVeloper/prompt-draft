@@ -86,6 +86,40 @@ export function sameSemanticTarget(
   return Boolean(firstIdentity && firstIdentity === semanticTargetIdentity(second));
 }
 
+/**
+ * Compare the complete semantic state of two target refs without depending on
+ * object key order. This is intentionally stricter than `sameSemanticTarget`:
+ * a builtin target and its linked module-output variant share one identity, but
+ * their state is different and the linked metadata must still be persisted.
+ */
+export function sameSemanticTargetState(
+  first: SemanticTargetRef,
+  second: SemanticTargetRef,
+) {
+  return (
+    first.kind === second.kind &&
+    first.value === second.value &&
+    (first.variableId || "") === (second.variableId || "") &&
+    (first.entityId || "") === (second.entityId || "") &&
+    (first.moduleKey || "") === (second.moduleKey || "") &&
+    (first.token || "") === (second.token || "") &&
+    (first.label || "") === (second.label || "") &&
+    (first.parentLabel || "") === (second.parentLabel || "")
+  );
+}
+
+export function sameSemanticTargetList(
+  first: SemanticTargetRef[],
+  second: SemanticTargetRef[],
+) {
+  if (first.length !== second.length) return false;
+
+  return first.every((target, index) => {
+    const candidate = second[index];
+    return Boolean(candidate && sameSemanticTargetState(target, candidate));
+  });
+}
+
 export function semanticTargetToken(target: SemanticTargetRef) {
   return cleanSemanticText(target.token || target.value);
 }
