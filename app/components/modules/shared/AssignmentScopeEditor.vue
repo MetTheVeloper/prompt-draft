@@ -328,7 +328,7 @@ function targetChipLabel(target: SemanticTargetRef) {
     <el-divider mode="dashed" :dash="4" :gap="2" />
 
     <el-flex rules="ccs" :gap="5" class="w100">
-      <el-text :size="10" color="normal50" icon="remove_circle_outline">
+      <el-text :size="10" color="normal50" icon="remove">
         {{ t("components.assignmentScope.except") }}
       </el-text>
       <el-multi-select
