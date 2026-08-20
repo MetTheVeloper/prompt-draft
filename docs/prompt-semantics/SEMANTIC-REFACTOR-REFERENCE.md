@@ -4,9 +4,11 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, and Pose + Expression work.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the reusable rules and lessons established through the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, Pose + Expression, and Background + Effects stages.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
+
+Detailed implementation history remains available in the numbered stage documents under `docs/prompt-semantics/`.
 
 ---
 
@@ -47,9 +49,7 @@ Remove or rewrite a phrase when it:
 - explains an option instead of instructing the generation model,
 - or exists only because similar prompts commonly contain it.
 
-A long output can be correct when every phrase contributes an independent semantic axis.
-
-A short output can still be wrong when it contains hidden assumptions.
+A long output can be correct when every phrase contributes an independent semantic axis. A short output can still be wrong when it contains hidden assumptions.
 
 ---
 
@@ -57,64 +57,13 @@ A short output can still be wrong when it contains hidden assumptions.
 
 For every field, option, preset, compiler phrase, fallback, generated variable or serializer decision, ask:
 
-## 3.1 Is the phrase directly implied by the user's selection?
+1. **Is it directly implied by the user's selection?**
+2. **Does it assume a use case the user did not select?**
+3. **Does it decide something owned by another module or field?**
+4. **Is it generic positive noise rather than a real semantic axis?**
+5. **If removed, would the intended semantic remain clear?**
 
-Emit only what the selection guarantees.
-
-Example:
-
-```text
-Pixel Art
-→ pixel-art aesthetic
-```
-
-Do not automatically infer:
-
-```text
-game asset
-minimal detail
-block-built subject anatomy
-```
-
-unless those are independently selected or intrinsic to the option's contract.
-
-## 3.2 Does it assume a use case the user did not select?
-
-Watch for accidental purpose semantics such as:
-
-```text
-poster
-social media post
-game asset
-product advertising
-professional portrait
-studio photography
-mobile content
-editorial cover
-```
-
-A ratio, style, medium or technique must not infer a use case merely because the use case is common.
-
-## 3.3 Does it decide something owned by another module or field?
-
-Examples:
-
-- Aspect ratio does not own layout composition.
-- Style does not own subject geometry.
-- Form does not own material or texture.
-- Camera does not own lighting.
-- Framing does not own lens behavior.
-- Framing does not own body pose.
-- Pose does not own viewpoint.
-- Expression does not own body pose or visual style.
-- Color Palette does not own lighting behavior.
-- Texture / Material does not own base color or illumination.
-
-If another module can reasonably own the concept, define the boundary before coding.
-
-## 3.4 Is it generic noise?
-
-Be suspicious of generic positive words such as:
+Examples of suspicious generic language:
 
 ```text
 high quality
@@ -128,21 +77,7 @@ dramatic
 detailed
 ```
 
-Keep them only when they intentionally represent the selected semantic dimension.
-
-## 3.5 If the phrase is removed, does the intended semantic remain clear?
-
-If yes, it may be redundant.
-
-Similar wording may still coexist when each phrase represents a distinct axis, for example:
-
-```text
-serpentine form language
-elongated proportions
-strong form transformation
-```
-
-These are different decisions even though all affect form.
+Keep such words only when they intentionally represent the selected semantic dimension.
 
 ---
 
@@ -152,29 +87,17 @@ Before refactoring a module, write two contracts.
 
 ## 4.1 One-sentence responsibility
 
+State exactly what the module owns.
+
 Example:
 
 > Framing defines how the subject is covered, placed and viewed inside an image frame without defining camera optics or body pose.
 
-If the sentence contains several unrelated responsibilities, the module may need to be split internally or redesigned.
-
 ## 4.2 Explicit non-responsibilities
 
-Write what the module does **not** own.
+State what the module does **not** own.
 
-Example:
-
-```text
-Framing does not own:
-- lens characteristics
-- focal length / optical compression
-- artifact/page layout
-- aspect ratio
-- body gesture or posture
-- visual aesthetic
-```
-
-The negative contract is as important as the positive contract.
+The negative contract is as important as the positive one. If another module can reasonably own a concept, define the boundary before coding.
 
 ---
 
@@ -194,13 +117,11 @@ For every existing field classify it as:
 
 Preserve useful ideas, not necessarily the old schema.
 
-Bad architecture should not survive merely because old values existed.
+> Preserve useful semantic ideas, not bad architecture.
 
 ---
 
 # 6. Orthogonal-axis rule
-
-This is one of the most important lessons from Framing.
 
 A single select must not mix independent decisions merely because they are related conceptually.
 
@@ -210,54 +131,43 @@ Ask:
 
 If yes, they probably do not belong to the same exclusive axis.
 
-Example of the old Framing problem:
-
-```text
-Full Subject
-Rule of Thirds
-Low Angle
-No Crop
-```
-
-These are not alternatives. They can coexist.
-
-The correct model became:
-
-```text
-Shot Size
-+ Subject Placement
-+ Frame Balance
-+ Composition Features
-+ View Angle
-+ View Direction
-+ Crop Safety
-```
-
 ## Single-select rule
 
 Use a single select when sibling values are mutually exclusive versions of the same decision.
 
-Example:
-
-```text
-Symmetrical
-Asymmetrical
-```
-
 ## Multi-select rule
 
-Use multi-select when independent features can meaningfully coexist.
+Use multi-select when independent features can meaningfully coexist and do not require independent per-item properties.
 
-Example:
+## Repeated-layer/entity rule
+
+Do **not** use a flat multi-select plus one shared modifier when selected items can legitimately need different modifier values.
+
+Ask:
+
+> Can two selected items coexist while needing different intensity, details, scope, targets, or other properties?
+
+If yes, model repeated structured entities instead.
+
+Canonical examples:
 
 ```text
-Negative Space
-Layered Depth
-Isolated Subject
-Dynamic Diagonal
+Lighting Sources[]
+Material Assignments[]
+Pose Assignments[]
+Expression Assignments[]
+Effect Layers[]
 ```
 
-Do not let UI convenience determine semantic structure.
+Effects established the clearest modifier example:
+
+```text
+grain → subtle
+glitch → strong
+HUD overlay → balanced + custom details
+```
+
+UI convenience must not determine semantic structure.
 
 ---
 
@@ -273,9 +183,7 @@ Each option should:
 - have concise but sufficient `promptText`,
 - avoid explaining causal effects unless the causal effect itself is required semantics.
 
-Do not enlarge catalogs merely to increase option count.
-
-Add options only when they create a genuinely new useful combination.
+Do not enlarge catalogs merely to increase option count. Add options only when they create a genuinely new useful combination.
 
 ---
 
@@ -302,32 +210,16 @@ A module may exist in the editor while producing no output until the user actual
 
 A preset should set only the minimum fields required to establish its identity.
 
-Do not use presets to inject unrelated assumptions.
+Preset rules:
 
-Conceptually:
-
-```text
-Pixel Art preset
-→ pixel-art aesthetic
-→ pixel-art medium
-```
-
-Do not automatically add form, detail, composition or purpose semantics unless they are essential to that preset.
-
-Preset lifecycle rules:
-
+- presets populate editable semantic state,
+- preset names should not compile when explicit fields already encode the instruction,
 - switching presets must not leave unintended stale state,
-- manual edits should detach a preset according to the generic preset lifecycle,
-- cross-module preset coupling should be avoided unless real testing proves it necessary.
+- manual edits should detach active preset state without destroying the actual values,
+- replaceable components should remain neutral,
+- cross-module preset coupling should be avoided unless real tests prove it necessary.
 
-When a named preset represents a real system with replaceable parts, populate only the components intrinsic to that preset. Leave replaceable components neutral rather than inventing them.
-
-Example principle from Camera:
-
-```text
-fixed-lens camera preset         → may populate Lens Profile
-interchangeable-lens body preset → should leave Lens Profile neutral
-```
+Named hardware, material, background, lighting, and effect recipes should remain inspectable and editable after selection.
 
 ---
 
@@ -348,8 +240,6 @@ reference
 aspect
 ```
 
-These may also become reusable variables when useful.
-
 ## 10.2 Context metadata
 
 Values used to guide the editor without being emitted by themselves.
@@ -358,12 +248,6 @@ Example:
 
 ```text
 subjectType = person
-```
-
-This can filter Form, Framing, Pose, Hair or other options without emitting:
-
-```text
-{subject_type} = person
 ```
 
 ## 10.3 Application state
@@ -378,46 +262,28 @@ Do not expose application state as prompt variables merely because it exists in 
 
 Design universal vocabulary first whenever possible.
 
-Then add subject-specific precision through applicability metadata.
-
-Example:
+Then add subject-specific precision through applicability metadata such as:
 
 ```ts
 appliesTo: ["person"]
 ```
 
-or:
+Use restrictions only when semantics truly depend on anatomy or subject type. Do not restrict an option merely because it is commonly used with one subject type.
 
-```ts
-appliesTo: ["person", "animal"]
-```
-
-Universal options should remain available broadly.
-
-Use subject-specific restrictions only when the semantics truly depend on anatomy or subject type.
-
-Do not apply `appliesTo` merely because an option is commonly used with one subject type.
-
-If a previously selected value becomes contextually incompatible after Subject Type changes, prefer warning/preservation over silently deleting user state.
+If context changes make a selected value incompatible, prefer warning/preservation over silently deleting user state.
 
 ---
 
-# 12. Nested variables and structural identity
+# 12. Stable identity, variables and typed semantic references
 
 Use stable semantic handles when they improve modularity.
 
-Example:
+Canonical nested-variable example:
 
 ```text
 {reference} = attached reference image
 {subject} = person in {reference}
 ```
-
-is preferable to repeating the literal reference phrase everywhere.
-
-Do not create nested variables merely for cleverness.
-
-## Stable identity rule
 
 For reusable structural entities:
 
@@ -426,59 +292,45 @@ ID/token → stable identity
 name     → editable human label
 ```
 
-Renaming a Layout region or Typography group must not break references.
+Renaming a Layout region, Typography group, or other structural entity must not break references.
 
-Generated structural namespaces must be reserved so user variables cannot collide with them.
+Variable and reference types are semantic contracts, not merely UI labels. Do not make every variable selectable everywhere merely because a token exists.
 
-## Typed semantic references
-
-Variable and structural-reference types are semantic contracts, not merely UI labels.
-
-Only expose a dynamic reference in a field when its type is meaningful for that role.
-
-Examples from Color Palette / Texture / Pose / Expression:
+Examples:
 
 ```text
 Color variable          → reusable palette value
-Subject/Object variable → reusable color/material target when supported
+Subject/Object variable → color/material target when compatible
 Typography Group/Text   → structural semantic target
-Outfit/Hair module      → target only when capability-compatible
-Layout Region           → not automatically a color/material target
 Subject variable        → Pose/Expression recipient
-Object variable         → may participate inside Pose details, but is not a Pose recipient
+Object variable         → may participate in Pose details without becoming a Pose recipient
 ```
-
-Do not make every variable selectable everywhere merely because a token exists. Filter reference catalogs by semantic compatibility.
 
 Store stable IDs alongside token/label snapshots so missing references can remain visible instead of silently deleting user intent.
 
 ## Capability-driven module targets
 
-When module outputs themselves can be targeted by another semantic system, consumers should request a capability rather than hard-code module names.
+When module outputs can be targeted by another semantic system, consumers should request capabilities rather than hard-code module names.
 
 Example:
 
 ```text
-Color Palette asks for targets supporting: color
-Texture asks for targets supporting: material
+Color Palette asks for: color
+Texture asks for: material
 ```
 
-A module such as Outfit or Hair may expose its output for one or more capabilities. The same semantic slot should upgrade from a generic built-in target to a linked module-output target without creating a duplicate option.
+Target identity should survive a generic-target → linked-module-output upgrade without creating duplicates.
 
-Keep target identity stable across that upgrade. Compare semantic target state canonically rather than relying on object serialization or property order.
-
-## Target policy is separate from assignment infrastructure
+## Target policy is separate from shared assignment infrastructure
 
 Shared assignment mechanics do not imply a universal target catalog.
 
-Color Palette and Texture / Material legitimately use broad semantic target policies. Pose and Expression reuse the same stable relational identity concepts while intentionally accepting only pose/expression-capable semantic subjects.
+Ask separately:
 
-Ask two separate questions:
+1. Does this module use shared assignment mechanics?
+2. Which entities are valid recipients for this particular payload?
 
-1. Does this module use the shared assignment mechanism?
-2. Which entities are valid recipients for this particular semantic payload?
-
-Do not answer the second question globally merely because the first is shared.
+Color/Material may use broad target policies; Pose/Expression intentionally use subject-only recipients.
 
 ---
 
@@ -486,30 +338,17 @@ Do not answer the second question globally merely because the first is shared.
 
 Natural output is a human-readable serialization of the same prompt graph, not permission to flatten that graph.
 
-User variables, nested system variables and linked module-output tokens remain useful in Natural when another part of the prompt references them.
-
-Canonical example:
-
-```text
-{reference} = attached reference image
-{subject} = person in {reference}
-
-Create a surreal image of {subject}.
-```
-
-Do not replace `{subject}` with repeated prose merely to make the output look more conversational. Doing so destroys reuse and makes nested-variable composition meaningless.
+If a token is used in final Natural output, preserve enough definition/context for the token to remain meaningful.
 
 Recommended behavior:
 
-- User variables remain defined and referenced in Natural.
-- Referenced nested system variables preserve the dependency chain required to resolve them.
-- Linked module outputs such as `{outfit}` / `{hair}` preserve their definition when another block uses the token.
-- Structured keys such as Layout regions or Typography text/group keys appear in Natural when another semantic block actually references them or traceability genuinely benefits the reader.
-- Unreferenced structural implementation keys may remain hidden.
+- user variables remain defined and referenced,
+- nested system variables preserve required dependency chains,
+- linked module outputs preserve definitions when referenced,
+- structural keys appear when referenced or when traceability materially helps,
+- unreferenced implementation keys may remain hidden.
 
-The key rule is:
-
-> If a token is used in final Natural output, the prompt must preserve enough definition/context for that token to remain meaningful.
+Do not replace reusable tokens with repeated prose merely to make Natural output look conversational.
 
 ---
 
@@ -532,19 +371,7 @@ Prefer:
 bold contour linework
 ```
 
-over:
-
-```text
-beautiful professional bold lines that create a visually striking result
-```
-
-Prefer:
-
-```text
-low-angle view
-```
-
-over explaining that low angles make the subject feel heroic or powerful unless that emotional effect is itself selected elsewhere.
+over explanatory or decorative prose.
 
 UI documentation can explain. `promptText` should instruct.
 
@@ -554,34 +381,22 @@ UI documentation can explain. `promptText` should instruct.
 
 Semantic smuggling happens when a missing axis is hidden inside another option's wording.
 
-Examples discovered during refactor work:
+Examples discovered during completed stages:
 
 - linework hidden inside Aesthetic,
 - detail density hidden inside Visual Treatment,
 - shape/form language hidden inside Style,
 - lens behavior hidden inside Framing,
-- artifact intent hidden inside Framing,
-- placement features hidden inside one composition select,
-- fashion/editorial/personality interpretation hidden inside Pose,
-- cinematic/professional/style assumptions hidden inside Expression.
+- purpose/style assumptions hidden inside Pose/Expression,
+- material properties hidden inside global Texture prose,
+- scene atmosphere hidden inside image-space Effects,
+- post-processing hidden inside Background,
+- lighting-native glow hidden inside Effects,
+- Camera behavior hidden inside Effects.
 
 When an option keeps growing to express unrelated behavior, stop expanding the wording and inspect the architecture.
 
-A system capability also must not silently imply the conditions under which that capability is commonly used.
-
-Example:
-
-```text
-high-sensitivity camera response
-```
-
-must not automatically become:
-
-```text
-low-light scene
-```
-
-unless low-light illumination is independently selected. Capability and operating context are separate semantic decisions.
+Capability also must not imply operating context. For example, high-sensitivity capture response must not automatically imply a low-light scene.
 
 ---
 
@@ -591,143 +406,45 @@ UI organization and semantic prompt order are separate concerns.
 
 When ordering matters, configure compile order explicitly rather than rearranging UI solely to change output text.
 
-A typical string module may move from broad identity to specific modifiers, but every module defines its own correct order.
-
-Example from Framing:
-
-```text
-shot size
-→ placement
-→ balance
-→ composition features
-→ view angle
-→ view direction
-→ crop safety
-→ extra details
-```
-
-For relational assignment systems, broad-to-specific ordering can also be useful when later assignments intentionally specialize a broader rule.
+Each module defines its own correct order.
 
 ---
 
-# 17. String output vs structured-object output
+# 17. Choose output structure from semantic relationships
 
 Not every module should compile the same way.
 
-## String modules
+## Flat string modules
 
 Use a compact string when the module is primarily a flat set of independent semantic descriptors.
 
-Example: Framing.
-
 ## Structured-object modules
 
-Use structured output when relationships themselves are semantic.
-
-Examples:
-
-- Layout regions and bounds,
-- Typography groups, texts and region bindings.
-
-Do not flatten meaningful relationships merely to make all modules look alike.
+Use structured output when relationships themselves are semantic, such as Layout regions or Typography structures.
 
 ## Repeated relational entities
 
-A module may keep structured/repeated state even when its final module output is a string.
-
-When several repeated entities each have properties that must remain associated, preserve each entity boundary through compilation rather than flattening all properties into global lists.
-
-Example principle from Lighting:
-
-```text
-red + camera-left   → one light-source relationship
-blue + camera-right → another light-source relationship
-```
-
-Flattening this into independent global lists of colors and directions would lose meaning.
-
-Also distinguish properties that belong to each repeated entity from properties that are genuinely global to the whole module. A bounded repeated-entity model is preferable when it materially improves prompt control without turning the editor into an unrestricted simulator.
-
-## Relational assignment rules
-
-When a module assigns a value set to one or more semantic targets, the assignment itself is the semantic unit.
+A module may keep repeated structured state while compiling to text. Preserve entity boundaries whenever properties must stay associated.
 
 Examples:
 
 ```text
-palette A → outfit + accents
-palette B → {hero}
+red + camera-left   → one light source
+blue + camera-right → another light source
 
-clay material → all scene surfaces except {car}
-cotton material → {car}
-
-pose A → {hero}
-pose B → {villain}
-
-expression A → {hero}
-expression B → {villain}
+strong glitch + custom details → one effect layer
+subtle grain                  → another effect layer
 ```
 
-Do not flatten payloads and targets into separate global lists. Preserve every assignment as a self-contained relation through compilation.
+Do not flatten related properties into independent global lists.
 
-A useful relational-assignment model should:
+## Relational assignment rules
 
-- keep payload data and target references together,
-- allow first-class scope appropriate to the domain,
-- keep custom targets distinct from selecting existing targets when custom targets are valid,
-- allow broad-to-specific ordering where the domain supports specialization,
-- preserve missing target references instead of silently mutating state,
-- keep warnings advisory unless a combination is genuinely impossible,
-- distinguish shared scope infrastructure from module-specific payload semantics,
-- distinguish assignment recipients from entities that merely participate inside payload details.
+When a module assigns payload to semantic targets, the whole assignment is the semantic unit.
 
-## Reuse the assignment mechanism, not the domain payload or target policy
+The shared layer may own target identity, filtering, selection, missing references, scope summaries, and serialization helpers. The module must continue to own its payload semantics and recipient policy.
 
-When two modules share the same targeting interaction, extract the shared layer before a third copy appears.
-
-The shared layer may own:
-
-```text
-target identity
-capability/filter primitives
-selection
-missing references
-scope summaries
-scope serialization helpers
-```
-
-Broader domains may additionally reuse:
-
-```text
-Apply To
-Exceptions
-custom targets/exceptions
-```
-
-The module must continue to own what is being assigned and who can receive it:
-
-```text
-Color Palette → colors / swatches → broad compatible targets
-Texture       → material / finish / surface / optical / condition → broad material targets
-Pose          → body configuration / gesture / motion → subject recipients only
-Expression    → facial affect / mechanics → subject recipients only
-```
-
-Do not build a generic mega-editor that knows every domain.
-
-## Assignment recipient vs payload participant
-
-An entity referenced inside assignment details is not automatically a valid recipient.
-
-Example:
-
-```text
-{hero}: holding {sword}
-```
-
-`{hero}` receives the Pose. `{sword}` participates in the interaction. The sword should not become pose-targetable merely because it appears in the payload.
-
-This distinction is especially important for typed variable systems.
+An entity referenced inside payload details is not automatically a valid assignment recipient.
 
 ---
 
@@ -738,46 +455,21 @@ A structured-object module must either:
 1. provide an explicit Natural serializer, or
 2. explicitly declare that it has no Natural representation.
 
-Repeated relational modules may also need protected text blocks even when their compiled value is a string.
+Repeated relational modules may require protected text blocks even when compiled output is a string.
 
-Do not assume the generic Natural pipeline can safely split or regroup content containing:
-
-- coordinates,
-- exact text,
-- structural tokens,
-- nested relationships,
-- bullet hierarchies,
-- relational assignment clauses,
-- keyword lists whose commas belong inside one semantic unit.
-
-Layout and Typography require dedicated serializers. Color Palette, Texture / Material, Pose, and Expression use protected bullet blocks so the generic optimizer cannot detach payload properties from their targets.
-
-The protection mechanism should be reusable for future modules that emit relationship-safe blocks.
+Do not assume the generic Natural pipeline can safely split/regroup content containing coordinates, exact text, structural tokens, nested relationships, relational clauses, or keyword lists whose commas belong inside one semantic unit.
 
 ---
 
 # 19. The Natural optimizer is a semantic boundary
 
-An optimizer can accidentally corrupt otherwise correct module output through:
-
-- classification,
-- regrouping,
-- deduplication,
-- punctuation rewriting,
-- numeric processing,
-- token processing,
-- hidden item limits,
-- variable-definition removal.
-
-For every refactored module, test the optimizer explicitly.
+An optimizer can corrupt otherwise correct module output through classification, regrouping, deduplication, punctuation rewriting, numeric/token handling, hidden limits, or variable-definition removal.
 
 Canonical invariants:
 
 > Every meaningful semantic item present in Modular output must still be represented in Natural output unless an intentional serializer transformation exists.
 
 > Natural may rewrite prose, but it must not destroy the reusable prompt graph.
-
-Never silently truncate valid semantics or leave a referenced token without the definition/context required to interpret it.
 
 Test maximum realistic simultaneous selections, not only simple examples.
 
@@ -791,50 +483,13 @@ Prefer warnings over blocking or silent state mutation.
 
 ## Module-local conflicts
 
-Use module compatibility when two fields inside one module have a high-confidence semantic tension.
-
-Example:
-
-```text
-Close-Up + Preserve Complete Silhouette
-```
-
-For material systems, warn only on high-confidence tensions such as obviously unusual material/property combinations. Do not warn merely because multiple materials target the same entity; multi-material designs can be intentional.
-
-For subject assignment systems such as Pose/Expression, overlapping assignments to the same subject may deserve an advisory warning when they can conflict, but the editor should not silently merge or delete the user's state.
+Warn only on high-confidence semantic tensions.
 
 ## Cross-module conflicts
 
-Handle conflicts between modules at prompt validation level.
+Handle real cross-module contradictions at prompt-validation level. Do not silently disable either module.
 
-Example:
-
-```text
-Setup: Preserve Composition
-Framing: Rule of Thirds + Low Angle
-```
-
-or:
-
-```text
-Setup: Preserve Materials
-Texture: assign new material properties
-```
-
-or:
-
-```text
-Setup: Preserve Pose
-Pose: assign a new pose to a subject
-```
-
-Do not silently disable either module.
-
-A useful warning explains that the selected instructions may compete while preserving the user's state.
-
-Do not warn merely because a combination is unusual. Creative tension can be intentional.
-
-For real-world system/configuration modules, restrict compatibility hints to high-confidence physical mismatches. Do not turn the editor into a strict hardware configurator when intentional simulation or creative borrowing remains useful.
+Do not warn merely because a combination is unusual; creative tension can be intentional.
 
 ---
 
@@ -847,9 +502,7 @@ Always separate two questions:
 
 Prompt Draft directly controls the first. Image generation is probabilistic and model-dependent.
 
-A module can be semantically correct while model compliance remains approximate.
-
-This distinction is especially important for spatial constraints, but it also applies to material, camera, lighting, pose, expression and other visual semantics.
+A semantically correct module may still have approximate model compliance.
 
 ---
 
@@ -859,12 +512,12 @@ Do not classify a spatial feature as reliable based on one unusually accurate re
 
 For Layout, placement, geometry or other spatial claims:
 
-1. run the identical prompt multiple times,
+1. run identical prompts multiple times,
 2. compare variance,
 3. classify reliability,
 4. set product expectations accordingly.
 
-Useful reliability classes:
+Useful classes:
 
 ```text
 Exact
@@ -872,8 +525,6 @@ Strong
 Approximate
 Weak
 ```
-
-For current Layout behavior, the realistic product contract is structural/directional guidance rather than pixel-accurate deterministic rendering.
 
 Do not keep adding prompt verbosity indefinitely when repeated tests show the image model is the limiting factor.
 
@@ -885,67 +536,23 @@ Refactor is iterative. Code cleanliness alone is not completion.
 
 ## Phase A — isolated output
 
-Test individual options.
-
-Check:
-
-- ownership,
-- redundancy,
-- assumptions,
-- wording clarity,
-- default neutrality.
+Test individual options for ownership, redundancy, assumptions, wording clarity, and default neutrality.
 
 ## Phase B — combination tests
 
-Combine multiple fields within the module.
-
-Look for:
-
-- hidden non-orthogonal fields,
-- contradictions,
-- duplicated wording,
-- accidental over-configuration,
-- single-select values that should coexist.
+Combine fields/layers/assignments and look for non-orthogonal axes, contradictions, duplicated wording, stale preset state, and modifiers that should be per-item rather than global.
 
 ## Phase C — Natural vs Modular parity
 
-Verify that Natural preserves the semantic set and prompt graph.
-
-Check:
-
-- classifier grouping,
-- limits,
-- punctuation,
-- numeric/token preservation,
-- referenced variable definitions,
-- linked module definitions,
-- structured/protected serializer behavior.
+Verify semantic-set and prompt-graph preservation.
 
 ## Phase D — subject diversity
 
-When applicable, test across:
-
-```text
-Person
-Animal
-Object
-Product
-Vehicle
-Architecture
-Scene / Environment
-Typography
-Custom
-```
-
-A supposedly universal option must not leak anatomy or use-case assumptions.
-
-For subject-only modules, also verify that ineligible target types never appear merely because they exist as variables.
+When applicable, test Person, Animal, Object, Product, Vehicle, Architecture, Scene/Environment, Typography, and Custom contexts.
 
 ## Phase E — cross-module audit
 
-Audit neighboring semantic owners.
-
-Examples:
+Audit neighboring owners, for example:
 
 ```text
 Style ↔ Form ↔ Texture
@@ -953,6 +560,7 @@ Framing ↔ Camera ↔ Pose ↔ Setup
 Pose ↔ Expression ↔ Framing ↔ Setup
 Lighting ↔ Color Palette ↔ Texture ↔ Camera
 Background ↔ Layout ↔ Effects
+Hair ↔ Outfit ↔ Color Palette ↔ Texture
 ```
 
 ## Phase F — full prompt tests
@@ -961,21 +569,11 @@ The final prompt should feel like independent components assembled intentionally
 
 ## Phase G — real image tests
 
-Generate actual images when useful.
-
-Image tests outrank purely theoretical wording preferences.
-
-However, diagnose failures correctly:
+Generate actual images when useful. Image tests outrank purely theoretical wording preferences, but diagnose failure correctly:
 
 - wrong semantic expression → refactor Prompt Draft,
-- correct expression but stochastic model compliance → adjust expectations or reliability classification,
-- selected framing/context hides the property being tested → redesign the test before blaming the semantic schema.
-
-Real-image tests can also reveal that wording which looks equivalent to humans is not equally strong for an image model. When this happens, prefer the shortest wording that materially improves instruction clarity instead of adding decorative verbosity.
-
-For spatial claims, repeat identical prompts.
-
-For Pose/Expression-like controls, ensure the chosen framing actually exposes the body/facial state being evaluated. A close-up cannot meaningfully validate full-body pose, and strong action context can legitimately compete with a static-pose instruction without proving an ownership defect.
+- correct expression but stochastic compliance → adjust expectations,
+- test framing/context hides the property → redesign the test.
 
 ---
 
@@ -992,15 +590,11 @@ For every replaced/split field, explicitly decide whether legacy values should:
 
 Do not invent cross-module migration merely to preserve old wording if it corrupts ownership.
 
-Track unresolved migration work in the review backlog rather than hiding it.
-
-A module's new semantic schema may be closed while legacy migration remains an explicitly deferred backlog task. Do not confuse migration debt with an unresolved semantic design.
+A module may be semantically closed while migration remains deferred backlog work.
 
 ---
 
 # 25. Deferred issues and review backlog
-
-Not every valid finding should interrupt the current module.
 
 Use:
 
@@ -1008,15 +602,9 @@ Use:
 docs/prompt-semantics/review-backlog/README.md
 ```
 
-for real issues that belong to another module or later architectural stage.
+for real deferred issues.
 
-A backlog item should record:
-
-- symptom,
-- semantic owner,
-- why it is deferred,
-- preferred resolution direction,
-- verification/removal after fix.
+A backlog item should record symptom, semantic owner, reason for deferral, preferred resolution direction, and verification/removal criteria.
 
 Do not use the backlog as a graveyard for vague ideas.
 
@@ -1024,31 +612,36 @@ Do not use the backlog as a graveyard for vague ideas.
 
 # 26. Translation workflow
 
-During semantic refactor, English is the working source of truth.
+English remains the semantic source of truth for prompt meaning, but shipping semantic UI must keep English and Persian aligned.
 
-For every semantic UI-copy change:
+Two workflows are supported:
 
-1. create/update a flat English patch under `scripts/i18n-patches/`,
-2. give the user the one-line merge command,
-3. register the new/changed English keys in the persistent Persian ledger:
+## 26.1 Module-scoped locale fragments — preferred for major module rewrites
+
+Background and Effects established this pattern:
 
 ```text
-scripts/i18n-patches/fa.semantic-refactor.todo.ts
+i18n/locales/<module>.en.ts
+i18n/locales/<module>.fa.ts
 ```
 
-The Persian ledger intentionally keeps English source values until the final Persian translation pass.
+Register both fragments in `i18n/i18n.config.ts` under the module key.
 
-Do **not** merge the ledger into `fa.ts` before its values are actually translated.
+Use this approach when a module rewrite introduces a large, self-contained translation surface and editing giant root locale files would create unnecessary noise.
 
-At the final Persian pass, replace all ledger values with Persian and then apply it with the merge script.
+No merge command is required; the fragments load through normal i18n configuration.
 
-English merge command format:
+## 26.2 Flat patch workflow — keep for broad or legacy locale edits
 
-```bash
-pnpm tsx scripts/merge-i18n.ts --locale en --patch scripts/i18n-patches/<patch-file>.ts --write --overwrite
-```
+For existing root-locale changes that still use the patch system, keep the established `scripts/i18n-patches/` + `merge-i18n.ts` workflow.
 
-Keep commands single-line in user instructions.
+Do not maintain the same keys simultaneously in both mechanisms.
+
+Regardless of mechanism:
+
+- English wording defines intended semantics,
+- Persian should represent the same semantic distinction rather than merely literal word substitution,
+- translation architecture must not change module ownership.
 
 ---
 
@@ -1066,15 +659,9 @@ Normal local sync instruction:
 git pull
 ```
 
-After required translation patch application, run:
+Create a checkpoint commit when a major semantic stage is closed. Checkpoint commits represent semantic milestones, not substitutes for implementation commits.
 
-```bash
-pnpm generate
-```
-
-Create a checkpoint commit when a major semantic stage is closed.
-
-Checkpoint commits represent semantic milestones, not substitutes for implementation commits.
+Do not force-update the branch when it has advanced; preserve concurrent commits and fast-forward safely.
 
 ---
 
@@ -1082,31 +669,29 @@ Checkpoint commits represent semantic milestones, not substitutes for implementa
 
 A module can be considered semantically closed when:
 
-- responsibility is clear,
-- non-responsibilities are clear,
-- fields represent independent axes,
+- responsibility and non-responsibilities are clear,
+- fields/layers/assignments represent independent axes,
 - exclusive vs combinable features are modeled correctly,
-- defaults do not inject unjustified assumptions,
+- per-item modifiers are local when required,
+- defaults are neutral unless justified,
 - options are concise and composable,
-- presets are minimum-sufficient,
-- subject applicability is intentional,
-- assignment target policy is intentional where relational state exists,
-- module-local conflicts are handled predictably,
+- presets are minimum-sufficient editable state recipes,
+- subject applicability and target policy are intentional,
+- module-local conflicts are predictable,
 - cross-module boundaries have been audited,
-- structured/relational outputs have an explicit Natural strategy,
-- Natural does not silently lose Modular semantics or referenced graph structure,
-- isolated tests pass,
-- combination tests pass,
-- subject-diversity tests pass where applicable,
+- structured/relational output has an explicit Natural strategy when required,
+- Natural does not silently lose Modular semantics or prompt-graph structure,
+- isolated and combination tests pass,
+- relevant subject-diversity tests pass,
 - full prompt output is coherent,
 - real image tests do not expose a semantic flaw,
 - stochastic model limitations are not mistaken for prompt bugs,
-- editor summaries/state representations remain correct for repeated relational entities,
-- `pnpm generate` passes.
+- editor state/summaries remain correct for repeated entities,
+- project generation/build validation passes before release integration.
 
 Once these conditions are met, stop theoretical micro-polishing.
 
-Reopen a closed module only when concrete tests or later module work reveal a real issue.
+Reopen a closed module only when concrete later evidence reveals a real issue.
 
 ---
 
@@ -1114,22 +699,16 @@ Reopen a closed module only when concrete tests or later module work reveal a re
 
 ## Style
 
-Key lessons:
-
 - aesthetic and medium are separate axes,
-- linework deserves an independent axis,
-- detail density deserves an independent axis,
-- rendering treatment should not steal Texture responsibilities,
-- finish should describe finish rather than generic quality,
-- Style must not own Form geometry,
-- presets should be minimum-sufficient,
-- defaults should remain neutral unless justified.
+- linework and detail density deserve independent axes,
+- Style must not own Form geometry or material surface behavior,
+- presets should be minimum-sufficient and defaults neutral.
 
 ## Form
 
 The old Deformation model mixed anatomy, form language, proportions, style, material, motion and context.
 
-Useful ideas were preserved, but ownership was redesigned around independent axes:
+Final conceptual axes:
 
 ```text
 Form Language
@@ -1139,248 +718,87 @@ Form Transformation Strength
 Extra Details
 ```
 
-Key lesson:
-
-> Preserve useful semantic ideas, not bad architecture.
+Key lesson: preserve useful semantic ideas, not bad architecture.
 
 ## Setup
 
-Setup clarified the difference between prompt semantics and editor context.
-
-Canonical examples:
-
-```text
-idea        → semantic
-subject     → semantic / reusable
-reference   → semantic handle
-aspect      → semantic raw ratio
-subjectType → context metadata
-```
-
-It also separated:
-
-```text
-Reference Usage
-Reference Transformation Strength
-Form Transformation Strength
-Preserve rules
-```
-
-Similar vocabulary does not mean duplicate scope.
+Setup clarified semantic data vs context metadata and separated reference usage, reference transformation, form transformation, and preservation rules.
 
 ## Layout
 
-Layout became a structured spatial schema whose `regions` are authoritative.
-
-Key lessons:
-
-- structural identity must be stable,
-- region labels are not IDs,
-- structured output needs a protected Natural serializer,
-- exact coordinates are a prompt specification but not a deterministic rendering guarantee,
-- repeated identical-prompt tests are required before claiming spatial reliability,
-- current Layout should be treated as approximate/strong structural guidance rather than a pixel renderer.
+Layout established stable structural identity, explicit structured output, protected Natural serialization, and realistic spatial-reliability expectations.
 
 ## Typography output
 
-Typography showed that object-output modules can disappear from Natural output if the generic pipeline only understands strings.
-
-Key lessons:
-
-- structured modules need explicit Natural serialization,
-- exact written text and hierarchy may need protected blocks,
-- structural Layout bindings should remain traceable without flooding Natural output with unused keys.
+Typography proved that structured modules need explicit Natural serialization and that exact text/hierarchy may need protected blocks.
 
 ## Framing
 
-Framing showed why mega-selects fail when they contain independent decisions.
-
-Final conceptual axes:
-
-```text
-Shot Size
-Subject Placement
-Frame Balance
-Composition Features
-View Angle
-View Direction
-Crop Safety
-```
-
-Key lessons:
-
-- single vs multi-select must follow semantics,
-- negative space is not the same axis as placement,
-- lens/camera behavior belongs to Camera,
-- body pose belongs to Pose,
-- prompt-level conflicts should use validation rather than silent overrides,
-- Natural optimizer classification and item limits must be tested explicitly.
+Framing replaced a mega-select with orthogonal Shot Size, Subject Placement, Frame Balance, Composition Features, View Angle, View Direction, and Crop Safety axes.
 
 ## Camera
 
-Camera established a clean boundary between how a view is composed and how that unchanged view is physically recorded.
-
-Final conceptual axes:
-
-```text
-Capture System
-Capture Response
-Lens Profile
-Focus & Depth
-Capture Behavior
-```
-
-Key lessons:
-
-- named hardware/device choices work best as editable state recipes rather than prose bundles,
-- presets should populate only intrinsic components; replaceable components remain neutral,
-- capture-system capability must not imply scene conditions such as lighting,
-- optical behavior belongs to Camera while viewpoint/composition belongs to Framing,
-- high-confidence physical mismatches can use advisory compatibility hints without blocking creative combinations,
-- Natural classification must protect legitimate Camera words such as distortion, grain, detail and tonal response from being reassigned to other semantic groups.
+Camera separated capture system, capture response, lens profile, focus/depth, and capture behavior from Framing and Lighting. Named hardware works best as editable state recipes.
 
 ## Lighting
 
-Lighting established a clean universal illumination model that works across realistic and stylized outputs without owning the visual style itself.
-
-Final conceptual model:
-
-```text
-Global Lighting
-├─ Ambient Level
-└─ Overall Contrast
-
-Light Sources [max 3]
-├─ Role
-├─ Source Type
-├─ Direction
-├─ Quality
-├─ Intensity
-├─ Light Color
-└─ Lighting Features
-```
-
-Key lessons:
-
-- repeated semantic entities should remain bounded when their properties must stay associated,
-- source-local properties and scene-global properties should not be duplicated across the same axis,
-- a bounded repeated-entity model can add substantial expressive power without becoming an unrestricted simulator,
-- illumination color belongs to Lighting while base object/image palette belongs to Color Palette,
-- flash is an illumination source and therefore Lighting-owned rather than Camera-owned,
-- visible volumetric beams can be Lighting-owned without automatically creating fog/smoke/dust scene content,
-- presets can be multi-entity state recipes as long as each source remains editable and relationships remain explicit,
-- dedicated editors should still follow generic field-type conventions where practical so later component-system upgrades remain straightforward,
-- Natural/Modular testing must verify relationships, not only the presence of individual words.
+Lighting established bounded repeated sources with source-local role/type/direction/quality/intensity/color/features plus global ambient/contrast. Property relationships must remain associated.
 
 ## Color Palette
 
-Color Palette preserved its original useful product idea while turning it into a reference-aware relational system.
-
-Final conceptual model:
-
-```text
-Palette Rules[]
-├─ Preset → editable swatches
-├─ Colors[]
-│  ├─ Literal Color
-│  └─ User Color Variable
-├─ Apply To[]
-├─ Custom Targets[]
-├─ Except[]
-└─ Custom Exceptions[]
-```
-
-Key lessons:
-
-- a preset can populate editable literal state instead of compiling a prose bundle,
-- variable types should be treated as semantic contracts when building dynamic reference catalogs,
-- structural/user references should store stable identity plus token/label snapshots so missing references remain recoverable,
-- relational assignment rules must keep values and targets linked through Modular and Natural compilation,
-- broad-to-specific rule ordering is useful when intentional overrides are part of the domain,
-- dynamic target selection should expose only semantically compatible entities rather than every available variable,
-- creation actions such as Custom Target should remain distinct from selecting an existing target,
-- a reusable component-system control should replace native UI when multiple modules share the same semantic interaction pattern.
+Color Palette established reference-aware relational assignments, stable semantic targets, capability-driven target selection, and editable literal/variable swatches.
 
 ## Texture / Material
 
-Texture / Material replaced a weak global-image texture concept with target-specific material assignments.
-
-Final conceptual model:
-
-```text
-Material Assignments[]
-├─ Preset
-├─ Apply To[] / Exceptions[]
-├─ Material
-├─ Finish
-├─ Surface Texture
-├─ Optical Character
-├─ Texture Prominence
-└─ Conditions[]
-```
-
-Key lessons:
-
-- material identity, finish, micro/surface texture, optical behavior, prominence and condition are independent axes,
-- a material module should describe what an entity is made of and how its surface behaves, not the style of the whole image,
-- Color owns base palette while Texture owns material/surface behavior and Lighting owns illumination,
-- when two modules repeat the same relational targeting pattern, extract shared target/scope infrastructure but keep domain payload semantics local,
-- semantic targets should be capability-driven so future modules can expose targetable outputs without consumers hard-coding module names,
-- `Apply To` and `Except` are first-class relational scope, not text-field decoration,
-- stable target identity must survive generic-target → linked-module-output upgrades,
-- native multi-select became insufficient once grouped dynamic targets and reusable relational scope were required; `el-multi-select` now provides the shared interaction pattern,
-- protected bullet blocks are appropriate for compact relational output whose commas belong inside one semantic unit,
-- preset names should not compile when explicit semantic properties already encode the instruction,
-- real-image testing showed that explicitly separating `cotton material; matte, woven...` communicates material identity more strongly than a flat keyword list while remaining concise,
-- Natural must preserve reusable user/system/module references and their dependency graph rather than replacing them with repeated prose,
-- substantial stylization can emerge from Form + Color + Material + other independent modules without Style being selected; Style remains a high-level aesthetic owner, not a mandatory stylization switch,
-- once real tests show the semantic system is working, stop micro-polishing unless later evidence reveals a concrete defect.
+Texture replaced a global image-texture concept with target-specific material assignments. Material identity, finish, surface texture, optical character, prominence, and condition are independent axes.
 
 ## Pose + Expression
 
-Pose and Expression replaced global prose-heavy mega-selects with subject-scoped relational assignments while preserving a strict body-vs-face ownership boundary.
+Pose and Expression replaced global prose-heavy mega-selects with subject-scoped relational assignments while preserving strict body-vs-face ownership and subject-only recipient policy.
 
-Final conceptual models:
+## Background + Effects
+
+Stage 13 closed the scene-content vs image-space-effect boundary.
+
+### Background owns
 
 ```text
-Pose Assignments[]
-├─ Preset
-├─ Apply To[] → subject recipients only
-├─ Base Posture
-├─ Torso Posture
-├─ Weight / Balance
-├─ Body Tension
-├─ Locomotion
-├─ Gestures[]
-├─ Interaction / Action Details
-└─ Additional Details
-
-Expression Assignments[]
-├─ Preset
-├─ Apply To[] → subject recipients only
-├─ Core Expression
-├─ Intensity
-├─ Eye State
-├─ Brow State
-├─ Mouth State
-└─ Additional Details
+background concept
+depicted setting/environment
+backdrop type
+background material
+spatial structure
+detail density
+secondary background elements
 ```
+
+Background deliberately does not own Camera blur/DOF, Lighting behavior, Style identity, or image-space effects.
+
+### Effects owns
+
+```text
+image-space post-processing
+overlays
+signal/damage artifacts
+compression/degradation mechanisms
+composited VFX
+interface overlays
+```
+
+Effects deliberately does not own Camera behavior, Lighting sources, Style medium/treatment, physical Background construction, or material properties.
 
 Key lessons:
 
-- Pose owns visible physical body configuration, gesture, movement and interaction but not viewpoint, framing, personality, fashion/editorial style or facial affect,
-- Expression owns visible facial affect and mechanics but not body pose, cinematic/editorial/cute/fantasy style, professional/commercial purpose or narrative role,
-- a shared assignment mechanism must not force every assignment-driven module to share the same target eligibility policy,
-- system `{subject}` and user variables with `type: "subject"` are valid Pose/Expression recipients while object/reference/text variables are not,
-- an object can still participate inside a Pose payload (`{hero}: holding {sword}`) without becoming a Pose recipient,
-- source/reference replacement semantics belong to compiler context: image-to-image assignments explicitly replace source pose/expression while text-to-image output does not emit replacement wording,
-- overlapping subject assignments should warn rather than silently merge/delete user intent,
-- per-assignment additional details are necessary once different subjects can receive different semantic states; a global `extraDetails` field loses ownership,
-- protected bullet blocks preserve subject-to-payload identity through Modular and Natural output,
-- real multi-subject image tests confirmed that opposite poses/expressions can remain independently targetable alongside subject-specific Color Palette and object-specific Texture assignments,
-- prompt tension must be distinguished from schema failure: close-up framing may hide body pose, action-heavy context may compete with a static pose, and subtle facial mechanics remain model-dependent,
-- repeated assignment cards need reactive semantic summaries; content-dependent render keys are a proven fallback when nested state changes do not refresh component-system text nodes reliably,
-- once the relational schema, compiler identity, target policy, UI summaries and representative image tests all pass, ordinary model variance is not a reason to reopen the stage.
+- classify atmosphere-like concepts by **mechanism**, not vocabulary: depicted physical/environment content belongs to the scene owner; explicitly composited/image-space treatment belongs to Effects,
+- `backgroundStyle` was better replaced by a semantic constructor than by another large style catalog,
+- structured fields that can never have exhaustive taxonomies need field-local Custom escape hatches,
+- multiple Custom fields must store independent companion state,
+- `effectStyle[] + one global intensity` was structurally wrong because each effect can require its own modifier,
+- Effect Layers establish a reusable repeated modifier-bearing entity pattern,
+- mechanism-oriented effect names reduce ownership drift (`added film grain`, `composited motion trails`, `signal artifacts`) compared with aesthetic bundle names,
+- real image-to-image testing confirmed that concise Background construction semantics can strongly replace a source backdrop without absorbing neighboring module responsibilities.
+
+See `stage-13-background-effects-semantics.md` for closure evidence.
 
 ---
 
@@ -1389,27 +807,28 @@ Key lessons:
 Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
 
 ```text
-1. Background + Effects
-2. Hair + Outfit
-3. remaining smaller modules / final cross-module audit
+1. Hair + Outfit
+2. remaining smaller modules
+3. final cross-module audit / migration planning
 ```
 
-Why Background + Effects are next:
+Background + Effects are closed in Stage 13 and should not be treated as the next open stage.
 
-- Lighting, Color Palette and Texture / Material are already closed, so illumination, base color and surface/material ownership are stable,
-- Layout is closed, so structural/spatial region ownership is stable,
-- current Background/Effects catalogs are likely to contain the next major ownership collision between scene content, environment/atmosphere, weather/particles, overlays, post-processing and decorative visual treatment,
-- auditing them together can reveal which atmospheric concepts belong to depicted scene content versus image-space effects without forcing the two modules to merge.
+Hair + Outfit are next because:
 
-Hair + Outfit are lower-risk subject-detail modules and should follow after the remaining global scene/effect boundary is stable. They already participate in capability-driven Color/Material targeting, which must be preserved during their own semantic refactors.
+- they are major remaining subject-detail owners,
+- both already participate in capability-driven Color/Material targeting,
+- their refactors must preserve those targetable module outputs,
+- likely ownership boundaries include Hair ↔ Outfit ↔ Texture/Material ↔ Color Palette ↔ Style ↔ Form,
+- existing catalogs may still mix physical garment/hair properties with aesthetic, material, color, pose, character archetype, or use-case assumptions.
 
-Texture / Material and Pose / Expression legacy migrations remain backlog work and do not block the next semantic stage.
+Legacy migrations from prior closed stages remain backlog work and do not block the next semantic stage.
 
 ---
 
 # 31. Operating instructions for a new chat
 
-When continuing this refactor in another conversation, first read this file:
+When continuing this refactor in another conversation, first read:
 
 ```text
 docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md
@@ -1423,9 +842,15 @@ Then read:
 - the semantic review backlog,
 - the most recent completed stage docs when useful.
 
-For the next planned stage, read both Background and Effects implementations and their compiler paths before proposing changes, but do not assume they should become one module.
+For the next planned stage, inspect **Hair and Outfit together** before freezing either architecture, but do not assume they should merge.
 
-Also read Stage 12 (`stage-12-pose-expression-semantics.md`) as the most recent closure precedent, especially its distinction between shared relational mechanics and domain-specific eligibility policy.
+Also read Stage 13 (`stage-13-background-effects-semantics.md`) as the most recent closure precedent, especially:
+
+- constructor vs catalog decisions,
+- scene-vs-effect mechanism ownership,
+- field-local Custom values,
+- repeated modifier-bearing layers,
+- module-scoped locale fragments.
 
 ## First response / audit
 
@@ -1434,30 +859,27 @@ Also read Stage 12 (`stage-12-pose-expression-semantics.md`) as the most recent 
 3. State the proposed responsibility and non-responsibilities.
 4. Identify semantic pollution and ownership collisions.
 5. Identify mega-fields that should be split into orthogonal axes.
-6. Decide single-select vs multi-select from semantics.
+6. Decide single-select vs multi-select vs repeated entities from semantics.
 7. Audit defaults and presets.
 8. Propose the clean field model before broad implementation.
 
-Do not reflexively preserve existing design.
-
-Challenge architecture when a cleaner ownership model exists.
+Do not reflexively preserve existing design. Challenge architecture when a cleaner ownership model exists.
 
 ## Implementation
 
 Once direction is agreed:
 
 1. implement structural changes,
-2. keep useful ideas in the correct owner,
+2. preserve useful ideas in the correct owner,
 3. remove semantic pollution,
-4. define explicit compile order,
+4. define explicit compile behavior/order,
 5. add compatibility only for high-confidence conflicts,
-6. reuse existing shared infrastructure when the semantic interaction truly matches,
-7. add/update English flat i18n patch,
-8. update the Persian translation ledger,
-9. protect structured/relational Natural output when required,
-10. preserve referenced variable/module graph structure,
-11. avoid silent optimizer loss,
-12. document the stage.
+6. reuse shared infrastructure only when the semantic interaction truly matches,
+7. keep English/Persian UI semantics aligned,
+8. protect structured/relational Natural output when required,
+9. preserve referenced variable/module graph structure,
+10. avoid silent optimizer loss,
+11. document the stage.
 
 ## Test review
 
@@ -1469,9 +891,9 @@ When compiled outputs are returned:
 - test subject applicability,
 - test module-local conflicts,
 - test neighboring modules,
-- test variable/reference preservation when the module can be referenced elsewhere,
-- ensure the chosen real-image test makes the target semantic observable,
-- distinguish prompt bugs from model stochasticity or prompt tension.
+- test variable/reference preservation,
+- ensure real-image tests expose the intended semantic,
+- distinguish prompt bugs from stochastic model behavior or prompt tension.
 
 ## Final closure
 
@@ -1480,9 +902,9 @@ Before checkpoint:
 - run one focused taxonomy/edge-case audit,
 - perform one cross-module boundary audit,
 - update backlog for deliberately deferred work,
-- run `pnpm generate`,
-- perform real-image validation when it can expose practical semantic ambiguity,
-- update the canonical reference with genuinely reusable lessons,
+- run project generation/build validation,
+- perform real-image validation when useful,
+- update this canonical reference with genuinely reusable lessons,
 - create a semantic checkpoint only after tests pass.
 
 ---
@@ -1491,11 +913,9 @@ Before checkpoint:
 
 Prompt Draft can become architecturally sophisticated enough to hide its value from ordinary users.
 
-The semantic engine should remain powerful, but future UX may expose that engine through simpler interfaces such as guided presets or a wizard that asks high-level questions and translates answers into the same module state.
+The semantic engine should remain powerful, but future UX may expose it through simpler guided interfaces that translate high-level choices into the same module state.
 
-Do not weaken the semantic architecture to make the current editor simpler.
-
-Likewise, do not keep adding architectural machinery merely because it is technically interesting.
+Do not weaken semantic architecture merely to simplify the current editor. Likewise, do not add machinery merely because it is technically interesting.
 
 For every major addition ask:
 
@@ -1511,30 +931,28 @@ Before auditing a new key module in a new conversation, ask the user one explici
 
 > What was your original goal and idea when you created this module? What problem did you want it to solve for the user?
 
-Treat the answer as first-class design context alongside the current code, compiler behavior and neighboring module boundaries.
-
-The existing implementation shows what the module became; the user's answer explains what the module was intended to achieve. Both are needed before deciding what should be preserved, split, moved or removed.
+Treat the answer as first-class design context alongside current code, compiler behavior, test evidence, and neighboring module boundaries.
 
 When a stage intentionally audits a related pair, ask for the original intent of both before freezing either architecture.
 
-Do not skip this question merely because the current schema appears understandable. It is especially valuable when old implementations contain semantic pollution that hides the original product intent.
+Do not skip this question merely because the current schema appears understandable.
 
 ---
 
 # 34. The canonical reference must improve after every closed module
 
-After a module is fully tested, approved by the user and closed with its semantic checkpoint, automatically perform a short lessons audit before moving to the next module.
+After a module is fully tested, approved by the user and closed with its semantic checkpoint, automatically perform a short lessons audit.
 
 Ask internally:
 
-> Did this module teach us a reusable semantic, compiler, validation, migration, testing, translation, UX or architectural lesson that is not already captured in this canonical reference?
+> Did this module teach us a reusable semantic, compiler, validation, migration, testing, translation, UX or architectural lesson that is not already captured here?
 
 If yes:
 
-1. add the reusable lesson to `docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md`,
-2. keep it general enough to guide future modules rather than documenting only one implementation detail,
-3. update the completed-stage lessons when the module establishes an important precedent,
-4. avoid duplicating guidance that the reference already contains,
-5. make this reference update part of the module's closure workflow, immediately after or alongside the checkpoint.
+1. add the reusable lesson to this file,
+2. keep it general enough to guide future modules,
+3. update completed-stage lessons when the module establishes a useful precedent,
+4. avoid duplicating guidance already captured,
+5. make the reference update part of the closure/checkpoint workflow.
 
 If the module teaches nothing materially new, do not add filler merely to make the document longer.
