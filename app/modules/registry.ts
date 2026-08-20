@@ -16,8 +16,9 @@ import { ColorPaletteModule } from './colorPalette.module'
 import { TypographyModule } from './typography.module'
 import { VariablesModule } from './variables.module'
 import { LayoutModule } from './layout.module'
+import { withSemanticTargetCapabilities } from './semanticTargetCapabilities'
 
-export const promptModules = [
+const registeredModules = [
   VariablesModule,
   LayoutModule,
   StyleModule,
@@ -35,6 +36,10 @@ export const promptModules = [
   EffectsModule,
   TextureModule,
 ] satisfies PromptKeyModule[]
+
+export const promptModules = registeredModules.map(
+  withSemanticTargetCapabilities,
+) satisfies PromptKeyModule[]
 
 export function getPromptModuleByKey(key: string) {
   return promptModules.find((module) => module.key === key)
