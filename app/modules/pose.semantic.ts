@@ -67,8 +67,24 @@ type PosePresetRecipe = Omit<PoseAssignment, "id" | "targets"> & {
   categoryLabel: string;
 };
 
+function posePreset(
+  recipe: Pick<PosePresetRecipe, "id" | "category" | "categoryLabel"> &
+    Partial<Omit<PosePresetRecipe, "id" | "category" | "categoryLabel">>,
+): PosePresetRecipe {
+  return {
+    basePosture: "",
+    torsoPosture: "",
+    weightBalance: "",
+    bodyTension: "",
+    locomotion: "",
+    gestures: [],
+    interactionDetails: "",
+    ...recipe,
+  };
+}
+
 const presetRecipes: PosePresetRecipe[] = [
-  {
+  posePreset({
     id: "neutral_standing",
     category: "standing",
     categoryLabel: "Standing",
@@ -77,70 +93,70 @@ const presetRecipes: PosePresetRecipe[] = [
     weightBalance: "even",
     bodyTension: "relaxed",
     gestures: ["hands_at_sides"],
-  },
-  {
+  }),
+  posePreset({
     id: "relaxed_standing",
     category: "standing",
     categoryLabel: "Standing",
     basePosture: "standing",
     weightBalance: "shifted",
     bodyTension: "relaxed",
-  },
-  {
+  }),
+  posePreset({
     id: "arms_crossed_standing",
     category: "standing",
     categoryLabel: "Standing",
     basePosture: "standing",
     torsoPosture: "upright",
     gestures: ["arms_crossed"],
-  },
-  {
+  }),
+  posePreset({
     id: "hand_on_hip",
     category: "standing",
     categoryLabel: "Standing",
     basePosture: "standing",
     weightBalance: "shifted",
     gestures: ["hand_on_hip"],
-  },
-  {
+  }),
+  posePreset({
     id: "relaxed_seated",
     category: "seated",
     categoryLabel: "Seated",
     basePosture: "seated",
     bodyTension: "relaxed",
-  },
-  {
+  }),
+  posePreset({
     id: "forward_seated",
     category: "seated",
     categoryLabel: "Seated",
     basePosture: "seated",
     torsoPosture: "leaning_forward",
     gestures: ["hands_on_knees"],
-  },
-  {
+  }),
+  posePreset({
     id: "walking",
     category: "motion",
     categoryLabel: "Motion",
     basePosture: "standing",
     bodyTension: "engaged",
     locomotion: "walking",
-  },
-  {
+  }),
+  posePreset({
     id: "running",
     category: "motion",
     categoryLabel: "Motion",
     basePosture: "standing",
     bodyTension: "engaged",
     locomotion: "running",
-  },
-  {
+  }),
+  posePreset({
     id: "action_ready",
     category: "dynamic",
     categoryLabel: "Dynamic",
     basePosture: "standing",
     weightBalance: "even",
     bodyTension: "tense",
-  },
+  }),
 ];
 
 const presetOptions: ModuleFieldOption[] = presetRecipes.map((preset) => ({
