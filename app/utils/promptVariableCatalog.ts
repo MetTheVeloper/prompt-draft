@@ -43,6 +43,11 @@ function createModuleVariable(
   module: PromptKeyModule,
   output: ModuleOutputValue,
 ): PromptVariable {
+  const semanticCapabilities =
+    module.semanticTargets?.exposeOutput === true
+      ? [...module.semanticTargets.capabilities]
+      : undefined
+
   return {
     id: `module:${module.key}`,
     key: module.key,
@@ -55,6 +60,7 @@ function createModuleVariable(
     moduleKey: module.key,
     entityType: "module",
     entityId: module.key,
+    semanticCapabilities,
   }
 }
 
