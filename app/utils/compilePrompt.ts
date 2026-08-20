@@ -330,11 +330,17 @@ function getPreservePromptText(settings: PromptSettings) {
   return getPreserveParts(settings).join(', ')
 }
 
+function isProtectedBulletOutput(output: ModuleOutputValue) {
+  return typeof output === 'string' && output.trim().startsWith('•')
+}
+
 function getModuleNaturalParts(
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
 ) {
   const parts = moduleOutputs
-    .filter((item) => typeof item.output === "string")
+    .filter((item) => {
+      return typeof item.output === "string" && !isProtectedBulletOutput(item.output)
+    })
     .flatMap((item) => {
       return (item.output as string)
         .split(",")
@@ -459,6 +465,60 @@ function getTypographyNaturalBlock(
     typographyOutput,
     getReferencedTypographyKeys(moduleOutputs, typographyOutput),
   )
+}
+
+function humanizeModuleKey(value: string) {
+  return value
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/[_-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .replace(/\b\w/g, (character) => character.toUpperCase())
+}
+
+function naturalBlockTitle(key: string) {
+  if (key === 'texture') return 'Texture / Material'
+  return humanizeModuleKey(key)
+}
+
+function naturalizeLinkedModuleTargets(
+  value: string,
+  modules: PromptKeyModule[],
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+) {
+  const activeOutputKeys = new Set(moduleOutputs.map((item) => item.key))
+  let result = value
+
+  modules.forEach((module) => {
+    if (
+      module.semanticTargets?.exposeOutput !== true ||
+      !activeOutputKeys.has(module.key)
+    ) {
+      return
+    }
+
+    const token = `{${module.key}}`
+    const replacement = `the configured ${humanizeModuleKey(module.key).toLowerCase()}`
+    result = result.split(token).join(replacement)
+  })
+
+  return result
+}
+
+function getProtectedBulletNaturalBlocks(
+  modules: PromptKeyModule[],
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+) {
+  return moduleOutputs
+    .filter((item) => isProtectedBulletOutput(item.output))
+    .map((item) => {
+      const output = item.output as string
+      return `${naturalBlockTitle(item.key)}:\n${naturalizeLinkedModuleTargets(
+        output,
+        modules,
+        moduleOutputs,
+      )}`
+    })
 }
 
 function getVariablesOutput(outputs: ModuleOutputMap) {
@@ -651,7 +711,15 @@ function compileModularOutput(
         ? item.output
         : JSON.stringify(item.output)
 
-    parts.push(`{${item.key}} = ${value}`)
+    const isBlockValue = typeof value === 'string' && (
+      value.includes('\n') || value.trim().startsWith('•')
+    )
+
+    parts.push(
+      isBlockValue
+        ? `{${item.key}} =\n${value}`
+        : `{${item.key}} = ${value}`
+    )
   })
 
   return parts.join('\n')
@@ -864,6 +932,10 @@ export function compilePromptOutput(
     const rawOutput = compileNaturalOutput(settings, moduleOutputs)
     const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
     const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
+    const protectedBulletBlocks = getProtectedBulletNaturalBlocks(
+      modules,
+      moduleOutputs,
+    )
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
@@ -877,7 +949,12 @@ export function compilePromptOutput(
     //   optimizedOutput
     // })
 
-    const naturalOutput = [optimizedOutput, layoutBlock, typographyBlock]
+    const naturalOutput = [
+      optimizedOutput,
+      layoutBlock,
+      typographyBlock,
+      ...protectedBulletBlocks,
+    ]
       .filter(Boolean)
       .join('\n\n')
 
