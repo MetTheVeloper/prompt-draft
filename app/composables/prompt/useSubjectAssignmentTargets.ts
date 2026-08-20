@@ -126,7 +126,6 @@ export function useSubjectAssignmentTargets() {
           "components.subjectAssignmentTargets.groups.missing",
           "Missing References",
         ),
-        disabled: true,
         color: "orange",
         target,
       }));
