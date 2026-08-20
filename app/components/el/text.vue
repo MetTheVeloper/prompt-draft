@@ -30,8 +30,7 @@
       :style="textStyle"
       v-bind="urlMode ? { to } : {}"
     >
-      <slot v-if="!localize" />
-      <template v-else v-for="(node, i) in getLocalizedText()" :key="i">
+      <template v-for="(node, i) in localizedText" :key="i">
         <component :is="node" />
       </template>
     </component>
@@ -187,15 +186,18 @@ const toEnglishDigits = (str) => {
 
 const { locale } = useI18n();
 
-function getLocalizedText() {
+const localizedText = computed(() => {
   const nodes = slots.default?.() || [];
 
   return nodes.map((node) => {
+    // فقط text node ها رو تغییر بده
     if (typeof node.children === "string") {
       let text = node.children;
 
       if (locale.value === "fa") {
-        text = toPersianDigits(text);
+        if (props.localize) {
+          text = toPersianDigits(text);
+        }
       } else {
         text = toEnglishDigits(text);
       }
@@ -208,7 +210,7 @@ function getLocalizedText() {
 
     return node;
   });
-}
+});
 
 onMounted(() => {
   if (props.effect === "glitch") {
