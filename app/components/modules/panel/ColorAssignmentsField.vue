@@ -4,18 +4,21 @@ import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   ColorPaletteRule,
   ColorPaletteSwatch,
-  ColorPaletteTarget,
   ModuleField,
   ModuleFieldOption,
-  PromptVariable,
+  SemanticTargetRef,
 } from "../../../modules/types";
+import type { SemanticBuiltinTargetDefinition } from "../../../utils/semanticTargets";
+import {
+  normalizeSemanticTarget,
+  semanticTargetIdentity,
+} from "../../../utils/semanticTargets";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { useSemanticTargetCatalog } from "~/composables/prompt/useSemanticTargetCatalog";
+import AssignmentScopeEditor from "../shared/AssignmentScopeEditor.vue";
 
 const { t } = useI18n();
-const {
-  enabledPromptVariables,
-  enabledModuleVariableGroups,
-} = usePromptVariables();
+const { enabledPromptVariables } = usePromptVariables();
 
 const props = withDefaults(
   defineProps<{
@@ -37,12 +40,7 @@ type DropdownItem = {
   description?: string;
   group?: string;
   groupLabel?: string;
-  color?: string;
   disabled?: boolean;
-};
-
-type TargetOption = DropdownItem & {
-  target: ColorPaletteTarget;
 };
 
 const builtinTargetValues = [
@@ -56,7 +54,6 @@ const builtinTargetValues = [
 ] as const;
 
 const collapsedRuleIds = ref<string[]>([]);
-const customTargetDrafts = ref<Record<string, string>>({});
 
 function translate(path: string, fallback = "") {
   const translated = t(path);
@@ -68,40 +65,71 @@ function humanize(value: string) {
     .replace(/[_-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function variableToken(variable: PromptVariable) {
-  return `{${variable.key}}`;
-}
+const builtinTargets = computed<SemanticBuiltinTargetDefinition[]>(() => [
+  {
+    value: "overall",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.overall",
+      "Overall",
+    ),
+  },
+  {
+    value: "background",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.background",
+      "Background",
+    ),
+  },
+  {
+    value: "subject",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.subject",
+      "Main Subject",
+    ),
+  },
+  {
+    value: "outfit",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.outfit",
+      "Outfit",
+    ),
+    moduleKey: "outfit",
+  },
+  {
+    value: "hair",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.hair",
+      "Hair",
+    ),
+    moduleKey: "hair",
+  },
+  {
+    value: "typography",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.typography",
+      "Typography",
+    ),
+  },
+  {
+    value: "accents",
+    label: translate(
+      "modules.colorPalette.fields.paletteAssignments.targets.builtin.accents",
+      "Accent Elements",
+    ),
+  },
+]);
 
-function isTokenLike(value?: string) {
-  return /^\{[^{}]+\}$/.test(String(value || "").trim());
-}
-
-function meaningfulVariableText(value?: string) {
-  const cleaned = String(value || "").trim();
-  return cleaned && !isTokenLike(cleaned) ? cleaned : "";
-}
-
-function typographyEntityLabel(
-  variable: PromptVariable,
-  fallback: string,
-) {
-  const token = variableToken(variable);
-  const label = meaningfulVariableText(variable.label);
-
-  if (label && label !== variable.key && label !== token) return label;
-
-  const value = meaningfulVariableText(variable.value);
-  if (value && value !== variable.key && value.length <= 72) return value;
-
-  return fallback;
-}
+const semanticCatalog = useSemanticTargetCatalog(
+  "color",
+  () => builtinTargets.value,
+);
 
 function getColorPalettePresetOptions() {
   return props.field.options || [];
@@ -122,17 +150,14 @@ function getColorPalettePresetCategories() {
 }
 
 function getColorPalettePresetsByCategory(category: string) {
-  return getColorPalettePresetOptions().filter((option) => {
-    return option.category === category;
-  });
+  return getColorPalettePresetOptions().filter(
+    (option) => option.category === category,
+  );
 }
 
 function getColorPalettePresetDropdownOptions() {
   const categories = getColorPalettePresetCategories();
-
-  if (!categories.length) {
-    return getColorPalettePresetOptions();
-  }
+  if (!categories.length) return getColorPalettePresetOptions();
 
   return categories.flatMap((category) => {
     return getColorPalettePresetsByCategory(category.value).map((option) => ({
@@ -148,20 +173,16 @@ function colorPalettePresetLabel(option: ModuleFieldOption) {
 }
 
 function presetOption(presetId?: string) {
-  return getColorPalettePresetOptions().find((option) => {
-    return option.value === presetId;
-  });
+  return getColorPalettePresetOptions().find(
+    (option) => option.value === presetId,
+  );
 }
 
 function literalSwatch(
   value = "#000000",
   id = createId("color"),
 ): ColorPaletteSwatch {
-  return {
-    id,
-    kind: "literal",
-    value,
-  };
+  return { id, kind: "literal", value };
 }
 
 function normalizeSwatch(
@@ -174,7 +195,6 @@ function normalizeSwatch(
   }
 
   if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-
   const item = value as Partial<ColorPaletteSwatch>;
   if (item.kind !== "literal" && item.kind !== "variable") return null;
   if (typeof item.value !== "string") return null;
@@ -189,34 +209,7 @@ function normalizeSwatch(
   };
 }
 
-function normalizeTarget(value: unknown): ColorPaletteTarget | null {
-  if (!value || typeof value !== "object" || Array.isArray(value)) return null;
-
-  const item = value as Partial<ColorPaletteTarget>;
-  if (
-    item.kind !== "builtin" &&
-    item.kind !== "user_variable" &&
-    item.kind !== "typography_group" &&
-    item.kind !== "typography_text" &&
-    item.kind !== "custom"
-  ) {
-    return null;
-  }
-
-  if (typeof item.value !== "string") return null;
-
-  return {
-    kind: item.kind,
-    value: item.value,
-    variableId: item.variableId,
-    entityId: item.entityId,
-    token: item.token,
-    label: item.label,
-    parentLabel: item.parentLabel,
-  };
-}
-
-function legacyTarget(value: unknown): ColorPaletteTarget {
+function legacyTarget(value: unknown): SemanticTargetRef {
   const usage =
     typeof value === "string" && value.trim() ? value.trim() : "overall";
 
@@ -225,10 +218,7 @@ function legacyTarget(value: unknown): ColorPaletteTarget {
       usage as (typeof builtinTargetValues)[number],
     )
   ) {
-    return {
-      kind: "builtin",
-      value: usage,
-    };
+    return { kind: "builtin", value: usage };
   }
 
   return {
@@ -257,17 +247,22 @@ function normalizeRule(
     .filter((color): color is ColorPaletteSwatch => Boolean(color));
 
   if (!colors.length && presetId) {
-    colors = (presetOption(presetId)?.colors || []).map((color, colorIndex) => {
-      return literalSwatch(color, `color-${ruleIndex + 1}-${colorIndex + 1}`);
-    });
+    colors = (presetOption(presetId)?.colors || []).map((color, colorIndex) =>
+      literalSwatch(color, `color-${ruleIndex + 1}-${colorIndex + 1}`),
+    );
   }
 
-  const rawTargets = Array.isArray(item.targets) ? item.targets : [];
-  const targets = rawTargets.length
-    ? rawTargets
-        .map(normalizeTarget)
-        .filter((target): target is ColorPaletteTarget => Boolean(target))
+  const hasExplicitTargets = Array.isArray(item.targets);
+  const targets = hasExplicitTargets
+    ? (item.targets as unknown[])
+        .map(normalizeSemanticTarget)
+        .filter((target): target is SemanticTargetRef => Boolean(target))
     : [legacyTarget(item.usage)];
+  const exceptions = Array.isArray(item.exceptions)
+    ? item.exceptions
+        .map(normalizeSemanticTarget)
+        .filter((target): target is SemanticTargetRef => Boolean(target))
+    : [];
 
   return {
     id:
@@ -277,12 +272,12 @@ function normalizeRule(
     presetId: presetId || undefined,
     colors,
     targets,
+    exceptions,
   };
 }
 
 function normalizeRules(value: unknown) {
   if (!Array.isArray(value)) return [];
-
   return value
     .map(normalizeRule)
     .filter((rule): rule is ColorPaletteRule => Boolean(rule));
@@ -295,7 +290,6 @@ watch(
   (value) => {
     const source = Array.isArray(value) ? value : [];
     const normalized = normalizeRules(source);
-
     if (JSON.stringify(source) !== JSON.stringify(normalized)) {
       emit("update:modelValue", normalized);
     }
@@ -311,19 +305,12 @@ function ruleId(rule: ColorPaletteRule, index: number) {
   return rule.id || `color-rule-${index + 1}`;
 }
 
-function isColorAssignmentExpanded(
-  rule: ColorPaletteRule,
-  assignmentIndex: number,
-) {
-  return !collapsedRuleIds.value.includes(ruleId(rule, assignmentIndex));
+function isColorAssignmentExpanded(rule: ColorPaletteRule, index: number) {
+  return !collapsedRuleIds.value.includes(ruleId(rule, index));
 }
 
-function toggleColorAssignment(
-  rule: ColorPaletteRule,
-  assignmentIndex: number,
-) {
-  const id = ruleId(rule, assignmentIndex);
-
+function toggleColorAssignment(rule: ColorPaletteRule, index: number) {
+  const id = ruleId(rule, index);
   collapsedRuleIds.value = collapsedRuleIds.value.includes(id)
     ? collapsedRuleIds.value.filter((item) => item !== id)
     : [...collapsedRuleIds.value, id];
@@ -334,6 +321,7 @@ function createColorAssignment(): ColorPaletteRule {
     id: createId("color-rule"),
     colors: [],
     targets: [{ kind: "builtin", value: "overall" }],
+    exceptions: [],
   };
 }
 
@@ -341,31 +329,21 @@ function addColorAssignment() {
   setAssignments([...assignments.value, createColorAssignment()]);
 }
 
-function removeColorAssignment(assignmentIndex: number) {
-  const current = assignments.value[assignmentIndex];
-
+function removeColorAssignment(index: number) {
+  const current = assignments.value[index];
   if (current?.id) {
     collapsedRuleIds.value = collapsedRuleIds.value.filter(
       (id) => id !== current.id,
     );
-    delete customTargetDrafts.value[current.id];
   }
-
-  setAssignments(
-    assignments.value.filter((_, index) => index !== assignmentIndex),
-  );
+  setAssignments(assignments.value.filter((_, itemIndex) => itemIndex !== index));
 }
 
-function updateRule(
-  assignmentIndex: number,
-  patch: Partial<ColorPaletteRule>,
-) {
+function updateRule(index: number, patch: Partial<ColorPaletteRule>) {
   setAssignments(
-    assignments.value.map((assignment, index) => {
-      return index === assignmentIndex
-        ? { ...assignment, ...patch }
-        : assignment;
-    }),
+    assignments.value.map((assignment, itemIndex) =>
+      itemIndex === index ? { ...assignment, ...patch } : assignment,
+    ),
   );
 }
 
@@ -373,81 +351,66 @@ function detachPreset(rule: ColorPaletteRule) {
   return rule.presetId ? { ...rule, presetId: undefined } : rule;
 }
 
-function updateColorAssignmentPreset(
-  assignmentIndex: number,
-  value: ElDropdownValue,
-) {
-  const current = assignments.value[assignmentIndex];
+function updateColorAssignmentPreset(index: number, value: ElDropdownValue) {
+  const current = assignments.value[index];
   if (!current) return;
 
   const presetId = String(value || "");
   if (!presetId) {
-    updateRule(assignmentIndex, { presetId: undefined });
+    updateRule(index, { presetId: undefined });
     return;
   }
 
   const option = presetOption(presetId);
   if (!option) return;
 
-  updateRule(assignmentIndex, {
+  updateRule(index, {
     presetId,
     colors: (option.colors || []).map((color) => literalSwatch(color)),
   });
 }
 
-function addColorAssignmentColor(assignmentIndex: number) {
-  const current = assignments.value[assignmentIndex];
+function addColorAssignmentColor(index: number) {
+  const current = assignments.value[index];
   if (!current) return;
-
   const detached = detachPreset(current);
-  updateRule(assignmentIndex, {
+  updateRule(index, {
     presetId: detached.presetId,
     colors: [...detached.colors, literalSwatch()],
   });
 }
 
-function removeColorAssignmentColor(
-  assignmentIndex: number,
-  colorIndex: number,
-) {
-  const current = assignments.value[assignmentIndex];
+function removeColorAssignmentColor(index: number, colorIndex: number) {
+  const current = assignments.value[index];
   if (!current) return;
-
   const detached = detachPreset(current);
-  updateRule(assignmentIndex, {
+  updateRule(index, {
     presetId: detached.presetId,
-    colors: detached.colors.filter((_, index) => index !== colorIndex),
+    colors: detached.colors.filter((_, itemIndex) => itemIndex !== colorIndex),
   });
 }
 
 function updateSwatch(
-  assignmentIndex: number,
+  index: number,
   colorIndex: number,
   swatch: ColorPaletteSwatch,
 ) {
-  const current = assignments.value[assignmentIndex];
+  const current = assignments.value[index];
   if (!current) return;
-
   const detached = detachPreset(current);
   const colors = [...detached.colors];
   colors[colorIndex] = swatch;
-
-  updateRule(assignmentIndex, {
-    presetId: detached.presetId,
-    colors,
-  });
+  updateRule(index, { presetId: detached.presetId, colors });
 }
 
 function updateColorAssignmentColorValue(
-  assignmentIndex: number,
+  index: number,
   colorIndex: number,
   value: string,
 ) {
-  const current = assignments.value[assignmentIndex];
-  const swatch = current?.colors[colorIndex];
+  const swatch = assignments.value[index]?.colors[colorIndex];
   if (!swatch) return;
-
-  updateSwatch(assignmentIndex, colorIndex, {
+  updateSwatch(index, colorIndex, {
     ...swatch,
     kind: "literal",
     value,
@@ -458,23 +421,25 @@ function updateColorAssignmentColorValue(
 }
 
 function updateColorAssignmentColor(
-  assignmentIndex: number,
+  index: number,
   colorIndex: number,
   event: Event,
 ) {
   const target = event.target as HTMLInputElement | null;
   updateColorAssignmentColorValue(
-    assignmentIndex,
+    index,
     colorIndex,
     target?.value || "#000000",
   );
 }
 
-const colorVariables = computed(() => {
-  return enabledPromptVariables.value.filter((variable) => {
-    return variable.type === "color";
-  });
-});
+function variableToken(key: string) {
+  return `{${key}}`;
+}
+
+const colorVariables = computed(() =>
+  enabledPromptVariables.value.filter((variable) => variable.type === "color"),
+);
 
 function swatchSourceValue(swatch: ColorPaletteSwatch) {
   if (swatch.kind !== "variable") return "literal";
@@ -490,7 +455,6 @@ function swatchSourceItems(swatch: ColorPaletteSwatch): DropdownItem[] {
     "modules.colorPalette.fields.paletteAssignments.colors.groups.variables",
     "Color Variables",
   );
-
   const items: DropdownItem[] = [
     {
       value: "literal",
@@ -503,7 +467,7 @@ function swatchSourceItems(swatch: ColorPaletteSwatch): DropdownItem[] {
     },
     ...colorVariables.value.map((variable) => ({
       value: `variable:${variable.id}`,
-      label: variableToken(variable),
+      label: variableToken(variable.key),
       description: variable.value,
       group: "variable",
       groupLabel: variableLabel,
@@ -529,18 +493,16 @@ function swatchSourceItems(swatch: ColorPaletteSwatch): DropdownItem[] {
 }
 
 function updateSwatchSource(
-  assignmentIndex: number,
+  index: number,
   colorIndex: number,
   value: ElDropdownValue,
 ) {
-  const current = assignments.value[assignmentIndex];
-  const swatch = current?.colors[colorIndex];
+  const swatch = assignments.value[index]?.colors[colorIndex];
   if (!swatch) return;
 
   const selected = String(value || "literal");
-
   if (selected === "literal") {
-    updateSwatch(assignmentIndex, colorIndex, {
+    updateSwatch(index, colorIndex, {
       id: swatch.id,
       kind: "literal",
       value: swatch.kind === "literal" ? swatch.value : "#000000",
@@ -549,13 +511,12 @@ function updateSwatchSource(
   }
 
   if (!selected.startsWith("variable:")) return;
-
   const variableId = selected.slice("variable:".length);
   const variable = colorVariables.value.find((item) => item.id === variableId);
   if (!variable) return;
 
-  const token = variableToken(variable);
-  updateSwatch(assignmentIndex, colorIndex, {
+  const token = variableToken(variable.key);
+  updateSwatch(index, colorIndex, {
     id: swatch.id,
     kind: "variable",
     value: token,
@@ -569,380 +530,30 @@ function normalizePickerColor(value: string) {
   return /^#[0-9a-f]{6}$/i.test(value.trim()) ? value.trim() : "#000000";
 }
 
-const typographyVariables = computed(() => {
-  const group = enabledModuleVariableGroups.value.find((item) => {
-    return item.id === "typography";
-  });
-
-  return group?.variables || [];
-});
-
-const typographyGroupVariables = computed(() => {
-  return typographyVariables.value.filter((variable) => {
-    return variable.entityType === "text_group";
-  });
-});
-
-const typographyTextVariables = computed(() => {
-  return typographyVariables.value.filter((variable) => {
-    return variable.entityType === "text";
-  });
-});
-
-const userTargetVariables = computed(() => {
-  return enabledPromptVariables.value.filter((variable) => {
-    return variable.type === "subject" || variable.type === "object";
-  });
-});
-
-function encodeReference(value: string) {
-  return encodeURIComponent(value);
-}
-
-function decodeReference(value: string) {
-  return decodeURIComponent(value);
-}
-
-function targetOptionValue(target: ColorPaletteTarget) {
-  if (target.kind === "builtin") return `builtin:${target.value}`;
-  if (target.kind === "custom") return "";
-  if (target.kind === "user_variable") {
-    return `user_variable:${encodeReference(target.variableId || target.value)}`;
-  }
-  if (target.kind === "typography_group") {
-    return `typography_group:${encodeReference(target.entityId || target.value)}`;
-  }
-  return `typography_text:${encodeReference(target.entityId || target.value)}`;
-}
-
-const generalGroupLabel = computed(() =>
-  translate(
-    "modules.colorPalette.fields.paletteAssignments.targets.groups.general",
-    "General",
-  ),
-);
-
-const typographyGroupsLabel = computed(() =>
-  translate(
-    "modules.colorPalette.fields.paletteAssignments.targets.groups.typographyGroups",
-    "Typography Groups",
-  ),
-);
-
-const typographyTextsLabel = computed(() =>
-  translate(
-    "modules.colorPalette.fields.paletteAssignments.targets.groups.typographyTexts",
-    "Typography Texts",
-  ),
-);
-
-const userVariablesLabel = computed(() =>
-  translate(
-    "modules.colorPalette.fields.paletteAssignments.targets.groups.userVariables",
-    "User Subject / Object Variables",
-  ),
-);
-
-const missingReferencesLabel = computed(() =>
-  translate(
-    "modules.colorPalette.fields.paletteAssignments.targets.groups.missing",
-    "Missing References",
-  ),
-);
-
-const builtinTargetOptions = computed<TargetOption[]>(() => {
-  return builtinTargetValues.map((value) => ({
-    value: `builtin:${value}`,
-    label: translate(
-      `modules.colorPalette.fields.paletteAssignments.targets.builtin.${value}`,
-      humanize(value),
-    ),
-    group: "general",
-    groupLabel: generalGroupLabel.value,
-    target: {
-      kind: "builtin",
-      value,
-    },
-  }));
-});
-
-const typographyGroupTargetOptions = computed<TargetOption[]>(() => {
-  return typographyGroupVariables.value.map((variable, index) => {
-    const token = variableToken(variable);
-    const label = typographyEntityLabel(
-      variable,
-      `${translate("modules.colorPalette.fields.paletteAssignments.targets.typographyGroupFallback", "Text Group")} ${index + 1}`,
-    );
-
-    return {
-      value: `typography_group:${encodeReference(variable.entityId || variable.id)}`,
-      label,
-      description: token,
-      group: "typography_groups",
-      groupLabel: typographyGroupsLabel.value,
-      target: {
-        kind: "typography_group" as const,
-        value: token,
-        entityId: variable.entityId || variable.id,
-        token,
-        label,
-      },
-    };
-  });
-});
-
-const typographyTextTargetOptions = computed<TargetOption[]>(() => {
-  return typographyTextVariables.value.map((variable, index) => {
-    const parent = typographyGroupVariables.value.find((groupVariable) => {
-      return groupVariable.entityId === variable.parentId;
-    });
-    const token = variableToken(variable);
-    const label = typographyEntityLabel(
-      variable,
-      `${translate("modules.colorPalette.fields.paletteAssignments.targets.typographyTextFallback", "Text")} ${index + 1}`,
-    );
-    const parentLabel = parent
-      ? typographyEntityLabel(parent, translate(
-          "modules.colorPalette.fields.paletteAssignments.targets.typographyGroupFallback",
-          "Text Group",
-        ))
-      : "";
-
-    return {
-      value: `typography_text:${encodeReference(variable.entityId || variable.id)}`,
-      label,
-      description: [token, parentLabel].filter(Boolean).join(" · "),
-      group: "typography_texts",
-      groupLabel: typographyTextsLabel.value,
-      target: {
-        kind: "typography_text" as const,
-        value: token,
-        entityId: variable.entityId || variable.id,
-        token,
-        label,
-        parentLabel,
-      },
-    };
-  });
-});
-
-const userTargetOptions = computed<TargetOption[]>(() => {
-  return userTargetVariables.value.map((variable) => ({
-    value: `user_variable:${encodeReference(variable.id)}`,
-    label: variableToken(variable),
-    description: variable.value,
-    group: "user_variables",
-    groupLabel: userVariablesLabel.value,
-    target: {
-      kind: "user_variable",
-      value: variableToken(variable),
-      variableId: variable.id,
-      token: variableToken(variable),
-      label: variable.label || variable.key,
-    },
-  }));
-});
-
-const allTargetOptions = computed<TargetOption[]>(() => [
-  ...builtinTargetOptions.value,
-  ...typographyGroupTargetOptions.value,
-  ...typographyTextTargetOptions.value,
-  ...userTargetOptions.value,
-]);
-
-function targetSelectValues(rule: ColorPaletteRule) {
-  return rule.targets
-    .filter((target) => target.kind !== "custom")
-    .map(targetOptionValue)
-    .filter(Boolean);
-}
-
-function targetFromSelection(
-  selection: string,
-  currentRule: ColorPaletteRule,
-): ColorPaletteTarget | null {
-  const option = allTargetOptions.value.find((item) => item.value === selection);
-  if (option) return { ...option.target };
-
-  const [kind, encoded = ""] = selection.split(":");
-  const reference = decodeReference(encoded);
-  const existing = currentRule.targets.find((target) => {
-    if (kind === "user_variable" && target.kind === "user_variable") {
-      return (target.variableId || target.value) === reference;
-    }
-
-    if (kind === "typography_group" && target.kind === "typography_group") {
-      return (target.entityId || target.value) === reference;
-    }
-
-    if (kind === "typography_text" && target.kind === "typography_text") {
-      return (target.entityId || target.value) === reference;
-    }
-
-    return false;
-  });
-
-  return existing ? { ...existing } : null;
-}
-
-function isTargetOptionAvailable(value: string) {
-  return allTargetOptions.value.some((option) => option.value === value);
-}
-
-function missingTargetOptions(rule: ColorPaletteRule): TargetOption[] {
-  return rule.targets
-    .filter((target) => target.kind !== "custom")
-    .map((target) => ({
-      value: targetOptionValue(target),
-      target,
-    }))
-    .filter(({ value }) => value && !isTargetOptionAvailable(value))
-    .map(({ value, target }) => ({
-      value,
-      label: `${translate("modules.colorPalette.fields.paletteAssignments.missing", "Missing")} — ${target.label || target.token || target.value}`,
-      description: target.token || target.value,
-      group: "missing",
-      groupLabel: missingReferencesLabel.value,
-      color: "orange",
-      target,
-    }));
-}
-
-function targetItems(rule: ColorPaletteRule) {
-  return [
-    ...allTargetOptions.value,
-    ...missingTargetOptions(rule),
-  ];
-}
-
-function updateColorAssignmentTargets(
-  assignmentIndex: number,
-  values: ElDropdownValue[],
-) {
-  const current = assignments.value[assignmentIndex];
-  if (!current) return;
-
-  const selectedValues = values.map((value) => String(value));
-  const hasOverall = selectedValues.includes("builtin:overall");
-  const selectedTargets = selectedValues
-    .map((value) => targetFromSelection(value, current))
-    .filter((target): target is ColorPaletteTarget => Boolean(target));
-  const customTargets = hasOverall
-    ? []
-    : current.targets.filter((target) => target.kind === "custom");
-
-  updateRule(assignmentIndex, {
-    targets: [...selectedTargets, ...customTargets],
-  });
-}
-
-function customTargets(rule: ColorPaletteRule) {
-  return rule.targets.filter((target) => target.kind === "custom");
-}
-
-function customTargetDraftKey(rule: ColorPaletteRule, assignmentIndex: number) {
-  return ruleId(rule, assignmentIndex);
-}
-
-function customTargetDraft(rule: ColorPaletteRule, assignmentIndex: number) {
-  return customTargetDrafts.value[customTargetDraftKey(rule, assignmentIndex)] || "";
-}
-
-function updateCustomTargetDraft(
-  rule: ColorPaletteRule,
-  assignmentIndex: number,
-  value: string,
-) {
-  customTargetDrafts.value = {
-    ...customTargetDrafts.value,
-    [customTargetDraftKey(rule, assignmentIndex)]: value,
-  };
-}
-
-function addCustomTarget(assignmentIndex: number) {
-  const current = assignments.value[assignmentIndex];
-  if (!current) return;
-
-  const key = customTargetDraftKey(current, assignmentIndex);
-  const value = String(customTargetDrafts.value[key] || "").trim();
-  if (!value) return;
-
-  const exists = current.targets.some((target) => {
-    return target.kind === "custom" && target.value.trim().toLowerCase() === value.toLowerCase();
-  });
-
-  if (!exists) {
-    updateRule(assignmentIndex, {
-      targets: [
-        ...current.targets.filter((target) => {
-          return !(target.kind === "builtin" && target.value === "overall");
-        }),
-        { kind: "custom", value },
-      ],
-    });
-  }
-
-  customTargetDrafts.value = {
-    ...customTargetDrafts.value,
-    [key]: "",
-  };
-}
-
-function removeCustomTarget(assignmentIndex: number, targetIndex: number) {
-  const current = assignments.value[assignmentIndex];
-  if (!current) return;
-
-  let customIndex = -1;
-  updateRule(assignmentIndex, {
-    targets: current.targets.filter((target) => {
-      if (target.kind !== "custom") return true;
-      customIndex += 1;
-      return customIndex !== targetIndex;
-    }),
-  });
-}
-
-function targetIdentity(target: ColorPaletteTarget) {
-  if (target.kind === "builtin") return `builtin:${target.value}`;
-  if (target.kind === "custom") {
-    return target.value.trim()
-      ? `custom:${target.value.trim().toLowerCase()}`
-      : "";
-  }
-  if (target.kind === "user_variable") {
-    return `user:${target.variableId || target.token || target.value}`;
-  }
-  return `${target.kind}:${target.entityId || target.token || target.value}`;
-}
-
 const targetConflictCounts = computed(() => {
   const counts = new Map<string, number>();
-
   assignments.value.forEach((rule) => {
     rule.targets.forEach((target) => {
-      const key = targetIdentity(target);
-      if (!key) return;
-      counts.set(key, (counts.get(key) || 0) + 1);
+      const key = semanticTargetIdentity(target);
+      if (key) counts.set(key, (counts.get(key) || 0) + 1);
     });
   });
-
   return counts;
 });
 
 function hasTargetConflict(rule: ColorPaletteRule) {
   return rule.targets.some((target) => {
-    const key = targetIdentity(target);
+    const key = semanticTargetIdentity(target);
     return key ? (targetConflictCounts.value.get(key) || 0) > 1 : false;
   });
 }
 
+function ruleTitle(rule: ColorPaletteRule) {
+  return semanticCatalog.summarize(rule.targets, rule.exceptions || []);
+}
+
 function ruleSummary(rule: ColorPaletteRule) {
-  return translate(
-    "modules.colorPalette.fields.paletteAssignments.ruleSummary",
-    `${rule.colors.length} colors · ${rule.targets.length} targets`,
-  )
-    .replace("{colors}", String(rule.colors.length))
-    .replace("{targets}", String(rule.targets.length));
+  return `${rule.colors.length} ${rule.colors.length === 1 ? "color" : "colors"}`;
 }
 </script>
 
@@ -968,9 +579,9 @@ function ruleSummary(rule: ColorPaletteRule) {
         @keydown.enter.prevent="toggleColorAssignment(assignment, assignmentIndex)"
         @keydown.space.prevent="toggleColorAssignment(assignment, assignmentIndex)"
       >
-        <el-flex rules="ccs" :gap="1">
-          <el-text :size="14" :weight="300" icon="palette">
-            {{ t("modules.colorPalette.fields.paletteAssignments.ruleTitle", { index: assignmentIndex + 1 }) }}
+        <el-flex rules="ccs" :gap="1" class="minw0">
+          <el-text :size="14" :weight="500" icon="palette">
+            {{ ruleTitle(assignment) }}
           </el-text>
           <el-text :size="9" color="normal45">
             {{ ruleSummary(assignment) }}
@@ -1017,82 +628,15 @@ function ruleSummary(rule: ColorPaletteRule) {
           />
         </label>
 
-        <label class="module-field__control">
-          <el-text :size="10" color="normal50">
-            {{ translate("modules.colorPalette.fields.paletteAssignments.targets.label", "Apply To") }}
-          </el-text>
-          <el-multi-select
-            :model-value="targetSelectValues(assignment)"
-            :items="targetItems(assignment)"
-            item-label="label"
-            item-value="value"
-            item-description="description"
-            item-group="group"
-            item-group-label="groupLabel"
-            item-color="color"
-            item-disabled="disabled"
-            :exclusive-values="['builtin:overall']"
-            :placeholder="t('panel.none')"
-            @update:model-value="updateColorAssignmentTargets(assignmentIndex, $event)"
-          />
-        </label>
-
-        <el-grid :gap="6" class="module-field__custom-target-editor">
-          <el-text :size="10" color="normal50">
-            {{ translate("modules.colorPalette.fields.paletteAssignments.targets.customLabel", "Custom targets") }}
-          </el-text>
-
-          <el-flex rules="rsc" :gap="8" class="w100">
-            <el-text-field
-              class="fg100"
-              :model-value="customTargetDraft(assignment, assignmentIndex)"
-              type="text"
-              support-variables
-              :placeholder="translate('modules.colorPalette.fields.paletteAssignments.targets.customPlaceholder', 'Example: dragon costume scales')"
-              @update:model-value="updateCustomTargetDraft(assignment, assignmentIndex, $event)"
-              @keydown.enter.prevent="addCustomTarget(assignmentIndex)"
-            />
-            <el-button
-              icon="add"
-              :label="translate('modules.colorPalette.fields.paletteAssignments.targets.addCustom', 'Add custom target')"
-              color="blue"
-              :size="12"
-              :p="[8, 12]"
-              @click="addCustomTarget(assignmentIndex)"
-            />
-          </el-flex>
-
-          <el-flex
-            v-if="customTargets(assignment).length"
-            rules="rsc"
-            :gap="6"
-            class="fw w100"
-          >
-            <el-flex
-              v-for="(target, targetIndex) in customTargets(assignment)"
-              :key="`${ruleId(assignment, assignmentIndex)}-custom-${targetIndex}`"
-              rules="rcc"
-              :gap="4"
-              :p="[4, 8]"
-              :radius="20"
-              bg="normal5"
-              :br="1"
-              bc="normal10"
-            >
-              <el-text :size="10">{{ target.value }}</el-text>
-              <el-button
-                type="fab"
-                mode="flat"
-                color="red"
-                icon="close"
-                :size="10"
-                :p="4"
-                :label="t('modules.colorPalette.fields.paletteAssignments.actions.remove')"
-                @click="removeCustomTarget(assignmentIndex, targetIndex)"
-              />
-            </el-flex>
-          </el-flex>
-        </el-grid>
+        <AssignmentScopeEditor
+          :model-value="assignment.targets"
+          :exceptions="assignment.exceptions || []"
+          capability="color"
+          :builtins="builtinTargets"
+          exclusive-value="overall"
+          @update:model-value="updateRule(assignmentIndex, { targets: $event })"
+          @update:exceptions="updateRule(assignmentIndex, { exceptions: $event })"
+        />
 
         <el-text
           v-if="hasTargetConflict(assignment)"
@@ -1217,8 +761,7 @@ function ruleSummary(rule: ColorPaletteRule) {
 
 .module-field__assignment-body,
 .module-field__control,
-.module-field__color-row,
-.module-field__custom-target-editor {
+.module-field__color-row {
   width: 100%;
 }
 
