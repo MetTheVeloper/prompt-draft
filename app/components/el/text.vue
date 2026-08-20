@@ -30,7 +30,7 @@
       :style="textStyle"
       v-bind="urlMode ? { to } : {}"
     >
-      <template v-for="(node, i) in localizedText" :key="i">
+      <template v-for="(node, i) in getLocalizedText()" :key="i">
         <component :is="node" />
       </template>
     </component>
@@ -186,7 +186,7 @@ const toEnglishDigits = (str) => {
 
 const { locale } = useI18n();
 
-const localizedText = computed(() => {
+function getLocalizedText() {
   const nodes = slots.default?.() || [];
 
   return nodes.map((node) => {
@@ -210,7 +210,7 @@ const localizedText = computed(() => {
 
     return node;
   });
-});
+}
 
 onMounted(() => {
   if (props.effect === "glitch") {
