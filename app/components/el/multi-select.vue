@@ -77,6 +77,7 @@ const emit = defineEmits<{
 
 const menuApi = useMenu()
 const triggerRef = ref<HTMLElement | null>(null)
+const localValues = ref<ElDropdownValue[]>([])
 
 function readItemValue<TResult>(
   item: any,
@@ -205,9 +206,15 @@ function uniqueValues(values: ElDropdownValue[]) {
   })
 }
 
-const selectedValues = computed(() => {
-  return uniqueValues(Array.isArray(props.modelValue) ? props.modelValue : [])
-})
+watch(
+  () => props.modelValue,
+  (value) => {
+    localValues.value = uniqueValues(Array.isArray(value) ? value : [])
+  },
+  { immediate: true, deep: true },
+)
+
+const selectedValues = computed(() => localValues.value)
 
 const selectedItems = computed(() => {
   return normalizedItems.value.filter((item) => {
@@ -281,8 +288,23 @@ function toggleSelection(
 
 function emitValues(values: ElDropdownValue[]) {
   const normalized = uniqueValues(values)
+  localValues.value = normalized
   emit('update:modelValue', normalized)
   emit('change', normalized)
+}
+
+function ownsOpenMenu() {
+  return Boolean(
+    menuApi.state.isOpen &&
+      triggerRef.value &&
+      menuApi.state.menu?.anchor === triggerRef.value,
+  )
+}
+
+async function refreshOpenMenu(selection: ElDropdownValue[]) {
+  await nextTick()
+  if (!ownsOpenMenu()) return
+  menuApi.update({ items: buildMenuItems(selection) })
 }
 
 function createHeaderItem(label?: string, icon?: string): GlobalMenuItem {
@@ -314,12 +336,12 @@ function createSelectableItem(
     icon: active ? 'check' : item.icon,
     disabled: item.disabled,
     close: false,
-    handler: () => {
+    handler: async () => {
       if (isItemDisabled(item)) return false
 
-      const nextSelection = toggleSelection(selection, value)
+      const nextSelection = toggleSelection(localValues.value, value)
       emitValues(nextSelection)
-      menuApi.update({ items: buildMenuItems(nextSelection) })
+      await refreshOpenMenu(nextSelection)
       return false
     },
   }
@@ -382,9 +404,9 @@ function createClearItem(selection: ElDropdownValue[]): GlobalMenuItem {
     active: selection.length === 0,
     disabled: selection.length === 0,
     close: false,
-    handler: () => {
+    handler: async () => {
       emitValues([])
-      menuApi.update({ items: buildMenuItems([]) })
+      await refreshOpenMenu([])
       return false
     },
   }
@@ -419,6 +441,7 @@ function openMultiSelect() {
       minWidth: 180,
       maxHeight: 'min(420px, calc(100vh - 24px))',
       closeOnSelect: false,
+      closeOnScroll: false,
       zIndex: 30000,
       ...props.menuOptions,
     },
