@@ -1,23 +1,27 @@
 import type {
   ColorPaletteRule,
   ColorPaletteSwatch,
-  ColorPaletteTarget,
   ModuleField,
   ModuleValues,
   PromptKeyModule,
+  SemanticTargetRef,
 } from "../modules/types";
+import {
+  cleanSemanticText,
+  formatSemanticScope,
+  normalizeSemanticTargets,
+  semanticTargetSpecificity,
+} from "./semanticTargets";
 
-function cleanPromptPart(value: string) {
-  return value.trim().replace(/\s+/g, " ");
-}
-
-function humanizeValue(value: string) {
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+const COLOR_BUILTIN_TARGET_TEXT: Record<string, string> = {
+  overall: "overall image",
+  background: "background",
+  subject: "main subject",
+  outfit: "outfit",
+  hair: "hair",
+  typography: "typography",
+  accents: "accent elements",
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -27,14 +31,6 @@ function isPaletteSwatch(value: unknown): value is ColorPaletteSwatch {
   return (
     isRecord(value) &&
     (value.kind === "literal" || value.kind === "variable") &&
-    typeof value.value === "string"
-  );
-}
-
-function isPaletteTarget(value: unknown): value is ColorPaletteTarget {
-  return (
-    isRecord(value) &&
-    typeof value.kind === "string" &&
     typeof value.value === "string"
   );
 }
@@ -53,29 +49,13 @@ function presetOption(field: ModuleField, presetId?: string) {
 }
 
 function literalSwatch(value: string): ColorPaletteSwatch {
-  return {
-    kind: "literal",
-    value,
-  };
+  return { kind: "literal", value };
 }
 
-function legacyTarget(value?: string): ColorPaletteTarget {
+function legacyTarget(value?: string): SemanticTargetRef {
   const target = value?.trim() || "overall";
-  const builtins = new Set([
-    "overall",
-    "background",
-    "subject",
-    "outfit",
-    "hair",
-    "typography",
-    "accents",
-  ]);
-
-  if (builtins.has(target)) {
-    return {
-      kind: "builtin",
-      value: target,
-    };
+  if (Object.prototype.hasOwnProperty.call(COLOR_BUILTIN_TARGET_TEXT, target)) {
+    return { kind: "builtin", value: target };
   }
 
   return {
@@ -108,6 +88,7 @@ function normalizeLegacyRule(
     targets: [
       legacyTarget(typeof value.usage === "string" ? value.usage : "overall"),
     ],
+    exceptions: [],
   };
 }
 
@@ -120,13 +101,11 @@ export function normalizeColorPaletteRules(
   return value
     .map((item, index) => {
       if (isPaletteRule(item)) {
-        const colors = item.colors.filter(isPaletteSwatch);
-        const targets = item.targets.filter(isPaletteTarget);
-
         return {
           ...item,
-          colors,
-          targets,
+          colors: item.colors.filter(isPaletteSwatch),
+          targets: normalizeSemanticTargets(item.targets),
+          exceptions: normalizeSemanticTargets(item.exceptions),
         } as ColorPaletteRule;
       }
 
@@ -137,105 +116,33 @@ export function normalizeColorPaletteRules(
 
 function formatSwatch(swatch: ColorPaletteSwatch) {
   if (swatch.kind === "variable") {
-    return cleanPromptPart(swatch.token || swatch.value);
+    return cleanSemanticText(swatch.token || swatch.value);
   }
-
-  return cleanPromptPart(swatch.value);
-}
-
-function formatPalette(field: ModuleField, rule: ColorPaletteRule) {
-  const colors = rule.colors.map(formatSwatch).filter(Boolean);
-  if (!colors.length) return "";
-
-  const option = presetOption(field, rule.presetId);
-  const paletteName = option?.promptText?.trim() || "custom color palette";
-
-  return `${paletteName} (${colors.join(" / ")})`;
-}
-
-function builtinTargetText(value: string) {
-  const map: Record<string, string> = {
-    overall: "the overall image",
-    background: "the background",
-    subject: "the main subject",
-    outfit: "the outfit",
-    hair: "the hair",
-    typography: "typography",
-    accents: "accent elements",
-  };
-
-  return map[value] || humanizeValue(value);
-}
-
-function quotedLabel(value?: string) {
-  const label = value?.trim();
-  return label ? `\"${label.replace(/\"/g, "\\\"")}\"` : "";
-}
-
-function formatTarget(target: ColorPaletteTarget) {
-  if (target.kind === "builtin") {
-    return builtinTargetText(target.value);
-  }
-
-  if (target.kind === "custom") {
-    return cleanPromptPart(target.value);
-  }
-
-  const token = cleanPromptPart(target.token || target.value);
-  const label = quotedLabel(target.label);
-
-  if (target.kind === "typography_group") {
-    return ["typography group", label, token && `(${token})`]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  if (target.kind === "typography_text") {
-    const parent = quotedLabel(target.parentLabel);
-    const descriptor = [
-      "typography text",
-      label,
-      parent ? `in group ${parent}` : "",
-      token && `(${token})`,
-    ];
-
-    return descriptor.filter(Boolean).join(" ");
-  }
-
-  return ["user target", label, token && `(${token})`]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function formatTargets(targets: ColorPaletteTarget[]) {
-  const values = targets.map(formatTarget).filter(Boolean);
-
-  if (!values.length) return "";
-  if (values.length === 1) return values[0];
-  return values.join(" and ");
-}
-
-function targetSpecificity(target: ColorPaletteTarget) {
-  if (target.kind !== "builtin") return 2;
-  if (target.value === "overall") return 0;
-  return 1;
+  return cleanSemanticText(swatch.value);
 }
 
 function ruleSpecificity(rule: ColorPaletteRule) {
   if (!rule.targets.length) return 0;
-  return Math.max(...rule.targets.map(targetSpecificity));
+  return Math.max(
+    ...rule.targets.map((target) =>
+      semanticTargetSpecificity(target, "overall"),
+    ),
+  );
 }
 
-export function compileColorPaletteRule(
-  field: ModuleField,
-  rule: ColorPaletteRule,
-) {
-  const paletteText = formatPalette(field, rule);
-  const targetText = formatTargets(rule.targets);
+export function compileColorPaletteRule(rule: ColorPaletteRule) {
+  const colors = rule.colors.map(formatSwatch).filter(Boolean);
+  const scope = formatSemanticScope(
+    rule.targets,
+    rule.exceptions || [],
+    {
+      format: "modular",
+      builtinText: COLOR_BUILTIN_TARGET_TEXT,
+    },
+  );
 
-  if (!paletteText || !targetText) return "";
-
-  return `${paletteText} assigned to ${targetText}`;
+  if (!colors.length || !scope) return "";
+  return `• Assign ${colors.join(", ")} to ${scope}`;
 }
 
 export function compileColorPaletteModule(
@@ -249,9 +156,8 @@ export function compileColorPaletteModule(
 
   if (overrideFieldId) {
     const overrideValue = values[overrideFieldId];
-
     if (typeof overrideValue === "string" && overrideValue.trim()) {
-      return cleanPromptPart(overrideValue);
+      return cleanSemanticText(overrideValue);
     }
   }
 
@@ -267,15 +173,17 @@ export function compileColorPaletteModule(
       const specificity = ruleSpecificity(a.rule) - ruleSpecificity(b.rule);
       return specificity || a.index - b.index;
     })
-    .map(({ rule }) => compileColorPaletteRule(rulesField, rule))
+    .map(({ rule }) => compileColorPaletteRule(rule))
     .filter(Boolean);
 
   const extraDetails =
     typeof values.extraDetails === "string"
-      ? cleanPromptPart(values.extraDetails)
+      ? cleanSemanticText(values.extraDetails)
       : "";
 
-  return [rules.join("; "), extraDetails]
-    .filter(Boolean)
-    .join(", ");
+  if (extraDetails) {
+    rules.push(`• ${extraDetails}`);
+  }
+
+  return rules.join("\n");
 }
