@@ -468,10 +468,19 @@ function assignmentSummary(assignment: MaterialAssignment) {
         @keydown.space.prevent="toggleExpanded(assignment, assignmentIndex)"
       >
         <el-flex rules="ccs" :gap="1" class="minw0">
-          <el-text :size="14" :weight="500" icon="texture">
+          <el-text
+            :key="`material-title:${assignmentTitle(assignment)}`"
+            :size="14"
+            :weight="500"
+            icon="texture"
+          >
             {{ assignmentTitle(assignment) }}
           </el-text>
-          <el-text :size="9" color="normal45">
+          <el-text
+            :key="`material-summary:${assignmentSummary(assignment)}`"
+            :size="9"
+            color="normal45"
+          >
             {{ assignmentSummary(assignment) }}
           </el-text>
         </el-flex>
