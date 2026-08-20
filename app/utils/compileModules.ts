@@ -13,6 +13,8 @@ import { compileLayoutModule } from "./compileLayout";
 import { compileLightingModule } from "./compileLighting";
 import { compileColorPaletteModule } from "./compileColorPalette";
 import { compileTextureModule } from "./compileTexture";
+import { compilePoseModule } from "./compilePose";
+import { compileExpressionModule } from "./compileExpression";
 import {
   getLayoutRegionVariableToken,
   getTypographyGroupVariableToken,
@@ -471,6 +473,14 @@ export function compileModule(
 
   if (module.key === "texture") {
     return compileTextureModule(module, values);
+  }
+
+  if (module.key === "pose") {
+    return compilePoseModule(module, values);
+  }
+
+  if (module.key === "expression") {
+    return compileExpressionModule(module, values);
   }
 
   const fields = Object.values(module.fields);
