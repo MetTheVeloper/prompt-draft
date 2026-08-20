@@ -178,3 +178,53 @@ Some old values were semantically misplaced or bundled multiple axes:
 3. Extract the material catalog from legacy `texture.module.ts` into a neutral catalog file.
 4. Remove the legacy module implementation once catalog extraction and migration are verified.
 5. Test legacy draft save/export/import round trips and remove this backlog item after migration is verified.
+
+---
+
+## Pose / Expression — legacy mega-select migration
+
+### Status
+Open — migration only. Stage 12's relational Pose / Expression schema should not be reopened to preserve polluted legacy prose.
+
+### Problem
+Older drafts can still contain the previous global fields:
+
+```text
+poseStyle
+expressionStyle
+extraDetails
+```
+
+Stage 12 replaces those global mega-selects with repeated subject-scoped `poseAssignments[]` and `expressionAssignments[]`. Each assignment targets the system `{subject}` or one or more user variables whose type is `subject`.
+
+The old options frequently bundle several independent axes and cross-module assumptions. Examples include editorial/fashion pose, heroic or shy body-language interpretation, cinematic/editorial expression, cute/chibi styling, fantasy/creature styling, professional/commercial use cases, and scenario assumptions such as battle-ready or protest-driven expression.
+
+### Exact concepts that can migrate later
+Some legacy concepts have clean destinations when converted to state recipes rather than prose:
+
+- standing / seated / kneeling / crouching / reclining → Pose `basePosture`,
+- leaning / twisting / upright posture → Pose `torsoPosture`,
+- weight shift / off-balance → Pose `weightBalance`,
+- relaxed / tense physical state → Pose `bodyTension`,
+- walking / running / jumping → Pose `locomotion`,
+- arms crossed / hand on hip / hands in pockets / pointing / reaching → Pose `gestures`,
+- neutral / happy / serious / angry / sad / surprised and similar affect → Expression `coreExpression`,
+- subtle / pronounced / exaggerated → Expression `intensity`,
+- wide / narrowed / relaxed eyes → Expression `eyeState`,
+- raised / furrowed brows → Expression `browState`,
+- smile / smirk / frown / open mouth / gritted teeth → Expression `mouthState`.
+
+### Values requiring policy
+Migration must not recreate removed semantic leakage:
+
+- Pose does not own viewpoint, framing, fashion/editorial style, personality, or narrative role.
+- Expression does not own cinematic/editorial/cute/fantasy style, commercial purpose, character archetype, or scene narrative.
+- Legacy global `extraDetails` cannot be assigned safely to one subject when a new draft contains multiple subject assignments.
+
+### Required follow-up
+
+1. Define conservative `poseStyle` and `expressionStyle` → assignment recipe migration tables.
+2. Decide whether a legacy global value should target only system `{subject}` or require user review when multiple subject variables exist.
+3. Define an explicit policy for legacy global `extraDetails`.
+4. Run migration during local-storage and imported JSON hydration.
+5. Remove stale legacy keys after successful migration and test save/export/import round trips.
