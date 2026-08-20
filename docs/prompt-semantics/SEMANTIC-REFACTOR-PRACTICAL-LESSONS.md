@@ -184,3 +184,61 @@ scripts/i18n-patches/fa.semantic-refactor.todo.ts
 The ledger intentionally keeps English source values during the refactor. It must not be merged into `fa.ts` until a final Persian translation pass replaces those values.
 
 This prevents new and rewritten UI copy from being scattered across many stages and makes the final Persian synchronization a single controlled operation.
+
+## 14. Reuse assignment infrastructure without reusing target policy blindly
+
+Shared relational infrastructure should own mechanics such as stable target identity, missing-reference preservation, selection, summaries, and serialization helpers.
+
+The domain still owns **who is eligible to receive the assignment**.
+
+Color Palette and Texture / Material legitimately expose broad target catalogs. Pose and Expression proved that another assignment-driven domain may need a much narrower policy: only semantic subjects capable of receiving pose/expression.
+
+Do not turn shared infrastructure into a universal target catalog merely because several modules use the same assignment interaction.
+
+## 15. Distinguish assignment recipients from payload participants
+
+An entity can participate in an instruction without being a valid assignment recipient.
+
+Example:
+
+```text
+{hero} → holding {sword}
+```
+
+Here `{hero}` is the Pose recipient while `{sword}` is a payload participant. The sword should not become pose-targetable merely because it appears in the pose instruction.
+
+This distinction keeps target eligibility semantically strict while preserving rich variable-driven interactions inside payload details.
+
+## 16. Source/reference replacement is often compiler context, not a user axis
+
+When defining a new state that is intended to override source/reference state, the replacement instruction may be intrinsic to the compiler context rather than a separate checkbox.
+
+Pose and Expression demonstrated the pattern:
+
+```text
+image-to-image + structured Pose       → replace source/reference pose
+image-to-image + structured Expression → replace source/reference expression
+text-to-image                           → no replacement wording
+```
+
+Do not ask users to repeatedly select a semantic consequence that already follows from the active mode and the presence of an explicit replacement assignment.
+
+## 17. Nested assignment summaries are functional editor state, not decorative copy
+
+Repeated assignment editors rely on compact card titles/subtitles for navigation, especially on mobile and in multi-subject prompts.
+
+If nested state changes but a component-system text node does not react reliably, use the proven content-dependent render-key pattern so title/summary nodes re-render when their semantic source changes.
+
+A summary must also inspect every meaningful structured axis. Showing `No properties` while less-common axes are populated is a real state-representation bug even if compilation itself is correct.
+
+## 18. Test whether a semantic control is actually observable in the chosen scene
+
+A generation cannot validate a control that the selected framing or context hides.
+
+Examples:
+
+- close-up framing can make body Pose impossible to judge,
+- a strongly action-oriented idea can compete with a deliberately static Pose,
+- subtle facial mechanics may be visually overwhelmed by lighting, angle, or expression intensity.
+
+Classify these as **test observability / prompt-tension issues** unless the compiled semantics are wrong or repeated controlled tests expose a real ownership defect.
