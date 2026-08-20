@@ -184,7 +184,7 @@ Some old values were semantically misplaced or bundled multiple axes:
 ## Pose / Expression — legacy mega-select migration
 
 ### Status
-Open — migration only. Stage 12's relational Pose / Expression schema should not be reopened to preserve polluted legacy prose.
+Open — migration only. **Stage 12 is semantically closed and validated.** This backlog item must not be interpreted as an open Pose/Expression schema-design task.
 
 ### Problem
 Older drafts can still contain the previous global fields:
@@ -196,6 +196,8 @@ extraDetails
 ```
 
 Stage 12 replaces those global mega-selects with repeated subject-scoped `poseAssignments[]` and `expressionAssignments[]`. Each assignment targets the system `{subject}` or one or more user variables whose type is `subject`.
+
+The new relational schema has passed structured-editor validation, title/summary reactivity validation, Modular/Natural identity preservation, and representative single- and multi-subject real image-generation tests.
 
 The old options frequently bundle several independent axes and cross-module assumptions. Examples include editorial/fashion pose, heroic or shy body-language interpretation, cinematic/editorial expression, cute/chibi styling, fantasy/creature styling, professional/commercial use cases, and scenario assumptions such as battle-ready or protest-driven expression.
 
