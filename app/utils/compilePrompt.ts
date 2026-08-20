@@ -335,11 +335,16 @@ function isProtectedBulletOutput(output: ModuleOutputValue) {
 }
 
 function getModuleNaturalParts(
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  excludedModuleKeys: Set<string> = new Set(),
 ) {
   const parts = moduleOutputs
     .filter((item) => {
-      return typeof item.output === "string" && !isProtectedBulletOutput(item.output)
+      return (
+        !excludedModuleKeys.has(item.key) &&
+        typeof item.output === "string" &&
+        !isProtectedBulletOutput(item.output)
+      )
     })
     .flatMap((item) => {
       return (item.output as string)
@@ -481,53 +486,13 @@ function naturalBlockTitle(key: string) {
   return humanizeModuleKey(key)
 }
 
-function naturalizeLinkedModuleTargets(
-  value: string,
-  modules: PromptKeyModule[],
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
-) {
-  const activeOutputKeys = new Set(moduleOutputs.map((item) => item.key))
-  const linkedModules = modules.filter((module) => {
-    return (
-      module.semanticTargets?.exposeOutput === true &&
-      activeOutputKeys.has(module.key)
-    )
-  })
-
-  return value
-    .split('\n')
-    .map((line) => {
-      const scopeMarker = ' to '
-      const scopeIndex = line.indexOf(scopeMarker)
-      if (scopeIndex < 0) return line
-
-      const prefix = line.slice(0, scopeIndex + scopeMarker.length)
-      let scope = line.slice(scopeIndex + scopeMarker.length)
-
-      linkedModules.forEach((module) => {
-        const token = `{${module.key}}`
-        const replacement = `the configured ${humanizeModuleKey(module.key).toLowerCase()}`
-        scope = scope.split(token).join(replacement)
-      })
-
-      return `${prefix}${scope}`
-    })
-    .join('\n')
-}
-
 function getProtectedBulletNaturalBlocks(
-  modules: PromptKeyModule[],
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
 ) {
   return moduleOutputs
     .filter((item) => isProtectedBulletOutput(item.output))
     .map((item) => {
-      const output = item.output as string
-      return `${naturalBlockTitle(item.key)}:\n${naturalizeLinkedModuleTargets(
-        output,
-        modules,
-        moduleOutputs,
-      )}`
+      return `${naturalBlockTitle(item.key)}:\n${item.output as string}`
     })
 }
 
@@ -643,6 +608,107 @@ function getSystemPromptVariables(
   return variables
 }
 
+function formatPromptDefinition(key: string, value: ModuleOutputValue) {
+  const stringValue =
+    typeof value === 'string'
+      ? value.trim()
+      : JSON.stringify(value)
+
+  if (!key.trim() || !stringValue) return ''
+
+  return stringValue.includes('\n') || stringValue.startsWith('•')
+    ? `{${key}} =\n${stringValue}`
+    : `{${key}} = ${stringValue}`
+}
+
+function moduleOutputText(value: ModuleOutputValue) {
+  return typeof value === 'string' ? value : JSON.stringify(value)
+}
+
+function getReferencedLinkedModuleKeys(
+  modules: PromptKeyModule[],
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  settings: PromptSettings,
+  variablesOutput: string,
+) {
+  const settingText = [
+    settings.idea,
+    settings.subject,
+    settings.globalRules,
+    variablesOutput,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const activeOutputKeys = new Set(moduleOutputs.map((item) => item.key))
+  const referencedKeys = new Set<string>()
+
+  modules.forEach((module) => {
+    if (
+      module.semanticTargets?.exposeOutput !== true ||
+      !activeOutputKeys.has(module.key)
+    ) {
+      return
+    }
+
+    const token = `{${module.key}}`
+    const externalModuleText = moduleOutputs
+      .filter((item) => item.key !== module.key)
+      .map((item) => moduleOutputText(item.output))
+      .join('\n')
+
+    if (`${settingText}\n${externalModuleText}`.includes(token)) {
+      referencedKeys.add(module.key)
+    }
+  })
+
+  return referencedKeys
+}
+
+function getLinkedModuleDefinitions(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  referencedModuleKeys: Set<string>,
+) {
+  return moduleOutputs
+    .filter((item) => referencedModuleKeys.has(item.key))
+    .map((item) => formatPromptDefinition(item.key, item.output))
+    .filter(Boolean)
+    .join('\n')
+}
+
+function getReferencedSystemVariableDefinitions(
+  settings: PromptSettings,
+  referenceText: string,
+) {
+  const variables = getSystemPromptVariables(settings).filter(
+    (variable) => variable.enabled,
+  )
+  const referencedKeys = new Set<string>()
+  let searchableText = referenceText
+  let changed = true
+
+  while (changed) {
+    changed = false
+
+    variables.forEach((variable) => {
+      if (referencedKeys.has(variable.key)) return
+
+      const token = `{${variable.key}}`
+      if (!searchableText.includes(token)) return
+
+      referencedKeys.add(variable.key)
+      searchableText += `\n${variable.value}`
+      changed = true
+    })
+  }
+
+  return variables
+    .filter((variable) => referencedKeys.has(variable.key))
+    .map((variable) => formatPromptDefinition(variable.key, variable.value))
+    .filter(Boolean)
+    .join('\n')
+}
+
 function syncActiveSystemPromptVariables(
   settings: PromptSettings,
 ) {
@@ -737,19 +803,21 @@ function compileModularOutput(
 
 function compileNaturalOutput(
   settings: PromptSettings,
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  excludedModuleKeys: Set<string> = new Set(),
 ) {
   const idea = normalizeTransformationIdea(settings.idea)
   const subject = buildNaturalSubject(settings)
   const aspectRatio = cleanNaturalPart(getAspectRatioRatio(settings.aspectRatio))
   const globalRules = cleanNaturalPart(settings.globalRules)
-  const moduleParts = getModuleNaturalParts(moduleOutputs)
+  const moduleParts = getModuleNaturalParts(moduleOutputs, excludedModuleKeys)
   const sentences: string[] = []
+  const ideaUsesSubjectToken = settings.idea.includes('{subject}')
 
   if (settings.mode === 'image_to_image') {
     let intro = 'Transform the attached reference image'
 
-    if (subject) {
+    if (subject && !ideaUsesSubjectToken) {
       intro += ` featuring ${subject}`
     }
 
@@ -778,7 +846,7 @@ function compileNaturalOutput(
   } else {
     let intro = 'Create an image'
 
-    if (subject) {
+    if (subject && !ideaUsesSubjectToken) {
       intro += ` of ${subject}`
     }
 
@@ -939,13 +1007,20 @@ export function compilePromptOutput(
   }
 
   if (format === 'natural') {
-    const rawOutput = compileNaturalOutput(settings, moduleOutputs)
-    const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
-    const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
-    const protectedBulletBlocks = getProtectedBulletNaturalBlocks(
+    const referencedLinkedModuleKeys = getReferencedLinkedModuleKeys(
       modules,
       moduleOutputs,
+      settings,
+      variablesOutput,
     )
+    const rawOutput = compileNaturalOutput(
+      settings,
+      moduleOutputs,
+      referencedLinkedModuleKeys,
+    )
+    const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
+    const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
+    const protectedBulletBlocks = getProtectedBulletNaturalBlocks(moduleOutputs)
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
@@ -968,7 +1043,25 @@ export function compilePromptOutput(
       .filter(Boolean)
       .join('\n\n')
 
-    return variablesOutput ? `${variablesOutput}\n\n${naturalOutput}` : naturalOutput
+    const linkedModuleDefinitions = getLinkedModuleDefinitions(
+      moduleOutputs,
+      referencedLinkedModuleKeys,
+    )
+    const systemVariableDefinitions = getReferencedSystemVariableDefinitions(
+      settings,
+      [variablesOutput, linkedModuleDefinitions, naturalOutput]
+        .filter(Boolean)
+        .join('\n'),
+    )
+    const definitions = [
+      variablesOutput,
+      systemVariableDefinitions,
+      linkedModuleDefinitions,
+    ]
+      .filter(Boolean)
+      .join('\n')
+
+    return definitions ? `${definitions}\n\n${naturalOutput}` : naturalOutput
   }
 
   return compileModularOutput(settings, moduleOutputs, variablesOutput)
