@@ -49,7 +49,8 @@ function getItemEffect(item: GlobalMenuItem) {
 }
 
 function getItemKey(item: GlobalMenuItem, index: number) {
-  return `${item.type || 'item'}-${item.value ?? item.label ?? 'menu-item'}-${index}`
+  const state = `${isActive(item) ? 'active' : 'inactive'}-${isDisabled(item) ? 'disabled' : 'enabled'}`
+  return `${item.type || 'item'}-${item.value ?? item.label ?? 'menu-item'}-${state}-${item.label || ''}-${item.description || ''}-${index}`
 }
 
 async function handleItemClick(item: GlobalMenuItem) {
