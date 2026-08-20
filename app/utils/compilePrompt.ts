@@ -487,22 +487,32 @@ function naturalizeLinkedModuleTargets(
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
 ) {
   const activeOutputKeys = new Set(moduleOutputs.map((item) => item.key))
-  let result = value
-
-  modules.forEach((module) => {
-    if (
-      module.semanticTargets?.exposeOutput !== true ||
-      !activeOutputKeys.has(module.key)
-    ) {
-      return
-    }
-
-    const token = `{${module.key}}`
-    const replacement = `the configured ${humanizeModuleKey(module.key).toLowerCase()}`
-    result = result.split(token).join(replacement)
+  const linkedModules = modules.filter((module) => {
+    return (
+      module.semanticTargets?.exposeOutput === true &&
+      activeOutputKeys.has(module.key)
+    )
   })
 
-  return result
+  return value
+    .split('\n')
+    .map((line) => {
+      const scopeMarker = ' to '
+      const scopeIndex = line.indexOf(scopeMarker)
+      if (scopeIndex < 0) return line
+
+      const prefix = line.slice(0, scopeIndex + scopeMarker.length)
+      let scope = line.slice(scopeIndex + scopeMarker.length)
+
+      linkedModules.forEach((module) => {
+        const token = `{${module.key}}`
+        const replacement = `the configured ${humanizeModuleKey(module.key).toLowerCase()}`
+        scope = scope.split(token).join(replacement)
+      })
+
+      return `${prefix}${scope}`
+    })
+    .join('\n')
 }
 
 function getProtectedBulletNaturalBlocks(
