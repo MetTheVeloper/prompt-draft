@@ -8,7 +8,7 @@ import type {
 } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
-import ModulesPanelBackground from "../modules/panel/background.vue";
+import ModulesPanelBackground from "../modules/panel/background-stable.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
 import ModulesPanelTexture from "../modules/panel/texture.vue";
 import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments.vue";
