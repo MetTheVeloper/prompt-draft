@@ -44,6 +44,14 @@ function cleanLabel(value?: string) {
   return cleaned;
 }
 
+function cleanDescription(value?: string) {
+  const cleaned = String(value || "").trim().replace(/\s+/g, " ");
+  if (!cleaned || cleaned.startsWith("{") && !/^\{[^{}]+\}$/.test(cleaned)) {
+    return "";
+  }
+  return cleaned.length > 100 ? `${cleaned.slice(0, 97)}...` : cleaned;
+}
+
 export function useSemanticTargetCatalog(
   capability: SemanticTargetCapability,
   getBuiltins: () => SemanticBuiltinTargetDefinition[],
@@ -153,17 +161,20 @@ export function useSemanticTargetCatalog(
     const declaredModuleKeys = new Set(
       builtinDefinitions.value
         .map((definition) => definition.moduleKey)
-        .filter(Boolean),
+        .filter((value): value is string => Boolean(value)),
     );
 
     return moduleTargetVariables.value
-      .filter((variable) => !declaredModuleKeys.has(variable.moduleKey))
+      .filter((variable) => {
+        return !variable.moduleKey || !declaredModuleKeys.has(variable.moduleKey);
+      })
       .map((variable) => {
         const token = variableToken(variable);
-        const label = cleanLabel(variable.label) || variable.moduleKey || variable.key;
+        const moduleKey = variable.moduleKey || variable.key;
+        const label = cleanLabel(variable.label) || moduleKey;
 
         return {
-          value: `module:${variable.id}`,
+          value: `slot:${moduleKey}`,
           label: `${label} · ${token}`,
           description: translate(
             "components.assignmentScope.linkedModuleDescription",
@@ -173,8 +184,8 @@ export function useSemanticTargetCatalog(
           groupLabel: groupLabels.value.moduleOutputs,
           target: {
             kind: "module_output" as const,
-            value: variable.moduleKey || variable.key,
-            moduleKey: variable.moduleKey,
+            value: moduleKey,
+            moduleKey,
             variableId: variable.id,
             token,
             label,
@@ -201,7 +212,7 @@ export function useSemanticTargetCatalog(
       const token = variableToken(variable);
       const label = cleanLabel(variable.label) || `Text Group ${index + 1}`;
       const serialized = parseSerializedObject(variable.value);
-      const purpose = cleanLabel(String(serialized?.purpose || ""));
+      const purpose = cleanDescription(String(serialized?.purpose || ""));
 
       return {
         value: `typography_group:${variable.entityId || variable.id}`,
@@ -227,7 +238,7 @@ export function useSemanticTargetCatalog(
         const token = variableToken(variable);
         const label = cleanLabel(variable.label) || `Text ${index + 1}`;
         const serialized = parseSerializedObject(variable.value);
-        const content = cleanLabel(String(serialized?.content || ""));
+        const content = cleanDescription(String(serialized?.content || ""));
         const parent = typographyGroupVariables.value.find(
           (candidate) => candidate.entityId === variable.parentId,
         );
@@ -296,12 +307,6 @@ export function useSemanticTargetCatalog(
     }
     if (target.kind === "typography_text") {
       return `typography_text:${target.entityId || target.value}`;
-    }
-    if (target.kind === "module_output") {
-      const option = availableOptions.value.find((item) => {
-        return semanticTargetIdentity(item.target) === identity;
-      });
-      return option?.value || `module:${target.variableId || target.moduleKey || target.value}`;
     }
 
     return identity;
