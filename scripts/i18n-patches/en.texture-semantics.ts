@@ -7,7 +7,7 @@ export default {
   "modules.texture.fields.materialAssignments.label": "Material Assignments",
   "modules.texture.fields.materialAssignments.description": "Build reusable material and surface specifications and assign each one to the scene entities it should affect.",
   "modules.texture.fields.materialAssignments.assignmentTitle": "Material Assignment {index}",
-  "modules.texture.fields.materialAssignments.summary.noMaterial": "No material",
+  "modules.texture.fields.materialAssignments.summary.noMaterial": "No material properties",
   "modules.texture.fields.materialAssignments.actions.add": "Add Material / Texture",
   "modules.texture.fields.materialAssignments.actions.remove": "Remove",
 
