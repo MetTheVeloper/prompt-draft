@@ -107,6 +107,10 @@ function validationMessage(issue: PromptValidationIssue) {
     return t("validation.texturePreserveMaterialsConflict");
   }
 
+  if (issue.code === "pose_preserve_pose_conflict") {
+    return t("validation.posePreservePoseConflict");
+  }
+
   return t("validation.unknown");
 }
 
