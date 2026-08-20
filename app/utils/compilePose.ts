@@ -7,11 +7,52 @@ import {
 } from "./semanticTargets";
 
 const POSE_KEYWORDS: Record<string, Record<string, string>> = {
+  basePosture: {
+    standing: "standing",
+    seated: "seated",
+    kneeling: "kneeling",
+    crouching: "crouching",
+    reclining: "reclining",
+    lying: "lying down",
+  },
+  torsoPosture: {
+    upright: "upright torso",
+    leaning_forward: "torso leaning forward",
+    leaning_backward: "torso leaning backward",
+    leaning_sideways: "torso leaning sideways",
+    hunched: "hunched torso",
+    twisted: "twisted torso",
+    arched: "arched torso",
+  },
   weightBalance: {
     even: "evenly balanced weight",
     shifted: "weight shifted to one side",
     single_side_support: "supported mainly on one side",
     off_balance: "intentionally off-balance",
+  },
+  bodyTension: {
+    relaxed: "relaxed body tension",
+    engaged: "engaged body tension",
+    tense: "tense body posture",
+    rigid: "rigid body posture",
+    loose: "loose body posture",
+  },
+  locomotion: {
+    walking: "walking",
+    running: "running",
+    jumping: "jumping",
+  },
+  gestures: {
+    arms_crossed: "arms crossed",
+    hands_at_sides: "hands relaxed at the sides",
+    hand_on_hip: "one hand on the hip",
+    hands_in_pockets: "hands in pockets",
+    open_arms: "open arms",
+    pointing: "pointing gesture",
+    reaching: "reaching gesture",
+    raised_arms: "raised arms",
+    hands_on_knees: "hands on knees",
+    hands_clasped: "hands clasped together",
   },
 };
 
