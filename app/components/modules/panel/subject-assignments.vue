@@ -6,30 +6,23 @@ import type {
   PoseAssignment,
   PromptKeyModule,
 } from "~/modules/types";
-import type {
-  ModuleOutputValue,
-  PromptMode,
-} from "~/utils/compilePrompt";
+import type { ModuleOutputValue } from "~/utils/compilePrompt";
 import type { PromptValidationIssue } from "~/utils/promptValidation";
 import { createDefaultModuleValues } from "~/utils/compileModules";
 import { compilePoseModule } from "~/utils/compilePose";
 import { compileExpressionModule } from "~/utils/compileExpression";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import SubjectAssignmentsField from "../shared/SubjectAssignmentsField.vue";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();
+const { enabledSystemPromptVariables } = usePromptVariables();
 
-const props = withDefaults(
-  defineProps<{
-    module: PromptKeyModule;
-    modelValue?: ModuleValues;
-    panelState?: { isCustomMode?: boolean; activePresetId?: string | null };
-    promptMode?: PromptMode;
-  }>(),
-  {
-    promptMode: "text_to_image",
-  },
-);
+const props = defineProps<{
+  module: PromptKeyModule;
+  modelValue?: ModuleValues;
+  panelState?: { isCustomMode?: boolean; activePresetId?: string | null };
+}>();
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: ModuleValues): void;
@@ -53,6 +46,9 @@ const assignmentFieldId = computed(() =>
 );
 const assignmentField = computed(() => props.module.fields[assignmentFieldId.value]);
 const customField = computed(() => props.module.fields.customText);
+const hasReference = computed(() =>
+  enabledSystemPromptVariables.value.some((variable) => variable.key === "reference"),
+);
 
 function cloneValue<T>(value: T): T {
   try {
@@ -120,7 +116,7 @@ const customText = computed(() =>
 
 const output = computed(() => {
   if (customMode.value) return customText.value;
-  const replaceSource = props.promptMode === "image_to_image";
+  const replaceSource = hasReference.value;
   return kind.value === "pose"
     ? compilePoseModule(props.module, values, { replaceSource })
     : compileExpressionModule(props.module, values, { replaceSource });
