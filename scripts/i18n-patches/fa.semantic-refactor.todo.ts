@@ -22,6 +22,7 @@ import lighting from "./en.lighting-semantics"
 import colorPalette from "./en.color-palette-semantics"
 import texture from "./en.texture-semantics"
 import semanticAssignmentScope from "./en.semantic-assignment-scope"
+import poseExpression from "./en.pose-expression-semantics"
 
 export default {
   ...style,
@@ -36,4 +37,5 @@ export default {
   ...colorPalette,
   ...texture,
   ...semanticAssignmentScope,
+  ...poseExpression,
 } as const
