@@ -67,8 +67,22 @@ type ExpressionPresetRecipe = Omit<ExpressionAssignment, "id" | "targets"> & {
   categoryLabel: string;
 };
 
+function expressionPreset(
+  recipe: Pick<ExpressionPresetRecipe, "id" | "category" | "categoryLabel"> &
+    Partial<Omit<ExpressionPresetRecipe, "id" | "category" | "categoryLabel">>,
+): ExpressionPresetRecipe {
+  return {
+    coreExpression: "",
+    intensity: "",
+    eyeState: "",
+    browState: "",
+    mouthState: "",
+    ...recipe,
+  };
+}
+
 const presetRecipes: ExpressionPresetRecipe[] = [
-  {
+  expressionPreset({
     id: "neutral_calm",
     category: "neutral",
     categoryLabel: "Neutral",
@@ -77,8 +91,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     eyeState: "relaxed",
     browState: "relaxed",
     mouthState: "neutral",
-  },
-  {
+  }),
+  expressionPreset({
     id: "gentle_smile",
     category: "positive",
     categoryLabel: "Positive",
@@ -86,8 +100,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     intensity: "subtle",
     eyeState: "relaxed",
     mouthState: "slight_smile",
-  },
-  {
+  }),
+  expressionPreset({
     id: "warm_smile",
     category: "positive",
     categoryLabel: "Positive",
@@ -95,8 +109,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     intensity: "moderate",
     eyeState: "soft",
     mouthState: "smile",
-  },
-  {
+  }),
+  expressionPreset({
     id: "joyful",
     category: "positive",
     categoryLabel: "Positive",
@@ -104,8 +118,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     intensity: "pronounced",
     eyeState: "soft",
     mouthState: "broad_smile",
-  },
-  {
+  }),
+  expressionPreset({
     id: "determined",
     category: "serious",
     categoryLabel: "Serious",
@@ -113,8 +127,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     intensity: "moderate",
     eyeState: "narrowed",
     browState: "furrowed",
-  },
-  {
+  }),
+  expressionPreset({
     id: "furious",
     category: "negative",
     categoryLabel: "Negative",
@@ -123,8 +137,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     eyeState: "narrowed",
     browState: "furrowed",
     mouthState: "gritted_teeth",
-  },
-  {
+  }),
+  expressionPreset({
     id: "sad_soft",
     category: "negative",
     categoryLabel: "Negative",
@@ -132,8 +146,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     intensity: "subtle",
     eyeState: "soft",
     mouthState: "frown",
-  },
-  {
+  }),
+  expressionPreset({
     id: "shocked",
     category: "reaction",
     categoryLabel: "Reaction",
@@ -142,8 +156,8 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     eyeState: "wide",
     browState: "raised",
     mouthState: "open",
-  },
-  {
+  }),
+  expressionPreset({
     id: "sleepy",
     category: "neutral",
     categoryLabel: "Neutral",
@@ -152,7 +166,7 @@ const presetRecipes: ExpressionPresetRecipe[] = [
     eyeState: "relaxed",
     browState: "relaxed",
     mouthState: "neutral",
-  },
+  }),
 ];
 
 const presetOptions: ModuleFieldOption[] = presetRecipes.map((preset) => ({
