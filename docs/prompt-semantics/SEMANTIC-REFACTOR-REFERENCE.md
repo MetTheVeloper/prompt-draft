@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, and Texture / Material work.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the original module refactor guide and the practical lessons learned from the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, and Pose + Expression work.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -106,6 +106,7 @@ Examples:
 - Framing does not own lens behavior.
 - Framing does not own body pose.
 - Pose does not own viewpoint.
+- Expression does not own body pose or visual style.
 - Color Palette does not own lighting behavior.
 - Texture / Material does not own base color or illumination.
 
@@ -435,14 +436,16 @@ Variable and structural-reference types are semantic contracts, not merely UI la
 
 Only expose a dynamic reference in a field when its type is meaningful for that role.
 
-Examples from Color Palette / Texture:
+Examples from Color Palette / Texture / Pose / Expression:
 
 ```text
 Color variable          → reusable palette value
-Subject/Object variable → reusable semantic target
+Subject/Object variable → reusable color/material target when supported
 Typography Group/Text   → structural semantic target
 Outfit/Hair module      → target only when capability-compatible
 Layout Region           → not automatically a color/material target
+Subject variable        → Pose/Expression recipient
+Object variable         → may participate inside Pose details, but is not a Pose recipient
 ```
 
 Do not make every variable selectable everywhere merely because a token exists. Filter reference catalogs by semantic compatibility.
@@ -463,6 +466,19 @@ Texture asks for targets supporting: material
 A module such as Outfit or Hair may expose its output for one or more capabilities. The same semantic slot should upgrade from a generic built-in target to a linked module-output target without creating a duplicate option.
 
 Keep target identity stable across that upgrade. Compare semantic target state canonically rather than relying on object serialization or property order.
+
+## Target policy is separate from assignment infrastructure
+
+Shared assignment mechanics do not imply a universal target catalog.
+
+Color Palette and Texture / Material legitimately use broad semantic target policies. Pose and Expression reuse the same stable relational identity concepts while intentionally accepting only pose/expression-capable semantic subjects.
+
+Ask two separate questions:
+
+1. Does this module use the shared assignment mechanism?
+2. Which entities are valid recipients for this particular semantic payload?
+
+Do not answer the second question globally merely because the first is shared.
 
 ---
 
@@ -545,7 +561,9 @@ Examples discovered during refactor work:
 - shape/form language hidden inside Style,
 - lens behavior hidden inside Framing,
 - artifact intent hidden inside Framing,
-- placement features hidden inside one composition select.
+- placement features hidden inside one composition select,
+- fashion/editorial/personality interpretation hidden inside Pose,
+- cinematic/professional/style assumptions hidden inside Expression.
 
 When an option keeps growing to express unrelated behavior, stop expanding the wording and inspect the architecture.
 
@@ -642,6 +660,12 @@ palette B → {hero}
 
 clay material → all scene surfaces except {car}
 cotton material → {car}
+
+pose A → {hero}
+pose B → {villain}
+
+expression A → {hero}
+expression B → {villain}
 ```
 
 Do not flatten payloads and targets into separate global lists. Preserve every assignment as a self-contained relation through compilation.
@@ -649,14 +673,15 @@ Do not flatten payloads and targets into separate global lists. Preserve every a
 A useful relational-assignment model should:
 
 - keep payload data and target references together,
-- allow first-class `Apply To` and `Except` scope,
-- keep custom targets distinct from selecting existing targets,
+- allow first-class scope appropriate to the domain,
+- keep custom targets distinct from selecting existing targets when custom targets are valid,
 - allow broad-to-specific ordering where the domain supports specialization,
 - preserve missing target references instead of silently mutating state,
 - keep warnings advisory unless a combination is genuinely impossible,
-- distinguish shared scope infrastructure from module-specific payload semantics.
+- distinguish shared scope infrastructure from module-specific payload semantics,
+- distinguish assignment recipients from entities that merely participate inside payload details.
 
-## Reuse the assignment mechanism, not the domain payload
+## Reuse the assignment mechanism, not the domain payload or target policy
 
 When two modules share the same targeting interaction, extract the shared layer before a third copy appears.
 
@@ -664,23 +689,45 @@ The shared layer may own:
 
 ```text
 target identity
-capability filtering
-Apply To
-Exceptions
-custom targets/exceptions
+capability/filter primitives
+selection
 missing references
 scope summaries
 scope serialization helpers
 ```
 
-The module must continue to own what is being assigned:
+Broader domains may additionally reuse:
 
 ```text
-Color Palette → colors / swatches
-Texture       → material / finish / surface / optical / condition
+Apply To
+Exceptions
+custom targets/exceptions
+```
+
+The module must continue to own what is being assigned and who can receive it:
+
+```text
+Color Palette → colors / swatches → broad compatible targets
+Texture       → material / finish / surface / optical / condition → broad material targets
+Pose          → body configuration / gesture / motion → subject recipients only
+Expression    → facial affect / mechanics → subject recipients only
 ```
 
 Do not build a generic mega-editor that knows every domain.
+
+## Assignment recipient vs payload participant
+
+An entity referenced inside assignment details is not automatically a valid recipient.
+
+Example:
+
+```text
+{hero}: holding {sword}
+```
+
+`{hero}` receives the Pose. `{sword}` participates in the interaction. The sword should not become pose-targetable merely because it appears in the payload.
+
+This distinction is especially important for typed variable systems.
 
 ---
 
@@ -703,7 +750,7 @@ Do not assume the generic Natural pipeline can safely split or regroup content c
 - relational assignment clauses,
 - keyword lists whose commas belong inside one semantic unit.
 
-Layout and Typography require dedicated serializers. Color Palette and Texture / Material use protected bullet blocks so the generic optimizer cannot detach payload properties from their targets.
+Layout and Typography require dedicated serializers. Color Palette, Texture / Material, Pose, and Expression use protected bullet blocks so the generic optimizer cannot detach payload properties from their targets.
 
 The protection mechanism should be reusable for future modules that emit relationship-safe blocks.
 
@@ -754,6 +801,8 @@ Close-Up + Preserve Complete Silhouette
 
 For material systems, warn only on high-confidence tensions such as obviously unusual material/property combinations. Do not warn merely because multiple materials target the same entity; multi-material designs can be intentional.
 
+For subject assignment systems such as Pose/Expression, overlapping assignments to the same subject may deserve an advisory warning when they can conflict, but the editor should not silently merge or delete the user's state.
+
 ## Cross-module conflicts
 
 Handle conflicts between modules at prompt validation level.
@@ -770,6 +819,13 @@ or:
 ```text
 Setup: Preserve Materials
 Texture: assign new material properties
+```
+
+or:
+
+```text
+Setup: Preserve Pose
+Pose: assign a new pose to a subject
 ```
 
 Do not silently disable either module.
@@ -793,7 +849,7 @@ Prompt Draft directly controls the first. Image generation is probabilistic and 
 
 A module can be semantically correct while model compliance remains approximate.
 
-This distinction is especially important for spatial constraints, but it also applies to material, camera, lighting and other visual semantics.
+This distinction is especially important for spatial constraints, but it also applies to material, camera, lighting, pose, expression and other visual semantics.
 
 ---
 
@@ -883,6 +939,8 @@ Custom
 
 A supposedly universal option must not leak anatomy or use-case assumptions.
 
+For subject-only modules, also verify that ineligible target types never appear merely because they exist as variables.
+
 ## Phase E — cross-module audit
 
 Audit neighboring semantic owners.
@@ -892,6 +950,7 @@ Examples:
 ```text
 Style ↔ Form ↔ Texture
 Framing ↔ Camera ↔ Pose ↔ Setup
+Pose ↔ Expression ↔ Framing ↔ Setup
 Lighting ↔ Color Palette ↔ Texture ↔ Camera
 Background ↔ Layout ↔ Effects
 ```
@@ -909,11 +968,14 @@ Image tests outrank purely theoretical wording preferences.
 However, diagnose failures correctly:
 
 - wrong semantic expression → refactor Prompt Draft,
-- correct expression but stochastic model compliance → adjust expectations or reliability classification.
+- correct expression but stochastic model compliance → adjust expectations or reliability classification,
+- selected framing/context hides the property being tested → redesign the test before blaming the semantic schema.
 
 Real-image tests can also reveal that wording which looks equivalent to humans is not equally strong for an image model. When this happens, prefer the shortest wording that materially improves instruction clarity instead of adding decorative verbosity.
 
 For spatial claims, repeat identical prompts.
+
+For Pose/Expression-like controls, ensure the chosen framing actually exposes the body/facial state being evaluated. A close-up cannot meaningfully validate full-body pose, and strong action context can legitimately compete with a static-pose instruction without proving an ownership defect.
 
 ---
 
@@ -1028,6 +1090,7 @@ A module can be considered semantically closed when:
 - options are concise and composable,
 - presets are minimum-sufficient,
 - subject applicability is intentional,
+- assignment target policy is intentional where relational state exists,
 - module-local conflicts are handled predictably,
 - cross-module boundaries have been audited,
 - structured/relational outputs have an explicit Natural strategy,
@@ -1038,6 +1101,7 @@ A module can be considered semantically closed when:
 - full prompt output is coherent,
 - real image tests do not expose a semantic flaw,
 - stochastic model limitations are not mistaken for prompt bugs,
+- editor summaries/state representations remain correct for repeated relational entities,
 - `pnpm generate` passes.
 
 Once these conditions are met, stop theoretical micro-polishing.
@@ -1272,6 +1336,52 @@ Key lessons:
 - substantial stylization can emerge from Form + Color + Material + other independent modules without Style being selected; Style remains a high-level aesthetic owner, not a mandatory stylization switch,
 - once real tests show the semantic system is working, stop micro-polishing unless later evidence reveals a concrete defect.
 
+## Pose + Expression
+
+Pose and Expression replaced global prose-heavy mega-selects with subject-scoped relational assignments while preserving a strict body-vs-face ownership boundary.
+
+Final conceptual models:
+
+```text
+Pose Assignments[]
+├─ Preset
+├─ Apply To[] → subject recipients only
+├─ Base Posture
+├─ Torso Posture
+├─ Weight / Balance
+├─ Body Tension
+├─ Locomotion
+├─ Gestures[]
+├─ Interaction / Action Details
+└─ Additional Details
+
+Expression Assignments[]
+├─ Preset
+├─ Apply To[] → subject recipients only
+├─ Core Expression
+├─ Intensity
+├─ Eye State
+├─ Brow State
+├─ Mouth State
+└─ Additional Details
+```
+
+Key lessons:
+
+- Pose owns visible physical body configuration, gesture, movement and interaction but not viewpoint, framing, personality, fashion/editorial style or facial affect,
+- Expression owns visible facial affect and mechanics but not body pose, cinematic/editorial/cute/fantasy style, professional/commercial purpose or narrative role,
+- a shared assignment mechanism must not force every assignment-driven module to share the same target eligibility policy,
+- system `{subject}` and user variables with `type: "subject"` are valid Pose/Expression recipients while object/reference/text variables are not,
+- an object can still participate inside a Pose payload (`{hero}: holding {sword}`) without becoming a Pose recipient,
+- source/reference replacement semantics belong to compiler context: image-to-image assignments explicitly replace source pose/expression while text-to-image output does not emit replacement wording,
+- overlapping subject assignments should warn rather than silently merge/delete user intent,
+- per-assignment additional details are necessary once different subjects can receive different semantic states; a global `extraDetails` field loses ownership,
+- protected bullet blocks preserve subject-to-payload identity through Modular and Natural output,
+- real multi-subject image tests confirmed that opposite poses/expressions can remain independently targetable alongside subject-specific Color Palette and object-specific Texture assignments,
+- prompt tension must be distinguished from schema failure: close-up framing may hide body pose, action-heavy context may compete with a static pose, and subtle facial mechanics remain model-dependent,
+- repeated assignment cards need reactive semantic summaries; content-dependent render keys are a proven fallback when nested state changes do not refresh component-system text nodes reliably,
+- once the relational schema, compiler identity, target policy, UI summaries and representative image tests all pass, ordinary model variance is not a reason to reopen the stage.
+
 ---
 
 # 30. Recommended remaining module order
@@ -1279,24 +1389,21 @@ Key lessons:
 Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
 
 ```text
-1. Pose + Expression
-2. Background + Effects
-3. Hair + Outfit
-4. remaining smaller modules / final cross-module audit
+1. Background + Effects
+2. Hair + Outfit
+3. remaining smaller modules / final cross-module audit
 ```
 
-Why Pose + Expression are next:
+Why Background + Effects are next:
 
-- Framing and Camera are already closed, so viewpoint/composition/capture boundaries are stable,
-- Form is closed, so body-shape/transformation ownership is stable,
-- Pose and Expression are closely related through the depicted subject but should remain independent body-vs-face semantic controls,
-- auditing them together can expose accidental overlap between gesture, body orientation, gaze, emotion and facial action without merging those responsibilities.
+- Lighting, Color Palette and Texture / Material are already closed, so illumination, base color and surface/material ownership are stable,
+- Layout is closed, so structural/spatial region ownership is stable,
+- current Background/Effects catalogs are likely to contain the next major ownership collision between scene content, environment/atmosphere, weather/particles, overlays, post-processing and decorative visual treatment,
+- auditing them together can reveal which atmospheric concepts belong to depicted scene content versus image-space effects without forcing the two modules to merge.
 
-Background + Effects should follow because current catalogs may mix scene content, atmosphere, overlays, post-processing and visual-treatment semantics.
+Hair + Outfit are lower-risk subject-detail modules and should follow after the remaining global scene/effect boundary is stable. They already participate in capability-driven Color/Material targeting, which must be preserved during their own semantic refactors.
 
-Hair + Outfit are lower-risk subject-detail modules and can follow after the remaining global/subject-control boundaries are stable. They already participate in capability-driven Color/Material targeting, which should be preserved during their own semantic refactors.
-
-Texture / Material legacy migration and catalog extraction remain backlog work and do not block the next semantic stage.
+Texture / Material and Pose / Expression legacy migrations remain backlog work and do not block the next semantic stage.
 
 ---
 
@@ -1316,7 +1423,9 @@ Then read:
 - the semantic review backlog,
 - the most recent completed stage docs when useful.
 
-For the next planned stage, read both Pose and Expression implementations before proposing changes, but do not assume they should become one module.
+For the next planned stage, read both Background and Effects implementations and their compiler paths before proposing changes, but do not assume they should become one module.
+
+Also read Stage 12 (`stage-12-pose-expression-semantics.md`) as the most recent closure precedent, especially its distinction between shared relational mechanics and domain-specific eligibility policy.
 
 ## First response / audit
 
@@ -1361,7 +1470,8 @@ When compiled outputs are returned:
 - test module-local conflicts,
 - test neighboring modules,
 - test variable/reference preservation when the module can be referenced elsewhere,
-- distinguish prompt bugs from model stochasticity.
+- ensure the chosen real-image test makes the target semantic observable,
+- distinguish prompt bugs from model stochasticity or prompt tension.
 
 ## Final closure
 
@@ -1372,6 +1482,7 @@ Before checkpoint:
 - update backlog for deliberately deferred work,
 - run `pnpm generate`,
 - perform real-image validation when it can expose practical semantic ambiguity,
+- update the canonical reference with genuinely reusable lessons,
 - create a semantic checkpoint only after tests pass.
 
 ---
@@ -1404,7 +1515,7 @@ Treat the answer as first-class design context alongside the current code, compi
 
 The existing implementation shows what the module became; the user's answer explains what the module was intended to achieve. Both are needed before deciding what should be preserved, split, moved or removed.
 
-When a stage intentionally audits a related pair such as Pose + Expression, ask for the original intent of both before freezing either architecture.
+When a stage intentionally audits a related pair, ask for the original intent of both before freezing either architecture.
 
 Do not skip this question merely because the current schema appears understandable. It is especially valuable when old implementations contain semantic pollution that hides the original product intent.
 
