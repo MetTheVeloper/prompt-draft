@@ -90,9 +90,8 @@ function normalizeAssignments(value: unknown): MaterialAssignment[] {
     }));
 }
 
-function materialKeywords(assignment: MaterialAssignment) {
+function surfaceKeywords(assignment: MaterialAssignment) {
   const properties = [
-    keyword(assignment.material),
     FINISH_KEYWORDS[assignment.finish || ""] || keyword(assignment.finish),
     SURFACE_KEYWORDS[assignment.surfaceTexture || ""] ||
       keyword(assignment.surfaceTexture),
@@ -118,7 +117,8 @@ function assignmentSpecificity(assignment: MaterialAssignment) {
 }
 
 export function compileMaterialAssignment(assignment: MaterialAssignment) {
-  const properties = materialKeywords(assignment);
+  const material = keyword(assignment.material);
+  const properties = surfaceKeywords(assignment);
   const scope = formatSemanticScope(
     assignment.targets,
     assignment.exceptions || [],
@@ -128,8 +128,16 @@ export function compileMaterialAssignment(assignment: MaterialAssignment) {
     },
   );
 
-  if (!properties.length || !scope) return "";
-  return `• Apply ${properties.join(", ")} to ${scope}`;
+  if ((!material && !properties.length) || !scope) return "";
+
+  const specification = [
+    material ? `${material} material` : "",
+    properties.length ? properties.join(", ") : "",
+  ]
+    .filter(Boolean)
+    .join("; ");
+
+  return `• ${scope}: ${specification}`;
 }
 
 export function compileTextureModule(
