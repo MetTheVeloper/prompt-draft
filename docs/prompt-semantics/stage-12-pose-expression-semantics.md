@@ -2,7 +2,13 @@
 
 ## Status
 
-Implemented for structured editor and compiler review. Real UI/output/image-generation validation is still required before semantic closure.
+**Semantically closed.**
+
+The structured editors, relational compilers, subject-only assignment targeting, multi-subject behavior, Modular/Natural output preservation, and representative real image-generation scenarios have been validated successfully.
+
+The final assignment-card reactivity issue was closed by using the same dynamic title/summary render-key pattern already used by Color Palette and Texture / Material assignment cards. Pose and Expression summaries now also cover all structured axes rather than only a partial subset.
+
+Legacy migration remains deferred to the semantic review backlog and does not keep this schema open.
 
 ## Responsibility contracts
 
@@ -105,7 +111,7 @@ This is compiler/context behavior rather than a user-selectable semantic field.
 
 Stage 12 reuses the shared `SemanticTargetRef` identity model but introduces a dedicated subject-only target catalog instead of forcing Pose/Expression through the broad Color/Material target policy.
 
-`SemanticTargetKind` now supports `system_variable`, allowing `{subject}` to be represented as a stable relational target.
+`SemanticTargetKind` supports `system_variable`, allowing `{subject}` to be represented as a stable relational target.
 
 Missing subject targets remain preserved in saved assignment state and can be removed by the user.
 
@@ -114,6 +120,34 @@ Missing subject targets remain preserved in saved assignment state and can be re
 The same subject may technically appear in multiple Pose or Expression assignments, but the editor displays a warning because overlapping assignments may conflict.
 
 The editor does not silently merge or delete assignments.
+
+## Assignment-card summaries
+
+Card titles summarize assignment recipients and react immediately when `Apply To` changes.
+
+Card subtitles summarize the structured state for fast scanning:
+
+### Pose summary sources
+
+- base posture,
+- torso posture,
+- weight/balance,
+- body tension,
+- locomotion,
+- gestures,
+- interaction details,
+- additional details.
+
+### Expression summary sources
+
+- core expression,
+- intensity,
+- eye state,
+- brow state,
+- mouth state,
+- additional details.
+
+Title and subtitle nodes use content-dependent render keys, matching the proven Color Palette and Texture / Material assignment-card reactivity pattern.
 
 ## Custom override
 
@@ -151,28 +185,28 @@ active Pose output
 
 produces an advisory warning. Neither setting is silently mutated.
 
+## Validation evidence
+
+Stage 12 was validated with representative single- and multi-subject image-to-image prompts covering:
+
+- distinct Pose assignments for multiple referenced subjects,
+- distinct and strongly contrasting Expression assignments for multiple referenced subjects,
+- subject-specific Color Palette assignments alongside Pose/Expression,
+- object-specific Texture / Material assignments in the same prompts,
+- reference-pose and reference-expression replacement semantics,
+- structured sports/editorial scenes with competing context pressure,
+- preservation of relational subject identity in compiled output.
+
+The tests showed that remaining deviations such as action-context pressure, framing hiding body pose, or image-model interpretation of subtle facial mechanics are model/prompt-tension behavior rather than schema ownership defects.
+
 ## Legacy migration
 
 Legacy `poseStyle`, `expressionStyle`, and global `extraDetails` migration is deferred to the semantic review backlog.
 
 The new schema must not be polluted with old fashion/editorial/cinematic/character/use-case assumptions solely to preserve legacy prose.
 
-## Validation required before closure
+## Closure rule
 
-1. Verify system `{subject}` appears for person/animal/custom-compatible Setup subjects and does not appear for object/product/vehicle/building/scene subjects.
-2. Verify only user variables with `type: "subject"` appear as additional recipients.
-3. Verify multiple Pose assignments can target different subjects and compile to separate bullet lines.
-4. Verify multiple Expression assignments can target different subjects and compile to separate bullet lines.
-5. Verify duplicate-target warnings are shown without blocking edits.
-6. Verify deleted subject variables become removable Missing references rather than silently disappearing.
-7. Verify Pose presets populate editable axes and detach after manual edits.
-8. Verify Expression presets populate editable axes and detach after manual edits.
-9. Verify Pose interaction/details fields support variable insertion.
-10. Verify text-to-image output does not mention replacing a source/reference.
-11. Verify image-to-image output explicitly replaces source/reference pose/expression.
-12. Verify Preserve Pose + active Pose output shows the advisory validation warning.
-13. Verify Modular output preserves target tokens and assignment identity.
-14. Verify Natural output preserves Pose and Expression as protected bullet blocks.
-15. Verify JSON output contains the compiled module blocks without losing target tokens.
-16. Verify Custom Override replaces structured output and empty custom mode raises the existing blocking validation error.
-17. Validate representative multi-subject prompts with real image generation before declaring Stage 12 semantically closed.
+Stage 12 should not be reopened for wording micro-polish or ordinary image-model variance.
+
+Reopen only if later testing reveals a concrete semantic ownership defect, relational target failure, compiler identity loss, or a reproducible structured-editor state bug.
