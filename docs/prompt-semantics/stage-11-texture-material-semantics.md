@@ -1,18 +1,18 @@
 # Stage 11 — Texture / Material Semantics
 
-Status: **Implementation ready for validation**
+Status: **Semantically closed**
 
 ## Original product intent
 
 The old Texture module attempted to define one texture for the output image, but the global model was not practically useful.
 
-Stage 11 reframes the module around a more concrete task:
+Stage 11 reframed the module around a more concrete task:
 
 > Define what selected scene entities are made of and how their surfaces behave.
 
 The module now uses the same relational assignment pattern proven by Color Palette while keeping material/surface semantics independent from color, lighting and style.
 
-During validation, Color Palette and Texture / Material revealed that relational assignment itself is a reusable product capability. The shared part has therefore been extracted instead of allowing the two modules to grow parallel target/reference implementations.
+During validation, Color Palette and Texture / Material also revealed that relational assignment itself is a reusable product capability. The shared part was extracted instead of allowing the two modules to grow parallel target/reference implementations.
 
 ## Responsibility
 
@@ -48,11 +48,11 @@ Texture / Material
 └── Custom Override
 ```
 
-Each assignment is a self-contained relational unit. Properties, targets and exceptions must remain associated through Modular and Natural output.
+Each assignment is a self-contained relational unit. Properties, targets and exceptions remain associated through Modular and Natural output.
 
 ## Shared relational assignment foundation
 
-Color Palette and Texture / Material now share infrastructure for relational scope while keeping their payload semantics independent.
+Color Palette and Texture / Material share infrastructure for relational scope while keeping their payload semantics independent.
 
 ```text
 Semantic assignment infrastructure
@@ -100,7 +100,7 @@ Outfit · {outfit}
 Hair · {hair}
 ```
 
-This replacement behavior avoids duplicate `Outfit` + `{outfit}` options.
+The slot identity remains stable while the semantic reference gains linked-module metadata. This avoids duplicate `Outfit` + `{outfit}` options and allows the selector state to survive the upgrade.
 
 ## Exceptions
 
@@ -277,7 +277,7 @@ Layout Regions remain excluded because a spatial region is not an unambiguous ma
 
 Typography structural variables contain serialized state internally, but serialized JSON must never become a dropdown display label.
 
-The shared semantic target catalog presents:
+The shared semantic target catalog presents human-readable labels with structural tokens as secondary identity, for example:
 
 ```text
 Text Group 1
@@ -291,7 +291,7 @@ Raw serialized group/text JSON remains internal metadata only.
 
 ## Target-aware card headers
 
-Collapsed cards must answer the most useful question first: **where does this assignment apply?**
+Collapsed cards answer the most useful question first: **where does this assignment apply?**
 
 Examples:
 
@@ -340,16 +340,16 @@ Color Palette example:
 • Assign #213B2B, #496342, #6F5A3A to {car}
 ```
 
-Texture / Material example:
+Texture / Material separates material identity from surface modifiers while remaining compact:
 
 ```text
-• Apply aluminum, satin, brushed, opaque, visible texture, clean to {car}
-• Apply clay, matte, porous, opaque to all scene surfaces except {outfit}
+• {car}: cotton material; matte, woven, opaque, visible texture, clean
+• all scene surfaces except {car}: clay material; matte, porous, opaque, visible texture
 ```
 
-Material properties use compact keywords because image-generation models already understand standard material vocabulary. Repetitive wording such as `material behavior`, `surface condition`, preset names and repeated `assigned to user target` phrases is intentionally removed.
+This wording was refined after real-image testing. A flat list such as `cotton, matte, woven...` could be interpreted as surface adjectives without strongly replacing the object's material identity. Explicit `<material> material; <surface properties>` produced a clearer material signal without returning to verbose prose.
 
-Assignments still compile broad-to-specific:
+Assignments compile broad-to-specific:
 
 1. broad built-in scope
 2. scoped built-in targets
@@ -357,9 +357,9 @@ Assignments still compile broad-to-specific:
 
 ## Protected bullet blocks
 
-Relational Color Palette and Texture / Material output no longer passes through generic comma splitting in Natural output.
+Relational Color Palette and Texture / Material output does not pass through generic comma splitting in Natural output.
 
-Any module output emitted as a bullet block is treated as a protected semantic block. Current Natural output therefore follows the same high-level pattern as Layout and Typography:
+Bullet output is treated as a protected semantic block. Natural output therefore follows the same high-level pattern as Layout and Typography:
 
 ```text
 Color Palette:
@@ -367,11 +367,11 @@ Color Palette:
 • Assign ...
 
 Texture / Material:
-• Apply ...
-• Apply ...
+• ...
+• ...
 ```
 
-This protection is intentionally generic so a future assignment-style module can reuse it without introducing another module-specific optimizer workaround.
+This protection is intentionally generic so a future assignment-style module can reuse it without another module-specific optimizer workaround.
 
 In Modular output, multi-line module values render below the module variable assignment:
 
@@ -380,36 +380,27 @@ In Modular output, multi-line module values render below the module variable ass
 • Assign ...
 
 {texture} =
-• Apply ...
+• ...
 ```
 
-## Format-aware module-output references
+## Natural output preserves the variable graph
 
-Linked module-output targets use their token in Modular output:
+Stage 11 established an important output contract:
+
+> Natural is a human-readable serialization of the same prompt graph; it is not a flattened prompt with reusable tokens removed.
+
+User variables remain defined and referenced by their tokens. Nested system references that are actually used are preserved recursively, for example:
 
 ```text
-{outfit}
-{hair}
+{reference} = attached reference image
+{subject} = person in {reference}
 ```
 
-In Natural protected blocks they are rendered as human-readable references:
+Linked module-output targets such as `{outfit}` and `{hair}` also remain tokens when they are used by another semantic block. Their module definition is preserved in Natural output rather than replacing the token with vague prose such as `the configured outfit`.
 
-```text
-the configured outfit
-the configured hair
-```
+This keeps nested-variable composition useful in both Modular and Natural formats while avoiding duplicate prose: a linked module whose definition is promoted to the definition section is excluded from the generic Natural module sentence.
 
-User variables and Typography structural tokens remain explicit because those tokens are defined/preserved elsewhere in the prompt.
-
-Prompt validation also recognizes active module-output keys as defined references, preventing false undefined-variable warnings for `{outfit}` / `{hair}`.
-
-## Structural reference preservation
-
-Stage 11 exposed a cross-module Natural-output gap: Typography structural keys were hidden even when another module referenced them.
-
-The Typography Natural serializer is reference-aware. `compilePrompt` scans all other module outputs and exposes only the referenced Typography group/text keys.
-
-This is deliberately module-agnostic, so Color Palette, Texture / Material and future modules can reuse the same structural-reference contract.
+Typography structural references follow the same principle: structural keys are exposed when another block actually references them.
 
 ## Cross-module preservation conflict
 
@@ -417,9 +408,58 @@ In image-to-image mode, enabling Setup `Preserve Materials` while Texture / Mate
 
 Neither setting is silently disabled or mutated.
 
+## Real-image validation
+
+Stage 11 was validated with a deliberately complex image-to-image prompt that used no Style module and combined:
+
+- a realistic referenced person,
+- Form-driven geometric/surreal transformation,
+- a linked Outfit module,
+- target-specific Color Palette rules,
+- target-specific Material Assignments,
+- broad exceptions for the person/car/outfit,
+- camera and framing controls.
+
+The test assigned:
+
+```text
+scene surfaces → clay
+car            → cotton / woven
+outfit         → silk / rough / wrinkled
+```
+
+and separate palettes to the overall scene, car and outfit.
+
+Both Modular and Natural generations produced visible semantic separation between the scene, car, outfit and realistic person. The environment strongly adopted the clay/materialized treatment and the assigned palettes remained visually distinct. Making material identity explicit improved the cotton/woven reading of the car compared with the earlier flat-keyword compiler.
+
+The two formats produced normal stochastic differences: the Modular sample followed some material assignments more strongly, while the Natural sample emphasized geometric Form semantics more strongly. This was treated as model variance rather than a prompt-architecture failure because both serializations preserved the intended semantic set.
+
+A second important finding was that substantial visual style can emerge from Form + Color + Material + Outfit + Camera without selecting Style. This confirms the intended ownership model: Style is a high-level aesthetic owner, not a mandatory switch required for every stylized output.
+
+## Validation outcome
+
+The stage is accepted as successful based on focused editor tests, relational-scope tests, Modular/Natural parity checks and real image-generation tests.
+
+Validated behaviors include:
+
+- live target-aware card summaries,
+- reusable `el-multi-select` behavior across assignment scopes,
+- stable linked Outfit/Hair target upgrades without duplicate options,
+- Typography Group/Text labels without serialized JSON,
+- Apply/Except mutual exclusion,
+- custom targets and custom exceptions,
+- Color and Material protected bullet output,
+- compact color serialization without preset-name noise,
+- explicit material identity plus compact surface properties,
+- preserved nested variables and linked module definitions in Natural output,
+- target-specific Color and Material semantics coexisting without ownership leakage,
+- real generated images showing practical material/palette separation.
+
+Further micro-polishing is intentionally stopped under the canonical closure rule: reopen only if later concrete tests reveal a real semantic defect.
+
 ## Legacy state
 
-The old global fields are not silently mapped during Stage 11 validation:
+The old global fields are not silently mapped:
 
 ```text
 material
@@ -428,46 +468,19 @@ detailLevel
 imperfections
 ```
 
-A migration task is tracked in the semantic review backlog. The old module implementation temporarily remains as the source of the large material catalog while the registered module uses `texture.semantic.ts`.
+A migration task remains in the semantic review backlog. The old module implementation temporarily remains as the source of the large material catalog while the registered module uses `texture.semantic.ts`.
 
 The old non-neutral default `material: vinyl` is not present in the new schema. Enabling the new Texture / Material module produces no material semantics until the user adds an assignment.
 
-## Validation checklist
-
-Before closing Stage 11, validate the shared scope layer and both consumers:
-
-1. collapsed Color and Material cards immediately show their live target scope and accurate payload summary
-2. Brushed Aluminum preset → user Object variable
-3. Weathered Leather preset → Outfit
-4. `Clean` exclusivity against scratches/weathering
-5. `Overall` / `All Scene Surfaces` exclusivity inside Apply To
-6. broad Apply + specific Exception remains valid
-7. exact target cannot stay in both Apply To and Except
-8. custom target and custom exception add/remove behavior
-9. inactive Outfit/Hair show generic targets; active modules with output upgrade the same options to `{outfit}` / `{hair}` without duplicate options
-10. Typography Group/Text target labels never expose serialized JSON
-11. deleted user/Typography references remain preserved as Missing References in Apply and Except
-12. preset payload edit detaches preset without changing scope; scope edit does not detach preset
-13. two different materials intentionally targeting the same entity remain allowed
-14. unusual material/property combination shows advisory warning without blocking
-15. Modular Color output is compact bullet syntax without preset names
-16. Modular Material output is compact keyword bullet syntax without preset names
-17. Natural output presents protected `Color Palette:` and `Texture / Material:` bullet blocks
-18. Natural converts linked `{outfit}` / `{hair}` target tokens to configured-module wording
-19. individual Typography Text target remains structurally identifiable in Natural output
-20. Setup Preserve Materials + active Texture emits advisory conflict warning
-21. Color Palette + Texture target the same entity without semantic leakage
-22. Lighting + Texture combine without finish/illumination ownership collision
-23. `pnpm generate` succeeds
-
 ## Files introduced/changed
 
-Stage 11 now includes both Texture-specific work and the shared relational assignment extraction:
+Stage 11 includes both Texture-specific work and the shared relational assignment extraction:
 
 - `app/modules/texture.semantic.ts`
 - `app/modules/types.ts`
 - `app/modules/semanticTargetCapabilities.ts`
 - `app/modules/registry.ts`
+- `app/components/el/multi-select.vue`
 - `app/components/modules/shared/AssignmentScopeEditor.vue`
 - `app/components/modules/panel/ColorAssignmentsField.vue`
 - `app/components/modules/texture/MaterialAssignmentsField.vue`
@@ -486,4 +499,8 @@ Stage 11 now includes both Texture-specific work and the shared relational assig
 - `scripts/i18n-patches/fa.semantic-refactor.todo.ts`
 - `docs/prompt-semantics/review-backlog/README.md`
 
-Stage 11 remains open until the validation checklist is exercised with real editor behavior plus Modular/Natural output.
+## Closure
+
+Stage 11 — Texture / Material is **semantically closed**.
+
+Deferred legacy migration/catalog extraction remains tracked separately and does not keep the new semantic schema open.
