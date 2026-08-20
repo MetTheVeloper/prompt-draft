@@ -580,10 +580,19 @@ function ruleSummary(rule: ColorPaletteRule) {
         @keydown.space.prevent="toggleColorAssignment(assignment, assignmentIndex)"
       >
         <el-flex rules="ccs" :gap="1" class="minw0">
-          <el-text :size="14" :weight="500" icon="palette">
+          <el-text
+            :key="`color-title:${ruleTitle(assignment)}`"
+            :size="14"
+            :weight="500"
+            icon="palette"
+          >
             {{ ruleTitle(assignment) }}
           </el-text>
-          <el-text :size="9" color="normal45">
+          <el-text
+            :key="`color-summary:${ruleSummary(assignment)}`"
+            :size="9"
+            color="normal45"
+          >
             {{ ruleSummary(assignment) }}
           </el-text>
         </el-flex>
