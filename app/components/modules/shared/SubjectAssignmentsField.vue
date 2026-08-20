@@ -232,6 +232,12 @@ function addAssignment() {
 }
 
 function removeAssignment(index: number) {
+  const current = assignments.value[index];
+  if (current?.id) {
+    collapsedAssignmentIds.value = collapsedAssignmentIds.value.filter(
+      (id) => id !== current.id,
+    );
+  }
   setAssignments(assignments.value.filter((_, itemIndex) => itemIndex !== index));
 }
 
@@ -328,22 +334,48 @@ function valueLabel(axis: string, value: unknown) {
   return text ? optionLabel(axis, { value: text }) : "";
 }
 
+function summaryText(value: unknown, maxLength = 56) {
+  if (typeof value !== "string") return "";
+  const text = value.trim().replace(/\s+/g, " ");
+  if (!text) return "";
+  return text.length > maxLength ? `${text.slice(0, maxLength - 1)}…` : text;
+}
+
 function assignmentSummary(assignment: SubjectAssignment) {
   if (props.kind === "pose") {
     const pose = assignment as PoseAssignment;
-    return [
+    const parts = [
       valueLabel("basePosture", pose.basePosture),
+      valueLabel("torsoPosture", pose.torsoPosture),
+      valueLabel("weightBalance", pose.weightBalance),
+      valueLabel("bodyTension", pose.bodyTension),
       valueLabel("locomotion", pose.locomotion),
-      ...(pose.gestures || []).slice(0, 1).map((value) => optionLabel("gestures", { value })),
-    ].filter(Boolean).join(" · ") || translate("modules.pose.fields.assignments.summary.empty", "No pose properties");
+      ...(pose.gestures || []).map((value) => optionLabel("gestures", { value })),
+      summaryText(pose.interactionDetails),
+      summaryText(pose.additionalDetails),
+    ].filter(Boolean);
+
+    return parts.length
+      ? parts.join(" · ")
+      : translate("modules.pose.fields.assignments.summary.empty", "No pose properties");
   }
 
   const expression = assignment as ExpressionAssignment;
-  return [
+  const parts = [
     valueLabel("coreExpression", expression.coreExpression),
     valueLabel("intensity", expression.intensity),
+    valueLabel("eyeState", expression.eyeState),
+    valueLabel("browState", expression.browState),
     valueLabel("mouthState", expression.mouthState),
-  ].filter(Boolean).join(" · ") || translate("modules.expression.fields.assignments.summary.empty", "No expression properties");
+    summaryText(expression.additionalDetails),
+  ].filter(Boolean);
+
+  return parts.length
+    ? parts.join(" · ")
+    : translate(
+        "modules.expression.fields.assignments.summary.empty",
+        "No expression properties",
+      );
 }
 
 function duplicateTargetLabels(index: number) {
@@ -395,10 +427,19 @@ function targetValues(assignment: SubjectAssignment) {
         @keydown.space.prevent="toggleExpanded(assignment, assignmentIndex)"
       >
         <el-flex rules="ccs" :gap="1" class="minw0">
-          <el-text :size="14" :weight="500" :icon="kind === 'pose' ? 'manage_accounts' : 'sentiment_satisfied'">
+          <el-text
+            :key="`${kind}-assignment-title:${assignmentId(assignment, assignmentIndex)}:${assignmentTitle(assignment)}`"
+            :size="14"
+            :weight="500"
+            :icon="kind === 'pose' ? 'manage_accounts' : 'sentiment_satisfied'"
+          >
             {{ assignmentTitle(assignment) }}
           </el-text>
-          <el-text :size="9" color="normal45">
+          <el-text
+            :key="`${kind}-assignment-summary:${assignmentId(assignment, assignmentIndex)}:${assignmentSummary(assignment)}`"
+            :size="9"
+            color="normal45"
+          >
             {{ assignmentSummary(assignment) }}
           </el-text>
         </el-flex>
