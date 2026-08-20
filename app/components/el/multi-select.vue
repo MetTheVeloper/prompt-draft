@@ -262,6 +262,15 @@ const selectedIcon = computed(() => {
   return props.icon
 })
 
+const selectionRenderKey = computed(() => {
+  return [
+    selectedValues.value.map((value) => String(value)).join('|'),
+    selectedLabel.value,
+    selectedDescription.value,
+    selectedIcon.value || '',
+  ].join('::')
+})
+
 function isExclusiveValue(value: ElDropdownValue) {
   return props.exclusiveValues.some((item) => isSameValue(item, value))
 }
@@ -301,10 +310,10 @@ function ownsOpenMenu() {
   )
 }
 
-async function refreshOpenMenu(selection: ElDropdownValue[]) {
+async function refreshOpenMenu() {
   await nextTick()
   if (!ownsOpenMenu()) return
-  menuApi.update({ items: buildMenuItems(selection) })
+  menuApi.update({ items: buildMenuItems(localValues.value) })
 }
 
 function createHeaderItem(label?: string, icon?: string): GlobalMenuItem {
@@ -341,7 +350,7 @@ function createSelectableItem(
 
       const nextSelection = toggleSelection(localValues.value, value)
       emitValues(nextSelection)
-      await refreshOpenMenu(nextSelection)
+      await refreshOpenMenu()
       return false
     },
   }
@@ -406,7 +415,7 @@ function createClearItem(selection: ElDropdownValue[]): GlobalMenuItem {
     close: false,
     handler: async () => {
       emitValues([])
-      await refreshOpenMenu([])
+      await refreshOpenMenu()
       return false
     },
   }
@@ -473,6 +482,7 @@ function handleKeydown(event: KeyboardEvent) {
     @keydown="handleKeydown"
   >
     <el-button
+      :key="selectionRenderKey"
       v-bind="$attrs"
       class="w100"
       rules="rbc"
