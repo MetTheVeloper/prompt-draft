@@ -1,55 +1,64 @@
 import type {
-  ColorPaletteTarget,
   MaterialAssignment,
-  ModuleField,
-  ModuleFieldOption,
   ModuleValues,
   PromptKeyModule,
 } from "../modules/types";
+import {
+  cleanSemanticText,
+  formatSemanticScope,
+  humanizeSemanticValue,
+  normalizeSemanticTargets,
+  semanticTargetSpecificity,
+} from "./semanticTargets";
 
-function cleanPromptPart(value: string) {
-  return value.trim().replace(/\s+/g, " ");
-}
+const MATERIAL_BUILTIN_TARGET_TEXT: Record<string, string> = {
+  all_surfaces: "all scene surfaces",
+  background: "background surface",
+  subject: "main subject",
+  outfit: "outfit",
+  hair: "hair",
+  typography: "typography",
+  accents: "accent elements",
+};
 
-function humanizeValue(value: string) {
-  return value
-    .replace(/[_-]+/g, " ")
-    .replace(/\s+/g, " ")
-    .trim()
-    .toLowerCase();
-}
+const FINISH_KEYWORDS: Record<string, string> = {
+  semi_gloss: "semi-gloss",
+  high_gloss: "high-gloss",
+  mirror: "mirror-like",
+};
+
+const SURFACE_KEYWORDS: Record<string, string> = {
+  grainy: "fine grain",
+  brush_marks: "brush marks",
+};
+
+const CONDITION_KEYWORDS: Record<string, string> = {
+  clean: "clean",
+  handmade: "handmade irregularities",
+  scratches: "scratches",
+  cracks: "cracks",
+  dents: "dents",
+  chips: "chipped",
+  dust: "dusty",
+  weathered: "weathered",
+  stains: "stained",
+  fading: "faded",
+  wrinkles: "wrinkled",
+  peeling: "peeling",
+  corrosion: "corroded",
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-function isTarget(value: unknown): value is ColorPaletteTarget {
-  return (
-    isRecord(value) &&
-    typeof value.kind === "string" &&
-    typeof value.value === "string"
-  );
 }
 
 function isMaterialAssignment(value: unknown): value is MaterialAssignment {
   return isRecord(value) && Array.isArray(value.targets);
 }
 
-function getConfigOptions(field: ModuleField, key: string): ModuleFieldOption[] {
-  const options = field.config?.[key];
-  if (!Array.isArray(options)) return [];
-
-  return options.filter((item): item is ModuleFieldOption => {
-    return isRecord(item) && typeof item.value === "string";
-  });
-}
-
-function optionPromptText(field: ModuleField, key: string, value?: string) {
+function keyword(value?: string) {
   const cleaned = value?.trim();
-  if (!cleaned) return "";
-
-  const option = getConfigOptions(field, key).find((item) => item.value === cleaned);
-  return cleanPromptPart(option?.promptText || humanizeValue(cleaned));
+  return cleaned ? humanizeSemanticValue(cleaned).toLowerCase() : "";
 }
 
 function normalizeAssignments(value: unknown): MaterialAssignment[] {
@@ -76,108 +85,51 @@ function normalizeAssignments(value: unknown): MaterialAssignment[] {
       conditions: Array.isArray(assignment.conditions)
         ? assignment.conditions.filter((item): item is string => typeof item === "string")
         : [],
-      targets: assignment.targets.filter(isTarget),
+      targets: normalizeSemanticTargets(assignment.targets),
+      exceptions: normalizeSemanticTargets(assignment.exceptions),
     }));
 }
 
-function builtinTargetText(value: string) {
-  const map: Record<string, string> = {
-    all_surfaces: "all scene surfaces",
-    background: "the background surface",
-    subject: "the main subject",
-    outfit: "the outfit",
-    hair: "the hair",
-    typography: "typography",
-    accents: "accent elements",
-  };
+function materialKeywords(assignment: MaterialAssignment) {
+  const properties = [
+    keyword(assignment.material),
+    FINISH_KEYWORDS[assignment.finish || ""] || keyword(assignment.finish),
+    SURFACE_KEYWORDS[assignment.surfaceTexture || ""] ||
+      keyword(assignment.surfaceTexture),
+    keyword(assignment.opticalCharacter),
+    assignment.textureProminence
+      ? `${keyword(assignment.textureProminence)} texture`
+      : "",
+    ...(assignment.conditions || []).map(
+      (value) => CONDITION_KEYWORDS[value] || keyword(value),
+    ),
+  ].filter(Boolean);
 
-  return map[value] || humanizeValue(value);
-}
-
-function quotedLabel(value?: string) {
-  const label = value?.trim();
-  return label ? `\"${label.replace(/\"/g, "\\\"")}\"` : "";
-}
-
-function formatTarget(target: ColorPaletteTarget) {
-  if (target.kind === "builtin") {
-    return builtinTargetText(target.value);
-  }
-
-  if (target.kind === "custom") {
-    return cleanPromptPart(target.value);
-  }
-
-  const token = cleanPromptPart(target.token || target.value);
-  const label = quotedLabel(target.label);
-
-  if (target.kind === "typography_group") {
-    return ["typography group", label, token && `(${token})`]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  if (target.kind === "typography_text") {
-    const parent = quotedLabel(target.parentLabel);
-
-    return [
-      "typography text",
-      label,
-      parent ? `in group ${parent}` : "",
-      token && `(${token})`,
-    ]
-      .filter(Boolean)
-      .join(" ");
-  }
-
-  return ["user target", label, token && `(${token})`]
-    .filter(Boolean)
-    .join(" ");
-}
-
-function formatTargets(targets: ColorPaletteTarget[]) {
-  const values = targets.map(formatTarget).filter(Boolean);
-
-  if (!values.length) return "";
-  if (values.length === 1) return values[0];
-  return values.join(" and ");
-}
-
-function targetSpecificity(target: ColorPaletteTarget) {
-  if (target.kind !== "builtin") return 2;
-  if (target.value === "all_surfaces") return 0;
-  return 1;
+  return Array.from(new Set(properties));
 }
 
 function assignmentSpecificity(assignment: MaterialAssignment) {
   if (!assignment.targets.length) return 0;
-  return Math.max(...assignment.targets.map(targetSpecificity));
+  return Math.max(
+    ...assignment.targets.map((target) =>
+      semanticTargetSpecificity(target, "all_surfaces"),
+    ),
+  );
 }
 
-export function compileMaterialAssignment(
-  field: ModuleField,
-  assignment: MaterialAssignment,
-) {
-  const properties = [
-    optionPromptText(field, "materialOptions", assignment.material),
-    optionPromptText(field, "finishOptions", assignment.finish),
-    optionPromptText(field, "surfaceTextureOptions", assignment.surfaceTexture),
-    optionPromptText(field, "opticalCharacterOptions", assignment.opticalCharacter),
-    optionPromptText(field, "textureProminenceOptions", assignment.textureProminence),
-  ].filter(Boolean);
+export function compileMaterialAssignment(assignment: MaterialAssignment) {
+  const properties = materialKeywords(assignment);
+  const scope = formatSemanticScope(
+    assignment.targets,
+    assignment.exceptions || [],
+    {
+      format: "modular",
+      builtinText: MATERIAL_BUILTIN_TARGET_TEXT,
+    },
+  );
 
-  const conditions = (assignment.conditions || [])
-    .map((value) => optionPromptText(field, "conditionOptions", value))
-    .filter(Boolean);
-
-  if (conditions.length) {
-    properties.push(conditions.join(" and "));
-  }
-
-  const targetText = formatTargets(assignment.targets);
-  if (!properties.length || !targetText) return "";
-
-  return `${properties.join(" with ")} assigned to ${targetText}`;
+  if (!properties.length || !scope) return "";
+  return `• Apply ${properties.join(", ")} to ${scope}`;
 }
 
 export function compileTextureModule(
@@ -191,14 +143,10 @@ export function compileTextureModule(
 
   if (overrideFieldId) {
     const overrideValue = values[overrideFieldId];
-
     if (typeof overrideValue === "string" && overrideValue.trim()) {
-      return cleanPromptPart(overrideValue);
+      return cleanSemanticText(overrideValue);
     }
   }
-
-  const assignmentField = module.fields.materialAssignments;
-  if (!assignmentField) return "";
 
   const compiledAssignments = normalizeAssignments(values.materialAssignments)
     .map((assignment, index) => ({ assignment, index }))
@@ -206,18 +154,19 @@ export function compileTextureModule(
       const specificity =
         assignmentSpecificity(a.assignment) -
         assignmentSpecificity(b.assignment);
-
       return specificity || a.index - b.index;
     })
-    .map(({ assignment }) => compileMaterialAssignment(assignmentField, assignment))
+    .map(({ assignment }) => compileMaterialAssignment(assignment))
     .filter(Boolean);
 
   const extraDetails =
     typeof values.extraDetails === "string"
-      ? cleanPromptPart(values.extraDetails)
+      ? cleanSemanticText(values.extraDetails)
       : "";
 
-  return [compiledAssignments.join("; "), extraDetails]
-    .filter(Boolean)
-    .join(", ");
+  if (extraDetails) {
+    compiledAssignments.push(`• ${extraDetails}`);
+  }
+
+  return compiledAssignments.join("\n");
 }
