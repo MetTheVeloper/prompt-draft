@@ -74,6 +74,10 @@ export function useSemanticTargetCatalog(
       "components.assignmentScope.groups.moduleOutputs",
       "Linked Module Outputs",
     ),
+    moduleEntities: translate(
+      "components.assignmentScope.groups.moduleEntities",
+      "Linked Module Entities",
+    ),
     typographyGroups: translate(
       "components.assignmentScope.groups.typographyGroups",
       "Typography Groups",
@@ -96,6 +100,17 @@ export function useSemanticTargetCatalog(
     return enabledModulePromptVariables.value.filter((variable) => {
       return (
         variable.entityType === "module" &&
+        variable.semanticCapabilities?.includes(capability)
+      );
+    });
+  });
+
+  const moduleEntityVariables = computed(() => {
+    return enabledModulePromptVariables.value.filter((variable) => {
+      return (
+        variable.entityType !== "module" &&
+        variable.entityType !== "text_group" &&
+        variable.entityType !== "text" &&
         variable.semanticCapabilities?.includes(capability)
       );
     });
@@ -194,6 +209,41 @@ export function useSemanticTargetCatalog(
       });
   });
 
+  const moduleEntityOptions = computed<SemanticTargetCatalogOption[]>(() => {
+    return moduleEntityVariables.value.map((variable, index) => {
+      const token = variableToken(variable);
+      const label = cleanLabel(variable.label) || `Module Entity ${index + 1}`;
+      const group = enabledModuleVariableGroups.value.find((candidate) =>
+        candidate.variables.some((item) => item.id === variable.id),
+      );
+      const parent = group?.variables.find(
+        (candidate) => candidate.entityId === variable.parentId,
+      );
+      const parentLabel = cleanLabel(parent?.label);
+      const description = cleanDescription(variable.description);
+
+      return {
+        value: `slot:${token}`,
+        label: `${label} · ${token}`,
+        description: [description, parentLabel].filter(Boolean).join(" · "),
+        group: `module_entities:${variable.moduleKey || "module"}`,
+        groupLabel: group?.label
+          ? `${groupLabels.value.moduleEntities} · ${group.label}`
+          : groupLabels.value.moduleEntities,
+        target: {
+          kind: "module_output" as const,
+          value: token,
+          moduleKey: variable.moduleKey,
+          variableId: variable.id,
+          entityId: variable.entityId || variable.id,
+          token,
+          label,
+          parentLabel,
+        },
+      };
+    });
+  });
+
   const typographyVariables = computed(() => {
     return (
       enabledModuleVariableGroups.value.find((group) => group.id === "typography")
@@ -289,6 +339,7 @@ export function useSemanticTargetCatalog(
   const availableOptions = computed<SemanticTargetCatalogOption[]>(() => [
     ...builtinOptions.value,
     ...extraModuleOutputOptions.value,
+    ...moduleEntityOptions.value,
     ...typographyGroupOptions.value,
     ...typographyTextOptions.value,
     ...userOptions.value,
