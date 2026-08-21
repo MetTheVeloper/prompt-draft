@@ -1,5 +1,7 @@
 import type { PromptVariableType } from "./types"
 
+export type VariableBlueprintCategory = "profiles" | "content" | "utilities"
+
 export type VariableBlueprintSlot = {
   id: string
   key: string
@@ -7,17 +9,35 @@ export type VariableBlueprintSlot = {
   value?: string
   description?: string
   optional?: boolean
+  typeEditable?: boolean
 }
 
-export type VariableBlueprintRepeatableSlot = {
+export type VariableBlueprintGroupSlot = {
   id: string
   keyPattern: string
   type: PromptVariableType
   valuePattern?: string
   descriptionPattern?: string
+  optional?: boolean
+  typeEditable?: boolean
+}
+
+export type VariableBlueprintRepeatableGroup = {
+  id: string
+  label: string
+  description?: string
   min: number
   max: number
   defaultCount: number
+  slots: VariableBlueprintGroupSlot[]
+}
+
+export type VariableBlueprintCustomSet = {
+  min: number
+  max: number
+  defaultCount: number
+  keyPattern: string
+  defaultType: PromptVariableType
 }
 
 export type VariableBlueprint = {
@@ -25,24 +45,107 @@ export type VariableBlueprint = {
   label: string
   description: string
   icon?: string
+  category: VariableBlueprintCategory
+  categoryLabel: string
   slots?: VariableBlueprintSlot[]
-  repeatable?: VariableBlueprintRepeatableSlot
+  groups?: VariableBlueprintRepeatableGroup[]
+  customSet?: VariableBlueprintCustomSet
+}
+
+function entityProfile(
+  id: string,
+  label: string,
+  entityLabel: string,
+  keyBase: string,
+  entityType: PromptVariableType,
+  icon: string,
+): VariableBlueprint {
+  return {
+    id,
+    label,
+    description: `Create one or more ${entityLabel.toLowerCase()} profiles with a primary semantic handle and optional reusable metadata.`,
+    icon,
+    category: "profiles",
+    categoryLabel: "Entity Profiles",
+    groups: [
+      {
+        id: keyBase,
+        label: entityLabel,
+        description: `Each ${entityLabel.toLowerCase()} profile is created as one coherent variable group.`,
+        min: 1,
+        max: 12,
+        defaultCount: 1,
+        slots: [
+          {
+            id: "entity",
+            keyPattern: `${keyBase}{index}`,
+            type: entityType,
+            descriptionPattern: `${entityLabel} {index}`,
+          },
+          {
+            id: "name",
+            keyPattern: `${keyBase}{index}Name`,
+            type: "text",
+            descriptionPattern: `${entityLabel} {index} name or reusable label`,
+            optional: true,
+          },
+          {
+            id: "reference",
+            keyPattern: `${keyBase}{index}Reference`,
+            type: "reference",
+            descriptionPattern: `${entityLabel} {index} auxiliary reference image`,
+            optional: true,
+          },
+        ],
+      },
+    ],
+  }
 }
 
 export const variableBlueprints: VariableBlueprint[] = [
+  entityProfile("personProfile", "Person Profile", "Person", "person", "subject", "person"),
+  entityProfile("animalProfile", "Animal Profile", "Animal", "animal", "subject", "pets"),
+  entityProfile("buildingProfile", "Building Profile", "Building", "building", "object", "apartment"),
+  entityProfile("productProfile", "Product Profile", "Product", "product", "object", "inventory_2"),
+  entityProfile("vehicleProfile", "Vehicle Profile", "Vehicle", "vehicle", "object", "directions_car"),
   {
     id: "multiSubject",
-    label: "Multiple Subjects",
-    description: "Create a configurable set of independently targetable subject variables.",
+    label: "Subject Set",
+    description: "Create a lightweight configurable set of independently targetable subject variables.",
     icon: "groups",
-    repeatable: {
-      id: "subjects",
-      keyPattern: "subject{index}",
-      type: "subject",
-      descriptionPattern: "Subject {index}",
+    category: "profiles",
+    categoryLabel: "Entity Profiles",
+    groups: [
+      {
+        id: "subjects",
+        label: "Subject",
+        min: 1,
+        max: 12,
+        defaultCount: 3,
+        slots: [
+          {
+            id: "subject",
+            keyPattern: "subject{index}",
+            type: "subject",
+            descriptionPattern: "Subject {index}",
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: "customVariableSet",
+    label: "Custom Variable Set",
+    description: "Build an open-ended set of variables with editable keys, values and semantic types.",
+    icon: "tune",
+    category: "utilities",
+    categoryLabel: "Utilities",
+    customSet: {
       min: 1,
-      max: 12,
+      max: 24,
       defaultCount: 3,
+      keyPattern: "variable{index}",
+      defaultType: "text",
     },
   },
   {
@@ -50,6 +153,8 @@ export const variableBlueprints: VariableBlueprint[] = [
     label: "Poster Content",
     description: "Create reusable content handles for a typical promotional or artistic poster.",
     icon: "campaign",
+    category: "content",
+    categoryLabel: "Content Recipes",
     slots: [
       { id: "brandName", key: "brandName", type: "text", description: "Brand or organizer name", optional: true },
       { id: "headline", key: "headline", type: "text", description: "Main headline" },
@@ -67,6 +172,8 @@ export const variableBlueprints: VariableBlueprint[] = [
     label: "Business Card",
     description: "Create common identity and contact variables for business-card typography.",
     icon: "badge",
+    category: "content",
+    categoryLabel: "Content Recipes",
     slots: [
       { id: "personName", key: "personName", type: "text", description: "Displayed person name" },
       { id: "jobTitle", key: "jobTitle", type: "text", description: "Job title or role", optional: true },
@@ -84,6 +191,8 @@ export const variableBlueprints: VariableBlueprint[] = [
     label: "Garment Print",
     description: "Create a semantic reference handle and optional print instructions for artwork applied to a garment.",
     icon: "texture",
+    category: "utilities",
+    categoryLabel: "Utilities",
     slots: [
       {
         id: "printArtwork",
@@ -92,7 +201,7 @@ export const variableBlueprints: VariableBlueprint[] = [
         value: "attached artwork reference image",
         description: "Artwork source to reproduce on the garment",
       },
-      { id: "printPlacement", key: "printPlacement", type: "text", value: "front of the garment", description: "Print placement", optional: true },
+      { id: "printPlacement", key: "printPlacement", type: "text", value: "front center of the t-shirt", description: "Print placement", optional: true },
       { id: "printMethod", key: "printMethod", type: "text", value: "natural DTF garment print", description: "Printing method and physical integration", optional: true },
       { id: "printScale", key: "printScale", type: "text", description: "Relative print size", optional: true },
     ],
