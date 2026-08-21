@@ -332,8 +332,9 @@ function relationText(relation: OutfitItemRelation, items: OutfitItem[]) {
 
 /**
  * Compile a clean, human-first Outfit block. Global tokens are intentionally
- * not emitted here. Final prompt assembly selectively promotes only referenced
- * sets/items to `{outfit_setKey}` and local `{itemKey}` aliases.
+ * not emitted here. Final prompt assembly selectively promotes referenced
+ * sets/items to local `{setKey}` / `{itemKey}` aliases while their external
+ * identities remain globally namespaced.
  */
 export function compileOutfitSet(set: OutfitSet) {
   const scope = formatSemanticScope(set.targets, [], { format: "modular" });
@@ -388,19 +389,20 @@ type ParsedOutfitSetBlock = {
 };
 
 /**
- * Promote only externally referenced Outfit entities to prompt aliases.
+ * Promote only externally referenced Outfit entities to local prompt aliases.
  *
  * Example without references:
  *   • Evening Set:
  *     ◦ dress: dress
  *
  * Example when the dress is targeted elsewhere:
- *   • {outfit_eveningSet}:
+ *   • {eveningSet}:
  *     ◦ {dress}: dress
  *
- * External modules still use the globally unique
- * `{outfit_eveningSet_dress}` token. The short `{dress}` alias is scoped by
- * the owning set definition and never registered as a global variable.
+ * External modules still use globally unique paths such as
+ * `{outfit_eveningSet}` and `{outfit_eveningSet_dress}`. The short aliases are
+ * scoped by the owning `{outfit}` definition and are never registered as
+ * global variables.
  */
 export function formatOutfitOutputForReferences(
   output: string,
@@ -441,6 +443,7 @@ export function formatOutfitOutputForReferences(
 
   blocks.forEach((block) => {
     const setToken = getOutfitSetVariableToken(block.key);
+    const setAlias = `{${block.key}}`;
     const referencedItems = new Set(
       block.itemLines
         .filter((item) =>
@@ -454,7 +457,7 @@ export function formatOutfitOutputForReferences(
       externalReferenceText.includes(setToken) || referencedItems.size > 0;
 
     if (setReferenced) {
-      lines[block.headerIndex] = `• ${setToken}:`;
+      lines[block.headerIndex] = `• ${setAlias}:`;
     }
 
     block.itemLines.forEach((item) => {
@@ -472,7 +475,7 @@ export function formatOutfitOutputForReferences(
       if (suffix !== block.display) return;
       lines[lineIndex] = line.replace(
         `${block.display}`,
-        setReferenced ? setToken : block.display,
+        setReferenced ? setAlias : block.display,
       );
     });
   });
