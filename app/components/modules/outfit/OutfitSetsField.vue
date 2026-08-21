@@ -427,7 +427,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
     keyToId.set(recipeItem.key, id);
     const definition = outfitItemTypeMap.get(recipeItem.type);
     const key = createUniqueOutfitEntityKey(
-      recipeItem.key || recipeItem.type,
+      recipeItem.customType || recipeItem.type || recipeItem.key,
       usedItemKeys,
       `item${itemIndex + 1}`,
     );
