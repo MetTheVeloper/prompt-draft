@@ -97,7 +97,13 @@ function getModulePanel(module: PromptKeyModule) {
 }
 
 function getModulePanelExtraProps(module: PromptKeyModule) {
-  return module.key === "outfit" ? { moduleOutputs } : {};
+  // Spread the reactive output map so Vue tracks its individual entries.
+  // Passing the proxy object itself does not guarantee that an Outfit preview
+  // re-renders when another module (for example Texture) changes a nested
+  // reference to one of its set/item tokens.
+  return module.key === "outfit"
+    ? { moduleOutputs: { ...moduleOutputs } }
+    : {};
 }
 
 watch(
