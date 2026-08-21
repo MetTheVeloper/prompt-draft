@@ -141,6 +141,7 @@ export const hairPropertyDefinitions: Record<string, HairPropertyDefinition> = {
     nature: "intrinsic",
     options: [
       option("natural", "naturally styled"),
+      option("controlled", "controlled styling"),
       option("sleek", "sleekly styled"),
       option("messy", "messy styling"),
       option("tousled", "tousled styling"),
