@@ -1,11 +1,13 @@
 <script setup lang="ts">
 import { computed, inject, watch } from "vue";
+import type { ElDropdownValue } from "~/types/dropdown";
 
 import type {
   ModuleField,
   ModuleFieldOption,
   PromptVariable,
 } from "../../../modules/types";
+import { variableBlueprints } from "../../../modules/variables.blueprints";
 
 import {
   createUniqueVariableKey,
@@ -14,8 +16,13 @@ import {
   isValidVariableKey,
   normalizeVariableKey,
 } from "../../../utils/promptVariables";
+import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 type VariableEditorController = {
+  submit: () => boolean;
+};
+
+type BlueprintEditorController = {
   submit: () => boolean;
 };
 
@@ -27,6 +34,7 @@ type CreateVariablesContextAction = {
 const CREATE_VARIABLES_CONTEXT_ACTION_KEY = "prompt-draft:create:variables-context-action";
 
 import VariableEditorModal from "./VariableEditorModal.vue";
+import VariableBlueprintModal from "./VariableBlueprintModal.vue";
 
 const props = withDefaults(
   defineProps<{
@@ -46,6 +54,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { mobile } = useScreen();
 const modal = useModal();
+const { activeSystemVariableKeys } = usePromptVariables();
 const createVariablesContextAction = inject<CreateVariablesContextAction | null>(
   CREATE_VARIABLES_CONTEXT_ACTION_KEY,
   null,
@@ -61,6 +70,14 @@ const variableCountLabel = computed(() => {
   return t("modules.variables.fields.variables.list.count", {
     count: variables.value.length,
   });
+});
+
+const blueprintItems = computed(() => {
+  return variableBlueprints.map((blueprint) => ({
+    value: blueprint.id,
+    label: blueprint.label,
+    description: blueprint.description,
+  }));
 });
 
 function translate(path: string, fallback = "") {
@@ -97,6 +114,13 @@ function getExistingVariableKeys(exceptIndex?: number) {
     .filter((_, index) => index !== exceptIndex)
     .map((variable) => normalizeVariableKey(variable.key))
     .filter(Boolean);
+}
+
+function getUnavailableVariableKeys() {
+  return Array.from(new Set([
+    ...getExistingVariableKeys(),
+    ...activeSystemVariableKeys.value.map(normalizeVariableKey).filter(Boolean),
+  ]));
 }
 
 function createPromptVariable(baseKey = "variable"): PromptVariable {
@@ -251,6 +275,57 @@ function openVariableModal(variableIndex?: number) {
   });
 }
 
+function selectBlueprint(value: ElDropdownValue) {
+  const blueprintId = String(value || "");
+  const blueprint = variableBlueprints.find((candidate) => candidate.id === blueprintId);
+  if (!blueprint) return;
+
+  const controller: BlueprintEditorController = { submit: () => false };
+
+  modal.open({
+    header: {
+      icon: blueprint.icon || "auto_awesome",
+      title: blueprint.label,
+      subtitle: "Configure the variables before adding them to the prompt graph.",
+      color: "blue",
+    },
+    component: VariableBlueprintModal,
+    props: {
+      blueprint,
+      existingKeys: getUnavailableVariableKeys(),
+      controller,
+      onApply: (createdVariables: Array<Omit<PromptVariable, "id">>) => {
+        const nextVariables = createdVariables.map((variable) => ({
+          ...variable,
+          id: createVariableId(),
+        })) as PromptVariable[];
+
+        updateVariables([...variables.value, ...nextVariables]);
+      },
+    },
+    actions: [
+      {
+        label: t("modules.variables.fields.variables.actions.cancel"),
+        icon: "cancel",
+        color: "normal",
+        mode: "flat",
+        close: true,
+      },
+      {
+        label: "Create variables",
+        icon: "auto_awesome",
+        color: "prim",
+        close: true,
+        handler: () => controller.submit(),
+      },
+    ],
+    options: {
+      width: mobile.value ? "calc(100% - 24px)" : 760,
+      closeOnBackdrop: true,
+    },
+  });
+}
+
 function removePromptVariable(variableIndex: number) {
   const nextVariables = variables.value.filter((_, index) => {
     return index !== variableIndex;
@@ -351,8 +426,18 @@ watch(
         </el-text>
       </el-flex>
 
-      <el-button :label="t('modules.variables.fields.variables.actions.add')" icon="add" color="prim" :size="12"
-        :p="[8, 12]" :radius="10" @click="openCreateModal" />
+      <el-flex rules="rcc" :gap="8">
+        <el-dropdown
+          :model-value="''"
+          :items="blueprintItems"
+          item-value="value"
+          item-label="label"
+          placeholder="Blueprints"
+          @update:model-value="selectBlueprint"
+        />
+        <el-button :label="t('modules.variables.fields.variables.actions.add')" icon="add" color="prim" :size="12"
+          :p="[8, 12]" :radius="10" @click="openCreateModal" />
+      </el-flex>
     </el-flex>
 
     <div v-if="variables.length" class="variables-field__list">
