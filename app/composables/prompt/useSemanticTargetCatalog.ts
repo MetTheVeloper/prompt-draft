@@ -221,12 +221,14 @@ export function useSemanticTargetCatalog(
       );
       const parentLabel = cleanLabel(parent?.label);
       const description = cleanDescription(variable.description);
+      const entityId = variable.entityId || variable.id;
+      const moduleKey = variable.moduleKey || "module";
 
       return {
-        value: `slot:${token}`,
+        value: `module_entity:${moduleKey}:${entityId}`,
         label: `${label} · ${token}`,
         description: [description, parentLabel].filter(Boolean).join(" · "),
-        group: `module_entities:${variable.moduleKey || "module"}`,
+        group: `module_entities:${moduleKey}`,
         groupLabel: group?.label
           ? `${groupLabels.value.moduleEntities} · ${group.label}`
           : groupLabels.value.moduleEntities,
@@ -235,7 +237,7 @@ export function useSemanticTargetCatalog(
           value: token,
           moduleKey: variable.moduleKey,
           variableId: variable.id,
-          entityId: variable.entityId || variable.id,
+          entityId,
           token,
           label,
           parentLabel,
