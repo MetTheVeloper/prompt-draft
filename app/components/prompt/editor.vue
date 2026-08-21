@@ -13,6 +13,7 @@ import ModulesPanelEffects from "../modules/panel/effects.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
 import ModulesPanelTexture from "../modules/panel/texture.vue";
 import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments.vue";
+import ModulesPanelHair from "../modules/panel/hair.vue";
 import ModulesPanelOutfit from "../modules/panel/outfit.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
@@ -89,6 +90,7 @@ function getModulePanel(module: PromptKeyModule) {
   if (module.key === "effects") return ModulesPanelEffects;
   if (module.key === "lighting") return ModulesPanelLighting;
   if (module.key === "texture") return ModulesPanelTexture;
+  if (module.key === "hair") return ModulesPanelHair;
   if (module.key === "outfit") return ModulesPanelOutfit;
   if (module.key === "pose" || module.key === "expression") {
     return ModulesPanelSubjectAssignments;
@@ -98,10 +100,9 @@ function getModulePanel(module: PromptKeyModule) {
 
 function getModulePanelExtraProps(module: PromptKeyModule) {
   // Spread the reactive output map so Vue tracks its individual entries.
-  // Passing the proxy object itself does not guarantee that an Outfit preview
-  // re-renders when another module (for example Texture) changes a nested
-  // reference to one of its set/item tokens.
-  return module.key === "outfit"
+  // Hair and Outfit previews use this snapshot only to show selective local
+  // aliases when another module targets one of their child entities.
+  return module.key === "outfit" || module.key === "hair"
     ? { moduleOutputs: { ...moduleOutputs } }
     : {};
 }
