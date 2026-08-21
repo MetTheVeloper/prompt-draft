@@ -9,6 +9,7 @@ export const RESERVED_VARIABLE_KEY_PATTERNS = [
   /^text_[a-zA-Z0-9_]*$/,
   /^text_group_[a-zA-Z0-9_]*$/,
   /^outfit_[a-zA-Z0-9_]+$/,
+  /^hair_[a-zA-Z0-9_]+$/,
 ];
 
 export type PromptVariableIssueLevel = "error" | "warning";
