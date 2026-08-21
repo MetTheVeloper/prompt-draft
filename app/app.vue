@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const { t } = useI18n()
 const isAppMounted = ref(false)
 
 onMounted(() => {
@@ -12,10 +13,10 @@ onMounted(() => {
   <NuxtLoadingIndicator />
 
   <Transition name="appBootLoader">
-    <div v-if="!isAppMounted" class="appBootLoader" aria-label="Loading application">
+    <div v-if="!isAppMounted" class="appBootLoader" :aria-label="t('app.loading')">
       <div class="appBootLoader__content">
         <div class="appBootLoader__logo">
-          PROMPT DRAFT
+          {{ t('app.title') }}
         </div>
 
         <div class="appBootLoader__spinner" />
