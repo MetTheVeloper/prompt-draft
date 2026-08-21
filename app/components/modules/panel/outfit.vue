@@ -5,7 +5,7 @@ import type { OutfitSet } from "~/modules/outfit.types";
 import type { ModuleOutputValue } from "~/utils/compilePrompt";
 import type { PromptValidationIssue } from "~/utils/promptValidation";
 import { createDefaultModuleValues } from "~/utils/compileModules";
-import { compileOutfitModule, normalizeOutfitSets } from "~/utils/compileOutfit";
+import { compileOutfitModule } from "~/utils/compileOutfit";
 import OutfitSetsField from "../outfit/OutfitSetsField.vue";
 
 const { t } = useI18n();
@@ -44,9 +44,7 @@ function translate(path: string, fallback = "") {
   return translated === path ? fallback : translated;
 }
 
-const moduleTitle = computed(() =>
-  translate("modules.outfit.title", "Outfit"),
-);
+const moduleTitle = computed(() => translate("modules.outfit.title", "Outfit"));
 const moduleDescription = computed(() =>
   translate(
     "modules.outfit.description",
@@ -87,7 +85,11 @@ watch(customMode, () => {
   });
 });
 
-const outfitSets = computed<OutfitSet[]>(() => normalizeOutfitSets(values.outfitSets));
+const outfitSets = computed<OutfitSet[]>(() => {
+  if (!Array.isArray(values.outfitSets)) return [];
+  return cloneValue(values.outfitSets) as unknown as OutfitSet[];
+});
+
 const customText = computed(() =>
   typeof values.customText === "string" ? values.customText.trim() : "",
 );
@@ -160,174 +162,54 @@ async function copyOutput() {
     <el-flex rules="ccs" class="w100" :gap="12">
       <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="12">
         <el-flex rules="rcc" :gap="12">
-          <el-text marker="blue5" color="blue" :size="12" :weight="700">
-            {{ t("panel.keyModule") }}
-          </el-text>
-          <el-text marker="orange5" color="orange" :size="12" :weight="700">
-            {{ statusLabel }}
-          </el-text>
-          <el-text :size="10" color="orange">
-            {{ outfitSets.length }} {{ outfitSets.length === 1 ? 'set' : 'sets' }}
-          </el-text>
+          <el-text marker="blue5" color="blue" :size="12" :weight="700">{{ t("panel.keyModule") }}</el-text>
+          <el-text marker="orange5" color="orange" :size="12" :weight="700">{{ statusLabel }}</el-text>
+          <el-text :size="10" color="orange">{{ outfitSets.length }} {{ outfitSets.length === 1 ? 'set' : 'sets' }}</el-text>
         </el-flex>
-
         <el-flex rules="rcc" :gap="6">
-          <el-switch
-            :model-value="customMode"
-            :size="12"
-            :label="t('panel.customMode')"
-            @update:model-value="customMode = $event"
-          />
-          <el-button
-            type="fab"
-            mode="flat"
-            icon="refresh"
-            :label="translate('components.contextMenu.actions.reset', 'Reset')"
-            :size="12"
-            :p="8"
-            @click="clearModule"
-          />
-          <el-button
-            type="fab"
-            mode="flat"
-            color="red"
-            icon="delete"
-            :label="t('components.contextMenu.actions.removeFromKeyModules')"
-            :size="12"
-            :p="8"
-            @click="removeModule"
-          />
-          <el-button
-            type="fab"
-            mode="flat"
-            color="prim"
-            :size="14"
-            :p="8"
-            :label="!expanded ? t('panel.expand') : t('panel.collapse')"
-            :icon="!expanded ? 'expand_more' : 'expand_less'"
-            @click="expanded = !expanded"
-          />
+          <el-switch :model-value="customMode" :size="12" :label="t('panel.customMode')" @update:model-value="customMode = $event" />
+          <el-button type="fab" mode="flat" icon="refresh" :label="translate('components.contextMenu.actions.reset', 'Reset')" :size="12" :p="8" @click="clearModule" />
+          <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('components.contextMenu.actions.removeFromKeyModules')" :size="12" :p="8" @click="removeModule" />
+          <el-button type="fab" mode="flat" color="prim" :size="14" :p="8" :label="!expanded ? t('panel.expand') : t('panel.collapse')" :icon="!expanded ? 'expand_more' : 'expand_less'" @click="expanded = !expanded" />
         </el-flex>
       </el-flex>
 
       <el-flex rules="ccs" class="w100 crp" :gap="4" @click="expanded = !expanded">
-        <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
-          {{ moduleTitle.toUpperCase() }}
-        </el-text>
-        <el-text
-          type="p"
-          :size="14"
-          :weight="200"
-          icon="info"
-          color="normal60"
-          icon-color="normal50"
-        >
-          {{ moduleDescription }}
-        </el-text>
+        <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">{{ moduleTitle.toUpperCase() }}</el-text>
+        <el-text type="p" :size="14" :weight="200" icon="info" color="normal60" icon-color="normal50">{{ moduleDescription }}</el-text>
       </el-flex>
 
       <el-divider mode="dashed" :dash="4" :gap="2" />
-      <pre
-        v-if="!expanded && output"
-        class="fs12 txt-normal"
-        style="white-space: pre-wrap; overflow-wrap: anywhere"
-      >{{ output }}</pre>
-      <el-text v-else-if="!expanded" :size="12" color="red80">
-        {{ t("panel.emptyOutput") }}
-      </el-text>
+      <pre v-if="!expanded && output" class="fs12 txt-normal" style="white-space: pre-wrap; overflow-wrap: anywhere">{{ output }}</pre>
+      <el-text v-else-if="!expanded" :size="12" color="red80">{{ t("panel.emptyOutput") }}</el-text>
     </el-flex>
 
     <el-grid v-show="expanded" :gap="12" class="w100">
-      <el-grid
-        v-if="!customMode && outfitField"
-        :p="12"
-        :br="1"
-        :radius="16"
-        bc="blue35"
-        class="w100"
-      >
+      <el-grid v-if="!customMode && outfitField" :p="12" :br="1" :radius="16" bc="blue35" class="w100">
         <el-flex rules="ccs" :gap="4">
           <el-text :size="14" :weight="600" icon="styler">Outfit Designer</el-text>
-          <el-text :size="11" color="normal45">
-            Build one or more wearable sets, assign each set to subjects, then configure every item independently.
-          </el-text>
+          <el-text :size="11" color="normal45">Build one or more wearable sets, assign each set to subjects, then configure every item independently.</el-text>
         </el-flex>
-
-        <OutfitSetsField
-          :model-value="outfitSets"
-          @update:model-value="values.outfitSets = $event"
-        />
+        <OutfitSetsField :model-value="outfitSets" @update:model-value="values.outfitSets = $event" />
       </el-grid>
 
-      <el-grid
-        v-if="customMode && customField"
-        :p="12"
-        :br="1"
-        :radius="16"
-        :bc="customText ? 'blue35' : 'orange25'"
-      >
+      <el-grid v-if="customMode && customField" :p="12" :br="1" :radius="16" :bc="customText ? 'blue35' : 'orange25'">
         <el-flex rules="ccs" :gap="4">
           <el-text :size="14" :weight="600" icon="edit">Custom Override</el-text>
-          <el-text :size="11" color="normal45">
-            Replace the structured Outfit Designer output with your own instruction.
-          </el-text>
+          <el-text :size="11" color="normal45">Replace the structured Outfit Designer output with your own instruction.</el-text>
         </el-flex>
-        <el-text-field
-          v-model="values.customText"
-          type="textarea"
-          :rows="customField.ui?.rows || 4"
-          support-variables
-          placeholder="Describe the complete outfit instruction..."
-        />
-        <el-text
-          v-if="!customText"
-          :size="10"
-          color="orange"
-          icon="warning"
-          icon-color="orange"
-        >
-          {{ t("panel.customOverrideEmpty") }}
-        </el-text>
+        <el-text-field v-model="values.customText" type="textarea" :rows="customField.ui?.rows || 4" support-variables placeholder="Describe the complete outfit instruction..." />
+        <el-text v-if="!customText" :size="10" color="orange" icon="warning" icon-color="orange">{{ t("panel.customOverrideEmpty") }}</el-text>
       </el-grid>
 
-      <el-grid
-        :gap="16"
-        :br="1"
-        :p="16"
-        :radius="16"
-        :bc="output ? 'normal15' : 'orange25'"
-        :bg="output ? 'normal5' : 'orange5'"
-      >
+      <el-grid :gap="16" :br="1" :p="16" :radius="16" :bc="output ? 'normal15' : 'orange25'" :bg="output ? 'normal5' : 'orange5'">
         <el-flex rules="rbc" class="w100">
-          <el-text
-            type="h3"
-            :size="16"
-            :weight="600"
-            :color="output ? 'normal' : 'orange'"
-            :icon="output ? 'task_alt' : 'error'"
-          >
-            {{ t("panel.compiledOutput") }}
-          </el-text>
-          <el-button
-            :label="copied ? t('panel.copied') : t('panel.copy')"
-            :icon="copied ? 'check' : 'content_copy'"
-            color="prim"
-            :mode="copied ? 'flat' : 'normal'"
-            :disable="!output"
-            :size="12"
-            :p="[8, 12]"
-            @click="copyOutput"
-          />
+          <el-text type="h3" :size="16" :weight="600" :color="output ? 'normal' : 'orange'" :icon="output ? 'task_alt' : 'error'">{{ t("panel.compiledOutput") }}</el-text>
+          <el-button :label="copied ? t('panel.copied') : t('panel.copy')" :icon="copied ? 'check' : 'content_copy'" color="prim" :mode="copied ? 'flat' : 'normal'" :disable="!output" :size="12" :p="[8, 12]" @click="copyOutput" />
         </el-flex>
         <el-divider />
-        <pre
-          v-if="output"
-          class="fs12 txt-normal"
-          style="white-space: pre-wrap; overflow-wrap: anywhere"
-        >{{ output }}</pre>
-        <el-text v-else :size="12" color="orange">
-          {{ customMode ? t("panel.emptyCustomOutputDescription") : t("panel.emptyOutputDescription") }}
-        </el-text>
+        <pre v-if="output" class="fs12 txt-normal" style="white-space: pre-wrap; overflow-wrap: anywhere">{{ output }}</pre>
+        <el-text v-else :size="12" color="orange">{{ customMode ? t("panel.emptyCustomOutputDescription") : t("panel.emptyOutputDescription") }}</el-text>
       </el-grid>
     </el-grid>
   </el-grid>
