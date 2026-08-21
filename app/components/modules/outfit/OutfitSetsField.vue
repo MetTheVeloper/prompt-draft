@@ -3,7 +3,6 @@ import { computed, reactive, ref, watch } from "vue";
 import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   OutfitItem,
-  OutfitPresetRecipe,
   OutfitSet,
   SemanticTargetRef,
 } from "~/modules/outfit.types";
@@ -15,24 +14,16 @@ import {
   outfitPresetRecipes,
 } from "~/modules/outfit.catalog";
 import { normalizeOutfitSets } from "~/utils/compileOutfit";
-import {
-  getOutfitItemVariableToken,
-  getOutfitSetVariableToken,
-} from "~/utils/outfitVariables";
+import { getOutfitSetVariableToken } from "~/utils/outfitVariables";
 import { semanticScopeSummary } from "~/utils/semanticTargets";
 import { useSubjectAssignmentTargets } from "~/composables/prompt/useSubjectAssignmentTargets";
 import OutfitItemCard from "./OutfitItemCard.vue";
 
-const { t } = useI18n();
 const { mobile } = useScreen();
 
 const props = withDefaults(
-  defineProps<{
-    modelValue?: OutfitSet[];
-  }>(),
-  {
-    modelValue: () => [],
-  },
+  defineProps<{ modelValue?: OutfitSet[] }>(),
+  { modelValue: () => [] },
 );
 
 const emit = defineEmits<{
@@ -60,11 +51,6 @@ function humanize(value: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function translate(path: string, fallback: string) {
-  const translated = t(path);
-  return translated === path ? fallback : translated;
-}
-
 function createId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
@@ -72,7 +58,6 @@ function createId(prefix: string) {
 function normalizeUiSet(value: OutfitSet, index: number): OutfitSet {
   const normalized = normalizeOutfitSets([value])[0];
   if (normalized) return normalized;
-
   return {
     id: value?.id || `outfit-set-${index + 1}`,
     name: value?.name || "",
@@ -96,7 +81,6 @@ watch(
       ...set,
       targets: targetCatalog.upgradeTargets(set.targets),
     }));
-
     if (JSON.stringify(source) !== JSON.stringify(normalized)) {
       emit("update:modelValue", normalized);
     }
@@ -142,14 +126,12 @@ function removeSet(index: number) {
 function duplicateSet(index: number) {
   const source = sets.value[index];
   if (!source) return;
-
   const itemIdMap = new Map<string, string>();
   const items = source.items.map((item) => {
     const id = createId("outfit-item");
     itemIdMap.set(item.id, id);
     return { ...cloneValue(item), id };
   });
-
   const duplicate: OutfitSet = {
     ...cloneValue(source),
     id: createId("outfit-set"),
@@ -163,25 +145,18 @@ function duplicateSet(index: number) {
       targetItemId: itemIdMap.get(relation.targetItemId) || relation.targetItemId,
     })),
   };
-
   setSets([...sets.value, duplicate]);
 }
 
-function updateSet(
-  index: number,
-  patch: Partial<OutfitSet>,
-  detachPreset = false,
-) {
-  setSets(
-    sets.value.map((set, itemIndex) => {
-      if (itemIndex !== index) return set;
-      return {
-        ...cloneValue(set),
-        ...cloneValue(patch),
-        ...(detachPreset ? { presetId: undefined } : {}),
-      };
-    }),
-  );
+function updateSet(index: number, patch: Partial<OutfitSet>, detachPreset = false) {
+  setSets(sets.value.map((set, itemIndex) => {
+    if (itemIndex !== index) return set;
+    return {
+      ...cloneValue(set),
+      ...cloneValue(patch),
+      ...(detachPreset ? { presetId: undefined } : {}),
+    };
+  }));
 }
 
 function isExpanded(set: OutfitSet) {
@@ -280,7 +255,6 @@ function createItemFromChoice(choice: string): OutfitItem | null {
   if (choice.startsWith("starter:")) {
     const starter = outfitItemStarterMap.get(choice.slice("starter:".length));
     if (!starter) return null;
-    const definition = outfitItemTypeMap.get(starter.item.type);
     return {
       id: createId("outfit-item"),
       name: starter.label,
@@ -315,53 +289,33 @@ function addSelectedItems(index: number) {
   if (!set) return;
   const choices = pendingItemChoices[set.id] || [];
   if (!choices.length) return;
-
-  const items = choices
-    .map(createItemFromChoice)
-    .filter((item): item is OutfitItem => Boolean(item));
-
-  if (items.length) {
-    updateSet(index, { items: [...set.items, ...items] }, true);
-  }
+  const items = choices.map(createItemFromChoice).filter((item): item is OutfitItem => Boolean(item));
+  if (items.length) updateSet(index, { items: [...set.items, ...items] }, true);
   pendingItemChoices[set.id] = [];
 }
 
 function updatePendingItems(setId: string, values: ElDropdownValue[]) {
-  pendingItemChoices[setId] = values
-    .map((value) => String(value ?? ""))
-    .filter(Boolean);
+  pendingItemChoices[setId] = values.map((value) => String(value ?? "")).filter(Boolean);
 }
 
 function updateItem(setIndex: number, itemIndex: number, item: OutfitItem) {
   const set = sets.value[setIndex];
   if (!set) return;
-  updateSet(
-    setIndex,
-    {
-      items: set.items.map((current, index) =>
-        index === itemIndex ? cloneValue(item) : current,
-      ),
-    },
-    true,
-  );
+  updateSet(setIndex, {
+    items: set.items.map((current, index) => index === itemIndex ? cloneValue(item) : current),
+  }, true);
 }
 
 function removeItem(setIndex: number, itemIndex: number) {
   const set = sets.value[setIndex];
   if (!set) return;
   const removed = set.items[itemIndex];
-  updateSet(
-    setIndex,
-    {
-      items: set.items.filter((_, index) => index !== itemIndex),
-      relations: (set.relations || []).filter(
-        (relation) =>
-          relation.sourceItemId !== removed?.id &&
-          relation.targetItemId !== removed?.id,
-      ),
-    },
-    true,
-  );
+  updateSet(setIndex, {
+    items: set.items.filter((_, index) => index !== itemIndex),
+    relations: (set.relations || []).filter((relation) =>
+      relation.sourceItemId !== removed?.id && relation.targetItemId !== removed?.id,
+    ),
+  }, true);
 }
 
 function duplicateItem(setIndex: number, itemIndex: number) {
@@ -376,45 +330,40 @@ function duplicateItem(setIndex: number, itemIndex: number) {
   updateSet(setIndex, { items: [...set.items, duplicate] }, true);
 }
 
-const presetItems = computed(() =>
-  outfitPresetRecipes.map((preset) => ({
-    value: preset.id,
-    label: preset.label,
-    description: preset.category ? humanize(preset.category) : "",
-    group: preset.category || "other",
-    groupLabel: preset.category ? humanize(preset.category) : "Other",
-  })),
-);
+const presetItems = computed(() => outfitPresetRecipes.map((preset) => ({
+  value: preset.id,
+  label: preset.label,
+  description: preset.category ? humanize(preset.category) : "",
+  group: preset.category || "other",
+  groupLabel: preset.category ? humanize(preset.category) : "Other",
+})));
 
 function applyPreset(index: number, value: ElDropdownValue) {
   const set = sets.value[index];
   if (!set) return;
-
   const presetId = String(value ?? "");
   if (!presetId) {
     updateSet(index, { presetId: undefined });
     return;
   }
-
   const recipe = outfitPresetRecipes.find((preset) => preset.id === presetId);
   if (!recipe) return;
 
   const keyToId = new Map<string, string>();
-  const items = recipe.items.map((recipeItem) => {
+  const items: OutfitItem[] = recipe.items.map((recipeItem) => {
     const id = createId("outfit-item");
     keyToId.set(recipeItem.key, id);
     const definition = outfitItemTypeMap.get(recipeItem.type);
-
     return {
       id,
       name: definition?.label || humanize(recipeItem.customType || recipeItem.type),
       type: recipeItem.type,
       customType: recipeItem.customType,
       customCategory: recipeItem.customCategory,
-      source: { mode: "defined" as const },
+      source: { mode: "defined" },
       properties: cloneValue(recipeItem.properties || {}),
       additionalDetails: recipeItem.additionalDetails || "",
-    } satisfies OutfitItem;
+    };
   });
 
   const relations = (recipe.relations || []).map((relation) => ({
@@ -432,62 +381,19 @@ function applyPreset(index: number, value: ElDropdownValue) {
     relations,
   });
 }
-
-function presetValue(set: OutfitSet) {
-  return set.presetId || "";
-}
 </script>
 
 <template>
   <el-grid :gap="14" class="w100">
-    <el-grid
-      v-for="(set, setIndex) in sets"
-      :key="set.id"
-      :radius="20"
-      :br="2"
-      :bc="isExpanded(set) ? 'blue45' : 'normal10'"
-      :p="12"
-      :gap="12"
-      class="w100"
-    >
-      <el-flex
-        rules="rbc"
-        class="w100 crp"
-        :gap="8"
-        role="button"
-        tabindex="0"
-        @click="toggleExpanded(set)"
-        @keydown.enter.prevent="toggleExpanded(set)"
-      >
+    <el-grid v-for="(set, setIndex) in sets" :key="set.id" :radius="20" :br="2" :bc="isExpanded(set) ? 'blue45' : 'normal10'" :p="12" :gap="12" class="w100">
+      <el-flex rules="rbc" class="w100 crp" :gap="8" role="button" tabindex="0" @click="toggleExpanded(set)" @keydown.enter.prevent="toggleExpanded(set)">
         <el-flex rules="ccs" :gap="1" class="minw0">
-          <el-text :size="15" :weight="600" icon="styler">
-            {{ setTitle(set, setIndex) }}
-          </el-text>
-          <el-text :size="9" color="normal45">
-            {{ getOutfitSetVariableToken(set) }} · {{ setSummary(set) }}
-          </el-text>
+          <el-text :size="15" :weight="600" icon="styler">{{ setTitle(set, setIndex) }}</el-text>
+          <el-text :size="9" color="normal45">{{ getOutfitSetVariableToken(set) }} · {{ setSummary(set) }}</el-text>
         </el-flex>
-
         <el-flex rules="rcc" :gap="4">
-          <el-button
-            type="fab"
-            mode="flat"
-            icon="content_copy"
-            label="Duplicate set"
-            :size="12"
-            :p="7"
-            @click.stop="duplicateSet(setIndex)"
-          />
-          <el-button
-            type="fab"
-            mode="flat"
-            color="red"
-            icon="delete"
-            label="Remove set"
-            :size="12"
-            :p="7"
-            @click.stop="removeSet(setIndex)"
-          />
+          <el-button type="fab" mode="flat" icon="content_copy" label="Duplicate set" :size="12" :p="7" @click.stop="duplicateSet(setIndex)" />
+          <el-button type="fab" mode="flat" color="red" icon="delete" label="Remove set" :size="12" :p="7" @click.stop="removeSet(setIndex)" />
           <el-icon :icon="isExpanded(set) ? 'expand_less' : 'expand_more'" :size="14" />
         </el-flex>
       </el-flex>
@@ -496,117 +402,47 @@ function presetValue(set: OutfitSet) {
         <el-grid :cols="mobile ? 1 : 2" :gap="10">
           <el-grid :gap="4">
             <el-text :size="10" :weight="500">Set name</el-text>
-            <el-text-field
-              :model-value="set.name"
-              type="text"
-              placeholder="Outfit set name"
-              @update:model-value="updateSet(setIndex, { name: String($event ?? '') })"
-            />
+            <el-text-field :model-value="set.name" type="text" placeholder="Outfit set name" @update:model-value="updateSet(setIndex, { name: String($event ?? '') })" />
           </el-grid>
-
           <el-grid :gap="4">
             <el-text :size="10" :weight="500">Starter preset</el-text>
-            <el-dropdown
-              :model-value="presetValue(set)"
-              :items="presetItems"
-              item-label="label"
-              item-value="value"
-              clearable
-              placeholder="No preset"
-              @update:model-value="applyPreset(setIndex, $event)"
-            />
+            <el-dropdown :model-value="set.presetId || ''" :items="presetItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" clearable placeholder="No preset" @update:model-value="applyPreset(setIndex, $event)" />
           </el-grid>
         </el-grid>
 
         <el-grid :gap="4">
           <el-text :size="10" :weight="500">Who wears this set?</el-text>
-          <el-multi-select
-            :model-value="targetValues(set)"
-            :items="targetItems(set)"
-            item-label="label"
-            item-value="value"
-            :item-group="(option) => option.group"
-            :item-group-label="(option) => option.groupLabel"
-            placeholder="Select subject targets"
-            @update:model-value="updateTargets(setIndex, $event)"
-          />
+          <el-multi-select :model-value="targetValues(set)" :items="targetItems(set)" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" placeholder="Select subject targets" @update:model-value="updateTargets(setIndex, $event)" />
         </el-grid>
 
         <el-grid :p="10" :radius="14" :br="1" bc="normal10" :gap="8">
           <el-flex rules="rbc" class="w100" :gap="8">
             <el-flex rules="ccs" :gap="1">
               <el-text :size="12" :weight="600" icon="add_circle">Add wearable items</el-text>
-              <el-text :size="9" color="normal45">
-                Choose canonical items, prepared starters, or a custom wearable.
-              </el-text>
+              <el-text :size="9" color="normal45">Choose canonical items, prepared starters, or a custom wearable.</el-text>
             </el-flex>
-            <el-button
-              icon="add"
-              color="prim"
-              label="Add selected"
-              :disable="!(pendingItemChoices[set.id] || []).length"
-              :size="12"
-              :p="[8, 12]"
-              @click="addSelectedItems(setIndex)"
-            />
+            <el-button icon="add" color="prim" label="Add selected" :disable="!(pendingItemChoices[set.id] || []).length" :size="12" :p="[8, 12]" @click="addSelectedItems(setIndex)" />
           </el-flex>
-
-          <el-multi-select
-            :model-value="pendingItemChoices[set.id] || []"
-            :items="itemPickerItems"
-            item-label="label"
-            item-value="value"
-            :item-group="(option) => option.group"
-            :item-group-label="(option) => option.groupLabel"
-            placeholder="Select clothes and wearable items..."
-            searchable
-            @update:model-value="updatePendingItems(set.id, $event)"
-          />
+          <el-multi-select :model-value="pendingItemChoices[set.id] || []" :items="itemPickerItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" placeholder="Select clothes and wearable items..." @update:model-value="updatePendingItems(set.id, $event)" />
         </el-grid>
 
         <el-grid v-if="set.items.length" :gap="8" class="w100">
-          <OutfitItemCard
-            v-for="(item, itemIndex) in set.items"
-            :key="item.id"
-            :item="item"
-            @update:item="updateItem(setIndex, itemIndex, $event)"
-            @remove="removeItem(setIndex, itemIndex)"
-            @duplicate="duplicateItem(setIndex, itemIndex)"
-          />
+          <OutfitItemCard v-for="(item, itemIndex) in set.items" :key="item.id" :item="item" @update:item="updateItem(setIndex, itemIndex, $event)" @remove="removeItem(setIndex, itemIndex)" @duplicate="duplicateItem(setIndex, itemIndex)" />
         </el-grid>
-
         <el-flex v-else rules="ccs" :p="12" :radius="12" :br="1" bc="orange15">
-          <el-text :size="11" color="orange" icon="info" icon-color="orange">
-            This set has no wearable items yet.
-          </el-text>
+          <el-text :size="11" color="orange" icon="info" icon-color="orange">This set has no wearable items yet.</el-text>
         </el-flex>
 
         <el-grid :gap="4">
           <el-text :size="10" :weight="500">Additional set details</el-text>
-          <el-text-field
-            :model-value="set.additionalDetails || ''"
-            type="textarea"
-            :rows="2"
-            placeholder="Optional instructions for the whole outfit set..."
-            support-variables
-            @update:model-value="updateSet(setIndex, { additionalDetails: String($event ?? '') }, true)"
-          />
+          <el-text-field :model-value="set.additionalDetails || ''" type="textarea" :rows="2" placeholder="Optional instructions for the whole outfit set..." support-variables @update:model-value="updateSet(setIndex, { additionalDetails: String($event ?? '') }, true)" />
         </el-grid>
       </el-grid>
     </el-grid>
 
     <el-flex rules="ccc" :gap="8" :p="16" :radius="16" :br="1" bc="normal10">
-      <el-button
-        icon="add"
-        color="prim"
-        label="Add Outfit Set"
-        :size="13"
-        :p="[9, 14]"
-        @click="addSet"
-      />
-      <el-text :size="9" color="normal45">
-        Create separate outfit sets for different subjects or alternate looks.
-      </el-text>
+      <el-button icon="add" color="prim" label="Add Outfit Set" :size="13" :p="[9, 14]" @click="addSet" />
+      <el-text :size="9" color="normal45">Create separate outfit sets for different subjects or alternate looks.</el-text>
     </el-flex>
   </el-grid>
 </template>
