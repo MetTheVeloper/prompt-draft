@@ -8,8 +8,7 @@ export const RESERVED_VARIABLE_KEY_PATTERNS = [
   /^layout_region_[a-zA-Z0-9_]*$/,
   /^text_[a-zA-Z0-9_]*$/,
   /^text_group_[a-zA-Z0-9_]*$/,
-  /^outfit_set_[a-zA-Z0-9_]*$/,
-  /^outfit_item_[a-zA-Z0-9_]*$/,
+  /^outfit_[a-zA-Z0-9_]+$/,
 ];
 
 export type PromptVariableIssueLevel = "error" | "warning";
