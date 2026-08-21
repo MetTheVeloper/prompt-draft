@@ -345,16 +345,16 @@ export function compileOutfitSet(set: OutfitSet) {
     `• ${display}:`,
     ...set.items.map((item) => {
       const description = compileOutfitItem(item);
-      return description ? `  ◘ ${itemDisplay(item)}: ${description}` : "";
+      return description ? `  ◦ ${itemDisplay(item)}: ${description}` : "";
     }),
     ...(set.relations || []).map((relation) => {
       const text = relationText(relation, set.items);
-      return text ? `  ◘ relation: ${text}` : "";
+      return text ? `  ◦ relation: ${text}` : "";
     }),
   ].filter(Boolean);
 
   const details = cleanSemanticText(set.additionalDetails);
-  if (details) lines.push(`  ◘ set details: ${details}`);
+  if (details) lines.push(`  ◦ set details: ${details}`);
 
   return lines.join("\n");
 }
@@ -392,11 +392,11 @@ type ParsedOutfitSetBlock = {
  *
  * Example without references:
  *   • Evening Set:
- *     ◘ dress: dress
+ *     ◦ dress: dress
  *
  * Example when the dress is targeted elsewhere:
  *   • {outfit_eveningSet}:
- *     ◘ {dress}: dress
+ *     ◦ {dress}: dress
  *
  * External modules still use the globally unique
  * `{outfit_eveningSet_dress}` token. The short `{dress}` alias is scoped by
@@ -424,7 +424,7 @@ export function formatOutfitOutputForReferences(
     }
 
     if (!current) return;
-    const item = line.match(/^\s*◘\s+([^:]+):\s*/);
+    const item = line.match(/^\s*◦\s+([^:]+):\s*/);
     if (
       !item ||
       item[1].trim().toLowerCase() === "relation" ||
@@ -460,7 +460,7 @@ export function formatOutfitOutputForReferences(
     block.itemLines.forEach((item) => {
       if (!referencedItems.has(item.key)) return;
       lines[item.lineIndex] = lines[item.lineIndex].replace(
-        /^(\s*◘\s+)([^:]+)(:\s*)/,
+        /^(\s*◦\s+)([^:]+)(:\s*)/,
         `$1{${item.key}}$3`,
       );
     });
