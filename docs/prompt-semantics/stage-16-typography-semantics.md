@@ -2,9 +2,11 @@
 
 ## Status
 
-**Implementation in progress — variable-first UI validated; simplified compiler pending final user/output validation.**
+**Semantically closed.**
 
-Stage 16 begins from an already successful structured Typography implementation. The goal is not to replace the current group/text schema, but to clarify content ownership and reduce compiler noise without losing the text-rendering accuracy established by prior Layout/Typography tests.
+Stage 16 preserves the successful structured Typography model, clarifies content ownership around Stage 15 user Variables, and reduces compiler noise without sacrificing prompt-graph structure or real image-generation accuracy.
+
+Ordinary localization, release/build verification, cosmetic editor polish, legacy migration, catalog growth, or later bug fixes do not keep this semantic stage open. Reopen Typography only if concrete later evidence reveals a real ownership defect, graph loss, serializer regression, target-identity failure, or meaningful output-semantic regression.
 
 ---
 
@@ -18,13 +20,13 @@ Typography exists to add visible text to generated imagery in any relevant conte
 - signage and labels,
 - text integrated into realistic scenes such as writing or signage on a wall.
 
-The existing text-group and text-block model has already proven useful and reasonably accurate in real generation tests.
+The existing text-group and text-block model had already proven useful and reasonably accurate in real generation tests before Stage 16.
 
 ---
 
 # Ownership
 
-Stage 15 established user Variables as reusable typed semantic handles. Stage 16 adopts this boundary:
+Stage 15 established user Variables as reusable typed semantic handles. Stage 16 closes on this boundary:
 
 ```text
 Variables  → what reusable text content says
@@ -56,8 +58,6 @@ The structural Typography text entity remains distinct from its content variable
 {headline} → reusable user Text variable / content source
 ```
 
-This distinction preserves the ability for other semantic systems to address the Typography entity independently of the content value.
-
 Typography owns:
 
 - text grouping,
@@ -84,7 +84,7 @@ Typography does not own:
 
 # Existing schema retained
 
-No destructive schema rewrite is required.
+No destructive schema rewrite was required.
 
 `TypographyTextGroup` continues to own:
 
@@ -148,11 +148,11 @@ After creation, the existing Text Block editor remains authoritative for Typogra
 
 ## UI validation completed
 
-The following behaviors were manually confirmed by the user:
+The following behaviors were manually confirmed:
 
 - Text variables appear in the group editor as expected,
 - multi-selection creates one Typography text block per selected user variable,
-- the block content remains the exact variable token,
+- block content remains the exact variable token,
 - Add Text uses the same variable-first path,
 - duplicate selection is prevented,
 - existing block editing remains functional,
@@ -181,8 +181,6 @@ This follows the established selective structural-token precedent from Layout an
 
 ## Compact structured output
 
-Typography compiler output is intentionally compact.
-
 A group may emit:
 
 ```text
@@ -204,7 +202,7 @@ weight
 description
 ```
 
-The compiler no longer emits nested verbose typography wording when a shorter semantic value carries the same meaning.
+The compiler no longer emits nested verbose wording when a shorter semantic value carries the same meaning.
 
 Examples:
 
@@ -228,7 +226,7 @@ bold 700 font weight
 → bold 700
 ```
 
-The default `regular` / `400` font weight is omitted from text items because it adds noise without representing a meaningful override.
+The default `regular` / `400` font weight is omitted because it adds noise without representing a meaningful override.
 
 Visible text accuracy is represented once as:
 
@@ -238,7 +236,7 @@ textAccuracy: exact | readable | flexible
 
 rather than the previous multi-flag `renderRules` object.
 
-Legacy compiled Typography objects using the previous nested shape remain supported by the Natural serializer during the transition.
+Legacy compiled Typography objects using the previous nested shape remain supported by the Natural serializer.
 
 ---
 
@@ -260,12 +258,12 @@ Legacy literal visible text remains quoted:
 
 Natural output summarizes common group behavior once, then emits separate text styling instructions only for blocks with meaningful per-text overrides.
 
-Target form:
+Canonical form:
 
 ```text
 Typography:
-• In {layout_region_middle}, arrange {name1}, {name2}, and {name3} horizontally, center aligned, with balanced spacing, as a typographic background element.
-• Style {name2} as the slogan, using huge bold display typography, with bold 700 weight.
+• In {layout_region_middle}, arrange {name1}, {name2}, and {name3} horizontally, center aligned, with balanced spacing, as the poster header.
+• Style {name2} as the main title, using huge bold display typography, with bold 700 weight.
 
 Render listed text values exactly as defined.
 ```
@@ -282,22 +280,57 @@ without repeating internal ids, unused structural keys, default font weight, or 
 
 ---
 
-# Current validation checkpoint
+# Validation and closure evidence
 
-Variable-first authoring is validated.
+Stage 16 was validated in both editor flow and generated-image behavior.
 
-The simplified compiler now requires user validation against the same known-good Typography state, checking:
+## Structural/compiler validation
 
-1. Modular output contains no internal Typography `id` values.
-2. Unreferenced `{text_group_*}` / `{text_*}` tokens are absent.
-3. Referenced structural Typography tokens remain present when another prompt-graph node uses them.
-4. User Text-variable tokens remain unchanged as `content` references.
-5. Default regular/400 weight is omitted.
-6. Meaningful purpose/style/size/weight overrides remain present.
-7. Layout-region binding remains explicit.
-8. Natural token-only content is unquoted.
-9. Literal legacy text is still quoted.
-10. Exact/readable/flexible text policy produces one concise instruction.
-11. Real image generation remains at least as accurate as the prior compiler on a representative Typography test.
+Confirmed in tested output:
 
-Stage 16 remains open until this simplified compiler pass is validated.
+1. Internal Typography `id` values no longer appear in prompt output.
+2. Unreferenced `{text_group_*}` / `{text_*}` structural tokens are pruned.
+3. User Text-variable tokens remain intact as content references.
+4. Default regular/400 weight is omitted.
+5. Meaningful purpose/style/size/weight overrides remain present.
+6. Layout-region binding remains explicit when configured.
+7. Natural token-only content is unquoted.
+8. Exact text policy is emitted as one concise instruction.
+9. Modular and Natural output preserve the same meaningful Typography graph.
+
+Referenced structural-key preservation and literal legacy text support remain structural regression expectations; a later concrete failure may be fixed without reopening the semantic architecture unless it reveals a deeper contract defect.
+
+## Real-image validation
+
+Multiple real multi-subject collage tests were run after compiler simplification using the same Layout-region structure and Text-variable-driven Typography.
+
+Observed behavior remained strong across realistic collage and heavily stylized pixel-art transformations:
+
+- three independently referenced subjects remained compositionally distinct,
+- generated name variables were rendered as visible text,
+- the main-title text retained a clearly stronger hierarchy than secondary names,
+- Layout and Typography continued to compose without destructive interference,
+- reference-specific subject traits remained understandable after extreme transformation,
+- exact text rendering remained useful,
+- substantial prompt-noise reduction did not expose an image-quality or semantic-control regression.
+
+Relative to the older Typography serialization, representative Typography-only prompt blocks were reduced substantially while retaining their useful decisions. The tested output showed that the simplification was not merely cosmetic: the same relationships remained understandable to the generation model with significantly less structural noise.
+
+---
+
+# Closure contract
+
+Stage 16 closes on these rules:
+
+1. **Reusable visible text content belongs to typed user Variables when authored through the current UI.**
+2. **Typography owns organization and visual/textual rendering semantics, not the reusable content value itself.**
+3. **Layout owns region geometry; Typography may bind a group to a Layout region without duplicating geometry.**
+4. **Typography Text/Group identities remain structurally distinct from the user-variable content they consume.**
+5. **Prompt-facing structural Typography keys are emitted selectively, not automatically.**
+6. **Internal runtime IDs never belong in prompt semantics.**
+7. **Default/no-op styling does not deserve compiler noise.**
+8. **Natural output preserves the same reference graph while presenting group behavior compactly.**
+9. **Legacy literal-text state remains compatible rather than requiring destructive migration.**
+10. **Future cosmetic/catalog/localization work does not reopen this stage.**
+
+> **Stage 16 — Typography Semantics: Semantically closed.**
