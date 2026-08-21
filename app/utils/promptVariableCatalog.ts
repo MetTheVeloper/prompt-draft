@@ -208,10 +208,11 @@ function createOutfitSetVariable(set: OutfitSet, index: number): PromptVariable 
     label,
     value: serializeValue({
       id: set.id,
+      semanticKey: set.key,
       key: token,
       name: label,
       targets: set.targets.map((target) => target.token || target.value),
-      items: set.items.map(getOutfitItemVariableToken),
+      items: set.items.map((item) => getOutfitItemVariableToken(set, item)),
     }),
     description: `Outfit set: ${label}.`,
     type: "reference",
@@ -230,8 +231,8 @@ function createOutfitItemVariable(
   setIndex: number,
   itemIndex: number,
 ): PromptVariable {
-  const key = getOutfitItemVariableKey(item)
-  const token = getOutfitItemVariableToken(item)
+  const key = getOutfitItemVariableKey(set, item)
+  const token = getOutfitItemVariableToken(set, item)
   const definition = outfitItemTypeMap.get(item.type)
   const label =
     cleanText(item.name) ||
@@ -246,6 +247,7 @@ function createOutfitItemVariable(
     label,
     value: serializeValue({
       id: item.id,
+      semanticKey: item.key,
       key: token,
       type: item.type,
       customType: cleanText(item.customType) || undefined,
