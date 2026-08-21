@@ -86,10 +86,6 @@ function normalizedExternalKeys() {
   return props.existingKeys.map(normalizeVariableKey).filter(Boolean)
 }
 
-function allDraftSlots() {
-  return draftGroups.flatMap((group) => group.slots)
-}
-
 function nonRepeatableDraftSlots() {
   return draftGroups
     .filter((group) => group.source !== "repeatable")
@@ -133,11 +129,6 @@ function makeRepeatableTemplateSlot(slot: VariableBlueprintGroupSlot): Blueprint
     optional: slot.optional === true,
     typeEditable: slot.typeEditable === true,
   }
-}
-
-function repeatableDefinition(group: BlueprintDraftGroup) {
-  if (group.source !== "repeatable" || !group.sourceGroupId) return undefined
-  return props.blueprint.groups?.find((candidate) => candidate.id === group.sourceGroupId)
 }
 
 function groupCount(group: BlueprintDraftGroup) {
@@ -386,15 +377,16 @@ function findAvailableProfileIndexes(
   const indexes: number[] = []
 
   for (let index = 1; index <= 999 && indexes.length < count; index += 1) {
-    const keys = enabledSlots.map((slot) => expandedKey(slot, index))
-    const uniqueKeys = new Set(keys)
+    const reservedProfileKeys = group.slots.map((slot) => expandedKey(slot, index))
+    const generatedKeys = enabledSlots.map((slot) => expandedKey(slot, index))
+    const uniqueGeneratedKeys = new Set(generatedKeys)
 
-    if (uniqueKeys.size !== keys.length) continue
-    if (keys.some((key) => !isValidVariableKey(key) || isReservedVariableKey(key))) continue
-    if (keys.some((key) => usedKeys.has(key))) continue
+    if (uniqueGeneratedKeys.size !== generatedKeys.length) continue
+    if (reservedProfileKeys.some((key) => !isValidVariableKey(key) || isReservedVariableKey(key))) continue
+    if (reservedProfileKeys.some((key) => usedKeys.has(key))) continue
 
     indexes.push(index)
-    keys.forEach((key) => usedKeys.add(key))
+    reservedProfileKeys.forEach((key) => usedKeys.add(key))
   }
 
   return indexes
