@@ -374,10 +374,13 @@ function findAvailableProfileIndexes(
   usedKeys: Set<string>,
 ) {
   const enabledSlots = group.slots.filter((slot) => slot.enabled)
+  const reservationSlots = group.slots.filter((slot) => {
+    return slot.enabled || hashCount(slot.key) === 1
+  })
   const indexes: number[] = []
 
   for (let index = 1; index <= 999 && indexes.length < count; index += 1) {
-    const reservedProfileKeys = group.slots.map((slot) => expandedKey(slot, index))
+    const reservedProfileKeys = reservationSlots.map((slot) => expandedKey(slot, index))
     const generatedKeys = enabledSlots.map((slot) => expandedKey(slot, index))
     const uniqueGeneratedKeys = new Set(generatedKeys)
 
