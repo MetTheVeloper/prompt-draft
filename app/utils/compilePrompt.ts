@@ -3,6 +3,7 @@ import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { compileLayoutNaturalBlock } from './compileLayoutNatural'
 import { compileTypographyNaturalBlock } from './compileTypographyNatural'
+import { formatHairOutputForReferences } from './compileHair'
 import { formatOutfitOutputForReferences } from './compileOutfit'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
@@ -654,20 +655,36 @@ function prepareModuleOutputsForPrompt(
   variablesOutput: string,
 ) {
   return moduleOutputs.map((item) => {
-    if (item.key !== 'outfit' || typeof item.output !== 'string') return item
+    if (typeof item.output !== 'string') return item
 
-    return {
-      ...item,
-      output: formatOutfitOutputForReferences(
-        item.output,
-        buildModuleExternalReferenceText(
-          item.key,
-          moduleOutputs,
-          settings,
-          variablesOutput,
+    const externalReferenceText = buildModuleExternalReferenceText(
+      item.key,
+      moduleOutputs,
+      settings,
+      variablesOutput,
+    )
+
+    if (item.key === 'outfit') {
+      return {
+        ...item,
+        output: formatOutfitOutputForReferences(
+          item.output,
+          externalReferenceText,
         ),
-      ),
+      }
     }
+
+    if (item.key === 'hair') {
+      return {
+        ...item,
+        output: formatHairOutputForReferences(
+          item.output,
+          externalReferenceText,
+        ),
+      }
+    }
+
+    return item
   })
 }
 
