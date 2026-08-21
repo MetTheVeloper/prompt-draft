@@ -19,8 +19,11 @@ import {
   normalizeSemanticTargets,
 } from "./semanticTargets";
 import {
+  createUniqueOutfitEntityKey,
   getOutfitItemVariableToken,
   getOutfitSetVariableToken,
+  humanizeOutfitEntityKey,
+  normalizeOutfitEntityKey,
 } from "./outfitVariables";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -67,14 +70,25 @@ function normalizePropertyState(value: unknown): OutfitPropertyState {
   return { mode: "inherit" };
 }
 
-function normalizeItem(value: unknown, index: number): OutfitItem | null {
+function normalizeItem(
+  value: unknown,
+  index: number,
+  usedKeys: Set<string>,
+): OutfitItem | null {
   if (!isRecord(value)) return null;
 
   const type = typeof value.type === "string" && value.type.trim() ? value.type : "custom";
+  const customType = typeof value.customType === "string" ? value.customType : undefined;
+  const name = typeof value.name === "string" ? value.name : "";
+  const rawKey = typeof value.key === "string" ? value.key : "";
+  const keySource = rawKey || (type === "custom" ? customType : "") || name || type || `item${index + 1}`;
+  const key = createUniqueOutfitEntityKey(keySource, usedKeys, `item${index + 1}`);
+  usedKeys.add(key);
+
   const properties = isRecord(value.properties)
     ? Object.fromEntries(
-        Object.entries(value.properties).map(([key, state]) => [
-          key,
+        Object.entries(value.properties).map(([propertyKey, state]) => [
+          propertyKey,
           normalizePropertyState(state),
         ]),
       )
@@ -102,9 +116,10 @@ function normalizeItem(value: unknown, index: number): OutfitItem | null {
       typeof value.id === "string" && value.id.trim()
         ? value.id
         : `outfit-item-${index + 1}`,
-    name: typeof value.name === "string" ? value.name : "",
+    key,
+    name,
     type,
-    customType: typeof value.customType === "string" ? value.customType : undefined,
+    customType,
     customCategory:
       typeof value.customCategory === "string"
         ? (value.customCategory as OutfitItem["customCategory"])
@@ -148,21 +163,36 @@ function normalizeRelation(value: unknown, index: number): OutfitItemRelation | 
 export function normalizeOutfitSets(value: unknown): OutfitSet[] {
   if (!Array.isArray(value)) return [];
 
-  return value
-    .filter(isRecord)
-    .map((set, setIndex) => ({
+  const usedSetKeys = new Set<string>();
+  const sets: OutfitSet[] = [];
+
+  value.filter(isRecord).forEach((set, setIndex) => {
+    const name = typeof set.name === "string" ? set.name : "";
+    const rawKey = typeof set.key === "string" ? set.key : "";
+    const key = createUniqueOutfitEntityKey(
+      rawKey || name || `set${setIndex + 1}`,
+      usedSetKeys,
+      `set${setIndex + 1}`,
+    );
+    usedSetKeys.add(key);
+
+    const usedItemKeys = new Set<string>();
+    const items = Array.isArray(set.items)
+      ? set.items
+          .map((item, itemIndex) => normalizeItem(item, itemIndex, usedItemKeys))
+          .filter((item): item is OutfitItem => Boolean(item))
+      : [];
+
+    const normalized: OutfitSet = {
       id:
         typeof set.id === "string" && set.id.trim()
           ? set.id
           : `outfit-set-${setIndex + 1}`,
-      name: typeof set.name === "string" ? set.name : "",
+      key,
+      name,
       presetId: typeof set.presetId === "string" ? set.presetId : undefined,
       targets: normalizeSemanticTargets(set.targets),
-      items: Array.isArray(set.items)
-        ? set.items
-            .map(normalizeItem)
-            .filter((item): item is OutfitItem => Boolean(item))
-        : [],
+      items,
       relations: Array.isArray(set.relations)
         ? set.relations
             .map(normalizeRelation)
@@ -170,8 +200,14 @@ export function normalizeOutfitSets(value: unknown): OutfitSet[] {
         : [],
       additionalDetails:
         typeof set.additionalDetails === "string" ? set.additionalDetails : "",
-    }))
-    .filter((set) => set.items.length > 0 || set.targets.length > 0);
+    };
+
+    if (normalized.items.length > 0 || normalized.targets.length > 0) {
+      sets.push(normalized);
+    }
+  });
+
+  return sets;
 }
 
 function itemTypeText(item: OutfitItem) {
@@ -259,15 +295,21 @@ export function compileOutfitItem(item: OutfitItem) {
         }`
       : itemTypeText(item);
 
-  const description = [
+  return [
     [...new Set(modifiers), baseline].filter(Boolean).join(" "),
     ...new Set(details),
     cleanSemanticText(item.additionalDetails),
   ]
     .filter(Boolean)
     .join("; ");
+}
 
-  return description;
+function itemDisplay(item: OutfitItem) {
+  return humanizeOutfitEntityKey(item.key).toLowerCase();
+}
+
+function setDisplay(set: OutfitSet) {
+  return humanizeOutfitEntityKey(set.key);
 }
 
 function relationText(relation: OutfitItemRelation, items: OutfitItem[]) {
@@ -275,8 +317,6 @@ function relationText(relation: OutfitItemRelation, items: OutfitItem[]) {
   const target = items.find((item) => item.id === relation.targetItemId);
   if (!source || !target) return "";
 
-  const sourceToken = getOutfitItemVariableToken(source);
-  const targetToken = getOutfitItemVariableToken(target);
   const verb: Record<OutfitItemRelation["type"], string> = {
     over: "over",
     under: "under",
@@ -284,32 +324,36 @@ function relationText(relation: OutfitItemRelation, items: OutfitItem[]) {
     layered_with: "layered with",
   };
 
-  return `${sourceToken} ${verb[relation.type]} ${targetToken}${
+  return `${itemDisplay(source)} ${verb[relation.type]} ${itemDisplay(target)}${
     cleanSemanticText(relation.details) ? `; ${cleanSemanticText(relation.details)}` : ""
   }`;
 }
 
+/**
+ * Compile a clean, human-first Outfit block. Global tokens are intentionally
+ * not emitted here. Final prompt assembly selectively promotes only referenced
+ * sets/items to `{outfit_setKey}` and local `{itemKey}` aliases.
+ */
 export function compileOutfitSet(set: OutfitSet) {
   const scope = formatSemanticScope(set.targets, [], { format: "modular" });
   if (!scope || !set.items.length) return "";
 
-  const setToken = getOutfitSetVariableToken(set);
-  const itemTokens = set.items.map(getOutfitItemVariableToken);
-  const setName = cleanSemanticText(set.name);
+  const display = setDisplay(set);
   const lines = [
-    `• ${scope}: wear ${setToken}${setName ? ` (${setName})` : ""} — ${itemTokens.join(", ")}`,
+    `• ${scope}: wear ${display}`,
+    `• ${display}:`,
     ...set.items.map((item) => {
       const description = compileOutfitItem(item);
-      return description ? `• ${getOutfitItemVariableToken(item)}: ${description}` : "";
+      return description ? `  ◘ ${itemDisplay(item)}: ${description}` : "";
     }),
     ...(set.relations || []).map((relation) => {
       const text = relationText(relation, set.items);
-      return text ? `• ${setToken}: ${text}` : "";
+      return text ? `  ◘ relation: ${text}` : "";
     }),
   ].filter(Boolean);
 
   const details = cleanSemanticText(set.additionalDetails);
-  if (details) lines.push(`• ${setToken}: ${details}`);
+  if (details) lines.push(`  ◘ set details: ${details}`);
 
   return lines.join("\n");
 }
@@ -328,4 +372,105 @@ export function compileOutfitModule(
     .map(compileOutfitSet)
     .filter(Boolean)
     .join("\n");
+}
+
+type ParsedOutfitItemLine = {
+  lineIndex: number;
+  key: string;
+};
+
+type ParsedOutfitSetBlock = {
+  key: string;
+  display: string;
+  headerIndex: number;
+  itemLines: ParsedOutfitItemLine[];
+};
+
+/**
+ * Promote only externally referenced Outfit entities to prompt aliases.
+ *
+ * Example without references:
+ *   • Evening Set:
+ *     ◘ dress: dress
+ *
+ * Example when the dress is targeted elsewhere:
+ *   • {outfit_eveningSet}:
+ *     ◘ {dress}: dress
+ *
+ * External modules still use the globally unique
+ * `{outfit_eveningSet_dress}` token. The short `{dress}` alias is scoped by
+ * the owning set definition and never registered as a global variable.
+ */
+export function formatOutfitOutputForReferences(
+  output: string,
+  externalReferenceText: string,
+) {
+  const cleanedOutput = String(output || "").trim();
+  if (!cleanedOutput) return "";
+
+  const lines = cleanedOutput.split("\n");
+  const blocks: ParsedOutfitSetBlock[] = [];
+  let current: ParsedOutfitSetBlock | null = null;
+
+  lines.forEach((line, lineIndex) => {
+    const header = line.match(/^•\s+([^:]+):\s*$/);
+    if (header && !line.includes(": wear ")) {
+      const display = header[1].trim();
+      const key = normalizeOutfitEntityKey(display, "set");
+      current = { key, display, headerIndex: lineIndex, itemLines: [] };
+      blocks.push(current);
+      return;
+    }
+
+    if (!current) return;
+    const item = line.match(/^\s*◘\s+([^:]+):\s*/);
+    if (!item || item[1].trim().toLowerCase() === "relation" || item[1].trim().toLowerCase() === "set details") {
+      return;
+    }
+
+    current.itemLines.push({
+      lineIndex,
+      key: normalizeOutfitEntityKey(item[1].trim(), "item"),
+    });
+  });
+
+  blocks.forEach((block) => {
+    const setToken = getOutfitSetVariableToken(block.key);
+    const referencedItems = new Set(
+      block.itemLines
+        .filter((item) =>
+          externalReferenceText.includes(
+            getOutfitItemVariableToken(block.key, item.key),
+          ),
+        )
+        .map((item) => item.key),
+    );
+    const setReferenced =
+      externalReferenceText.includes(setToken) || referencedItems.size > 0;
+
+    if (setReferenced) {
+      lines[block.headerIndex] = `• ${setToken}:`;
+    }
+
+    block.itemLines.forEach((item) => {
+      if (!referencedItems.has(item.key)) return;
+      lines[item.lineIndex] = lines[item.lineIndex].replace(
+        /^(\s*◘\s+)([^:]+)(:\s*)/,
+        `$1{${item.key}}$3`,
+      );
+    });
+
+    lines.forEach((line, lineIndex) => {
+      const applicationPrefix = /^•\s+.+:\s+wear\s+/;
+      if (!applicationPrefix.test(line)) return;
+      const suffix = line.replace(applicationPrefix, "").trim();
+      if (suffix !== block.display) return;
+      lines[lineIndex] = line.replace(
+        `${block.display}`,
+        setReferenced ? setToken : block.display,
+      );
+    });
+  });
+
+  return lines.join("\n");
 }
