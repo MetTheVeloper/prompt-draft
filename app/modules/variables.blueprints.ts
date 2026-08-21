@@ -14,8 +14,16 @@ export type VariableBlueprintSlot = {
 
 export type VariableBlueprintGroupSlot = {
   id: string
+  /**
+   * Repeatable profile key template. `#` marks the semantic index position.
+   * Example: `person#Name` -> `person1Name`, `person2Name`, ...
+   */
   keyPattern: string
   type: PromptVariableType
+  /**
+   * Optional value template. `#` is optional here; when present it is replaced
+   * with the same semantic index used by the generated key.
+   */
   valuePattern?: string
   descriptionPattern?: string
   optional?: boolean
@@ -71,29 +79,29 @@ function entityProfile(
       {
         id: keyBase,
         label: entityLabel,
-        description: `Each ${entityLabel.toLowerCase()} profile is created as one coherent variable group.`,
+        description: `Edit one ${entityLabel.toLowerCase()} template, then create as many indexed profiles as needed.`,
         min: 1,
         max: 12,
         defaultCount: 1,
         slots: [
           {
             id: "entity",
-            keyPattern: `${keyBase}{index}`,
+            keyPattern: `${keyBase}#`,
             type: entityType,
-            descriptionPattern: `${entityLabel} {index}`,
+            descriptionPattern: `${entityLabel} #`,
           },
           {
             id: "name",
-            keyPattern: `${keyBase}{index}Name`,
+            keyPattern: `${keyBase}#Name`,
             type: "text",
-            descriptionPattern: `${entityLabel} {index} name or reusable label`,
+            descriptionPattern: `${entityLabel} # name or reusable label`,
             optional: true,
           },
           {
             id: "reference",
-            keyPattern: `${keyBase}{index}Reference`,
+            keyPattern: `${keyBase}#Reference`,
             type: "reference",
-            descriptionPattern: `${entityLabel} {index} auxiliary reference image`,
+            descriptionPattern: `${entityLabel} # auxiliary reference image`,
             optional: true,
           },
         ],
@@ -119,15 +127,16 @@ export const variableBlueprints: VariableBlueprint[] = [
       {
         id: "subjects",
         label: "Subject",
+        description: "Edit one subject template and expand it into indexed subject variables.",
         min: 1,
         max: 12,
         defaultCount: 3,
         slots: [
           {
             id: "subject",
-            keyPattern: "subject{index}",
+            keyPattern: "subject#",
             type: "subject",
-            descriptionPattern: "Subject {index}",
+            descriptionPattern: "Subject #",
           },
         ],
       },
