@@ -417,45 +417,112 @@ function getLayoutNaturalBlock(
   })
 }
 
-function getReferencedTypographyKeys(
-  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+function getExposedTypographyKeys(
   typographyOutput: Record<string, unknown>,
 ) {
-  const referenceText = moduleOutputs
-    .filter((item) => item.key !== 'typography')
-    .map((item) =>
-      typeof item.output === 'string'
-        ? item.output
-        : JSON.stringify(item.output)
-    )
-    .join('\n')
-
   const referencedGroupKeys = new Set<string>()
   const referencedTextKeys = new Set<string>()
   const groups = Array.isArray(typographyOutput.groups) ? typographyOutput.groups : []
 
-  regions: for (const group of groups) {
-    if (!isRecord(group)) continue regions
+  groups.forEach((group) => {
+    if (!isRecord(group)) return
 
     const groupKey = typeof group.key === 'string' ? group.key.trim() : ''
-    if (groupKey && referenceText.includes(groupKey)) {
-      referencedGroupKeys.add(groupKey)
-    }
+    if (groupKey) referencedGroupKeys.add(groupKey)
 
     const texts = Array.isArray(group.texts) ? group.texts : []
     texts.forEach((text) => {
       if (!isRecord(text)) return
-
       const textKey = typeof text.key === 'string' ? text.key.trim() : ''
-      if (textKey && referenceText.includes(textKey)) {
-        referencedTextKeys.add(textKey)
-      }
+      if (textKey) referencedTextKeys.add(textKey)
     })
-  }
+  })
 
   return {
     referencedGroupKeys,
     referencedTextKeys,
+  }
+}
+
+function typographyInternalReferenceText(
+  typographyOutput: Record<string, unknown>,
+) {
+  const groups = Array.isArray(typographyOutput.groups)
+    ? typographyOutput.groups.map((group) => {
+        if (!isRecord(group)) return group
+
+        const { key: _groupKey, id: _groupId, texts, ...groupRest } = group
+        const cleanTexts = Array.isArray(texts)
+          ? texts.map((text) => {
+              if (!isRecord(text)) return text
+              const { key: _textKey, id: _textId, ...textRest } = text
+              return textRest
+            })
+          : texts
+
+        return {
+          ...groupRest,
+          texts: cleanTexts,
+        }
+      })
+    : []
+
+  return JSON.stringify({
+    ...typographyOutput,
+    groups,
+  })
+}
+
+function pruneTypographyStructuralKeys(
+  typographyOutput: Record<string, unknown>,
+  externalReferenceText: string,
+) {
+  const referenceText = [
+    externalReferenceText,
+    typographyInternalReferenceText(typographyOutput),
+  ].filter(Boolean).join('\n')
+
+  const groups = Array.isArray(typographyOutput.groups)
+    ? typographyOutput.groups.map((group) => {
+        if (!isRecord(group)) return group
+
+        const nextGroup = { ...group }
+        delete nextGroup.id
+
+        const groupKey = typeof nextGroup.key === 'string'
+          ? nextGroup.key.trim()
+          : ''
+
+        if (!groupKey || !referenceText.includes(groupKey)) {
+          delete nextGroup.key
+        }
+
+        if (Array.isArray(nextGroup.texts)) {
+          nextGroup.texts = nextGroup.texts.map((text) => {
+            if (!isRecord(text)) return text
+
+            const nextText = { ...text }
+            delete nextText.id
+
+            const textKey = typeof nextText.key === 'string'
+              ? nextText.key.trim()
+              : ''
+
+            if (!textKey || !referenceText.includes(textKey)) {
+              delete nextText.key
+            }
+
+            return nextText
+          })
+        }
+
+        return nextGroup
+      })
+    : typographyOutput.groups
+
+  return {
+    ...typographyOutput,
+    groups,
   }
 }
 
@@ -470,7 +537,7 @@ function getTypographyNaturalBlock(
 
   return compileTypographyNaturalBlock(
     typographyOutput,
-    getReferencedTypographyKeys(moduleOutputs, typographyOutput),
+    getExposedTypographyKeys(typographyOutput),
   )
 }
 
@@ -655,14 +722,24 @@ function prepareModuleOutputsForPrompt(
   variablesOutput: string,
 ) {
   return moduleOutputs.map((item) => {
-    if (typeof item.output !== 'string') return item
-
     const externalReferenceText = buildModuleExternalReferenceText(
       item.key,
       moduleOutputs,
       settings,
       variablesOutput,
     )
+
+    if (item.key === 'typography' && isRecord(item.output)) {
+      return {
+        ...item,
+        output: pruneTypographyStructuralKeys(
+          item.output,
+          externalReferenceText,
+        ),
+      }
+    }
+
+    if (typeof item.output !== 'string') return item
 
     if (item.key === 'outfit') {
       return {
