@@ -9,6 +9,7 @@ import type {
 } from "../../../modules/types"
 import TextGroupEditorModal from "../typography/TextGroupEditorModal.vue"
 import TextBlockEditorModal from "../typography/TextBlockEditorModal.vue"
+import TextVariablePickerModal from "../typography/TextVariablePickerModal.vue"
 import {
   cloneTypographyGroups,
   createTypographyTextBlock,
@@ -126,6 +127,31 @@ function fontLabel(block: TypographyTextBlock) {
   return optionLabel("fontStyleOptions", block.fontStyle)
 }
 
+function variableToken(variable: PromptVariable) {
+  return `{${variable.key}}`
+}
+
+function appendTextVariables(
+  group: TypographyTextGroup,
+  variables: PromptVariable[],
+) {
+  const existing = new Set(
+    group.texts
+      .map((block) => block.text?.trim())
+      .filter((value): value is string => Boolean(value)),
+  )
+
+  variables.forEach((variable) => {
+    const token = variableToken(variable)
+    if (existing.has(token)) return
+
+    const block = createTypographyTextBlock()
+    block.text = token
+    group.texts.push(block)
+    existing.add(token)
+  })
+}
+
 function openGroupEditor(groupIndex?: number) {
   const isEdit = typeof groupIndex === "number"
   const source = isEdit
@@ -188,15 +214,68 @@ function openGroupEditor(groupIndex?: number) {
   })
 }
 
-function openTextEditor(groupIndex: number, blockIndex?: number) {
+function openTextVariablePicker(groupIndex: number) {
   const group = groups.value[groupIndex]
   if (!group) return
 
-  const isEdit = typeof blockIndex === "number"
-  const source = isEdit
-    ? group.texts[blockIndex]
-    : createTypographyTextBlock()
+  const controller: EditorController = {
+    submit: () => false,
+  }
 
+  modal.open({
+    header: {
+      icon: "add_circle",
+      title: translate(
+        "modules.typography.fields.textGroups.variablePicker.modalTitle",
+        "Add text variables",
+      ),
+      subtitle: group.groupName,
+      color: "orange",
+    },
+    component: TextVariablePickerModal,
+    props: {
+      existingTokens: group.texts.map((block) => block.text.trim()).filter(Boolean),
+      controller,
+      onSave: (variables: PromptVariable[]) => {
+        const nextGroups = cloneTypographyGroups(groups.value)
+        const nextGroup = nextGroups[groupIndex]
+        if (!nextGroup) return
+
+        appendTextVariables(nextGroup, variables)
+        commit(nextGroups)
+      },
+    },
+    actions: [
+      {
+        label: t("modules.typography.fields.textGroups.actions.cancel"),
+        icon: "cancel",
+        color: "normal",
+        mode: "flat",
+        close: true,
+      },
+      {
+        label: translate(
+          "modules.typography.fields.textGroups.variablePicker.addSelected",
+          "Add selected",
+        ),
+        icon: "add_circle",
+        color: "prim",
+        close: true,
+        handler: () => controller.submit(),
+      },
+    ],
+    options: {
+      width: mobile.value ? "calc(100% - 24px)" : 560,
+      closeOnBackdrop: true,
+    },
+  })
+}
+
+function openTextEditor(groupIndex: number, blockIndex: number) {
+  const group = groups.value[groupIndex]
+  if (!group) return
+
+  const source = group.texts[blockIndex]
   if (!source) return
 
   const controller: EditorController = {
@@ -205,10 +284,8 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
 
   modal.open({
     header: {
-      icon: isEdit ? "edit" : "add_circle",
-      title: isEdit
-        ? t("modules.typography.fields.textGroups.block.modal.editTitle")
-        : t("modules.typography.fields.textGroups.block.modal.createTitle"),
+      icon: "edit",
+      title: t("modules.typography.fields.textGroups.block.modal.editTitle"),
       subtitle: `${group.groupName} · ${source.layerName}`,
       color: "orange",
     },
@@ -222,12 +299,7 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
         const nextGroup = nextGroups[groupIndex]
         if (!nextGroup) return
 
-        if (isEdit) {
-          nextGroup.texts[blockIndex] = savedBlock
-        } else {
-          nextGroup.texts.push(savedBlock)
-        }
-
+        nextGroup.texts[blockIndex] = savedBlock
         commit(nextGroups)
       },
     },
@@ -240,10 +312,8 @@ function openTextEditor(groupIndex: number, blockIndex?: number) {
         close: true,
       },
       {
-        label: isEdit
-          ? t("modules.typography.fields.textGroups.actions.save")
-          : t("modules.typography.fields.textGroups.actions.create"),
-        icon: isEdit ? "check_circle" : "add_circle",
+        label: t("modules.typography.fields.textGroups.actions.save"),
+        icon: "check_circle",
         color: "prim",
         close: true,
         handler: () => controller.submit(),
@@ -386,7 +456,7 @@ function moveText(groupIndex: number, blockIndex: number, offset: -1 | 1) {
               :p="6"
               mode="flat"
               color="prim"
-              @click="openTextEditor(groupIndex)"
+              @click="openTextVariablePicker(groupIndex)"
             />
             <el-button
               type="fab"
