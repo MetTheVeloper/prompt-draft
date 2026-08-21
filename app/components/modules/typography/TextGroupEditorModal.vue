@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, reactive } from "vue"
+import { computed, onBeforeUnmount, reactive, ref } from "vue"
 import type { ElDropdownValue } from "~/types/dropdown"
 import type {
   ModuleField,
@@ -9,6 +9,7 @@ import type {
 } from "~/modules/types"
 import {
   cloneTypographyTextGroup,
+  createTypographyTextBlock,
   normalizeTypographyTextGroup,
 } from "~/utils/typography"
 import { getLayoutRegionVariableToken } from "~/utils/structuralVariables"
@@ -37,7 +38,11 @@ const props = defineProps<{
 
 const { t } = useI18n()
 const { mobile } = useScreen()
-const { enabledModuleVariableGroups } = usePromptVariables()
+const {
+  enabledModuleVariableGroups,
+  enabledPromptVariables,
+} = usePromptVariables()
+const selectedTextVariableIds = ref<ElDropdownValue[]>([])
 const draft = reactive(
   cloneTypographyTextGroup(normalizeTypographyTextGroup(props.group)),
 )
@@ -73,6 +78,48 @@ function optionItems(key: string) {
     label: humanize(option.value),
   }))
 }
+
+function userVariableToken(variable: PromptVariable) {
+  return `{${variable.key}}`
+}
+
+const userTextVariables = computed(() => {
+  return enabledPromptVariables.value.filter((variable) => {
+    return variable.type === "text"
+  })
+})
+
+const existingTextTokens = computed(() => {
+  return new Set(
+    (draft.texts || [])
+      .map((block) => block.text?.trim())
+      .filter((value): value is string => Boolean(value)),
+  )
+})
+
+const textVariableItems = computed(() => {
+  return userTextVariables.value.map((variable) => {
+    const token = userVariableToken(variable)
+
+    return {
+      value: variable.id,
+      label: token,
+      description: variable.value,
+      icon: "text_fields",
+      disabled: existingTextTokens.value.has(token),
+    }
+  })
+})
+
+const selectedTextVariables = computed(() => {
+  return selectedTextVariableIds.value
+    .map((id) => {
+      return userTextVariables.value.find((variable) => {
+        return variable.id === String(id)
+      })
+    })
+    .filter((variable): variable is PromptVariable => Boolean(variable))
+})
 
 const layoutRegionVariables = computed<PromptVariable[]>(() => {
   const layoutGroup = enabledModuleVariableGroups.value.find((group) => {
@@ -200,8 +247,28 @@ function updatePosition(value: ElDropdownValue) {
   draft.layoutRegionId = ""
 }
 
+function appendSelectedTextVariables(group: TypographyTextGroup) {
+  const existing = new Set(
+    (group.texts || [])
+      .map((block) => block.text?.trim())
+      .filter((value): value is string => Boolean(value)),
+  )
+
+  selectedTextVariables.value.forEach((variable) => {
+    const token = userVariableToken(variable)
+    if (existing.has(token)) return
+
+    const block = createTypographyTextBlock()
+    block.text = token
+    group.texts.push(block)
+    existing.add(token)
+  })
+}
+
 function saveGroup() {
-  props.onSave?.(cloneTypographyTextGroup(draft))
+  const nextGroup = cloneTypographyTextGroup(draft)
+  appendSelectedTextVariables(nextGroup)
+  props.onSave?.(nextGroup)
   return true
 }
 
@@ -231,6 +298,76 @@ onBeforeUnmount(() => {
         {{ t("modules.typography.fields.textGroups.group.modal.stableKey") }}
       </el-text>
     </el-flex>
+
+    <div class="text-group-editor__control">
+      <el-flex rules="rbc" :gap="8" class="w100">
+        <el-text :size="11" color="normal50">
+          {{
+            translate(
+              "modules.typography.fields.textGroups.group.controls.textVariables.label",
+              "Text variables",
+            )
+          }}
+        </el-text>
+        <el-text
+          v-if="selectedTextVariableIds.length"
+          :size="10"
+          color="blue"
+        >
+          {{ selectedTextVariableIds.length }} selected
+        </el-text>
+      </el-flex>
+
+      <el-multi-select
+        v-if="textVariableItems.length"
+        v-model="selectedTextVariableIds"
+        :items="textVariableItems"
+        item-label="label"
+        item-value="value"
+        item-description="description"
+        item-icon="icon"
+        item-disabled="disabled"
+        icon="text_fields"
+        :placeholder="
+          translate(
+            'modules.typography.fields.textGroups.group.controls.textVariables.placeholder',
+            'Select user Text variables',
+          )
+        "
+        :clear-label="
+          translate(
+            'modules.typography.fields.textGroups.group.controls.textVariables.clear',
+            'Clear text variable selection',
+          )
+        "
+      />
+
+      <el-flex
+        v-else
+        rules="rsc"
+        :gap="6"
+        class="text-group-editor__empty-variables"
+      >
+        <el-icon icon="info" :size="12" color="normal45" />
+        <el-text :size="10" color="normal45">
+          {{
+            translate(
+              "modules.typography.fields.textGroups.group.controls.textVariables.empty",
+              "No active user Text variables are available yet. Create them in Variables first.",
+            )
+          }}
+        </el-text>
+      </el-flex>
+
+      <el-text :size="10" color="normal45">
+        {{
+          translate(
+            "modules.typography.fields.textGroups.group.controls.textVariables.description",
+            "Each selected variable becomes a normal typography text item whose content is the variable token.",
+          )
+        }}
+      </el-text>
+    </div>
 
     <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
       <div class="text-group-editor__control">
@@ -385,5 +522,12 @@ onBeforeUnmount(() => {
   display: grid;
   gap: 5px;
   width: 100%;
+}
+
+.text-group-editor__empty-variables {
+  min-height: 42px;
+  padding: 10px;
+  border: 1px dashed var(--normal20);
+  border-radius: 10px;
 }
 </style>
