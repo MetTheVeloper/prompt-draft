@@ -4,6 +4,8 @@ import type {
   SemanticTargetRef,
 } from "./types";
 
+export type { SemanticTargetRef } from "./types";
+
 export type OutfitItemCategory =
   | "tops"
   | "bottoms"
