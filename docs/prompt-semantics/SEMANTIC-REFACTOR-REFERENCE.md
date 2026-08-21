@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the reusable rules and lessons established through the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, Pose + Expression, and Background + Effects stages.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the reusable rules and lessons established through the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, Pose + Expression, Background + Effects, and Hair + Outfit stages.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -157,6 +157,8 @@ Material Assignments[]
 Pose Assignments[]
 Expression Assignments[]
 Effect Layers[]
+Outfit Sets[] + Wearable Items[]
+Hair Styles[] + Hair Components[]
 ```
 
 Effects established the clearest modifier example:
@@ -166,6 +168,8 @@ grain → subtle
 glitch → strong
 HUD overlay → balanced + custom details
 ```
+
+Hair + Outfit establish the nested-entity case: a parent semantic entity can contain child entities that remain independently addressable when another module needs to target them.
 
 UI convenience must not determine semantic structure.
 
@@ -204,6 +208,8 @@ If not, prefer neutral defaults:
 
 A module may exist in the editor while producing no output until the user actually chooses something.
 
+For intrinsic properties whose baseline already comes from the chosen entity or a reference, an explicit application-state value such as `inherit` can be a neutral default when the compiler emits no additional semantic claim. Do not confuse `inherit` with an explicit semantic value such as `none` or `absent`.
+
 ---
 
 # 9. Presets are state recipes, not prose bundles
@@ -219,7 +225,9 @@ Preset rules:
 - replaceable components should remain neutral,
 - cross-module preset coupling should be avoided unless real tests prove it necessary.
 
-Named hardware, material, background, lighting, and effect recipes should remain inspectable and editable after selection.
+Named hardware, material, background, lighting, effect, outfit and hairstyle recipes should remain inspectable and editable after selection.
+
+A useful additional pattern is a **starter layer** below presets: a catalog may expose human-friendly starter choices that instantiate one canonical entity plus prefilled orthogonal properties rather than creating a new semantic type for every combination.
 
 ---
 
@@ -256,6 +264,8 @@ UI/editor state with no prompt meaning.
 
 Do not expose application state as prompt variables merely because it exists in settings.
 
+A source mode such as `defined` vs `reference` may affect how inherited values are interpreted while still avoiding redundant prose for every inherited property.
+
 ---
 
 # 11. Subject-agnostic first, subject-specific second
@@ -285,14 +295,17 @@ Canonical nested-variable example:
 {subject} = person in {reference}
 ```
 
-For reusable structural entities:
+For reusable structural entities, distinguish internal persistence identity from prompt-facing semantic identity:
 
 ```text
-ID/token → stable identity
-name     → editable human label
+internal ID  → stable persistence / target identity
+semantic key → human-editable prompt path segment
+label/name   → editable presentation text
+global token → globally unique external reference
+local alias  → short reference valid only inside an owning module scope
 ```
 
-Renaming a Layout region, Typography group, or other structural entity must not break references.
+Renaming a Layout region, Typography group, Outfit item, Hair component, or other structural entity must not break persisted relationships. When a prompt-facing semantic key changes, target identity should remain based on the stable internal entity ID and only the rendered token/path should update.
 
 Variable and reference types are semantic contracts, not merely UI labels. Do not make every variable selectable everywhere merely because a token exists.
 
@@ -302,7 +315,7 @@ Examples:
 Color variable          → reusable palette value
 Subject/Object variable → color/material target when compatible
 Typography Group/Text   → structural semantic target
-Subject variable        → Pose/Expression recipient
+Subject variable        → Pose/Expression/Hair/Outfit recipient
 Object variable         → may participate in Pose details without becoming a Pose recipient
 ```
 
@@ -321,6 +334,8 @@ Texture asks for: material
 
 Target identity should survive a generic-target → linked-module-output upgrade without creating duplicates.
 
+Nested child entities may expose the same capabilities as their parent. For example, an Outfit Set and one specific garment item, or a Hair Style and one specific hair component, may each independently expose `color` and `material` capabilities.
+
 ## Target policy is separate from shared assignment infrastructure
 
 Shared assignment mechanics do not imply a universal target catalog.
@@ -330,11 +345,11 @@ Ask separately:
 1. Does this module use shared assignment mechanics?
 2. Which entities are valid recipients for this particular payload?
 
-Color/Material may use broad target policies; Pose/Expression intentionally use subject-only recipients.
+Color/Material may use broad target policies; Pose/Expression/Hair/Outfit intentionally use subject-only recipients for their primary assignment relationship.
 
 ---
 
-# 13. Structural tokens and prompt-graph preservation
+# 13. Structural tokens, scoped aliases and prompt-graph preservation
 
 Natural output is a human-readable serialization of the same prompt graph, not permission to flatten that graph.
 
@@ -349,6 +364,50 @@ Recommended behavior:
 - unreferenced implementation keys may remain hidden.
 
 Do not replace reusable tokens with repeated prose merely to make Natural output look conversational.
+
+## Global paths vs local aliases
+
+Hierarchical semantic entities may need globally unique references outside their owning module while remaining concise inside their own definition.
+
+Canonical Stage 14 pattern:
+
+```text
+Global references:
+{outfit_eveningSet_dress}
+{hair_curlyUpdo_bangs}
+
+Inside the owning module definition:
+{eveningSet}
+{dress}
+{curlyUpdo}
+{bangs}
+```
+
+The local alias is a serialization convenience, not a separate global variable. It is valid because the parent module block provides scope.
+
+## Selective token emission
+
+Do not decorate every child entity with a token merely because a token can exist.
+
+When a child entity is not referenced elsewhere, human-readable prose is usually sufficient:
+
+```text
+◦ pumps: high-heeled pumps
+```
+
+When another module targets the entity, promote the local label to a scoped alias:
+
+```text
+◦ {dress}: dress
+```
+
+while the external assignment keeps the globally unique path:
+
+```text
+{outfit_eveningSet_dress}
+```
+
+Selective emission keeps prompts readable without sacrificing graph identity.
 
 ---
 
@@ -392,7 +451,9 @@ Examples discovered during completed stages:
 - scene atmosphere hidden inside image-space Effects,
 - post-processing hidden inside Background,
 - lighting-native glow hidden inside Effects,
-- Camera behavior hidden inside Effects.
+- Camera behavior hidden inside Effects,
+- garment color/material/style assumptions hidden inside Outfit archetypes,
+- hair color/material/aesthetic assumptions hidden inside hairstyle mega-options.
 
 When an option keeps growing to express unrelated behavior, stop expanding the wording and inspect the architecture.
 
@@ -438,6 +499,22 @@ subtle grain                  → another effect layer
 
 Do not flatten related properties into independent global lists.
 
+## Hierarchical semantic entities
+
+When a parent semantic concept contains independently configurable/addressable children, model the hierarchy directly instead of flattening the children into prose.
+
+Examples:
+
+```text
+Outfit Set
+└── Wearable Items[]
+
+Hair Style
+└── Hair Components[]
+```
+
+The parent owns the subject relationship and composition; child entities own their local structural payload. Parent and child entities may both be exposed as semantic targets when external modules have a real reason to address them.
+
 ## Relational assignment rules
 
 When a module assigns payload to semantic targets, the whole assignment is the semantic unit.
@@ -458,6 +535,8 @@ A structured-object module must either:
 Repeated relational modules may require protected text blocks even when compiled output is a string.
 
 Do not assume the generic Natural pipeline can safely split/regroup content containing coordinates, exact text, structural tokens, nested relationships, relational clauses, or keyword lists whose commas belong inside one semantic unit.
+
+A linked structured module must not be emitted twice: once as a referenced definition and again as a generic protected Natural block. The final assembler should know whether a module definition is already present through the prompt graph and exclude duplicate emission.
 
 ---
 
@@ -575,6 +654,8 @@ Generate actual images when useful. Image tests outrank purely theoretical wordi
 - correct expression but stochastic compliance → adjust expectations,
 - test framing/context hides the property → redesign the test.
 
+For hierarchical targetable modules, include at least one test where only selected child entities receive external Color/Material assignments and verify that prompt aliases/paths remain unambiguous.
+
 ---
 
 # 24. Legacy state and migration
@@ -592,6 +673,8 @@ Do not invent cross-module migration merely to preserve old wording if it corrup
 
 A module may be semantically closed while migration remains deferred backlog work.
 
+When a new hierarchy introduces human semantic keys, migration must preserve stable internal entity IDs and generate unique keys separately. Prompt-facing renames must not become persistence identity.
+
 ---
 
 # 25. Deferred issues and review backlog
@@ -602,7 +685,7 @@ Use:
 docs/prompt-semantics/review-backlog/README.md
 ```
 
-for real deferred issues.
+and dedicated stage migration files under the same directory for real deferred issues.
 
 A backlog item should record symptom, semantic owner, reason for deferral, preferred resolution direction, and verification/removal criteria.
 
@@ -618,7 +701,7 @@ Two workflows are supported:
 
 ## 26.1 Module-scoped locale fragments — preferred for major module rewrites
 
-Background and Effects established this pattern:
+Background, Effects and Hair established this pattern:
 
 ```text
 i18n/locales/<module>.en.ts
@@ -800,27 +883,64 @@ Key lessons:
 
 See `stage-13-background-effects-semantics.md` for closure evidence.
 
+## Hair + Outfit
+
+Stage 14 replaced two legacy global mega-select modules with subject-scoped hierarchical semantic entities.
+
+### Outfit owns
+
+```text
+wearable set composition
+wearable item identity
+item construction / fit / cut / length
+wearable arrangement and item-local structural details
+```
+
+Outfit deliberately does not own garment color, material/surface finish, global aesthetic style, or unrelated props merely held by the subject.
+
+### Hair owns
+
+```text
+hairstyle structural baseline
+length / cut / curl pattern / volume / parting / silhouette
+structural styling state
+hair components such as bangs, braids, buns, ponytails, locs and integrated hair ornaments
+```
+
+Hair deliberately does not own hair color or material/surface rendering. Hair-specific structure such as curly/wavy/braided remains Hair-owned even though the word “texture” may colloquially describe it.
+
+### Reusable Stage 14 lessons
+
+- distinguish stable internal entity IDs from human semantic keys and prompt-facing tokens,
+- hierarchical parent/child entities are appropriate when both the whole and selected children may need external targeting,
+- use globally unique external paths but short local aliases inside the owning module scope,
+- selectively expose braces/tokens only for entities actually referenced elsewhere to keep prompt definitions readable,
+- a large discovery catalog should not imply a large canonical type system; starter choices can instantiate canonical types plus properties,
+- reference baselines and explicit structural overrides can coexist in one schema through `inherit` / explicit / custom / reference states,
+- `inherit` is a neutral state, while explicit absence is a semantic instruction,
+- source mode can establish a baseline for many inherited properties without repeating “from reference” for every property,
+- capability-driven targeting lets Color Palette and Texture / Material target an Outfit Set/item or Hair Style/component without Hair/Outfit owning those payload semantics,
+- surface/material ownership can apply even to non-realistic hair (toy yarn, plastic, marble, crystal, etc.) while structural hair semantics remain in Hair,
+- linked hierarchical definitions must be emitted once in Natural output; duplicate protected-block emission is an assembler defect rather than a module wording problem,
+- multi-subject real-image tests confirmed that subject → Hair/Outfit assignment boundaries and child Color targeting remain understandable to the generation model.
+
+See `stage-14-hair-outfit-semantics.md` for closure evidence.
+
 ---
 
 # 30. Recommended remaining module order
 
-Re-evaluate when new ownership collisions appear, but the current preferred sequence is:
+Hair + Outfit are closed in Stage 14 and should not be reopened for ordinary model variance or wording micro-polish.
+
+The current preferred sequence is:
 
 ```text
-1. Hair + Outfit
-2. remaining smaller modules
-3. final cross-module audit / migration planning
+1. audit the remaining smaller / not-yet-closed semantic surfaces
+2. final cross-module audit
+3. migration planning and compatibility cleanup
 ```
 
-Background + Effects are closed in Stage 13 and should not be treated as the next open stage.
-
-Hair + Outfit are next because:
-
-- they are major remaining subject-detail owners,
-- both already participate in capability-driven Color/Material targeting,
-- their refactors must preserve those targetable module outputs,
-- likely ownership boundaries include Hair ↔ Outfit ↔ Texture/Material ↔ Color Palette ↔ Style ↔ Form,
-- existing catalogs may still mix physical garment/hair properties with aesthetic, material, color, pose, character archetype, or use-case assumptions.
+Before selecting the next module, inspect the current registry and completed stage history rather than assuming every registered module still needs a full semantic rewrite. In particular, distinguish modules that already received output/architecture work from modules whose field ownership is still genuinely open.
 
 Legacy migrations from prior closed stages remain backlog work and do not block the next semantic stage.
 
@@ -836,32 +956,29 @@ docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md
 
 Then read:
 
+- `stage-14-hair-outfit-semantics.md` as the most recent closure precedent,
+- `docs/prompt-semantics/review-backlog/`,
+- the current module registry,
 - the target module implementation,
 - relevant compiler/Natural code,
 - neighboring modules with likely ownership overlap,
-- the semantic review backlog,
-- the most recent completed stage docs when useful.
+- older completed stage docs when useful.
 
-For the next planned stage, inspect **Hair and Outfit together** before freezing either architecture, but do not assume they should merge.
+Do **not** reopen Hair or Outfit unless later evidence reveals a concrete ownership defect, reproducible compiler/state failure, broken target identity, or prompt-graph loss.
 
-Also read Stage 13 (`stage-13-background-effects-semantics.md`) as the most recent closure precedent, especially:
-
-- constructor vs catalog decisions,
-- scene-vs-effect mechanism ownership,
-- field-local Custom values,
-- repeated modifier-bearing layers,
-- module-scoped locale fragments.
+For the next stage, first identify which registered semantic surface is actually still open. Do not infer openness from the mere existence of a legacy-looking file; the registered implementation and completed-stage history are authoritative.
 
 ## First response / audit
 
-1. Ask the mandatory original-intent discovery question for the new key module(s).
-2. State each module's current responsibility.
-3. State the proposed responsibility and non-responsibilities.
-4. Identify semantic pollution and ownership collisions.
-5. Identify mega-fields that should be split into orthogonal axes.
-6. Decide single-select vs multi-select vs repeated entities from semantics.
-7. Audit defaults and presets.
-8. Propose the clean field model before broad implementation.
+1. Identify the remaining unclosed candidate module(s) from the current repository and stage history.
+2. Ask the mandatory original-intent discovery question for the chosen key module(s).
+3. State each module's current responsibility.
+4. State the proposed responsibility and non-responsibilities.
+5. Identify semantic pollution and ownership collisions.
+6. Identify mega-fields that should be split into orthogonal axes.
+7. Decide single-select vs multi-select vs repeated/hierarchical entities from semantics.
+8. Audit defaults and presets.
+9. Propose the clean field model before broad implementation.
 
 Do not reflexively preserve existing design. Challenge architecture when a cleaner ownership model exists.
 
@@ -894,6 +1011,14 @@ When compiled outputs are returned:
 - test variable/reference preservation,
 - ensure real-image tests expose the intended semantic,
 - distinguish prompt bugs from stochastic model behavior or prompt tension.
+
+For hierarchical entities, additionally verify:
+
+- stable identity survives semantic-key rename,
+- child targeting remains attached after rename,
+- local aliases are emitted only when useful,
+- external modules use globally unique paths,
+- the owning module definition is not duplicated in Natural output.
 
 ## Final closure
 
