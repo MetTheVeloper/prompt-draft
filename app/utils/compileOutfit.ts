@@ -81,7 +81,12 @@ function normalizeItem(
   const customType = typeof value.customType === "string" ? value.customType : undefined;
   const name = typeof value.name === "string" ? value.name : "";
   const rawKey = typeof value.key === "string" ? value.key : "";
-  const keySource = rawKey || (type === "custom" ? customType : "") || name || type || `item${index + 1}`;
+  const keySource =
+    rawKey ||
+    (type === "custom" ? customType : "") ||
+    (type !== "custom" ? type : "") ||
+    name ||
+    `item${index + 1}`;
   const key = createUniqueOutfitEntityKey(keySource, usedKeys, `item${index + 1}`);
   usedKeys.add(key);
 
@@ -183,7 +188,7 @@ export function normalizeOutfitSets(value: unknown): OutfitSet[] {
           .filter((item): item is OutfitItem => Boolean(item))
       : [];
 
-    const normalized: OutfitSet = {
+    sets.push({
       id:
         typeof set.id === "string" && set.id.trim()
           ? set.id
@@ -200,11 +205,7 @@ export function normalizeOutfitSets(value: unknown): OutfitSet[] {
         : [],
       additionalDetails:
         typeof set.additionalDetails === "string" ? set.additionalDetails : "",
-    };
-
-    if (normalized.items.length > 0 || normalized.targets.length > 0) {
-      sets.push(normalized);
-    }
+    });
   });
 
   return sets;
@@ -424,7 +425,11 @@ export function formatOutfitOutputForReferences(
 
     if (!current) return;
     const item = line.match(/^\s*◘\s+([^:]+):\s*/);
-    if (!item || item[1].trim().toLowerCase() === "relation" || item[1].trim().toLowerCase() === "set details") {
+    if (
+      !item ||
+      item[1].trim().toLowerCase() === "relation" ||
+      item[1].trim().toLowerCase() === "set details"
+    ) {
       return;
     }
 
