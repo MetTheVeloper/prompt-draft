@@ -4,7 +4,7 @@
 
 This is the canonical operating reference for semantic refactoring of Prompt Draft modules.
 
-Use this file when starting or continuing a semantic-refactor conversation. It consolidates the reusable rules and lessons established through the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, Pose + Expression, Background + Effects, and Hair + Outfit stages.
+Use this file when starting or continuing a semantic-refactor conversation. It consolidates the reusable rules and lessons established through the completed Style, Form, Setup, Layout, Typography-output, Framing, Camera, Lighting, Color Palette, Texture / Material, Pose + Expression, Background + Effects, Hair + Outfit, and User Variables + Variable Blueprints stages.
 
 The goal is not prompt brevity for its own sake. The goal is **minimum sufficient prompt semantics**: every emitted phrase should represent one useful decision that belongs to the correct semantic owner.
 
@@ -229,6 +229,8 @@ Named hardware, material, background, lighting, effect, outfit and hairstyle rec
 
 A useful additional pattern is a **starter layer** below presets: a catalog may expose human-friendly starter choices that instantiate one canonical entity plus prefilled orthogonal properties rather than creating a new semantic type for every combination.
 
+Stage 15 adds a related but distinct **Blueprint** pattern: a Blueprint may create several ordinary user variables or repeated profile handles, but the Blueprint itself must disappear after state creation rather than becoming prompt semantics.
+
 ---
 
 # 10. Semantic data, context metadata and application state
@@ -317,9 +319,32 @@ Subject/Object variable → color/material target when compatible
 Typography Group/Text   → structural semantic target
 Subject variable        → Pose/Expression/Hair/Outfit recipient
 Object variable         → may participate in Pose details without becoming a Pose recipient
+Reference variable      → external semantic input without automatically becoming a recipient
 ```
 
 Store stable IDs alongside token/label snapshots so missing references can remain visible instead of silently deleting user intent.
+
+## User-variable key identity
+
+Human semantic keys should preserve valid lowerCamelCase presentation such as:
+
+```text
+person1Name
+callToAction
+printArtwork
+```
+
+Do not destructively lowercase prompt-facing keys merely to compare them. Comparison/collision identity may be case-insensitive while stored/displayed semantic casing remains intact.
+
+## Variable Blueprints and profiles
+
+Blueprints are editor recipes for creating ordinary user-variable state, not prompt-graph nodes.
+
+For repeatable semantic profiles, prefer one editable template plus indexed expansion over rendering many duplicated editors. A user-visible index marker such as `#` can define where the coherent profile index is inserted in keys and optionally values.
+
+Repeated profile allocation must be group-coherent: if one generated handle for a candidate index collides, move the entire profile to a safe index rather than uniquifying members independently.
+
+Profile recipes should remain small and generic. They may create identity/reference handles, but they must not absorb semantic properties owned by Hair, Outfit, Pose, Expression, Color Palette or other modules.
 
 ## Capability-driven module targets
 
@@ -570,6 +595,12 @@ Handle real cross-module contradictions at prompt-validation level. Do not silen
 
 Do not warn merely because a combination is unusual; creative tension can be intentional.
 
+## Warning density
+
+A non-blocking warning can be correct and still become noisy when repeated many times during normal progressive authoring.
+
+Keep blocking errors immediately visible. Repetitive non-blocking warnings may be grouped or collapsed behind a count/summary as long as the user can still inspect them.
+
 ---
 
 # 21. Semantic correctness is not generation determinism
@@ -640,6 +671,7 @@ Pose ↔ Expression ↔ Framing ↔ Setup
 Lighting ↔ Color Palette ↔ Texture ↔ Camera
 Background ↔ Layout ↔ Effects
 Hair ↔ Outfit ↔ Color Palette ↔ Texture
+Variables ↔ subject recipients ↔ Color/Material targets ↔ structured module entities
 ```
 
 ## Phase F — full prompt tests
@@ -655,6 +687,8 @@ Generate actual images when useful. Image tests outrank purely theoretical wordi
 - test framing/context hides the property → redesign the test.
 
 For hierarchical targetable modules, include at least one test where only selected child entities receive external Color/Material assignments and verify that prompt aliases/paths remain unambiguous.
+
+For reusable variable systems, include at least one test where generated handles are consumed by independently owned modules rather than validated only as isolated definitions.
 
 ---
 
@@ -775,6 +809,8 @@ A module can be considered semantically closed when:
 Once these conditions are met, stop theoretical micro-polishing.
 
 Reopen a closed module only when concrete later evidence reveals a real issue.
+
+Semantic closure and release integration are related but distinct checkpoints: ordinary localization, build-environment, migration, or cosmetic follow-up does not automatically reopen an accepted semantic contract unless it exposes a real semantic failure.
 
 ---
 
@@ -926,23 +962,56 @@ Hair deliberately does not own hair color or material/surface rendering. Hair-sp
 
 See `stage-14-hair-outfit-semantics.md` for closure evidence.
 
+## User Variables + Variable Blueprints
+
+Stage 15 confirmed Variables as a typed semantic-handle system and added editor-side Blueprint recipes without changing the underlying prompt-graph contract.
+
+### Variables owns
+
+```text
+user-created semantic handles
+typed value contracts
+human prompt-facing keys/tokens
+manual variable state
+Blueprint/profile-driven variable creation
+key validation and collision prevention
+```
+
+Variables deliberately does not own the domain semantics later applied to subjects/objects/references by Hair, Outfit, Pose, Expression, Color Palette, Texture / Material, Typography or other modules.
+
+### Reusable Stage 15 lessons
+
+- every user variable may be semantic even when it is not a valid assignment recipient,
+- variable type and target policy are separate contracts; consumer modules decide what can be targeted,
+- auxiliary image/artwork inputs can use `reference` variables without inventing a new type,
+- a Blueprint is a recipe that creates ordinary editable variables and then disappears from prompt semantics,
+- common entity Profiles should remain intentionally small instead of becoming mini-modules,
+- one editable template plus count-based expansion is preferable to duplicating near-identical profile editors,
+- one explicit `#` marker can safely define user-editable index insertion in repeated key patterns and optionally in values,
+- allocate repeated profile indices coherently across the whole profile rather than uniquifying generated keys independently,
+- preserve human lowerCamelCase semantic keys while using a separate case-insensitive comparison identity,
+- numerous non-blocking authoring warnings may be collapsed while blocking semantic errors remain immediately visible,
+- real poster and garment-print tests confirmed that Blueprint-generated handles compose correctly with structured Typography/Layout and hierarchical Outfit/Color/Pose/Expression semantics.
+
+See `stage-15-variables-semantics.md` for closure evidence.
+
 ---
 
 # 30. Recommended remaining module order
 
-Hair + Outfit are closed in Stage 14 and should not be reopened for ordinary model variance or wording micro-polish.
+Hair + Outfit are closed in Stage 14. User Variables + Variable Blueprints are closed in Stage 15. These stages should not be reopened for ordinary model variance, recipe catalog growth, wording micro-polish, or cosmetic editor work.
 
 The current preferred sequence is:
 
 ```text
-1. audit the remaining smaller / not-yet-closed semantic surfaces
+1. audit the remaining genuinely unclosed semantic surfaces
 2. final cross-module audit
 3. migration planning and compatibility cleanup
 ```
 
 Before selecting the next module, inspect the current registry and completed stage history rather than assuming every registered module still needs a full semantic rewrite. In particular, distinguish modules that already received output/architecture work from modules whose field ownership is still genuinely open.
 
-Legacy migrations from prior closed stages remain backlog work and do not block the next semantic stage.
+Legacy migrations and non-semantic maintenance from prior closed stages remain follow-up work and do not block the next semantic stage.
 
 ---
 
@@ -956,7 +1025,8 @@ docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md
 
 Then read:
 
-- `stage-14-hair-outfit-semantics.md` as the most recent closure precedent,
+- `stage-15-variables-semantics.md` as the most recent closure precedent,
+- `stage-14-hair-outfit-semantics.md` when hierarchical semantic entities are relevant,
 - `docs/prompt-semantics/review-backlog/`,
 - the current module registry,
 - the target module implementation,
@@ -964,7 +1034,7 @@ Then read:
 - neighboring modules with likely ownership overlap,
 - older completed stage docs when useful.
 
-Do **not** reopen Hair or Outfit unless later evidence reveals a concrete ownership defect, reproducible compiler/state failure, broken target identity, or prompt-graph loss.
+Do **not** reopen Hair/Outfit or Variables/Blueprints unless later evidence reveals a concrete ownership defect, reproducible compiler/state failure, broken target identity/indexing, destructive semantic-key handling, incorrect recipient policy, or prompt-graph loss.
 
 For the next stage, first identify which registered semantic surface is actually still open. Do not infer openness from the mere existence of a legacy-looking file; the registered implementation and completed-stage history are authoritative.
 
@@ -1020,6 +1090,13 @@ For hierarchical entities, additionally verify:
 - external modules use globally unique paths,
 - the owning module definition is not duplicated in Natural output.
 
+For repeatable user-variable profiles, additionally verify:
+
+- key/value pattern expansion preserves intended casing and nested references,
+- one profile index remains coherent across every generated member,
+- collision detection continues from a safe whole-profile index,
+- Blueprint metadata never leaks into prompt output.
+
 ## Final closure
 
 Before checkpoint:
@@ -1027,10 +1104,10 @@ Before checkpoint:
 - run one focused taxonomy/edge-case audit,
 - perform one cross-module boundary audit,
 - update backlog for deliberately deferred work,
-- run project generation/build validation,
+- run project generation/build validation before release integration,
 - perform real-image validation when useful,
 - update this canonical reference with genuinely reusable lessons,
-- create a semantic checkpoint only after tests pass.
+- create a semantic checkpoint only after semantic tests and user approval pass.
 
 ---
 
