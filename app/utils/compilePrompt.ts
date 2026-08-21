@@ -3,6 +3,7 @@ import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { compileLayoutNaturalBlock } from './compileLayoutNatural'
 import { compileTypographyNaturalBlock } from './compileTypographyNatural'
+import { formatOutfitOutputForReferences } from './compileOutfit'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
 import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
 import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
@@ -432,8 +433,8 @@ function getReferencedTypographyKeys(
   const referencedTextKeys = new Set<string>()
   const groups = Array.isArray(typographyOutput.groups) ? typographyOutput.groups : []
 
-  groups.forEach((group) => {
-    if (!isRecord(group)) return
+  regions: for (const group of groups) {
+    if (!isRecord(group)) continue regions
 
     const groupKey = typeof group.key === 'string' ? group.key.trim() : ''
     if (groupKey && referenceText.includes(groupKey)) {
@@ -449,7 +450,7 @@ function getReferencedTypographyKeys(
         referencedTextKeys.add(textKey)
       }
     })
-  })
+  }
 
   return {
     referencedGroupKeys,
@@ -488,9 +489,12 @@ function naturalBlockTitle(key: string) {
 
 function getProtectedBulletNaturalBlocks(
   moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  excludedModuleKeys: Set<string> = new Set(),
 ) {
   return moduleOutputs
-    .filter((item) => isProtectedBulletOutput(item.output))
+    .filter((item) =>
+      !excludedModuleKeys.has(item.key) && isProtectedBulletOutput(item.output)
+    )
     .map((item) => {
       return `${naturalBlockTitle(item.key)}:\n${item.output as string}`
     })
@@ -623,6 +627,48 @@ function formatPromptDefinition(key: string, value: ModuleOutputValue) {
 
 function moduleOutputText(value: ModuleOutputValue) {
   return typeof value === 'string' ? value : JSON.stringify(value)
+}
+
+function buildModuleExternalReferenceText(
+  moduleKey: string,
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  settings: PromptSettings,
+  variablesOutput: string,
+) {
+  return [
+    settings.idea,
+    settings.subject,
+    settings.globalRules,
+    variablesOutput,
+    ...moduleOutputs
+      .filter((item) => item.key !== moduleKey)
+      .map((item) => moduleOutputText(item.output)),
+  ]
+    .filter(Boolean)
+    .join('\n')
+}
+
+function prepareModuleOutputsForPrompt(
+  moduleOutputs: Array<{ key: string; output: ModuleOutputValue }>,
+  settings: PromptSettings,
+  variablesOutput: string,
+) {
+  return moduleOutputs.map((item) => {
+    if (item.key !== 'outfit' || typeof item.output !== 'string') return item
+
+    return {
+      ...item,
+      output: formatOutfitOutputForReferences(
+        item.output,
+        buildModuleExternalReferenceText(
+          item.key,
+          moduleOutputs,
+          settings,
+          variablesOutput,
+        ),
+      ),
+    }
+  })
 }
 
 function getReferencedLinkedModuleKeys(
@@ -986,8 +1032,13 @@ export function compilePromptOutput(
   settings: PromptSettings,
   format: PromptOutputFormat = 'modular'
 ) {
-  const moduleOutputs = getOrderedModuleOutputs(modules, outputs)
+  const rawModuleOutputs = getOrderedModuleOutputs(modules, outputs)
   const variablesOutput = getVariablesOutput(outputs)
+  const moduleOutputs = prepareModuleOutputsForPrompt(
+    rawModuleOutputs,
+    settings,
+    variablesOutput,
+  )
 
   syncActivePromptSubjectContext(settings)
   syncActiveSystemPromptVariables(settings)
@@ -1020,7 +1071,10 @@ export function compilePromptOutput(
     )
     const layoutBlock = getLayoutNaturalBlock(moduleOutputs)
     const typographyBlock = getTypographyNaturalBlock(moduleOutputs)
-    const protectedBulletBlocks = getProtectedBulletNaturalBlocks(moduleOutputs)
+    const protectedBulletBlocks = getProtectedBulletNaturalBlocks(
+      moduleOutputs,
+      referencedLinkedModuleKeys,
+    )
 
     const optimizedOutput = optimizeNaturalPrompt(
       rawOutput,
