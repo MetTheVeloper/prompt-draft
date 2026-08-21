@@ -11,78 +11,153 @@ function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : ""
 }
 
-function quoteExactText(value: unknown) {
-  return typeof value === "string" && value.trim()
-    ? JSON.stringify(value.trim())
-    : ""
+function isVariableToken(value: string) {
+  return /^\{[^{}]+\}$/.test(value.trim())
+}
+
+function displayContent(value: unknown) {
+  const text = cleanText(value)
+  if (!text) return ""
+  return isVariableToken(text) ? text : JSON.stringify(text)
+}
+
+function naturalJoin(values: string[]) {
+  const items = values.filter(Boolean)
+  if (!items.length) return ""
+  if (items.length === 1) return items[0]
+  if (items.length === 2) return `${items[0]} and ${items[1]}`
+  return `${items.slice(0, -1).join(", ")}, and ${items[items.length - 1]}`
 }
 
 function formatPosition(value: unknown) {
+  if (typeof value === "string") return cleanText(value)
   if (!isRecord(value)) return ""
 
-  const region = cleanText(value.region)
-  if (region) return `position: layout region ${region}`
-
-  const preset = cleanText(value.preset)
-  if (preset) return `position: ${preset}`
-
-  const custom = cleanText(value.custom)
-  if (custom) return `position: ${custom}`
-
-  return ""
+  return (
+    cleanText(value.region) ||
+    cleanText(value.preset) ||
+    cleanText(value.custom)
+  )
 }
 
 function formatGroupLayout(value: unknown) {
+  if (typeof value === "string") return cleanText(value)
   if (!isRecord(value)) return ""
 
-  const parts = [
+  return [
     cleanText(value.direction),
     cleanText(value.writingDirection),
     cleanText(value.alignment),
     cleanText(value.distribution),
-  ].filter(Boolean)
-
-  return parts.length ? `layout: ${parts.join(", ")}` : ""
-}
-
-function formatTextTypography(value: unknown) {
-  if (!isRecord(value)) return ""
-
-  return [
-    cleanText(value.fontStyle),
-    cleanText(value.fontSize),
-    cleanText(value.fontWeight),
   ].filter(Boolean).join(", ")
 }
 
-function formatTextBlock(
+function formatPurposeClause(purpose: string) {
+  if (!purpose) return ""
+
+  if (/^(poster header|poster footer|product information area|event information area|music cover information area|advertising copy area|credits area|main title|subtitle|slogan|artist name|brand name|product name|price|discount|date|time|location|call-to-action text)$/i.test(purpose)) {
+    return `as the ${purpose}`
+  }
+
+  return `as a ${purpose}`
+}
+
+function formatArrangement(contents: string, layout: string) {
+  if (!layout) return `arrange ${contents}`
+
+  const parts = layout.split(",").map((part) => part.trim()).filter(Boolean)
+  const first = parts.shift() || ""
+  let sentence = `arrange ${contents}`
+
+  if (/horizontal row/i.test(first)) {
+    sentence += " horizontally"
+  } else if (/vertical column/i.test(first)) {
+    sentence += " vertically"
+  } else if (first) {
+    sentence += ` in ${first}`
+  }
+
+  parts.forEach((part) => {
+    if (/spacing|placement/i.test(part) && !/^(with|using)\b/i.test(part)) {
+      sentence += `, with ${part}`
+      return
+    }
+
+    if (/writing direction/i.test(part) && !/^using\b/i.test(part)) {
+      sentence += `, using ${part}`
+      return
+    }
+
+    sentence += `, ${part}`
+  })
+
+  return sentence
+}
+
+function getLegacyTypography(value: Record<string, unknown>) {
+  const typography = isRecord(value.typography) ? value.typography : {}
+
+  return {
+    style: cleanText(value.style) || cleanText(typography.fontStyle),
+    size: cleanText(value.size) || cleanText(typography.fontSize),
+    weight: cleanText(value.weight) || cleanText(typography.fontWeight),
+  }
+}
+
+function textReference(
+  value: Record<string, unknown>,
+  options: TypographyNaturalOptions,
+) {
+  const content = displayContent(value.content)
+  if (!content) return ""
+
+  const key = cleanText(value.key)
+  const shouldExposeKey = Boolean(key && options.referencedTextKeys?.has(key))
+  return shouldExposeKey ? `${key} (${content})` : content
+}
+
+function formatTextInstruction(
   value: unknown,
   options: TypographyNaturalOptions,
 ) {
   if (!isRecord(value)) return ""
 
-  const content = quoteExactText(value.content)
-  if (!content) return ""
+  const reference = textReference(value, options)
+  if (!reference) return ""
 
-  const key = cleanText(value.key)
   const purpose = cleanText(value.purpose)
-  const typography = formatTextTypography(value.typography)
   const description = cleanText(value.description)
-  const shouldExposeKey = Boolean(key && options.referencedTextKeys?.has(key))
+  const { style, size, weight } = getLegacyTypography(value)
+  const hasDetail = Boolean(purpose || description || style || size || weight)
+  const key = cleanText(value.key)
+  const exposesKey = Boolean(key && options.referencedTextKeys?.has(key))
 
-  const details = [
-    purpose ? `purpose: ${purpose}` : "",
-    typography ? `typography: ${typography}` : "",
-    description ? `description: ${description}` : "",
-  ].filter(Boolean)
+  if (!hasDetail && !exposesKey) return ""
 
-  const prefix = shouldExposeKey ? `${key}: ` : ""
-  return `  ◦ ${prefix}${content}${details.length ? ` (${details.join("; ")})` : ""}.`
+  const parts: string[] = []
+
+  if (purpose) {
+    parts.push(formatPurposeClause(purpose))
+  }
+
+  const visualParts = [size, style].filter(Boolean)
+  if (visualParts.length) {
+    parts.push(`using ${visualParts.join(" ")}`)
+  }
+
+  if (weight) {
+    parts.push(`with ${weight} weight`)
+  }
+
+  if (description) {
+    parts.push(description)
+  }
+
+  return `• Style ${reference}${parts.length ? ` ${parts.join(", ")}` : ""}.`
 }
 
 function formatGroup(
   value: unknown,
-  index: number,
   options: TypographyNaturalOptions,
 ) {
   if (!isRecord(value)) return [] as string[]
@@ -92,49 +167,59 @@ function formatGroup(
   const position = formatPosition(value.position)
   const layout = formatGroupLayout(value.layout)
   const description = cleanText(value.description)
-  const texts = Array.isArray(value.texts)
-    ? value.texts.map((item) => formatTextBlock(item, options)).filter(Boolean)
-    : []
+  const rawTexts = Array.isArray(value.texts) ? value.texts : []
+  const textRecords = rawTexts.filter(isRecord)
+  const contents = textRecords
+    .map((item) => textReference(item, options))
+    .filter(Boolean)
 
-  if (!texts.length) return [] as string[]
-
-  const details = [
-    purpose ? `purpose: ${purpose}` : "",
-    position,
-    layout,
-    description ? `description: ${description}` : "",
-  ].filter(Boolean)
+  if (!contents.length) return [] as string[]
 
   const shouldExposeKey = Boolean(key && options.referencedGroupKeys?.has(key))
-  const keySuffix = shouldExposeKey ? ` ${key}` : ""
-  const header = `• Group ${index + 1}${keySuffix}${details.length ? ` (${details.join("; ")})` : ""}:`
+  const prefix = shouldExposeKey ? `${key}: ` : ""
+  const positionPrefix = position
+    ? isVariableToken(position)
+      ? `In ${position}, `
+      : `At ${position}, `
+    : ""
+  const purposeClause = formatPurposeClause(purpose)
 
-  return [header, ...texts]
+  let summary = `• ${prefix}${positionPrefix}${formatArrangement(
+    naturalJoin(contents),
+    layout,
+  )}`
+
+  if (purposeClause) {
+    summary += `, ${purposeClause}`
+  }
+
+  summary += "."
+
+  if (description) {
+    summary += ` ${description}.`
+  }
+
+  const textInstructions = textRecords
+    .map((item) => formatTextInstruction(item, options))
+    .filter(Boolean)
+
+  return [summary, ...textInstructions]
 }
 
-function formatRenderRules(value: unknown) {
-  if (!isRecord(value)) return ""
+function formatAccuracy(output: Record<string, unknown>) {
+  const directAccuracy = cleanText(output.textAccuracy)
+  const legacyRules = isRecord(output.renderRules) ? output.renderRules : {}
+  const accuracy = directAccuracy || cleanText(legacyRules.accuracy)
 
-  const accuracy = cleanText(value.accuracy)
-  const renderTextValuesOnly = value.renderTextValuesOnly === true
-  const preserveSpelling = value.preserveSpelling === true
-  const rules: string[] = []
-
-  if (renderTextValuesOnly) {
-    rules.push("render only the listed text values")
+  if (accuracy === "flexible") {
+    return "Keep listed text content recognizable while allowing flexible lettering."
   }
 
-  if (accuracy) {
-    rules.push(`use ${accuracy} text accuracy`)
+  if (accuracy === "readable") {
+    return "Render listed text values clearly and readably."
   }
 
-  if (preserveSpelling) {
-    rules.push("preserve spelling exactly")
-  }
-
-  if (!rules.length) return ""
-
-  return `Typography render rules: ${rules.join("; ")}.`
+  return "Render listed text values exactly as defined."
 }
 
 export function compileTypographyNaturalBlock(
@@ -142,18 +227,13 @@ export function compileTypographyNaturalBlock(
   options: TypographyNaturalOptions = {},
 ) {
   const groups = Array.isArray(output.groups)
-    ? output.groups.flatMap((group, index) => formatGroup(group, index, options))
+    ? output.groups.flatMap((group) => formatGroup(group, options))
     : []
 
   if (!groups.length) return ""
 
   const extraDetails = cleanText(output.extraDetails)
-  const renderRules = formatRenderRules(output.renderRules)
-  const lines = ["Typography:", ...groups]
-
-  if (renderRules) {
-    lines.push("", renderRules)
-  }
+  const lines = ["Typography:", ...groups, "", formatAccuracy(output)]
 
   if (extraDetails) {
     lines.push("", `Additional typography instructions: ${extraDetails}.`)
