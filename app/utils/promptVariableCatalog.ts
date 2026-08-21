@@ -12,10 +12,13 @@ import type {
 } from "../modules/types"
 import type { OutfitItem, OutfitSet } from "../modules/outfit.types"
 import { outfitItemTypeMap } from "../modules/outfit.catalog"
+import type { HairComponent, HairStyle } from "../modules/hair.types"
+import { hairComponentTypeMap } from "../modules/hair.catalog"
 import type { LayoutRegion } from "../modules/layout.types"
 import { normalizeLayoutRegionsState } from "./layoutRegions"
 import { normalizeTypographyGroups } from "./typography"
 import { normalizeOutfitSets } from "./compileOutfit"
+import { normalizeHairStyles } from "./compileHair"
 import {
   getLayoutRegionVariableKey,
   getTypographyGroupVariableKey,
@@ -27,6 +30,12 @@ import {
   getOutfitSetVariableKey,
   getOutfitSetVariableToken,
 } from "./outfitVariables"
+import {
+  getHairComponentVariableKey,
+  getHairComponentVariableToken,
+  getHairStyleVariableKey,
+  getHairStyleVariableToken,
+} from "./hairVariables"
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : ""
@@ -269,6 +278,81 @@ function createOutfitItemVariable(
   }
 }
 
+function createHairStyleVariable(style: HairStyle, index: number): PromptVariable {
+  const key = getHairStyleVariableKey(style)
+  const token = getHairStyleVariableToken(style)
+  const label = cleanText(style.name) || `Hairstyle ${index + 1}`
+
+  return {
+    id: `hair:${style.id}`,
+    key,
+    label,
+    value: serializeValue({
+      id: style.id,
+      semanticKey: style.key,
+      key: token,
+      name: label,
+      targets: style.targets.map((target) => target.token || target.value),
+      source: style.source,
+      properties: style.properties,
+      components: style.components.map((component) =>
+        getHairComponentVariableToken(style, component),
+      ),
+    }),
+    description: `Hairstyle: ${label}.`,
+    type: "reference",
+    enabled: true,
+    source: "module",
+    moduleKey: "hair",
+    entityType: "hair_style",
+    entityId: style.id,
+    semanticCapabilities: ["color", "material"],
+  }
+}
+
+function createHairComponentVariable(
+  component: HairComponent,
+  style: HairStyle,
+  styleIndex: number,
+  componentIndex: number,
+): PromptVariable {
+  const key = getHairComponentVariableKey(style, component)
+  const token = getHairComponentVariableToken(style, component)
+  const definition = hairComponentTypeMap.get(component.type)
+  const label =
+    cleanText(component.name) ||
+    cleanText(component.customType) ||
+    definition?.label ||
+    `Hair Component ${componentIndex + 1}`
+  const parentLabel = cleanText(style.name) || `Hairstyle ${styleIndex + 1}`
+
+  return {
+    id: `hair:${style.id}:${component.id}`,
+    key,
+    label,
+    value: serializeValue({
+      id: component.id,
+      semanticKey: component.key,
+      key: token,
+      type: component.type,
+      customType: cleanText(component.customType) || undefined,
+      parent: getHairStyleVariableToken(style),
+      properties: component.properties,
+    }),
+    description: `${label} · ${parentLabel}`,
+    type: "reference",
+    enabled: true,
+    source: "module",
+    moduleKey: "hair",
+    entityType: "hair_component",
+    entityId: component.id,
+    parentId: style.id,
+    semanticCapabilities: definition?.semanticCapabilities?.length
+      ? [...definition.semanticCapabilities]
+      : ["color", "material"],
+  }
+}
+
 function moduleChildren(
   module: PromptKeyModule,
   values: ModuleValues,
@@ -303,6 +387,22 @@ function moduleChildren(
         createOutfitSetVariable(set, setIndex),
         ...set.items.map((item, itemIndex) =>
           createOutfitItemVariable(item, set, setIndex, itemIndex),
+        ),
+      ]
+    })
+  }
+
+  if (module.key === "hair") {
+    return normalizeHairStyles(values.hairStyles).flatMap((style, styleIndex) => {
+      return [
+        createHairStyleVariable(style, styleIndex),
+        ...style.components.map((component, componentIndex) =>
+          createHairComponentVariable(
+            component,
+            style,
+            styleIndex,
+            componentIndex,
+          ),
         ),
       ]
     })
