@@ -4,6 +4,8 @@ import backgroundEn from './locales/background.en'
 import backgroundFa from './locales/background.fa'
 import effectsEn from './locales/effects.en'
 import effectsFa from './locales/effects.fa'
+import hairEn from './locales/hair.en'
+import hairFa from './locales/hair.fa'
 
 export default defineI18nConfig(() => ({
   legacy: false,
@@ -17,6 +19,10 @@ export default defineI18nConfig(() => ({
         ...en.modules,
         background: backgroundEn,
         effects: effectsEn,
+        hair: {
+          ...en.modules.hair,
+          ...hairEn,
+        },
       },
     },
     fa: {
@@ -25,6 +31,10 @@ export default defineI18nConfig(() => ({
         ...fa.modules,
         background: backgroundFa,
         effects: effectsFa,
+        hair: {
+          ...fa.modules.hair,
+          ...hairFa,
+        },
       },
     },
   },
