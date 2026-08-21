@@ -58,12 +58,19 @@ export function normalizeSemanticTargets(value: unknown): SemanticTargetRef[] {
 }
 
 /**
- * Built-in and linked module-output variants share one slot identity. This lets
- * `Outfit` seamlessly become linked `{outfit}` when that module output exists
- * without creating a duplicate semantic target.
+ * Built-in and top-level linked module-output variants share one slot identity.
+ * Child module entities are different: their persisted entityId is their stable
+ * identity while token/key changes remain presentation/reference metadata.
  */
 export function semanticTargetIdentity(target: SemanticTargetRef) {
-  if (target.kind === "builtin" || target.kind === "module_output") {
+  if (target.kind === "builtin") {
+    return `slot:${target.value}`;
+  }
+
+  if (target.kind === "module_output") {
+    if (target.entityId) {
+      return `module_entity:${target.moduleKey || "module"}:${target.entityId}`;
+    }
     return `slot:${target.value}`;
   }
 
