@@ -130,7 +130,7 @@ function removeTextBlock(blockIndex: number) {
         </el-text>
 
         <el-text :size="12" color="normal45">
-          {{ modelValue.texts?.length || 0 }} text block{{ (modelValue.texts?.length || 0) === 1 ? "" : "s" }}
+          {{ t("modules.typography.fields.textGroups.group.list.textCount", { count: modelValue.texts?.length || 0 }) }}
         </el-text>
       </el-flex>
 
@@ -157,7 +157,9 @@ function removeTextBlock(blockIndex: number) {
       </label>
 
       <label v-if="modelValue.groupPurpose === 'custom'" class="text-group-card__field">
-        <span>Custom group purpose</span>
+        <span>
+          {{ t("modules.typography.fields.textGroups.group.controls.customGroupPurpose.label") }}
+        </span>
 
         <el-text-field
           :model-value="modelValue.customGroupPurpose || ''"
