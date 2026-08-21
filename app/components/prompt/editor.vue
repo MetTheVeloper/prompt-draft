@@ -96,6 +96,10 @@ function getModulePanel(module: PromptKeyModule) {
   return ModulesPanelBase;
 }
 
+function getModulePanelExtraProps(module: PromptKeyModule) {
+  return module.key === "outfit" ? { moduleOutputs } : {};
+}
+
 watch(
   [
     () => props.modules,
@@ -182,6 +186,7 @@ watch(
         :is="getModulePanel(module)"
         v-for="module in modules"
         :key="module.key"
+        v-bind="getModulePanelExtraProps(module)"
         :module="module"
         :model-value="moduleValues[module.key]"
         :panel-state="modulePanelStates[module.key]"
