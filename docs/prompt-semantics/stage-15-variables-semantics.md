@@ -1,14 +1,18 @@
-# Stage 15 — User Variables Semantics
+# Stage 15 — User Variables + Variable Blueprints
 
 ## Status
 
-**Implementation in progress.**
+**Semantically closed.**
 
-The semantic contract is stable enough for implementation and representative first-generation Blueprint tests have validated the core idea. The Blueprint editor has now been refactored toward repeatable entity profiles and an open-ended custom variable set. Build verification and user validation of this second Blueprint iteration are still required before closure.
+Stage 15 formalizes user variables as typed semantic handles and adds Variable Blueprints as editor-side recipes for creating ordinary user-variable state.
+
+The implementation was exercised through the real editor, prompt-output inspection, cross-module targeting, profile expansion/indexing tests, and representative real image-generation workflows. The user approved the resulting architecture and behavior for closure.
+
+Blueprint catalog growth, localization polish, release/build verification, or future convenience recipes do not by themselves keep this semantic stage open.
 
 ---
 
-## Original product intent recovered during discovery
+# Original product intent recovered during discovery
 
 Variables exist so the user can create semantic handles that are not already produced naturally by Setup or another module.
 
@@ -21,7 +25,43 @@ Examples:
 {printArtwork} = attached artwork reference image
 ```
 
-User variables are not merely string-substitution conveniences. Their type participates in semantic contracts across the prompt graph.
+The key discovery was that Variables had already become more than string substitution: variable `type` participates in prompt-graph contracts and determines where a handle may be meaningfully consumed or targeted.
+
+The stage therefore preserved the original Variables concept instead of replacing it with a more complicated entity system.
+
+---
+
+# Responsibility contract
+
+Variables owns:
+
+- user-created semantic handles,
+- stable user-variable identity,
+- human semantic keys/tokens,
+- typed value contracts,
+- enable/disable state,
+- manual variable CRUD,
+- Blueprint-driven bulk creation,
+- key validation and collision prevention,
+- reusable profile/template expansion.
+
+Variables does **not** own the domain semantics of modules that later consume those handles.
+
+Examples:
+
+```text
+Variables identifies {anna} as a subject.
+Hair defines Anna's hairstyle.
+Outfit defines Anna's wearable composition.
+Pose defines Anna's body configuration.
+Color Palette assigns colors to eligible semantic targets.
+```
+
+A Blueprint must not become a mini-module. A Person Profile may create a subject handle, reusable name/label and auxiliary reference, but it does not own Hair, Outfit, Pose or Expression state.
+
+---
+
+# Variable types are semantic contracts
 
 Current user-facing types remain intentionally compact:
 
@@ -35,58 +75,32 @@ font
 custom
 ```
 
-No type expansion is currently justified merely to support more Blueprints.
-
----
-
-# Responsibility contract
-
-Variables owns:
-
-- user-created semantic handles,
-- stable user-variable identity,
-- human semantic keys/tokens,
-- typed value contracts,
-- enable/disable state,
-- manual variable creation/editing,
-- Blueprint-driven bulk creation,
-- key validation and collision prevention.
-
-Variables does not own the payload semantics of modules that later consume or target those handles.
-
-Examples:
-
-```text
-Variables identifies {anna} as a subject.
-Hair defines Anna's hairstyle.
-Outfit defines Anna's wearable composition.
-Pose defines Anna's body configuration.
-Color Palette assigns colors to eligible semantic targets.
-```
-
-A Blueprint must not become a mini-module. For example, a Person Profile should not begin owning hairstyle, outfit, pose or expression state merely because those concepts relate to a person.
-
----
-
-# Variable types are semantic contracts
+No type expansion was required merely to support more use cases.
 
 Every variable is semantic, but not every variable type has the same relationship to other modules.
 
 ## Entity / recipient handles
 
-`subject` and `object` may identify concrete semantic entities that selected modules can target directly.
+`subject` and `object` may identify concrete semantic entities.
 
-Subject-scoped modules such as Pose, Expression, Hair and Outfit intentionally accept only subject recipients.
+Subject-scoped modules such as:
 
-Color / Material use their own broader target policies and currently admit compatible user subject/object handles.
+```text
+Pose
+Expression
+Hair
+Outfit
+```
+
+intentionally accept subject recipients.
+
+Color Palette and Texture / Material retain their own broader target policies and may accept compatible subject/object variables.
 
 ## Value / input handles
 
-Types such as `text`, `color`, `font` and `reference` remain semantic even when they are not assignment recipients.
+`text`, `color`, `font` and `reference` remain semantic even when they are not assignment recipients.
 
-A semantic variable may therefore be useful as an input/reference without becoming a valid target.
-
-The rule is:
+Canonical rule:
 
 > Semantic variable does not imply assignment target.
 
@@ -96,7 +110,7 @@ Target policy remains a consumer-module decision.
 
 # Auxiliary-reference precedent
 
-A user `reference` variable may represent an external semantic input distinct from the main Setup reference.
+A user `reference` variable may represent an external semantic input distinct from Setup's main reference.
 
 Canonical tested example:
 
@@ -104,27 +118,24 @@ Canonical tested example:
 {printArtwork} = attached artwork reference image
 ```
 
-An Outfit item may then be addressed directly while the reference variable supplies the artwork payload:
+The exact Outfit item can then be addressed directly while the user variable provides the image payload:
 
 ```text
 Print {printArtwork} on {outfit_set1_tShirt} as a {printMethod} on the {printPlacement}.
 ```
 
-The T-shirt remains an Outfit item entity. A duplicate user `object` variable is not required merely to make that garment addressable.
-
-Optional supporting handles remain ordinary text variables:
+Supporting values remain normal typed variables:
 
 ```text
 {printPlacement} = front center of the t-shirt
 {printMethod} = natural DTF garment print
-{printScale} = large chest print
 ```
 
-This demonstrates why a new `image`, `material` or `print` variable type is not currently required.
+This validated that a new `image`, `print` or `material` variable type was unnecessary.
 
-The real-image tests also established a useful authoring precedent:
+It also established an authoring rule:
 
-> Localized operations such as printing, embroidery, patches, labels or artwork placement should address the exact module entity when available rather than a broad parent module token.
+> Localized operations should target the exact semantic module entity when available rather than a broad parent token.
 
 ---
 
@@ -132,13 +143,13 @@ The real-image tests also established a useful authoring precedent:
 
 ## Core rule
 
-A Variable Blueprint is an editor recipe for creating ordinary `PromptVariable[]` state.
+A Variable Blueprint is an **editor recipe** that creates ordinary `PromptVariable[]` state.
 
-It is **not** a new prompt-graph entity and must never compile into prompt output by itself.
+It is not a prompt-graph entity and has no independent compiled representation.
 
-After applying a Blueprint, created variables become fully ordinary editable user variables. The user may rename, edit, duplicate, disable or delete them without preserving any hidden dependency on the source Blueprint.
+After creation, the resulting variables are ordinary editable user variables. They may be renamed, edited, duplicated, disabled or deleted without preserving hidden coupling to the originating Blueprint.
 
-This follows the project-wide precedent:
+Canonical rule:
 
 > Recipes create editable state; recipes do not own that state afterward.
 
@@ -146,56 +157,66 @@ This follows the project-wide precedent:
 
 # Blueprint engine
 
-The engine now supports three useful structures.
+The final engine supports three complementary structures.
 
-## 1. Static slots
+## 1. Static recipes
 
-Used for known content recipes such as Poster Content, Business Card and Garment Print.
+Used for known reusable sets such as:
 
-A slot defines an initial:
+```text
+Poster Content
+Business Card
+Garment Print
+```
+
+Slots may define:
 
 ```text
 key
 type
-value
+initial value
 description
 optional state
 ```
 
-The resulting variable is still an ordinary `PromptVariable` after creation.
+## 2. Repeatable entity-profile templates
 
-## 2. Repeatable profile groups
+Profiles are intentionally small semantic bundles for common addressable entities.
 
-A repeatable group creates a coherent set of related variable slots per entity instance.
-
-Canonical Person Profile shape:
+Current profile starters include:
 
 ```text
-Person 1
-├── {person1}          subject
-├── {person1Name}      text      optional
-└── {person1Reference} reference optional
-
-Person 2
-├── {person2}          subject
-├── {person2Name}      text      optional
-└── {person2Reference} reference optional
+Person Profile
+Animal Profile
+Building Profile
+Product Profile
+Vehicle Profile
+Subject Set
 ```
 
-The user chooses the number of complete profiles, not the number of unrelated rows.
+Person and Animal primary handles use `subject`.
+Building, Product and Vehicle primary handles use `object`.
 
-Group indexing is allocated coherently. If one candidate profile index would collide with an existing user/system/module key, the engine skips that index for the entire profile rather than allowing mixed numbering across its slots.
+A richer profile remains minimal:
+
+```text
+primary semantic entity
+optional reusable name/label
+optional auxiliary reference
+```
+
+Module-owned properties remain outside the Profile.
 
 ## 3. Dynamic Custom Variable Set
 
-The Custom Variable Set is the escape hatch for unforeseen prompt structures.
+The Custom Variable Set is the escape hatch for unforeseen structures.
 
 It supports:
 
-- adding/removing arbitrary variable rows,
-- editing every key,
-- entering initial values,
-- choosing the type of each row independently from the existing Variables type catalog.
+- adding/removing rows,
+- editing keys,
+- editing initial values,
+- selecting each row's semantic type independently.
 
 Example:
 
@@ -208,143 +229,144 @@ Example:
 {brandFont}   font
 ```
 
-The Custom Variable Set does not introduce a separate variable schema. It creates the same ordinary `PromptVariable[]` state as every other Blueprint.
+It still produces ordinary `PromptVariable[]` state and does not introduce a parallel schema.
 
 ---
 
-# Profile Blueprint policy
+# Profile pattern expansion
 
-Profiles are intentionally limited to common reusable semantic entities rather than attempting to predict every possible use case.
+The first repeatable implementation rendered multiple independent copies of a profile editor. Real editor testing showed that this was unnecessarily verbose and made user-edited patterns difficult to propagate coherently.
 
-Current profile starters:
+The final model uses **one editable template + count-based expansion at Create time**.
 
-```text
-Person Profile
-Animal Profile
-Building Profile
-Product Profile
-Vehicle Profile
-Subject Set
-```
+For a profile count greater than one:
 
-Person and Animal primary handles use `subject` because they may legitimately participate in subject-scoped semantic assignments.
+- every enabled key pattern must contain exactly one `#`,
+- `#` marks the semantic index insertion point,
+- a value pattern may contain zero or one `#`,
+- a value without `#` is reused unchanged,
+- a value with `#` receives the same profile index,
+- nested variable references in values are preserved.
 
-Building, Product and Vehicle primary handles currently use `object`, avoiding accidental exposure as recipients for subject-specific Hair/Outfit/Pose/Expression behavior.
-
-Each richer entity profile remains deliberately minimal:
+Example template:
 
 ```text
-primary semantic entity
-optional reusable name/label
-optional auxiliary reference
+Key:   person#
+Value: #th person in {reference}
+
+Key:   person#Name
+Value: ai-random-generated name suitable for {person#} personality
 ```
 
-Module-owned properties must remain in their owning modules.
+With count `3`, this expands to:
+
+```text
+{person1} = 1th person in {reference}
+{person1Name} = "ai-random-generated name suitable for {person1} personality"
+{person2} = 2th person in {reference}
+{person2Name} = "ai-random-generated name suitable for {person2} personality"
+{person3} = 3th person in {reference}
+{person3Name} = "ai-random-generated name suitable for {person3} personality"
+```
+
+This pattern dramatically reduces repeated editing while preserving explicit final variables.
 
 ---
 
-# Content and utility recipes
+# Coherent profile indexing
 
-Existing useful recipes remain available on the same Blueprint engine.
+Profile indexing is allocated as a **group-level identity decision** rather than independently uniquifying each generated key.
 
-## Poster Content
-
-Provides reusable handles such as brand name, headline, subheadline, product, price, discount, call-to-action and reusable colors.
-
-## Business Card
-
-Provides common identity/contact handles such as person name, role, company, phone, email, website, address, brand color and brand font.
-
-## Garment Print
-
-Provides the tested auxiliary-reference pattern:
+If an existing profile already occupies:
 
 ```text
-{printArtwork}   reference
-{printPlacement} text
-{printMethod}    text
-{printScale}     text
+person1
+person1Name
+person2
+person2Name
 ```
 
-## Custom Variable Set
+then another Person Profile operation continues from the next coherent index rather than generating suffixes such as `_2` or mixing profile numbers.
 
-Provides fully user-defined key/type/value rows for cases that no starter recipe predicts.
+Candidate profile indices are checked against the whole profile pattern, including optional slots, so one pre-existing member can reserve that profile index even when the corresponding optional slot is disabled in the new operation.
+
+Canonical rule:
+
+> A repeated semantic profile owns one coherent index across all of its generated handles.
 
 ---
 
-# Blueprint configuration behavior
+# Human semantic key casing
 
-Before creation, the user may configure Blueprint state:
+Stage 15 exposed an important implementation distinction between **stored/display semantic keys** and **comparison identity**.
 
-- choose repeat count for profile groups,
-- enable optional profile/static slots,
-- edit generated keys,
-- enter initial values,
-- add/remove Custom Variable Set rows,
-- edit the semantic type of Custom Variable Set rows.
+User-facing semantic keys preserve valid lowerCamelCase:
 
-Profile-owned slot types remain fixed by default because those types are part of the profile recipe's semantic contract. The custom set intentionally exposes type editing.
+```text
+person1Name
+callToAction
+printArtwork
+```
 
-Creation remains collision-safe against:
+They must not be destructively lowercased during normalization or serialization.
 
-- existing user variables,
-- active system variables,
-- active module variables,
-- reserved structural namespaces,
-- sibling variables being created in the same Blueprint operation.
+Collision detection remains case-insensitive, so keys that differ only by case are treated as the same logical namespace entry.
 
-Generated variables receive ordinary stable user-variable IDs when added to module state.
+Canonical rule:
+
+> Preserve human semantic casing; normalize separately for comparison identity.
 
 ---
 
 # Compiler strategy
 
-No Blueprint compiler is introduced.
+No Blueprint compiler exists.
 
-Variables continue to compile ordinary enabled user variables through the existing Variables pipeline.
+Variables continue to compile ordinary enabled user-variable definitions through the existing Variables pipeline.
 
-Blueprint identity, category, labels, group counts and editor configuration metadata must not appear in prompt output.
+Blueprint identity, category, profile count, templates and editor metadata never appear in prompt output.
+
+Text variables retain their existing quoted-value behavior; other types retain ordinary variable serialization.
 
 ---
 
 # Natural strategy
 
-Natural output must preserve the same user-variable prompt graph used by Modular output.
+Natural output must preserve the same reusable variable graph used by Modular output.
 
-If a user variable is referenced elsewhere, its definition must remain available rather than being flattened into duplicated prose.
+If a variable is referenced elsewhere, its definition must remain available rather than being flattened into duplicated prose.
 
-Blueprints have no Natural representation because they are editor recipes rather than prompt semantics.
-
----
-
-# Target policy
-
-Variable type does not automatically determine universal targetability.
-
-Consumer modules retain their own recipient policy:
-
-```text
-Pose / Expression / Hair / Outfit → subject recipients
-Color / Material                  → their own capability/target policy
-```
-
-Adding a variable type in the future must not automatically make it targetable.
-
-A new type is justified only when it creates a real semantic contract difference such as distinct validation, picker behavior, consumer compatibility or serialization behavior.
+Blueprints themselves have no Natural representation because they are editor recipes, not prompt semantics.
 
 ---
 
-# Validation evidence so far
+# Validation and warning UX
 
-## Poster Blueprint test
+Variables validation distinguishes real blocking defects from normal prompt-authoring incompleteness.
 
-A real poster-generation prompt used Blueprint-generated handles for brand name, headline, subheadline, product, price, call-to-action and address. Those variables were consumed inside structured Typography groups bound to Layout regions.
+Examples of real errors include invalid/reserved/duplicate keys or otherwise invalid variable state.
 
-The generated poster preserved the major requested text hierarchy and demonstrated that Blueprint-created text/object handles can participate naturally in structured Typography/Layout prompt graphs.
+Unused-variable warnings are common during progressive prompt construction and are not semantic errors.
 
-## Garment Print tests
+The output UI therefore keeps errors immediately visible while warnings are grouped under a collapsible summary.
 
-Multiple image-to-image tests used:
+Canonical UX rule:
+
+> Blocking semantic errors should remain immediately visible; numerous non-blocking authoring warnings may be collapsed without weakening validation.
+
+---
+
+# Validation evidence
+
+## Poster workflow
+
+Blueprint-created handles such as brand name, headline, subheadline, product, price, call-to-action and address were consumed by structured Typography groups bound to Layout regions.
+
+A real generated poster preserved the major content hierarchy and validated that user Blueprint handles can participate naturally in Layout/Typography prompt graphs.
+
+## Garment Print workflows
+
+Multiple image-to-image prompts used:
 
 ```text
 {printArtwork}
@@ -352,59 +374,125 @@ Multiple image-to-image tests used:
 {printMethod}
 ```
 
-alongside a referenced person, subject-scoped Pose/Expression, hierarchical Outfit items and item-level Color Palette targets.
+alongside referenced subjects, Pose/Expression assignments, hierarchical Outfit items, Color Palette targets, Background, Lighting, Camera and Effects.
 
-The generated results successfully:
+The resulting images successfully demonstrated:
 
-- replaced the referenced outfit,
-- preserved recognizable subject identity,
-- applied the supplied auxiliary artwork as a garment print,
-- responded more precisely when the exact T-shirt entity token was targeted,
-- combined the print operation with Pose, Expression, Background, Lighting, Camera and Effects without collapsing module ownership.
+- recognizable reference identity,
+- outfit replacement,
+- artwork application to the intended T-shirt,
+- improved precision from item-level Outfit targeting,
+- compatibility between Variables and multiple independently owned semantic modules.
 
-These tests validate the fundamental Blueprint/value-reference concept. They do **not** by themselves close the second-generation profile/custom-set editor implementation.
+## Profile-template workflow
+
+The final Person Profile editor was tested with multiple profile counts and user-edited key/value patterns.
+
+A three-profile template correctly produced:
+
+```text
+{person1}
+{person1Name}
+{person2}
+{person2Name}
+{person3}
+{person3Name}
+```
+
+with value patterns expanded using matching indices and nested references such as `{person2}` preserved correctly.
+
+The editor/list/output path also confirmed that lowerCamelCase keys remain intact after creation/editing rather than being destructively lowercased.
+
+## Broader integration
+
+Earlier real-image and editor tests already confirmed that generated subject/object/reference variables interact correctly with the existing recipient/target infrastructure rather than creating a separate graph system.
+
+The user accepted Stage 15 after the final profile expansion, casing and warning-UX fixes.
 
 ---
 
 # Implementation checkpoint
 
-Implemented on `refactor/prompt-semantics`:
+Implemented on `refactor/prompt-semantics` across the existing Variables pipeline and the new Blueprint surfaces, including:
 
-- `app/modules/variables.blueprints.ts`
-- `app/components/modules/variables/VariableBlueprintModal.vue`
-- Blueprint integration in `app/components/modules/variables/VariablesField.vue`
+```text
+app/modules/variables.blueprints.ts
+app/components/modules/variables/VariableBlueprintModal.vue
+app/components/modules/variables/VariablesField.vue
+app/utils/promptVariables.ts
+app/components/prompt/output-preview.vue
+```
 
-Current editor architecture includes:
+The final architecture includes:
 
+- ordinary manual Variables CRUD,
+- typed semantic handles,
 - categorized Blueprint discovery,
 - static recipes,
-- repeatable coherent profile groups,
-- collision-aware group indexing,
+- entity Profile templates,
+- `#`-based indexed key/value expansion,
+- coherent collision-aware profile indexing,
 - optional profile slots,
 - dynamic Custom Variable Set rows,
-- per-row type editing for custom sets,
-- ordinary user-variable output with no persistent Blueprint coupling.
+- per-row type editing for Custom Variable Set,
+- lowerCamelCase-preserving semantic keys,
+- collapsed non-blocking warning presentation,
+- no persistent Blueprint coupling in prompt state.
 
 ---
 
-# Validation still required
+# Non-semantic follow-up
 
-Before Stage 15 can close:
+The following work may still be performed as normal engineering/release maintenance without reopening Stage 15:
 
-1. Run a successful project build/generate check.
-2. Test manual variable creation/editing for regressions.
-3. Test each entity Profile Blueprint in the editor.
-4. Verify profile counts create coherent group numbering.
-5. Verify existing-key collisions skip/flag complete profile indices safely.
-6. Verify optional profile slots and initial values.
-7. Test Custom Variable Set add/remove behavior and per-row type switching.
-8. Verify generated `subject` variables appear correctly in Pose/Expression/Hair/Outfit recipient pickers.
-9. Verify generated `subject`/`object` variables remain compatible with Color/Material target policy.
-10. Verify `reference` variables remain semantic inputs without incorrectly appearing as assignment recipients.
-11. Verify Modular and Natural output preserve definitions and references.
-12. Apply translation/localization coverage for the Blueprint UI.
-13. Obtain user approval before marking Stage 15 semantically closed.
+- additional Blueprint/Profile catalog entries,
+- translation/localization polish,
+- cosmetic editor refinements,
+- release/build/generate verification in the target deployment environment,
+- additional warning presentation improvements,
+- documentation examples.
 
-## Build note
+These do not change the accepted semantic contract.
 
-A previous local build attempt from the assistant execution container could not start because that environment could not resolve `github.com` while cloning the repository. This is an environment/network limitation and is not build evidence. A real project build remains pending.
+---
+
+# Reusable lessons established by Stage 15
+
+1. **Variables are semantic handles, not mere string placeholders.** Type participates in cross-module contracts.
+2. **Semantic does not mean universally targetable.** Recipient policy belongs to the consuming module.
+3. **Auxiliary references can remain normal typed variables.** A new variable type is unnecessary when the semantic difference is already represented by existing types and consumer context.
+4. **Blueprints should create ordinary state and then disappear.** Do not make recipe identity part of the prompt graph.
+5. **Profile recipes should remain small.** Do not turn entity profiles into mini-modules that steal domain ownership.
+6. **Repeat one editable template, not the editor UI.** Count-based template expansion is more reusable and easier to customize than rendering many near-identical forms.
+7. **An explicit index marker is useful for user-editable repeat patterns.** A single `#` cleanly identifies index placement in keys and optionally values.
+8. **Repeated semantic groups need coherent index allocation.** Resolve collisions at the whole-profile level rather than uniquifying each key independently.
+9. **Human semantic casing and comparison identity are separate concerns.** Preserve lowerCamelCase while comparing keys case-insensitively.
+10. **Non-blocking warning volume is a UX concern, not a semantic failure.** Keep errors prominent while allowing repetitive warnings to collapse.
+11. **The best proof of a variable system is composition.** Variables should work naturally inside Typography, Outfit, Color, Pose/Expression and other independently owned semantics rather than requiring special-case compilers.
+
+---
+
+# Closure rule
+
+Do not reopen Variables / Variable Blueprints for:
+
+- ordinary requests for additional Profile or content recipes,
+- minor Blueprint wording preferences,
+- cosmetic modal/layout changes,
+- localization polish,
+- release-environment build chores,
+- ordinary image-model variance,
+- warnings caused simply by variables not yet being used during prompt construction.
+
+Reopen only when later evidence reveals:
+
+- a concrete variable ownership/type-contract defect,
+- broken variable definition/reference preservation,
+- incorrect target/recipient exposure,
+- reproducible key collision or profile-index corruption,
+- destructive semantic-key normalization,
+- Blueprint metadata leaking into prompt semantics,
+- Natural/Modular prompt-graph loss,
+- or another real semantic failure that cannot be represented by the accepted contract.
+
+With those exceptions, **Stage 15 — User Variables + Variable Blueprints is closed.**
