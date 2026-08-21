@@ -14,7 +14,11 @@ import {
   outfitPresetRecipes,
 } from "~/modules/outfit.catalog";
 import { normalizeOutfitSets } from "~/utils/compileOutfit";
-import { getOutfitSetVariableToken } from "~/utils/outfitVariables";
+import {
+  createUniqueOutfitEntityKey,
+  getOutfitSetVariableToken,
+  normalizeOutfitEntityKey,
+} from "~/utils/outfitVariables";
 import { semanticScopeSummary } from "~/utils/semanticTargets";
 import { useSubjectAssignmentTargets } from "~/composables/prompt/useSubjectAssignmentTargets";
 import OutfitItemCard from "./OutfitItemCard.vue";
@@ -58,8 +62,10 @@ function createId(prefix: string) {
 function normalizeUiSet(value: OutfitSet, index: number): OutfitSet {
   const normalized = normalizeOutfitSets([value])[0];
   if (normalized) return normalized;
+
   return {
     id: value?.id || `outfit-set-${index + 1}`,
+    key: normalizeOutfitEntityKey(value?.key || value?.name || `set${index + 1}`, `set${index + 1}`),
     name: value?.name || "",
     presetId: value?.presetId,
     targets: Array.isArray(value?.targets) ? cloneValue(value.targets) : [],
@@ -77,10 +83,11 @@ watch(
   [() => props.modelValue, targetCatalog.availableOptions],
   () => {
     const source = Array.isArray(props.modelValue) ? props.modelValue : [];
-    const normalized = source.map(normalizeUiSet).map((set) => ({
+    const normalized = normalizeOutfitSets(source).map((set) => ({
       ...set,
       targets: targetCatalog.upgradeTargets(set.targets),
     }));
+
     if (JSON.stringify(source) !== JSON.stringify(normalized)) {
       emit("update:modelValue", normalized);
     }
@@ -98,9 +105,15 @@ function defaultTargets(): SemanticTargetRef[] {
 }
 
 function createEmptySet(): OutfitSet {
+  const index = sets.value.length + 1;
   return {
     id: createId("outfit-set"),
-    name: `Outfit Set ${sets.value.length + 1}`,
+    key: createUniqueOutfitEntityKey(
+      `set${index}`,
+      sets.value.map((set) => set.key),
+      "set",
+    ),
+    name: `Outfit Set ${index}`,
     targets: defaultTargets(),
     items: [],
     relations: [],
@@ -126,15 +139,22 @@ function removeSet(index: number) {
 function duplicateSet(index: number) {
   const source = sets.value[index];
   if (!source) return;
+
   const itemIdMap = new Map<string, string>();
   const items = source.items.map((item) => {
     const id = createId("outfit-item");
     itemIdMap.set(item.id, id);
     return { ...cloneValue(item), id };
   });
+
   const duplicate: OutfitSet = {
     ...cloneValue(source),
     id: createId("outfit-set"),
+    key: createUniqueOutfitEntityKey(
+      `${source.key}Copy`,
+      sets.value.map((set) => set.key),
+      "set",
+    ),
     name: `${source.name || "Outfit Set"} Copy`,
     presetId: undefined,
     items,
@@ -145,6 +165,7 @@ function duplicateSet(index: number) {
       targetItemId: itemIdMap.get(relation.targetItemId) || relation.targetItemId,
     })),
   };
+
   setSets([...sets.value, duplicate]);
 }
 
@@ -157,6 +178,17 @@ function updateSet(index: number, patch: Partial<OutfitSet>, detachPreset = fals
       ...(detachPreset ? { presetId: undefined } : {}),
     };
   }));
+}
+
+function updateSetKey(index: number, value: unknown) {
+  const set = sets.value[index];
+  if (!set) return;
+  const key = createUniqueOutfitEntityKey(
+    String(value ?? ""),
+    sets.value.filter((_, itemIndex) => itemIndex !== index).map((item) => item.key),
+    set.key || `set${index + 1}`,
+  );
+  updateSet(index, { key });
 }
 
 function isExpanded(set: OutfitSet) {
@@ -238,10 +270,16 @@ const itemPickerItems = computed(() => [
   },
 ]);
 
-function createItemFromChoice(choice: string): OutfitItem | null {
+function createItemFromChoice(
+  choice: string,
+  existingKeys: Set<string>,
+): OutfitItem | null {
   if (choice === "custom") {
+    const key = createUniqueOutfitEntityKey("customWearable", existingKeys, "item");
+    existingKeys.add(key);
     return {
       id: createId("outfit-item"),
+      key,
       name: "Custom Wearable",
       type: "custom",
       customType: "",
@@ -255,8 +293,15 @@ function createItemFromChoice(choice: string): OutfitItem | null {
   if (choice.startsWith("starter:")) {
     const starter = outfitItemStarterMap.get(choice.slice("starter:".length));
     if (!starter) return null;
+    const key = createUniqueOutfitEntityKey(
+      starter.item.customType || starter.item.type || starter.label,
+      existingKeys,
+      "item",
+    );
+    existingKeys.add(key);
     return {
       id: createId("outfit-item"),
+      key,
       name: starter.label,
       type: starter.item.type,
       customType: starter.item.customType,
@@ -271,8 +316,11 @@ function createItemFromChoice(choice: string): OutfitItem | null {
     const type = choice.slice("type:".length);
     const definition = outfitItemTypeMap.get(type);
     if (!definition) return null;
+    const key = createUniqueOutfitEntityKey(type, existingKeys, "item");
+    existingKeys.add(key);
     return {
       id: createId("outfit-item"),
+      key,
       name: definition.label,
       type,
       source: { mode: "defined" },
@@ -289,7 +337,12 @@ function addSelectedItems(index: number) {
   if (!set) return;
   const choices = pendingItemChoices[set.id] || [];
   if (!choices.length) return;
-  const items = choices.map(createItemFromChoice).filter((item): item is OutfitItem => Boolean(item));
+
+  const existingKeys = new Set(set.items.map((item) => item.key));
+  const items = choices
+    .map((choice) => createItemFromChoice(choice, existingKeys))
+    .filter((item): item is OutfitItem => Boolean(item));
+
   if (items.length) updateSet(index, { items: [...set.items, ...items] }, true);
   pendingItemChoices[set.id] = [];
 }
@@ -301,8 +354,19 @@ function updatePendingItems(setId: string, values: ElDropdownValue[]) {
 function updateItem(setIndex: number, itemIndex: number, item: OutfitItem) {
   const set = sets.value[setIndex];
   if (!set) return;
+
+  const key = createUniqueOutfitEntityKey(
+    item.key || item.name || item.type,
+    set.items
+      .filter((_, index) => index !== itemIndex)
+      .map((candidate) => candidate.key),
+    `item${itemIndex + 1}`,
+  );
+
   updateSet(setIndex, {
-    items: set.items.map((current, index) => index === itemIndex ? cloneValue(item) : current),
+    items: set.items.map((current, index) =>
+      index === itemIndex ? { ...cloneValue(item), key } : current,
+    ),
   }, true);
 }
 
@@ -322,9 +386,15 @@ function duplicateItem(setIndex: number, itemIndex: number) {
   const set = sets.value[setIndex];
   const item = set?.items[itemIndex];
   if (!set || !item) return;
+
   const duplicate: OutfitItem = {
     ...cloneValue(item),
     id: createId("outfit-item"),
+    key: createUniqueOutfitEntityKey(
+      item.key,
+      set.items.map((candidate) => candidate.key),
+      "item",
+    ),
     name: `${item.name || humanize(item.type)} Copy`,
   };
   updateSet(setIndex, { items: [...set.items, duplicate] }, true);
@@ -346,16 +416,26 @@ function applyPreset(index: number, value: ElDropdownValue) {
     updateSet(index, { presetId: undefined });
     return;
   }
+
   const recipe = outfitPresetRecipes.find((preset) => preset.id === presetId);
   if (!recipe) return;
 
   const keyToId = new Map<string, string>();
-  const items: OutfitItem[] = recipe.items.map((recipeItem) => {
+  const usedItemKeys = new Set<string>();
+  const items: OutfitItem[] = recipe.items.map((recipeItem, itemIndex) => {
     const id = createId("outfit-item");
     keyToId.set(recipeItem.key, id);
     const definition = outfitItemTypeMap.get(recipeItem.type);
+    const key = createUniqueOutfitEntityKey(
+      recipeItem.key || recipeItem.type,
+      usedItemKeys,
+      `item${itemIndex + 1}`,
+    );
+    usedItemKeys.add(key);
+
     return {
       id,
+      key,
       name: definition?.label || humanize(recipeItem.customType || recipeItem.type),
       type: recipeItem.type,
       customType: recipeItem.customType,
@@ -374,9 +454,22 @@ function applyPreset(index: number, value: ElDropdownValue) {
     details: relation.details,
   }));
 
+  const hasDefaultName = /^Outfit Set \d+$/i.test(set.name?.trim() || "");
+  const nextName = hasDefaultName
+    ? recipe.name || `${recipe.label} Set`
+    : set.name?.trim() || recipe.name || recipe.label;
+  const nextKey = hasDefaultName
+    ? createUniqueOutfitEntityKey(
+        nextName,
+        sets.value.filter((_, setIndex) => setIndex !== index).map((candidate) => candidate.key),
+        set.key,
+      )
+    : set.key;
+
   updateSet(index, {
     presetId: recipe.id,
-    name: set.name?.trim() || recipe.name || recipe.label,
+    name: nextName,
+    key: nextKey,
     items,
     relations,
   });
@@ -399,11 +492,18 @@ function applyPreset(index: number, value: ElDropdownValue) {
       </el-flex>
 
       <el-grid v-if="isExpanded(set)" :gap="12" class="w100">
-        <el-grid :cols="mobile ? 1 : 2" :gap="10">
+        <el-grid :cols="mobile ? 1 : 3" :gap="10">
           <el-grid :gap="4">
             <el-text :size="10" :weight="500">Set name</el-text>
             <el-text-field :model-value="set.name" type="text" placeholder="Outfit set name" @update:model-value="updateSet(setIndex, { name: String($event ?? '') })" />
           </el-grid>
+
+          <el-grid :gap="4">
+            <el-text :size="10" :weight="500">Semantic key</el-text>
+            <el-text-field :model-value="set.key" type="text" placeholder="eveningSet" @update:model-value="updateSetKey(setIndex, $event)" />
+            <el-text :size="8" color="normal40">lowerCamelCase · auto-unique</el-text>
+          </el-grid>
+
           <el-grid :gap="4">
             <el-text :size="10" :weight="500">Starter preset</el-text>
             <el-dropdown :model-value="set.presetId || ''" :items="presetItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" clearable placeholder="No preset" @update:model-value="applyPreset(setIndex, $event)" />
@@ -427,8 +527,17 @@ function applyPreset(index: number, value: ElDropdownValue) {
         </el-grid>
 
         <el-grid v-if="set.items.length" :gap="8" class="w100">
-          <OutfitItemCard v-for="(item, itemIndex) in set.items" :key="item.id" :item="item" @update:item="updateItem(setIndex, itemIndex, $event)" @remove="removeItem(setIndex, itemIndex)" @duplicate="duplicateItem(setIndex, itemIndex)" />
+          <OutfitItemCard
+            v-for="(item, itemIndex) in set.items"
+            :key="item.id"
+            :item="item"
+            :set-key="set.key"
+            @update:item="updateItem(setIndex, itemIndex, $event)"
+            @remove="removeItem(setIndex, itemIndex)"
+            @duplicate="duplicateItem(setIndex, itemIndex)"
+          />
         </el-grid>
+
         <el-flex v-else rules="ccs" :p="12" :radius="12" :br="1" bc="orange15">
           <el-text :size="11" color="orange" icon="info" icon-color="orange">This set has no wearable items yet.</el-text>
         </el-flex>
