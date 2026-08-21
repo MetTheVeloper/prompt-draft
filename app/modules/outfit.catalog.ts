@@ -1,0 +1,1202 @@
+import type { ModuleFieldOption } from "./types";
+import type {
+  OutfitItemStarter,
+  OutfitItemTypeDefinition,
+  OutfitPresetRecipe,
+  OutfitPropertyDefinition,
+  OutfitPropertyProfile,
+  OutfitPropertyState,
+} from "./outfit.types";
+
+function option(value: string, promptText: string, tags: string[] = []): ModuleFieldOption {
+  return { value, promptText, tags };
+}
+
+export function inheritProperty(): OutfitPropertyState {
+  return { mode: "inherit" };
+}
+
+export function optionProperty(value: string | string[]): OutfitPropertyState {
+  return { mode: "option", value };
+}
+
+export function customProperty(value: string): OutfitPropertyState {
+  return { mode: "custom", value };
+}
+
+export const outfitPropertyDefinitions: Record<string, OutfitPropertyDefinition> = {
+  fit: {
+    id: "fit",
+    label: "Fit",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 10,
+    options: [
+      option("fitted", "fitted"),
+      option("slim", "slim-fit"),
+      option("regular", "regular-fit"),
+      option("relaxed", "relaxed-fit"),
+      option("loose", "loose-fit"),
+      option("oversized", "oversized"),
+      option("tailored", "tailored"),
+      option("boxy", "boxy"),
+      option("body_hugging", "body-hugging"),
+    ],
+  },
+
+  length: {
+    id: "length",
+    label: "Length",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 20,
+    optionSets: {
+      upper: [
+        option("cropped", "cropped"),
+        option("waist", "waist-length"),
+        option("hip", "hip-length"),
+        option("longline", "longline"),
+        option("tunic", "tunic-length"),
+      ],
+      skirt: [
+        option("micro", "micro-length"),
+        option("mini", "mini"),
+        option("above_knee", "above-knee"),
+        option("knee", "knee-length"),
+        option("midi", "midi-length"),
+        option("maxi", "maxi-length"),
+        option("floor", "floor-length"),
+      ],
+      trouser: [
+        option("short", "short-length"),
+        option("bermuda", "Bermuda-length"),
+        option("cropped", "cropped"),
+        option("ankle", "ankle-length"),
+        option("full", "full-length"),
+        option("floor", "floor-length"),
+      ],
+      dress: [
+        option("mini", "mini-length"),
+        option("above_knee", "above-knee"),
+        option("knee", "knee-length"),
+        option("midi", "midi-length"),
+        option("maxi", "maxi-length"),
+        option("floor", "floor-length"),
+      ],
+      outerwear: [
+        option("cropped", "cropped"),
+        option("waist", "waist-length"),
+        option("hip", "hip-length"),
+        option("mid_thigh", "mid-thigh-length"),
+        option("knee", "knee-length"),
+        option("mid_calf", "mid-calf-length"),
+        option("full", "full-length"),
+      ],
+    },
+  },
+
+  silhouette: {
+    id: "silhouette",
+    label: "Silhouette",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 30,
+    optionSets: {
+      upper: [
+        option("straight", "straight-silhouette"),
+        option("boxy", "boxy-silhouette"),
+        option("tapered", "tapered-silhouette"),
+        option("flared", "flared-silhouette"),
+        option("peplum", "peplum-silhouette"),
+      ],
+      skirt: [
+        option("pencil", "pencil-silhouette"),
+        option("a_line", "A-line"),
+        option("straight", "straight-silhouette"),
+        option("circle", "circle-silhouette"),
+        option("tulip", "tulip-silhouette"),
+        option("bubble", "bubble-silhouette"),
+        option("mermaid", "mermaid-silhouette"),
+        option("tiered", "tiered-silhouette"),
+        option("wrap", "wrap-silhouette"),
+      ],
+      dress: [
+        option("column", "column-silhouette"),
+        option("sheath", "sheath-silhouette"),
+        option("a_line", "A-line"),
+        option("fit_and_flare", "fit-and-flare"),
+        option("empire", "empire-waist silhouette"),
+        option("ball_gown", "ball-gown silhouette"),
+        option("mermaid", "mermaid-silhouette"),
+        option("tent", "tent-silhouette"),
+        option("shift", "shift-silhouette"),
+        option("wrap", "wrap-silhouette"),
+      ],
+      outerwear: [
+        option("straight", "straight-silhouette"),
+        option("boxy", "boxy-silhouette"),
+        option("tailored", "tailored-silhouette"),
+        option("cocoon", "cocoon-silhouette"),
+        option("trapeze", "trapeze-silhouette"),
+        option("flared", "flared-silhouette"),
+      ],
+    },
+  },
+
+  sleeveLength: {
+    id: "sleeveLength",
+    label: "Sleeve Length",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 40,
+    options: [
+      option("sleeveless", "sleeveless"),
+      option("cap", "cap-sleeve"),
+      option("short", "short-sleeve"),
+      option("elbow", "elbow-length-sleeve"),
+      option("three_quarter", "three-quarter-sleeve"),
+      option("long", "long-sleeve"),
+      option("extra_long", "extra-long-sleeve"),
+    ],
+  },
+
+  sleeveShape: {
+    id: "sleeveShape",
+    label: "Sleeve Shape",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 50,
+    options: [
+      option("fitted", "fitted sleeves"),
+      option("straight", "straight sleeves"),
+      option("raglan", "raglan sleeves"),
+      option("puff", "puff sleeves"),
+      option("balloon", "balloon sleeves"),
+      option("bishop", "bishop sleeves"),
+      option("bell", "bell sleeves"),
+      option("flutter", "flutter sleeves"),
+      option("kimono", "kimono sleeves"),
+      option("batwing", "batwing sleeves"),
+    ],
+  },
+
+  neckline: {
+    id: "neckline",
+    label: "Neckline",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 60,
+    options: [
+      option("crew", "crew-neck"),
+      option("round", "round-neck"),
+      option("v_neck", "V-neck"),
+      option("deep_v", "deep V-neck"),
+      option("scoop", "scoop-neck"),
+      option("square", "square-neck"),
+      option("sweetheart", "sweetheart-neckline"),
+      option("boat", "boat-neck"),
+      option("halter", "halter-neck"),
+      option("off_shoulder", "off-shoulder"),
+      option("one_shoulder", "one-shoulder"),
+      option("high_neck", "high-neck"),
+      option("turtleneck", "turtleneck"),
+      option("mock_neck", "mock-neck"),
+      option("plunging", "plunging-neckline"),
+    ],
+  },
+
+  collar: {
+    id: "collar",
+    label: "Collar",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "collarless",
+    compilePlacement: "modifier",
+    order: 70,
+    options: [
+      option("point", "point collar"),
+      option("spread", "spread collar"),
+      option("button_down", "button-down collar"),
+      option("mandarin", "mandarin collar"),
+      option("peter_pan", "Peter Pan collar"),
+      option("polo", "polo collar"),
+      option("sailor", "sailor collar"),
+      option("shawl", "shawl collar"),
+      option("funnel", "funnel collar"),
+    ],
+  },
+
+  closure: {
+    id: "closure",
+    label: "Closure",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without visible closures",
+    compilePlacement: "detail",
+    order: 80,
+    optionSets: {
+      garment: [
+        option("buttons", "button closure"),
+        option("zipper", "zipper closure"),
+        option("snap", "snap closure"),
+        option("hook_eye", "hook-and-eye closure"),
+        option("lace_up", "lace-up closure"),
+        option("tie", "tie closure"),
+        option("wrap", "wrap closure"),
+        option("drawstring", "drawstring closure"),
+        option("pullover", "pullover construction"),
+        option("single_breasted", "single-breasted closure"),
+        option("double_breasted", "double-breasted closure"),
+      ],
+      footwear: [
+        option("lace_up", "lace-up closure"),
+        option("zipper", "zipper closure"),
+        option("buckle", "buckle closure"),
+        option("strap", "strap closure"),
+        option("multiple_straps", "multiple-strap closure"),
+        option("velcro", "hook-and-loop closure"),
+        option("slip_on", "slip-on construction"),
+      ],
+    },
+  },
+
+  hemShape: {
+    id: "hemShape",
+    label: "Hem Shape",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "detail",
+    order: 90,
+    options: [
+      option("straight", "straight hem"),
+      option("curved", "curved hem"),
+      option("rounded", "rounded hem"),
+      option("asymmetric", "asymmetric hem"),
+      option("high_low", "high-low hem"),
+      option("scalloped", "scalloped hem"),
+      option("split", "split hem"),
+    ],
+  },
+
+  rise: {
+    id: "rise",
+    label: "Rise",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 100,
+    options: [
+      option("low", "low-rise"),
+      option("mid", "mid-rise"),
+      option("high", "high-rise"),
+      option("ultra_high", "ultra-high-rise"),
+    ],
+  },
+
+  legShape: {
+    id: "legShape",
+    label: "Leg Shape",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 110,
+    options: [
+      option("skinny", "skinny-leg"),
+      option("slim", "slim-leg"),
+      option("straight", "straight-leg"),
+      option("tapered", "tapered-leg"),
+      option("bootcut", "bootcut"),
+      option("flared", "flared-leg"),
+      option("wide", "wide-leg"),
+      option("barrel", "barrel-leg"),
+      option("palazzo", "palazzo-leg"),
+    ],
+  },
+
+  waistConstruction: {
+    id: "waistConstruction",
+    label: "Waist Construction",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "detail",
+    order: 120,
+    options: [
+      option("elastic", "elastic waistband"),
+      option("drawstring", "drawstring waist"),
+      option("paperbag", "paperbag waist"),
+      option("gathered", "gathered waist"),
+      option("fitted", "fitted waistband"),
+      option("fold_over", "fold-over waist"),
+      option("corset", "corset-style waist"),
+      option("wrap", "wrap waist"),
+    ],
+  },
+
+  pleating: {
+    id: "pleating",
+    label: "Pleating",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without pleats",
+    compilePlacement: "modifier",
+    order: 130,
+    options: [
+      option("knife", "knife-pleated"),
+      option("box", "box-pleated"),
+      option("accordion", "accordion-pleated"),
+      option("inverted", "inverted-pleated"),
+      option("sunray", "sunray-pleated"),
+    ],
+  },
+
+  slit: {
+    id: "slit",
+    label: "Slit",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without a slit",
+    compilePlacement: "detail",
+    order: 140,
+    options: [
+      option("front", "front slit"),
+      option("back", "back slit"),
+      option("side", "side slit"),
+      option("double_side", "double side slits"),
+      option("high", "high slit"),
+    ],
+  },
+
+  pockets: {
+    id: "pockets",
+    label: "Pockets",
+    nature: "optional",
+    control: "multiSelect",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without pockets",
+    compilePlacement: "detail",
+    order: 150,
+    options: [
+      option("side", "side pockets"),
+      option("patch", "patch pockets"),
+      option("welt", "welt pockets"),
+      option("flap", "flap pockets"),
+      option("cargo", "cargo pockets"),
+      option("kangaroo", "kangaroo pocket"),
+      option("chest", "chest pocket"),
+      option("back", "back pockets"),
+    ],
+  },
+
+  hood: {
+    id: "hood",
+    label: "Hood",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without a hood",
+    compilePlacement: "detail",
+    order: 160,
+    options: [
+      option("fitted", "fitted hood"),
+      option("oversized", "oversized hood"),
+      option("detachable", "detachable hood"),
+    ],
+  },
+
+  lapel: {
+    id: "lapel",
+    label: "Lapel",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "lapel-free",
+    compilePlacement: "detail",
+    order: 170,
+    options: [
+      option("notch", "notch lapels"),
+      option("peak", "peak lapels"),
+      option("shawl", "shawl lapels"),
+      option("wide", "wide lapels"),
+      option("narrow", "narrow lapels"),
+    ],
+  },
+
+  surfacePattern: {
+    id: "surfacePattern",
+    label: "Surface Pattern",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "unpatterned",
+    compilePlacement: "modifier",
+    order: 180,
+    options: [
+      option("striped", "striped"),
+      option("plaid", "plaid"),
+      option("checkered", "checkered"),
+      option("gingham", "gingham-patterned"),
+      option("polka_dot", "polka-dot"),
+      option("houndstooth", "houndstooth-patterned"),
+      option("argyle", "argyle-patterned"),
+      option("chevron", "chevron-patterned"),
+      option("floral", "floral-patterned"),
+      option("geometric", "geometric-patterned"),
+      option("paisley", "paisley-patterned"),
+      option("camouflage", "camouflage-patterned"),
+      option("animal_print", "animal-print"),
+      option("abstract", "abstract-patterned"),
+    ],
+  },
+
+  graphicMotif: {
+    id: "graphicMotif",
+    label: "Graphic / Motif",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without graphics",
+    compilePlacement: "detail",
+    order: 190,
+    options: [
+      option("logo", "logo graphic"),
+      option("emblem", "emblem graphic"),
+      option("text", "text graphic"),
+      option("character", "character graphic"),
+      option("illustration", "illustrated graphic"),
+      option("symbol", "symbol graphic"),
+      option("patch", "patch graphic"),
+    ],
+  },
+
+  embellishments: {
+    id: "embellishments",
+    label: "Embellishments",
+    nature: "optional",
+    control: "multiSelect",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without embellishments",
+    compilePlacement: "detail",
+    order: 200,
+    options: [
+      option("ruffles", "ruffles"),
+      option("frills", "frills"),
+      option("bows", "bows"),
+      option("ribbons", "ribbons"),
+      option("embroidery", "embroidery"),
+      option("sequins", "sequins"),
+      option("beads", "bead embellishments"),
+      option("studs", "stud embellishments"),
+      option("spikes", "spike embellishments"),
+      option("fringe", "fringe"),
+      option("tassels", "tassels"),
+      option("patches", "decorative patches"),
+      option("lace_trim", "lace trim"),
+    ],
+  },
+
+  toeShape: {
+    id: "toeShape",
+    label: "Toe Shape",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 210,
+    options: [
+      option("round", "round-toe"),
+      option("almond", "almond-toe"),
+      option("pointed", "pointed-toe"),
+      option("square", "square-toe"),
+      option("open", "open-toe"),
+      option("peep", "peep-toe"),
+    ],
+  },
+
+  heelHeight: {
+    id: "heelHeight",
+    label: "Heel Height",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 220,
+    options: [
+      option("flat", "flat-heeled"),
+      option("low", "low-heeled"),
+      option("mid", "mid-heeled"),
+      option("high", "high-heeled"),
+      option("very_high", "very-high-heeled"),
+    ],
+  },
+
+  heelShape: {
+    id: "heelShape",
+    label: "Heel Shape",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 230,
+    options: [
+      option("kitten", "kitten-heel"),
+      option("block", "block-heel"),
+      option("stiletto", "stiletto-heel"),
+      option("wedge", "wedge-heel"),
+      option("cone", "cone-heel"),
+      option("spool", "spool-heel"),
+      option("platform", "platform-heel"),
+    ],
+  },
+
+  platform: {
+    id: "platform",
+    label: "Platform",
+    nature: "optional",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    allowAbsent: true,
+    absentPromptText: "without a platform sole",
+    compilePlacement: "modifier",
+    order: 240,
+    options: [
+      option("low", "low-platform"),
+      option("medium", "medium-platform"),
+      option("high", "high-platform"),
+    ],
+  },
+
+  shaftHeight: {
+    id: "shaftHeight",
+    label: "Shaft Height",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 250,
+    options: [
+      option("ankle", "ankle-high"),
+      option("mid_calf", "mid-calf-high"),
+      option("knee", "knee-high"),
+      option("over_knee", "over-the-knee"),
+      option("thigh", "thigh-high"),
+    ],
+  },
+
+  legwearLength: {
+    id: "legwearLength",
+    label: "Legwear Length",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 260,
+    options: [
+      option("no_show", "no-show"),
+      option("ankle", "ankle-length"),
+      option("crew", "crew-length"),
+      option("mid_calf", "mid-calf-length"),
+      option("knee", "knee-high"),
+      option("over_knee", "over-the-knee"),
+      option("thigh", "thigh-high"),
+      option("full", "full-length"),
+    ],
+  },
+
+  accessoryScale: {
+    id: "accessoryScale",
+    label: "Scale",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "modifier",
+    order: 270,
+    options: [
+      option("delicate", "delicate"),
+      option("small", "small"),
+      option("medium", "medium-sized"),
+      option("large", "large"),
+      option("oversized", "oversized"),
+    ],
+  },
+
+  accessoryArrangement: {
+    id: "accessoryArrangement",
+    label: "Arrangement",
+    nature: "intrinsic",
+    control: "select",
+    allowCustom: true,
+    allowReference: true,
+    compilePlacement: "detail",
+    order: 280,
+    options: [
+      option("single", "single"),
+      option("paired", "paired"),
+      option("layered", "layered"),
+      option("stacked", "stacked"),
+      option("clustered", "clustered"),
+    ],
+  },
+};
+
+export const outfitPropertyProfiles: Record<string, OutfitPropertyProfile> = {
+  top_basic: {
+    id: "top_basic",
+    properties: [
+      { propertyId: "fit" },
+      { propertyId: "length", optionSet: "upper" },
+      { propertyId: "silhouette", optionSet: "upper" },
+      { propertyId: "sleeveLength" },
+      { propertyId: "sleeveShape" },
+      { propertyId: "neckline" },
+      { propertyId: "collar" },
+      { propertyId: "closure", optionSet: "garment" },
+      { propertyId: "hemShape" },
+      { propertyId: "pockets" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  bottom_trouser: {
+    id: "bottom_trouser",
+    properties: [
+      { propertyId: "fit" },
+      { propertyId: "length", optionSet: "trouser" },
+      { propertyId: "rise" },
+      { propertyId: "legShape" },
+      { propertyId: "waistConstruction" },
+      { propertyId: "closure", optionSet: "garment" },
+      { propertyId: "pockets" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  bottom_skirt: {
+    id: "bottom_skirt",
+    properties: [
+      { propertyId: "fit" },
+      { propertyId: "length", optionSet: "skirt" },
+      { propertyId: "rise" },
+      { propertyId: "silhouette", optionSet: "skirt" },
+      { propertyId: "waistConstruction" },
+      { propertyId: "closure", optionSet: "garment" },
+      { propertyId: "pleating" },
+      { propertyId: "slit" },
+      { propertyId: "pockets" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  dress: {
+    id: "dress",
+    properties: [
+      { propertyId: "fit" },
+      { propertyId: "length", optionSet: "dress" },
+      { propertyId: "silhouette", optionSet: "dress" },
+      { propertyId: "sleeveLength" },
+      { propertyId: "sleeveShape" },
+      { propertyId: "neckline" },
+      { propertyId: "collar" },
+      { propertyId: "waistConstruction" },
+      { propertyId: "closure", optionSet: "garment" },
+      { propertyId: "slit" },
+      { propertyId: "pockets" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  outerwear: {
+    id: "outerwear",
+    properties: [
+      { propertyId: "fit" },
+      { propertyId: "length", optionSet: "outerwear" },
+      { propertyId: "silhouette", optionSet: "outerwear" },
+      { propertyId: "sleeveLength" },
+      { propertyId: "sleeveShape" },
+      { propertyId: "collar" },
+      { propertyId: "lapel" },
+      { propertyId: "closure", optionSet: "garment" },
+      { propertyId: "hood" },
+      { propertyId: "pockets" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  footwear: {
+    id: "footwear",
+    properties: [
+      { propertyId: "toeShape" },
+      { propertyId: "heelHeight" },
+      { propertyId: "heelShape" },
+      { propertyId: "platform" },
+      { propertyId: "closure", optionSet: "footwear" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  boots: {
+    id: "boots",
+    properties: [
+      { propertyId: "toeShape" },
+      { propertyId: "heelHeight" },
+      { propertyId: "heelShape" },
+      { propertyId: "platform" },
+      { propertyId: "shaftHeight" },
+      { propertyId: "closure", optionSet: "footwear" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  legwear: {
+    id: "legwear",
+    properties: [
+      { propertyId: "legwearLength" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+
+  accessory: {
+    id: "accessory",
+    properties: [
+      { propertyId: "accessoryScale" },
+      { propertyId: "accessoryArrangement" },
+      { propertyId: "surfacePattern" },
+      { propertyId: "graphicMotif" },
+      { propertyId: "embellishments" },
+    ],
+  },
+};
+
+const CAPABILITIES = ["color", "material"] as const;
+
+function wearable(
+  value: string,
+  label: string,
+  category: OutfitItemTypeDefinition["category"],
+  promptText: string,
+  profileId: string | undefined,
+  wearSlots: OutfitItemTypeDefinition["wearSlots"],
+  layerClass: OutfitItemTypeDefinition["layerClass"],
+  tags: string[] = [],
+): OutfitItemTypeDefinition {
+  return {
+    value,
+    label,
+    category,
+    promptText,
+    profileId,
+    wearSlots,
+    layerClass,
+    semanticCapabilities: [...CAPABILITIES],
+    tags,
+  };
+}
+
+export const outfitItemTypes: OutfitItemTypeDefinition[] = [
+  wearable("t_shirt", "T-Shirt", "tops", "T-shirt", "top_basic", ["upper_body"], "base"),
+  wearable("shirt", "Shirt", "tops", "shirt", "top_basic", ["upper_body"], "base"),
+  wearable("blouse", "Blouse", "tops", "blouse", "top_basic", ["upper_body"], "base"),
+  wearable("polo", "Polo", "tops", "polo shirt", "top_basic", ["upper_body"], "base"),
+  wearable("tank_top", "Tank Top", "tops", "tank top", "top_basic", ["upper_body"], "base"),
+  wearable("camisole", "Camisole", "tops", "camisole", "top_basic", ["upper_body"], "under"),
+  wearable("sweater", "Sweater", "tops", "sweater", "top_basic", ["upper_body"], "mid"),
+  wearable("cardigan", "Cardigan", "tops", "cardigan", "top_basic", ["upper_body"], "mid"),
+  wearable("sweatshirt", "Sweatshirt", "tops", "sweatshirt", "top_basic", ["upper_body"], "mid"),
+  wearable("hoodie", "Hoodie", "tops", "hoodie", "top_basic", ["upper_body"], "mid"),
+  wearable("vest", "Vest", "tops", "vest", "top_basic", ["upper_body"], "mid"),
+  wearable("tunic", "Tunic", "tops", "tunic", "top_basic", ["upper_body"], "base"),
+  wearable("jersey", "Jersey", "tops", "jersey", "top_basic", ["upper_body"], "base"),
+
+  wearable("trousers", "Trousers", "bottoms", "trousers", "bottom_trouser", ["lower_body", "legs"], "base"),
+  wearable("jeans", "Jeans", "bottoms", "jeans", "bottom_trouser", ["lower_body", "legs"], "base"),
+  wearable("shorts", "Shorts", "bottoms", "shorts", "bottom_trouser", ["lower_body"], "base"),
+  wearable("skirt", "Skirt", "bottoms", "skirt", "bottom_skirt", ["lower_body"], "base"),
+  wearable("leggings", "Leggings", "bottoms", "leggings", "bottom_trouser", ["lower_body", "legs"], "base"),
+  wearable("joggers", "Joggers", "bottoms", "joggers", "bottom_trouser", ["lower_body", "legs"], "base"),
+  wearable("sweatpants", "Sweatpants", "bottoms", "sweatpants", "bottom_trouser", ["lower_body", "legs"], "base"),
+  wearable("skort", "Skort", "bottoms", "skort", "bottom_skirt", ["lower_body"], "base"),
+
+  wearable("dress", "Dress", "one_piece", "dress", "dress", ["full_body"], "base"),
+  wearable("jumpsuit", "Jumpsuit", "one_piece", "jumpsuit", "dress", ["full_body"], "base"),
+  wearable("romper", "Romper", "one_piece", "romper", "dress", ["full_body"], "base"),
+  wearable("overalls", "Overalls", "one_piece", "overalls", "dress", ["full_body"], "mid"),
+  wearable("bodysuit", "Bodysuit", "one_piece", "bodysuit", "dress", ["full_body"], "base"),
+
+  wearable("jacket", "Jacket", "outerwear", "jacket", "outerwear", ["upper_body"], "outer"),
+  wearable("blazer", "Blazer", "outerwear", "blazer", "outerwear", ["upper_body"], "outer"),
+  wearable("coat", "Coat", "outerwear", "coat", "outerwear", ["upper_body", "lower_body"], "outer"),
+  wearable("trench_coat", "Trench Coat", "outerwear", "trench coat", "outerwear", ["upper_body", "lower_body"], "outer"),
+  wearable("parka", "Parka", "outerwear", "parka", "outerwear", ["upper_body"], "outer"),
+  wearable("puffer_jacket", "Puffer Jacket", "outerwear", "puffer jacket", "outerwear", ["upper_body"], "outer"),
+  wearable("bomber_jacket", "Bomber Jacket", "outerwear", "bomber jacket", "outerwear", ["upper_body"], "outer"),
+  wearable("cape", "Cape", "outerwear", "cape", "outerwear", ["upper_body"], "outer"),
+  wearable("cloak", "Cloak", "outerwear", "cloak", "outerwear", ["upper_body", "lower_body"], "outer"),
+  wearable("robe", "Robe", "outerwear", "robe", "outerwear", ["full_body"], "outer"),
+
+  wearable("socks", "Socks", "legwear", "socks", "legwear", ["legs", "feet"], "under"),
+  wearable("tights", "Tights", "legwear", "tights", "legwear", ["legs", "feet"], "under"),
+  wearable("stockings", "Stockings", "legwear", "stockings", "legwear", ["legs"], "under"),
+  wearable("leg_warmers", "Leg Warmers", "legwear", "leg warmers", "legwear", ["legs"], "accessory"),
+
+  wearable("sneakers", "Sneakers", "footwear", "sneakers", "footwear", ["feet"], "base"),
+  wearable("boots", "Boots", "footwear", "boots", "boots", ["feet", "legs"], "base"),
+  wearable("pumps", "Pumps", "footwear", "pumps", "footwear", ["feet"], "base"),
+  wearable("flats", "Flats", "footwear", "flats", "footwear", ["feet"], "base"),
+  wearable("loafers", "Loafers", "footwear", "loafers", "footwear", ["feet"], "base"),
+  wearable("oxfords", "Oxford Shoes", "footwear", "Oxford shoes", "footwear", ["feet"], "base"),
+  wearable("sandals", "Sandals", "footwear", "sandals", "footwear", ["feet"], "base"),
+  wearable("mules", "Mules", "footwear", "mules", "footwear", ["feet"], "base"),
+  wearable("clogs", "Clogs", "footwear", "clogs", "footwear", ["feet"], "base"),
+  wearable("slippers", "Slippers", "footwear", "slippers", "footwear", ["feet"], "base"),
+
+  wearable("cap", "Cap", "headwear", "cap", "accessory", ["head"], "accessory"),
+  wearable("hat", "Hat", "headwear", "hat", "accessory", ["head"], "accessory"),
+  wearable("beanie", "Beanie", "headwear", "beanie", "accessory", ["head"], "accessory"),
+  wearable("beret", "Beret", "headwear", "beret", "accessory", ["head"], "accessory"),
+  wearable("visor", "Visor", "headwear", "visor", "accessory", ["head"], "accessory"),
+
+  wearable("scarf", "Scarf", "neckwear", "scarf", "accessory", ["neck"], "accessory"),
+  wearable("tie", "Tie", "neckwear", "tie", "accessory", ["neck"], "accessory"),
+  wearable("bow_tie", "Bow Tie", "neckwear", "bow tie", "accessory", ["neck"], "accessory"),
+  wearable("neckerchief", "Neckerchief", "neckwear", "neckerchief", "accessory", ["neck"], "accessory"),
+
+  wearable("gloves", "Gloves", "handwear", "gloves", "accessory", ["hands"], "accessory"),
+  wearable("mittens", "Mittens", "handwear", "mittens", "accessory", ["hands"], "accessory"),
+  wearable("belt", "Belt", "waistwear", "belt", "accessory", ["waist"], "accessory"),
+  wearable("waist_bag", "Waist Bag", "waistwear", "waist bag", "accessory", ["waist"], "accessory"),
+
+  wearable("glasses", "Glasses", "eyewear", "glasses", "accessory", ["eyes"], "accessory"),
+  wearable("sunglasses", "Sunglasses", "eyewear", "sunglasses", "accessory", ["eyes"], "accessory"),
+  wearable("goggles", "Goggles", "eyewear", "goggles", "accessory", ["eyes"], "accessory"),
+
+  wearable("necklace", "Necklace", "jewelry", "necklace", "accessory", ["neck"], "accessory"),
+  wearable("earrings", "Earrings", "jewelry", "earrings", "accessory", ["ears"], "accessory"),
+  wearable("bracelet", "Bracelet", "jewelry", "bracelet", "accessory", ["wrists"], "accessory"),
+  wearable("ring", "Ring", "jewelry", "ring", "accessory", ["hands"], "accessory"),
+  wearable("anklet", "Anklet", "jewelry", "anklet", "accessory", ["legs"], "accessory"),
+  wearable("brooch", "Brooch", "jewelry", "brooch", "accessory", ["accessory"], "accessory"),
+  wearable("choker", "Choker", "jewelry", "choker", "accessory", ["neck"], "accessory"),
+
+  wearable("watch", "Watch", "wearable_accessories", "watch", "accessory", ["wrists"], "accessory"),
+  wearable("backpack", "Backpack", "wearable_accessories", "backpack", "accessory", ["accessory"], "accessory"),
+  wearable("crossbody_bag", "Crossbody Bag", "wearable_accessories", "crossbody bag", "accessory", ["accessory"], "accessory"),
+  wearable("shoulder_bag", "Shoulder Bag", "wearable_accessories", "shoulder bag", "accessory", ["accessory"], "accessory"),
+  wearable("harness", "Harness", "wearable_accessories", "wearable harness", "accessory", ["upper_body"], "accessory"),
+  wearable("suspenders", "Suspenders", "wearable_accessories", "suspenders", "accessory", ["upper_body"], "accessory"),
+
+  wearable("kimono", "Kimono", "specialty", "kimono", "dress", ["full_body"], "base"),
+  wearable("sari", "Sari", "specialty", "sari", "dress", ["full_body"], "base"),
+  wearable("hanbok", "Hanbok", "specialty", "hanbok", "dress", ["full_body"], "base"),
+  wearable("qipao", "Qipao", "specialty", "qipao", "dress", ["full_body"], "base"),
+  wearable("abaya", "Abaya", "specialty", "abaya", "dress", ["full_body"], "base"),
+  wearable("thobe", "Thobe", "specialty", "thobe", "dress", ["full_body"], "base"),
+  wearable("kaftan", "Kaftan", "specialty", "kaftan", "dress", ["full_body"], "base"),
+  wearable("kilt", "Kilt", "specialty", "kilt", "bottom_skirt", ["lower_body"], "base"),
+  wearable("poncho", "Poncho", "specialty", "poncho", "outerwear", ["upper_body"], "outer"),
+
+  wearable("armor", "Armor", "protective_costume", "armor", "accessory", ["full_body"], "outer"),
+  wearable("helmet", "Helmet", "protective_costume", "helmet", "accessory", ["head"], "outer"),
+  wearable("mask", "Mask", "protective_costume", "wearable mask", "accessory", ["head"], "accessory"),
+  wearable("apron", "Apron", "protective_costume", "apron", "accessory", ["upper_body", "lower_body"], "outer"),
+];
+
+export const outfitItemStarters: OutfitItemStarter[] = [
+  {
+    id: "crop_t_shirt",
+    label: "Crop T-Shirt",
+    category: "tops",
+    item: { type: "t_shirt", properties: { length: optionProperty("cropped") } },
+  },
+  {
+    id: "oversized_t_shirt",
+    label: "Oversized T-Shirt",
+    category: "tops",
+    item: { type: "t_shirt", properties: { fit: optionProperty("oversized") } },
+  },
+  {
+    id: "long_sleeve_blouse",
+    label: "Long-Sleeve Blouse",
+    category: "tops",
+    item: { type: "blouse", properties: { sleeveLength: optionProperty("long") } },
+  },
+  {
+    id: "oversized_hoodie",
+    label: "Oversized Hoodie",
+    category: "tops",
+    item: { type: "hoodie", properties: { fit: optionProperty("oversized") } },
+  },
+  {
+    id: "mini_skirt",
+    label: "Mini Skirt",
+    category: "bottoms",
+    item: { type: "skirt", properties: { length: optionProperty("mini") } },
+  },
+  {
+    id: "pleated_skirt",
+    label: "Pleated Skirt",
+    category: "bottoms",
+    item: { type: "skirt", properties: { pleating: optionProperty("knife") } },
+  },
+  {
+    id: "pleated_mini_skirt",
+    label: "Pleated Mini Skirt",
+    category: "bottoms",
+    item: {
+      type: "skirt",
+      properties: {
+        length: optionProperty("mini"),
+        pleating: optionProperty("knife"),
+      },
+    },
+  },
+  {
+    id: "pencil_skirt",
+    label: "Pencil Skirt",
+    category: "bottoms",
+    item: { type: "skirt", properties: { silhouette: optionProperty("pencil") } },
+  },
+  {
+    id: "skinny_jeans",
+    label: "Skinny Jeans",
+    category: "bottoms",
+    item: { type: "jeans", properties: { legShape: optionProperty("skinny") } },
+  },
+  {
+    id: "wide_leg_trousers",
+    label: "Wide-Leg Trousers",
+    category: "bottoms",
+    item: { type: "trousers", properties: { legShape: optionProperty("wide") } },
+  },
+  {
+    id: "cargo_pants",
+    label: "Cargo Pants",
+    category: "bottoms",
+    item: {
+      type: "trousers",
+      properties: {
+        fit: optionProperty("loose"),
+        pockets: optionProperty(["cargo"]),
+      },
+    },
+  },
+  {
+    id: "ankle_boots",
+    label: "Ankle Boots",
+    category: "footwear",
+    item: { type: "boots", properties: { shaftHeight: optionProperty("ankle") } },
+  },
+  {
+    id: "knee_high_boots",
+    label: "Knee-High Boots",
+    category: "footwear",
+    item: { type: "boots", properties: { shaftHeight: optionProperty("knee") } },
+  },
+  {
+    id: "high_heeled_pumps",
+    label: "High-Heeled Pumps",
+    category: "footwear",
+    item: { type: "pumps", properties: { heelHeight: optionProperty("high") } },
+  },
+  {
+    id: "knee_high_socks",
+    label: "Knee-High Socks",
+    category: "legwear",
+    item: { type: "socks", properties: { legwearLength: optionProperty("knee") } },
+  },
+];
+
+export const outfitPresetRecipes: OutfitPresetRecipe[] = [
+  {
+    id: "casual",
+    label: "Casual",
+    category: "everyday",
+    items: [
+      { key: "top", type: "t_shirt" },
+      { key: "bottom", type: "jeans" },
+      { key: "shoes", type: "sneakers" },
+    ],
+  },
+  {
+    id: "smart_casual",
+    label: "Smart Casual",
+    category: "everyday",
+    items: [
+      { key: "shirt", type: "shirt" },
+      { key: "trousers", type: "trousers" },
+      { key: "loafers", type: "loafers" },
+      { key: "blazer", type: "blazer" },
+    ],
+  },
+  {
+    id: "preppy",
+    label: "Preppy",
+    category: "fashion",
+    items: [
+      { key: "blouse", type: "blouse" },
+      {
+        key: "skirt",
+        type: "skirt",
+        properties: { pleating: optionProperty("knife") },
+      },
+      {
+        key: "socks",
+        type: "socks",
+        properties: { legwearLength: optionProperty("knee") },
+      },
+      { key: "shoes", type: "loafers" },
+    ],
+  },
+  {
+    id: "streetwear",
+    label: "Streetwear",
+    category: "fashion",
+    items: [
+      {
+        key: "hoodie",
+        type: "hoodie",
+        properties: { fit: optionProperty("oversized") },
+      },
+      {
+        key: "pants",
+        type: "trousers",
+        properties: {
+          fit: optionProperty("loose"),
+          pockets: optionProperty(["cargo"]),
+        },
+      },
+      { key: "shoes", type: "sneakers" },
+      { key: "cap", type: "cap" },
+    ],
+  },
+  {
+    id: "formal_suit",
+    label: "Formal Suit",
+    category: "formal",
+    items: [
+      { key: "shirt", type: "shirt" },
+      { key: "trousers", type: "trousers", properties: { fit: optionProperty("tailored") } },
+      { key: "blazer", type: "blazer", properties: { fit: optionProperty("tailored") } },
+      { key: "shoes", type: "oxfords" },
+      { key: "tie", type: "tie" },
+    ],
+  },
+  {
+    id: "winter_layered",
+    label: "Winter Layered",
+    category: "seasonal",
+    items: [
+      { key: "sweater", type: "sweater" },
+      { key: "trousers", type: "trousers" },
+      { key: "coat", type: "coat" },
+      { key: "boots", type: "boots" },
+      { key: "scarf", type: "scarf" },
+      { key: "gloves", type: "gloves" },
+    ],
+  },
+  {
+    id: "evening",
+    label: "Evening",
+    category: "formal",
+    items: [
+      { key: "dress", type: "dress" },
+      { key: "shoes", type: "pumps", properties: { heelHeight: optionProperty("high") } },
+      { key: "earrings", type: "earrings" },
+      { key: "necklace", type: "necklace" },
+    ],
+  },
+];
+
+export const outfitItemTypeMap = new Map(outfitItemTypes.map((item) => [item.value, item]));
+export const outfitItemStarterMap = new Map(outfitItemStarters.map((starter) => [starter.id, starter]));
+export const outfitPresetRecipeMap = new Map(outfitPresetRecipes.map((preset) => [preset.id, preset]));
+
+export function getOutfitPropertyBindings(type: OutfitItemTypeDefinition) {
+  const profile = type.profileId ? outfitPropertyProfiles[type.profileId] : undefined;
+  const bindings = [...(profile?.properties || []), ...(type.properties || [])];
+  const byProperty = new Map(bindings.map((binding) => [binding.propertyId, binding]));
+
+  return [...byProperty.values()].sort((a, b) => {
+    const definitionA = outfitPropertyDefinitions[a.propertyId];
+    const definitionB = outfitPropertyDefinitions[b.propertyId];
+
+    return (a.order ?? definitionA?.order ?? 0) - (b.order ?? definitionB?.order ?? 0);
+  });
+}
+
+export function getOutfitPropertyOptions(propertyId: string, optionSet?: string) {
+  const definition = outfitPropertyDefinitions[propertyId];
+
+  if (!definition) return [];
+  if (optionSet) return definition.optionSets?.[optionSet] || [];
+
+  return definition.options || [];
+}
