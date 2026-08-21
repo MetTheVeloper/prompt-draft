@@ -5,11 +5,11 @@ export const VARIABLES_MODULE_KEY = "variables";
 export const VARIABLE_TOKEN_PATTERN = /\{([a-z][a-zA-Z0-9_]*)\}/g;
 
 export const RESERVED_VARIABLE_KEY_PATTERNS = [
-  /^layout_region_[a-zA-Z0-9_]*$/,
-  /^text_[a-zA-Z0-9_]*$/,
-  /^text_group_[a-zA-Z0-9_]*$/,
-  /^outfit_[a-zA-Z0-9_]+$/,
-  /^hair_[a-zA-Z0-9_]+$/,
+  /^layout_region_[a-z0-9_]*$/,
+  /^text_[a-z0-9_]*$/,
+  /^text_group_[a-z0-9_]*$/,
+  /^outfit_[a-z0-9_]+$/,
+  /^hair_[a-z0-9_]+$/,
 ];
 
 export type PromptVariableIssueLevel = "error" | "warning";
@@ -30,18 +30,30 @@ export type PromptVariableIssue = {
   token?: string;
 };
 
+/**
+ * Canonicalize a user-facing variable key without destroying meaningful
+ * lowerCamelCase casing. Comparison/collision logic uses a separate
+ * case-insensitive identity, while stored keys and emitted tokens preserve the
+ * semantic spelling chosen by the user or blueprint.
+ */
 export function normalizeVariableKey(input: string) {
-  let key = (input || "").trim().toLowerCase();
+  let key = (input || "").trim();
 
   key = key.normalize("NFKD").replace(/[\u0300-\u036f]/g, "");
   key = key.replace(/['"`]+/g, "");
-  key = key.replace(/[^a-z0-9]+/g, "_");
+  key = key.replace(/[^a-zA-Z0-9_]+/g, "_");
   key = key.replace(/_+/g, "_").replace(/^_+|_+$/g, "");
 
   if (!key) key = "variable";
   if (/^[0-9]/.test(key)) key = `var_${key}`;
 
+  key = `${key.charAt(0).toLowerCase()}${key.slice(1)}`;
+
   return key;
+}
+
+export function variableKeyIdentity(input: string) {
+  return normalizeVariableKey(input).toLowerCase();
 }
 
 export function isValidVariableKey(key: string) {
@@ -49,19 +61,20 @@ export function isValidVariableKey(key: string) {
 }
 
 export function isReservedVariableKey(key: string) {
-  return RESERVED_VARIABLE_KEY_PATTERNS.some((pattern) => pattern.test(key));
+  const identity = String(key || "").toLowerCase();
+  return RESERVED_VARIABLE_KEY_PATTERNS.some((pattern) => pattern.test(identity));
 }
 
 export function createUniqueVariableKey(input: string, existingKeys: string[]) {
   const baseKey = normalizeVariableKey(input);
-  const existing = new Set(existingKeys.map((key) => normalizeVariableKey(key)));
+  const existing = new Set(existingKeys.map(variableKeyIdentity));
 
-  if (!existing.has(baseKey)) return baseKey;
+  if (!existing.has(variableKeyIdentity(baseKey))) return baseKey;
 
   let index = 2;
   let nextKey = `${baseKey}_${index}`;
 
-  while (existing.has(nextKey)) {
+  while (existing.has(variableKeyIdentity(nextKey))) {
     index += 1;
     nextKey = `${baseKey}_${index}`;
   }
@@ -127,9 +140,10 @@ export function formatPromptVariableDefinitions(value: unknown) {
   return variables
     .map((variable) => {
       const key = normalizeVariableKey(variable.key);
+      const identity = variableKeyIdentity(key);
 
-      if (usedKeys.has(key)) return "";
-      usedKeys.add(key);
+      if (usedKeys.has(identity)) return "";
+      usedKeys.add(identity);
 
       return formatVariableDefinition({
         ...variable,
@@ -181,11 +195,12 @@ export function validatePromptVariables(
 ): PromptVariableIssue[] {
   const issues: PromptVariableIssue[] = [];
   const variables = getEnabledPromptVariables(value);
-  const seenKeys = new Set<string>();
+  const seenKeyIdentities = new Set<string>();
   const definedKeys = new Set<string>();
 
   variables.forEach((variable, index) => {
     const key = normalizeVariableKey(variable.key);
+    const identity = variableKeyIdentity(key);
     const idPrefix = `variables:${index}:${key}`;
 
     if (!isValidVariableKey(key)) {
@@ -220,7 +235,7 @@ export function validatePromptVariables(
       });
     }
 
-    if (seenKeys.has(key)) {
+    if (seenKeyIdentities.has(identity)) {
       issues.push({
         id: `${idPrefix}:duplicate`,
         code: "variable_duplicate_key",
@@ -231,7 +246,7 @@ export function validatePromptVariables(
       return;
     }
 
-    seenKeys.add(key);
+    seenKeyIdentities.add(identity);
 
     if (variable.value.trim()) {
       definedKeys.add(key);
