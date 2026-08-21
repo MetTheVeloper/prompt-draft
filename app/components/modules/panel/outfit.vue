@@ -2,10 +2,16 @@
 import { computed, nextTick, reactive, ref, watch } from "vue";
 import type { ModuleValues, PromptKeyModule } from "~/modules/types";
 import type { OutfitSet } from "~/modules/outfit.types";
-import type { ModuleOutputValue } from "~/utils/compilePrompt";
+import type {
+  ModuleOutputMap,
+  ModuleOutputValue,
+} from "~/utils/compilePrompt";
 import type { PromptValidationIssue } from "~/utils/promptValidation";
 import { createDefaultModuleValues } from "~/utils/compileModules";
-import { compileOutfitModule } from "~/utils/compileOutfit";
+import {
+  compileOutfitModule,
+  formatOutfitOutputForReferences,
+} from "~/utils/compileOutfit";
 import OutfitSetsField from "../outfit/OutfitSetsField.vue";
 
 const { t } = useI18n();
@@ -15,6 +21,7 @@ const props = defineProps<{
   module: PromptKeyModule;
   modelValue?: ModuleValues;
   panelState?: { isCustomMode?: boolean; activePresetId?: string | null };
+  moduleOutputs?: ModuleOutputMap;
 }>();
 
 const emit = defineEmits<{
@@ -42,6 +49,10 @@ function cloneValue<T>(value: T): T {
 function translate(path: string, fallback = "") {
   const translated = t(path);
   return translated === path ? fallback : translated;
+}
+
+function moduleOutputText(value: ModuleOutputValue) {
+  return typeof value === "string" ? value : JSON.stringify(value);
 }
 
 const moduleTitle = computed(() => translate("modules.outfit.title", "Outfit"));
@@ -94,12 +105,34 @@ const customText = computed(() =>
   typeof values.customText === "string" ? values.customText.trim() : "",
 );
 
-const output = computed(() => {
+const externalReferenceText = computed(() =>
+  Object.entries(props.moduleOutputs || {})
+    .filter(([moduleKey]) => moduleKey !== props.module.key)
+    .map(([, value]) => moduleOutputText(value))
+    .filter(Boolean)
+    .join("\n"),
+);
+
+/**
+ * Keep the emitted module output context-independent. The final prompt
+ * assembler performs selective alias emission using settings + every module.
+ * The panel preview can still reflect live Color/Texture references without
+ * feeding those aliases back into the shared module output graph.
+ */
+const rawOutput = computed(() => {
   if (customMode.value) return customText.value;
   return compileOutfitModule(props.module, values);
 });
 
-watch(output, (value) => emit("update:output", value), { immediate: true });
+const output = computed(() => {
+  if (customMode.value || !rawOutput.value) return rawOutput.value;
+  return formatOutfitOutputForReferences(
+    String(rawOutput.value),
+    externalReferenceText.value,
+  );
+});
+
+watch(rawOutput, (value) => emit("update:output", value), { immediate: true });
 
 const issues = computed<PromptValidationIssue[]>(() => {
   if (customMode.value && !customText.value) {
