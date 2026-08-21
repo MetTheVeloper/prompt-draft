@@ -10,14 +10,23 @@ import type {
   TypographyTextBlock,
   TypographyTextGroup,
 } from "../modules/types"
+import type { OutfitItem, OutfitSet } from "../modules/outfit.types"
+import { outfitItemTypeMap } from "../modules/outfit.catalog"
 import type { LayoutRegion } from "../modules/layout.types"
 import { normalizeLayoutRegionsState } from "./layoutRegions"
 import { normalizeTypographyGroups } from "./typography"
+import { normalizeOutfitSets } from "./compileOutfit"
 import {
   getLayoutRegionVariableKey,
   getTypographyGroupVariableKey,
   getTypographyTextVariableKey,
 } from "./structuralVariables"
+import {
+  getOutfitItemVariableKey,
+  getOutfitItemVariableToken,
+  getOutfitSetVariableKey,
+  getOutfitSetVariableToken,
+} from "./outfitVariables"
 
 function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : ""
@@ -188,6 +197,76 @@ function createTypographyTextVariable(
   }
 }
 
+function createOutfitSetVariable(set: OutfitSet, index: number): PromptVariable {
+  const key = getOutfitSetVariableKey(set)
+  const token = getOutfitSetVariableToken(set)
+  const label = cleanText(set.name) || `Outfit Set ${index + 1}`
+
+  return {
+    id: `outfit:${set.id}`,
+    key,
+    label,
+    value: serializeValue({
+      id: set.id,
+      key: token,
+      name: label,
+      targets: set.targets.map((target) => target.token || target.value),
+      items: set.items.map(getOutfitItemVariableToken),
+    }),
+    description: `Outfit set: ${label}.`,
+    type: "reference",
+    enabled: set.items.length > 0,
+    source: "module",
+    moduleKey: "outfit",
+    entityType: "outfit_set",
+    entityId: set.id,
+    semanticCapabilities: ["color", "material"],
+  }
+}
+
+function createOutfitItemVariable(
+  item: OutfitItem,
+  set: OutfitSet,
+  setIndex: number,
+  itemIndex: number,
+): PromptVariable {
+  const key = getOutfitItemVariableKey(item)
+  const token = getOutfitItemVariableToken(item)
+  const definition = outfitItemTypeMap.get(item.type)
+  const label =
+    cleanText(item.name) ||
+    cleanText(item.customType) ||
+    definition?.label ||
+    `Outfit Item ${itemIndex + 1}`
+  const parentLabel = cleanText(set.name) || `Outfit Set ${setIndex + 1}`
+
+  return {
+    id: `outfit:${set.id}:${item.id}`,
+    key,
+    label,
+    value: serializeValue({
+      id: item.id,
+      key: token,
+      type: item.type,
+      customType: cleanText(item.customType) || undefined,
+      parent: getOutfitSetVariableToken(set),
+      source: item.source,
+      properties: item.properties,
+    }),
+    description: `${label} · ${parentLabel}`,
+    type: "reference",
+    enabled: true,
+    source: "module",
+    moduleKey: "outfit",
+    entityType: "outfit_item",
+    entityId: item.id,
+    parentId: set.id,
+    semanticCapabilities: definition?.semanticCapabilities?.length
+      ? [...definition.semanticCapabilities]
+      : ["color", "material"],
+  }
+}
+
 function moduleChildren(
   module: PromptKeyModule,
   values: ModuleValues,
@@ -214,6 +293,17 @@ function moduleChildren(
         ]
       },
     )
+  }
+
+  if (module.key === "outfit") {
+    return normalizeOutfitSets(values.outfitSets).flatMap((set, setIndex) => {
+      return [
+        createOutfitSetVariable(set, setIndex),
+        ...set.items.map((item, itemIndex) =>
+          createOutfitItemVariable(item, set, setIndex, itemIndex),
+        ),
+      ]
+    })
   }
 
   return []
