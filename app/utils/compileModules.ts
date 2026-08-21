@@ -15,6 +15,7 @@ import { compileColorPaletteModule } from "./compileColorPalette";
 import { compileTextureModule } from "./compileTexture";
 import { compilePoseModule } from "./compilePose";
 import { compileExpressionModule } from "./compileExpression";
+import { compileHairModule } from "./compileHair";
 import { compileOutfitModule } from "./compileOutfit";
 import { compileBackgroundModule } from "./compileBackground";
 import { compileEffectsModule } from "./compileEffects";
@@ -484,6 +485,10 @@ export function compileModule(
 
   if (module.key === "expression") {
     return compileExpressionModule(module, values);
+  }
+
+  if (module.key === "hair") {
+    return compileHairModule(module, values);
   }
 
   if (module.key === "outfit") {
