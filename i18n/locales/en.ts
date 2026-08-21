@@ -15,6 +15,7 @@ export default {
       convert: "Convert",
       about: "About",
     },
+    loading: "Loading application",
   },
   pwa: {
     offline: {
@@ -796,8 +797,8 @@ export default {
       },
     },
     texture: {
-      title: "Texture",
-      description: "Controls material, surface quality, and tactile details of the prompt.",
+      title: "Texture / Material",
+      description: "Define material and surface properties, then assign them to semantic targets.",
       categories: {
         vinyl_plastic: "Vinyl / Plastic",
         clay_ceramic: "Clay / Ceramic",
@@ -862,6 +863,30 @@ export default {
         imperfection_peeling:
           "Peeling or flaking works best on painted, coated, aged, or layered surfaces.",
         imperfection_corrosion: "Corrosion and oxidation are mostly suitable for metal materials.",
+        finish_semi_gloss:
+          "Semi-gloss is unusual for the selected material, but the choice is preserved.",
+        finish_glossy:
+          "A glossy finish is unusual for the selected material, but the choice is preserved.",
+        finish_high_gloss:
+          "A high-gloss finish is unusual for the selected material, but the choice is preserved.",
+        finish_mirror:
+          "A mirror-like polished finish is unusual for the selected material, but the choice is preserved.",
+        surface_hammered:
+          "A hammered texture is unusual for the selected material, but the choice is preserved.",
+        surface_ridged:
+          "A ridged texture is unusual for the selected material, but the choice is preserved.",
+        surface_brush_marks:
+          "Visible brush marks are unusual for the selected material, but the choice is preserved.",
+        surface_coarse:
+          "A coarse texture is unusual for the selected material, but the choice is preserved.",
+        optical_opaque:
+          "Opaque behavior is unusual for the selected material, but the choice is preserved.",
+        optical_translucent:
+          "Translucent behavior is unusual for the selected material, but the choice is preserved.",
+        optical_transparent:
+          "Transparent behavior is unusual for the selected material, but the choice is preserved.",
+        optical_frosted:
+          "Frosted light-passing behavior is unusual for the selected material, but the choice is preserved.",
       },
       groups: {
         material: {
@@ -1013,32 +1038,183 @@ export default {
         },
         extraDetails: {
           label: "Extra Details",
-          description: "Add optional texture details without replacing the generated output.",
-          placeholder: "Add extra texture details...",
+          description:
+            "Add material or surface instructions that do not fit the structured controls.",
+          placeholder: "Add optional material or surface details...",
         },
         customText: {
-          label: "Custom Texture Override",
+          label: "Custom Override",
           description:
-            "If filled, this text becomes the final texture output and all other fields are ignored.",
-          placeholder: "Write a complete custom texture description...",
+            "Replace structured material assignments with your own texture/material instruction.",
+          placeholder: "Describe the material and surface behavior...",
+        },
+        materialAssignments: {
+          label: "Material Assignments",
+          description:
+            "Build reusable material and surface specifications and assign each one to the scene entities it should affect.",
+          assignmentTitle: "Material Assignment {index}",
+          summary: {
+            noMaterial: "No material properties",
+          },
+          actions: {
+            add: "Add Material / Texture",
+            remove: "Remove",
+          },
+          preset: {
+            label: "Material Preset",
+          },
+          material: {
+            label: "Material",
+          },
+          finish: {
+            label: "Finish",
+            options: {
+              matte: "Matte",
+              satin: "Satin",
+              semi_gloss: "Semi-gloss",
+              glossy: "Glossy",
+              high_gloss: "High Gloss",
+              mirror: "Mirror-like / Polished",
+            },
+          },
+          surfaceTexture: {
+            label: "Surface Texture",
+            options: {
+              smooth: "Smooth",
+              brushed: "Brushed",
+              rough: "Rough",
+              porous: "Porous",
+              grainy: "Fine Grain",
+              fibrous: "Fibrous",
+              woven: "Woven",
+              hammered: "Hammered",
+              ridged: "Ridged",
+              brush_marks: "Brush Marks",
+              coarse: "Coarse",
+            },
+          },
+          opticalCharacter: {
+            label: "Optical Character",
+            options: {
+              opaque: "Opaque",
+              translucent: "Translucent",
+              transparent: "Transparent",
+              frosted: "Frosted / Diffused",
+            },
+          },
+          textureProminence: {
+            label: "Texture Prominence",
+            options: {
+              subtle: "Subtle",
+              visible: "Visible",
+              pronounced: "Pronounced",
+            },
+          },
+          conditions: {
+            label: "Condition / Imperfections",
+            placeholder: "Select surface conditions",
+            options: {
+              clean: "Clean",
+              handmade: "Handmade Irregularities",
+              scratches: "Scratches",
+              cracks: "Cracks",
+              dents: "Dents / Bumps",
+              chips: "Chipped Areas",
+              dust: "Dust / Dirt",
+              weathered: "Weathered",
+              stains: "Stains",
+              fading: "Fading",
+              wrinkles: "Wrinkles / Creases",
+              peeling: "Peeling / Flaking",
+              corrosion: "Corrosion / Oxidation",
+            },
+          },
+          targets: {
+            label: "Apply To",
+            placeholder: "Select material targets",
+            groups: {
+              general: "General",
+              typographyGroups: "Typography Groups",
+              typographyTexts: "Typography Texts",
+              userVariables: "User Subject / Object Variables",
+              missing: "Missing References",
+            },
+            builtin: {
+              all_surfaces: "All Scene Surfaces",
+              background: "Background Surface",
+              subject: "Main Subject",
+              outfit: "Outfit",
+              hair: "Hair",
+              typography: "Typography",
+              accents: "Accent Elements",
+            },
+            typographyGroupFallback: "Text Group",
+            typographyTextFallback: "Text",
+            customLabel: "Custom Targets",
+            customPlaceholder: "Example: dragon costume scales",
+            addCustom: "Add custom target",
+            missing: "Missing",
+            missingHelp:
+              "Some referenced targets no longer exist. They remain preserved until you remove them.",
+          },
+          warnings: {
+            unusualCombination:
+              "This property is unusual for the selected material, but it is kept as an intentional creative choice.",
+          },
         },
       },
       presets: {
         smooth_vinyl: {
           label: "Smooth Vinyl",
-          description: "A clean smooth vinyl-like material setup.",
+          description: "Clean satin vinyl with a smooth, subtle surface.",
         },
         handmade_clay: {
           label: "Handmade Clay",
-          description: "A tactile handmade clay surface with subtle imperfections.",
+          description: "Matte porous clay with visible handmade irregularities.",
         },
         polished_metal: {
           label: "Polished Metal",
-          description: "A glossy polished metallic material.",
+          description: "Clean high-gloss metal with a smooth surface.",
         },
         painterly_surface: {
           label: "Painterly Surface",
           description: "A matte stylized surface with brush marks and paint details.",
+        },
+        brushed_aluminum: {
+          label: "Brushed Aluminum",
+          description: "Satin aluminum with visible directional brushing.",
+        },
+        clear_glass: {
+          label: "Clear Glass",
+          description: "Clean transparent glass with a smooth glossy finish.",
+        },
+        frosted_glass: {
+          label: "Frosted Glass",
+          description: "Diffused frosted glass with a smooth matte surface.",
+        },
+        clean_porcelain: {
+          label: "Clean Porcelain",
+          description: "Smooth glossy porcelain with a clean opaque surface.",
+        },
+        weathered_leather: {
+          label: "Weathered Leather",
+          description: "Matte grainy leather with visible wear and scratches.",
+        },
+        woven_cotton: {
+          label: "Woven Cotton",
+          description: "Matte cotton with a clearly visible woven texture.",
+        },
+        aged_wood: {
+          label: "Aged Wood",
+          description: "Pronounced oak grain with weathering and scratches.",
+        },
+        polished_marble: {
+          label: "Polished Marble",
+          description: "Smooth high-gloss marble with visible surface character.",
+        },
+        matte_rubber: {
+          label: "Matte Rubber",
+          description: "Clean opaque rubber with a smooth matte surface.",
         },
       },
     },
@@ -1326,7 +1502,8 @@ export default {
     },
     lighting: {
       title: "Lighting",
-      description: "Controls the lighting setup or mood of illumination in the scene.",
+      description:
+        "Build the illumination of the scene from up to three independent light sources plus global ambient and contrast controls. Lighting does not define camera capture, scene content, surface material, the image palette, or post-processing effects.",
       groups: {
         core: {
           title: "Lighting",
@@ -1335,11 +1512,21 @@ export default {
         advanced: {
           title: "Advanced Details",
           description:
-            "Add optional extra lighting details without replacing the generated output.",
+            "Add optional illumination-specific instructions not covered by the structured controls.",
         },
         override: {
           title: "Custom Override",
-          description: "Replace the generated lighting output with your own text.",
+          description: "Replace the generated Lighting output with your own lighting instruction.",
+        },
+        sources: {
+          title: "Light Sources",
+          description:
+            "Add up to three independently configurable lights. Each source keeps its role, type, direction, quality, intensity, color, and lighting-only features together.",
+        },
+        global: {
+          title: "Global Lighting",
+          description:
+            "Control scene-wide ambient fill and overall light-shadow contrast without changing the individual source recipes.",
         },
       },
       fields: {
@@ -1418,15 +1605,284 @@ export default {
           },
         },
         extraDetails: {
-          label: "Extra Details",
+          label: "Extra Lighting Details",
           description:
-            "Add optional extra lighting details without replacing the generated output.",
-          placeholder: "Add extra lighting details...",
+            "Add only illumination-specific instructions that are not already expressed by the structured lighting controls.",
+          placeholder: "Add optional lighting details...",
         },
         customText: {
-          label: "Custom Override",
-          description: "Write your own lighting text and replace the generated output.",
-          placeholder: "Write your custom lighting text...",
+          label: "Custom Lighting Text",
+          description:
+            "Write your own lighting instruction and replace the generated Lighting output.",
+          placeholder: "Write your custom lighting instruction...",
+        },
+        lightSources: {
+          label: "Light Sources",
+          description:
+            "Define one to three independent sources while preserving the relationship between each light's direction, color, intensity, and other properties.",
+          editorTitle: "Lighting Rig",
+          editorDescription:
+            "Add up to {max} light sources. Multiple sources are compiled as separate linked lighting clauses.",
+          emptyTitle: "No light source defined",
+          emptyDescription: "Add a source manually or choose a preset to build the lighting setup.",
+          sourceTitle: "Light Source {index}",
+          actions: {
+            add: "Add light",
+            remove: "Remove light",
+          },
+          role: {
+            label: "Role",
+            options: {
+              key: "Key Light",
+              fill: "Fill Light",
+              rim: "Rim Light",
+              accent: "Accent Light",
+              background: "Background Light",
+              practical: "Practical Light",
+              environment: "Environment Light",
+            },
+          },
+          sourceType: {
+            label: "Source Type",
+            options: {
+              area_light: "Area Light",
+              point_light: "Point Light",
+              daylight: "Natural Daylight",
+              direct_sun: "Direct Sunlight",
+              overcast_sky: "Overcast Sky",
+              window: "Window Light",
+              studio: "Studio Light",
+              softbox: "Softbox",
+              spotlight: "Spotlight",
+              direct_flash: "Direct Flash",
+              streetlight: "Streetlight",
+              candle: "Candlelight",
+              fire: "Firelight",
+              screen: "Screen Light",
+              fluorescent: "Fluorescent Light",
+              neon: "Neon Light",
+              stage: "Stage Light",
+            },
+          },
+          direction: {
+            label: "Direction",
+            options: {
+              omnidirectional: "Surrounding / Ambient",
+              front: "Front",
+              camera_left: "Camera Left",
+              camera_right: "Camera Right",
+              three_quarter_left: "Three-Quarter Left",
+              three_quarter_right: "Three-Quarter Right",
+              back: "Back",
+              back_left: "Back Left",
+              back_right: "Back Right",
+              top: "Top",
+              below: "Below",
+            },
+          },
+          quality: {
+            label: "Quality",
+            options: {
+              very_soft: "Very Soft / Diffused",
+              soft: "Soft",
+              balanced: "Moderately Defined",
+              hard: "Hard / Directional",
+              very_hard: "Very Hard / Crisp",
+            },
+          },
+          intensity: {
+            label: "Intensity",
+            options: {
+              dim: "Dim",
+              low: "Low",
+              balanced: "Balanced",
+              bright: "Bright",
+              intense: "Intense",
+            },
+          },
+          color: {
+            label: "Light Color",
+            options: {
+              neutral: "Neutral",
+              warm: "Warm",
+              cool: "Cool",
+              amber: "Golden / Amber",
+              blue: "Blue",
+              red: "Red",
+              magenta: "Magenta",
+              cyan: "Cyan",
+              green: "Green",
+              purple: "Purple",
+              pastel: "Pastel Colored",
+              custom: "Custom Color",
+            },
+            customLabel: "Custom light color",
+            customPlaceholder: "Example: deep turquoise, #36d8ff, pale warm pink...",
+          },
+          features: {
+            label: "Lighting Features",
+            options: {
+              patterned_shadows: "Patterned Shadows",
+              volumetric_beams: "Volumetric Beams",
+              halo_backlight: "Backlight Halo",
+              silhouette_emphasis: "Silhouette Emphasis",
+            },
+          },
+        },
+        ambientLevel: {
+          label: "Ambient Level",
+          description:
+            "Set the scene-wide ambient fill independently from the intensity of each explicit light source.",
+          placeholder: "Select ambient level",
+          options: {
+            none: "No Additional Ambient Fill",
+            minimal: "Minimal",
+            low: "Low",
+            balanced: "Balanced",
+            bright: "Bright",
+          },
+        },
+        overallContrast: {
+          label: "Overall Contrast",
+          description:
+            "Control the scene-wide relationship between illuminated and shadow areas without changing individual source intensity.",
+          placeholder: "Select overall contrast",
+          options: {
+            low: "Low Contrast",
+            balanced: "Balanced Contrast",
+            high: "High Contrast",
+            extreme: "Extreme Light-Shadow Contrast",
+          },
+        },
+      },
+      presetsDescription:
+        "Choose a lighting recipe, then edit any individual source or global control.",
+      presets: {
+        soft_diffused: {
+          label: "Soft Diffused",
+          description: "Broad soft illumination with low scene contrast.",
+        },
+        natural_window: {
+          label: "Natural Window Light",
+          description:
+            "A soft window-source recipe with independent direction left open for customization.",
+        },
+        overcast_daylight: {
+          label: "Overcast Daylight",
+          description: "Broad overcast-sky illumination with bright ambient fill and low contrast.",
+        },
+        golden_hour: {
+          label: "Golden Hour",
+          description:
+            "Warm golden sunlight recipe without imposing scene content or camera style.",
+        },
+        clean_studio: {
+          label: "Clean Studio",
+          description: "Two-light studio recipe with a soft key and restrained fill.",
+        },
+        beauty_studio: {
+          label: "Beauty Studio",
+          description: "Very soft frontal key and fill lighting with low overall contrast.",
+        },
+        softbox_studio: {
+          label: "Softbox Studio",
+          description: "Single softbox key recipe ready for manual fill or rim additions.",
+        },
+        high_key: {
+          label: "High Key",
+          description: "Three-source bright studio recipe with strong fill and low contrast.",
+        },
+        low_key: {
+          label: "Low Key",
+          description: "Selective hard key lighting with minimal ambient fill and high contrast.",
+        },
+        chiaroscuro: {
+          label: "Chiaroscuro",
+          description: "Hard selective side illumination with extreme light-shadow contrast.",
+        },
+        moody_side: {
+          label: "Hard Side Light",
+          description: "Hard side-key recipe with low ambient fill and strong contrast.",
+        },
+        backlit_silhouette: {
+          label: "Backlit Silhouette",
+          description: "Strong backlight recipe designed to emphasize the subject silhouette.",
+        },
+        spotlight: {
+          label: "Spotlight",
+          description: "Focused hard key illumination with dark surrounding fill.",
+        },
+        film_noir: {
+          label: "Film Noir Lighting",
+          description: "Hard side spotlight with patterned shadows and extreme contrast.",
+        },
+        hard_direct: {
+          label: "Hard Direct Light",
+        },
+        direct_flash: {
+          label: "Direct Flash",
+          description: "Hard intense frontal flash illumination without camera-style assumptions.",
+        },
+        top_hard: {
+          label: "Hard Top Light",
+        },
+        underlight: {
+          label: "Underlight",
+        },
+        warm_cool_split: {
+          label: "Warm / Cool Split",
+          description: "Two opposing colored studio lights with independent warm and cool sources.",
+        },
+        blue_red_split: {
+          label: "Blue / Red Split",
+          description:
+            "Red light from camera-left and blue light from camera-right as two linked sources.",
+        },
+        neon_split: {
+          label: "Magenta / Cyan Neon Split",
+          description: "Opposing magenta and cyan neon sources for a vivid dual-light setup.",
+        },
+        pastel_soft: {
+          label: "Soft Pastel Lighting",
+        },
+        volumetric_spotlight: {
+          label: "Volumetric Spotlight",
+          description:
+            "Focused directional light with visible volumetric beams but without inventing fog or smoke content.",
+        },
+        rim_separation: {
+          label: "Key + Rim Separation",
+          description: "Soft key plus a separate rear rim source for subject separation.",
+        },
+        streetlight_night: {
+          label: "Streetlight",
+          description:
+            "Low amber streetlight illumination; the environment itself remains owned by Background.",
+        },
+        candlelight: {
+          label: "Candlelight",
+          description: "Low soft amber practical light with minimal ambient fill.",
+        },
+        screen_light: {
+          label: "Screen Light",
+          description: "Low soft blue frontal illumination from a digital screen.",
+        },
+        firelight: {
+          label: "Firelight",
+          description:
+            "Warm low practical fire illumination without adding flames as scene content.",
+        },
+        fluorescent_interior: {
+          label: "Fluorescent Interior",
+          description: "Cool overhead fluorescent illumination with balanced ambient fill.",
+        },
+        stage_lighting: {
+          label: "Stage Lighting",
+          description: "Hard stage key plus an independent colored accent source.",
+        },
+        warm_key_cool_rim: {
+          label: "Warm Key + Cool Rim",
+          description: "Soft warm key light paired with a harder cool rear rim source.",
         },
       },
     },
@@ -1657,7 +2113,7 @@ export default {
     pose: {
       title: "Pose",
       description:
-        "Controls the subject’s body posture, gestures, and dynamic or static positioning in the scene.",
+        "Define physical body configurations, movement, gestures, and interactions, then assign each pose to semantic subjects.",
       groups: {
         core: {
           title: "Pose",
@@ -1747,15 +2203,151 @@ export default {
         },
         customText: {
           label: "Custom Override",
-          description: "Write your own pose instructions and replace the generated output.",
-          placeholder: "Write your custom pose text...",
+          description: "Replace structured pose assignments with your own pose instruction.",
+          placeholder: "Describe the complete pose instruction...",
+        },
+        assignments: {
+          label: "Pose Assignments",
+          description:
+            "Build independent pose specifications and assign each one to the subjects it should control.",
+          countLabel: "assignments",
+          actions: {
+            add: "Add Pose Assignment",
+            remove: "Remove",
+          },
+          preset: {
+            label: "Pose Preset",
+          },
+          targets: {
+            label: "Apply To",
+            placeholder: "Select subject targets",
+          },
+          warnings: {
+            duplicateTarget:
+              "One or more subjects are already targeted by another pose assignment and may receive conflicting instructions.",
+          },
+          summary: {
+            empty: "No pose properties",
+          },
+          basePosture: {
+            label: "Base Posture",
+            options: {
+              standing: "Standing",
+              seated: "Seated",
+              kneeling: "Kneeling",
+              crouching: "Crouching",
+              reclining: "Reclining",
+              lying: "Lying Down",
+            },
+          },
+          torsoPosture: {
+            label: "Torso Posture",
+            options: {
+              upright: "Upright",
+              leaning_forward: "Leaning Forward",
+              leaning_backward: "Leaning Backward",
+              leaning_sideways: "Leaning Sideways",
+              hunched: "Hunched",
+              twisted: "Twisted",
+              arched: "Arched",
+            },
+          },
+          weightBalance: {
+            label: "Weight / Balance",
+            options: {
+              even: "Evenly Balanced",
+              shifted: "Weight Shifted",
+              single_side_support: "Single-side Support",
+              off_balance: "Off-balance",
+            },
+          },
+          bodyTension: {
+            label: "Body Tension",
+            options: {
+              relaxed: "Relaxed",
+              engaged: "Engaged",
+              tense: "Tense",
+              rigid: "Rigid",
+              loose: "Loose",
+            },
+          },
+          locomotion: {
+            label: "Locomotion",
+            options: {
+              walking: "Walking",
+              running: "Running",
+              jumping: "Jumping",
+            },
+          },
+          gestures: {
+            label: "Gestures",
+            placeholder: "Select gestures",
+            options: {
+              arms_crossed: "Arms Crossed",
+              hands_at_sides: "Hands at Sides",
+              hand_on_hip: "Hand on Hip",
+              hands_in_pockets: "Hands in Pockets",
+              open_arms: "Open Arms",
+              pointing: "Pointing",
+              reaching: "Reaching",
+              raised_arms: "Raised Arms",
+              hands_on_knees: "Hands on Knees",
+              hands_clasped: "Hands Clasped",
+            },
+          },
+          interactionDetails: {
+            label: "Interaction / Action Details",
+            placeholder: "Example: holding {sword}, leaning against {car}",
+          },
+          additionalDetails: {
+            label: "Additional Details",
+            placeholder: "Add subject-specific pose details...",
+          },
+        },
+      },
+      presets: {
+        neutral_standing: {
+          label: "Neutral Standing",
+          description: "Balanced standing posture with an upright torso and relaxed hands.",
+        },
+        relaxed_standing: {
+          label: "Relaxed Standing",
+          description: "Relaxed standing with a natural weight shift.",
+        },
+        arms_crossed_standing: {
+          label: "Arms Crossed",
+          description: "Upright standing pose with crossed arms.",
+        },
+        hand_on_hip: {
+          label: "Hand on Hip",
+          description: "Standing pose with shifted weight and one hand on the hip.",
+        },
+        relaxed_seated: {
+          label: "Relaxed Seated",
+          description: "Comfortable seated posture with relaxed body tension.",
+        },
+        forward_seated: {
+          label: "Forward Seated",
+          description: "Seated pose leaning forward with hands on the knees.",
+        },
+        walking: {
+          label: "Walking",
+          description: "Engaged standing body configuration in walking motion.",
+        },
+        running: {
+          label: "Running",
+          description: "Engaged standing body configuration in running motion.",
+        },
+        action_ready: {
+          label: "Action Ready",
+          description: "Balanced standing posture with visible body tension before action.",
         },
       },
     },
     expression: {
       title: "Expression",
       description:
-        "Controls the subject’s facial expression, emotional tone, and overall facial mood.",
+        "Define visible facial expressions and their physical facial features, then assign each expression to semantic subjects.",
       groups: {
         core: {
           title: "Expression",
@@ -1859,8 +2451,139 @@ export default {
         },
         customText: {
           label: "Custom Override",
-          description: "Write your own expression instructions and replace the generated output.",
-          placeholder: "Write your custom expression text...",
+          description:
+            "Replace structured expression assignments with your own facial-expression instruction.",
+          placeholder: "Describe the complete facial-expression instruction...",
+        },
+        assignments: {
+          label: "Expression Assignments",
+          description:
+            "Build independent facial-expression specifications and assign each one to the subjects it should control.",
+          countLabel: "assignments",
+          actions: {
+            add: "Add Expression Assignment",
+            remove: "Remove",
+          },
+          preset: {
+            label: "Expression Preset",
+          },
+          targets: {
+            label: "Apply To",
+            placeholder: "Select subject targets",
+          },
+          warnings: {
+            duplicateTarget:
+              "One or more subjects are already targeted by another expression assignment and may receive conflicting instructions.",
+          },
+          summary: {
+            empty: "No expression properties",
+          },
+          coreExpression: {
+            label: "Core Expression",
+            options: {
+              neutral: "Neutral",
+              happy: "Happy",
+              joyful: "Joyful",
+              serious: "Serious",
+              determined: "Determined",
+              angry: "Angry",
+              sad: "Sad",
+              melancholic: "Melancholic",
+              fearful: "Fearful",
+              surprised: "Surprised",
+              confused: "Confused",
+              disgusted: "Disgusted",
+              smug: "Smug",
+              curious: "Curious",
+              sleepy: "Sleepy",
+            },
+          },
+          intensity: {
+            label: "Intensity",
+            options: {
+              subtle: "Subtle",
+              moderate: "Moderate",
+              pronounced: "Pronounced",
+              exaggerated: "Exaggerated",
+            },
+          },
+          eyeState: {
+            label: "Eye State",
+            options: {
+              relaxed: "Relaxed",
+              soft: "Soft",
+              narrowed: "Narrowed",
+              wide: "Wide",
+              squinting: "Squinting",
+              closed: "Closed",
+            },
+          },
+          browState: {
+            label: "Brow State",
+            options: {
+              relaxed: "Relaxed",
+              raised: "Raised",
+              furrowed: "Furrowed",
+              lowered: "Lowered",
+            },
+          },
+          mouthState: {
+            label: "Mouth State",
+            options: {
+              neutral: "Neutral",
+              slight_smile: "Slight Smile",
+              smile: "Smile",
+              broad_smile: "Broad Smile",
+              smirk: "Smirk",
+              frown: "Frown",
+              open: "Open Mouth",
+              gritted_teeth: "Gritted Teeth",
+              pursed_lips: "Pursed Lips",
+            },
+          },
+          additionalDetails: {
+            label: "Additional Details",
+            placeholder: "Add subject-specific expression details...",
+          },
+        },
+      },
+      presets: {
+        neutral_calm: {
+          label: "Neutral Calm",
+          description: "Subtle neutral expression with relaxed facial features.",
+        },
+        gentle_smile: {
+          label: "Gentle Smile",
+          description: "Subtle happy expression with relaxed eyes and a slight smile.",
+        },
+        warm_smile: {
+          label: "Warm Smile",
+          description: "Moderate happy expression with soft eyes and a clear smile.",
+        },
+        joyful: {
+          label: "Joyful",
+          description: "Pronounced joyful expression with soft eyes and a broad smile.",
+        },
+        determined: {
+          label: "Determined",
+          description: "Focused determined expression with narrowed eyes and furrowed brows.",
+        },
+        furious: {
+          label: "Furious",
+          description:
+            "Pronounced angry expression with narrowed eyes, furrowed brows, and gritted teeth.",
+        },
+        sad_soft: {
+          label: "Soft Sadness",
+          description: "Subtle sad expression with soft eyes and a frown.",
+        },
+        shocked: {
+          label: "Shocked",
+          description: "Pronounced surprise with wide eyes, raised brows, and an open mouth.",
+        },
+        sleepy: {
+          label: "Sleepy",
+          description: "Subtle sleepy expression with relaxed facial features.",
         },
       },
     },
@@ -1925,6 +2648,96 @@ export default {
           label: "Custom Override",
           description: "Write your own outfit instructions and replace the generated output.",
           placeholder: "Write your custom outfit text...",
+        },
+      },
+      ui: {
+        designer: {
+          title: "Outfit Designer",
+          description:
+            "Build one or more wearable sets, assign each set to subjects, then configure every item independently.",
+        },
+        override: {
+          title: "Custom Override",
+          description: "Replace the structured Outfit Designer output with your own instruction.",
+          placeholder: "Describe the complete outfit instruction...",
+        },
+        sets: {
+          actions: {
+            duplicate: "Duplicate set",
+            remove: "Remove set",
+            add: "Add Outfit Set",
+          },
+          fields: {
+            name: {
+              label: "Set name",
+              placeholder: "Outfit set name",
+            },
+            key: {
+              label: "Semantic key",
+              hint: "lowerCamelCase · auto-unique",
+            },
+            preset: {
+              label: "Starter preset",
+              placeholder: "No preset",
+            },
+            targets: {
+              label: "Who wears this set?",
+              placeholder: "Select subject targets",
+            },
+            additionalDetails: {
+              label: "Additional set details",
+              placeholder: "Optional instructions for the whole outfit set...",
+            },
+          },
+          sections: {
+            items: {
+              title: "Add wearable items",
+              description: "Choose canonical items, prepared starters, or a custom wearable.",
+              addSelected: "Add selected",
+              placeholder: "Select clothes and wearable items...",
+              empty: "This set has no wearable items yet.",
+            },
+          },
+          footer: {
+            description: "Create separate outfit sets for different subjects or alternate looks.",
+          },
+        },
+        item: {
+          actions: {
+            duplicate: "Duplicate item",
+            remove: "Remove item",
+          },
+          fields: {
+            name: {
+              label: "Item name",
+              placeholder: "Display name",
+            },
+            key: {
+              label: "Semantic key",
+              hint: "Unique inside this set",
+            },
+            type: {
+              label: "Wearable type",
+            },
+            customType: {
+              label: "Custom wearable",
+              placeholder: "Describe the wearable item...",
+            },
+            propertyFamily: {
+              label: "Property family",
+            },
+            source: {
+              label: "Baseline source",
+            },
+            referenceHint: {
+              label: "Reference item hint",
+              placeholder: "e.g. the blouse worn by the person on the left",
+            },
+            additionalDetails: {
+              label: "Additional item details",
+              placeholder: "Optional construction or wearing details...",
+            },
+          },
         },
       },
     },
@@ -2061,6 +2874,99 @@ export default {
           placeholder: "Write your custom hair text...",
         },
       },
+      ui: {
+        designer: {
+          title: "Hairstyle Designer",
+          description:
+            "Build one or more subject-scoped hairstyles, then assign color and material externally when needed.",
+        },
+        override: {
+          title: "Custom Override",
+          description:
+            "Replace the structured Hairstyle Designer output with your own instruction.",
+          placeholder: "Describe the complete hairstyle instruction...",
+        },
+        styles: {
+          actions: {
+            duplicate: "Duplicate hairstyle",
+            remove: "Remove hairstyle",
+            add: "Add Hairstyle",
+          },
+          fields: {
+            name: {
+              label: "Hairstyle name",
+              placeholder: "Hairstyle name",
+            },
+            key: {
+              label: "Semantic key",
+              hint: "lowerCamelCase · auto-unique",
+            },
+            preset: {
+              label: "Starter preset",
+              placeholder: "No preset",
+            },
+            targets: {
+              label: "Whose hair is this?",
+              placeholder: "Select subject targets",
+            },
+            source: {
+              label: "Baseline source",
+            },
+            referenceHint: {
+              label: "Reference hair hint",
+              placeholder: "e.g. the hairstyle of the person on the left",
+            },
+            additionalDetails: {
+              label: "Additional hairstyle details",
+              placeholder: "Optional structural or styling instructions...",
+            },
+          },
+          sections: {
+            base: {
+              title: "Base Hair Structure",
+              description: "Color and material are intentionally assigned from their own modules.",
+            },
+            components: {
+              title: "Add hairstyle components",
+              description:
+                "Add bangs, braids, buns, ponytails, hair accessories, or custom elements.",
+              addSelected: "Add selected",
+              placeholder: "Select hairstyle components...",
+              empty: "No extra hairstyle components. Base hair structure can stand on its own.",
+            },
+          },
+          footer: {
+            description: "Create separate hairstyles for different subjects or alternate looks.",
+          },
+        },
+        component: {
+          actions: {
+            duplicate: "Duplicate component",
+            remove: "Remove component",
+          },
+          fields: {
+            name: {
+              label: "Component name",
+              placeholder: "Display name",
+            },
+            key: {
+              label: "Semantic key",
+              hint: "Unique inside this hairstyle",
+            },
+            type: {
+              label: "Component type",
+            },
+            customType: {
+              label: "Custom component",
+              placeholder: "Describe the hair component...",
+            },
+            additionalDetails: {
+              label: "Additional component details",
+              placeholder: "Optional structural or styling details...",
+            },
+          },
+        },
+      },
     },
     effects: {
       title: "Effects",
@@ -2173,7 +3079,7 @@ export default {
     camera: {
       title: "Camera",
       description:
-        "Controls camera type and lens perspective for the image, including general lens styles or specific camera models.",
+        "Control how an otherwise unchanged realistic scene is recorded: capture system, image response, lens behavior, focus/depth behavior, and physical capture behavior. Framing, viewpoint, composition, lighting, pose, and visual style remain independent.",
       groups: {
         core: {
           title: "Camera",
@@ -2182,11 +3088,26 @@ export default {
         advanced: {
           title: "Advanced Details",
           description:
-            "Add optional extra camera instructions without replacing the generated output.",
+            "Add optional camera-specific instructions not covered by the structured controls.",
         },
         override: {
           title: "Custom Override",
-          description: "Replace the generated camera output with your own text.",
+          description: "Replace the generated camera output with your own camera instruction.",
+        },
+        capture: {
+          title: "Capture System",
+          description:
+            "Choose the camera or recording system and its image-response character without changing framing or lighting.",
+        },
+        optics: {
+          title: "Optics & Focus",
+          description:
+            "Control lens behavior and depth-of-field independently from the selected camera body or device.",
+        },
+        behavior: {
+          title: "Capture Behavior",
+          description:
+            "Describe physical camera handling or recording stability without changing subject placement or composition.",
         },
       },
       fields: {
@@ -2241,50 +3162,287 @@ export default {
           },
         },
         extraDetails: {
-          label: "Extra Details",
+          label: "Extra Camera Details",
           description:
-            "Add optional instructions or clarifications for the camera without replacing the generated output.",
-          placeholder: "Add extra camera details...",
+            "Add only camera/capture-specific instructions that are not already expressed by the controls above.",
+          placeholder: "Add optional camera details...",
         },
         customText: {
-          label: "Custom Override",
-          description: "Write your own instructions to override the generated camera output.",
+          label: "Custom Camera Text",
+          description: "Write your own camera instruction and replace the generated Camera output.",
           placeholder: "Write your custom camera text...",
+        },
+        captureSystem: {
+          label: "Capture System",
+          description:
+            "Choose the recording system or specific camera body. This defines the capture platform, not angle, framing, composition, or lighting.",
+          placeholder: "Select capture system",
+          categories: {
+            genericDigital: "Generic Digital",
+            genericFilm: "Generic Film",
+            integrated: "Integrated / Fixed Systems",
+            analogModels: "Analog Camera Models",
+            digitalModels: "Digital Camera Models",
+          },
+          options: {
+            digital_full_frame: "Full-Frame Digital",
+            digital_aps_c: "APS-C Digital",
+            digital_medium_format: "Medium-Format Digital",
+            digital_cinema: "Digital Cinema",
+            film_35mm: "35mm Film",
+            film_medium_format: "Medium-Format Film",
+            instant_film: "Instant Film",
+            smartphone: "Smartphone Camera",
+            webcam: "Webcam",
+            security_camera: "Security Camera",
+            action_camera: "Action Camera",
+            aerial_drone: "Aerial Drone Camera",
+            polaroid_sx70: "Polaroid SX-70",
+            kodak_disposable: "Kodak Disposable",
+            canon_ae1: "Canon AE-1",
+            nikon_f3: "Nikon F3",
+            pentax_k1000: "Pentax K1000",
+            leica_m6: "Leica M6",
+            hasselblad_500c: "Hasselblad 500C/M",
+            rolleiflex: "Rolleiflex",
+            contax_t2: "Contax T2",
+            lomography: "Lomography Camera",
+            canon_eos_r5: "Canon EOS R5",
+            nikon_z8: "Nikon Z8",
+            sony_a7r_iv: "Sony A7R IV",
+            sony_a7s_iii: "Sony A7S III",
+            fujifilm_x100v: "Fujifilm X100V",
+            fujifilm_gfx_100s: "Fujifilm GFX 100S",
+            leica_q2: "Leica Q2",
+            leica_sl2: "Leica SL2",
+            hasselblad_x2d: "Hasselblad X2D",
+            red_komodo: "RED Komodo",
+            arri_alexa: "ARRI Alexa",
+            blackmagic_pocket: "Blackmagic Pocket Cinema Camera",
+          },
+        },
+        captureResponse: {
+          label: "Capture Response",
+          description:
+            "Control sensor or film response such as tonal roll-off, grain/noise character, dynamic-range behavior, and image-response character without changing scene lighting.",
+          placeholder: "Select capture response",
+          options: {
+            neutral_digital: "Neutral Digital",
+            high_resolution_digital: "High-Resolution Digital",
+            low_light_digital: "High-Sensitivity Digital",
+            xtrans_digital: "Fujifilm X-Trans",
+            medium_format_digital: "Medium-Format Digital",
+            cinema_digital: "Digital Cinema",
+            film_35mm: "35mm Film",
+            consumer_film: "Consumer 35mm Film",
+            medium_format_film: "Medium-Format Film",
+            instant_film: "Instant Film",
+            experimental_film: "Experimental Film",
+            compressed_digital: "Compressed Digital",
+          },
+          compatibilityWarnings: {
+            systemMismatch:
+              "This capture response is not a typical physical match for the selected capture system. The combination is still allowed for intentional creative use.",
+          },
+        },
+        lensProfile: {
+          label: "Lens Profile",
+          description:
+            "Choose optical field-of-view, compression, and distortion behavior. This does not control shot size or viewpoint.",
+          placeholder: "Select lens profile",
+          options: {
+            macro: "Macro",
+            fisheye: "Fisheye",
+            ultra_wide: "Ultra Wide",
+            wide_angle: "Wide Angle",
+            standard: "Standard",
+            short_telephoto: "Short Telephoto",
+            telephoto: "Telephoto",
+            fixed_23mm_wide: "Fixed 23mm Wide-Normal",
+            fixed_28mm_wide: "Fixed 28mm Wide",
+            simple_fixed_wide: "Simple Fixed Wide",
+            integral_instant_lens: "Integral Instant-Camera Lens",
+            twin_lens_medium_format: "Medium-Format Twin-Lens",
+            fixed_38mm: "Fixed 38mm",
+          },
+          compatibilityWarnings: {
+            systemMismatch:
+              "This lens profile is not a typical physical match for the selected capture system. The combination is still allowed for intentional creative use.",
+          },
+        },
+        focusDepth: {
+          label: "Focus & Depth",
+          description:
+            "Choose the depth-of-field behavior independently from lens profile and framing.",
+          placeholder: "Select focus and depth behavior",
+          options: {
+            shallow: "Shallow Depth of Field",
+            moderate: "Moderate Depth of Field",
+            deep: "Deep Depth of Field",
+            fixed_focus_deep: "Fixed Focus / Deep",
+            critical_focus: "Critical Focus",
+          },
+        },
+        captureBehavior: {
+          label: "Capture Behavior",
+          description:
+            "Choose physical recording behavior such as tripod stability or subtle handheld instability without forcing composition or motion effects.",
+          placeholder: "Select capture behavior",
+          options: {
+            tripod_stable: "Tripod Stable",
+            handheld_subtle: "Subtle Handheld",
+            handheld_active: "Active Handheld",
+            stabilized: "Stabilized",
+            fixed_mounted: "Fixed Mounted",
+          },
+        },
+      },
+      presets: {
+        polaroid_sx70: {
+          label: "Polaroid SX-70",
+          description:
+            "Instant-film capture recipe with the SX-70 system's integral optical and response character.",
+        },
+        kodak_disposable: {
+          label: "Kodak Disposable",
+          description: "Simple fixed-lens consumer 35mm film capture recipe.",
+        },
+        canon_ae1: {
+          label: "Canon AE-1",
+          description:
+            "Canon AE-1 35mm film-body recipe; lens and focus remain independently editable.",
+        },
+        nikon_f3: {
+          label: "Nikon F3",
+          description:
+            "Nikon F3 35mm film-body recipe; lens and focus remain independently editable.",
+        },
+        pentax_k1000: {
+          label: "Pentax K1000",
+          description:
+            "Pentax K1000 35mm film-body recipe; lens and focus remain independently editable.",
+        },
+        leica_m6: {
+          label: "Leica M6",
+          description:
+            "Leica M6 35mm rangefinder-body recipe; lens and focus remain independently editable.",
+        },
+        hasselblad_500c: {
+          label: "Hasselblad 500C/M",
+          description: "Hasselblad 500C/M medium-format film capture recipe.",
+        },
+        rolleiflex: {
+          label: "Rolleiflex",
+          description:
+            "Rolleiflex medium-format twin-lens-reflex capture recipe with fixed-system optical character.",
+        },
+        contax_t2: {
+          label: "Contax T2",
+          description:
+            "Contax T2 compact 35mm film capture recipe with its fixed 38mm optical character.",
+        },
+        lomography: {
+          label: "Lomography Camera",
+          description:
+            "Experimental compact-film capture recipe without imposing viewpoint or composition.",
+        },
+        canon_eos_r5: {
+          label: "Canon EOS R5",
+          description:
+            "Canon EOS R5 full-frame digital capture recipe; lens and focus remain independently editable.",
+        },
+        nikon_z8: {
+          label: "Nikon Z8",
+          description:
+            "Nikon Z8 full-frame digital capture recipe; lens and focus remain independently editable.",
+        },
+        sony_a7r_iv: {
+          label: "Sony A7R IV",
+          description: "Sony A7R IV high-resolution full-frame digital capture recipe.",
+        },
+        sony_a7s_iii: {
+          label: "Sony A7S III",
+          description:
+            "Sony A7S III high-sensitivity full-frame digital capture recipe without forcing low-light scene lighting.",
+        },
+        fujifilm_x100v: {
+          label: "Fujifilm X100V",
+          description:
+            "Fujifilm X100V APS-C fixed-lens capture recipe with integrated optical character.",
+        },
+        fujifilm_gfx_100s: {
+          label: "Fujifilm GFX 100S",
+          description:
+            "Fujifilm GFX 100S medium-format digital capture recipe; lens and focus remain independently editable.",
+        },
+        leica_q2: {
+          label: "Leica Q2",
+          description:
+            "Leica Q2 full-frame fixed-lens capture recipe with integrated 28mm-class optics.",
+        },
+        leica_sl2: {
+          label: "Leica SL2",
+          description:
+            "Leica SL2 full-frame digital capture recipe; lens and focus remain independently editable.",
+        },
+        hasselblad_x2d: {
+          label: "Hasselblad X2D",
+          description:
+            "Hasselblad X2D medium-format digital capture recipe; lens and focus remain independently editable.",
+        },
+        red_komodo: {
+          label: "RED Komodo",
+          description:
+            "RED Komodo digital-cinema capture recipe without cinematic composition or lighting assumptions.",
+        },
+        arri_alexa: {
+          label: "ARRI Alexa",
+          description:
+            "ARRI Alexa digital-cinema capture recipe focused on capture response rather than cinematic styling.",
+        },
+        blackmagic_pocket: {
+          label: "Blackmagic Pocket Cinema Camera",
+          description:
+            "Blackmagic Pocket Cinema Camera digital-cinema capture recipe without composition assumptions.",
         },
       },
     },
     colorPalette: {
       title: "Color Palette",
       description:
-        "Control the color theme of the image using custom colors or predefined palettes.",
+        "Define editable color palettes and assign them to broad image areas, specific typography entities, or user-defined subject and object variables. Color Palette controls base colors only; illumination color belongs to Lighting and material appearance belongs to Texture.",
       groups: {
         core: {
-          title: "Core",
+          title: "Palette Rules",
           description:
-            "Assign palettes or custom colors to specific parts of the image such as background, outfit, lighting, etc.",
+            "Create one or more palette rules. Each rule keeps its colors and semantic targets linked together.",
         },
         advanced: {
-          title: "Advanced",
+          title: "Advanced Details",
+          description: "Add optional color-specific instructions not covered by palette rules.",
+        },
+        override: {
+          title: "Custom Override",
           description:
-            "Add optional notes about color usage without replacing the generated palette.",
+            "Replace the generated Color Palette output with your own color instruction.",
         },
       },
       fields: {
         paletteAssignments: {
-          label: "Color Assignments",
+          label: "Palette Rules",
           description:
-            "Assign palettes or custom colors to specific parts of the image such as background, outfit, lighting, etc.",
+            "Choose a palette preset or build colors manually, then assign that palette to one or more semantic targets.",
           placeholder: "Select palette assignments",
           actions: {
-            addAssignment: "Add Assignment",
+            addAssignment: "Add palette rule",
             remove: "Remove",
-            addColor: "Add Color",
+            addColor: "Add color",
           },
           modes: {
             custom: "Custom",
             preset: "Preset",
           },
-          ruleTitle: "Palette Rule",
+          ruleTitle: "Palette Rule {index}",
           usages: {
             accents: "Accents",
             background: "Background",
@@ -2296,21 +3454,62 @@ export default {
           },
           controls: {
             color: {
-              placeholder: "Select or enter a color...",
+              placeholder: "Color value, for example #3366ff or deep navy",
             },
+          },
+          ruleSummary: "{colors} colors · {targets} targets",
+          preset: {
+            label: "Palette Preset",
+          },
+          colors: {
+            label: "Palette Colors",
+            description:
+              "Preset colors stay editable. Any swatch can use a literal color or an enabled user Color variable.",
+            literal: "Custom Color",
+            groups: {
+              manual: "Manual",
+              variables: "Color Variables",
+            },
+          },
+          targets: {
+            label: "Apply To",
+            groups: {
+              general: "General",
+              typographyGroups: "Typography Groups",
+              typographyTexts: "Typography Texts",
+              userVariables: "User Subject / Object Variables",
+              missing: "Missing References",
+              custom: "Custom",
+            },
+            builtin: {
+              overall: "Overall Image",
+              background: "Background",
+              subject: "Main Subject",
+              outfit: "Outfit",
+              hair: "Hair",
+              typography: "Typography",
+              accents: "Accent Elements",
+            },
+            custom: "Custom Target",
+            customLabel: "Custom target",
+            customPlaceholder: "Example: dragon costume scales",
+          },
+          missing: "Missing",
+          warnings: {
+            duplicateTarget:
+              "Another palette rule also targets at least one of these exact elements. Both rules are kept.",
           },
         },
         extraDetails: {
-          label: "Extra Details",
+          label: "Extra Color Details",
           description:
-            "Add optional notes about color usage without replacing the generated palette.",
-          placeholder: "Add extra color palette details...",
+            "Add optional color instructions that do not redefine lighting, material, or visual style.",
+          placeholder: "Add optional color details...",
         },
         customText: {
-          description:
-            "If filled, this text becomes the final color palette output and all other color palette fields are ignored.",
-          label: "Custom Color Palette Override",
-          placeholder: "Write a complete custom color palette description...",
+          description: "Replace all structured Color Palette output with a custom instruction.",
+          label: "Custom Color Override",
+          placeholder: "Replace generated color palette output...",
         },
       },
     },
@@ -2436,6 +3635,16 @@ export default {
               },
               customGroupPurpose: {
                 label: "Custom group purpose",
+                placeholder: "Describe the typography group's purpose...",
+              },
+              textVariables: {
+                clear: "Clear text variable selection",
+                description:
+                  "Each selected variable becomes a normal typography text item whose content is the variable token.",
+                empty:
+                  "No active user Text variables are available yet. Create them in Variables first.",
+                label: "Text variables",
+                placeholder: "Select user Text variables",
               },
             },
             textBlocksTitle: "Text Blocks",
@@ -2456,6 +3665,15 @@ export default {
           empty: {
             description: "Create at least one typography group, then add text blocks inside it.",
             title: "No typography groups yet",
+          },
+          variablePicker: {
+            addSelected: "Add selected",
+            clear: "Clear text variable selection",
+            description: "Select one or more user Text variables to add as typography text items.",
+            empty: "No active user Text variables are available. Create them in Variables first.",
+            modalTitle: "Add text variables",
+            placeholder: "Select Text variables",
+            title: "Text variables",
           },
         },
         extraDetails: {
@@ -2773,6 +3991,10 @@ export default {
               subtitle: "Review the new grid size before applying it.",
               title: "Reset Builder Grid?",
             },
+            contentKey: {
+              empty: "Empty",
+              select: "Select content variable",
+            },
           },
           controls: {
             contentKey: {
@@ -2862,6 +4084,16 @@ export default {
           copied: "Copied",
           copy: "Copy",
           copyJson: "Copy JSON",
+          close: "Close",
+          download: "Download",
+        },
+        errors: {
+          render: "Could not render the layout schema image.",
+        },
+        preview: {
+          alt: "Generated layout schema preview",
+          subtitle: "Preview or download the generated layout schema image.",
+          title: "Layout schema preview",
         },
       },
       presets: {
@@ -3710,6 +4942,10 @@ export default {
       "{token} is referenced in the prompt but is not defined as an active user variable.",
     unusedVariable:
       "{token} is defined but is not currently referenced by the active prompt output.",
+    texturePreserveMaterialsConflict:
+      "Texture / Material requests material or surface changes while Setup is preserving the original materials and surface details. Review one of these settings to avoid conflicting instructions.",
+    posePreservePoseConflict:
+      "Pose requests a new body configuration while Setup is preserving the original pose. Review one of these settings to avoid conflicting instructions.",
   },
   guide: {
     title: "Module Guide",
@@ -4433,6 +5669,11 @@ export default {
         empty: "No selected images left.",
         remove: "Remove image",
       },
+      optimization: {
+        increased: "Size increased by {percent}% · {inputSize} → {outputSize}",
+        reduced: "Size reduced by {percent}% · {inputSize} → {outputSize}",
+        unchanged: "Output size is nearly unchanged · {inputSize} → {outputSize}",
+      },
     },
     about: {
       title: "About Prompt Draft",
@@ -4459,6 +5700,7 @@ export default {
         removeFromKeyModules: "Remove from key modules",
         showVariables: "Show variables",
         refreshPage: "Refresh page",
+        reset: "Reset",
       },
     },
     modal: {
@@ -4471,6 +5713,43 @@ export default {
         insertVariable: "Insert Variable",
         insertVariableSubtitle: "Choose a variable and insert it into the active prompt field.",
       },
+    },
+    assignmentScope: {
+      groups: {
+        general: "General",
+        moduleOutputs: "Linked Module Outputs",
+        typographyGroups: "Typography Groups",
+        typographyTexts: "Typography Texts",
+        userVariables: "User Subject / Object Variables",
+        missing: "Missing References",
+        moduleEntities: "Linked Module Entities",
+      },
+      linkedModuleDescription: "Linked module output",
+      missing: "Missing",
+      applyTo: "Apply To",
+      applyPlaceholder: "Select targets",
+      customTargets: "Custom Targets",
+      customTargetPlaceholder: "Example: dragon costume scales",
+      addTarget: "Add custom target",
+      except: "Except",
+      exceptionPlaceholder: "Select exceptions",
+      customExceptions: "Custom Exceptions",
+      customExceptionPlaceholder: "Example: buttons or shoe laces",
+      addException: "Add exception",
+      remove: "Remove",
+      missingHelp:
+        "Some referenced targets no longer exist. They remain preserved until you remove them.",
+      missingExceptionHelp:
+        "Some referenced exceptions no longer exist. They remain preserved until you remove them.",
+    },
+    subjectAssignmentTargets: {
+      groups: {
+        systemSubject: "Main Subject",
+        userSubjects: "User Subject Variables",
+        missing: "Missing References",
+      },
+      mainSubject: "Main Subject",
+      missing: "Missing",
     },
   },
   prompts: {

@@ -22,6 +22,7 @@ import {
 } from "~/utils/outfitVariables";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
+const { t } = useI18n();
 const { mobile } = useScreen();
 const {
   enabledPromptVariables,
@@ -387,8 +388,8 @@ function customPropertyValue(propertyId: string) {
         <el-text :size="9" color="normal45">{{ itemToken }} · {{ item.source.mode === 'reference' ? 'Reference baseline' : 'Defined baseline' }}</el-text>
       </el-flex>
       <el-flex rules="rcc" :gap="4">
-        <el-button type="fab" mode="flat" icon="content_copy" label="Duplicate item" :size="12" :p="7" @click.stop="emit('duplicate')" />
-        <el-button type="fab" mode="flat" color="red" icon="delete" label="Remove item" :size="12" :p="7" @click.stop="emit('remove')" />
+        <el-button type="fab" mode="flat" icon="content_copy" :label="t('modules.outfit.ui.item.actions.duplicate')" :size="12" :p="7" @click.stop="emit('duplicate')" />
+        <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('modules.outfit.ui.item.actions.remove')" :size="12" :p="7" @click.stop="emit('remove')" />
         <el-icon :icon="expanded ? 'expand_less' : 'expand_more'" :size="14" />
       </el-flex>
     </el-flex>
@@ -396,34 +397,34 @@ function customPropertyValue(propertyId: string) {
     <template v-if="expanded">
       <el-grid :cols="mobile ? 1 : 3" :gap="10" class="w100">
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Item name</el-text>
-          <el-text-field :model-value="item.name" type="text" placeholder="Display name" @update:model-value="updateItem({ name: String($event ?? '') })" />
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.name.label") }}</el-text>
+          <el-text-field :model-value="item.name" type="text" :placeholder="t('modules.outfit.ui.item.fields.name.placeholder')" @update:model-value="updateItem({ name: String($event ?? '') })" />
         </el-grid>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Semantic key</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.key.label") }}</el-text>
           <el-text-field :model-value="item.key" type="text" placeholder="dress" @update:model-value="updateItemKey" />
-          <el-text :size="8" color="normal40">Unique inside this set</el-text>
+          <el-text :size="8" color="normal40">{{ t("modules.outfit.ui.item.fields.key.hint") }}</el-text>
         </el-grid>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Wearable type</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.type.label") }}</el-text>
           <el-dropdown :model-value="item.type" :items="typeItems" item-label="label" item-value="value" item-group="group" item-group-label="groupLabel" @update:model-value="changeType" />
         </el-grid>
 
         <template v-if="item.type === 'custom'">
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Custom wearable</el-text>
-            <el-text-field :model-value="item.customType || ''" type="text" placeholder="Describe the wearable item..." @update:model-value="updateItem({ customType: String($event ?? '') })" />
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.customType.label") }}</el-text>
+            <el-text-field :model-value="item.customType || ''" type="text" :placeholder="t('modules.outfit.ui.item.fields.customType.placeholder')" @update:model-value="updateItem({ customType: String($event ?? '') })" />
           </el-grid>
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Property family</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.propertyFamily.label") }}</el-text>
             <el-dropdown :model-value="item.customCategory || 'custom'" :items="customCategoryItems" item-label="label" item-value="value" @update:model-value="changeCustomCategory" />
           </el-grid>
         </template>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Baseline source</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.source.label") }}</el-text>
           <el-dropdown :model-value="item.source.mode" :items="sourceModeItems" item-label="label" item-value="value" @update:model-value="changeSourceMode" />
         </el-grid>
 
@@ -433,8 +434,8 @@ function customPropertyValue(propertyId: string) {
             <el-dropdown :model-value="selectedReferenceValue" :items="referenceItems" item-label="label" item-value="value" item-description="description" @update:model-value="changeReference" />
           </el-grid>
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Reference item hint</el-text>
-            <el-text-field :model-value="item.source.itemHint || ''" type="text" placeholder="e.g. the blouse worn by the person on the left" @update:model-value="updateReferenceHint" />
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.referenceHint.label") }}</el-text>
+            <el-text-field :model-value="item.source.itemHint || ''" type="text" :placeholder="t('modules.outfit.ui.item.fields.referenceHint.placeholder')" @update:model-value="updateReferenceHint" />
           </el-grid>
         </template>
       </el-grid>
@@ -465,8 +466,8 @@ function customPropertyValue(propertyId: string) {
       </el-grid>
 
       <el-grid :gap="4">
-        <el-text :size="10" :weight="500">Additional item details</el-text>
-        <el-text-field :model-value="item.additionalDetails || ''" type="textarea" :rows="2" placeholder="Optional construction or wearing details..." support-variables @update:model-value="updateItem({ additionalDetails: String($event ?? '') })" />
+        <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.item.fields.additionalDetails.label") }}</el-text>
+        <el-text-field :model-value="item.additionalDetails || ''" type="textarea" :rows="2" :placeholder="t('modules.outfit.ui.item.fields.additionalDetails.placeholder')" support-variables @update:model-value="updateItem({ additionalDetails: String($event ?? '') })" />
       </el-grid>
     </template>
   </el-grid>

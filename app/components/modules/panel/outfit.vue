@@ -220,18 +220,18 @@ async function copyOutput() {
     <el-grid v-show="expanded" :gap="12" class="w100">
       <el-grid v-if="!customMode && outfitField" :p="12" :br="1" :radius="16" bc="blue35" class="w100">
         <el-flex rules="ccs" :gap="4">
-          <el-text :size="14" :weight="600" icon="styler">Outfit Designer</el-text>
-          <el-text :size="11" color="normal45">Build one or more wearable sets, assign each set to subjects, then configure every item independently.</el-text>
+          <el-text :size="14" :weight="600" icon="styler">{{ t("modules.outfit.ui.designer.title") }}</el-text>
+          <el-text :size="11" color="normal45">{{ t("modules.outfit.ui.designer.description") }}</el-text>
         </el-flex>
         <OutfitSetsField :model-value="outfitSets" @update:model-value="values.outfitSets = $event" />
       </el-grid>
 
       <el-grid v-if="customMode && customField" :p="12" :br="1" :radius="16" :bc="customText ? 'blue35' : 'orange25'">
         <el-flex rules="ccs" :gap="4">
-          <el-text :size="14" :weight="600" icon="edit">Custom Override</el-text>
-          <el-text :size="11" color="normal45">Replace the structured Outfit Designer output with your own instruction.</el-text>
+          <el-text :size="14" :weight="600" icon="edit">{{ t("modules.outfit.ui.override.title") }}</el-text>
+          <el-text :size="11" color="normal45">{{ t("modules.outfit.ui.override.description") }}</el-text>
         </el-flex>
-        <el-text-field v-model="values.customText" type="textarea" :rows="customField.ui?.rows || 4" support-variables placeholder="Describe the complete outfit instruction..." />
+        <el-text-field v-model="values.customText" type="textarea" :rows="customField.ui?.rows || 4" support-variables :placeholder="t('modules.outfit.ui.override.placeholder')" />
         <el-text v-if="!customText" :size="10" color="orange" icon="warning" icon-color="orange">{{ t("panel.customOverrideEmpty") }}</el-text>
       </el-grid>
 

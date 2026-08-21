@@ -162,7 +162,10 @@ async function walkSourceFiles(directory = ROOT) {
       const absolute = path.join(current, entry.name)
 
       if (entry.isDirectory()) {
-        if (EXCLUDED_DIRS.has(entry.name)) continue
+        if (
+          EXCLUDED_DIRS.has(entry.name) ||
+          /^\.layout-stage\d+-backup$/i.test(entry.name)
+        ) continue
         await visit(absolute)
         continue
       }

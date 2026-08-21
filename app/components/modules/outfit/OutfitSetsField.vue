@@ -23,6 +23,7 @@ import { semanticScopeSummary } from "~/utils/semanticTargets";
 import { useSubjectAssignmentTargets } from "~/composables/prompt/useSubjectAssignmentTargets";
 import OutfitItemCard from "./OutfitItemCard.vue";
 
+const { t } = useI18n();
 const { mobile } = useScreen();
 
 const props = withDefaults(
@@ -485,8 +486,8 @@ function applyPreset(index: number, value: ElDropdownValue) {
           <el-text :size="9" color="normal45">{{ getOutfitSetVariableToken(set) }} · {{ setSummary(set) }}</el-text>
         </el-flex>
         <el-flex rules="rcc" :gap="4">
-          <el-button type="fab" mode="flat" icon="content_copy" label="Duplicate set" :size="12" :p="7" @click.stop="duplicateSet(setIndex)" />
-          <el-button type="fab" mode="flat" color="red" icon="delete" label="Remove set" :size="12" :p="7" @click.stop="removeSet(setIndex)" />
+          <el-button type="fab" mode="flat" icon="content_copy" :label="t('modules.outfit.ui.sets.actions.duplicate')" :size="12" :p="7" @click.stop="duplicateSet(setIndex)" />
+          <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('modules.outfit.ui.sets.actions.remove')" :size="12" :p="7" @click.stop="removeSet(setIndex)" />
           <el-icon :icon="isExpanded(set) ? 'expand_less' : 'expand_more'" :size="14" />
         </el-flex>
       </el-flex>
@@ -494,36 +495,36 @@ function applyPreset(index: number, value: ElDropdownValue) {
       <el-grid v-if="isExpanded(set)" :gap="12" class="w100">
         <el-grid :cols="mobile ? 1 : 3" :gap="10">
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Set name</el-text>
-            <el-text-field :model-value="set.name" type="text" placeholder="Outfit set name" @update:model-value="updateSet(setIndex, { name: String($event ?? '') })" />
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.sets.fields.name.label") }}</el-text>
+            <el-text-field :model-value="set.name" type="text" :placeholder="t('modules.outfit.ui.sets.fields.name.placeholder')" @update:model-value="updateSet(setIndex, { name: String($event ?? '') })" />
           </el-grid>
 
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Semantic key</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.sets.fields.key.label") }}</el-text>
             <el-text-field :model-value="set.key" type="text" placeholder="eveningSet" @update:model-value="updateSetKey(setIndex, $event)" />
-            <el-text :size="8" color="normal40">lowerCamelCase · auto-unique</el-text>
+            <el-text :size="8" color="normal40">{{ t("modules.outfit.ui.sets.fields.key.hint") }}</el-text>
           </el-grid>
 
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Starter preset</el-text>
-            <el-dropdown :model-value="set.presetId || ''" :items="presetItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" clearable placeholder="No preset" @update:model-value="applyPreset(setIndex, $event)" />
+            <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.sets.fields.preset.label") }}</el-text>
+            <el-dropdown :model-value="set.presetId || ''" :items="presetItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" clearable :placeholder="t('modules.outfit.ui.sets.fields.preset.placeholder')" @update:model-value="applyPreset(setIndex, $event)" />
           </el-grid>
         </el-grid>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Who wears this set?</el-text>
-          <el-multi-select :model-value="targetValues(set)" :items="targetItems(set)" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" placeholder="Select subject targets" @update:model-value="updateTargets(setIndex, $event)" />
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.sets.fields.targets.label") }}</el-text>
+          <el-multi-select :model-value="targetValues(set)" :items="targetItems(set)" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" :placeholder="t('modules.outfit.ui.sets.fields.targets.placeholder')" @update:model-value="updateTargets(setIndex, $event)" />
         </el-grid>
 
         <el-grid :p="10" :radius="14" :br="1" bc="normal10" :gap="8">
           <el-flex rules="rbc" class="w100" :gap="8">
             <el-flex rules="ccs" :gap="1">
-              <el-text :size="12" :weight="600" icon="add_circle">Add wearable items</el-text>
-              <el-text :size="9" color="normal45">Choose canonical items, prepared starters, or a custom wearable.</el-text>
+              <el-text :size="12" :weight="600" icon="add_circle">{{ t("modules.outfit.ui.sets.sections.items.title") }}</el-text>
+              <el-text :size="9" color="normal45">{{ t("modules.outfit.ui.sets.sections.items.description") }}</el-text>
             </el-flex>
-            <el-button icon="add" color="prim" label="Add selected" :disable="!(pendingItemChoices[set.id] || []).length" :size="12" :p="[8, 12]" @click="addSelectedItems(setIndex)" />
+            <el-button icon="add" color="prim" :label="t('modules.outfit.ui.sets.sections.items.addSelected')" :disable="!(pendingItemChoices[set.id] || []).length" :size="12" :p="[8, 12]" @click="addSelectedItems(setIndex)" />
           </el-flex>
-          <el-multi-select :model-value="pendingItemChoices[set.id] || []" :items="itemPickerItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" placeholder="Select clothes and wearable items..." @update:model-value="updatePendingItems(set.id, $event)" />
+          <el-multi-select :model-value="pendingItemChoices[set.id] || []" :items="itemPickerItems" item-label="label" item-value="value" item-description="description" item-group="group" item-group-label="groupLabel" :placeholder="t('modules.outfit.ui.sets.sections.items.placeholder')" @update:model-value="updatePendingItems(set.id, $event)" />
         </el-grid>
 
         <el-grid v-if="set.items.length" :gap="8" class="w100">
@@ -539,19 +540,19 @@ function applyPreset(index: number, value: ElDropdownValue) {
         </el-grid>
 
         <el-flex v-else rules="ccs" :p="12" :radius="12" :br="1" bc="orange15">
-          <el-text :size="11" color="orange" icon="info" icon-color="orange">This set has no wearable items yet.</el-text>
+          <el-text :size="11" color="orange" icon="info" icon-color="orange">{{ t("modules.outfit.ui.sets.sections.items.empty") }}</el-text>
         </el-flex>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Additional set details</el-text>
-          <el-text-field :model-value="set.additionalDetails || ''" type="textarea" :rows="2" placeholder="Optional instructions for the whole outfit set..." support-variables @update:model-value="updateSet(setIndex, { additionalDetails: String($event ?? '') }, true)" />
+          <el-text :size="10" :weight="500">{{ t("modules.outfit.ui.sets.fields.additionalDetails.label") }}</el-text>
+          <el-text-field :model-value="set.additionalDetails || ''" type="textarea" :rows="2" :placeholder="t('modules.outfit.ui.sets.fields.additionalDetails.placeholder')" support-variables @update:model-value="updateSet(setIndex, { additionalDetails: String($event ?? '') }, true)" />
         </el-grid>
       </el-grid>
     </el-grid>
 
     <el-flex rules="ccc" :gap="8" :p="16" :radius="16" :br="1" bc="normal10">
-      <el-button icon="add" color="prim" label="Add Outfit Set" :size="13" :p="[9, 14]" @click="addSet" />
-      <el-text :size="9" color="normal45">Create separate outfit sets for different subjects or alternate looks.</el-text>
+      <el-button icon="add" color="prim" :label="t('modules.outfit.ui.sets.actions.add')" :size="13" :p="[9, 14]" @click="addSet" />
+      <el-text :size="9" color="normal45">{{ t("modules.outfit.ui.sets.footer.description") }}</el-text>
     </el-flex>
   </el-grid>
 </template>

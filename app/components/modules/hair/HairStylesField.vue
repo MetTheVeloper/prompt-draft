@@ -29,6 +29,7 @@ import { useSubjectAssignmentTargets } from "~/composables/prompt/useSubjectAssi
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import HairComponentCard from "./HairComponentCard.vue";
 
+const { t } = useI18n();
 const { mobile } = useScreen();
 const targetCatalog = useSubjectAssignmentTargets();
 const {
@@ -723,8 +724,8 @@ function applyPreset(index: number, value: ElDropdownValue) {
           <el-text :size="9" color="normal45">{{ getHairStyleVariableToken(style) }} · {{ styleSummary(style) }}</el-text>
         </el-flex>
         <el-flex rules="rcc" :gap="4">
-          <el-button type="fab" mode="flat" icon="content_copy" label="Duplicate hairstyle" :size="12" :p="7" @click.stop="duplicateStyle(styleIndex)" />
-          <el-button type="fab" mode="flat" color="red" icon="delete" label="Remove hairstyle" :size="12" :p="7" @click.stop="removeStyle(styleIndex)" />
+          <el-button type="fab" mode="flat" icon="content_copy" :label="t('modules.hair.ui.styles.actions.duplicate')" :size="12" :p="7" @click.stop="duplicateStyle(styleIndex)" />
+          <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('modules.hair.ui.styles.actions.remove')" :size="12" :p="7" @click.stop="removeStyle(styleIndex)" />
           <el-icon :icon="isExpanded(style) ? 'expand_less' : 'expand_more'" :size="14" />
         </el-flex>
       </el-flex>
@@ -732,28 +733,28 @@ function applyPreset(index: number, value: ElDropdownValue) {
       <el-grid v-if="isExpanded(style)" :gap="12" class="w100">
         <el-grid :cols="mobile ? 1 : 3" :gap="10">
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Hairstyle name</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.name.label") }}</el-text>
             <el-text-field
               :model-value="style.name"
               type="text"
-              placeholder="Hairstyle name"
+              :placeholder="t('modules.hair.ui.styles.fields.name.placeholder')"
               @update:model-value="updateStyle(styleIndex, { name: String($event ?? '') })"
             />
           </el-grid>
 
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Semantic key</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.key.label") }}</el-text>
             <el-text-field
               :model-value="style.key"
               type="text"
               placeholder="curlyUpdo"
               @update:model-value="updateStyleKey(styleIndex, $event)"
             />
-            <el-text :size="8" color="normal40">lowerCamelCase · auto-unique</el-text>
+            <el-text :size="8" color="normal40">{{ t("modules.hair.ui.styles.fields.key.hint") }}</el-text>
           </el-grid>
 
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Starter preset</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.preset.label") }}</el-text>
             <el-dropdown
               :model-value="style.presetId || ''"
               :items="presetItems"
@@ -763,7 +764,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
               item-group="group"
               item-group-label="groupLabel"
               clearable
-              placeholder="No preset"
+              :placeholder="t('modules.hair.ui.styles.fields.preset.placeholder')"
               @update:model-value="applyPreset(styleIndex, $event)"
             />
           </el-grid>
@@ -771,7 +772,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
 
         <el-grid :cols="mobile ? 1 : 2" :gap="10">
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Whose hair is this?</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.targets.label") }}</el-text>
             <el-multi-select
               :model-value="targetValues(style)"
               :items="targetItems(style)"
@@ -780,13 +781,13 @@ function applyPreset(index: number, value: ElDropdownValue) {
               item-description="description"
               item-group="group"
               item-group-label="groupLabel"
-              placeholder="Select subject targets"
+              :placeholder="t('modules.hair.ui.styles.fields.targets.placeholder')"
               @update:model-value="updateTargets(styleIndex, $event)"
             />
           </el-grid>
 
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Baseline source</el-text>
+            <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.source.label") }}</el-text>
             <el-dropdown
               :model-value="style.source.mode"
               :items="sourceModeItems"
@@ -810,11 +811,11 @@ function applyPreset(index: number, value: ElDropdownValue) {
             </el-grid>
 
             <el-grid :gap="4">
-              <el-text :size="10" :weight="500">Reference hair hint</el-text>
+              <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.referenceHint.label") }}</el-text>
               <el-text-field
                 :model-value="style.source.hairHint || ''"
                 type="text"
-                placeholder="e.g. the hairstyle of the person on the left"
+                :placeholder="t('modules.hair.ui.styles.fields.referenceHint.placeholder')"
                 @update:model-value="updateReferenceHint(styleIndex, $event)"
               />
             </el-grid>
@@ -824,8 +825,8 @@ function applyPreset(index: number, value: ElDropdownValue) {
         <el-divider mode="dashed" />
 
         <el-flex rules="ccs" :gap="2">
-          <el-text :size="12" :weight="600" icon="tune">Base Hair Structure</el-text>
-          <el-text :size="9" color="normal45">Color and material are intentionally assigned from their own modules.</el-text>
+          <el-text :size="12" :weight="600" icon="tune">{{ t("modules.hair.ui.styles.sections.base.title") }}</el-text>
+          <el-text :size="9" color="normal45">{{ t("modules.hair.ui.styles.sections.base.description") }}</el-text>
         </el-flex>
 
         <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
@@ -864,13 +865,13 @@ function applyPreset(index: number, value: ElDropdownValue) {
         <el-grid :p="10" :radius="14" :br="1" bc="normal10" :gap="8">
           <el-flex rules="rbc" class="w100" :gap="8">
             <el-flex rules="ccs" :gap="1">
-              <el-text :size="12" :weight="600" icon="add_circle">Add hairstyle components</el-text>
-              <el-text :size="9" color="normal45">Add bangs, braids, buns, ponytails, hair accessories, or custom elements.</el-text>
+              <el-text :size="12" :weight="600" icon="add_circle">{{ t("modules.hair.ui.styles.sections.components.title") }}</el-text>
+              <el-text :size="9" color="normal45">{{ t("modules.hair.ui.styles.sections.components.description") }}</el-text>
             </el-flex>
             <el-button
               icon="add"
               color="prim"
-              label="Add selected"
+              :label="t('modules.hair.ui.styles.sections.components.addSelected')"
               :disable="!(pendingComponentChoices[style.id] || []).length"
               :size="12"
               :p="[8, 12]"
@@ -886,7 +887,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
             item-description="description"
             item-group="group"
             item-group-label="groupLabel"
-            placeholder="Select hairstyle components..."
+            :placeholder="t('modules.hair.ui.styles.sections.components.placeholder')"
             @update:model-value="updatePendingComponents(style.id, $event)"
           />
         </el-grid>
@@ -904,16 +905,16 @@ function applyPreset(index: number, value: ElDropdownValue) {
         </el-grid>
 
         <el-flex v-else rules="ccs" :p="12" :radius="12" :br="1" bc="normal10">
-          <el-text :size="11" color="normal45" icon="info">No extra hairstyle components. Base hair structure can stand on its own.</el-text>
+          <el-text :size="11" color="normal45" icon="info">{{ t("modules.hair.ui.styles.sections.components.empty") }}</el-text>
         </el-flex>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Additional hairstyle details</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.hair.ui.styles.fields.additionalDetails.label") }}</el-text>
           <el-text-field
             :model-value="style.additionalDetails || ''"
             type="textarea"
             :rows="2"
-            placeholder="Optional structural or styling instructions..."
+            :placeholder="t('modules.hair.ui.styles.fields.additionalDetails.placeholder')"
             support-variables
             @update:model-value="updateStyle(styleIndex, { additionalDetails: String($event ?? '') }, true)"
           />
@@ -925,12 +926,12 @@ function applyPreset(index: number, value: ElDropdownValue) {
       <el-button
         icon="add"
         color="prim"
-        label="Add Hairstyle"
+        :label="t('modules.hair.ui.styles.actions.add')"
         :size="13"
         :p="[9, 14]"
         @click="addStyle"
       />
-      <el-text :size="9" color="normal45">Create separate hairstyles for different subjects or alternate looks.</el-text>
+      <el-text :size="9" color="normal45">{{ t("modules.hair.ui.styles.footer.description") }}</el-text>
     </el-flex>
   </el-grid>
 </template>

@@ -215,18 +215,18 @@ async function copyOutput() {
     <el-grid v-show="expanded" :gap="12" class="w100">
       <el-grid v-if="!customMode && hairField" :p="12" :br="1" :radius="16" bc="blue35" class="w100">
         <el-flex rules="ccs" :gap="4">
-          <el-text :size="14" :weight="600" icon="face_retouching_natural">Hairstyle Designer</el-text>
-          <el-text :size="11" color="normal45">Build one or more subject-scoped hairstyles, then assign color and material externally when needed.</el-text>
+          <el-text :size="14" :weight="600" icon="face_retouching_natural">{{ t("modules.hair.ui.designer.title") }}</el-text>
+          <el-text :size="11" color="normal45">{{ t("modules.hair.ui.designer.description") }}</el-text>
         </el-flex>
         <HairStylesField :model-value="hairStyles" @update:model-value="values.hairStyles = $event" />
       </el-grid>
 
       <el-grid v-if="customMode && customField" :p="12" :br="1" :radius="16" :bc="customText ? 'blue35' : 'orange25'">
         <el-flex rules="ccs" :gap="4">
-          <el-text :size="14" :weight="600" icon="edit">Custom Override</el-text>
-          <el-text :size="11" color="normal45">Replace the structured Hairstyle Designer output with your own instruction.</el-text>
+          <el-text :size="14" :weight="600" icon="edit">{{ t("modules.hair.ui.override.title") }}</el-text>
+          <el-text :size="11" color="normal45">{{ t("modules.hair.ui.override.description") }}</el-text>
         </el-flex>
-        <el-text-field v-model="values.customText" type="textarea" :rows="customField.ui?.rows || 4" support-variables placeholder="Describe the complete hairstyle instruction..." />
+        <el-text-field v-model="values.customText" type="textarea" :rows="customField.ui?.rows || 4" support-variables :placeholder="t('modules.hair.ui.override.placeholder')" />
         <el-text v-if="!customText" :size="10" color="orange" icon="warning" icon-color="orange">{{ t("panel.customOverrideEmpty") }}</el-text>
       </el-grid>
 

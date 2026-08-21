@@ -16,6 +16,7 @@ import {
   normalizeHairEntityKey,
 } from "~/utils/hairVariables";
 
+const { t } = useI18n();
 const { mobile } = useScreen();
 
 const props = defineProps<{
@@ -191,8 +192,8 @@ function customPropertyValue(propertyId: string) {
         <el-text :size="9" color="normal45">{{ componentToken }}</el-text>
       </el-flex>
       <el-flex rules="rcc" :gap="4">
-        <el-button type="fab" mode="flat" icon="content_copy" label="Duplicate component" :size="12" :p="7" @click.stop="emit('duplicate')" />
-        <el-button type="fab" mode="flat" color="red" icon="delete" label="Remove component" :size="12" :p="7" @click.stop="emit('remove')" />
+        <el-button type="fab" mode="flat" icon="content_copy" :label="t('modules.hair.ui.component.actions.duplicate')" :size="12" :p="7" @click.stop="emit('duplicate')" />
+        <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('modules.hair.ui.component.actions.remove')" :size="12" :p="7" @click.stop="emit('remove')" />
         <el-icon :icon="expanded ? 'expand_less' : 'expand_more'" :size="14" />
       </el-flex>
     </el-flex>
@@ -200,28 +201,28 @@ function customPropertyValue(propertyId: string) {
     <template v-if="expanded">
       <el-grid :cols="mobile ? 1 : 3" :gap="10" class="w100">
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Component name</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.hair.ui.component.fields.name.label") }}</el-text>
           <el-text-field
             :model-value="component.name"
             type="text"
-            placeholder="Display name"
+            :placeholder="t('modules.hair.ui.component.fields.name.placeholder')"
             @update:model-value="updateComponent({ name: String($event ?? '') })"
           />
         </el-grid>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Semantic key</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.hair.ui.component.fields.key.label") }}</el-text>
           <el-text-field
             :model-value="component.key"
             type="text"
             placeholder="bangs"
             @update:model-value="updateComponentKey"
           />
-          <el-text :size="8" color="normal40">Unique inside this hairstyle</el-text>
+          <el-text :size="8" color="normal40">{{ t("modules.hair.ui.component.fields.key.hint") }}</el-text>
         </el-grid>
 
         <el-grid :gap="4">
-          <el-text :size="10" :weight="500">Component type</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.hair.ui.component.fields.type.label") }}</el-text>
           <el-dropdown
             :model-value="component.type"
             :items="typeItems"
@@ -232,11 +233,11 @@ function customPropertyValue(propertyId: string) {
         </el-grid>
 
         <el-grid v-if="component.type === 'custom'" :gap="4">
-          <el-text :size="10" :weight="500">Custom component</el-text>
+          <el-text :size="10" :weight="500">{{ t("modules.hair.ui.component.fields.customType.label") }}</el-text>
           <el-text-field
             :model-value="component.customType || ''"
             type="text"
-            placeholder="Describe the hair component..."
+            :placeholder="t('modules.hair.ui.component.fields.customType.placeholder')"
             @update:model-value="updateComponent({ customType: String($event ?? '') })"
           />
         </el-grid>
@@ -278,12 +279,12 @@ function customPropertyValue(propertyId: string) {
       </el-grid>
 
       <el-grid :gap="4">
-        <el-text :size="10" :weight="500">Additional component details</el-text>
+        <el-text :size="10" :weight="500">{{ t("modules.hair.ui.component.fields.additionalDetails.label") }}</el-text>
         <el-text-field
           :model-value="component.additionalDetails || ''"
           type="textarea"
           :rows="2"
-          placeholder="Optional structural or styling details..."
+          :placeholder="t('modules.hair.ui.component.fields.additionalDetails.placeholder')"
           support-variables
           @update:model-value="updateComponent({ additionalDetails: String($event ?? '') })"
         />
