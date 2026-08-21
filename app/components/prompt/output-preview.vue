@@ -21,15 +21,24 @@ const emit = defineEmits<{
 }>();
 
 const isCopied = ref(false);
+const warningsExpanded = ref(false);
 
 const formatOptions: PromptOutputFormat[] = ["modular", "natural", "json"];
 
+const errorIssues = computed(() => {
+  return props.issues.filter((issue) => issue.level === "error");
+});
+
+const warningIssues = computed(() => {
+  return props.issues.filter((issue) => issue.level === "warning");
+});
+
 const hasBlockingIssues = computed(() => {
-  return props.issues.some((issue) => issue.level === "error");
+  return errorIssues.value.length > 0;
 });
 
 const hasWarnings = computed(() => {
-  return props.issues.some((issue) => issue.level === "warning");
+  return warningIssues.value.length > 0;
 });
 
 const outputState = computed(() => {
@@ -62,6 +71,10 @@ const canCopy = computed(() => {
 
 function setFormat(format: PromptOutputFormat) {
   emit("update:format", format);
+}
+
+function toggleWarnings() {
+  warningsExpanded.value = !warningsExpanded.value;
 }
 
 function validationMessage(issue: PromptValidationIssue) {
@@ -208,7 +221,8 @@ async function copyOutput() {
         </el-flex>
 
         <el-grid :gap="8">
-          <el-flex v-for="issue in issues" :key="issue.id" rules="ccs" :gap="8" :p="[10, 12]" :radius="12"
+          <!-- Errors remain always visible. -->
+          <el-flex v-for="issue in errorIssues" :key="issue.id" rules="ccs" :gap="8" :p="[10, 12]" :radius="12"
             :bg="`${issueColor(issue)}5`" :br="1" :bc="`${issueColor(issue)}20`">
             <el-text type="label" :size="10" :weight="900" :color="issueColor(issue)" :icon="issueIcon(issue)"
               :icon-color="issueColor(issue)">
@@ -219,6 +233,44 @@ async function copyOutput() {
               {{ validationMessage(issue) }}
             </el-text>
           </el-flex>
+
+          <!-- Warnings are intentionally collapsed by default because unused
+               variables are common while a prompt is still being authored. -->
+          <el-grid v-if="warningIssues.length" :gap="8">
+            <el-flex
+              rules="rbc"
+              :gap="8"
+              :p="[10, 12]"
+              :radius="12"
+              bg="orange5"
+              :br="1"
+              bc="orange20"
+              role="button"
+              tabindex="0"
+              @click="toggleWarnings"
+              @keydown.enter.prevent="toggleWarnings"
+              @keydown.space.prevent="toggleWarnings"
+            >
+              <el-text type="label" :size="11" :weight="900" color="orange" icon="warning" icon-color="orange">
+                {{ t("validation.level.warning") }} · {{ warningIssues.length }}
+              </el-text>
+
+              <el-icon :icon="warningsExpanded ? 'expand_less' : 'expand_more'" :size="16" color="orange" />
+            </el-flex>
+
+            <el-grid v-if="warningsExpanded" :gap="8">
+              <el-flex v-for="issue in warningIssues" :key="issue.id" rules="ccs" :gap="8" :p="[10, 12]" :radius="12"
+                bg="orange5" :br="1" bc="orange20">
+                <el-text type="label" :size="10" :weight="900" color="orange" icon="warning" icon-color="orange">
+                  {{ t("validation.level.warning") }}
+                </el-text>
+
+                <el-text :size="12" :weight="400" color="orange">
+                  {{ validationMessage(issue) }}
+                </el-text>
+              </el-flex>
+            </el-grid>
+          </el-grid>
         </el-grid>
       </el-grid>
 
