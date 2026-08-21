@@ -253,7 +253,9 @@ export type PromptVariableEntityType =
   | "text_group"
   | "text"
   | "outfit_set"
-  | "outfit_item";
+  | "outfit_item"
+  | "hair_style"
+  | "hair_component";
 
 export type PromptVariable = {
   id: string;
@@ -290,6 +292,7 @@ export type ModuleFieldType =
   | "poseAssignments"
   | "expressionAssignments"
   | "outfitSets"
+  | "hairStyles"
   | "lightSources"
   | "effectLayers"
   | "textGroups"
@@ -340,7 +343,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "outfitSets" | "lightSources" | "effectLayers" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "outfitSets" | "hairStyles" | "lightSources" | "effectLayers" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
