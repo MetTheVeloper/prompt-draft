@@ -13,6 +13,7 @@ import ModulesPanelEffects from "../modules/panel/effects.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
 import ModulesPanelTexture from "../modules/panel/texture.vue";
 import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments.vue";
+import ModulesPanelOutfit from "../modules/panel/outfit.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
 
@@ -88,6 +89,7 @@ function getModulePanel(module: PromptKeyModule) {
   if (module.key === "effects") return ModulesPanelEffects;
   if (module.key === "lighting") return ModulesPanelLighting;
   if (module.key === "texture") return ModulesPanelTexture;
+  if (module.key === "outfit") return ModulesPanelOutfit;
   if (module.key === "pose" || module.key === "expression") {
     return ModulesPanelSubjectAssignments;
   }
