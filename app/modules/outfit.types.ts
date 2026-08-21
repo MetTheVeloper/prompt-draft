@@ -94,7 +94,17 @@ export type OutfitPropertyState =
   | OutfitAbsentProperty;
 
 export type OutfitItem = {
+  /** Stable persistence identity. Never serialize this into prompt prose. */
   id: string;
+
+  /**
+   * Human semantic key, unique inside its Outfit Set.
+   * This becomes the local alias (`dress`) and the final path segment in
+   * `{outfit_eveningSet_dress}`.
+   */
+  key: string;
+
+  /** Editable display label. Identity must not depend on this value. */
   name: string;
   type: string;
   customType?: string;
@@ -119,7 +129,17 @@ export type OutfitItemRelation = {
 };
 
 export type OutfitSet = {
+  /** Stable persistence identity. Never serialize this into prompt prose. */
   id: string;
+
+  /**
+   * Human semantic key, unique across all Outfit Sets.
+   * Underscores are reserved for hierarchy boundaries, so this key is stored
+   * as lower camelCase (for example `eveningSet`).
+   */
+  key: string;
+
+  /** Editable display label. Identity must not depend on this value. */
   name: string;
   presetId?: string;
   targets: SemanticTargetRef[];
@@ -189,6 +209,7 @@ export type OutfitItemStarter = {
 };
 
 export type OutfitPresetItemRecipe = {
+  /** Recipe-local semantic key. Becomes the default item key when applied. */
   key: string;
   type: string;
   customType?: string;
