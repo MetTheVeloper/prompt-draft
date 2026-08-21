@@ -251,7 +251,9 @@ export type PromptVariableEntityType =
   | "module"
   | "region"
   | "text_group"
-  | "text";
+  | "text"
+  | "outfit_set"
+  | "outfit_item";
 
 export type PromptVariable = {
   id: string;
@@ -287,6 +289,7 @@ export type ModuleFieldType =
   | "materialAssignments"
   | "poseAssignments"
   | "expressionAssignments"
+  | "outfitSets"
   | "lightSources"
   | "effectLayers"
   | "textGroups"
@@ -337,7 +340,7 @@ export type ModuleFieldUi = {
 };
 
 export interface ModuleFieldUiConfig {
-  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "lightSources" | "effectLayers" | "textGroups" | "variables" | "layoutRegions";
+  component?: "input" | "textarea" | "select" | "multiSelect" | "segmented" | "checkbox" | "slider" | "color" | "colorAssignments" | "materialAssignments" | "poseAssignments" | "expressionAssignments" | "outfitSets" | "lightSources" | "effectLayers" | "textGroups" | "variables" | "layoutRegions";
   placeholder?: string;
   rows?: number;
   width?: "full" | "half" | "third";
