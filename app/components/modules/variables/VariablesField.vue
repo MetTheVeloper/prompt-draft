@@ -6,6 +6,7 @@ import type {
   ModuleField,
   ModuleFieldOption,
   PromptVariable,
+  PromptVariableType,
 } from "../../../modules/types";
 import { variableBlueprints } from "../../../modules/variables.blueprints";
 
@@ -77,6 +78,9 @@ const blueprintItems = computed(() => {
     value: blueprint.id,
     label: blueprint.label,
     description: blueprint.description,
+    icon: blueprint.icon,
+    group: blueprint.category,
+    groupLabel: blueprint.categoryLabel,
   }));
 });
 
@@ -149,6 +153,7 @@ function getVariableTypeOptions() {
     { value: "reference" },
     { value: "object" },
     { value: "color" },
+    { value: "font" },
     { value: "custom" },
   ];
 }
@@ -158,6 +163,13 @@ function variableTypeLabel(optionValue: string) {
     `modules.${props.moduleKey}.fields.${props.field.id}.types.${optionValue}`,
     optionValue
   );
+}
+
+function getBlueprintTypeOptions() {
+  return getVariableTypeOptions().map((option) => ({
+    value: option.value as PromptVariableType,
+    label: variableTypeLabel(option.value),
+  }));
 }
 
 function getVariableToken(variable: PromptVariable) {
@@ -293,6 +305,7 @@ function selectBlueprint(value: ElDropdownValue) {
     props: {
       blueprint,
       existingKeys: getUnavailableVariableKeys(),
+      typeOptions: getBlueprintTypeOptions(),
       controller,
       onApply: (createdVariables: Array<Omit<PromptVariable, "id">>) => {
         const nextVariables = createdVariables.map((variable) => ({
@@ -320,7 +333,7 @@ function selectBlueprint(value: ElDropdownValue) {
       },
     ],
     options: {
-      width: mobile.value ? "calc(100% - 24px)" : 760,
+      width: mobile.value ? "calc(100% - 24px)" : 860,
       closeOnBackdrop: true,
     },
   });
@@ -395,6 +408,7 @@ function openDeleteConfirm(variable: PromptVariable, variableIndex: number) {
     },
   });
 }
+
 watch(
   () => createVariablesContextAction?.id,
   (actionId) => {
@@ -410,7 +424,6 @@ watch(
   },
   { immediate: true },
 );
-
 </script>
 
 <template>
@@ -432,25 +445,43 @@ watch(
           :items="blueprintItems"
           item-value="value"
           item-label="label"
+          item-description="description"
+          item-icon="icon"
+          item-group="group"
+          item-group-label="groupLabel"
           placeholder="Blueprints"
           @update:model-value="selectBlueprint"
         />
-        <el-button :label="t('modules.variables.fields.variables.actions.add')" icon="add" color="prim" :size="12"
-          :p="[8, 12]" :radius="10" @click="openCreateModal" />
+        <el-button
+          :label="t('modules.variables.fields.variables.actions.add')"
+          icon="add"
+          color="prim"
+          :size="12"
+          :p="[8, 12]"
+          :radius="10"
+          @click="openCreateModal"
+        />
       </el-flex>
     </el-flex>
 
     <div v-if="variables.length" class="variables-field__list">
-      <modules-variables-variable-chip v-for="(variable, variableIndex) in variables" :key="variable.id || variableIndex"
-        :variable="variable" :token="getVariableToken(variable)"
-        :type-label="variableTypeLabel(variable.type || 'text')" :value-preview="getVariableValuePreview(variable)"
-        :issue="getVariableKeyIssue(variable, variableIndex)" :disabled="variable.enabled === false"
+      <modules-variables-variable-chip
+        v-for="(variable, variableIndex) in variables"
+        :key="variable.id || variableIndex"
+        :variable="variable"
+        :token="getVariableToken(variable)"
+        :type-label="variableTypeLabel(variable.type || 'text')"
+        :value-preview="getVariableValuePreview(variable)"
+        :issue="getVariableKeyIssue(variable, variableIndex)"
+        :disabled="variable.enabled === false"
         :disabled-label="t('modules.variables.fields.variables.list.disabled')"
         :delete-label="t('modules.variables.fields.variables.actions.delete')"
-        :edit-label="t('modules.variables.fields.variables.actions.edit')" @edit="openEditModal(variableIndex)"
-        @delete="openDeleteConfirm(variable, variableIndex)"
+        :edit-label="t('modules.variables.fields.variables.actions.edit')"
         :duplicate-label="t('modules.variables.fields.variables.actions.duplicate')"
-        @duplicate="duplicatePromptVariable(variableIndex)" />
+        @edit="openEditModal(variableIndex)"
+        @delete="openDeleteConfirm(variable, variableIndex)"
+        @duplicate="duplicatePromptVariable(variableIndex)"
+      />
     </div>
 
     <el-flex v-else rules="ccs" class="variables-field__empty" :gap="4" :p="14" :radius="14">
