@@ -16,7 +16,10 @@ import {
   outfitPropertyDefinitions,
   outfitPropertyProfiles,
 } from "~/modules/outfit.catalog";
-import { getOutfitItemVariableToken } from "~/utils/outfitVariables";
+import {
+  getOutfitItemVariableToken,
+  normalizeOutfitEntityKey,
+} from "~/utils/outfitVariables";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { mobile } = useScreen();
@@ -25,7 +28,10 @@ const {
   enabledSystemPromptVariables,
 } = usePromptVariables();
 
-const props = defineProps<{ item: OutfitItem }>();
+const props = defineProps<{
+  item: OutfitItem;
+  setKey: string;
+}>();
 const emit = defineEmits<{
   (event: "update:item", value: OutfitItem): void;
   (event: "remove"): void;
@@ -58,6 +64,15 @@ function updateItem(patch: Partial<OutfitItem>) {
   });
 }
 
+function updateItemKey(value: unknown) {
+  updateItem({
+    key: normalizeOutfitEntityKey(
+      String(value ?? ""),
+      props.item.key || props.item.type || "item",
+    ),
+  });
+}
+
 const typeDefinition = computed(() => outfitItemTypeMap.get(props.item.type));
 const typeLabel = computed(() => {
   if (props.item.type === "custom") {
@@ -66,7 +81,9 @@ const typeLabel = computed(() => {
   return typeDefinition.value?.label || humanize(props.item.type);
 });
 const itemTitle = computed(() => props.item.name?.trim() || typeLabel.value);
-const itemToken = computed(() => getOutfitItemVariableToken(props.item));
+const itemToken = computed(() =>
+  getOutfitItemVariableToken(props.setKey, props.item),
+);
 
 const categoryLabels: Record<OutfitItemCategory, string> = {
   tops: "Tops",
@@ -377,11 +394,18 @@ function customPropertyValue(propertyId: string) {
     </el-flex>
 
     <template v-if="expanded">
-      <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
+      <el-grid :cols="mobile ? 1 : 3" :gap="10" class="w100">
         <el-grid :gap="4">
           <el-text :size="10" :weight="500">Item name</el-text>
           <el-text-field :model-value="item.name" type="text" placeholder="Display name" @update:model-value="updateItem({ name: String($event ?? '') })" />
         </el-grid>
+
+        <el-grid :gap="4">
+          <el-text :size="10" :weight="500">Semantic key</el-text>
+          <el-text-field :model-value="item.key" type="text" placeholder="dress" @update:model-value="updateItemKey" />
+          <el-text :size="8" color="normal40">Unique inside this set</el-text>
+        </el-grid>
+
         <el-grid :gap="4">
           <el-text :size="10" :weight="500">Wearable type</el-text>
           <el-dropdown :model-value="item.type" :items="typeItems" item-label="label" item-value="value" item-group="group" item-group-label="groupLabel" @update:model-value="changeType" />
