@@ -25,6 +25,7 @@ import OutfitItemCard from "./OutfitItemCard.vue";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const catalogI18n = useCatalogI18n("outfit");
 
 const props = withDefaults(
   defineProps<{ modelValue?: OutfitSet[] }>(),
@@ -225,10 +226,13 @@ function setTitle(set: OutfitSet, index: number) {
 function setSummary(set: OutfitSet) {
   const scope = semanticScopeSummary(set.targets);
   const count = set.items.length;
-  return `${scope} · ${count} ${count === 1 ? "item" : "items"}`;
+  const unit = count === 1
+    ? catalogI18n.uiText("common.item", "item")
+    : catalogI18n.uiText("common.items", "items");
+  return `${scope} · ${count} ${unit}`;
 }
 
-const categoryLabels: Record<string, string> = {
+const categoryFallbacks: Record<string, string> = {
   tops: "Tops",
   bottoms: "Bottoms",
   one_piece: "One-Piece",
@@ -247,27 +251,31 @@ const categoryLabels: Record<string, string> = {
   custom: "Custom",
 };
 
+function categoryLabel(category: string) {
+  return catalogI18n.catalogText(`categories.${category}`, categoryFallbacks[category] || humanize(category));
+}
+
 const itemPickerItems = computed(() => [
   ...outfitItemTypes.map((item) => ({
     value: `type:${item.value}`,
-    label: item.label,
-    description: "Wearable type",
+    label: catalogI18n.itemLabel("itemTypes", item.value, item.label),
+    description: catalogI18n.uiText("common.wearableType", "Wearable type"),
     group: item.category,
-    groupLabel: categoryLabels[item.category] || humanize(item.category),
+    groupLabel: categoryLabel(item.category),
   })),
   ...outfitItemStarters.map((starter) => ({
     value: `starter:${starter.id}`,
-    label: starter.label,
-    description: "Starter configuration",
+    label: catalogI18n.itemLabel("itemStarters", starter.id, starter.label),
+    description: catalogI18n.uiText("common.starterConfiguration", "Starter configuration"),
     group: starter.category,
-    groupLabel: `${categoryLabels[starter.category] || humanize(starter.category)} · Starters`,
+    groupLabel: `${categoryLabel(starter.category)} · ${catalogI18n.uiText("common.starters", "Starters")}`,
   })),
   {
     value: "custom",
-    label: "Custom Wearable",
-    description: "Define a custom wearable item",
+    label: catalogI18n.uiText("common.customWearable", "Custom Wearable"),
+    description: catalogI18n.uiText("common.customWearableDescription", "Define a custom wearable item"),
     group: "custom",
-    groupLabel: "Custom",
+    groupLabel: catalogI18n.uiText("common.custom", "Custom"),
   },
 ]);
 
@@ -401,13 +409,17 @@ function duplicateItem(setIndex: number, itemIndex: number) {
   updateSet(setIndex, { items: [...set.items, duplicate] }, true);
 }
 
-const presetItems = computed(() => outfitPresetRecipes.map((preset) => ({
-  value: preset.id,
-  label: preset.label,
-  description: preset.category ? humanize(preset.category) : "",
-  group: preset.category || "other",
-  groupLabel: preset.category ? humanize(preset.category) : "Other",
-})));
+const presetItems = computed(() => outfitPresetRecipes.map((preset) => {
+  const fallbackCategory = preset.category ? humanize(preset.category) : "Other";
+  const category = catalogI18n.catalogText(`presets.${preset.id}.category`, fallbackCategory);
+  return {
+    value: preset.id,
+    label: catalogI18n.itemLabel("presets", preset.id, preset.label),
+    description: category,
+    group: preset.category || "other",
+    groupLabel: category || catalogI18n.uiText("common.other", "Other"),
+  };
+}));
 
 function applyPreset(index: number, value: ElDropdownValue) {
   const set = sets.value[index];
