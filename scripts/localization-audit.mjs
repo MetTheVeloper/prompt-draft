@@ -13,34 +13,24 @@ const REPORT_JSON = path.join(REPORTS_DIR, 'localization-audit.json')
 
 const SOURCE_EXTENSIONS = new Set(['.vue', '.ts', '.tsx', '.js', '.jsx', '.mjs', '.cjs'])
 const EXCLUDED_DIRS = new Set([
-  '.git',
-  '.nuxt',
-  '.output',
-  '.idea',
-  '.vscode',
-  'node_modules',
-  'dist',
-  'coverage',
-  'reports',
-  'android',
-  'ios',
+  '.git', '.nuxt', '.output', '.idea', '.vscode', 'node_modules', 'dist',
+  'coverage', 'reports', 'android', 'ios',
 ])
 const EXCLUDED_FILE_PATTERNS = [
   /\/i18n\/locales\//,
-  /\/scripts\/localization-audit\.mjs$/,
+  /\/scripts\/localization-(?:audit|review|consolidate)\.mjs$/,
   /\.bak(?:\.|$)/,
 ]
 
 const HIGH_CONFIDENCE_ATTRS = new Set([
-  'label',
-  'placeholder',
-  'title',
-  'description',
-  'aria-label',
-  'clear-label',
-  'empty-text',
-  'confirm-label',
-  'cancel-label',
+  'label', 'placeholder', 'title', 'subtitle', 'description', 'alt', 'tooltip',
+  'aria-label', 'clear-label', 'empty-text', 'helper-text', 'confirm-label',
+  'cancel-label', 'button-label',
+])
+const SHORT_UI_TEXT = new Set(['ok', 'go', 'on', 'off', 'no', 'yes'])
+const UI_OBJECT_PROPERTIES = new Set([
+  'label', 'title', 'subtitle', 'description', 'descriptionPattern', 'placeholder',
+  'emptyText', 'clearLabel', 'groupLabel', 'categoryLabel', 'tooltip', 'helperText',
 ])
 
 const mode = normalizeMode(process.argv.slice(2).find((arg) => !arg.startsWith('--')) || 'all')
@@ -62,60 +52,43 @@ function toPosix(filePath) {
   return filePath.split(path.sep).join('/')
 }
 
+function relativeFile(file) {
+  return toPosix(path.relative(ROOT, file))
+}
+
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value)
 }
 
 function deepMerge(target, source) {
   const out = isPlainObject(target) ? { ...target } : {}
-
   for (const [key, value] of Object.entries(source || {})) {
-    if (isPlainObject(value) && isPlainObject(out[key])) {
-      out[key] = deepMerge(out[key], value)
-    } else if (isPlainObject(value)) {
-      out[key] = deepMerge({}, value)
-    } else {
-      out[key] = value
-    }
+    if (isPlainObject(value)) out[key] = deepMerge(out[key], value)
+    else out[key] = value
   }
-
   return out
 }
 
 function flattenMessages(input, prefix = '', output = new Map()) {
   if (!isPlainObject(input)) return output
-
   for (const [key, value] of Object.entries(input)) {
     const fullKey = prefix ? `${prefix}.${key}` : key
-
-    if (isPlainObject(value)) {
-      flattenMessages(value, fullKey, output)
-      continue
-    }
-
-    output.set(fullKey, value)
+    if (isPlainObject(value)) flattenMessages(value, fullKey, output)
+    else output.set(fullKey, value)
   }
-
   return output
 }
 
 async function importDefault(filePath) {
   const source = await fs.readFile(filePath, 'utf8')
   const match = source.match(/^\s*export\s+default\s+([\s\S]*)$/)
-  if (!match) {
-    throw new Error(`Locale file must use a plain export default object: ${relativeFile(filePath)}`)
-  }
-
+  if (!match) throw new Error(`Locale file must use a plain export default object: ${relativeFile(filePath)}`)
   const expression = match[1].trim().replace(/;\s*$/, '')
   const value = vm.runInNewContext(`(${expression})`, Object.create(null), {
     filename: filePath,
     timeout: 1000,
   })
-
-  if (!isPlainObject(value)) {
-    throw new Error(`Locale default export is not an object: ${relativeFile(filePath)}`)
-  }
-
+  if (!isPlainObject(value)) throw new Error(`Locale default export is not an object: ${relativeFile(filePath)}`)
   return value
 }
 
@@ -123,62 +96,41 @@ async function loadEffectiveLocale(locale) {
   const rootPath = path.join(LOCALES_DIR, `${locale}.ts`)
   let messages = await importDefault(rootPath)
   const entries = await fs.readdir(LOCALES_DIR, { withFileTypes: true })
-
-  const fragmentNames = entries
-    .filter((entry) => entry.isFile())
+  const fragments = entries
+    .filter((entry) => entry.isFile() && entry.name.endsWith(`.${locale}.ts`) && !entry.name.includes('.bak.'))
     .map((entry) => entry.name)
-    .filter((name) => name.endsWith(`.${locale}.ts`))
-    .filter((name) => !name.includes('.bak.'))
     .sort()
 
-  for (const fileName of fragmentNames) {
+  for (const fileName of fragments) {
     const moduleKey = fileName.slice(0, -`.${locale}.ts`.length)
     const fragment = await importDefault(path.join(LOCALES_DIR, fileName))
-    const currentModule = messages?.modules?.[moduleKey] || {}
-
     messages = deepMerge(messages, {
       modules: {
         ...(messages.modules || {}),
-        [moduleKey]: deepMerge(currentModule, fragment),
+        [moduleKey]: deepMerge(messages?.modules?.[moduleKey] || {}, fragment),
       },
     })
   }
 
-  return {
-    messages,
-    flat: flattenMessages(messages),
-    fragments: fragmentNames,
-  }
+  return { messages, flat: flattenMessages(messages), fragments }
 }
 
 async function walkSourceFiles(directory = ROOT) {
   const files = []
-
   async function visit(current) {
-    const entries = await fs.readdir(current, { withFileTypes: true })
-
-    for (const entry of entries) {
-      if (entry.name.startsWith('.') && EXCLUDED_DIRS.has(entry.name)) continue
+    for (const entry of await fs.readdir(current, { withFileTypes: true })) {
       const absolute = path.join(current, entry.name)
-
       if (entry.isDirectory()) {
-        if (
-          EXCLUDED_DIRS.has(entry.name) ||
-          /^\.layout-stage\d+-backup$/i.test(entry.name)
-        ) continue
+        if (EXCLUDED_DIRS.has(entry.name) || /^\.layout-stage\d+-backup$/i.test(entry.name)) continue
         await visit(absolute)
         continue
       }
-
-      if (!entry.isFile()) continue
-      if (!SOURCE_EXTENSIONS.has(path.extname(entry.name))) continue
-
+      if (!entry.isFile() || !SOURCE_EXTENSIONS.has(path.extname(entry.name))) continue
       const relative = `/${toPosix(path.relative(ROOT, absolute))}`
       if (EXCLUDED_FILE_PATTERNS.some((pattern) => pattern.test(relative))) continue
       files.push(absolute)
     }
   }
-
   await visit(directory)
   return files.sort()
 }
@@ -186,65 +138,7 @@ async function walkSourceFiles(directory = ROOT) {
 function lineAndColumn(source, index) {
   const before = source.slice(0, index)
   const lines = before.split('\n')
-  return {
-    line: lines.length,
-    column: lines.at(-1).length + 1,
-  }
-}
-
-function readQuoted(source, index) {
-  const quote = source[index]
-  if (!['"', "'", '`'].includes(quote)) return null
-
-  let i = index + 1
-  let value = ''
-  let dynamic = false
-
-  while (i < source.length) {
-    const char = source[i]
-
-    if (char === '\\') {
-      value += char
-      if (i + 1 < source.length) {
-        value += source[i + 1]
-        i += 2
-        continue
-      }
-    }
-
-    if (quote === '`' && char === '$' && source[i + 1] === '{') {
-      dynamic = true
-      let depth = 1
-      let j = i + 2
-      let expression = ''
-
-      while (j < source.length && depth > 0) {
-        const current = source[j]
-        if (current === '{') depth += 1
-        if (current === '}') depth -= 1
-        if (depth > 0) expression += current
-        j += 1
-      }
-
-      value += `\${${expression}}`
-      i = j
-      continue
-    }
-
-    if (char === quote) {
-      return {
-        raw: source.slice(index, i + 1),
-        value: decodeSimpleEscapes(value),
-        dynamic,
-        end: i + 1,
-      }
-    }
-
-    value += char
-    i += 1
-  }
-
-  return null
+  return { line: lines.length, column: (lines.at(-1) || '').length + 1 }
 }
 
 function decodeSimpleEscapes(value) {
@@ -253,6 +147,44 @@ function decodeSimpleEscapes(value) {
     .replace(/\\r/g, '\r')
     .replace(/\\t/g, '\t')
     .replace(/\\([\\"'`])/g, '$1')
+}
+
+function readQuoted(source, index) {
+  const quote = source[index]
+  if (!['"', "'", '`'].includes(quote)) return null
+  let i = index + 1
+  let value = ''
+  let dynamic = false
+  while (i < source.length) {
+    const char = source[i]
+    if (char === '\\') {
+      value += char
+      if (i + 1 < source.length) value += source[++i]
+      i += 1
+      continue
+    }
+    if (quote === '`' && char === '$' && source[i + 1] === '{') {
+      dynamic = true
+      let depth = 1
+      let j = i + 2
+      let expression = ''
+      while (j < source.length && depth > 0) {
+        if (source[j] === '{') depth += 1
+        if (source[j] === '}') depth -= 1
+        if (depth > 0) expression += source[j]
+        j += 1
+      }
+      value += `\${${expression}}`
+      i = j
+      continue
+    }
+    if (char === quote) {
+      return { value: decodeSimpleEscapes(value), dynamic, end: i + 1 }
+    }
+    value += char
+    i += 1
+  }
+  return null
 }
 
 function splitCallArguments(source, openParenIndex) {
@@ -264,33 +196,21 @@ function splitCallArguments(source, openParenIndex) {
   let brace = 0
   let quote = null
   let escaped = false
-
   while (i < source.length) {
     const char = source[i]
-
     if (quote) {
-      if (escaped) {
-        escaped = false
-      } else if (char === '\\') {
-        escaped = true
-      } else if (char === quote) {
-        quote = null
-      }
+      if (escaped) escaped = false
+      else if (char === '\\') escaped = true
+      else if (char === quote) quote = null
       i += 1
       continue
     }
-
-    if (['"', "'", '`'].includes(char)) {
-      quote = char
-      i += 1
-      continue
-    }
-
+    if (['"', "'", '`'].includes(char)) { quote = char; i += 1; continue }
     if (char === '(') paren += 1
     else if (char === ')') {
       if (paren === 0 && bracket === 0 && brace === 0) {
         args.push(source.slice(currentStart, i).trim())
-        return { args, end: i + 1 }
+        return args
       }
       paren -= 1
     } else if (char === '[') bracket += 1
@@ -301,10 +221,8 @@ function splitCallArguments(source, openParenIndex) {
       args.push(source.slice(currentStart, i).trim())
       currentStart = i + 1
     }
-
     i += 1
   }
-
   return null
 }
 
@@ -312,16 +230,11 @@ function parseLiteralArgument(argument) {
   if (!argument) return null
   const trimmed = argument.trim()
   const parsed = readQuoted(trimmed, 0)
-  if (!parsed || parsed.end !== trimmed.length) return null
-  return parsed
+  return parsed && parsed.end === trimmed.length ? parsed : null
 }
 
 function looksLikeI18nKey(value) {
   return /^[A-Za-z0-9_$-]+(?:\.[A-Za-z0-9_$-]+)+$/.test(value)
-}
-
-function dynamicPattern(value) {
-  return value.replace(/\$\{[^}]+\}/g, '*')
 }
 
 function extractI18nCalls(source, file) {
@@ -329,69 +242,36 @@ function extractI18nCalls(source, file) {
   const dynamicKeys = []
   const callRegex = /(?:\b(?:t|translate|tc)\b|\$t\b|\bi18n\.t\b)\s*\(/g
   let match
-
   while ((match = callRegex.exec(source))) {
     const openParen = source.indexOf('(', match.index)
-    const parsedCall = splitCallArguments(source, openParen)
-    if (!parsedCall?.args?.length) continue
-
-    const first = parseLiteralArgument(parsedCall.args[0])
+    const args = splitCallArguments(source, openParen)
+    if (!args?.length) continue
+    const first = parseLiteralArgument(args[0])
     if (!first) continue
-
     const pos = lineAndColumn(source, match.index)
-    const fallback = parseLiteralArgument(parsedCall.args[1])
-
+    const fallback = parseLiteralArgument(args[1])
     if (first.dynamic) {
-      dynamicKeys.push({
-        pattern: dynamicPattern(first.value),
-        raw: first.value,
-        file,
-        ...pos,
-      })
-      continue
+      dynamicKeys.push({ pattern: first.value.replace(/\$\{[^}]+\}/g, '*'), raw: first.value, file, ...pos })
+    } else if (looksLikeI18nKey(first.value)) {
+      staticKeys.push({ key: first.value, fallback: fallback && !fallback.dynamic ? fallback.value : '', file, ...pos })
     }
-
-    if (!looksLikeI18nKey(first.value)) continue
-
-    staticKeys.push({
-      key: first.value,
-      fallback: fallback && !fallback.dynamic ? fallback.value : '',
-      file,
-      ...pos,
-    })
   }
 
   const vtRegex = /\bv-t\s*=\s*(["'])(.*?)\1/g
   while ((match = vtRegex.exec(source))) {
-    const raw = match[2].trim().replace(/^['"]|['"]$/g, '')
-    if (!looksLikeI18nKey(raw)) continue
-    const pos = lineAndColumn(source, match.index)
-    staticKeys.push({ key: raw, fallback: '', file, ...pos })
+    const key = match[2].trim().replace(/^['"]|['"]$/g, '')
+    if (looksLikeI18nKey(key)) staticKeys.push({ key, fallback: '', file, ...lineAndColumn(source, match.index) })
   }
-
   const keypathRegex = /<i18n-t\b[^>]*\bkeypath\s*=\s*(["'])(.*?)\1/gi
   while ((match = keypathRegex.exec(source))) {
     const key = match[2].trim()
-    if (!looksLikeI18nKey(key)) continue
-    const pos = lineAndColumn(source, match.index)
-    staticKeys.push({ key, fallback: '', file, ...pos })
+    if (looksLikeI18nKey(key)) staticKeys.push({ key, fallback: '', file, ...lineAndColumn(source, match.index) })
   }
-
   return { staticKeys, dynamicKeys }
 }
 
-function isHumanEnglishText(value) {
-  const text = value.replace(/\s+/g, ' ').trim()
-  if (text.length < 3 || text.length > 240) return false
-  if (!/[A-Za-z]/.test(text)) return false
-  if (/^[A-Za-z0-9_.:/@#%+={}()\[\]-]+$/.test(text) && !/\s/.test(text)) return false
-  if (/^(true|false|null|undefined|auto|none|normal|inherit)$/i.test(text)) return false
-  if (/^(https?:|data:|var\(|rgb\(|hsl\()/i.test(text)) return false
-  return true
-}
-
 function normalizeCandidateText(value) {
-  return value
+  return String(value || '')
     .replace(/\{\{[\s\S]*?\}\}/g, ' ')
     .replace(/&nbsp;/g, ' ')
     .replace(/&amp;/g, '&')
@@ -399,10 +279,19 @@ function normalizeCandidateText(value) {
     .trim()
 }
 
-function extractVueHardcoded(source, file) {
-  const results = []
-  if (!file.endsWith('.vue')) return results
+function isHumanEnglishText(value, { allowShort = false } = {}) {
+  const text = normalizeCandidateText(value)
+  if (!text || text.length > 240 || !/[A-Za-z]/.test(text)) return false
+  if (text.length < 3 && !(allowShort && SHORT_UI_TEXT.has(text.toLowerCase()))) return false
+  if (/^[A-Za-z0-9_.:/@#%+={}()\[\]-]+$/.test(text) && !/\s/.test(text) && !SHORT_UI_TEXT.has(text.toLowerCase())) return false
+  if (/^(true|false|null|undefined|auto|none|normal|inherit)$/i.test(text)) return false
+  if (/^(https?:|data:|var\(|rgb\(|hsl\()/i.test(text)) return false
+  return true
+}
 
+function extractVueHardcoded(source, file) {
+  if (!file.endsWith('.vue')) return []
+  const results = []
   const template = source
     .replace(/<script\b[\s\S]*?<\/script>/gi, '')
     .replace(/<style\b[\s\S]*?<\/style>/gi, '')
@@ -411,80 +300,67 @@ function extractVueHardcoded(source, file) {
   const textRegex = />([^<>]+)</g
   let match
   while ((match = textRegex.exec(template))) {
-    const text = normalizeCandidateText(match[1])
-    if (!text || !isHumanEnglishText(text)) continue
-    if (/^[·•◦–—\-\s]+$/.test(text)) continue
-
-    const pos = lineAndColumn(source, source.indexOf(match[1]))
+    const raw = match[1]
+    const text = normalizeCandidateText(raw)
+    if (!isHumanEnglishText(text, { allowShort: true })) continue
+    if (/[{}]/.test(text) || /(?:translate|\$?t)\s*\(/.test(text) || text.includes('?.')) continue
+    const absoluteIndex = source.indexOf(raw)
     results.push({
-      text,
-      file,
-      ...pos,
-      confidence: 'high',
-      reason: 'Vue template text node',
+      text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)),
+      confidence: 'high', reason: 'Vue template text node', property: null,
     })
   }
 
   const attrRegex = /(?:^|\s)(?![:@])([A-Za-z][\w-]*)\s*=\s*(["'])(.*?)\2/g
   while ((match = attrRegex.exec(template))) {
-    const attr = match[1]
-    if (!HIGH_CONFIDENCE_ATTRS.has(attr)) continue
+    const property = match[1]
+    if (!HIGH_CONFIDENCE_ATTRS.has(property)) continue
     const text = normalizeCandidateText(match[3])
-    if (!isHumanEnglishText(text)) continue
-
+    if (!isHumanEnglishText(text, { allowShort: true })) continue
     const absoluteIndex = source.indexOf(match[0])
-    const pos = lineAndColumn(source, Math.max(0, absoluteIndex))
     results.push({
-      text,
-      file,
-      ...pos,
-      confidence: 'high',
-      reason: `Static UI attribute: ${attr}`,
+      text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)),
+      confidence: 'high', reason: `Static UI attribute: ${property}`, property,
     })
   }
-
   return results
 }
 
 function extractCodeHardcoded(source, file) {
   const results = []
+  let scanSource = source
   if (file.endsWith('.vue')) {
-    const scriptMatches = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-    source = scriptMatches.map((match) => match[1]).join('\n')
+    scanSource = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
+      .map((match) => match[1])
+      .join('\n')
   }
 
-  const patterns = [
-    {
-      regex: /\b(?:label|title|description|placeholder|emptyText|clearLabel)\s*:\s*(["'`])([^\n]{2,240}?)\1/g,
-      reason: 'UI-like object property',
-    },
-    {
-      regex: /\breturn\s+(["'`])([^\n]{2,120}?)\1\s*[;\n}]/g,
-      reason: 'Returned display string',
-    },
-  ]
-
-  for (const { regex, reason } of patterns) {
-    let match
-    while ((match = regex.exec(source))) {
-      const text = normalizeCandidateText(match[2])
-      if (!isHumanEnglishText(text)) continue
-      if (looksLikeI18nKey(text)) continue
-      const pos = lineAndColumn(source, match.index)
-      results.push({
-        text,
-        file,
-        ...pos,
-        confidence: 'medium',
-        reason,
-      })
-    }
+  const propertyNames = [...UI_OBJECT_PROPERTIES].join('|')
+  const propertyRegex = new RegExp(`\\b(${propertyNames})\\s*:\\s*(["'\\x60])([^\\n]{1,240}?)\\2`, 'g')
+  let match
+  while ((match = propertyRegex.exec(scanSource))) {
+    const property = match[1]
+    const text = normalizeCandidateText(match[3])
+    if (!isHumanEnglishText(text, { allowShort: true }) || looksLikeI18nKey(text)) continue
+    results.push({
+      text, file, ...lineAndColumn(scanSource, match.index),
+      confidence: 'medium', reason: 'UI-like object property', property,
+    })
   }
 
+  const returnRegex = /\breturn\s+(["'`])([^\n]{2,120}?)\1\s*[;\n}]/g
+  while ((match = returnRegex.exec(scanSource))) {
+    const text = normalizeCandidateText(match[2])
+    if (!isHumanEnglishText(text) || looksLikeI18nKey(text)) continue
+    results.push({
+      text, file, ...lineAndColumn(scanSource, match.index),
+      confidence: 'medium', reason: 'Returned display string', property: null,
+    })
+  }
   return results
 }
 
-function dedupeOccurrences(items, identity) {
+function dedupe(items, identity) {
   const seen = new Set()
   return items.filter((item) => {
     const key = identity(item)
@@ -504,44 +380,23 @@ function humanizeKeySegment(key) {
     .replace(/^\w/, (char) => char.toUpperCase())
 }
 
-function markdownEscape(value) {
-  return String(value ?? '').replace(/\|/g, '\\|').replace(/\n/g, ' ')
-}
-
-function relativeFile(file) {
-  return toPosix(path.relative(ROOT, file))
-}
-
-function isUiSourceFile(file) {
-  const relative = `/${toPosix(path.relative(ROOT, file))}`
-  return relative.startsWith('/app/') || relative.startsWith('/pages/') || relative.startsWith('/layouts/')
-}
-
 function makeSourceAudit(staticOccurrences, dynamicOccurrences, enFlat) {
   const grouped = new Map()
-
   for (const occurrence of staticOccurrences) {
     const list = grouped.get(occurrence.key) || []
     list.push(occurrence)
     grouped.set(occurrence.key, list)
   }
-
   const missingInEn = []
   for (const [key, occurrences] of [...grouped.entries()].sort(([a], [b]) => a.localeCompare(b))) {
     if (enFlat.has(key)) continue
     const fallback = occurrences.find((item) => item.fallback)?.fallback || ''
-    missingInEn.push({
-      key,
-      suggestedValue: fallback || humanizeKeySegment(key),
-      suggestionConfidence: fallback ? 100 : 60,
-      occurrences,
-    })
+    missingInEn.push({ key, suggestedValue: fallback || humanizeKeySegment(key), suggestionConfidence: fallback ? 100 : 60, occurrences })
   }
-
   return {
     usedStaticKeys: [...grouped.keys()].sort(),
     missingInEn,
-    dynamicKeys: dedupeOccurrences(dynamicOccurrences, (item) => `${item.pattern}|${item.file}|${item.line}`)
+    dynamicKeys: dedupe(dynamicOccurrences, (item) => `${item.pattern}|${item.file}|${item.line}`)
       .sort((a, b) => a.pattern.localeCompare(b.pattern)),
   }
 }
@@ -549,187 +404,94 @@ function makeSourceAudit(staticOccurrences, dynamicOccurrences, enFlat) {
 function makeParityAudit(enFlat, faFlat) {
   const enKeys = [...enFlat.keys()].sort()
   const faKeys = [...faFlat.keys()].sort()
+  return {
+    missingInFa: enKeys.filter((key) => !faFlat.has(key)).map((key) => ({ key, en: enFlat.get(key) })),
+    extraInFa: faKeys.filter((key) => !enFlat.has(key)).map((key) => ({ key, fa: faFlat.get(key) })),
+    sameValue: enKeys.filter((key) => faFlat.has(key) && typeof enFlat.get(key) === 'string' && enFlat.get(key) === faFlat.get(key)).map((key) => ({ key, value: enFlat.get(key) })),
+    emptyInEn: enKeys.filter((key) => enFlat.get(key) === '' || enFlat.get(key) == null).map((key) => ({ key })),
+    emptyInFa: faKeys.filter((key) => faFlat.get(key) === '' || faFlat.get(key) == null).map((key) => ({ key })),
+  }
+}
 
-  const missingInFa = enKeys
-    .filter((key) => !faFlat.has(key))
-    .map((key) => ({ key, en: enFlat.get(key) }))
-
-  const extraInFa = faKeys
-    .filter((key) => !enFlat.has(key))
-    .map((key) => ({ key, fa: faFlat.get(key) }))
-
-  const sameValue = enKeys
-    .filter((key) => faFlat.has(key))
-    .filter((key) => typeof enFlat.get(key) === 'string' && enFlat.get(key) === faFlat.get(key))
-    .map((key) => ({ key, value: enFlat.get(key) }))
-
-  const emptyInEn = enKeys
-    .filter((key) => enFlat.get(key) === '' || enFlat.get(key) == null)
-    .map((key) => ({ key }))
-
-  const emptyInFa = faKeys
-    .filter((key) => faFlat.get(key) === '' || faFlat.get(key) == null)
-    .map((key) => ({ key }))
-
-  return { missingInFa, extraInFa, sameValue, emptyInEn, emptyInFa }
+function markdownEscape(value) {
+  return String(value ?? '').replace(/\|/g, '\\|').replace(/\r?\n/g, ' ')
 }
 
 function buildMarkdown(report) {
-  const lines = []
-  lines.push('# Localization Audit')
-  lines.push('')
-  lines.push(`Generated: ${report.generatedAt}`)
-  lines.push(`Mode: \`${report.mode}\``)
-  lines.push('')
-  lines.push('## Summary')
-  lines.push('')
-  lines.push('| Check | Count |')
-  lines.push('| --- | ---: |')
-  lines.push(`| Source files scanned | ${report.summary.sourceFiles} |`)
-  lines.push(`| Static i18n keys used | ${report.summary.staticKeysUsed} |`)
-  lines.push(`| Missing in EN | ${report.summary.missingInEn} |`)
-  lines.push(`| Missing in FA | ${report.summary.missingInFa} |`)
-  lines.push(`| Extra keys in FA | ${report.summary.extraInFa} |`)
-  lines.push(`| Dynamic i18n patterns | ${report.summary.dynamicPatterns} |`)
-  lines.push(`| Hardcoded UI candidates | ${report.summary.hardcodedCandidates} |`)
-  lines.push('')
+  const lines = [
+    '# Localization Audit', '',
+    `Generated: ${report.generatedAt}`, `Mode: \`${report.mode}\``, '',
+    '## Summary', '', '| Check | Count |', '| --- | ---: |',
+    `| Source files scanned | ${report.summary.sourceFiles} |`,
+    `| Static i18n keys used | ${report.summary.staticKeysUsed} |`,
+    `| Missing in EN | ${report.summary.missingInEn} |`,
+    `| Missing in FA | ${report.summary.missingInFa} |`,
+    `| Extra keys in FA | ${report.summary.extraInFa} |`,
+    `| Dynamic i18n patterns | ${report.summary.dynamicPatterns} |`,
+    `| Hardcoded UI candidates | ${report.summary.hardcodedCandidates} |`, '',
+  ]
 
   if (report.source) {
-    lines.push('## EN patch plan — keys used in source but missing in EN')
-    lines.push('')
-    if (!report.source.missingInEn.length) {
-      lines.push('No statically referenced keys are missing in the effective English locale. ✅')
-    } else {
-      for (const item of report.source.missingInEn) {
-        lines.push(`### \`${item.key}\``)
-        lines.push('')
-        lines.push(`Suggested EN: **${markdownEscape(item.suggestedValue)}**`)
-        lines.push(`Suggestion confidence: **${item.suggestionConfidence}%**`)
-        lines.push('')
-        lines.push('Used at:')
-        for (const occurrence of item.occurrences.slice(0, 8)) {
-          const fallback = occurrence.fallback ? ` — fallback: \`${markdownEscape(occurrence.fallback)}\`` : ''
-          lines.push(`- \`${relativeFile(occurrence.file)}:${occurrence.line}:${occurrence.column}\`${fallback}`)
-        }
-        lines.push('')
-      }
-
-      lines.push('### Suggested flat EN patch map')
-      lines.push('')
-      lines.push('```text')
-      for (const item of report.source.missingInEn) {
-        lines.push(`${JSON.stringify(item.key)}: ${JSON.stringify(item.suggestedValue)},`)
-      }
-      lines.push('```')
-      lines.push('')
+    lines.push('## Missing statically referenced EN keys', '')
+    if (!report.source.missingInEn.length) lines.push('None. ✅', '')
+    else for (const item of report.source.missingInEn) {
+      lines.push(`- \`${item.key}\` → ${JSON.stringify(item.suggestedValue)}`)
     }
-
-    lines.push('## Dynamic i18n keys — review required')
-    lines.push('')
-    if (!report.source.dynamicKeys.length) {
-      lines.push('No dynamic i18n patterns detected.')
-    } else {
-      lines.push('| Pattern | Location |')
-      lines.push('| --- | --- |')
-      for (const item of report.source.dynamicKeys) {
-        lines.push(`| \`${markdownEscape(item.pattern)}\` | \`${relativeFile(item.file)}:${item.line}\` |`)
-      }
-    }
+    lines.push('', '## Dynamic i18n patterns', '')
+    if (!report.source.dynamicKeys.length) lines.push('None.')
+    else for (const item of report.source.dynamicKeys) lines.push(`- \`${item.pattern}\` — \`${relativeFile(item.file)}:${item.line}\``)
     lines.push('')
   }
 
   if (report.parity) {
-    lines.push('## EN → FA parity')
-    lines.push('')
-    lines.push('### Missing in FA')
-    lines.push('')
-    if (!report.parity.missingInFa.length) {
-      lines.push('No English keys are missing in Persian. ✅')
-    } else {
-      lines.push('| Key | English value |')
-      lines.push('| --- | --- |')
-      for (const item of report.parity.missingInFa) {
-        lines.push(`| \`${item.key}\` | ${markdownEscape(item.en)} |`)
-      }
-    }
-    lines.push('')
-
-    lines.push('### Extra in FA / missing in EN')
-    lines.push('')
-    if (!report.parity.extraInFa.length) {
-      lines.push('No Persian-only keys detected.')
-    } else {
-      lines.push('| Key | Persian value |')
-      lines.push('| --- | --- |')
-      for (const item of report.parity.extraInFa) {
-        lines.push(`| \`${item.key}\` | ${markdownEscape(item.fa)} |`)
-      }
-    }
-    lines.push('')
-
-    lines.push('### Same English/Persian value — review candidates')
-    lines.push('')
-    lines.push('These are not automatically errors: brand names, tokens, acronyms, URLs and intentionally untranslated UI may appear here.')
-    lines.push('')
-    for (const item of report.parity.sameValue.slice(0, 200)) {
-      lines.push(`- \`${item.key}\` → ${JSON.stringify(item.value)}`)
-    }
-    if (report.parity.sameValue.length > 200) {
-      lines.push(`- … ${report.parity.sameValue.length - 200} more in JSON report`)
-    }
+    lines.push('## EN → FA parity', '', '### Missing in FA', '')
+    if (!report.parity.missingInFa.length) lines.push('None. ✅')
+    else for (const item of report.parity.missingInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.en)}`)
+    lines.push('', '### Extra in FA / missing in EN', '')
+    if (!report.parity.extraInFa.length) lines.push('None.')
+    else for (const item of report.parity.extraInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.fa)}`)
     lines.push('')
   }
 
   if (report.hardcoded) {
-    lines.push('## Hardcoded UI candidates')
-    lines.push('')
-    lines.push('This section is heuristic. High-confidence candidates are Vue text/attributes; medium-confidence candidates need human review.')
-    lines.push('')
-    if (!report.hardcoded.length) {
-      lines.push('No hardcoded UI candidates detected.')
-    } else {
-      lines.push('| Confidence | Text | Location | Reason |')
-      lines.push('| --- | --- | --- | --- |')
-      for (const item of report.hardcoded) {
-        lines.push(`| ${item.confidence} | ${markdownEscape(item.text)} | \`${relativeFile(item.file)}:${item.line}\` | ${item.reason} |`)
-      }
+    lines.push('## Hardcoded UI candidates', '', '| Confidence | Text | Location | Property | Reason |', '| --- | --- | --- | --- | --- |')
+    if (!report.hardcoded.length) lines.push('| — | None | — | — | — |')
+    else for (const item of report.hardcoded) {
+      lines.push(`| ${item.confidence} | ${markdownEscape(item.text)} | \`${relativeFile(item.file)}:${item.line}\` | ${item.property || ''} | ${item.reason} |`)
     }
     lines.push('')
   }
 
-  lines.push('## Notes')
-  lines.push('')
-  lines.push('- Locale fragments named `*.en.ts` / `*.fa.ts` are merged under `modules.<fragmentName>` to mirror the current i18n config convention.')
-  lines.push('- Static literal key detection is high confidence. Dynamic template keys are intentionally reported separately instead of guessed.')
-  lines.push('- Hardcoded UI detection is advisory and never edits source files.')
-  lines.push('- The auditor is read-only; it writes only report files unless `--stdout` is used.')
-  lines.push('')
-
+  lines.push(
+    '## Notes', '',
+    '- Catalog scanning is presentation-field aware: semantic `value`, `promptText`, `absentPromptText`, keys and tokens are not harvested as UI metadata.',
+    '- Short text detection is intentionally whitelist-based to catch real controls such as `OK` without turning technical two-letter tokens into UI findings.',
+    '- Dynamic i18n keys are reported separately and never guessed.',
+    '- This auditor is read-only apart from report files.', '',
+  )
   return `${lines.join('\n')}\n`
 }
 
 async function main() {
   const [enLocale, faLocale, sourceFiles] = await Promise.all([
-    loadEffectiveLocale('en'),
-    loadEffectiveLocale('fa'),
-    walkSourceFiles(),
+    loadEffectiveLocale('en'), loadEffectiveLocale('fa'), walkSourceFiles(),
   ])
-
   const staticOccurrences = []
   const dynamicOccurrences = []
   const hardcodedCandidates = []
-
   const shouldScanSource = mode === 'all' || mode === 'source' || mode === 'hardcoded'
+
   if (shouldScanSource) {
     for (const filePath of sourceFiles) {
       const source = await fs.readFile(filePath, 'utf8')
       const extracted = extractI18nCalls(source, filePath)
       staticOccurrences.push(...extracted.staticKeys)
       dynamicOccurrences.push(...extracted.dynamicKeys)
-
-      if (!noHardcoded && (mode === 'all' || mode === 'hardcoded') && isUiSourceFile(filePath)) {
-        hardcodedCandidates.push(...extractVueHardcoded(source, filePath))
-        hardcodedCandidates.push(...extractCodeHardcoded(source, filePath))
+      if (!noHardcoded && (mode === 'all' || mode === 'hardcoded')) {
+        const relative = `/${relativeFile(filePath)}`
+        if (relative.startsWith('/app/') || relative.startsWith('/pages/') || relative.startsWith('/layouts/')) {
+          hardcodedCandidates.push(...extractVueHardcoded(source, filePath), ...extractCodeHardcoded(source, filePath))
+        }
       }
     }
   }
@@ -737,28 +499,18 @@ async function main() {
   const sourceAudit = mode === 'all' || mode === 'source'
     ? makeSourceAudit(staticOccurrences, dynamicOccurrences, enLocale.flat)
     : null
-
   const parityAudit = mode === 'all' || mode === 'parity'
     ? makeParityAudit(enLocale.flat, faLocale.flat)
     : null
-
   const hardcoded = mode === 'all' || mode === 'hardcoded'
-    ? dedupeOccurrences(
-        hardcodedCandidates,
-        (item) => `${item.file}|${item.line}|${item.text}`,
-      ).sort((a, b) => {
-        if (a.confidence !== b.confidence) return a.confidence === 'high' ? -1 : 1
-        return relativeFile(a.file).localeCompare(relativeFile(b.file)) || a.line - b.line
-      })
+    ? dedupe(hardcodedCandidates, (item) => `${item.file}|${item.line}|${item.text}`)
+        .sort((a, b) => (a.confidence === b.confidence ? relativeFile(a.file).localeCompare(relativeFile(b.file)) || a.line - b.line : a.confidence === 'high' ? -1 : 1))
     : null
 
   const report = {
     generatedAt: new Date().toISOString(),
     mode,
-    localeFragments: {
-      en: enLocale.fragments,
-      fa: faLocale.fragments,
-    },
+    localeFragments: { en: enLocale.fragments, fa: faLocale.fragments },
     summary: {
       sourceFiles: sourceFiles.length,
       staticKeysUsed: sourceAudit?.usedStaticKeys.length || 0,
@@ -774,28 +526,26 @@ async function main() {
   }
 
   const markdown = buildMarkdown(report)
-
-  if (stdoutOnly) {
-    process.stdout.write(markdown)
-  } else {
+  if (stdoutOnly) process.stdout.write(markdown)
+  else {
     await fs.mkdir(REPORTS_DIR, { recursive: true })
     await Promise.all([
       fs.writeFile(REPORT_MD, markdown, 'utf8'),
       fs.writeFile(REPORT_JSON, `${JSON.stringify(report, null, 2)}\n`, 'utf8'),
     ])
-
     console.log('Localization audit complete.')
     console.log(`Markdown: ${toPosix(path.relative(ROOT, REPORT_MD))}`)
     console.log(`JSON:     ${toPosix(path.relative(ROOT, REPORT_JSON))}`)
     console.log('')
     console.log(`Missing in EN:          ${report.summary.missingInEn}`)
     console.log(`Missing in FA:          ${report.summary.missingInFa}`)
+    console.log(`Extra in FA:            ${report.summary.extraInFa}`)
     console.log(`Dynamic key patterns:   ${report.summary.dynamicPatterns}`)
     console.log(`Hardcoded candidates:   ${report.summary.hardcodedCandidates}`)
   }
 
   if (strict) {
-    const failures = (report.summary.missingInEn || 0) + (report.summary.missingInFa || 0)
+    const failures = (report.summary.missingInEn || 0) + (report.summary.missingInFa || 0) + (report.summary.extraInFa || 0)
     if (failures > 0) process.exitCode = 1
   }
 }
