@@ -66,11 +66,11 @@ This includes:
 
 A file must not be deleted merely because it originated before the refactor.
 
-### Current known live dependencies
+### Dependencies present at the start of cleanup
 
 At the start of this cleanup:
 
-- `style.semantic.ts` builds on `style.module.ts`,
+- `style.semantic.ts` built on `style.module.ts`,
 - `form.semantic.ts` builds on `form.module.ts`,
 - `texture.semantic.ts` read catalog data from `texture.module.ts`.
 
@@ -85,7 +85,18 @@ The Texture dependency has now been removed without reopening semantic design:
 
 Texture / Material now has no runtime dependency on its pre-refactor global-field module.
 
-The remaining known base-module dependencies are Style and Form. They should only be consolidated when current behavior can be preserved cleanly.
+### Style dependency — resolved
+
+The Style dependency has also been removed without changing the accepted semantic schema:
+
+- `style.semantic.ts` now declares its own module key, icon, groups, field metadata, presets, and compile configuration,
+- the existing semantic Aesthetic, Medium, Stylization, Linework, Visual Treatment, Detail Level, Finish, `extraDetails`, and override behavior are preserved,
+- no `BaseStyleModule` inheritance remains,
+- the unregistered legacy `app/modules/style.module.ts` implementation has been deleted.
+
+Style now has no runtime dependency on its pre-refactor module implementation.
+
+The only remaining known base-module dependency is Form. It should only be consolidated when current behavior can be preserved cleanly.
 
 ---
 
@@ -104,9 +115,9 @@ The remaining known base-module dependencies are Style and Form. They should onl
 
 ### Phase C — remove live legacy dependencies conservatively
 
-- Do not rewrite Style or Form simply to make filenames look newer.
+- Do not rewrite Form simply to make filenames look newer.
 - Consolidate a dependency only when current behavior can be preserved and the old implementation can then be removed completely.
-- Texture catalog extraction is the accepted precedent for this type of cleanup.
+- Texture catalog extraction and Style standalone consolidation are accepted precedents for this type of cleanup.
 
 ### Phase D — reference audit
 
