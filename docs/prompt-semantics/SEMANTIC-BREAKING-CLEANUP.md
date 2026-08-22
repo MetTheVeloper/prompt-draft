@@ -1,0 +1,164 @@
+# Prompt Draft — Semantic Breaking Cleanup
+
+## Status
+
+Active cleanup policy for `refactor/prompt-semantics` after semantic closure.
+
+The project intentionally does **not** guarantee backward compatibility with drafts or importable JSON produced by the pre-refactor semantic schemas.
+
+This is a product decision, not a missing migration task. The previous schemas contained ownership and architecture problems that should not be reintroduced through compatibility code.
+
+---
+
+## 1. Compatibility policy
+
+The current registered schema is the only authoritative schema.
+
+We will not add automatic migration for removed legacy fields such as:
+
+- `framingStyle`
+- `cameraStyle`
+- `lightingStyle`
+- legacy global Texture / Material fields
+- `poseStyle`
+- `expressionStyle`
+- legacy Background / Effects mega-select fields
+- legacy Hair / Outfit flat fields
+
+Old local-storage drafts and old JSON exports may therefore fail validation, lose obsolete fields, or require manual recreation in the current editor. That behavior is acceptable for this cleanup stage.
+
+Do not add cross-module guesses merely to preserve old prose.
+
+---
+
+## 2. What should be deleted
+
+Delete code or documentation when all of the following are true:
+
+1. it exists only for an obsolete pre-refactor schema or migration plan,
+2. it is not registered by `app/modules/registry.ts`,
+3. no current semantic module, editor component, compiler, serializer, catalog, or target system imports it,
+4. removing it does not change the behavior of the current schema.
+
+Typical delete candidates:
+
+- unregistered legacy module implementations replaced by standalone semantic modules,
+- migration-only backlog documents,
+- compatibility helpers that are not used by the current schema,
+- stale comments that describe future legacy migration as required work.
+
+---
+
+## 3. What should be kept
+
+Keep anything that is part of the current runtime or still supplies current semantic data.
+
+This includes:
+
+- every module registered in `app/modules/registry.ts`,
+- semantic module implementations,
+- current catalogs and catalog validation,
+- current types and assignment infrastructure,
+- compiler and Natural serializers,
+- stable identity / semantic target infrastructure,
+- localization required by current UI,
+- legacy-named files that are still an active dependency of current code.
+
+A file must not be deleted merely because it originated before the refactor.
+
+### Current known live dependencies
+
+At the start of this cleanup:
+
+- `style.semantic.ts` still builds on `style.module.ts`,
+- `form.semantic.ts` still builds on `form.module.ts`,
+- `texture.semantic.ts` still reads catalog data from `texture.module.ts`.
+
+These are **runtime dependencies**, not backward-compatibility support. They remain until they can be consolidated without changing current behavior.
+
+The Texture dependency is a good future consolidation candidate: extract the material/condition catalog into a neutral catalog file, point `texture.semantic.ts` at it, then remove the old implementation. Do not combine that extraction with speculative semantic changes.
+
+---
+
+## 4. Cleanup order
+
+### Phase A — close migration scope
+
+- Treat legacy draft/JSON migration as intentionally unsupported.
+- Remove migration-only backlog items.
+- Keep the review backlog available for concrete reproducible defects discovered during testing.
+
+### Phase B — remove dead legacy implementations
+
+- Delete unregistered legacy modules only after confirming the current registry and semantic modules do not depend on them.
+- Prefer small, reviewable removals over broad filename-based deletion.
+
+### Phase C — preserve live dependencies
+
+- Do not rewrite Style, Form, or Texture simply to make filenames look newer.
+- Consolidate them only when the current behavior can be preserved exactly and the dependency can be removed cleanly.
+
+### Phase D — reference audit
+
+After deletions, check for:
+
+- broken imports,
+- stale module names,
+- references to deleted migration docs,
+- obsolete comments that promise legacy migration,
+- current components importing removed legacy implementations directly.
+
+### Phase E — validation
+
+Run the normal current-project validation path:
+
+```bash
+pnpm locale:consolidate
+pnpm generate
+pnpm build
+```
+
+Then smoke-test the current schema only:
+
+- create a new draft,
+- edit representative modules,
+- verify Modular and Natural output,
+- save/reload a current draft,
+- export/import a newly created JSON,
+- verify EN/FA rendering,
+- verify important Color/Material semantic targets,
+- verify Hair/Outfit/Pose/Expression structured editors.
+
+Old draft compatibility is not an exit criterion.
+
+---
+
+## 5. Backlog rule after cleanup
+
+`docs/prompt-semantics/review-backlog/` is reserved for concrete defects that are reproducible on the current schema.
+
+Good backlog items include:
+
+- broken prompt-graph identity,
+- target persistence failures,
+- compiler or Natural serialization regressions,
+- current-schema save/import round-trip defects,
+- real ownership defects demonstrated by current behavior.
+
+Do not add speculative legacy migration work unless backward compatibility becomes an explicit product requirement again.
+
+---
+
+## 6. Exit criteria
+
+This cleanup is complete when:
+
+- migration-only work is no longer presented as required before integration,
+- dead unregistered legacy modules are removed,
+- remaining old-origin files are retained only because current runtime behavior depends on them,
+- current imports resolve cleanly,
+- localization consolidation passes,
+- generate/build pass,
+- current-schema smoke tests pass.
+
+At that point the branch can proceed toward integration with `main` without carrying a compatibility architecture for the abandoned schemas.
