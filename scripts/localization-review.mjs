@@ -12,7 +12,7 @@ const DEFAULT_MD_OUTPUT = path.join(ROOT, 'reports', 'localization-review.md')
 const CATEGORY_ORDER = [
   'LIKELY_UI',
   'UI_METADATA',
-  'RENDER_LOCALIZED_METADATA',
+  'RENDER_LOCALIZED',
   'REVIEW_REQUIRED',
   'SEMANTIC_VALUE',
   'COMPILER_TEXT',
@@ -27,11 +27,11 @@ const CATEGORY_META = {
   },
   UI_METADATA: {
     action: 'localize-at-render-layer',
-    description: 'Presentation metadata stored in catalogs or constants that still needs a render-layer translation path.',
+    description: 'Presentation metadata that still appears to need a render-layer translation boundary.',
   },
-  RENDER_LOCALIZED_METADATA: {
-    action: 'keep-canonical-source',
-    description: 'Canonical presentation metadata intentionally remains English in semantic catalogs because the active UI translates it at render time.',
+  RENDER_LOCALIZED: {
+    action: 'no-action-render-localized',
+    description: 'Canonical English presentation metadata already translated at render time. Keep the source value locale-independent.',
   },
   REVIEW_REQUIRED: {
     action: 'inspect-call-site',
@@ -47,7 +47,7 @@ const CATEGORY_META = {
   },
   DEVELOPER_TEXT: {
     action: 'ignore',
-    description: 'Formatting, geometry, CSS, identifiers or other developer-facing strings.',
+    description: 'Formatting, geometry, generated IDs, paths, CSS, identifiers or other developer-facing strings.',
   },
   INTENTIONAL: {
     action: 'ignore',
@@ -63,19 +63,9 @@ const SEMANTIC_PROPERTIES = new Set([
   'value', 'valuePattern', 'key', 'keyPattern', 'promptText', 'absentPromptText',
   'token', 'variableToken', 'semanticValue', 'compilerText',
 ])
-const RENDER_LOCALIZED_CATALOGS = new Set([
-  'app/modules/hair.catalog.ts',
-  'app/modules/outfit.catalog.ts',
-  'app/modules/variables.blueprints.ts',
-])
 
 function parseArgs(argv) {
-  const options = {
-    input: DEFAULT_INPUT,
-    jsonOutput: DEFAULT_JSON_OUTPUT,
-    mdOutput: DEFAULT_MD_OUTPUT,
-    stdout: false,
-  }
+  const options = { input: DEFAULT_INPUT, jsonOutput: DEFAULT_JSON_OUTPUT, mdOutput: DEFAULT_MD_OUTPUT, stdout: false }
   for (let index = 0; index < argv.length; index += 1) {
     const arg = argv[index]
     if (arg === '--stdout') options.stdout = true
@@ -104,12 +94,7 @@ function markdownEscape(value) {
 }
 
 function classification(category, confidence, reason) {
-  return {
-    category,
-    classificationConfidence: confidence,
-    classificationReason: reason,
-    action: CATEGORY_META[category].action,
-  }
+  return { category, classificationConfidence: confidence, classificationReason: reason, action: CATEGORY_META[category].action }
 }
 
 function isKeyboardShortcut(text) {
@@ -120,7 +105,15 @@ function isKeyboardShortcut(text) {
 function looksLikeTemplateExpressionFalsePositive(candidate) {
   if (candidate.reason !== 'Vue template text node') return false
   const text = String(candidate.text || '')
-  return /(?:\}\}|\{\{|translate\(|\$?t\(|\?\.|\|\|)/.test(text)
+  return /(?:\}\}|\{\{|translate\(|catalogI18n\.|\$?t\(|\?\.|\|\|)/.test(text)
+}
+
+function isAlreadyLocalizedExpression(text) {
+  return /(?:catalogI18n\.(?:uiText|catalogText|itemLabel|itemDescription)|\btranslate|\$?t|i18n\.t)\s*\(/.test(text)
+}
+
+function isTokenOnly(text) {
+  return /^\{\$\{[^}]+\}\}$/.test(text) || /^\{[A-Za-z][\w.:-]*\}$/.test(text)
 }
 
 function looksTechnicalReturn(text) {
@@ -129,10 +122,15 @@ function looksTechnicalReturn(text) {
     /\bminmax\(/,
     /\brepeat\(/,
     /\blinear-gradient\(/,
+    /\b(?:Date\.now|Math\.random|\.toString)\s*\(/,
     /(^|\s)(?:bg|hbg|gr|hgr|trnsx|trnsy|b\d|t\d|l\d|r\d)[-_0-9${}]/,
     /^\$\{[^}]+\}$/,
     /^#[A-Fa-f0-9]{3,8}$/,
     /^\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|fr|ms|s)$/i,
+    /^\/?[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_?=&${}.-]+)+$/,
+    /\.zip$/i,
+    /^[A-Za-z0-9_-]+(?::[A-Za-z0-9_${}.-]+){1,}$/,
+    /^(?:effect|light|variable|draft|layout|region|setup|typography|block|group)[_:-].*\$\{/i,
   ].some((pattern) => pattern.test(text))
 }
 
@@ -151,6 +149,15 @@ function isSemanticHelperFile(file) {
 
 function isProtectedSemanticCatalog(file) {
   return /^app\/modules\/(?:hair|outfit)\.catalog\.ts$/i.test(file) || file === 'app/modules/variables.blueprints.ts'
+}
+
+function isModuleDefinition(file) {
+  return /^app\/modules\/[^/]+\.module\.ts$/i.test(file)
+}
+
+function isBlueprintCanonicalDraftMetadata(file, text) {
+  if (file !== 'app/components/modules/variables/VariableBlueprintModal.vue') return false
+  return /^(?:Variables|Variable \$\{|Custom variable \$\{|\$\{group\.label\} template)/.test(text)
 }
 
 function classifyCandidate(candidate) {
@@ -172,8 +179,17 @@ function classifyCandidate(candidate) {
   if (isSemanticHelperFile(file)) {
     return classification('SEMANTIC_VALUE', 98, 'Semantic/token helper output must remain locale-independent.')
   }
+  if (isTokenOnly(text)) {
+    return classification('SEMANTIC_VALUE', 99, 'Variable/token identity is intentionally locale-independent even when displayed as a label.')
+  }
+  if (isAlreadyLocalizedExpression(text)) {
+    return classification('RENDER_LOCALIZED', 100, 'The expression already resolves through the localization layer at render time.')
+  }
+  if (isBlueprintCanonicalDraftMetadata(file, text)) {
+    return classification('RENDER_LOCALIZED', 99, 'Blueprint draft metadata is deliberately canonical; a separate display helper localizes it at render time.')
+  }
   if (reason === 'Returned display string' && looksTechnicalReturn(text)) {
-    return classification('DEVELOPER_TEXT', 98, 'Formatting/style return value, not ordinary UI prose.')
+    return classification('DEVELOPER_TEXT', 99, 'Generated identifier/path/formatting return value, not UI prose.')
   }
 
   if (isProtectedSemanticCatalog(file)) {
@@ -181,16 +197,18 @@ function classifyCandidate(candidate) {
       return classification('SEMANTIC_VALUE', 100, `Catalog property \`${property}\` is semantic/prompt-facing and must not be localized.`)
     }
     if (property && PRESENTATION_PROPERTIES.has(property)) {
-      if (RENDER_LOCALIZED_CATALOGS.has(file)) {
-        return classification(
-          'RENDER_LOCALIZED_METADATA',
-          100,
-          `Catalog property \`${property}\` intentionally stays canonical; Hair/Outfit/Variable Blueprint UI resolves its translation at render time.`,
-        )
-      }
-      return classification('UI_METADATA', 99, `Catalog property \`${property}\` is presentation metadata; translate only at the render layer.`)
+      return classification('RENDER_LOCALIZED', 100, `Canonical catalog \`${property}\` is already translated by the render-layer catalog i18n boundary.`)
     }
     return classification('REVIEW_REQUIRED', 82, 'Protected semantic catalog candidate without a confirmed presentation property.')
+  }
+
+  if (isModuleDefinition(file) && reason === 'UI-like object property') {
+    if (property && SEMANTIC_PROPERTIES.has(property)) {
+      return classification('SEMANTIC_VALUE', 98, `Module property \`${property}\` is semantic-shaped.`)
+    }
+    if (property && PRESENTATION_PROPERTIES.has(property)) {
+      return classification('RENDER_LOCALIZED', 96, 'Module presentation metadata is used as a canonical fallback while the panel renders the matching i18n key.')
+    }
   }
 
   if (lowerFile.endsWith('.vue')) {
@@ -207,7 +225,7 @@ function classifyCandidate(candidate) {
       if (!looksTechnicalReturn(text) && /[A-Za-z]{2,}/.test(text.replace(/\$\{[^}]+\}/g, ' '))) {
         return classification('LIKELY_UI', 84, 'Human-readable returned string inside a Vue component.')
       }
-      return classification('DEVELOPER_TEXT', 88, 'Returned component string appears technical.')
+      return classification('DEVELOPER_TEXT', 92, 'Returned component string appears technical.')
     }
   }
 
@@ -215,7 +233,7 @@ function classifyCandidate(candidate) {
     if (property && SEMANTIC_PROPERTIES.has(property)) {
       return classification('SEMANTIC_VALUE', 92, `Constant property \`${property}\` is semantic-shaped.`)
     }
-    return classification('UI_METADATA', 94, 'Constant-backed presentation metadata is likely rendered by controls.')
+    return classification('UI_METADATA', 94, 'Constant-backed presentation metadata is likely rendered by controls and still needs a call-site translation boundary.')
   }
 
   const uiCatalogFiles = new Set([
@@ -224,11 +242,7 @@ function classifyCandidate(candidate) {
     'app/composables/prompt/useSubjectAssignmentTargets.ts',
   ])
   if (uiCatalogFiles.has(file) && reason === 'UI-like object property') {
-    return classification('UI_METADATA', 94, 'Selector/catalog presentation metadata.')
-  }
-
-  if (/^app\/modules\/[^/]+\.module\.ts$/i.test(file) && reason === 'UI-like object property') {
-    return classification('UI_METADATA', 90, 'Module label/description metadata is likely displayed; keep semantic payload separate.')
+    return classification('UI_METADATA', 88, 'Selector/catalog presentation metadata needs confirmation that its render path translates the canonical label.')
   }
 
   if (file.startsWith('app/composables/useScreen.') && reason === 'Returned display string') {
@@ -262,10 +276,9 @@ function buildSummary(items) {
     total: items.length,
     categories,
     actionable: categories.LIKELY_UI + categories.UI_METADATA,
-    renderLocalized: categories.RENDER_LOCALIZED_METADATA,
+    alreadyRenderLocalized: categories.RENDER_LOCALIZED,
     inspectManually: categories.REVIEW_REQUIRED,
-    doNotAutoLocalize:
-      categories.SEMANTIC_VALUE + categories.COMPILER_TEXT + categories.DEVELOPER_TEXT + categories.INTENTIONAL,
+    doNotAutoLocalize: categories.SEMANTIC_VALUE + categories.COMPILER_TEXT + categories.DEVELOPER_TEXT + categories.INTENTIONAL,
     topFiles: [...files.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, 25)
@@ -290,13 +303,11 @@ function buildMarkdown(report) {
     `Source audit: ${report.sourceAuditGeneratedAt || 'unknown'}`, '',
     '## Summary', '', '| Category | Count | Recommended action |', '| --- | ---: | --- |',
   ]
-  for (const category of CATEGORY_ORDER) {
-    lines.push(`| \`${category}\` | ${report.summary.categories[category]} | ${CATEGORY_META[category].action} |`)
-  }
+  for (const category of CATEGORY_ORDER) lines.push(`| \`${category}\` | ${report.summary.categories[category]} | ${CATEGORY_META[category].action} |`)
   lines.push(
     '',
     `- Actionable UI/UI metadata: **${report.summary.actionable}**`,
-    `- Already localized at render layer: **${report.summary.renderLocalized}**`,
+    `- Already localized at render layer: **${report.summary.alreadyRenderLocalized}**`,
     `- Manual call-site review: **${report.summary.inspectManually}**`,
     `- Do not auto-localize / ignore: **${report.summary.doNotAutoLocalize}**`, '',
   )
@@ -306,18 +317,16 @@ function buildMarkdown(report) {
     lines.push(`## ${category} — ${items.length}`, '', CATEGORY_META[category].description, '')
     if (!items.length) { lines.push('No candidates.', ''); continue }
     lines.push('| Confidence | Text | Property | Location | Why |', '| ---: | --- | --- | --- | --- |')
-    for (const item of items) {
-      lines.push(`| ${item.classificationConfidence}% | ${markdownEscape(item.text)} | ${item.property || ''} | \`${relativeFile(item.file)}:${item.line}\` | ${markdownEscape(item.classificationReason)} |`)
-    }
+    for (const item of items) lines.push(`| ${item.classificationConfidence}% | ${markdownEscape(item.text)} | ${item.property || ''} | \`${relativeFile(item.file)}:${item.line}\` | ${markdownEscape(item.classificationReason)} |`)
     lines.push('')
   }
 
   lines.push(
     '## Notes', '',
-    '- Hair/Outfit/Variable Blueprint canonical catalog metadata is now separated from actionable localization findings when its active UI already translates it at render time.',
-    '- Protected semantic catalog `value`, `promptText`, token/key and Blueprint prompt defaults remain non-localizable semantic payloads.',
-    '- Direct Vue text nodes and static visible attributes are classified as UI instead of falling through to manual review.',
-    '- `COMPILER_TEXT` and `SEMANTIC_VALUE` remain conservative by design.', '',
+    '- `RENDER_LOCALIZED` is deliberately non-actionable: canonical English metadata remains stable while the render layer supplies the active locale.',
+    '- Protected Hair/Outfit/Variable Blueprint semantic values remain locale-independent.',
+    '- Direct Vue text nodes and static visible attributes remain high-confidence UI candidates.',
+    '- Generated IDs, paths, token labels and compiler output are excluded from localization work.', '',
   )
   return `${lines.join('\n')}\n`
 }
@@ -350,10 +359,10 @@ async function main() {
   console.log(`JSON:     ${toPosix(path.relative(ROOT, options.jsonOutput))}`)
   console.log('')
   console.log(`Actionable UI/metadata: ${report.summary.actionable}`)
-  console.log(`Render-localized:       ${report.summary.renderLocalized}`)
+  console.log(`Render-localized:       ${report.summary.alreadyRenderLocalized}`)
   console.log(`Review required:        ${report.summary.inspectManually}`)
   console.log(`Do not auto-localize:   ${report.summary.doNotAutoLocalize}`)
-  for (const category of CATEGORY_ORDER) console.log(`${category.padEnd(26)} ${report.summary.categories[category]}`)
+  for (const category of CATEGORY_ORDER) console.log(`${category.padEnd(18)} ${report.summary.categories[category]}`)
 }
 
 main().catch((error) => {

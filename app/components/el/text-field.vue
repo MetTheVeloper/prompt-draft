@@ -20,6 +20,8 @@ defineOptions({
   inheritAttrs: false,
 });
 
+const { t } = useI18n();
+
 type TextFieldType = "text" | "textarea";
 
 type TextFieldAction =
@@ -74,7 +76,7 @@ const props = withDefaults(
     historyLimit: 20,
     editorId: "",
     supportVariables: false,
-    actionLabel: "Text actions",
+    actionLabel: undefined,
     size: 16,
 
     translationSource: "auto",
@@ -131,6 +133,10 @@ const enabledActions = computed<TextFieldAction[]>(() => {
   } else {
     return DEFAULT_TEXT_FIELD_ACTIONS;
   }
+});
+
+const resolvedActionLabel = computed(() => {
+  return props.actionLabel || t("components.textField.actionLabel");
 });
 
 const shouldTrackEditor = computed(() => {
@@ -463,10 +469,9 @@ async function translateFieldContent() {
 
     modal.message({
       type: "error",
-      title: "خطا در ترجمه",
-      message:
-        "سرویس ترجمه در دسترس نیست. مطمئن شو LibreTranslate روی پورت 5000 روشن است.",
-      actionLabel: "بستن",
+      title: t("components.textField.translation.errorTitle"),
+      message: t("components.textField.translation.errorMessage"),
+      actionLabel: t("components.textField.translation.close"),
     });
 
     emit("action-error", error);
@@ -477,9 +482,9 @@ async function translateFieldContent() {
   if (!result.options.length) {
     modal.message({
       type: "warning",
-      title: "ترجمه‌ای پیدا نشد",
-      message: "موتور ترجمه پاسخی برای این متن برنگرداند.",
-      actionLabel: "بستن",
+      title: t("components.textField.translation.noneTitle"),
+      message: t("components.textField.translation.noneMessage"),
+      actionLabel: t("components.textField.translation.close"),
     });
 
     return;
@@ -490,8 +495,8 @@ async function translateFieldContent() {
   modal.open({
     header: {
       icon: "translate",
-      title: "انتخاب ترجمه",
-      subtitle: "یکی از ترجمه‌ها را انتخاب کن تا جایگزین متن فعلی شود.",
+      title: t("components.textField.translation.chooseTitle"),
+      subtitle: t("components.textField.translation.chooseSubtitle"),
       color: "blue",
     },
 
@@ -508,14 +513,14 @@ async function translateFieldContent() {
 
     actions: [
       {
-        label: "بستن",
+        label: t("components.textField.translation.close"),
         icon: "cancel",
         color: "normal",
         mode: "flat",
         close: true,
       },
       {
-        label: "استفاده از ترجمه انتخاب‌شده",
+        label: t("components.textField.translation.useSelected"),
         icon: "check_circle",
         color: "blue",
         mode: "normal",
@@ -564,7 +569,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
   if (hasAction("insertVariable")) {
     items.push({
-      label: "درج متغیر",
+      label: t("components.textField.actions.insertVariable"),
       icon: "code",
       color: "blue",
       disabled: () =>
@@ -577,7 +582,9 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
   if (hasAction("translate")) {
     items.push({
-      label: isTranslating.value ? "Translating..." : "Translate",
+      label: isTranslating.value
+        ? t("components.textField.actions.translating")
+        : t("components.textField.actions.translate"),
       icon: "translate",
       color: "blue",
       disabled: () => isLocked.value || !hasValue.value || isTranslating.value,
@@ -588,7 +595,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
   }
   if (hasAction("copy")) {
     items.push({
-      label: "Copy",
+      label: t("components.textField.actions.copy"),
       icon: "content_copy",
       disabled: () => !hasValue.value || !canUseClipboard.value,
       handler: copyFieldContent,
@@ -597,7 +604,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
   if (hasAction("paste")) {
     items.push({
-      label: "Paste",
+      label: t("components.textField.actions.paste"),
       icon: "content_paste",
       disabled: () => isLocked.value || !canUseClipboard.value,
       handler: pasteClipboardContent,
@@ -606,7 +613,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
   if (hasAction("selectAll")) {
     items.push({
-      label: "Select all",
+      label: t("components.textField.actions.selectAll"),
       icon: "select_all",
       disabled: () => !hasValue.value,
       handler: selectAllContent,
@@ -618,7 +625,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
     if (hasAction("undo")) {
       items.push({
-        label: "Undo",
+        label: t("components.textField.actions.undo"),
         icon: "undo",
         disabled: () => !canUndo.value,
         handler: undoFieldChange,
@@ -627,7 +634,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
 
     if (hasAction("redo")) {
       items.push({
-        label: "Redo",
+        label: t("components.textField.actions.redo"),
         icon: "redo",
         disabled: () => !canRedo.value,
         handler: redoFieldChange,
@@ -639,7 +646,7 @@ function getActionMenuItems(): GlobalMenuItem[] {
     addDivider(items);
 
     items.push({
-      label: "Clear",
+      label: t("components.textField.actions.clear"),
       icon: "delete",
       color: "red",
       disabled: () => isLocked.value || !hasValue.value,
@@ -733,7 +740,7 @@ defineExpose({
     <div v-if="showActionButton" ref="actionAnchorRef" class="el-text-field-host__actions" @pointerdown.prevent.stop
       @click.stop="openActionMenu">
       <el-button
-        :label="actionLabel"
+        :label="resolvedActionLabel"
         icon="more_vert"
         type="fab"
         mode="flat"

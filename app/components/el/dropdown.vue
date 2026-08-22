@@ -14,6 +14,8 @@ defineOptions({
   inheritAttrs: false,
 })
 
+const { t } = useI18n()
+
 type ElDropdownRawItem =
   | ElDropdownValue
   | ElDropdownItem
@@ -59,7 +61,7 @@ const props = withDefaults(
     itemColor: undefined,
     itemGroup: undefined,
     itemGroupLabel: undefined,
-    placeholder: 'Select option',
+    placeholder: undefined,
     clearable: false,
     disabled: false,
     emptyValue: '',
@@ -76,6 +78,7 @@ const emit = defineEmits<{
 
 const menuApi = useMenu()
 const dropdownRef = ref<HTMLElement | null>(null)
+const resolvedPlaceholder = computed(() => props.placeholder || t('components.dropdown.placeholder'))
 
 function isSameValue(first?: ElDropdownValue, second?: ElDropdownValue) {
   return first === second
@@ -252,7 +255,7 @@ const selectedItem = computed(() => {
 })
 
 const selectedLabel = computed(() => {
-  if (!hasValue.value) return props.placeholder
+  if (!hasValue.value) return resolvedPlaceholder.value
 
   return selectedItem.value?.label || String(props.modelValue ?? '')
 })
@@ -315,7 +318,7 @@ function createSelectableMenuItem(item: ElDropdownItem): GlobalMenuItem {
 function createClearItem(): GlobalMenuItem {
   return {
     type: 'item',
-    label: props.placeholder,
+    label: resolvedPlaceholder.value,
     icon: 'cancel',
     value: props.emptyValue,
     active: !hasValue.value,

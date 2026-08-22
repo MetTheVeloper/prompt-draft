@@ -69,6 +69,23 @@ function deepMerge(target, source) {
   return out
 }
 
+function flatToNested(flat) {
+  const output = {}
+  for (const [key, value] of Object.entries(flat || {})) {
+    const parts = key.split('.').filter(Boolean)
+    if (!parts.length) continue
+    let current = output
+    parts.forEach((part, index) => {
+      if (index === parts.length - 1) current[part] = value
+      else {
+        if (!isPlainObject(current[part])) current[part] = {}
+        current = current[part]
+      }
+    })
+  }
+  return output
+}
+
 function flattenMessages(input, prefix = '', output = new Map()) {
   if (!isPlainObject(input)) return output
   for (const [key, value] of Object.entries(input)) {
@@ -94,35 +111,29 @@ async function importDefault(filePath) {
 
 async function loadEffectiveLocale(locale) {
   const rootPath = path.join(LOCALES_DIR, `${locale}.ts`)
-  const rootMessages = await importDefault(rootPath)
-  let messages = rootMessages
+  let messages = await importDefault(rootPath)
   const entries = await fs.readdir(LOCALES_DIR, { withFileTypes: true })
   const fragments = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(`.${locale}.ts`) && !entry.name.includes('.bak.'))
     .map((entry) => entry.name)
     .sort()
-  const fragmentFlats = new Map()
 
   for (const fileName of fragments) {
-    const moduleKey = fileName.slice(0, -`.${locale}.ts`.length)
     const fragment = await importDefault(path.join(LOCALES_DIR, fileName))
-    fragmentFlats.set(moduleKey, flattenMessages(fragment))
+    if (fileName.startsWith('consolidated-')) {
+      messages = deepMerge(messages, flatToNested(fragment))
+      continue
+    }
+
+    const moduleKey = fileName.slice(0, -`.${locale}.ts`.length)
     messages = deepMerge(messages, {
       modules: {
-        ...(messages.modules || {}),
-        [moduleKey]: deepMerge(messages?.modules?.[moduleKey] || {}, fragment),
+        [moduleKey]: fragment,
       },
     })
   }
 
-  return {
-    rootMessages,
-    rootFlat: flattenMessages(rootMessages),
-    messages,
-    flat: flattenMessages(messages),
-    fragments,
-    fragmentFlats,
-  }
+  return { messages, flat: flattenMessages(messages), fragments }
 }
 
 async function walkSourceFiles(directory = ROOT) {
@@ -287,6 +298,29 @@ function normalizeCandidateText(value) {
     .trim()
 }
 
+function interpolationResidue(value) {
+  return normalizeCandidateText(value)
+    .replace(/\$\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}/g, ' ')
+    .replace(/[{}$:_./?&=+\-]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function isAlreadyLocalizedExpression(value) {
+  return /(?:catalogI18n\.(?:uiText|catalogText|itemLabel|itemDescription)|\btranslate|\$?t|i18n\.t)\s*\(/.test(value)
+}
+
+function isTechnicalTemplate(value) {
+  const text = String(value || '')
+  if (/\b(?:Date\.now|Math\.random|\.toString|createId|editorId)\s*\(/.test(text)) return true
+  if (/^\/?[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_?=&${}.-]+)+$/.test(text)) return true
+  if (/\.zip$/i.test(text)) return true
+  if (/^\{\$\{[^}]+\}\}$/.test(text)) return true
+  if (/^[A-Za-z0-9_-]+(?::[A-Za-z0-9_${}.-]+){1,}$/.test(text)) return true
+  if (/^(?:effect|light|variable|draft|layout|region|setup|typography|block|group)[_:-].*\$\{/i.test(text)) return true
+  return false
+}
+
 function isHumanEnglishText(value, { allowShort = false } = {}) {
   const text = normalizeCandidateText(value)
   if (!text || text.length > 240 || !/[A-Za-z]/.test(text)) return false
@@ -295,6 +329,14 @@ function isHumanEnglishText(value, { allowShort = false } = {}) {
   if (/^(true|false|null|undefined|auto|none|normal|inherit)$/i.test(text)) return false
   if (/^(https?:|data:|var\(|rgb\(|hsl\()/i.test(text)) return false
   return true
+}
+
+function shouldIgnoreHardcoded(value) {
+  const text = normalizeCandidateText(value)
+  if (!text) return true
+  if (isAlreadyLocalizedExpression(text) || isTechnicalTemplate(text)) return true
+  if (text.includes('${') && !/[A-Za-z]{2,}/.test(interpolationResidue(text))) return true
+  return false
 }
 
 function extractVueHardcoded(source, file) {
@@ -310,13 +352,10 @@ function extractVueHardcoded(source, file) {
   while ((match = textRegex.exec(template))) {
     const raw = match[1]
     const text = normalizeCandidateText(raw)
-    if (!isHumanEnglishText(text, { allowShort: true })) continue
-    if (/[{}]/.test(text) || /(?:translate|\$?t)\s*\(/.test(text) || text.includes('?.')) continue
+    if (!isHumanEnglishText(text, { allowShort: true }) || shouldIgnoreHardcoded(text)) continue
+    if (/[{}]/.test(text) || text.includes('?.')) continue
     const absoluteIndex = source.indexOf(raw)
-    results.push({
-      text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)),
-      confidence: 'high', reason: 'Vue template text node', property: null,
-    })
+    results.push({ text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)), confidence: 'high', reason: 'Vue template text node', property: null })
   }
 
   const attrRegex = /(?:^|\s)(?![:@])([A-Za-z][\w-]*)\s*=\s*(["'])(.*?)\2/g
@@ -324,12 +363,9 @@ function extractVueHardcoded(source, file) {
     const property = match[1]
     if (!HIGH_CONFIDENCE_ATTRS.has(property)) continue
     const text = normalizeCandidateText(match[3])
-    if (!isHumanEnglishText(text, { allowShort: true })) continue
+    if (!isHumanEnglishText(text, { allowShort: true }) || shouldIgnoreHardcoded(text)) continue
     const absoluteIndex = source.indexOf(match[0])
-    results.push({
-      text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)),
-      confidence: 'high', reason: `Static UI attribute: ${property}`, property,
-    })
+    results.push({ text, file, ...lineAndColumn(source, Math.max(0, absoluteIndex)), confidence: 'high', reason: `Static UI attribute: ${property}`, property })
   }
   return results
 }
@@ -338,9 +374,7 @@ function extractCodeHardcoded(source, file) {
   const results = []
   let scanSource = source
   if (file.endsWith('.vue')) {
-    scanSource = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)]
-      .map((match) => match[1])
-      .join('\n')
+    scanSource = [...source.matchAll(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)].map((match) => match[1]).join('\n')
   }
 
   const propertyNames = [...UI_OBJECT_PROPERTIES].join('|')
@@ -349,21 +383,15 @@ function extractCodeHardcoded(source, file) {
   while ((match = propertyRegex.exec(scanSource))) {
     const property = match[1]
     const text = normalizeCandidateText(match[3])
-    if (!isHumanEnglishText(text, { allowShort: true }) || looksLikeI18nKey(text)) continue
-    results.push({
-      text, file, ...lineAndColumn(scanSource, match.index),
-      confidence: 'medium', reason: 'UI-like object property', property,
-    })
+    if (!isHumanEnglishText(text, { allowShort: true }) || looksLikeI18nKey(text) || shouldIgnoreHardcoded(text)) continue
+    results.push({ text, file, ...lineAndColumn(scanSource, match.index), confidence: 'medium', reason: 'UI-like object property', property })
   }
 
-  const returnRegex = /\breturn\s+(["'`])([^\n]{2,120}?)\1\s*[;\n}]/g
+  const returnRegex = /\breturn\s+(["'`])([^\n]{2,160}?)\1\s*[;\n}]/g
   while ((match = returnRegex.exec(scanSource))) {
     const text = normalizeCandidateText(match[2])
-    if (!isHumanEnglishText(text) || looksLikeI18nKey(text)) continue
-    results.push({
-      text, file, ...lineAndColumn(scanSource, match.index),
-      confidence: 'medium', reason: 'Returned display string', property: null,
-    })
+    if (!isHumanEnglishText(text) || looksLikeI18nKey(text) || shouldIgnoreHardcoded(text)) continue
+    results.push({ text, file, ...lineAndColumn(scanSource, match.index), confidence: 'medium', reason: 'Returned display string', property: null })
   }
   return results
 }
@@ -380,12 +408,7 @@ function dedupe(items, identity) {
 
 function humanizeKeySegment(key) {
   const segment = key.split('.').at(-1) || key
-  return segment
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/[_-]+/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-    .replace(/^\w/, (char) => char.toUpperCase())
+  return segment.replace(/([a-z0-9])([A-Z])/g, '$1 $2').replace(/[_-]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/^\w/, (char) => char.toUpperCase())
 }
 
 function makeSourceAudit(staticOccurrences, dynamicOccurrences, enFlat) {
@@ -404,91 +427,19 @@ function makeSourceAudit(staticOccurrences, dynamicOccurrences, enFlat) {
   return {
     usedStaticKeys: [...grouped.keys()].sort(),
     missingInEn,
-    dynamicKeys: dedupe(dynamicOccurrences, (item) => `${item.pattern}|${item.file}|${item.line}`)
-      .sort((a, b) => a.pattern.localeCompare(b.pattern)),
+    dynamicKeys: dedupe(dynamicOccurrences, (item) => `${item.pattern}|${item.file}|${item.line}`).sort((a, b) => a.pattern.localeCompare(b.pattern)),
   }
 }
 
-function compareFlatMaps(enFlat, faFlat, prefix = '') {
+function makeParityAudit(enFlat, faFlat) {
   const enKeys = [...enFlat.keys()].sort()
   const faKeys = [...faFlat.keys()].sort()
-  const withPrefix = (key) => prefix ? `${prefix}.${key}` : key
   return {
-    missing: enKeys
-      .filter((key) => !faFlat.has(key))
-      .map((key) => ({ key: withPrefix(key), en: enFlat.get(key) })),
-    extra: faKeys
-      .filter((key) => !enFlat.has(key))
-      .map((key) => ({ key: withPrefix(key), fa: faFlat.get(key) })),
-  }
-}
-
-function makeFragmentParity(enLocale, faLocale) {
-  const moduleKeys = new Set([
-    ...enLocale.fragmentFlats.keys(),
-    ...faLocale.fragmentFlats.keys(),
-  ])
-  const missing = []
-  const extra = []
-  const missingFiles = []
-  const extraFiles = []
-
-  for (const moduleKey of [...moduleKeys].sort()) {
-    const enFlat = enLocale.fragmentFlats.get(moduleKey)
-    const faFlat = faLocale.fragmentFlats.get(moduleKey)
-    if (enFlat && !faFlat) {
-      missingFiles.push(`${moduleKey}.fa.ts`)
-      for (const [key, value] of enFlat.entries()) {
-        missing.push({ key: `modules.${moduleKey}.${key}`, en: value, source: 'fragment-file-missing' })
-      }
-      continue
-    }
-    if (!enFlat && faFlat) {
-      extraFiles.push(`${moduleKey}.fa.ts`)
-      for (const [key, value] of faFlat.entries()) {
-        extra.push({ key: `modules.${moduleKey}.${key}`, fa: value, source: 'fragment-file-extra' })
-      }
-      continue
-    }
-    if (!enFlat || !faFlat) continue
-    const compared = compareFlatMaps(enFlat, faFlat, `modules.${moduleKey}`)
-    missing.push(...compared.missing.map((item) => ({ ...item, source: 'fragment' })))
-    extra.push(...compared.extra.map((item) => ({ ...item, source: 'fragment' })))
-  }
-
-  return { missing, extra, missingFiles, extraFiles }
-}
-
-function makeParityAudit(enLocale, faLocale, sourceAudit) {
-  const inventory = compareFlatMaps(enLocale.flat, faLocale.flat)
-  const activeStaticKeys = new Set(sourceAudit?.usedStaticKeys || [])
-  const missingStatic = inventory.missing.filter((item) => activeStaticKeys.has(item.key))
-  const fragment = makeFragmentParity(enLocale, faLocale)
-
-  const blockingMissingByKey = new Map()
-  for (const item of [...missingStatic, ...fragment.missing]) {
-    if (!blockingMissingByKey.has(item.key)) blockingMissingByKey.set(item.key, item)
-  }
-  const blockingExtraByKey = new Map()
-  for (const item of fragment.extra) {
-    if (!blockingExtraByKey.has(item.key)) blockingExtraByKey.set(item.key, item)
-  }
-
-  const sameValue = [...enLocale.flat.keys()]
-    .filter((key) => faLocale.flat.has(key))
-    .filter((key) => typeof enLocale.flat.get(key) === 'string' && enLocale.flat.get(key) === faLocale.flat.get(key))
-    .map((key) => ({ key, value: enLocale.flat.get(key) }))
-
-  return {
-    missingInFa: [...blockingMissingByKey.values()].sort((a, b) => a.key.localeCompare(b.key)),
-    extraInFa: [...blockingExtraByKey.values()].sort((a, b) => a.key.localeCompare(b.key)),
-    inventoryMissingInFa: inventory.missing,
-    inventoryExtraInFa: inventory.extra,
-    inactiveInventoryMissingInFa: inventory.missing.filter((item) => !blockingMissingByKey.has(item.key)),
-    fragment,
-    sameValue,
-    emptyInEn: [...enLocale.flat.keys()].filter((key) => enLocale.flat.get(key) === '' || enLocale.flat.get(key) == null).map((key) => ({ key })),
-    emptyInFa: [...faLocale.flat.keys()].filter((key) => faLocale.flat.get(key) === '' || faLocale.flat.get(key) == null).map((key) => ({ key })),
+    missingInFa: enKeys.filter((key) => !faFlat.has(key)).map((key) => ({ key, en: enFlat.get(key) })),
+    extraInFa: faKeys.filter((key) => !enFlat.has(key)).map((key) => ({ key, fa: faFlat.get(key) })),
+    sameValue: enKeys.filter((key) => faFlat.has(key) && typeof enFlat.get(key) === 'string' && enFlat.get(key) === faFlat.get(key)).map((key) => ({ key, value: enFlat.get(key) })),
+    emptyInEn: enKeys.filter((key) => enFlat.get(key) === '' || enFlat.get(key) == null).map((key) => ({ key })),
+    emptyInFa: faKeys.filter((key) => faFlat.get(key) === '' || faFlat.get(key) == null).map((key) => ({ key })),
   }
 }
 
@@ -503,11 +454,9 @@ function buildMarkdown(report) {
     '## Summary', '', '| Check | Count |', '| --- | ---: |',
     `| Source files scanned | ${report.summary.sourceFiles} |`,
     `| Static i18n keys used | ${report.summary.staticKeysUsed} |`,
-    `| Missing in EN (active source) | ${report.summary.missingInEn} |`,
-    `| Missing in FA (blocking active/fragment parity) | ${report.summary.missingInFa} |`,
-    `| Extra in FA fragments (blocking) | ${report.summary.extraInFa} |`,
-    `| Missing in FA full inventory (advisory) | ${report.summary.inventoryMissingInFa} |`,
-    `| Extra in FA full inventory (advisory) | ${report.summary.inventoryExtraInFa} |`,
+    `| Missing in EN | ${report.summary.missingInEn} |`,
+    `| Missing in FA | ${report.summary.missingInFa} |`,
+    `| Extra keys in FA | ${report.summary.extraInFa} |`,
     `| Dynamic i18n patterns | ${report.summary.dynamicPatterns} |`,
     `| Hardcoded UI candidates | ${report.summary.hardcodedCandidates} |`, '',
   ]
@@ -515,9 +464,7 @@ function buildMarkdown(report) {
   if (report.source) {
     lines.push('## Missing statically referenced EN keys', '')
     if (!report.source.missingInEn.length) lines.push('None. ✅', '')
-    else for (const item of report.source.missingInEn) {
-      lines.push(`- \`${item.key}\` → ${JSON.stringify(item.suggestedValue)}`)
-    }
+    else for (const item of report.source.missingInEn) lines.push(`- \`${item.key}\` → ${JSON.stringify(item.suggestedValue)}`)
     lines.push('', '## Dynamic i18n patterns', '')
     if (!report.source.dynamicKeys.length) lines.push('None.')
     else for (const item of report.source.dynamicKeys) lines.push(`- \`${item.pattern}\` — \`${relativeFile(item.file)}:${item.line}\``)
@@ -525,44 +472,28 @@ function buildMarkdown(report) {
   }
 
   if (report.parity) {
-    lines.push('## Blocking EN → FA parity', '', '### Missing in FA (active static keys + locale fragments)', '')
+    lines.push('## EN → FA parity', '', '### Missing in FA', '')
     if (!report.parity.missingInFa.length) lines.push('None. ✅')
     else for (const item of report.parity.missingInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.en)}`)
-    lines.push('', '### Extra in FA fragments', '')
-    if (!report.parity.extraInFa.length) lines.push('None. ✅')
+    lines.push('', '### Extra in FA / missing in EN', '')
+    if (!report.parity.extraInFa.length) lines.push('None.')
     else for (const item of report.parity.extraInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.fa)}`)
-
-    lines.push('', '## Full locale inventory parity — advisory', '')
-    lines.push('The full root dictionaries can contain historical/unused inventory. These gaps stay visible but do not block consolidation unless the key is used by active source or belongs to an active locale fragment.', '')
-    lines.push(`- Missing in FA inventory: **${report.parity.inventoryMissingInFa.length}**`)
-    lines.push(`- Extra in FA inventory: **${report.parity.inventoryExtraInFa.length}**`)
-    if (report.parity.inactiveInventoryMissingInFa.length) {
-      lines.push('', '### Inactive/historical EN keys absent from FA', '')
-      for (const item of report.parity.inactiveInventoryMissingInFa.slice(0, 250)) {
-        lines.push(`- \`${item.key}\` — ${markdownEscape(item.en)}`)
-      }
-      if (report.parity.inactiveInventoryMissingInFa.length > 250) {
-        lines.push(`- … ${report.parity.inactiveInventoryMissingInFa.length - 250} more in JSON report`)
-      }
-    }
     lines.push('')
   }
 
   if (report.hardcoded) {
     lines.push('## Hardcoded UI candidates', '', '| Confidence | Text | Location | Property | Reason |', '| --- | --- | --- | --- | --- |')
     if (!report.hardcoded.length) lines.push('| — | None | — | — | — |')
-    else for (const item of report.hardcoded) {
-      lines.push(`| ${item.confidence} | ${markdownEscape(item.text)} | \`${relativeFile(item.file)}:${item.line}\` | ${item.property || ''} | ${item.reason} |`)
-    }
+    else for (const item of report.hardcoded) lines.push(`| ${item.confidence} | ${markdownEscape(item.text)} | \`${relativeFile(item.file)}:${item.line}\` | ${item.property || ''} | ${item.reason} |`)
     lines.push('')
   }
 
   lines.push(
     '## Notes', '',
-    '- Blocking FA parity is intentionally scoped to active static source keys and complete `*.en.ts` / `*.fa.ts` fragment pairs.',
-    '- Full root-locale inventory parity remains reported separately so legacy/dead keys are visible without pretending they are active UI defects.',
+    '- Consolidated flat locale fragments are merged at the root; ordinary `module.locale.ts` fragments remain module-scoped.',
     '- Catalog scanning is presentation-field aware: semantic `value`, `promptText`, `absentPromptText`, keys and tokens are not harvested as UI metadata.',
-    '- Short text detection is intentionally whitelist-based to catch real controls such as `OK` without turning technical two-letter tokens into UI findings.',
+    '- Already localized render expressions, token-only labels, generated IDs, paths and file names are excluded from hardcoded UI candidates.',
+    '- Short text detection remains intentionally whitelist-based to catch real controls such as `OK`.',
     '- Dynamic i18n keys are reported separately and never guessed.',
     '- This auditor is read-only apart from report files.', '',
   )
@@ -593,12 +524,8 @@ async function main() {
     }
   }
 
-  const sourceAudit = mode === 'all' || mode === 'source'
-    ? makeSourceAudit(staticOccurrences, dynamicOccurrences, enLocale.flat)
-    : null
-  const parityAudit = mode === 'all' || mode === 'parity'
-    ? makeParityAudit(enLocale, faLocale, sourceAudit)
-    : null
+  const sourceAudit = mode === 'all' || mode === 'source' ? makeSourceAudit(staticOccurrences, dynamicOccurrences, enLocale.flat) : null
+  const parityAudit = mode === 'all' || mode === 'parity' ? makeParityAudit(enLocale.flat, faLocale.flat) : null
   const hardcoded = mode === 'all' || mode === 'hardcoded'
     ? dedupe(hardcodedCandidates, (item) => `${item.file}|${item.line}|${item.text}`)
         .sort((a, b) => (a.confidence === b.confidence ? relativeFile(a.file).localeCompare(relativeFile(b.file)) || a.line - b.line : a.confidence === 'high' ? -1 : 1))
@@ -614,8 +541,6 @@ async function main() {
       missingInEn: sourceAudit?.missingInEn.length || 0,
       missingInFa: parityAudit?.missingInFa.length || 0,
       extraInFa: parityAudit?.extraInFa.length || 0,
-      inventoryMissingInFa: parityAudit?.inventoryMissingInFa.length || 0,
-      inventoryExtraInFa: parityAudit?.inventoryExtraInFa.length || 0,
       dynamicPatterns: sourceAudit?.dynamicKeys.length || 0,
       hardcodedCandidates: hardcoded?.length || 0,
     },
@@ -636,12 +561,11 @@ async function main() {
     console.log(`Markdown: ${toPosix(path.relative(ROOT, REPORT_MD))}`)
     console.log(`JSON:     ${toPosix(path.relative(ROOT, REPORT_JSON))}`)
     console.log('')
-    console.log(`Missing in EN (active):  ${report.summary.missingInEn}`)
-    console.log(`Missing in FA (blocking): ${report.summary.missingInFa}`)
-    console.log(`Extra in FA fragments:   ${report.summary.extraInFa}`)
-    console.log(`Missing in FA inventory: ${report.summary.inventoryMissingInFa}`)
-    console.log(`Dynamic key patterns:    ${report.summary.dynamicPatterns}`)
-    console.log(`Hardcoded candidates:    ${report.summary.hardcodedCandidates}`)
+    console.log(`Missing in EN:          ${report.summary.missingInEn}`)
+    console.log(`Missing in FA:          ${report.summary.missingInFa}`)
+    console.log(`Extra in FA:            ${report.summary.extraInFa}`)
+    console.log(`Dynamic key patterns:   ${report.summary.dynamicPatterns}`)
+    console.log(`Hardcoded candidates:   ${report.summary.hardcodedCandidates}`)
   }
 
   if (strict) {

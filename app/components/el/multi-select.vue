@@ -13,6 +13,8 @@ defineOptions({
   inheritAttrs: false,
 })
 
+const { t } = useI18n()
+
 type ElMultiSelectRawItem =
   | ElDropdownValue
   | ElDropdownItem
@@ -58,9 +60,9 @@ const props = withDefaults(
     itemColor: undefined,
     itemGroup: undefined,
     itemGroupLabel: undefined,
-    placeholder: 'Select options',
+    placeholder: undefined,
     clearable: true,
-    clearLabel: 'Clear selection',
+    clearLabel: undefined,
     disabled: false,
     exclusiveValues: () => [],
     placement: 'bottom-start',
@@ -78,6 +80,8 @@ const emit = defineEmits<{
 const menuApi = useMenu()
 const triggerRef = ref<HTMLElement | null>(null)
 const localValues = ref<ElDropdownValue[]>([])
+const resolvedPlaceholder = computed(() => props.placeholder || t('components.multiSelect.placeholder'))
+const resolvedClearLabel = computed(() => props.clearLabel || t('components.multiSelect.clearSelection'))
 
 function readItemValue<TResult>(
   item: any,
@@ -228,12 +232,12 @@ const selectedItems = computed(() => {
 const hasValue = computed(() => selectedValues.value.length > 0)
 
 const selectedLabel = computed(() => {
-  if (!selectedValues.value.length) return props.placeholder
+  if (!selectedValues.value.length) return resolvedPlaceholder.value
   if (selectedValues.value.length === 1) {
     return selectedItems.value[0]?.label || String(selectedValues.value[0])
   }
 
-  return `${selectedValues.value.length} selected`
+  return t('components.multiSelect.selectedCount', { count: selectedValues.value.length })
 })
 
 const selectedDescription = computed(() => {
@@ -408,7 +412,7 @@ function buildGroupedItems(
 function createClearItem(selection: ElDropdownValue[]): GlobalMenuItem {
   return {
     type: 'item',
-    label: props.clearLabel,
+    label: resolvedClearLabel.value,
     icon: 'cancel',
     active: selection.length === 0,
     disabled: selection.length === 0,
