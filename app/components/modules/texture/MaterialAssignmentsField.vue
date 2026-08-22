@@ -332,12 +332,30 @@ function optionLabel(axis: string, option: ModuleFieldOption) {
   return translate(path, humanize(option.value));
 }
 
+function materialCategoryLabel(option: ModuleFieldOption) {
+  const category = option.category || "";
+  const fallback = option.categoryLabel || (category ? humanize(category) : "");
+  const path = option.categoryLabelKey ||
+    (category ? `modules.texture.categories.${category}` : "");
+
+  return path ? translate(path, fallback) : fallback;
+}
+
+function presetCategoryLabel(option: MaterialPresetRecipe | ModuleFieldOption) {
+  const category = option.category || "";
+  const fallback = option.categoryLabel || (category ? humanize(category) : "");
+
+  return category
+    ? translate(`modules.texture.presetCategories.${category}`, fallback)
+    : fallback;
+}
+
 function optionItems(axis: string, options: ModuleFieldOption[]) {
   return options.map((option) => ({
     ...option,
     label: optionLabel(axis, option),
     group: option.category || "",
-    groupLabel: option.categoryLabel || option.category || "",
+    groupLabel: materialCategoryLabel(option),
   }));
 }
 
@@ -353,7 +371,7 @@ const presetItems = computed(() =>
       "",
     ),
     group: option.category || "",
-    groupLabel: option.categoryLabel || option.category || "",
+    groupLabel: presetCategoryLabel(option),
   })),
 );
 

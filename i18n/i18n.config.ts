@@ -12,6 +12,8 @@ import variablesEn from './locales/variables.en'
 import variablesFa from './locales/variables.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
+import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
+import consolidatedUiCleanupFa from './locales/consolidated-ui-cleanup.fa'
 import consolidatedCoreFa from './locales/consolidated-core.fa'
 import consolidatedCameraFramingFa from './locales/consolidated-camera-framing.fa'
 import consolidatedFormFa from './locales/consolidated-form.fa'
@@ -71,6 +73,11 @@ function withModuleFragments(
   )
 }
 
+const enConsolidated = {
+  ...consolidatedControlsEn,
+  ...consolidatedUiCleanupEn,
+}
+
 const enMessages = deepMerge(
   withModuleFragments(en, [
     ['background', backgroundEn],
@@ -79,11 +86,12 @@ const enMessages = deepMerge(
     ['outfit', outfitEn],
     ['variables', variablesEn],
   ]),
-  flatToNested(consolidatedControlsEn),
+  flatToNested(enConsolidated),
 )
 
 const faConsolidated = {
   ...consolidatedControlsFa,
+  ...consolidatedUiCleanupFa,
   ...consolidatedCoreFa,
   ...consolidatedCameraFramingFa,
   ...consolidatedFormFa,

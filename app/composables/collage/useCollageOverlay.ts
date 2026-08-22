@@ -36,12 +36,51 @@ type UseCollageOverlayOptions = {
   activeMode: Ref<CollageMode>
 }
 
+const SAFE_AREA_LABEL_KEYS: Record<OverlaySafeAreaPreset, string> = {
+  none: 'pages.collage.safeArea.options.none',
+  story: 'pages.collage.safeArea.options.story',
+  reel: 'pages.collage.safeArea.options.reel',
+}
+
+const FONT_WEIGHT_LABEL_KEYS: Record<number, string> = {
+  100: 'thin',
+  200: 'extraLight',
+  300: 'light',
+  400: 'regular',
+  500: 'medium',
+  600: 'semiBold',
+  700: 'bold',
+  800: 'extraBold',
+  900: 'black',
+}
+
 export function useCollageOverlay(options: UseCollageOverlayOptions) {
+  const { t } = useI18n()
   const overlaySafeAreaPreset = ref<OverlaySafeAreaPreset>('none')
 
-  const overlaySafeAreaOptions = COLLAGE_OVERLAY_SAFE_AREA_OPTIONS
+  const overlaySafeAreaOptions = computed(() =>
+    COLLAGE_OVERLAY_SAFE_AREA_OPTIONS.map((item) => ({
+      ...item,
+      label: t(SAFE_AREA_LABEL_KEYS[item.value]),
+    })),
+  )
   const watermarkPositions = COLLAGE_WATERMARK_POSITIONS
-  const textOverlayFontGroups = COLLAGE_TEXT_OVERLAY_FONT_GROUPS
+  const textOverlayFontGroups = computed(() =>
+    COLLAGE_TEXT_OVERLAY_FONT_GROUPS.map((group) => ({
+      ...group,
+      options: group.options.map((option) => {
+        const weightKey = FONT_WEIGHT_LABEL_KEYS[option.weight]
+        const weightLabel = weightKey
+          ? t(`pages.collage.textOverlay.fontWeights.${weightKey}`)
+          : String(option.weight)
+
+        return {
+          ...option,
+          label: `${weightLabel} / ${option.weight}`,
+        }
+      }),
+    })),
+  )
 
   const watermarkPosition = ref<CollageWatermarkPosition>('bottom-center')
   const watermarkSize = ref(80)

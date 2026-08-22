@@ -18,6 +18,8 @@ type UseCollageExportOptions = {
 }
 
 export function useCollageExport(options: UseCollageExportOptions) {
+  const { t } = useI18n()
+
   async function getExportBlob(
     type = 'image/png',
     quality = 0.96
@@ -41,20 +43,20 @@ export function useCollageExport(options: UseCollageExportOptions) {
           fileName: `collage-${Date.now()}`,
         })
 
-        alert('Collage saved to gallery.')
+        alert(t('pages.collage.share.savedToGallery'))
       } catch (error) {
         console.error('Native save failed:', error)
 
         try {
           await shareBlobNative(blob, {
             fileName: `collage-${Date.now()}.png`,
-            title: 'Prompt Draft Collage',
-            text: 'Created with Prompt Draft',
-            dialogTitle: 'Share collage',
+            title: t('pages.collage.share.collageTitle'),
+            text: t('pages.collage.share.createdWith'),
+            dialogTitle: t('pages.collage.share.collageDialogTitle'),
           })
         } catch (shareError) {
           console.error('Native share failed:', shareError)
-          alert('Could not save or share collage.')
+          alert(t('pages.collage.share.saveOrShareFailed'))
         }
       }
 
@@ -73,20 +75,20 @@ export function useCollageExport(options: UseCollageExportOptions) {
       try {
         await shareBlobNative(blob, {
           fileName: `collage-${Date.now()}.png`,
-          title: 'Prompt Draft Collage',
-          text: 'Created with Prompt Draft',
-          dialogTitle: 'Share collage',
+          title: t('pages.collage.share.collageTitle'),
+          text: t('pages.collage.share.createdWith'),
+          dialogTitle: t('pages.collage.share.collageDialogTitle'),
         })
       } catch (error) {
         console.error('Native share failed:', error)
-        alert('Could not share collage.')
+        alert(t('pages.collage.share.shareFailed'))
       }
 
       return
     }
 
     if (!navigator.clipboard || !window.ClipboardItem) {
-      alert('Clipboard image copy is not supported in this browser.')
+      alert(t('pages.collage.share.clipboardUnsupported'))
       return
     }
 
@@ -104,9 +106,9 @@ export function useCollageExport(options: UseCollageExportOptions) {
   async function shareVideoBlobNative(blob: Blob) {
     await shareBlobNative(blob, {
       fileName: `prompt-draft-video-${Date.now()}.webm`,
-      title: 'Prompt Draft Video',
-      text: 'Created with Prompt Draft',
-      dialogTitle: 'Share video',
+      title: t('pages.collage.share.videoTitle'),
+      text: t('pages.collage.share.createdWith'),
+      dialogTitle: t('pages.collage.share.videoDialogTitle'),
     })
   }
 
@@ -117,9 +119,9 @@ export function useCollageExport(options: UseCollageExportOptions) {
   async function shareMp4BlobNative(blob: Blob) {
     await shareBlobNative(blob, {
       fileName: `prompt-draft-video-${Date.now()}.mp4`,
-      title: 'Prompt Draft Video',
-      text: 'Created with Prompt Draft',
-      dialogTitle: 'Share video',
+      title: t('pages.collage.share.videoTitle'),
+      text: t('pages.collage.share.createdWith'),
+      dialogTitle: t('pages.collage.share.videoDialogTitle'),
     })
   }
 

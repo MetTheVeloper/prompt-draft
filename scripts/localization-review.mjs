@@ -116,6 +116,14 @@ function isTokenOnly(text) {
   return /^\{\$\{[^}]+\}\}$/.test(text) || /^\{[A-Za-z][\w.:-]*\}$/.test(text)
 }
 
+function isSemanticIdentityText(text) {
+  return /^(?:user|system|module_entity):\$\{/.test(text)
+}
+
+function isPlatformDescriptor(text) {
+  return /^(?:Unknown Device|Android Device|Windows PC|Linux PC|Windows Phone|iPhone|iPad|Mac)$/i.test(text)
+}
+
 function looksTechnicalReturn(text) {
   return [
     /\$\{[^}]+\}px\b/,
@@ -123,11 +131,17 @@ function looksTechnicalReturn(text) {
     /\brepeat\(/,
     /\blinear-gradient\(/,
     /\b(?:Date\.now|Math\.random|\.toString)\s*\(/,
-    /(^|\s)(?:bg|hbg|gr|hgr|trnsx|trnsy|b\d|t\d|l\d|r\d)[-_0-9${}]/,
+    /(^|\s)(?:bg|hbg|gr|hgr|brs|bc|hbc|trnsx|trnsy|b\d|t\d|l\d|r\d)[-_0-9${}]/,
     /^\$\{[^}]+\}$/,
     /^#[A-Fa-f0-9]{3,8}$/,
-    /^\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|fr|ms|s)$/i,
+    /^\d+(?:\.\d+)?\s*(?:px|rem|em|vh|vw|fr|ms|s|B|KB|MB|GB|TB)$/i,
     /^\/?[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_?=&${}.-]+)+$/,
+    /^\/[A-Za-z0-9_-]+$/,
+    /^\/[A-Za-z0-9_-]+\?[A-Za-z0-9_-]+=\$\{[^}]+\}$/,
+    /^[A-Za-z0-9_.-]+\.\$\{[^}]+\}$/,
+    /^[A-Za-z0-9_.-]*\$\{[^}]+\}[A-Za-z0-9_.-]*\.(?:png|jpe?g|webp|gif|svg|json|mp3|wav|m4a|mp4|webm|zip)$/i,
+    /^PDVAR\$\{[^}]+\}TOKEN$/,
+    /^\$\{[^}]*moduleKey[^}]*\}:\$\{[^}]*field\.id[^}]*\}:(?:block|group)_\$\{[^}]+\}:\$\{[^}]+\}$/,
     /\.zip$/i,
     /^[A-Za-z0-9_-]+(?::[A-Za-z0-9_${}.-]+){1,}$/,
     /^(?:effect|light|variable|draft|layout|region|setup|typography|block|group)[_:-].*\$\{/i,
@@ -160,6 +174,12 @@ function isBlueprintCanonicalDraftMetadata(file, text) {
   return /^(?:Variables|Variable \$\{|Custom variable \$\{|\$\{group\.label\} template)/.test(text)
 }
 
+function isRenderLocalizedCanonicalMetadata(file, property) {
+  if (file === 'app/constants/collage.ts' && property === 'label') return true
+  if (file === 'app/modules/texture.semantic.ts' && property === 'categoryLabel') return true
+  return false
+}
+
 function classifyCandidate(candidate) {
   const file = relativeFile(candidate.file)
   const lowerFile = file.toLowerCase()
@@ -173,10 +193,13 @@ function classifyCandidate(candidate) {
   if (isKeyboardShortcut(text)) {
     return classification('INTENTIONAL', 100, 'Keyboard shortcut notation is intentionally language-neutral.')
   }
+  if (isPlatformDescriptor(text)) {
+    return classification('DEVELOPER_TEXT', 99, 'Platform/device diagnostic label is technical metadata, not localized product copy.')
+  }
   if (isCompilerFile(file)) {
     return classification('COMPILER_TEXT', 99, 'Compiler output can change generated prompt semantics.')
   }
-  if (isSemanticHelperFile(file)) {
+  if (isSemanticHelperFile(file) || isSemanticIdentityText(text)) {
     return classification('SEMANTIC_VALUE', 98, 'Semantic/token helper output must remain locale-independent.')
   }
   if (isTokenOnly(text)) {
@@ -187,6 +210,15 @@ function classifyCandidate(candidate) {
   }
   if (isBlueprintCanonicalDraftMetadata(file, text)) {
     return classification('RENDER_LOCALIZED', 99, 'Blueprint draft metadata is deliberately canonical; a separate display helper localizes it at render time.')
+  }
+  if (isRenderLocalizedCanonicalMetadata(file, property)) {
+    const reasonText = file === 'app/constants/collage.ts'
+      ? 'Collage option labels stay canonical while the active controls project them through locale-aware render helpers or label keys.'
+      : 'Texture category labels stay canonical while MaterialAssignmentsField translates their category keys at render time.'
+    return classification('RENDER_LOCALIZED', 99, reasonText)
+  }
+  if (file === 'app/utils/promptVariableCatalog.ts' && property === 'description') {
+    return classification('SEMANTIC_VALUE', 97, 'System-variable catalog descriptions are canonical search/reference metadata and are not rendered as localized UI copy.')
   }
   if (reason === 'Returned display string' && looksTechnicalReturn(text)) {
     return classification('DEVELOPER_TEXT', 99, 'Generated identifier/path/formatting return value, not UI prose.')
@@ -237,7 +269,6 @@ function classifyCandidate(candidate) {
   }
 
   const uiCatalogFiles = new Set([
-    'app/utils/promptVariableCatalog.ts',
     'app/composables/prompt/useSemanticTargetCatalog.ts',
     'app/composables/prompt/useSubjectAssignmentTargets.ts',
   ])
@@ -246,7 +277,6 @@ function classifyCandidate(candidate) {
   }
 
   if (file.startsWith('app/composables/useScreen.') && reason === 'Returned display string') {
-    if (/\b(?:Device|PC|Phone)\b/i.test(text)) return classification('REVIEW_REQUIRED', 68, 'Device label may be visible diagnostics or internal metadata.')
     return classification('DEVELOPER_TEXT', 95, 'Screen/layout utility output appears technical.')
   }
 
