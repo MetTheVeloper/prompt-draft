@@ -24,6 +24,7 @@ import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const catalogI18n = useCatalogI18n("outfit");
 const {
   enabledPromptVariables,
   enabledSystemPromptVariables,
@@ -77,16 +78,17 @@ function updateItemKey(value: unknown) {
 const typeDefinition = computed(() => outfitItemTypeMap.get(props.item.type));
 const typeLabel = computed(() => {
   if (props.item.type === "custom") {
-    return props.item.customType?.trim() || "Custom Wearable";
+    return props.item.customType?.trim() || catalogI18n.itemLabel("itemTypes", "custom", "Custom Wearable");
   }
-  return typeDefinition.value?.label || humanize(props.item.type);
+  const fallback = typeDefinition.value?.label || humanize(props.item.type);
+  return catalogI18n.itemLabel("itemTypes", props.item.type, fallback);
 });
 const itemTitle = computed(() => props.item.name?.trim() || typeLabel.value);
 const itemToken = computed(() =>
   getOutfitItemVariableToken(props.setKey, props.item),
 );
 
-const categoryLabels: Record<OutfitItemCategory, string> = {
+const categoryFallbacks: Record<OutfitItemCategory, string> = {
   tops: "Tops",
   bottoms: "Bottoms",
   one_piece: "One-Piece",
@@ -105,25 +107,29 @@ const categoryLabels: Record<OutfitItemCategory, string> = {
   custom: "Generic / Custom",
 };
 
+function categoryLabel(category: OutfitItemCategory) {
+  return catalogI18n.catalogText(`categories.${category}`, categoryFallbacks[category] || humanize(category));
+}
+
 const typeItems = computed(() => [
   ...outfitItemTypes.map((item) => ({
     value: item.value,
-    label: item.label,
+    label: catalogI18n.itemLabel("itemTypes", item.value, item.label),
     group: item.category,
-    groupLabel: categoryLabels[item.category],
+    groupLabel: categoryLabel(item.category),
   })),
   {
     value: "custom",
-    label: "Custom Wearable",
+    label: catalogI18n.itemLabel("itemTypes", "custom", "Custom Wearable"),
     group: "custom",
-    groupLabel: categoryLabels.custom,
+    groupLabel: categoryLabel("custom"),
   },
 ]);
 
 const customCategoryItems = computed(() =>
-  (Object.keys(categoryLabels) as OutfitItemCategory[]).map((category) => ({
+  (Object.keys(categoryFallbacks) as OutfitItemCategory[]).map((category) => ({
     value: category,
-    label: categoryLabels[category],
+    label: categoryLabel(category),
   })),
 );
 
@@ -151,10 +157,10 @@ const propertyBindings = computed<OutfitPropertyBinding[]>(() => {
   return profileId ? outfitPropertyProfiles[profileId]?.properties || [] : [];
 });
 
-const sourceModeItems = [
-  { value: "defined", label: "Defined Item" },
-  { value: "reference", label: "From Reference" },
-];
+const sourceModeItems = computed(() => [
+  { value: "defined", label: catalogI18n.uiText("common.definedItem", "Defined Item") },
+  { value: "reference", label: catalogI18n.uiText("common.fromReference", "From Reference") },
+]);
 
 function variableReference(variable: {
   id: string;
@@ -194,9 +200,10 @@ const referenceItems = computed(() => {
     items.unshift({
       value: "system-reference",
       label: "{reference}",
-      description: "Main attached reference image",
+      description: catalogI18n.uiText("common.mainReference", "Main attached reference image"),
       reference: {
         token: "{reference}",
+        // Keep the persisted semantic snapshot locale-independent.
         label: "Reference",
         source: "system",
       },
@@ -217,6 +224,7 @@ function changeType(value: ElDropdownValue) {
   const definition = outfitItemTypeMap.get(type);
   updateItem({
     type,
+    // Persist canonical catalog metadata; localization is display-only.
     name: definition?.label || (type === "custom" ? props.item.name : humanize(type)),
     customType: type === "custom" ? props.item.customType || "" : undefined,
     customCategory: type === "custom" ? props.item.customCategory || "custom" : undefined,
@@ -226,7 +234,7 @@ function changeType(value: ElDropdownValue) {
 
 function changeCustomCategory(value: ElDropdownValue) {
   const raw = String(value ?? "custom") as OutfitItemCategory;
-  const category = Object.prototype.hasOwnProperty.call(categoryLabels, raw) ? raw : "custom";
+  const category = Object.prototype.hasOwnProperty.call(categoryFallbacks, raw) ? raw : "custom";
   updateItem({ customCategory: category, properties: {} });
 }
 
@@ -284,13 +292,15 @@ function updateProperty(propertyId: string, state: OutfitPropertyState) {
 }
 
 function inheritLabel() {
-  return props.item.source.mode === "reference"
-    ? `From referenced ${typeLabel.value}`
-    : `As defined by ${typeLabel.value}`;
+  const prefix = props.item.source.mode === "reference"
+    ? catalogI18n.uiText("common.fromReferenced", "From referenced")
+    : catalogI18n.uiText("common.asDefinedBy", "As defined by");
+  return `${prefix} ${typeLabel.value}`;
 }
 
 function propertyLabel(propertyId: string) {
-  return outfitPropertyDefinitions[propertyId]?.label || humanize(propertyId);
+  const fallback = outfitPropertyDefinitions[propertyId]?.label || humanize(propertyId);
+  return catalogI18n.propertyLabel(propertyId, fallback);
 }
 
 function singleSelection(binding: OutfitPropertyBinding) {
@@ -309,12 +319,12 @@ function singleItems(binding: OutfitPropertyBinding) {
     { value: "__inherit", label: inheritLabel() },
     ...getOutfitPropertyOptions(binding.propertyId, binding.optionSet).map((option) => ({
       value: `option:${option.value}`,
-      label: humanize(option.value),
+      label: catalogI18n.optionLabel(binding.propertyId, option.value, humanize(option.value)),
     })),
   ];
-  if (definition?.allowReference) items.push({ value: "__reference", label: "From reference" });
-  if (definition?.allowAbsent) items.push({ value: "__absent", label: "Explicitly absent" });
-  if (definition?.allowCustom) items.push({ value: "__custom", label: "Custom" });
+  if (definition?.allowReference) items.push({ value: "__reference", label: catalogI18n.uiText("common.fromReference", "From reference") });
+  if (definition?.allowAbsent) items.push({ value: "__absent", label: catalogI18n.uiText("common.explicitlyAbsent", "Explicitly absent") });
+  if (definition?.allowCustom) items.push({ value: "__custom", label: catalogI18n.uiText("common.custom", "Custom") });
   return items;
 }
 
@@ -337,11 +347,11 @@ function multiModeItems(binding: OutfitPropertyBinding) {
   const definition = outfitPropertyDefinitions[binding.propertyId];
   const items = [
     { value: "inherit", label: inheritLabel() },
-    { value: "explicit", label: "Choose values" },
+    { value: "explicit", label: catalogI18n.uiText("common.chooseValues", "Choose values") },
   ];
-  if (definition?.allowReference) items.push({ value: "reference", label: "From reference" });
-  if (definition?.allowAbsent) items.push({ value: "absent", label: "Explicitly absent" });
-  if (definition?.allowCustom) items.push({ value: "custom", label: "Custom" });
+  if (definition?.allowReference) items.push({ value: "reference", label: catalogI18n.uiText("common.fromReference", "From reference") });
+  if (definition?.allowAbsent) items.push({ value: "absent", label: catalogI18n.uiText("common.explicitlyAbsent", "Explicitly absent") });
+  if (definition?.allowCustom) items.push({ value: "custom", label: catalogI18n.uiText("common.custom", "Custom") });
   return items;
 }
 
@@ -370,13 +380,18 @@ function updateMultiValues(binding: OutfitPropertyBinding, values: ElDropdownVal
 function multiOptionItems(binding: OutfitPropertyBinding) {
   return getOutfitPropertyOptions(binding.propertyId, binding.optionSet).map((option) => ({
     ...option,
-    label: humanize(option.value),
+    label: catalogI18n.optionLabel(binding.propertyId, option.value, humanize(option.value)),
   }));
 }
 
 function customPropertyValue(propertyId: string) {
   const state = propertyState(propertyId);
   return state.mode === "custom" ? state.value : "";
+}
+
+function natureLabel(propertyId: string) {
+  const nature = outfitPropertyDefinitions[propertyId]?.nature || "";
+  return nature ? catalogI18n.catalogText(`nature.${nature}`, humanize(nature)) : "";
 }
 </script>
 
@@ -385,7 +400,7 @@ function customPropertyValue(propertyId: string) {
     <el-flex rules="rbc" class="w100 crp" :gap="8" role="button" tabindex="0" @click="expanded = !expanded" @keydown.enter.prevent="expanded = !expanded">
       <el-flex rules="ccs" :gap="1" class="minw0">
         <el-text :size="14" :weight="600" icon="checkroom">{{ itemTitle }}</el-text>
-        <el-text :size="9" color="normal45">{{ itemToken }} · {{ item.source.mode === 'reference' ? 'Reference baseline' : 'Defined baseline' }}</el-text>
+        <el-text :size="9" color="normal45">{{ itemToken }} · {{ item.source.mode === 'reference' ? catalogI18n.uiText('common.referenceBaseline', 'Reference baseline') : catalogI18n.uiText('common.definedBaseline', 'Defined baseline') }}</el-text>
       </el-flex>
       <el-flex rules="rcc" :gap="4">
         <el-button type="fab" mode="flat" icon="content_copy" :label="t('modules.outfit.ui.item.actions.duplicate')" :size="12" :p="7" @click.stop="emit('duplicate')" />
@@ -430,7 +445,7 @@ function customPropertyValue(propertyId: string) {
 
         <template v-if="item.source.mode === 'reference'">
           <el-grid :gap="4">
-            <el-text :size="10" :weight="500">Reference</el-text>
+            <el-text :size="10" :weight="500">{{ catalogI18n.uiText("common.reference", "Reference") }}</el-text>
             <el-dropdown :model-value="selectedReferenceValue" :items="referenceItems" item-label="label" item-value="value" item-description="description" @update:model-value="changeReference" />
           </el-grid>
           <el-grid :gap="4">
@@ -446,7 +461,7 @@ function customPropertyValue(propertyId: string) {
         <el-grid v-for="binding in propertyBindings" :key="binding.propertyId" :gap="5" :p="10" :radius="12" bc="normal5" :br="1">
           <el-flex rules="rbc" class="w100">
             <el-text :size="11" :weight="500">{{ propertyLabel(binding.propertyId) }}</el-text>
-            <el-text :size="8" color="normal40">{{ outfitPropertyDefinitions[binding.propertyId]?.nature || '' }}</el-text>
+            <el-text :size="8" color="normal40">{{ natureLabel(binding.propertyId) }}</el-text>
           </el-flex>
 
           <template v-if="outfitPropertyDefinitions[binding.propertyId]?.control === 'multiSelect'">
@@ -459,7 +474,7 @@ function customPropertyValue(propertyId: string) {
             v-if="propertyState(binding.propertyId).mode === 'custom'"
             :model-value="customPropertyValue(binding.propertyId)"
             type="text"
-            :placeholder="`Custom ${propertyLabel(binding.propertyId).toLowerCase()}...`"
+            :placeholder="`${catalogI18n.uiText('common.custom', 'Custom')} ${propertyLabel(binding.propertyId)}...`"
             @update:model-value="updateProperty(binding.propertyId, { mode: 'custom', value: String($event ?? '') })"
           />
         </el-grid>
