@@ -2,150 +2,166 @@
 
 ## Status
 
-Active cleanup policy for `refactor/prompt-semantics` after semantic closure.
+**Closed — 2026-08-22**
 
-The project intentionally does **not** guarantee backward compatibility with drafts or importable JSON produced by the pre-refactor semantic schemas.
+Branch:
 
-This is a product decision, not a missing migration task. The previous schemas contained ownership and architecture problems that should not be reintroduced through compatibility code.
+```text
+refactor/prompt-semantics
+```
 
----
-
-## 1. Compatibility policy
-
-The current registered schema is the only authoritative schema.
-
-We will not add automatic migration for removed legacy fields such as:
-
-- `framingStyle`
-- `cameraStyle`
-- `lightingStyle`
-- legacy global Texture / Material fields
-- `poseStyle`
-- `expressionStyle`
-- legacy Background / Effects mega-select fields
-- legacy Hair / Outfit flat fields
-
-Old local-storage drafts and old JSON exports may therefore fail validation, lose obsolete fields, or require manual recreation in the current editor. That behavior is acceptable for this cleanup stage.
-
-Do not add cross-module guesses merely to preserve old prose.
+This cleanup intentionally removes obsolete pre-refactor compatibility and implementation debt while preserving the behavior of the current semantic schema.
 
 ---
 
-## 2. What should be deleted
+# Product decision
 
-Delete code or documentation when all of the following are true:
+The current registered schema is the only authoritative Draft/JSON contract.
 
-1. it exists only for an obsolete pre-refactor schema or migration plan,
-2. it is not registered by `app/modules/registry.ts`,
-3. no current semantic module, editor component, compiler, serializer, catalog, or target system imports it,
-4. removing it does not change the behavior of the current schema.
+Backward compatibility with pre-refactor saved drafts and importable JSON is intentionally unsupported. Automatic migration for removed legacy fields is not a release requirement.
 
-Typical delete candidates:
-
-- unregistered legacy module implementations replaced by standalone semantic modules,
-- migration-only backlog documents,
-- compatibility helpers that are not used by the current schema,
-- stale comments that describe future legacy migration as required work.
+Do not reintroduce cross-module guesses merely to preserve old state or prose.
 
 ---
 
-## 3. What should be kept
+# Cleanup rule
 
-Keep anything that is part of the current runtime or still supplies current semantic data.
+A legacy artifact is removable when:
 
-This includes:
+1. it belongs only to an obsolete schema, migration, backup, or one-off refactor process,
+2. it is not part of the current registry/runtime,
+3. no current compiler, serializer, editor, catalog, target system, release script, or maintained tool depends on it,
+4. removing it does not change current-schema behavior.
 
-- every module registered in `app/modules/registry.ts`,
-- semantic module implementations,
-- current catalogs and catalog validation,
-- current types and assignment infrastructure,
-- compiler and Natural serializers,
-- stable identity / semantic target infrastructure,
-- localization required by current UI,
-- old-origin files that are still an active dependency of current code.
-
-A file must not be deleted merely because it originated before the refactor.
-
-### Dependencies present at the start of cleanup
-
-At the start of this cleanup:
-
-- `style.semantic.ts` built on `style.module.ts`,
-- `form.semantic.ts` built on `form.module.ts`,
-- `texture.semantic.ts` read catalog data from `texture.module.ts`.
-
-### Texture dependency — resolved
-
-The Texture dependency was removed without reopening semantic design:
-
-- the current Material catalog and condition compatibility metadata live in `app/modules/texture.catalog.ts`,
-- `texture.semantic.ts` imports that neutral catalog directly,
-- the compound legacy material values intentionally excluded during Stage 11 remain excluded,
-- the unregistered legacy `app/modules/texture.module.ts` implementation has been deleted.
-
-Texture / Material now has no runtime dependency on its pre-refactor global-field module.
-
-### Style dependency — resolved
-
-The Style dependency was removed without changing the accepted semantic schema:
-
-- `style.semantic.ts` now declares its own module key, icon, groups, field metadata, presets, and compile configuration,
-- the existing semantic Aesthetic, Medium, Stylization, Linework, Visual Treatment, Detail Level, Finish, `extraDetails`, and override behavior are preserved,
-- no `BaseStyleModule` inheritance remains,
-- the unregistered legacy `app/modules/style.module.ts` implementation has been deleted.
-
-Style now has no runtime dependency on its pre-refactor module implementation.
-
-### Form dependency — resolved
-
-The final known base-module dependency has now been removed:
-
-- the complete current Form catalog now lives directly in `form.semantic.ts`, including subject applicability, categories, compatibility metadata, transformation strength, and UI field contracts,
-- the accepted semantic wording corrections previously layered by the wrapper are merged directly into their canonical options,
-- Form keeps the same groups, defaults, field order, compatibility behavior, `extraDetails`, and override contract,
-- no `BaseFormModule` inheritance remains,
-- the unregistered legacy `app/modules/form.module.ts` implementation has been deleted.
-
-Form is now standalone and the three known live legacy dependencies present at the start of this cleanup — Texture, Style, and Form — are all resolved.
+Current code is retained based on runtime purpose, not filename age.
 
 ---
 
-## 4. Cleanup order
+# Completed cleanup
 
-### Phase A — close migration scope
+## Dead legacy module implementations
 
-- Treat legacy draft/JSON migration as intentionally unsupported.
-- Remove migration-only backlog items.
-- Keep the review backlog available for concrete reproducible defects discovered during testing.
+Removed:
 
-### Phase B — remove dead legacy implementations
+```text
+app/modules/deformation.module.ts
+app/modules/pose.module.ts
+app/modules/expression.module.ts
+app/modules/hair.module.ts
+app/modules/outfit.module.ts
+```
 
-- Delete unregistered legacy modules only after confirming the current registry and semantic modules do not depend on them.
-- Prefer small, reviewable removals over broad filename-based deletion.
+Their current implementations/contracts are provided by the accepted semantic architecture.
 
-### Phase C — remove live legacy dependencies conservatively
+## Texture — resolved
 
-Completed precedents:
+The previous semantic module temporarily consumed catalog data from `texture.module.ts`.
 
-- Texture catalog extraction,
-- Style standalone consolidation,
-- Form standalone consolidation.
+Completed state:
 
-No known live base-module dependency remains from the semantic refactor cleanup list.
+```text
+texture.catalog.ts
+        ↓
+texture.semantic.ts
+        ↓
+registry
+```
 
-### Phase D — reference audit
+The current material catalog and condition compatibility metadata are independent, compound values intentionally rejected by the accepted semantic design remain rejected, and the old `texture.module.ts` implementation is removed.
 
-After deletions, check for:
+## Style — resolved
 
-- broken imports,
-- stale module names,
-- references to deleted migration docs,
-- obsolete comments that promise legacy migration,
-- current components importing removed legacy implementations directly.
+`style.semantic.ts` is now a complete standalone module containing its current module metadata, fields, UI contracts, semantic option catalogs, presets, `extraDetails`, override field, and compile configuration.
 
-### Phase E — validation
+`style.module.ts` and `BaseStyleModule` inheritance are removed.
 
-Run the normal current-project validation path:
+## Form — resolved
+
+The full accepted Form catalog now lives directly in `form.semantic.ts`, including:
+
+- subject applicability,
+- option categories,
+- compatibility metadata,
+- Form Language,
+- Proportions,
+- Transformation,
+- Transformation Strength,
+- UI contracts,
+- `extraDetails`,
+- override behavior,
+- compile order.
+
+The semantic wording fixes previously applied by a wrapper are now canonical option text.
+
+`form.module.ts` and `BaseFormModule` inheritance are removed.
+
+## Migration backlog — closed
+
+Migration-only Background/Effects and Hair/Outfit backlog documents were removed.
+
+`docs/prompt-semantics/review-backlog/` now exists only for reproducible current-schema defects.
+
+## Layout refactor artifacts — removed
+
+Tracked stage snapshots/payloads were deleted:
+
+```text
+.layout-stage1-backup/
+.layout-stage2-backup/
+_layout-stage2-payload/
+```
+
+Matching temporary paths are ignored by `.gitignore` to prevent accidental recommit.
+
+## Localization migration artifacts — removed
+
+The maintained release tools are:
+
+```text
+scripts/localization-audit.mjs
+scripts/localization-review.mjs
+scripts/localization-consolidate.mjs
+```
+
+Completed one-off migration machinery was removed:
+
+```text
+scripts/apply-hardcoded-batch-*.mjs
+scripts/i18n-patches/
+scripts/merge-i18n.ts
+```
+
+These files were not part of the release-facing `package.json` localization commands.
+
+---
+
+# Preserved current infrastructure
+
+The cleanup does **not** remove current runtime/release infrastructure such as:
+
+- all modules registered by `app/modules/registry.ts`,
+- current semantic module implementations and catalogs,
+- current compiler and Natural serializers,
+- stable semantic target/identity infrastructure,
+- current EN/FA localization files and verification scripts,
+- offline/PWA build tooling,
+- general project utilities unrelated to the completed migration.
+
+---
+
+# Final audit result
+
+The final integration audit found no remaining known live semantic base-module dependency from the refactor cleanup list.
+
+At audit time the branch was ahead of `main` and not behind it; the compare diff was limited to intentional cleanup/consolidation changes and removal of obsolete tracked artifacts.
+
+Canonical acceptance criteria are now current-schema behavior only.
+
+---
+
+# Final validation gate
+
+After pulling the latest branch, run:
 
 ```bash
 pnpm locale:consolidate
@@ -153,47 +169,24 @@ pnpm generate
 pnpm build
 ```
 
-Then smoke-test the current schema only:
+Then smoke-test current behavior:
 
-- create a new draft,
-- edit representative modules,
-- verify Modular and Natural output,
-- save/reload a current draft,
-- export/import a newly created JSON,
-- verify EN/FA rendering,
-- verify important Color/Material semantic targets,
-- verify Hair/Outfit/Pose/Expression structured editors.
+- create/edit a current draft,
+- Modular output,
+- Natural output,
+- save/reload,
+- export/import a newly generated JSON,
+- EN/FA rendering,
+- Color/Material targets,
+- Hair/Outfit/Pose/Expression structured editors,
+- Style/Form/Texture selections and presets.
 
-Old draft compatibility is not an exit criterion.
-
----
-
-## 5. Backlog rule after cleanup
-
-`docs/prompt-semantics/review-backlog/` is reserved for concrete defects that are reproducible on the current schema.
-
-Good backlog items include:
-
-- broken prompt-graph identity,
-- target persistence failures,
-- compiler or Natural serialization regressions,
-- current-schema save/import round-trip defects,
-- real ownership defects demonstrated by current behavior.
-
-Do not add speculative legacy migration work unless backward compatibility becomes an explicit product requirement again.
+Old Draft/JSON compatibility is not an exit criterion.
 
 ---
 
-## 6. Exit criteria
+# Exit rule
 
-This cleanup is complete when:
+> **Semantic breaking cleanup is complete. No known legacy compatibility layer, base-module dependency, refactor backup/payload, or one-off localization migration pipeline remains as required product infrastructure.**
 
-- migration-only work is no longer presented as required before integration,
-- dead unregistered legacy modules are removed,
-- no known live semantic base-module dependency remains,
-- current imports resolve cleanly,
-- localization consolidation passes,
-- generate/build pass,
-- current-schema smoke tests pass.
-
-At that point the branch can proceed toward integration with `main` without carrying a compatibility architecture for the abandoned schemas.
+After final validation passes, proceed to integrate `refactor/prompt-semantics` into `main`.
