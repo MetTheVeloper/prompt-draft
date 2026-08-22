@@ -138,6 +138,7 @@ function looksTechnicalReturn(text) {
     /^\/?[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_?=&${}.-]+)+$/,
     /^\/[A-Za-z0-9_-]+$/,
     /^\/[A-Za-z0-9_-]+\?[A-Za-z0-9_-]+=\$\{[^}]+\}$/,
+    /^\$\{window\.location\.origin\}\/[A-Za-z0-9_/-]+$/,
     /^[A-Za-z0-9_.-]+\.\$\{[^}]+\}$/,
     /^[A-Za-z0-9_.-]*\$\{[^}]+\}[A-Za-z0-9_.-]*\.(?:png|jpe?g|webp|gif|svg|json|mp3|wav|m4a|mp4|webm|zip)$/i,
     /^PDVAR\$\{[^}]+\}TOKEN$/,
