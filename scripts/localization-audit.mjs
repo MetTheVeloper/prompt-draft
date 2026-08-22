@@ -94,16 +94,19 @@ async function importDefault(filePath) {
 
 async function loadEffectiveLocale(locale) {
   const rootPath = path.join(LOCALES_DIR, `${locale}.ts`)
-  let messages = await importDefault(rootPath)
+  const rootMessages = await importDefault(rootPath)
+  let messages = rootMessages
   const entries = await fs.readdir(LOCALES_DIR, { withFileTypes: true })
   const fragments = entries
     .filter((entry) => entry.isFile() && entry.name.endsWith(`.${locale}.ts`) && !entry.name.includes('.bak.'))
     .map((entry) => entry.name)
     .sort()
+  const fragmentFlats = new Map()
 
   for (const fileName of fragments) {
     const moduleKey = fileName.slice(0, -`.${locale}.ts`.length)
     const fragment = await importDefault(path.join(LOCALES_DIR, fileName))
+    fragmentFlats.set(moduleKey, flattenMessages(fragment))
     messages = deepMerge(messages, {
       modules: {
         ...(messages.modules || {}),
@@ -112,7 +115,14 @@ async function loadEffectiveLocale(locale) {
     })
   }
 
-  return { messages, flat: flattenMessages(messages), fragments }
+  return {
+    rootMessages,
+    rootFlat: flattenMessages(rootMessages),
+    messages,
+    flat: flattenMessages(messages),
+    fragments,
+    fragmentFlats,
+  }
 }
 
 async function walkSourceFiles(directory = ROOT) {
@@ -178,9 +188,7 @@ function readQuoted(source, index) {
       i = j
       continue
     }
-    if (char === quote) {
-      return { value: decodeSimpleEscapes(value), dynamic, end: i + 1 }
-    }
+    if (char === quote) return { value: decodeSimpleEscapes(value), dynamic, end: i + 1 }
     value += char
     i += 1
   }
@@ -401,15 +409,86 @@ function makeSourceAudit(staticOccurrences, dynamicOccurrences, enFlat) {
   }
 }
 
-function makeParityAudit(enFlat, faFlat) {
+function compareFlatMaps(enFlat, faFlat, prefix = '') {
   const enKeys = [...enFlat.keys()].sort()
   const faKeys = [...faFlat.keys()].sort()
+  const withPrefix = (key) => prefix ? `${prefix}.${key}` : key
   return {
-    missingInFa: enKeys.filter((key) => !faFlat.has(key)).map((key) => ({ key, en: enFlat.get(key) })),
-    extraInFa: faKeys.filter((key) => !enFlat.has(key)).map((key) => ({ key, fa: faFlat.get(key) })),
-    sameValue: enKeys.filter((key) => faFlat.has(key) && typeof enFlat.get(key) === 'string' && enFlat.get(key) === faFlat.get(key)).map((key) => ({ key, value: enFlat.get(key) })),
-    emptyInEn: enKeys.filter((key) => enFlat.get(key) === '' || enFlat.get(key) == null).map((key) => ({ key })),
-    emptyInFa: faKeys.filter((key) => faFlat.get(key) === '' || faFlat.get(key) == null).map((key) => ({ key })),
+    missing: enKeys
+      .filter((key) => !faFlat.has(key))
+      .map((key) => ({ key: withPrefix(key), en: enFlat.get(key) })),
+    extra: faKeys
+      .filter((key) => !enFlat.has(key))
+      .map((key) => ({ key: withPrefix(key), fa: faFlat.get(key) })),
+  }
+}
+
+function makeFragmentParity(enLocale, faLocale) {
+  const moduleKeys = new Set([
+    ...enLocale.fragmentFlats.keys(),
+    ...faLocale.fragmentFlats.keys(),
+  ])
+  const missing = []
+  const extra = []
+  const missingFiles = []
+  const extraFiles = []
+
+  for (const moduleKey of [...moduleKeys].sort()) {
+    const enFlat = enLocale.fragmentFlats.get(moduleKey)
+    const faFlat = faLocale.fragmentFlats.get(moduleKey)
+    if (enFlat && !faFlat) {
+      missingFiles.push(`${moduleKey}.fa.ts`)
+      for (const [key, value] of enFlat.entries()) {
+        missing.push({ key: `modules.${moduleKey}.${key}`, en: value, source: 'fragment-file-missing' })
+      }
+      continue
+    }
+    if (!enFlat && faFlat) {
+      extraFiles.push(`${moduleKey}.fa.ts`)
+      for (const [key, value] of faFlat.entries()) {
+        extra.push({ key: `modules.${moduleKey}.${key}`, fa: value, source: 'fragment-file-extra' })
+      }
+      continue
+    }
+    if (!enFlat || !faFlat) continue
+    const compared = compareFlatMaps(enFlat, faFlat, `modules.${moduleKey}`)
+    missing.push(...compared.missing.map((item) => ({ ...item, source: 'fragment' })))
+    extra.push(...compared.extra.map((item) => ({ ...item, source: 'fragment' })))
+  }
+
+  return { missing, extra, missingFiles, extraFiles }
+}
+
+function makeParityAudit(enLocale, faLocale, sourceAudit) {
+  const inventory = compareFlatMaps(enLocale.flat, faLocale.flat)
+  const activeStaticKeys = new Set(sourceAudit?.usedStaticKeys || [])
+  const missingStatic = inventory.missing.filter((item) => activeStaticKeys.has(item.key))
+  const fragment = makeFragmentParity(enLocale, faLocale)
+
+  const blockingMissingByKey = new Map()
+  for (const item of [...missingStatic, ...fragment.missing]) {
+    if (!blockingMissingByKey.has(item.key)) blockingMissingByKey.set(item.key, item)
+  }
+  const blockingExtraByKey = new Map()
+  for (const item of fragment.extra) {
+    if (!blockingExtraByKey.has(item.key)) blockingExtraByKey.set(item.key, item)
+  }
+
+  const sameValue = [...enLocale.flat.keys()]
+    .filter((key) => faLocale.flat.has(key))
+    .filter((key) => typeof enLocale.flat.get(key) === 'string' && enLocale.flat.get(key) === faLocale.flat.get(key))
+    .map((key) => ({ key, value: enLocale.flat.get(key) }))
+
+  return {
+    missingInFa: [...blockingMissingByKey.values()].sort((a, b) => a.key.localeCompare(b.key)),
+    extraInFa: [...blockingExtraByKey.values()].sort((a, b) => a.key.localeCompare(b.key)),
+    inventoryMissingInFa: inventory.missing,
+    inventoryExtraInFa: inventory.extra,
+    inactiveInventoryMissingInFa: inventory.missing.filter((item) => !blockingMissingByKey.has(item.key)),
+    fragment,
+    sameValue,
+    emptyInEn: [...enLocale.flat.keys()].filter((key) => enLocale.flat.get(key) === '' || enLocale.flat.get(key) == null).map((key) => ({ key })),
+    emptyInFa: [...faLocale.flat.keys()].filter((key) => faLocale.flat.get(key) === '' || faLocale.flat.get(key) == null).map((key) => ({ key })),
   }
 }
 
@@ -424,9 +503,11 @@ function buildMarkdown(report) {
     '## Summary', '', '| Check | Count |', '| --- | ---: |',
     `| Source files scanned | ${report.summary.sourceFiles} |`,
     `| Static i18n keys used | ${report.summary.staticKeysUsed} |`,
-    `| Missing in EN | ${report.summary.missingInEn} |`,
-    `| Missing in FA | ${report.summary.missingInFa} |`,
-    `| Extra keys in FA | ${report.summary.extraInFa} |`,
+    `| Missing in EN (active source) | ${report.summary.missingInEn} |`,
+    `| Missing in FA (blocking active/fragment parity) | ${report.summary.missingInFa} |`,
+    `| Extra in FA fragments (blocking) | ${report.summary.extraInFa} |`,
+    `| Missing in FA full inventory (advisory) | ${report.summary.inventoryMissingInFa} |`,
+    `| Extra in FA full inventory (advisory) | ${report.summary.inventoryExtraInFa} |`,
     `| Dynamic i18n patterns | ${report.summary.dynamicPatterns} |`,
     `| Hardcoded UI candidates | ${report.summary.hardcodedCandidates} |`, '',
   ]
@@ -444,12 +525,26 @@ function buildMarkdown(report) {
   }
 
   if (report.parity) {
-    lines.push('## EN → FA parity', '', '### Missing in FA', '')
+    lines.push('## Blocking EN → FA parity', '', '### Missing in FA (active static keys + locale fragments)', '')
     if (!report.parity.missingInFa.length) lines.push('None. ✅')
     else for (const item of report.parity.missingInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.en)}`)
-    lines.push('', '### Extra in FA / missing in EN', '')
-    if (!report.parity.extraInFa.length) lines.push('None.')
+    lines.push('', '### Extra in FA fragments', '')
+    if (!report.parity.extraInFa.length) lines.push('None. ✅')
     else for (const item of report.parity.extraInFa) lines.push(`- \`${item.key}\` — ${markdownEscape(item.fa)}`)
+
+    lines.push('', '## Full locale inventory parity — advisory', '')
+    lines.push('The full root dictionaries can contain historical/unused inventory. These gaps stay visible but do not block consolidation unless the key is used by active source or belongs to an active locale fragment.', '')
+    lines.push(`- Missing in FA inventory: **${report.parity.inventoryMissingInFa.length}**`)
+    lines.push(`- Extra in FA inventory: **${report.parity.inventoryExtraInFa.length}**`)
+    if (report.parity.inactiveInventoryMissingInFa.length) {
+      lines.push('', '### Inactive/historical EN keys absent from FA', '')
+      for (const item of report.parity.inactiveInventoryMissingInFa.slice(0, 250)) {
+        lines.push(`- \`${item.key}\` — ${markdownEscape(item.en)}`)
+      }
+      if (report.parity.inactiveInventoryMissingInFa.length > 250) {
+        lines.push(`- … ${report.parity.inactiveInventoryMissingInFa.length - 250} more in JSON report`)
+      }
+    }
     lines.push('')
   }
 
@@ -464,6 +559,8 @@ function buildMarkdown(report) {
 
   lines.push(
     '## Notes', '',
+    '- Blocking FA parity is intentionally scoped to active static source keys and complete `*.en.ts` / `*.fa.ts` fragment pairs.',
+    '- Full root-locale inventory parity remains reported separately so legacy/dead keys are visible without pretending they are active UI defects.',
     '- Catalog scanning is presentation-field aware: semantic `value`, `promptText`, `absentPromptText`, keys and tokens are not harvested as UI metadata.',
     '- Short text detection is intentionally whitelist-based to catch real controls such as `OK` without turning technical two-letter tokens into UI findings.',
     '- Dynamic i18n keys are reported separately and never guessed.',
@@ -500,7 +597,7 @@ async function main() {
     ? makeSourceAudit(staticOccurrences, dynamicOccurrences, enLocale.flat)
     : null
   const parityAudit = mode === 'all' || mode === 'parity'
-    ? makeParityAudit(enLocale.flat, faLocale.flat)
+    ? makeParityAudit(enLocale, faLocale, sourceAudit)
     : null
   const hardcoded = mode === 'all' || mode === 'hardcoded'
     ? dedupe(hardcodedCandidates, (item) => `${item.file}|${item.line}|${item.text}`)
@@ -517,6 +614,8 @@ async function main() {
       missingInEn: sourceAudit?.missingInEn.length || 0,
       missingInFa: parityAudit?.missingInFa.length || 0,
       extraInFa: parityAudit?.extraInFa.length || 0,
+      inventoryMissingInFa: parityAudit?.inventoryMissingInFa.length || 0,
+      inventoryExtraInFa: parityAudit?.inventoryExtraInFa.length || 0,
       dynamicPatterns: sourceAudit?.dynamicKeys.length || 0,
       hardcodedCandidates: hardcoded?.length || 0,
     },
@@ -537,11 +636,12 @@ async function main() {
     console.log(`Markdown: ${toPosix(path.relative(ROOT, REPORT_MD))}`)
     console.log(`JSON:     ${toPosix(path.relative(ROOT, REPORT_JSON))}`)
     console.log('')
-    console.log(`Missing in EN:          ${report.summary.missingInEn}`)
-    console.log(`Missing in FA:          ${report.summary.missingInFa}`)
-    console.log(`Extra in FA:            ${report.summary.extraInFa}`)
-    console.log(`Dynamic key patterns:   ${report.summary.dynamicPatterns}`)
-    console.log(`Hardcoded candidates:   ${report.summary.hardcodedCandidates}`)
+    console.log(`Missing in EN (active):  ${report.summary.missingInEn}`)
+    console.log(`Missing in FA (blocking): ${report.summary.missingInFa}`)
+    console.log(`Extra in FA fragments:   ${report.summary.extraInFa}`)
+    console.log(`Missing in FA inventory: ${report.summary.inventoryMissingInFa}`)
+    console.log(`Dynamic key patterns:    ${report.summary.dynamicPatterns}`)
+    console.log(`Hardcoded candidates:    ${report.summary.hardcodedCandidates}`)
   }
 
   if (strict) {
