@@ -12,6 +12,7 @@ const DEFAULT_MD_OUTPUT = path.join(ROOT, 'reports', 'localization-review.md')
 const CATEGORY_ORDER = [
   'LIKELY_UI',
   'UI_METADATA',
+  'RENDER_LOCALIZED_METADATA',
   'REVIEW_REQUIRED',
   'SEMANTIC_VALUE',
   'COMPILER_TEXT',
@@ -26,7 +27,11 @@ const CATEGORY_META = {
   },
   UI_METADATA: {
     action: 'localize-at-render-layer',
-    description: 'Presentation metadata stored in catalogs or constants. Translate the rendered label, not the semantic source value.',
+    description: 'Presentation metadata stored in catalogs or constants that still needs a render-layer translation path.',
+  },
+  RENDER_LOCALIZED_METADATA: {
+    action: 'keep-canonical-source',
+    description: 'Canonical presentation metadata intentionally remains English in semantic catalogs because the active UI translates it at render time.',
   },
   REVIEW_REQUIRED: {
     action: 'inspect-call-site',
@@ -57,6 +62,11 @@ const PRESENTATION_PROPERTIES = new Set([
 const SEMANTIC_PROPERTIES = new Set([
   'value', 'valuePattern', 'key', 'keyPattern', 'promptText', 'absentPromptText',
   'token', 'variableToken', 'semanticValue', 'compilerText',
+])
+const RENDER_LOCALIZED_CATALOGS = new Set([
+  'app/modules/hair.catalog.ts',
+  'app/modules/outfit.catalog.ts',
+  'app/modules/variables.blueprints.ts',
 ])
 
 function parseArgs(argv) {
@@ -171,6 +181,13 @@ function classifyCandidate(candidate) {
       return classification('SEMANTIC_VALUE', 100, `Catalog property \`${property}\` is semantic/prompt-facing and must not be localized.`)
     }
     if (property && PRESENTATION_PROPERTIES.has(property)) {
+      if (RENDER_LOCALIZED_CATALOGS.has(file)) {
+        return classification(
+          'RENDER_LOCALIZED_METADATA',
+          100,
+          `Catalog property \`${property}\` intentionally stays canonical; Hair/Outfit/Variable Blueprint UI resolves its translation at render time.`,
+        )
+      }
       return classification('UI_METADATA', 99, `Catalog property \`${property}\` is presentation metadata; translate only at the render layer.`)
     }
     return classification('REVIEW_REQUIRED', 82, 'Protected semantic catalog candidate without a confirmed presentation property.')
@@ -245,8 +262,10 @@ function buildSummary(items) {
     total: items.length,
     categories,
     actionable: categories.LIKELY_UI + categories.UI_METADATA,
+    renderLocalized: categories.RENDER_LOCALIZED_METADATA,
     inspectManually: categories.REVIEW_REQUIRED,
-    doNotAutoLocalize: categories.SEMANTIC_VALUE + categories.COMPILER_TEXT + categories.DEVELOPER_TEXT + categories.INTENTIONAL,
+    doNotAutoLocalize:
+      categories.SEMANTIC_VALUE + categories.COMPILER_TEXT + categories.DEVELOPER_TEXT + categories.INTENTIONAL,
     topFiles: [...files.entries()]
       .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
       .slice(0, 25)
@@ -277,6 +296,7 @@ function buildMarkdown(report) {
   lines.push(
     '',
     `- Actionable UI/UI metadata: **${report.summary.actionable}**`,
+    `- Already localized at render layer: **${report.summary.renderLocalized}**`,
     `- Manual call-site review: **${report.summary.inspectManually}**`,
     `- Do not auto-localize / ignore: **${report.summary.doNotAutoLocalize}**`, '',
   )
@@ -294,7 +314,8 @@ function buildMarkdown(report) {
 
   lines.push(
     '## Notes', '',
-    '- Protected Hair/Outfit/Variable Blueprint catalogs are property-aware: presentation metadata may be translated at render time; semantic values are not translation candidates.',
+    '- Hair/Outfit/Variable Blueprint canonical catalog metadata is now separated from actionable localization findings when its active UI already translates it at render time.',
+    '- Protected semantic catalog `value`, `promptText`, token/key and Blueprint prompt defaults remain non-localizable semantic payloads.',
     '- Direct Vue text nodes and static visible attributes are classified as UI instead of falling through to manual review.',
     '- `COMPILER_TEXT` and `SEMANTIC_VALUE` remain conservative by design.', '',
   )
@@ -329,9 +350,10 @@ async function main() {
   console.log(`JSON:     ${toPosix(path.relative(ROOT, options.jsonOutput))}`)
   console.log('')
   console.log(`Actionable UI/metadata: ${report.summary.actionable}`)
+  console.log(`Render-localized:       ${report.summary.renderLocalized}`)
   console.log(`Review required:        ${report.summary.inspectManually}`)
   console.log(`Do not auto-localize:   ${report.summary.doNotAutoLocalize}`)
-  for (const category of CATEGORY_ORDER) console.log(`${category.padEnd(18)} ${report.summary.categories[category]}`)
+  for (const category of CATEGORY_ORDER) console.log(`${category.padEnd(26)} ${report.summary.categories[category]}`)
 }
 
 main().catch((error) => {
