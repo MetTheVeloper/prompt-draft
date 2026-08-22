@@ -31,6 +31,7 @@ import HairComponentCard from "./HairComponentCard.vue";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const catalogI18n = useCatalogI18n("hair");
 const targetCatalog = useSubjectAssignmentTargets();
 const {
   enabledPromptVariables,
@@ -242,7 +243,10 @@ function styleTitle(style: HairStyle, index: number) {
 function styleSummary(style: HairStyle) {
   const scope = semanticScopeSummary(style.targets);
   const count = style.components.length;
-  return `${scope} · ${count} ${count === 1 ? "component" : "components"}`;
+  const unit = count === 1
+    ? catalogI18n.uiText("common.hairComponent", "Hair component")
+    : catalogI18n.uiText("common.components", "Components");
+  return `${scope} · ${count} ${unit}`;
 }
 
 function variableReference(variable: {
@@ -285,7 +289,7 @@ const referenceItems = computed(() => {
     items.unshift({
       value: "system-reference",
       label: "{reference}",
-      description: "Main attached reference image",
+      description: catalogI18n.uiText("common.mainReference", "Main attached reference image"),
       reference: {
         token: "{reference}",
         label: "Reference",
@@ -306,10 +310,10 @@ function selectedReferenceValue(style: HairStyle) {
   );
 }
 
-const sourceModeItems = [
-  { value: "defined", label: "Defined Hairstyle" },
-  { value: "reference", label: "From Reference" },
-];
+const sourceModeItems = computed(() => [
+  { value: "defined", label: catalogI18n.uiText("common.definedHairstyle", "Defined Hairstyle") },
+  { value: "reference", label: catalogI18n.uiText("common.referenceHairstyle", "From Reference") },
+]);
 
 function changeSourceMode(index: number, value: ElDropdownValue) {
   const style = styles.value[index];
@@ -384,9 +388,10 @@ function updateBaseProperty(
 }
 
 function inheritLabel(style: HairStyle) {
-  return style.source.mode === "reference"
-    ? "From referenced hairstyle"
-    : "As defined by hairstyle";
+  const prefix = style.source.mode === "reference"
+    ? catalogI18n.uiText("common.fromReferenced", "From referenced")
+    : catalogI18n.uiText("common.asDefinedBy", "As defined by");
+  return `${prefix} ${catalogI18n.uiText("common.definedHairstyle", "hairstyle")}`;
 }
 
 function basePropertySelection(style: HairStyle, propertyId: string) {
@@ -404,17 +409,17 @@ function basePropertyItems(style: HairStyle, propertyId: string) {
     { value: "__inherit", label: inheritLabel(style) },
     ...(definition?.options || []).map((item) => ({
       value: `option:${item.value}`,
-      label: humanize(item.value),
+      label: catalogI18n.optionLabel(propertyId, item.value, humanize(item.value)),
     })),
   ];
   if (definition?.allowReference) {
-    items.push({ value: "__reference", label: "From reference" });
+    items.push({ value: "__reference", label: catalogI18n.uiText("common.fromReference", "From reference") });
   }
   if (definition?.allowAbsent) {
-    items.push({ value: "__absent", label: "Explicitly absent" });
+    items.push({ value: "__absent", label: catalogI18n.uiText("common.explicitlyAbsent", "Explicitly absent") });
   }
   if (definition?.allowCustom) {
-    items.push({ value: "__custom", label: "Custom" });
+    items.push({ value: "__custom", label: catalogI18n.uiText("common.custom", "Custom") });
   }
   return items;
 }
@@ -446,29 +451,39 @@ function customBasePropertyValue(style: HairStyle, propertyId: string) {
   return state.mode === "custom" ? state.value : "";
 }
 
+function propertyDisplayLabel(propertyId: string) {
+  const fallback = hairPropertyDefinitions[propertyId]?.label || humanize(propertyId);
+  return catalogI18n.propertyLabel(propertyId, fallback);
+}
+
+function natureLabel(propertyId: string) {
+  const nature = hairPropertyDefinitions[propertyId]?.nature || "";
+  return nature ? catalogI18n.catalogText(`nature.${nature}`, humanize(nature)) : "";
+}
+
 const componentPickerItems = computed(() => [
   ...hairComponentTypes
     .filter((item) => item.value !== "custom")
     .map((item) => ({
       value: `type:${item.value}`,
-      label: item.label,
-      description: "Hair component",
+      label: catalogI18n.itemLabel("componentTypes", item.value, item.label),
+      description: catalogI18n.uiText("common.hairComponent", "Hair component"),
       group: "components",
-      groupLabel: "Components",
+      groupLabel: catalogI18n.uiText("common.components", "Components"),
     })),
   ...hairComponentStarters.map((starter) => ({
     value: `starter:${starter.id}`,
-    label: starter.label,
-    description: "Starter configuration",
+    label: catalogI18n.itemLabel("componentStarters", starter.id, starter.label),
+    description: catalogI18n.uiText("common.starterConfiguration", "Starter configuration"),
     group: "starters",
-    groupLabel: "Starters",
+    groupLabel: catalogI18n.uiText("common.starters", "Starters"),
   })),
   {
     value: "custom",
-    label: "Custom Hair Component",
-    description: "Define a custom structural hair element",
+    label: catalogI18n.itemLabel("componentTypes", "custom", "Custom Hair Component"),
+    description: catalogI18n.uiText("common.customHairComponentDescription", "Define a custom structural hair element"),
     group: "custom",
-    groupLabel: "Custom",
+    groupLabel: catalogI18n.uiText("common.custom", "Custom"),
   },
 ]);
 
@@ -499,7 +514,6 @@ function createComponentFromChoice(
       choice.slice("starter:".length),
     );
     if (!starter) return null;
-    const definition = hairComponentTypeMap.get(starter.type);
     const key = createUniqueHairEntityKey(
       starter.type || starter.label,
       existingKeys,
@@ -626,13 +640,19 @@ function duplicateComponent(styleIndex: number, componentIndex: number) {
 }
 
 const presetItems = computed(() =>
-  hairPresetRecipes.map((preset) => ({
-    value: preset.id,
-    label: preset.label,
-    description: preset.categoryLabel,
-    group: preset.category,
-    groupLabel: preset.categoryLabel,
-  })),
+  hairPresetRecipes.map((preset) => {
+    const category = catalogI18n.catalogText(
+      `presets.${preset.id}.category`,
+      preset.categoryLabel,
+    );
+    return {
+      value: preset.id,
+      label: catalogI18n.itemLabel("presets", preset.id, preset.label),
+      description: category,
+      group: preset.category,
+      groupLabel: category,
+    };
+  }),
 );
 
 function applyPreset(index: number, value: ElDropdownValue) {
@@ -799,7 +819,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
 
           <template v-if="style.source.mode === 'reference'">
             <el-grid :gap="4">
-              <el-text :size="10" :weight="500">Reference</el-text>
+              <el-text :size="10" :weight="500">{{ catalogI18n.uiText("common.reference", "Reference") }}</el-text>
               <el-dropdown
                 :model-value="selectedReferenceValue(style)"
                 :items="referenceItems"
@@ -840,8 +860,8 @@ function applyPreset(index: number, value: ElDropdownValue) {
             :br="1"
           >
             <el-flex rules="rbc" class="w100">
-              <el-text :size="11" :weight="500">{{ hairPropertyDefinitions[propertyId]?.label || humanize(propertyId) }}</el-text>
-              <el-text :size="8" color="normal40">{{ hairPropertyDefinitions[propertyId]?.nature || '' }}</el-text>
+              <el-text :size="11" :weight="500">{{ propertyDisplayLabel(propertyId) }}</el-text>
+              <el-text :size="8" color="normal40">{{ natureLabel(propertyId) }}</el-text>
             </el-flex>
 
             <el-dropdown
@@ -856,7 +876,7 @@ function applyPreset(index: number, value: ElDropdownValue) {
               v-if="basePropertyState(style, propertyId).mode === 'custom'"
               :model-value="customBasePropertyValue(style, propertyId)"
               type="text"
-              :placeholder="`Custom ${(hairPropertyDefinitions[propertyId]?.label || propertyId).toLowerCase()}...`"
+              :placeholder="`${catalogI18n.uiText('common.custom', 'Custom')} ${propertyDisplayLabel(propertyId)}...`"
               @update:model-value="updateBaseProperty(styleIndex, propertyId, { mode: 'custom', value: String($event ?? '') })"
             />
           </el-grid>
