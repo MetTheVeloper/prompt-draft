@@ -55,6 +55,7 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const { mobile } = useScreen();
 const modal = useModal();
+const catalogI18n = useCatalogI18n("variables");
 const { activeSystemVariableKeys } = usePromptVariables();
 const createVariablesContextAction = inject<CreateVariablesContextAction | null>(
   CREATE_VARIABLES_CONTEXT_ACTION_KEY,
@@ -73,14 +74,26 @@ const variableCountLabel = computed(() => {
   });
 });
 
+function blueprintLabel(id: string, fallback: string) {
+  return catalogI18n.itemLabel("blueprints", id, fallback);
+}
+
+function blueprintDescription(id: string, fallback: string) {
+  return catalogI18n.itemDescription("blueprints", id, fallback);
+}
+
+function blueprintCategoryLabel(category: string, fallback: string) {
+  return catalogI18n.catalogText(`categories.${category}`, fallback);
+}
+
 const blueprintItems = computed(() => {
   return variableBlueprints.map((blueprint) => ({
     value: blueprint.id,
-    label: blueprint.label,
-    description: blueprint.description,
+    label: blueprintLabel(blueprint.id, blueprint.label),
+    description: blueprintDescription(blueprint.id, blueprint.description),
     icon: blueprint.icon,
     group: blueprint.category,
-    groupLabel: blueprint.categoryLabel,
+    groupLabel: blueprintCategoryLabel(blueprint.category, blueprint.categoryLabel),
   }));
 });
 
@@ -297,8 +310,11 @@ function selectBlueprint(value: ElDropdownValue) {
   modal.open({
     header: {
       icon: blueprint.icon || "auto_awesome",
-      title: blueprint.label,
-      subtitle: "Configure the variables before adding them to the prompt graph.",
+      title: blueprintLabel(blueprint.id, blueprint.label),
+      subtitle: catalogI18n.uiText(
+        "blueprints.configureSubtitle",
+        "Configure the variables before adding them to the prompt graph.",
+      ),
       color: "blue",
     },
     component: VariableBlueprintModal,
@@ -325,7 +341,7 @@ function selectBlueprint(value: ElDropdownValue) {
         close: true,
       },
       {
-        label: "Create variables",
+        label: catalogI18n.uiText("blueprints.createVariables", "Create variables"),
         icon: "auto_awesome",
         color: "prim",
         close: true,
@@ -449,7 +465,7 @@ watch(
           item-icon="icon"
           item-group="group"
           item-group-label="groupLabel"
-          placeholder="Blueprints"
+          :placeholder="catalogI18n.uiText('blueprints.placeholder', 'Blueprints')"
           @update:model-value="selectBlueprint"
         />
         <el-button
