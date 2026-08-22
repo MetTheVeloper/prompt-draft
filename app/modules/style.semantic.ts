@@ -4,19 +4,6 @@ import type {
   ModuleValues,
   PromptKeyModule,
 } from "./types";
-import { StyleModule as BaseStyleModule } from "./style.module";
-
-type PromptTextOverrides = Record<string, string>;
-
-function applyPromptTextOverrides(
-  options: ModuleFieldOption[] | undefined,
-  overrides: PromptTextOverrides,
-) {
-  return (options || []).map((option) => ({
-    ...option,
-    promptText: overrides[option.value] ?? option.promptText,
-  }));
-}
 
 function mediumOption(
   value: string,
@@ -132,13 +119,13 @@ const mediumOptions: ModuleFieldOption[] = [
   mediumOption("stitched_textile_art", "textile_handmade", "Textile / Handmade", "stitched textile artwork", ["stitched", "textile"]),
 ];
 
-const stylizationPromptText: PromptTextOverrides = {
-  subtle: "subtle stylization with minimal transformation",
-  controlled: "controlled stylization with moderate transformation",
-  strong: "strong stylization with clearly transformed forms",
-  extreme: "extreme stylization with radically transformed forms",
-  abstract: "abstract stylization with substantially simplified or deconstructed forms",
-};
+const stylizationLevelOptions: ModuleFieldOption[] = [
+  { value: "subtle", promptText: "subtle stylization with minimal transformation", tags: ["subtle"] },
+  { value: "controlled", promptText: "controlled stylization with moderate transformation", tags: ["controlled"] },
+  { value: "strong", promptText: "strong stylization with clearly transformed forms", tags: ["strong", "exaggerated"] },
+  { value: "extreme", promptText: "extreme stylization with radically transformed forms", tags: ["extreme", "exaggerated"] },
+  { value: "abstract", promptText: "abstract stylization with substantially simplified or deconstructed forms", tags: ["abstract", "stylized"] },
+];
 
 const lineworkOptions: ModuleFieldOption[] = [
   { value: "clean_fine", promptText: "clean fine linework", tags: ["clean", "fine"] },
@@ -206,12 +193,6 @@ function stylePreset(
     },
   };
 }
-
-const {
-  preset: _legacyAestheticField,
-  shapeLanguage: _legacyShapeLanguageField,
-  ...baseFields
-} = BaseStyleModule.fields;
 
 const presets: Record<string, ModulePreset> = {
   soft_3d_cartoon: stylePreset("soft_3d_cartoon", 10, {
@@ -346,7 +327,14 @@ const presets: Record<string, ModulePreset> = {
 };
 
 export const StyleModule = {
-  ...BaseStyleModule,
+  key: "style",
+  icon: "auto_fix_high",
+  groups: {
+    core: { id: "core", order: 10, defaultOpen: false },
+    modifiers: { id: "modifiers", order: 20, defaultOpen: true },
+    advanced: { id: "advanced", order: 30, defaultOpen: false },
+    override: { id: "override", order: 40, defaultOpen: false },
+  },
   fields: {
     aesthetic: {
       id: "aesthetic",
@@ -362,30 +350,31 @@ export const StyleModule = {
         width: "full",
       },
     },
-    ...baseFields,
     medium: {
-      ...baseFields.medium,
+      id: "medium",
+      type: "select",
       default: "",
+      group: "core",
       order: 20,
       options: mediumOptions,
       ui: {
-        ...baseFields.medium.ui,
+        component: "select",
         optionLayout: "categorized",
         clearable: true,
         width: "full",
       },
     },
     stylizationLevel: {
-      ...baseFields.stylizationLevel,
+      id: "stylizationLevel",
+      type: "select",
       default: "",
+      group: "modifiers",
       order: 10,
-      options: applyPromptTextOverrides(
-        baseFields.stylizationLevel.options,
-        stylizationPromptText,
-      ),
+      options: stylizationLevelOptions,
       ui: {
-        ...baseFields.stylizationLevel.ui,
+        component: "segmented",
         clearable: true,
+        width: "half",
       },
     },
     linework: {
@@ -402,14 +391,16 @@ export const StyleModule = {
       },
     },
     visualTreatment: {
-      ...baseFields.visualTreatment,
+      id: "visualTreatment",
+      type: "select",
       default: "",
+      group: "modifiers",
       order: 30,
       options: treatmentOptions,
       ui: {
-        ...baseFields.visualTreatment.ui,
+        component: "select",
         clearable: true,
-        compatibility: undefined,
+        width: "half",
       },
     },
     detailLevel: {
@@ -426,14 +417,41 @@ export const StyleModule = {
       },
     },
     finish: {
-      ...baseFields.finish,
+      id: "finish",
+      type: "select",
       default: "",
+      group: "modifiers",
       order: 50,
       options: finishOptions,
       ui: {
-        ...baseFields.finish.ui,
+        component: "select",
         clearable: true,
-        compatibility: undefined,
+        width: "half",
+      },
+    },
+    extraDetails: {
+      id: "extraDetails",
+      type: "textarea",
+      default: "",
+      group: "advanced",
+      order: 10,
+      ui: {
+        component: "textarea",
+        rows: 3,
+        width: "full",
+      },
+    },
+    customText: {
+      id: "customText",
+      type: "textarea",
+      default: "",
+      group: "override",
+      order: 10,
+      isOverride: true,
+      ui: {
+        component: "textarea",
+        rows: 4,
+        width: "full",
       },
     },
   },
@@ -446,7 +464,10 @@ export const StyleModule = {
     resetOnNone: true,
   },
   compile: {
-    ...BaseStyleModule.compile,
+    separator: ", ",
+    removeDuplicates: true,
+    ignoreEmpty: true,
+    overrideField: "customText",
     fieldOrder: [
       "aesthetic",
       "medium",
