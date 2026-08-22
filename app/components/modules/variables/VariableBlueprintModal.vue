@@ -52,24 +52,52 @@ const props = withDefaults(defineProps<{
 const emit = defineEmits<{ (event: "close"): void }>()
 const { t } = useI18n()
 const { mobile } = useScreen()
+const catalogI18n = useCatalogI18n("variables")
 
-const fallbackTypeOptions: BlueprintTypeOption[] = [
-  { value: "text", label: "Text" },
-  { value: "subject", label: "Subject" },
-  { value: "reference", label: "Reference" },
-  { value: "object", label: "Object" },
-  { value: "color", label: "Color" },
-  { value: "font", label: "Font" },
-  { value: "custom", label: "Custom" },
-]
+const fallbackTypeOptions = computed<BlueprintTypeOption[]>(() => [
+  { value: "text", label: catalogI18n.uiText("types.text", "Text") },
+  { value: "subject", label: catalogI18n.uiText("types.subject", "Subject") },
+  { value: "reference", label: catalogI18n.uiText("types.reference", "Reference") },
+  { value: "object", label: catalogI18n.uiText("types.object", "Object") },
+  { value: "color", label: catalogI18n.uiText("types.color", "Color") },
+  { value: "font", label: catalogI18n.uiText("types.font", "Font") },
+  { value: "custom", label: catalogI18n.uiText("types.custom", "Custom") },
+])
 
 const availableTypeOptions = computed(() => {
-  return props.typeOptions.length ? props.typeOptions : fallbackTypeOptions
+  return props.typeOptions.length ? props.typeOptions : fallbackTypeOptions.value
 })
 
 const draftGroups = reactive<BlueprintDraftGroup[]>([])
 const groupCounts = reactive<Record<string, number>>({})
 let customSequence = 0
+
+function blueprintLabel() {
+  return catalogI18n.itemLabel("blueprints", props.blueprint.id, props.blueprint.label)
+}
+
+function blueprintDescription() {
+  return catalogI18n.itemDescription("blueprints", props.blueprint.id, props.blueprint.description)
+}
+
+function blueprintGroupLabel(groupId: string, fallback: string) {
+  return catalogI18n.catalogText(`blueprints.${props.blueprint.id}.groups.${groupId}.label`, fallback)
+}
+
+function blueprintGroupDescription(groupId: string, fallback = "") {
+  return catalogI18n.catalogText(`blueprints.${props.blueprint.id}.groups.${groupId}.description`, fallback)
+}
+
+function blueprintSlotDescription(groupId: string, slotId: string, fallback: string) {
+  return catalogI18n.catalogText(
+    `blueprints.${props.blueprint.id}.groups.${groupId}.slots.${slotId}.description`,
+    fallback,
+  )
+}
+
+function staticSlotDescription(slotId: string, fallback: string) {
+  return catalogI18n.catalogText(`blueprints.${props.blueprint.id}.slots.${slotId}.description`, fallback)
+}
 
 function legacyPatternValue(pattern: string | undefined, index: number) {
   return String(pattern || "").replaceAll("{index}", String(index))
@@ -111,6 +139,7 @@ function makeStaticSlot(slot: VariableBlueprintSlot, usedKeys: string[]): Bluepr
     id: slot.id,
     enabled: !slot.optional,
     key,
+    // Blueprint values are semantic defaults. Never localize them here.
     value: slot.value || "",
     description: slot.description || slot.key,
     type: slot.type,
@@ -124,6 +153,7 @@ function makeRepeatableTemplateSlot(slot: VariableBlueprintGroupSlot): Blueprint
     id: slot.id,
     enabled: !slot.optional,
     key: slot.keyPattern,
+    // Pattern values are semantic payload and stay locale-independent.
     value: slot.valuePattern || "",
     description: slot.descriptionPattern || slot.id,
     type: slot.type,
@@ -176,6 +206,7 @@ function addCustomVariable() {
   draftGroups.push({
     id: `custom:${semanticIndex}:${Date.now()}`,
     source: "custom",
+    // Keep canonical draft metadata stable; translated labels are computed at render time.
     label: `Variable ${currentCount + 1}`,
     slots: [
       {
@@ -258,16 +289,16 @@ function ordinarySlotIssue(slot: BlueprintDraftSlot) {
   if (!slot.enabled) return ""
 
   const key = normalizeVariableKey(slot.key)
-  if (!isValidVariableKey(key)) return "Invalid variable key"
-  if (isReservedVariableKey(key)) return "Reserved variable key"
-  if (normalizedExternalKeys().includes(key)) return "Variable key already exists"
+  if (!isValidVariableKey(key)) return catalogI18n.uiText("blueprints.validation.invalidKey", "Invalid variable key")
+  if (isReservedVariableKey(key)) return catalogI18n.uiText("blueprints.validation.reservedKey", "Reserved variable key")
+  if (normalizedExternalKeys().includes(key)) return catalogI18n.uiText("blueprints.validation.exists", "Variable key already exists")
 
   const enabledSlots = nonRepeatableDraftSlots().filter((candidate) => candidate.enabled)
   const duplicate = enabledSlots.some((candidate) => {
     return candidate !== slot && normalizeVariableKey(candidate.key) === key
   })
 
-  return duplicate ? "Duplicate variable key" : ""
+  return duplicate ? catalogI18n.uiText("blueprints.validation.duplicateKey", "Duplicate variable key") : ""
 }
 
 function repeatableSlotIssue(group: BlueprintDraftGroup, slot: BlueprintDraftSlot) {
@@ -278,15 +309,15 @@ function repeatableSlotIssue(group: BlueprintDraftGroup, slot: BlueprintDraftSlo
   const valueHashes = hashCount(slot.value)
 
   if (count > 1 && keyHashes !== 1) {
-    return "Key must contain exactly one # when creating multiple profiles"
+    return catalogI18n.uiText("blueprints.validation.exactlyOneHash", "Key must contain exactly one # when creating multiple profiles")
   }
 
   if (count === 1 && keyHashes > 1) {
-    return "Key can contain at most one #"
+    return catalogI18n.uiText("blueprints.validation.maxOneHash", "Key can contain at most one #")
   }
 
   if (valueHashes > 1) {
-    return "Initial value can contain at most one #"
+    return catalogI18n.uiText("blueprints.validation.valueMaxOneHash", "Initial value can contain at most one #")
   }
 
   const previewIndex = 1
@@ -294,8 +325,8 @@ function repeatableSlotIssue(group: BlueprintDraftGroup, slot: BlueprintDraftSlo
     keyHashes === 1 ? indexedPatternValue(slot.key, previewIndex) : slot.key,
   )
 
-  if (!isValidVariableKey(previewKey)) return "Invalid variable key pattern"
-  if (isReservedVariableKey(previewKey)) return "Reserved variable key pattern"
+  if (!isValidVariableKey(previewKey)) return catalogI18n.uiText("blueprints.validation.invalidPattern", "Invalid variable key pattern")
+  if (isReservedVariableKey(previewKey)) return catalogI18n.uiText("blueprints.validation.reservedPattern", "Reserved variable key pattern")
 
   const enabledSlots = group.slots.filter((candidate) => candidate.enabled)
   const duplicatePattern = enabledSlots.some((candidate) => {
@@ -309,10 +340,10 @@ function repeatableSlotIssue(group: BlueprintDraftGroup, slot: BlueprintDraftSlo
     return candidateKey === previewKey
   })
 
-  if (duplicatePattern) return "Duplicate variable key pattern"
+  if (duplicatePattern) return catalogI18n.uiText("blueprints.validation.duplicatePattern", "Duplicate variable key pattern")
 
   if (count === 1 && keyHashes === 0 && normalizedExternalKeys().includes(previewKey)) {
-    return "Variable key already exists"
+    return catalogI18n.uiText("blueprints.validation.exists", "Variable key already exists")
   }
 
   return ""
@@ -460,6 +491,34 @@ function createBlueprintVariables() {
   return true
 }
 
+function customGroupIndex(group: BlueprintDraftGroup) {
+  return draftGroups.filter((candidate) => candidate.source === "custom").findIndex((candidate) => candidate.id === group.id) + 1
+}
+
+function displayGroupLabel(group: BlueprintDraftGroup) {
+  if (group.source === "static") return catalogI18n.uiText("blueprints.variables", "Variables")
+  if (group.source === "custom") {
+    const index = customGroupIndex(group)
+    return `${catalogI18n.uiText("blueprints.variable", "Variable")} ${index}`
+  }
+  const groupId = group.sourceGroupId || group.id
+  return `${blueprintGroupLabel(groupId, group.label.replace(/ template$/i, ""))} ${catalogI18n.uiText("blueprints.template", "template")}`
+}
+
+function displayGroupDescription(group: BlueprintDraftGroup) {
+  if (group.source !== "repeatable" || !group.sourceGroupId) return group.description || ""
+  return blueprintGroupDescription(group.sourceGroupId, group.description || "")
+}
+
+function displaySlotDescription(group: BlueprintDraftGroup, slot: BlueprintDraftSlot) {
+  if (group.source === "static") return staticSlotDescription(slot.id, slot.description || slot.key)
+  if (group.source === "repeatable" && group.sourceGroupId) {
+    return blueprintSlotDescription(group.sourceGroupId, slot.id, slot.description || slot.key)
+  }
+  const index = customGroupIndex(group)
+  return `${catalogI18n.uiText("blueprints.customVariable", "Custom variable")} ${index}`
+}
+
 if (props.controller) props.controller.submit = createBlueprintVariables
 </script>
 
@@ -467,10 +526,10 @@ if (props.controller) props.controller.submit = createBlueprintVariables
   <div class="variable-blueprint">
     <el-flex rules="ccs" :gap="4">
       <el-text :size="13" :weight="700" :icon="blueprint.icon || 'auto_awesome'">
-        {{ blueprint.label }}
+        {{ blueprintLabel() }}
       </el-text>
       <el-text :size="11" color="normal55">
-        {{ blueprint.description }}
+        {{ blueprintDescription() }}
       </el-text>
     </el-flex>
 
@@ -484,7 +543,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
       bg="normal5"
     >
       <el-flex rules="ccs" :gap="2">
-        <el-text :size="11" :weight="700">{{ group.label }} profiles</el-text>
+        <el-text :size="11" :weight="700">{{ blueprintGroupLabel(group.id, group.label) }} {{ catalogI18n.uiText("blueprints.profiles", "profiles") }}</el-text>
         <el-text :size="10" color="normal45">
           {{ t("modules.variables.fields.variables.blueprints.modal.repeatable.description") }}
         </el-text>
@@ -519,7 +578,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
     </el-flex>
 
     <el-flex rules="rbc" :gap="8">
-      <el-text :size="11" :weight="700">Variables</el-text>
+      <el-text :size="11" :weight="700">{{ catalogI18n.uiText("blueprints.variables", "Variables") }}</el-text>
       <el-text :size="10" color="normal45">{{ t("modules.variables.fields.variables.blueprints.modal.creationCount", { count: enabledCount }) }}</el-text>
     </el-flex>
 
@@ -536,9 +595,9 @@ if (props.controller) props.controller.submit = createBlueprintVariables
       >
         <el-flex rules="rbc" class="w100" :gap="10">
           <el-flex rules="ccs" :gap="2">
-            <el-text :size="11" :weight="700">{{ group.label }}</el-text>
-            <el-text v-if="group.description" :size="10" color="normal45">
-              {{ group.description }}
+            <el-text :size="11" :weight="700">{{ displayGroupLabel(group) }}</el-text>
+            <el-text v-if="displayGroupDescription(group)" :size="10" color="normal45">
+              {{ displayGroupDescription(group) }}
             </el-text>
             <el-text v-if="group.source === 'repeatable' && groupCount(group) > 1" :size="10" color="blue60">
               {{ t("modules.variables.fields.variables.blueprints.modal.repeatable.indexHint") }}
@@ -547,7 +606,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
 
           <el-button
             v-if="group.source === 'custom'"
-            label="Remove"
+            :label="catalogI18n.uiText('blueprints.remove', 'Remove')"
             icon="delete"
             color="red"
             mode="flat"
@@ -575,7 +634,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
                   type="checkbox"
                 />
                 <el-text :size="11" :weight="700">
-                  {{ slot.description || slot.key }}
+                  {{ displaySlotDescription(group, slot) }}
                 </el-text>
               </el-flex>
 
@@ -587,7 +646,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
             <el-grid :cols="mobile ? 1 : (slot.typeEditable ? 3 : 2)" :gap="8" class="w100">
               <label class="variable-blueprint__control">
                 <el-text :size="10" color="normal45">
-                  {{ group.source === 'repeatable' ? 'Key pattern' : 'Key' }}
+                  {{ group.source === 'repeatable' ? catalogI18n.uiText('blueprints.keyPattern', 'Key pattern') : catalogI18n.uiText('blueprints.key', 'Key') }}
                 </el-text>
                 <el-text-field
                   v-model="slot.key"
@@ -598,7 +657,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
               </label>
 
               <div v-if="slot.typeEditable" class="variable-blueprint__control">
-                <el-text :size="10" color="normal45">Type</el-text>
+                <el-text :size="10" color="normal45">{{ catalogI18n.uiText("blueprints.type", "Type") }}</el-text>
                 <el-dropdown
                   :model-value="slot.type"
                   :items="availableTypeOptions"
@@ -611,7 +670,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
 
               <label class="variable-blueprint__control">
                 <el-text :size="10" color="normal45">
-                  {{ group.source === 'repeatable' ? 'Initial value pattern' : 'Initial value' }}
+                  {{ group.source === 'repeatable' ? catalogI18n.uiText('blueprints.initialValuePattern', 'Initial value pattern') : catalogI18n.uiText('blueprints.initialValue', 'Initial value') }}
                 </el-text>
                 <el-text-field
                   v-model="slot.value"
