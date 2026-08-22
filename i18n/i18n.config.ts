@@ -11,6 +11,29 @@ import outfitFa from './locales/outfit.fa'
 import variablesEn from './locales/variables.en'
 import variablesFa from './locales/variables.fa'
 
+function mergeModuleLocale(base: Record<string, any> = {}, fragment: Record<string, any> = {}) {
+  return {
+    ...base,
+    ...fragment,
+    ...(base.catalog || fragment.catalog
+      ? {
+          catalog: {
+            ...(base.catalog || {}),
+            ...(fragment.catalog || {}),
+          },
+        }
+      : {}),
+    ...(base.ui || fragment.ui
+      ? {
+          ui: {
+            ...(base.ui || {}),
+            ...(fragment.ui || {}),
+          },
+        }
+      : {}),
+  }
+}
+
 export default defineI18nConfig(() => ({
   legacy: false,
   locale: 'en',
@@ -23,18 +46,9 @@ export default defineI18nConfig(() => ({
         ...en.modules,
         background: backgroundEn,
         effects: effectsEn,
-        hair: {
-          ...en.modules.hair,
-          ...hairEn,
-        },
-        outfit: {
-          ...en.modules.outfit,
-          ...outfitEn,
-        },
-        variables: {
-          ...en.modules.variables,
-          ...variablesEn,
-        },
+        hair: mergeModuleLocale(en.modules.hair, hairEn),
+        outfit: mergeModuleLocale(en.modules.outfit, outfitEn),
+        variables: mergeModuleLocale(en.modules.variables, variablesEn),
       },
     },
     fa: {
@@ -43,18 +57,9 @@ export default defineI18nConfig(() => ({
         ...fa.modules,
         background: backgroundFa,
         effects: effectsFa,
-        hair: {
-          ...fa.modules.hair,
-          ...hairFa,
-        },
-        outfit: {
-          ...fa.modules.outfit,
-          ...outfitFa,
-        },
-        variables: {
-          ...fa.modules.variables,
-          ...variablesFa,
-        },
+        hair: mergeModuleLocale(fa.modules.hair, hairFa),
+        outfit: mergeModuleLocale(fa.modules.outfit, outfitFa),
+        variables: mergeModuleLocale(fa.modules.variables, variablesFa),
       },
     },
   },
