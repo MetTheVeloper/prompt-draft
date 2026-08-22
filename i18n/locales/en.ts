@@ -795,6 +795,20 @@ export default {
             "Cut-paper aesthetic using paper cutout construction and a handcrafted finish.",
         },
       },
+      ui: {
+        legacy: {
+          presetsHint: "Choose a base style quickly",
+          customOutput: {
+            label: "Custom Style Output",
+            hint: "Overrides all selected fields when filled",
+            placeholder: "Write a complete custom style phrase...",
+            activeNotice: "Custom override is active. Form options are ignored in compiled output.",
+          },
+          advancedOptions: "Advanced Options",
+          compiledTitle: "Compiled Style",
+          empty: "No style selected yet.",
+        },
+      },
     },
     texture: {
       title: "Texture / Material",
@@ -3803,6 +3817,23 @@ export default {
             duplicateKey: "Duplicate variable key.",
             systemKey: "This key is reserved by an active system variable.",
           },
+          blueprints: {
+            modal: {
+              repeatable: {
+                description:
+                  "Configure one template and choose how many indexed profiles to create.",
+                indexHint:
+                  "Use exactly one # in every enabled key. A # in the value is optional and receives the same index.",
+              },
+              custom: {
+                title: "Custom variables",
+                description:
+                  "Add any semantic handles you need and choose each variable type independently.",
+                add: "Add variable",
+              },
+              creationCount: "{count} will be created",
+            },
+          },
         },
       },
       groups: {
@@ -4456,6 +4487,8 @@ export default {
       natural: "Natural",
       json: "JSON",
     },
+    emptyOutputDescription:
+      "Select modules and complete the required setup fields to generate output.",
   },
   promptSetup: {
     title: "Prompt Setup",
@@ -5750,6 +5783,11 @@ export default {
       },
       mainSubject: "Main Subject",
       missing: "Missing",
+    },
+    colorPicker: {
+      aria: {
+        saturationBrightness: "Color saturation and brightness",
+      },
     },
   },
   prompts: {

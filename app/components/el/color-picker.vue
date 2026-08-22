@@ -11,7 +11,7 @@
         class="elColorPickerPlane"
         :style="planeStyle"
         role="slider"
-        aria-label="Color saturation and brightness"
+        :aria-label="t('components.colorPicker.aria.saturationBrightness')"
         :aria-valuetext="selectedColor"
         tabindex="0"
         @pointerdown="startPlaneDrag"
@@ -120,6 +120,8 @@
 
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+
+const { t } = useI18n()
 
 type RgbaColor = {
   r: number

@@ -301,7 +301,7 @@ async function copyOutput() {
           </el-text>
 
           <el-text :size="12" :weight="300" color="normal55">
-            Select modules and complete the required setup fields to generate output.
+            {{ t("create.emptyOutputDescription") }}
           </el-text>
         </el-flex>
       </el-grid>

@@ -3,6 +3,8 @@ import { computed, reactive, ref } from 'vue'
 import { StyleModule } from '../../../modules/style.module'
 import { compileStyle, getStylePresetValues, type StyleValues } from '../../../utils/compileStyle'
 
+const { t } = useI18n()
+
 const values = reactive<StyleValues>({
   preset: '',
   medium: '',
@@ -60,7 +62,7 @@ async function copyOutput() {
   <section class="module-panel">
     <header class="module-panel__header">
       <div class="module-panel__title-wrap">
-        <span class="module-panel__eyebrow">Key Module</span>
+        <span class="module-panel__eyebrow">{{ t('panel.keyModule') }}</span>
         <h2>{{ StyleModule.label }}</h2>
         <p>{{ StyleModule.description }}</p>
       </div>
@@ -77,7 +79,7 @@ async function copyOutput() {
     <div class="module-panel__section">
       <div class="module-panel__section-head">
         <h3>Presets</h3>
-        <span>Choose a base style quickly</span>
+        <span>{{ t('modules.style.ui.legacy.presetsHint') }}</span>
       </div>
 
       <div class="module-panel__chips">
@@ -96,14 +98,14 @@ async function copyOutput() {
 
     <label class="module-panel__custom">
       <span>
-        Custom Style Output
-        <small>Overrides all selected fields when filled</small>
+        {{ t('modules.style.ui.legacy.customOutput.label') }}
+        <small>{{ t('modules.style.ui.legacy.customOutput.hint') }}</small>
       </span>
 
       <textarea
         v-model="values.customText"
         rows="3"
-        placeholder="Write a complete custom style phrase..."
+        :placeholder="t('modules.style.ui.legacy.customOutput.placeholder')"
       />
     </label>
 
@@ -111,7 +113,7 @@ async function copyOutput() {
       v-if="isCustomOverride"
       class="module-panel__notice"
     >
-      Custom override is active. Form options are ignored in compiled output.
+      {{ t('modules.style.ui.legacy.customOutput.activeNotice') }}
     </div>
 
     <button
@@ -119,7 +121,7 @@ async function copyOutput() {
       class="module-panel__advanced-toggle"
       @click="isAdvancedOpen = !isAdvancedOpen"
     >
-      <span>Advanced Options</span>
+      <span>{{ t('modules.style.ui.legacy.advancedOptions') }}</span>
       <span>{{ isAdvancedOpen ? '−' : '+' }}</span>
     </button>
 
@@ -200,7 +202,7 @@ async function copyOutput() {
 
     <div class="module-panel__output">
       <div class="module-panel__output-head">
-        <h3>Compiled Style</h3>
+        <h3>{{ t('modules.style.ui.legacy.compiledTitle') }}</h3>
 
         <button
           type="button"
@@ -213,7 +215,7 @@ async function copyOutput() {
       </div>
 
       <p v-if="output">{{ output }}</p>
-      <p v-else class="module-panel__empty">No style selected yet.</p>
+      <p v-else class="module-panel__empty">{{ t('modules.style.ui.legacy.empty') }}</p>
     </div>
   </section>
 </template>

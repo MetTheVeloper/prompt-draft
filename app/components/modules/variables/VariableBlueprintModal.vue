@@ -50,6 +50,7 @@ const props = withDefaults(defineProps<{
 })
 
 const emit = defineEmits<{ (event: "close"): void }>()
+const { t } = useI18n()
 const { mobile } = useScreen()
 
 const fallbackTypeOptions: BlueprintTypeOption[] = [
@@ -485,7 +486,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
       <el-flex rules="ccs" :gap="2">
         <el-text :size="11" :weight="700">{{ group.label }} profiles</el-text>
         <el-text :size="10" color="normal45">
-          Configure one template and choose how many indexed profiles to create.
+          {{ t("modules.variables.fields.variables.blueprints.modal.repeatable.description") }}
         </el-text>
       </el-flex>
 
@@ -500,14 +501,14 @@ if (props.controller) props.controller.submit = createBlueprintVariables
 
     <el-flex v-if="blueprint.customSet" rules="rbc" :gap="10">
       <el-flex rules="ccs" :gap="2">
-        <el-text :size="11" :weight="700">Custom variables</el-text>
+        <el-text :size="11" :weight="700">{{ t("modules.variables.fields.variables.blueprints.modal.custom.title") }}</el-text>
         <el-text :size="10" color="normal45">
-          Add any semantic handles you need and choose each variable type independently.
+          {{ t("modules.variables.fields.variables.blueprints.modal.custom.description") }}
         </el-text>
       </el-flex>
 
       <el-button
-        label="Add variable"
+        :label="t('modules.variables.fields.variables.blueprints.modal.custom.add')"
         icon="add"
         color="blue"
         mode="flat"
@@ -519,7 +520,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
 
     <el-flex rules="rbc" :gap="8">
       <el-text :size="11" :weight="700">Variables</el-text>
-      <el-text :size="10" color="normal45">{{ enabledCount }} will be created</el-text>
+      <el-text :size="10" color="normal45">{{ t("modules.variables.fields.variables.blueprints.modal.creationCount", { count: enabledCount }) }}</el-text>
     </el-flex>
 
     <div class="variable-blueprint__groups">
@@ -540,7 +541,7 @@ if (props.controller) props.controller.submit = createBlueprintVariables
               {{ group.description }}
             </el-text>
             <el-text v-if="group.source === 'repeatable' && groupCount(group) > 1" :size="10" color="blue60">
-              Use exactly one # in every enabled key. A # in the value is optional and receives the same index.
+              {{ t("modules.variables.fields.variables.blueprints.modal.repeatable.indexHint") }}
             </el-text>
           </el-flex>
 
