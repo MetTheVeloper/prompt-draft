@@ -71,12 +71,12 @@ A file must not be deleted merely because it originated before the refactor.
 At the start of this cleanup:
 
 - `style.semantic.ts` built on `style.module.ts`,
-- `form.semantic.ts` builds on `form.module.ts`,
+- `form.semantic.ts` built on `form.module.ts`,
 - `texture.semantic.ts` read catalog data from `texture.module.ts`.
 
 ### Texture dependency — resolved
 
-The Texture dependency has now been removed without reopening semantic design:
+The Texture dependency was removed without reopening semantic design:
 
 - the current Material catalog and condition compatibility metadata live in `app/modules/texture.catalog.ts`,
 - `texture.semantic.ts` imports that neutral catalog directly,
@@ -87,7 +87,7 @@ Texture / Material now has no runtime dependency on its pre-refactor global-fiel
 
 ### Style dependency — resolved
 
-The Style dependency has also been removed without changing the accepted semantic schema:
+The Style dependency was removed without changing the accepted semantic schema:
 
 - `style.semantic.ts` now declares its own module key, icon, groups, field metadata, presets, and compile configuration,
 - the existing semantic Aesthetic, Medium, Stylization, Linework, Visual Treatment, Detail Level, Finish, `extraDetails`, and override behavior are preserved,
@@ -96,7 +96,17 @@ The Style dependency has also been removed without changing the accepted semanti
 
 Style now has no runtime dependency on its pre-refactor module implementation.
 
-The only remaining known base-module dependency is Form. It should only be consolidated when current behavior can be preserved cleanly.
+### Form dependency — resolved
+
+The final known base-module dependency has now been removed:
+
+- the complete current Form catalog now lives directly in `form.semantic.ts`, including subject applicability, categories, compatibility metadata, transformation strength, and UI field contracts,
+- the accepted semantic wording corrections previously layered by the wrapper are merged directly into their canonical options,
+- Form keeps the same groups, defaults, field order, compatibility behavior, `extraDetails`, and override contract,
+- no `BaseFormModule` inheritance remains,
+- the unregistered legacy `app/modules/form.module.ts` implementation has been deleted.
+
+Form is now standalone and the three known live legacy dependencies present at the start of this cleanup — Texture, Style, and Form — are all resolved.
 
 ---
 
@@ -115,9 +125,13 @@ The only remaining known base-module dependency is Form. It should only be conso
 
 ### Phase C — remove live legacy dependencies conservatively
 
-- Do not rewrite Form simply to make filenames look newer.
-- Consolidate a dependency only when current behavior can be preserved and the old implementation can then be removed completely.
-- Texture catalog extraction and Style standalone consolidation are accepted precedents for this type of cleanup.
+Completed precedents:
+
+- Texture catalog extraction,
+- Style standalone consolidation,
+- Form standalone consolidation.
+
+No known live base-module dependency remains from the semantic refactor cleanup list.
 
 ### Phase D — reference audit
 
@@ -176,7 +190,7 @@ This cleanup is complete when:
 
 - migration-only work is no longer presented as required before integration,
 - dead unregistered legacy modules are removed,
-- remaining old-origin files are retained only because current runtime behavior depends on them,
+- no known live semantic base-module dependency remains,
 - current imports resolve cleanly,
 - localization consolidation passes,
 - generate/build pass,
