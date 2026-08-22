@@ -1158,3 +1158,27 @@ If yes:
 5. make the reference update part of the closure/checkpoint workflow.
 
 If the module teaches nothing materially new, do not add filler merely to make the document longer.
+
+---
+
+# 35. Current handoff checkpoint — localization consolidation
+
+As of 2026-08-22, module-by-module semantic refactoring is closed for the currently registered semantic surfaces. The active work is localization/release cleanup and must not reopen closed semantics unless a concrete semantic defect is reproduced.
+
+Current localization state:
+
+- `scripts/localization-audit.mjs` and `scripts/localization-review.mjs` exist and produce project-wide localization reports.
+- The latest observed review reported **223 actionable UI/metadata**, **35 review-required**, and **123 do-not-auto-localize** candidates, but the classifier still contains both false positives and missed short UI strings. Do not blindly patch the counts.
+- `app/composables/useCatalogI18n.ts` has been added as the beginning of a render-layer translation boundary for catalog metadata.
+- The intended consolidated migration is **not implemented yet**. `pnpm locale:consolidate` does not currently exist in `package.json`; the latest user run failed with `Command "locale:consolidate" not found`.
+
+The next conversation should first inspect the current branch and finish one consolidated localization pass before asking the user to run anything. That pass should refine the audit/review heuristics, localize safe visible UI, translate Hair/Outfit/Variable-Blueprint metadata at the render layer without mutating semantic prompt values or compiler text, add aligned EN/FA keys, add the `locale:consolidate` runner/package command, and make it execute the final localization audit/review.
+
+Only after that implementation is committed should the user be asked to run:
+
+```bash
+git pull
+pnpm locale:consolidate
+```
+
+Keep Blueprint default prompt values, compiler/Natural wording, token identities and other semantic payloads locale-independent unless the product architecture explicitly changes that contract.
