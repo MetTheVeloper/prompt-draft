@@ -4,13 +4,15 @@
 
 **All semantic surfaces currently registered in `app/modules/registry.ts` are semantically closed.**
 
+**Localization consolidation is also closed as of 2026-08-22.**
+
 Checkpoint branch:
 
 ```text
 refactor/prompt-semantics
 ```
 
-This checkpoint marks the end of the module-by-module semantic-refactor phase for the current registry.
+This checkpoint marks the end of the module-by-module semantic-refactor phase for the current registry and records the completed localization/release-cleanup pass that followed it.
 
 A closed module should not be reopened for ordinary model variance, recipe/catalog growth, localization, cosmetic UI work, legacy migration, release/build maintenance, or theoretical micro-polish. Reopen only when concrete evidence reveals a real semantic ownership defect, prompt-graph loss, broken identity/target policy, reproducible compiler/state regression, or another contract-level failure.
 
@@ -117,6 +119,52 @@ Stage 16 also established variable-first Typography authoring, multi-select Text
 
 ---
 
+# Localization consolidation — closed
+
+The project-wide localization consolidation pass is complete and should be treated as a closed release-cleanup checkpoint unless a concrete localization defect is reproduced.
+
+The final verified command was:
+
+```bash
+pnpm locale:consolidate
+```
+
+Final verification on 2026-08-22:
+
+```text
+Semantic boundary check passed. ✅
+Missing in EN:          0
+Missing in FA:          0
+Extra in FA:            0
+Actionable UI/metadata: 0
+Review required:        0
+Localization consolidation complete. ✅
+```
+
+Additional final review categories were intentionally non-actionable:
+
+```text
+RENDER_LOCALIZED   493
+SEMANTIC_VALUE      20
+COMPILER_TEXT       24
+DEVELOPER_TEXT      37
+INTENTIONAL          3
+```
+
+The consolidation established these release rules:
+
+- English and Persian locale parity must remain clean.
+- Canonical semantic metadata may remain English/locale-independent when a render-layer translation boundary supplies the active UI locale.
+- Hair, Outfit and Variable Blueprint presentation metadata must be localized at render time without mutating semantic values.
+- Blueprint defaults, compiler/Natural wording, token identities, prompt-facing semantic values and other semantic payloads remain locale-independent.
+- Canonical module metadata can remain stable fallback/source data while module panels resolve matching i18n keys at render time.
+- `scripts/localization-audit.mjs` is the broad inventory scanner; its raw hardcoded-candidate count is not itself an error count.
+- `scripts/localization-review.mjs` classifies candidates into actionable, render-localized, semantic, compiler, developer and intentional groups.
+- `pnpm locale:consolidate` is the release-facing verification command and must continue to enforce semantic-boundary safety and EN/FA parity.
+- Do not reopen closed semantic stages merely to eliminate canonical English metadata that is already correctly localized at render time.
+
+---
+
 # Current global semantic precedents
 
 The project now consistently uses these rules where applicable:
@@ -148,7 +196,7 @@ The project now consistently uses these rules where applicable:
 The following may still exist as normal engineering work without reopening semantic closure:
 
 - legacy-state migration,
-- localization completeness,
+- future translation additions for genuinely new UI,
 - cosmetic UI polish,
 - blueprint/preset/catalog expansion,
 - build/release verification,
@@ -163,19 +211,20 @@ Existing items under `docs/prompt-semantics/review-backlog/` remain valid deferr
 
 # Recommended next phase
 
-There is currently no registered module that needs another speculative semantic rewrite.
+There is currently no registered module that needs another speculative semantic rewrite, and there is no open localization-consolidation task.
 
 The preferred sequence from this checkpoint is:
 
 ```text
-1. final cross-module semantic audit
-2. resolve only concrete integration defects discovered by that audit
-3. review legacy migration backlog
-4. localization / release / build integration cleanup
-5. merge or otherwise integrate the semantic-refactor branch when ready
+1. review remaining concrete migration/integration backlog
+2. run normal project generation/build/release validation
+3. fix only reproducible integration defects
+4. merge or otherwise integrate the semantic-refactor branch when ready
 ```
 
 If a new module is added later, or a closed module exposes a real contract-level defect, use the canonical semantic-refactor workflow again starting with original-intent discovery and ownership definition.
+
+If new UI is added later, extend EN/FA localization together and keep `pnpm locale:consolidate` clean rather than reopening this consolidation stage wholesale.
 
 ---
 
@@ -183,6 +232,6 @@ If a new module is added later, or a closed module exposes a real contract-level
 
 At this commit:
 
-> **The current Prompt Draft module registry is semantically closed as a complete set.**
+> **The current Prompt Draft module registry is semantically closed as a complete set, and localization consolidation is clean and closed.**
 
-Future work should prefer integration, validation, migration and product polish over reopening accepted module architectures without concrete evidence.
+Future work should prefer integration, validation, migration, release work and product polish over reopening accepted module architectures or localization boundaries without concrete evidence.
