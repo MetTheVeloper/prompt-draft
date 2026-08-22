@@ -62,7 +62,7 @@ This includes:
 - compiler and Natural serializers,
 - stable identity / semantic target infrastructure,
 - localization required by current UI,
-- legacy-named files that are still an active dependency of current code.
+- old-origin files that are still an active dependency of current code.
 
 A file must not be deleted merely because it originated before the refactor.
 
@@ -70,13 +70,22 @@ A file must not be deleted merely because it originated before the refactor.
 
 At the start of this cleanup:
 
-- `style.semantic.ts` still builds on `style.module.ts`,
-- `form.semantic.ts` still builds on `form.module.ts`,
-- `texture.semantic.ts` still reads catalog data from `texture.module.ts`.
+- `style.semantic.ts` builds on `style.module.ts`,
+- `form.semantic.ts` builds on `form.module.ts`,
+- `texture.semantic.ts` read catalog data from `texture.module.ts`.
 
-These are **runtime dependencies**, not backward-compatibility support. They remain until they can be consolidated without changing current behavior.
+### Texture dependency — resolved
 
-The Texture dependency is a good future consolidation candidate: extract the material/condition catalog into a neutral catalog file, point `texture.semantic.ts` at it, then remove the old implementation. Do not combine that extraction with speculative semantic changes.
+The Texture dependency has now been removed without reopening semantic design:
+
+- the current Material catalog and condition compatibility metadata live in `app/modules/texture.catalog.ts`,
+- `texture.semantic.ts` imports that neutral catalog directly,
+- the compound legacy material values intentionally excluded during Stage 11 remain excluded,
+- the unregistered legacy `app/modules/texture.module.ts` implementation has been deleted.
+
+Texture / Material now has no runtime dependency on its pre-refactor global-field module.
+
+The remaining known base-module dependencies are Style and Form. They should only be consolidated when current behavior can be preserved cleanly.
 
 ---
 
@@ -93,10 +102,11 @@ The Texture dependency is a good future consolidation candidate: extract the mat
 - Delete unregistered legacy modules only after confirming the current registry and semantic modules do not depend on them.
 - Prefer small, reviewable removals over broad filename-based deletion.
 
-### Phase C — preserve live dependencies
+### Phase C — remove live legacy dependencies conservatively
 
-- Do not rewrite Style, Form, or Texture simply to make filenames look newer.
-- Consolidate them only when the current behavior can be preserved exactly and the dependency can be removed cleanly.
+- Do not rewrite Style or Form simply to make filenames look newer.
+- Consolidate a dependency only when current behavior can be preserved and the old implementation can then be removed completely.
+- Texture catalog extraction is the accepted precedent for this type of cleanup.
 
 ### Phase D — reference audit
 
