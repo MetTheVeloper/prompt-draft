@@ -4,7 +4,11 @@
 
 **All semantic surfaces currently registered in `app/modules/registry.ts` are semantically closed.**
 
-**Localization consolidation is also closed as of 2026-08-22.**
+**Localization consolidation is closed.**
+
+**Legacy semantic compatibility/migration is intentionally out of scope.**
+
+**The semantic breaking-cleanup pass is closed.**
 
 Checkpoint branch:
 
@@ -12,13 +16,11 @@ Checkpoint branch:
 refactor/prompt-semantics
 ```
 
-This checkpoint marks the end of the module-by-module semantic-refactor phase for the current registry and records the completed localization/release-cleanup pass that followed it.
-
-A closed module should not be reopened for ordinary model variance, recipe/catalog growth, localization, cosmetic UI work, legacy migration, release/build maintenance, or theoretical micro-polish. Reopen only when concrete evidence reveals a real semantic ownership defect, prompt-graph loss, broken identity/target policy, reproducible compiler/state regression, or another contract-level failure.
+This checkpoint is the canonical end-state of the semantic-refactor project for the current registry. A closed module should not be reopened for ordinary model variance, catalog growth, localization, cosmetic UI work, old-draft compatibility, release maintenance, or theoretical micro-polish. Reopen only when a reproducible current-schema defect exposes a real ownership, identity, prompt-graph, compiler, target-policy, or state contract failure.
 
 ---
 
-# Registered semantic surfaces at this checkpoint
+# Registered semantic surfaces
 
 The current registry contains 16 modules:
 
@@ -41,7 +43,7 @@ Effects
 Texture / Material
 ```
 
-All 16 are covered by completed semantic stages and accepted closure precedents.
+All 16 are semantically closed.
 
 ---
 
@@ -49,9 +51,7 @@ All 16 are covered by completed semantic stages and accepted closure precedents.
 
 ## Style + Form
 
-Closed through the early semantic-refactor stages.
-
-Key outcomes include orthogonal Style/Form ownership, neutral defaults, minimum-sufficient preset state, and removal of aesthetic/material/form leakage across module boundaries.
+Closed with orthogonal ownership, neutral defaults, minimum-sufficient state recipes, and removal of aesthetic/material/form leakage. Both modules are now standalone current implementations; their pre-refactor base modules have been removed.
 
 ## Setup / core prompt context
 
@@ -63,7 +63,7 @@ Closed with stable region identity, structured spatial output, protected Natural
 
 ## Framing
 
-Closed with orthogonal framing axes separated from Camera and Pose ownership.
+Closed with framing axes separated from Camera, Pose, Style, and layout ownership.
 
 ## Camera
 
@@ -71,43 +71,35 @@ Closed with capture system, response, optics/focus behavior, and capture behavio
 
 ## Lighting
 
-Closed with repeated source-local entities and global ambient/contrast semantics.
+Closed with repeated source-local entities plus global ambient/contrast semantics.
 
 ## Color Palette
 
-Closed with relational target assignments and capability-driven target discovery.
+Closed with relational assignments, stable semantic target references, and capability-driven target discovery.
 
 ## Texture / Material
 
-Closed with target-specific material assignments and independent material/surface axes.
+Closed with target-specific material assignments and independent material/surface axes. Its material and condition metadata now live in the neutral `app/modules/texture.catalog.ts`; the pre-refactor global Texture module has been removed.
 
 ## Pose + Expression
 
 Closed with subject-scoped relational assignments and strict body-vs-face ownership.
 
-## Background + Effects — Stage 13
+## Background + Effects
 
-Semantically closed.
+Closed with Background owning depicted scene/backdrop content and Effects owning image-space/composited post-processing and overlays.
 
-Background owns depicted scene/backdrop content. Effects owns image-space/composited post-processing and overlays.
+## Hair + Outfit
 
-## Hair + Outfit — Stage 14
+Closed with hierarchical entities, stable internal identity, global external paths, scoped aliases, selective token emission, subject-scoped assignments, capability-driven Color/Material targets, editable recipes, inherit baselines, and protected linked-module Natural behavior.
 
-Semantically closed.
+## User Variables + Variable Blueprints
 
-Established hierarchical semantic entities, stable internal identity, global external paths, scoped local aliases, selective token emission, subject-scoped assignments, capability-driven Color/Material targets, editable recipes, inherit baselines, and protected linked-module Natural behavior.
+Closed with typed semantic handles, lowerCamelCase prompt-facing keys, case-insensitive collision identity, auxiliary reference inputs, editor-only Blueprint recipes, repeatable Profile templates, coherent index allocation, Custom Variable Sets, and non-blocking warning UX.
 
-## User Variables + Variable Blueprints — Stage 15
+## Typography
 
-Semantically closed.
-
-Established typed semantic user handles, preserved lowerCamelCase prompt-facing keys, case-insensitive collision identity, auxiliary reference inputs, editor-only Blueprint recipes, repeatable Profile templates using `#` index patterns, coherent whole-profile index allocation, Custom Variable Sets, and collapsed non-blocking warning UX.
-
-## Typography — Stage 16
-
-Semantically closed.
-
-Final ownership boundary:
+Closed with the ownership boundary:
 
 ```text
 Variables  → reusable visible-text content
@@ -115,123 +107,128 @@ Typography → grouping and text-rendering semantics
 Layout     → explicit spatial region geometry / placement
 ```
 
-Stage 16 also established variable-first Typography authoring, multi-select Text-variable insertion, selective structural-key emission, compiler removal of internal IDs/default noise, compact structured Typography output, and concise protected Natural serialization while retaining tested generation accuracy.
+Typography uses variable-first authoring, selective structural-key emission, compact structured output, and protected Natural serialization.
 
 ---
 
-# Localization consolidation — closed
-
-The project-wide localization consolidation pass is complete and should be treated as a closed release-cleanup checkpoint unless a concrete localization defect is reproduced.
-
-The final verified command was:
-
-```bash
-pnpm locale:consolidate
-```
-
-Final verification on 2026-08-22:
-
-```text
-Semantic boundary check passed. ✅
-Missing in EN:          0
-Missing in FA:          0
-Extra in FA:            0
-Actionable UI/metadata: 0
-Review required:        0
-Localization consolidation complete. ✅
-```
-
-Additional final review categories were intentionally non-actionable:
-
-```text
-RENDER_LOCALIZED   493
-SEMANTIC_VALUE      20
-COMPILER_TEXT       24
-DEVELOPER_TEXT      37
-INTENTIONAL          3
-```
-
-The consolidation established these release rules:
-
-- English and Persian locale parity must remain clean.
-- Canonical semantic metadata may remain English/locale-independent when a render-layer translation boundary supplies the active UI locale.
-- Hair, Outfit and Variable Blueprint presentation metadata must be localized at render time without mutating semantic values.
-- Blueprint defaults, compiler/Natural wording, token identities, prompt-facing semantic values and other semantic payloads remain locale-independent.
-- Canonical module metadata can remain stable fallback/source data while module panels resolve matching i18n keys at render time.
-- `scripts/localization-audit.mjs` is the broad inventory scanner; its raw hardcoded-candidate count is not itself an error count.
-- `scripts/localization-review.mjs` classifies candidates into actionable, render-localized, semantic, compiler, developer and intentional groups.
-- `pnpm locale:consolidate` is the release-facing verification command and must continue to enforce semantic-boundary safety and EN/FA parity.
-- Do not reopen closed semantic stages merely to eliminate canonical English metadata that is already correctly localized at render time.
-
----
-
-# Current global semantic precedents
+# Global semantic precedents
 
 The project now consistently uses these rules where applicable:
 
 - minimum sufficient prompt semantics,
 - explicit ownership and non-responsibilities,
 - orthogonal fields instead of mega-selects,
-- repeated/hierarchical entities when modifiers or children need independent identity,
-- stable internal entity IDs separate from human semantic keys,
-- lowerCamelCase human prompt-facing keys,
+- repeated/hierarchical entities when children or modifiers need identity,
+- stable internal IDs separate from human semantic keys,
+- lowerCamelCase prompt-facing keys,
 - globally unique external structural tokens where required,
 - scoped local aliases inside owning module definitions,
-- selective structural-token emission only when graph references require it,
-- typed variables as semantic contracts rather than UI labels,
-- target policy separate from shared assignment mechanics,
-- capability-driven Color/Material target discovery,
-- presets/Blueprints as editable state recipes rather than prompt semantics,
+- selective token emission only when graph references require it,
+- typed variables as semantic contracts,
+- target policy separated from assignment mechanics,
+- capability-driven Color/Material targets,
+- presets and Blueprints as editable state recipes,
 - `inherit` as a neutral baseline where appropriate,
 - reference baseline plus explicit overrides,
-- protected Natural serializers for structured/relational modules,
-- Natural output as a readable serialization of the same prompt graph rather than graph flattening,
-- blocking errors immediately visible while repetitive non-blocking warnings may be collapsed,
+- Natural output as a readable serialization of the same prompt graph,
 - semantic correctness evaluated separately from stochastic generation-model compliance.
 
 ---
 
-# What is no longer a module-semantic-stage task
+# Localization consolidation — closed
 
-The following may still exist as normal engineering work without reopening semantic closure:
+Release-facing verification remains:
 
-- legacy-state migration,
-- future translation additions for genuinely new UI,
-- cosmetic UI polish,
-- blueprint/preset/catalog expansion,
-- build/release verification,
-- performance cleanup,
-- ordinary bug fixes,
-- warning text refinement,
-- stochastic model-specific tuning that does not expose an ownership defect.
+```bash
+pnpm locale:consolidate
+```
 
-Existing items under `docs/prompt-semantics/review-backlog/` remain valid deferred work where applicable.
+The completed consolidation established:
+
+- EN/FA parity must remain clean,
+- canonical semantic metadata may remain locale-independent when translated at render time,
+- prompt-facing semantic values, compiler/Natural wording, tokens, and Blueprint defaults remain locale-independent,
+- `localization-audit.mjs`, `localization-review.mjs`, and `localization-consolidate.mjs` are the maintained localization verification tools.
+
+One-off patch/merge scripts used during the completed localization migration have been removed.
+
+---
+
+# Backward compatibility decision
+
+Pre-refactor saved drafts and pre-refactor importable JSON are **not** part of the current product contract.
+
+Do not add migration code for removed legacy fields unless backward compatibility becomes an explicit future product requirement.
+
+This includes old mega-select/flat schemas from Framing, Camera, Lighting, Texture, Pose, Expression, Background, Effects, Hair, Outfit, Style/Form ancestors, and related cross-module pollution.
+
+The review backlog is reserved for reproducible defects in the **current schema**, not speculative old-state migration.
+
+---
+
+# Breaking cleanup — closed
+
+The cleanup pass removed obsolete implementation and migration artifacts, including:
+
+- unregistered legacy Pose, Expression, Hair, Outfit and Deformation implementations,
+- pre-refactor Style and Form base implementations after standalone consolidation,
+- pre-refactor Texture implementation after neutral catalog extraction,
+- migration-only Stage 13/14 backlog documents,
+- tracked Layout stage backup/payload directories,
+- completed one-off localization patch and hardcoded-batch scripts.
+
+Temporary Layout backup/payload paths are ignored by `.gitignore` to prevent accidental reintroduction.
+
+The maintained runtime remains centered on the current registry and its current semantic modules/catalogs.
+
+See also:
+
+```text
+docs/prompt-semantics/SEMANTIC-BREAKING-CLEANUP.md
+```
+
+---
+
+# Final integration audit
+
+The final branch audit checks these boundaries:
+
+- registry imports only current implementations,
+- no known `BaseStyleModule`, `BaseFormModule`, or legacy Texture runtime dependency remains,
+- no tracked semantic-refactor backup/payload directory remains,
+- no migration-only localization patch pipeline remains,
+- migration backlog is not a release blocker,
+- branch changes are limited to intentional semantic cleanup/integration work,
+- current-schema validation, not old-state compatibility, is the acceptance criterion.
+
+The remaining release gate is normal project validation after pulling the latest branch:
+
+```bash
+pnpm locale:consolidate
+pnpm generate
+pnpm build
+```
+
+Then perform the existing current-schema smoke tests for editor state, Modular/Natural output, save/reload, current JSON export/import, EN/FA, relational targets, and structured modules.
 
 ---
 
 # Recommended next phase
 
-There is currently no registered module that needs another speculative semantic rewrite, and there is no open localization-consolidation task.
+There is no remaining planned semantic-refactor stage and no planned legacy migration stage.
 
-The preferred sequence from this checkpoint is:
+After the final validation commands and smoke tests pass:
 
 ```text
-1. review remaining concrete migration/integration backlog
-2. run normal project generation/build/release validation
-3. fix only reproducible integration defects
-4. merge or otherwise integrate the semantic-refactor branch when ready
+refactor/prompt-semantics
+        ↓
+       main
 ```
 
-If a new module is added later, or a closed module exposes a real contract-level defect, use the canonical semantic-refactor workflow again starting with original-intent discovery and ownership definition.
-
-If new UI is added later, extend EN/FA localization together and keep `pnpm locale:consolidate` clean rather than reopening this consolidation stage wholesale.
+From that point onward, fix only concrete reproducible integration/product defects without reopening accepted semantic architecture unless the defect proves that an architecture contract is actually wrong.
 
 ---
 
 # Checkpoint rule
 
-At this commit:
-
-> **The current Prompt Draft module registry is semantically closed as a complete set, and localization consolidation is clean and closed.**
-
-Future work should prefer integration, validation, migration, release work and product polish over reopening accepted module architectures or localization boundaries without concrete evidence.
+> **The current Prompt Draft registry is semantically closed, localization is consolidated, legacy migration is intentionally unsupported, and the semantic cleanup pass is complete. The branch is in final release-validation/integration state.**
