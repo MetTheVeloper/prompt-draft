@@ -8,6 +8,7 @@
     "generate": "nuxt generate && tsx scripts/generate-offline-manifest.ts",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
+    "locale:consolidate": "node scripts/localization-consolidate.mjs",
     "locale:audit": "node scripts/localization-audit.mjs all",
     "locale:audit:source": "node scripts/localization-audit.mjs source",
     "locale:audit:parity": "node scripts/localization-audit.mjs parity --no-hardcoded",
