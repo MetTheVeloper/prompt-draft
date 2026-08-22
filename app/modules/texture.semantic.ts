@@ -3,47 +3,12 @@ import type {
   ModuleFieldOption,
   PromptKeyModule,
 } from "./types";
-import { TextureModule as LegacyTextureModule } from "./texture.module";
+import {
+  textureConditionMetadata,
+  textureMaterialOptions,
+} from "./texture.catalog";
 
-/**
- * The legacy module contains a large, useful material catalog. Stage 11 keeps
- * that catalog while replacing the old global field architecture around it.
- * The legacy module is not registered after this refactor; it acts only as the
- * temporary catalog source until the catalog is extracted to its own file.
- *
- * Compound legacy values that smuggle one of the new orthogonal axes back into
- * Material are intentionally excluded here. They can be reconstructed with
- * independent fields instead (for example glass + frosted optical character).
- */
-const legacyMaterialOptions = LegacyTextureModule.fields.material.options || [];
-const excludedLegacyMaterialValues = new Set([
-  "molded_plastic",
-  "frosted_glass",
-  "stained_glass",
-]);
-
-const materialOptions: ModuleFieldOption[] = [
-  {
-    value: "plastic",
-    category: "vinyl_plastic",
-    categoryLabel: "Vinyl / Plastic",
-    categoryLabelKey: "modules.texture.categories.vinyl_plastic",
-    promptText: "plastic material",
-    tags: [
-      "plastic",
-      "synthetic",
-      "rigid",
-      "opaque",
-      "smooth-friendly",
-      "gloss-friendly",
-    ],
-  },
-  ...legacyMaterialOptions.filter(
-    (option) => !excludedLegacyMaterialValues.has(option.value),
-  ),
-];
-
-const legacyConditionOptions = LegacyTextureModule.fields.imperfections.options || [];
+const materialOptions = textureMaterialOptions;
 
 function option(
   value: string,
@@ -212,10 +177,10 @@ const conditionPromptText: Record<string, string> = {
 
 const conditionValues = Object.keys(conditionPromptText);
 const conditionOptions: ModuleFieldOption[] = conditionValues.map((value) => {
-  const legacy = legacyConditionOptions.find((option) => option.value === value);
+  const metadata = textureConditionMetadata.find((option) => option.value === value);
 
   return {
-    ...legacy,
+    ...metadata,
     value,
     promptText: conditionPromptText[value],
   };
