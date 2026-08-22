@@ -18,6 +18,7 @@ import {
 
 const { t } = useI18n();
 const { mobile } = useScreen();
+const catalogI18n = useCatalogI18n("hair");
 
 const props = defineProps<{
   component: HairComponent;
@@ -70,9 +71,10 @@ const typeDefinition = computed(() =>
 );
 const typeLabel = computed(() => {
   if (props.component.type === "custom") {
-    return props.component.customType?.trim() || "Custom Hair Component";
+    return props.component.customType?.trim() || catalogI18n.itemLabel("componentTypes", "custom", "Custom Hair Component");
   }
-  return typeDefinition.value?.label || humanize(props.component.type);
+  const fallback = typeDefinition.value?.label || humanize(props.component.type);
+  return catalogI18n.itemLabel("componentTypes", props.component.type, fallback);
 });
 const componentTitle = computed(() =>
   props.component.name?.trim() || typeLabel.value,
@@ -84,7 +86,7 @@ const componentToken = computed(() =>
 const typeItems = computed(() =>
   hairComponentTypes.map((item) => ({
     value: item.value,
-    label: item.label,
+    label: catalogI18n.itemLabel("componentTypes", item.value, item.label),
   })),
 );
 
@@ -96,6 +98,7 @@ function changeType(value: ElDropdownValue) {
   const definition = hairComponentTypeMap.get(type);
   updateComponent({
     type,
+    // Persist the canonical catalog name. Display translation stays render-only.
     name: definition?.label || "Custom Hair Component",
     customType: type === "custom" ? props.component.customType || "" : undefined,
     properties: {},
@@ -127,20 +130,23 @@ function propertySelection(propertyId: string) {
 function propertyItems(propertyId: string) {
   const definition = hairPropertyDefinitions[propertyId];
   const items: Array<{ value: string; label: string }> = [
-    { value: "__inherit", label: `As defined by ${typeLabel.value}` },
+    {
+      value: "__inherit",
+      label: `${catalogI18n.uiText("common.asDefinedBy", "As defined by")} ${typeLabel.value}`,
+    },
     ...(definition?.options || []).map((item) => ({
       value: `option:${item.value}`,
-      label: humanize(item.value),
+      label: catalogI18n.optionLabel(propertyId, item.value, humanize(item.value)),
     })),
   ];
   if (definition?.allowReference) {
-    items.push({ value: "__reference", label: "From reference" });
+    items.push({ value: "__reference", label: catalogI18n.uiText("common.fromReference", "From reference") });
   }
   if (definition?.allowAbsent) {
-    items.push({ value: "__absent", label: "Explicitly absent" });
+    items.push({ value: "__absent", label: catalogI18n.uiText("common.explicitlyAbsent", "Explicitly absent") });
   }
   if (definition?.allowCustom) {
-    items.push({ value: "__custom", label: "Custom" });
+    items.push({ value: "__custom", label: catalogI18n.uiText("common.custom", "Custom") });
   }
   return items;
 }
@@ -166,6 +172,16 @@ function updatePropertySelection(propertyId: string, value: ElDropdownValue) {
 function customPropertyValue(propertyId: string) {
   const state = propertyState(propertyId);
   return state.mode === "custom" ? state.value : "";
+}
+
+function propertyDisplayLabel(propertyId: string) {
+  const fallback = hairPropertyDefinitions[propertyId]?.label || humanize(propertyId);
+  return catalogI18n.propertyLabel(propertyId, fallback);
+}
+
+function natureLabel(propertyId: string) {
+  const nature = hairPropertyDefinitions[propertyId]?.nature || "";
+  return nature ? catalogI18n.catalogText(`nature.${nature}`, humanize(nature)) : "";
 }
 </script>
 
@@ -256,8 +272,8 @@ function customPropertyValue(propertyId: string) {
           :br="1"
         >
           <el-flex rules="rbc" class="w100">
-            <el-text :size="11" :weight="500">{{ hairPropertyDefinitions[propertyId]?.label || humanize(propertyId) }}</el-text>
-            <el-text :size="8" color="normal40">{{ hairPropertyDefinitions[propertyId]?.nature || '' }}</el-text>
+            <el-text :size="11" :weight="500">{{ propertyDisplayLabel(propertyId) }}</el-text>
+            <el-text :size="8" color="normal40">{{ natureLabel(propertyId) }}</el-text>
           </el-flex>
 
           <el-dropdown
@@ -272,7 +288,7 @@ function customPropertyValue(propertyId: string) {
             v-if="propertyState(propertyId).mode === 'custom'"
             :model-value="customPropertyValue(propertyId)"
             type="text"
-            :placeholder="`Custom ${(hairPropertyDefinitions[propertyId]?.label || propertyId).toLowerCase()}...`"
+            :placeholder="`${catalogI18n.uiText('common.custom', 'Custom')} ${propertyDisplayLabel(propertyId)}...`"
             @update:model-value="updateProperty(propertyId, { mode: 'custom', value: String($event ?? '') })"
           />
         </el-grid>
