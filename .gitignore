@@ -16,6 +16,12 @@ logs
 # Generated reports
 reports/localization-audit.md
 reports/localization-audit.json
+reports/localization-review.md
+reports/localization-review.json
+
+# Temporary refactor artifacts
+.layout-stage*-backup/
+_layout-stage*-payload/
 
 # Misc
 .DS_Store
