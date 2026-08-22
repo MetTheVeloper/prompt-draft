@@ -12,6 +12,8 @@
     "locale:audit:source": "node scripts/localization-audit.mjs source",
     "locale:audit:parity": "node scripts/localization-audit.mjs parity --no-hardcoded",
     "locale:audit:hardcoded": "node scripts/localization-audit.mjs hardcoded",
+    "locale:review": "node scripts/localization-review.mjs",
+    "locale:audit:full": "pnpm locale:audit && pnpm locale:review",
     "locale:check": "node scripts/localization-audit.mjs all --no-hardcoded --strict"
   },
   "dependencies": {
