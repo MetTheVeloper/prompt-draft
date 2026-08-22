@@ -78,20 +78,36 @@ function runNodeScript(relative, args = []) {
   })
 
   if (result.error) throw result.error
-  if (result.status !== 0) {
-    fail(`${relative} exited with status ${result.status}`)
+  if (result.status !== 0) fail(`${relative} exited with status ${result.status}`)
+}
+
+async function assertFinalParity() {
+  const reportPath = path.join(ROOT, 'reports', 'localization-audit.json')
+  const report = JSON.parse(await fs.readFile(reportPath, 'utf8'))
+  const summary = report.summary || {}
+  const failures =
+    Number(summary.missingInEn || 0) +
+    Number(summary.missingInFa || 0) +
+    Number(summary.extraInFa || 0)
+
+  if (failures > 0) {
+    fail(
+      `Final localization parity is not clean: missing EN=${summary.missingInEn || 0}, missing FA=${summary.missingInFa || 0}, extra FA=${summary.extraInFa || 0}. Review reports/localization-audit.md.`,
+    )
   }
 }
 
 async function main() {
   await assertSemanticBoundary()
 
-  // Keep audit and review as the final two stages so one command always leaves
-  // fresh reports behind for the handoff/checkpoint review.
-  runNodeScript('scripts/localization-audit.mjs', ['all', '--strict'])
+  // Audit and review are deliberately the final executable stages. Audit stays
+  // non-strict so review still runs and both fresh reports are always produced.
+  runNodeScript('scripts/localization-audit.mjs', ['all'])
   console.log('')
   runNodeScript('scripts/localization-review.mjs')
   console.log('')
+
+  await assertFinalParity()
   console.log('Localization consolidation complete. ✅')
 }
 
