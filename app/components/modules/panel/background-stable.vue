@@ -15,6 +15,7 @@ const props = defineProps<{
   modelValue?: ModuleValues;
   panelState?: ModulePanelState;
   aspectRatio?: string;
+  previewOutput?: string;
 }>();
 
 const emit = defineEmits<{
@@ -119,6 +120,7 @@ function handlePanelState(value: ModulePanelState) {
     :model-value="modelSnapshot"
     :panel-state="panelSnapshot"
     :aspect-ratio="aspectRatio"
+    :preview-output="previewOutput"
     @update:model-value="handleModelValue"
     @update:panel-state="handlePanelState"
     @update:output="emit('update:output', $event)"
