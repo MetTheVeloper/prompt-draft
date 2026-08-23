@@ -7,12 +7,18 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
-function stringifyOutput(value: ModuleOutputValue) {
-  return typeof value === "string" ? value.trim() : JSON.stringify(value, null, 2);
+function stringifyOutput(value: ModuleOutputValue, pretty = true) {
+  return typeof value === "string"
+    ? value.trim()
+    : JSON.stringify(value, null, pretty ? 2 : undefined);
 }
 
 function formatDefinition(moduleKey: string, value: ModuleOutputValue) {
-  const text = stringifyOutput(value);
+  if (moduleKey === VARIABLES_MODULE_KEY) {
+    return stringifyOutput(value);
+  }
+
+  const text = stringifyOutput(value, false);
   if (!text) return "";
 
   return text.includes("\n") || text.startsWith("•")
