@@ -54,6 +54,7 @@ const props = defineProps<{
   modelValue?: ModuleValues;
   panelState?: ModulePanelState;
   aspectRatio?: string;
+  previewOutput?: string;
 }>();
 
 const emit = defineEmits<{
@@ -339,6 +340,11 @@ const output = computed(() => {
   return compileModule(props.module, effectiveValues.value);
 });
 
+const displayOutput = computed(() => {
+  if (props.previewOutput) return props.previewOutput;
+  return output.value ? getModuleOutputText(output.value) : "";
+});
+
 const isLayoutModule = computed(() => props.module.key === "layout");
 
 const layoutRegionsState = computed(() => {
@@ -354,7 +360,7 @@ const isPrimaryCopyDisabled = computed(() => {
     return !hasLayoutRegions.value || isLayoutSchemaBusy.value;
   }
 
-  return !output.value;
+  return !displayOutput.value;
 });
 
 const isPrimaryCopied = computed(() => {
@@ -962,15 +968,25 @@ function getModuleOutputText(value: ModuleOutputValue) {
 }
 
 async function copyOutput() {
-  if (!output.value) return;
+  if (!displayOutput.value) return;
 
   try {
-    await navigator.clipboard.writeText(getModuleOutputText(output.value));
+    await navigator.clipboard.writeText(displayOutput.value);
     isCopied.value = true;
 
     window.setTimeout(() => {
       isCopied.value = false;
     }, 1500);
+  } catch (error) {
+    console.error("Copy failed:", error);
+  }
+}
+
+async function copyCanonicalOutput() {
+  if (!output.value) return;
+
+  try {
+    await navigator.clipboard.writeText(getModuleOutputText(output.value));
   } catch (error) {
     console.error("Copy failed:", error);
   }
@@ -1168,7 +1184,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
       {
         label: labels.copyOutput,
         icon: "file_copy",
-        disabled: !output.value,
+        disabled: !displayOutput.value,
         handler: copyOutput,
       },
     );
@@ -1176,7 +1192,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     items.push({
       label: labels.copyOutput,
       icon: "file_copy",
-      disabled: !output.value,
+      disabled: !displayOutput.value,
       handler: copyOutput,
     });
   }
@@ -1250,17 +1266,22 @@ onBeforeUnmount(() => {
           </el-flex>
         </el-flex>
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
-          <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
-            {{ moduleTitle.toUpperCase() }}
-          </el-text>
-          <el-text type="p" :size="14" :weight="200" icon="info" color="normal60" icon-color="normal50"
-            v-if="moduleDescription">
-            {{ moduleDescription }}
-          </el-text>
+          <el-flex rules="rsc" :gap="8">
+            <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
+              {{ moduleTitle.toUpperCase() }}
+            </el-text>
+            <el-help v-if="moduleDescription" :text="moduleDescription" />
+          </el-flex>
         </el-flex>
         <el-divider mode="dashed" :dash="4" :gap="2" class="mt12 mb12" />
-        <el-text type="span" :size="12" :color="output ? 'normal50' : 'red80'" v-if="!isPanelExpanded">
-          {{ output ? getModuleOutputText(output) : t("panel.emptyOutput") }}
+        <modules-panel-module-output-text
+          v-if="!isPanelExpanded && displayOutput"
+          :value="displayOutput"
+          :size="12"
+          color="normal50"
+        />
+        <el-text v-else-if="!isPanelExpanded" type="span" :size="12" color="red80">
+          {{ t("panel.emptyOutput") }}
         </el-text>
       </el-flex>
     </el-flex>
@@ -1269,17 +1290,17 @@ onBeforeUnmount(() => {
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
             <el-flex rules="rbc" class="w100">
-              <el-text type="h3" :size="16" :weight="600" class="lh1">
-                {{ t("panel.presets") }}
-              </el-text>
+              <el-flex rules="rsc" :gap="8">
+                <el-text type="h3" :size="16" :weight="600" class="lh1">
+                  {{ t("panel.presets") }}
+                </el-text>
+                <el-help :text="t('panel.presetsDescription')" />
+              </el-flex>
               <el-text marker="blue15" :size="12" color="white" icon-color="white" :weight="300" v-if="activePresetId"
                 icon="check">
                 {{ t("panel.presetSelected") }}
               </el-text>
             </el-flex>
-            <el-text :size="10" :weight="300">
-              {{ t("panel.presetsDescription") }}
-            </el-text>
           </el-flex>
         </el-flex>
 
@@ -1301,9 +1322,12 @@ onBeforeUnmount(() => {
         <el-flex rules="ccs" :gap="0" class="w100">
           <el-flex rules="ccs" class="w100">
             <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="8">
-              <el-text type="h3" :size="16" :weight="600" class="lh1" icon="edit">
-                {{ fieldLabel(overrideField.id) }}
-              </el-text>
+              <el-flex rules="rsc" :gap="8">
+                <el-text type="h3" :size="16" :weight="600" class="lh1" icon="edit">
+                  {{ fieldLabel(overrideField.id) }}
+                </el-text>
+                <el-help v-if="fieldDescription(overrideField.id)" :text="fieldDescription(overrideField.id)" />
+              </el-flex>
 
               <el-flex rules="rcc" :gap="8" :class="mini ? 'w100' : ''">
                 <el-text marker="normal5" :size="12" :weight="300" v-if="isCustomMode">
@@ -1311,9 +1335,6 @@ onBeforeUnmount(() => {
                 </el-text>
               </el-flex>
             </el-flex>
-            <el-text :size="10" :weight="300" v-if="fieldDescription(overrideField.id)">
-              {{ fieldDescription(overrideField.id) }}
-            </el-text>
           </el-flex>
         </el-flex>
 
@@ -1332,32 +1353,28 @@ onBeforeUnmount(() => {
         <el-flex rules="rsc" class="w100" @click="toggleGroup(group.id)">
           <el-flex rules="csc" class="w100 chpen crp" :gap="4">
             <el-flex rules="rbc" class="w100">
-              <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'expand_less' : 'expand_more'">
-                {{ groupTitle(group.id) }}
-              </el-text>
+              <el-flex rules="rsc" :gap="8">
+                <el-text :size="14" :weight="600" :icon="isGroupOpen(group) ? 'expand_less' : 'expand_more'">
+                  {{ groupTitle(group.id) }}
+                </el-text>
+                <el-help v-if="groupDescription(group.id)" :text="groupDescription(group.id)" />
+              </el-flex>
 
               <el-text :size="10">
                 {{ getGroupFilledCount(group) }} / {{ group.fields.length }}
                 {{ t("panel.fieldsFilled") }}
               </el-text>
             </el-flex>
-
-            <el-text :size="12" class="w100" color="normal45" icon-color="normal55" icon="info"
-              v-if="groupDescription(group.id)">
-              {{ groupDescription(group.id) }}
-            </el-text>
           </el-flex>
         </el-flex>
 
         <el-grid v-if="isGroupOpen(group)" :cols="groupColumns(group)">
           <el-grid v-if="isInlinePresetGroup(group.id)" :br="1" :radius="12" bc="normal5" :p="12" :gap="24">
-            <el-flex rules="ccs" :gap="0">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="14" :weight="400" icon="widgets">
                 {{ t("panel.presets") }}
               </el-text>
-              <el-text :size="10" color="normal45">
-                {{ t("panel.presetsDescription") }}
-              </el-text>
+              <el-help :text="t('panel.presetsDescription')" />
             </el-flex>
 
             <el-dropdown
@@ -1372,14 +1389,11 @@ onBeforeUnmount(() => {
 
           <el-grid v-for="field in group.fields" :key="field.id" :br="1" :radius="12" bc="normal5" :p="12"
             :class="fieldClasses(field)" :gap="24">
-            <el-flex rules="ccs" :gap="0">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="14" :weight="400" icon="star">
                 {{ fieldLabel(field.id) }}
               </el-text>
-
-              <el-text :size="10" color="normal45" v-if="fieldDescription(field.id)">
-                {{ fieldDescription(field.id) }}
-              </el-text>
+              <el-help v-if="fieldDescription(field.id)" :text="fieldDescription(field.id)" />
             </el-flex>
 
             <el-flex rules="csc" :gap="8" v-if="isCategorizedSelect(field)">
@@ -1484,12 +1498,12 @@ onBeforeUnmount(() => {
         }}</el-text>
       </el-flex>
 
-      <el-grid rules="csc" :gap="16" :br="1" :p="16" :radius="[16]" :bc="!output ? 'orange25' : 'normal15'"
-        :bg="!output ? 'orange5' : 'normal5'" :class="{ 'module-panel__custom-card--empty': !customOverrideValue }">
+      <el-grid rules="csc" :gap="16" :br="1" :p="16" :radius="[16]" :bc="!displayOutput ? 'orange25' : 'normal15'"
+        :bg="!displayOutput ? 'orange5' : 'normal5'" :class="{ 'module-panel__custom-card--empty': !customOverrideValue }">
         <el-flex rules="rbc" class="w100">
           <el-flex rules="rsc" :gap="16">
-            <el-text type="h3" :size="16" :weight="600" class="lh1" :color="!output ? 'orange' : 'normal'"
-              :icon-color="!output ? 'orange' : 'normal'" :icon="!output ? 'error' : 'task_alt'">
+            <el-text type="h3" :size="16" :weight="600" class="lh1" :color="!displayOutput ? 'orange' : 'normal'"
+              :icon-color="!displayOutput ? 'orange' : 'normal'" :icon="!displayOutput ? 'error' : 'task_alt'">
               {{ t("panel.compiledOutput") }}
             </el-text>
             <el-text marker="primary" color="white" class="wsnw" :size="mobile ? 10 : mini ? 12 : 14" :weight="300">
@@ -1506,7 +1520,7 @@ onBeforeUnmount(() => {
               :disable="!output"
               :size="12"
               :p="[8]"
-              @click="copyOutput"
+              @click="copyCanonicalOutput"
             />
 
             <el-button
@@ -1524,9 +1538,12 @@ onBeforeUnmount(() => {
           </el-flex>
         </el-flex>
         <el-divider />
-        <el-text :size="14" :weight="300" color="normal85" v-if="output">
-          {{ output }}
-        </el-text>
+        <modules-panel-module-output-text
+          v-if="displayOutput"
+          :value="displayOutput"
+          :size="14"
+          color="normal85"
+        />
         <el-flex rules="ccs" v-else>
           <el-text :size="14" :weight="700">{{ t("panel.emptyOutputTitle") }}</el-text>
           <el-text :size="12" :weight="400">

@@ -16,10 +16,13 @@ import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments
 import ModulesPanelHair from "../modules/panel/hair.vue";
 import ModulesPanelOutfit from "../modules/panel/outfit.vue";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { usePromptOutputFormat } from "~/composables/usePromptOutputFormat";
 import { buildModuleVariableGroups } from "~/utils/promptVariableCatalog";
+import { formatModuleOutputPreview } from "~/utils/moduleOutputPreview";
 
 const { t } = useI18n();
 const { setModuleVariableGroups, clearModuleVariableGroups } = usePromptVariables();
+const { outputFormat } = usePromptOutputFormat();
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -98,13 +101,27 @@ function getModulePanel(module: PromptKeyModule) {
   return ModulesPanelBase;
 }
 
+function getModulePreview(module: PromptKeyModule) {
+  return formatModuleOutputPreview(
+    module.key,
+    moduleOutputs[module.key],
+    outputFormat.value,
+  );
+}
+
 function getModulePanelExtraProps(module: PromptKeyModule) {
+  const extraProps: Record<string, unknown> = {
+    previewOutput: getModulePreview(module),
+  };
+
   // Spread the reactive output map so Vue tracks its individual entries.
   // Hair and Outfit previews use this snapshot only to show selective local
   // aliases when another module targets one of their child entities.
-  return module.key === "outfit" || module.key === "hair"
-    ? { moduleOutputs: { ...moduleOutputs } }
-    : {};
+  if (module.key === "outfit" || module.key === "hair") {
+    extraProps.moduleOutputs = { ...moduleOutputs };
+  }
+
+  return extraProps;
 }
 
 watch(

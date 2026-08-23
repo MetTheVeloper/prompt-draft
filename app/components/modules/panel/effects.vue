@@ -19,6 +19,7 @@ const props = defineProps<{
   modelValue?: ModuleValues;
   panelState?: ModulePanelState;
   aspectRatio?: string;
+  previewOutput?: string;
 }>();
 
 const emit = defineEmits<{
@@ -255,6 +256,8 @@ const output = computed(() =>
     : compileEffectsModule(props.module, effectiveValues.value),
 );
 
+const displayOutput = computed(() => props.previewOutput || String(output.value || ""));
+
 watch(
   output,
   (value) => emit("update:output", value),
@@ -305,9 +308,9 @@ function togglePanel() {
 }
 
 async function copyOutput() {
-  if (!output.value) return;
+  if (!displayOutput.value) return;
   try {
-    await navigator.clipboard.writeText(String(output.value));
+    await navigator.clipboard.writeText(displayOutput.value);
     isCopied.value = true;
     window.setTimeout(() => {
       isCopied.value = false;
@@ -332,7 +335,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
   onToggleExpand: togglePanel,
   getCustomMode: () => isCustomMode.value,
   onToggleCustomize: () => toggleCustomMode(!isCustomMode.value),
-  canCopyOutput: () => Boolean(output.value),
+  canCopyOutput: () => Boolean(displayOutput.value),
   onCopyOutput: copyOutput,
   onRemove: removeModule,
 });
@@ -390,7 +393,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
               :p="8"
               :icon="isCopied ? 'check' : 'content_copy'"
               :label="isCopied ? t('panel.copied') : t('panel.copy')"
-              :disable="!output"
+              :disable="!displayOutput"
               @click="copyOutput"
             />
             <el-button
@@ -407,25 +410,23 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         </el-flex>
 
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
-          <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
-            {{ moduleTitle.toUpperCase() }}
-          </el-text>
-          <el-text
-            v-if="moduleDescription"
-            type="p"
-            :size="14"
-            :weight="200"
-            icon="info"
-            color="normal60"
-            icon-color="normal50"
-          >
-            {{ moduleDescription }}
-          </el-text>
+          <el-flex rules="rsc" :gap="8">
+            <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
+              {{ moduleTitle.toUpperCase() }}
+            </el-text>
+            <el-help v-if="moduleDescription" :text="moduleDescription" />
+          </el-flex>
         </el-flex>
 
         <el-divider mode="dashed" :dash="4" :gap="2" class="mt12 mb12" />
-        <el-text v-if="!isPanelExpanded" type="span" :size="12" :color="output ? 'normal50' : 'red80'">
-          {{ output || t("panel.emptyOutput") }}
+        <modules-panel-module-output-text
+          v-if="!isPanelExpanded && displayOutput"
+          :value="displayOutput"
+          :size="12"
+          color="normal50"
+        />
+        <el-text v-else-if="!isPanelExpanded" type="span" :size="12" color="red80">
+          {{ t("panel.emptyOutput") }}
         </el-text>
       </el-flex>
     </el-flex>
@@ -441,9 +442,9 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         :bg="!customTextValue ? 'orange5' : 'normal5'"
         :gap="12"
       >
-        <el-flex rules="ccs" :gap="4">
+        <el-flex rules="rsc" :gap="8">
           <el-text :size="16" :weight="600" icon="edit">{{ fieldLabel("customText") }}</el-text>
-          <el-text :size="10" color="normal45">{{ fieldDescription("customText") }}</el-text>
+          <el-help v-if="fieldDescription('customText')" :text="fieldDescription('customText')" />
         </el-flex>
         <el-text-field
           :model-value="String(values.customText || '')"
@@ -458,19 +459,20 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
 
       <template v-else>
         <el-grid :p="12" :br="1" :radius="16" bc="blue50" :gap="12">
-          <el-flex rules="ccs" :gap="4">
+          <el-flex rules="rsc" :gap="8">
             <el-text :size="14" :weight="600" icon="layers">
               {{ translate(`${moduleI18nBase}.groups.core.title`, "Effect Stack") }}
             </el-text>
-            <el-text :size="11" color="normal45">
-              {{ translate(`${moduleI18nBase}.groups.core.description`) }}
-            </el-text>
+            <el-help
+              v-if="translate(`${moduleI18nBase}.groups.core.description`)"
+              :text="translate(`${moduleI18nBase}.groups.core.description`)"
+            />
           </el-flex>
 
           <el-grid :br="1" :radius="12" bc="normal5" :p="12" :gap="10">
-            <el-flex rules="ccs" :gap="3">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="13" :weight="500" icon="widgets">{{ t("panel.presets") }}</el-text>
-              <el-text :size="10" color="normal45">{{ t("panel.presetsDescription") }}</el-text>
+              <el-help :text="t('panel.presetsDescription')" />
             </el-flex>
             <el-dropdown
               :model-value="activePresetId || ''"
@@ -483,9 +485,9 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
           </el-grid>
 
           <el-grid :br="1" :radius="12" bc="normal5" :p="12" :gap="12">
-            <el-flex rules="ccs" :gap="3">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="14" :weight="500" icon="auto_awesome">{{ fieldLabel("effectLayers") }}</el-text>
-              <el-text :size="10" color="normal45">{{ fieldDescription("effectLayers") }}</el-text>
+              <el-help v-if="fieldDescription('effectLayers')" :text="fieldDescription('effectLayers')" />
             </el-flex>
             <EffectLayersField
               v-if="module.fields.effectLayers"
@@ -498,20 +500,21 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
 
         <el-grid :p="12" :br="1" :radius="16" :bc="isAdvancedOpen ? 'blue50' : 'normal10'" :gap="12">
           <el-flex rules="rbc" class="w100 crp" @click="isAdvancedOpen = !isAdvancedOpen">
-            <el-flex rules="ccs" :gap="3">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="14" :weight="600" :icon="isAdvancedOpen ? 'expand_less' : 'expand_more'">
                 {{ translate(`${moduleI18nBase}.groups.advanced.title`, "Advanced") }}
               </el-text>
-              <el-text :size="10" color="normal45">
-                {{ translate(`${moduleI18nBase}.groups.advanced.description`) }}
-              </el-text>
+              <el-help
+                v-if="translate(`${moduleI18nBase}.groups.advanced.description`)"
+                :text="translate(`${moduleI18nBase}.groups.advanced.description`)"
+              />
             </el-flex>
           </el-flex>
 
           <el-grid v-if="isAdvancedOpen" :br="1" :radius="12" bc="normal5" :p="12" :gap="10">
-            <el-flex rules="ccs" :gap="3">
+            <el-flex rules="rsc" :gap="8">
               <el-text :size="14" :weight="500" icon="notes">{{ fieldLabel("extraDetails") }}</el-text>
-              <el-text :size="10" color="normal45">{{ fieldDescription("extraDetails") }}</el-text>
+              <el-help v-if="fieldDescription('extraDetails')" :text="fieldDescription('extraDetails')" />
             </el-flex>
             <el-text-field
               :model-value="String(values.extraDetails || '')"
@@ -532,17 +535,17 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         :br="1"
         :p="16"
         :radius="16"
-        :bc="!output ? 'orange25' : 'normal15'"
-        :bg="!output ? 'orange5' : 'normal5'"
+        :bc="!displayOutput ? 'orange25' : 'normal15'"
+        :bg="!displayOutput ? 'orange5' : 'normal5'"
       >
         <el-flex rules="rbc" class="w100">
           <el-flex rules="rsc" :gap="16">
             <el-text
               :size="16"
               :weight="600"
-              :color="!output ? 'orange' : 'normal'"
-              :icon-color="!output ? 'orange' : 'normal'"
-              :icon="!output ? 'error' : 'task_alt'"
+              :color="!displayOutput ? 'orange' : 'normal'"
+              :icon-color="!displayOutput ? 'orange' : 'normal'"
+              :icon="!displayOutput ? 'error' : 'task_alt'"
             >
               {{ t("panel.compiledOutput") }}
             </el-text>
@@ -553,14 +556,19 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
             :icon="isCopied ? 'check' : 'content_copy'"
             color="prim"
             :mode="isCopied ? 'flat' : 'normal'"
-            :disable="!output"
+            :disable="!displayOutput"
             :size="12"
             :p="[8, 12]"
             @click="copyOutput"
           />
         </el-flex>
         <el-divider />
-        <el-text v-if="output" :size="14" :weight="300" color="normal85">{{ output }}</el-text>
+        <modules-panel-module-output-text
+          v-if="displayOutput"
+          :value="displayOutput"
+          :size="14"
+          color="normal85"
+        />
         <el-flex v-else rules="ccs">
           <el-text :size="14" :weight="700">{{ t("panel.emptyOutputTitle") }}</el-text>
           <el-text :size="12" :weight="400">
