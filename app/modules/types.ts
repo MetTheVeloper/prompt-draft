@@ -44,6 +44,13 @@ export type ModuleFieldOption = {
   categoryLabelKey?: string;
 
   /**
+   * Optional freeform editor entry. The UI uses this option only as a trigger;
+   * the user-authored text itself is persisted as the field/axis value.
+   */
+  freeform?: boolean;
+  freeformPlaceholder?: string;
+
+  /**
    * Optional subject applicability metadata used by module editors.
    * Omit it (or include "*") for universally applicable options.
    */
