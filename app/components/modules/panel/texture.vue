@@ -237,6 +237,20 @@ function removeModule() {
     }),
   );
 }
+
+const { openModulePanelContextMenu } = useModulePanelContextMenu({
+  getTitle: () => moduleTitle.value,
+  getExpanded: () => isPanelExpanded.value,
+  onToggleExpand: togglePanel,
+  getCustomMode: () => isCustomMode.value,
+  onToggleCustomize: () => {
+    isCustomMode.value = !isCustomMode.value;
+    if (isCustomMode.value) isPanelExpanded.value = true;
+  },
+  canCopyOutput: () => Boolean(output.value),
+  onCopyOutput: copyOutput,
+  onRemove: removeModule,
+});
 </script>
 
 <template>
@@ -248,6 +262,7 @@ function removeModule() {
     :radius="mobile ? 16 : mini ? 24 : 32"
     bg="surface"
     class="w100"
+    @contextmenu="openModulePanelContextMenu"
   >
     <el-flex rules="csc" class="w100">
       <el-flex rules="ccs" class="w100">
@@ -383,7 +398,7 @@ function removeModule() {
         :bc="customTextValue ? 'blue35' : 'orange25'"
         class="w100"
       >
-        <el-flex rules="ccs" :gap="4" class="w100">
+        <el-flex rules="ccs" class="w100" :gap="4">
           <el-text :size="14" :weight="600" icon="edit">
             {{ fieldLabel("customText", "Custom Override") }}
           </el-text>
