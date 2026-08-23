@@ -78,7 +78,7 @@ Keep this table synchronized whenever a case is created, reclassified, started, 
 
 | ID | Title | Type | Priority | Area | Status |
 | --- | --- | --- | --- | --- | --- |
-| `BUG-001` | Module context menu is not available on all module cards | BUG | P2 | Module cards / Context menu | Investigating |
+| `BUG-001` | Module context menu is not available on all module cards | BUG | P2 | Module cards / Context menu | In Progress |
 
 ---
 
@@ -217,7 +217,7 @@ Fill only when closed.
 
 ## BUG-001 — Module context menu is not available on all module cards
 
-**Status:** Investigating  
+**Status:** In Progress  
 **Priority:** P2  
 **Area:** Module cards / Context menu  
 **Type:** BUG  
@@ -238,31 +238,64 @@ Right-clicking any current or future module card should resolve to that module's
 - Right-click Layout: the Layout module menu opens and includes both common actions and Layout-specific actions such as Copy/Download.
 - Right-click Effects: the page-level/default Draft context menu opens instead of an Effects/module context menu.
 - User-provided screenshots on 2026-08-23 demonstrate all three behaviors.
-- The user reports the same missing module-menu behavior on multiple modules, so the scope is broader than Effects alone.
+- `app/components/prompt/editor.vue` routes `background`, `effects`, `lighting`, `texture`, `hair`, `outfit`, `pose`, and `expression` to bespoke panel components; all other modules use `base.vue`.
+- `base.vue` binds `@contextmenu="openModulePanelContextMenu"` on its module-card root and owns the working common menu mechanics.
+- The inspected bespoke panels duplicate the relevant panel actions/state but do not bind the module context-menu handler, so the right-click event bubbles to the page-level Draft menu.
 
 ### Affected code / surfaces
 
-Under investigation. Inspect the module-card rendering path, context-menu event wiring, module action/menu configuration, and the page-level context-menu fallback on current `main`.
+- `app/components/prompt/editor.vue` — bespoke-panel selection in `getModulePanel()`.
+- `app/components/modules/panel/base.vue` — current working module context-menu implementation and Layout-specific menu policy.
+- `app/components/modules/panel/background.vue`
+- `app/components/modules/panel/effects.vue`
+- `app/components/modules/panel/lighting.vue`
+- `app/components/modules/panel/texture.vue`
+- `app/components/modules/panel/hair.vue`
+- `app/components/modules/panel/outfit.vue`
+- `app/components/modules/panel/subject-assignments.vue`
+- `app/composables/usePageContextMenu.ts` — shared point-menu opening/fallback suppression.
 
 ### Root cause
 
-Under investigation.
+The defect is not a module-key allow-list inside the context-menu system. The common module context-menu lifecycle is coupled to the implementation of `base.vue`: the Base panel owns both the menu item construction and the root `contextmenu` binding. `editor.vue` intentionally renders several modules through standalone bespoke panel components instead of Base. Those panels independently implement the same user-facing actions (expand/collapse, optional custom mode, copy output, remove) but never inherited or re-registered the Base-only context-menu mechanic. Consequently, a right-click on their card is unhandled at module level and falls through to the page-level Draft context menu.
+
+This is therefore a responsibility/centralization defect: a shared module-card interaction was placed inside one concrete panel implementation rather than a narrow shared module-panel primitive.
 
 ### Architecture signal
 
-There is a likely centralization signal because a behavior that should belong to the generic module-card interaction appears to be available only to a subset of modules. Before introducing or changing a shared abstraction, inspect whether this is caused by a hardcoded module list, per-module event wiring, capability metadata, or intentional semantic differences.
+The architecture test supports a narrow shared refactor:
+
+1. The bespoke panels need the same context-menu lifecycle, not merely a visually similar menu.
+2. Multiple real consumers already expose the same expand/copy/remove mechanics, with custom-mode support where semantically available.
+3. The current bug is direct evidence of divergence caused by duplicated panel shells and Base-only wiring.
+4. The common layer can expose a small getter/action contract while each panel keeps ownership of its own state and semantic behavior.
+5. A future bespoke panel becomes easier to integrate because it can opt into one shared context-menu primitive instead of recreating menu construction and propagation handling.
+6. The abstraction is smaller than duplicating the menu definition across every bespoke panel.
+7. Verification is entirely current-schema/UI behavior and does not depend on legacy compatibility.
+
+The broader duplication of the complete module-panel shell is intentionally not being refactored in this case; it is recorded as a cross-case candidate below.
 
 ### Decision
 
-Pending root-cause investigation. Prefer a local fix if the common mechanism already exists and the defect is isolated wiring. Prefer a narrow shared refactor if module-menu eligibility or registration is hardcoded in a way that excludes current/future modules.
+Implement a narrow shared module-panel context-menu composable. It will centralize common menu construction and `usePageContextMenu` opening behavior behind a small contract of state getters/capabilities and action callbacks. Bespoke panels will opt into that primitive and bind the returned handler on their card root. Module-specific state and actions stay inside the owning panel.
+
+Preserve specialized policy rather than forcing every module into identical behavior: modules with standard Custom Mode can provide a customize callback; Lighting can keep Customize disabled because its bespoke UI exposes a different inline override lifecycle; Layout's existing schema Copy/Download behavior in Base remains unchanged in this case.
+
+Ordinary current/future modules that render through `base.vue` already receive the existing module menu automatically. Current bespoke panels will all be wired to the shared primitive so they no longer fall through to the page menu. A future bespoke panel should use the same primitive when it introduces its own panel implementation.
 
 ### Implementation
 
-Not started.
+In progress. Planned changes:
+
+- add the shared module-panel context-menu composable,
+- wire every current bespoke module-panel root to it,
+- reuse each panel's existing expand/custom/copy/remove actions instead of duplicating semantic logic,
+- preserve the Base/Layout specialized menu behavior,
+- add no new localization strings.
 
 ### Verification
 
-Pending. Verification must cover at least Variables, Layout, Effects, another previously affected module, and a module without extra module-specific actions to confirm the common menu is inherited correctly without breaking specialized actions.
+Pending. Verification must cover at least Variables, Layout, Effects, another previously affected bespoke module, a bespoke module without standard Custom Mode, and the page-level Draft menu outside module cards. Build/generate validation is required before closure.
 
 ### Resolution
 
@@ -279,7 +312,7 @@ Use this section only for patterns that are visible across multiple cases but ar
 
 | Candidate | Evidence from cases | Decision |
 | --- | --- | --- |
-| — | — | — |
+| Shared module-panel shell/action contract | `BUG-001` shows Base plus bespoke panels independently own expand/custom/copy/remove shell mechanics, and that divergence already caused a missing shared interaction. | Keep as a candidate. `BUG-001` centralizes only context-menu mechanics; promote to `ARC-`/`DUP-` if later cases show repeated shell-level divergence or maintenance cost. |
 
 Once evidence is sufficient, create a real case and replace the candidate with its case ID.
 
