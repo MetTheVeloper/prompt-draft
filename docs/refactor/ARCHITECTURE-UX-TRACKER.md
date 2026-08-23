@@ -202,13 +202,37 @@ For intentionally persisted unfinished work, keep only the minimum needed to res
 
 ---
 
+## UX-001 — Module previews are inconsistent and guidance consumes excessive card space
+
+**Status:** Completed  
+**Priority:** P2  
+**Area:** Module cards / Output preview / Help text  
+**Type:** UX  
+**Found:** 2026-08-23  
+**Completed:** 2026-08-23
+
+### Final report
+
+- Added the shared `ModuleOutputText` renderer and applied it across every module-panel render path so multiline output and bullet lists preserve their intended line breaks, wrapping, and normal design-system typography instead of falling back to inconsistent raw/preformatted rendering.
+- Added the reusable `el-help` click/tap popover and moved recurring module/group/field guidance out of the permanent card layout where appropriate. Schema-driven modules such as Camera and Typography, plus bespoke panels such as Background and Effects, now keep guidance available without paying the previous vertical-space cost.
+- Added shared output-format state and the display-only `formatModuleOutputPreview` pipeline so each module card follows the active `Modular`, `Natural`, or `JSON` selection. Canonical module outputs continue to be emitted unchanged, keeping compiler/schema semantics outside the UI layer.
+- Preserved Hair/Outfit reference-aware preview aliases by moving their display preparation into the shared preview formatter instead of feeding preview-only state back into canonical module output.
+
+### Verification
+
+- User tested the updated module UI and confirmed the preview rendering, compact help behavior, and format-aware module previews all work correctly.
+
+**Commits:** `cb6c6f7` (shared preview/help refactor), `5dc2c07` (reference-aware preview preservation)
+
+---
+
 # Cross-case architecture candidates
 
 Use this section only for patterns that are visible across completed cases but are not yet mature enough to become their own `ARC-` or `DUP-` case.
 
 | Candidate | Evidence from cases | Decision |
 | --- | --- | --- |
-| Shared module-panel shell/action contract | `BUG-001` shows Base plus bespoke panels independently own expand/custom/copy/remove shell mechanics, and that divergence already caused a missing shared interaction. | Keep as a candidate. `BUG-001` centralized only context-menu mechanics; promote to `ARC-`/`DUP-` if later completed cases show repeated shell-level divergence or maintenance cost. |
+| Shared module-panel shell/action contract | `BUG-001` and `UX-001` both show that Base plus bespoke panels independently own recurring shell/display mechanics. Shared context-menu, output-rendering, help, and preview-format primitives reduced real divergence without centralizing module semantics. | Evidence is stronger, but keep this as a candidate until broader shell extraction becomes an explicitly selected task. A future shell-level discrepancy should trigger a dedicated `ARC-`/`DUP-` case rather than another isolated copy of the mechanic. |
 
 Once evidence is sufficient and the work is actually selected, create a real case ID.
 
@@ -221,6 +245,7 @@ This is the compact historical view. Keep each row short.
 | ID | Resolution | Commit | Verified |
 | --- | --- | --- | --- |
 | `BUG-001` | Shared module context-menu mechanics across bespoke panels; preserved specialized module policy. | `774b287`, `fb74c4a` | User UI confirmation, 2026-08-23 |
+| `UX-001` | Unified multiline module previews, compact click/tap guidance, and format-aware per-module display while preserving canonical outputs. | `cb6c6f7`, `5dc2c07` | User UI confirmation, 2026-08-23 |
 
 ---
 
