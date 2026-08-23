@@ -1,9 +1,11 @@
 <script setup lang="ts">
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 import type { PromptOutputFormat } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
+import { usePromptOutputFormat } from "~/composables/usePromptOutputFormat";
 
 const { t } = useI18n();
+const { setPromptOutputFormat } = usePromptOutputFormat();
 
 const props = withDefaults(
   defineProps<{
@@ -24,6 +26,12 @@ const isCopied = ref(false);
 const warningsExpanded = ref(false);
 
 const formatOptions: PromptOutputFormat[] = ["modular", "natural", "json"];
+
+watch(
+  () => props.format,
+  (format) => setPromptOutputFormat(format),
+  { immediate: true },
+);
 
 const errorIssues = computed(() => {
   return props.issues.filter((issue) => issue.level === "error");
@@ -262,7 +270,7 @@ async function copyOutput() {
               <el-flex v-for="issue in warningIssues" :key="issue.id" rules="ccs" :gap="8" :p="[10, 12]" :radius="12"
                 bg="orange5" :br="1" bc="orange20">
                 <el-text type="label" :size="10" :weight="900" color="orange" icon="warning" icon-color="orange">
-                  {{ t("validation.level.warning") }}
+                  {{ t(`validation.level.${issue.level}`) }}
                 </el-text>
 
                 <el-text :size="12" :weight="400" color="orange">
