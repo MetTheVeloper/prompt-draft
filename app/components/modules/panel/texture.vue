@@ -20,6 +20,7 @@ const props = defineProps<{
   modelValue?: ModuleValues;
   panelState?: ModulePanelState;
   aspectRatio?: string;
+  previewOutput?: string;
 }>();
 
 const emit = defineEmits<{
@@ -145,6 +146,8 @@ const output = computed(() => {
   return compileTextureModule(props.module, effectiveValues.value);
 });
 
+const displayOutput = computed(() => props.previewOutput || String(output.value || ""));
+
 watch(
   output,
   (value) => emit("update:output", value),
@@ -216,10 +219,10 @@ function clearTexture() {
 }
 
 async function copyOutput() {
-  if (!output.value) return;
+  if (!displayOutput.value) return;
 
   try {
-    await navigator.clipboard.writeText(String(output.value));
+    await navigator.clipboard.writeText(displayOutput.value);
     isCopied.value = true;
     window.setTimeout(() => {
       isCopied.value = false;
@@ -248,7 +251,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
     isCustomMode.value = !isCustomMode.value;
     if (isCustomMode.value) isPanelExpanded.value = true;
   },
-  canCopyOutput: () => Boolean(output.value),
+  canCopyOutput: () => Boolean(displayOutput.value),
   onCopyOutput: copyOutput,
   onRemove: removeModule,
 });
@@ -320,25 +323,23 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         </el-flex>
 
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
-          <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
-            {{ moduleTitle.toUpperCase() }}
-          </el-text>
-          <el-text
-            v-if="moduleDescription"
-            type="p"
-            :size="14"
-            :weight="200"
-            icon="info"
-            color="normal60"
-            icon-color="normal50"
-          >
-            {{ moduleDescription }}
-          </el-text>
+          <el-flex rules="rsc" :gap="8">
+            <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
+              {{ moduleTitle.toUpperCase() }}
+            </el-text>
+            <el-help v-if="moduleDescription" :text="moduleDescription" />
+          </el-flex>
         </el-flex>
 
         <el-divider mode="dashed" :dash="4" :gap="2" class="mt12 mb12" />
-        <el-text v-if="!isPanelExpanded" :size="12" :color="output ? 'normal50' : 'red80'">
-          {{ output || t("panel.emptyOutput") }}
+        <modules-panel-module-output-text
+          v-if="!isPanelExpanded && displayOutput"
+          :value="displayOutput"
+          :size="12"
+          color="normal50"
+        />
+        <el-text v-else-if="!isPanelExpanded" :size="12" color="red80">
+          {{ t("panel.emptyOutput") }}
         </el-text>
       </el-flex>
     </el-flex>
@@ -352,13 +353,11 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         bc="blue35"
         class="w100"
       >
-        <el-flex rules="ccs" :gap="4" class="w100">
+        <el-flex rules="rsc" :gap="8" class="w100">
           <el-text :size="14" :weight="600" icon="texture">
             {{ fieldLabel("materialAssignments", "Material Assignments") }}
           </el-text>
-          <el-text :size="11" color="normal45">
-            {{ fieldDescription("materialAssignments", "Build material and surface specifications and assign them to scene entities.") }}
-          </el-text>
+          <el-help :text="fieldDescription('materialAssignments', 'Build material and surface specifications and assign them to scene entities.')" />
         </el-flex>
 
         <MaterialAssignmentsField
@@ -399,13 +398,11 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         :bc="customTextValue ? 'blue35' : 'orange25'"
         class="w100"
       >
-        <el-flex rules="ccs" class="w100" :gap="4">
+        <el-flex rules="rsc" class="w100" :gap="8">
           <el-text :size="14" :weight="600" icon="edit">
             {{ fieldLabel("customText", "Custom Override") }}
           </el-text>
-          <el-text :size="11" color="normal45">
-            {{ fieldDescription("customText", "Replace structured material assignments with your own texture/material instruction.") }}
-          </el-text>
+          <el-help :text="fieldDescription('customText', 'Replace structured material assignments with your own texture/material instruction.')" />
         </el-flex>
         <el-text-field
           v-model="values.customText"
@@ -425,16 +422,16 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
         :br="1"
         :p="16"
         :radius="16"
-        :bc="output ? 'normal15' : 'orange25'"
-        :bg="output ? 'normal5' : 'orange5'"
+        :bc="displayOutput ? 'normal15' : 'orange25'"
+        :bg="displayOutput ? 'normal5' : 'orange5'"
       >
         <el-flex rules="rbc" class="w100">
           <el-text
             type="h3"
             :size="16"
             :weight="600"
-            :color="output ? 'normal' : 'orange'"
-            :icon="output ? 'task_alt' : 'error'"
+            :color="displayOutput ? 'normal' : 'orange'"
+            :icon="displayOutput ? 'task_alt' : 'error'"
           >
             {{ t("panel.compiledOutput") }}
           </el-text>
@@ -443,16 +440,19 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
             :icon="isCopied ? 'check' : 'content_copy'"
             color="prim"
             :mode="isCopied ? 'flat' : 'normal'"
-            :disable="!output"
+            :disable="!displayOutput"
             :size="12"
             :p="[8, 12]"
             @click="copyOutput"
           />
         </el-flex>
         <el-divider />
-        <el-text v-if="output" :size="14" :weight="300" color="normal85">
-          {{ output }}
-        </el-text>
+        <modules-panel-module-output-text
+          v-if="displayOutput"
+          :value="displayOutput"
+          :size="14"
+          color="normal85"
+        />
         <el-text v-else :size="12" color="orange">
           {{ isCustomMode ? t("panel.emptyCustomOutputDescription") : t("panel.emptyOutputDescription") }}
         </el-text>
