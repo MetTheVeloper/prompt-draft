@@ -78,6 +78,8 @@ const emit = defineEmits<{
 
 const menuApi = useMenu()
 const dropdownRef = ref<HTMLElement | null>(null)
+const freeformEditing = ref(false)
+const freeformDraft = ref('')
 const resolvedPlaceholder = computed(() => props.placeholder || t('components.dropdown.placeholder'))
 
 function isSameValue(first?: ElDropdownValue, second?: ElDropdownValue) {
@@ -200,6 +202,9 @@ function normalizeDropdownItem(
     groupLabel:
       readItemValue<string>(item, index, props.itemGroupLabel) ??
       record.groupLabel,
+
+    freeform: record.freeform === true,
+    freeformPlaceholder: record.freeformPlaceholder,
   }
 }
 
@@ -240,6 +245,67 @@ const selectableItems = computed(() => {
   return normalizedItems.value.filter(isSelectableItem)
 })
 
+const freeformItem = computed(() => {
+  return selectableItems.value.find((item) => item.freeform)
+})
+
+const knownSelectableItems = computed(() => {
+  return selectableItems.value.filter((item) => !item.freeform)
+})
+
+function findKnownItem(value?: ElDropdownValue) {
+  return knownSelectableItems.value.find((item) => {
+    return isSameValue(item.value, value)
+  })
+}
+
+function isEmptyValue(value?: ElDropdownValue) {
+  return value === undefined || value === null || isSameValue(value, props.emptyValue)
+}
+
+const externalFreeformValue = computed(() => {
+  if (!freeformItem.value || isEmptyValue(props.modelValue)) return false
+  if (findKnownItem(props.modelValue)) return false
+
+  return typeof props.modelValue === 'string'
+})
+
+watch(
+  () => props.modelValue,
+  (value) => {
+    if (freeformEditing.value) {
+      if (findKnownItem(value)) {
+        freeformEditing.value = false
+        freeformDraft.value = ''
+      }
+      return
+    }
+
+    if (externalFreeformValue.value) {
+      freeformDraft.value = String(value ?? '')
+      return
+    }
+
+    if (isEmptyValue(value) || findKnownItem(value)) {
+      freeformDraft.value = ''
+    }
+  },
+  { immediate: true },
+)
+
+const isFreeformActive = computed(() => {
+  return Boolean(
+    freeformItem.value &&
+      (freeformEditing.value || externalFreeformValue.value),
+  )
+})
+
+const freeformInputValue = computed(() => {
+  if (freeformEditing.value) return freeformDraft.value
+  if (externalFreeformValue.value) return String(props.modelValue ?? '')
+  return ''
+})
+
 const hasValue = computed(() => {
   if (props.modelValue === undefined || props.modelValue === null) {
     return false
@@ -248,13 +314,21 @@ const hasValue = computed(() => {
   return !isSameValue(props.modelValue, props.emptyValue)
 })
 
+const hasDisplayValue = computed(() => hasValue.value || isFreeformActive.value)
+
 const selectedItem = computed(() => {
+  if (isFreeformActive.value) return freeformItem.value
+
   return selectableItems.value.find((item) => {
     return isSameValue(item.value, props.modelValue)
   })
 })
 
 const selectedLabel = computed(() => {
+  if (isFreeformActive.value) {
+    return freeformInputValue.value.trim() || freeformItem.value?.label || 'Custom'
+  }
+
   if (!hasValue.value) return resolvedPlaceholder.value
 
   return selectedItem.value?.label || String(props.modelValue ?? '')
@@ -268,17 +342,52 @@ const selectedDescription = computed(() => {
   return selectedItem.value?.description || ''
 })
 
+const freeformPlaceholder = computed(() => {
+  return (
+    freeformItem.value?.freeformPlaceholder ||
+    freeformItem.value?.label ||
+    'Custom'
+  )
+})
+
 const triggerMode = computed(() => {
-  return hasValue.value ? 'normal' : 'normal'
+  return hasDisplayValue.value ? 'normal' : 'normal'
 })
 
 const triggerColor = computed(() => {
-  return hasValue.value ? 'blue25' : 'normal15'
+  return hasDisplayValue.value ? 'blue25' : 'normal15'
 })
 
 function emitValue(value: ElDropdownValue) {
   emit('update:modelValue', value)
   emit('change', value)
+}
+
+function resetFreeformState() {
+  freeformEditing.value = false
+  freeformDraft.value = ''
+}
+
+function activateFreeform() {
+  if (!freeformItem.value) return
+
+  const currentCustomValue = externalFreeformValue.value
+    ? String(props.modelValue ?? '')
+    : ''
+
+  freeformEditing.value = true
+  freeformDraft.value = currentCustomValue
+
+  if (!externalFreeformValue.value) {
+    emitValue(props.emptyValue)
+  }
+}
+
+function updateFreeformValue(value: unknown) {
+  const nextValue = String(value ?? '')
+  freeformEditing.value = true
+  freeformDraft.value = nextValue
+  emitValue(nextValue || props.emptyValue)
 }
 
 function createHeaderItem(label?: string, icon?: string): GlobalMenuItem {
@@ -303,11 +412,19 @@ function createSelectableMenuItem(item: ElDropdownItem): GlobalMenuItem {
     color: item.color,
     description: item.description,
     value: item.value,
-    active: isSameValue(item.value, props.modelValue),
+    active: item.freeform
+      ? isFreeformActive.value
+      : isSameValue(item.value, props.modelValue),
     disabled: item.disabled,
     handler: () => {
       if (item.value === undefined) return false
 
+      if (item.freeform) {
+        activateFreeform()
+        return true
+      }
+
+      resetFreeformState()
       emitValue(item.value)
 
       return true
@@ -321,8 +438,9 @@ function createClearItem(): GlobalMenuItem {
     label: resolvedPlaceholder.value,
     icon: 'cancel',
     value: props.emptyValue,
-    active: !hasValue.value,
+    active: !hasDisplayValue.value,
     handler: () => {
+      resetFreeformState()
       emitValue(props.emptyValue)
 
       return true
@@ -437,7 +555,7 @@ function handleKeydown(event: KeyboardEvent) {
 <template>
   <div ref="dropdownRef" class="elDropdown w100" :class="{
     'elDropdown--disabled': disabled,
-    'elDropdown--filled': hasValue,
+    'elDropdown--filled': hasDisplayValue,
   }" @keydown="handleKeydown">
     <el-button v-bind="$attrs"
       class="w100"
@@ -451,18 +569,37 @@ function handleKeydown(event: KeyboardEvent) {
       :mode="triggerMode"
       text-color="normal"
       :color="triggerColor"
-      :effect="{ color: hasValue ? 'normal25' : 'blue50' }" :disable="disabled" :radius="10" :p="[12, 10]"
+      :effect="{ color: hasDisplayValue ? 'normal25' : 'blue50' }" :disable="disabled" :radius="10" :p="[12, 10]"
       @click="openDropdown">
       <template #iconafter>
         <el-icon icon="arrow_downward" :size="12" color="normal" />
       </template>
     </el-button>
+
+    <div
+      v-if="isFreeformActive"
+      class="elDropdown__freeform"
+      @click.stop
+      @keydown.stop
+    >
+      <el-text-field
+        :model-value="freeformInputValue"
+        type="text"
+        :placeholder="freeformPlaceholder"
+        support-variables
+        @update:model-value="updateFreeformValue"
+      />
+    </div>
   </div>
 </template>
 
 <style scoped>
 .elDropdown {
   min-width: 0;
+}
+
+.elDropdown__freeform {
+  margin-top: 6px;
 }
 
 .elDropdown--disabled {
