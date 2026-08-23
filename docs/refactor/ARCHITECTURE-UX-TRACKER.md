@@ -78,7 +78,7 @@ Keep this table synchronized whenever a case is created, reclassified, started, 
 
 | ID | Title | Type | Priority | Area | Status |
 | --- | --- | --- | --- | --- | --- |
-| — | No cases recorded yet | — | — | — | — |
+| `BUG-001` | Module context menu is not available on all module cards | BUG | P2 | Module cards / Context menu | Investigating |
 
 ---
 
@@ -215,9 +215,61 @@ Fill only when closed.
 
 # Cases
 
-No cases have been recorded yet.
+## BUG-001 — Module context menu is not available on all module cards
 
-Add new cases below this heading and keep completed cases in place.
+**Status:** Investigating  
+**Priority:** P2  
+**Area:** Module cards / Context menu  
+**Type:** BUG  
+**Found:** 2026-08-23  
+**Related cases:** —
+
+### Problem
+
+The module-specific context menu is available on some module cards, such as Variables and Layout, but not consistently across all modules. Right-clicking an affected module such as Effects falls through to the page-level/default Draft context menu instead of opening the context menu for that module.
+
+### Expected behavior
+
+Right-clicking any current or future module card should resolve to that module's context menu. Shared module actions should be available through the common module-card mechanism, while module-specific actions should remain owned/configured by the module that supports them. A newly added module should not require an unrelated hardcoded allow-list entry merely to receive the common module context menu.
+
+### Evidence / reproduction
+
+- Right-click Variables: the Variables module menu opens with module actions such as Expand, Copy output, and Remove from key modules.
+- Right-click Layout: the Layout module menu opens and includes both common actions and Layout-specific actions such as Copy/Download.
+- Right-click Effects: the page-level/default Draft context menu opens instead of an Effects/module context menu.
+- User-provided screenshots on 2026-08-23 demonstrate all three behaviors.
+- The user reports the same missing module-menu behavior on multiple modules, so the scope is broader than Effects alone.
+
+### Affected code / surfaces
+
+Under investigation. Inspect the module-card rendering path, context-menu event wiring, module action/menu configuration, and the page-level context-menu fallback on current `main`.
+
+### Root cause
+
+Under investigation.
+
+### Architecture signal
+
+There is a likely centralization signal because a behavior that should belong to the generic module-card interaction appears to be available only to a subset of modules. Before introducing or changing a shared abstraction, inspect whether this is caused by a hardcoded module list, per-module event wiring, capability metadata, or intentional semantic differences.
+
+### Decision
+
+Pending root-cause investigation. Prefer a local fix if the common mechanism already exists and the defect is isolated wiring. Prefer a narrow shared refactor if module-menu eligibility or registration is hardcoded in a way that excludes current/future modules.
+
+### Implementation
+
+Not started.
+
+### Verification
+
+Pending. Verification must cover at least Variables, Layout, Effects, another previously affected module, and a module without extra module-specific actions to confirm the common menu is inherited correctly without breaking specialized actions.
+
+### Resolution
+
+Open.
+
+**Completed:** —  
+**Commit:** —
 
 ---
 
