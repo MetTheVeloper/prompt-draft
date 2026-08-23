@@ -26,12 +26,31 @@ export function createFreeformOption(
   };
 }
 
+export function readModuleFieldOptions(value: unknown): ModuleFieldOption[] {
+  if (!Array.isArray(value)) return [];
+
+  return value.filter((item): item is ModuleFieldOption => {
+    return Boolean(
+      item &&
+      typeof item === "object" &&
+      typeof (item as ModuleFieldOption).value === "string"
+    );
+  });
+}
+
 export function appendFreeformOption<T extends ModuleFieldOption>(
   options: T[] | undefined,
   config: FreeformOptionConfig = {},
 ): ModuleFieldOption[] {
   const catalogOptions = (options || []).filter((option) => !option.freeform);
   return [...catalogOptions, createFreeformOption(config)];
+}
+
+export function appendFreeformConfigOption(
+  value: unknown,
+  config: FreeformOptionConfig = {},
+) {
+  return appendFreeformOption(readModuleFieldOptions(value), config);
 }
 
 export function collectOptionTags(options: ModuleFieldOption[] | undefined) {
