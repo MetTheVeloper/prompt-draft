@@ -324,6 +324,17 @@ function removeModule() {
     }),
   );
 }
+
+const { openModulePanelContextMenu } = useModulePanelContextMenu({
+  getTitle: () => moduleTitle.value,
+  getExpanded: () => isPanelExpanded.value,
+  onToggleExpand: togglePanel,
+  getCustomMode: () => isCustomMode.value,
+  onToggleCustomize: () => toggleCustomMode(!isCustomMode.value),
+  canCopyOutput: () => Boolean(output.value),
+  onCopyOutput: copyOutput,
+  onRemove: removeModule,
+});
 </script>
 
 <template>
@@ -335,6 +346,7 @@ function removeModule() {
     :radius="mobile ? 16 : mini ? 24 : 32"
     bg="surface"
     class="w100"
+    @contextmenu="openModulePanelContextMenu"
   >
     <el-flex rules="csc" class="w100">
       <el-flex rules="ccs" class="w100">
