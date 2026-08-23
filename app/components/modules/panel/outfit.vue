@@ -12,6 +12,7 @@ import {
   compileOutfitModule,
   formatOutfitOutputForReferences,
 } from "~/utils/compileOutfit";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import OutfitSetsField from "../outfit/OutfitSetsField.vue";
 
 const { t } = useI18n();

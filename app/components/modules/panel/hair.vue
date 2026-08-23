@@ -12,6 +12,7 @@ import {
   compileHairModule,
   formatHairOutputForReferences,
 } from "~/utils/compileHair";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import HairStylesField from "../hair/HairStylesField.vue";
 
 const { t } = useI18n();

@@ -8,6 +8,7 @@ import {
   getModulePresetValues,
 } from "../../../utils/compileModules";
 import { compileEffectsModule } from "../../../utils/compileEffects";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import EffectLayersField from "../effects/EffectLayersField.vue";
 
 const { t } = useI18n();

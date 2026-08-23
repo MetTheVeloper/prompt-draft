@@ -15,6 +15,7 @@ import {
   getModulePresetValues,
 } from "../../../utils/compileModules";
 import { compileLightingModule } from "../../../utils/compileLighting";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import LightSourcesField from "../lighting/LightSourcesField.vue";
 
 const { t } = useI18n();

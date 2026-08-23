@@ -18,6 +18,7 @@ import {
   getModuleFieldCustomValueKey,
   isModuleFieldCustomSelection,
 } from "../../../utils/moduleFieldValues";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 
 const { t } = useI18n();
 const { mobile, mini } = useScreen();

@@ -9,6 +9,7 @@ import type { ModuleOutputValue } from "../../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
 import { createDefaultModuleValues } from "../../../utils/compileModules";
 import { compileTextureModule } from "../../../utils/compileTexture";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import MaterialAssignmentsField from "../texture/MaterialAssignmentsField.vue";
 
 const { t } = useI18n();

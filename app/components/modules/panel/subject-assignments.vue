@@ -12,6 +12,7 @@ import { createDefaultModuleValues } from "~/utils/compileModules";
 import { compilePoseModule } from "~/utils/compilePose";
 import { compileExpressionModule } from "~/utils/compileExpression";
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
+import { useModulePanelContextMenu } from "~/composables/useModulePanelContextMenu";
 import SubjectAssignmentsField from "../shared/SubjectAssignmentsField.vue";
 
 const { t } = useI18n();
