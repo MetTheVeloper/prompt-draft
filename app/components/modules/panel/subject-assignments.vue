@@ -168,6 +168,22 @@ async function copyOutput() {
     console.error("Copy failed:", error);
   }
 }
+
+const { openModulePanelContextMenu } = useModulePanelContextMenu({
+  getTitle: () => moduleTitle.value,
+  getExpanded: () => expanded.value,
+  onToggleExpand: () => {
+    expanded.value = !expanded.value;
+  },
+  getCustomMode: () => customMode.value,
+  onToggleCustomize: () => {
+    customMode.value = !customMode.value;
+    if (customMode.value) expanded.value = true;
+  },
+  canCopyOutput: () => Boolean(output.value),
+  onCopyOutput: copyOutput,
+  onRemove: removeModule,
+});
 </script>
 
 <template>
@@ -179,6 +195,7 @@ async function copyOutput() {
     :radius="mobile ? 16 : mini ? 24 : 32"
     bg="surface"
     class="w100"
+    @contextmenu="openModulePanelContextMenu"
   >
     <el-flex rules="ccs" class="w100" :gap="12">
       <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="12">
