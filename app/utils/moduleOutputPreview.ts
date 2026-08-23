@@ -1,6 +1,12 @@
-import type { ModuleOutputValue, PromptOutputFormat } from "./compilePrompt";
+import type {
+  ModuleOutputMap,
+  ModuleOutputValue,
+  PromptOutputFormat,
+} from "./compilePrompt";
 import { compileLayoutNaturalBlock } from "./compileLayoutNatural";
 import { compileTypographyNaturalBlock } from "./compileTypographyNatural";
+import { formatHairOutputForReferences } from "./compileHair";
+import { formatOutfitOutputForReferences } from "./compileOutfit";
 import { variableDefinitionsToRecord, VARIABLES_MODULE_KEY } from "./promptVariables";
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -11,6 +17,29 @@ function stringifyOutput(value: ModuleOutputValue, pretty = true) {
   return typeof value === "string"
     ? value.trim()
     : JSON.stringify(value, null, pretty ? 2 : undefined);
+}
+
+function outputReferenceText(value: ModuleOutputValue) {
+  return typeof value === "string" ? value : JSON.stringify(value);
+}
+
+function prepareDisplayValue(
+  moduleKey: string,
+  value: ModuleOutputValue,
+  outputs: ModuleOutputMap,
+): ModuleOutputValue {
+  if (typeof value !== "string") return value;
+  if (moduleKey !== "hair" && moduleKey !== "outfit") return value;
+
+  const externalReferenceText = Object.entries(outputs)
+    .filter(([key]) => key !== moduleKey)
+    .map(([, output]) => outputReferenceText(output))
+    .filter(Boolean)
+    .join("\n");
+
+  return moduleKey === "hair"
+    ? formatHairOutputForReferences(value, externalReferenceText)
+    : formatOutfitOutputForReferences(value, externalReferenceText);
 }
 
 function formatDefinition(moduleKey: string, value: ModuleOutputValue) {
@@ -110,11 +139,14 @@ export function formatModuleOutputPreview(
   moduleKey: string,
   value: ModuleOutputValue | undefined,
   format: PromptOutputFormat,
+  outputs: ModuleOutputMap = {},
 ) {
   if (value === undefined || value === null) return "";
   if (typeof value === "string" && !value.trim()) return "";
 
-  if (format === "json") return jsonPreview(moduleKey, value);
-  if (format === "natural") return naturalPreview(moduleKey, value);
-  return formatDefinition(moduleKey, value);
+  const displayValue = prepareDisplayValue(moduleKey, value, outputs);
+
+  if (format === "json") return jsonPreview(moduleKey, displayValue);
+  if (format === "natural") return naturalPreview(moduleKey, displayValue);
+  return formatDefinition(moduleKey, displayValue);
 }

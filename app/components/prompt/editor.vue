@@ -106,6 +106,7 @@ function getModulePreview(module: PromptKeyModule) {
     module.key,
     moduleOutputs[module.key],
     outputFormat.value,
+    moduleOutputs,
   );
 }
 
