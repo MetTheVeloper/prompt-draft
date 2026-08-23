@@ -10,10 +10,18 @@
 
 **The semantic breaking-cleanup pass is closed.**
 
-Checkpoint branch:
+**The completed semantic refactor has been integrated into `main`.**
+
+Historical refactor branch:
 
 ```text
 refactor/prompt-semantics
+```
+
+Current development base:
+
+```text
+main
 ```
 
 This checkpoint is the canonical end-state of the semantic-refactor project for the current registry. A closed module should not be reopened for ordinary model variance, catalog growth, localization, cosmetic UI work, old-draft compatibility, release maintenance, or theoretical micro-polish. Reopen only when a reproducible current-schema defect exposes a real ownership, identity, prompt-graph, compiler, target-policy, or state contract failure.
@@ -189,9 +197,9 @@ docs/prompt-semantics/SEMANTIC-BREAKING-CLEANUP.md
 
 ---
 
-# Final integration audit
+# Final integration audit — completed
 
-The final branch audit checks these boundaries:
+The final branch audit verified these boundaries:
 
 - registry imports only current implementations,
 - no known `BaseStyleModule`, `BaseFormModule`, or legacy Texture runtime dependency remains,
@@ -201,7 +209,7 @@ The final branch audit checks these boundaries:
 - branch changes are limited to intentional semantic cleanup/integration work,
 - current-schema validation, not old-state compatibility, is the acceptance criterion.
 
-The remaining release gate is normal project validation after pulling the latest branch:
+Release validation was performed with the maintained project gates, including:
 
 ```bash
 pnpm locale:consolidate
@@ -209,26 +217,56 @@ pnpm generate
 pnpm build
 ```
 
-Then perform the existing current-schema smoke tests for editor state, Modular/Natural output, save/reload, current JSON export/import, EN/FA, relational targets, and structured modules.
+The semantic-refactor branch was then fast-forward integrated into `main`.
+
+---
+
+# Post-refactor engineering tracker
+
+Post-refactor UX, bug-fixing, maintainability, architecture-hardening, and centralization work must now be tracked in:
+
+```text
+docs/refactor/ARCHITECTURE-UX-TRACKER.md
+```
+
+That file is a living development record. It owns:
+
+- UX findings from ongoing testing,
+- reproducible current-product bugs,
+- duplication and centralization opportunities,
+- architecture improvements that preserve module ownership,
+- implementation decisions,
+- verification results,
+- completed-case history and commit references.
+
+Do not turn this semantic checkpoint into a general product backlog. Only update this file again when a post-refactor case genuinely changes a semantic contract or the historical checkpoint itself.
 
 ---
 
 # Recommended next phase
 
-There is no remaining planned semantic-refactor stage and no planned legacy migration stage.
+Continue product development from `main` and use the Architecture & UX Tracker as the canonical cross-chat work state.
 
-After the final validation commands and smoke tests pass:
+The preferred loop is:
 
 ```text
-refactor/prompt-semantics
+real testing / development finding
         ↓
-       main
+record case in ARCHITECTURE-UX-TRACKER.md
+        ↓
+inspect current implementation
+        ↓
+decide local fix vs reusable architecture improvement
+        ↓
+implement + verify
+        ↓
+record resolution + commit + Completed status
 ```
 
-From that point onward, fix only concrete reproducible integration/product defects without reopening accepted semantic architecture unless the defect proves that an architecture contract is actually wrong.
+This allows UX work and architecture hardening to progress together without reopening the accepted semantic architecture by default.
 
 ---
 
 # Checkpoint rule
 
-> **The current Prompt Draft registry is semantically closed, localization is consolidated, legacy migration is intentionally unsupported, and the semantic cleanup pass is complete. The branch is in final release-validation/integration state.**
+> **The current Prompt Draft registry is semantically closed, localization is consolidated, legacy migration is intentionally unsupported, semantic cleanup is complete, and the refactor has been integrated into `main`. Post-refactor UX and architecture work is tracked separately in `docs/refactor/ARCHITECTURE-UX-TRACKER.md`.**
