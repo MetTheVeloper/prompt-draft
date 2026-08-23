@@ -1,3 +1,4 @@
+import { readonly, ref } from "vue";
 import type { PromptOutputFormat } from "~/utils/compilePrompt";
 
 const activePromptOutputFormat = ref<PromptOutputFormat>("modular");
