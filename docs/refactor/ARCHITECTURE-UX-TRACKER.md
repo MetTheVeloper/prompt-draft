@@ -253,6 +253,7 @@ Right-clicking any current or future module card should resolve to that module's
 - `app/components/modules/panel/hair.vue`
 - `app/components/modules/panel/outfit.vue`
 - `app/components/modules/panel/subject-assignments.vue`
+- `app/composables/useModulePanelContextMenu.ts` — shared bespoke-panel context-menu primitive introduced by this case.
 - `app/composables/usePageContextMenu.ts` — shared point-menu opening/fallback suppression.
 
 ### Root cause
@@ -277,29 +278,43 @@ The broader duplication of the complete module-panel shell is intentionally not 
 
 ### Decision
 
-Implement a narrow shared module-panel context-menu composable. It will centralize common menu construction and `usePageContextMenu` opening behavior behind a small contract of state getters/capabilities and action callbacks. Bespoke panels will opt into that primitive and bind the returned handler on their card root. Module-specific state and actions stay inside the owning panel.
+Implement a narrow shared module-panel context-menu composable. It centralizes the common menu construction and `usePageContextMenu` opening behavior behind a small contract of state getters/capabilities and action callbacks. Bespoke panels opt into that primitive and bind the returned handler on their card root. Module-specific state and actions stay inside the owning panel.
 
-Preserve specialized policy rather than forcing every module into identical behavior: modules with standard Custom Mode can provide a customize callback; Lighting can keep Customize disabled because its bespoke UI exposes a different inline override lifecycle; Layout's existing schema Copy/Download behavior in Base remains unchanged in this case.
+Preserve specialized policy rather than forcing every module into identical behavior: modules with standard Custom Mode provide a customize callback; Lighting keeps Customize disabled because its bespoke UI exposes a different inline override lifecycle; Layout's existing schema Copy/Download behavior in Base remains unchanged in this case.
 
-Ordinary current/future modules that render through `base.vue` already receive the existing module menu automatically. Current bespoke panels will all be wired to the shared primitive so they no longer fall through to the page menu. A future bespoke panel should use the same primitive when it introduces its own panel implementation.
+Ordinary current/future modules that render through `base.vue` already receive the existing module menu automatically. Current bespoke panels are all wired to the shared primitive so they no longer fall through to the page menu. A future bespoke panel should use the same primitive when it introduces its own panel implementation.
 
 ### Implementation
 
-In progress. Planned changes:
+Implemented in `774b287533b9667815bbafe6ef730094b30c1da6` (`fix: centralize module panel context menus`).
 
-- add the shared module-panel context-menu composable,
-- wire every current bespoke module-panel root to it,
-- reuse each panel's existing expand/custom/copy/remove actions instead of duplicating semantic logic,
-- preserve the Base/Layout specialized menu behavior,
-- add no new localization strings.
+- Added top-level `app/composables/useModulePanelContextMenu.ts` so Nuxt auto-imports the shared primitive consistently with the existing top-level menu composables.
+- The composable builds the common header, Expand/Collapse, Customize, Copy output, and Remove actions and delegates opening/propagation handling to `usePageContextMenu`.
+- The API accepts state getters and action callbacks rather than owning module state, so semantic responsibility stays inside each panel.
+- Wired the root card of `background.vue`, `effects.vue`, `lighting.vue`, `texture.vue`, `hair.vue`, `outfit.vue`, and `subject-assignments.vue` to `openModulePanelContextMenu`.
+- Background, Effects, Texture, Hair, Outfit, Pose, and Expression provide their existing Custom Mode state/action to the shared menu. Enabling Customize from the menu expands the panel where necessary.
+- Lighting intentionally omits the standard Customize callback; the shared menu therefore renders Customize disabled while Expand, Copy output, and Remove remain available.
+- `base.vue`, Variables behavior, and Layout's specialized Copy/Download menu were left unchanged to avoid widening this case into a full panel-shell refactor.
+- No localization keys or semantic schema/compiler behavior were changed.
 
 ### Verification
 
-Pending. Verification must cover at least Variables, Layout, Effects, another previously affected bespoke module, a bespoke module without standard Custom Mode, and the page-level Draft menu outside module cards. Build/generate validation is required before closure.
+Completed so far:
+
+- Reviewed the final `main` diff from `c63c441` to implementation commit `774b287`: exactly eight expected files changed — the seven bespoke panel implementations plus the new shared composable.
+- Confirmed every currently mapped bespoke panel path from `editor.vue` is covered: Background, Effects, Lighting, Texture, Hair, Outfit, and the shared Pose/Expression Subject Assignments panel.
+- Diff inspection confirms each bespoke card root now binds `@contextmenu="openModulePanelContextMenu"` and reuses its existing local actions rather than introducing duplicate semantic logic.
+- Base-panel code was not changed, so the previously working Variables/common Base menu and Layout-specific menu are preserved structurally.
+- No localization boundary was touched, so `pnpm locale:consolidate` is not required for this case.
+
+Still required before closure:
+
+- `pnpm generate` / deploy-workflow success for the current `main`. The repository workflow runs this automatically on `main`, but the connected GitHub action available in this chat only returns pull-request-triggered runs, so the push-run result is not currently observable here.
+- UI smoke test: right-click Effects and at least one other bespoke module; confirm the module menu opens instead of Draft; verify Expand/Collapse, Customize where supported, Copy output, and Remove; verify Lighting shows Customize disabled; verify Variables and Layout remain correct; verify right-click outside module cards still opens the Draft page menu.
 
 ### Resolution
 
-Open.
+Implementation is merged to `main`; closure is pending build/UI verification.
 
 **Completed:** —  
 **Commit:** —
