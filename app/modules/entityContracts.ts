@@ -27,12 +27,17 @@ export type ModuleEntityTargetPolicy = "subject" | "object";
  * `id` is canonical persistence identity.
  * `key`, `name`, generated tokens, and labels are representation metadata and
  * may change without invalidating cross-module references.
+ *
+ * `inheritGlobal` defaults to true when omitted. Setting it to false makes the
+ * entity independent from the module's global/default scalar state, so only
+ * values explicitly present in `payload` participate in resolution/compile.
  */
 export type ModuleEntity<TPayload extends object = Record<string, unknown>> = {
   id: string;
   key: string;
   name: string;
   enabled?: boolean;
+  inheritGlobal?: boolean;
   payload: TPayload;
 };
 
@@ -123,8 +128,15 @@ export function isModuleEntity(
   if (typeof value.key !== "string") return false;
   if (typeof value.name !== "string") return false;
   if (!isRecord(value.payload)) return false;
+  if (value.enabled !== undefined && typeof value.enabled !== "boolean") return false;
+  if (
+    value.inheritGlobal !== undefined &&
+    typeof value.inheritGlobal !== "boolean"
+  ) {
+    return false;
+  }
 
-  return value.enabled === undefined || typeof value.enabled === "boolean";
+  return true;
 }
 
 /**
@@ -172,18 +184,10 @@ export function getGlobalModuleValues(values: ModuleValues): ModuleValues {
   return globalValues;
 }
 
-/**
- * Resolve a named scalar-module entity by overlaying its payload on top of the
- * existing global/default configuration.
- *
- * Omitted/undefined payload keys inherit the global value. Explicit empty
- * strings, nulls, false values, and empty arrays remain valid overrides.
- */
-export function resolveModuleEntityValues(
-  values: ModuleValues,
+function getModuleEntityPayloadValues(
   entity: ModuleEntity<ModuleEntityPayload>,
 ): ModuleValues {
-  const payload = Object.entries(entity.payload).reduce<ModuleValues>(
+  return Object.entries(entity.payload).reduce<ModuleValues>(
     (result, [key, value]) => {
       if (key === MODULE_ENTITY_STATE_KEY || value === undefined) return result;
       result[key] = value;
@@ -191,6 +195,28 @@ export function resolveModuleEntityValues(
     },
     {},
   );
+}
+
+/**
+ * Resolve a named scalar-module entity.
+ *
+ * By default, payload values overlay the existing global/default configuration.
+ * Omitted/undefined payload keys therefore inherit global values. Explicit
+ * empty strings, nulls, false values, and empty arrays remain valid overrides.
+ *
+ * When `inheritGlobal === false`, the entity is independent and resolves from
+ * its local payload only. This keeps the global/default state active elsewhere
+ * while preventing it from leaking into the entity's target scope.
+ */
+export function resolveModuleEntityValues(
+  values: ModuleValues,
+  entity: ModuleEntity<ModuleEntityPayload>,
+): ModuleValues {
+  const payload = getModuleEntityPayloadValues(entity);
+
+  if (entity.inheritGlobal === false) {
+    return payload;
+  }
 
   return {
     ...getGlobalModuleValues(values),
