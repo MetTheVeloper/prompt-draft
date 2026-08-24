@@ -76,6 +76,7 @@ function updateEntities(nextEntities: typeof entities.value) {
       :global-values="globalValues"
       :model-value="entities"
       :target-policy="targetPolicy"
+      allow-presets
       @update:model-value="updateEntities"
     />
   </el-flex>
