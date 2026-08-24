@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Planning / source of truth
+> **Status:** Phase 1 complete / Phase 2 ready
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** Until this refactor is accepted and merged, implementation work for this effort should stay on the working branch and unrelated project changes should be avoided.
@@ -169,12 +169,10 @@ Renaming a Scene, Region, or generated variable token must not silently break en
 
 ### Generic repeatable module entity
 
-The exact type names are not final, but repeatable modules should converge on a shared contract rather than inventing unrelated `formAssignments`, `cameraAssignments`, `lightingAssignments`, etc.
-
-Conceptual model:
+The shared Phase 1 contract is implemented in `app/modules/entityContracts.ts`.
 
 ```ts
-type ModuleEntity<TPayload = unknown> = {
+type ModuleEntity<TPayload extends object = Record<string, unknown>> = {
   id: string
   key: string
   name: string
@@ -183,17 +181,99 @@ type ModuleEntity<TPayload = unknown> = {
 }
 ```
 
-Modules may declare capabilities/policies such as:
+Stable cross-module references use:
 
 ```ts
-entity: {
+type ModuleEntityRef = {
+  moduleKey: string
+  entityId: string
+  token?: string
+  label?: string
+}
+```
+
+Only `moduleKey + entityId` participate in canonical reference identity. `key`, `name`, `token`, and `label` are representation metadata and may change without invalidating the reference.
+
+Module entity capabilities are kept separate from existing color/material semantic-target capabilities:
+
+```ts
+type ModuleEntityConfig = {
+  enabled: boolean
+  sceneExposable?: boolean
+  targetPolicy?: Array<"subject" | "object">
+}
+```
+
+The initial capability registry in `app/modules/entityCapabilities.ts` enables the two proof modules:
+
+```ts
+form: {
   enabled: true,
   sceneExposable: true,
   targetPolicy: ["subject", "object"],
 }
+
+camera: {
+  enabled: true,
+  sceneExposable: true,
+  targetPolicy: [],
+}
 ```
 
-The exact schema should be derived during Phase 1 and kept small enough to support specialized modules such as Hair and Outfit without forcing them into an unnatural structure.
+Camera is intentionally scene-exposable while having no semantic subject/object target policy. This is the concrete reason scene exposure must remain distinct from semantic target eligibility.
+
+### Global/default state and named entity state
+
+The existing top-level `ModuleValues` object remains the module's global/default configuration.
+
+Generic named scalar-module entities use the optional reserved sibling state key:
+
+```ts
+{
+  // existing scalar/global fields remain unchanged
+  formLanguage: "geometric",
+  proportions: "balanced",
+
+  // optional new state
+  entities: [
+    {
+      id: "form-abc123",
+      key: "decayedBuilding",
+      name: "Decayed Building",
+      payload: {
+        proportions: "elongated",
+      },
+    },
+  ],
+}
+```
+
+Entity payloads are **partial patches** over the top-level global/default values. Omitted or `undefined` payload keys inherit from the global configuration. Explicit empty strings, `null`, `false`, and empty arrays remain valid overrides.
+
+The generic helpers in `entityContracts.ts` provide normalization, collection read/write, global-value extraction, entity-value resolution, stable ref construction/comparison, and capability queries.
+
+### Backward-compatible migration behavior
+
+Existing scalar drafts do not require a destructive migration.
+
+If the optional `entities` key is absent:
+
+```text
+legacy scalar ModuleValues
+→ global/default configuration remains unchanged
+→ generic entity collection normalizes to []
+→ existing compiler behavior is unchanged
+```
+
+No existing compiler currently consumes the reserved entity state key. Form and Camera conversion phases must continue to preserve scalar output when no named entities exist.
+
+### Specialized entity-owning modules
+
+Hair and Outfit already use stable module-owned entity structures with the same core identity principles (`id`, semantic `key`, editable `name`) but richer domain-specific shapes.
+
+They are **not** forced into generic scalar `payload` storage. Later generic reference/catalog work should adapt their existing entities where useful rather than rewriting them into an unnatural structure.
+
+The same principle applies to other already-structured systems such as Typography and Layout Regions.
 
 ### Scene entity
 
@@ -330,6 +410,25 @@ Not every module needs identical behavior.
 
 ---
 
+## Phase 1 audit findings
+
+The Phase 1 source audit covered the current state/type/compiler/reference patterns needed to define the generic contract.
+
+Key findings:
+
+- `PromptKeyModule` values are persisted as direct `ModuleValues`; wrapping existing module state inside a new container would be unnecessarily destructive.
+- `createDefaultModuleValues()` creates only declared module fields, and generic compilation reads declared fields. An optional sibling entity collection therefore does not change legacy scalar compilation by itself.
+- Form and Camera are currently scalar modules and are suitable proof modules for inheritance from global/default values.
+- Pose and Expression already model repeatable target-oriented assignments and remain useful compiler/UI references, but their assignment payloads should not become the generic storage shape for every module.
+- Hair and Outfit already establish stable persistence identity with `id`, semantic `key`, and editable `name`; nested child identity also uses stable IDs.
+- Layout Regions already generate/persist stable Region IDs and derive variable references from them.
+- `promptVariableCatalog` consistently treats module-child IDs as persistence identity while generated keys/tokens are representation.
+- `semanticTargetIdentity()` already prefers `entityId` for module child entities, reinforcing the stable-ID rule.
+- Existing `semanticTargets` module metadata is specifically about color/material capability filtering. Scene exposure must remain a separate capability axis.
+- The repository currently has no dedicated unit-test framework or standalone typecheck script in `package.json`; Phase 1 therefore uses `satisfies`-based type checks plus strict TypeScript/runtime invariant validation of the new isolated contracts without introducing new dependencies.
+
+---
+
 ## Implementation phases and tracker
 
 ### Phase 0 — Baseline and source of truth
@@ -337,22 +436,24 @@ Not every module needs identical behavior.
 - [x] Confirm latest `main` baseline.
 - [x] Create dedicated working branch from exact main SHA.
 - [x] Create this canonical refactor document.
-- [ ] From now on, update this document when decisions or phase status change.
+- [x] From now on, update this document when decisions or phase status change.
 
 ### Phase 1 — Define generic entity contracts
 
 Goal: establish the smallest reusable infrastructure before converting many modules.
 
-- [ ] Audit current module state/type contracts that represent repeatable entities or assignments.
-- [ ] Define shared `ModuleEntity` / entity metadata contract.
-- [ ] Define module-level entity capability/configuration metadata.
-- [ ] Define stable reference identity rules.
-- [ ] Decide how global/default configuration and named entities coexist in module state.
-- [ ] Define migration behavior for existing scalar drafts.
-- [ ] Define scene-exposable eligibility without overloading existing color/material semantic capabilities.
-- [ ] Add tests/type-level checks where practical before UI conversion.
+- [x] Audit current module state/type contracts that represent repeatable entities or assignments.
+- [x] Define shared `ModuleEntity` / entity metadata contract.
+- [x] Define module-level entity capability/configuration metadata.
+- [x] Define stable reference identity rules.
+- [x] Decide how global/default configuration and named entities coexist in module state.
+- [x] Define migration behavior for existing scalar drafts.
+- [x] Define scene-exposable eligibility without overloading existing color/material semantic capabilities.
+- [x] Add tests/type-level checks where practical before UI conversion.
 
 **Exit condition:** Form and Camera can adopt the contract without bespoke architecture and existing drafts remain valid.
+
+**Phase 1 result:** Exit condition satisfied. The shared contract is implemented, Form/Camera capability metadata is available through the module registry, old scalar state remains the global/default state, and no existing compiler/UI behavior was replaced.
 
 ### Phase 2 — Convert Form as first generic repeatable module
 
@@ -570,9 +671,16 @@ Do not merge to main without my explicit approval.
 
 ## Current checkpoint
 
-As of creation of this document:
+As of completion of Phase 1:
 
-- Architecture discussion is complete enough to start Phase 1.
-- No application source code has been changed for this refactor yet.
-- Working branch was created directly from main commit `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`.
-- The next implementation task is **Phase 1: define and validate the generic repeatable module entity contract** before converting Form or Camera.
+- The generic repeatable scalar-module entity contract lives in `app/modules/entityContracts.ts`.
+- The optional `entities` sibling state preserves existing top-level `ModuleValues` as global/default configuration.
+- Entity payloads are partial patches resolved over those global/default values.
+- Stable generic references use `moduleKey + entityId`; token/key/name changes are non-identity changes.
+- Form and Camera entity capability metadata is attached in the module registry through `app/modules/entityCapabilities.ts`.
+- Form is target-capable for subject/object entities; Camera has no semantic target policy but is scene-exposable.
+- Existing color/material `semanticTargets` capability metadata remains separate and unchanged.
+- Hair, Outfit, Typography, and Layout keep their specialized entity structures; the generic contract does not force a storage rewrite.
+- Existing UI and compiler behavior has not been replaced by Phase 1.
+- Strict TypeScript validation and focused runtime invariant checks passed for the new contract in isolation; the repository has no dedicated test runner/typecheck script and branch pushes do not trigger the production-only workflow.
+- The next implementation task is **Phase 2: convert Form into the first generic repeatable module while proving legacy scalar Form output remains unchanged when no entities are present**.
