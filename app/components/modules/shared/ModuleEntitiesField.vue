@@ -43,10 +43,12 @@ const props = withDefaults(
     globalValues: ModuleValues;
     modelValue?: ModuleEntity<ModuleEntityPayload>[];
     targetPolicy?: ModuleEntityTargetPolicy[];
+    allowGlobalInheritanceToggle?: boolean;
   }>(),
   {
     modelValue: () => [],
     targetPolicy: () => [],
+    allowGlobalInheritanceToggle: false,
   },
 );
 
@@ -183,6 +185,14 @@ function updateEntity(index: number, patch: Partial<EditableModuleEntity>) {
   );
 }
 
+function setIndependent(index: number, independent: boolean) {
+  updateEntity(index, { inheritGlobal: !independent });
+}
+
+function isIndependent(entity: EditableModuleEntity) {
+  return entity.inheritGlobal === false;
+}
+
 function updatePayload(index: number, fieldId: string, value: unknown) {
   const entity = entities.value[index];
   if (!entity) return;
@@ -228,7 +238,9 @@ function setPayloadOverride(
     delete payload[field.id];
   } else if (!Object.prototype.hasOwnProperty.call(payload, field.id)) {
     payload[field.id] = cloneValue(
-      props.globalValues[field.id] ?? field.default ?? "",
+      isIndependent(entity)
+        ? field.default ?? ""
+        : props.globalValues[field.id] ?? field.default ?? "",
     );
   }
 
@@ -258,6 +270,7 @@ function createEntity(): EditableModuleEntity {
     key: uniqueEntityKey(`${props.module.key}${number}`),
     name,
     enabled: true,
+    inheritGlobal: true,
     payload: {},
     ...(hasTargets.value ? { targets: defaultTargets() } : {}),
   };
@@ -499,6 +512,10 @@ function selectedCompatibilityWarning(
 }
 
 function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
+  if (isIndependent(entity)) {
+    return translate("components.moduleEntities.fields.notSet", "Not set — independent configuration");
+  }
+
   const value = resolvedFieldValue(entity, field);
   if (Array.isArray(value)) return value.join(", ") || translate("panel.none", "None");
   if (typeof value === "boolean") return value ? "True" : "False";
@@ -569,7 +586,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
               {{ entity.name || entity.key || `${humanize(module.key)} ${entityIndex + 1}` }}
             </el-text>
             <el-text :size="9" color="normal45">
-              {{ targetSummary(entity) }} · {{ overrideCount(entity) }} {{ translate("components.moduleEntities.overrides", "overrides") }}
+              {{ targetSummary(entity) }} · {{ overrideCount(entity) }} {{ translate("components.moduleEntities.overrides", "overrides") }}<template v-if="isIndependent(entity)"> · {{ translate("components.moduleEntities.independentBadge", "Independent") }}</template>
             </el-text>
           </el-flex>
 
@@ -656,6 +673,32 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
             </el-text>
           </el-flex>
 
+          <el-flex
+            v-if="allowGlobalInheritanceToggle"
+            rules="rbc"
+            :gap="12"
+            :p="10"
+            :br="1"
+            :bc="isIndependent(entity) ? 'blue25' : 'normal10'"
+            :radius="12"
+            class="w100"
+          >
+            <el-flex rules="ccs" :gap="2" class="minw0">
+              <el-text :size="11" :weight="600">
+                {{ translate("components.moduleEntities.fields.independent", `Independent ${humanize(module.key)}`) }}
+              </el-text>
+              <el-text :size="9" color="normal45">
+                {{ translate("components.moduleEntities.fields.independentDescription", "Do not inherit or apply the Global/default configuration to this target. Only local overrides are used.") }}
+              </el-text>
+            </el-flex>
+            <el-switch
+              :model-value="isIndependent(entity)"
+              :size="12"
+              :label="translate('components.moduleEntities.fields.independent', `Independent ${humanize(module.key)}`)"
+              @update:model-value="setIndependent(entityIndex, $event)"
+            />
+          </el-flex>
+
           <el-divider mode="dashed" :dash="4" :gap="2" />
 
           <el-grid v-for="group in groups" :key="group.id" :gap="8" :p="10" :br="1" bc="normal10" :radius="12">
@@ -685,7 +728,12 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                 </el-flex>
 
                 <el-text v-if="!hasPayloadOverride(entity, field.id)" :size="9" color="normal45">
-                  {{ translate("components.moduleEntities.fields.inherits", "Inherits") }}: {{ inheritedLabel(entity, field) }}
+                  <template v-if="isIndependent(entity)">
+                    {{ inheritedLabel(entity, field) }}
+                  </template>
+                  <template v-else>
+                    {{ translate("components.moduleEntities.fields.inherits", "Inherits") }}: {{ inheritedLabel(entity, field) }}
+                  </template>
                 </el-text>
 
                 <template v-else>
