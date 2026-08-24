@@ -14,6 +14,9 @@ export type PromptValidationIssueCode =
   | 'framing_preserve_composition_conflict'
   | 'texture_preserve_materials_conflict'
   | 'pose_preserve_pose_conflict'
+  | 'scene_missing_content_reference'
+  | 'scene_missing_component_reference'
+  | 'scene_component_cardinality_conflict'
 
 export interface PromptValidationIssue {
   id: string
