@@ -429,19 +429,9 @@ function issueText(issue: SceneCompileIssue) {
 <template>
   <el-grid :gap="12" class="w100">
     <el-flex rules="rbc" class="w100" :gap="12">
-      <el-flex rules="ccs" :gap="3">
-        <el-flex rules="rsc" :gap="8">
-          <el-text :size="16" :weight="700" icon="layers">
-            {{ translate("modules.scene.fields.scenes.label", "Scenes") }}
-          </el-text>
-          <el-text marker="blue10" color="blue" :size="10" :weight="600">
-            {{ scenes.length }}
-          </el-text>
-        </el-flex>
-        <el-text :size="10" color="normal50">
-          {{ translate("modules.scene.fields.scenes.description", "Compose reusable Scene entities from content and named module configurations.") }}
-        </el-text>
-      </el-flex>
+      <el-text marker="blue10" color="blue" :size="10" :weight="600">
+        {{ scenes.length }} {{ scenes.length === 1 ? 'Scene' : 'Scenes' }}
+      </el-text>
 
       <el-flex rules="rcc" :gap="6">
         <el-button
