@@ -2,6 +2,7 @@ import type {
   ModuleFieldValue,
   ModuleValues,
   PromptKeyModule,
+  SemanticTargetRef,
 } from "./types";
 
 /**
@@ -33,6 +34,17 @@ export type ModuleEntity<TPayload extends object = Record<string, unknown>> = {
   name: string;
   enabled?: boolean;
   payload: TPayload;
+};
+
+/**
+ * Optional semantic-target specialization used by modules such as Form.
+ * Camera and other scene-only configurations keep the smaller ModuleEntity
+ * shape and are not forced to own meaningless target arrays.
+ */
+export type TargetedModuleEntity<
+  TPayload extends object = Record<string, unknown>,
+> = ModuleEntity<TPayload> & {
+  targets: SemanticTargetRef[];
 };
 
 /**
@@ -79,6 +91,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
 
+function randomEntitySuffix() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
+/**
+ * Generate a persistence ID that is independent from editable entity key/name.
+ * A module-key prefix is included only for debugging/readability; identity must
+ * still be treated as the full opaque generated ID.
+ */
+export function createModuleEntityId(moduleKey = "module") {
+  const prefix = moduleKey
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "module";
+
+  return `${prefix}-entity-${randomEntitySuffix()}`;
+}
+
 export function isModuleEntity(
   value: unknown,
 ): value is ModuleEntity<ModuleEntityPayload> {
@@ -101,7 +136,7 @@ export function normalizeModuleEntities<
 >(value: unknown): ModuleEntity<TPayload>[] {
   if (!Array.isArray(value)) return [];
 
-  return value.filter(isModuleEntity) as ModuleEntity<TPayload>[];
+  return value.filter(isModuleEntity) as unknown as ModuleEntity<TPayload>[];
 }
 
 export function getModuleEntities<
