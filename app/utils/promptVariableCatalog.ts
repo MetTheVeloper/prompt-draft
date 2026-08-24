@@ -15,10 +15,12 @@ import { outfitItemTypeMap } from "../modules/outfit.catalog"
 import type { HairComponent, HairStyle } from "../modules/hair.types"
 import { hairComponentTypeMap } from "../modules/hair.catalog"
 import type { LayoutRegion } from "../modules/layout.types"
+import type { SceneEntity } from "../modules/scene.types"
 import { normalizeLayoutRegionsState } from "./layoutRegions"
 import { normalizeTypographyGroups } from "./typography"
 import { normalizeOutfitSets } from "./compileOutfit"
 import { normalizeHairStyles } from "./compileHair"
+import { getSceneEntities, getSceneVariableKey, getSceneVariableToken } from "./scene"
 import {
   getLayoutRegionVariableKey,
   getTypographyGroupVariableKey,
@@ -134,6 +136,41 @@ function createLayoutRegionVariable(
     moduleKey: "layout",
     entityType: "region",
     entityId: region.id,
+  }
+}
+
+function createSceneVariable(
+  scene: SceneEntity,
+  index: number,
+  layoutActive: boolean,
+): PromptVariable {
+  const key = getSceneVariableKey(scene)
+  const token = getSceneVariableToken(scene)
+  const label = cleanText(scene.name) || `Scene ${index + 1}`
+
+  return {
+    id: `scene:${scene.id}`,
+    key,
+    label,
+    value: serializeValue({
+      id: scene.id,
+      semanticKey: scene.key,
+      key: token,
+      name: label,
+      content: scene.content.map((ref) => ref.token || ref.variableId),
+      components: scene.components.map((ref) => ({
+        moduleKey: ref.moduleKey,
+        entityId: ref.entityId,
+        label: ref.label,
+      })),
+    }),
+    description: `Scene reference: ${label}.`,
+    type: "reference",
+    enabled: layoutActive && scene.enabled !== false,
+    source: "module",
+    moduleKey: "scene",
+    entityType: "scene",
+    entityId: scene.id,
   }
 }
 
@@ -356,10 +393,18 @@ function createHairComponentVariable(
 function moduleChildren(
   module: PromptKeyModule,
   values: ModuleValues,
+  modules: PromptKeyModule[],
 ): PromptVariable[] {
   if (module.key === "layout") {
     return normalizeLayoutRegionsState(values.regions).regions.map(
       createLayoutRegionVariable,
+    )
+  }
+
+  if (module.key === "scene") {
+    const layoutActive = modules.some((item) => item.key === "layout")
+    return getSceneEntities(values).map((scene, index) =>
+      createSceneVariable(scene, index, layoutActive),
     )
   }
 
@@ -422,12 +467,14 @@ export function buildModuleVariableGroups(
       const output = outputs[module.key]
       const variables: PromptVariable[] = []
 
-      if (hasOutput(output)) {
+      // Scene owns child reference variables; exposing an additional generic
+      // {scene} module-output variable would be redundant and ambiguous.
+      if (module.key !== "scene" && hasOutput(output)) {
         variables.push(createModuleVariable(module, output))
       }
 
       variables.push(
-        ...moduleChildren(module, moduleValues[module.key] || {}),
+        ...moduleChildren(module, moduleValues[module.key] || {}, modules),
       )
 
       return {
