@@ -1,6 +1,18 @@
 export default {
   title: 'Scene',
   description: 'Compose reusable scene content and stable references to named module configurations.',
+  groups: {
+    scenes: {
+      title: 'Scene Composition',
+      description: 'Create and manage reusable Scene entities.',
+    },
+  },
+  fields: {
+    scenes: {
+      label: 'Scenes',
+      description: 'Compose reusable Scene entities from content and named module configurations.',
+    },
+  },
   actions: {
     add: 'Add Scene',
   },
