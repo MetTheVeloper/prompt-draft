@@ -10,14 +10,18 @@ import type {
 
 import type {
   ModuleField,
+  ModuleFieldValue,
   ModulePreset,
   ModuleValues,
   PromptKeyModule,
   PromptVariable,
 } from "../../../modules/types";
 import type { LayoutRegionsState } from "../../../modules/layout.types";
+import type { SceneEntity } from "../../../modules/scene.types";
 import { normalizeLayoutRegionsState } from "../../../utils/layoutRegions";
+import { normalizeSceneEntities } from "../../../utils/scene";
 import LayoutRegionsField from "../layout/LayoutRegionsField.vue";
+import SceneEntitiesField from "../scene/SceneEntitiesField.vue";
 import LayoutSchemaPreviewModal from "../layout/LayoutSchemaPreviewModal.vue";
 import type { ModuleOutputValue } from "../../../utils/compilePrompt";
 import {
@@ -55,6 +59,8 @@ const props = defineProps<{
   panelState?: ModulePanelState;
   aspectRatio?: string;
   previewOutput?: string;
+  modules?: PromptKeyModule[];
+  moduleValues?: Record<string, ModuleValues>;
 }>();
 
 const emit = defineEmits<{
@@ -266,7 +272,7 @@ const groupedFields = computed<ModuleGroupView[]>(() => {
       groupMap.set(groupId, []);
     }
 
-    groupMap.get(groupId)?.push(field);
+    groupMap.get(group.id)?.push(field);
   });
 
   const definedGroups = Object.values(props.module.groups || {}).map((group) => {
@@ -554,6 +560,9 @@ function isFieldFilled(field: ModuleField) {
   if (field.type === "layoutRegions") {
     return normalizeLayoutRegionsState(value).regions.length > 0;
   }
+  if (field.type === "sceneEntities") {
+    return normalizeSceneEntities(value).length > 0;
+  }
   if (Array.isArray(value)) {
     return value.length > 0;
   }
@@ -577,6 +586,14 @@ function getLayoutRegionsValue(fieldId: string): LayoutRegionsState {
   return normalizeLayoutRegionsState(values[fieldId]);
 }
 
+function getSceneEntitiesValue(fieldId: string): SceneEntity[] {
+  return normalizeSceneEntities(values[fieldId]);
+}
+
+function updateSceneEntitiesValue(fieldId: string, nextScenes: SceneEntity[]) {
+  values[fieldId] = nextScenes as unknown as ModuleFieldValue;
+}
+
 function fieldClasses(field: ModuleField) {
   const fieldWidth = field.ui?.width || "half";
 
@@ -589,6 +606,7 @@ function fieldClasses(field: ModuleField) {
       field.type === "textGroups" ||
       field.type === "variables" ||
       field.type === "layoutRegions" ||
+      field.type === "sceneEntities" ||
       isCategorizedSelect(field),
     "module-panel__field--half": fieldWidth !== "full",
     "module-panel__field--checkbox": field.type === "checkbox",
@@ -941,6 +959,7 @@ function groupColumns(group: ModuleGroupView) {
       field.type === "textGroups" ||
       field.type === "colorAssignments" ||
       field.type === "layoutRegions" ||
+      field.type === "sceneEntities" ||
       isCategorizedSelect(field)
     );
   });
@@ -1460,6 +1479,15 @@ onBeforeUnmount(() => {
 
             <modules-panel-text-groups-field v-else-if="field.type === 'textGroups'" v-model="values[field.id]"
               :field="field" :module-key="module.key" />
+
+            <SceneEntitiesField
+              v-else-if="field.type === 'sceneEntities'"
+              :model-value="getSceneEntitiesValue(field.id)"
+              :field="field"
+              :modules="modules || []"
+              :module-values="moduleValues || {}"
+              @update:model-value="updateSceneEntitiesValue(field.id, $event)"
+            />
 
             <LayoutRegionsField
               v-else-if="field.type === 'layoutRegions'"
