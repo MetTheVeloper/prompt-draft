@@ -190,7 +190,7 @@ function compileFormEntity(
   if (!specification) return "";
 
   if (entity.inheritGlobal === false) {
-    return `• ${scope} — independent form; do not apply the Global/default form to ${scope}: ${specification}`;
+    return `• ${scope} — independent form: exclude ${scope} from the Global/default form. Use only: ${specification}`;
   }
 
   return `• ${scope}: ${specification}`;
