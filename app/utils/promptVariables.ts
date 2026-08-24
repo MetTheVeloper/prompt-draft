@@ -6,6 +6,7 @@ export const VARIABLE_TOKEN_PATTERN = /\{([a-z][a-zA-Z0-9_]*)\}/g;
 
 export const RESERVED_VARIABLE_KEY_PATTERNS = [
   /^layout_region_[a-z0-9_]*$/,
+  /^scene_[a-z0-9_]*$/,
   /^text_[a-z0-9_]*$/,
   /^text_group_[a-z0-9_]*$/,
   /^outfit_[a-z0-9_]+$/,
