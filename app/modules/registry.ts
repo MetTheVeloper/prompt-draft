@@ -1,5 +1,6 @@
 // app/modules/registry.ts
 import type { PromptKeyModule } from './types'
+import type { EntityCapablePromptKeyModule } from './entityContracts'
 import { StyleModule } from './style.freeform'
 import { TextureModule } from './texture.freeform'
 import { FormModule } from './form.freeform'
@@ -17,6 +18,7 @@ import { TypographyModule } from './typography.module'
 import { VariablesModule } from './variables.module'
 import { LayoutModule } from './layout.module'
 import { withSemanticTargetCapabilities } from './semanticTargetCapabilities'
+import { withModuleEntityCapabilities } from './entityCapabilities'
 
 const registeredModules = [
   VariablesModule,
@@ -37,9 +39,9 @@ const registeredModules = [
   TextureModule,
 ] satisfies PromptKeyModule[]
 
-export const promptModules = registeredModules.map(
-  withSemanticTargetCapabilities,
-) satisfies PromptKeyModule[]
+export const promptModules = registeredModules.map((module) =>
+  withModuleEntityCapabilities(withSemanticTargetCapabilities(module)),
+) satisfies EntityCapablePromptKeyModule[]
 
 export function getPromptModuleByKey(key: string) {
   return promptModules.find((module) => module.key === key)
