@@ -43,7 +43,7 @@ function prepareDisplayValue(
 }
 
 function formatDefinition(moduleKey: string, value: ModuleOutputValue) {
-  if (moduleKey === VARIABLES_MODULE_KEY) {
+  if (moduleKey === VARIABLES_MODULE_KEY || moduleKey === "scene") {
     return stringifyOutput(value);
   }
 
@@ -89,7 +89,7 @@ function typographyKeys(output: Record<string, unknown>) {
 }
 
 function naturalPreview(moduleKey: string, value: ModuleOutputValue) {
-  if (moduleKey === VARIABLES_MODULE_KEY) {
+  if (moduleKey === VARIABLES_MODULE_KEY || moduleKey === "scene") {
     return stringifyOutput(value);
   }
 
