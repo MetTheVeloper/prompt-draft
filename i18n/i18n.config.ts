@@ -10,6 +10,8 @@ import outfitEn from './locales/outfit.en'
 import outfitFa from './locales/outfit.fa'
 import variablesEn from './locales/variables.en'
 import variablesFa from './locales/variables.fa'
+import sceneEn from './locales/scene.en'
+import sceneFa from './locales/scene.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -85,6 +87,7 @@ const enMessages = deepMerge(
     ['hair', hairEn],
     ['outfit', outfitEn],
     ['variables', variablesEn],
+    ['scene', sceneEn],
   ]),
   flatToNested(enConsolidated),
 )
@@ -110,6 +113,7 @@ const faMessages = deepMerge(
     ['hair', hairFa],
     ['outfit', outfitFa],
     ['variables', variablesFa],
+    ['scene', sceneFa],
   ]),
   flatToNested(faConsolidated),
 )
