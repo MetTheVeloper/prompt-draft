@@ -172,7 +172,12 @@ function normalizeFormEntities(values: ModuleValues) {
   });
 }
 
-function compileFormEntity(
+/**
+ * Compile one selected Form entity without also emitting the global/default
+ * Form line. Scene composition uses this adapter when a Scene references a
+ * specific Form entity by stable ID.
+ */
+export function compileFormEntityConfiguration(
   module: PromptKeyModule,
   values: ModuleValues,
   entity: TargetedModuleEntity<ModuleEntityPayload>,
@@ -216,7 +221,7 @@ export function compileFormModule(
   });
 
   const entityLines = normalizeFormEntities(values)
-    .map((entity) => compileFormEntity(module, values, entity))
+    .map((entity) => compileFormEntityConfiguration(module, values, entity))
     .filter(Boolean);
 
   // Preserve byte-equivalent scalar behavior for legacy/no-entity drafts.
