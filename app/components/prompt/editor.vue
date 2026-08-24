@@ -10,6 +10,7 @@ import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
 import ModulesPanelForm from "../modules/panel/form.vue";
 import ModulesPanelCamera from "../modules/panel/camera.vue";
+import ModulesPanelScene from "../modules/panel/scene.vue";
 import ModulesPanelBackground from "../modules/panel/background-stable.vue";
 import ModulesPanelEffects from "../modules/panel/effects.vue";
 import ModulesPanelLighting from "../modules/panel/lighting.vue";
@@ -91,6 +92,7 @@ function updateModuleIssues(moduleKey: string, issues: PromptValidationIssue[]) 
 }
 
 function getModulePanel(module: PromptKeyModule) {
+  if (module.key === "scene") return ModulesPanelScene;
   if (module.key === "form") return ModulesPanelForm;
   if (module.key === "camera") return ModulesPanelCamera;
   if (module.key === "background") return ModulesPanelBackground;
@@ -118,6 +120,11 @@ function getModulePanelExtraProps(module: PromptKeyModule) {
   const extraProps: Record<string, unknown> = {
     previewOutput: getModulePreview(module),
   };
+
+  if (module.key === "scene") {
+    extraProps.modules = props.modules;
+    extraProps.moduleValues = props.moduleValues;
+  }
 
   // Spread the reactive output map so Vue tracks its individual entries.
   // Hair and Outfit previews use this snapshot only to show selective local
