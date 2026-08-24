@@ -132,6 +132,18 @@ function validationMessage(issue: PromptValidationIssue) {
     return t("validation.posePreservePoseConflict");
   }
 
+  if (issue.code === "scene_missing_content_reference") {
+    return "A Scene contains a missing or disabled content reference.";
+  }
+
+  if (issue.code === "scene_missing_component_reference") {
+    return "A Scene contains a missing, disabled, or unavailable configuration reference.";
+  }
+
+  if (issue.code === "scene_component_cardinality_conflict") {
+    return "A Scene contains more than one configuration for a single-selection module.";
+  }
+
   return t("validation.unknown");
 }
 
