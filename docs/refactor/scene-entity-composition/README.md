@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 3 complete / Phase 4 ready
+> **Status:** Phase 3 complete / Phase 4 implemented, user validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** Keep all work for this refactor on the working branch until explicit user approval to merge. Do not merge or transfer these changes to `main` implicitly.
@@ -17,14 +17,14 @@ This file is the canonical source of truth for the Scene + repeatable module ent
 
 ---
 
-## Goal
+# Goal
 
-Prompt Generator already has semantic targets, prompt variables, Layout Regions, Typography entities, Hair entities, Outfit sets/items, and specialized assignment systems. Most visual modules, however, still behave as singleton configurations.
+Prompt Draft already has semantic targets, prompt variables, Layout Regions, Typography entities, Hair entities, Outfit sets/items, and specialized assignment systems. Most visual modules, however, originally behaved as singleton configurations.
 
-The refactor introduces two complementary concepts:
+This refactor introduces two complementary concepts:
 
 1. **Repeatable Module Entities** — named reusable configurations owned by a module.
-2. **Scene Entities** — reusable scene compositions that reference existing module entities and semantic content.
+2. **Scene Entities** — reusable scene compositions that reference semantic content and existing module entities.
 
 Target architecture:
 
@@ -46,9 +46,9 @@ A Layout Region should normally reference one Scene rather than directly wiring 
 
 ## 1. Scene is a real key module
 
-Scene will be implemented as a structured key module with repeatable Scene entities.
+Scene is implemented as a real key module with specialized repeatable Scene entities.
 
-Each Scene entity will also be exposed through the prompt-variable catalog as a derived `reference` variable/token:
+Each Scene entity exposes a derived `reference` variable/token:
 
 ```text
 Scene entity
@@ -58,7 +58,7 @@ Derived PromptVariable
 {scene_*}
 ```
 
-Manual user-created reference variables remain an escape hatch, not the primary Scene model.
+Manual user-created reference variables remain an escape hatch, not the canonical Scene model.
 
 ## 2. Scene composes references; it does not duplicate module state
 
@@ -70,50 +70,51 @@ scene.form.transformation
 scene.background.environment
 ```
 
-Preferred:
+Canonical direction:
 
 ```ts
 scene.components = [
   { moduleKey: "camera", entityId: "camera-entity-id" },
   { moduleKey: "form", entityId: "form-entity-id" },
-  { moduleKey: "background", entityId: "background-entity-id" },
 ]
 ```
 
-The source of truth for each configuration remains inside its owning module.
+The source of truth for each configuration stays inside its owning module.
 
-## 3. Canonical ownership is Region → Scene
+## 3. Region owns the Scene placement relationship
+
+Canonical ownership remains:
 
 ```text
 Layout Region → Scene
 ```
 
-Scene must not canonically own a Region. One Scene may be reused by multiple Regions.
+Scene does not own a Region. One Scene may later be reused by multiple Regions.
 
 ## 4. Semantic target and layout scope are different concepts
 
 Semantic targeting answers **what entity** receives a configuration.
 
-Layout scoping answers **where** a configured scene is placed.
-
-Do not collapse these into one ambiguous target array.
+Layout scoping answers **where** a composed Scene is placed.
 
 Examples:
 
-- Form may target `{person}`, `{car}`, or other subject/object references.
+- Form may target `{person}`, `{car}`, or other semantic references.
 - Camera normally has no subject/object semantic target.
-- Scene composition selects a Camera entity.
+- Scene selects a Camera entity.
 - Layout Region selects a Scene.
+
+Do not collapse these concepts into one target array.
 
 ## 5. Existing scalar module state remains global/default state
 
-A module converted to repeatable entities keeps its existing top-level `ModuleValues` as its global/default configuration.
+A scalar module converted to repeatable entities keeps its existing top-level `ModuleValues` as global/default configuration.
 
-Named configurations coexist under an optional sibling `entities` key.
+Generic named configurations coexist under the optional sibling `entities` key.
 
-This is the primary backward-compatibility strategy for old drafts.
+This is the backward-compatible strategy for old drafts.
 
-## 6. Named entities may inherit or be independent
+## 6. Named scalar entities may inherit or be independent
 
 Generic module entities support:
 
@@ -124,60 +125,95 @@ inheritGlobal?: boolean
 Semantics:
 
 - missing / `true` → inherit global/default values;
-- `false` → do not inherit global/default values; only local payload values are used.
-
-The default is intentionally inheriting, so existing entity state written before this flag remains compatible.
+- `false` → resolve only from local payload values.
 
 Form exposes this as **Independent Form**.
 
-## 7. Entity presets are local entity state, not global module state
+## 7. Entity presets are local entity state
 
-The generic entity editor now has opt-in preset support.
+The generic entity editor has opt-in preset support.
 
-When enabled for a module:
+When enabled:
 
-- selecting a preset writes that preset's declared normal field values into the selected entity's `payload`;
-- those values become explicit per-field overrides for that entity;
-- the module's global/default values remain unchanged;
-- the active preset is derived from matching local payload values rather than becoming canonical identity;
-- for Camera, selecting `None` follows its existing `resetOnNone: true` behavior by clearing the entity's normal-field overrides and returning it to global inheritance.
+- preset field values are written to the selected entity payload;
+- those values become explicit local overrides;
+- global/default state is unchanged;
+- preset identity is derived from matching values, not stored as canonical identity.
 
-Preset support is generic but opt-in. Phase 3 enables it for Camera.
+Camera enables this behavior.
 
-## 8. Scene can depend on Layout at runtime without losing state
+## 8. Scene-exposable and semantic-target capability are separate axes
 
-Expected behavior:
+A module can be useful inside a Scene without supporting semantic subject/object targeting.
+
+Current proof modules:
+
+```ts
+form: {
+  enabled: true,
+  sceneExposable: true,
+  sceneSelection: "multiple",
+  targetPolicy: ["subject", "object"],
+}
+
+camera: {
+  enabled: true,
+  sceneExposable: true,
+  sceneSelection: "single",
+  targetPolicy: [],
+}
+```
+
+`sceneSelection` controls cardinality in Scene composition:
+
+- Camera → one named configuration per Scene;
+- Form → multiple named configurations per Scene.
+
+## 9. Scene can depend on Layout at runtime without losing state
+
+Current Phase 4 behavior:
 
 ```text
 Layout inactive
-→ Scene compilation/placement unavailable
-→ Scene state remains persisted
+→ Scene cards remain stored and editable
+→ Scene definitions do not compile
+→ derived {scene_*} references are not exposed as active picker variables
 
 Layout active
-→ Scene available
-→ Regions can reference Scenes
+→ Scene definitions compile
+→ derived {scene_*} references become available
 ```
 
-Disabling Layout must not destroy Scene state.
+Disabling Layout must never destroy Scene state.
 
-## 9. Stable IDs are identity; names/tokens are representation
+## 10. Stable IDs are identity; keys/tokens/names are representation
 
-Cross-module references must use stable entity identity whenever available.
+Cross-module references use stable IDs whenever available.
 
-Renaming an entity, changing its semantic key, or regenerating its token must not silently invalidate references.
+For module configuration components:
+
+```text
+moduleKey + entityId
+```
+
+is canonical identity.
+
+Scene itself also has a stable `id`. Its editable semantic key generates the `{scene_*}` token, but changing Name/Semantic Key must not change Scene identity.
+
+Missing/deleted references remain missing; the system must never silently retarget them to another entity.
 
 ---
 
-# Implemented generic entity contract
+# Implemented generic entity infrastructure — Phase 1
 
-Shared infrastructure lives primarily in:
+Primary files:
 
 - `app/modules/entityContracts.ts`
 - `app/modules/entityCapabilities.ts`
 - `app/modules/registry.ts`
 - `app/components/modules/shared/ModuleEntitiesField.vue`
 
-## Generic entity
+Generic scalar entity:
 
 ```ts
 type ModuleEntity<TPayload extends object = Record<string, unknown>> = {
@@ -199,7 +235,7 @@ type TargetedModuleEntity<TPayload extends object = Record<string, unknown>> =
   }
 ```
 
-Stable cross-module reference:
+Stable module-entity reference:
 
 ```ts
 type ModuleEntityRef = {
@@ -210,192 +246,85 @@ type ModuleEntityRef = {
 }
 ```
 
-Only `moduleKey + entityId` participate in canonical identity.
-
-## Module entity capability metadata
-
-```ts
-type ModuleEntityConfig = {
-  enabled: boolean
-  sceneExposable?: boolean
-  targetPolicy?: Array<"subject" | "object">
-}
-```
-
-Current proof-module capabilities:
-
-```ts
-form: {
-  enabled: true,
-  sceneExposable: true,
-  targetPolicy: ["subject", "object"],
-}
-
-camera: {
-  enabled: true,
-  sceneExposable: true,
-  targetPolicy: [],
-}
-```
-
-Scene exposure is deliberately separate from the existing color/material `semanticTargets` capability metadata.
-
-## State model
-
-Example:
-
-```ts
-{
-  // existing scalar/global/default module values
-  formLanguage: "geometric",
-  proportions: "balanced",
-
-  entities: [
-    {
-      id: "form-entity-stable-id",
-      key: "meltedCar",
-      name: "Melted Car",
-      inheritGlobal: false,
-      targets: [...],
-      payload: {
-        formLanguage: "melted",
-        transformation: "offset_segments",
-      },
-    },
-  ],
-}
-```
-
-Entity payloads are partial patches.
-
-When inheritance is enabled, omitted fields resolve from global/default state.
-
-When inheritance is disabled, omitted fields are genuinely unset for that entity.
-
-Explicit empty strings, `null`, `false`, and empty arrays remain explicit values rather than implicit inheritance.
-
-## Specialized existing modules
-
-Hair, Outfit, Typography, Layout Regions, Pose, and Expression already contain richer entity/assignment structures.
-
-They are not forced into generic scalar payload storage. Later phases should adapt their stable references where useful rather than destructively rewriting domain-specific state.
+Only `moduleKey + entityId` participate in canonical component identity.
 
 ---
 
-# Form implementation result — Phase 2
+# Form result — Phase 2
 
-Form is the proof for a **target-oriented repeatable scalar module**.
+Form proves the architecture for a **target-oriented repeatable scalar module**.
 
-Implemented files include:
+Implemented behavior:
 
-- `app/utils/compileForm.ts`
-- `app/components/modules/panel/form.vue`
-- `app/components/modules/shared/ModuleEntitiesField.vue`
-- `app/composables/prompt/useModuleEntityTargets.ts`
+- existing Form scalar state remains global/default state;
+- named Form configurations use the generic `entities` collection;
+- Form entities support subject/object semantic targets;
+- editor supports add/duplicate/rename/delete/enable, per-field overrides and inheritance;
+- stable ID does not change when Name or Semantic Key changes;
+- dedicated Form compiler handles scoped entity output;
+- no named entities → legacy scalar behavior remains unchanged;
+- optional Independent Form disables global inheritance.
 
-## Behavior
-
-- Existing Form scalar state remains global/default state.
-- Named Form configurations use the generic `entities` collection.
-- Form entities can target subject/object semantic references.
-- The generic editor supports add, duplicate, rename, delete, enable/disable, target selection, per-field overrides, compatibility hints, and inheritance.
-- Existing stable IDs remain unchanged when Name or Semantic Key changes.
-- Form has a dedicated compiler because targeted scoped output cannot be represented correctly by the generic scalar compiler.
-- No named entities → legacy scalar Form output remains unchanged.
-
-## Independent Form
-
-A Form entity may disable global inheritance.
-
-UI concept:
-
-```text
-Independent Form
-Do not inherit or apply the Global/default configuration to this target.
-Only local overrides are used.
-```
-
-Compiler wording accepted after real generation tests:
+Accepted Independent Form wording:
 
 ```text
 • {target} — independent form: exclude {target} from the Global/default form. Use only: [local specification]
 ```
 
-Example:
-
-```text
-Form:
-• Global/default form: realistic and natural forms
-• {car} — independent form: exclude {car} from the Global/default form. Use only: melted physical behavior, offset segmented form with displaced structural sections
-```
-
-## Phase 2 manual validation
-
-Phase 2 was manually tested in the running application with a vehicle target and several generated-image comparisons.
-
-Observed behavior:
-
-- inherited Form entities correctly combine global/default values with local overrides;
-- Independent Form removes inherited values from the entity specification;
-- explicit exclusion wording keeps target-specific melted/deformed behavior substantially better isolated from the environment;
-- a neutral Global/default Form (`realistic and natural forms`) produces a clear normal-environment + transformed-target separation;
-- an aggressive Global/default Form can still style the surrounding scene while the independent target retains its own distinct Form specification;
-- the resulting behavior matches the intended global-rule + explicit-target-exception model.
-
-Phase 2 is accepted as complete.
+Phase 2 was manually validated in the running application with real generated-image comparisons and accepted.
 
 ---
 
-# Camera implementation result — Phase 3
+# Camera result — Phase 3
 
-Camera is the proof for a **scene-oriented repeatable scalar module**.
-
-Unlike Form, named Camera entities do not receive subject/object targets.
-
-A Camera entity represents a reusable scene configuration that will later be selected by Scene composition.
+Camera proves the architecture for a **scene-oriented repeatable scalar module**.
 
 Implemented behavior:
 
-- `app/components/modules/panel/camera.vue` wraps the existing Camera scalar panel.
-- `ModuleEntitiesField.vue` is reused for named Camera configurations.
-- Camera entity target policy is empty, so no `Apply To` picker is shown.
-- Named Camera configurations inherit global/default Camera values through the generic payload resolver.
-- Per-field overrides can create Camera configurations that differ from global/default values.
-- Camera entity presets are enabled through the generic opt-in preset support.
-- Applying a Camera preset writes preset values only into that Camera entity's local payload as explicit overrides.
-- Applying/clearing an entity preset never changes Global/default Camera state.
-- Named Camera configurations are intentionally **not compiled into the current global Camera prompt output**. Compiling several cameras globally before Scene exists would create ambiguous/conflicting camera instructions.
-- Existing Camera compilation remains owned by the existing scalar compiler.
-- Camera capability metadata marks it `sceneExposable: true`, so Phase 4 can discover Camera entities without Camera-specific Scene wiring.
+- existing Camera state remains global/default state;
+- named Camera configurations use the generic entity editor;
+- Camera entities have no subject/object target picker;
+- named Camera state does not add multiple Camera instructions to the global Camera output;
+- Camera entities inherit global/default values unless locally overridden;
+- per-entity Camera presets write only to local entity payload;
+- Camera is `sceneExposable: true` and `sceneSelection: "single"`.
 
-## Phase 3 manual validation
-
-Phase 3 was manually tested in the running application before the final preset UX addition.
-
-Validated behavior:
-
-- named Camera configurations can be created and edited;
-- Camera entities show scene-configuration semantics rather than subject/object targeting;
-- changing named Camera entities does not alter the existing global Camera prompt output;
-- global Camera configuration continues to compile normally;
-- inherited entity fields follow changes to Global/default Camera unless locally overridden;
-- multiple Camera entities can coexist without generating multiple global camera instructions.
-
-The final requested UX addition was per-entity Camera preset support. It was implemented generically and enabled only for Camera in Phase 3. Its state semantics reuse the existing Camera preset definitions while writing only to local entity payloads.
-
-Phase 3 is accepted as complete.
+Phase 3 was manually validated in the running application and accepted.
 
 ---
 
-# Scene target model
+# Scene implementation — Phase 4
 
-Conceptual Scene entity:
+Scene is intentionally a **specialized repeatable entity-owning module**, not another scalar `ModuleEntity.payload` module.
+
+Primary Phase 4 files:
+
+- `app/modules/scene.types.ts`
+- `app/modules/scene.module.ts`
+- `app/utils/scene.ts`
+- `app/utils/compileScene.ts`
+- `app/components/modules/panel/scene.vue`
+- `app/utils/promptVariableCatalog.ts`
+- `app/components/prompt/editor.vue`
+
+## Scene state model
 
 ```ts
+type SceneContentRef = {
+  variableId: string
+  token?: string
+  label?: string
+  source?: PromptVariableSource
+  type?: PromptVariableType
+}
+
+type SceneComponentRef = ModuleEntityRef
+
 type SceneEntity = {
   id: string
   key: string
   name: string
+  enabled?: boolean
   description?: string
   content: SceneContentRef[]
   components: SceneComponentRef[]
@@ -403,80 +332,116 @@ type SceneEntity = {
 }
 ```
 
-Generic component reference:
+Scene state is stored under the Scene module's `scenes` field.
+
+Scene does not copy Camera/Form payloads.
+
+## Scene Content / Actors
+
+The Scene editor currently exposes a deliberately small Phase 4 content catalog rather than prematurely replacing the project's full semantic target catalog.
+
+Supported Scene content includes:
+
+- user `subject` variables;
+- user `object` variables;
+- user `reference` variables;
+- active system `{subject}`.
+
+Scene and Layout Region references are intentionally excluded from Scene Content in this phase.
+
+Scene stores `variableId` as canonical content identity and resolves the current token during compilation.
+
+A deleted/disabled content variable remains a missing reference and surfaces a warning.
+
+## Scene Configuration Components
+
+The Scene editor discovers configuration modules generically from capability metadata:
 
 ```ts
-type SceneComponentRef = {
-  moduleKey: string
-  entityId: string
-  token?: string
-  label?: string
-}
+isSceneExposableModule(module)
 ```
 
-Scene should distinguish:
+It does not hard-code a Camera picker and a Form picker separately.
 
-### Content / actors
+Current behavior:
 
-- subject variables
-- object variables
-- typography groups/texts where appropriate
-- other semantic content references
+- Camera picker → single selection;
+- Form picker → multiple selection;
+- only named module entities are selectable;
+- disabled entities cannot be newly selected;
+- existing missing/disabled refs remain visible as missing instead of being silently removed;
+- component refs store stable `moduleKey + entityId`.
 
-### Configuration components
+## Scene component compilation
 
-- Camera
-- Form
-- Background
-- Lighting
-- Style
-- Effects
-- Framing
-- Material / Texture
-- Pose / Expression configurations where meaningful
-- future modules marked scene-exposable
+`compileScene.ts` resolves a component ref back to the source module entity.
 
-Scene component references remain generic. Do not add a hard-coded property per module.
-
----
-
-# Layout content direction
-
-Current `LayoutRegion.contentKey` is string-oriented.
-
-Long-term editing/state direction:
-
-```ts
-type LayoutContentRef = {
-  kind: "scene" | "variable" | "module_entity" | "custom"
-  entityId?: string
-  variableId?: string
-  moduleKey?: string
-  token?: string
-  value?: string
-}
-```
-
-Compilation may still resolve this to the token/string expected by the existing Layout prompt format.
-
----
-
-# General target/reference catalog direction
-
-The project currently has several specialized picker paths.
-
-Long-term direction: one reusable semantic entity/reference catalog with module-specific eligibility policies.
-
-Examples:
+Generic scalar entity path:
 
 ```text
-Form     → subject + object
-Pose     → subject
-Material → supported semantic/module entities
-Camera   → no semantic target; selected by Scene
+SceneComponentRef
+→ find module + entity by stable ID
+→ resolve global/default + local payload
+→ compile selected entity
 ```
 
-Do not generalize this prematurely before Scene composition proves the final reference requirements.
+Form uses its dedicated exported adapter so target scoping and Independent Form semantics are preserved.
+
+Camera uses the generic scalar entity path.
+
+Scene therefore does not know Camera/Form field schemas.
+
+## Scene compiler output
+
+Initial Phase 4 structural format:
+
+```text
+• Scene definitions:
+{scene_scene1} =
+Scene: Scene 1
+Content: {car}, {buildings}
+Form:
+• {car} — independent form: exclude {car} from the Global/default form. Use only: ...
+Camera: ...
+```
+
+The leading bullet marks Scene output as a protected structural block in the current Natural output pipeline so the optimizer cannot split Scene definitions into ordinary comma-separated style instructions.
+
+Wording/outer formatting is intentionally still open to refinement after running-app and generation tests, just as Form wording was refined from real output tests.
+
+## Derived Scene variables
+
+Each Scene generates a module-owned reference variable:
+
+```text
+id: scene:<stable-scene-id>
+entityType: scene
+entityId: <stable-scene-id>
+key: scene_<semantic-key>
+type: reference
+```
+
+The module-level generic `{scene}` output variable is intentionally suppressed; Scene exposes child `{scene_*}` references instead.
+
+Generated `scene_*` keys are reserved so user variables cannot collide with them.
+
+## Missing-reference safety
+
+Scene compile/editor warnings currently cover:
+
+- missing/disabled content reference;
+- missing/disabled/unavailable module entity reference;
+- multiple references for a module whose Scene cardinality is `single`.
+
+No missing ref is silently mapped to another entity.
+
+## Layout runtime rule
+
+Scene editor remains editable when Layout is inactive.
+
+Scene compilation and active derived Scene variables are disabled until Layout is active.
+
+This satisfies the persistence requirement before Phase 5 adds the actual Region → Scene relationship.
 
 ---
 
@@ -489,6 +454,8 @@ Do not generalize this prematurely before Scene composition proves the final ref
 - [x] Create canonical refactor document.
 - [x] Keep this document updated as architecture changes.
 
+**Result:** complete.
+
 ## Phase 1 — Generic entity contracts
 
 - [x] Audit repeatable entity/assignment patterns.
@@ -497,7 +464,7 @@ Do not generalize this prematurely before Scene composition proves the final ref
 - [x] Define stable identity/reference rules.
 - [x] Preserve top-level scalar state as global/default configuration.
 - [x] Define backward-compatible optional `entities` state.
-- [x] Keep scene exposure separate from color/material semantic targeting.
+- [x] Keep Scene exposure separate from color/material semantic targeting.
 - [x] Add focused type/runtime checks where practical.
 
 **Result:** complete.
@@ -513,8 +480,6 @@ Do not generalize this prematurely before Scene composition proves the final ref
 - [x] Test named Form configurations and independent target behavior in the running app.
 - [x] Add optional independent/no-global-inheritance behavior.
 
-**Exit condition:** Form proves the entity model for a target-oriented scalar module.
-
 **Result:** complete and manually accepted.
 
 ## Phase 3 — Camera
@@ -522,32 +487,37 @@ Do not generalize this prematurely before Scene composition proves the final ref
 - [x] Preserve existing Camera state as global/default behavior.
 - [x] Add named Camera entities/configurations.
 - [x] Avoid semantic subject/object targets for Camera.
-- [x] Keep Camera entities scene-exposable through capability metadata.
+- [x] Keep Camera entities Scene-exposable through capability metadata.
 - [x] Keep named Camera entities out of global Camera compilation before Scene exists.
 - [x] User-test Camera named configurations in the running app.
-- [x] Verify old/no-entity Camera prompt output remains unchanged in the running app.
-- [x] Add per-entity Camera preset selection using generic opt-in entity-preset support.
-
-**Exit condition:** The same generic contract works for both target-oriented Form and scene-oriented Camera.
+- [x] Verify old/no-entity Camera prompt output remains unchanged.
+- [x] Add per-entity Camera preset selection.
 
 **Result:** complete and manually accepted.
 
 ## Phase 4 — Scene module
 
-- [ ] Add Scene to module types/registry/schema.
-- [ ] Add `scene` to prompt-variable entity typing where required.
-- [ ] Implement repeatable Scene entities.
-- [ ] Implement Scene `content` references.
-- [ ] Implement generic Scene `components` references.
-- [ ] Restrict Scene component picker to scene-exposable module entities.
-- [ ] Generate derived Scene reference variables/tokens.
-- [ ] Use stable `entityId` for Scene reference identity.
-- [ ] Implement Scene compiler format.
-- [ ] Define component ordering/deduplication.
-- [ ] Handle missing/deleted component references safely.
-- [ ] Keep Scene state persisted while Layout is inactive.
+- [x] Add Scene to module types/registry/schema.
+- [x] Add `scene` to prompt-variable entity typing.
+- [x] Implement specialized repeatable Scene entities.
+- [x] Implement Scene `content` references.
+- [x] Implement generic Scene `components` references.
+- [x] Restrict component picker to Scene-exposable module entities.
+- [x] Add per-module Scene selection cardinality metadata.
+- [x] Generate derived Scene reference variables/tokens.
+- [x] Use stable Scene ID and `moduleKey + entityId` reference identity.
+- [x] Implement Scene compiler with generic scalar + Form adapter paths.
+- [x] Define deterministic component ordering/deduplication.
+- [x] Handle missing/deleted/disabled component references safely.
+- [x] Handle missing/disabled content references safely.
+- [x] Keep Scene state persisted/editable while Layout is inactive.
+- [x] Protect Scene definitions from Natural prompt comma-splitting.
+- [ ] User-test Scene composition in the running app.
+- [ ] Validate/refine Scene compiler wording/outer formatting from real output.
 
-**Exit condition:** A Scene composes content + at least Form and Camera references and compiles into a reusable Scene reference/value.
+**Exit condition:** A Scene composes content + at least Form and Camera references, exposes a stable Scene reference, and preserves missing-reference/layout-toggle behavior.
+
+**Current state:** implementation complete; running-app validation pending.
 
 ## Phase 5 — Layout Region → Scene
 
@@ -581,7 +551,7 @@ For every conversion:
 - expose only meaningful entities to Scene;
 - document newly discovered constraints.
 
-## Phase 7 — Generalize target/reference catalog
+## Phase 7 — Generalize semantic target/reference catalog
 
 - [ ] Audit specialized target picker overlaps.
 - [ ] Define reusable reference/target catalog.
@@ -591,18 +561,18 @@ For every conversion:
 - [ ] Include relevant module child entities.
 - [ ] Include typography entities where valid.
 - [ ] Preserve missing-reference recovery behavior.
-- [ ] Migrate existing specialized editors where beneficial.
+- [ ] Migrate specialized editors where beneficial.
 
 ## Phase 8 — UX consolidation
 
-- [ ] Consolidate generic entity list/editor patterns.
-- [ ] Consolidate add/duplicate/rename/delete interactions.
+- [ ] Consolidate generic entity list/editor interactions.
 - [ ] Consolidate reference picker patterns.
 - [ ] Keep global/default vs named configuration distinction obvious.
-- [ ] Separate Scene Content and Configuration Components in UI.
+- [ ] Keep Scene Content and Configuration Components visually distinct.
 - [ ] Optimize Region picker for Scene-first workflow.
-- [ ] Add missing-reference warnings/recovery UI.
+- [ ] Improve missing-reference recovery UI.
 - [ ] Validate mobile behavior with the existing component system.
+- [ ] Complete Scene-specific localization/UX wording if needed.
 
 ## Phase 9 — Regression, migration, cleanup
 
@@ -627,7 +597,7 @@ For every conversion:
 
 ---
 
-# Required manual scenarios
+# Required manual test scenarios
 
 ## Scenario A — targeted Form
 
@@ -636,41 +606,72 @@ For every conversion:
 - Optional Independent Form excludes that target from Global/default Form.
 - Output scopes the local transformation without unintentionally applying it to everything.
 
-**Phase 2 proof:** manually exercised with a vehicle target and generated images; accepted.
+**Status:** passed and accepted in Phase 2.
 
-## Scenario B — independent multi-region cameras
+## Scenario B — Scene composition proof
 
-- Layout contains multiple Regions.
-- Scene A references Camera A.
-- Scene B references Camera B.
-- Camera configurations differ significantly.
-- Regions reference Scenes, not Camera directly.
+Prepare:
 
-## Scenario C — nine-region poster
+```text
+Content variables:
+- {car}
+- {buildings}
 
-- Nine Regions exist.
-- Several Scenes are created/reused.
-- Scenes combine distinct Camera, Background, Lighting, Form, content, etc.
-- Regions select Scene references only.
+Named Camera entities:
+- Camera A
+- Camera B
+
+Named Form entities:
+- Melted Car
+```
+
+Create:
+
+```text
+Scene A
+Content: {car}, {buildings}
+Components: Camera A + Melted Car
+
+Scene B
+Content: {car}, {buildings}
+Components: Camera B
+```
+
+Expected:
+
+- two independent `{scene_*}` references are exposed while Layout is active;
+- Scene A resolves Camera A + targeted Form;
+- Scene B resolves Camera B without inheriting Scene A components;
+- source Camera/Form entities are not copied into Scene state.
+
+## Scenario C — stable rename/delete behavior
+
+- rename a Scene; stable Scene ID remains unchanged;
+- change Scene Semantic Key; token representation changes but identity remains stable;
+- delete a referenced Camera/Form entity;
+- Scene retains the old reference and reports it missing;
+- Scene must never auto-select another configuration.
 
 ## Scenario D — Layout toggle persistence
 
-- Create Scenes and Region assignments.
-- Disable Layout.
-- Scene state remains stored.
-- Re-enable Layout.
-- Scene/Region references recover intact.
+- create Scenes and component assignments;
+- disable Layout;
+- Scene state remains visible/editable;
+- Scene output and active `{scene_*}` references disappear;
+- re-enable Layout;
+- Scene definitions and references recover from persisted state.
 
-## Scenario E — rename/delete safety
+## Scenario E — Camera cardinality
 
-- Rename Scene/module entities without breaking stable references.
-- Delete referenced entities and surface missing references rather than silently retargeting.
+- Camera is single-selection inside one Scene;
+- selecting Camera B replaces Camera A for that Scene;
+- no Scene should compile two Camera entity configurations accidentally.
 
 ## Scenario F — backward compatibility
 
-- Load an old draft with only singleton Form/Camera values.
-- Create no named entities or Scenes.
-- Prompt output remains equivalent to previous behavior.
+- load an old draft containing only singleton Form/Camera values;
+- create no named entities or Scenes;
+- previous prompt behavior remains intact.
 
 ---
 
@@ -683,28 +684,37 @@ For every conversion:
 5. Region owns the Scene content reference; Scene does not own Region.
 6. Stable IDs are canonical identity; generated keys/tokens are representation.
 7. Preserve existing scalar/global behavior unless an explicit backward-compatible migration is defined.
-8. Prefer reusable contracts/editors over module-specific duplicate entity infrastructure.
-9. Specialized UI is acceptable only when the module genuinely requires different semantics.
+8. Prefer reusable contracts/editors over duplicated module-specific entity infrastructure.
+9. Specialized UI is acceptable when the domain genuinely needs different semantics; Scene is one such module.
 10. Keep compiler behavior explicit and testable rather than coupling semantics to UI structure.
-11. Keep unrelated feature work out of this branch.
-12. Update this document in the same development cycle as meaningful architectural changes.
-13. **Never merge to `main` without explicit final user approval.**
+11. Missing references must remain missing; never silently retarget by list position/name.
+12. Keep unrelated feature work out of this branch.
+13. Update this document in the same development cycle as meaningful architectural changes.
+14. **Never merge to `main` without explicit final user approval.**
 
 ---
 
 # Current checkpoint
 
-As of completion of Phase 3:
+As of the Phase 4 implementation checkpoint:
 
-- Phase 1 generic entity infrastructure is complete.
-- Phase 2 Form conversion is complete and manually accepted with real generated-image testing.
-- Form supports global/default inheritance, per-field local overrides, subject/object targeting, and optional Independent Form behavior.
-- Independent Form uses `inheritGlobal: false` and compiler wording: `exclude {target} from the Global/default form. Use only: ...`.
-- Phase 3 Camera conversion is complete and manually accepted in the running app.
-- Camera has repeatable named configurations using the same generic entity editor.
-- Camera entities intentionally have no semantic target picker.
-- Camera entities remain scene-only configurations and do not alter the current global Camera output.
-- Camera entity presets are supported through the generic opt-in preset path and write only local payload overrides.
-- Camera is marked scene-exposable through entity capability metadata.
-- The next implementation phase is **Phase 4: introduce the Scene module and compose stable references to at least Form + Camera entities**.
-- `main` remains untouched by this refactor and must remain untouched until explicit user approval.
+- Phase 1 generic repeatable-entity infrastructure is complete.
+- Phase 2 Form is complete and manually accepted.
+- Phase 3 Camera is complete and manually accepted.
+- Scene is now a registered key module with specialized `SceneEntity` state.
+- Scene distinguishes Content / Actors from Configuration Components.
+- Content references use stable variable IDs.
+- Component references use stable `moduleKey + entityId` identity.
+- Camera is single-select per Scene; Form is multi-select.
+- Scene component discovery is driven by `sceneExposable` capability metadata, not hard-coded picker branches.
+- Camera entities compile through the generic scalar entity resolver.
+- Form entities compile through the dedicated Form entity adapter so target and Independent Form semantics are preserved.
+- Derived `{scene_*}` reference variables are generated from Scene entities.
+- Generated `scene_*` keys are reserved against user-variable collisions.
+- Missing/disabled content and component refs produce warnings and are not silently retargeted.
+- Scene state remains stored/editable with Layout off, while Scene compilation/reference exposure is disabled.
+- Scene output is protected from Natural optimizer comma-splitting.
+- Base English/Persian Scene localization is registered.
+- The repository has no branch CI/typecheck workflow for this branch; running-app validation is the remaining Phase 4 acceptance gate.
+- **Next action:** user pulls `refactor/scene-entity-composition`, tests the Phase 4 Scene composition scenarios, and returns output/screenshots/errors for final hardening.
+- `main` remains untouched and must remain untouched until explicit final approval.
