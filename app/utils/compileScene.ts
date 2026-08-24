@@ -278,9 +278,16 @@ export function compileSceneModule(
   const compiled = getSceneEntities(values)
     .filter((scene) => scene.enabled !== false)
     .map((scene) => compileSceneDefinition(scene, context));
+  const definitions = compiled
+    .map((item) => item.definition)
+    .filter(Boolean)
+    .join("\n\n");
 
   return {
-    output: compiled.map((item) => item.definition).filter(Boolean).join("\n\n"),
+    // Leading bullet intentionally marks Scene as a protected structural block
+    // in the existing Natural output pipeline so definitions are never split
+    // into ordinary comma-separated style instructions.
+    output: definitions ? `• Scene definitions:\n${definitions}` : "",
     issues: compiled.flatMap((item) => item.issues),
   };
 }
