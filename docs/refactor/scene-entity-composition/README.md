@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 2 complete / Phase 3 implemented, user validation pending
+> **Status:** Phase 3 complete / Phase 4 ready
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** Keep all work for this refactor on the working branch until explicit user approval to merge. Do not merge or transfer these changes to `main` implicitly.
@@ -115,7 +115,7 @@ This is the primary backward-compatibility strategy for old drafts.
 
 ## 6. Named entities may inherit or be independent
 
-Generic module entities now support:
+Generic module entities support:
 
 ```ts
 inheritGlobal?: boolean
@@ -130,7 +130,21 @@ The default is intentionally inheriting, so existing entity state written before
 
 Form exposes this as **Independent Form**.
 
-## 7. Scene can depend on Layout at runtime without losing state
+## 7. Entity presets are local entity state, not global module state
+
+The generic entity editor now has opt-in preset support.
+
+When enabled for a module:
+
+- selecting a preset writes that preset's declared normal field values into the selected entity's `payload`;
+- those values become explicit per-field overrides for that entity;
+- the module's global/default values remain unchanged;
+- the active preset is derived from matching local payload values rather than becoming canonical identity;
+- for Camera, selecting `None` follows its existing `resetOnNone: true` behavior by clearing the entity's normal-field overrides and returning it to global inheritance.
+
+Preset support is generic but opt-in. Phase 3 enables it for Camera.
+
+## 8. Scene can depend on Layout at runtime without losing state
 
 Expected behavior:
 
@@ -146,7 +160,7 @@ Layout active
 
 Disabling Layout must not destroy Scene state.
 
-## 8. Stable IDs are identity; names/tokens are representation
+## 9. Stable IDs are identity; names/tokens are representation
 
 Cross-module references must use stable entity identity whenever available.
 
@@ -332,7 +346,7 @@ Phase 2 is accepted as complete.
 
 ---
 
-# Camera implementation direction — Phase 3
+# Camera implementation result — Phase 3
 
 Camera is the proof for a **scene-oriented repeatable scalar module**.
 
@@ -340,17 +354,36 @@ Unlike Form, named Camera entities do not receive subject/object targets.
 
 A Camera entity represents a reusable scene configuration that will later be selected by Scene composition.
 
-Current implementation:
+Implemented behavior:
 
 - `app/components/modules/panel/camera.vue` wraps the existing Camera scalar panel.
 - `ModuleEntitiesField.vue` is reused for named Camera configurations.
 - Camera entity target policy is empty, so no `Apply To` picker is shown.
-- Named Camera configurations inherit global/default Camera values through the same generic payload resolver.
+- Named Camera configurations inherit global/default Camera values through the generic payload resolver.
+- Per-field overrides can create Camera configurations that differ from global/default values.
+- Camera entity presets are enabled through the generic opt-in preset support.
+- Applying a Camera preset writes preset values only into that Camera entity's local payload as explicit overrides.
+- Applying/clearing an entity preset never changes Global/default Camera state.
 - Named Camera configurations are intentionally **not compiled into the current global Camera prompt output**. Compiling several cameras globally before Scene exists would create ambiguous/conflicting camera instructions.
 - Existing Camera compilation remains owned by the existing scalar compiler.
-- Camera capability metadata already marks it `sceneExposable: true`, so Phase 4 can discover it for Scene composition without adding Camera-specific Scene wiring.
+- Camera capability metadata marks it `sceneExposable: true`, so Phase 4 can discover Camera entities without Camera-specific Scene wiring.
 
-Current Phase 3 state: implementation is present; user validation in the running app is still required before the phase is marked complete.
+## Phase 3 manual validation
+
+Phase 3 was manually tested in the running application before the final preset UX addition.
+
+Validated behavior:
+
+- named Camera configurations can be created and edited;
+- Camera entities show scene-configuration semantics rather than subject/object targeting;
+- changing named Camera entities does not alter the existing global Camera prompt output;
+- global Camera configuration continues to compile normally;
+- inherited entity fields follow changes to Global/default Camera unless locally overridden;
+- multiple Camera entities can coexist without generating multiple global camera instructions.
+
+The final requested UX addition was per-entity Camera preset support. It was implemented generically and enabled only for Camera in Phase 3. Its state semantics reuse the existing Camera preset definitions while writing only to local entity payloads.
+
+Phase 3 is accepted as complete.
 
 ---
 
@@ -491,12 +524,13 @@ Do not generalize this prematurely before Scene composition proves the final ref
 - [x] Avoid semantic subject/object targets for Camera.
 - [x] Keep Camera entities scene-exposable through capability metadata.
 - [x] Keep named Camera entities out of global Camera compilation before Scene exists.
-- [ ] User-test Camera named configurations in the running app.
-- [ ] Verify old/no-entity Camera prompt output remains unchanged in the running app.
+- [x] User-test Camera named configurations in the running app.
+- [x] Verify old/no-entity Camera prompt output remains unchanged in the running app.
+- [x] Add per-entity Camera preset selection using generic opt-in entity-preset support.
 
 **Exit condition:** The same generic contract works for both target-oriented Form and scene-oriented Camera.
 
-**Current state:** implementation done; manual validation pending.
+**Result:** complete and manually accepted.
 
 ## Phase 4 — Scene module
 
@@ -660,16 +694,17 @@ For every conversion:
 
 # Current checkpoint
 
-As of the latest working-branch implementation:
+As of completion of Phase 3:
 
 - Phase 1 generic entity infrastructure is complete.
 - Phase 2 Form conversion is complete and manually accepted with real generated-image testing.
 - Form supports global/default inheritance, per-field local overrides, subject/object targeting, and optional Independent Form behavior.
 - Independent Form uses `inheritGlobal: false` and compiler wording: `exclude {target} from the Global/default form. Use only: ...`.
-- Camera now has repeatable named configurations using the same generic entity editor.
+- Phase 3 Camera conversion is complete and manually accepted in the running app.
+- Camera has repeatable named configurations using the same generic entity editor.
 - Camera entities intentionally have no semantic target picker.
 - Camera entities remain scene-only configurations and do not alter the current global Camera output.
-- Camera is already marked scene-exposable through entity capability metadata.
-- Phase 3 implementation is ready for manual running-app validation.
-- After Phase 3 validation, the next implementation phase is **Phase 4: introduce the Scene module and compose stable references to at least Form + Camera entities**.
+- Camera entity presets are supported through the generic opt-in preset path and write only local payload overrides.
+- Camera is marked scene-exposable through entity capability metadata.
+- The next implementation phase is **Phase 4: introduce the Scene module and compose stable references to at least Form + Camera entities**.
 - `main` remains untouched by this refactor and must remain untouched until explicit user approval.
