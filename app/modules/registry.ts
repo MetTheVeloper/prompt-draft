@@ -17,12 +17,14 @@ import { ColorPaletteModule } from './colorPalette.module'
 import { TypographyModule } from './typography.module'
 import { VariablesModule } from './variables.module'
 import { LayoutModule } from './layout.module'
+import { SceneModule } from './scene.module'
 import { withSemanticTargetCapabilities } from './semanticTargetCapabilities'
 import { withModuleEntityCapabilities } from './entityCapabilities'
 
 const registeredModules = [
   VariablesModule,
   LayoutModule,
+  SceneModule,
   StyleModule,
   FormModule,
   FramingModule,
