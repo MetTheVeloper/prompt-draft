@@ -22,6 +22,13 @@ export const MODULE_ENTITY_STATE_KEY = "entities" as const;
 export type ModuleEntityTargetPolicy = "subject" | "object";
 
 /**
+ * How many configurations from one module a Scene may select.
+ * Camera is normally single-selection while target-oriented modules such as
+ * Form can contribute several independent configurations to one Scene.
+ */
+export type ModuleEntitySceneSelection = "single" | "multiple";
+
+/**
  * Small shared contract for repeatable module-owned configurations.
  *
  * `id` is canonical persistence identity.
@@ -72,6 +79,7 @@ export type ModuleEntityRef = {
 export type ModuleEntityConfig = {
   enabled: boolean;
   sceneExposable?: boolean;
+  sceneSelection?: ModuleEntitySceneSelection;
   targetPolicy?: ModuleEntityTargetPolicy[];
 };
 
@@ -290,4 +298,10 @@ export function getModuleEntityTargetPolicy(
   module: PromptKeyModule,
 ): ModuleEntityTargetPolicy[] {
   return getModuleEntityConfig(module)?.targetPolicy || [];
+}
+
+export function getModuleEntitySceneSelection(
+  module: PromptKeyModule,
+): ModuleEntitySceneSelection {
+  return getModuleEntityConfig(module)?.sceneSelection || "multiple";
 }
