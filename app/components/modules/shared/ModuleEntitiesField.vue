@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
-import type { ElDropdownValue } from "~/types/dropdown";
+import type { ElDropdownItem, ElDropdownValue } from "~/types/dropdown";
 import type {
   ModuleField,
   ModuleFieldOption,
@@ -18,6 +18,7 @@ import {
   createModuleEntityId,
   resolveModuleEntityValues,
 } from "~/modules/entityContracts";
+import { getModulePresetValues } from "~/utils/compileModules";
 import {
   normalizeSemanticTargets,
   semanticScopeSummary,
@@ -44,11 +45,13 @@ const props = withDefaults(
     modelValue?: ModuleEntity<ModuleEntityPayload>[];
     targetPolicy?: ModuleEntityTargetPolicy[];
     allowGlobalInheritanceToggle?: boolean;
+    allowPresets?: boolean;
   }>(),
   {
     modelValue: () => [],
     targetPolicy: () => [],
     allowGlobalInheritanceToggle: false,
+    allowPresets: false,
   },
 );
 
@@ -152,6 +155,27 @@ const groups = computed(() => {
 });
 
 const hasTargets = computed(() => props.targetPolicy.length > 0);
+const presetItems = computed(() => {
+  return Object.values(props.module.presets || {}).sort(
+    (a, b) => (a.order ?? 0) - (b.order ?? 0),
+  );
+});
+const hasEntityPresets = computed(() => {
+  return props.allowPresets && presetItems.value.length > 0;
+});
+const entityPresetDropdownItems = computed<ElDropdownItem[]>(() => {
+  const items: ElDropdownItem[] = presetItems.value.map((preset) => ({
+    value: preset.id,
+    label: presetLabel(preset.id),
+    description: presetDescription(preset.id),
+  }));
+
+  if (props.module.presetUi?.allowNone !== false) {
+    items.unshift({ value: "", label: t("panel.none") });
+  }
+
+  return items;
+});
 
 watch(
   [() => props.modelValue, targetCatalog.availableOptions],
@@ -361,6 +385,79 @@ function targetSummary(entity: EditableModuleEntity) {
 
 function overrideCount(entity: EditableModuleEntity) {
   return normalFields.value.filter((field) => hasPayloadOverride(entity, field.id)).length;
+}
+
+function presetLabel(presetId: string) {
+  return translate(
+    `modules.${props.module.key}.presets.${presetId}.label`,
+    humanize(presetId),
+  );
+}
+
+function presetDescription(presetId: string) {
+  return translate(`modules.${props.module.key}.presets.${presetId}.description`, "");
+}
+
+function moduleValuesEqual(first: unknown, second: unknown) {
+  if (first === second) return true;
+  try {
+    return JSON.stringify(first) === JSON.stringify(second);
+  } catch {
+    return false;
+  }
+}
+
+function presetValuesForEntity(presetId: string) {
+  const presetValues = getModulePresetValues(props.module, presetId);
+  return Object.entries(presetValues).filter(([fieldId]) => {
+    const field = props.module.fields[fieldId];
+    return Boolean(field && !field.isOverride);
+  });
+}
+
+function entityPresetMatches(entity: EditableModuleEntity, presetId: string) {
+  const entries = presetValuesForEntity(presetId);
+  if (!entries.length) return false;
+
+  return entries.every(([fieldId, value]) => {
+    return hasPayloadOverride(entity, fieldId) &&
+      moduleValuesEqual(entity.payload[fieldId], value);
+  });
+}
+
+function entityPresetValue(entity: EditableModuleEntity) {
+  return presetItems.value.find((preset) => entityPresetMatches(entity, preset.id))?.id || "";
+}
+
+function clearEntityPreset(index: number) {
+  const entity = entities.value[index];
+  if (!entity) return;
+
+  if (props.module.presetUi?.resetOnNone !== true) return;
+
+  const payload = { ...entity.payload };
+  normalFields.value.forEach((field) => {
+    delete payload[field.id];
+  });
+  updateEntity(index, { payload });
+}
+
+function applyEntityPreset(index: number, value: ElDropdownValue) {
+  const presetId = String(value ?? "");
+  if (!presetId) {
+    clearEntityPreset(index);
+    return;
+  }
+
+  if (!props.module.presets?.[presetId]) return;
+  const entity = entities.value[index];
+  if (!entity) return;
+
+  const payload = { ...entity.payload };
+  presetValuesForEntity(presetId).forEach(([fieldId, fieldValue]) => {
+    payload[fieldId] = cloneValue(fieldValue as ModuleFieldValue);
+  });
+  updateEntity(index, { payload });
 }
 
 function fieldLabel(field: ModuleField) {
@@ -650,6 +747,26 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
               </el-text>
             </el-flex>
           </el-grid>
+
+          <el-flex v-if="hasEntityPresets" rules="ccs" :gap="5" class="w100">
+            <el-flex rules="rsc" :gap="6">
+              <el-text :size="10" color="normal50">
+                {{ translate("components.moduleEntities.fields.preset", "Preset") }}
+              </el-text>
+              <el-help :text="translate('components.moduleEntities.fields.presetDescription', 'Apply a module preset as explicit overrides for this named configuration.')" />
+            </el-flex>
+            <el-dropdown
+              :model-value="entityPresetValue(entity)"
+              :items="entityPresetDropdownItems"
+              item-label="label"
+              item-value="value"
+              :clearable="false"
+              @update:model-value="applyEntityPreset(entityIndex, $event)"
+            />
+            <el-text :size="9" color="normal40">
+              {{ translate("components.moduleEntities.fields.presetHint", "Preset values are stored as local overrides; the Global/default configuration is not changed.") }}
+            </el-text>
+          </el-flex>
 
           <el-flex v-if="hasTargets" rules="ccs" :gap="5" class="w100">
             <el-text :size="10" color="normal50">
