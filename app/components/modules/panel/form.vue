@@ -102,6 +102,7 @@ function updateEntities(nextEntities: typeof entities.value) {
       :global-values="globalValues"
       :model-value="entities"
       :target-policy="targetPolicy"
+      allow-global-inheritance-toggle
       @update:model-value="updateEntities"
     />
   </el-flex>
