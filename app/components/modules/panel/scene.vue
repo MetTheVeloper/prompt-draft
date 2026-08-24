@@ -57,16 +57,28 @@ const layoutActive = computed(() => {
 });
 
 const sceneVariables = computed<PromptVariable[]>(() => {
-  const userVariables = enabledPromptVariables.value.map((variable) => ({
-    ...variable,
-    source: variable.source || ("user" as const),
-  }));
+  const userVariables = enabledPromptVariables.value
+    .filter((variable) => {
+      return (
+        variable.type === "subject" ||
+        variable.type === "object" ||
+        variable.type === "reference"
+      );
+    })
+    .map((variable) => ({
+      ...variable,
+      source: variable.source || ("user" as const),
+    }));
+
+  const systemVariables = enabledSystemPromptVariables.value.filter((variable) => {
+    return variable.key === "subject";
+  });
 
   const seen = new Set<string>();
 
   return [
     ...userVariables,
-    ...enabledSystemPromptVariables.value,
+    ...systemVariables,
   ].filter((variable) => {
     if (!variable.id || seen.has(variable.id)) return false;
     seen.add(variable.id);
