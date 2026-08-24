@@ -4,6 +4,7 @@ import type { ElDropdownValue } from "~/types/dropdown";
 import type {
   ModuleField,
   ModuleFieldOption,
+  ModuleFieldValue,
   ModuleValues,
   PromptKeyModule,
   SemanticTargetRef,
@@ -189,9 +190,24 @@ function updatePayload(index: number, fieldId: string, value: unknown) {
   updateEntity(index, {
     payload: {
       ...entity.payload,
-      [fieldId]: value as ModuleValues[string],
+      [fieldId]: value as ModuleFieldValue,
     },
   });
+}
+
+function updateCheckboxInput(index: number, fieldId: string, event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  updatePayload(index, fieldId, Boolean(input?.checked));
+}
+
+function updateTextInput(index: number, fieldId: string, event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  updatePayload(index, fieldId, input?.value ?? "");
+}
+
+function updateNumberInput(index: number, fieldId: string, event: Event) {
+  const input = event.target as HTMLInputElement | null;
+  updatePayload(index, fieldId, Number(input?.value ?? 0));
 }
 
 function hasPayloadOverride(entity: EditableModuleEntity, fieldId: string) {
@@ -260,12 +276,11 @@ function duplicateEntity(index: number) {
   const source = entities.value[index];
   if (!source) return;
 
-  const copyName = `${source.name || humanize(props.module.key)} Copy`;
   const copy: EditableModuleEntity = {
     ...cloneValue(source),
     id: createModuleEntityId(props.module.key),
     key: uniqueEntityKey(`${source.key || props.module.key}Copy`),
-    name: copyName,
+    name: `${source.name || humanize(props.module.key)} Copy`,
   };
 
   setEntities([
@@ -300,8 +315,7 @@ function updateName(index: number, value: unknown) {
 }
 
 function updateKey(index: number, value: unknown) {
-  const next = String(value ?? "");
-  updateEntity(index, { key: uniqueEntityKey(next, index) });
+  updateEntity(index, { key: uniqueEntityKey(String(value ?? ""), index) });
 }
 
 function entityTargets(entity: EditableModuleEntity) {
@@ -326,7 +340,9 @@ function updateTargets(index: number, values: ElDropdownValue[]) {
 }
 
 function targetSummary(entity: EditableModuleEntity) {
-  if (!hasTargets.value) return translate("components.moduleEntities.sceneOnly", "Scene configuration");
+  if (!hasTargets.value) {
+    return translate("components.moduleEntities.sceneOnly", "Scene configuration");
+  }
   return semanticScopeSummary(entityTargets(entity));
 }
 
@@ -418,7 +434,6 @@ function selectedOption(entity: EditableModuleEntity, field: ModuleField) {
 function activeCategory(entity: EditableModuleEntity, field: ModuleField) {
   const selected = selectedOption(entity, field);
   if (selected?.category) return selected.category;
-
   return selectedCategories.value[categoryStateKey(entity, field)] || "";
 }
 
@@ -480,7 +495,6 @@ function selectedCompatibilityWarning(
 
   const tags = dependencyTags(entity, field);
   if (!hasTagMatch(tags, selected.compatibility.discouragedTags)) return "";
-
   return translate(selected.compatibility.warningKey, "");
 }
 
@@ -491,7 +505,9 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
 
   const stringValue = String(value ?? "");
   const option = field.options?.find((item) => item.value === stringValue);
-  return option ? optionLabel(field, option) : stringValue || translate("panel.none", "None");
+  return option
+    ? optionLabel(field, option)
+    : stringValue || translate("panel.none", "None");
 }
 </script>
 
@@ -613,7 +629,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                 @update:model-value="updateKey(entityIndex, $event)"
               />
               <el-text :size="9" color="normal40">
-                {{ translate("components.moduleEntities.fields.idHint", `Stable ID: ${entity.id}`) }}
+                {{ translate("components.moduleEntities.fields.idHint", "Stable ID") }}: {{ entity.id }}
               </el-text>
             </el-flex>
           </el-grid>
@@ -732,14 +748,14 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                     v-else-if="field.type === 'checkbox'"
                     :checked="Boolean(entity.payload[field.id])"
                     type="checkbox"
-                    @change="updatePayload(entityIndex, field.id, ($event.target as HTMLInputElement).checked)"
+                    @change="updateCheckboxInput(entityIndex, field.id, $event)"
                   />
 
                   <input
                     v-else-if="field.type === 'color'"
                     :value="String(entity.payload[field.id] || '')"
                     type="color"
-                    @input="updatePayload(entityIndex, field.id, ($event.target as HTMLInputElement).value)"
+                    @input="updateTextInput(entityIndex, field.id, $event)"
                   />
 
                   <input
@@ -749,7 +765,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                     :min="field.ui?.min"
                     :max="field.ui?.max"
                     :step="field.ui?.step"
-                    @input="updatePayload(entityIndex, field.id, Number(($event.target as HTMLInputElement).value))"
+                    @input="updateNumberInput(entityIndex, field.id, $event)"
                   />
 
                   <el-text-field
