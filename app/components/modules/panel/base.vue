@@ -272,7 +272,7 @@ const groupedFields = computed<ModuleGroupView[]>(() => {
       groupMap.set(groupId, []);
     }
 
-    groupMap.get(group.id)?.push(field);
+    groupMap.get(groupId)?.push(field);
   });
 
   const definedGroups = Object.values(props.module.groups || {}).map((group) => {
