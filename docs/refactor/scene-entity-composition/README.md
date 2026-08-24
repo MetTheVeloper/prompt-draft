@@ -60,7 +60,49 @@ Derived PromptVariable
 
 Manual user-created reference variables remain an escape hatch, not the canonical Scene model.
 
-## 2. Scene composes references; it does not duplicate module state
+## 2. Every Key Module shell is Base-driven
+
+Scene is specialized in its **field/editor semantics**, not in its outer Key Module shell.
+
+Canonical UI layering:
+
+```text
+Prompt Key Module
+→ ModulesPanelBase
+→ module schema/groups/fields
+→ specialized field component only where the field semantics require it
+```
+
+Scene therefore uses the same `ModulesPanelBase` shell as other Key Modules for:
+
+- Key Module header/status;
+- module expand/collapse;
+- clear/delete state action;
+- module output preview;
+- copy action;
+- right-click context menu;
+- remove-from-Key-Modules action;
+- shared visual spacing/radius/borders and responsive behavior.
+
+The Scene-specific editor is injected through the Scene schema field:
+
+```ts
+fields: {
+  scenes: {
+    id: "scenes",
+    type: "sceneEntities",
+    ...
+  }
+}
+```
+
+`Base.vue` renders that field using `SceneEntitiesField.vue`.
+
+`app/components/modules/panel/scene.vue` is only an orchestration wrapper for Scene-specific compile/issues/context; it must not recreate a second Key Module shell.
+
+This rule applies to future structured Key Modules too unless a documented architecture-level exception is approved.
+
+## 3. Scene composes references; it does not duplicate module state
 
 Bad:
 
@@ -81,7 +123,7 @@ scene.components = [
 
 The source of truth for each configuration stays inside its owning module.
 
-## 3. Region owns the Scene placement relationship
+## 4. Region owns the Scene placement relationship
 
 Canonical ownership remains:
 
@@ -91,7 +133,7 @@ Layout Region → Scene
 
 Scene does not own a Region. One Scene may later be reused by multiple Regions.
 
-## 4. Semantic target and layout scope are different concepts
+## 5. Semantic target and layout scope are different concepts
 
 Semantic targeting answers **what entity** receives a configuration.
 
@@ -106,7 +148,7 @@ Examples:
 
 Do not collapse these concepts into one target array.
 
-## 5. Existing scalar module state remains global/default state
+## 6. Existing scalar module state remains global/default state
 
 A scalar module converted to repeatable entities keeps its existing top-level `ModuleValues` as global/default configuration.
 
@@ -114,7 +156,7 @@ Generic named configurations coexist under the optional sibling `entities` key.
 
 This is the backward-compatible strategy for old drafts.
 
-## 6. Named scalar entities may inherit or be independent
+## 7. Named scalar entities may inherit or be independent
 
 Generic module entities support:
 
@@ -129,7 +171,7 @@ Semantics:
 
 Form exposes this as **Independent Form**.
 
-## 7. Entity presets are local entity state
+## 8. Entity presets are local entity state
 
 The generic entity editor has opt-in preset support.
 
@@ -142,7 +184,7 @@ When enabled:
 
 Camera enables this behavior.
 
-## 8. Scene-exposable and semantic-target capability are separate axes
+## 9. Scene-exposable and semantic-target capability are separate axes
 
 A module can be useful inside a Scene without supporting semantic subject/object targeting.
 
@@ -169,13 +211,13 @@ camera: {
 - Camera → one named configuration per Scene;
 - Form → multiple named configurations per Scene.
 
-## 9. Scene can depend on Layout at runtime without losing state
+## 10. Scene can depend on Layout at runtime without losing state
 
 Current Phase 4 behavior:
 
 ```text
 Layout inactive
-→ Scene cards remain stored and editable
+→ Scene entities remain stored and editable
 → Scene definitions do not compile
 → derived {scene_*} references are not exposed as active picker variables
 
@@ -186,7 +228,7 @@ Layout active
 
 Disabling Layout must never destroy Scene state.
 
-## 10. Stable IDs are identity; keys/tokens/names are representation
+## 11. Stable IDs are identity; keys/tokens/names are representation
 
 Cross-module references use stable IDs whenever available.
 
@@ -295,7 +337,7 @@ Phase 3 was manually validated in the running application and accepted.
 
 # Scene implementation — Phase 4
 
-Scene is intentionally a **specialized repeatable entity-owning module**, not another scalar `ModuleEntity.payload` module.
+Scene is a **specialized repeatable entity-owning module**, not another scalar `ModuleEntity.payload` module. Its outer Key Module UI is nevertheless fully Base-driven.
 
 Primary Phase 4 files:
 
@@ -303,9 +345,38 @@ Primary Phase 4 files:
 - `app/modules/scene.module.ts`
 - `app/utils/scene.ts`
 - `app/utils/compileScene.ts`
+- `app/components/modules/scene/SceneEntitiesField.vue`
 - `app/components/modules/panel/scene.vue`
+- `app/components/modules/panel/base.vue`
 - `app/utils/promptVariableCatalog.ts`
 - `app/components/prompt/editor.vue`
+
+## Scene UI architecture
+
+`SceneModule` declares the structured field in its schema:
+
+```ts
+scenes: {
+  id: "scenes",
+  type: "sceneEntities",
+  default: [],
+  group: "scenes",
+}
+```
+
+`ModulesPanelBase` owns the common Key Module shell and renders the field via `SceneEntitiesField.vue`.
+
+The specialized field component owns only Scene-domain controls:
+
+- Scene add/duplicate/delete/enable;
+- Scene card expand/collapse;
+- Name + Semantic Key;
+- Description + Extra Details;
+- Content / Actors picker;
+- Configuration Components picker;
+- per-Scene missing-reference warnings.
+
+The thin `panel/scene.vue` wrapper owns canonical Scene compilation and combines Scene-specific issues with Base issues.
 
 ## Scene state model
 
@@ -346,6 +417,12 @@ Supported Scene content includes:
 - user `object` variables;
 - user `reference` variables;
 - active system `{subject}`.
+
+Important implementation detail discovered during the first UI test:
+
+User variables created by the Variables module do not need to persist `source: "user"` inside their own stored record. The Scene catalog therefore reads them directly from `enabledPromptVariables` and normalizes a missing source to `user`; it must **not** filter user content by requiring `variable.source === "user"`.
+
+This is what allows variables such as `{car}` and `{buildings}` to appear correctly in Content / Actors.
 
 Scene and Layout Region references are intentionally excluded from Scene Content in this phase.
 
@@ -407,7 +484,7 @@ Camera: ...
 
 The leading bullet marks Scene output as a protected structural block in the current Natural output pipeline so the optimizer cannot split Scene definitions into ordinary comma-separated style instructions.
 
-Wording/outer formatting is intentionally still open to refinement after running-app and generation tests, just as Form wording was refined from real output tests.
+Wording/outer formatting is intentionally still open to refinement after running-app and generation tests. UI correctness is being validated before compiler wording is finalized.
 
 ## Derived Scene variables
 
@@ -500,7 +577,10 @@ This satisfies the persistence requirement before Phase 5 adds the actual Region
 - [x] Add Scene to module types/registry/schema.
 - [x] Add `scene` to prompt-variable entity typing.
 - [x] Implement specialized repeatable Scene entities.
+- [x] Render Scene through the shared `ModulesPanelBase` Key Module shell.
+- [x] Inject Scene editing via the schema-driven `sceneEntities` field type.
 - [x] Implement Scene `content` references.
+- [x] Include user subject/object/reference variables without requiring persisted `source: user` metadata.
 - [x] Implement generic Scene `components` references.
 - [x] Restrict component picker to Scene-exposable module entities.
 - [x] Add per-module Scene selection cardinality metadata.
@@ -512,12 +592,12 @@ This satisfies the persistence requirement before Phase 5 adds the actual Region
 - [x] Handle missing/disabled content references safely.
 - [x] Keep Scene state persisted/editable while Layout is inactive.
 - [x] Protect Scene definitions from Natural prompt comma-splitting.
-- [ ] User-test Scene composition in the running app.
+- [ ] User-test corrected Base-driven Scene UI in the running app.
 - [ ] Validate/refine Scene compiler wording/outer formatting from real output.
 
-**Exit condition:** A Scene composes content + at least Form and Camera references, exposes a stable Scene reference, and preserves missing-reference/layout-toggle behavior.
+**Exit condition:** A Scene composes content + at least Form and Camera references, exposes a stable Scene reference, and preserves missing-reference/layout-toggle behavior while behaving visually/interaction-wise as a normal Key Module.
 
-**Current state:** implementation complete; running-app validation pending.
+**Current state:** implementation complete; corrected Base-driven UI validation pending.
 
 ## Phase 5 — Layout Region → Scene
 
@@ -639,6 +719,9 @@ Components: Camera B
 
 Expected:
 
+- Scene is rendered with the same Base Key Module shell/interactions as Camera/Form/etc.;
+- `{car}` and `{buildings}` appear under user content in Content / Actors;
+- system `{subject}` may also appear separately;
 - two independent `{scene_*}` references are exposed while Layout is active;
 - Scene A resolves Camera A + targeted Form;
 - Scene B resolves Camera B without inheriting Scene A components;
@@ -685,7 +768,7 @@ Expected:
 6. Stable IDs are canonical identity; generated keys/tokens are representation.
 7. Preserve existing scalar/global behavior unless an explicit backward-compatible migration is defined.
 8. Prefer reusable contracts/editors over duplicated module-specific entity infrastructure.
-9. Specialized UI is acceptable when the domain genuinely needs different semantics; Scene is one such module.
+9. **Every Key Module shell must remain Base-driven.** Domain-specific UI belongs in schema-injected field components unless an explicit architecture exception is documented and approved.
 10. Keep compiler behavior explicit and testable rather than coupling semantics to UI structure.
 11. Missing references must remain missing; never silently retarget by list position/name.
 12. Keep unrelated feature work out of this branch.
@@ -696,12 +779,16 @@ Expected:
 
 # Current checkpoint
 
-As of the Phase 4 implementation checkpoint:
+As of the corrected Phase 4 UI checkpoint:
 
 - Phase 1 generic repeatable-entity infrastructure is complete.
 - Phase 2 Form is complete and manually accepted.
 - Phase 3 Camera is complete and manually accepted.
-- Scene is now a registered key module with specialized `SceneEntity` state.
+- Scene is a registered Key Module with specialized `SceneEntity` state.
+- Scene now uses `ModulesPanelBase` for the complete Key Module shell and interactions.
+- Scene-specific editing is injected via `SceneModule.fields.scenes` with field type `sceneEntities` and `SceneEntitiesField.vue`.
+- The earlier standalone Scene shell was removed; `panel/scene.vue` is now a thin compile/issues wrapper around Base.
+- Content / Actors now reads user variables from `enabledPromptVariables` and normalizes missing source metadata, fixing `{car}` / `{buildings}` omission from the picker.
 - Scene distinguishes Content / Actors from Configuration Components.
 - Content references use stable variable IDs.
 - Component references use stable `moduleKey + entityId` identity.
@@ -716,5 +803,5 @@ As of the Phase 4 implementation checkpoint:
 - Scene output is protected from Natural optimizer comma-splitting.
 - Base English/Persian Scene localization is registered.
 - The repository has no branch CI/typecheck workflow for this branch; running-app validation is the remaining Phase 4 acceptance gate.
-- **Next action:** user pulls `refactor/scene-entity-composition`, tests the Phase 4 Scene composition scenarios, and returns output/screenshots/errors for final hardening.
+- **Next action:** user pulls `refactor/scene-entity-composition`, validates the corrected Base-driven Scene UI and Content / Actors picker, then compiler wording is reviewed separately.
 - `main` remains untouched and must remain untouched until explicit final approval.
