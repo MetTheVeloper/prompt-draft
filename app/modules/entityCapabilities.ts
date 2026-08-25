@@ -31,6 +31,12 @@ const moduleEntityCapabilities = {
     sceneSelection: "single",
     targetPolicy: [],
   },
+  background: {
+    enabled: true,
+    sceneExposable: true,
+    sceneSelection: "single",
+    targetPolicy: [],
+  },
 } satisfies Partial<Record<string, ModuleEntityConfig>>;
 
 /**
@@ -44,6 +50,7 @@ const moduleEntitySceneInstructions: Partial<Record<string, string>> = {
   form: "Apply {tokens} to this scene.",
   camera: "Capture this scene with {tokens}.",
   framing: "Frame this scene with {tokens}.",
+  background: "Use {tokens} as this scene's background.",
 };
 
 export function withModuleEntityCapabilities(
