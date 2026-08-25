@@ -15,6 +15,7 @@ import {
   isSceneExposableModule,
   moduleEntityRefIdentity,
 } from "../modules/entityContracts";
+import { getModuleEntitySceneInstruction } from "../modules/entityCapabilities";
 import {
   getSceneEntities,
   getSceneVariableToken,
@@ -93,19 +94,11 @@ function joinTokens(tokens: string[]) {
   return `${tokens.slice(0, -1).join(", ")}, and ${tokens[tokens.length - 1]}`;
 }
 
-function componentInstruction(moduleKey: string, tokens: string[]) {
+function componentInstruction(module: PromptKeyModule, tokens: string[]) {
   const tokenText = joinTokens(tokens);
   if (!tokenText) return "";
 
-  if (moduleKey === "camera") {
-    return `Capture this scene with ${tokenText}.`;
-  }
-
-  if (moduleKey === "form") {
-    return `Apply ${tokenText} to this scene.`;
-  }
-
-  return `Apply ${tokenText} to this scene.`;
+  return getModuleEntitySceneInstruction(module).replaceAll("{tokens}", tokenText);
 }
 
 function appendSentence(base: string, sentence: string) {
@@ -166,7 +159,7 @@ function compileSceneDefinition(
         return [getModuleEntityVariableToken(module.key, entity)];
       });
 
-      const instruction = componentInstruction(module.key, tokens);
+      const instruction = componentInstruction(module, tokens);
       if (instruction) instructions.push(instruction);
     });
 
