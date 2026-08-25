@@ -15,6 +15,10 @@ import {
   isSceneExposableModule,
 } from "~/modules/entityContracts";
 import {
+  createModuleEntityReferenceCatalogIndex,
+  resolveModuleEntityReferenceCatalogItem,
+} from "~/utils/moduleEntityReferenceCatalog";
+import {
   getSceneVariableToken,
   normalizeSceneEntities,
 } from "~/utils/scene";
@@ -99,13 +103,21 @@ const layoutActive = computed(() => props.modules.some((module) => module.key ==
 const componentGroups = computed(() => {
   return props.modules
     .filter(isSceneExposableModule)
-    .map((module) => ({
-      module,
-      selection: getModuleEntitySceneSelection(module),
-      entities: getModuleEntities<ModuleEntityPayload>(
+    .map((module) => {
+      const entities = getModuleEntities<ModuleEntityPayload>(
         props.moduleValues[module.key] || {},
-      ),
-    }));
+      );
+
+      return {
+        module,
+        selection: getModuleEntitySceneSelection(module),
+        entities,
+        catalogIndex: createModuleEntityReferenceCatalogIndex(
+          module.key,
+          entities,
+        ),
+      };
+    });
 });
 
 const compileResult = computed(() => {
@@ -222,16 +234,23 @@ function refsForModule(scene: SceneEntity, moduleKey: string) {
 
 function componentItems(scene: SceneEntity, moduleKey: string) {
   const group = componentGroups.value.find((item) => item.module.key === moduleKey);
-  const items = (group?.entities || []).map((entity) => ({
-    value: entity.id,
-    label: entity.name || entity.key || entity.id,
-    description: entity.enabled === false ? "Disabled configuration" : entity.key,
-    disabled: entity.enabled === false,
+  const items = Array.from(group?.catalogIndex.values() || []).map((item) => ({
+    value: item.reference.entityId,
+    label: item.presentation.label,
+    description:
+      item.state?.available === false
+        ? "Disabled configuration"
+        : item.metadata.key,
+    disabled: item.state?.available === false,
   }));
-  const known = new Set(items.map((item) => item.value));
 
   refsForModule(scene, moduleKey).forEach((ref) => {
-    if (known.has(ref.entityId)) return;
+    const resolution = group
+      ? resolveModuleEntityReferenceCatalogItem(ref, group.catalogIndex)
+      : undefined;
+
+    if (resolution && resolution.status !== "missing") return;
+
     items.push({
       value: ref.entityId,
       label: ref.label || "Missing configuration",
@@ -260,19 +279,18 @@ function selectSingleComponent(
   }
 
   const group = componentGroups.value.find((item) => item.module.key === moduleKey);
-  const entity = group?.entities.find((item) => item.id === entityId);
   const existing = refsForModule(scene, moduleKey).find((ref) => ref.entityId === entityId);
+  const reference = existing || { moduleKey, entityId };
+  const resolution = group
+    ? resolveModuleEntityReferenceCatalogItem(reference, group.catalogIndex)
+    : undefined;
 
   updateScene(index, {
     components: [
       ...otherRefs,
-      entity
-        ? {
-            moduleKey,
-            entityId: entity.id,
-            label: entity.name || entity.key || entity.id,
-          }
-        : existing || { moduleKey, entityId },
+      resolution && resolution.status !== "missing"
+        ? { ...resolution.item.reference }
+        : reference,
     ],
   });
 }
@@ -292,23 +310,21 @@ function selectMultipleComponents(
   const scene = scenes.value[index];
   if (!scene) return;
 
-  const entities = new Map((group?.entities || []).map((entity) => [entity.id, entity]));
   const current = new Map(refsForModule(scene, moduleKey).map((ref) => [ref.entityId, ref]));
   const otherRefs = scene.components.filter((ref) => ref.moduleKey !== moduleKey);
 
   const nextRefs = selected.flatMap((value) => {
     const entityId = String(value ?? "");
-    const entity = entities.get(entityId);
+    const existing = current.get(entityId);
+    const reference = existing || { moduleKey, entityId };
+    const resolution = group
+      ? resolveModuleEntityReferenceCatalogItem(reference, group.catalogIndex)
+      : undefined;
 
-    if (entity) {
-      return [{
-        moduleKey,
-        entityId: entity.id,
-        label: entity.name || entity.key || entity.id,
-      }];
+    if (resolution && resolution.status !== "missing") {
+      return [{ ...resolution.item.reference }];
     }
 
-    const existing = current.get(entityId);
     return existing ? [existing] : [];
   });
 
