@@ -6,6 +6,10 @@ import {
   resolveReferenceCatalogItem,
   type ReferenceCatalogItem,
 } from "../app/utils/referenceCatalog.ts";
+import {
+  createSemanticReferenceCatalogIndex,
+  resolveSemanticReferenceCatalogItem,
+} from "../app/utils/semanticReferenceCatalog.ts";
 
 type Ref = {
   id: string;
@@ -142,4 +146,71 @@ test("duplicate canonical identities fail instead of silently choosing a target"
       ]),
     /Duplicate reference catalog identity: entity:same/,
   );
+});
+
+test("semantic adapter resolves module entities by stable entity id after rename", () => {
+  const current = {
+    value: "form:form-1",
+    label: "{form_newName}",
+    group: "module_entities",
+    target: {
+      kind: "module_output" as const,
+      value: "{form_newName}",
+      moduleKey: "form",
+      entityId: "form-1",
+      token: "{form_newName}",
+      label: "New Name",
+    },
+  };
+
+  const persisted = {
+    kind: "module_output" as const,
+    value: "{form_oldName}",
+    moduleKey: "form",
+    entityId: "form-1",
+    token: "{form_oldName}",
+    label: "Old Name",
+  };
+
+  const resolution = resolveSemanticReferenceCatalogItem(
+    persisted,
+    createSemanticReferenceCatalogIndex([current]),
+  );
+
+  assert.equal(resolution.status, "resolved");
+  assert.equal(resolution.identity, "module_entity:form:form-1");
+  if (resolution.status === "resolved") {
+    assert.equal(resolution.item.reference.token, "{form_newName}");
+    assert.equal(resolution.item.presentation.label, "{form_newName}");
+  }
+});
+
+test("semantic adapter keeps disabled targets unavailable without retargeting", () => {
+  const current = {
+    value: "user:user-1",
+    label: "{subject1}",
+    disabled: true,
+    target: {
+      kind: "user_variable" as const,
+      value: "{subject1}",
+      variableId: "user-1",
+      token: "{subject1}",
+      label: "Subject 1",
+    },
+  };
+
+  const persisted = {
+    ...current.target,
+    token: "{oldSubject1}",
+    value: "{oldSubject1}",
+  };
+
+  const resolution = resolveSemanticReferenceCatalogItem(
+    persisted,
+    createSemanticReferenceCatalogIndex([current]),
+  );
+
+  assert.equal(resolution.status, "unavailable");
+  assert.equal(resolution.identity, "user:user-1");
+  assert.equal(resolution.reference, persisted);
 });
