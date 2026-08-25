@@ -3,7 +3,6 @@ import { computed, ref, watch } from "vue";
 import type {
   ModuleValues,
   PromptKeyModule,
-  PromptVariable,
 } from "~/modules/types";
 import type { ModuleOutputValue } from "~/utils/compilePrompt";
 import type { PromptValidationIssue } from "~/utils/promptValidation";
@@ -11,7 +10,6 @@ import {
   compileSceneModule,
   type SceneCompileIssue,
 } from "~/utils/compileScene";
-import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 import ModulesPanelBase from "./base.vue";
 
 type ModulePanelState = {
@@ -45,45 +43,10 @@ const emit = defineEmits<{
   (event: "remove", moduleKey: string): void;
 }>();
 
-const {
-  enabledPromptVariables,
-  enabledSystemPromptVariables,
-} = usePromptVariables();
-
 const baseIssues = ref<PromptValidationIssue[]>([]);
 
 const layoutActive = computed(() => {
   return props.modules.some((module) => module.key === "layout");
-});
-
-const sceneVariables = computed<PromptVariable[]>(() => {
-  const userVariables = enabledPromptVariables.value
-    .filter((variable) => {
-      return (
-        variable.type === "subject" ||
-        variable.type === "object" ||
-        variable.type === "reference"
-      );
-    })
-    .map((variable) => ({
-      ...variable,
-      source: variable.source || ("user" as const),
-    }));
-
-  const systemVariables = enabledSystemPromptVariables.value.filter((variable) => {
-    return variable.key === "subject";
-  });
-
-  const seen = new Set<string>();
-
-  return [
-    ...userVariables,
-    ...systemVariables,
-  ].filter((variable) => {
-    if (!variable.id || seen.has(variable.id)) return false;
-    seen.add(variable.id);
-    return true;
-  });
 });
 
 const compileResult = computed(() => {
@@ -93,7 +56,6 @@ const compileResult = computed(() => {
       ...props.moduleValues,
       scene: props.modelValue || {},
     },
-    variables: sceneVariables.value,
     layoutActive: layoutActive.value,
   });
 });
@@ -103,18 +65,16 @@ const displayPreview = computed(() => props.previewOutput || output.value);
 
 function mapCompileIssue(issue: SceneCompileIssue): PromptValidationIssue {
   const code =
-    issue.kind === "missing_content"
-      ? "scene_missing_content_reference"
-      : issue.kind === "component_cardinality"
-        ? "scene_component_cardinality_conflict"
-        : "scene_missing_component_reference";
+    issue.kind === "component_cardinality"
+      ? "scene_component_cardinality_conflict"
+      : "scene_missing_component_reference";
 
   return {
     id: issue.id,
     code,
     level: "warning",
     moduleKey: "scene",
-    moduleLabel: "Scene",
+    moduleLabel: "Scenes",
   };
 }
 
