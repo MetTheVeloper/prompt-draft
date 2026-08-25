@@ -1,14 +1,14 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-withDefaults(
+const props = withDefaults(
   defineProps<{
     count?: number;
     label?: string;
   }>(),
   {
     count: 0,
-    label: "Named Configurations",
+    label: "",
   },
 );
 
@@ -16,7 +16,16 @@ const emit = defineEmits<{
   (event: "open"): void;
 }>();
 
+const { t } = useI18n();
 const { mobile, mini } = useScreen();
+
+const resolvedLabel = computed(() => {
+  if (props.label) return props.label;
+
+  const path = "components.moduleEntities.title";
+  const translated = t(path);
+  return translated === path ? "Named Configurations" : translated;
+});
 
 const launcherStyle = computed(() => ({
   top: mobile.value ? "88px" : mini.value ? "72px" : "58px",
@@ -51,7 +60,7 @@ const launcherStyle = computed(() => ({
         icon="layers"
         :size="14"
         :p="8"
-        :label="`${label} (${count})`"
+        :label="`${resolvedLabel} (${count})`"
         @click.stop="emit('open')"
       />
     </el-flex>
