@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 3 complete / Phase 4 implemented, compiler validation pending
+> **Status:** Phase 3 complete / Phase 4 implemented, running-app compiler validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on the working branch. Never merge or transfer to `main` without explicit final user approval.
@@ -44,7 +44,7 @@ A Layout Region should ultimately reference one Scene instead of wiring Camera, 
 
 ## 1. Stable IDs are identity
 
-Names, semantic keys, and generated tokens are presentation. Cross-module references use stable IDs.
+Names, semantic keys, and generated tokens are representation. Cross-module references use stable IDs.
 
 Module entity identity:
 
@@ -100,13 +100,11 @@ camera: {
 }
 ```
 
-Camera is useful inside a Scene without having a subject/object target. Form may contribute multiple target-specific configurations to the same Scene; Camera is single-selection.
+Camera is useful inside a Scene without a subject/object target. Form may contribute multiple target-specific configurations to one Scene; Camera is single-selection.
 
 ## 4. Every Key Module shell is Base-driven
 
-Scene is specialized only in field/editor semantics. Its outer Key Module shell must use `ModulesPanelBase`, exactly like other Key Modules.
-
-Canonical UI layering:
+Scene is specialized only in field/editor semantics. Its outer Key Module shell uses `ModulesPanelBase`, exactly like other Key Modules.
 
 ```text
 Key Module
@@ -119,9 +117,9 @@ Scene uses `sceneEntities` as a schema field rendered by `SceneEntitiesField.vue
 
 This preserves shared header/status, expand/collapse, preview, copy, clear/delete, right-click context menu, responsive layout, and visual styling.
 
-## 5. Scene Description is the canonical scene-content definition
+## 5. Scene Description is canonical scene content
 
-The original Phase 4 prototype had a separate **Content / Actors** picker. Real workflow testing showed that it duplicated variables already expressed more precisely through nested Scene Description text.
+The first Phase 4 prototype had a separate **Content / Actors** picker. Real workflow testing showed that it duplicated variables already expressed more precisely through nested Description text.
 
 Example:
 
@@ -129,15 +127,14 @@ Example:
 {char1} facing {char2} with an irritated expression while saying {dialogue1}
 ```
 
-This communicates entities, roles, relationships, action, expression, and dialogue in one nested definition. A second list containing `{char1}`, `{char2}`, `{dialogue1}` adds no semantic information.
+This communicates entities, roles, relationship, action, expression, and dialogue in one nested definition. A second list containing the same tokens adds no semantic information.
 
 Therefore:
 
 - Content / Actors UI is removed;
 - Description is the canonical content definition;
-- nested variables are inserted directly through the normal variable system;
-- the legacy `content` array is retained only as temporary type/draft compatibility and normalized to `[]`;
-- legacy content selections have no compile semantics.
+- variables are inserted directly through the normal variable system;
+- legacy `content` state is compatibility-only and normalized away from compile semantics.
 
 Scene state direction:
 
@@ -163,25 +160,83 @@ Camera: Nikon F3 35mm film camera capture system, ...
 Form: angular form language with ...
 ```
 
-The selected Camera/Form remains defined by its owning module. Scene only refers to the reusable named configuration token.
+Selected Camera/Form configuration payloads remain defined by their owning modules. Scene only refers to reusable named configuration tokens.
 
-Named entity tokens use the module + semantic key representation:
+Generated representation:
 
 ```text
 {form_form1}
 {camera_telephoto}
 ```
 
-Canonical persistence is still `moduleKey + entityId`; tokens are generated representation.
+Canonical persistence remains `moduleKey + entityId`; tokens are generated representation only.
 
-The owning module exposes the actual definition. Scene appends only a compact instruction:
+Scene appends compact instructions:
 
 ```text
 Apply {form_form1} to this scene.
 Capture this scene with {camera_telephoto}.
 ```
 
-If no Scene-specific Form/Camera is selected, no local instruction is emitted and the module's global/default behavior remains applicable.
+If no Scene-specific Form/Camera is selected, no local instruction is emitted and global/default module behavior remains applicable.
+
+### 6.1 Camera entity locality
+
+Named Camera entities are Scene resources, not extra global Camera instructions.
+
+```text
+Camera entity exists but no active Scene references it
+→ do not emit its definition
+→ keep legacy/global Camera output unchanged
+
+Active Scene references Camera entity
+→ owning Camera module defines {camera_*}
+→ Scene says: Capture this scene with {camera_*}.
+```
+
+This keeps unused named Camera state out of the prompt.
+
+### 6.2 Form entity locality
+
+Form has two valid consumption modes and they must remain distinct.
+
+**Phase-2 direct Form behavior:**
+
+A named Form entity that is not referenced by any active Scene keeps the accepted direct target behavior.
+
+```text
+• {target}: [form specification]
+```
+
+Independent Form keeps the accepted wording:
+
+```text
+• {target} — independent form: exclude {target} from the Global/default form. Use only: [form specification]
+```
+
+**Scene-local Form behavior:**
+
+When an active Scene references a Form entity, that entity must stop acting as an immediately applied global target instruction. The owning Form module exposes a reusable definition instead:
+
+```text
+• {form_form1} = Form for {target}: [form specification]
+```
+
+Independent Form becomes:
+
+```text
+• {form_form1} = Independent form for {target}: [form specification]. When applied, exclude {target} from the Global/default form.
+```
+
+Then only the Scene applies it:
+
+```text
+Apply {form_form1} to this scene.
+```
+
+This rule is critical: a Form selected for one Scene must not leak onto the same target in other Scenes.
+
+The target remains encoded in the reusable Form definition so Scene-local application does not lose semantic scope.
 
 ## 7. Compact Scenes output
 
@@ -202,7 +257,7 @@ Removed as redundant:
 - `Scene: <name>`
 - `Description:`
 - `Content:`
-- inline Camera/Form payload blocks
+- inline Camera/Form payload blocks.
 
 The leading bullet format keeps the block protected from Natural prompt comma splitting.
 
@@ -220,17 +275,17 @@ Scene does not own a Region. One Scene may later be referenced by multiple Regio
 
 ## 9. Layout-off persistence
 
-Current Phase 4 behavior:
-
 ```text
 Layout inactive
 → Scene state remains stored/editable
 → Scene definitions do not compile
 → derived {scene_*} variables are inactive
+→ Form/Camera entities are not treated as Scene-consumed
 
 Layout active
 → Scene definitions compile
 → derived {scene_*} variables become active
+→ active Scene component refs determine reusable Form/Camera definitions
 ```
 
 Disabling Layout must never destroy Scene state.
@@ -250,7 +305,7 @@ Disabling Layout must never destroy Scene state.
 
 ## Phase 1 — Generic entity contracts
 
-Primary files include:
+Primary files:
 
 - `app/modules/entityContracts.ts`
 - `app/modules/entityCapabilities.ts`
@@ -276,11 +331,9 @@ Form proves target-oriented repeatable scalar entities.
 - [x] Independent Form behavior.
 - [x] Real generated-image tests accepted.
 
-The accepted independent semantic remains: the target may be excluded from Global/default Form and use only its local configuration.
+Phase 4 adds a second consumption path for Scene-referenced Form entities. Direct Phase-2 behavior remains unchanged for Form entities that are not consumed by Scenes.
 
-Phase 4 extends named Form output with a reusable `{form_*}` token so Scene can reference the configuration without repeating its specification. This new nested representation still requires running-app validation.
-
-**Result:** Phase 2 accepted; reusable token representation pending Phase 4 validation.
+**Result:** Phase 2 accepted; Scene-local reusable representation pending Phase 4 running-app validation.
 
 ## Phase 3 — Camera
 
@@ -293,9 +346,9 @@ Camera proves scene-oriented repeatable scalar entities.
 - [x] Per-entity presets.
 - [x] Running-app behavior accepted.
 
-Phase 4 extends named Camera output with reusable `{camera_*}` definitions so Scene may reference them without inline payload duplication. No named entities still preserves legacy scalar Camera output.
+Phase 4 emits reusable `{camera_*}` definitions only for named Camera entities referenced by active Scenes.
 
-**Result:** Phase 3 accepted; reusable token representation pending Phase 4 validation.
+**Result:** Phase 3 accepted; Scene-reference representation pending Phase 4 running-app validation.
 
 ## Phase 4 — Scenes
 
@@ -310,7 +363,10 @@ Primary files:
 - `app/utils/compileForm.ts`
 - `app/components/modules/scene/SceneEntitiesField.vue`
 - `app/components/modules/panel/scene.vue`
+- `app/components/modules/panel/form.vue`
+- `app/components/modules/panel/camera.vue`
 - `app/components/modules/panel/base.vue`
+- `app/components/prompt/editor.vue`
 - `app/utils/promptVariableCatalog.ts`
 - `app/utils/compilePrompt.ts`
 - `app/utils/compilePromptCore.ts`
@@ -330,16 +386,19 @@ Implemented:
 - [x] Make Description canonical nested content.
 - [x] Stop inline compilation of selected Form/Camera payloads in Scene.
 - [x] Generate reusable `{form_*}` / `{camera_*}` entity references.
+- [x] Keep unused Camera entities out of prompt output.
+- [x] Preserve Phase-2 direct Form behavior for non-Scene Form entities.
+- [x] Convert Scene-referenced Form entities to reusable definitions without global target leakage.
 - [x] Append compact component instructions to Scene definitions.
 - [x] Present module output as plural `{scenes}` while preserving internal `scene` key.
 - [ ] Running-app validation of compact Scenes output.
 - [ ] Validate Form/Camera nested reference definitions in final Modular/Natural output.
 - [ ] Real prompt/image test with three-scene comic workflow.
-- [ ] Final wording refinement if the real model interpretation exposes ambiguity.
+- [ ] Final wording refinement if real model interpretation exposes ambiguity.
 
 **Current state:** implementation ready for user testing; do not mark Phase 4 complete yet.
 
-**Exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, and produce concise interpretable output.
+**Exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication or cross-scene leakage, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, and produce concise interpretable output.
 
 ---
 
@@ -363,7 +422,7 @@ Suggested order:
 - [ ] Effects
 - [ ] Framing
 - [ ] Texture / Material
-- [ ] other suitable modules
+- [ ] other suitable modules.
 
 Every conversion must preserve old global/default behavior and reuse generic entity infrastructure where appropriate.
 
@@ -430,11 +489,28 @@ Scene descriptions:
 {char1} looking fed up and ready to snap while saying {dialogue3}; {char2} answers with a calm mischievous grin, turning the tension into dark humor.
 ```
 
-For the first compiler test, global Form may remain global and no Scene-specific configuration needs to be selected. Then select a named Form and/or Camera for one Scene and verify that only short nested-reference instructions are appended.
+First validation pass:
+
+1. keep Form global and select no local Form/Camera in any Scene;
+2. verify `{scenes}` contains only the three nested descriptions;
+3. select one named Form for only the bottom Scene;
+4. verify Form defines `{form_*}` once and only bottom Scene applies it;
+5. repeat with Independent Form and confirm the exclusion wording is conditional/local, not global;
+6. select one named Camera for only the bottom Scene;
+7. verify Camera defines `{camera_*}` once and only bottom Scene captures with it;
+8. verify an unused named Camera entity produces no extra output.
 
 Expected pattern:
 
 ```text
+{form} =
+• Global/default form: ...
+• {form_someConfig} = Form for {char1}: ...
+
+{camera} =
+• Global/default camera: ...
+• {camera_someConfig} = ...
+
 {scenes} =
 • {scene_topScene} = ...
 • {scene_centerScene} = ...
@@ -458,4 +534,5 @@ The selected configuration payload must be defined by its owning module and must
 9. Prefer concise nested compiler text over restating information already defined elsewhere.
 10. Missing references remain missing; never auto-retarget.
 11. Keep compiler behavior explicit and testable.
-12. Update this document with architectural changes.
+12. A Scene-local module configuration must never leak into unrelated Scenes.
+13. Update this document with architectural changes.
