@@ -168,41 +168,78 @@ function normalizeFormEntities(values: ModuleValues) {
   });
 }
 
-/**
- * Compile one named Form entity as a reusable nested reference while preserving
- * its semantic target behavior. Scene can then apply the token locally without
- * repeating the Form payload.
- */
-export function compileFormEntityConfiguration(
+function resolveFormEntitySpecification(
   module: PromptKeyModule,
   values: ModuleValues,
   entity: TargetedModuleEntity<ModuleEntityPayload>,
 ) {
-  if (entity.enabled === false) return "";
+  if (entity.enabled === false) return null;
 
   const scope = formatSemanticScope(entity.targets, [], { format: "modular" });
-  if (!scope) return "";
+  if (!scope) return null;
 
   const resolvedValues = resolveModuleEntityValues(values, entity);
   const specification = compileFormScalar(module, resolvedValues, {
     allowOverride: false,
   });
 
-  if (!specification) return "";
+  if (!specification) return null;
 
+  return { scope, specification };
+}
+
+/**
+ * Phase-2 direct Form behavior. This path remains canonical for named Form
+ * entities that are not consumed by a Scene.
+ */
+export function compileFormEntityConfiguration(
+  module: PromptKeyModule,
+  values: ModuleValues,
+  entity: TargetedModuleEntity<ModuleEntityPayload>,
+) {
+  const resolved = resolveFormEntitySpecification(module, values, entity);
+  if (!resolved) return "";
+
+  const { scope, specification } = resolved;
+
+  if (entity.inheritGlobal === false) {
+    return `• ${scope} — independent form: exclude ${scope} from the Global/default form. Use only: ${specification}`;
+  }
+
+  return `• ${scope}: ${specification}`;
+}
+
+/**
+ * Scene-referenced Form entities are definitions, not global instructions.
+ * Target semantics stay inside the reusable definition while application is
+ * deferred to the Scene compiler. This prevents a scene-local Form from
+ * leaking into other Scenes that contain the same target.
+ */
+export function compileSceneFormEntityDefinition(
+  module: PromptKeyModule,
+  values: ModuleValues,
+  entity: TargetedModuleEntity<ModuleEntityPayload>,
+) {
+  const resolved = resolveFormEntitySpecification(module, values, entity);
+  if (!resolved) return "";
+
+  const { scope, specification } = resolved;
   const token = getModuleEntityVariableToken(module.key, entity);
 
   if (entity.inheritGlobal === false) {
-    return `• ${token} = ${specification}. Apply only to ${scope}; exclude ${scope} from the Global/default form.`;
+    return `• ${token} = Independent form for ${scope}: ${specification}. When applied, exclude ${scope} from the Global/default form.`;
   }
 
-  return `• ${token} = ${specification}. Apply to ${scope}.`;
+  return `• ${token} = Form for ${scope}: ${specification}`;
 }
 
 export function compileFormModule(
   module: PromptKeyModule,
   values: ModuleValues,
-  options: { customMode?: boolean } = {},
+  options: {
+    customMode?: boolean;
+    referencedEntityIds?: string[];
+  } = {},
 ) {
   const globalValues = getGlobalModuleValues(values);
 
@@ -218,8 +255,16 @@ export function compileFormModule(
     allowOverride: false,
   });
 
+  const referencedIds = new Set(
+    (options.referencedEntityIds || []).map((id) => id.trim()).filter(Boolean),
+  );
+
   const entityLines = normalizeFormEntities(values)
-    .map((entity) => compileFormEntityConfiguration(module, values, entity))
+    .map((entity) => {
+      return referencedIds.has(entity.id)
+        ? compileSceneFormEntityDefinition(module, values, entity)
+        : compileFormEntityConfiguration(module, values, entity);
+    })
     .filter(Boolean);
 
   // Preserve byte-equivalent scalar behavior for legacy/no-entity drafts.
