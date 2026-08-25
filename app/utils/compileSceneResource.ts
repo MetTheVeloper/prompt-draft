@@ -52,6 +52,32 @@ function compileScalar(
     : compileModule(module, compileValues);
 }
 
+function outputLines(value: string) {
+  return value
+    .split("\n")
+    .map((line) => line.trimEnd())
+    .filter((line) => line.trim());
+}
+
+/**
+ * Keep single-line resource definitions compact while making structured,
+ * multi-line compiler output unambiguously owned by its parent definition.
+ * This matters for assignment-driven resources such as Texture/Material.
+ */
+function formatResourceDefinition(
+  prefix: string,
+  specification: string,
+) {
+  const lines = outputLines(specification);
+  if (!lines.length) return "";
+  if (lines.length === 1) return `${prefix}${lines[0]}`;
+
+  return [
+    prefix.trimEnd(),
+    ...lines.map((line) => `  ${line}`),
+  ].join("\n");
+}
+
 function compileSceneResourceEntity(
   module: PromptKeyModule,
   moduleState: ModuleValues,
@@ -65,7 +91,10 @@ function compileSceneResourceEntity(
 
   if (!specification) return "";
 
-  return `• ${getModuleEntityVariableToken(module.key, entity)} = ${specification}`;
+  return formatResourceDefinition(
+    `• ${getModuleEntityVariableToken(module.key, entity)} = `,
+    specification,
+  );
 }
 
 function getCustomOverride(
@@ -96,6 +125,11 @@ function getCustomOverride(
  * such as Lighting where Global/default custom mode changes only the global
  * presentation while Scene-referenced named configurations remain valid. The
  * default keeps existing adapter behavior (for example Background) unchanged.
+ *
+ * Structured compiler output is kept byte-for-byte at the semantic level. When
+ * named resources are present, multi-line Global/default and entity output is
+ * merely indented beneath its owning definition so nested assignment bullets
+ * cannot be mistaken for sibling resource definitions.
  */
 export function compileSceneResourceModule(
   module: PromptKeyModule,
@@ -144,10 +178,14 @@ export function compileSceneResourceModule(
 
   if (!entityLines.length) return globalOutput;
 
-  return [
-    globalOutput ? `• Global/default ${module.key}: ${globalOutput}` : "",
-    ...entityLines,
-  ]
+  const globalDefinition = globalOutput
+    ? formatResourceDefinition(
+        `• Global/default ${module.key}: `,
+        globalOutput,
+      )
+    : "";
+
+  return [globalDefinition, ...entityLines]
     .filter(Boolean)
     .join("\n");
 }
