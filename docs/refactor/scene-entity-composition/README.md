@@ -201,7 +201,7 @@ Texture / Material is an explicit adapter case because the module is assignment-
 
 Named Configuration editors are secondary workspaces rather than permanent inline sections. Entity-capable Key Modules use `ModuleEntitiesPanelShell.vue` to expose one compact header FAB with the current configuration count. `useModuleEntitiesModal()` opens the existing editor component inside the project's global modal system and forwards edits live to canonical module state. Closing by Done, backdrop, Escape, or the modal close button never rolls changes back. The same generic and specialized editors are reused; no duplicate entity-editing implementation exists for the modal path.
 
-All collapsible containers inside the Named Configurations workspace start expanded by default: the configuration list is open, entity cards are open, and nested structured editors such as Lighting sources, Effects layers, and Material Assignments also start open. Users may collapse them afterward during the current modal session.
+The Named Configurations list itself remains visible when the workspace opens, but all existing entity cards start collapsed so the modal stays compact. A newly added configuration opens immediately for editing. Entity-capable module context menus also expose the same Named Configurations action through the shared panel-shell/context-menu path, so FAB and right-click access resolve to one modal workspace.
 
 ## 5. Scene Description is canonical scene content
 
@@ -680,8 +680,9 @@ Implementation:
 - [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls back edits.
 - [x] Generic and specialized editor logic is reused directly; no modal-specific editor copies exist.
 - [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
-- [x] Named Configuration lists, entity cards, Lighting sources, Effects layers, and Material Assignments all start expanded by default.
-- [ ] Running-app visual/interaction validation for FAB placement, modal sizing, live edits, backdrop/Escape close, and mobile behavior.
+- [x] Existing Named Configuration entity cards start collapsed whenever the workspace opens; the list remains visible and newly added configurations open immediately for editing.
+- [x] Right-click context menus for entity-capable Key Modules expose a Named Configurations action through the shared panel shell and `usePageContextMenu()` augmentation path.
+- [ ] Running-app visual/interaction validation for FAB placement, modal sizing, live edits, backdrop/Escape close, context-menu access, and mobile behavior.
 
 **Result:** implemented / validation pending.
 
@@ -869,5 +870,6 @@ Selected configuration payloads are defined by owning modules and are never repe
 23. Multi-line specialized compiler output must remain clearly nested beneath the Global/default or named definition that owns it.
 24. Named Configuration management belongs in the shared modal workspace; wrappers expose one compact launcher and must reuse the canonical entity editor component.
 25. Modal entity edits are live state edits, not a temporary transaction; dismissing the workspace must not discard valid changes.
-26. Collapsible containers inside the Named Configurations workspace start expanded by default.
-27. Update this document with architectural changes and phase status.
+26. Existing Named Configuration entity cards start collapsed whenever the modal workspace opens; the list remains visible and newly added configurations may open immediately for editing.
+27. Entity-capable Key Module context menus expose the same Named Configurations workspace action as the header FAB.
+28. Update this document with architectural changes and phase status.
