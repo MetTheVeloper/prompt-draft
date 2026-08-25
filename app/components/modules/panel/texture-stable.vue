@@ -15,6 +15,7 @@ import { compileTextureModule } from "~/utils/compileTexture";
 import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import TexturePanel from "./texture.vue";
 import TextureEntitiesField from "../texture/TextureEntitiesField.vue";
+import ModuleEntitiesPanelShell from "../shared/ModuleEntitiesPanelShell.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -191,10 +192,25 @@ function handlePanelState(value: ModulePanelState) {
 function updateEntities(nextEntities: typeof entities.value) {
   handleModelValue(setModuleEntities(modelSnapshot.value, nextEntities));
 }
+
+const { openModuleEntitiesModal } = useModuleEntitiesModal({
+  module: () => props.module,
+  component: TextureEntitiesField,
+  getProps: () => ({
+    module: props.module,
+    globalValues: globalValues.value,
+    modelValue: entities.value,
+    allowGlobalInheritanceToggle: allowGlobalInheritanceToggle.value,
+  }),
+  onUpdate: updateEntities,
+});
 </script>
 
 <template>
-  <el-flex rules="ccs" class="w100" :gap="12">
+  <ModuleEntitiesPanelShell
+    :count="entities.length"
+    @open="openModuleEntitiesModal"
+  >
     <TexturePanel
       :module="module"
       :model-value="modelSnapshot"
@@ -205,13 +221,5 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:panel-state="handlePanelState"
       @update:issues="emit('update:issues', $event)"
     />
-
-    <TextureEntitiesField
-      :module="module"
-      :global-values="globalValues"
-      :model-value="entities"
-      :allow-global-inheritance-toggle="allowGlobalInheritanceToggle"
-      @update:model-value="updateEntities"
-    />
-  </el-flex>
+  </ModuleEntitiesPanelShell>
 </template>
