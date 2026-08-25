@@ -15,6 +15,7 @@ import { compileEffectsModule } from "~/utils/compileEffects";
 import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import EffectsPanel from "./effects.vue";
 import EffectsEntitiesField from "../effects/EffectsEntitiesField.vue";
+import ModuleEntitiesPanelShell from "../shared/ModuleEntitiesPanelShell.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -187,10 +188,25 @@ function handlePanelState(value: ModulePanelState) {
 function updateEntities(nextEntities: typeof entities.value) {
   handleModelValue(setModuleEntities(modelSnapshot.value, nextEntities));
 }
+
+const { openModuleEntitiesModal } = useModuleEntitiesModal({
+  module: () => props.module,
+  component: EffectsEntitiesField,
+  getProps: () => ({
+    module: props.module,
+    globalValues: globalValues.value,
+    modelValue: entities.value,
+    allowGlobalInheritanceToggle: allowGlobalInheritanceToggle.value,
+  }),
+  onUpdate: updateEntities,
+});
 </script>
 
 <template>
-  <el-flex rules="ccs" class="w100" :gap="12">
+  <ModuleEntitiesPanelShell
+    :count="entities.length"
+    @open="openModuleEntitiesModal"
+  >
     <EffectsPanel
       :module="module"
       :model-value="modelSnapshot"
@@ -201,14 +217,5 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:panel-state="handlePanelState"
       @update:issues="emit('update:issues', $event)"
     />
-
-    <EffectsEntitiesField
-      v-show="!customMode || preserveEntitiesInCustomMode"
-      :module="module"
-      :global-values="globalValues"
-      :model-value="entities"
-      :allow-global-inheritance-toggle="allowGlobalInheritanceToggle"
-      @update:model-value="updateEntities"
-    />
-  </el-flex>
+  </ModuleEntitiesPanelShell>
 </template>
