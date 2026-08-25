@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 5 complete / Phase 6 in progress — Framing accepted, Background implemented and awaiting validation
+> **Status:** Phase 5 complete / Phase 6 in progress — Framing and Background accepted, Lighting next
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on this branch. Never merge or transfer to `main` without explicit final user approval.
@@ -474,16 +474,19 @@ Implementation:
 - [x] Unused named Background configurations stay out of prompt output.
 - [x] Scene-referenced Background configurations emit `{background_*}` definitions.
 - [x] Scene wording: `Use only {background_*} as this scene's background.`
-- [ ] Running-app UI/compile validation.
-- [ ] Real image test with different Background configurations across Scenes.
+- [x] Running-app UI/compile validation accepted.
+- [x] Real image test validates different Background configurations across Scenes.
 
-**Status:** implemented / user validation pending.
+**Result:** complete and accepted.
 
 ### Remaining Phase 6 candidates
 
-Proposed continuation after Background validation:
+Next conversion target:
 
 - [ ] Lighting
+
+Then:
+
 - [ ] Style
 - [ ] Effects
 - [ ] Texture / Material
@@ -538,7 +541,7 @@ The core accepted workflow uses:
 {layout} → stable Region → Scene bindings
 ```
 
-Accepted examples:
+Accepted Framing example:
 
 ```text
 {framing} =
@@ -552,17 +555,18 @@ Accepted examples:
 • {scene_bottomScene} = ... Frame this scene with {framing_wideConversation}.
 ```
 
-Expected Background test pattern:
+Accepted Background example:
 
 ```text
 {background} =
 • Global/default background: ...
-• {background_sceneA} = ...
-• {background_sceneB} = ...
+• {background_openSea} = ...
+• {background_darkGraffitiClub} = ...
 
 {scenes} =
-• {scene_a} = ... Use only {background_sceneA} as this scene's background.
-• {scene_b} = ... Use only {background_sceneB} as this scene's background.
+• {scene_topScene} = ... Use only {background_openSea} as this scene's background.
+• {scene_centerScene} = ... Use only {background_darkGraffitiClub} as this scene's background.
+• {scene_bottomScene} = ... Use only {background_openSea} as this scene's background.
 ```
 
 Selected configuration payloads are defined by owning modules and are never repeated inside `{scenes}`.
