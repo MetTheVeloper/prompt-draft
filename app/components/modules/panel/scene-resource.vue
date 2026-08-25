@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, watch } from "vue";
-import type { ModuleValues, PromptKeyModule } from "~/modules/types";
+import type { ModuleFieldValue, ModuleValues, PromptKeyModule } from "~/modules/types";
 import type { ModuleOutputValue } from "~/utils/compilePrompt";
 import type { PromptValidationIssue } from "~/utils/promptValidation";
 import type { ModuleEntityPayload } from "~/modules/entityContracts";
@@ -59,6 +59,70 @@ const preserveEntitiesInCustomMode = computed(
   () => entityConfig.value?.preserveEntitiesInCustomMode === true,
 );
 
+function persistedFieldValues(fieldId: string): ModuleFieldValue[] {
+  return [
+    globalValues.value[fieldId],
+    ...entities.value.map((entity) => entity.payload[fieldId]),
+  ];
+}
+
+/**
+ * Categorized freeform dropdowns persist the authored text itself rather than
+ * the synthetic `Custom` option. Re-introduce those persisted strings as
+ * temporary known options for the editor so their category can be reconstructed
+ * after reload. Compilation/persistence still use the original raw string.
+ */
+const editorModule = computed<PromptKeyModule>(() => {
+  const fields = Object.fromEntries(
+    Object.entries(props.module.fields).map(([fieldId, field]) => {
+      if (
+        field.type !== "select" ||
+        field.ui?.optionLayout !== "categorized" ||
+        !field.options?.some((option) => option.freeform)
+      ) {
+        return [fieldId, field];
+      }
+
+      const options = field.options || [];
+      const freeformOption = options.find((option) => option.freeform);
+      if (!freeformOption) return [fieldId, field];
+
+      const knownValues = new Set(options.map((option) => option.value));
+      const persistedCustomValues = Array.from(
+        new Set(
+          persistedFieldValues(fieldId)
+            .filter((value): value is string => typeof value === "string")
+            .map((value) => value.trim())
+            .filter((value) => value && !knownValues.has(value)),
+        ),
+      );
+
+      if (!persistedCustomValues.length) return [fieldId, field];
+
+      return [
+        fieldId,
+        {
+          ...field,
+          options: [
+            ...options,
+            ...persistedCustomValues.map((value) => ({
+              ...freeformOption,
+              value,
+              promptText: value,
+              freeform: false,
+            })),
+          ],
+        },
+      ];
+    }),
+  ) as PromptKeyModule["fields"];
+
+  return {
+    ...props.module,
+    fields,
+  };
+});
+
 const referencedEntityIds = computed(() => {
   const sceneActive = props.modules.some((module) => module.key === "scene");
   const layoutActive = props.modules.some((module) => module.key === "layout");
@@ -106,7 +170,7 @@ function updateEntities(nextEntities: typeof entities.value) {
 <template>
   <el-flex rules="ccs" class="w100" :gap="12">
     <ModulesPanelBase
-      :module="module"
+      :module="editorModule"
       :model-value="modelValue"
       :panel-state="panelState"
       :aspect-ratio="aspectRatio"
@@ -119,7 +183,7 @@ function updateEntities(nextEntities: typeof entities.value) {
 
     <ModuleEntitiesField
       v-show="!customMode || preserveEntitiesInCustomMode"
-      :module="module"
+      :module="editorModule"
       :global-values="globalValues"
       :model-value="entities"
       :target-policy="targetPolicy"
