@@ -46,8 +46,8 @@ const isSyncingValues = ref(false);
 const isSyncingPanelState = ref(false);
 const isPanelExpanded = ref(false);
 const isAdvancedOpen = ref(false);
-const isOverrideOpen = ref(false);
 const isCopied = ref(false);
+const isCustomMode = ref(false);
 const activePresetId = ref<string | null>(null);
 
 function cloneValue<T>(value: T): T {
@@ -85,7 +85,6 @@ watch(
   values,
   (nextValues) => {
     if (isSyncingValues.value) return;
-
     emit("update:modelValue", cloneValue(nextValues));
   },
   { deep: true },
@@ -95,6 +94,7 @@ watch(
   () => props.panelState,
   (panelState) => {
     isSyncingPanelState.value = true;
+    isCustomMode.value = Boolean(panelState?.isCustomMode);
     activePresetId.value = panelState?.activePresetId ?? null;
 
     nextTick(() => {
@@ -104,11 +104,11 @@ watch(
   { immediate: true, deep: true },
 );
 
-watch(activePresetId, () => {
+watch([isCustomMode, activePresetId], () => {
   if (isSyncingPanelState.value) return;
 
   emit("update:panelState", {
-    isCustomMode: false,
+    isCustomMode: isCustomMode.value,
     activePresetId: activePresetId.value,
   });
 });
@@ -117,17 +117,16 @@ const moduleI18nBase = computed(() => `modules.${props.module.key}`);
 
 function translate(path: string, fallback = "") {
   const translated = t(path);
-
   return translated === path ? fallback : translated;
 }
 
-const moduleTitle = computed(() => {
-  return translate(`${moduleI18nBase.value}.title`, props.module.key);
-});
+const moduleTitle = computed(() =>
+  translate(`${moduleI18nBase.value}.title`, props.module.key),
+);
 
-const moduleDescription = computed(() => {
-  return translate(`${moduleI18nBase.value}.description`);
-});
+const moduleDescription = computed(() =>
+  translate(`${moduleI18nBase.value}.description`),
+);
 
 function fieldLabel(fieldId: string) {
   return translate(`${moduleI18nBase.value}.fields.${fieldId}.label`, fieldId);
@@ -162,17 +161,17 @@ const overallContrastField = computed(() => props.module.fields.overallContrast)
 const extraDetailsField = computed(() => props.module.fields.extraDetails);
 const customTextField = computed(() => props.module.fields.customText);
 
-const lightSources = computed<LightingSource[]>(() => {
-  return Array.isArray(values.lightSources)
+const lightSources = computed<LightingSource[]>(() =>
+  Array.isArray(values.lightSources)
     ? (values.lightSources as LightingSource[])
-    : [];
-});
+    : [],
+);
 
-const presetItems = computed<ModulePreset[]>(() => {
-  return Object.values(props.module.presets || {}).sort(
+const presetItems = computed<ModulePreset[]>(() =>
+  Object.values(props.module.presets || {}).sort(
     (a, b) => (a.order ?? 0) - (b.order ?? 0),
-  );
-});
+  ),
+);
 
 const presetDropdownItems = computed<ElDropdownItem[]>(() => {
   const items: ElDropdownItem[] = presetItems.value.map((preset) => ({
@@ -182,10 +181,7 @@ const presetDropdownItems = computed<ElDropdownItem[]>(() => {
   }));
 
   if (props.module.presetUi?.allowNone !== false) {
-    items.unshift({
-      value: "",
-      label: t("panel.none"),
-    });
+    items.unshift({ value: "", label: t("panel.none") });
   }
 
   return items;
@@ -206,10 +202,7 @@ function presetMatchesCurrentValues(presetKey: string) {
   const entries = Object.entries(presetValues);
 
   if (!entries.length) return false;
-
-  return entries.every(([key, value]) => {
-    return moduleValuesEqual(values[key], value);
-  });
+  return entries.every(([key, value]) => moduleValuesEqual(values[key], value));
 }
 
 function applyPreset(presetKey: string) {
@@ -245,7 +238,6 @@ function handlePresetSelect(value: ElDropdownValue) {
   }
 
   if (!props.module.presets?.[presetKey]) return;
-
   applyPreset(presetKey);
 }
 
@@ -264,8 +256,23 @@ watch(
   { deep: true },
 );
 
-const output = computed(() => compileLightingModule(props.module, values));
-const displayOutput = computed(() => props.previewOutput || String(output.value || ""));
+const customOverrideValue = computed(() =>
+  typeof values.customText === "string" ? values.customText.trim() : "",
+);
+
+const normalCompileValues = computed<ModuleValues>(() => ({
+  ...values,
+  customText: "",
+}));
+
+const output = computed(() => {
+  if (isCustomMode.value) return customOverrideValue.value;
+  return compileLightingModule(props.module, normalCompileValues.value);
+});
+
+const displayOutput = computed(() =>
+  props.previewOutput || String(output.value || ""),
+);
 
 watch(
   output,
@@ -273,32 +280,48 @@ watch(
   { immediate: true },
 );
 
-watch(
-  () => values,
-  () => emit("update:issues", []),
-  { immediate: true, deep: true },
-);
+const validationIssues = computed<PromptValidationIssue[]>(() => {
+  if (!isCustomMode.value || customOverrideValue.value) return [];
 
-const hasCustomOverride = computed(() => {
-  return typeof values.customText === "string" && Boolean(values.customText.trim());
+  return [
+    {
+      id: `${props.module.key}:custom_override_empty`,
+      code: "custom_override_empty",
+      level: "error",
+      moduleKey: props.module.key,
+      moduleLabel: moduleTitle.value,
+    },
+  ];
 });
 
-const filledCount = computed(() => {
+watch(
+  validationIssues,
+  (issues) => emit("update:issues", issues),
+  { immediate: true },
+);
+
+const filledNormalFieldsCount = computed(() => {
   let count = 0;
 
   if (lightSources.value.length) count += 1;
   if (String(values.ambientLevel ?? "").trim()) count += 1;
   if (String(values.overallContrast ?? "").trim()) count += 1;
   if (String(values.extraDetails ?? "").trim()) count += 1;
-  if (hasCustomOverride.value) count += 1;
 
   return count;
 });
 
+const totalNormalFieldsCount = 4;
+
 const statusLabel = computed(() => {
-  if (hasCustomOverride.value) return t("panel.statusCustom");
+  if (isCustomMode.value) {
+    return customOverrideValue.value
+      ? t("panel.statusCustom")
+      : t("panel.statusCustomEmpty");
+  }
+
   if (activePresetId.value) return t("panel.statusPreset");
-  if (filledCount.value) return t("panel.statusPartiallyFilled");
+  if (filledNormalFieldsCount.value) return t("panel.statusPartiallyFilled");
   return t("panel.statusEmpty");
 });
 
@@ -310,12 +333,24 @@ function togglePanel() {
   isPanelExpanded.value = !isPanelExpanded.value;
 }
 
+function setCustomMode(value: boolean) {
+  isCustomMode.value = Boolean(value);
+  if (isCustomMode.value) isPanelExpanded.value = true;
+}
+
 function clearLighting() {
   const defaults = createDefaultModuleValues(props.module);
 
-  Object.keys(defaults).forEach((key) => {
-    values[key] = cloneValue(defaults[key]);
-  });
+  if (isCustomMode.value && customTextField.value) {
+    values.customText = cloneValue(defaults.customText ?? "");
+    return;
+  }
+
+  ["lightSources", "ambientLevel", "overallContrast", "extraDetails"].forEach(
+    (key) => {
+      values[key] = cloneValue(defaults[key] ?? "");
+    },
+  );
 
   activePresetId.value = null;
 }
@@ -340,9 +375,7 @@ function removeModule() {
 
   window.dispatchEvent(
     new CustomEvent("prompt-draft:remove-key-module", {
-      detail: {
-        moduleKey: props.module.key,
-      },
+      detail: { moduleKey: props.module.key },
     }),
   );
 }
@@ -379,17 +412,25 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
               {{ statusLabel }}
             </el-text>
             <el-text type="span" :size="10" color="orange">
-              {{ filledCount }} / 5 {{ t("panel.fieldsFilled") }}
+              {{ filledNormalFieldsCount }} / {{ totalNormalFieldsCount }} {{ t("panel.fieldsFilled") }}
             </el-text>
           </el-flex>
 
           <el-flex rules="rcc" :gap="6" :class="mini ? 'w100' : ''">
+            <el-switch
+              v-if="customTextField"
+              :class="mini ? 'fg100' : ''"
+              :model-value="isCustomMode"
+              :size="12"
+              :label="t('panel.customMode')"
+              @update:model-value="setCustomMode"
+            />
             <el-button
               type="fab"
               mode="flat"
               color="normal"
               icon="refresh"
-              :label="t('components.contextMenu.actions.reset')"
+              :label="isCustomMode ? t('panel.clearCustom') : t('components.contextMenu.actions.reset')"
               :size="12"
               :p="8"
               @click="clearLighting"
@@ -419,7 +460,14 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
 
         <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
           <el-flex rules="rsc" :gap="8">
-            <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">
+            <el-text
+              type="h2"
+              :size="24"
+              :weight="800"
+              class="lh1"
+              effect="glitch"
+              :icon="module.icon"
+            >
               {{ moduleTitle.toUpperCase() }}
             </el-text>
             <el-help v-if="moduleDescription" :text="moduleDescription" />
@@ -440,123 +488,160 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
     </el-flex>
 
     <el-grid v-show="isPanelExpanded" :gap="12" class="w100">
-      <el-grid :p="12" :br="1" :radius="16" bc="blue25" :gap="12">
-        <el-flex rules="rsc" :gap="8">
-          <el-text :size="14" :weight="600" icon="widgets">{{ t("panel.presets") }}</el-text>
-          <el-help :text="t('modules.lighting.presetsDescription')" />
-        </el-flex>
-
-        <el-dropdown
-          :model-value="activePresetId || ''"
-          :items="presetDropdownItems"
-          item-label="label"
-          item-value="value"
-          :clearable="false"
-          @update:model-value="handlePresetSelect"
-        />
-      </el-grid>
-
-      <el-grid :p="12" :br="1" :radius="16" bc="blue35" :gap="12">
-        <el-flex rules="rsc" :gap="8">
-          <el-text :size="14" :weight="600" icon="lightbulb">
-            {{ t("modules.lighting.groups.sources.title") }}
-          </el-text>
-          <el-help :text="t('modules.lighting.groups.sources.description')" />
-        </el-flex>
-
-        <LightSourcesField
-          v-if="lightSourcesField"
-          :field="lightSourcesField"
-          :model-value="lightSources"
-          @update:model-value="values.lightSources = $event"
-        />
-      </el-grid>
-
-      <el-grid :p="12" :br="1" :radius="16" bc="normal10" :gap="12">
-        <el-flex rules="rsc" :gap="8">
-          <el-text :size="14" :weight="600" icon="tune">
-            {{ t("modules.lighting.groups.global.title") }}
-          </el-text>
-          <el-help :text="t('modules.lighting.groups.global.description')" />
-        </el-flex>
-
-        <el-grid :cols="mobile ? 1 : 2" :gap="10">
-          <el-grid v-if="ambientLevelField" :gap="6">
-            <el-flex rules="rsc" :gap="6">
-              <el-text :size="13" :weight="500">{{ fieldLabel("ambientLevel") }}</el-text>
-              <el-help v-if="fieldDescription('ambientLevel')" :text="fieldDescription('ambientLevel')" />
-            </el-flex>
-            <el-dropdown
-              v-model="values.ambientLevel"
-              :items="getFieldOptions(ambientLevelField)"
-              :item-label="(item) => fieldOptionLabel('ambientLevel', item.value)"
-              item-value="value"
-              :placeholder="t('panel.none')"
-              clearable
-            />
-          </el-grid>
-
-          <el-grid v-if="overallContrastField" :gap="6">
-            <el-flex rules="rsc" :gap="6">
-              <el-text :size="13" :weight="500">{{ fieldLabel("overallContrast") }}</el-text>
-              <el-help v-if="fieldDescription('overallContrast')" :text="fieldDescription('overallContrast')" />
-            </el-flex>
-            <el-dropdown
-              v-model="values.overallContrast"
-              :items="getFieldOptions(overallContrastField)"
-              :item-label="(item) => fieldOptionLabel('overallContrast', item.value)"
-              item-value="value"
-              :placeholder="t('panel.none')"
-              clearable
-            />
-          </el-grid>
-        </el-grid>
-      </el-grid>
-
-      <el-grid :p="12" :br="1" :radius="16" :bc="isAdvancedOpen ? 'blue35' : 'normal10'" :gap="12">
-        <el-flex rules="rbc" class="w100 crp" @click="isAdvancedOpen = !isAdvancedOpen">
+      <el-grid
+        v-if="isCustomMode && customTextField"
+        rules="csc"
+        :br="1"
+        :p="16"
+        :radius="16"
+        :bc="!customOverrideValue ? 'orange25' : 'normal15'"
+        :bg="!customOverrideValue ? 'orange5' : 'normal5'"
+      >
+        <el-flex :rules="mini ? 'ccs' : 'rbc'" class="w100" :gap="8">
           <el-flex rules="rsc" :gap="8">
-            <el-text :size="14" :weight="600" :icon="isAdvancedOpen ? 'expand_less' : 'expand_more'">
-              {{ t("modules.lighting.groups.advanced.title") }}
+            <el-text type="h3" :size="16" :weight="600" icon="edit">
+              {{ fieldLabel("customText") }}
             </el-text>
-            <el-help :text="t('modules.lighting.groups.advanced.description')" />
+            <el-help
+              v-if="fieldDescription('customText')"
+              :text="fieldDescription('customText')"
+            />
           </el-flex>
+          <el-text marker="normal5" :size="12" :weight="300">
+            {{ t("panel.customOverrideActive") }}
+          </el-text>
         </el-flex>
 
         <el-text-field
-          v-if="isAdvancedOpen && extraDetailsField"
-          v-model="values.extraDetails"
-          type="textarea"
-          :rows="extraDetailsField.ui?.rows || 3"
-          :placeholder="fieldPlaceholder('extraDetails')"
-          support-variables
-        />
-      </el-grid>
-
-      <el-grid :p="12" :br="1" :radius="16" :bc="isOverrideOpen || hasCustomOverride ? 'orange35' : 'normal10'" :gap="12">
-        <el-flex rules="rbc" class="w100 crp" @click="isOverrideOpen = !isOverrideOpen">
-          <el-flex rules="rsc" :gap="8">
-            <el-text
-              :size="14"
-              :weight="600"
-              :color="hasCustomOverride ? 'orange' : 'normal'"
-              :icon="isOverrideOpen ? 'expand_less' : 'expand_more'"
-            >
-              {{ t("modules.lighting.groups.override.title") }}
-            </el-text>
-            <el-help :text="t('modules.lighting.groups.override.description')" />
-          </el-flex>
-        </el-flex>
-
-        <el-text-field
-          v-if="isOverrideOpen && customTextField"
           v-model="values.customText"
           type="textarea"
           :rows="customTextField.ui?.rows || 4"
           :placeholder="fieldPlaceholder('customText')"
           support-variables
         />
+
+        <el-text
+          v-if="!customOverrideValue"
+          :size="12"
+          icon="warning"
+          icon-color="orange"
+          :weight="300"
+          color="orange"
+        >
+          {{ t("panel.customOverrideEmpty") }}
+        </el-text>
       </el-grid>
+
+      <template v-if="!isCustomMode">
+        <el-grid :p="12" :br="1" :radius="16" bc="blue25" :gap="12">
+          <el-flex rules="rsc" :gap="8">
+            <el-text :size="14" :weight="600" icon="widgets">{{ t("panel.presets") }}</el-text>
+            <el-help :text="t('modules.lighting.presetsDescription')" />
+          </el-flex>
+
+          <el-dropdown
+            :model-value="activePresetId || ''"
+            :items="presetDropdownItems"
+            item-label="label"
+            item-value="value"
+            :clearable="false"
+            @update:model-value="handlePresetSelect"
+          />
+        </el-grid>
+
+        <el-grid :p="12" :br="1" :radius="16" bc="blue35" :gap="12">
+          <el-flex rules="rsc" :gap="8">
+            <el-text :size="14" :weight="600" icon="lightbulb">
+              {{ t("modules.lighting.groups.sources.title") }}
+            </el-text>
+            <el-help :text="t('modules.lighting.groups.sources.description')" />
+          </el-flex>
+
+          <LightSourcesField
+            v-if="lightSourcesField"
+            :field="lightSourcesField"
+            :model-value="lightSources"
+            @update:model-value="values.lightSources = $event"
+          />
+        </el-grid>
+
+        <el-grid :p="12" :br="1" :radius="16" bc="normal10" :gap="12">
+          <el-flex rules="rsc" :gap="8">
+            <el-text :size="14" :weight="600" icon="tune">
+              {{ t("modules.lighting.groups.global.title") }}
+            </el-text>
+            <el-help :text="t('modules.lighting.groups.global.description')" />
+          </el-flex>
+
+          <el-grid :cols="mobile ? 1 : 2" :gap="10">
+            <el-grid v-if="ambientLevelField" :gap="6">
+              <el-flex rules="rsc" :gap="6">
+                <el-text :size="13" :weight="500">{{ fieldLabel("ambientLevel") }}</el-text>
+                <el-help
+                  v-if="fieldDescription('ambientLevel')"
+                  :text="fieldDescription('ambientLevel')"
+                />
+              </el-flex>
+              <el-dropdown
+                v-model="values.ambientLevel"
+                :items="getFieldOptions(ambientLevelField)"
+                :item-label="(item) => fieldOptionLabel('ambientLevel', item.value)"
+                item-value="value"
+                :placeholder="t('panel.none')"
+                clearable
+              />
+            </el-grid>
+
+            <el-grid v-if="overallContrastField" :gap="6">
+              <el-flex rules="rsc" :gap="6">
+                <el-text :size="13" :weight="500">{{ fieldLabel("overallContrast") }}</el-text>
+                <el-help
+                  v-if="fieldDescription('overallContrast')"
+                  :text="fieldDescription('overallContrast')"
+                />
+              </el-flex>
+              <el-dropdown
+                v-model="values.overallContrast"
+                :items="getFieldOptions(overallContrastField)"
+                :item-label="(item) => fieldOptionLabel('overallContrast', item.value)"
+                item-value="value"
+                :placeholder="t('panel.none')"
+                clearable
+              />
+            </el-grid>
+          </el-grid>
+        </el-grid>
+
+        <el-grid
+          :p="12"
+          :br="1"
+          :radius="16"
+          :bc="isAdvancedOpen ? 'blue35' : 'normal10'"
+          :gap="12"
+        >
+          <el-flex rules="rbc" class="w100 crp" @click="isAdvancedOpen = !isAdvancedOpen">
+            <el-flex rules="rsc" :gap="8">
+              <el-text
+                :size="14"
+                :weight="600"
+                :icon="isAdvancedOpen ? 'expand_less' : 'expand_more'"
+              >
+                {{ t("modules.lighting.groups.advanced.title") }}
+              </el-text>
+              <el-help :text="t('modules.lighting.groups.advanced.description')" />
+            </el-flex>
+          </el-flex>
+
+          <el-text-field
+            v-if="isAdvancedOpen && extraDetailsField"
+            v-model="values.extraDetails"
+            type="textarea"
+            :rows="extraDetailsField.ui?.rows || 3"
+            :placeholder="fieldPlaceholder('extraDetails')"
+            support-variables
+          />
+        </el-grid>
+      </template>
 
       <el-grid
         rules="csc"
