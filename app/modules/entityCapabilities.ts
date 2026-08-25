@@ -43,6 +43,14 @@ const moduleEntityCapabilities = {
     sceneSelection: "single",
     targetPolicy: [],
   },
+  style: {
+    enabled: true,
+    sceneExposable: true,
+    sceneSelection: "single",
+    targetPolicy: [],
+    allowGlobalInheritanceToggle: true,
+    preserveEntitiesInCustomMode: true,
+  },
 } satisfies Partial<Record<string, ModuleEntityConfig>>;
 
 /**
@@ -58,6 +66,7 @@ const moduleEntitySceneInstructions: Partial<Record<string, string>> = {
   framing: "Frame this scene with {tokens}.",
   background: "Use only {tokens} as this scene's background.",
   lighting: "Light this scene with {tokens}.",
+  style: "Use {tokens} as this scene's visual style.",
 };
 
 export function withModuleEntityCapabilities(
