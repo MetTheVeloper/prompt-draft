@@ -447,7 +447,7 @@ onBeforeUnmount(() => {
           :model-value="draft.contentKey"
           :editor-id="editorId('contentKey')"
           support-variables
-          :disable="draft.contentRef?.kind === 'scene'"
+          :disabled="draft.contentRef?.kind === 'scene'"
           :placeholder="t('modules.layout.fields.regions.controls.contentKey.placeholder')"
           @update:model-value="updateContentKey"
         />
