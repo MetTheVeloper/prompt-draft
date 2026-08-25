@@ -81,6 +81,14 @@ export type ModuleEntityConfig = {
   sceneExposable?: boolean;
   sceneSelection?: ModuleEntitySceneSelection;
   targetPolicy?: ModuleEntityTargetPolicy[];
+  /** Expose the shared Independent configuration toggle for named entities. */
+  allowGlobalInheritanceToggle?: boolean;
+  /**
+   * Keep active Scene-referenced named definitions available while the global
+   * module uses its custom override mode. The global override remains scoped
+   * to the Global/default definition rather than replacing Scene resources.
+   */
+  preserveEntitiesInCustomMode?: boolean;
 };
 
 /**
