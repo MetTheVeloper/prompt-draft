@@ -1,14 +1,4 @@
 import type { ModuleEntityRef } from "./entityContracts";
-import type { PromptVariableSource, PromptVariableType } from "./types";
-
-/** Stable reference to semantic content used by a Scene. */
-export type SceneContentRef = {
-  variableId: string;
-  token?: string;
-  label?: string;
-  source?: PromptVariableSource;
-  type?: PromptVariableType;
-};
 
 /**
  * Scene configuration components reuse the generic module-entity reference.
@@ -17,8 +7,8 @@ export type SceneContentRef = {
 export type SceneComponentRef = ModuleEntityRef;
 
 /**
- * Scene is a specialized repeatable entity: it composes references rather than
- * duplicating scalar module payloads.
+ * Scene is a specialized repeatable entity. Its description is the canonical
+ * nested content definition; module configurations remain stable references.
  */
 export type SceneEntity = {
   id: string;
@@ -26,7 +16,6 @@ export type SceneEntity = {
   name: string;
   enabled?: boolean;
   description?: string;
-  content: SceneContentRef[];
   components: SceneComponentRef[];
   extraDetails?: string;
 };
