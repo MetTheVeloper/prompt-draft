@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 6 module conversions complete and accepted; Named Configurations modal UX implemented / validation pending
+> **Status:** Phase 6 complete and accepted; Phase 7 — Generalize semantic/reference catalog is current
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
@@ -501,7 +501,7 @@ Setup state is preserved. Ownership is compile/presentation behavior and is type
 
 ---
 
-# Current phase
+# Completed Phase 6
 
 ## Phase 6 — Expand Scene-capable modules
 
@@ -682,25 +682,68 @@ Implementation:
 - [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
 - [x] Existing Named Configuration entity cards start collapsed whenever the workspace opens; the list remains visible and newly added configurations open immediately for editing.
 - [x] Right-click context menus for entity-capable Key Modules expose a Named Configurations action through the shared panel shell and `usePageContextMenu()` augmentation path.
-- [ ] Running-app visual/interaction validation for FAB placement, modal sizing, live edits, backdrop/Escape close, context-menu access, and mobile behavior.
+- [x] Running-app visual/interaction validation accepted for FAB access, modal workflow, live edits, collapsed defaults, and context-menu access.
 
-**Result:** implemented / validation pending.
+**Result:** complete and accepted.
 
 ### Phase 6 completion gate
 
 - [x] All planned Scene-capable module conversions are complete and accepted.
-- [ ] Accept the compact Named Configurations modal UX after running-app validation.
-- [ ] Continue to Phase 7 — Generalize semantic/reference catalog.
+- [x] Compact Named Configurations modal UX accepted after running-app validation.
+- [x] Phase 6 closed; continue to Phase 7 — Generalize semantic/reference catalog.
+
+---
+
+# Current phase
+
+## Phase 7 — Generalize semantic/reference catalog
+
+Phase 7 does **not** change prompt semantics by itself. Its goal is to consolidate the increasingly duplicated logic that discovers, filters, labels, groups, and resolves semantic targets and stable references across editors while preserving the module-specific rules that already work.
+
+### Phase 7.1 — Audit existing catalogs and pickers
+
+- [ ] Inventory every target/reference option source and every picker that builds its own catalog.
+- [ ] Trace identity used by each path: semantic token, stable entity ID, module/entity pair, Scene ID, Region content ref, or compatibility-only string.
+- [ ] Identify duplicated eligibility/filtering/grouping/label logic versus genuinely module-specific behavior.
+- [ ] Explicitly audit Scene component selection, Form target selection, Texture Material Assignment targets/exceptions, Layout Region → Scene selection, and existing entity-oriented systems such as Typography/Hair/Outfit where relevant.
+- [ ] Record current missing/disabled/deleted-reference behavior before changing shared infrastructure.
+
+### Phase 7.2 — Define the reusable catalog contract
+
+- [ ] Define one reusable catalog item/reference contract with canonical identity plus presentation metadata.
+- [ ] Keep stable IDs canonical where stable IDs exist; tokens/names remain representation only.
+- [ ] Support eligibility predicates/capabilities instead of hard-coded picker-specific filtering.
+- [ ] Support grouping, labels/descriptions, semantic kind/scope, enabled/disabled state, and missing-reference recovery metadata without forcing every consumer to use every field.
+- [ ] Preserve module-specific policies through adapters/capabilities rather than flattening specialized semantics.
+
+### Phase 7.3 — Build shared catalog/resolver infrastructure
+
+- [ ] Introduce reusable catalog-building/resolution utilities or composables after the audit proves the correct boundary.
+- [ ] Add adapters for current semantic targets and stable entity references rather than destructively rewriting persisted state.
+- [ ] Centralize duplicate token/label/eligibility resolution where safe.
+- [ ] Keep missing references representable and never silently auto-retarget them.
+
+### Phase 7.4 — Migrate consumers incrementally
+
+- [ ] Move overlapping picker/catalog consumers to the shared infrastructure one at a time.
+- [ ] Keep specialized UI components where their UX is genuinely different; Phase 7 generalizes data/catalog semantics, not necessarily every visual picker.
+- [ ] Preserve Scene cardinality, target policies, Texture assignment scopes/exceptions, Region → Scene stable refs, and entity enable/disable behavior.
+- [ ] Avoid unrelated compiler/output changes while catalog plumbing is being consolidated.
+
+### Phase 7.5 — Validation and exit gate
+
+- [ ] Verify old drafts and current branch drafts resolve the same valid targets/references after migration.
+- [ ] Verify rename keeps stable references intact.
+- [ ] Verify delete/disable leaves references missing/unavailable rather than silently retargeting.
+- [ ] Verify Scene, Form, Texture, Layout, and other migrated consumers expose the same eligible choices as before unless an explicit bug is documented and intentionally fixed.
+- [ ] Confirm prompt output remains behaviorally unchanged for accepted Phase 2–6 scenarios.
+- [ ] Update this source of truth with the final catalog architecture and consumer list.
+
+**Result:** not started — audit is the first task.
 
 ---
 
 # Later phases
-
-## Phase 7 — Generalize semantic/reference catalog
-
-- [ ] Audit overlapping specialized target/reference pickers.
-- [ ] Define reusable eligibility-aware catalog.
-- [ ] Preserve missing-reference recovery and module-specific capabilities.
 
 ## Phase 8 — UX consolidation
 
@@ -872,4 +915,5 @@ Selected configuration payloads are defined by owning modules and are never repe
 25. Modal entity edits are live state edits, not a temporary transaction; dismissing the workspace must not discard valid changes.
 26. Existing Named Configuration entity cards start collapsed whenever the modal workspace opens; the list remains visible and newly added configurations may open immediately for editing.
 27. Entity-capable Key Module context menus expose the same Named Configurations workspace action as the header FAB.
-28. Update this document with architectural changes and phase status.
+28. Shared semantic/reference catalog work must preserve canonical identities and module-specific eligibility rules; consolidation must never silently change target/reference meaning.
+29. Update this document with architectural changes and phase status.
