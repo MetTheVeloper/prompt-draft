@@ -12,6 +12,12 @@ export default {
       label: 'Scenes',
       description: 'Compose reusable Scene entities from content and named module configurations.',
     },
+    description: {
+      placeholder: 'Describe this Scene. You can reference prompt variables here.',
+    },
+    extraDetails: {
+      placeholder: 'Add optional scene-specific instructions, constraints, or context.',
+    },
   },
   actions: {
     add: 'Add Scene',
