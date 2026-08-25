@@ -37,7 +37,7 @@ const emit = defineEmits<{
   (event: "update:modelValue", value: ModuleEntity<ModuleEntityPayload>[]): void;
 }>();
 
-const collapsedEntityIds = ref<string[]>([]);
+const collapsedEntityIds = ref<string[]>(props.modelValue.map((entity) => entity.id));
 const listExpanded = ref(true);
 
 function cloneValue<T>(value: T): T {
