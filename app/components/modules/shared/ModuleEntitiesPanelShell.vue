@@ -1,5 +1,7 @@
 <script setup lang="ts">
-const props = withDefaults(
+import { computed } from "vue";
+
+withDefaults(
   defineProps<{
     count?: number;
     label?: string;
