@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 5 complete / Phase 6 in progress — Framing and Background accepted, Lighting next
+> **Status:** Phase 5 complete / Phase 6 in progress — Framing and Background accepted, Lighting implemented / validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on this branch. Never merge or transfer to `main` without explicit final user approval.
@@ -39,7 +39,7 @@ Scene Entities
 Layout Regions
 ```
 
-A Scene references reusable module configurations such as Form, Camera, Framing, Background, and later other suitable modules.
+A Scene references reusable module configurations such as Form, Camera, Framing, Background, Lighting, and later other suitable modules.
 
 ---
 
@@ -131,9 +131,16 @@ background: {
   sceneSelection: "single",
   targetPolicy: [],
 }
+
+lighting: {
+  enabled: true,
+  sceneExposable: true,
+  sceneSelection: "single",
+  targetPolicy: [],
+}
 ```
 
-Camera, Framing, and Background are Scene resources and do not need meaningless subject/object targets.
+Camera, Framing, Background, and Lighting are Scene resources and do not need meaningless subject/object targets.
 
 ## 4. Key Module shells stay consistent
 
@@ -150,6 +157,8 @@ compileSceneResourceModule()
 ```
 
 Background is an explicit adapter case because its existing global panel and compiler have specialized custom-input/natural-language behavior that must remain backward compatible.
+
+Lighting is also an explicit adapter case. Its canonical compiler owns nested `lightSources` semantics plus inline `customText` override behavior, and its named configuration editor reuses the existing `LightSourcesField.vue` rather than flattening structured source state into generic scalar inputs.
 
 ## 5. Scene Description is canonical scene content
 
@@ -181,6 +190,7 @@ Correct:
 {form_meltedCar}
 {framing_closeGrass}
 {background_sunsetDeck}
+{lighting_neonRim}
 ```
 
 Owning modules define reusable tokens. Scene appends only concise application instructions.
@@ -192,6 +202,7 @@ Form       → Apply {tokens} to this scene.
 Camera     → Capture this scene with {tokens}.
 Framing    → Frame this scene with {tokens}.
 Background → Use only {tokens} as this scene's background.
+Lighting   → Light this scene with {tokens}.
 ```
 
 The wording registry lives in `entityCapabilities.ts`, not scattered through `compileScene.ts`.
@@ -212,7 +223,7 @@ Active Scene references entity
 
 This keeps unused entity state out of prompts.
 
-`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background.
+`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Specialized adapters may also preserve an existing global override path while still excluding override fields from named entity definitions.
 
 ## 8. Form keeps two consumption modes
 
@@ -479,15 +490,48 @@ Implementation:
 
 **Result:** complete and accepted.
 
+### Phase 6.3 — Lighting
+
+Lighting requires a specialized Scene-resource adapter rather than the plain generic scalar panel/compiler path.
+
+Audit findings:
+
+- `compileLightingModule()` owns the canonical natural-language semantics for nested `lightSources`, including role/type/direction/quality/intensity/color/custom-color/features.
+- Lighting presets contain structured `LightingSource[]` payloads and must remain structured when stored inside named entities.
+- `customText` is an inline global override in the existing Lighting compiler; unlike generic panel custom mode, it must remain backward compatible even when named entities are enabled.
+- Lighting has no meaningful subject/object target semantics.
+
+Implementation:
+
+- [x] Lighting is entity-capable and `sceneExposable`.
+- [x] Lighting cardinality is `single` per Scene.
+- [x] Lighting target policy is empty; no target selector is exposed.
+- [x] Existing global Lighting panel remains canonical.
+- [x] Existing `compileLightingModule()` remains canonical for global and named configuration specifications.
+- [x] `lighting-stable.vue` adapts the specialized panel to generic entity state and Scene reference consumption.
+- [x] Named Lighting configurations use stable generic `ModuleEntity` identity/state.
+- [x] `LightingEntitiesField.vue` reuses the existing `LightSourcesField.vue` so nested source state, custom colors, and source features persist as structured values.
+- [x] Named Lighting configurations support existing Lighting presets, including structured `lightSources` arrays.
+- [x] Named Lighting configurations may inherit global values or opt into Independent Lighting mode.
+- [x] Global `customText` override behavior remains backward compatible through `preserveGlobalOverride`; named entity definitions do not inline the module override field.
+- [x] Unused named Lighting configurations stay out of prompt output.
+- [x] Scene-referenced Lighting configurations emit `{lighting_*}` definitions.
+- [x] Scene wording: `Light this scene with {lighting_*}.`
+- [x] Layout-off consumption gate matches Framing/Background: state remains stored, but named Lighting definitions are not treated as consumed while Layout is inactive.
+- [x] Static compiler-path sanity review completed.
+- [ ] Running-app UI/compile validation.
+- [ ] Real image validation if useful after compile/UI acceptance.
+
+**Result:** implemented / validation pending.
+
 ### Remaining Phase 6 candidates
 
-Next conversion target:
+Next conversion target after Lighting validation:
 
-- [ ] Lighting
+- [ ] Style
 
 Then:
 
-- [ ] Style
 - [ ] Effects
 - [ ] Texture / Material
 - [ ] other suitable modules after audit.
@@ -517,7 +561,7 @@ Exact order may change based on specialized module constraints and real workflow
 - [ ] Prompts without Scenes remain behaviorally equivalent.
 - [ ] Existing Layout/Pose/Expression/Color/Material semantics remain functional.
 - [ ] Re-validate typed user `reference` ownership and Setup alias restoration.
-- [ ] Re-validate Scene-local Form/Camera/Framing/Background definitions across Modular/Natural/JSON as applicable.
+- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting definitions across Modular/Natural/JSON as applicable.
 - [ ] Import/export JSON remains valid or gets explicit migration.
 - [ ] Final user acceptance tests.
 
@@ -593,4 +637,5 @@ Selected configuration payloads are defined by owning modules and are never repe
 16. Scene-component application wording stays centralized.
 17. Generic scalar Scene resources reuse `scene-resource.vue` and `compileSceneResourceModule()` unless specialized semantics require an adapter.
 18. Specialized scalar adapters must preserve their existing canonical compiler behavior.
-19. Update this document with architectural changes and phase status.
+19. Structured module fields such as Lighting `lightSources` must remain structured in named entity state and reuse specialized editors when generic scalar inputs are insufficient.
+20. Update this document with architectural changes and phase status.
