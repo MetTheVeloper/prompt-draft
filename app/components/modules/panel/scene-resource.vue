@@ -7,6 +7,7 @@ import type { ModuleEntityPayload } from "~/modules/entityContracts";
 import {
   getGlobalModuleValues,
   getModuleEntities,
+  getModuleEntityConfig,
   getModuleEntityTargetPolicy,
   setModuleEntities,
 } from "~/modules/entityContracts";
@@ -47,9 +48,16 @@ const emit = defineEmits<{
 const values = computed<ModuleValues>(() => props.modelValue || {});
 const globalValues = computed(() => getGlobalModuleValues(values.value));
 const entities = computed(() => getModuleEntities<ModuleEntityPayload>(values.value));
+const entityConfig = computed(() => getModuleEntityConfig(props.module));
 const targetPolicy = computed(() => getModuleEntityTargetPolicy(props.module));
 const customMode = computed(() => Boolean(props.panelState?.isCustomMode));
 const allowPresets = computed(() => Object.keys(props.module.presets || {}).length > 0);
+const allowGlobalInheritanceToggle = computed(
+  () => entityConfig.value?.allowGlobalInheritanceToggle === true,
+);
+const preserveEntitiesInCustomMode = computed(
+  () => entityConfig.value?.preserveEntitiesInCustomMode === true,
+);
 
 const referencedEntityIds = computed(() => {
   const sceneActive = props.modules.some((module) => module.key === "scene");
@@ -74,6 +82,7 @@ const output = computed(() => {
   return compileSceneResourceModule(props.module, values.value, {
     customMode: customMode.value,
     referencedEntityIds: referencedEntityIds.value,
+    preserveEntitiesInCustomMode: preserveEntitiesInCustomMode.value,
   });
 });
 
@@ -109,12 +118,13 @@ function updateEntities(nextEntities: typeof entities.value) {
     />
 
     <ModuleEntitiesField
-      v-show="!customMode"
+      v-show="!customMode || preserveEntitiesInCustomMode"
       :module="module"
       :global-values="globalValues"
       :model-value="entities"
       :target-policy="targetPolicy"
       :allow-presets="allowPresets"
+      :allow-global-inheritance-toggle="allowGlobalInheritanceToggle"
       @update:model-value="updateEntities"
     />
   </el-flex>
