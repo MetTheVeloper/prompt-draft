@@ -2,10 +2,9 @@ import { computed, toValue, type MaybeRefOrGetter } from "vue";
 import type { ModuleEntityTargetPolicy } from "~/modules/entityContracts";
 import type { SemanticTargetRef } from "~/modules/types";
 import {
-  createReferenceCatalogIndex,
-  resolveReferenceCatalogItem,
-  type ReferenceCatalogItem,
-} from "~/utils/referenceCatalog";
+  createSemanticReferenceCatalogIndex,
+  resolveSemanticReferenceCatalogItem,
+} from "~/utils/semanticReferenceCatalog";
 import {
   sameSemanticTargetList,
   semanticTargetIdentity,
@@ -24,12 +23,6 @@ export type ModuleEntityTargetOption = {
   color?: string;
   target: SemanticTargetRef;
 };
-
-type ModuleEntityTargetCatalogItem = ReferenceCatalogItem<
-  SemanticTargetRef,
-  string,
-  ModuleEntityTargetOption
->;
 
 function variableToken(key: string) {
   return `{${key}}`;
@@ -128,29 +121,8 @@ export function useModuleEntityTargets(
     return options;
   });
 
-  const catalogItems = computed<ModuleEntityTargetCatalogItem[]>(() => {
-    return availableOptions.value.map((option) => ({
-      identity: semanticTargetIdentity(option.target),
-      reference: option.target,
-      presentation: {
-        label: option.label,
-        description: option.description,
-        token: option.target.token,
-        name: option.target.label,
-        group: option.group,
-        groupLabel: option.groupLabel,
-        color: option.color,
-      },
-      kind: option.target.kind,
-      state: {
-        available: option.disabled !== true,
-      },
-      metadata: option,
-    }));
-  });
-
   const catalogIndex = computed(() =>
-    createReferenceCatalogIndex(catalogItems.value),
+    createSemanticReferenceCatalogIndex(availableOptions.value),
   );
 
   function selectionValue(target: SemanticTargetRef) {
@@ -164,11 +136,7 @@ export function useModuleEntityTargets(
   }
 
   function resolveTarget(target: SemanticTargetRef) {
-    return resolveReferenceCatalogItem(
-      target,
-      catalogIndex.value,
-      semanticTargetIdentity,
-    );
+    return resolveSemanticReferenceCatalogItem(target, catalogIndex.value);
   }
 
   function isAvailable(target: SemanticTargetRef) {
