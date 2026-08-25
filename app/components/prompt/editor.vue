@@ -10,6 +10,7 @@ import type { PromptValidationIssue } from "../../utils/promptValidation";
 import ModulesPanelBase from "../modules/panel/base.vue";
 import ModulesPanelForm from "../modules/panel/form.vue";
 import ModulesPanelCamera from "../modules/panel/camera.vue";
+import ModulesPanelSceneResource from "../modules/panel/scene-resource.vue";
 import ModulesPanelScene from "../modules/panel/scene.vue";
 import ModulesPanelBackground from "../modules/panel/background-stable.vue";
 import ModulesPanelEffects from "../modules/panel/effects.vue";
@@ -95,6 +96,7 @@ function getModulePanel(module: PromptKeyModule) {
   if (module.key === "scene") return ModulesPanelScene;
   if (module.key === "form") return ModulesPanelForm;
   if (module.key === "camera") return ModulesPanelCamera;
+  if (module.key === "framing") return ModulesPanelSceneResource;
   if (module.key === "background") return ModulesPanelBackground;
   if (module.key === "effects") return ModulesPanelEffects;
   if (module.key === "lighting") return ModulesPanelLighting;
@@ -124,7 +126,8 @@ function getModulePanelExtraProps(module: PromptKeyModule) {
   if (
     module.key === "scene" ||
     module.key === "form" ||
-    module.key === "camera"
+    module.key === "camera" ||
+    module.key === "framing"
   ) {
     extraProps.modules = props.modules;
     extraProps.moduleValues = props.moduleValues;
