@@ -11,6 +11,12 @@ import {
   type ReferenceCatalogItem,
 } from "../app/utils/referenceCatalog.ts";
 import {
+  createSceneReferenceCatalogIndex,
+  createSceneReferenceCatalogItems,
+  findLegacySceneReferenceByToken,
+  resolveSceneReferenceCatalogItem,
+} from "../app/utils/sceneReferenceCatalog.ts";
+import {
   createSemanticReferenceCatalogIndex,
   resolveSemanticReferenceCatalogItem,
 } from "../app/utils/semanticReferenceCatalog.ts";
@@ -293,4 +299,117 @@ test("module entity adapter never crosses module scopes for the same entity id",
 
   assert.equal(resolution.status, "missing");
   assert.equal(resolution.identity, "module_entity:form:shared-id");
+});
+
+test("scene adapter resolves stable Layout refs after Scene rename", () => {
+  const current = {
+    id: "scene-variable-1",
+    key: "scene_newKey",
+    value: "New scene body",
+    label: "New Scene",
+    enabled: true,
+    source: "module" as const,
+    moduleKey: "scene",
+    entityType: "scene" as const,
+    entityId: "scene-1",
+  };
+  const persisted = {
+    kind: "scene" as const,
+    entityId: "scene-1",
+    token: "{scene_oldKey}",
+    label: "Old Scene",
+  };
+
+  const resolution = resolveSceneReferenceCatalogItem(
+    persisted,
+    createSceneReferenceCatalogIndex([current]),
+  );
+
+  assert.equal(resolution.status, "resolved");
+  assert.equal(resolution.identity, "scene:scene-1");
+  if (resolution.status === "resolved") {
+    assert.equal(resolution.item.reference.token, "{scene_newKey}");
+    assert.equal(resolution.item.reference.label, "New Scene");
+  }
+});
+
+test("scene adapter reports disabled Scene refs as unavailable", () => {
+  const current = {
+    id: "scene-variable-disabled",
+    key: "scene_disabled",
+    value: "Disabled scene body",
+    label: "Disabled Scene",
+    enabled: false,
+    source: "module" as const,
+    moduleKey: "scene",
+    entityType: "scene" as const,
+    entityId: "scene-disabled",
+  };
+  const persisted = {
+    kind: "scene" as const,
+    entityId: "scene-disabled",
+    token: "{scene_oldDisabled}",
+    label: "Old Disabled Scene",
+  };
+
+  const resolution = resolveSceneReferenceCatalogItem(
+    persisted,
+    createSceneReferenceCatalogIndex([current]),
+  );
+
+  assert.equal(resolution.status, "unavailable");
+  if (resolution.status === "unavailable") {
+    assert.equal(resolution.item.reference.token, "{scene_disabled}");
+  }
+});
+
+test("scene stable refs never retarget by matching legacy token", () => {
+  const current = {
+    id: "scene-variable-other",
+    key: "scene_sharedToken",
+    value: "Other scene body",
+    label: "Other Scene",
+    enabled: true,
+    source: "module" as const,
+    moduleKey: "scene",
+    entityType: "scene" as const,
+    entityId: "scene-other",
+  };
+  const persisted = {
+    kind: "scene" as const,
+    entityId: "scene-missing",
+    token: "{scene_sharedToken}",
+    label: "Missing Scene",
+  };
+
+  const resolution = resolveSceneReferenceCatalogItem(
+    persisted,
+    createSceneReferenceCatalogIndex([current]),
+  );
+
+  assert.equal(resolution.status, "missing");
+  assert.equal(resolution.identity, "scene:scene-missing");
+});
+
+test("legacy Scene token lookup is explicit and only upgrades refs that do not exist yet", () => {
+  const current = {
+    id: "scene-variable-legacy",
+    key: "scene_legacy",
+    value: "Legacy scene body",
+    label: "Legacy Scene",
+    enabled: true,
+    source: "module" as const,
+    moduleKey: "scene",
+    entityType: "scene" as const,
+    entityId: "scene-legacy",
+  };
+
+  const item = findLegacySceneReferenceByToken(
+    "{scene_legacy}",
+    createSceneReferenceCatalogItems([current]),
+  );
+
+  assert.ok(item);
+  assert.equal(item.reference.entityId, "scene-legacy");
+  assert.equal(item.reference.token, "{scene_legacy}");
 });
