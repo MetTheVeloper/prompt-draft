@@ -143,12 +143,10 @@ const referencedEntityIds = computed(() => {
 
 const output = computed(() =>
   compileSceneResourceModule(props.module, modelSnapshot.value, {
+    customMode: customMode.value,
     referencedEntityIds: referencedEntityIds.value,
     compileValues: compileLightingModule,
-    // Lighting custom mode is a Global/default presentation choice only.
-    // Keep referenced named Lighting definitions available for Scenes while
-    // preventing a stored global customText from affecting normal mode.
-    preserveGlobalOverride: customMode.value,
+    preserveEntitiesInCustomMode: true,
   }),
 );
 
