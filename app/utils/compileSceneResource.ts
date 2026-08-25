@@ -68,6 +68,18 @@ function compileSceneResourceEntity(
   return `• ${getModuleEntityVariableToken(module.key, entity)} = ${specification}`;
 }
 
+function getCustomOverride(
+  module: PromptKeyModule,
+  globalValues: ModuleValues,
+) {
+  const overrideFieldId =
+    module.compile?.overrideField ||
+    Object.values(module.fields).find((field) => field.isOverride)?.id;
+  const override = overrideFieldId ? globalValues[overrideFieldId] : "";
+
+  return typeof override === "string" ? override.trim() : "";
+}
+
 /**
  * Compile a scalar module that owns named Scene resources.
  *
@@ -79,6 +91,11 @@ function compileSceneResourceEntity(
  * scalar modules continue using the normal `compileModule` path. Modules whose
  * existing global compiler treats the override field as an inline override can
  * opt into `preserveGlobalOverride` without exposing that override to entities.
+ *
+ * `preserveEntitiesInCustomMode` is intentionally opt-in. It supports modules
+ * such as Lighting where Global/default custom mode changes only the global
+ * presentation while Scene-referenced named configurations remain valid. The
+ * default keeps existing adapter behavior (for example Background) unchanged.
  */
 export function compileSceneResourceModule(
   module: PromptKeyModule,
@@ -88,26 +105,24 @@ export function compileSceneResourceModule(
     referencedEntityIds?: string[];
     compileValues?: SceneResourceScalarCompiler;
     preserveGlobalOverride?: boolean;
+    preserveEntitiesInCustomMode?: boolean;
   } = {},
 ) {
   const globalValues = getGlobalModuleValues(values);
+  const globalOutput = options.customMode
+    ? getCustomOverride(module, globalValues)
+    : outputText(
+        compileScalar(
+          module,
+          globalValues,
+          options.compileValues,
+          options.preserveGlobalOverride,
+        ),
+      );
 
-  if (options.customMode) {
-    const overrideFieldId =
-      module.compile?.overrideField ||
-      Object.values(module.fields).find((field) => field.isOverride)?.id;
-    const override = overrideFieldId ? globalValues[overrideFieldId] : "";
-    return typeof override === "string" ? override.trim() : "";
+  if (options.customMode && !options.preserveEntitiesInCustomMode) {
+    return globalOutput;
   }
-
-  const globalOutput = outputText(
-    compileScalar(
-      module,
-      globalValues,
-      options.compileValues,
-      options.preserveGlobalOverride,
-    ),
-  );
 
   const referencedIds = new Set(
     (options.referencedEntityIds || []).map((id) => id.trim()).filter(Boolean),
