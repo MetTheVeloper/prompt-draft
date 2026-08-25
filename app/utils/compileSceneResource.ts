@@ -12,6 +12,11 @@ import {
 import { compileModule } from "./compileModules";
 import { getModuleEntityVariableToken } from "./moduleEntityVariables";
 
+export type SceneResourceScalarCompiler = (
+  module: PromptKeyModule,
+  values: ModuleValues,
+) => ModuleOutputValue;
+
 function outputText(value: ModuleOutputValue) {
   return typeof value === "string" ? value.trim() : JSON.stringify(value);
 }
@@ -32,17 +37,27 @@ function clearScalarOverride(
   };
 }
 
+function compileScalar(
+  module: PromptKeyModule,
+  values: ModuleValues,
+  compiler?: SceneResourceScalarCompiler,
+) {
+  const cleanValues = clearScalarOverride(module, values);
+  return compiler
+    ? compiler(module, cleanValues)
+    : compileModule(module, cleanValues);
+}
+
 function compileSceneResourceEntity(
   module: PromptKeyModule,
   moduleState: ModuleValues,
   entity: ModuleEntity<ModuleEntityPayload>,
+  compiler?: SceneResourceScalarCompiler,
 ) {
   if (entity.enabled === false) return "";
 
   const resolved = resolveModuleEntityValues(moduleState, entity);
-  const specification = outputText(
-    compileModule(module, clearScalarOverride(module, resolved)),
-  );
+  const specification = outputText(compileScalar(module, resolved, compiler));
 
   if (!specification) return "";
 
@@ -55,6 +70,9 @@ function compileSceneResourceEntity(
  * Global/default scalar behavior remains backward compatible. Named entities
  * are definitions only and are emitted exclusively when an active Scene holds
  * a stable reference to them. This keeps unused entity state out of prompts.
+ *
+ * Modules with specialized scalar wording may pass `compileValues`; generic
+ * scalar modules continue using the normal `compileModule` path.
  */
 export function compileSceneResourceModule(
   module: PromptKeyModule,
@@ -62,6 +80,7 @@ export function compileSceneResourceModule(
   options: {
     customMode?: boolean;
     referencedEntityIds?: string[];
+    compileValues?: SceneResourceScalarCompiler;
   } = {},
 ) {
   const globalValues = getGlobalModuleValues(values);
@@ -75,7 +94,7 @@ export function compileSceneResourceModule(
   }
 
   const globalOutput = outputText(
-    compileModule(module, clearScalarOverride(module, globalValues)),
+    compileScalar(module, globalValues, options.compileValues),
   );
 
   const referencedIds = new Set(
@@ -86,7 +105,14 @@ export function compileSceneResourceModule(
 
   const entityLines = getModuleEntities<ModuleEntityPayload>(values)
     .filter((entity) => referencedIds.has(entity.id))
-    .map((entity) => compileSceneResourceEntity(module, values, entity))
+    .map((entity) =>
+      compileSceneResourceEntity(
+        module,
+        values,
+        entity,
+        options.compileValues,
+      ),
+    )
     .filter(Boolean);
 
   if (!entityLines.length) return globalOutput;
