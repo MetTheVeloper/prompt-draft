@@ -1,9 +1,9 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 5 complete / Phase 6 in progress — Framing, Background, and Lighting accepted; Style implemented / validation pending
+> **Status:** Phase 5 complete / Phase 6 in progress — Framing, Background, Lighting, and Style accepted; Effects implemented / validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
-> **Scope rule:** all refactor work stays on this branch. Never merge or transfer to `main` without explicit final user approval.
+> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
 
 ## Source-of-truth rule
 
@@ -39,7 +39,7 @@ Scene Entities
 Layout Regions
 ```
 
-A Scene references reusable module configurations such as Form, Camera, Framing, Background, Lighting, Style, and later other suitable modules.
+A Scene references reusable module configurations such as Form, Camera, Framing, Background, Lighting, Style, Effects, and later other suitable modules.
 
 ---
 
@@ -147,11 +147,20 @@ style: {
   allowGlobalInheritanceToggle: true,
   preserveEntitiesInCustomMode: true,
 }
+
+effects: {
+  enabled: true,
+  sceneExposable: true,
+  sceneSelection: "single",
+  targetPolicy: [],
+  allowGlobalInheritanceToggle: true,
+  preserveEntitiesInCustomMode: true,
+}
 ```
 
-Camera, Framing, Background, Lighting, and Style are Scene resources and do not need meaningless subject/object targets.
+Camera, Framing, Background, Lighting, Style, and Effects are Scene resources and do not need meaningless subject/object targets.
 
-Scene-resource UX/compile options that are meaningful only for some modules are also capability-driven. In particular, Style opts into an Independent configuration toggle and keeps Scene-referenced named definitions available while the Global/default Style panel is in custom mode.
+Scene-resource UX/compile options that are meaningful only for some modules are capability-driven. Style and Effects opt into an Independent configuration model and keep Scene-referenced named definitions available while their Global/default panel is in custom mode.
 
 ## 4. Key Module shells stay consistent
 
@@ -172,6 +181,8 @@ Framing and Style are direct generic Scene-resource cases. Style continues using
 Background is an explicit adapter case because its existing global panel and compiler have specialized custom-input/natural-language behavior that must remain backward compatible.
 
 Lighting is also an explicit adapter case. Its canonical compiler owns nested `lightSources` semantics plus inline `customText` override behavior, and its named configuration editor reuses the existing `LightSourcesField.vue` rather than flattening structured source state into generic scalar inputs.
+
+Effects is another explicit adapter case. Its canonical compiler owns structured `effectLayers` semantics, including custom effect text, intensity, layer details, duplicate suppression, and extra effects direction. `effects-stable.vue` keeps the specialized global Effects panel while `EffectsEntitiesField.vue` reuses the existing `EffectLayersField.vue` for named configurations.
 
 ## 5. Scene Description is canonical scene content
 
@@ -205,6 +216,7 @@ Correct:
 {background_sunsetDeck}
 {lighting_neonRim}
 {style_watercolorNight}
+{effects_glitchPass}
 ```
 
 Owning modules define reusable tokens. Scene appends only concise application instructions.
@@ -218,6 +230,7 @@ Framing    → Frame this scene with {tokens}.
 Background → Use only {tokens} as this scene's background.
 Lighting   → Light this scene with {tokens}.
 Style      → Use {tokens} as this scene's visual style.
+Effects    → Apply {tokens} as this scene's effects.
 ```
 
 The wording registry lives in `entityCapabilities.ts`, not scattered through `compileScene.ts`.
@@ -238,7 +251,7 @@ Active Scene references entity
 
 This keeps unused entity state out of prompts.
 
-`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Scene-resource capability metadata can also opt into preserving referenced named definitions while Global/default custom mode is active and into exposing the shared Independent configuration control.
+`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background, Lighting, and Effects. Scene-resource capability metadata can also opt into preserving referenced named definitions while Global/default custom mode is active and into exposing the shared Independent configuration control.
 
 ## 8. Form keeps two consumption modes
 
@@ -385,7 +398,7 @@ Setup state is preserved. Ownership is compile/presentation behavior and is type
 - [x] Dedicated working branch.
 - [x] Baseline main commit recorded.
 - [x] Canonical refactor document established.
-- [x] Main kept untouched.
+- [x] Main kept untouched during the branch-only refactor until the explicitly approved deployment checkpoint.
 
 **Result:** complete.
 
@@ -574,18 +587,50 @@ Implementation:
 - [x] Scene wording: `Use {style_*} as this scene's visual style.`
 - [x] Layout-off consumption gate preserves Style entity/Scene state while suppressing Scene-related Style definitions.
 - [x] Static compiler/UI-path sanity review completed.
+- [x] Running-app UI/compile validation accepted.
+- [x] Real multi-scene image test validated three Scene-local Style configurations — cinematic realism/photography, Art Deco/vector illustration, and claymation/hand-modeled clay — while Scene content remained reusable and token-based.
+
+**Result:** complete and accepted.
+
+### Phase 6.5 — Effects
+
+Effects requires a specialized Scene-resource adapter because the module owns structured effect-layer state and a dedicated natural-language compiler.
+
+Audit findings:
+
+- `effectLayers` is a structured `EffectLayer[]` field with up to eight layers; each layer may carry effect type, custom effect text, intensity, and details.
+- `compileEffectsModule()` is canonical and handles custom layer text, intensity wording, duplicate suppression, punctuation normalization, and `extraDetails`.
+- Existing Effects presets contain structured `EffectLayer[]` values and must stay structured inside named entities.
+- Because one configuration can already contain a complete stack of layers, Effects cardinality is `single` per Scene.
+- Effects is Scene-wide and has no meaningful subject/object target selector.
+- Existing Global/default Effects custom mode already follows the standard top-level switch UX.
+
+Implementation:
+
+- [x] Effects is entity-capable and `sceneExposable`.
+- [x] Effects cardinality is `single` per Scene.
+- [x] Effects target policy is empty.
+- [x] Existing specialized global `effects.vue` panel remains canonical.
+- [x] Existing `compileEffectsModule()` remains canonical for Global/default and named specifications.
+- [x] `effects-stable.vue` adapts the specialized global panel to generic stable entity state and demand-driven Scene consumption.
+- [x] `EffectsEntitiesField.vue` stores named Effects through generic `ModuleEntity` identity while reusing `EffectLayersField.vue` for structured layer editing.
+- [x] Named Effects configurations support existing structured Effects presets.
+- [x] Named Effects configurations may inherit Global/default Effects or opt into **Independent Effects** mode.
+- [x] Global Effects custom mode may coexist with Scene-referenced named Effects definitions; global `customText` is cleared from named entity compilation and cannot leak into their specifications.
+- [x] Global panel edits, including Clear, are adapter-guarded so they preserve sibling named entity state.
+- [x] Unused named Effects configurations remain stored but stay out of prompt output.
+- [x] Scene-referenced Effects configurations emit `{effects_*}` definitions.
+- [x] Scene wording: `Apply {effects_*} as this scene's effects.`
+- [x] Layout-off consumption gating preserves Effects/Scene state while suppressing Scene-related Effects definitions.
+- [x] Static compiler/UI-path sanity review completed.
 - [ ] Running-app UI/compile validation.
-- [ ] Real image validation if useful after compile/UI acceptance.
+- [ ] Real image validation with repeated Scene content and contrasting Effects stacks if useful.
 
 **Result:** implemented / validation pending.
 
 ### Remaining Phase 6 candidates
 
-Next conversion target after Style validation:
-
-- [ ] Effects
-
-Then:
+Next conversion target after Effects validation:
 
 - [ ] Texture / Material
 - [ ] other suitable modules after audit.
@@ -615,7 +660,7 @@ Exact order may change based on specialized module constraints and real workflow
 - [ ] Prompts without Scenes remain behaviorally equivalent.
 - [ ] Existing Layout/Pose/Expression/Color/Material semantics remain functional.
 - [ ] Re-validate typed user `reference` ownership and Setup alias restoration.
-- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style definitions across Modular/Natural/JSON as applicable.
+- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style/Effects definitions across Modular/Natural/JSON as applicable.
 - [ ] Import/export JSON remains valid or gets explicit migration.
 - [ ] Final user acceptance tests.
 
@@ -624,8 +669,8 @@ Exact order may change based on specialized module constraints and real workflow
 - [ ] Rebase/validate against intended `main` if required.
 - [ ] Verify no unrelated changes.
 - [ ] Finalize docs.
-- [ ] Receive explicit final user approval.
-- [ ] Merge/transfer to `main` only after that approval.
+- [ ] Receive explicit final user approval for final branch synchronization.
+- [ ] Move/merge remaining branch work to `main` only after that approval.
 
 ---
 
@@ -684,6 +729,23 @@ Accepted Lighting example:
 
 The real repeated-scene image test showed clearly different lighting treatments while Scene content, Background, and Framing remained intentionally repeated.
 
+Accepted Style example:
+
+```text
+{style} =
+• Global/default style: retro comic-book aesthetic, digital illustration, ...
+• {style_style1} = cinematic realism aesthetic, photography
+• {style_style2} = Art Deco aesthetic, vector illustration
+• {style_style3} = claymation aesthetic, hand-modeled clay, handcrafted finish ...
+
+{scenes} =
+• {scene_topScene} = [reusable scene content]. Use {style_style1} as this scene's visual style.
+• {scene_centerScene} = [reusable scene content]. Use {style_style2} as this scene's visual style.
+• {scene_bottomScene} = [reusable scene content]. Use {style_style3} as this scene's visual style.
+```
+
+The real Style image test produced visibly distinct photographic/cinematic, graphic/vector-like, and claymation treatments while the Scene architecture remained reference-driven.
+
 Selected configuration payloads are defined by owning modules and are never repeated inside `{scenes}`.
 
 ---
@@ -691,7 +753,7 @@ Selected configuration payloads are defined by owning modules and are never repe
 # Implementation rules
 
 1. Inspect latest branch history and this file before changes.
-2. Keep `main` untouched until explicit approval.
+2. Keep subsequent refactor commits on `refactor/scene-entity-composition`; do not move `main` again without explicit user approval.
 3. Stable IDs are canonical identity; tokens are representation.
 4. Scene stores references, never duplicated module payload state.
 5. Description is canonical Scene content; avoid redundant parallel representations.
@@ -708,7 +770,8 @@ Selected configuration payloads are defined by owning modules and are never repe
 16. Scene-component application wording stays centralized.
 17. Generic scalar Scene resources reuse `scene-resource.vue` and `compileSceneResourceModule()` unless specialized semantics require an adapter.
 18. Specialized scalar adapters must preserve their existing canonical compiler behavior.
-19. Structured module fields such as Lighting `lightSources` must remain structured in named entity state and reuse specialized editors when generic scalar inputs are insufficient.
+19. Structured module fields such as Lighting `lightSources` and Effects `effectLayers` must remain structured in named entity state and reuse specialized editors when generic scalar inputs are insufficient.
 20. Scene-resource-specific UX/compile behavior such as Independent entity controls or preserving named definitions during Global custom mode must be capability-driven rather than scattered module-key conditionals.
 21. Persisted freeform values must remain raw user-authored values; UI reconstruction may add temporary presentation options but must not rewrite persistence identity or compiler text.
-22. Update this document with architectural changes and phase status.
+22. Specialized global panels wrapped by entity adapters must preserve unknown sibling entity state during global resets/edits.
+23. Update this document with architectural changes and phase status.
