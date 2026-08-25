@@ -25,7 +25,26 @@ const moduleEntityCapabilities = {
     sceneSelection: "single",
     targetPolicy: [],
   },
+  framing: {
+    enabled: true,
+    sceneExposable: true,
+    sceneSelection: "single",
+    targetPolicy: [],
+  },
 } satisfies Partial<Record<string, ModuleEntityConfig>>;
+
+/**
+ * Prompt-facing wording for applying a selected named configuration inside a
+ * Scene. Keeping this separate from Scene compilation prevents module-key
+ * conditionals from spreading as Phase 6 exposes more modules.
+ *
+ * `{tokens}` is replaced with one or more reusable entity tokens.
+ */
+const moduleEntitySceneInstructions: Partial<Record<string, string>> = {
+  form: "Apply {tokens} to this scene.",
+  camera: "Capture this scene with {tokens}.",
+  framing: "Frame this scene with {tokens}.",
+};
 
 export function withModuleEntityCapabilities(
   module: PromptKeyModule,
@@ -34,4 +53,11 @@ export function withModuleEntityCapabilities(
   if (!config) return module;
 
   return withModuleEntityConfig(module, config);
+}
+
+export function getModuleEntitySceneInstruction(module: PromptKeyModule) {
+  return (
+    moduleEntitySceneInstructions[module.key] ||
+    "Apply {tokens} to this scene."
+  );
 }
