@@ -57,7 +57,10 @@ function compileCameraEntity(
 export function compileCameraModule(
   module: PromptKeyModule,
   values: ModuleValues,
-  options: { customMode?: boolean } = {},
+  options: {
+    customMode?: boolean;
+    referencedEntityIds?: string[];
+  } = {},
 ) {
   const globalValues = getGlobalModuleValues(values);
 
@@ -73,11 +76,20 @@ export function compileCameraModule(
     compileModule(module, clearScalarOverride(module, globalValues)),
   );
 
+  const referencedIds = new Set(
+    (options.referencedEntityIds || []).map((id) => id.trim()).filter(Boolean),
+  );
+
+  // Named Camera configurations are Scene resources, not additional global
+  // Camera instructions. Define only configurations that an active Scene
+  // actually references, keeping unused entity state out of the prompt.
+  if (!referencedIds.size) return globalOutput;
+
   const entityLines = getModuleEntities<ModuleEntityPayload>(values)
+    .filter((entity) => referencedIds.has(entity.id))
     .map((entity) => compileCameraEntity(module, values, entity))
     .filter(Boolean);
 
-  // Preserve legacy/no-entity Camera output exactly.
   if (!entityLines.length) return globalOutput;
 
   return [
