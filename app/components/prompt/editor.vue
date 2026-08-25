@@ -127,7 +127,8 @@ function getModulePanelExtraProps(module: PromptKeyModule) {
     module.key === "scene" ||
     module.key === "form" ||
     module.key === "camera" ||
-    module.key === "framing"
+    module.key === "framing" ||
+    module.key === "background"
   ) {
     extraProps.modules = props.modules;
     extraProps.moduleValues = props.moduleValues;
