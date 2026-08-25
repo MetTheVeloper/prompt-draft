@@ -7,14 +7,13 @@ import type { ModuleEntityPayload } from "~/modules/entityContracts";
 import {
   getGlobalModuleValues,
   getModuleEntities,
-  getModuleEntityTargetPolicy,
   setModuleEntities,
 } from "~/modules/entityContracts";
 import { getSceneEntities } from "~/utils/scene";
 import { compileLightingModule } from "~/utils/compileLighting";
 import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import LightingPanel from "./lighting.vue";
-import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
+import LightingEntitiesField from "../lighting/LightingEntitiesField.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -121,7 +120,6 @@ const globalValues = computed(() => getGlobalModuleValues(modelSnapshot.value));
 const entities = computed(() =>
   getModuleEntities<ModuleEntityPayload>(modelSnapshot.value),
 );
-const targetPolicy = computed(() => getModuleEntityTargetPolicy(props.module));
 
 const referencedEntityIds = computed(() => {
   const sceneActive = props.modules.some((module) => module.key === "scene");
@@ -190,13 +188,10 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:issues="emit('update:issues', $event)"
     />
 
-    <ModuleEntitiesField
+    <LightingEntitiesField
       :module="module"
       :global-values="globalValues"
       :model-value="entities"
-      :target-policy="targetPolicy"
-      allow-presets
-      allow-global-inheritance-toggle
       @update:model-value="updateEntities"
     />
   </el-flex>
