@@ -15,6 +15,12 @@ import {
   cloneLayoutRegion,
   normalizeLayoutRegion,
 } from "~/utils/layoutRegions"
+import {
+  createSceneReferenceCatalogIndex,
+  createSceneReferenceCatalogItems,
+  isSceneReferenceVariable,
+  resolveSceneReferenceCatalogItem,
+} from "~/utils/sceneReferenceCatalog"
 
 type LayoutRegionEditorController = {
   submit: () => boolean
@@ -95,35 +101,27 @@ function translate(path: string, fallback: string) {
   return translated === path ? fallback : translated
 }
 
-function sceneVariableToken(variable: PromptVariable) {
-  const key = String(variable.key || "").trim()
-  return key ? `{${key}}` : ""
-}
-
-function sceneVariableLabel(variable: PromptVariable) {
-  return String(variable.label || "").trim() || sceneVariableToken(variable)
-}
-
 const sceneVariables = computed(() => {
-  return (props.sceneVariables || []).filter((variable) => {
-    return (
-      variable.moduleKey === "scene" &&
-      variable.entityType === "scene" &&
-      Boolean(variable.entityId) &&
-      Boolean(sceneVariableToken(variable))
-    )
-  })
+  return (props.sceneVariables || []).filter(isSceneReferenceVariable)
+})
+
+const sceneCatalogItems = computed(() => {
+  return createSceneReferenceCatalogItems(sceneVariables.value)
+})
+
+const sceneCatalogIndex = computed(() => {
+  return createSceneReferenceCatalogIndex(sceneVariables.value)
 })
 
 const sceneBindingValue = computed(() => {
   return draft.contentRef?.kind === "scene" ? draft.contentRef.entityId : ""
 })
 
-const selectedSceneVariable = computed(() => {
-  const entityId = sceneBindingValue.value
-  if (!entityId) return undefined
+const selectedSceneResolution = computed(() => {
+  const ref = draft.contentRef
+  if (ref?.kind !== "scene") return undefined
 
-  return sceneVariables.value.find((variable) => variable.entityId === entityId)
+  return resolveSceneReferenceCatalogItem(ref, sceneCatalogIndex.value)
 })
 
 const sceneBindingItems = computed(() => {
@@ -146,19 +144,19 @@ const sceneBindingItems = computed(() => {
     },
   ]
 
-  sceneVariables.value.forEach((variable) => {
+  sceneCatalogItems.value.forEach((item) => {
     items.push({
-      value: String(variable.entityId),
-      label: sceneVariableLabel(variable),
-      description: sceneVariableToken(variable),
-      disabled: variable.enabled === false,
+      value: item.reference.entityId,
+      label: item.presentation.label,
+      description: item.presentation.description,
+      disabled: item.state?.available === false,
     })
   })
 
   const ref = draft.contentRef
   if (
     ref?.kind === "scene" &&
-    !sceneVariables.value.some((variable) => variable.entityId === ref.entityId)
+    selectedSceneResolution.value?.status === "missing"
   ) {
     items.push({
       value: ref.entityId,
@@ -177,13 +175,11 @@ const sceneBindingItems = computed(() => {
 })
 
 const selectedSceneMissing = computed(() => {
-  return Boolean(
-    draft.contentRef?.kind === "scene" && !selectedSceneVariable.value,
-  )
+  return selectedSceneResolution.value?.status === "missing"
 })
 
 const selectedSceneUnavailable = computed(() => {
-  return selectedSceneVariable.value?.enabled === false
+  return selectedSceneResolution.value?.status === "unavailable"
 })
 
 const customRoleIssue = computed(() => {
@@ -228,21 +224,15 @@ function updateSceneBinding(value: ElDropdownValue) {
     return
   }
 
-  const variable = sceneVariables.value.find((candidate) => {
-    return candidate.entityId === entityId && candidate.enabled !== false
-  })
+  const resolution = resolveSceneReferenceCatalogItem(
+    { kind: "scene", entityId },
+    sceneCatalogIndex.value,
+  )
 
-  if (!variable) return
+  if (resolution.status !== "resolved") return
 
-  const token = sceneVariableToken(variable)
-
-  draft.contentRef = {
-    kind: "scene",
-    entityId,
-    token,
-    label: sceneVariableLabel(variable),
-  }
-  draft.contentKey = token
+  draft.contentRef = { ...resolution.item.reference }
+  draft.contentKey = resolution.item.reference.token || ""
 }
 
 function updateContentKey(value: unknown) {
@@ -261,21 +251,15 @@ function syncSelectedSceneRef() {
   const ref = draft.contentRef
   if (ref?.kind !== "scene") return
 
-  const variable = sceneVariables.value.find((candidate) => {
-    return candidate.entityId === ref.entityId
-  })
+  const resolution = resolveSceneReferenceCatalogItem(
+    ref,
+    sceneCatalogIndex.value,
+  )
 
-  if (!variable) return
+  if (resolution.status === "missing") return
 
-  const token = sceneVariableToken(variable)
-
-  draft.contentRef = {
-    kind: "scene",
-    entityId: ref.entityId,
-    token,
-    label: sceneVariableLabel(variable),
-  }
-  draft.contentKey = token
+  draft.contentRef = { ...resolution.item.reference }
+  draft.contentKey = resolution.item.reference.token || draft.contentKey
 }
 
 function updateHorizontalAlign(value: ElDropdownValue) {
