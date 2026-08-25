@@ -466,6 +466,7 @@ export function useSemanticTargetCatalog(
     itemsFor,
     valuesFor,
     resolveSelections,
+    resolveTarget,
     upgradeTargets,
     summarize,
   };
