@@ -201,6 +201,7 @@ function updateEntities(nextEntities: typeof entities.value) {
       :model-value="entities"
       :target-policy="targetPolicy"
       allow-presets
+      allow-global-inheritance-toggle
       @update:model-value="updateEntities"
     />
   </el-flex>
