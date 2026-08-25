@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 3 complete / Phase 4 implemented, running-app compiler validation pending
+> **Status:** Phase 3 complete / Phase 4 compiler direction validated, refinement validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on the working branch. Never merge or transfer to `main` without explicit final user approval.
@@ -263,6 +263,20 @@ The leading bullet format keeps the block protected from Natural prompt comma sp
 
 `scenes` is a presentation alias only. Internal storage/module key remains `scene`, avoiding destructive migration.
 
+### 7.1 Scene/Layout fidelity rule
+
+Real comic-page testing showed that models can follow the top/center/bottom region order while still drifting from the exact region dimensions in `{layout}`.
+
+When both Layout and Scenes have active output, the prompt compiler now appends one concise nested rule to the effective `{rules}` value:
+
+```text
+Match each scene's dimensions exactly to its corresponding region in {layout}.
+```
+
+The numeric region geometry is never repeated in system prose. `{layout}` remains the single source of truth.
+
+This is a compile/presentation rule only. The user's stored `globalRules` setting is not mutated.
+
 ## 8. Region owns Scene placement
 
 Canonical relationship remains:
@@ -289,6 +303,29 @@ Layout active
 ```
 
 Disabling Layout must never destroy Scene state.
+
+## 10. Explicit user variables take ownership from Setup defaults
+
+User-created typed variables are more explicit than generated Setup aliases.
+
+Compile ownership policy:
+
+```text
+Enabled user variable with type = subject
+→ do not emit generated Setup {subject}
+→ do not expose generated system {subject} in the variable picker
+
+Enabled user variable with type = reference
+→ do not emit generated Setup {reference}
+→ do not expose generated system {reference} in the variable picker
+→ also suppress generated Setup {subject} because the default i2i subject definition depends on {reference}
+```
+
+Setup state is preserved; it is not cleared or migrated. This policy affects prompt compilation/presentation only.
+
+The suppression is type-driven, not key-name-driven. A user subject variable may be `{char1}`, `{personA}`, etc.; its `type: "subject"` is what transfers ownership.
+
+JSON output keeps its existing data schema for now; this ownership policy currently targets prompt-text/system-variable presentation. JSON migration/schema changes belong to the later regression/migration phase if needed.
 
 ---
 
@@ -391,14 +428,18 @@ Implemented:
 - [x] Convert Scene-referenced Form entities to reusable definitions without global target leakage.
 - [x] Append compact component instructions to Scene definitions.
 - [x] Present module output as plural `{scenes}` while preserving internal `scene` key.
-- [ ] Running-app validation of compact Scenes output.
+- [x] Running-app validation of compact `{scenes}` output.
+- [x] Real three-scene retro-comic prompt/image test validates Description-as-content, nested `{scenes}`, per-scene framing text, and dialogue structure.
+- [x] Add automatic nested Scene/Layout fidelity rule.
+- [x] Add typed user-variable ownership for generated Setup `{subject}` / `{reference}` aliases.
+- [ ] Validate automatic Scene/Layout fidelity rule in the next generated output.
+- [ ] Validate user subject/reference ownership suppression in running-app Modular output.
 - [ ] Validate Form/Camera nested reference definitions in final Modular/Natural output.
-- [ ] Real prompt/image test with three-scene comic workflow.
 - [ ] Final wording refinement if real model interpretation exposes ambiguity.
 
-**Current state:** implementation ready for user testing; do not mark Phase 4 complete yet.
+**Current state:** compiler direction is validated by a real three-scene comic generation. The remaining Phase 4 work is focused refinement validation, not a compiler-architecture redesign.
 
-**Exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication or cross-scene leakage, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, and produce concise interpretable output.
+**Exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication or cross-scene leakage, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, preserve exact Layout intent through nested rules, respect explicit user variable ownership, and produce concise interpretable output.
 
 ---
 
@@ -473,34 +514,48 @@ User-defined variables:
 Idea:
 
 ```text
-A retro comic-book page showing a short conversation between {char1} and {char2}, built from {scene1}, {scene2}, and {scene3}, and arranged in {layout} regions, with one short dialogue line in each scene.
+A retro comic-book page showing a short conversation between {char1} and {char2}, built from {scenes}, and arranged in {layout} regions, with one short dialogue line in each scene.
 ```
 
 Scene descriptions:
 
 ```text
 {scene_topScene}
-{char1} facing {char2} with an irritated expression and sharp body language, confronting him while saying {dialogue1}; {char2} stands relaxed with a teasing dark-humor smirk.
+Medium two-shot of {char1} and {char2}. {char1} faces {char2} with an irritated expression and sharp body language, confronting him while saying {dialogue1}. {char2} stands relaxed with a teasing dark-humor smirk.
 
 {scene_centerScene}
-{char2} replying with a smug darkly playful expression while saying {dialogue2}; {char1} looks more annoyed, staring at him with disbelief and restrained anger.
+Closer framing focused on {char2}, with {char1} still visible in the shot. {char2} replies with a smug, darkly playful expression while saying {dialogue2}. {char1} looks more annoyed, staring at him with disbelief and restrained anger.
 
 {scene_bottomScene}
-{char1} looking fed up and ready to snap while saying {dialogue3}; {char2} answers with a calm mischievous grin, turning the tension into dark humor.
+Wider two-shot at table level, showing stronger tension between both characters. {char1} looks fed up and ready to snap while saying {dialogue3}. {char2} answers with a calm mischievous grin, turning the tension into dark humor.
 ```
 
-First validation pass:
+Accepted speech-balloon test rule:
 
-1. keep Form global and select no local Form/Camera in any Scene;
-2. verify `{scenes}` contains only the three nested descriptions;
-3. select one named Form for only the bottom Scene;
-4. verify Form defines `{form_*}` once and only bottom Scene applies it;
-5. repeat with Independent Form and confirm the exclusion wording is conditional/local, not global;
-6. select one named Camera for only the bottom Scene;
-7. verify Camera defines `{camera_*}` once and only bottom Scene captures with it;
-8. verify an unused named Camera entity produces no extra output.
+```text
+Speech balloon tails must always point to the correct speaking character. Never point a speech balloon to a silent listener. When a scene contains lines from two speakers, use separate balloons in clear reading order.
+```
 
-Expected pattern:
+The compiler appends this nested Layout fidelity rule whenever active Scenes and Layout output coexist:
+
+```text
+Match each scene's dimensions exactly to its corresponding region in {layout}.
+```
+
+Current refinement validation pass:
+
+1. keep the tested comic setup and verify the generated `{rules}` includes the Layout fidelity rule once;
+2. confirm the next image follows top/center/bottom region heights more closely;
+3. with user variables of type `subject`, verify generated Setup `{subject}` is absent;
+4. with no user `subject`, verify Setup `{subject}` returns;
+5. with a user variable of type `reference`, verify generated Setup `{reference}` and its dependent generated `{subject}` are absent;
+6. remove/disable the user `reference` variable and verify Setup `{reference}` returns;
+7. select one named Form for only the bottom Scene and verify Form defines `{form_*}` once and only bottom Scene applies it;
+8. repeat with Independent Form and confirm exclusion wording remains Scene-local;
+9. select one named Camera for only the bottom Scene and verify Camera defines `{camera_*}` once and only bottom Scene captures with it;
+10. verify an unused named Camera entity produces no extra output.
+
+Expected nested component pattern:
 
 ```text
 {form} =
@@ -535,4 +590,6 @@ The selected configuration payload must be defined by its owning module and must
 10. Missing references remain missing; never auto-retarget.
 11. Keep compiler behavior explicit and testable.
 12. A Scene-local module configuration must never leak into unrelated Scenes.
-13. Update this document with architectural changes.
+13. If precise structural data already exists in a module token such as `{layout}`, reference that token instead of restating its numeric contents in system prose.
+14. Enabled user variables with explicit semantic types may take prompt-output ownership from generated Setup aliases; ownership is determined by variable type, not key name.
+15. Update this document with architectural changes.
