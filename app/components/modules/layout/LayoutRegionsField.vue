@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
-import type { ModuleField } from "~/modules/types"
+import type { ModuleField, PromptVariable } from "~/modules/types"
 import type {
   LayoutRegion,
+  LayoutRegionContentRef,
   LayoutRegionsState,
   LayoutRegionsValue,
 } from "~/modules/layout.types"
@@ -11,7 +12,6 @@ import {
   cloneLayoutRegionsState,
   createLayoutRegion,
   createLayoutRegionId,
-  normalizeLayoutRegionsState,
 } from "~/utils/layoutRegions"
 import LayoutRegionEditorModal from "./LayoutRegionEditorModal.vue"
 import VisualLayoutBuilderModal from "./VisualLayoutBuilderModal.vue"
@@ -51,6 +51,7 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { mobile } = useScreen()
 const modal = useModal()
+const { moduleVariableGroups } = usePromptVariables()
 
 const regionRoleTranslationKeys: Record<LayoutRegion["role"], string> = {
   none: "modules.layout.fields.regions.roles.none",
@@ -67,17 +68,131 @@ const regionRoleTranslationKeys: Record<LayoutRegion["role"], string> = {
   custom: "modules.layout.fields.regions.roles.custom",
 }
 
+function translate(path: string, fallback: string) {
+  const translated = t(path)
+  return translated === path ? fallback : translated
+}
+
+function sceneVariableToken(variable: PromptVariable) {
+  const key = String(variable.key || "").trim()
+  return key ? `{${key}}` : ""
+}
+
+function sceneVariableLabel(variable: PromptVariable) {
+  return String(variable.label || "").trim() || sceneVariableToken(variable)
+}
+
+const sceneVariables = computed(() => {
+  return moduleVariableGroups.value
+    .flatMap((group) => group.variables)
+    .filter((variable) => {
+      return (
+        variable.moduleKey === "scene" &&
+        variable.entityType === "scene" &&
+        Boolean(variable.entityId) &&
+        Boolean(sceneVariableToken(variable))
+      )
+    })
+})
+
+function createSceneContentRef(variable: PromptVariable): LayoutRegionContentRef {
+  return {
+    kind: "scene",
+    entityId: String(variable.entityId),
+    token: sceneVariableToken(variable),
+    label: sceneVariableLabel(variable),
+  }
+}
+
+function getSceneVariableById(entityId?: string) {
+  if (!entityId) return undefined
+
+  return sceneVariables.value.find((variable) => variable.entityId === entityId)
+}
+
+function getSceneVariableByToken(token?: string) {
+  const normalizedToken = String(token || "").trim()
+  if (!normalizedToken) return undefined
+
+  return sceneVariables.value.find((variable) => {
+    return sceneVariableToken(variable) === normalizedToken
+  })
+}
+
+function reconcileRegionSceneBinding(region: LayoutRegion): LayoutRegion {
+  const nextRegion = cloneLayoutRegion(region)
+  const ref = nextRegion.contentRef
+
+  if (ref?.kind === "scene") {
+    const variable = getSceneVariableById(ref.entityId)
+
+    if (!variable) {
+      return nextRegion
+    }
+
+    const token = sceneVariableToken(variable)
+    nextRegion.contentRef = createSceneContentRef(variable)
+    nextRegion.contentKey = token
+    return nextRegion
+  }
+
+  const legacyScene = getSceneVariableByToken(nextRegion.contentKey)
+  if (!legacyScene) return nextRegion
+
+  nextRegion.contentRef = createSceneContentRef(legacyScene)
+  nextRegion.contentKey = sceneVariableToken(legacyScene)
+  return nextRegion
+}
+
+function reconcileSceneBindings(value: LayoutRegionsValue | unknown) {
+  const nextState = cloneLayoutRegionsState(value)
+
+  nextState.regions = nextState.regions.map(reconcileRegionSceneBinding)
+  return nextState
+}
+
+function statesEqual(a: LayoutRegionsState, b: LayoutRegionsState) {
+  try {
+    return JSON.stringify(a) === JSON.stringify(b)
+  } catch {
+    return false
+  }
+}
+
 const localState = ref<LayoutRegionsState>(
-  cloneLayoutRegionsState(props.modelValue),
+  reconcileSceneBindings(props.modelValue),
 )
 
 watch(
   () => props.modelValue,
   (modelValue) => {
-    localState.value = cloneLayoutRegionsState(modelValue)
+    const sourceState = cloneLayoutRegionsState(modelValue)
+    const reconciledState = reconcileSceneBindings(sourceState)
+
+    localState.value = reconciledState
+
+    if (!statesEqual(sourceState, reconciledState)) {
+      emit("update:modelValue", cloneLayoutRegionsState(reconciledState))
+    }
   },
   {
     deep: true,
+  },
+)
+
+watch(
+  sceneVariables,
+  () => {
+    const reconciledState = reconcileSceneBindings(localState.value)
+
+    if (statesEqual(localState.value, reconciledState)) return
+
+    localState.value = reconciledState
+    emit("update:modelValue", cloneLayoutRegionsState(reconciledState))
+  },
+  {
+    deep: true,
+    immediate: true,
   },
 )
 
@@ -85,7 +200,7 @@ const state = computed(() => localState.value)
 const regions = computed(() => localState.value.regions)
 
 function updateState(nextState: LayoutRegionsState) {
-  const normalizedState = cloneLayoutRegionsState(nextState)
+  const normalizedState = reconcileSceneBindings(nextState)
 
   localState.value = normalizedState
   emit("update:modelValue", cloneLayoutRegionsState(normalizedState))
@@ -113,6 +228,44 @@ function regionRoleLabel(region: LayoutRegion) {
   }
 
   return t(regionRoleTranslationKeys[region.role])
+}
+
+function regionSceneVariable(region: LayoutRegion) {
+  if (region.contentRef?.kind !== "scene") return undefined
+  return getSceneVariableById(region.contentRef.entityId)
+}
+
+function regionSceneToken(region: LayoutRegion) {
+  const variable = regionSceneVariable(region)
+
+  return (
+    (variable ? sceneVariableToken(variable) : "") ||
+    region.contentRef?.token?.trim() ||
+    region.contentKey?.trim() ||
+    ""
+  )
+}
+
+function regionSceneLabel(region: LayoutRegion) {
+  const variable = regionSceneVariable(region)
+
+  return (
+    (variable ? sceneVariableLabel(variable) : "") ||
+    region.contentRef?.label?.trim() ||
+    translate(
+      "modules.layout.fields.regions.list.missingScene",
+      "Missing Scene",
+    )
+  )
+}
+
+function regionSceneStatus(region: LayoutRegion) {
+  if (region.contentRef?.kind !== "scene") return "manual"
+
+  const variable = regionSceneVariable(region)
+  if (!variable) return "missing"
+  if (variable.enabled === false) return "unavailable"
+  return "active"
 }
 
 function formatNumber(value: number) {
@@ -168,6 +321,7 @@ function openRegionEditor(regionIndex?: number) {
     props: {
       region: cloneLayoutRegion(sourceRegion),
       regionIndex: isEdit ? regionIndex : regions.value.length,
+      sceneVariables: sceneVariables.value,
       controller,
       onSave: (savedRegion: LayoutRegion) => {
         if (isEdit) {
@@ -407,7 +561,22 @@ function openDeleteConfirm(region: LayoutRegion, regionIndex: number) {
           </el-text>
 
           <el-text
-            v-if="region.contentKey?.trim()"
+            v-if="region.contentRef?.kind === 'scene'"
+            :size="10"
+            :color="
+              regionSceneStatus(region) === 'missing'
+                ? 'red'
+                : regionSceneStatus(region) === 'unavailable'
+                  ? 'orange'
+                  : 'blue'
+            "
+            :icon="regionSceneStatus(region) === 'active' ? 'layers' : 'warning'"
+          >
+            {{ regionSceneLabel(region) }} · {{ regionSceneToken(region) }}
+          </el-text>
+
+          <el-text
+            v-else-if="region.contentKey?.trim()"
             :key="`${region.id}:${region.contentKey}`"
             :size="10"
             color="normal55"
