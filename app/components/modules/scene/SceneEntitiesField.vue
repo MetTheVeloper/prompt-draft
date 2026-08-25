@@ -66,6 +66,10 @@ function translate(path: string, fallback = "") {
   return translated === path ? fallback : translated;
 }
 
+function sceneEditorId(scene: SceneEntity, fieldId: "description" | "extraDetails") {
+  return `scene:${scene.id}:${fieldId}`;
+}
+
 function humanize(value: string) {
   return value
     .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
@@ -373,10 +377,16 @@ function selectMultipleComponents(
   moduleKey: string,
   selected: ElDropdownValue[],
 ) {
+  const group = componentGroups.value.find((item) => item.module.key === moduleKey);
+
+  if (group?.selection === "single") {
+    selectSingleComponent(index, moduleKey, selected[0] ?? "");
+    return;
+  }
+
   const scene = scenes.value[index];
   if (!scene) return;
 
-  const group = componentGroups.value.find((item) => item.module.key === moduleKey);
   const entities = new Map((group?.entities || []).map((entity) => [entity.id, entity]));
   const current = new Map(refsForModule(scene, moduleKey).map((ref) => [ref.entityId, ref]));
   const otherRefs = scene.components.filter((ref) => ref.moduleKey !== moduleKey);
@@ -529,6 +539,8 @@ function issueText(issue: SceneCompileIssue) {
               :model-value="scene.description || ''"
               type="textarea"
               :rows="2"
+              :placeholder="translate('modules.scene.fields.description.placeholder', 'Describe this Scene. You can reference prompt variables here.')"
+              :editor-id="sceneEditorId(scene, 'description')"
               support-variables
               @update:model-value="updateScene(sceneIndex, { description: String($event || '') })"
             />
@@ -619,6 +631,8 @@ function issueText(issue: SceneCompileIssue) {
               :model-value="scene.extraDetails || ''"
               type="textarea"
               :rows="3"
+              :placeholder="translate('modules.scene.fields.extraDetails.placeholder', 'Add optional scene-specific instructions, constraints, or context.')"
+              :editor-id="sceneEditorId(scene, 'extraDetails')"
               support-variables
               @update:model-value="updateScene(sceneIndex, { extraDetails: String($event || '') })"
             />
