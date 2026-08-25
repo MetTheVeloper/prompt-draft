@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 3 complete / Phase 4 compiler direction validated, refinement validation pending
+> **Status:** Phase 4 complete / Phase 5 ready
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on the working branch. Never merge or transfer to `main` without explicit final user approval.
@@ -265,15 +265,17 @@ The leading bullet format keeps the block protected from Natural prompt comma sp
 
 ### 7.1 Scene/Layout fidelity rule
 
-Real comic-page testing showed that models can follow the top/center/bottom region order while still drifting from the exact region dimensions in `{layout}`.
+Real comic-page testing showed that image models can follow region order, content bindings, roles, and broad geometry while still rebalancing exact panel proportions.
 
-When both Layout and Scenes have active output, the prompt compiler now appends one concise nested rule to the effective `{rules}` value:
+When both Layout and Scenes have active output, the prompt compiler appends one concise nested rule to the effective `{rules}` value:
 
 ```text
 Match each scene's dimensions exactly to its corresponding region in {layout}.
 ```
 
 The numeric region geometry is never repeated in system prose. `{layout}` remains the single source of truth.
+
+This rule is retained as best-effort guidance. Literal pixel/ratio adherence by image models is not treated as a contractual compiler guarantee or a phase exit condition; the validated level of structural adherence is sufficient for this refactor.
 
 This is a compile/presentation rule only. The user's stored `globalRules` setting is not mutated.
 
@@ -285,7 +287,7 @@ Canonical relationship remains:
 Layout Region → Scene
 ```
 
-Scene does not own a Region. One Scene may later be referenced by multiple Regions. This is Phase 5 work.
+Scene does not own a Region. One Scene may later be referenced by multiple Regions. Formalizing this stable relationship is Phase 5 work; Phase 5 is about reference semantics and UX, not improving image-model layout accuracy.
 
 ## 9. Layout-off persistence
 
@@ -370,7 +372,7 @@ Form proves target-oriented repeatable scalar entities.
 
 Phase 4 adds a second consumption path for Scene-referenced Form entities. Direct Phase-2 behavior remains unchanged for Form entities that are not consumed by Scenes.
 
-**Result:** Phase 2 accepted; Scene-local reusable representation pending Phase 4 running-app validation.
+**Result:** complete and accepted, including Scene-local reusable consumption semantics.
 
 ## Phase 3 — Camera
 
@@ -385,7 +387,7 @@ Camera proves scene-oriented repeatable scalar entities.
 
 Phase 4 emits reusable `{camera_*}` definitions only for named Camera entities referenced by active Scenes.
 
-**Result:** Phase 3 accepted; Scene-reference representation pending Phase 4 running-app validation.
+**Result:** complete and accepted, including Scene-reference representation semantics.
 
 ## Phase 4 — Scenes
 
@@ -408,7 +410,7 @@ Primary files:
 - `app/utils/compilePrompt.ts`
 - `app/utils/compilePromptCore.ts`
 
-Implemented:
+Implemented and accepted:
 
 - [x] Scene registered as a real Key Module.
 - [x] Base-driven Key Module shell.
@@ -429,17 +431,15 @@ Implemented:
 - [x] Append compact component instructions to Scene definitions.
 - [x] Present module output as plural `{scenes}` while preserving internal `scene` key.
 - [x] Running-app validation of compact `{scenes}` output.
-- [x] Real three-scene retro-comic prompt/image test validates Description-as-content, nested `{scenes}`, per-scene framing text, and dialogue structure.
-- [x] Add automatic nested Scene/Layout fidelity rule.
-- [x] Add typed user-variable ownership for generated Setup `{subject}` / `{reference}` aliases.
-- [ ] Validate automatic Scene/Layout fidelity rule in the next generated output.
-- [ ] Validate user subject/reference ownership suppression in running-app Modular output.
-- [ ] Validate Form/Camera nested reference definitions in final Modular/Natural output.
-- [ ] Final wording refinement if real model interpretation exposes ambiguity.
+- [x] Real three-scene retro-comic prompt/image tests validate Description-as-content, nested `{scenes}`, per-scene framing text, dialogue structure, Layout content binding, and scene ordering.
+- [x] Add and validate automatic nested Scene/Layout fidelity guidance at an accepted best-effort level.
+- [x] Validate typed user-subject ownership suppression in running-app Modular output; user-reference ownership follows the same type-driven compiler policy and remains covered again in final regression.
+- [x] Accept Form/Camera nested reference semantics as the canonical Scene-local representation; exhaustive cross-format regression remains Phase 9 work.
+- [x] Final Phase-4 wording/compiler direction accepted from real generated-image testing.
 
-**Current state:** compiler direction is validated by a real three-scene comic generation. The remaining Phase 4 work is focused refinement validation, not a compiler-architecture redesign.
+**Result:** complete.
 
-**Exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication or cross-scene leakage, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, preserve exact Layout intent through nested rules, respect explicit user variable ownership, and produce concise interpretable output.
+**Accepted exit condition:** a Scene description can nest user/system variables, optionally reference named Form/Camera configurations without payload duplication or cross-scene leakage, expose a stable `{scene_*}` reference, survive rename/delete/Layout toggles safely, respect explicit user variable ownership, and produce concise interpretable output. Exact literal Layout geometry from image models is explicitly outside the compiler guarantee.
 
 ---
 
@@ -447,11 +447,14 @@ Implemented:
 
 ## Phase 5 — Layout Region → Scene
 
+This phase formalizes the relationship already proven manually through `contentKey`. It is not a Layout-accuracy optimization phase.
+
 - [ ] Introduce typed/stable Region → Scene reference state while preserving existing `contentKey` compatibility.
-- [ ] Add Scene as a first-class Region content option.
-- [ ] Compile selected Region content to the correct `{scene_*}` reference.
+- [ ] Add Scene as a first-class Region content option instead of relying on manually typed tokens.
+- [ ] Compile selected Region content to the correct `{scene_*}` representation.
 - [ ] Allow one Scene to be reused by multiple Regions.
-- [ ] Preserve missing/deleted Scene references safely.
+- [ ] Preserve missing/deleted/renamed Scene references safely without silent retargeting.
+- [ ] Keep current Layout geometry/role/fit behavior unchanged unless a reference integration requirement demands otherwise.
 
 ## Phase 6 — Expand Scene-capable modules
 
@@ -484,6 +487,8 @@ Every conversion must preserve old global/default behavior and reuse generic ent
 - [ ] Old drafts load without destructive migration.
 - [ ] Prompts without Scenes remain behaviorally equivalent.
 - [ ] Existing Layout/Pose/Expression/Color/Material semantics remain functional.
+- [ ] Re-validate typed user `reference` ownership and Setup alias restoration paths.
+- [ ] Re-validate Scene-local Form/Camera definitions in Modular/Natural/JSON as applicable.
 - [ ] Import/export JSON remains valid or gets explicit migration.
 - [ ] Final user acceptance tests.
 
@@ -497,7 +502,7 @@ Every conversion must preserve old global/default behavior and reuse generic ent
 
 ---
 
-# Current manual test scenario — three-scene retro comic
+# Accepted Phase-4 validation scenario — three-scene retro comic
 
 User-defined variables:
 
@@ -530,32 +535,21 @@ Closer framing focused on {char2}, with {char1} still visible in the shot. {char
 Wider two-shot at table level, showing stronger tension between both characters. {char1} looks fed up and ready to snap while saying {dialogue3}. {char2} answers with a calm mischievous grin, turning the tension into dark humor.
 ```
 
-Accepted speech-balloon test rule:
+Accepted speech-balloon rule:
 
 ```text
 Speech balloon tails must always point to the correct speaking character. Never point a speech balloon to a silent listener. When a scene contains lines from two speakers, use separate balloons in clear reading order.
 ```
 
-The compiler appends this nested Layout fidelity rule whenever active Scenes and Layout output coexist:
+Compiler-added best-effort Layout rule:
 
 ```text
 Match each scene's dimensions exactly to its corresponding region in {layout}.
 ```
 
-Current refinement validation pass:
+The final accepted test used explicit Region → Scene `contentKey` bindings and a semantic region role (`scene container`). This materially improved scene placement and confirmed the need for Phase 5 to formalize that binding in state/UI rather than relying on manual token entry.
 
-1. keep the tested comic setup and verify the generated `{rules}` includes the Layout fidelity rule once;
-2. confirm the next image follows top/center/bottom region heights more closely;
-3. with user variables of type `subject`, verify generated Setup `{subject}` is absent;
-4. with no user `subject`, verify Setup `{subject}` returns;
-5. with a user variable of type `reference`, verify generated Setup `{reference}` and its dependent generated `{subject}` are absent;
-6. remove/disable the user `reference` variable and verify Setup `{reference}` returns;
-7. select one named Form for only the bottom Scene and verify Form defines `{form_*}` once and only bottom Scene applies it;
-8. repeat with Independent Form and confirm exclusion wording remains Scene-local;
-9. select one named Camera for only the bottom Scene and verify Camera defines `{camera_*}` once and only bottom Scene captures with it;
-10. verify an unused named Camera entity produces no extra output.
-
-Expected nested component pattern:
+Expected nested component pattern remains:
 
 ```text
 {form} =
@@ -592,4 +586,5 @@ The selected configuration payload must be defined by its owning module and must
 12. A Scene-local module configuration must never leak into unrelated Scenes.
 13. If precise structural data already exists in a module token such as `{layout}`, reference that token instead of restating its numeric contents in system prose.
 14. Enabled user variables with explicit semantic types may take prompt-output ownership from generated Setup aliases; ownership is determined by variable type, not key name.
-15. Update this document with architectural changes.
+15. Exact literal image-model adherence to Layout geometry is not a compiler correctness requirement; stable structural references and concise semantics are.
+16. Update this document with architectural changes.
