@@ -165,6 +165,10 @@ function handleModelValue(value: ModuleValues) {
   emit("update:modelValue", nextValue);
 }
 
+function handleGlobalModelValue(value: ModuleValues) {
+  handleModelValue(setModuleEntities(cloneValue(value), entities.value));
+}
+
 function handlePanelState(value: ModulePanelState) {
   const nextValue = cloneValue(value);
   panelSnapshot.value = nextValue;
@@ -185,7 +189,7 @@ function updateEntities(nextEntities: typeof entities.value) {
       :panel-state="panelSnapshot"
       :aspect-ratio="aspectRatio"
       :preview-output="displayPreview"
-      @update:model-value="handleModelValue"
+      @update:model-value="handleGlobalModelValue"
       @update:panel-state="handlePanelState"
       @update:issues="emit('update:issues', $event)"
     />
