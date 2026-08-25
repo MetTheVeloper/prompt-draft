@@ -55,6 +55,9 @@ export function normalizeSceneEntities(value: unknown): SceneEntity[] {
     enabled: scene.enabled,
     description: typeof scene.description === "string" ? scene.description : "",
     extraDetails: typeof scene.extraDetails === "string" ? scene.extraDetails : "",
+    // Legacy Content/Actors selections are intentionally discarded. Nested
+    // variables inside Description are now the canonical Scene content model.
+    content: [],
     components: normalizeSceneComponentRefs(scene.components),
   }));
 }
