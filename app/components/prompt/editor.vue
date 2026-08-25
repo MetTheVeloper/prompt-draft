@@ -121,7 +121,7 @@ function getModulePanelExtraProps(module: PromptKeyModule) {
     previewOutput: getModulePreview(module),
   };
 
-  if (module.key === "scene") {
+  if (module.key === "scene" || module.key === "camera") {
     extraProps.modules = props.modules;
     extraProps.moduleValues = props.moduleValues;
   }
@@ -257,25 +257,5 @@ watch(
   display: flex;
   flex-direction: column;
   gap: 16px;
-}
-
-.prompt-editor__empty {
-  width: 100%;
-  padding: 32px;
-  border: 1px dashed rgba(0, 0, 0, 0.18);
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.6);
-  text-align: center;
-}
-
-.prompt-editor__empty h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-}
-
-.prompt-editor__empty p {
-  margin: 0;
-  font-size: 13px;
-  opacity: 0.65;
 }
 </style>
