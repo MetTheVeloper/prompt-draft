@@ -1,7 +1,6 @@
 import type { ModuleFieldValue, ModuleValues } from "../modules/types";
 import type {
   SceneComponentRef,
-  SceneContentRef,
   SceneEntity,
 } from "../modules/scene.types";
 import { normalizeVariableKey } from "./promptVariables";
@@ -11,33 +10,6 @@ export const SCENE_STATE_KEY = "scenes" as const;
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
-
-export function normalizeSceneContentRefs(value: unknown): SceneContentRef[] {
-  if (!Array.isArray(value)) return [];
-
-  const seen = new Set<string>();
-
-  return value.flatMap((item) => {
-    if (!isRecord(item)) return [];
-    const variableId = typeof item.variableId === "string" ? item.variableId.trim() : "";
-    if (!variableId || seen.has(variableId)) return [];
-    seen.add(variableId);
-
-    return [{
-      variableId,
-      token: typeof item.token === "string" ? item.token : undefined,
-      label: typeof item.label === "string" ? item.label : undefined,
-      source:
-        item.source === "user" || item.source === "module" || item.source === "system"
-          ? item.source
-          : undefined,
-      type:
-        typeof item.type === "string"
-          ? item.type as SceneContentRef["type"]
-          : undefined,
-    }];
-  });
 }
 
 export function normalizeSceneComponentRefs(value: unknown): SceneComponentRef[] {
@@ -77,10 +49,12 @@ export function normalizeSceneEntities(value: unknown): SceneEntity[] {
   if (!Array.isArray(value)) return [];
 
   return value.filter(isSceneEntity).map((scene) => ({
-    ...scene,
+    id: scene.id,
+    key: scene.key,
+    name: scene.name,
+    enabled: scene.enabled,
     description: typeof scene.description === "string" ? scene.description : "",
     extraDetails: typeof scene.extraDetails === "string" ? scene.extraDetails : "",
-    content: normalizeSceneContentRefs(scene.content),
     components: normalizeSceneComponentRefs(scene.components),
   }));
 }
@@ -106,8 +80,4 @@ export function getSceneVariableKey(scene: Pick<SceneEntity, "key" | "name">) {
 
 export function getSceneVariableToken(scene: Pick<SceneEntity, "key" | "name">) {
   return `{${getSceneVariableKey(scene)}}`;
-}
-
-export function sceneContentRefIdentity(ref: SceneContentRef) {
-  return ref.variableId.trim() ? `scene_content:${ref.variableId.trim()}` : "";
 }
