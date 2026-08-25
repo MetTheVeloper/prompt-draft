@@ -59,6 +59,14 @@ const moduleEntityCapabilities = {
     allowGlobalInheritanceToggle: true,
     preserveEntitiesInCustomMode: true,
   },
+  texture: {
+    enabled: true,
+    sceneExposable: true,
+    sceneSelection: "single",
+    targetPolicy: [],
+    allowGlobalInheritanceToggle: true,
+    preserveEntitiesInCustomMode: true,
+  },
 } satisfies Partial<Record<string, ModuleEntityConfig>>;
 
 /**
@@ -76,6 +84,7 @@ const moduleEntitySceneInstructions: Partial<Record<string, string>> = {
   lighting: "Light this scene with {tokens}.",
   style: "Use {tokens} as this scene's visual style.",
   effects: "Apply {tokens} as this scene's effects.",
+  texture: "Use {tokens} as this scene's material and surface treatment.",
 };
 
 export function withModuleEntityCapabilities(
