@@ -17,6 +17,7 @@ import { getSceneEntities } from "~/utils/scene";
 import { compileCameraModule } from "~/utils/compileCamera";
 import ModulesPanelBase from "./base.vue";
 import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
+import ModuleEntitiesPanelShell from "../shared/ModuleEntitiesPanelShell.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -97,10 +98,26 @@ function updateEntities(nextEntities: typeof entities.value) {
     setModuleEntities(values.value, nextEntities),
   );
 }
+
+const { openModuleEntitiesModal } = useModuleEntitiesModal({
+  module: () => props.module,
+  component: ModuleEntitiesField,
+  getProps: () => ({
+    module: props.module,
+    globalValues: globalValues.value,
+    modelValue: entities.value,
+    targetPolicy: targetPolicy.value,
+    allowPresets: true,
+  }),
+  onUpdate: updateEntities,
+});
 </script>
 
 <template>
-  <el-flex rules="ccs" class="w100" :gap="12">
+  <ModuleEntitiesPanelShell
+    :count="entities.length"
+    @open="openModuleEntitiesModal"
+  >
     <ModulesPanelBase
       :module="module"
       :model-value="modelValue"
@@ -112,15 +129,5 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:issues="emit('update:issues', $event)"
       @remove="emit('remove', $event)"
     />
-
-    <ModuleEntitiesField
-      v-show="!customMode"
-      :module="module"
-      :global-values="globalValues"
-      :model-value="entities"
-      :target-policy="targetPolicy"
-      allow-presets
-      @update:model-value="updateEntities"
-    />
-  </el-flex>
+  </ModuleEntitiesPanelShell>
 </template>
