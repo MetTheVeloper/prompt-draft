@@ -13,6 +13,7 @@ import {
   getModuleEntityTargetPolicy,
   setModuleEntities,
 } from "~/modules/entityContracts";
+import { getSceneEntities } from "~/utils/scene";
 import { compileCameraModule } from "~/utils/compileCamera";
 import ModulesPanelBase from "./base.vue";
 import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
@@ -22,13 +23,21 @@ type ModulePanelState = {
   activePresetId?: string | null;
 };
 
-const props = defineProps<{
-  module: PromptKeyModule;
-  modelValue?: ModuleValues;
-  panelState?: ModulePanelState;
-  aspectRatio?: string;
-  previewOutput?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    module: PromptKeyModule;
+    modelValue?: ModuleValues;
+    panelState?: ModulePanelState;
+    aspectRatio?: string;
+    previewOutput?: string;
+    modules?: PromptKeyModule[];
+    moduleValues?: Record<string, ModuleValues>;
+  }>(),
+  {
+    modules: () => [],
+    moduleValues: () => ({}),
+  },
+);
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: ModuleValues): void;
@@ -44,9 +53,29 @@ const entities = computed(() => getModuleEntities<ModuleEntityPayload>(values.va
 const targetPolicy = computed(() => getModuleEntityTargetPolicy(props.module));
 const customMode = computed(() => Boolean(props.panelState?.isCustomMode));
 
+const referencedEntityIds = computed(() => {
+  const sceneActive = props.modules.some((module) => module.key === "scene");
+  const layoutActive = props.modules.some((module) => module.key === "layout");
+  if (!sceneActive || !layoutActive) return [];
+
+  const seen = new Set<string>();
+
+  return getSceneEntities(props.moduleValues.scene || {})
+    .filter((scene) => scene.enabled !== false)
+    .flatMap((scene) => scene.components)
+    .filter((ref) => ref.moduleKey === props.module.key)
+    .map((ref) => ref.entityId)
+    .filter((entityId) => {
+      if (!entityId || seen.has(entityId)) return false;
+      seen.add(entityId);
+      return true;
+    });
+});
+
 const output = computed(() => {
   return compileCameraModule(props.module, values.value, {
     customMode: customMode.value,
+    referencedEntityIds: referencedEntityIds.value,
   });
 });
 
