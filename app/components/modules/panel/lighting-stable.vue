@@ -14,6 +14,7 @@ import { compileLightingModule } from "~/utils/compileLighting";
 import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import LightingPanel from "./lighting.vue";
 import LightingEntitiesField from "../lighting/LightingEntitiesField.vue";
+import ModuleEntitiesPanelShell from "../shared/ModuleEntitiesPanelShell.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -175,10 +176,24 @@ function handlePanelState(value: ModulePanelState) {
 function updateEntities(nextEntities: typeof entities.value) {
   handleModelValue(setModuleEntities(modelSnapshot.value, nextEntities));
 }
+
+const { openModuleEntitiesModal } = useModuleEntitiesModal({
+  module: () => props.module,
+  component: LightingEntitiesField,
+  getProps: () => ({
+    module: props.module,
+    globalValues: globalValues.value,
+    modelValue: entities.value,
+  }),
+  onUpdate: updateEntities,
+});
 </script>
 
 <template>
-  <el-flex rules="ccs" class="w100" :gap="12">
+  <ModuleEntitiesPanelShell
+    :count="entities.length"
+    @open="openModuleEntitiesModal"
+  >
     <LightingPanel
       :module="module"
       :model-value="modelSnapshot"
@@ -189,12 +204,5 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:panel-state="handlePanelState"
       @update:issues="emit('update:issues', $event)"
     />
-
-    <LightingEntitiesField
-      :module="module"
-      :global-values="globalValues"
-      :model-value="entities"
-      @update:model-value="updateEntities"
-    />
-  </el-flex>
+  </ModuleEntitiesPanelShell>
 </template>
