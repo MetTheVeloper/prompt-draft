@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 5 complete / Phase 6 in progress — Framing and Background accepted, Lighting implemented / validation pending
+> **Status:** Phase 5 complete / Phase 6 in progress — Framing, Background, and Lighting accepted; Style implemented / validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Scope rule:** all refactor work stays on this branch. Never merge or transfer to `main` without explicit final user approval.
@@ -39,7 +39,7 @@ Scene Entities
 Layout Regions
 ```
 
-A Scene references reusable module configurations such as Form, Camera, Framing, Background, Lighting, and later other suitable modules.
+A Scene references reusable module configurations such as Form, Camera, Framing, Background, Lighting, Style, and later other suitable modules.
 
 ---
 
@@ -138,9 +138,20 @@ lighting: {
   sceneSelection: "single",
   targetPolicy: [],
 }
+
+style: {
+  enabled: true,
+  sceneExposable: true,
+  sceneSelection: "single",
+  targetPolicy: [],
+  allowGlobalInheritanceToggle: true,
+  preserveEntitiesInCustomMode: true,
+}
 ```
 
-Camera, Framing, Background, and Lighting are Scene resources and do not need meaningless subject/object targets.
+Camera, Framing, Background, Lighting, and Style are Scene resources and do not need meaningless subject/object targets.
+
+Scene-resource UX/compile options that are meaningful only for some modules are also capability-driven. In particular, Style opts into an Independent configuration toggle and keeps Scene-referenced named definitions available while the Global/default Style panel is in custom mode.
 
 ## 4. Key Module shells stay consistent
 
@@ -155,6 +166,8 @@ ModuleEntitiesField.vue
 scene-resource.vue
 compileSceneResourceModule()
 ```
+
+Framing and Style are direct generic Scene-resource cases. Style continues using the standard Base panel and generic `compileModule()` semantics; its named configurations therefore need no specialized compiler adapter.
 
 Background is an explicit adapter case because its existing global panel and compiler have specialized custom-input/natural-language behavior that must remain backward compatible.
 
@@ -191,6 +204,7 @@ Correct:
 {framing_closeGrass}
 {background_sunsetDeck}
 {lighting_neonRim}
+{style_watercolorNight}
 ```
 
 Owning modules define reusable tokens. Scene appends only concise application instructions.
@@ -203,6 +217,7 @@ Camera     → Capture this scene with {tokens}.
 Framing    → Frame this scene with {tokens}.
 Background → Use only {tokens} as this scene's background.
 Lighting   → Light this scene with {tokens}.
+Style      → Use {tokens} as this scene's visual style.
 ```
 
 The wording registry lives in `entityCapabilities.ts`, not scattered through `compileScene.ts`.
@@ -223,7 +238,7 @@ Active Scene references entity
 
 This keeps unused entity state out of prompts.
 
-`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Specialized adapters may also opt to keep referenced named definitions available while Global/default custom mode is active; this is explicit per module so existing adapter semantics are not changed accidentally.
+`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Scene-resource capability metadata can also opt into preserving referenced named definitions while Global/default custom mode is active and into exposing the shared Independent configuration control.
 
 ## 8. Form keeps two consumption modes
 
@@ -517,28 +532,61 @@ Implementation:
 - [x] Lighting custom mode uses the standard top-of-module switch and custom-only editor view instead of an inline always-visible override accordion.
 - [x] Global `customText` and Scene-referenced named Lighting definitions may compile together; named entity definitions still clear the override field so the global custom text never leaks into them.
 - [x] `compileSceneResourceModule()` has an opt-in `preserveEntitiesInCustomMode` path; adapters that do not request it keep their previous behavior.
-- [x] Demand-driven output remains canonical: created-but-unreferenced Lighting entities do not compile. If only `{lighting_lighting1}` is referenced by active Scenes, seeing only that named definition is expected; referencing Lighting 1/2/3 from active Scenes must emit all three definitions.
+- [x] Demand-driven output remains canonical: created-but-unreferenced Lighting entities do not compile. If only `{lighting_lighting1}` is referenced by active Scenes, seeing only that named definition is expected; referencing Lighting 1/2/3 from active Scenes emits all three definitions.
 - [x] Unused named Lighting configurations stay out of prompt output.
 - [x] Scene-referenced Lighting configurations emit `{lighting_*}` definitions.
 - [x] Scene wording: `Light this scene with {lighting_*}.`
 - [x] Layout-off consumption gate matches Framing/Background: state remains stored, but named Lighting definitions are not treated as consumed while Layout is inactive.
-- [x] Running-app test confirmed Global `customText` can coexist with a referenced named Lighting definition without leaking the global override into the named specification.
-- [x] Initial real comic output is consistent with Scene-local neutral Lighting overriding the red Global/default Lighting while an unassigned Scene falls back to Global/default Lighting; a more controlled repeated-scene lighting test remains pending.
+- [x] Running-app test confirmed Global `customText` can coexist with referenced named Lighting definitions without leaking the global override into named specifications.
+- [x] Custom-mode UX/state behavior was validated after the standard top-level switch fix.
+- [x] Controlled repeated-scene / different-lighting prompt and real image test validated three distinct named Lighting configurations on otherwise repeated Scene content.
 - [x] Static compiler-path sanity review completed after custom-mode fixes.
-- [ ] Final running-app UI/compile validation after custom-mode UX fix.
-- [ ] Controlled repeated-scene / different-lighting image validation.
+
+**Result:** complete and accepted.
+
+### Phase 6.4 — Style
+
+Style is a direct generic scalar Scene-resource conversion; it does not need a specialized compiler adapter.
+
+Audit findings:
+
+- The active registry module is `style.freeform.ts`, which overlays the semantic Style schema with first-class freeform options.
+- Style uses the standard Base Key Module panel and generic `compileModule()` path; no module-specific compiler exists to preserve through an adapter.
+- Style presets contain scalar field values and fit the shared entity preset system directly.
+- Freeform Style selections persist the authored text itself through `el-dropdown`; they do not use a separate sidecar state object.
+- `medium` is a categorized freeform select. Scene-resource editors re-introduce persisted arbitrary values as temporary known options so the `Custom` category can be reconstructed after reload without changing the stored or compiled value.
+- Style has no meaningful subject/object target semantics.
+
+Implementation:
+
+- [x] Style is entity-capable and `sceneExposable`.
+- [x] Style cardinality is `single` per Scene.
+- [x] Style target policy is empty; no target selector is exposed.
+- [x] Existing global Style Base panel and generic `compileModule()` behavior remain canonical.
+- [x] Named Style configurations reuse `scene-resource.vue`, `ModuleEntitiesField.vue`, and `compileSceneResourceModule()` directly.
+- [x] Existing Style presets are available per named configuration.
+- [x] Freeform `aesthetic`, `medium`, `linework`, `visualTreatment`, and `finish` values remain raw persisted strings and compile through existing Style semantics.
+- [x] Categorized freeform values are restored into editor category state after reload without introducing new persistence state.
+- [x] Named Style configurations may inherit Global/default Style or opt into **Independent Style** mode.
+- [x] Global Style custom mode may coexist with Scene-referenced named Style definitions; the global `customText` override does not leak into named definitions.
+- [x] Unused named Style configurations stay out of prompt output.
+- [x] Scene-referenced Style configurations emit `{style_*}` definitions.
+- [x] Scene wording: `Use {style_*} as this scene's visual style.`
+- [x] Layout-off consumption gate preserves Style entity/Scene state while suppressing Scene-related Style definitions.
+- [x] Static compiler/UI-path sanity review completed.
+- [ ] Running-app UI/compile validation.
+- [ ] Real image validation if useful after compile/UI acceptance.
 
 **Result:** implemented / validation pending.
 
 ### Remaining Phase 6 candidates
 
-Next conversion target after Lighting validation:
+Next conversion target after Style validation:
 
-- [ ] Style
+- [ ] Effects
 
 Then:
 
-- [ ] Effects
 - [ ] Texture / Material
 - [ ] other suitable modules after audit.
 
@@ -567,7 +615,7 @@ Exact order may change based on specialized module constraints and real workflow
 - [ ] Prompts without Scenes remain behaviorally equivalent.
 - [ ] Existing Layout/Pose/Expression/Color/Material semantics remain functional.
 - [ ] Re-validate typed user `reference` ownership and Setup alias restoration.
-- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting definitions across Modular/Natural/JSON as applicable.
+- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style definitions across Modular/Natural/JSON as applicable.
 - [ ] Import/export JSON remains valid or gets explicit migration.
 - [ ] Final user acceptance tests.
 
@@ -619,6 +667,23 @@ Accepted Background example:
 • {scene_bottomScene} = ... Use only {background_openSea} as this scene's background.
 ```
 
+Accepted Lighting example:
+
+```text
+{lighting} =
+• Global/default lighting: ...
+• {lighting_lighting1} = neutral soft environment light ...
+• {lighting_lighting2} = soft key light with blue rim ...
+• {lighting_lighting3} = magenta/cyan neon accent lighting ...
+
+{scenes} =
+• {scene_dup1} = [repeated scene content]. Light this scene with {lighting_lighting1}.
+• {scene_dup2} = [repeated scene content]. Light this scene with {lighting_lighting3}.
+• {scene_dup3} = [repeated scene content]. Light this scene with {lighting_lighting2}.
+```
+
+The real repeated-scene image test showed clearly different lighting treatments while Scene content, Background, and Framing remained intentionally repeated.
+
 Selected configuration payloads are defined by owning modules and are never repeated inside `{scenes}`.
 
 ---
@@ -644,5 +709,6 @@ Selected configuration payloads are defined by owning modules and are never repe
 17. Generic scalar Scene resources reuse `scene-resource.vue` and `compileSceneResourceModule()` unless specialized semantics require an adapter.
 18. Specialized scalar adapters must preserve their existing canonical compiler behavior.
 19. Structured module fields such as Lighting `lightSources` must remain structured in named entity state and reuse specialized editors when generic scalar inputs are insufficient.
-20. Global/default custom mode may have module-specific interaction with named Scene resources; any exception to the default suppression behavior must be explicit and documented.
-21. Update this document with architectural changes and phase status.
+20. Scene-resource-specific UX/compile behavior such as Independent entity controls or preserving named definitions during Global custom mode must be capability-driven rather than scattered module-key conditionals.
+21. Persisted freeform values must remain raw user-authored values; UI reconstruction may add temporary presentation options but must not rewrite persistence identity or compiler text.
+22. Update this document with architectural changes and phase status.
