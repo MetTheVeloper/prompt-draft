@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, watch } from "vue";
 import type {
   ModuleValues,
   PromptKeyModule,
@@ -13,6 +13,7 @@ import {
   getModuleEntityTargetPolicy,
   setModuleEntities,
 } from "~/modules/entityContracts";
+import { compileCameraModule } from "~/utils/compileCamera";
 import ModulesPanelBase from "./base.vue";
 import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
 
@@ -43,6 +44,20 @@ const entities = computed(() => getModuleEntities<ModuleEntityPayload>(values.va
 const targetPolicy = computed(() => getModuleEntityTargetPolicy(props.module));
 const customMode = computed(() => Boolean(props.panelState?.isCustomMode));
 
+const output = computed(() => {
+  return compileCameraModule(props.module, values.value, {
+    customMode: customMode.value,
+  });
+});
+
+const displayPreview = computed(() => props.previewOutput || output.value);
+
+watch(
+  output,
+  (value) => emit("update:output", value),
+  { immediate: true },
+);
+
 function updateBaseValues(nextValues: ModuleValues) {
   emit("update:modelValue", nextValues);
 }
@@ -62,10 +77,9 @@ function updateEntities(nextEntities: typeof entities.value) {
       :model-value="modelValue"
       :panel-state="panelState"
       :aspect-ratio="aspectRatio"
-      :preview-output="previewOutput"
+      :preview-output="displayPreview"
       @update:model-value="updateBaseValues"
       @update:panel-state="emit('update:panelState', $event)"
-      @update:output="emit('update:output', $event)"
       @update:issues="emit('update:issues', $event)"
       @remove="emit('remove', $event)"
     />
