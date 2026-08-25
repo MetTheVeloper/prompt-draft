@@ -33,7 +33,13 @@ const launcherStyle = computed(() => ({
 </script>
 
 <template>
-  <div class="module-entities-panel-shell w100">
+  <div
+    class="module-entities-panel-shell w100"
+    data-module-entities-context
+    :data-module-entities-label="resolvedLabel"
+    :data-module-entities-count="count"
+    @prompt-draft-open-module-entities="emit('open')"
+  >
     <slot />
 
     <el-flex
