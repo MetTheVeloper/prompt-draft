@@ -4,6 +4,7 @@ import type {
   LayoutHorizontalAlign,
   LayoutOverflow,
   LayoutRegion,
+  LayoutRegionContentRef,
   LayoutRegionRole,
   LayoutRegionsState,
   LayoutRegionsValue,
@@ -134,6 +135,21 @@ function normalizeOverflow(value: unknown): LayoutOverflow {
     : "none"
 }
 
+function normalizeContentRef(value: unknown): LayoutRegionContentRef | undefined {
+  if (!isRecord(value)) return undefined
+  if (value.kind !== "scene") return undefined
+
+  const entityId = typeof value.entityId === "string" ? value.entityId.trim() : ""
+  if (!entityId) return undefined
+
+  return {
+    kind: "scene",
+    entityId,
+    token: typeof value.token === "string" ? value.token.trim() : "",
+    label: typeof value.label === "string" ? value.label.trim() : "",
+  }
+}
+
 export function normalizeLayoutRegion(
   value: unknown,
   index = 0,
@@ -155,6 +171,7 @@ export function normalizeLayoutRegion(
       typeof source.customRole === "string" ? source.customRole : "",
     contentKey:
       typeof source.contentKey === "string" ? source.contentKey : "",
+    contentRef: normalizeContentRef(source.contentRef),
     x,
     y,
     width: Math.min(width, 1 - x),
