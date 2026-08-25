@@ -18,6 +18,7 @@ import {
   formatSemanticScope,
   normalizeSemanticTargets,
 } from "./semanticTargets";
+import { getModuleEntityVariableToken } from "./moduleEntityVariables";
 
 function isEmptyValue(value: ModuleFieldValue) {
   if (value === null || value === undefined) return true;
@@ -118,11 +119,6 @@ function uniquePromptParts(parts: string[]) {
   });
 }
 
-/**
- * Scalar Form compiler intentionally mirrors the generic compileModules path.
- * Keeping this isolated makes entity-specific output possible without changing
- * legacy Form output when no named entities exist.
- */
 export function compileFormScalar(
   module: PromptKeyModule,
   values: ModuleValues,
@@ -173,9 +169,9 @@ function normalizeFormEntities(values: ModuleValues) {
 }
 
 /**
- * Compile one selected Form entity without also emitting the global/default
- * Form line. Scene composition uses this adapter when a Scene references a
- * specific Form entity by stable ID.
+ * Compile one named Form entity as a reusable nested reference while preserving
+ * its semantic target behavior. Scene can then apply the token locally without
+ * repeating the Form payload.
  */
 export function compileFormEntityConfiguration(
   module: PromptKeyModule,
@@ -194,11 +190,13 @@ export function compileFormEntityConfiguration(
 
   if (!specification) return "";
 
+  const token = getModuleEntityVariableToken(module.key, entity);
+
   if (entity.inheritGlobal === false) {
-    return `• ${scope} — independent form: exclude ${scope} from the Global/default form. Use only: ${specification}`;
+    return `• ${token} = ${specification}. Apply only to ${scope}; exclude ${scope} from the Global/default form.`;
   }
 
-  return `• ${scope}: ${specification}`;
+  return `• ${token} = ${specification}. Apply to ${scope}.`;
 }
 
 export function compileFormModule(
