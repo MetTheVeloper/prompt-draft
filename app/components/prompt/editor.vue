@@ -14,7 +14,7 @@ import ModulesPanelSceneResource from "../modules/panel/scene-resource.vue";
 import ModulesPanelScene from "../modules/panel/scene.vue";
 import ModulesPanelBackground from "../modules/panel/background-stable.vue";
 import ModulesPanelEffects from "../modules/panel/effects.vue";
-import ModulesPanelLighting from "../modules/panel/lighting.vue";
+import ModulesPanelLighting from "../modules/panel/lighting-stable.vue";
 import ModulesPanelTexture from "../modules/panel/texture.vue";
 import ModulesPanelSubjectAssignments from "../modules/panel/subject-assignments.vue";
 import ModulesPanelHair from "../modules/panel/hair.vue";
@@ -128,7 +128,8 @@ function getModulePanelExtraProps(module: PromptKeyModule) {
     module.key === "form" ||
     module.key === "camera" ||
     module.key === "framing" ||
-    module.key === "background"
+    module.key === "background" ||
+    module.key === "lighting"
   ) {
     extraProps.modules = props.modules;
     extraProps.moduleValues = props.moduleValues;
