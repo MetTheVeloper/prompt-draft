@@ -27,9 +27,11 @@ const props = withDefaults(
     module: PromptKeyModule;
     globalValues: ModuleValues;
     modelValue?: ModuleEntity<ModuleEntityPayload>[];
+    allowGlobalInheritanceToggle?: boolean;
   }>(),
   {
     modelValue: () => [],
+    allowGlobalInheritanceToggle: false,
   },
 );
 
@@ -532,6 +534,7 @@ function applyEntityPreset(index: number, value: ElDropdownValue) {
           </el-flex>
 
           <el-flex
+            v-if="allowGlobalInheritanceToggle"
             rules="rbc"
             :gap="12"
             :p="10"
