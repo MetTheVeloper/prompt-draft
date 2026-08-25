@@ -223,7 +223,7 @@ Active Scene references entity
 
 This keeps unused entity state out of prompts.
 
-`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Specialized adapters may also preserve an existing global override path while still excluding override fields from named entity definitions.
+`compileSceneResourceModule()` supports both generic scalar compilation and a specialized `compileValues` callback for modules such as Background and Lighting. Specialized adapters may also opt to keep referenced named definitions available while Global/default custom mode is active; this is explicit per module so existing adapter semantics are not changed accidentally.
 
 ## 8. Form keeps two consumption modes
 
@@ -498,7 +498,7 @@ Audit findings:
 
 - `compileLightingModule()` owns the canonical natural-language semantics for nested `lightSources`, including role/type/direction/quality/intensity/color/custom-color/features.
 - Lighting presets contain structured `LightingSource[]` payloads and must remain structured when stored inside named entities.
-- `customText` is an inline global override in the existing Lighting compiler; unlike generic panel custom mode, it must remain backward compatible even when named entities are enabled.
+- `customText` is the module override field. The UI must use the same explicit `isCustomMode` switch as other override-capable Key Modules instead of treating the textarea as an always-visible normal form section.
 - Lighting has no meaningful subject/object target semantics.
 
 Implementation:
@@ -513,14 +513,20 @@ Implementation:
 - [x] `LightingEntitiesField.vue` reuses the existing `LightSourcesField.vue` so nested source state, custom colors, and source features persist as structured values.
 - [x] Named Lighting configurations support existing Lighting presets, including structured `lightSources` arrays.
 - [x] Named Lighting configurations may inherit global values or opt into Independent Lighting mode.
-- [x] Global `customText` override behavior remains backward compatible through `preserveGlobalOverride`; named entity definitions do not inline the module override field.
+- [x] Global custom mode is driven by `panelState.isCustomMode`; stored `customText` is preserved while custom mode is off but is excluded from normal global compilation.
+- [x] Lighting custom mode uses the standard top-of-module switch and custom-only editor view instead of an inline always-visible override accordion.
+- [x] Global `customText` and Scene-referenced named Lighting definitions may compile together; named entity definitions still clear the override field so the global custom text never leaks into them.
+- [x] `compileSceneResourceModule()` has an opt-in `preserveEntitiesInCustomMode` path; adapters that do not request it keep their previous behavior.
+- [x] Demand-driven output remains canonical: created-but-unreferenced Lighting entities do not compile. If only `{lighting_lighting1}` is referenced by active Scenes, seeing only that named definition is expected; referencing Lighting 1/2/3 from active Scenes must emit all three definitions.
 - [x] Unused named Lighting configurations stay out of prompt output.
 - [x] Scene-referenced Lighting configurations emit `{lighting_*}` definitions.
 - [x] Scene wording: `Light this scene with {lighting_*}.`
 - [x] Layout-off consumption gate matches Framing/Background: state remains stored, but named Lighting definitions are not treated as consumed while Layout is inactive.
-- [x] Static compiler-path sanity review completed.
-- [ ] Running-app UI/compile validation.
-- [ ] Real image validation if useful after compile/UI acceptance.
+- [x] Running-app test confirmed Global `customText` can coexist with a referenced named Lighting definition without leaking the global override into the named specification.
+- [x] Initial real comic output is consistent with Scene-local neutral Lighting overriding the red Global/default Lighting while an unassigned Scene falls back to Global/default Lighting; a more controlled repeated-scene lighting test remains pending.
+- [x] Static compiler-path sanity review completed after custom-mode fixes.
+- [ ] Final running-app UI/compile validation after custom-mode UX fix.
+- [ ] Controlled repeated-scene / different-lighting image validation.
 
 **Result:** implemented / validation pending.
 
@@ -638,4 +644,5 @@ Selected configuration payloads are defined by owning modules and are never repe
 17. Generic scalar Scene resources reuse `scene-resource.vue` and `compileSceneResourceModule()` unless specialized semantics require an adapter.
 18. Specialized scalar adapters must preserve their existing canonical compiler behavior.
 19. Structured module fields such as Lighting `lightSources` must remain structured in named entity state and reuse specialized editors when generic scalar inputs are insufficient.
-20. Update this document with architectural changes and phase status.
+20. Global/default custom mode may have module-specific interaction with named Scene resources; any exception to the default suppression behavior must be explicit and documented.
+21. Update this document with architectural changes and phase status.
