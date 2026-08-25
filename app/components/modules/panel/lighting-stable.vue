@@ -120,6 +120,7 @@ const globalValues = computed(() => getGlobalModuleValues(modelSnapshot.value));
 const entities = computed(() =>
   getModuleEntities<ModuleEntityPayload>(modelSnapshot.value),
 );
+const customMode = computed(() => Boolean(panelSnapshot.value?.isCustomMode));
 
 const referencedEntityIds = computed(() => {
   const sceneActive = props.modules.some((module) => module.key === "scene");
@@ -144,7 +145,10 @@ const output = computed(() =>
   compileSceneResourceModule(props.module, modelSnapshot.value, {
     referencedEntityIds: referencedEntityIds.value,
     compileValues: compileLightingModule,
-    preserveGlobalOverride: true,
+    // Lighting custom mode is a Global/default presentation choice only.
+    // Keep referenced named Lighting definitions available for Scenes while
+    // preventing a stored global customText from affecting normal mode.
+    preserveGlobalOverride: customMode.value,
   }),
 );
 
