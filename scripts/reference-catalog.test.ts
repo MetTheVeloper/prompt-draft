@@ -1,6 +1,10 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import {
+  createModuleEntityReferenceCatalogIndex,
+  resolveModuleEntityReferenceCatalogItem,
+} from "../app/utils/moduleEntityReferenceCatalog.ts";
+import {
   createReferenceCatalogIndex,
   queryReferenceCatalog,
   resolveReferenceCatalogItem,
@@ -213,4 +217,80 @@ test("semantic adapter keeps disabled targets unavailable without retargeting", 
   assert.equal(resolution.status, "unavailable");
   assert.equal(resolution.identity, "user:user-1");
   assert.equal(resolution.reference, persisted);
+});
+
+test("module entity adapter resolves stable refs after entity rename", () => {
+  const current = {
+    id: "camera-1",
+    key: "newTelephoto",
+    name: "New Telephoto",
+    enabled: true,
+    payload: {},
+  };
+  const persisted = {
+    moduleKey: "camera",
+    entityId: "camera-1",
+    token: "{camera_oldTelephoto}",
+    label: "Old Telephoto",
+  };
+
+  const resolution = resolveModuleEntityReferenceCatalogItem(
+    persisted,
+    createModuleEntityReferenceCatalogIndex("camera", [current], (entity) => ({
+      token: `{camera_${entity.key}}`,
+    })),
+  );
+
+  assert.equal(resolution.status, "resolved");
+  assert.equal(resolution.identity, "module_entity:camera:camera-1");
+  if (resolution.status === "resolved") {
+    assert.equal(resolution.item.reference.label, "New Telephoto");
+    assert.equal(resolution.item.reference.token, "{camera_newTelephoto}");
+  }
+});
+
+test("module entity adapter reports disabled refs as unavailable", () => {
+  const current = {
+    id: "style-1",
+    key: "poster",
+    name: "Poster",
+    enabled: false,
+    payload: {},
+  };
+  const persisted = {
+    moduleKey: "style",
+    entityId: "style-1",
+    label: "Old Poster",
+  };
+
+  const resolution = resolveModuleEntityReferenceCatalogItem(
+    persisted,
+    createModuleEntityReferenceCatalogIndex("style", [current]),
+  );
+
+  assert.equal(resolution.status, "unavailable");
+  assert.equal(resolution.identity, "module_entity:style:style-1");
+});
+
+test("module entity adapter never crosses module scopes for the same entity id", () => {
+  const current = {
+    id: "shared-id",
+    key: "same",
+    name: "Same",
+    enabled: true,
+    payload: {},
+  };
+  const persisted = {
+    moduleKey: "form",
+    entityId: "shared-id",
+    label: "Form Same",
+  };
+
+  const resolution = resolveModuleEntityReferenceCatalogItem(
+    persisted,
+    createModuleEntityReferenceCatalogIndex("camera", [current]),
+  );
+
+  assert.equal(resolution.status, "missing");
+  assert.equal(resolution.identity, "module_entity:form:shared-id");
 });
