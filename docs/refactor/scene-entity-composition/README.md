@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 6 complete and accepted; Phase 7 — Generalize semantic/reference catalog is current
+> **Status:** Phase 7 — Generalize semantic/reference catalog is in progress; audit/contract/foundation are complete and incremental consumer migration is underway
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
@@ -700,46 +700,103 @@ Implementation:
 
 Phase 7 does **not** change prompt semantics by itself. Its goal is to consolidate the increasingly duplicated logic that discovers, filters, labels, groups, and resolves semantic targets and stable references across editors while preserving the module-specific rules that already work.
 
+The approved architectural boundary is deliberately narrower than a universal picker abstraction:
+
+```text
+Canonical domain data
+        ↓
+Shared reference catalog / resolver
+  • canonical identity
+  • current presentation metadata
+  • resolved / unavailable / missing state
+  • optional generic capabilities / eligibility query
+        ↓
+Consumer-specific policy
+  • Scene cardinality
+  • Form subject/object policy
+  • Texture target/exception semantics
+  • Layout contentKey compatibility
+  • Typography/Hair/Outfit domain rules
+        ↓
+Existing specialized picker / editor UX
+```
+
+Stable IDs remain canonical wherever they exist. Tokens, semantic keys, names, labels, and descriptions are presentation/representation only and must never become fallback identity for a missing stable reference.
+
 ### Phase 7.1 — Audit existing catalogs and pickers
 
-- [ ] Inventory every target/reference option source and every picker that builds its own catalog.
-- [ ] Trace identity used by each path: semantic token, stable entity ID, module/entity pair, Scene ID, Region content ref, or compatibility-only string.
-- [ ] Identify duplicated eligibility/filtering/grouping/label logic versus genuinely module-specific behavior.
-- [ ] Explicitly audit Scene component selection, Form target selection, Texture Material Assignment targets/exceptions, Layout Region → Scene selection, and existing entity-oriented systems such as Typography/Hair/Outfit where relevant.
-- [ ] Record current missing/disabled/deleted-reference behavior before changing shared infrastructure.
+- [x] Inventory every target/reference option source and every picker that builds its own catalog.
+- [x] Trace identity used by each path: semantic token, stable entity ID, module/entity pair, Scene ID, Region content ref, or compatibility-only string.
+- [x] Identify duplicated eligibility/filtering/grouping/label logic versus genuinely module-specific behavior.
+- [x] Explicitly audit Scene component selection, Form target selection, Texture Material Assignment targets/exceptions, Layout Region → Scene selection, and existing entity-oriented systems such as Typography/Hair/Outfit where relevant.
+- [x] Record current missing/disabled/deleted-reference behavior before changing shared infrastructure.
+
+Audit result:
+
+- seven semantic/reference families remain meaningfully distinct at the policy level: Scene components, Form targets, Texture assignment targets/exceptions, Layout Region → Scene, Typography, Hair, and Outfit;
+- the repeated machinery is primarily canonical-ID lookup, current presentation refresh, availability/missing representation, and option-source filtering/grouping;
+- module-specific eligibility and compiler semantics stay specialized rather than moving into the generic resolver.
 
 ### Phase 7.2 — Define the reusable catalog contract
 
-- [ ] Define one reusable catalog item/reference contract with canonical identity plus presentation metadata.
-- [ ] Keep stable IDs canonical where stable IDs exist; tokens/names remain representation only.
-- [ ] Support eligibility predicates/capabilities instead of hard-coded picker-specific filtering.
-- [ ] Support grouping, labels/descriptions, semantic kind/scope, enabled/disabled state, and missing-reference recovery metadata without forcing every consumer to use every field.
-- [ ] Preserve module-specific policies through adapters/capabilities rather than flattening specialized semantics.
+- [x] Define one reusable catalog item/reference contract with canonical identity plus presentation metadata.
+- [x] Keep stable IDs canonical where stable IDs exist; tokens/names remain representation only.
+- [x] Support eligibility predicates/capabilities instead of hard-coded picker-specific filtering.
+- [x] Support grouping, labels/descriptions, semantic kind/scope, enabled/disabled state, and missing-reference recovery metadata without forcing every consumer to use every field.
+- [x] Preserve module-specific policies through adapters/capabilities rather than flattening specialized semantics.
+
+Current contract:
+
+- `ReferenceCatalogItem` owns canonical `identity`, the persisted/reference value, presentation metadata, optional kind/scope/capabilities/state, and optional consumer metadata;
+- `ReferenceCatalogResolution` has explicit `resolved`, `unavailable`, and `missing` states;
+- duplicate canonical identities fail loudly in the shared index instead of silently choosing an arbitrary target;
+- generic queries may filter by capabilities and consumer-supplied eligibility predicates without teaching the generic layer what Form, Texture, Layout, or another module means.
 
 ### Phase 7.3 — Build shared catalog/resolver infrastructure
 
-- [ ] Introduce reusable catalog-building/resolution utilities or composables after the audit proves the correct boundary.
-- [ ] Add adapters for current semantic targets and stable entity references rather than destructively rewriting persisted state.
-- [ ] Centralize duplicate token/label/eligibility resolution where safe.
-- [ ] Keep missing references representable and never silently auto-retarget them.
+- [x] Introduce reusable catalog-building/resolution utilities or composables after the audit proves the correct boundary.
+- [x] Add adapters for current semantic targets and stable module-entity references rather than destructively rewriting persisted state.
+- [ ] Centralize duplicate token/label/eligibility resolution where safe; presentation construction remains intentionally local where wording/grouping is consumer-specific.
+- [x] Keep missing references representable and never silently auto-retarget them.
+
+Implemented infrastructure:
+
+- `app/utils/referenceCatalog.ts` — generic catalog contract, strict canonical index, resolver, availability state, and capability/eligibility query;
+- `app/utils/semanticReferenceCatalog.ts` — adapter from existing `SemanticTargetRef` option sources to the generic resolver while preserving `semanticTargetIdentity()` as canonical identity;
+- `app/utils/moduleEntityReferenceCatalog.ts` — stable `ModuleEntityRef` adapter using `moduleKey + entityId`, with enabled/unavailable state and refreshed presentation metadata;
+- `scripts/reference-catalog.test.ts` — regression coverage for rename, missing, unavailable, no token/name retarget, duplicate identity, capability filtering, semantic entity IDs, and module-scope isolation.
+
+The isolated runtime catalog suite currently passes 11/11 cases. Full Nuxt/running-app regression remains part of Phase 7.5.
 
 ### Phase 7.4 — Migrate consumers incrementally
 
-- [ ] Move overlapping picker/catalog consumers to the shared infrastructure one at a time.
-- [ ] Keep specialized UI components where their UX is genuinely different; Phase 7 generalizes data/catalog semantics, not necessarily every visual picker.
-- [ ] Preserve Scene cardinality, target policies, Texture assignment scopes/exceptions, Region → Scene stable refs, and entity enable/disable behavior.
-- [ ] Avoid unrelated compiler/output changes while catalog plumbing is being consolidated.
+- [ ] Move overlapping picker/catalog consumers to the shared infrastructure one at a time. **In progress.**
+- [x] Keep specialized UI components where their UX is genuinely different; Phase 7 generalizes data/catalog semantics, not necessarily every visual picker.
+- [ ] Preserve Scene cardinality, target policies, Texture assignment scopes/exceptions, Region → Scene stable refs, and entity enable/disable behavior across the full consumer set. Migrated paths preserve their existing policies; Layout and final cross-consumer validation remain open.
+- [x] Avoid unrelated compiler/output changes while catalog plumbing is being consolidated.
+
+Migrated consumers so far:
+
+- `useModuleEntityTargets.ts` — subject/object eligibility remains local; availability/upgrade resolution is shared;
+- `useSubjectAssignmentTargets.ts` — subject-specific option discovery remains local; availability/upgrade resolution is shared;
+- `useSemanticTargetCatalog.ts` — builtin/module/Typography/user discovery, capability filtering, grouping, missing UX, and summaries remain specialized while canonical availability/upgrade resolution is shared;
+- `SceneEntitiesField.vue` — Scene-exposable discovery and single/multiple cardinality remain unchanged while stable module-entity lookup, missing detection, disabled state, and current reference presentation use the shared module-entity adapter.
+
+Sensitive paths intentionally not migrated yet:
+
+- Layout Region → Scene binding, because it also owns `contentKey` backward compatibility and rename synchronization;
+- any further consumer whose persistence identity or compiler behavior would be changed merely to fit the shared catalog contract.
 
 ### Phase 7.5 — Validation and exit gate
 
 - [ ] Verify old drafts and current branch drafts resolve the same valid targets/references after migration.
-- [ ] Verify rename keeps stable references intact.
-- [ ] Verify delete/disable leaves references missing/unavailable rather than silently retargeting.
+- [ ] Verify rename keeps stable references intact in the running app across every migrated stable-reference path.
+- [ ] Verify delete/disable leaves references missing/unavailable rather than silently retargeting across every migrated consumer.
 - [ ] Verify Scene, Form, Texture, Layout, and other migrated consumers expose the same eligible choices as before unless an explicit bug is documented and intentionally fixed.
 - [ ] Confirm prompt output remains behaviorally unchanged for accepted Phase 2–6 scenarios.
-- [ ] Update this source of truth with the final catalog architecture and consumer list.
+- [ ] Update this source of truth with the final catalog architecture and complete consumer list.
 
-**Result:** not started — audit is the first task.
+**Result:** in progress — audit, reusable contract, resolver foundation, semantic adapter, stable module-entity adapter, and the first incremental consumer migrations are complete. Layout Region → Scene migration plus full running-app/regression validation remain open.
 
 ---
 
