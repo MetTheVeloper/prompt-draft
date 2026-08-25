@@ -115,30 +115,19 @@ const customExceptions = computed(() =>
   props.exceptions.filter((target) => target.kind === "custom"),
 );
 
-const availableIdentitySet = computed(() => {
-  return new Set(
-    catalog.availableOptions.value
-      .map((option) => semanticTargetIdentity(option.target))
-      .filter(Boolean),
+function isMissingCatalogTarget(target: SemanticTargetRef) {
+  return (
+    target.kind !== "custom" &&
+    catalog.resolveTarget(target).status === "missing"
   );
-});
+}
 
 const missingTargets = computed(() =>
-  props.modelValue.filter((target) => {
-    return (
-      target.kind !== "custom" &&
-      !availableIdentitySet.value.has(semanticTargetIdentity(target))
-    );
-  }),
+  props.modelValue.filter(isMissingCatalogTarget),
 );
 
 const missingExceptions = computed(() =>
-  props.exceptions.filter((target) => {
-    return (
-      target.kind !== "custom" &&
-      !availableIdentitySet.value.has(semanticTargetIdentity(target))
-    );
-  }),
+  props.exceptions.filter(isMissingCatalogTarget),
 );
 
 function removeExactConflicts(
