@@ -15,6 +15,7 @@ import { compileBackgroundModule } from "~/utils/compileBackground";
 import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import BackgroundPanel from "./background.vue";
 import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
+import ModuleEntitiesPanelShell from "../shared/ModuleEntitiesPanelShell.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
@@ -179,10 +180,27 @@ function handlePanelState(value: ModulePanelState) {
 function updateEntities(nextEntities: typeof entities.value) {
   handleModelValue(setModuleEntities(modelSnapshot.value, nextEntities));
 }
+
+const { openModuleEntitiesModal } = useModuleEntitiesModal({
+  module: () => props.module,
+  component: ModuleEntitiesField,
+  getProps: () => ({
+    module: props.module,
+    globalValues: globalValues.value,
+    modelValue: entities.value,
+    targetPolicy: targetPolicy.value,
+    allowPresets: true,
+    allowGlobalInheritanceToggle: true,
+  }),
+  onUpdate: updateEntities,
+});
 </script>
 
 <template>
-  <el-flex rules="ccs" class="w100" :gap="12">
+  <ModuleEntitiesPanelShell
+    :count="entities.length"
+    @open="openModuleEntitiesModal"
+  >
     <BackgroundPanel
       :module="module"
       :model-value="modelSnapshot"
@@ -193,16 +211,5 @@ function updateEntities(nextEntities: typeof entities.value) {
       @update:panel-state="handlePanelState"
       @update:issues="emit('update:issues', $event)"
     />
-
-    <ModuleEntitiesField
-      v-show="!customMode"
-      :module="module"
-      :global-values="globalValues"
-      :model-value="entities"
-      :target-policy="targetPolicy"
-      allow-presets
-      allow-global-inheritance-toggle
-      @update:model-value="updateEntities"
-    />
-  </el-flex>
+  </ModuleEntitiesPanelShell>
 </template>
