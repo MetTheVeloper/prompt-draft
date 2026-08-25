@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 5 complete / Phase 6 in progress — Framing, Background, Lighting, Style, and Effects accepted; Texture / Material implemented / validation pending
+> **Status:** Phase 6 module conversions complete and accepted; Named Configurations modal UX implemented / validation pending
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
@@ -198,6 +198,10 @@ Lighting is also an explicit adapter case. Its canonical compiler owns nested `l
 Effects is another explicit adapter case. Its canonical compiler owns structured `effectLayers` semantics, including custom effect text, intensity, layer details, duplicate suppression, and extra effects direction. `effects-stable.vue` keeps the specialized global Effects panel while `EffectsEntitiesField.vue` reuses the existing `EffectLayersField.vue` for named configurations.
 
 Texture / Material is an explicit adapter case because the module is assignment-driven rather than scalar. `compileTextureModule()` remains canonical, `texture-stable.vue` keeps the existing specialized global panel, and `TextureEntitiesField.vue` reuses `MaterialAssignmentsField.vue` so material presets, freeform values, compatibility hints, assignment targets, and exceptions retain the existing structured semantics.
+
+Named Configuration editors are secondary workspaces rather than permanent inline sections. Entity-capable Key Modules use `ModuleEntitiesPanelShell.vue` to expose one compact header FAB with the current configuration count. `useModuleEntitiesModal()` opens the existing editor component inside the project's global modal system and forwards edits live to canonical module state. Closing by Done, backdrop, Escape, or the modal close button never rolls changes back. The same generic and specialized editors are reused; no duplicate entity-editing implementation exists for the modal path.
+
+All collapsible containers inside the Named Configurations workspace start expanded by default: the configuration list is open, entity cards are open, and nested structured editors such as Lighting sources, Effects layers, and Material Assignments also start open. Users may collapse them afterward during the current modal session.
 
 ## 5. Scene Description is canonical scene content
 
@@ -640,7 +644,7 @@ Audit findings:
 - One Texture configuration can already describe multiple target-specific materials, so cardinality is `single` per Scene.
 - Texture compiler output may contain multiple assignment bullets. Scene-resource formatting must preserve those bullets while clearly nesting them beneath their owning Global/default or `{texture_*}` definition.
 
-Implementation:
+Implementation / validation:
 
 - [x] Texture is entity-capable and `sceneExposable`.
 - [x] Texture cardinality is `single` per Scene.
@@ -653,24 +657,38 @@ Implementation:
 - [x] Named Texture configurations may inherit Global/default Texture state or opt into **Independent Texture** mode.
 - [x] Global Texture custom mode may coexist with Scene-referenced named Texture definitions; global `customText` is excluded from entity compilation and cannot leak into named specifications.
 - [x] Specialized global panel edits are adapter-guarded so sibling named entity state is preserved.
-- [x] `compileSceneResourceModule()` now formats multi-line compiler output as nested definition content; existing single-line Scene-resource output is unchanged.
+- [x] `compileSceneResourceModule()` formats multi-line compiler output as nested definition content; existing single-line Scene-resource output is unchanged.
 - [x] Unused named Texture configurations stay stored but out of prompt output.
 - [x] Scene-referenced Texture configurations emit `{texture_*}` definitions.
 - [x] Scene wording: `Use {texture_*} as this scene's material and surface treatment.`
 - [x] Layout-off consumption gating preserves Texture/Scene state while suppressing Scene-related Texture definitions.
 - [x] Static compiler/UI-path sanity review completed.
-- [ ] Running-app UI/compile validation.
-- [ ] Real image validation with repeated Scene content and contrasting material/surface bundles.
+- [x] Running-app UI/compile validation accepted.
+- [x] Real 2×2 reference-image test validated distinct Scene-local vinyl, brushed aluminum, transparent glass, and weathered leather material/surface bundles while Effects were simultaneously active.
+
+**Result:** complete and accepted.
+
+### Phase 6 UX closeout — Named Configurations workspace
+
+The inline Named Configurations blocks became increasingly tall as structured editors gained real-world depth, especially Effects and Texture / Material. They are management workspaces, not information that must remain permanently visible in the Key Module page.
+
+Implementation:
+
+- [x] Form, Camera, Framing, Style, Background, Lighting, Effects, and Texture no longer render Named Configurations inline below the Global/default panel.
+- [x] `ModuleEntitiesPanelShell.vue` provides one shared compact header launcher with an entity count and FAB.
+- [x] `useModuleEntitiesModal()` opens the correct existing generic or specialized entity editor in the project's global modal system.
+- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls back edits.
+- [x] Generic and specialized editor logic is reused directly; no modal-specific editor copies exist.
+- [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
+- [x] Named Configuration lists, entity cards, Lighting sources, Effects layers, and Material Assignments all start expanded by default.
+- [ ] Running-app visual/interaction validation for FAB placement, modal sizing, live edits, backdrop/Escape close, and mobile behavior.
 
 **Result:** implemented / validation pending.
 
 ### Phase 6 completion gate
 
-Texture / Material is the final planned Scene-capable module conversion in Phase 6.
-
-After Texture validation:
-
-- [ ] Mark Phase 6 complete and accepted.
+- [x] All planned Scene-capable module conversions are complete and accepted.
+- [ ] Accept the compact Named Configurations modal UX after running-app validation.
 - [ ] Continue to Phase 7 — Generalize semantic/reference catalog.
 
 ---
@@ -798,6 +816,28 @@ The real Style image test produced visibly distinct photographic/cinematic, grap
 
 The accepted 2×2 UI-kit image test produced four clearly distinct treatments while reference composition and region placement remained consistent enough to validate Scene-local Effects isolation.
 
+## Texture / Material
+
+```text
+{texture} =
+• {texture_texture1} =
+  • all scene surfaces: vinyl material; satin, smooth, opaque, subtle texture, clean
+• {texture_texture2} =
+  • all scene surfaces: aluminum material; satin, brushed, opaque, visible texture, clean
+• {texture_texture3} =
+  • all scene surfaces: glass material; glossy, smooth, transparent, subtle texture, clean
+• {texture_texture4} =
+  • all scene surfaces: leather material; matte, fine grain, opaque, visible texture, weathered, scratches
+
+{scenes} =
+• {scene_scene1} = [repeated reference content]. Use {texture_texture1} as this scene's material and surface treatment.
+• {scene_scene2} = [repeated reference content]. Use {texture_texture2} as this scene's material and surface treatment.
+• {scene_scene3} = [repeated reference content]. Use {texture_texture3} as this scene's material and surface treatment.
+• {scene_scene4} = [repeated reference content]. Use {texture_texture4} as this scene's material and surface treatment.
+```
+
+The accepted 2×2 image test showed the material/surface axis is interpreted even when Effects are more visually dominant: vinyl remained smooth/subtle, aluminum read as cooler/brushed, glass read as smooth/transparent, and leather carried visible grain/weathering. Stronger material visibility is a prompt-strength/scope choice rather than a Scene-resource compiler requirement.
+
 Selected configuration payloads are defined by owning modules and are never repeated inside `{scenes}`.
 
 ---
@@ -827,4 +867,7 @@ Selected configuration payloads are defined by owning modules and are never repe
 21. Persisted freeform values must remain raw user-authored values; UI reconstruction/presentation must not rewrite persistence identity or compiler text.
 22. Specialized global panels wrapped by entity adapters must preserve unknown sibling entity state during global resets/edits.
 23. Multi-line specialized compiler output must remain clearly nested beneath the Global/default or named definition that owns it.
-24. Update this document with architectural changes and phase status.
+24. Named Configuration management belongs in the shared modal workspace; wrappers expose one compact launcher and must reuse the canonical entity editor component.
+25. Modal entity edits are live state edits, not a temporary transaction; dismissing the workspace must not discard valid changes.
+26. Collapsible containers inside the Named Configurations workspace start expanded by default.
+27. Update this document with architectural changes and phase status.
