@@ -1,4 +1,14 @@
 import type { ModuleEntityRef } from "./entityContracts";
+import type { PromptVariableSource, PromptVariableType } from "./types";
+
+/** @deprecated Scene content is now expressed directly through nested Description text. */
+export type SceneContentRef = {
+  variableId: string;
+  token?: string;
+  label?: string;
+  source?: PromptVariableSource;
+  type?: PromptVariableType;
+};
 
 /**
  * Scene configuration components reuse the generic module-entity reference.
@@ -16,6 +26,8 @@ export type SceneEntity = {
   name: string;
   enabled?: boolean;
   description?: string;
+  /** @deprecated Always normalized to an empty array; kept for draft compatibility. */
+  content: SceneContentRef[];
   components: SceneComponentRef[];
   extraDetails?: string;
 };
