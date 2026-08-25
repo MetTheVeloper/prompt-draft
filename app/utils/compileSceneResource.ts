@@ -41,11 +41,15 @@ function compileScalar(
   module: PromptKeyModule,
   values: ModuleValues,
   compiler?: SceneResourceScalarCompiler,
+  preserveOverride = false,
 ) {
-  const cleanValues = clearScalarOverride(module, values);
+  const compileValues = preserveOverride
+    ? values
+    : clearScalarOverride(module, values);
+
   return compiler
-    ? compiler(module, cleanValues)
-    : compileModule(module, cleanValues);
+    ? compiler(module, compileValues)
+    : compileModule(module, compileValues);
 }
 
 function compileSceneResourceEntity(
@@ -72,7 +76,9 @@ function compileSceneResourceEntity(
  * a stable reference to them. This keeps unused entity state out of prompts.
  *
  * Modules with specialized scalar wording may pass `compileValues`; generic
- * scalar modules continue using the normal `compileModule` path.
+ * scalar modules continue using the normal `compileModule` path. Modules whose
+ * existing global compiler treats the override field as an inline override can
+ * opt into `preserveGlobalOverride` without exposing that override to entities.
  */
 export function compileSceneResourceModule(
   module: PromptKeyModule,
@@ -81,6 +87,7 @@ export function compileSceneResourceModule(
     customMode?: boolean;
     referencedEntityIds?: string[];
     compileValues?: SceneResourceScalarCompiler;
+    preserveGlobalOverride?: boolean;
   } = {},
 ) {
   const globalValues = getGlobalModuleValues(values);
@@ -94,7 +101,12 @@ export function compileSceneResourceModule(
   }
 
   const globalOutput = outputText(
-    compileScalar(module, globalValues, options.compileValues),
+    compileScalar(
+      module,
+      globalValues,
+      options.compileValues,
+      options.preserveGlobalOverride,
+    ),
   );
 
   const referencedIds = new Set(
