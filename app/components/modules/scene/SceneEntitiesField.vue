@@ -158,6 +158,7 @@ function createScene(): SceneEntity {
     name: `Scene ${number}`,
     enabled: true,
     description: "",
+    content: [],
     components: [],
     extraDetails: "",
   };
