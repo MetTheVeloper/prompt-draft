@@ -1,19 +1,12 @@
 import type {
-  ModuleOutputValue,
-} from "./compilePrompt";
-import type {
   ModuleValues,
   PromptKeyModule,
-  PromptVariable,
 } from "../modules/types";
 import type {
-  ModuleEntity,
   ModuleEntityPayload,
-  TargetedModuleEntity,
 } from "../modules/entityContracts";
 import type {
   SceneComponentRef,
-  SceneContentRef,
   SceneEntity,
 } from "../modules/scene.types";
 import {
@@ -21,18 +14,14 @@ import {
   getModuleEntitySceneSelection,
   isSceneExposableModule,
   moduleEntityRefIdentity,
-  resolveModuleEntityValues,
 } from "../modules/entityContracts";
 import {
   getSceneEntities,
   getSceneVariableToken,
 } from "./scene";
-import { compileModule } from "./compileModules";
-import { compileFormEntityConfiguration } from "./compileForm";
-import { normalizeSemanticTargets } from "./semanticTargets";
+import { getModuleEntityVariableToken } from "./moduleEntityVariables";
 
 export type SceneCompileIssueKind =
-  | "missing_content"
   | "missing_component"
   | "component_cardinality";
 
@@ -41,7 +30,6 @@ export type SceneCompileIssue = {
   kind: SceneCompileIssueKind;
   sceneId: string;
   sceneLabel: string;
-  variableId?: string;
   moduleKey?: string;
   entityId?: string;
 };
@@ -49,7 +37,6 @@ export type SceneCompileIssue = {
 export type SceneCompileContext = {
   modules: PromptKeyModule[];
   moduleValues: Record<string, ModuleValues>;
-  variables: PromptVariable[];
   layoutActive: boolean;
 };
 
@@ -71,19 +58,6 @@ function humanize(value: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function outputText(value: ModuleOutputValue) {
-  return typeof value === "string" ? value.trim() : JSON.stringify(value);
-}
-
-function resolvedContentToken(
-  ref: SceneContentRef,
-  variables: PromptVariable[],
-) {
-  const variable = variables.find((item) => item.id === ref.variableId);
-  if (!variable || variable.enabled === false || !variable.key?.trim()) return "";
-  return `{${variable.key.trim()}}`;
-}
-
 function findModule(
   modules: PromptKeyModule[],
   moduleKey: string,
@@ -100,52 +74,6 @@ function findEntity(
   ).find((entity) => entity.id === ref.entityId);
 }
 
-function clearScalarOverride(
-  module: PromptKeyModule,
-  values: ModuleValues,
-) {
-  const overrideFieldId =
-    module.compile?.overrideField ||
-    Object.values(module.fields).find((field) => field.isOverride)?.id;
-
-  if (!overrideFieldId) return values;
-
-  return {
-    ...values,
-    [overrideFieldId]: "",
-  };
-}
-
-function compileGenericEntity(
-  module: PromptKeyModule,
-  moduleState: ModuleValues,
-  entity: ModuleEntity<ModuleEntityPayload>,
-) {
-  if (entity.enabled === false) return "";
-
-  const resolved = resolveModuleEntityValues(moduleState, entity);
-  return outputText(compileModule(module, clearScalarOverride(module, resolved)));
-}
-
-function compileSelectedComponent(
-  module: PromptKeyModule,
-  moduleState: ModuleValues,
-  entity: ModuleEntity<ModuleEntityPayload>,
-) {
-  if (module.key === "form") {
-    const targetedEntity = {
-      ...entity,
-      targets: normalizeSemanticTargets(
-        (entity as Partial<TargetedModuleEntity<ModuleEntityPayload>>).targets,
-      ),
-    } satisfies TargetedModuleEntity<ModuleEntityPayload>;
-
-    return compileFormEntityConfiguration(module, moduleState, targetedEntity);
-  }
-
-  return compileGenericEntity(module, moduleState, entity);
-}
-
 function normalizedComponentRefs(scene: SceneEntity) {
   const seen = new Set<string>();
 
@@ -157,31 +85,48 @@ function normalizedComponentRefs(scene: SceneEntity) {
   });
 }
 
+function joinTokens(tokens: string[]) {
+  if (!tokens.length) return "";
+  if (tokens.length === 1) return tokens[0];
+  if (tokens.length === 2) return `${tokens[0]} and ${tokens[1]}`;
+
+  return `${tokens.slice(0, -1).join(", ")}, and ${tokens[tokens.length - 1]}`;
+}
+
+function componentInstruction(moduleKey: string, tokens: string[]) {
+  const tokenText = joinTokens(tokens);
+  if (!tokenText) return "";
+
+  if (moduleKey === "camera") {
+    return `Capture this scene with ${tokenText}.`;
+  }
+
+  if (moduleKey === "form") {
+    return `Apply ${tokenText} to this scene.`;
+  }
+
+  return `Apply ${tokenText} to this scene.`;
+}
+
+function appendSentence(base: string, sentence: string) {
+  const nextSentence = cleanText(sentence);
+  if (!nextSentence) return base;
+
+  const current = base.trim();
+  if (!current) return nextSentence;
+
+  const separator = /[.!?]$/.test(current) ? " " : ". ";
+  return `${current}${separator}${nextSentence}`;
+}
+
 function compileSceneDefinition(
   scene: SceneEntity,
   context: SceneCompileContext,
 ): { definition: string; issues: SceneCompileIssue[] } {
   const issues: SceneCompileIssue[] = [];
   const sceneLabel = cleanText(scene.name) || humanize(scene.key) || "Scene";
-
-  const contentTokens = scene.content
-    .map((ref) => {
-      const token = resolvedContentToken(ref, context.variables);
-      if (token) return token;
-
-      issues.push({
-        id: `scene:${scene.id}:content:${ref.variableId}:missing`,
-        kind: "missing_content",
-        sceneId: scene.id,
-        sceneLabel,
-        variableId: ref.variableId,
-      });
-      return "";
-    })
-    .filter(Boolean);
-
   const refs = normalizedComponentRefs(scene);
-  const componentBlocks: string[] = [];
+  const instructions: string[] = [];
 
   context.modules
     .filter(isSceneExposableModule)
@@ -203,41 +148,30 @@ function compileSceneDefinition(
         });
       }
 
-      const outputs = selectedRefs
-        .map((ref) => {
-          const entity = findEntity(ref, context.moduleValues);
-          if (!entity || entity.enabled === false) {
-            issues.push({
-              id: `scene:${scene.id}:component:${ref.moduleKey}:${ref.entityId}:missing`,
-              kind: "missing_component",
-              sceneId: scene.id,
-              sceneLabel,
-              moduleKey: ref.moduleKey,
-              entityId: ref.entityId,
-            });
-            return "";
-          }
+      const tokens = selectedRefs.flatMap((ref) => {
+        const entity = findEntity(ref, context.moduleValues);
 
-          return compileSelectedComponent(
-            module,
-            context.moduleValues[module.key] || {},
-            entity,
-          );
-        })
-        .filter(Boolean);
+        if (!entity || entity.enabled === false) {
+          issues.push({
+            id: `scene:${scene.id}:component:${ref.moduleKey}:${ref.entityId}:missing`,
+            kind: "missing_component",
+            sceneId: scene.id,
+            sceneLabel,
+            moduleKey: ref.moduleKey,
+            entityId: ref.entityId,
+          });
+          return [];
+        }
 
-      if (!outputs.length) return;
+        return [getModuleEntityVariableToken(module.key, entity)];
+      });
 
-      const label = humanize(module.key);
-      componentBlocks.push(
-        outputs.some((output) => output.includes("\n") || output.startsWith("•"))
-          ? `${label}:\n${outputs.join("\n")}`
-          : `${label}: ${outputs.join("; ")}`,
-      );
+      const instruction = componentInstruction(module.key, tokens);
+      if (instruction) instructions.push(instruction);
     });
 
-  // Preserve references to modules that are no longer active/exposable as
-  // explicit missing-reference issues instead of silently retargeting.
+  // Preserve refs to modules that are no longer active/exposable as explicit
+  // missing-reference issues instead of silently dropping or retargeting them.
   refs.forEach((ref) => {
     const module = findModule(context.modules, ref.moduleKey);
     if (module && isSceneExposableModule(module)) return;
@@ -252,17 +186,14 @@ function compileSceneDefinition(
     });
   });
 
-  const lines = [
-    `${getSceneVariableToken(scene)} =`,
-    `Scene: ${sceneLabel}`,
-    cleanText(scene.description) ? `Description: ${cleanText(scene.description)}` : "",
-    contentTokens.length ? `Content: ${contentTokens.join(", ")}` : "",
-    ...componentBlocks,
-    cleanText(scene.extraDetails) ? `Details: ${cleanText(scene.extraDetails)}` : "",
-  ].filter(Boolean);
+  let body = cleanText(scene.description);
+  body = appendSentence(body, cleanText(scene.extraDetails));
+  instructions.forEach((instruction) => {
+    body = appendSentence(body, instruction);
+  });
 
   return {
-    definition: lines.join("\n"),
+    definition: body ? `• ${getSceneVariableToken(scene)} = ${body}` : "",
     issues,
   };
 }
@@ -278,16 +209,14 @@ export function compileSceneModule(
   const compiled = getSceneEntities(values)
     .filter((scene) => scene.enabled !== false)
     .map((scene) => compileSceneDefinition(scene, context));
-  const definitions = compiled
-    .map((item) => item.definition)
-    .filter(Boolean)
-    .join("\n\n");
 
   return {
-    // Leading bullet intentionally marks Scene as a protected structural block
-    // in the existing Natural output pipeline so definitions are never split
-    // into ordinary comma-separated style instructions.
-    output: definitions ? `• Scene definitions:\n${definitions}` : "",
+    // A leading bullet keeps the Scenes block protected from Natural prompt
+    // comma-splitting while the modular formatter supplies the {scenes} alias.
+    output: compiled
+      .map((item) => item.definition)
+      .filter(Boolean)
+      .join("\n"),
     issues: compiled.flatMap((item) => item.issues),
   };
 }
