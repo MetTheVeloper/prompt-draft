@@ -1,6 +1,6 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 7 — Generalize semantic/reference catalog is in progress; audit/contract/foundation are complete and incremental consumer migration is underway
+> **Status:** Phase 7 — catalog architecture and consumer migration complete; Phase 7.5 running-app/regression validation is current
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
 > **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
@@ -677,7 +677,7 @@ Implementation:
 - [x] Form, Camera, Framing, Style, Background, Lighting, Effects, and Texture no longer render Named Configurations inline below the Global/default panel.
 - [x] `ModuleEntitiesPanelShell.vue` provides one shared compact header launcher with an entity count and FAB.
 - [x] `useModuleEntitiesModal()` opens the correct existing generic or specialized entity editor in the project's global modal system.
-- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls back edits.
+- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls changes back.
 - [x] Generic and specialized editor logic is reused directly; no modal-specific editor copies exist.
 - [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
 - [x] Existing Named Configuration entity cards start collapsed whenever the workspace opens; the list remains visible and newly added configurations open immediately for editing.
@@ -755,8 +755,8 @@ Current contract:
 ### Phase 7.3 — Build shared catalog/resolver infrastructure
 
 - [x] Introduce reusable catalog-building/resolution utilities or composables after the audit proves the correct boundary.
-- [x] Add adapters for current semantic targets and stable module-entity references rather than destructively rewriting persisted state.
-- [ ] Centralize duplicate token/label/eligibility resolution where safe; presentation construction remains intentionally local where wording/grouping is consumer-specific.
+- [x] Add adapters for current semantic targets and stable entity references rather than destructively rewriting persisted state.
+- [x] Centralize duplicate identity, availability, missing, and safe presentation-refresh resolution while keeping consumer-specific wording/grouping local.
 - [x] Keep missing references representable and never silently auto-retarget them.
 
 Implemented infrastructure:
@@ -764,28 +764,35 @@ Implemented infrastructure:
 - `app/utils/referenceCatalog.ts` — generic catalog contract, strict canonical index, resolver, availability state, and capability/eligibility query;
 - `app/utils/semanticReferenceCatalog.ts` — adapter from existing `SemanticTargetRef` option sources to the generic resolver while preserving `semanticTargetIdentity()` as canonical identity;
 - `app/utils/moduleEntityReferenceCatalog.ts` — stable `ModuleEntityRef` adapter using `moduleKey + entityId`, with enabled/unavailable state and refreshed presentation metadata;
-- `scripts/reference-catalog.test.ts` — regression coverage for rename, missing, unavailable, no token/name retarget, duplicate identity, capability filtering, semantic entity IDs, and module-scope isolation.
+- `app/utils/sceneReferenceCatalog.ts` — stable Layout Region → Scene adapter using `scene:${entityId}` plus an explicitly separate compatibility-only legacy `{scene_*}` token lookup for drafts that do not yet have a stable `contentRef`;
+- `scripts/reference-catalog.test.ts` — regression coverage for rename, missing, unavailable, no token/name retarget, duplicate identity, capability filtering, semantic entity IDs, module-scope isolation, Scene stable refs, and legacy Scene-token migration boundaries.
 
-The isolated runtime catalog suite currently passes 11/11 cases. Full Nuxt/running-app regression remains part of Phase 7.5.
+The isolated runtime resolver/catalog validation currently passes **15/15** invariants. Full Nuxt/running-app regression remains part of Phase 7.5.
 
 ### Phase 7.4 — Migrate consumers incrementally
 
-- [ ] Move overlapping picker/catalog consumers to the shared infrastructure one at a time. **In progress.**
+- [x] Move overlapping picker/catalog consumers to the shared infrastructure one at a time.
 - [x] Keep specialized UI components where their UX is genuinely different; Phase 7 generalizes data/catalog semantics, not necessarily every visual picker.
-- [ ] Preserve Scene cardinality, target policies, Texture assignment scopes/exceptions, Region → Scene stable refs, and entity enable/disable behavior across the full consumer set. Migrated paths preserve their existing policies; Layout and final cross-consumer validation remain open.
+- [x] Preserve Scene cardinality, target policies, Texture assignment scopes/exceptions, Region → Scene stable refs, and entity enable/disable behavior in migrated source paths.
 - [x] Avoid unrelated compiler/output changes while catalog plumbing is being consolidated.
 
-Migrated consumers so far:
+Migrated consumers:
 
 - `useModuleEntityTargets.ts` — subject/object eligibility remains local; availability/upgrade resolution is shared;
 - `useSubjectAssignmentTargets.ts` — subject-specific option discovery remains local; availability/upgrade resolution is shared;
 - `useSemanticTargetCatalog.ts` — builtin/module/Typography/user discovery, capability filtering, grouping, missing UX, and summaries remain specialized while canonical availability/upgrade resolution is shared;
-- `SceneEntitiesField.vue` — Scene-exposable discovery and single/multiple cardinality remain unchanged while stable module-entity lookup, missing detection, disabled state, and current reference presentation use the shared module-entity adapter.
+- `AssignmentScopeEditor.vue` — target/exception missing detection now uses the same semantic resolver rather than rebuilding an identity set independently; custom/exclusive/conflict semantics remain local;
+- `SceneEntitiesField.vue` — Scene-exposable discovery and single/multiple cardinality remain unchanged while stable module-entity lookup, missing detection, disabled state, and current reference presentation use the shared module-entity adapter;
+- `LayoutRegionsField.vue` — stable Region → Scene reconciliation/list status use the Scene resolver; rename refreshes cached token/label/contentKey by stable ID, deleted refs remain missing, and legacy token upgrade runs only when no stable `contentRef` exists;
+- `LayoutRegionEditorModal.vue` — Scene picker items, missing/unavailable state, selection, and save-time presentation refresh use the same Scene resolver while preserving manual `contentKey` compatibility behavior.
 
-Sensitive paths intentionally not migrated yet:
+Consumer-boundary audit after migration:
 
-- Layout Region → Scene binding, because it also owns `contentKey` backward compatibility and rename synchronization;
-- any further consumer whose persistence identity or compiler behavior would be changed merely to fit the shared catalog contract.
+- Texture / Material targets and exceptions both flow through `MaterialAssignmentsField → AssignmentScopeEditor → useSemanticTargetCatalog`; no parallel material-only reference resolver remains;
+- Typography, Hair, and Outfit export their existing stable domain `entityId` values through `promptVariableCatalog.ts` and attach semantic capabilities there, so they are consumed naturally by the semantic adapter and do not justify extra resolver layers;
+- no additional consumer migration is currently justified merely for abstraction symmetry.
+
+**Result:** source migration complete; proceed to Phase 7.5 validation.
 
 ### Phase 7.5 — Validation and exit gate
 
@@ -794,9 +801,17 @@ Sensitive paths intentionally not migrated yet:
 - [ ] Verify delete/disable leaves references missing/unavailable rather than silently retargeting across every migrated consumer.
 - [ ] Verify Scene, Form, Texture, Layout, and other migrated consumers expose the same eligible choices as before unless an explicit bug is documented and intentionally fixed.
 - [ ] Confirm prompt output remains behaviorally unchanged for accepted Phase 2–6 scenarios.
-- [ ] Update this source of truth with the final catalog architecture and complete consumer list.
+- [x] Update this source of truth with the final catalog architecture and complete migrated consumer list.
 
-**Result:** in progress — audit, reusable contract, resolver foundation, semantic adapter, stable module-entity adapter, and the first incremental consumer migrations are complete. Layout Region → Scene migration plus full running-app/regression validation remain open.
+Static validation checkpoint:
+
+- isolated resolver/catalog runtime harness passes **15/15** identity, rename, unavailable, missing, scope-isolation, and legacy-migration invariants;
+- branch comparison from Phase 7 start (`04874f5`) through the migration checkpoint changes only catalog utilities, picker/composable plumbing, tests, package script, and this document;
+- no prompt compiler file or persistence/domain schema/type file was changed by Phase 7;
+- GitHub reports no CI/status checks for the current branch commits;
+- a full Nuxt checkout/build could not be executed in the current tool environment because direct GitHub network access is unavailable, so running-app regression remains the acceptance gate.
+
+**Result:** in progress — catalog architecture and source migration are complete; running-app regression/acceptance is current.
 
 ---
 
@@ -974,3 +989,4 @@ Selected configuration payloads are defined by owning modules and are never repe
 27. Entity-capable Key Module context menus expose the same Named Configurations workspace action as the header FAB.
 28. Shared semantic/reference catalog work must preserve canonical identities and module-specific eligibility rules; consolidation must never silently change target/reference meaning.
 29. Update this document with architectural changes and phase status.
+30. Legacy token matching is compatibility-only and may upgrade a reference only when no stable reference exists; it must never rescue or retarget a missing stable reference.
