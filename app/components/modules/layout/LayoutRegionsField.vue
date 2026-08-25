@@ -1,10 +1,9 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue"
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables"
-import type { ModuleField, PromptVariable } from "~/modules/types"
+import type { ModuleField } from "~/modules/types"
 import type {
   LayoutRegion,
-  LayoutRegionContentRef,
   LayoutRegionsState,
   LayoutRegionsValue,
 } from "~/modules/layout.types"
@@ -14,6 +13,13 @@ import {
   createLayoutRegion,
   createLayoutRegionId,
 } from "~/utils/layoutRegions"
+import {
+  createSceneReferenceCatalogIndex,
+  createSceneReferenceCatalogItems,
+  findLegacySceneReferenceByToken,
+  isSceneReferenceVariable,
+  resolveSceneReferenceCatalogItem,
+} from "~/utils/sceneReferenceCatalog"
 import LayoutRegionEditorModal from "./LayoutRegionEditorModal.vue"
 import VisualLayoutBuilderModal from "./VisualLayoutBuilderModal.vue"
 
@@ -74,74 +80,47 @@ function translate(path: string, fallback: string) {
   return translated === path ? fallback : translated
 }
 
-function sceneVariableToken(variable: PromptVariable) {
-  const key = String(variable.key || "").trim()
-  return key ? `{${key}}` : ""
-}
-
-function sceneVariableLabel(variable: PromptVariable) {
-  return String(variable.label || "").trim() || sceneVariableToken(variable)
-}
-
 const sceneVariables = computed(() => {
   return moduleVariableGroups.value
     .flatMap((group) => group.variables)
-    .filter((variable) => {
-      return (
-        variable.moduleKey === "scene" &&
-        variable.entityType === "scene" &&
-        Boolean(variable.entityId) &&
-        Boolean(sceneVariableToken(variable))
-      )
-    })
+    .filter(isSceneReferenceVariable)
 })
 
-function createSceneContentRef(variable: PromptVariable): LayoutRegionContentRef {
-  return {
-    kind: "scene",
-    entityId: String(variable.entityId),
-    token: sceneVariableToken(variable),
-    label: sceneVariableLabel(variable),
-  }
-}
+const sceneCatalogItems = computed(() => {
+  return createSceneReferenceCatalogItems(sceneVariables.value)
+})
 
-function getSceneVariableById(entityId?: string) {
-  if (!entityId) return undefined
-
-  return sceneVariables.value.find((variable) => variable.entityId === entityId)
-}
-
-function getSceneVariableByToken(token?: string) {
-  const normalizedToken = String(token || "").trim()
-  if (!normalizedToken) return undefined
-
-  return sceneVariables.value.find((variable) => {
-    return sceneVariableToken(variable) === normalizedToken
-  })
-}
+const sceneCatalogIndex = computed(() => {
+  return createSceneReferenceCatalogIndex(sceneVariables.value)
+})
 
 function reconcileRegionSceneBinding(region: LayoutRegion): LayoutRegion {
   const nextRegion = cloneLayoutRegion(region)
   const ref = nextRegion.contentRef
 
   if (ref?.kind === "scene") {
-    const variable = getSceneVariableById(ref.entityId)
+    const resolution = resolveSceneReferenceCatalogItem(
+      ref,
+      sceneCatalogIndex.value,
+    )
 
-    if (!variable) {
+    if (resolution.status === "missing") {
       return nextRegion
     }
 
-    const token = sceneVariableToken(variable)
-    nextRegion.contentRef = createSceneContentRef(variable)
-    nextRegion.contentKey = token
+    nextRegion.contentRef = { ...resolution.item.reference }
+    nextRegion.contentKey = resolution.item.reference.token || nextRegion.contentKey
     return nextRegion
   }
 
-  const legacyScene = getSceneVariableByToken(nextRegion.contentKey)
+  const legacyScene = findLegacySceneReferenceByToken(
+    nextRegion.contentKey,
+    sceneCatalogItems.value,
+  )
   if (!legacyScene) return nextRegion
 
-  nextRegion.contentRef = createSceneContentRef(legacyScene)
-  nextRegion.contentKey = sceneVariableToken(legacyScene)
+  nextRegion.contentRef = { ...legacyScene.reference }
+  nextRegion.contentKey = legacyScene.reference.token || nextRegion.contentKey
   return nextRegion
 }
 
@@ -231,16 +210,22 @@ function regionRoleLabel(region: LayoutRegion) {
   return t(regionRoleTranslationKeys[region.role])
 }
 
-function regionSceneVariable(region: LayoutRegion) {
+function regionSceneResolution(region: LayoutRegion) {
   if (region.contentRef?.kind !== "scene") return undefined
-  return getSceneVariableById(region.contentRef.entityId)
+
+  return resolveSceneReferenceCatalogItem(
+    region.contentRef,
+    sceneCatalogIndex.value,
+  )
 }
 
 function regionSceneToken(region: LayoutRegion) {
-  const variable = regionSceneVariable(region)
+  const resolution = regionSceneResolution(region)
 
   return (
-    (variable ? sceneVariableToken(variable) : "") ||
+    (resolution && resolution.status !== "missing"
+      ? resolution.item.reference.token?.trim()
+      : "") ||
     region.contentRef?.token?.trim() ||
     region.contentKey?.trim() ||
     ""
@@ -248,10 +233,12 @@ function regionSceneToken(region: LayoutRegion) {
 }
 
 function regionSceneLabel(region: LayoutRegion) {
-  const variable = regionSceneVariable(region)
+  const resolution = regionSceneResolution(region)
 
   return (
-    (variable ? sceneVariableLabel(variable) : "") ||
+    (resolution && resolution.status !== "missing"
+      ? resolution.item.reference.label?.trim()
+      : "") ||
     region.contentRef?.label?.trim() ||
     translate(
       "modules.layout.fields.regions.list.missingScene",
@@ -263,9 +250,9 @@ function regionSceneLabel(region: LayoutRegion) {
 function regionSceneStatus(region: LayoutRegion) {
   if (region.contentRef?.kind !== "scene") return "manual"
 
-  const variable = regionSceneVariable(region)
-  if (!variable) return "missing"
-  if (variable.enabled === false) return "unavailable"
+  const resolution = regionSceneResolution(region)
+  if (!resolution || resolution.status === "missing") return "missing"
+  if (resolution.status === "unavailable") return "unavailable"
   return "active"
 }
 
