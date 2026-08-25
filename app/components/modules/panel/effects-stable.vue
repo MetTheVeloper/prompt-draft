@@ -7,6 +7,7 @@ import type { ModuleEntityPayload } from "~/modules/entityContracts";
 import {
   getGlobalModuleValues,
   getModuleEntities,
+  getModuleEntityConfig,
   setModuleEntities,
 } from "~/modules/entityContracts";
 import { getSceneEntities } from "~/utils/scene";
@@ -120,7 +121,14 @@ const globalValues = computed(() => getGlobalModuleValues(modelSnapshot.value));
 const entities = computed(() =>
   getModuleEntities<ModuleEntityPayload>(modelSnapshot.value),
 );
+const entityConfig = computed(() => getModuleEntityConfig(props.module));
 const customMode = computed(() => Boolean(panelSnapshot.value?.isCustomMode));
+const allowGlobalInheritanceToggle = computed(
+  () => entityConfig.value?.allowGlobalInheritanceToggle === true,
+);
+const preserveEntitiesInCustomMode = computed(
+  () => entityConfig.value?.preserveEntitiesInCustomMode === true,
+);
 
 const referencedEntityIds = computed(() => {
   const sceneActive = props.modules.some((module) => module.key === "scene");
@@ -146,7 +154,7 @@ const output = computed(() =>
     customMode: customMode.value,
     referencedEntityIds: referencedEntityIds.value,
     compileValues: compileEffectsModule,
-    preserveEntitiesInCustomMode: true,
+    preserveEntitiesInCustomMode: preserveEntitiesInCustomMode.value,
   }),
 );
 
@@ -195,9 +203,11 @@ function updateEntities(nextEntities: typeof entities.value) {
     />
 
     <EffectsEntitiesField
+      v-show="!customMode || preserveEntitiesInCustomMode"
       :module="module"
       :global-values="globalValues"
       :model-value="entities"
+      :allow-global-inheritance-toggle="allowGlobalInheritanceToggle"
       @update:model-value="updateEntities"
     />
   </el-flex>
