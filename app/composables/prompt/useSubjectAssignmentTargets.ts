@@ -1,6 +1,11 @@
 import { computed } from "vue";
 import type { SemanticTargetRef } from "~/modules/types";
 import {
+  createReferenceCatalogIndex,
+  resolveReferenceCatalogItem,
+  type ReferenceCatalogItem,
+} from "~/utils/referenceCatalog";
+import {
   sameSemanticTargetList,
   semanticTargetIdentity,
   semanticTargetUiLabel,
@@ -19,16 +24,20 @@ export type SubjectAssignmentTargetOption = {
   target: SemanticTargetRef;
 };
 
+type SubjectAssignmentTargetCatalogItem = ReferenceCatalogItem<
+  SemanticTargetRef,
+  string,
+  SubjectAssignmentTargetOption
+>;
+
 function variableToken(key: string) {
   return `{${key}}`;
 }
 
 export function useSubjectAssignmentTargets() {
   const { t } = useI18n();
-  const {
-    enabledPromptVariables,
-    enabledSystemPromptVariables,
-  } = usePromptVariables();
+  const { enabledPromptVariables, enabledSystemPromptVariables } =
+    usePromptVariables();
   const { subjectType } = usePromptSubjectContext();
 
   function translate(path: string, fallback: string) {
@@ -97,6 +106,31 @@ export function useSubjectAssignmentTargets() {
     return options;
   });
 
+  const catalogItems = computed<SubjectAssignmentTargetCatalogItem[]>(() => {
+    return availableOptions.value.map((option) => ({
+      identity: semanticTargetIdentity(option.target),
+      reference: option.target,
+      presentation: {
+        label: option.label,
+        description: option.description,
+        token: option.target.token,
+        name: option.target.label,
+        group: option.group,
+        groupLabel: option.groupLabel,
+        color: option.color,
+      },
+      kind: option.target.kind,
+      state: {
+        available: option.disabled !== true,
+      },
+      metadata: option,
+    }));
+  });
+
+  const catalogIndex = computed(() =>
+    createReferenceCatalogIndex(catalogItems.value),
+  );
+
   function selectionValue(target: SemanticTargetRef) {
     if (target.kind === "system_variable") {
       return `system:${target.variableId || target.value}`;
@@ -107,11 +141,16 @@ export function useSubjectAssignmentTargets() {
     return semanticTargetIdentity(target);
   }
 
-  function isAvailable(target: SemanticTargetRef) {
-    const identity = semanticTargetIdentity(target);
-    return availableOptions.value.some(
-      (option) => semanticTargetIdentity(option.target) === identity,
+  function resolveTarget(target: SemanticTargetRef) {
+    return resolveReferenceCatalogItem(
+      target,
+      catalogIndex.value,
+      semanticTargetIdentity,
     );
+  }
+
+  function isAvailable(target: SemanticTargetRef) {
+    return resolveTarget(target).status === "resolved";
   }
 
   function missingOptions(currentTargets: SemanticTargetRef[]) {
@@ -160,11 +199,10 @@ export function useSubjectAssignmentTargets() {
 
   function upgradeTargets(targets: SemanticTargetRef[]) {
     return targets.map((target) => {
-      const identity = semanticTargetIdentity(target);
-      const option = availableOptions.value.find(
-        (candidate) => semanticTargetIdentity(candidate.target) === identity,
-      );
-      return option ? { ...option.target } : target;
+      const resolution = resolveTarget(target);
+      return resolution.status === "resolved"
+        ? { ...resolution.item.reference }
+        : target;
     });
   }
 
