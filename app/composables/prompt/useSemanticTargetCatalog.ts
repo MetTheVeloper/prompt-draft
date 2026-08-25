@@ -4,6 +4,10 @@ import type {
   SemanticTargetCapability,
   SemanticTargetRef,
 } from "~/modules/types";
+import {
+  createSemanticReferenceCatalogIndex,
+  resolveSemanticReferenceCatalogItem,
+} from "~/utils/semanticReferenceCatalog";
 import type { SemanticBuiltinTargetDefinition } from "~/utils/semanticTargets";
 import {
   semanticScopeSummary,
@@ -46,7 +50,7 @@ function cleanLabel(value?: string) {
 
 function cleanDescription(value?: string) {
   const cleaned = String(value || "").trim().replace(/\s+/g, " ");
-  if (!cleaned || cleaned.startsWith("{") && !/^\{[^{}]+\}$/.test(cleaned)) {
+  if (!cleaned || (cleaned.startsWith("{") && !/^\{[^{}]+\}$/.test(cleaned))) {
     return "";
   }
   return cleaned.length > 100 ? `${cleaned.slice(0, 97)}...` : cleaned;
@@ -347,6 +351,10 @@ export function useSemanticTargetCatalog(
     ...userOptions.value,
   ]);
 
+  const catalogIndex = computed(() =>
+    createSemanticReferenceCatalogIndex(availableOptions.value),
+  );
+
   function selectionValue(target: SemanticTargetRef) {
     const identity = semanticTargetIdentity(target);
     if (!identity) return "";
@@ -365,11 +373,12 @@ export function useSemanticTargetCatalog(
     return identity;
   }
 
+  function resolveTarget(target: SemanticTargetRef) {
+    return resolveSemanticReferenceCatalogItem(target, catalogIndex.value);
+  }
+
   function isAvailable(target: SemanticTargetRef) {
-    const identity = semanticTargetIdentity(target);
-    return availableOptions.value.some(
-      (option) => semanticTargetIdentity(option.target) === identity,
-    );
+    return resolveTarget(target).status === "resolved";
   }
 
   function missingOptions(
@@ -433,11 +442,10 @@ export function useSemanticTargetCatalog(
   function upgradeTargets(targets: SemanticTargetRef[]) {
     return targets.map((target) => {
       if (target.kind === "custom") return target;
-      const identity = semanticTargetIdentity(target);
-      const option = availableOptions.value.find(
-        (candidate) => semanticTargetIdentity(candidate.target) === identity,
-      );
-      return option ? { ...option.target } : target;
+      const resolution = resolveTarget(target);
+      return resolution.status === "resolved"
+        ? { ...resolution.item.reference }
+        : target;
     });
   }
 
