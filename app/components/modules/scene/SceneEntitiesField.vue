@@ -5,9 +5,8 @@ import type {
   ModuleField,
   ModuleValues,
   PromptKeyModule,
-  PromptVariable,
 } from "~/modules/types";
-import type { SceneContentRef, SceneEntity } from "~/modules/scene.types";
+import type { SceneEntity } from "~/modules/scene.types";
 import type { ModuleEntityPayload } from "~/modules/entityContracts";
 import {
   createModuleEntityId,
@@ -23,14 +22,9 @@ import {
   compileSceneModule,
   type SceneCompileIssue,
 } from "~/utils/compileScene";
-import { usePromptVariables } from "~/composables/prompt/usePromptVariables";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
-const {
-  enabledPromptVariables,
-  enabledSystemPromptVariables,
-} = usePromptVariables();
 
 const props = withDefaults(
   defineProps<{
@@ -102,40 +96,6 @@ function semanticKey(value: string) {
 const scenes = computed(() => normalizeSceneEntities(props.modelValue));
 const layoutActive = computed(() => props.modules.some((module) => module.key === "layout"));
 
-const userContentVariables = computed(() => {
-  return enabledPromptVariables.value
-    .filter((variable) => {
-      return (
-        variable.type === "subject" ||
-        variable.type === "object" ||
-        variable.type === "reference"
-      );
-    })
-    .map((variable) => ({
-      ...variable,
-      source: variable.source || ("user" as const),
-    }));
-});
-
-const systemContentVariables = computed(() => {
-  return enabledSystemPromptVariables.value.filter((variable) => {
-    return variable.key === "subject";
-  });
-});
-
-const contentVariables = computed<PromptVariable[]>(() => {
-  const seen = new Set<string>();
-
-  return [
-    ...userContentVariables.value,
-    ...systemContentVariables.value,
-  ].filter((variable) => {
-    if (!variable.id || seen.has(variable.id)) return false;
-    seen.add(variable.id);
-    return true;
-  });
-});
-
 const componentGroups = computed(() => {
   return props.modules
     .filter(isSceneExposableModule)
@@ -157,7 +117,6 @@ const compileResult = computed(() => {
         ...props.moduleValues,
         scene: { scenes: scenes.value as unknown as Record<string, unknown>[] },
       },
-      variables: contentVariables.value,
       layoutActive: layoutActive.value,
     },
   );
@@ -199,7 +158,6 @@ function createScene(): SceneEntity {
     name: `Scene ${number}`,
     enabled: true,
     description: "",
-    content: [],
     components: [],
     extraDetails: "",
   };
@@ -255,60 +213,6 @@ function updateName(index: number, value: unknown) {
 
 function updateKey(index: number, value: unknown) {
   updateScene(index, { key: uniqueSceneKey(String(value ?? ""), index) });
-}
-
-function contentRef(variable: PromptVariable): SceneContentRef {
-  return {
-    variableId: variable.id,
-    token: `{${variable.key}}`,
-    label: variable.label || variable.key,
-    source: variable.source || "user",
-    type: variable.type,
-  };
-}
-
-function contentItems(scene: SceneEntity) {
-  const items = contentVariables.value.map((variable) => ({
-    value: variable.id,
-    label: variable.label || variable.key,
-    description: `{${variable.key}}`,
-    group: variable.source || "user",
-    groupLabel: humanize(variable.source || "user"),
-    disabled: false,
-  }));
-  const known = new Set(items.map((item) => item.value));
-
-  scene.content.forEach((ref) => {
-    if (known.has(ref.variableId)) return;
-    items.push({
-      value: ref.variableId,
-      label: ref.label || "Missing content reference",
-      description: `${ref.token || ref.variableId} · Missing`,
-      group: "missing",
-      groupLabel: "Missing",
-      disabled: true,
-    });
-  });
-
-  return items;
-}
-
-function updateContent(index: number, selected: ElDropdownValue[]) {
-  const scene = scenes.value[index];
-  if (!scene) return;
-
-  const current = new Map(scene.content.map((ref) => [ref.variableId, ref]));
-  const available = new Map(contentVariables.value.map((variable) => [variable.id, variable]));
-
-  const next = selected.flatMap((value) => {
-    const id = String(value ?? "");
-    const variable = available.get(id);
-    if (variable) return [contentRef(variable)];
-    const existing = current.get(id);
-    return existing ? [existing] : [];
-  });
-
-  updateScene(index, { content: next });
 }
 
 function refsForModule(scene: SceneEntity, moduleKey: string) {
@@ -415,13 +319,6 @@ function sceneIssues(scene: SceneEntity) {
 }
 
 function issueText(issue: SceneCompileIssue) {
-  if (issue.kind === "missing_content") {
-    return translate(
-      "modules.scene.warnings.missingContent",
-      "A selected content reference is missing or disabled.",
-    );
-  }
-
   if (issue.kind === "component_cardinality") {
     return translate(
       "modules.scene.warnings.cardinality",
@@ -482,7 +379,7 @@ function issueText(issue: SceneCompileIssue) {
 
     <el-grid v-show="listExpanded" :gap="12" class="w100">
       <el-text v-if="!scenes.length" :size="11" color="normal50">
-        {{ translate("modules.scene.empty", "No Scenes yet. Add a Scene to compose content with named Form/Camera configurations.") }}
+        {{ translate("modules.scene.empty", "No Scenes yet. Add a Scene to compose nested descriptions with named module configurations.") }}
       </el-text>
 
       <el-grid
@@ -501,7 +398,7 @@ function issueText(issue: SceneCompileIssue) {
               {{ scene.name || scene.key || `Scene ${sceneIndex + 1}` }}
             </el-text>
             <el-text :size="9" color="normal45">
-              {{ getSceneVariableToken(scene) }} · {{ scene.content.length }} content · {{ scene.components.length }} components
+              {{ getSceneVariableToken(scene) }} · {{ scene.components.length }} components
             </el-text>
           </el-flex>
 
@@ -538,33 +435,13 @@ function issueText(issue: SceneCompileIssue) {
             <el-text-field
               :model-value="scene.description || ''"
               type="textarea"
-              :rows="2"
-              :placeholder="translate('modules.scene.fields.description.placeholder', 'Describe this Scene. You can reference prompt variables here.')"
+              :rows="3"
+              :placeholder="translate('modules.scene.editor.descriptionPlaceholder', 'Describe this Scene using nested variables, actions, expressions, and local context.')"
               :editor-id="sceneEditorId(scene, 'description')"
               support-variables
               @update:model-value="updateScene(sceneIndex, { description: String($event || '') })"
             />
           </el-flex>
-
-          <el-grid :p="12" :br="1" bc="normal10" :radius="12" :gap="8" class="w100">
-            <el-flex rules="ccs" :gap="2">
-              <el-text :size="13" :weight="700" icon="person">Content / Actors</el-text>
-              <el-text :size="9" color="normal45">Select stable subject/object/reference variables that belong to this Scene.</el-text>
-            </el-flex>
-
-            <el-multi-select
-              :model-value="scene.content.map((ref) => ref.variableId)"
-              :items="contentItems(scene)"
-              item-label="label"
-              item-value="value"
-              item-description="description"
-              item-group="group"
-              item-group-label="groupLabel"
-              item-disabled="disabled"
-              placeholder="Select Scene content"
-              @update:model-value="updateContent(sceneIndex, $event)"
-            />
-          </el-grid>
 
           <el-grid :p="12" :br="1" bc="normal10" :radius="12" :gap="10" class="w100">
             <el-flex rules="ccs" :gap="2">
@@ -631,7 +508,7 @@ function issueText(issue: SceneCompileIssue) {
               :model-value="scene.extraDetails || ''"
               type="textarea"
               :rows="3"
-              :placeholder="translate('modules.scene.fields.extraDetails.placeholder', 'Add optional scene-specific instructions, constraints, or context.')"
+              :placeholder="translate('modules.scene.editor.extraDetailsPlaceholder', 'Add optional scene-specific instructions, constraints, or context.')"
               :editor-id="sceneEditorId(scene, 'extraDetails')"
               support-variables
               @update:model-value="updateScene(sceneIndex, { extraDetails: String($event || '') })"
