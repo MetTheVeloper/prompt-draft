@@ -60,7 +60,7 @@ const emit = defineEmits<{
 }>();
 
 const targetCatalog = useModuleEntityTargets(() => props.targetPolicy);
-const collapsedEntityIds = ref<string[]>([]);
+const collapsedEntityIds = ref<string[]>(props.modelValue.map((entity) => entity.id));
 const selectedCategories = ref<Record<string, string>>({});
 const listExpanded = ref(true);
 
