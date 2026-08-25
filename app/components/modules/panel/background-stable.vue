@@ -1,22 +1,41 @@
 <script setup lang="ts">
-import { ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 import type { ModuleValues, PromptKeyModule } from "../../../modules/types";
 import type { ModuleOutputValue } from "../../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../../utils/promptValidation";
+import type { ModuleEntityPayload } from "~/modules/entityContracts";
+import {
+  getGlobalModuleValues,
+  getModuleEntities,
+  getModuleEntityTargetPolicy,
+  setModuleEntities,
+} from "~/modules/entityContracts";
+import { getSceneEntities } from "~/utils/scene";
+import { compileBackgroundModule } from "~/utils/compileBackground";
+import { compileSceneResourceModule } from "~/utils/compileSceneResource";
 import BackgroundPanel from "./background.vue";
+import ModuleEntitiesField from "../shared/ModuleEntitiesField.vue";
 
 type ModulePanelState = {
   isCustomMode?: boolean;
   activePresetId?: string | null;
 };
 
-const props = defineProps<{
-  module: PromptKeyModule;
-  modelValue?: ModuleValues;
-  panelState?: ModulePanelState;
-  aspectRatio?: string;
-  previewOutput?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    module: PromptKeyModule;
+    modelValue?: ModuleValues;
+    panelState?: ModulePanelState;
+    aspectRatio?: string;
+    previewOutput?: string;
+    modules?: PromptKeyModule[];
+    moduleValues?: Record<string, ModuleValues>;
+  }>(),
+  {
+    modules: () => [],
+    moduleValues: () => ({}),
+  },
+);
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: ModuleValues): void;
@@ -101,29 +120,88 @@ watch(
   { deep: true },
 );
 
+const globalValues = computed(() => getGlobalModuleValues(modelSnapshot.value));
+const entities = computed(() =>
+  getModuleEntities<ModuleEntityPayload>(modelSnapshot.value),
+);
+const targetPolicy = computed(() => getModuleEntityTargetPolicy(props.module));
+const customMode = computed(() => Boolean(panelSnapshot.value?.isCustomMode));
+
+const referencedEntityIds = computed(() => {
+  const sceneActive = props.modules.some((module) => module.key === "scene");
+  const layoutActive = props.modules.some((module) => module.key === "layout");
+  if (!sceneActive || !layoutActive) return [];
+
+  const seen = new Set<string>();
+
+  return getSceneEntities(props.moduleValues.scene || {})
+    .filter((scene) => scene.enabled !== false)
+    .flatMap((scene) => scene.components)
+    .filter((ref) => ref.moduleKey === props.module.key)
+    .map((ref) => ref.entityId)
+    .filter((entityId) => {
+      if (!entityId || seen.has(entityId)) return false;
+      seen.add(entityId);
+      return true;
+    });
+});
+
+const output = computed(() =>
+  compileSceneResourceModule(props.module, modelSnapshot.value, {
+    customMode: customMode.value,
+    referencedEntityIds: referencedEntityIds.value,
+    compileValues: compileBackgroundModule,
+  }),
+);
+
+const displayPreview = computed(() => props.previewOutput || output.value);
+
+watch(
+  output,
+  (value) => emit("update:output", value),
+  { immediate: true },
+);
+
 function handleModelValue(value: ModuleValues) {
   const nextValue = cloneValue(value);
+  modelSnapshot.value = nextValue;
   rememberPending(pendingModelEchoes, stateSignature(nextValue));
   emit("update:modelValue", nextValue);
 }
 
 function handlePanelState(value: ModulePanelState) {
   const nextValue = cloneValue(value);
+  panelSnapshot.value = nextValue;
   rememberPending(pendingPanelEchoes, stateSignature(nextValue));
   emit("update:panelState", nextValue);
+}
+
+function updateEntities(nextEntities: typeof entities.value) {
+  handleModelValue(setModuleEntities(modelSnapshot.value, nextEntities));
 }
 </script>
 
 <template>
-  <BackgroundPanel
-    :module="module"
-    :model-value="modelSnapshot"
-    :panel-state="panelSnapshot"
-    :aspect-ratio="aspectRatio"
-    :preview-output="previewOutput"
-    @update:model-value="handleModelValue"
-    @update:panel-state="handlePanelState"
-    @update:output="emit('update:output', $event)"
-    @update:issues="emit('update:issues', $event)"
-  />
+  <el-flex rules="ccs" class="w100" :gap="12">
+    <BackgroundPanel
+      :module="module"
+      :model-value="modelSnapshot"
+      :panel-state="panelSnapshot"
+      :aspect-ratio="aspectRatio"
+      :preview-output="displayPreview"
+      @update:model-value="handleModelValue"
+      @update:panel-state="handlePanelState"
+      @update:issues="emit('update:issues', $event)"
+    />
+
+    <ModuleEntitiesField
+      v-show="!customMode"
+      :module="module"
+      :global-values="globalValues"
+      :model-value="entities"
+      :target-policy="targetPolicy"
+      allow-presets
+      @update:model-value="updateEntities"
+    />
+  </el-flex>
 </template>
