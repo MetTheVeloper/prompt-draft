@@ -166,6 +166,12 @@ const customTextValue = computed(() =>
   typeof values.value.customText === "string" ? values.value.customText.trim() : "",
 );
 
+const { isCollapseLocked, togglePanel } = useModulePanelCollapseGuard({
+  expanded: isPanelExpanded,
+  isCustomMode: () => isCustomMode.value,
+  getCustomValue: () => customTextValue.value,
+});
+
 function emitModel(nextValue: ModuleValues) {
   const next = normalizeModel(nextValue);
   modelSnapshot.value = next;
@@ -303,10 +309,6 @@ const statusLabel = computed(() => {
   return t("panel.statusEmpty");
 });
 
-function togglePanel() {
-  isPanelExpanded.value = !isPanelExpanded.value;
-}
-
 async function copyOutput() {
   if (!displayOutput.value) return;
   try {
@@ -333,6 +335,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
   getTitle: () => moduleTitle.value,
   getExpanded: () => isPanelExpanded.value,
   onToggleExpand: togglePanel,
+  canToggleExpand: () => !isCollapseLocked.value,
   getCustomMode: () => isCustomMode.value,
   onToggleCustomize: () => toggleCustomMode(!isCustomMode.value),
   canCopyOutput: () => Boolean(displayOutput.value),
@@ -402,6 +405,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
               mode="flat"
               color="prim"
               :p="8"
+              :disable="isCollapseLocked"
               :icon="!isPanelExpanded ? 'expand_more' : 'expand_less'"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
               @click="togglePanel"
