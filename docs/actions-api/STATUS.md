@@ -10,6 +10,8 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
+Current implementation checkpoint: action runtime foundation implemented; create-page adoption still pending.
+
 ## Completed
 
 ### Phase 0 — audit and scope
@@ -33,42 +35,91 @@ Last source audit: 2026-08-27
 
 ### 1A. Draft contracts
 
-- [ ] Introduce reusable `PromptDraftState` and `ModulePanelState` contracts outside `create.vue`.
-- [ ] Add canonical default/clone/normalize/apply helpers.
-- [ ] Keep persistence timestamps/collection metadata outside the pure state contract.
-- [ ] Reuse the extracted contract from `create.vue` without changing runtime behavior.
+- [x] Introduce reusable `PromptDraftState` and `ModulePanelState` contracts outside `create.vue`.
+- [x] Separate canonical draft state from timestamp/record/collection persistence metadata.
+- [x] Add headless default/clone/normalize helpers.
+- [ ] Reuse the extracted contracts/helpers from `create.vue` without changing runtime behavior.
+- [ ] Remove the duplicate local draft-state type definitions from `create.vue` after adoption.
+
+Implemented files:
+
+- `app/modules/promptDraft.types.ts`
+- `app/utils/promptDraftState.ts`
 
 ### 1B. Action runtime primitives
 
-- [ ] Define `ActionIssue`.
-- [ ] Define `ActionExecutionResult`.
-- [ ] Define `ActionContext`.
-- [ ] Define typed `ActionDefinition`.
-- [ ] Implement registry `register/get/has/list/execute`.
-- [ ] Reject duplicate action IDs.
-- [ ] Return structured failure for unknown actions.
-- [ ] Guarantee failed action execution returns the original draft state.
+- [x] Define `ActionIssue`.
+- [x] Define `ActionExecutionResult`.
+- [x] Define `ActionContext`.
+- [x] Define typed `ActionDefinition`.
+- [x] Define repository-owned input schema metadata.
+- [x] Implement headless input validation.
+- [x] Implement registry `register/get/has/list/execute`.
+- [x] Reject duplicate/empty action IDs.
+- [x] Return structured failure for unknown actions.
+- [x] Guarantee failed action execution returns the original draft state.
+- [x] Isolate `canExecute` and `execute` from the caller draft through cloned contexts.
+- [x] Convert unexpected execution exceptions to structured runtime issues.
+- [x] Add a single public export surface at `app/actions/index.ts`.
+
+Implemented files:
+
+- `app/actions/types.ts`
+- `app/actions/inputSchema.ts`
+- `app/actions/registry.ts`
+- `app/actions/index.ts`
 
 ### 1C. Tests
 
-- [ ] Draft clone/normalization tests.
-- [ ] Registry discovery tests.
-- [ ] Duplicate registration test.
-- [ ] Successful execution test.
-- [ ] Expected domain rejection test.
-- [ ] Unknown action test.
-- [ ] Verify no Vue/component dependency is required by the runtime tests.
+- [x] Add draft clone/normalization tests.
+- [x] Add registry discovery tests.
+- [x] Add duplicate registration test.
+- [x] Add successful execution/immutability test.
+- [x] Add schema validation/no-execution test.
+- [x] Add expected `canExecute` rejection/atomicity test.
+- [x] Add failed action rollback-to-original test.
+- [x] Add unknown action test.
+- [x] Add thrown action structured-failure test.
+- [x] Add `pnpm test:actions-api` script.
+- [x] Confirm the runtime foundation itself has no Vue/component runtime dependency.
+- [x] Run a local Node 22 headless smoke harness for normalize/clone and atomic registry success/failure (3/3 passed).
+- [ ] Run the repository's exact `pnpm test:actions-api` suite in the project checkout/runtime.
+
+Test file:
+
+- `scripts/actions-api.test.ts`
 
 ## Phase 1 exit gate
 
 Phase 1 is complete only when:
 
 - [ ] `create.vue` no longer owns duplicate definitions of the canonical draft-state contract;
-- [ ] the Actions runtime is headless and tested;
-- [ ] no existing draft persistence behavior changes;
-- [ ] no compiler output behavior changes;
-- [ ] no new persisted schema version is introduced;
-- [ ] the next low-risk domain extraction (Variables) can be implemented without changing the runtime architecture.
+- [x] the Actions runtime is headless;
+- [ ] the exact repository Actions API test suite passes in the project runtime;
+- [x] current branch changes do not modify prompt compiler code;
+- [x] no new persisted schema version is introduced;
+- [ ] create-page persistence/import/export behavior is confirmed unchanged after adoption;
+- [x] the next low-risk domain extraction (Variables) can use the runtime without changing its architecture.
+
+## Current branch delta
+
+At the foundation checkpoint the branch is additive relative to its main baseline:
+
+- Actions runtime files added;
+- canonical draft-state contracts/helpers added;
+- isolated tests added;
+- `/docs/actions-api` source-of-truth set added;
+- one package test script added;
+- no compiler file changed;
+- no existing domain schema changed;
+- `main` not modified by this work.
+
+## Next work in Phase 1
+
+1. Adopt the shared draft contracts/helpers in `create.vue` with behavior-preserving changes only.
+2. Run `pnpm test:actions-api` in the project runtime.
+3. Re-check draft import/export/autosave behavior.
+4. Close Phase 1 and open Phase 2 with Variables as the first canonical write service.
 
 ## Next planned phase
 
