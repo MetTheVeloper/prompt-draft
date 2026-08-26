@@ -8,6 +8,7 @@
     "generate": "nuxt generate && tsx scripts/generate-offline-manifest.ts",
     "preview": "nuxt preview",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
+    "test:phase8-ux": "node --test scripts/phase8-ux-regression.test.mjs",
     "postinstall": "nuxt prepare",
     "locale:consolidate": "node scripts/localization-consolidate.mjs",
     "locale:audit": "node scripts/localization-audit.mjs all",
