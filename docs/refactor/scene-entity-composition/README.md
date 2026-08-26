@@ -1,9 +1,9 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 7 — catalog architecture and consumer migration complete; Phase 7.5 running-app/regression validation is current
+> **Status:** Phase 8 — UX consolidation is in progress; Phase 7 catalog generalization is complete and accepted
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
-> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `eafbe3be6dc27f6cebb884c862742396279509c1` for remote testing after Style implementation. All subsequent refactor work resumes on the working branch only; do not move `main` again without explicit user approval.
+> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `6fce091bc77a4c842005bb390f64af015cf94df8` for Phase 7 running-app testing. Phase 7 was accepted after no regressions were observed in the tested paths. Phase 8 development resumes on the working branch only; do not move `main` again without explicit user approval.
 
 ## Source-of-truth rule
 
@@ -526,7 +526,7 @@ General requirements for each conversion:
 - [x] Generic `compileSceneResourceModule()` introduced.
 - [x] Unused Framing entities stay out of prompt.
 - [x] Scene-referenced Framing entities emit `{framing_*}` definitions.
-- [x] Scene wording: `Frame this scene with {framing_*}.`
+- [x] Scene wording: `Frame this scene with {framing_*}`.
 - [x] Rename/delete/disable/Layout-off behavior validated.
 - [x] Real multi-scene comic image validates different Framing configurations across Scenes.
 
@@ -534,7 +534,7 @@ General requirements for each conversion:
 
 ### Phase 6.2 — Background
 
-Background is specialized because its existing global panel and `compileBackgroundModule()` produce module-specific natural-language clauses and custom-input behavior.
+Background is specialized because its existing global panel and `compileBackgroundModule()` produce module-specific natural-language clauses and custom-input behavior that must remain backward compatible.
 
 Implementation:
 
@@ -677,7 +677,7 @@ Implementation:
 - [x] Form, Camera, Framing, Style, Background, Lighting, Effects, and Texture no longer render Named Configurations inline below the Global/default panel.
 - [x] `ModuleEntitiesPanelShell.vue` provides one shared compact header launcher with an entity count and FAB.
 - [x] `useModuleEntitiesModal()` opens the correct existing generic or specialized entity editor in the project's global modal system.
-- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls changes back.
+- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls back edits.
 - [x] Generic and specialized editor logic is reused directly; no modal-specific editor copies exist.
 - [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
 - [x] Existing Named Configuration entity cards start collapsed whenever the workspace opens; the list remains visible and newly added configurations open immediately for editing.
@@ -694,7 +694,7 @@ Implementation:
 
 ---
 
-# Current phase
+# Completed Phase 7
 
 ## Phase 7 — Generalize semantic/reference catalog
 
@@ -767,7 +767,7 @@ Implemented infrastructure:
 - `app/utils/sceneReferenceCatalog.ts` — stable Layout Region → Scene adapter using `scene:${entityId}` plus an explicitly separate compatibility-only legacy `{scene_*}` token lookup for drafts that do not yet have a stable `contentRef`;
 - `scripts/reference-catalog.test.ts` — regression coverage for rename, missing, unavailable, no token/name retarget, duplicate identity, capability filtering, semantic entity IDs, module-scope isolation, Scene stable refs, and legacy Scene-token migration boundaries.
 
-The isolated runtime resolver/catalog validation currently passes **15/15** invariants. Full Nuxt/running-app regression remains part of Phase 7.5.
+The isolated runtime resolver/catalog validation passes **15/15** invariants.
 
 ### Phase 7.4 — Migrate consumers incrementally
 
@@ -790,39 +790,115 @@ Consumer-boundary audit after migration:
 
 - Texture / Material targets and exceptions both flow through `MaterialAssignmentsField → AssignmentScopeEditor → useSemanticTargetCatalog`; no parallel material-only reference resolver remains;
 - Typography, Hair, and Outfit export their existing stable domain `entityId` values through `promptVariableCatalog.ts` and attach semantic capabilities there, so they are consumed naturally by the semantic adapter and do not justify extra resolver layers;
-- no additional consumer migration is currently justified merely for abstraction symmetry.
-
-**Result:** source migration complete; proceed to Phase 7.5 validation.
+- no additional consumer migration is justified merely for abstraction symmetry.
 
 ### Phase 7.5 — Validation and exit gate
 
-- [ ] Verify old drafts and current branch drafts resolve the same valid targets/references after migration.
-- [ ] Verify rename keeps stable references intact in the running app across every migrated stable-reference path.
-- [ ] Verify delete/disable leaves references missing/unavailable rather than silently retargeting across every migrated consumer.
-- [ ] Verify Scene, Form, Texture, Layout, and other migrated consumers expose the same eligible choices as before unless an explicit bug is documented and intentionally fixed.
-- [ ] Confirm prompt output remains behaviorally unchanged for accepted Phase 2–6 scenarios.
-- [x] Update this source of truth with the final catalog architecture and complete migrated consumer list.
+- [x] Old/current draft reference behavior accepted in running-app testing; no regression was observed in the tested paths.
+- [x] Stable rename behavior accepted in the tested migrated paths.
+- [x] Delete/disable behavior accepted; no silent retarget regression was observed.
+- [x] Scene, Form, Texture, Layout, and migrated picker eligibility behavior accepted for the tested workflows.
+- [x] No behavioral prompt-output regression was observed in the tested Phase 2–6 workflows.
+- [x] Source of truth records the final catalog architecture and migrated consumer list.
 
-Static validation checkpoint:
+Validation checkpoint:
 
 - isolated resolver/catalog runtime harness passes **15/15** identity, rename, unavailable, missing, scope-isolation, and legacy-migration invariants;
-- branch comparison from Phase 7 start (`04874f5`) through the migration checkpoint changes only catalog utilities, picker/composable plumbing, tests, package script, and this document;
+- branch comparison from Phase 7 start (`04874f5`) through the migration checkpoint changed only catalog utilities, picker/composable plumbing, tests, package script, and documentation;
 - no prompt compiler file or persistence/domain schema/type file was changed by Phase 7;
-- GitHub reports no CI/status checks for the current branch commits;
-- a full Nuxt checkout/build could not be executed in the current tool environment because direct GitHub network access is unavailable, so running-app regression remains the acceptance gate.
+- GitHub reported no CI/status checks for the Phase 7 branch commits;
+- the user completed running-app testing from the `main` deployment checkpoint and reported no visible issue in the tested paths, then explicitly accepted closing Phase 7.
 
-**Result:** in progress — catalog architecture and source migration are complete; running-app regression/acceptance is current.
+**Result:** complete and accepted.
+
+---
+
+# Current phase
+
+## Phase 8 — UX consolidation
+
+Phase 8 consolidates repeated editor/picker presentation and interaction patterns **without changing domain semantics, compiler output, stable identity, or persisted payload shape**. Shared chrome should become reusable; specialized editor bodies stay specialized.
+
+Approved working boundary:
+
+```text
+Shared collection/card/editor chrome
+  • list header/count/add/collapse
+  • entity card title/summary/status/actions
+  • common mobile presentation rules
+  • reusable missing/unavailable presentation/actions
+        ↓ slots / adapters
+Domain-specific editor body
+  • generic scalar fields
+  • LightSourcesField
+  • EffectLayersField
+  • MaterialAssignmentsField
+  • Scene component semantics
+  • Hair/Outfit/Typography structured semantics
+```
+
+### Phase 8.1 — Audit editor and picker UX families
+
+- [x] Audit generic `ModuleEntitiesField.vue` against specialized Lighting, Effects, and Texture entity editors.
+- [x] Confirm the repeated collection/card chrome is structurally the same while structured editor bodies are genuinely specialized.
+- [x] Audit `SceneEntitiesField.vue` as a related collection/card pattern without forcing `SceneEntity` into the `ModuleEntity` payload contract.
+- [ ] Audit Hair, Outfit, and Typography collection/card patterns for safe shell reuse.
+- [ ] Audit semantic assignment, Scene component, and Layout Region → Scene picker presentation for common missing/unavailable recovery patterns.
+- [ ] Audit generic field rendering for custom/freeform companion-value sidecars before attempting to remove adapter cases.
+
+Initial audit result:
+
+- `ModuleEntitiesField.vue`, `LightingEntitiesField.vue`, `EffectsEntitiesField.vue`, and `TextureEntitiesField.vue` duplicated collection header/count/add/collapse UI and entity card title/status/actions;
+- Lighting, Effects, and Texture must keep their structured body editors (`LightSourcesField`, `EffectLayersField`, `MaterialAssignmentsField`) unchanged;
+- Scene shares collection/card interaction patterns but remains a separate domain model and should consume only payload-agnostic UX primitives;
+- consolidation should proceed from shared chrome inward rather than creating one universal entity editor.
+
+### Phase 8.2 — Consolidate Named Configuration collection/card chrome
+
+- [x] Add `ModuleEntitiesCollectionShell.vue` for shared Named Configurations collection header/count/add/collapse chrome.
+- [x] Add `ModuleEntityCardShell.vue` for shared entity title/summary/enabled/duplicate/remove/expand chrome.
+- [x] Migrate `LightingEntitiesField.vue` to the shared shells while preserving `LightSourcesField` and existing preset/inheritance behavior.
+- [x] Migrate `EffectsEntitiesField.vue` to the shared shells while preserving `EffectLayersField`, presets, and Independent Effects behavior.
+- [x] Migrate `TextureEntitiesField.vue` to the shared shells while preserving `MaterialAssignmentsField`, assignment target/exception semantics, and Independent Texture behavior.
+- [ ] Migrate generic `ModuleEntitiesField.vue` to the same shells.
+- [ ] Evaluate Scene/Hair/Outfit/Typography for payload-agnostic shell reuse after their domain-specific audit.
+- [ ] Consolidate duplicated entity collection lifecycle logic only after the visual shell boundary is proven stable across consumers.
+
+### Phase 8.3 — Missing/unavailable reference recovery UX
+
+- [ ] Define one presentation contract for resolved/unavailable/missing references on top of the Phase 7 resolver states.
+- [ ] Provide explicit user actions such as remove/replace where useful; replacement must always be user-selected.
+- [ ] Never use token/name fallback to rescue an existing missing stable reference.
+- [ ] Preserve specialized picker semantics such as Texture exclusive scopes and Scene cardinality.
+
+### Phase 8.4 — Mobile validation and responsive consolidation
+
+- [ ] Validate Named Configurations modal/card shells on narrow mobile widths.
+- [ ] Validate nested structured editors, dropdowns/multi-selects, long tokens/labels, and action rows.
+- [ ] Consolidate responsive rules in shared shells only where all consumers benefit from the same behavior.
+- [ ] Re-check Scene and Layout editors separately because their interaction density differs from Named Configurations.
+
+### Phase 8.5 — Generic custom/freeform sidecar audit
+
+- [ ] Inventory module fields whose selected option owns a companion authored value such as `field` + `fieldCustom`.
+- [ ] Determine whether generic entity payload editing can preserve these pairs without module-specific wrappers.
+- [ ] Add generic sidecar support only if persistence and compiler semantics remain byte-for-byte compatible.
+- [ ] Keep structured fields specialized; sidecar support must not become a reason to flatten Lighting/Effects/Texture state.
+
+### Phase 8.6 — Validation and exit gate
+
+- [ ] Confirm editor consolidation does not change persisted entity/Scene state for equivalent interactions.
+- [ ] Confirm Named Configuration add/edit/duplicate/remove/enabled/independent/preset behavior remains unchanged.
+- [ ] Confirm specialized structured editors remain canonical and fully functional.
+- [ ] Confirm mobile workflows are usable and no action controls become inaccessible.
+- [ ] Confirm missing/unavailable references remain explicit and never auto-retarget.
+- [ ] Confirm prompt output remains behaviorally unchanged after UX-only consolidation.
+
+**Result:** in progress — audit started and the first shared collection/card primitives are now used by Lighting, Effects, and Texture. Generic editor, broader domain audit, recovery UX, mobile validation, and sidecar consolidation remain open.
 
 ---
 
 # Later phases
-
-## Phase 8 — UX consolidation
-
-- [ ] Consolidate entity editor/reference picker patterns.
-- [ ] Validate mobile behavior.
-- [ ] Improve missing-reference recovery UX.
-- [ ] Audit generic entity support for module-specific custom-input sidecars and other specialized field patterns.
 
 ## Phase 9 — Regression and migration
 
@@ -990,3 +1066,4 @@ Selected configuration payloads are defined by owning modules and are never repe
 28. Shared semantic/reference catalog work must preserve canonical identities and module-specific eligibility rules; consolidation must never silently change target/reference meaning.
 29. Update this document with architectural changes and phase status.
 30. Legacy token matching is compatibility-only and may upgrade a reference only when no stable reference exists; it must never rescue or retarget a missing stable reference.
+31. UX consolidation may share editor chrome and interaction primitives, but it must not flatten specialized structured payloads or turn unrelated domain models into one universal editor contract.
