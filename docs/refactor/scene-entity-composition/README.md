@@ -1,9 +1,9 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 9 — regression and migration is in progress; Phase 8 UX consolidation is complete and accepted
+> **Status:** Phase 10 — merge readiness is current; Phase 9 regression and migration is complete and accepted
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
-> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `6fce091bc77a4c842005bb390f64af015cf94df8` for Phase 7 running-app testing. Phase 7 was accepted there. Phase 8 was completed and accepted after branch-only running-app, narrow-mobile, recovery, custom-input, and Custom Override UX validation. Phase 9 continues on the working branch only; do not move `main` again without explicit user approval.
+> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `6fce091bc77a4c842005bb390f64af015cf94df8` for Phase 7 running-app testing. Phase 7 was accepted there. Phase 8 was completed and accepted after branch-only running-app, narrow-mobile, recovery, custom-input, and Custom Override UX validation. Phase 9 was completed and accepted after the 9/9 compiler-regression harness and full practical migration/output checks passed. Phase 10 remains on the working branch; do not move `main` again without explicit user approval.
 
 ## Source-of-truth rule
 
@@ -189,7 +189,7 @@ scene-resource.vue
 compileSceneResourceModule()
 ```
 
-Framing and Style are direct generic Scene-resource cases. Style continues using the standard Base panel and generic `compileModule()` semantics; its named configurations therefore need no specialized compiler adapter.
+Framing and Style are direct generic Scene-resource cases. Style continues using the standard Base Key Module panel and generic `compileModule()` semantics; its named configurations therefore need no specialized compiler adapter.
 
 Background is an explicit adapter case because its existing global panel and compiler have specialized custom-input/natural-language behavior that must remain backward compatible.
 
@@ -968,23 +968,23 @@ Validation checkpoint:
 
 ---
 
-# Current phase
+# Completed Phase 9
 
 ## Phase 9 — Regression and migration
 
 Phase 9 verifies that the completed architecture remains backward compatible at persistence and prompt-output boundaries and that old non-Scene workflows remain stable.
 
-- [x] Old drafts load without destructive migration at the source/persistence contract level.
+- [x] Old drafts load without destructive migration at the source/persistence contract level and in practical testing.
 - [x] Prompts without Scenes retain the pre-refactor core formatter and entity-aware compilers preserve legacy/global output when no Scene consumes a named resource.
 - [x] Existing Layout/Pose/Expression/Color/Material compiler implementations remain unchanged from the refactor baseline.
-- [ ] Re-validate typed user `reference` ownership and Setup alias restoration in the runtime regression pass.
-- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style/Effects/Texture definitions across Modular/Natural/JSON as applicable.
-- [x] Import/export JSON implementation remains unchanged from the refactor baseline; no explicit migration is currently required.
-- [ ] Final user acceptance tests.
+- [x] Typed user `reference` ownership and Setup alias restoration were re-validated through the regression harness and running-app workflow.
+- [x] Scene-local Form/Camera/Framing/Background/Lighting/Style/Effects/Texture definitions were re-validated across Modular/Natural/JSON as applicable in the practical Phase 9 pass.
+- [x] Import/export JSON implementation remains unchanged from the refactor baseline; no explicit migration is required.
+- [x] Final Phase 9 user acceptance tests passed without visible regression.
 
 ### Phase 9.1 — Static compatibility audit
 
-Current findings:
+Findings:
 
 - `app/pages/create.vue` is the same Git blob as baseline `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`; draft storage, legacy v1 localStorage restoration, active-draft snapshots, and JSON import/export were not rewritten by the Scene/entity refactor;
 - draft `moduleValues` remain opaque module-owned state at the persistence boundary, so old drafts without optional `entities`, Scene state, or stable Region `contentRef` do not require destructive schema migration;
@@ -994,7 +994,7 @@ Current findings:
 - Form explicitly returns byte-equivalent scalar output for legacy/no-entity state; Camera and generic Scene resources return their normal global output when no active Scene references a named entity;
 - Scene-resource named definitions remain demand-driven and therefore unused named state cannot leak into old prompts.
 
-### Phase 9.2 — Regression harness
+### Phase 9.2 — Regression harness and runtime acceptance
 
 Added `scripts/phase9-compiler-regression.test.ts` and package command:
 
@@ -1013,21 +1013,62 @@ The harness checks:
 - typed user `reference` ownership stays reversible because the core regenerates system variables before ownership filtering on each compile;
 - Scene presentation aliases remain format-specific for Modular/Natural/JSON without modifying the baseline core.
 
-GitHub has no CI/status check configured for this branch, so this regression command plus the remaining running-app format/UAT pass are the next Phase 9 gate.
+Acceptance checkpoint:
 
-**Result:** in progress — static migration compatibility is strong; runtime regression, three-format Scene-local output validation, and final user acceptance remain open.
+- `pnpm test:phase9-regression` passed **9/9** tests with zero failures, skips, cancellations, or TODOs;
+- old-draft loading and current draft JSON export/import were tested successfully;
+- no-Scene prompt behavior with unused Named Configurations remained clean;
+- typed user `reference` ownership suppressed generated aliases while active and restored them after disabling the user variable;
+- a Scene + Layout workflow was re-checked across Modular, Natural, and JSON output without Scene payload duplication or stable-ID leakage;
+- Layout Off/On preserved Scene and Named Configuration state while correctly gating Scene-derived output;
+- the user reported that all practical Phase 9 checks were correct and explicitly approved closing Phase 9;
+- GitHub has no configured CI/status checks for the branch, so the accepted local harness and running-app validation are the authoritative regression gate for this phase.
+
+**Result:** complete and accepted.
 
 ---
 
-# Later phases
+# Current phase
 
 ## Phase 10 — Merge readiness
 
-- [ ] Rebase/validate against intended `main` if required.
-- [ ] Verify no unrelated changes.
-- [ ] Finalize docs.
+Phase 10 does not introduce new product behavior. It verifies that the accepted working branch can be synchronized to the intended `main` without hidden divergence or unrelated changes.
+
+- [x] Validate against intended `main`; no rebase is required while `main` remains at the Phase 7 deployment checkpoint.
+- [x] Verify the remaining branch diff contains only accepted Phase 8 UX work, Phase 8/9 regression tests, package test scripts, and this source-of-truth documentation.
+- [x] Finalize the refactor source-of-truth documentation through the accepted Phase 9 result and merge-readiness audit.
 - [ ] Receive explicit final user approval for final branch synchronization.
-- [ ] Move/merge remaining branch work to `main` only after that approval.
+- [ ] Move/fast-forward the remaining working-branch commits to `main` only after that approval.
+
+### Phase 10.1 — Branch divergence and scope audit
+
+Current merge-readiness checkpoint:
+
+- intended target `main` remains at `6fce091bc77a4c842005bb390f64af015cf94df8`, the explicitly approved Phase 7 deployment checkpoint;
+- the working branch was **34 commits ahead and 0 commits behind** `main` at the start of Phase 10;
+- the merge base is exactly `main@6fce091`, so no rebase or conflict-resolution step is required while `main` remains unchanged;
+- the remaining `main → working branch` diff contains 23 files, all attributable to accepted Phase 8 UX consolidation/recovery/collapse behavior, Phase 8/9 regression tests, package test scripts, and this documentation;
+- no new compiler, domain schema/type, draft persistence/import-export, or migration implementation is present in the post-Phase-7 diff;
+- current GitHub combined status has zero configured status checks, so there is no external CI gate to wait for;
+- the accepted Phase 8 running-app/mobile validation and Phase 9 9/9 regression + practical UAT provide the final local validation evidence.
+
+### Phase 10.2 — Synchronization rule
+
+The branch is technically fast-forwardable to `main`, but synchronization is intentionally not automatic.
+
+```text
+No explicit final user approval
+→ keep main at 6fce091
+→ keep accepted Phase 8/9/10 readiness commits on refactor/scene-entity-composition
+
+Explicit final user approval
+→ re-check main has not moved
+→ re-check working branch is still 0 commits behind
+→ fast-forward main to the latest accepted working-branch HEAD
+→ do not force-push
+```
+
+**Result:** merge-ready pending explicit final approval for `main` synchronization.
 
 ---
 
@@ -1184,3 +1225,4 @@ Selected configuration payloads are defined by owning modules and are never repe
 35. A module panel with Custom Override active and an empty authored custom value is non-collapsible and must stay open until the user enters a non-empty value or disables Custom Override.
 36. The accepted Phase 8 consolidation boundary stops at shared chrome/recovery/sidecar behavior; do not centralize entity mutation lifecycle merely to remove superficial function duplication.
 37. Regression/migration work treats baseline persistence, the baseline prompt-output core, and unchanged legacy compilers as protected compatibility surfaces.
+38. Phase 10 synchronization must re-check `main` immediately before moving it; fast-forward only, never force-update, and only after explicit final user approval.
