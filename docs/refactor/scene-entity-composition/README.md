@@ -1,9 +1,9 @@
 # Scene & Entity Composition Refactor
 
-> **Status:** Phase 8 — UX consolidation is in progress; Phase 7 catalog generalization is complete and accepted
+> **Status:** Phase 9 — regression and migration is in progress; Phase 8 UX consolidation is complete and accepted
 > **Working branch:** `refactor/scene-entity-composition`
 > **Baseline main commit:** `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`
-> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `6fce091bc77a4c842005bb390f64af015cf94df8` for Phase 7 running-app testing. Phase 7 was accepted after no regressions were observed in the tested paths. Phase 8 development resumes on the working branch only; do not move `main` again without explicit user approval.
+> **Deployment checkpoint:** `main` was explicitly fast-forwarded to `6fce091bc77a4c842005bb390f64af015cf94df8` for Phase 7 running-app testing. Phase 7 was accepted there. Phase 8 was completed and accepted after branch-only running-app, narrow-mobile, recovery, custom-input, and Custom Override UX validation. Phase 9 continues on the working branch only; do not move `main` again without explicit user approval.
 
 ## Source-of-truth rule
 
@@ -677,7 +677,7 @@ Implementation:
 - [x] Form, Camera, Framing, Style, Background, Lighting, Effects, and Texture no longer render Named Configurations inline below the Global/default panel.
 - [x] `ModuleEntitiesPanelShell.vue` provides one shared compact header launcher with an entity count and FAB.
 - [x] `useModuleEntitiesModal()` opens the correct existing generic or specialized entity editor in the project's global modal system.
-- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls back edits.
+- [x] Modal edits are live and immediately update canonical module state and compiled output; dismissing the modal never rolls changes back.
 - [x] Generic and specialized editor logic is reused directly; no modal-specific editor copies exist.
 - [x] Desktop modal width and mobile near-full-screen sizing use the existing global modal scroll container.
 - [x] Existing Named Configuration entity cards start collapsed whenever the workspace opens; the list remains visible and newly added configurations open immediately for editing.
@@ -813,7 +813,7 @@ Validation checkpoint:
 
 ---
 
-# Current phase
+# Completed Phase 8
 
 ## Phase 8 — UX consolidation
 
@@ -865,14 +865,14 @@ Audit result:
 - [x] Migrate `TextureEntitiesField.vue` to the shared shells while preserving `MaterialAssignmentsField`, assignment target/exception semantics, and Independent Texture behavior.
 - [x] Migrate generic `ModuleEntitiesField.vue` to the same shells while preserving target policy, preset, compatibility, inheritance, and payload behavior.
 - [x] Evaluate Scene/Hair/Outfit/Typography for payload-agnostic shell reuse and keep specialized domain card systems separate where their lifecycle does not match the Named Configuration contract.
-- [ ] Consolidate duplicated entity collection lifecycle logic only after running-app validation proves that another logic abstraction has enough common semantics to justify itself.
+- [x] Re-evaluate duplicated entity collection lifecycle logic after running-app validation and intentionally keep mutation lifecycle local; another composable would mostly relocate add/duplicate/remove/expand state mutation without adding shared semantic capability and would increase regression surface.
 
-Current shell boundary:
+Final shell boundary:
 
 - `ModuleEntitiesCollectionShell.vue` owns only collection-level presentation and add/collapse events;
 - `ModuleEntityCardShell.vue` owns only title/summary/enabled/duplicate/remove/expand presentation and events;
-- module editors still own create/clone/key generation, presets, inheritance, target policy, structured payloads, and normalization;
-- this intentionally avoids moving module semantics into a universal collection composable before the visual boundary is validated.
+- module editors keep create/clone/key generation, presets, inheritance, target policy, structured payloads, normalization, and mutation lifecycle local;
+- this is the accepted consolidation boundary rather than a temporary stop before a universal entity composable.
 
 ### Phase 8.3 — Missing/unavailable reference recovery UX
 
@@ -891,19 +891,19 @@ Implemented recovery boundary:
 
 ### Phase 8.4 — Mobile validation and responsive consolidation
 
-- [ ] Validate Named Configurations modal/card shells in the running app on narrow mobile widths.
-- [ ] Validate nested structured editors, dropdowns/multi-selects, long tokens/labels, and action rows in the running app.
+- [x] Validate Named Configurations modal/card shells in the running app on narrow mobile widths.
+- [x] Validate nested structured editors, dropdowns/multi-selects, long tokens/labels, and action rows in the running app.
 - [x] Consolidate source-level responsive rules in shared shells where all Named Configuration consumers benefit from the same behavior.
-- [ ] Re-check Scene and Layout editors in the running app because their interaction density differs from Named Configurations.
+- [x] Re-check Scene and Layout editors in the running app because their interaction density differs from Named Configurations.
 
-Source-level responsive changes / audit:
+Responsive implementation / validation:
 
-- `ModuleEntitiesCollectionShell.vue` now stacks collection title/description above the count/actions on mobile and lets the action row wrap;
-- `ModuleEntityCardShell.vue` now stacks title/summary above enabled/duplicate/remove/expand actions on mobile and lets the action row wrap;
-- generic Named Configuration field grids already collapse from two columns to one on mobile;
-- `LightSourcesField.vue`, `EffectLayersField.vue`, and `MaterialAssignmentsField.vue` retain their existing mobile one-column field layouts and compact add controls;
+- `ModuleEntitiesCollectionShell.vue` stacks collection title/description above the count/actions on mobile and lets the action row wrap;
+- `ModuleEntityCardShell.vue` stacks title/summary above enabled/duplicate/remove/expand actions on mobile and lets the action row wrap;
+- generic Named Configuration field grids collapse from two columns to one on mobile;
+- `LightSourcesField.vue`, `EffectLayersField.vue`, and `MaterialAssignmentsField.vue` retain their mobile one-column field layouts and compact add controls;
 - `ReferenceRecoveryList.vue` wraps recovery items and keeps labels/actions in a compact minimum-width-safe layout;
-- Scene card/action density and Layout modal density still require real narrow-viewport testing rather than being declared correct from source inspection alone.
+- the user completed narrow-mobile running-app validation including Named Configurations, structured editors, Scene, and Layout and reported no inaccessible control or visible functional issue.
 
 ### Phase 8.5 — Generic custom/freeform sidecar audit
 
@@ -924,7 +924,7 @@ customInput field
 → companion value lives at field.customInput.valueKey || `${field.id}Custom`
 ```
 
-Generic Named Configuration behavior now treats a `customInput` field and its companion value as one override bundle:
+Generic Named Configuration behavior treats a `customInput` field and its companion value as one override bundle:
 
 - enabling an inherited override copies the current global/default companion text when the selected value is custom;
 - enabling an Independent override starts from the field default and creates an empty companion when required;
@@ -934,39 +934,92 @@ Generic Named Configuration behavior now treats a `customInput` field and its co
 - inherited summaries display authored custom text when available;
 - compiler/schema/type contracts were not changed; existing `moduleFieldValues.ts` resolution remains canonical.
 
+Phase 8 also added one global module-panel UX invariant through `useModulePanelCollapseGuard.ts`:
+
+```text
+Custom Override active + authored custom value empty
+→ module panel is forced open
+→ header/button/context-menu collapse is disabled
+
+custom value becomes non-empty or Custom Override is disabled
+→ normal collapse behavior returns
+```
+
+This rule is presentation-only and does not change persisted custom mode, authored values, or compiler semantics.
+
 ### Phase 8.6 — Validation and exit gate
 
-- [ ] Confirm editor consolidation does not change persisted entity/Scene state for equivalent interactions.
-- [ ] Confirm Named Configuration add/edit/duplicate/remove/enabled/independent/preset behavior remains unchanged.
-- [ ] Confirm specialized structured editors remain canonical and fully functional.
-- [ ] Confirm mobile workflows are usable and no action controls become inaccessible.
-- [ ] Confirm missing/unavailable references remain explicit and never auto-retarget.
-- [ ] Confirm prompt output remains behaviorally unchanged after UX-only consolidation.
+- [x] Editor consolidation preserves persisted entity/Scene state for equivalent interactions in the tested workflows.
+- [x] Named Configuration add/edit/duplicate/remove/enabled/independent/preset behavior remains unchanged in running-app testing.
+- [x] Specialized structured editors remain canonical and fully functional.
+- [x] Mobile workflows are usable and action controls remain accessible in the tested narrow-width paths.
+- [x] Missing/unavailable references remain explicit and never auto-retarget in tested recovery workflows.
+- [x] Prompt output showed no behavioral regression from the UX-only consolidation in the tested workflows.
 
-Implementation checkpoint before running-app validation:
+Validation checkpoint:
 
-- shared Named Configuration collection/card chrome is used by generic, Lighting, Effects, and Texture editors;
-- generic `customInput` companion values are now editable in named configurations without a new compiler or persistence schema;
-- shared recovery presentation is active for semantic assignment scopes and Scene component references while Layout keeps its already-explicit specialized clear/replace path;
-- Hair, Outfit, and Typography were audited and intentionally remain specialized;
-- branch comparison for the latest Phase 8 subsection changes contains only UX/editor components and this documentation; no compiler or domain schema/type file was changed;
-- GitHub reports no commit status checks for the current Phase 8 branch head.
+- `scripts/phase8-ux-regression.test.mjs` locks shared-shell, structured-editor, resolver-backed recovery, Custom Override collapse-guard, and mobile-shell source boundaries;
+- the user completed the practical Phase 8 checklist across generic and structured Named Configurations, add/edit/duplicate/remove/enabled/independent/preset behavior, recovery, Scene, Layout, narrow-mobile UX, and prompt preview and reported no issue;
+- the Custom Override empty-state collapse lock was separately tested and accepted;
+- no Phase 8 compiler/domain schema/persistence migration was introduced;
+- no additional lifecycle abstraction is justified after validation because the remaining duplication is mutation ownership, not shared presentation semantics.
 
-**Result:** in progress — the planned source-level UX consolidation is substantially implemented. Running-app regression and narrow-mobile validation are the remaining Phase 8 exit gate before the phase can be accepted and closed.
+**Result:** complete and accepted.
+
+---
+
+# Current phase
+
+## Phase 9 — Regression and migration
+
+Phase 9 verifies that the completed architecture remains backward compatible at persistence and prompt-output boundaries and that old non-Scene workflows remain stable.
+
+- [x] Old drafts load without destructive migration at the source/persistence contract level.
+- [x] Prompts without Scenes retain the pre-refactor core formatter and entity-aware compilers preserve legacy/global output when no Scene consumes a named resource.
+- [x] Existing Layout/Pose/Expression/Color/Material compiler implementations remain unchanged from the refactor baseline.
+- [ ] Re-validate typed user `reference` ownership and Setup alias restoration in the runtime regression pass.
+- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style/Effects/Texture definitions across Modular/Natural/JSON as applicable.
+- [x] Import/export JSON implementation remains unchanged from the refactor baseline; no explicit migration is currently required.
+- [ ] Final user acceptance tests.
+
+### Phase 9.1 — Static compatibility audit
+
+Current findings:
+
+- `app/pages/create.vue` is the same Git blob as baseline `83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c`; draft storage, legacy v1 localStorage restoration, active-draft snapshots, and JSON import/export were not rewritten by the Scene/entity refactor;
+- draft `moduleValues` remain opaque module-owned state at the persistence boundary, so old drafts without optional `entities`, Scene state, or stable Region `contentRef` do not require destructive schema migration;
+- current `app/utils/compilePromptCore.ts` is byte-identical to baseline `app/utils/compilePrompt.ts` (Git blob `d65e66812513d3e72486ca6ba69a729416218663`), so Modular/Natural/JSON core formatting was preserved by moving the old compiler into a core file rather than rewriting it;
+- the new `compilePrompt.ts` wrapper is limited to automatic Scene↔Layout rule injection, typed user-variable ownership filtering, and the presentation alias `scene → scenes`;
+- `compileLayout.ts`, `compilePose.ts`, `compileExpression.ts`, `compileColorPalette.ts`, and `compileTexture.ts` are unchanged from the refactor baseline;
+- Form explicitly returns byte-equivalent scalar output for legacy/no-entity state; Camera and generic Scene resources return their normal global output when no active Scene references a named entity;
+- Scene-resource named definitions remain demand-driven and therefore unused named state cannot leak into old prompts.
+
+### Phase 9.2 — Regression harness
+
+Added `scripts/phase9-compiler-regression.test.ts` and package command:
+
+```bash
+pnpm test:phase9-regression
+```
+
+The harness checks:
+
+- draft persistence/import-export implementation remains unchanged from baseline;
+- Layout/Pose/Expression/Color/Texture canonical compilers remain unchanged from baseline;
+- the current prompt-output core remains byte-identical to the pre-refactor compiler;
+- legacy Form output parity;
+- unused Camera and generic Scene-resource entities do not change global output;
+- referenced Scene-resource definitions remain demand-driven;
+- typed user `reference` ownership stays reversible because the core regenerates system variables before ownership filtering on each compile;
+- Scene presentation aliases remain format-specific for Modular/Natural/JSON without modifying the baseline core.
+
+GitHub has no CI/status check configured for this branch, so this regression command plus the remaining running-app format/UAT pass are the next Phase 9 gate.
+
+**Result:** in progress — static migration compatibility is strong; runtime regression, three-format Scene-local output validation, and final user acceptance remain open.
 
 ---
 
 # Later phases
-
-## Phase 9 — Regression and migration
-
-- [ ] Old drafts load without destructive migration.
-- [ ] Prompts without Scenes remain behaviorally equivalent.
-- [ ] Existing Layout/Pose/Expression/Color/Material semantics remain functional.
-- [ ] Re-validate typed user `reference` ownership and Setup alias restoration.
-- [ ] Re-validate Scene-local Form/Camera/Framing/Background/Lighting/Style/Effects/Texture definitions across Modular/Natural/JSON as applicable.
-- [ ] Import/export JSON remains valid or gets explicit migration.
-- [ ] Final user acceptance tests.
 
 ## Phase 10 — Merge readiness
 
@@ -1128,3 +1181,6 @@ Selected configuration payloads are defined by owning modules and are never repe
 32. Generic `customInput` fields in named configurations treat the selected field and companion authored value as one override bundle while retaining the existing compiler/value-key contract.
 33. Recovery presentation may expose explicit removal, but replacement must remain a deliberate picker selection and must never be inferred from name/token similarity.
 34. A specialized picker does not need to consume every shared visual primitive when it already provides clear remove/replace behavior and integrating the primitive would increase risk to domain-specific compatibility semantics.
+35. A module panel with Custom Override active and an empty authored custom value is non-collapsible and must stay open until the user enters a non-empty value or disables Custom Override.
+36. The accepted Phase 8 consolidation boundary stops at shared chrome/recovery/sidecar behavior; do not centralize entity mutation lifecycle merely to remove superficial function duplication.
+37. Regression/migration work treats baseline persistence, the baseline prompt-output core, and unchanged legacy compilers as protected compatibility surfaces.
