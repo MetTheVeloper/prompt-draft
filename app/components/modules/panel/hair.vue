@@ -107,6 +107,12 @@ const customText = computed(() =>
   typeof values.customText === "string" ? values.customText.trim() : "",
 );
 
+const { isCollapseLocked, togglePanel } = useModulePanelCollapseGuard({
+  expanded,
+  isCustomMode: () => customMode.value,
+  getCustomValue: () => customText.value,
+});
+
 const externalReferenceText = computed(() =>
   Object.entries(props.moduleOutputs || {})
     .filter(([moduleKey]) => moduleKey !== props.module.key)
@@ -183,9 +189,8 @@ async function copyOutput() {
 const { openModulePanelContextMenu } = useModulePanelContextMenu({
   getTitle: () => moduleTitle.value,
   getExpanded: () => expanded.value,
-  onToggleExpand: () => {
-    expanded.value = !expanded.value;
-  },
+  onToggleExpand: togglePanel,
+  canToggleExpand: () => !isCollapseLocked.value,
   getCustomMode: () => customMode.value,
   onToggleCustomize: () => {
     customMode.value = !customMode.value;
@@ -219,11 +224,11 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
           <el-switch :model-value="customMode" :size="12" :label="t('panel.customMode')" @update:model-value="customMode = $event" />
           <el-button type="fab" mode="flat" icon="refresh" :label="translate('components.contextMenu.actions.reset', 'Reset')" :size="12" :p="8" @click="clearModule" />
           <el-button type="fab" mode="flat" color="red" icon="delete" :label="t('components.contextMenu.actions.removeFromKeyModules')" :size="12" :p="8" @click="removeModule" />
-          <el-button type="fab" mode="flat" color="prim" :size="14" :p="8" :label="!expanded ? t('panel.expand') : t('panel.collapse')" :icon="!expanded ? 'expand_more' : 'expand_less'" @click="expanded = !expanded" />
+          <el-button type="fab" mode="flat" color="prim" :size="14" :p="8" :disable="isCollapseLocked" :label="!expanded ? t('panel.expand') : t('panel.collapse')" :icon="!expanded ? 'expand_more' : 'expand_less'" @click="togglePanel" />
         </el-flex>
       </el-flex>
 
-      <el-flex rules="ccs" class="w100 crp" :gap="4" @click="expanded = !expanded">
+      <el-flex rules="ccs" class="w100 crp" :gap="4" @click="togglePanel">
         <el-flex rules="rsc" :gap="8">
           <el-text type="h2" :size="24" :weight="800" class="lh1" effect="glitch" :icon="module.icon">{{ moduleTitle.toUpperCase() }}</el-text>
           <el-help v-if="moduleDescription" :text="moduleDescription" />
