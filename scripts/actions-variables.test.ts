@@ -262,7 +262,7 @@ test("variable.create action activates Variables and writes canonical state", as
 
   assert.deepEqual(result.draft.selectedModuleKeys, ["variables", "camera"]);
   assert.equal(result.data?.variable.id, "action-variable-1");
-  assert.equal(result.data?.variable.key, "hero_Subject");
+  assert.equal(result.data?.variable.key, "hero_subject");
   assert.deepEqual(
     draftVariables(result.draft).map((item) => item.id),
     ["action-variable-1"],
