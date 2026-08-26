@@ -86,16 +86,18 @@ Validation checkpoint: `pnpm test:actions-api` passed **49/49** on 2026-08-27 wi
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `scene.create` | planned | Source implemented: create a Scene with stable ID and unique semantic key. |
-| `scene.update` | planned | Source implemented: update Scene metadata/description while preserving stable ID and component refs. |
-| `scene.duplicate` | planned | Source implemented: duplicate adjacent with new stable ID/key and copied explicit references. |
-| `scene.delete` | planned | Source implemented: delete Scene while leaving Layout refs missing until explicitly repaired/removed. |
-| `scene.setEnabled` | planned | Source implemented: toggle Scene availability without changing identity. |
-| `scene.component.attach` | planned | Source implemented: attach one exact available module entity while respecting module cardinality. |
-| `scene.component.detach` | planned | Source implemented: remove one exact stable module-entity reference, including missing/orphan refs. |
-| `scene.component.replace` | planned | Source implemented: explicitly replace one exact ref with another available entity from the same module. |
+| `scene.create` | implemented | Create a Scene with stable ID and unique semantic key. |
+| `scene.update` | implemented | Update Scene metadata/description while preserving stable ID and component refs. |
+| `scene.duplicate` | implemented | Duplicate adjacent with new stable ID/key and copied explicit references. |
+| `scene.delete` | implemented | Delete Scene while leaving Layout refs missing until explicitly repaired/removed. |
+| `scene.setEnabled` | implemented | Toggle Scene availability without changing identity. |
+| `scene.component.attach` | implemented | Attach one exact available module entity while respecting module cardinality. |
+| `scene.component.detach` | implemented | Remove one exact stable module-entity reference, including missing/orphan refs. |
+| `scene.component.replace` | implemented | Explicitly replace one exact ref with another available entity from the same module. |
 
-Scene source invariants:
+Validation checkpoint: `pnpm test:actions-api` passed **57/57** on 2026-08-27 with the Scene suite included.
+
+Scene invariants:
 
 - Scene identity is `scene.id`; editable key/name never replace identity;
 - create/duplicate receive deterministic-injectable stable IDs and unique semantic keys;
@@ -106,20 +108,34 @@ Scene source invariants:
 - detach intentionally does not require target availability, so missing/orphan refs remain explicitly recoverable;
 - replace may repair an exact missing entity ref but never performs token/name/fuzzy retargeting.
 
-Scene actions remain `planned` until `scripts/actions-scenes.test.ts` passes in the real project checkout.
-
 ## Layout
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `layout.region.create` | planned | Create a normalized region. |
-| `layout.region.update` | planned | Update region geometry/metadata with clamping. |
-| `layout.region.duplicate` | planned | Duplicate with new stable ID and existing binding semantics. |
-| `layout.region.delete` | planned | Delete region. |
-| `layout.region.move` | planned | Reorder/layer movement. |
-| `layout.grid.update` | planned | Update normalized grid dimensions. |
-| `layout.region.assignScene` | planned | Bind an exact stable Scene ref and compatible token metadata. |
-| `layout.region.clearScene` | planned | Explicitly clear stable Scene binding. |
+| `layout.region.create` | planned | Source implemented: create a normalized region with a new stable ID. |
+| `layout.region.update` | planned | Source implemented: update exact region metadata/geometry with canonical clamp rules; direct `contentRef` patching is forbidden. |
+| `layout.region.duplicate` | planned | Source implemented: duplicate adjacent with new stable ID, offset geometry, and preserved explicit binding semantics. |
+| `layout.region.delete` | planned | Source implemented: delete one exact region without rewriting external region refs. |
+| `layout.region.move` | planned | Source implemented: reorder one exact region without silently changing authored `layer`. |
+| `layout.grid.update` | planned | Source implemented: update normalized/clamped grid dimensions while preserving region geometry. |
+| `layout.region.assignScene` | planned | Source implemented: bind one exact active Scene ref and synchronize cached Scene token/label metadata. |
+| `layout.region.clearScene` | planned | Source implemented: explicitly clear Scene binding while preserving unrelated manual content. |
+
+Layout source invariants:
+
+- Region identity is `region.id` and cannot be replaced through metadata update;
+- create/duplicate use deterministic-injectable stable IDs and reject ID conflicts;
+- geometry is normalized through the existing `layoutRegions` clamp/normalization helpers;
+- `custom` role requires non-empty `customRole`, matching the current editor validation;
+- zero width/height are rejected after normalization;
+- collection move changes order only and does not rewrite authored layer values;
+- delete affects Layout-owned state only; Typography or future external region refs remain explicitly missing;
+- Scene binding identity is `contentRef.kind="scene" + entityId`; token/label/contentKey are presentation/backward-compatible metadata;
+- `assignScene` requires exact active Scene identity and never falls back to token/name matching;
+- manual `contentKey` replacement detaches an existing Scene ref when it no longer matches that ref's cached token;
+- `clearScene` clears `contentKey` only when it is the Scene token being cleared; unrelated manual content is preserved.
+
+Layout actions remain `planned` until `scripts/actions-layouts.test.ts` passes in the real project checkout.
 
 ## Color / Material scopes
 
