@@ -842,16 +842,19 @@ Domain-specific editor body
 - [x] Audit generic `ModuleEntitiesField.vue` against specialized Lighting, Effects, and Texture entity editors.
 - [x] Confirm the repeated collection/card chrome is structurally the same while structured editor bodies are genuinely specialized.
 - [x] Audit `SceneEntitiesField.vue` as a related collection/card pattern without forcing `SceneEntity` into the `ModuleEntity` payload contract.
-- [ ] Audit Hair, Outfit, and Typography collection/card patterns for safe shell reuse.
-- [ ] Audit semantic assignment, Scene component, and Layout Region → Scene picker presentation for common missing/unavailable recovery patterns.
-- [ ] Audit generic field rendering for custom/freeform companion-value sidecars before attempting to remove adapter cases.
+- [x] Audit Hair, Outfit, and Typography collection/card patterns for safe shell reuse.
+- [x] Audit semantic assignment, Scene component, and Layout Region → Scene picker presentation for common missing/unavailable recovery patterns.
+- [x] Audit generic field rendering for custom/freeform companion-value sidecars before attempting to remove adapter cases.
 
-Initial audit result:
+Audit result:
 
-- `ModuleEntitiesField.vue`, `LightingEntitiesField.vue`, `EffectsEntitiesField.vue`, and `TextureEntitiesField.vue` duplicated collection header/count/add/collapse UI and entity card title/status/actions;
-- Lighting, Effects, and Texture must keep their structured body editors (`LightSourcesField`, `EffectLayersField`, `MaterialAssignmentsField`) unchanged;
-- Scene shares collection/card interaction patterns but remains a separate domain model and should consume only payload-agnostic UX primitives;
-- consolidation should proceed from shared chrome inward rather than creating one universal entity editor.
+- `ModuleEntitiesField.vue`, `LightingEntitiesField.vue`, `EffectsEntitiesField.vue`, and `TextureEntitiesField.vue` shared the same collection header/count/add/collapse and entity-card enabled/duplicate/remove/expand chrome;
+- Lighting, Effects, and Texture keep their canonical structured body editors (`LightSourcesField`, `EffectLayersField`, `MaterialAssignmentsField`) unchanged;
+- Hair and Outfit have superficially similar cards but different domain lifecycle, nested identity, preset/source/target semantics, and no equivalent `ModuleEntity.enabled/inheritGlobal` contract, so they do not consume the Named Configuration shell merely for visual symmetry;
+- Typography is a nested ordered editor (`text group → text blocks → move/reorder → modal edits`) and likewise remains specialized;
+- Scene shares some payload-agnostic interaction concepts but remains a separate `SceneEntity` model; Phase 8 reuses only recovery/presentation patterns where the contract is genuinely shared;
+- Layout Region → Scene already exposes both explicit `None` clearing and user-selected replacement in its specialized single-select picker, so its existing missing/unavailable warnings remain appropriate without forcing another wrapper into the sensitive `contentKey` compatibility path;
+- consolidation proceeds from shared chrome inward rather than creating one universal entity editor.
 
 ### Phase 8.2 — Consolidate Named Configuration collection/card chrome
 
@@ -860,30 +863,76 @@ Initial audit result:
 - [x] Migrate `LightingEntitiesField.vue` to the shared shells while preserving `LightSourcesField` and existing preset/inheritance behavior.
 - [x] Migrate `EffectsEntitiesField.vue` to the shared shells while preserving `EffectLayersField`, presets, and Independent Effects behavior.
 - [x] Migrate `TextureEntitiesField.vue` to the shared shells while preserving `MaterialAssignmentsField`, assignment target/exception semantics, and Independent Texture behavior.
-- [ ] Migrate generic `ModuleEntitiesField.vue` to the same shells.
-- [ ] Evaluate Scene/Hair/Outfit/Typography for payload-agnostic shell reuse after their domain-specific audit.
-- [ ] Consolidate duplicated entity collection lifecycle logic only after the visual shell boundary is proven stable across consumers.
+- [x] Migrate generic `ModuleEntitiesField.vue` to the same shells while preserving target policy, preset, compatibility, inheritance, and payload behavior.
+- [x] Evaluate Scene/Hair/Outfit/Typography for payload-agnostic shell reuse and keep specialized domain card systems separate where their lifecycle does not match the Named Configuration contract.
+- [ ] Consolidate duplicated entity collection lifecycle logic only after running-app validation proves that another logic abstraction has enough common semantics to justify itself.
+
+Current shell boundary:
+
+- `ModuleEntitiesCollectionShell.vue` owns only collection-level presentation and add/collapse events;
+- `ModuleEntityCardShell.vue` owns only title/summary/enabled/duplicate/remove/expand presentation and events;
+- module editors still own create/clone/key generation, presets, inheritance, target policy, structured payloads, and normalization;
+- this intentionally avoids moving module semantics into a universal collection composable before the visual boundary is validated.
 
 ### Phase 8.3 — Missing/unavailable reference recovery UX
 
-- [ ] Define one presentation contract for resolved/unavailable/missing references on top of the Phase 7 resolver states.
-- [ ] Provide explicit user actions such as remove/replace where useful; replacement must always be user-selected.
-- [ ] Never use token/name fallback to rescue an existing missing stable reference.
-- [ ] Preserve specialized picker semantics such as Texture exclusive scopes and Scene cardinality.
+- [x] Define one presentation contract for missing/unavailable references on top of the Phase 7 resolver states.
+- [x] Provide explicit user actions such as remove/replace where useful; replacement always remains user-selected in the owning picker.
+- [x] Never use token/name fallback to rescue an existing missing stable reference.
+- [x] Preserve specialized picker semantics such as Texture exclusive scopes, target/exception conflict behavior, Scene cardinality, and Layout `contentKey` compatibility.
+
+Implemented recovery boundary:
+
+- `ReferenceRecoveryList.vue` is presentation-only. It receives canonical identity, label, `missing | unavailable` state, optional description, and whether explicit removal is available;
+- `AssignmentScopeEditor.vue` uses the shared recovery presentation for both targets and exceptions while retaining custom target entry, exclusive-value rules, and exact conflict removal locally;
+- `SceneEntitiesField.vue` exposes explicit recovery rows for missing/disabled component refs and for orphan refs whose owning module is no longer available. Removal is by canonical `moduleKey + entityId`; replacement is still chosen manually through the module picker;
+- disabled items remain disabled in dropdown/multi-select controls instead of becoming implicit mutation handles. The explicit recovery action prevents a disabled selected multi-select item from becoming impossible to remove;
+- Layout Region → Scene remains specialized: its picker already contains an enabled `None` option plus user-selected Scene replacements, while red/orange resolver-state warnings explain missing versus disabled references. No new token/name fallback or automatic repair was added.
 
 ### Phase 8.4 — Mobile validation and responsive consolidation
 
-- [ ] Validate Named Configurations modal/card shells on narrow mobile widths.
-- [ ] Validate nested structured editors, dropdowns/multi-selects, long tokens/labels, and action rows.
-- [ ] Consolidate responsive rules in shared shells only where all consumers benefit from the same behavior.
-- [ ] Re-check Scene and Layout editors separately because their interaction density differs from Named Configurations.
+- [ ] Validate Named Configurations modal/card shells in the running app on narrow mobile widths.
+- [ ] Validate nested structured editors, dropdowns/multi-selects, long tokens/labels, and action rows in the running app.
+- [x] Consolidate source-level responsive rules in shared shells where all Named Configuration consumers benefit from the same behavior.
+- [ ] Re-check Scene and Layout editors in the running app because their interaction density differs from Named Configurations.
+
+Source-level responsive changes / audit:
+
+- `ModuleEntitiesCollectionShell.vue` now stacks collection title/description above the count/actions on mobile and lets the action row wrap;
+- `ModuleEntityCardShell.vue` now stacks title/summary above enabled/duplicate/remove/expand actions on mobile and lets the action row wrap;
+- generic Named Configuration field grids already collapse from two columns to one on mobile;
+- `LightSourcesField.vue`, `EffectLayersField.vue`, and `MaterialAssignmentsField.vue` retain their existing mobile one-column field layouts and compact add controls;
+- `ReferenceRecoveryList.vue` wraps recovery items and keeps labels/actions in a compact minimum-width-safe layout;
+- Scene card/action density and Layout modal density still require real narrow-viewport testing rather than being declared correct from source inspection alone.
 
 ### Phase 8.5 — Generic custom/freeform sidecar audit
 
-- [ ] Inventory module fields whose selected option owns a companion authored value such as `field` + `fieldCustom`.
-- [ ] Determine whether generic entity payload editing can preserve these pairs without module-specific wrappers.
-- [ ] Add generic sidecar support only if persistence and compiler semantics remain byte-for-byte compatible.
-- [ ] Keep structured fields specialized; sidecar support must not become a reason to flatten Lighting/Effects/Texture state.
+- [x] Inventory module fields whose selected option owns a companion authored value such as `field` + `fieldCustom`.
+- [x] Determine whether generic entity payload editing can preserve these pairs without module-specific wrappers.
+- [x] Add generic sidecar support while preserving the existing field-value and compiler contracts.
+- [x] Keep structured fields specialized; sidecar support is not used as a reason to flatten Lighting/Effects/Texture state.
+
+Important distinction:
+
+```text
+freeform option
+→ authored text becomes the field value itself
+→ already first-class in el-dropdown / el-multi-select
+
+customInput field
+→ field keeps the selected custom sentinel
+→ companion value lives at field.customInput.valueKey || `${field.id}Custom`
+```
+
+Generic Named Configuration behavior now treats a `customInput` field and its companion value as one override bundle:
+
+- enabling an inherited override copies the current global/default companion text when the selected value is custom;
+- enabling an Independent override starts from the field default and creates an empty companion when required;
+- disabling the field override removes both the main field override and its companion sidecar from the entity payload;
+- selecting custom in select/categorized/multi-select rendering creates the companion value and renders a variable-aware text field;
+- preset apply/clear keeps companion values synchronized and avoids leaving a stale custom sidecar active under a normal preset selection;
+- inherited summaries display authored custom text when available;
+- compiler/schema/type contracts were not changed; existing `moduleFieldValues.ts` resolution remains canonical.
 
 ### Phase 8.6 — Validation and exit gate
 
@@ -894,7 +943,16 @@ Initial audit result:
 - [ ] Confirm missing/unavailable references remain explicit and never auto-retarget.
 - [ ] Confirm prompt output remains behaviorally unchanged after UX-only consolidation.
 
-**Result:** in progress — audit started and the first shared collection/card primitives are now used by Lighting, Effects, and Texture. Generic editor, broader domain audit, recovery UX, mobile validation, and sidecar consolidation remain open.
+Implementation checkpoint before running-app validation:
+
+- shared Named Configuration collection/card chrome is used by generic, Lighting, Effects, and Texture editors;
+- generic `customInput` companion values are now editable in named configurations without a new compiler or persistence schema;
+- shared recovery presentation is active for semantic assignment scopes and Scene component references while Layout keeps its already-explicit specialized clear/replace path;
+- Hair, Outfit, and Typography were audited and intentionally remain specialized;
+- branch comparison for the latest Phase 8 subsection changes contains only UX/editor components and this documentation; no compiler or domain schema/type file was changed;
+- GitHub reports no commit status checks for the current Phase 8 branch head.
+
+**Result:** in progress — the planned source-level UX consolidation is substantially implemented. Running-app regression and narrow-mobile validation are the remaining Phase 8 exit gate before the phase can be accepted and closed.
 
 ---
 
@@ -1067,3 +1125,6 @@ Selected configuration payloads are defined by owning modules and are never repe
 29. Update this document with architectural changes and phase status.
 30. Legacy token matching is compatibility-only and may upgrade a reference only when no stable reference exists; it must never rescue or retarget a missing stable reference.
 31. UX consolidation may share editor chrome and interaction primitives, but it must not flatten specialized structured payloads or turn unrelated domain models into one universal editor contract.
+32. Generic `customInput` fields in named configurations treat the selected field and companion authored value as one override bundle while retaining the existing compiler/value-key contract.
+33. Recovery presentation may expose explicit removal, but replacement must remain a deliberate picker selection and must never be inferred from name/token similarity.
+34. A specialized picker does not need to consume every shared visual primitive when it already provides clear remove/replace behavior and integrating the primitive would increase risk to domain-specific compatibility semantics.
