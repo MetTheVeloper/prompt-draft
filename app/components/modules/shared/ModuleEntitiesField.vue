@@ -24,6 +24,8 @@ import {
   semanticScopeSummary,
 } from "~/utils/semanticTargets";
 import { useModuleEntityTargets } from "~/composables/prompt/useModuleEntityTargets";
+import ModuleEntitiesCollectionShell from "./ModuleEntitiesCollectionShell.vue";
+import ModuleEntityCardShell from "./ModuleEntityCardShell.vue";
 
 const { t } = useI18n();
 const { mobile } = useScreen();
@@ -387,6 +389,21 @@ function overrideCount(entity: EditableModuleEntity) {
   return normalFields.value.filter((field) => hasPayloadOverride(entity, field.id)).length;
 }
 
+function entitySummary(entity: EditableModuleEntity) {
+  const parts = [
+    targetSummary(entity),
+    `${overrideCount(entity)} ${translate("components.moduleEntities.overrides", "overrides")}`,
+  ];
+
+  if (isIndependent(entity)) {
+    parts.push(
+      translate("components.moduleEntities.independentBadge", "Independent"),
+    );
+  }
+
+  return parts.join(" · ");
+}
+
 function presetLabel(presetId: string) {
   return translate(
     `modules.${props.module.key}.presets.${presetId}.label`,
@@ -626,337 +643,356 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
 </script>
 
 <template>
-  <el-grid type="section" :p="mobile ? 12 : 16" :br="1" bc="blue25" :radius="mobile ? 16 : 24" class="w100">
-    <el-flex rules="rbc" class="w100" :gap="12">
-      <el-flex rules="ccs" :gap="2">
-        <el-text :size="16" :weight="700" icon="layers">
-          {{ translate("components.moduleEntities.title", "Named Configurations") }}
-        </el-text>
-        <el-text :size="10" color="normal50">
-          {{ translate("components.moduleEntities.description", "Create reusable module configurations that inherit from the global/default values above.") }}
-        </el-text>
-      </el-flex>
+  <ModuleEntitiesCollectionShell
+    :count="entities.length"
+    :expanded="listExpanded"
+    :add-label="
+      translate(
+        'components.moduleEntities.actions.add',
+        `Add ${humanize(module.key)} Configuration`,
+      )
+    "
+    @update:expanded="listExpanded = $event"
+    @add="addEntity"
+  >
+    <el-text v-if="!entities.length" :size="11" color="normal50">
+      {{
+        translate(
+          "components.moduleEntities.empty",
+          "No named configurations yet. Global/default module behavior remains unchanged until one is added.",
+        )
+      }}
+    </el-text>
 
-      <el-flex rules="rcc" :gap="6">
-        <el-text marker="blue5" color="blue" :size="10" :weight="600">
-          {{ entities.length }}
-        </el-text>
-        <el-button
-          type="fab"
-          mode="flat"
-          color="prim"
-          :icon="listExpanded ? 'expand_less' : 'expand_more'"
-          :label="listExpanded ? translate('components.moduleEntities.actions.collapse', 'Collapse') : translate('components.moduleEntities.actions.expand', 'Expand')"
-          :size="12"
-          :p="8"
-          @click="listExpanded = !listExpanded"
-        />
-        <el-button
-          color="blue"
-          icon="add"
-          :label="translate('components.moduleEntities.actions.add', `Add ${humanize(module.key)} Configuration`)"
-          :size="12"
-          :p="[8, 12]"
-          @click="addEntity"
-        />
-      </el-flex>
-    </el-flex>
-
-    <el-grid v-show="listExpanded" :gap="12" class="w100">
-      <el-text v-if="!entities.length" :size="11" color="normal50">
-        {{ translate("components.moduleEntities.empty", "No named configurations yet. Global/default module behavior remains unchanged until one is added.") }}
-      </el-text>
-
-      <el-grid
-        v-for="(entity, entityIndex) in entities"
-        :key="entity.id"
-        :p="12"
-        :br="2"
-        :bc="isExpanded(entity) ? 'blue40' : 'normal10'"
-        :radius="16"
-        :gap="12"
-        class="w100"
-      >
-        <el-flex rules="rbc" class="w100 crp" :gap="8" @click="toggleExpanded(entity)">
-          <el-flex rules="ccs" :gap="1" class="minw0">
-            <el-text :size="14" :weight="600" icon="tune">
-              {{ entity.name || entity.key || `${humanize(module.key)} ${entityIndex + 1}` }}
-            </el-text>
-            <el-text :size="9" color="normal45">
-              {{ targetSummary(entity) }} · {{ overrideCount(entity) }} {{ translate("components.moduleEntities.overrides", "overrides") }}<template v-if="isIndependent(entity)"> · {{ translate("components.moduleEntities.independentBadge", "Independent") }}</template>
-            </el-text>
-          </el-flex>
-
-          <el-flex rules="rcc" :gap="6">
-            <el-switch
-              :model-value="entity.enabled !== false"
-              :size="12"
-              :label="translate('components.moduleEntities.enabled', 'Enabled')"
-              @click.stop
-              @update:model-value="updateEntity(entityIndex, { enabled: $event })"
-            />
-            <el-button
-              type="fab"
-              mode="flat"
-              icon="content_copy"
-              :label="translate('components.moduleEntities.actions.duplicate', 'Duplicate')"
-              :size="12"
-              :p="8"
-              @click.stop="duplicateEntity(entityIndex)"
-            />
-            <el-button
-              type="fab"
-              mode="flat"
-              color="red"
-              icon="delete"
-              :label="translate('components.moduleEntities.actions.remove', 'Remove')"
-              :size="12"
-              :p="8"
-              @click.stop="removeEntity(entityIndex)"
-            />
-            <el-icon :icon="isExpanded(entity) ? 'expand_less' : 'expand_more'" :size="14" />
-          </el-flex>
+    <ModuleEntityCardShell
+      v-for="(entity, entityIndex) in entities"
+      :key="entity.id"
+      :title="
+        entity.name ||
+        entity.key ||
+        `${humanize(module.key)} ${entityIndex + 1}`
+      "
+      :summary="entitySummary(entity)"
+      icon="tune"
+      :enabled="entity.enabled !== false"
+      :expanded="isExpanded(entity)"
+      @toggle="toggleExpanded(entity)"
+      @update:enabled="updateEntity(entityIndex, { enabled: $event })"
+      @duplicate="duplicateEntity(entityIndex)"
+      @remove="removeEntity(entityIndex)"
+    >
+      <el-grid :cols="mobile ? 1 : 2" :gap="12" class="w100">
+        <el-flex rules="ccs" :gap="5">
+          <el-text :size="10" color="normal50">
+            {{ translate("components.moduleEntities.fields.name", "Name") }}
+          </el-text>
+          <el-text-field
+            :model-value="entity.name"
+            type="text"
+            :placeholder="
+              translate(
+                'components.moduleEntities.fields.namePlaceholder',
+                'Configuration name',
+              )
+            "
+            @update:model-value="updateName(entityIndex, $event)"
+          />
         </el-flex>
 
-        <el-grid v-show="isExpanded(entity)" :gap="12" class="w100">
-          <el-grid :cols="mobile ? 1 : 2" :gap="12" class="w100">
-            <el-flex rules="ccs" :gap="5">
-              <el-text :size="10" color="normal50">
-                {{ translate("components.moduleEntities.fields.name", "Name") }}
-              </el-text>
-              <el-text-field
-                :model-value="entity.name"
-                type="text"
-                :placeholder="translate('components.moduleEntities.fields.namePlaceholder', 'Configuration name')"
-                @update:model-value="updateName(entityIndex, $event)"
-              />
-            </el-flex>
+        <el-flex rules="ccs" :gap="5">
+          <el-text :size="10" color="normal50">
+            {{ translate("components.moduleEntities.fields.key", "Semantic Key") }}
+          </el-text>
+          <el-text-field
+            :model-value="entity.key"
+            type="text"
+            :placeholder="
+              translate(
+                'components.moduleEntities.fields.keyPlaceholder',
+                'stable semantic key',
+              )
+            "
+            @update:model-value="updateKey(entityIndex, $event)"
+          />
+          <el-text :size="9" color="normal40">
+            {{ translate("components.moduleEntities.fields.idHint", "Stable ID") }}:
+            {{ entity.id }}
+          </el-text>
+        </el-flex>
+      </el-grid>
 
-            <el-flex rules="ccs" :gap="5">
-              <el-text :size="10" color="normal50">
-                {{ translate("components.moduleEntities.fields.key", "Semantic Key") }}
-              </el-text>
-              <el-text-field
-                :model-value="entity.key"
-                type="text"
-                :placeholder="translate('components.moduleEntities.fields.keyPlaceholder', 'stable semantic key')"
-                @update:model-value="updateKey(entityIndex, $event)"
-              />
-              <el-text :size="9" color="normal40">
-                {{ translate("components.moduleEntities.fields.idHint", "Stable ID") }}: {{ entity.id }}
-              </el-text>
-            </el-flex>
-          </el-grid>
+      <el-flex v-if="hasEntityPresets" rules="ccs" :gap="5" class="w100">
+        <el-flex rules="rsc" :gap="6">
+          <el-text :size="10" color="normal50">
+            {{ translate("components.moduleEntities.fields.preset", "Preset") }}
+          </el-text>
+          <el-help
+            :text="
+              translate(
+                'components.moduleEntities.fields.presetDescription',
+                'Apply a module preset as explicit overrides for this named configuration.',
+              )
+            "
+          />
+        </el-flex>
+        <el-dropdown
+          :model-value="entityPresetValue(entity)"
+          :items="entityPresetDropdownItems"
+          item-label="label"
+          item-value="value"
+          :clearable="false"
+          @update:model-value="applyEntityPreset(entityIndex, $event)"
+        />
+        <el-text :size="9" color="normal40">
+          {{
+            translate(
+              "components.moduleEntities.fields.presetHint",
+              "Preset values are stored as local overrides; the Global/default configuration is not changed.",
+            )
+          }}
+        </el-text>
+      </el-flex>
 
-          <el-flex v-if="hasEntityPresets" rules="ccs" :gap="5" class="w100">
-            <el-flex rules="rsc" :gap="6">
-              <el-text :size="10" color="normal50">
-                {{ translate("components.moduleEntities.fields.preset", "Preset") }}
-              </el-text>
-              <el-help :text="translate('components.moduleEntities.fields.presetDescription', 'Apply a module preset as explicit overrides for this named configuration.')" />
-            </el-flex>
-            <el-dropdown
-              :model-value="entityPresetValue(entity)"
-              :items="entityPresetDropdownItems"
-              item-label="label"
-              item-value="value"
-              :clearable="false"
-              @update:model-value="applyEntityPreset(entityIndex, $event)"
-            />
-            <el-text :size="9" color="normal40">
-              {{ translate("components.moduleEntities.fields.presetHint", "Preset values are stored as local overrides; the Global/default configuration is not changed.") }}
-            </el-text>
-          </el-flex>
+      <el-flex v-if="hasTargets" rules="ccs" :gap="5" class="w100">
+        <el-text :size="10" color="normal50">
+          {{ translate("components.moduleEntities.fields.targets", "Apply To") }}
+        </el-text>
+        <el-multi-select
+          :model-value="targetValues(entity)"
+          :items="targetItems(entity)"
+          item-label="label"
+          item-value="value"
+          item-description="description"
+          item-group="group"
+          item-group-label="groupLabel"
+          item-color="color"
+          item-disabled="disabled"
+          :placeholder="
+            translate(
+              'components.moduleEntities.fields.targetsPlaceholder',
+              'Select subject/object targets',
+            )
+          "
+          @update:model-value="updateTargets(entityIndex, $event)"
+        />
+        <el-text
+          v-if="!entityTargets(entity).length"
+          :size="10"
+          color="orange"
+          icon="warning"
+          icon-color="orange"
+        >
+          {{
+            translate(
+              "components.moduleEntities.warnings.noTarget",
+              "This configuration is stored but will not compile until at least one valid target is selected.",
+            )
+          }}
+        </el-text>
+      </el-flex>
 
-          <el-flex v-if="hasTargets" rules="ccs" :gap="5" class="w100">
-            <el-text :size="10" color="normal50">
-              {{ translate("components.moduleEntities.fields.targets", "Apply To") }}
-            </el-text>
-            <el-multi-select
-              :model-value="targetValues(entity)"
-              :items="targetItems(entity)"
-              item-label="label"
-              item-value="value"
-              item-description="description"
-              item-group="group"
-              item-group-label="groupLabel"
-              item-color="color"
-              item-disabled="disabled"
-              :placeholder="translate('components.moduleEntities.fields.targetsPlaceholder', 'Select subject/object targets')"
-              @update:model-value="updateTargets(entityIndex, $event)"
-            />
-            <el-text v-if="!entityTargets(entity).length" :size="10" color="orange" icon="warning" icon-color="orange">
-              {{ translate("components.moduleEntities.warnings.noTarget", "This configuration is stored but will not compile until at least one valid target is selected.") }}
-            </el-text>
-          </el-flex>
+      <el-flex
+        v-if="allowGlobalInheritanceToggle"
+        rules="rbc"
+        :gap="12"
+        :p="10"
+        :br="1"
+        :bc="isIndependent(entity) ? 'blue25' : 'normal10'"
+        :radius="12"
+        class="w100"
+      >
+        <el-flex rules="ccs" :gap="2" class="minw0">
+          <el-text :size="11" :weight="600">
+            {{
+              translate(
+                "components.moduleEntities.fields.independent",
+                `Independent ${humanize(module.key)}`,
+              )
+            }}
+          </el-text>
+          <el-text :size="9" color="normal45">
+            {{
+              translate(
+                "components.moduleEntities.fields.independentDescription",
+                "Do not inherit or apply the Global/default configuration to this target. Only local overrides are used.",
+              )
+            }}
+          </el-text>
+        </el-flex>
+        <el-switch
+          :model-value="isIndependent(entity)"
+          :size="12"
+          :label="
+            translate(
+              'components.moduleEntities.fields.independent',
+              `Independent ${humanize(module.key)}`,
+            )
+          "
+          @update:model-value="setIndependent(entityIndex, $event)"
+        />
+      </el-flex>
 
-          <el-flex
-            v-if="allowGlobalInheritanceToggle"
-            rules="rbc"
-            :gap="12"
+      <el-divider mode="dashed" :dash="4" :gap="2" />
+
+      <el-grid
+        v-for="group in groups"
+        :key="group.id"
+        :gap="8"
+        :p="10"
+        :br="1"
+        bc="normal10"
+        :radius="12"
+      >
+        <el-text :size="12" :weight="600">{{ groupTitle(group.id) }}</el-text>
+
+        <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
+          <el-grid
+            v-for="field in group.fields"
+            :key="field.id"
             :p="10"
             :br="1"
-            :bc="isIndependent(entity) ? 'blue25' : 'normal10'"
-            :radius="12"
-            class="w100"
+            :bc="hasPayloadOverride(entity, field.id) ? 'blue25' : 'normal10'"
+            :radius="10"
+            :gap="8"
           >
-            <el-flex rules="ccs" :gap="2" class="minw0">
-              <el-text :size="11" :weight="600">
-                {{ translate("components.moduleEntities.fields.independent", `Independent ${humanize(module.key)}`) }}
-              </el-text>
-              <el-text :size="9" color="normal45">
-                {{ translate("components.moduleEntities.fields.independentDescription", "Do not inherit or apply the Global/default configuration to this target. Only local overrides are used.") }}
-              </el-text>
+            <el-flex rules="rbc" :gap="8" class="w100">
+              <el-flex rules="rsc" :gap="6">
+                <el-text :size="11" :weight="500">{{ fieldLabel(field) }}</el-text>
+                <el-help
+                  v-if="fieldDescription(field)"
+                  :text="fieldDescription(field)"
+                />
+              </el-flex>
+              <el-switch
+                :model-value="hasPayloadOverride(entity, field.id)"
+                :size="11"
+                :label="translate('components.moduleEntities.fields.override', 'Override')"
+                @update:model-value="setPayloadOverride(entityIndex, field, $event)"
+              />
             </el-flex>
-            <el-switch
-              :model-value="isIndependent(entity)"
-              :size="12"
-              :label="translate('components.moduleEntities.fields.independent', `Independent ${humanize(module.key)}`)"
-              @update:model-value="setIndependent(entityIndex, $event)"
-            />
-          </el-flex>
 
-          <el-divider mode="dashed" :dash="4" :gap="2" />
+            <el-text
+              v-if="!hasPayloadOverride(entity, field.id)"
+              :size="9"
+              color="normal45"
+            >
+              <template v-if="isIndependent(entity)">
+                {{ inheritedLabel(entity, field) }}
+              </template>
+              <template v-else>
+                {{ translate("components.moduleEntities.fields.inherits", "Inherits") }}:
+                {{ inheritedLabel(entity, field) }}
+              </template>
+            </el-text>
 
-          <el-grid v-for="group in groups" :key="group.id" :gap="8" :p="10" :br="1" bc="normal10" :radius="12">
-            <el-text :size="12" :weight="600">{{ groupTitle(group.id) }}</el-text>
+            <template v-else>
+              <el-flex v-if="isCategorizedSelect(field)" rules="ccs" :gap="6">
+                <el-dropdown
+                  :model-value="activeCategory(entity, field)"
+                  :items="categoryItems(entity, field)"
+                  item-label="label"
+                  item-value="value"
+                  :placeholder="t('panel.none')"
+                  clearable
+                  @update:model-value="
+                    updateCategory(entity, entityIndex, field, $event)
+                  "
+                />
+                <el-dropdown
+                  :model-value="entity.payload[field.id]"
+                  :items="visibleCategorizedOptions(entity, field)"
+                  :item-label="(option) => optionLabel(field, option)"
+                  item-value="value"
+                  item-disabled="disabled"
+                  :placeholder="t('panel.none')"
+                  :disabled="!activeCategory(entity, field)"
+                  :clearable="field.ui?.clearable !== false"
+                  @update:model-value="updatePayload(entityIndex, field.id, $event)"
+                />
+              </el-flex>
 
-            <el-grid :cols="mobile ? 1 : 2" :gap="10" class="w100">
-              <el-grid
-                v-for="field in group.fields"
-                :key="field.id"
-                :p="10"
-                :br="1"
-                :bc="hasPayloadOverride(entity, field.id) ? 'blue25' : 'normal10'"
-                :radius="10"
-                :gap="8"
+              <el-dropdown
+                v-else-if="field.type === 'select'"
+                :model-value="entity.payload[field.id]"
+                :items="sortedOptions(entity, field)"
+                :item-label="(option) => optionLabel(field, option)"
+                item-value="value"
+                item-disabled="disabled"
+                :placeholder="t('panel.none')"
+                :clearable="field.ui?.clearable !== false"
+                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+              />
+
+              <el-multi-select
+                v-else-if="field.type === 'multiSelect'"
+                :model-value="
+                  Array.isArray(entity.payload[field.id])
+                    ? entity.payload[field.id]
+                    : []
+                "
+                :items="sortedOptions(entity, field)"
+                :item-label="(option) => optionLabel(field, option)"
+                item-value="value"
+                :placeholder="t('panel.none')"
+                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+              />
+
+              <el-text-field
+                v-else-if="field.type === 'textarea'"
+                :model-value="entity.payload[field.id]"
+                type="textarea"
+                :rows="field.ui?.rows || 3"
+                :placeholder="fieldPlaceholder(field)"
+                support-variables
+                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+              />
+
+              <input
+                v-else-if="field.type === 'checkbox'"
+                :checked="Boolean(entity.payload[field.id])"
+                type="checkbox"
+                @change="updateCheckboxInput(entityIndex, field.id, $event)"
+              />
+
+              <input
+                v-else-if="field.type === 'color'"
+                :value="String(entity.payload[field.id] || '')"
+                type="color"
+                @input="updateTextInput(entityIndex, field.id, $event)"
+              />
+
+              <input
+                v-else-if="field.type === 'number' || field.type === 'range'"
+                :value="Number(entity.payload[field.id] || 0)"
+                :type="field.type"
+                :min="field.ui?.min"
+                :max="field.ui?.max"
+                :step="field.ui?.step"
+                @input="updateNumberInput(entityIndex, field.id, $event)"
+              />
+
+              <el-text-field
+                v-else
+                :model-value="entity.payload[field.id]"
+                type="text"
+                :placeholder="fieldPlaceholder(field)"
+                support-variables
+                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+              />
+
+              <el-text
+                v-if="selectedCompatibilityWarning(entity, field)"
+                :size="9"
+                color="orange"
+                icon="warning"
+                icon-color="orange"
               >
-                <el-flex rules="rbc" :gap="8" class="w100">
-                  <el-flex rules="rsc" :gap="6">
-                    <el-text :size="11" :weight="500">{{ fieldLabel(field) }}</el-text>
-                    <el-help v-if="fieldDescription(field)" :text="fieldDescription(field)" />
-                  </el-flex>
-                  <el-switch
-                    :model-value="hasPayloadOverride(entity, field.id)"
-                    :size="11"
-                    :label="translate('components.moduleEntities.fields.override', 'Override')"
-                    @update:model-value="setPayloadOverride(entityIndex, field, $event)"
-                  />
-                </el-flex>
-
-                <el-text v-if="!hasPayloadOverride(entity, field.id)" :size="9" color="normal45">
-                  <template v-if="isIndependent(entity)">
-                    {{ inheritedLabel(entity, field) }}
-                  </template>
-                  <template v-else>
-                    {{ translate("components.moduleEntities.fields.inherits", "Inherits") }}: {{ inheritedLabel(entity, field) }}
-                  </template>
-                </el-text>
-
-                <template v-else>
-                  <el-flex v-if="isCategorizedSelect(field)" rules="ccs" :gap="6">
-                    <el-dropdown
-                      :model-value="activeCategory(entity, field)"
-                      :items="categoryItems(entity, field)"
-                      item-label="label"
-                      item-value="value"
-                      :placeholder="t('panel.none')"
-                      clearable
-                      @update:model-value="updateCategory(entity, entityIndex, field, $event)"
-                    />
-                    <el-dropdown
-                      :model-value="entity.payload[field.id]"
-                      :items="visibleCategorizedOptions(entity, field)"
-                      :item-label="(option) => optionLabel(field, option)"
-                      item-value="value"
-                      item-disabled="disabled"
-                      :placeholder="t('panel.none')"
-                      :disabled="!activeCategory(entity, field)"
-                      :clearable="field.ui?.clearable !== false"
-                      @update:model-value="updatePayload(entityIndex, field.id, $event)"
-                    />
-                  </el-flex>
-
-                  <el-dropdown
-                    v-else-if="field.type === 'select'"
-                    :model-value="entity.payload[field.id]"
-                    :items="sortedOptions(entity, field)"
-                    :item-label="(option) => optionLabel(field, option)"
-                    item-value="value"
-                    item-disabled="disabled"
-                    :placeholder="t('panel.none')"
-                    :clearable="field.ui?.clearable !== false"
-                    @update:model-value="updatePayload(entityIndex, field.id, $event)"
-                  />
-
-                  <el-multi-select
-                    v-else-if="field.type === 'multiSelect'"
-                    :model-value="Array.isArray(entity.payload[field.id]) ? entity.payload[field.id] : []"
-                    :items="sortedOptions(entity, field)"
-                    :item-label="(option) => optionLabel(field, option)"
-                    item-value="value"
-                    :placeholder="t('panel.none')"
-                    @update:model-value="updatePayload(entityIndex, field.id, $event)"
-                  />
-
-                  <el-text-field
-                    v-else-if="field.type === 'textarea'"
-                    :model-value="entity.payload[field.id]"
-                    type="textarea"
-                    :rows="field.ui?.rows || 3"
-                    :placeholder="fieldPlaceholder(field)"
-                    support-variables
-                    @update:model-value="updatePayload(entityIndex, field.id, $event)"
-                  />
-
-                  <input
-                    v-else-if="field.type === 'checkbox'"
-                    :checked="Boolean(entity.payload[field.id])"
-                    type="checkbox"
-                    @change="updateCheckboxInput(entityIndex, field.id, $event)"
-                  />
-
-                  <input
-                    v-else-if="field.type === 'color'"
-                    :value="String(entity.payload[field.id] || '')"
-                    type="color"
-                    @input="updateTextInput(entityIndex, field.id, $event)"
-                  />
-
-                  <input
-                    v-else-if="field.type === 'number' || field.type === 'range'"
-                    :value="Number(entity.payload[field.id] || 0)"
-                    :type="field.type"
-                    :min="field.ui?.min"
-                    :max="field.ui?.max"
-                    :step="field.ui?.step"
-                    @input="updateNumberInput(entityIndex, field.id, $event)"
-                  />
-
-                  <el-text-field
-                    v-else
-                    :model-value="entity.payload[field.id]"
-                    type="text"
-                    :placeholder="fieldPlaceholder(field)"
-                    support-variables
-                    @update:model-value="updatePayload(entityIndex, field.id, $event)"
-                  />
-
-                  <el-text
-                    v-if="selectedCompatibilityWarning(entity, field)"
-                    :size="9"
-                    color="orange"
-                    icon="warning"
-                    icon-color="orange"
-                  >
-                    {{ selectedCompatibilityWarning(entity, field) }}
-                  </el-text>
-                </template>
-              </el-grid>
-            </el-grid>
+                {{ selectedCompatibilityWarning(entity, field) }}
+              </el-text>
+            </template>
           </el-grid>
         </el-grid>
       </el-grid>
-    </el-grid>
-  </el-grid>
+    </ModuleEntityCardShell>
+  </ModuleEntitiesCollectionShell>
 </template>
