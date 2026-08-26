@@ -11,6 +11,14 @@ import {
   semanticTargetIdentity,
 } from "~/utils/semanticTargets";
 import { useSemanticTargetCatalog } from "~/composables/prompt/useSemanticTargetCatalog";
+import ReferenceRecoveryList from "./ReferenceRecoveryList.vue";
+
+type RecoveryItem = {
+  identity: string;
+  label: string;
+  status: "missing" | "unavailable";
+  description?: string;
+};
 
 const props = withDefaults(
   defineProps<{
@@ -42,6 +50,11 @@ const catalog = useSemanticTargetCatalog(
   props.capability,
   () => props.builtins,
 );
+
+function translate(path: string, fallback = "") {
+  const translated = t(path);
+  return translated === path ? fallback : translated;
+}
 
 function cloneTargets(value: SemanticTargetRef[]) {
   return value.map((target) => ({ ...target }));
@@ -115,20 +128,50 @@ const customExceptions = computed(() =>
   props.exceptions.filter((target) => target.kind === "custom"),
 );
 
-function isMissingCatalogTarget(target: SemanticTargetRef) {
-  return (
-    target.kind !== "custom" &&
-    catalog.resolveTarget(target).status === "missing"
-  );
+function targetChipLabel(target: SemanticTargetRef) {
+  return target.token || target.label || target.value;
 }
 
-const missingTargets = computed(() =>
-  props.modelValue.filter(isMissingCatalogTarget),
-);
+function recoveryItems(targets: SemanticTargetRef[]): RecoveryItem[] {
+  return targets.flatMap((target) => {
+    if (target.kind === "custom") return [];
 
-const missingExceptions = computed(() =>
-  props.exceptions.filter(isMissingCatalogTarget),
-);
+    const resolution = catalog.resolveTarget(target);
+    if (resolution.status === "resolved") return [];
+
+    return [
+      {
+        identity: semanticTargetIdentity(target),
+        label: targetChipLabel(target),
+        status: resolution.status,
+        description:
+          resolution.status === "missing"
+            ? translate(
+                "components.assignmentScope.missingReference",
+                "Saved reference is missing.",
+              )
+            : translate(
+                "components.assignmentScope.unavailableReference",
+                "Saved reference is currently unavailable.",
+              ),
+      },
+    ];
+  });
+}
+
+const targetRecoveryItems = computed(() => recoveryItems(props.modelValue));
+const exceptionRecoveryItems = computed(() => recoveryItems(props.exceptions));
+
+function recoveryHelp(items: RecoveryItem[], missingKey: string) {
+  if (items.length && items.every((item) => item.status === "missing")) {
+    return t(missingKey);
+  }
+
+  return translate(
+    "components.assignmentScope.recoveryHelp",
+    "Saved references that are missing or unavailable stay explicit. Remove them or choose replacements manually.",
+  );
+}
 
 function removeExactConflicts(
   source: SemanticTargetRef[],
@@ -226,8 +269,18 @@ function removeException(targetToRemove: SemanticTargetRef) {
   );
 }
 
-function targetChipLabel(target: SemanticTargetRef) {
-  return target.token || target.label || target.value;
+function removeTargetRecovery(item: RecoveryItem) {
+  const target = props.modelValue.find(
+    (candidate) => semanticTargetIdentity(candidate) === item.identity,
+  );
+  if (target) removeTarget(target);
+}
+
+function removeExceptionRecovery(item: RecoveryItem) {
+  const target = props.exceptions.find(
+    (candidate) => semanticTargetIdentity(candidate) === item.identity,
+  );
+  if (target) removeException(target);
 }
 </script>
 
@@ -301,34 +354,12 @@ function targetChipLabel(target: SemanticTargetRef) {
       </el-flex>
     </el-flex>
 
-    <el-flex v-if="missingTargets.length" rules="ccs" :gap="4" class="w100">
-      <el-text :size="10" color="orange" icon="warning" icon-color="orange">
-        {{ t("components.assignmentScope.missingHelp") }}
-      </el-text>
-      <el-flex rules="rsc" class="fw w100" :gap="4">
-        <el-flex
-          v-for="target in missingTargets"
-          :key="semanticTargetIdentity(target)"
-          rules="rcc"
-          :gap="4"
-          :p="[4, 8]"
-          :radius="50"
-          bg="orange5"
-        >
-          <el-text :size="10" color="orange">{{ targetChipLabel(target) }}</el-text>
-          <el-button
-            type="fab"
-            mode="flat"
-            color="red"
-            icon="close"
-            :size="10"
-            :p="4"
-            :label="t('components.assignmentScope.remove')"
-            @click="removeTarget(target)"
-          />
-        </el-flex>
-      </el-flex>
-    </el-flex>
+    <ReferenceRecoveryList
+      :items="targetRecoveryItems"
+      :help="recoveryHelp(targetRecoveryItems, 'components.assignmentScope.missingHelp')"
+      :remove-label="t('components.assignmentScope.remove')"
+      @remove="removeTargetRecovery"
+    />
 
     <el-divider mode="dashed" :dash="4" :gap="2" />
 
@@ -399,33 +430,11 @@ function targetChipLabel(target: SemanticTargetRef) {
       </el-flex>
     </el-flex>
 
-    <el-flex v-if="missingExceptions.length" rules="ccs" :gap="4" class="w100">
-      <el-text :size="10" color="orange" icon="warning" icon-color="orange">
-        {{ t("components.assignmentScope.missingExceptionHelp") }}
-      </el-text>
-      <el-flex rules="rsc" class="fw w100" :gap="4">
-        <el-flex
-          v-for="target in missingExceptions"
-          :key="semanticTargetIdentity(target)"
-          rules="rcc"
-          :gap="4"
-          :p="[4, 8]"
-          :radius="50"
-          bg="orange5"
-        >
-          <el-text :size="10" color="orange">{{ targetChipLabel(target) }}</el-text>
-          <el-button
-            type="fab"
-            mode="flat"
-            color="red"
-            icon="close"
-            :size="10"
-            :p="4"
-            :label="t('components.assignmentScope.remove')"
-            @click="removeException(target)"
-          />
-        </el-flex>
-      </el-flex>
-    </el-flex>
+    <ReferenceRecoveryList
+      :items="exceptionRecoveryItems"
+      :help="recoveryHelp(exceptionRecoveryItems, 'components.assignmentScope.missingExceptionHelp')"
+      :remove-label="t('components.assignmentScope.remove')"
+      @remove="removeExceptionRecovery"
+    />
   </el-grid>
 </template>
