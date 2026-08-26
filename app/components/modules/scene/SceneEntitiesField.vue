@@ -13,6 +13,7 @@ import {
   getModuleEntities,
   getModuleEntitySceneSelection,
   isSceneExposableModule,
+  moduleEntityRefIdentity,
 } from "~/modules/entityContracts";
 import {
   createModuleEntityReferenceCatalogIndex,
@@ -26,6 +27,14 @@ import {
   compileSceneModule,
   type SceneCompileIssue,
 } from "~/utils/compileScene";
+import ReferenceRecoveryList from "../shared/ReferenceRecoveryList.vue";
+
+type RecoveryItem = {
+  identity: string;
+  label: string;
+  status: "missing" | "unavailable";
+  description?: string;
+};
 
 const { t } = useI18n();
 const { mobile } = useScreen();
@@ -260,6 +269,76 @@ function componentItems(scene: SceneEntity, moduleKey: string) {
   });
 
   return items;
+}
+
+function componentRecoveryItems(
+  scene: SceneEntity,
+  moduleKey: string,
+): RecoveryItem[] {
+  const group = componentGroups.value.find((item) => item.module.key === moduleKey);
+  if (!group) return [];
+
+  return refsForModule(scene, moduleKey).flatMap((ref) => {
+    const resolution = resolveModuleEntityReferenceCatalogItem(
+      ref,
+      group.catalogIndex,
+    );
+
+    if (resolution.status === "resolved") return [];
+
+    return [
+      {
+        identity: moduleEntityRefIdentity(ref),
+        label:
+          resolution.status === "unavailable"
+            ? resolution.item.presentation.label
+            : ref.label ||
+              translate(
+                "modules.scene.warnings.missingConfigurationLabel",
+                "Missing configuration",
+              ),
+        status: resolution.status,
+        description:
+          resolution.status === "unavailable"
+            ? translate(
+                "modules.scene.warnings.disabledConfiguration",
+                "This configuration is disabled.",
+              )
+            : `${ref.entityId} · ${translate("modules.scene.warnings.missing", "Missing")}`,
+      },
+    ];
+  });
+}
+
+function orphanComponentRecoveryItems(scene: SceneEntity): RecoveryItem[] {
+  const activeModuleKeys = new Set(
+    componentGroups.value.map((group) => group.module.key),
+  );
+
+  return scene.components
+    .filter((ref) => !activeModuleKeys.has(ref.moduleKey))
+    .map((ref) => ({
+      identity: moduleEntityRefIdentity(ref),
+      label:
+        ref.label ||
+        translate(
+          "modules.scene.warnings.missingConfigurationLabel",
+          `${humanize(ref.moduleKey)} configuration`,
+        ),
+      status: "missing" as const,
+      description: `${ref.moduleKey} · ${ref.entityId}`,
+    }));
+}
+
+function removeComponentReference(index: number, item: RecoveryItem) {
+  const scene = scenes.value[index];
+  if (!scene) return;
+
+  updateScene(index, {
+    components: scene.components.filter(
+      (ref) => moduleEntityRefIdentity(ref) !== item.identity,
+    ),
+  });
 }
 
 function selectSingleComponent(
@@ -511,12 +590,36 @@ function issueText(issue: SceneCompileIssue) {
                   placeholder="Select configurations"
                   @update:model-value="selectMultipleComponents(sceneIndex, group.module.key, $event)"
                 />
+
+                <ReferenceRecoveryList
+                  :items="componentRecoveryItems(scene, group.module.key)"
+                  :help="
+                    translate(
+                      'modules.scene.warnings.recoveryHelp',
+                      'Saved component references that are missing or disabled stay explicit. Remove them or select replacements manually.',
+                    )
+                  "
+                  :remove-label="translate('components.assignmentScope.remove', 'Remove')"
+                  @remove="removeComponentReference(sceneIndex, $event)"
+                />
               </el-grid>
             </el-grid>
 
             <el-text v-else :size="10" color="orange" icon="warning" icon-color="orange">
               Add at least one scene-exposable module with a named configuration, such as Form or Camera.
             </el-text>
+
+            <ReferenceRecoveryList
+              :items="orphanComponentRecoveryItems(scene)"
+              :help="
+                translate(
+                  'modules.scene.warnings.orphanRecoveryHelp',
+                  'Some saved component references point to modules that are no longer available. They are preserved until you remove them explicitly.',
+                )
+              "
+              :remove-label="translate('components.assignmentScope.remove', 'Remove')"
+              @remove="removeComponentReference(sceneIndex, $event)"
+            />
           </el-grid>
 
           <el-flex rules="ccs" :gap="5" class="w100">
