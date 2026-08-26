@@ -22,6 +22,7 @@ const emit = defineEmits<{
 }>()
 
 const { t } = useI18n()
+const { mobile } = useScreen()
 
 function translate(path: string, fallback: string) {
   const translated = t(path)
@@ -38,7 +39,12 @@ function translate(path: string, fallback: string) {
     :gap="12"
     class="w100"
   >
-    <el-flex rules="rbc" class="w100 crp" :gap="8" @click="emit('toggle')">
+    <el-flex
+      :rules="mobile ? 'ccs' : 'rbc'"
+      class="w100 crp"
+      :gap="8"
+      @click="emit('toggle')"
+    >
       <el-flex rules="ccs" :gap="1" class="minw0">
         <el-text :size="14" :weight="600" :icon="icon">
           {{ title }}
@@ -48,7 +54,11 @@ function translate(path: string, fallback: string) {
         </el-text>
       </el-flex>
 
-      <el-flex rules="rcc" :gap="6">
+      <el-flex
+        rules="rcc"
+        :gap="6"
+        :class="mobile ? 'w100 fw' : ''"
+      >
         <el-switch
           :model-value="enabled"
           :size="12"
