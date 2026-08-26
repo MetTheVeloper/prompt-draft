@@ -7,6 +7,7 @@ import {
   isReservedVariableKey,
   isValidVariableKey,
   normalizeVariableKey,
+  variableKeyIdentity,
 } from "../utils/promptVariables";
 import {
   domainFailure,
@@ -81,18 +82,25 @@ function variableIndexById(
   return variables.findIndex((variable) => variable.id === variableId);
 }
 
-function unavailableKeys(
+function existingUserKeys(
   variables: readonly PromptVariable[],
-  blockedKeys: readonly string[],
   exceptVariableId?: string,
 ) {
-  return [
-    ...variables
-      .filter((variable) => variable.id !== exceptVariableId)
-      .map((variable) => normalizeVariableKey(variable.key))
-      .filter(Boolean),
-    ...blockedKeys.map(normalizeVariableKey).filter(Boolean),
-  ];
+  return variables
+    .filter((variable) => variable.id !== exceptVariableId)
+    .map((variable) => normalizeVariableKey(variable.key))
+    .filter(Boolean);
+}
+
+function hasBlockedKey(
+  key: string,
+  blockedKeys: readonly string[],
+) {
+  const identity = variableKeyIdentity(key);
+
+  return blockedKeys.some((blockedKey) => {
+    return variableKeyIdentity(blockedKey) === identity;
+  });
 }
 
 function resolveVariableKey(
@@ -119,13 +127,17 @@ function resolveVariableKey(
     });
   }
 
+  if (hasBlockedKey(normalized, options.blockedKeys || [])) {
+    return domainFailure({
+      code: "variable_system_key_conflict",
+      path: "key",
+      details: { key: normalized },
+    });
+  }
+
   const key = createUniqueVariableKey(
     normalized,
-    unavailableKeys(
-      variables,
-      options.blockedKeys || [],
-      exceptVariableId,
-    ),
+    existingUserKeys(variables, exceptVariableId),
   );
 
   return domainSuccess(key);
