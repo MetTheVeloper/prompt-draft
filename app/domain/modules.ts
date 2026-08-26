@@ -1,5 +1,4 @@
 import type {
-  ModuleField,
   ModuleFieldValue,
   ModuleValues,
   PromptKeyModule,
@@ -17,24 +16,18 @@ import {
   isModuleFieldCustomSelection,
 } from "../utils/moduleFieldValues";
 import {
+  applySimpleModuleFieldValue,
+  SIMPLE_MODULE_FIELD_TYPES,
+  type SimpleModuleFieldType,
+} from "./moduleFields";
+import {
   domainFailure,
   domainSuccess,
   type DomainResult,
 } from "./types";
 
-export const SIMPLE_MODULE_FIELD_TYPES = [
-  "text",
-  "textarea",
-  "select",
-  "multiSelect",
-  "checkbox",
-  "color",
-  "number",
-  "range",
-] as const;
-
-export type SimpleModuleFieldType =
-  (typeof SIMPLE_MODULE_FIELD_TYPES)[number];
+export { SIMPLE_MODULE_FIELD_TYPES } from "./moduleFields";
+export type { SimpleModuleFieldType } from "./moduleFields";
 
 export type SetPromptModuleFieldInput = {
   fieldId: string;
@@ -127,148 +120,6 @@ function moduleMutation(
   });
 }
 
-function isSimpleModuleField(field: ModuleField) {
-  return SIMPLE_MODULE_FIELD_TYPES.includes(
-    field.type as SimpleModuleFieldType,
-  );
-}
-
-function fieldHasFreeformOption(field: ModuleField) {
-  return Boolean(field.options?.some((option) => option.freeform));
-}
-
-function fieldOptionExists(field: ModuleField, value: string) {
-  return Boolean(field.options?.some((option) => option.value === value));
-}
-
-function validateSelectValue(
-  field: ModuleField,
-  value: unknown,
-): DomainResult<ModuleFieldValue> {
-  if (typeof value !== "string") {
-    return domainFailure({
-      code: "module_field_invalid_value",
-      path: "value",
-      details: { fieldId: field.id, expected: "string" },
-    });
-  }
-
-  if (!value || fieldOptionExists(field, value) || fieldHasFreeformOption(field)) {
-    return domainSuccess(value);
-  }
-
-  return domainFailure({
-    code: "module_field_invalid_option",
-    path: "value",
-    details: { fieldId: field.id, value },
-  });
-}
-
-function validateMultiSelectValue(
-  field: ModuleField,
-  value: unknown,
-): DomainResult<ModuleFieldValue> {
-  if (!Array.isArray(value) || value.some((item) => typeof item !== "string")) {
-    return domainFailure({
-      code: "module_field_invalid_value",
-      path: "value",
-      details: { fieldId: field.id, expected: "string[]" },
-    });
-  }
-
-  if (fieldHasFreeformOption(field)) {
-    return domainSuccess([...value] as string[]);
-  }
-
-  const invalid = value.find((item) => !fieldOptionExists(field, item));
-  if (invalid !== undefined) {
-    return domainFailure({
-      code: "module_field_invalid_option",
-      path: "value",
-      details: { fieldId: field.id, value: invalid },
-    });
-  }
-
-  return domainSuccess([...value] as string[]);
-}
-
-function validateNumberValue(
-  field: ModuleField,
-  value: unknown,
-): DomainResult<ModuleFieldValue> {
-  if (typeof value !== "number" || !Number.isFinite(value)) {
-    return domainFailure({
-      code: "module_field_invalid_value",
-      path: "value",
-      details: { fieldId: field.id, expected: "finite_number" },
-    });
-  }
-
-  const min = field.ui?.min;
-  const max = field.ui?.max;
-
-  if (typeof min === "number" && value < min) {
-    return domainFailure({
-      code: "module_field_out_of_range",
-      path: "value",
-      details: { fieldId: field.id, min, value },
-    });
-  }
-
-  if (typeof max === "number" && value > max) {
-    return domainFailure({
-      code: "module_field_out_of_range",
-      path: "value",
-      details: { fieldId: field.id, max, value },
-    });
-  }
-
-  return domainSuccess(value);
-}
-
-function validateSimpleFieldValue(
-  field: ModuleField,
-  value: unknown,
-): DomainResult<ModuleFieldValue> {
-  if (!isSimpleModuleField(field)) {
-    return domainFailure({
-      code: "module_field_structured",
-      path: "fieldId",
-      details: { fieldId: field.id, fieldType: field.type },
-    });
-  }
-
-  if (field.type === "select") {
-    return validateSelectValue(field, value);
-  }
-
-  if (field.type === "multiSelect") {
-    return validateMultiSelectValue(field, value);
-  }
-
-  if (field.type === "checkbox") {
-    return typeof value === "boolean"
-      ? domainSuccess(value)
-      : domainFailure({
-          code: "module_field_invalid_value",
-          path: "value",
-          details: { fieldId: field.id, expected: "boolean" },
-        });
-  }
-
-  if (field.type === "number" || field.type === "range") {
-    return validateNumberValue(field, value);
-  }
-
-  return typeof value === "string"
-    ? domainSuccess(value)
-    : domainFailure({
-        code: "module_field_invalid_value",
-        path: "value",
-        details: { fieldId: field.id, expected: "string" },
-      });
-}
-
 function valuesEqual(first: ModuleFieldValue, second: ModuleFieldValue) {
   try {
     return JSON.stringify(first) === JSON.stringify(second);
@@ -343,50 +194,25 @@ export function setPromptModuleField(
     });
   }
 
-  const valueResult = validateSimpleFieldValue(field, input.value);
+  const values = currentModuleValues(draft, module);
+  const valueResult = applySimpleModuleFieldValue(values, field, {
+    value: input.value,
+    customText: input.customText,
+  });
   if (!valueResult.ok) return valueResult;
 
-  const values = currentModuleValues(draft, module);
-  values[field.id] = cloneValue(valueResult.value);
-
-  if (field.customInput) {
-    const customKey = getModuleFieldCustomValueKey(field);
-    const isCustom = isModuleFieldCustomSelection(field, valueResult.value);
-
-    if (input.customText !== undefined && !isCustom) {
-      return domainFailure({
-        code: "module_field_custom_text_inactive",
-        path: "customText",
-        details: { moduleKey: module.key, fieldId: field.id },
-      });
-    }
-
-    if (isCustom) {
-      if (input.customText !== undefined) {
-        values[customKey] = input.customText;
-      } else if (values[customKey] === undefined) {
-        values[customKey] = "";
-      }
-    }
-  } else if (input.customText !== undefined) {
-    return domainFailure({
-      code: "module_field_custom_text_unsupported",
-      path: "customText",
-      details: { moduleKey: module.key, fieldId: field.id },
-    });
-  }
-
+  const nextValues = valueResult.value;
   const panelState = currentPanelState(draft, module.key);
   const activePresetId = panelState.activePresetId;
 
   if (
     activePresetId &&
-    !presetMatchesValues(module, activePresetId, values)
+    !presetMatchesValues(module, activePresetId, nextValues)
   ) {
     panelState.activePresetId = null;
   }
 
-  return moduleMutation(draft, module, values, panelState);
+  return moduleMutation(draft, module, nextValues, panelState);
 }
 
 export function applyPromptModulePreset(
