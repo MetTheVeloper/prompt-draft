@@ -6,6 +6,7 @@ export type ModulePanelContextMenuOptions = {
   getTitle: () => string;
   getExpanded: () => boolean;
   onToggleExpand: ModulePanelContextMenuAction;
+  canToggleExpand?: () => boolean;
   getCustomMode?: () => boolean;
   onToggleCustomize?: ModulePanelContextMenuAction;
   canCopyOutput?: () => boolean;
@@ -22,6 +23,9 @@ export function useModulePanelContextMenu(
   function getItems(): GlobalMenuItem[] {
     const isExpanded = options.getExpanded();
     const isCustomMode = Boolean(options.getCustomMode?.());
+    const canToggleExpand = options.canToggleExpand
+      ? options.canToggleExpand()
+      : true;
 
     const customizeItem: GlobalMenuItem = {
       label: isCustomMode
@@ -58,6 +62,7 @@ export function useModulePanelContextMenu(
           ? t("components.contextMenu.actions.collapse")
           : t("components.contextMenu.actions.expand"),
         icon: isExpanded ? "expand_less" : "expand_more",
+        disabled: !canToggleExpand,
         handler: options.onToggleExpand,
       },
       customizeItem,
