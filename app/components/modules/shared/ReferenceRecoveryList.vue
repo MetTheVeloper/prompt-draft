@@ -1,7 +1,7 @@
 <script setup lang="ts">
-export type ReferenceRecoveryStatus = "missing" | "unavailable";
+type ReferenceRecoveryStatus = "missing" | "unavailable";
 
-export type ReferenceRecoveryItem = {
+type ReferenceRecoveryItem = {
   identity: string;
   label: string;
   status: ReferenceRecoveryStatus;
