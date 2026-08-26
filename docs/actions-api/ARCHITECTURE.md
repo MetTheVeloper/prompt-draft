@@ -2,9 +2,7 @@
 
 ## 1. Canonical draft state
 
-The Actions API operates on a serializable, application-level draft state rather than Vue refs or component-local state.
-
-Proposed core contract:
+The Actions API operates on serializable application state, never Vue refs or component-local state.
 
 ```ts
 export type PromptDraftState = {
@@ -17,9 +15,9 @@ export type PromptDraftState = {
 }
 ```
 
-Timestamps, active draft IDs, collection membership, persistence metadata, and save status are session/storage concerns and are not required for a pure mutation.
+Timestamps, active draft IDs, collection membership, autosave status and storage metadata are session concerns, not domain mutation input.
 
-A separate record/snapshot contract may add persistence metadata:
+Persistence records may extend the canonical state:
 
 ```ts
 export type PromptDraftRecord = PromptDraftState & {
@@ -31,10 +29,6 @@ export type PromptDraftRecord = PromptDraftState & {
 ```
 
 ## 2. Draft session boundary
-
-The UI needs a session adapter that owns the active draft and persistence behavior, but the domain/action layer should not know about localStorage.
-
-Conceptual split:
 
 ```text
 DraftSession
@@ -49,39 +43,39 @@ ActionsRuntime
   - returns next PromptDraftState + structured result
 ```
 
-The current create page can progressively delegate to `DraftSession` while keeping its UX unchanged.
+The create page may progressively delegate to this boundary while keeping its UX and persistence behavior unchanged.
 
-## 3. Pure mutation rule
+## 3. One canonical mutation rule
 
-Preferred domain-service shape:
+Every domain mutation has one canonical implementation outside Vue components.
 
-```ts
-function updateSomething(
-  state: PromptDraftState,
-  input: SomeInput,
-  context: DomainContext,
-): DomainMutationResult
+```text
+Expert UI ─┐
+Wizard ────┼─> Action / adapter ─> Domain Service ─> Canonical Draft State
+AI Planner ┘
 ```
 
-The mutation should return a new canonical state or a domain fragment that can be immutably applied. It must not:
+Domain services must not:
 
-- open a modal;
-- display a toast;
+- open modals or menus;
+- display toasts;
 - write localStorage;
 - depend on DOM APIs;
 - depend on component instances;
-- silently repair a missing stable reference by fuzzy matching.
+- import Vue/Nuxt composables for runtime facts;
+- silently repair missing stable references by fuzzy matching.
 
 ## 4. Action definition
-
-Initial target contract:
 
 ```ts
 export type ActionDefinition<TInput, TData = unknown> = {
   id: string
   description: string
-  inputSchema: ActionInputSchema
-  canExecute?: (context: ActionContext, input: TInput) => ActionAvailability
+  inputSchema?: ActionInputSchema
+  canExecute?: (
+    context: ActionContext,
+    input: TInput,
+  ) => ActionAvailability
   execute: (
     context: ActionContext,
     input: TInput,
@@ -89,31 +83,37 @@ export type ActionDefinition<TInput, TData = unknown> = {
 }
 ```
 
-The schema representation should initially remain small and repository-owned. Do not commit to a third-party schema library unless implementation needs justify it.
+The schema representation remains small and repository-owned until real complexity justifies a third-party validator.
 
-## 5. Action context
+## 5. Action context and explicit environment
 
-Actions need explicit access to canonical registry/domain context without reaching into Vue globals.
-
-Proposed shape:
+Actions receive all required facts explicitly.
 
 ```ts
+export type ActionEnvironment = {
+  activeSystemVariableKeys?: readonly string[]
+}
+
 export type ActionContext = {
   draft: PromptDraftState
-  modules: PromptKeyModule[]
+  modules: readonly PromptKeyModule[]
+  environment?: ActionEnvironment
   idFactory?: ActionIdFactory
 }
 ```
 
-Derived catalogs/resolvers should be created from this explicit context.
+`environment` contains runtime/domain facts that are not persisted in the draft but are needed for a deterministic decision. The first concrete example is active system/module variable keys used to reject user-variable key collisions.
 
-Do not place translation functions, modal APIs, current screen size, or persistence adapters in `ActionContext`.
+Rules:
 
-## 6. Results and errors
+- domain/actions must not read `usePromptVariables()`, Pinia, i18n, screen size, modal state or other ambient Vue/Nuxt state;
+- if a runtime fact is required, add the smallest explicit environment contract needed;
+- environment values are inputs, never hidden mutation targets;
+- translation stays in UI adapters; issue `code` is the authoritative machine contract.
 
-An action should not throw for expected domain rejection.
+## 6. Results and expected failures
 
-Proposed result shape:
+Expected domain rejection does not throw.
 
 ```ts
 export type ActionExecutionResult<TData = unknown> =
@@ -130,9 +130,7 @@ export type ActionExecutionResult<TData = unknown> =
     }
 ```
 
-`draft` on failure is unchanged.
-
-Issue shape:
+On failure `draft` is the original caller state. Registry execution uses detached clones so an action cannot mutate the caller by accident.
 
 ```ts
 export type ActionIssue = {
@@ -143,30 +141,20 @@ export type ActionIssue = {
 }
 ```
 
-Machine-readable `code` is authoritative. UI localization belongs to adapters.
+## 7. Registry and discovery
 
-## 7. Action registry and discovery
-
-The registry should support:
+The runtime supports:
 
 ```ts
 registry.get(id)
-registry.list()
 registry.has(id)
+registry.list()
 registry.execute(id, context, input)
 ```
 
-Discovery metadata should be sufficient for a future Wizard/AI planner to understand:
+Discovery metadata exposes action ID, description and input schema. It does not expose arbitrary implementation paths.
 
-- action ID;
-- description;
-- expected fields;
-- required/optional fields;
-- simple enum constraints where practical.
-
-The registry should not expose arbitrary implementation functions by path.
-
-## 8. Domain-service namespaces
+## 8. Domain service families
 
 Expected service families:
 
@@ -190,25 +178,38 @@ outfit
 prompt
 ```
 
-Not every service must map one-to-one to an action namespace. Services are implementation boundaries; actions are consumer-facing operations.
+Services are implementation boundaries; action namespaces are consumer-facing contracts. They do not need a one-to-one mapping.
 
 ## 9. Generic vs specialized mutations
 
-### Generic operations allowed
+### Generic operations
 
-For simple module fields:
+Safe generic operations must be schema-backed and narrow:
 
 ```text
 module.activate
 module.deactivate
 module.field.set
-module.reset
 module.preset.apply
+module.customMode.set
 ```
 
-The implementation must use module schema/default/custom-input rules.
+`module.field.set` is deliberately limited to simple field types:
 
-### Specialized operations required
+```text
+text
+textarea
+select
+multiSelect
+checkbox
+color
+number
+range
+```
+
+Structured field types reject and require domain-specific actions.
+
+### Specialized operations
 
 Examples:
 
@@ -218,29 +219,78 @@ layout.region.assignScene
 outfit.item.delete
 hair.style.setSource
 typography.text.create
-texture.assignment.setTargets
+texture.assignment.update
 ```
 
-These operations encode invariants that a generic patch cannot safely express.
+A generic JSON/path patch API is prohibited for these invariants.
 
-## 10. Stable reference policy
+## 10. Module activation semantics
 
-All mutation services that consume persisted references follow these rules:
+Activation and removal are different operations in the current product.
+
+`module.activate`:
+
+- adds the module key when inactive;
+- preserves existing inactive module values/panel state;
+- initializes canonical defaults/panel state only when state is missing.
+
+`module.deactivate`:
+
+- removes only the key from `selectedModuleKeys`;
+- preserves `moduleValues[moduleKey]`;
+- preserves `modulePanelStates[moduleKey]`.
+
+This matches toggling a module from the current module selector. Destructive removal from a module panel is a different behavior and must not be silently folded into `module.deactivate`.
+
+## 11. Module field / preset semantics
+
+### Freeform
+
+For a field option marked `freeform`, authored text becomes the field value itself.
+
+### `customInput`
+
+For `customInput`, the field keeps its sentinel selection (normally `"custom"`) while authored text lives in the companion key:
+
+```ts
+field.customInput?.valueKey || `${field.id}Custom`
+```
+
+`module.field.set` preserves this distinction.
+
+### Presets
+
+`module.preset.apply`:
+
+- overlays only values owned by the preset;
+- preserves unrelated module state;
+- updates `activePresetId`;
+- exits Custom Mode;
+- synchronizes `customInput` companion state when a preset changes the owning field.
+
+Changing a normal field clears `activePresetId` only if the current values no longer match the active preset.
+
+### Reset is intentionally deferred
+
+`module.reset` is not published yet. Current Clear/Reset behavior differs between generic and specialized panels, so a generic reset contract would be misleading until those semantics are explicitly canonicalized.
+
+## 12. Stable reference policy
+
+All services consuming persisted references follow these rules:
 
 1. resolve using canonical stable identity;
-2. if identity is present but missing, preserve it as missing unless the operation explicitly removes/replaces it;
-3. unavailable references remain unavailable, not silently substituted;
-4. legacy token lookup is allowed only in explicitly named compatibility/upgrade paths where no stable identity exists;
+2. preserve missing identity unless the operation explicitly removes/replaces it;
+3. unavailable references remain unavailable, never silently substituted;
+4. legacy token lookup is restricted to explicit compatibility/upgrade paths where no stable identity exists;
 5. replacement is always explicit.
 
-## 11. ID generation
+## 13. ID generation
 
-Production services may use existing repository ID factories. Tests should be able to inject deterministic ID generation where needed.
-
-Conceptual interface:
+Production services use existing domain ID conventions. Tests can inject deterministic factories.
 
 ```ts
 export type ActionIdFactory = {
+  variable?: () => string
   moduleEntity?: (moduleKey: string) => string
   scene?: () => string
   layoutRegion?: () => string
@@ -250,17 +300,19 @@ export type ActionIdFactory = {
 }
 ```
 
-Do not introduce a single global ID format that rewrites existing domain ID conventions.
+Do not introduce a global ID format that rewrites existing domain conventions.
 
-## 12. Transactions / batches
+## 14. Transactions / batches
 
-Do not implement a sophisticated transaction engine in Phase 1.
+Do not build a sophisticated transaction engine before real Wizard flows require one.
 
-Phase 1 requirement:
+Current guarantee:
 
-- a single action is atomic: either it returns a valid next draft or the original draft unchanged.
+- one action is atomic;
+- success returns a detached next draft;
+- failure returns the original caller draft.
 
-Later batch target, only after real Wizard use-cases are documented:
+Future target, if justified:
 
 ```ts
 executeBatch(actions, {
@@ -269,64 +321,53 @@ executeBatch(actions, {
 })
 ```
 
-Potential behavior:
-
-- `atomic: true`: any failed step rolls back the whole batch;
-- `dryRun: true`: return proposed next state/issues without applying to session;
-- step results remain inspectable.
-
-## 13. Validation strategy
-
-Validation happens at three levels:
+## 15. Validation layers
 
 ### Input validation
 
-Checks action input shape and primitive constraints.
+Action shape and primitive constraints.
 
 ### Domain validation
 
-Checks operation invariants such as:
+Examples:
 
 - module exists and is active/eligible;
-- field exists and accepts the supplied value;
-- entity ID exists;
+- field exists and accepts supplied value;
+- structured fields use specialized actions;
+- entity/Scene IDs exist;
 - Scene component cardinality;
 - relation endpoints exist;
-- duplicate keys are normalized safely;
-- target capability eligibility.
+- duplicate keys normalize safely;
+- semantic target capability eligibility.
 
 ### Whole-draft validation
 
-Existing prompt/module validation remains available for final/regression checks. It should not be required for every small action unless the action can violate a global invariant that cannot be checked locally.
+Existing prompt/module validation remains a final/regression layer and is not automatically run after every small action.
 
-## 14. Compilation boundary
+## 16. Compilation boundary
 
-Actions mutate state; they do not compile prompts as a side effect.
-
-Compilation is a separate explicit operation/service:
+Actions mutate state; compilation is explicit and separate:
 
 ```text
 prompt.compile
 prompt.validate
 ```
 
-The target implementation must be headless and derive user-variable ownership and module outputs from explicit draft context rather than implicit Vue composable state.
+The final compile service must be headless and derive variable ownership and module outputs from explicit context, not implicit Vue composable state.
 
-## 15. Expert UI migration
+## 17. Expert UI migration
 
 Migration is incremental:
 
-1. extract a service from one UI-owned mutation;
-2. add isolated service tests;
-3. expose the corresponding action if useful;
-4. change the existing component to call the service;
+1. extract canonical domain service;
+2. add isolated service/action tests;
+3. validate the action contract;
+4. migrate one existing Expert UI path to the same service;
 5. remove duplicate mutation code;
-6. confirm UI behavior/output equivalence.
+6. verify UI/output equivalence.
 
-No big-bang rewrite of the create page or all module editors.
+No big-bang rewrite.
 
-## 16. Compatibility
+## 18. Compatibility
 
-Actions API introduction must not require an immediate draft schema version bump. Existing serialized `moduleValues` remain canonical unless a domain change separately justifies migration.
-
-The first phases are architecture/extraction work, not persisted-schema redesign.
+Actions API introduction does not itself require a persisted draft schema bump. Existing serialized `moduleValues` remain canonical unless a separate domain change explicitly requires migration.
