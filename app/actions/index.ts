@@ -10,6 +10,16 @@ export {
   registerModuleActions,
 } from "./modules";
 export {
+  moduleEntityActions,
+  moduleEntityCreateAction,
+  moduleEntityDeleteAction,
+  moduleEntityDuplicateAction,
+  moduleEntitySetEnabledAction,
+  moduleEntitySetInheritanceAction,
+  moduleEntityUpdateAction,
+  registerModuleEntityActions,
+} from "./moduleEntities";
+export {
   registerVariableActions,
   variableActions,
   variableCreateAction,
