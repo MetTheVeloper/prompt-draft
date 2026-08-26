@@ -300,6 +300,10 @@ export const variableActions = [
 ] as const;
 
 export function registerVariableActions(registry: ActionRegistry) {
-  variableActions.forEach((action) => registry.register(action as ActionDefinition));
+  registry.register(variableCreateAction);
+  registry.register(variableUpdateAction);
+  registry.register(variableDuplicateAction);
+  registry.register(variableDeleteAction);
+  registry.register(variableSetEnabledAction);
   return registry;
 }
