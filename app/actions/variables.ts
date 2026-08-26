@@ -11,7 +11,11 @@ import {
   type UpdatePromptVariableInput,
 } from "../domain/variables";
 import type { DomainIssue } from "../domain/types";
-import type { ActionDefinition, ActionIssue } from "./types";
+import type {
+  ActionContext,
+  ActionDefinition,
+  ActionIssue,
+} from "./types";
 import { ActionRegistry } from "./registry";
 
 const VARIABLES_MODULE_KEY = "variables";
@@ -56,7 +60,7 @@ function actionIssues(issues: DomainIssue[]): ActionIssue[] {
   return issues.map((issue) => ({ ...issue }));
 }
 
-function variableOptions(context: Parameters<NonNullable<typeof variableCreateAction.execute>>[0]) {
+function variableOptions(context: ActionContext) {
   return {
     blockedKeys: context.environment?.activeSystemVariableKeys || [],
     createId: context.idFactory?.variable,
@@ -296,6 +300,6 @@ export const variableActions = [
 ] as const;
 
 export function registerVariableActions(registry: ActionRegistry) {
-  variableActions.forEach((action) => registry.register(action as any));
+  variableActions.forEach((action) => registry.register(action as ActionDefinition));
   return registry;
 }
