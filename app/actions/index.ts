@@ -27,6 +27,18 @@ export {
   registerModuleEntityFieldActions,
 } from "./moduleEntityFields";
 export {
+  registerSceneActions,
+  sceneActions,
+  sceneComponentAttachAction,
+  sceneComponentDetachAction,
+  sceneComponentReplaceAction,
+  sceneCreateAction,
+  sceneDeleteAction,
+  sceneDuplicateAction,
+  sceneSetEnabledAction,
+  sceneUpdateAction,
+} from "./scenes";
+export {
   registerTypographyActions,
   typographyActions,
   typographyGroupCreateAction,
