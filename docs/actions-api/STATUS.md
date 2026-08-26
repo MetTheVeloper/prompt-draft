@@ -56,7 +56,7 @@ Status: `implemented`, not yet `migrated` to Expert UI.
 Services:
 
 - `app/domain/modules.ts`
-- shared simple-field rules: `app/domain/moduleFields.ts`
+- `app/domain/moduleFields.ts` — shared canonical simple-field validation/write semantics
 
 Implemented actions:
 
@@ -105,54 +105,88 @@ Validated invariants:
 - inheritance mutation requires explicit module capability;
 - inactive/non-entity-capable/missing/conflicting targets reject explicitly.
 
-User runtime checkpoint on 2026-08-27:
+User runtime checkpoint on 2026-08-27: **35/35 passed**.
 
-- command: `pnpm test:actions-api`
-- result: **35 tests / 35 passed / 0 failed**
-- suites: Foundation + Variables + Modules + ModuleEntity lifecycle
-
-### 2D. ModuleEntity simple fields and presets — SOURCE IMPLEMENTED / VALIDATION PENDING
+### 2D. ModuleEntity simple fields and presets — IMPLEMENTED + VALIDATED
 
 Services:
 
-- `app/domain/moduleFields.ts` — canonical simple-field validation/write semantics shared by Global module fields and ModuleEntity payload fields.
+- `app/domain/moduleFields.ts` — shared by Global module fields and ModuleEntity payload fields;
 - `app/domain/moduleEntityFields.ts` — entity-local field/preset orchestration.
 
-Source actions:
+Implemented actions:
 
-- [x] `moduleEntity.field.set`
-- [x] `moduleEntity.field.clear`
-- [x] `moduleEntity.preset.apply`
+- `moduleEntity.field.set`
+- `moduleEntity.field.clear`
+- `moduleEntity.preset.apply`
 
-Important semantics:
+Validated semantics:
 
 - only simple schema-backed non-override fields are accepted;
 - structured fields require specialized domain actions;
 - `field.set` writes one local payload override and preserves entity identity;
 - `field.clear` removes the local field plus its `customInput` sidecar, restoring inherited/unset semantics;
-- `customInput` sidecar behavior is shared with Global `module.field.set` through one canonical helper;
+- Global and entity simple fields share one canonical validator/mutator implementation;
 - entity preset application overlays only real non-override module fields;
-- unrelated entity payload survives preset application;
-- stale custom sidecars are removed when a preset selects a non-custom option;
-- entity preset application does not expose arbitrary payload patching.
+- unrelated payload survives preset application;
+- stale custom sidecars are removed when the preset leaves a custom selection.
+
+User runtime checkpoint on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **41 tests / 41 passed / 0 failed**
+- suites: Foundation + Variables + Modules + ModuleEntity lifecycle + ModuleEntity fields/presets
+
+### 2E. Typography — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/typography.ts`
+
+Actions:
+
+- [x] `typography.group.create`
+- [x] `typography.group.update`
+- [x] `typography.group.delete`
+- [x] `typography.group.move`
+- [x] `typography.text.create`
+- [x] `typography.text.update`
+- [x] `typography.text.delete`
+- [x] `typography.text.move`
 
 Tests:
 
-- `scripts/actions-module-entity-fields.test.ts`
-- the main Actions API command now runs all prior suites plus this suite.
+- `scripts/actions-typography.test.ts`
+- included in `pnpm test:actions-api`
+
+Typography audit/contract decisions:
+
+- `groupName` and `layerName` are structural tokens derived from stable IDs and are not arbitrary update fields;
+- create resolves the final stable ID first, then derives the structural token from that identity;
+- group update preserves stable group ID/token and all contained text identities;
+- text update preserves stable text ID/layer token;
+- text create/update reject empty authored text, matching the current editor validation;
+- group metadata remains optional, matching the current editor behavior;
+- configured purpose/direction/alignment/distribution/font options validate against the Typography field schema;
+- a structural variable token remains valid as a font-style value;
+- explicit Layout Region positioning requires `positionSource: "layout_region"` plus an exact active region ID;
+- explicit missing-region replacement rejects rather than fuzzy-retargeting;
+- unrelated persisted missing region references are not rewritten by unrelated Typography mutations;
+- move operations use exact stable IDs and explicit target indices;
+- group deletion deletes the contained text blocks as current ownership semantics imply.
 
 Validation pending:
 
-- [ ] Run `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **41**.
-- [ ] Resolve any regression/new-suite failure before marking the three new actions `implemented`.
+- [ ] Run updated `pnpm test:actions-api` in the real project checkout.
+- [ ] Expected current total if all tests pass: **49**.
+- [ ] Resolve any Typography or prior-suite regression before marking the eight actions `implemented`.
 
-## Next after 2D validation
+## Next after Typography validation
 
-1. Mark ModuleEntity field/preset actions `implemented` if the suite is green.
-2. Decide the first low-risk Expert UI migration boundary after the service contracts are stable.
-3. Continue Phase 2 to Typography domain services/actions.
-4. Then continue toward Scene and Layout, which are required before Wizard work begins.
+1. Mark the eight Typography actions `implemented` if the suite is green.
+2. Re-evaluate the first low-risk Expert UI migration boundary now that Variables, Modules, ModuleEntity and Typography services are stable.
+3. Continue Phase 2 to Scene services/actions.
+4. Continue to Layout immediately after Scene; both are required before Wizard work begins.
 
 ## Known deferred decisions
 
