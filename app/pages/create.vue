@@ -5,11 +5,23 @@ import { useDebounceFn } from "@vueuse/core";
 import { promptModules } from "../modules/registry";
 import type { ModuleValues, PromptVariable } from "../modules/types";
 import type {
+  ModulePanelState,
+  PromptDraftCollection,
+  PromptDraftRecord,
+  PromptDraftSnapshot,
+} from "../modules/promptDraft.types";
+import type {
   ModuleOutputMap,
   PromptOutputFormat,
   PromptSettings,
 } from "../utils/compilePrompt";
 import { compilePromptOutput, createDefaultPromptSettings } from "../utils/compilePrompt";
+import {
+  clonePromptDraftState,
+  createPromptDraftState,
+  isPromptOutputFormat,
+  normalizePromptDraftState,
+} from "../utils/promptDraftState";
 import type { PromptValidationIssue } from "../utils/promptValidation";
 import { validatePromptSettings } from "../utils/promptValidation";
 import PromptEditor from "../components/prompt/editor.vue";
@@ -26,10 +38,6 @@ const app = useAppStore();
 const { $menu, $modal } = useNuxtApp();
 const { openPageContextMenu } = usePageContextMenu();
 const { openVariablePicker } = useVariablePickerModal();
-type ModulePanelState = {
-  isCustomMode?: boolean;
-  activePresetId?: string | null;
-};
 
 const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
 const LEGACY_DRAFT_STORAGE_KEY = "prompt-draft:create-editor:v1";
@@ -49,28 +57,6 @@ const createVariablesContextAction = reactive<CreateVariablesContextAction>({
 });
 
 provide(CREATE_VARIABLES_CONTEXT_ACTION_KEY, createVariablesContextAction);
-
-type PromptDraftSnapshot = {
-  version: 1;
-  selectedModuleKeys: string[];
-  moduleValues: Record<string, ModuleValues>;
-  modulePanelStates: Record<string, ModulePanelState>;
-  promptSettings: PromptSettings;
-  outputFormat: PromptOutputFormat;
-  updatedAt: string;
-};
-
-type PromptDraftRecord = PromptDraftSnapshot & {
-  id: string;
-  title: string;
-  createdAt: string;
-};
-
-type PromptDraftCollection = {
-  version: 1;
-  activeDraftId: string | null;
-  drafts: PromptDraftRecord[];
-};
 
 // const selectedModuleKeys = ref<string[]>(promptModules.map((module) => module.key));
 const selectedModuleKeys = ref<string[]>([]);
@@ -144,10 +130,6 @@ function isPlainRecord(value: unknown): value is Record<string, unknown> {
 
 function isAbortError(error: unknown) {
   return error instanceof DOMException && error.name === "AbortError";
-}
-
-function isValidOutputFormat(value: unknown): value is PromptOutputFormat {
-  return value === "modular" || value === "natural" || value === "json";
 }
 
 function createDraftId() {
@@ -285,33 +267,28 @@ function muteAutoSaveUntilNextTick() {
 }
 
 function resetDraftState() {
-  selectedModuleKeys.value = [];
-  moduleValues.value = {};
-  modulePanelStates.value = {};
-  promptSettings.value = createDefaultPromptSettings();
-  outputFormat.value = "modular";
+  const state = createPromptDraftState(createDefaultPromptSettings());
+
+  selectedModuleKeys.value = state.selectedModuleKeys;
+  moduleValues.value = state.moduleValues;
+  modulePanelStates.value = state.modulePanelStates;
+  promptSettings.value = state.promptSettings;
+  outputFormat.value = state.outputFormat;
   moduleOutputs.value = {};
   moduleValidationIssues.value = [];
 }
 
 function applyDraftSnapshot(snapshot: Partial<PromptDraftSnapshot>) {
-  const validModuleKeys = new Set(promptModules.map((module) => module.key));
+  const normalized = normalizePromptDraftState(snapshot, {
+    validModuleKeys: promptModules.map((module) => module.key),
+    defaultPromptSettings: createDefaultPromptSettings(),
+  });
 
-  selectedModuleKeys.value = Array.isArray(snapshot.selectedModuleKeys)
-    ? snapshot.selectedModuleKeys.filter((key) => validModuleKeys.has(key))
-    : [];
-
-  moduleValues.value = snapshot.moduleValues || {};
-  modulePanelStates.value = snapshot.modulePanelStates || {};
-
-  promptSettings.value = {
-    ...createDefaultPromptSettings(),
-    ...(snapshot.promptSettings || {}),
-  };
-
-  outputFormat.value = isValidOutputFormat(snapshot.outputFormat)
-    ? snapshot.outputFormat
-    : "modular";
+  selectedModuleKeys.value = normalized.selectedModuleKeys;
+  moduleValues.value = normalized.moduleValues;
+  modulePanelStates.value = normalized.modulePanelStates;
+  promptSettings.value = normalized.promptSettings;
+  outputFormat.value = normalized.outputFormat;
 
   moduleOutputs.value = {};
   moduleValidationIssues.value = [];
@@ -329,13 +306,17 @@ function applyDraftRecord(draft: PromptDraftRecord) {
 }
 
 function createDraftSnapshot(): PromptDraftSnapshot {
-  return {
+  const state = clonePromptDraftState({
     version: 1,
-    selectedModuleKeys: cloneJson(selectedModuleKeys.value),
-    moduleValues: cloneJson(moduleValues.value),
-    modulePanelStates: cloneJson(modulePanelStates.value),
-    promptSettings: cloneJson(promptSettings.value),
+    selectedModuleKeys: selectedModuleKeys.value,
+    moduleValues: moduleValues.value,
+    modulePanelStates: modulePanelStates.value,
+    promptSettings: promptSettings.value,
     outputFormat: outputFormat.value,
+  });
+
+  return {
+    ...state,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -425,7 +406,7 @@ function getSafeDraftRecord(
       ...createDefaultPromptSettings(),
       ...(value.promptSettings || {}),
     },
-    outputFormat: isValidOutputFormat(value.outputFormat)
+    outputFormat: isPromptOutputFormat(value.outputFormat)
       ? value.outputFormat
       : "modular",
     updatedAt,
