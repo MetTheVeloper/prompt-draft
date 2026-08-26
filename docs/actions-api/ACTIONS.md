@@ -27,14 +27,14 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `module.activate` | planned | Activate a registered module; preserve existing inactive state or initialize missing defaults/panel state. |
-| `module.deactivate` | planned | Deactivate non-destructively; preserve stored values/panel state. |
-| `module.field.set` | planned | Set a simple schema-backed field; structured field types reject. |
-| `module.preset.apply` | planned | Overlay a registered preset using canonical field/custom-sidecar semantics. |
-| `module.customMode.set` | planned | Enable/disable module-level Custom Override where an override field exists. |
+| `module.activate` | implemented | Activate a registered module; preserve existing inactive state or initialize missing defaults/panel state. |
+| `module.deactivate` | implemented | Deactivate non-destructively; preserve stored values/panel state. |
+| `module.field.set` | implemented | Set a simple schema-backed field; structured field types reject. |
+| `module.preset.apply` | implemented | Overlay a registered preset using canonical field/custom-sidecar semantics. |
+| `module.customMode.set` | implemented | Enable/disable module-level Custom Override where an override field exists. |
 | `module.reset` | planned | Deferred until generic/specialized Clear semantics are explicitly canonicalized. |
 
-The first five module actions have source implementations and tests on the current Phase 2 branch, but remain `planned` here until the updated suite passes in the real project checkout.
+Validation checkpoint: `pnpm test:actions-api` passed **27/27** on 2026-08-27 with Foundation + Variables + Modules suites.
 
 ## Variables
 
@@ -46,20 +46,20 @@ The first five module actions have source implementations and tests on the curre
 | `variable.delete` | implemented | Remove one exact stable variable; references are not silently retargeted. |
 | `variable.setEnabled` | implemented | Enable/disable one exact user variable. |
 
-Validation checkpoint: `pnpm test:actions-api` passed **18/18** on 2026-08-27 with the Foundation + Variables suites.
-
 ## Generic named module entities
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `moduleEntity.create` | planned | Create a named configuration for an entity-capable module. |
-| `moduleEntity.update` | planned | Update name/key/payload through canonical normalization. |
-| `moduleEntity.duplicate` | planned | Duplicate with a new stable ID and unique editable key. |
-| `moduleEntity.delete` | planned | Remove entity; external stable refs become missing, never retargeted. |
-| `moduleEntity.setEnabled` | planned | Toggle availability without changing identity. |
-| `moduleEntity.setInheritance` | planned | Toggle global inheritance where capability allows it. |
+| `moduleEntity.create` | planned | Source implemented: create empty-payload named configuration with new stable ID and canonical unique key. |
+| `moduleEntity.update` | planned | Source implemented: update editable name/key metadata while preserving stable ID. |
+| `moduleEntity.duplicate` | planned | Source implemented: duplicate adjacent with deep-copied payload, new stable ID and unique key. |
+| `moduleEntity.delete` | planned | Source implemented: remove one exact entity; external stable refs remain missing and are never retargeted. |
+| `moduleEntity.setEnabled` | planned | Source implemented: toggle availability without changing identity. |
+| `moduleEntity.setInheritance` | planned | Source implemented: toggle global inheritance only where module capability allows it. |
 | `moduleEntity.field.set` | planned | Set a simple payload field with schema/custom-sidecar rules. |
 | `moduleEntity.preset.apply` | planned | Apply an eligible module preset to entity payload. |
+
+The first six lifecycle actions remain `planned` until the updated repository suite passes. Generic lifecycle deliberately does not accept arbitrary payload patches; field/preset actions own schema-backed payload editing.
 
 ## Typography
 
@@ -184,7 +184,7 @@ These are action-like public capabilities but do not mutate state.
 An action may be marked `implemented` only when:
 
 1. its domain mutation is implemented outside Vue components;
-2. expected rejection returns structured issues rather than relying on UI behavior;
+2. expected rejection returns a structured issue rather than relying on UI behavior;
 3. isolated tests cover success and important invariant failures;
 4. its ID/input/result shape is documented here;
 5. it does not introduce a second implementation of an existing mutation;
