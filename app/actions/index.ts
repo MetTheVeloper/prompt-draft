@@ -1,6 +1,18 @@
 export { ActionRegistry, createActionRegistry } from "./registry";
 export { validateActionInput } from "./inputSchema";
 export {
+  layoutActions,
+  layoutGridUpdateAction,
+  layoutRegionAssignSceneAction,
+  layoutRegionClearSceneAction,
+  layoutRegionCreateAction,
+  layoutRegionDeleteAction,
+  layoutRegionDuplicateAction,
+  layoutRegionMoveAction,
+  layoutRegionUpdateAction,
+  registerLayoutActions,
+} from "./layouts";
+export {
   moduleActions,
   moduleActivateAction,
   moduleCustomModeSetAction,
