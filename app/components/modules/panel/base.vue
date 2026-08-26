@@ -328,6 +328,12 @@ const customOverrideValue = computed(() => {
   return String(values[overrideField.value.id] ?? "").trim();
 });
 
+const { isCollapseLocked, togglePanel } = useModulePanelCollapseGuard({
+  expanded: isPanelExpanded,
+  isCustomMode: () => isCustomMode.value && Boolean(overrideField.value),
+  getCustomValue: () => customOverrideValue.value,
+});
+
 const effectiveValues = computed<ModuleValues>(() => {
   const nextValues: ModuleValues = { ...values };
 
@@ -524,10 +530,6 @@ function isGroupOpen(group: ModuleGroupView) {
 
 function toggleGroup(groupId: string) {
   openGroups[groupId] = !openGroups[groupId];
-}
-
-function togglePanel() {
-  isPanelExpanded.value = !isPanelExpanded.value;
 }
 
 function toggleCustomMode() {
@@ -1172,6 +1174,7 @@ const modulePanelContextMenuItems = computed<GlobalMenuItem[]>(() => {
     {
       label: isPanelExpanded.value ? labels.collapse : labels.expand,
       icon: isPanelExpanded.value ? "expand_less" : "expand_more",
+      disabled: isCollapseLocked.value,
       handler: togglePanel,
     },
     {
@@ -1279,7 +1282,7 @@ onBeforeUnmount(() => {
               :label="primaryCopyLabel"
               :icon="primaryCopyIcon"
             />
-            <el-button type="fab" :size="14" @click="togglePanel" mode="flat" color="prim" :p="8"
+            <el-button type="fab" :size="14" @click="togglePanel" :disable="isCollapseLocked" mode="flat" color="prim" :p="8"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
               :icon="!isPanelExpanded ? 'expand_more' : 'expand_less'" />
           </el-flex>
