@@ -137,29 +137,22 @@ User runtime checkpoint on 2026-08-27:
 - result: **41 tests / 41 passed / 0 failed**
 - suites: Foundation + Variables + Modules + ModuleEntity lifecycle + ModuleEntity fields/presets
 
-### 2E. Typography — SOURCE IMPLEMENTED / VALIDATION PENDING
+### 2E. Typography — IMPLEMENTED + VALIDATED
 
-Service:
+Service: `app/domain/typography.ts`
 
-- `app/domain/typography.ts`
+Implemented actions:
 
-Actions:
+- `typography.group.create`
+- `typography.group.update`
+- `typography.group.delete`
+- `typography.group.move`
+- `typography.text.create`
+- `typography.text.update`
+- `typography.text.delete`
+- `typography.text.move`
 
-- [x] `typography.group.create`
-- [x] `typography.group.update`
-- [x] `typography.group.delete`
-- [x] `typography.group.move`
-- [x] `typography.text.create`
-- [x] `typography.text.update`
-- [x] `typography.text.delete`
-- [x] `typography.text.move`
-
-Tests:
-
-- `scripts/actions-typography.test.ts`
-- included in `pnpm test:actions-api`
-
-Typography audit/contract decisions:
+Validated contract decisions:
 
 - `groupName` and `layerName` are structural tokens derived from stable IDs and are not arbitrary update fields;
 - create resolves the final stable ID first, then derives the structural token from that identity;
@@ -175,18 +168,61 @@ Typography audit/contract decisions:
 - move operations use exact stable IDs and explicit target indices;
 - group deletion deletes the contained text blocks as current ownership semantics imply.
 
+User runtime checkpoint on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **49 tests / 49 passed / 0 failed**
+- suites: all prior suites + Typography
+
+### 2F. Scene — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/scenes.ts`
+
+Actions:
+
+- [x] `scene.create`
+- [x] `scene.update`
+- [x] `scene.duplicate`
+- [x] `scene.delete`
+- [x] `scene.setEnabled`
+- [x] `scene.component.attach`
+- [x] `scene.component.detach`
+- [x] `scene.component.replace`
+
+Tests:
+
+- `scripts/actions-scenes.test.ts`
+- included in `pnpm test:actions-api`
+
+Scene audit/contract decisions:
+
+- canonical Scene identity remains `scene.id`; key/name are editable presentation/semantic metadata;
+- create/duplicate receive deterministic-injectable stable IDs and unique camel-style semantic keys;
+- duplicate is adjacent and deep-copies explicit component refs;
+- delete touches only Scene-owned state, so existing Layout Region `contentRef.entityId` remains missing instead of being rewritten;
+- component identity remains exact `moduleKey + entityId`;
+- attach/replace require the target module to be active, Scene-exposable, and the target entity to exist and be enabled;
+- `single` Scene-selection modules reject implicit replacement during attach; callers must use explicit `scene.component.replace`;
+- `multiple` modules may attach several distinct exact entity refs;
+- duplicate attachment is rejected instead of silently deduplicating an authored mutation;
+- detach intentionally validates only the exact stored reference, not current target availability, so missing/orphan refs can always be explicitly removed;
+- replace can repair an exact missing entity ref when the module is still active/exposable and the replacement entity is exact/available;
+- no Scene action performs token/name/fuzzy reference rescue;
+- compiler, Scene UI and Layout implementation remain unchanged in this checkpoint.
+
 Validation pending:
 
 - [ ] Run updated `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **49**.
-- [ ] Resolve any Typography or prior-suite regression before marking the eight actions `implemented`.
+- [ ] Expected current total if all tests pass: **57**.
+- [ ] Resolve any Scene or prior-suite regression before marking the eight Scene actions `implemented`.
 
-## Next after Typography validation
+## Next after Scene validation
 
-1. Mark the eight Typography actions `implemented` if the suite is green.
-2. Re-evaluate the first low-risk Expert UI migration boundary now that Variables, Modules, ModuleEntity and Typography services are stable.
-3. Continue Phase 2 to Scene services/actions.
-4. Continue to Layout immediately after Scene; both are required before Wizard work begins.
+1. Mark the eight Scene actions `implemented` if the suite is green.
+2. Continue Phase 2 immediately to Layout domain services/actions; Scene + Layout form the minimum stable relational path required before Wizard work.
+3. Re-evaluate the first low-risk Expert UI migration boundary after the Scene/Layout write contracts are both validated, avoiding migration churn while relational semantics are still being finalized.
 
 ## Known deferred decisions
 
