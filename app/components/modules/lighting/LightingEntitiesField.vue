@@ -22,6 +22,7 @@ import ModuleEntityCardShell from "~/components/modules/shared/ModuleEntityCardS
 import LightSourcesField from "./LightSourcesField.vue";
 
 const { t } = useI18n();
+const { mobile } = useScreen();
 
 const props = withDefaults(
   defineProps<{
@@ -426,7 +427,7 @@ function entitySummary(entity: ModuleEntity<ModuleEntityPayload>) {
       @duplicate="duplicateEntity(entityIndex)"
       @remove="removeEntity(entityIndex)"
     >
-      <el-grid :cols="2" :gap="12" class="w100">
+      <el-grid :cols="mobile ? 1 : 2" :gap="12" class="w100">
         <el-flex rules="ccs" :gap="5">
           <el-text :size="10" color="normal50">
             {{ translate("components.moduleEntities.fields.name", "Name") }}
