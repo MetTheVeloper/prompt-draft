@@ -27,6 +27,18 @@ export {
   registerModuleEntityFieldActions,
 } from "./moduleEntityFields";
 export {
+  registerTypographyActions,
+  typographyActions,
+  typographyGroupCreateAction,
+  typographyGroupDeleteAction,
+  typographyGroupMoveAction,
+  typographyGroupUpdateAction,
+  typographyTextCreateAction,
+  typographyTextDeleteAction,
+  typographyTextMoveAction,
+  typographyTextUpdateAction,
+} from "./typography";
+export {
   registerVariableActions,
   variableActions,
   variableCreateAction,
