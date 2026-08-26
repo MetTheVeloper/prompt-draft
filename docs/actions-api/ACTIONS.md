@@ -56,11 +56,14 @@ Validation checkpoint: `pnpm test:actions-api` passed **27/27** on 2026-08-27 wi
 | `moduleEntity.delete` | implemented | Remove one exact entity; external stable refs remain missing and are never retargeted. |
 | `moduleEntity.setEnabled` | implemented | Toggle availability without changing identity. |
 | `moduleEntity.setInheritance` | implemented | Toggle global inheritance only where module capability allows it. |
-| `moduleEntity.field.set` | planned | Source implemented: set one simple local payload override with canonical schema/custom-sidecar rules. |
-| `moduleEntity.field.clear` | planned | Source implemented: explicitly remove one local override + sidecar to resume inherited/unset semantics. |
-| `moduleEntity.preset.apply` | planned | Source implemented: overlay eligible non-override module fields into one entity payload. |
+| `moduleEntity.field.set` | implemented | Set one simple local payload override with canonical schema/custom-sidecar rules. |
+| `moduleEntity.field.clear` | implemented | Explicitly remove one local override + sidecar to resume inherited/unset semantics. |
+| `moduleEntity.preset.apply` | implemented | Overlay eligible non-override module fields into one entity payload. |
 
-Lifecycle validation checkpoint: `pnpm test:actions-api` passed **35/35** on 2026-08-27. The three field/preset actions remain `planned` until the updated suite passes in the real project checkout.
+Validation checkpoints:
+
+- lifecycle suite reached **35/35** on 2026-08-27;
+- lifecycle + field/preset suite reached **41/41** on 2026-08-27.
 
 Generic lifecycle and field actions deliberately do not accept arbitrary payload patches. Structured fields remain owned by specialized domain actions.
 
@@ -68,14 +71,16 @@ Generic lifecycle and field actions deliberately do not accept arbitrary payload
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `typography.group.create` | planned | Create a text group with stable ID. |
-| `typography.group.update` | planned | Update group metadata/layout options. |
-| `typography.group.delete` | planned | Delete a group and contained blocks. |
-| `typography.group.move` | planned | Reorder a group. |
-| `typography.text.create` | planned | Add a stable text block to a group. |
-| `typography.text.update` | planned | Update text block fields. |
-| `typography.text.delete` | planned | Remove a text block. |
-| `typography.text.move` | planned | Reorder/move text within supported group semantics. |
+| `typography.group.create` | planned | Source implemented: create a text group with stable ID and structural group token derived from that ID. |
+| `typography.group.update` | planned | Source implemented: update group metadata/position while preserving stable ID/token and contained text identities. |
+| `typography.group.delete` | planned | Source implemented: delete one exact group and its contained blocks. |
+| `typography.group.move` | planned | Source implemented: reorder one exact group by explicit index. |
+| `typography.text.create` | planned | Source implemented: add a non-empty stable text block with structural layer token derived from its ID. |
+| `typography.text.update` | planned | Source implemented: update block content/style while preserving ID/layer token. |
+| `typography.text.delete` | planned | Source implemented: remove one exact block from one exact group. |
+| `typography.text.move` | planned | Source implemented: reorder one exact block inside its current group. |
+
+Typography actions remain `planned` until the repository suite including `scripts/actions-typography.test.ts` passes. Explicit Layout Region replacement validates the exact active region ID; missing persisted region refs are not silently rewritten by unrelated mutations.
 
 ## Scene
 
