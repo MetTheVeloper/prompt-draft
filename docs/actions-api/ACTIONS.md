@@ -1,13 +1,15 @@
 # Actions API Registry
 
-This file is the canonical inventory of public Actions API operations. Status values:
+This file is the canonical inventory of public Actions API operations.
 
-- `planned` — accepted scope, not implemented;
+Status values:
+
+- `planned` — accepted scope, not yet validated as a public action;
 - `foundation` — runtime/support primitive, not normally called by product consumers;
-- `implemented` — action exists with tests;
+- `implemented` — action exists with isolated tests and has passed the Actions API suite;
 - `migrated` — action exists and the current Expert UI uses the same canonical service.
 
-Action IDs are stable public identifiers once marked `implemented`. Renaming/removing an implemented action requires an explicit compatibility decision.
+Once an action is marked `implemented`, its ID is a compatibility surface. Renaming/removing it requires an explicit compatibility decision.
 
 ## Foundation
 
@@ -15,8 +17,9 @@ Action IDs are stable public identifiers once marked `implemented`. Renaming/rem
 |---|---|---|
 | Action registry discovery | foundation | `get`, `has`, `list` |
 | Single action execution | foundation | atomic success/failure result |
-| Input schema validation | planned | small repository-owned schema first |
-| Deterministic test ID injection | planned | preserve domain ID conventions |
+| Input schema validation | foundation | small repository-owned schema |
+| Deterministic test ID injection | foundation | domain-specific factory injection |
+| Explicit runtime environment | foundation | ambient facts are passed through `ActionContext.environment` |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -24,21 +27,26 @@ Action IDs are stable public identifiers once marked `implemented`. Renaming/rem
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `module.activate` | planned | Activate a registered module and initialize canonical defaults/panel state. |
-| `module.deactivate` | planned | Remove a module from active selection while preserving explicitly documented persisted state behavior. |
-| `module.field.set` | planned | Set a simple schema-backed field; structured field types are rejected. |
-| `module.reset` | planned | Reset module values to schema defaults. |
-| `module.preset.apply` | planned | Apply a module preset using canonical field/custom-sidecar semantics. |
+| `module.activate` | planned | Activate a registered module; preserve existing inactive state or initialize missing defaults/panel state. |
+| `module.deactivate` | planned | Deactivate non-destructively; preserve stored values/panel state. |
+| `module.field.set` | planned | Set a simple schema-backed field; structured field types reject. |
+| `module.preset.apply` | planned | Overlay a registered preset using canonical field/custom-sidecar semantics. |
+| `module.customMode.set` | planned | Enable/disable module-level Custom Override where an override field exists. |
+| `module.reset` | planned | Deferred until generic/specialized Clear semantics are explicitly canonicalized. |
+
+The first five module actions have source implementations and tests on the current Phase 2 branch, but remain `planned` here until the updated suite passes in the real project checkout.
 
 ## Variables
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `variable.create` | planned | Create a user variable with canonical unique key. |
-| `variable.update` | planned | Update key/value/type/label while preserving stable variable ID. |
-| `variable.duplicate` | planned | Duplicate with a new ID/key. |
-| `variable.delete` | planned | Remove variable explicitly; referenced tokens are not silently retargeted. |
-| `variable.setEnabled` | planned | Enable/disable an existing user variable. |
+| `variable.create` | implemented | Create a user variable with canonical unique key and stable ID. |
+| `variable.update` | implemented | Update key/value/type/description/enabled while preserving stable variable ID. |
+| `variable.duplicate` | implemented | Duplicate with a new ID/key and adjacent placement. |
+| `variable.delete` | implemented | Remove one exact stable variable; references are not silently retargeted. |
+| `variable.setEnabled` | implemented | Enable/disable one exact user variable. |
+
+Validation checkpoint: `pnpm test:actions-api` passed **18/18** on 2026-08-27 with the Foundation + Variables suites.
 
 ## Generic named module entities
 
@@ -105,7 +113,7 @@ Action IDs are stable public identifiers once marked `implemented`. Renaming/rem
 | `assignment.targets.set` | planned | Shared canonical target selection helper where domain-compatible. |
 | `assignment.exceptions.set` | planned | Shared canonical exception selection helper. |
 
-The shared assignment actions must not erase domain-specific assignment payload semantics.
+Shared assignment actions must not erase domain-specific assignment payload semantics.
 
 ## Pose / Expression
 
@@ -176,9 +184,10 @@ These are action-like public capabilities but do not mutate state.
 An action may be marked `implemented` only when:
 
 1. its domain mutation is implemented outside Vue components;
-2. expected rejection returns a structured issue rather than relying on UI behavior;
+2. expected rejection returns structured issues rather than relying on UI behavior;
 3. isolated tests cover success and important invariant failures;
 4. its ID/input/result shape is documented here;
-5. it does not introduce a second implementation of an existing mutation.
+5. it does not introduce a second implementation of an existing mutation;
+6. the corresponding Actions API suite passes in the real project checkout.
 
 An action may be marked `migrated` only after the existing Expert UI path uses the same canonical domain service and regression behavior is checked.
