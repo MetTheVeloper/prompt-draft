@@ -1,11 +1,13 @@
 import type {
   ModuleField,
   ModuleFieldValue,
-  ModulePanelState,
   ModuleValues,
   PromptKeyModule,
 } from "../modules/types";
-import type { PromptDraftState } from "../modules/promptDraft.types";
+import type {
+  ModulePanelState,
+  PromptDraftState,
+} from "../modules/promptDraft.types";
 import {
   createDefaultModuleValues,
   getModulePresetValues,
