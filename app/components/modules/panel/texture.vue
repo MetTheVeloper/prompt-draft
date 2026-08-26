@@ -136,6 +136,12 @@ const customTextValue = computed(() => {
   return typeof values.customText === "string" ? values.customText.trim() : "";
 });
 
+const { isCollapseLocked, togglePanel } = useModulePanelCollapseGuard({
+  expanded: isPanelExpanded,
+  isCustomMode: () => isCustomMode.value,
+  getCustomValue: () => customTextValue.value,
+});
+
 const effectiveValues = computed<ModuleValues>(() => ({
   ...values,
   customText: "",
@@ -206,10 +212,6 @@ function fieldPlaceholder(fieldId: string, fallback = "") {
   return translate(`${moduleI18nBase.value}.fields.${fieldId}.placeholder`, fallback);
 }
 
-function togglePanel() {
-  isPanelExpanded.value = !isPanelExpanded.value;
-}
-
 function clearTexture() {
   const defaults = createDefaultModuleValues(props.module);
   Object.keys(defaults).forEach((key) => {
@@ -246,6 +248,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
   getTitle: () => moduleTitle.value,
   getExpanded: () => isPanelExpanded.value,
   onToggleExpand: togglePanel,
+  canToggleExpand: () => !isCollapseLocked.value,
   getCustomMode: () => isCustomMode.value,
   onToggleCustomize: () => {
     isCustomMode.value = !isCustomMode.value;
@@ -315,6 +318,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
               mode="flat"
               color="prim"
               :p="8"
+              :disable="isCollapseLocked"
               :label="!isPanelExpanded ? t('panel.expand') : t('panel.collapse')"
               :icon="!isPanelExpanded ? 'expand_more' : 'expand_less'"
               @click="togglePanel"
