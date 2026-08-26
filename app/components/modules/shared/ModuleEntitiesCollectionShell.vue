@@ -28,8 +28,8 @@ function translate(path: string, fallback: string) {
     :radius="mobile ? 16 : 24"
     class="w100"
   >
-    <el-flex rules="rbc" class="w100" :gap="12">
-      <el-flex rules="ccs" :gap="2">
+    <el-flex :rules="mobile ? 'ccs' : 'rbc'" class="w100" :gap="12">
+      <el-flex rules="ccs" :gap="2" class="minw0">
         <el-text :size="16" :weight="700" icon="layers">
           {{ translate("components.moduleEntities.title", "Named Configurations") }}
         </el-text>
@@ -43,7 +43,11 @@ function translate(path: string, fallback: string) {
         </el-text>
       </el-flex>
 
-      <el-flex rules="rcc" :gap="6">
+      <el-flex
+        rules="rcc"
+        :gap="6"
+        :class="mobile ? 'w100 fw' : ''"
+      >
         <el-text marker="blue5" color="blue" :size="10" :weight="600">
           {{ count }}
         </el-text>
