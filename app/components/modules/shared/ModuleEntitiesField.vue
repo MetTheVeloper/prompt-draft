@@ -20,6 +20,11 @@ import {
 } from "~/modules/entityContracts";
 import { getModulePresetValues } from "~/utils/compileModules";
 import {
+  getModuleFieldCustomText,
+  getModuleFieldCustomValueKey,
+  isModuleFieldCustomSelection,
+} from "~/utils/moduleFieldValues";
+import {
   normalizeSemanticTargets,
   semanticScopeSummary,
 } from "~/utils/semanticTargets";
@@ -231,6 +236,41 @@ function updatePayload(index: number, fieldId: string, value: unknown) {
   });
 }
 
+function customValueKey(field: ModuleField) {
+  return getModuleFieldCustomValueKey(field);
+}
+
+function hasCustomSelection(entity: EditableModuleEntity, field: ModuleField) {
+  return Boolean(
+    field.customInput &&
+      isModuleFieldCustomSelection(field, entity.payload[field.id]),
+  );
+}
+
+function updateFieldPayload(
+  index: number,
+  field: ModuleField,
+  value: unknown,
+) {
+  const entity = entities.value[index];
+  if (!entity) return;
+
+  const nextValue = value as ModuleFieldValue;
+  const payload = {
+    ...entity.payload,
+    [field.id]: nextValue,
+  };
+
+  if (field.customInput && isModuleFieldCustomSelection(field, nextValue)) {
+    const valueKey = customValueKey(field);
+    if (!Object.prototype.hasOwnProperty.call(payload, valueKey)) {
+      payload[valueKey] = "";
+    }
+  }
+
+  updateEntity(index, { payload });
+}
+
 function updateCheckboxInput(index: number, fieldId: string, event: Event) {
   const input = event.target as HTMLInputElement | null;
   updatePayload(index, fieldId, Boolean(input?.checked));
@@ -260,14 +300,25 @@ function setPayloadOverride(
   if (!entity) return;
 
   const payload = { ...entity.payload };
+  const valueKey = field.customInput ? customValueKey(field) : "";
+
   if (!enabled) {
     delete payload[field.id];
+    if (valueKey) delete payload[valueKey];
   } else if (!Object.prototype.hasOwnProperty.call(payload, field.id)) {
-    payload[field.id] = cloneValue(
-      isIndependent(entity)
-        ? field.default ?? ""
-        : props.globalValues[field.id] ?? field.default ?? "",
+    const sourceValues = isIndependent(entity) ? {} : props.globalValues;
+    const nextValue = cloneValue(
+      sourceValues[field.id] ?? field.default ?? "",
     );
+
+    payload[field.id] = nextValue;
+
+    if (
+      field.customInput &&
+      isModuleFieldCustomSelection(field, nextValue)
+    ) {
+      payload[valueKey] = cloneValue(sourceValues[valueKey] ?? "");
+    }
   }
 
   updateEntity(index, { payload });
@@ -455,6 +506,7 @@ function clearEntityPreset(index: number) {
   const payload = { ...entity.payload };
   normalFields.value.forEach((field) => {
     delete payload[field.id];
+    if (field.customInput) delete payload[customValueKey(field)];
   });
   updateEntity(index, { payload });
 }
@@ -472,7 +524,20 @@ function applyEntityPreset(index: number, value: ElDropdownValue) {
 
   const payload = { ...entity.payload };
   presetValuesForEntity(presetId).forEach(([fieldId, fieldValue]) => {
-    payload[fieldId] = cloneValue(fieldValue as ModuleFieldValue);
+    const field = props.module.fields[fieldId];
+    const nextValue = cloneValue(fieldValue as ModuleFieldValue);
+    payload[fieldId] = nextValue;
+
+    if (!field?.customInput) return;
+
+    const valueKey = customValueKey(field);
+    if (isModuleFieldCustomSelection(field, nextValue)) {
+      if (!Object.prototype.hasOwnProperty.call(payload, valueKey)) {
+        payload[valueKey] = "";
+      }
+    } else {
+      delete payload[valueKey];
+    }
   });
   updateEntity(index, { payload });
 }
@@ -490,6 +555,21 @@ function fieldDescription(field: ModuleField) {
 
 function fieldPlaceholder(field: ModuleField) {
   return translate(`modules.${props.module.key}.fields.${field.id}.placeholder`, "");
+}
+
+function fieldCustomPlaceholder(field: ModuleField) {
+  return translate(
+    `modules.${props.module.key}.fields.${field.id}.customPlaceholder`,
+    fieldPlaceholder(field),
+  );
+}
+
+function entityEditorId(
+  entity: EditableModuleEntity,
+  field: ModuleField,
+  suffix = "",
+) {
+  return `module-entity:${props.module.key}:${entity.id}:${field.id}${suffix ? `:${suffix}` : ""}`;
 }
 
 function groupTitle(groupId: string) {
@@ -604,7 +684,7 @@ function updateCategory(
     ...selectedCategories.value,
     [categoryStateKey(entity, field)]: String(value ?? ""),
   };
-  updatePayload(index, field.id, "");
+  updateFieldPayload(index, field, "");
 }
 
 function isCategorizedSelect(field: ModuleField) {
@@ -630,7 +710,14 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
     return translate("components.moduleEntities.fields.notSet", "Not set — independent configuration");
   }
 
-  const value = resolvedFieldValue(entity, field);
+  const resolved = resolvedValues(entity);
+  const value = resolved[field.id] ?? field.default ?? "";
+
+  if (field.customInput && isModuleFieldCustomSelection(field, value)) {
+    const customText = getModuleFieldCustomText(field, resolved);
+    if (customText) return customText;
+  }
+
   if (Array.isArray(value)) return value.join(", ") || translate("panel.none", "None");
   if (typeof value === "boolean") return value ? "True" : "False";
 
@@ -907,7 +994,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                   :placeholder="t('panel.none')"
                   :disabled="!activeCategory(entity, field)"
                   :clearable="field.ui?.clearable !== false"
-                  @update:model-value="updatePayload(entityIndex, field.id, $event)"
+                  @update:model-value="updateFieldPayload(entityIndex, field, $event)"
                 />
               </el-flex>
 
@@ -920,7 +1007,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                 item-disabled="disabled"
                 :placeholder="t('panel.none')"
                 :clearable="field.ui?.clearable !== false"
-                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+                @update:model-value="updateFieldPayload(entityIndex, field, $event)"
               />
 
               <el-multi-select
@@ -934,7 +1021,7 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                 :item-label="(option) => optionLabel(field, option)"
                 item-value="value"
                 :placeholder="t('panel.none')"
-                @update:model-value="updatePayload(entityIndex, field.id, $event)"
+                @update:model-value="updateFieldPayload(entityIndex, field, $event)"
               />
 
               <el-text-field
@@ -978,6 +1065,18 @@ function inheritedLabel(entity: EditableModuleEntity, field: ModuleField) {
                 :placeholder="fieldPlaceholder(field)"
                 support-variables
                 @update:model-value="updatePayload(entityIndex, field.id, $event)"
+              />
+
+              <el-text-field
+                v-if="field.customInput && hasCustomSelection(entity, field)"
+                :model-value="entity.payload[customValueKey(field)]"
+                type="text"
+                :placeholder="fieldCustomPlaceholder(field)"
+                :editor-id="entityEditorId(entity, field, 'custom')"
+                support-variables
+                @update:model-value="
+                  updatePayload(entityIndex, customValueKey(field), $event)
+                "
               />
 
               <el-text
