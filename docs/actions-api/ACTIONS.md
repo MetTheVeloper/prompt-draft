@@ -50,16 +50,19 @@ Validation checkpoint: `pnpm test:actions-api` passed **27/27** on 2026-08-27 wi
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `moduleEntity.create` | planned | Source implemented: create empty-payload named configuration with new stable ID and canonical unique key. |
-| `moduleEntity.update` | planned | Source implemented: update editable name/key metadata while preserving stable ID. |
-| `moduleEntity.duplicate` | planned | Source implemented: duplicate adjacent with deep-copied payload, new stable ID and unique key. |
-| `moduleEntity.delete` | planned | Source implemented: remove one exact entity; external stable refs remain missing and are never retargeted. |
-| `moduleEntity.setEnabled` | planned | Source implemented: toggle availability without changing identity. |
-| `moduleEntity.setInheritance` | planned | Source implemented: toggle global inheritance only where module capability allows it. |
-| `moduleEntity.field.set` | planned | Set a simple payload field with schema/custom-sidecar rules. |
-| `moduleEntity.preset.apply` | planned | Apply an eligible module preset to entity payload. |
+| `moduleEntity.create` | implemented | Create empty-payload named configuration with new stable ID and canonical unique key. |
+| `moduleEntity.update` | implemented | Update editable name/key metadata while preserving stable ID. |
+| `moduleEntity.duplicate` | implemented | Duplicate adjacent with deep-copied payload, new stable ID and unique key. |
+| `moduleEntity.delete` | implemented | Remove one exact entity; external stable refs remain missing and are never retargeted. |
+| `moduleEntity.setEnabled` | implemented | Toggle availability without changing identity. |
+| `moduleEntity.setInheritance` | implemented | Toggle global inheritance only where module capability allows it. |
+| `moduleEntity.field.set` | planned | Source implemented: set one simple local payload override with canonical schema/custom-sidecar rules. |
+| `moduleEntity.field.clear` | planned | Source implemented: explicitly remove one local override + sidecar to resume inherited/unset semantics. |
+| `moduleEntity.preset.apply` | planned | Source implemented: overlay eligible non-override module fields into one entity payload. |
 
-The first six lifecycle actions remain `planned` until the updated repository suite passes. Generic lifecycle deliberately does not accept arbitrary payload patches; field/preset actions own schema-backed payload editing.
+Lifecycle validation checkpoint: `pnpm test:actions-api` passed **35/35** on 2026-08-27. The three field/preset actions remain `planned` until the updated suite passes in the real project checkout.
+
+Generic lifecycle and field actions deliberately do not accept arbitrary payload patches. Structured fields remain owned by specialized domain actions.
 
 ## Typography
 
