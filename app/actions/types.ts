@@ -41,6 +41,7 @@ export type ActionValueSchema =
 export type ActionInputSchema = Extract<ActionValueSchema, { type: "object" }>;
 
 export type ActionIdFactory = {
+  variable?: () => string;
   moduleEntity?: (moduleKey: string) => string;
   scene?: () => string;
   layoutRegion?: () => string;
@@ -49,9 +50,19 @@ export type ActionIdFactory = {
   generic?: (prefix: string) => string;
 };
 
+/**
+ * Explicit runtime facts that are not persisted inside PromptDraftState.
+ * Consumers/adapters may provide these values, but domain services never read
+ * Vue composables or component state directly.
+ */
+export type ActionEnvironment = {
+  activeSystemVariableKeys?: readonly string[];
+};
+
 export type ActionContext = {
   draft: PromptDraftState;
   modules: readonly PromptKeyModule[];
+  environment?: ActionEnvironment;
   idFactory?: ActionIdFactory;
 };
 
