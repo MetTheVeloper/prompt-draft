@@ -1,6 +1,15 @@
 export { ActionRegistry, createActionRegistry } from "./registry";
 export { validateActionInput } from "./inputSchema";
 export {
+  moduleActions,
+  moduleActivateAction,
+  moduleCustomModeSetAction,
+  moduleDeactivateAction,
+  moduleFieldSetAction,
+  modulePresetApplyAction,
+  registerModuleActions,
+} from "./modules";
+export {
   registerVariableActions,
   variableActions,
   variableCreateAction,
