@@ -184,6 +184,12 @@ const customTextValue = computed(() => {
   return typeof values.customText === "string" ? values.customText.trim() : "";
 });
 
+const { isCollapseLocked, togglePanel } = useModulePanelCollapseGuard({
+  expanded: isPanelExpanded,
+  isCustomMode: () => isCustomMode.value,
+  getCustomValue: () => customTextValue.value,
+});
+
 const effectiveValues = computed<ModuleValues>(() => ({
   ...values,
   customText: "",
@@ -378,10 +384,6 @@ function clearBackground() {
   isCustomMode.value = false;
 }
 
-function togglePanel() {
-  isPanelExpanded.value = !isPanelExpanded.value;
-}
-
 function toggleGroup(groupId: string) {
   openGroups[groupId] = !openGroups[groupId];
 }
@@ -418,6 +420,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
   getTitle: () => moduleTitle.value,
   getExpanded: () => isPanelExpanded.value,
   onToggleExpand: togglePanel,
+  canToggleExpand: () => !isCollapseLocked.value,
   getCustomMode: () => isCustomMode.value,
   onToggleCustomize: () => {
     isCustomMode.value = !isCustomMode.value;
@@ -488,6 +491,7 @@ const { openModulePanelContextMenu } = useModulePanelContextMenu({
               type="fab"
               :size="14"
               @click="togglePanel"
+              :disable="isCollapseLocked"
               mode="flat"
               color="prim"
               :p="8"
