@@ -8,8 +8,6 @@ Branch: `refactor/actions-api`
 
 Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
-Current source checkpoint: `d5104fbb6ae97cea779d47c314a02da8a90b2900`
-
 Last source audit: 2026-08-27
 
 ## Completed
@@ -26,32 +24,11 @@ Last source audit: 2026-08-27
 
 ### Phase 1 — canonical draft boundary and action primitives — COMPLETE
 
-Draft boundary:
-
-- [x] Extracted `PromptDraftState`, `ModulePanelState`, snapshot/record/collection contracts.
-- [x] Separated canonical draft state from persistence/session metadata.
-- [x] Added headless create/clone/normalize helpers.
-- [x] Migrated `app/pages/create.vue` to the shared draft contracts/helpers.
-- [x] Removed duplicate local draft-state contracts from `create.vue`.
-- [x] Kept persisted schema version at `1`.
-- [x] No prompt compiler file changed as part of Phase 1.
-
-Action runtime:
-
-- [x] Added typed `ActionDefinition`, `ActionContext`, result/issues and discovery contracts.
-- [x] Added repository-owned input schema validation.
-- [x] Added headless registry `register/get/has/list/execute`.
-- [x] Added duplicate/unknown/exception handling.
-- [x] Enforced atomic failure: failed actions return the original caller draft.
-- [x] Isolated execution from caller mutation through cloned contexts.
-- [x] Added deterministic ID factory injection.
-- [x] Added explicit `ActionEnvironment` for runtime facts instead of Vue/global reads.
-
-Validation:
-
-- [x] User ran `pnpm test:actions-api` in the real project checkout on 2026-08-27.
-- [x] Result: **18 tests / 18 passed / 0 failed**.
-- [x] Foundation and Variables suites passed together.
+- [x] Extracted canonical draft contracts/helpers.
+- [x] Migrated `create.vue` to shared draft contracts without persisted schema changes.
+- [x] Added headless Action registry, validation, structured issues/results and deterministic ID factories.
+- [x] Enforced atomic failure and caller-draft isolation.
+- [x] Kept compiler code unchanged.
 
 Phase 1 exit gate: **accepted**.
 
@@ -59,77 +36,92 @@ Phase 1 exit gate: **accepted**.
 
 ### 2A. Variables — IMPLEMENTED + VALIDATED
 
-Canonical service:
+Service: `app/domain/variables.ts`
 
-- `app/domain/variables.ts`
+Implemented actions:
+
+- `variable.create`
+- `variable.update`
+- `variable.duplicate`
+- `variable.delete`
+- `variable.setEnabled`
+
+Status: `implemented`, not yet `migrated`.
+
+### 2B. Simple modules and presets — IMPLEMENTED + VALIDATED
+
+Service: `app/domain/modules.ts`
+
+Implemented actions:
+
+- `module.activate`
+- `module.deactivate`
+- `module.field.set`
+- `module.preset.apply`
+- `module.customMode.set`
+
+User runtime validation on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **27 tests / 27 passed / 0 failed**
+- suites covered: Foundation + Variables + Modules
+
+Canonical semantics now validated:
+
+- activation preserves existing inactive state and initializes only missing state;
+- deactivation is non-destructive;
+- generic field mutation rejects structured fields;
+- freeform and `customInput` persistence semantics remain distinct;
+- preset overlay leaves unrelated state intact and synchronizes sidecars;
+- active preset clears only after values stop matching;
+- Custom Mode requires an override field.
+
+Deferred: `module.reset` remains planned because generic/specialized Clear behavior is not yet one canonical contract.
+
+### 2C. Generic ModuleEntity lifecycle — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/moduleEntities.ts`
 
 Actions:
 
-- [x] `variable.create`
-- [x] `variable.update`
-- [x] `variable.duplicate`
-- [x] `variable.delete`
-- [x] `variable.setEnabled`
+- [x] `moduleEntity.create`
+- [x] `moduleEntity.update`
+- [x] `moduleEntity.duplicate`
+- [x] `moduleEntity.delete`
+- [x] `moduleEntity.setEnabled`
+- [x] `moduleEntity.setInheritance`
 
-Invariants covered:
+Tests:
 
-- stable IDs on update;
-- new IDs on create/duplicate;
-- canonical user-key normalization and uniqueness;
-- active system/module variable collisions reject explicitly;
-- reserved keys reject;
-- exact stable-ID delete/enable mutations;
-- `variable.create` activates Variables when required;
-- failures remain atomic.
+- `scripts/actions-module-entities.test.ts`
+- included in `pnpm test:actions-api`
 
-Status: `implemented`, not yet `migrated`. The current Expert UI still owns its existing mutation calls and will be migrated only after the service/action contract is stable.
+Lifecycle invariants encoded:
 
-### 2B. Simple modules and presets — SOURCE IMPLEMENTED / VALIDATION PENDING
-
-Current service:
-
-- `app/domain/modules.ts`
-
-Current actions:
-
-- [x] `module.activate`
-- [x] `module.deactivate`
-- [x] `module.field.set`
-- [x] `module.preset.apply`
-- [x] `module.customMode.set`
-
-Tests added:
-
-- `scripts/actions-modules.test.ts`
-
-`pnpm test:actions-api` now runs foundation + Variables + Modules suites.
-
-Important semantics fixed by audit:
-
-- `module.activate` preserves existing inactive state and initializes defaults only when state is missing.
-- `module.deactivate` is non-destructive: it removes only the active module key and preserves values/panel state, matching module-selector behavior.
-- `module.field.set` supports only simple schema-backed field types; structured fields reject with `module_field_structured` and require specialized actions.
-- freeform and `customInput` remain distinct persistence contracts.
-- preset application overlays only preset-owned values and leaves unrelated module state intact.
-- preset application exits Custom Mode and synchronizes `customInput` sidecars.
-- ordinary field changes clear `activePresetId` only when the current values no longer match that preset.
-- Custom Mode can only be enabled for modules exposing an override field.
+- entity identity is exact stable `moduleKey + entityId` ownership; editable key/name never replace identity;
+- create/duplicate use new IDs and canonical unique editable keys;
+- duplicate is inserted adjacent to the source and deep-copies its payload;
+- metadata update preserves stable ID;
+- delete removes only the exact entity and deliberately leaves Scene/Layout/external refs untouched so they become explicit missing refs rather than silently retargeting;
+- enabled toggle preserves identity;
+- inheritance toggle is allowed only when module capability explicitly supports it;
+- inactive or non-entity-capable modules reject lifecycle mutation;
+- deterministic `ActionContext.idFactory.moduleEntity` is supported for tests/consumers;
+- lifecycle update deliberately does not expose arbitrary payload patching.
 
 Validation pending:
 
-- [ ] Run updated `pnpm test:actions-api` in the project checkout.
-- [ ] Resolve any module-suite failures before marking these actions `implemented` in `ACTIONS.md`.
+- [ ] Run updated `pnpm test:actions-api` in the real project checkout.
+- [ ] Resolve any lifecycle-suite failures before marking the six actions `implemented`.
 
-### Deferred from 2B: `module.reset`
+### Next after lifecycle validation
 
-`module.reset` remains intentionally planned, not implemented. Source audit found that current Clear/Reset semantics are not identical across generic and specialized panels (notably Background). We will not publish a fake generic reset contract until that behavior is explicitly canonicalized.
-
-## Next work after 2B validation
-
-1. Fix any Module action test failures.
-2. Mark validated Module actions `implemented`.
-3. Decide whether to migrate the low-risk Expert UI module selector/field paths onto the canonical service now or after the next service family.
-4. Continue to generic `ModuleEntity` lifecycle.
+1. Mark the six ModuleEntity lifecycle actions `implemented` if the suite is green.
+2. Add schema-backed `moduleEntity.field.set` using the same simple-field/custom-sidecar rules as module fields.
+3. Add `moduleEntity.preset.apply` using entity-local payload overlay semantics.
+4. Re-evaluate low-risk Expert UI migration only after these contracts stabilize.
 5. Continue to Typography.
 
 ## Known deferred decisions
