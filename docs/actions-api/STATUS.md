@@ -174,29 +174,22 @@ User runtime checkpoint on 2026-08-27:
 - result: **49 tests / 49 passed / 0 failed**
 - suites: all prior suites + Typography
 
-### 2F. Scene — SOURCE IMPLEMENTED / VALIDATION PENDING
+### 2F. Scene — IMPLEMENTED + VALIDATED
 
-Service:
+Service: `app/domain/scenes.ts`
 
-- `app/domain/scenes.ts`
+Implemented actions:
 
-Actions:
+- `scene.create`
+- `scene.update`
+- `scene.duplicate`
+- `scene.delete`
+- `scene.setEnabled`
+- `scene.component.attach`
+- `scene.component.detach`
+- `scene.component.replace`
 
-- [x] `scene.create`
-- [x] `scene.update`
-- [x] `scene.duplicate`
-- [x] `scene.delete`
-- [x] `scene.setEnabled`
-- [x] `scene.component.attach`
-- [x] `scene.component.detach`
-- [x] `scene.component.replace`
-
-Tests:
-
-- `scripts/actions-scenes.test.ts`
-- included in `pnpm test:actions-api`
-
-Scene audit/contract decisions:
+Validated contract decisions:
 
 - canonical Scene identity remains `scene.id`; key/name are editable presentation/semantic metadata;
 - create/duplicate receive deterministic-injectable stable IDs and unique camel-style semantic keys;
@@ -209,20 +202,66 @@ Scene audit/contract decisions:
 - duplicate attachment is rejected instead of silently deduplicating an authored mutation;
 - detach intentionally validates only the exact stored reference, not current target availability, so missing/orphan refs can always be explicitly removed;
 - replace can repair an exact missing entity ref when the module is still active/exposable and the replacement entity is exact/available;
-- no Scene action performs token/name/fuzzy reference rescue;
-- compiler, Scene UI and Layout implementation remain unchanged in this checkpoint.
+- no Scene action performs token/name/fuzzy reference rescue.
+
+User runtime checkpoint on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **57 tests / 57 passed / 0 failed**
+- suites: all prior suites + Scene
+
+### 2G. Layout — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/layouts.ts`
+
+Actions:
+
+- [x] `layout.region.create`
+- [x] `layout.region.update`
+- [x] `layout.region.duplicate`
+- [x] `layout.region.delete`
+- [x] `layout.region.move`
+- [x] `layout.grid.update`
+- [x] `layout.region.assignScene`
+- [x] `layout.region.clearScene`
+
+Tests:
+
+- `scripts/actions-layouts.test.ts`
+- included in `pnpm test:actions-api`
+
+Layout audit/contract decisions:
+
+- Region identity remains `region.id`; update cannot replace it;
+- create/duplicate receive deterministic-injectable stable IDs and reject ID conflicts;
+- create/update/duplicate reuse canonical `layoutRegions` normalization instead of reimplementing geometry rules;
+- `custom` role requires a non-empty custom-role description;
+- width/height must remain positive after canonical clamp/normalization;
+- duplicate keeps explicit Scene binding metadata, clears duplicated name, offsets geometry by one grid cell where possible, and uses a new authored layer value matching current UI behavior;
+- collection move changes order only; it deliberately does not rewrite authored `layer` values;
+- grid update uses canonical grid min/max/round rules and preserves Region geometry;
+- delete touches Layout-owned state only, so Typography/future external Region refs remain missing until explicitly repaired;
+- direct `contentRef` patching is not exposed through `layout.region.update`;
+- Scene binding requires exact active Scene ID and synchronizes cached token/label plus backward-compatible `contentKey`;
+- manual `contentKey` replacement explicitly detaches the stable Scene ref when it no longer matches the cached Scene token;
+- `clearScene` removes only the Scene binding and clears `contentKey` only when that content was the Scene token being cleared;
+- no Layout action uses legacy token lookup as fallback for an existing/missing stable Scene ref;
+- compiler and current Expert UI remain unchanged in this checkpoint.
 
 Validation pending:
 
 - [ ] Run updated `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **57**.
-- [ ] Resolve any Scene or prior-suite regression before marking the eight Scene actions `implemented`.
+- [ ] Expected current total if all tests pass: **65**.
+- [ ] Resolve any Layout or prior-suite regression before marking the eight Layout actions `implemented`.
 
-## Next after Scene validation
+## Next after Layout validation
 
-1. Mark the eight Scene actions `implemented` if the suite is green.
-2. Continue Phase 2 immediately to Layout domain services/actions; Scene + Layout form the minimum stable relational path required before Wizard work.
-3. Re-evaluate the first low-risk Expert UI migration boundary after the Scene/Layout write contracts are both validated, avoiding migration churn while relational semantics are still being finalized.
+1. Mark the eight Layout actions `implemented` if the suite is green.
+2. Scene + Layout will then form the first validated cross-domain relational path usable by future Wizard orchestration.
+3. Re-evaluate the first low-risk Expert UI migration boundary now that Variables, Modules, ModuleEntity, Typography, Scene and Layout write contracts are stable.
+4. Continue Phase 2 into shared semantic-assignment write services, then specialized assignment domains.
 
 ## Known deferred decisions
 
