@@ -71,29 +71,42 @@ Generic lifecycle and field actions deliberately do not accept arbitrary payload
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `typography.group.create` | planned | Source implemented: create a text group with stable ID and structural group token derived from that ID. |
-| `typography.group.update` | planned | Source implemented: update group metadata/position while preserving stable ID/token and contained text identities. |
-| `typography.group.delete` | planned | Source implemented: delete one exact group and its contained blocks. |
-| `typography.group.move` | planned | Source implemented: reorder one exact group by explicit index. |
-| `typography.text.create` | planned | Source implemented: add a non-empty stable text block with structural layer token derived from its ID. |
-| `typography.text.update` | planned | Source implemented: update block content/style while preserving ID/layer token. |
-| `typography.text.delete` | planned | Source implemented: remove one exact block from one exact group. |
-| `typography.text.move` | planned | Source implemented: reorder one exact block inside its current group. |
+| `typography.group.create` | implemented | Create a text group with stable ID and structural group token derived from that ID. |
+| `typography.group.update` | implemented | Update group metadata/position while preserving stable ID/token and contained text identities. |
+| `typography.group.delete` | implemented | Delete one exact group and its contained blocks. |
+| `typography.group.move` | implemented | Reorder one exact group by explicit index. |
+| `typography.text.create` | implemented | Add a non-empty stable text block with structural layer token derived from its ID. |
+| `typography.text.update` | implemented | Update block content/style while preserving ID/layer token. |
+| `typography.text.delete` | implemented | Remove one exact block from one exact group. |
+| `typography.text.move` | implemented | Reorder one exact block inside its current group. |
 
-Typography actions remain `planned` until the repository suite including `scripts/actions-typography.test.ts` passes. Explicit Layout Region replacement validates the exact active region ID; missing persisted region refs are not silently rewritten by unrelated mutations.
+Validation checkpoint: `pnpm test:actions-api` passed **49/49** on 2026-08-27 with the Typography suite included. Explicit Layout Region replacement validates the exact active region ID; missing persisted region refs are not silently rewritten by unrelated mutations.
 
 ## Scene
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `scene.create` | planned | Create a Scene with stable ID and unique semantic key. |
-| `scene.update` | planned | Update Scene metadata/description while preserving stable ID. |
-| `scene.duplicate` | planned | Duplicate with new stable ID/key and copied explicit references. |
-| `scene.delete` | planned | Delete Scene; Layout refs become missing until explicitly repaired/removed. |
-| `scene.setEnabled` | planned | Toggle Scene availability. |
-| `scene.component.attach` | planned | Attach an eligible module entity respecting module cardinality. |
-| `scene.component.detach` | planned | Remove one exact stable module-entity reference. |
-| `scene.component.replace` | planned | Explicitly replace a stable component reference. |
+| `scene.create` | planned | Source implemented: create a Scene with stable ID and unique semantic key. |
+| `scene.update` | planned | Source implemented: update Scene metadata/description while preserving stable ID and component refs. |
+| `scene.duplicate` | planned | Source implemented: duplicate adjacent with new stable ID/key and copied explicit references. |
+| `scene.delete` | planned | Source implemented: delete Scene while leaving Layout refs missing until explicitly repaired/removed. |
+| `scene.setEnabled` | planned | Source implemented: toggle Scene availability without changing identity. |
+| `scene.component.attach` | planned | Source implemented: attach one exact available module entity while respecting module cardinality. |
+| `scene.component.detach` | planned | Source implemented: remove one exact stable module-entity reference, including missing/orphan refs. |
+| `scene.component.replace` | planned | Source implemented: explicitly replace one exact ref with another available entity from the same module. |
+
+Scene source invariants:
+
+- Scene identity is `scene.id`; editable key/name never replace identity;
+- create/duplicate receive deterministic-injectable stable IDs and unique semantic keys;
+- duplicate deep-copies explicit component references and is adjacent to its source;
+- Scene deletion never rewrites Layout Region `contentRef` ownership;
+- new attach/replace requires an active scene-exposable module and exact available entity ID;
+- single-selection modules reject implicit replacement and require `scene.component.replace`;
+- detach intentionally does not require target availability, so missing/orphan refs remain explicitly recoverable;
+- replace may repair an exact missing entity ref but never performs token/name/fuzzy retargeting.
+
+Scene actions remain `planned` until `scripts/actions-scenes.test.ts` passes in the real project checkout.
 
 ## Layout
 
