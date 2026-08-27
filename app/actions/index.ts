@@ -53,6 +53,22 @@ export {
   registerEffectsLayerActions,
 } from "./effectLayers";
 export {
+  hairActions,
+  hairComponentCreateAction,
+  hairComponentDeleteAction,
+  hairComponentDuplicateAction,
+  hairComponentSetPropertyAction,
+  hairComponentUpdateAction,
+  hairStyleApplyPresetAction,
+  hairStyleCreateAction,
+  hairStyleDeleteAction,
+  hairStyleDuplicateAction,
+  hairStyleSetPropertyAction,
+  hairStyleSetSourceAction,
+  hairStyleUpdateAction,
+  registerHairActions,
+} from "./hairStyles";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
