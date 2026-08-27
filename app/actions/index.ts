@@ -69,6 +69,24 @@ export {
   registerHairActions,
 } from "./hairStyles";
 export {
+  outfitActions,
+  outfitItemCreateAction,
+  outfitItemDeleteAction,
+  outfitItemDuplicateAction,
+  outfitItemSetPropertyAction,
+  outfitItemSetSourceAction,
+  outfitItemUpdateAction,
+  outfitRelationCreateAction,
+  outfitRelationDeleteAction,
+  outfitRelationUpdateAction,
+  outfitSetApplyPresetAction,
+  outfitSetCreateAction,
+  outfitSetDeleteAction,
+  outfitSetDuplicateAction,
+  outfitSetUpdateAction,
+  registerOutfitActions,
+} from "./outfitSets";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
