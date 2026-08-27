@@ -10,7 +10,7 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **97/97 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **105/105 passed** on 2026-08-27.
 
 `main` remains untouched by Actions API development.
 
@@ -338,56 +338,85 @@ Validation history:
 - corrected real-checkout command: `pnpm test:actions-api`;
 - final result: **97 tests / 97 passed / 0 failed**.
 
-Pose public actions are now promoted to `implemented` in `ACTIONS.md`.
+Pose public actions are promoted to `implemented` in `ACTIONS.md`.
 
-### 2L. Expression assignments — IMPLEMENTED, AWAITING USER VALIDATION
+### 2L. Expression assignments — IMPLEMENTED + VALIDATED
 
-Service:
+Services:
 
 - `app/domain/expressionAssignments.ts`
-- reuses `app/domain/subjectAssignmentTargets.ts`; no second target resolver was introduced
+- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target resolver; no second Expression resolver exists
 
-Actions present on branch:
+Implemented actions:
 
 - `expression.assignment.create`
 - `expression.assignment.update`
 - `expression.assignment.delete`
 - `expression.assignment.applyPreset`
 
-Audit/contract decisions:
+Validated decisions:
 
-- current Expert UI normalizes Expression assignments to stable/compatibility IDs plus `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, `additionalDetails`, and exact subject `targets`;
-- create mirrors the existing Expert UI default-target behavior using the first available explicit `ActionEnvironment.subjectAssignmentTargets` source, otherwise `[]`;
+- Expression assignments use stable/compatibility IDs plus `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, `additionalDetails`, and exact subject `targets`;
+- create mirrors existing Expert UI default-target behavior using the first available explicit `ActionEnvironment.subjectAssignmentTargets` source, otherwise `[]`;
 - target mutation uses the same exact subject resolver already validated by Pose;
 - new missing/unavailable refs reject; exact persisted orphan refs may be retained/removed only by the same identity;
 - no token/name fuzzy recovery or cross-kind retargeting;
-- update exposes only the known Expression payload axes plus `targets`; there is no arbitrary structured patch escape hatch;
-- authored strings are preserved instead of silently coercing to catalog options, matching current UI mutation behavior;
+- update exposes only known Expression payload axes plus `targets`; there is no arbitrary structured patch escape hatch;
+- authored strings are preserved instead of silently coercing to catalog options;
 - payload edits detach `presetId`; target-only changes preserve the preset;
 - preset application replaces the five preset-owned Expression axes while preserving exact targets and authored `additionalDetails`;
 - legacy assignments without IDs normalize to deterministic `expression-assignment-{index}` compatibility identity before exact mutation;
 - compiler and Expert UI remain unchanged.
 
-Test checkpoint added:
+User runtime checkpoint on 2026-08-27:
 
-- `scripts/actions-expression-assignments.test.ts`
-- `pnpm test:actions-api` now includes the Expression suite
-- expected total: **105 tests**
-- coverage includes stable create/default target, authored payload preservation, preset detachment, target-only preset preservation, exact live target metadata refresh, new missing/unavailable rejection, persisted orphan preservation, preset application, exact-ID failures, legacy normalization and registry atomicity
+- command: `pnpm test:actions-api`
+- result: **105 tests / 105 passed / 0 failed**
+- Expression public actions are now promoted to `implemented` in `ACTIONS.md`.
 
-Validation status:
+### 2M. First Expert UI migration boundary — REVIEW COMPLETE, VARIABLES SELECTED
 
-- **not yet user-validated**
-- latest accepted real-checkout checkpoint remains **97/97**
-- Expression actions remain `planned` in `ACTIONS.md` until the real checkout suite passes, per the registry promotion rule
+Audit result: **Variables is the first low-risk migration boundary.**
+
+Why Variables is selected:
+
+- `app/components/modules/variables/VariablesField.vue` currently owns direct create/edit/duplicate/delete list mutation and blueprint insertion;
+- `app/domain/variables.ts` already operates directly on `PromptVariable[]`, exactly matching the component's `modelValue` / `update:modelValue` boundary;
+- `VariablesField.vue` already has `activeSystemVariableKeys`, which maps directly to canonical `VariableMutationOptions.blockedKeys`;
+- migration therefore does not require passing a full `PromptDraftState` into the component and does not require Action registry coupling inside Vue;
+- the Variable editor's translation, validation hints, modal orchestration and blueprint configuration remain UI concerns and can stay in place while persisted mutations move to the domain service;
+- blueprint insertion can be applied through repeated canonical `createPromptVariable` calls against a detached working list and emitted once, preserving an atomic UI commit;
+- no compiler behavior needs to change.
+
+Why `base.vue` generic module fields are not the first migration:
+
+- `base.vue` currently owns local reactive `ModuleValues` and `ModulePanelState` slices and emits them separately;
+- canonical module actions operate against the full draft boundary;
+- migrating Base first would require broader prop/context plumbing and would affect many modules at once, making it a poor first regression surface.
+
+Why Pose/Expression assignment UI is not the first migration:
+
+- the shared `SubjectAssignmentsField.vue` is a cross-domain UI abstraction with Vue-derived target catalogs;
+- the new canonical services require module/draft context plus explicit subject source environment;
+- that migration is valuable later, but crosses more adapters than Variables and is therefore not the first low-risk proof.
+
+Migration status:
+
+- **review complete; path selected**;
+- no Expert UI file has been changed in this review checkpoint;
+- no compiler file has been changed;
+- Variable actions remain `implemented`, not `migrated`, until the UI patch is applied and regression behavior is checked;
+- when the UI patch lands, `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are candidates for `migrated` status because those current UI paths exist;
+- `variable.setEnabled` remains `implemented` unless/until a current Expert UI path explicitly uses its dedicated canonical `setPromptVariableEnabled` mutation (the existing editor currently changes `enabled` as part of the general variable update form).
 
 ## Next
 
-1. Run and confirm the Expression checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
-2. If Expression passes, promote its public action statuses to `implemented` and record the validated **105/105** checkpoint.
-3. Re-evaluate the first **low-risk Expert UI migration boundary** now that Pose + Expression assignment domains both have canonical headless services.
-4. Do not migrate UI or compiler until that boundary review explicitly selects a path.
-5. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
+1. Enter the first Expert UI migration checkpoint by refactoring `VariablesField.vue` persisted CRUD/blueprint writes to call `app/domain/variables.ts` instead of directly rebuilding the array.
+2. Keep modal state, translations, validation presentation, and `usePromptVariables()` catalog synchronization in the UI adapter layer.
+3. Do not route this component through a second mutation implementation or introduce full-draft plumbing where the array-level canonical service already fits.
+4. Run `pnpm test:actions-api` after the UI patch and regression-check Variable create/edit/duplicate/delete/blueprint flows in the real app.
+5. Only after that regression checkpoint, promote the corresponding Variable actions from `implemented` to `migrated`.
+6. Continue specialized domains after this first migration proof: Lighting / Effects, then Hair / Outfit as appropriate.
 
 ## Known deferred decisions
 
