@@ -54,6 +54,7 @@ export type ActionIdFactory = {
   colorAssignment?: () => string;
   colorSwatch?: () => string;
   materialAssignment?: () => string;
+  poseAssignment?: () => string;
   generic?: (prefix: string) => string;
 };
 
@@ -74,6 +75,14 @@ export type ActionEnvironment = {
   semanticTargetSources?: Partial<
     Record<SemanticTargetCapability, readonly SemanticReferenceCatalogSource[]>
   >;
+
+  /**
+   * Exact subject-variable catalog used by Pose/Expression assignment actions.
+   * Ordering is meaningful for create: the first available source mirrors the
+   * Expert UI's current default-target behavior. Missing/unavailable persisted
+   * refs are never reconstructed by token/name matching.
+   */
+  subjectAssignmentTargets?: readonly SemanticReferenceCatalogSource[];
 };
 
 export type ActionContext = {
