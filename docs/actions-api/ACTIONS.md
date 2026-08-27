@@ -246,13 +246,23 @@ Validated public boundary:
 - malformed envelope and unknown Action failures remain structured;
 - Action atomic caller-draft semantics are preserved.
 
-The final readiness audit adds `scripts/actions-public-ids.test.ts`, which pins the exact v1 ID set. This adds one test and no production behavior.
+`scripts/actions-public-ids.test.ts` pins the exact v1 ID set and passed in the final **168/168** Actions gate.
 
-Expected final Actions total: **168**.
+## Final merge-readiness validation
+
+Accepted final gate on 2026-08-27:
+
+- `pnpm test:actions-api` => **168/168**;
+- `pnpm test:reference-catalog` => **15/15**;
+- `pnpm test:phase8-ux` => **5/5**;
+- `pnpm test:phase9-regression` => **9/9**;
+- `pnpm build` => **successful**.
+
+The branch is **merge-ready**.
 
 ## Validation timeline
 
-18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → 161 → **167 validated** → **168 final gate pending**.
+18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → 161 → 167 → **168 final validated**.
 
 ## Registration / compatibility rule
 
