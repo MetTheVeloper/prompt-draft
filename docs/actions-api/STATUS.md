@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-Phase: **Final Readiness Audit**
+Phase: **MERGE-READY**
 
 Branch: `refactor/actions-api`
 
@@ -10,13 +10,17 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **167/167 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **168/168 passed** on 2026-08-27.
 
-Latest confirmed production build: **Public Contract checkpoint — successful**.
+Final reference-catalog regression: **15/15 passed**.
 
-Latest compiler regression: **phase9 9/9** at the Prompt Compile checkpoint; no compiler production file changed after that checkpoint.
+Final Phase 8 UX regression: **5/5 passed**.
 
-`main` remains untouched and still points to the recorded baseline.
+Final Phase 9 compiler regression: **9/9 passed**.
+
+Final production build: **successful**.
+
+`main` remained untouched throughout validation and still points to the recorded baseline until an explicit merge/update is performed.
 
 ## Validation history
 
@@ -41,7 +45,11 @@ Latest compiler regression: **phase9 9/9** at the Prompt Compile checkpoint; no 
 | Prompt Validate | 153/153 | validated |
 | Prompt Compile | 161/161 | validated + phase9 9/9 + build |
 | Public Contract / Export | 167/167 | validated + build |
-| Exact public-ID freeze | expected 168 | final validation pending |
+| Exact public-ID freeze / final Actions gate | 168/168 | validated |
+| Reference catalog final regression | 15/15 | validated |
+| Phase 8 UX final regression | 5/5 | validated |
+| Phase 9 compiler final regression | 9/9 | validated |
+| Final production build | successful | validated |
 
 Detailed Action inventory lives in `docs/actions-api/ACTIONS.md`.
 Public transport contract lives in `docs/actions-api/PUBLIC-CONTRACT.md`.
@@ -70,7 +78,8 @@ Validated public/domain boundaries:
 - Outfit;
 - Prompt Validate;
 - Prompt Compile;
-- provider-neutral public registry/manifest/invocation bridge.
+- provider-neutral public registry/manifest/invocation bridge;
+- exact `prompt-draft.actions.v1` public-ID compatibility freeze.
 
 Stable-reference rules remain unchanged: stable IDs are canonical identity, missing refs never fuzzy-retarget, and exact persisted orphans may survive only where the owning domain explicitly permits it.
 
@@ -127,23 +136,10 @@ Contract: `prompt-draft.actions.v1`.
 
 Accepted validation:
 
-- `pnpm test:actions-api` => **167/167**;
-- `pnpm build` => successful.
+- public-contract checkpoint: **167/167 + successful build**;
+- exact public-ID compatibility set: **168/168 final Actions gate**.
 
 Provider-specific OpenAI/Gemini/MCP/REST adapters remain intentionally outside this branch.
-
-## Current work: exact public-ID freeze + final readiness
-
-The public-contract checkpoint proved count, uniqueness, discovery, schema export, and invocation behavior. The final audit identified one additional compatibility guard worth adding before merge readiness: pin the exact v1 set of all 99 public Action IDs.
-
-Added:
-
-- `scripts/actions-public-ids.test.ts` — exact v1 compatibility set;
-- package test registration.
-
-This adds one test only; no production behavior changes.
-
-Expected final Actions API total: **168**.
 
 ## Branch-to-main audit
 
@@ -158,17 +154,17 @@ Existing production files modified relative to `main` are intentionally narrow:
 
 All other Actions/domain/compiler additions are new files introduced by this refactor. See `FINAL-AUDIT.md` for the detailed scope review.
 
-## Final validation gate
+## Final validation gate — ACCEPTED
 
-After pulling the final audit commits, run:
+The complete merge-readiness gate passed in the real checkout on 2026-08-27:
 
-1. `pnpm test:actions-api` — expected **168/168**;
-2. `pnpm test:reference-catalog` — must pass;
-3. `pnpm test:phase8-ux` — must pass;
-4. `pnpm test:phase9-regression` — expected **9/9**;
-5. `pnpm build` — must succeed.
+1. `pnpm test:actions-api` => **168/168**;
+2. `pnpm test:reference-catalog` => **15/15**;
+3. `pnpm test:phase8-ux` => **5/5**;
+4. `pnpm test:phase9-regression` => **9/9**;
+5. `pnpm build` => **successful**.
 
-If all five are green, the branch has no known Actions API blocker and can be declared merge-ready.
+No known Actions API blocker remains. `refactor/actions-api` is **merge-ready**.
 
 ## Intentionally deferred / non-blocking
 
@@ -182,7 +178,7 @@ If all five are green, the branch has no known Actions API blocker and can be de
 
 ## Regression guardrails
 
-Final state must preserve:
+Final state preserves:
 
 - stable ID identity semantics;
 - missing/unavailable reference behavior;
@@ -194,4 +190,4 @@ Final state must preserve:
 
 ## Main branch rule
 
-Do not update or move `main` without explicit approval. All current work remains on `refactor/actions-api`.
+The branch is merge-ready, but this status update itself does not move `main`. Merge/update of `main` remains an explicit operation.
