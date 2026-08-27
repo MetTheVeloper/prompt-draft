@@ -55,6 +55,7 @@ export type ActionIdFactory = {
   colorSwatch?: () => string;
   materialAssignment?: () => string;
   poseAssignment?: () => string;
+  expressionAssignment?: () => string;
   generic?: (prefix: string) => string;
 };
 
