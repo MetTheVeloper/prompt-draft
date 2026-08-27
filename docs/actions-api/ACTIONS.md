@@ -22,6 +22,7 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Explicit runtime environment | foundation | ambient facts passed through `ActionContext.environment` |
 | Semantic assignment scope service | foundation | internal exact-ref normalization/recovery/exclusivity primitive; not public cross-domain mutation |
 | Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
+| Subject assignment target resolver | foundation | internal exact-ref resolver for Pose/Expression subject targets; preserves exact persisted orphan refs without fuzzy recovery |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -163,16 +164,28 @@ The generic public actions `assignment.targets.set` and `assignment.exceptions.s
 
 ## Pose / Expression
 
+Pose implementation is present on `refactor/actions-api` with isolated tests, but remains `planned` until the real checkout `pnpm test:actions-api` checkpoint passes. This deliberately preserves the registry rule that `implemented` means validated.
+
 | Action ID | Status | Intent |
 |---|---|---|
-| `pose.assignment.create` | planned | Create pose assignment with canonical default target policy. |
-| `pose.assignment.update` | planned | Update pose payload and detach preset when required. |
-| `pose.assignment.delete` | planned | Delete pose assignment. |
-| `pose.assignment.applyPreset` | planned | Apply pose preset while preserving target scope. |
+| `pose.assignment.create` | planned | Create pose assignment with a stable ID and first explicit available subject target when supplied. |
+| `pose.assignment.update` | planned | Update only the known Pose payload/targets; payload edits detach preset while target-only edits preserve it. |
+| `pose.assignment.delete` | planned | Delete one exact pose assignment by stable ID. |
+| `pose.assignment.applyPreset` | planned | Apply/clear pose preset while preserving exact targets and authored additional details. |
 | `expression.assignment.create` | planned | Create expression assignment. |
 | `expression.assignment.update` | planned | Update expression payload and detach preset when required. |
 | `expression.assignment.delete` | planned | Delete expression assignment. |
 | `expression.assignment.applyPreset` | planned | Apply expression preset while preserving target scope. |
+
+Pose target invariants pending validation:
+
+- Pose has a target list, not Color/Texture builtin target+exception scope;
+- available subject refs are supplied headlessly through `ActionEnvironment.subjectAssignmentTargets`;
+- target identity resolves exactly through the shared semantic reference catalog;
+- new missing/unavailable refs reject;
+- an exact persisted missing/unavailable ref may be retained or explicitly removed;
+- no token/name fuzzy retargeting;
+- no arbitrary structured Pose patch surface.
 
 ## Lighting / Effects
 
