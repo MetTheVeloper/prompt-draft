@@ -80,7 +80,17 @@ test("public manifest is deterministic JSON-safe discovery data", () => {
   const fieldSet = manifest.actions.find(
     (action) => action.id === "module.field.set",
   );
+  assert.equal(fieldSet?.effect, "mutation");
   assert.deepEqual(fieldSet?.inputSchema.properties?.value, {});
+
+  assert.equal(
+    manifest.actions.find((action) => action.id === "prompt.validate")?.effect,
+    "read",
+  );
+  assert.equal(
+    manifest.actions.find((action) => action.id === "prompt.compile")?.effect,
+    "read",
+  );
 });
 
 test("public schema mapper converts internal constraints without changing validator types", () => {
