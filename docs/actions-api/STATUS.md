@@ -210,29 +210,22 @@ User runtime checkpoint on 2026-08-27:
 - result: **57 tests / 57 passed / 0 failed**
 - suites: all prior suites + Scene
 
-### 2G. Layout — SOURCE IMPLEMENTED / VALIDATION PENDING
+### 2G. Layout — IMPLEMENTED + VALIDATED
 
-Service:
+Service: `app/domain/layouts.ts`
 
-- `app/domain/layouts.ts`
+Implemented actions:
 
-Actions:
+- `layout.region.create`
+- `layout.region.update`
+- `layout.region.duplicate`
+- `layout.region.delete`
+- `layout.region.move`
+- `layout.grid.update`
+- `layout.region.assignScene`
+- `layout.region.clearScene`
 
-- [x] `layout.region.create`
-- [x] `layout.region.update`
-- [x] `layout.region.duplicate`
-- [x] `layout.region.delete`
-- [x] `layout.region.move`
-- [x] `layout.grid.update`
-- [x] `layout.region.assignScene`
-- [x] `layout.region.clearScene`
-
-Tests:
-
-- `scripts/actions-layouts.test.ts`
-- included in `pnpm test:actions-api`
-
-Layout audit/contract decisions:
+Validated contract decisions:
 
 - Region identity remains `region.id`; update cannot replace it;
 - create/duplicate receive deterministic-injectable stable IDs and reject ID conflicts;
@@ -247,21 +240,65 @@ Layout audit/contract decisions:
 - Scene binding requires exact active Scene ID and synchronizes cached token/label plus backward-compatible `contentKey`;
 - manual `contentKey` replacement explicitly detaches the stable Scene ref when it no longer matches the cached Scene token;
 - `clearScene` removes only the Scene binding and clears `contentKey` only when that content was the Scene token being cleared;
-- no Layout action uses legacy token lookup as fallback for an existing/missing stable Scene ref;
-- compiler and current Expert UI remain unchanged in this checkpoint.
+- no Layout action uses legacy token lookup as fallback for an existing/missing stable Scene ref.
+
+User runtime checkpoint on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **65 tests / 65 passed / 0 failed**
+- suites: all prior suites + Layout
+
+Scene + Layout now form the first fully validated cross-domain relational write path for future Wizard orchestration.
+
+### 2H. Semantic assignment scope foundation — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/assignmentScopes.ts`
+
+Runtime contract extension:
+
+- `ActionEnvironment.semanticTargetSources`
+- sources are grouped by semantic capability (`color` / `material`)
+- domain code remains independent from `useSemanticTargetCatalog()` and Vue/i18n state
+
+Tests:
+
+- `scripts/actions-assignment-scopes.test.ts`
+- included in `pnpm test:actions-api`
+
+Scope ownership decisions:
+
+- this service is an internal foundation primitive, not a public generic `assignment.*` action namespace;
+- specialized Color/Texture/Pose/Expression actions will call the same scope service, keeping payload ownership local to each domain;
+- exact identity uses `semanticTargetIdentity` and shared reference-catalog resolution;
+- domain builtin slots are merged with optional dynamic semantic sources; a live dynamic source may canonically upgrade the same builtin slot identity;
+- new missing or unavailable dynamic refs reject explicitly;
+- exact persisted missing/unavailable refs may survive unrelated edits so recovery remains possible;
+- exact duplicates are removed by stable identity;
+- target/exception conflicts follow the current editor's directional semantics: the side explicitly changed wins; when both are authored atomically, targets win deterministically;
+- domain-exclusive builtin target values collapse the target scope and cannot be authored as exceptions;
+- custom targets remain valid exact semantic refs and dedupe by normalized semantic identity;
+- no token/name fuzzy recovery is introduced.
+
+Public API decision:
+
+- the previously considered generic `assignment.targets.set` and `assignment.exceptions.set` operations are rejected as public API design;
+- public assignment mutations remain domain-specific (`colorPalette.*`, `texture.*`, `pose.*`, `expression.*`).
 
 Validation pending:
 
 - [ ] Run updated `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **65**.
-- [ ] Resolve any Layout or prior-suite regression before marking the eight Layout actions `implemented`.
+- [ ] Expected current total if all tests pass: **73**.
+- [ ] Resolve any scope or prior-suite regression before treating this foundation as validated.
 
-## Next after Layout validation
+## Next after semantic scope validation
 
-1. Mark the eight Layout actions `implemented` if the suite is green.
-2. Scene + Layout will then form the first validated cross-domain relational path usable by future Wizard orchestration.
-3. Re-evaluate the first low-risk Expert UI migration boundary now that Variables, Modules, ModuleEntity, Typography, Scene and Layout write contracts are stable.
-4. Continue Phase 2 into shared semantic-assignment write services, then specialized assignment domains.
+1. Mark the semantic assignment scope foundation validated if the suite is green.
+2. Implement Color Palette assignment actions on the shared scope service.
+3. Implement Texture Material assignment actions on the same service while preserving Texture-specific preset-detach and compatibility semantics.
+4. Continue to Pose and Expression assignment actions after Color/Texture prove the shared scope contract across two different payload domains.
+5. Re-evaluate the first low-risk Expert UI migration boundary after assignment contracts stabilize.
 
 ## Known deferred decisions
 
@@ -269,8 +306,9 @@ Validation pending:
 - Batch/transaction API — defer until real multi-step Wizard flows justify it.
 - Dry-run semantics — defer with batch design.
 - Third-party schema validator — avoid until action input complexity justifies dependency cost.
+- Headless semantic source builder from canonical draft/compiler outputs — current actions accept explicit capability-scoped sources; extraction of a universal builder is deferred until specialized assignment consumers establish the exact runtime needs.
 - AI-facing tool schema/export format — design after internal registry contract stabilizes.
-- Wizard UI — out of scope until core actions and at least Scene/Layout paths are stable.
+- Wizard UI — out of scope until core actions and relational/assignment paths are stable.
 
 ## Regression guardrails
 
