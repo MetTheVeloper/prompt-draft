@@ -291,7 +291,7 @@ Validated decisions:
 - property/condition mutations detach active preset;
 - authored freeform material/property/condition strings are preserved rather than silently coerced;
 - compatibility metadata remains warning-only and does not block intentional combinations;
-- legacy assignment shapes normalize before exact domain mutation;
+- legacy material assignment shapes normalize before exact domain mutation;
 - compiler and Expert UI remain unchanged.
 
 User runtime checkpoint on 2026-08-27:
@@ -302,13 +302,56 @@ User runtime checkpoint on 2026-08-27:
 
 Color + Texture now prove the shared semantic assignment scope contract across two distinct payload domains.
 
+### 2K. Pose assignments — IMPLEMENTED, AWAITING USER VALIDATION
+
+Services:
+
+- `app/domain/poseAssignments.ts`
+- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive intended for Pose/Expression
+
+Actions present on branch:
+
+- `pose.assignment.create`
+- `pose.assignment.update`
+- `pose.assignment.delete`
+- `pose.assignment.applyPreset`
+
+Audit/contract decisions:
+
+- Pose uses a subject target list only; it does not have the Color/Texture target+exception builtin scope model;
+- available subject refs are passed explicitly through `ActionEnvironment.subjectAssignmentTargets` rather than read from `useSubjectAssignmentTargets()` inside domain code;
+- exact identity continues to use the shared `semanticTargetIdentity` / semantic reference catalog contract;
+- new missing or unavailable refs reject;
+- an exact persisted missing/unavailable ref may survive when that same identity is explicitly retained, and may be removed explicitly;
+- no token/name fuzzy recovery or retargeting is introduced;
+- assignment create uses a new stable ID and mirrors current Expert UI default-target semantics by selecting the first available explicit subject source when one exists, otherwise `[]`;
+- update exposes only known Pose payload fields plus `targets`; there is no arbitrary structured patch escape hatch;
+- Pose payload edits detach `presetId`; target-only changes preserve the active preset;
+- preset application replaces preset-owned Pose payload, preserves exact targets and preserves authored `additionalDetails`;
+- legacy assignments without IDs normalize to the existing deterministic `pose-assignment-{index}` compatibility identity before exact mutation;
+- compiler and Expert UI remain unchanged.
+
+Test checkpoint added:
+
+- `scripts/actions-pose-assignments.test.ts`
+- `pnpm test:actions-api` now includes the Pose suite
+- coverage includes stable create identity/default target, freeform payload preservation, preset detachment, target-only preset preservation, exact target metadata refresh, new missing/unavailable rejection, persisted orphan preservation, preset application, exact-ID failures, legacy normalization and registry atomicity
+
+Validation status:
+
+- **not yet user-validated**
+- latest accepted real-checkout baseline remains **89/89**
+- Pose actions remain `planned` in `ACTIONS.md` until the real checkout suite passes, per the registry promotion rule
+- an assistant-side smoke run was attempted, but the execution environment could not resolve GitHub to clone the repository; this does not count as validation or failure of the project suite
+
 ## Next
 
-1. Implement **Pose assignment actions** from the current Expert UI/domain semantics.
-2. Implement **Expression assignment actions** on the same exact-reference/scope principles where applicable.
-3. Preserve domain-specific payload ownership; do not introduce a public generic assignment patch action.
-4. After Pose/Expression validation, re-evaluate the first low-risk Expert UI migration boundary.
-5. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
+1. Run and confirm the Pose checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
+2. If Pose passes, promote its public action statuses to `implemented` and record the new validated test count.
+3. Implement **Expression assignment actions** using the same exact subject-reference primitive and Expression-specific payload/preset semantics.
+4. After Expression validation, re-evaluate the first low-risk Expert UI migration boundary.
+5. Preserve domain-specific payload ownership; do not introduce a public generic assignment patch action.
+6. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
 
 ## Known deferred decisions
 
