@@ -10,7 +10,7 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **107/107 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **119/119 passed** on 2026-08-27; production build also succeeded.
 
 `main` remains untouched by Actions API development.
 
@@ -305,7 +305,7 @@ User runtime checkpoint on 2026-08-27:
 Services:
 
 - `app/domain/poseAssignments.ts`
-- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive for Pose/Expression
+- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive for Pose/Expression/Hair
 
 Implemented actions:
 
@@ -408,14 +408,14 @@ Migration result:
 - `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are promoted to `migrated` in `ACTIONS.md`;
 - `variable.setEnabled` remains `implemented` because the current UI changes Enabled through the general variable-update form rather than the dedicated set-enabled service.
 
-### 2N. Lighting / Effects — IMPLEMENTED, AWAITING USER VALIDATION
+### 2N. Lighting / Effects — IMPLEMENTED + VALIDATED
 
 Services:
 
 - `app/domain/lightingSources.ts`
 - `app/domain/effectLayers.ts`
 
-Actions present on branch:
+Implemented actions:
 
 - `lighting.source.create`
 - `lighting.source.update`
@@ -424,7 +424,7 @@ Actions present on branch:
 - `effects.layer.update`
 - `effects.layer.delete`
 
-Audit/contract decisions:
+Validated contract decisions:
 
 - Lighting and Effects structured lists use exact stable item IDs; role, source type, effect type and display labels never retarget a mutation;
 - legacy persisted items without IDs normalize to deterministic compatibility IDs matching the current Expert UI fallback (`light-{index}` / `effect-{index}`) before exact mutation;
@@ -435,30 +435,79 @@ Audit/contract decisions:
 - Lighting entering custom color normalizes missing/invalid hex to `#ffffff`, while leaving custom color clears `customColor`;
 - Effects leaving `effectType="custom"` clears `customEffect`; custom effect/details remain authored strings;
 - create/update/delete preserve unrelated module values and caller draft isolation;
-- module-level `activePresetId` clears only if the resulting complete module values no longer match the active preset, matching current Lighting/Effects Expert UI behavior;
+- module-level `activePresetId` clears only if the resulting complete module values no longer match the active preset;
+- Effects preset equality is recursively object-key-order-insensitive, matching the current Expert UI signature comparison;
 - public update schemas expose only known structured properties; no arbitrary object/path patch exists;
 - no compiler or Expert UI file changed in this checkpoint.
 
-Regression coverage added:
+Validation history on 2026-08-27:
 
-- `scripts/actions-lighting-effects.test.ts`;
-- 12 tests cover deterministic create IDs, configured limits, custom transitions, catalog validation, preset preserve/detach behavior, legacy compatibility IDs, exact missing/conflicting identities, registry discovery and atomic failure;
-- `pnpm test:actions-api` includes the new suite;
-- expected total: **119 tests**.
+- first real-checkout `pnpm test:actions-api` => **119 tests / 118 passed / 1 failed**;
+- sole failure: a no-op Effects layer update incorrectly detached the active preset because the new domain compared nested objects with order-sensitive raw `JSON.stringify`;
+- fix: canonical recursive object-key sorting before equality in `app/domain/effectLayers.ts`, matching existing `effects.vue` semantics; no UI/compiler/action-schema change;
+- corrected real-checkout `pnpm test:actions-api` => **119 tests / 119 passed / 0 failed**;
+- `pnpm build` => **successful production build**.
+
+The six Lighting/Effects actions are promoted to `implemented` in `ACTIONS.md`.
+
+### 2O. Hair — IMPLEMENTED, AWAITING USER VALIDATION
+
+Fresh source audit selected Hair before Outfit because Hair has nested style/component ownership but no relation-endpoint graph. Outfit remains the higher-risk next domain because set duplication/deletion must remap or clean relation endpoints.
+
+Services/actions now present:
+
+- `app/domain/hairStyles.ts`
+- `app/actions/hairStyles.ts`
+- `hair.style.create`
+- `hair.style.update`
+- `hair.style.duplicate`
+- `hair.style.delete`
+- `hair.style.setSource`
+- `hair.style.setProperty`
+- `hair.style.applyPreset`
+- `hair.component.create`
+- `hair.component.update`
+- `hair.component.setProperty`
+- `hair.component.duplicate`
+- `hair.component.delete`
+
+Contract decisions:
+
+- style mutation identity is exact stable `style.id`; nested component identity is exact within the owning style (`style.id + component.id`);
+- editable semantic `key` remains unique/canonical through existing Hair key helpers but never substitutes for stable identity;
+- legacy missing IDs normalize through existing `normalizeHairStyles` compatibility behavior before exact mutation;
+- create uses injected `ActionIdFactory.hairStyle`; nested creation/preset/duplication uses `ActionIdFactory.hairComponent`;
+- style create mirrors the current UI by choosing the first available explicit subject target when supplied, otherwise `[]`;
+- target edits reuse `app/domain/subjectAssignmentTargets.ts`; no second target resolver exists;
+- Hair source references are explicit runtime facts through `ActionEnvironment.hairReferenceSources` and resolve by exact variable/source identity; the builtin `{reference}` fallback is domain-owned;
+- new missing/unavailable variable-backed references reject; an exact persisted orphan may be retained, never reconstructed from label/name;
+- style metadata/targets/source edits preserve `presetId`; base-property and all component payload/lifecycle mutations detach it, matching current UI ownership;
+- property states validate definition capabilities: known option, custom support, reference support and explicit-absent support;
+- component property mutation is separate from `hair.component.update`, avoiding arbitrary nested property patches;
+- component type transition resets properties and canonical catalog name like `HairComponentCard.vue`;
+- style duplication allocates a new style ID/key, clears copied `presetId`, and remaps every nested component ID;
+- preset application/clear is explicit: recipe application replaces recipe-owned properties/components, preserves exact targets/source, preserves authored details when the recipe has none, and allocates fresh component IDs;
+- public style update cannot patch source/properties/components/preset; specialized actions own those mutations;
+- compiler and Expert UI remain unchanged.
+
+Regression coverage:
+
+- `scripts/actions-hair.test.ts` adds **12 tests** for stable IDs, exact subject targets, Hair reference resolution/orphan retention, property validation/preset detachment, recipe application, nested ID remapping, type/starter/custom component creation, type transitions, component property ownership, exact duplicate/delete, legacy IDs, registry discovery and atomic failure;
+- `pnpm test:actions-api` now includes Hair;
+- expected total: **131 tests**.
 
 Validation status:
 
-- **not yet user-validated**;
-- latest accepted real-checkout checkpoint remains **107/107**;
-- Lighting/Effects public actions remain `planned` in `ACTIONS.md` until the real checkout suite passes.
+- Hair actions remain `planned` in `ACTIONS.md` until the real checkout passes;
+- latest accepted checkpoint remains **119/119 + successful production build**.
 
 ## Next
 
 1. Pull the current `refactor/actions-api` checkpoint.
-2. Run `pnpm test:actions-api`; expected result is **119/119**.
+2. Run `pnpm test:actions-api`; expected result is **131/131**.
 3. Run `pnpm build` to catch TypeScript/Nuxt integration regressions.
-4. If green, promote the six Lighting/Effects actions from `planned` to `implemented` and record the validated checkpoint.
-5. Continue specialized domains with Hair / Outfit; choose the lower-risk subdomain boundary from a fresh source audit before writing mutations.
+4. If green, promote all validated Hair actions from `planned` to `implemented` and record the checkpoint.
+5. Then audit/implement Outfit with explicit relation endpoint ownership/remapping; do not reuse Hair mutation semantics for Outfit relations.
 
 ## Known deferred decisions
 
