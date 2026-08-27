@@ -53,6 +53,7 @@ export type ActionIdFactory = {
   typographyText?: () => string;
   colorAssignment?: () => string;
   colorSwatch?: () => string;
+  materialAssignment?: () => string;
   generic?: (prefix: string) => string;
 };
 
