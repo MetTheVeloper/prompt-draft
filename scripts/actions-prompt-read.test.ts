@@ -11,7 +11,6 @@ import type {
   PromptKeyModule,
   PromptVariable,
 } from "../app/modules/types.ts";
-import { createDefaultPromptSettings } from "../app/utils/compilePromptCore.ts";
 
 const styleModule: PromptKeyModule = {
   key: "style",
@@ -59,6 +58,29 @@ const detailModule: PromptKeyModule = {
   },
 };
 
+function createTestPromptSettings(): PromptDraftState["promptSettings"] {
+  return {
+    mode: "image_to_image",
+    idea: "",
+    subject: "",
+    subjectType: "unspecified",
+    aspectRatio: "common_square",
+    globalRules: "",
+    imageToImage: {
+      referenceUsage: "balanced",
+      transformationStrength: "balanced",
+      preserveMainSubject: true,
+      preserveIdentity: true,
+      preservePose: false,
+      preserveOutfit: false,
+      preserveComposition: true,
+      preserveColors: false,
+      preserveMaterials: false,
+      preserveLighting: false,
+    },
+  };
+}
+
 function createDraft(
   overrides: Partial<PromptDraftState> = {},
 ): PromptDraftState {
@@ -67,7 +89,7 @@ function createDraft(
     selectedModuleKeys: [],
     moduleValues: {},
     modulePanelStates: {},
-    promptSettings: createDefaultPromptSettings(),
+    promptSettings: createTestPromptSettings(),
     outputFormat: "modular",
     ...overrides,
   };
@@ -136,7 +158,7 @@ test("prompt read model mirrors persisted custom-mode override semantics", () =>
 test("prompt validation reports global setup errors from canonical draft", () => {
   const draft = createDraft({
     promptSettings: {
-      ...createDefaultPromptSettings(),
+      ...createTestPromptSettings(),
       mode: "text_to_image",
       idea: "",
       subject: "",
@@ -166,7 +188,7 @@ test("prompt validation derives variable reference warnings from module outputs"
       },
     },
     promptSettings: {
-      ...createDefaultPromptSettings(),
+      ...createTestPromptSettings(),
       idea: "reference test",
     },
   });
@@ -187,7 +209,7 @@ test("prompt.validate returns validation as read data without mutating caller dr
     selectedModuleKeys: ["style"],
     moduleValues: { style: { finish: "sharp" } },
     promptSettings: {
-      ...createDefaultPromptSettings(),
+      ...createTestPromptSettings(),
       idea: "portrait",
     },
   });
