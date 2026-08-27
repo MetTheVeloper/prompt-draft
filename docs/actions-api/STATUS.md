@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-Phase: **2 — Core operations / read + compile stabilization**
+Phase: **2 — Core operations / read + compile stabilization COMPLETE**
 
 Branch: `refactor/actions-api`
 
@@ -10,9 +10,9 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **153/153 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **161/161 passed** on 2026-08-27.
 
-Latest separately confirmed production build remains the **119/119 Lighting / Effects** checkpoint. Hair, Outfit, and Prompt Validate have newer green Actions API runs but no newer build result has been recorded yet.
+Latest confirmed production build: **Prompt Compile 161/161 + phase9 compiler regression 9/9 + successful build**.
 
 `main` remains untouched.
 
@@ -37,7 +37,7 @@ Latest separately confirmed production build remains the **119/119 Lighting / Ef
 | Hair | 131/131 | validated |
 | Outfit | 147/147 | validated |
 | Prompt Validate | 153/153 | validated |
-| Prompt Compile | expected 161 | awaiting real-checkout validation |
+| Prompt Compile | 161/161 | validated + phase9 9/9 + build |
 
 Detailed action inventory lives in `docs/actions-api/ACTIONS.md`.
 
@@ -61,7 +61,9 @@ Validated public/domain boundaries:
 - Expression;
 - Lighting / Effects;
 - Hair;
-- Outfit.
+- Outfit;
+- Prompt Validate;
+- Prompt Compile.
 
 Stable-reference rules remain unchanged: stable IDs are canonical identity, missing refs never fuzzy-retarget, and exact persisted orphans may survive only where the owning domain explicitly permits it.
 
@@ -79,7 +81,7 @@ Accepted validation:
 
 The four CRUD actions are `migrated`; `variable.setEnabled` remains `implemented` because the UI uses general update for the Enabled field.
 
-No other broad Expert UI migration is part of the current compiler checkpoint.
+No other broad Expert UI migration is required for current Actions API branch readiness.
 
 ## Prompt Validate — IMPLEMENTED + VALIDATED
 
@@ -98,29 +100,18 @@ Contract:
 - return validation errors/warnings as read data rather than Action execution failure;
 - no Vue/composable dependency and no caller-draft mutation.
 
-Real checkout first exposed a test-fixture import of Nuxt-coupled `compilePromptCore.ts`; the fixture was decoupled without changing production behavior. Final validation: **153 tests / 153 passed / 0 failed**.
+Final real-checkout validation: **153/153**.
 
-`prompt.validate` is promoted to `implemented`.
+## Prompt Compile — IMPLEMENTED + VALIDATED
 
-## Current work: Prompt Compile — IMPLEMENTED, AWAITING USER VALIDATION
-
-### Why compiler extraction was required
-
-Before this checkpoint, final compilation was split across:
-
-- `compilePromptCore.ts`, which contained the actual formatting algorithm plus Vue runtime synchronization;
-- `compilePrompt.ts`, which added typed user-variable ownership, automatic Scene/Layout rules, system-variable filtering, and Scene presentation aliases.
-
-Importing that path directly into Actions would have coupled headless execution to Vue/Nuxt. Copying the logic would have created a second compiler. The implementation therefore extracts runtime effects while preserving one canonical final compile path.
-
-### New ownership
+### Compiler ownership
 
 `app/utils/compilePromptCore.ts`
 
-- existing compiler/formatting algorithm remains in place;
-- Vue composable imports and runtime sync calls are removed;
-- existing `getSystemPromptVariables` is exported;
-- no formatting/optimizer/module-order algorithm is intentionally changed.
+- existing formatting/compiler algorithm remains in place;
+- Vue composable imports/runtime sync calls are removed;
+- existing system-variable builder is exported;
+- no formatting/optimizer/module-order algorithm was intentionally changed.
 
 `app/utils/compilePromptPure.ts`
 
@@ -133,63 +124,63 @@ Importing that path directly into Actions would have coupled headless execution 
 
 `app/utils/compilePrompt.ts`
 
-- now only the Expert UI runtime adapter;
+- Expert UI runtime adapter only;
 - reads enabled user variable ownership from `usePromptVariables`;
 - calls `compilePromptOutputPure`;
 - synchronizes subject context and returned system variables back into existing Vue runtime state;
-- returns the same pure output.
+- returns the pure output.
 
 `app/domain/promptRead.ts`
 
-- `compilePromptDraft` reuses the already validated headless module-output builder;
-- derives Subject/Reference ownership from the active canonical Variables module using the same enabled/key/value rules as the current variable composable;
+- `compilePromptDraft` reuses the validated headless module-output builder;
+- derives Subject/Reference ownership from the active canonical Variables module;
 - defaults to persisted `draft.outputFormat`;
 - explicit format override is read-only.
 
 `app/actions/promptRead.ts`
 
-- adds public `prompt.compile`;
-- optional input: `format: modular | natural | json`;
+- exposes public `prompt.compile`;
+- optional `format: modular | natural | json`;
 - validation issues do not block compile, matching current Expert UI behavior.
 
-### Regression coverage
+### Accepted validation
 
-- new `scripts/actions-prompt-compile.test.ts`: **8 tests**;
-- covers persisted/default format, explicit JSON override, Subject ownership, Reference ownership, automatic Scene/Layout rule, Scene modular/JSON aliases, read-only Action execution, discovery/schema atomicity;
-- existing prompt read discovery test updated for `prompt.validate + prompt.compile`;
-- `scripts/phase9-compiler-regression.test.ts` updated so the old byte-identical core guard now proves that current core differs from baseline only by the intentional headless extraction and that Vue synchronization remains isolated in the runtime adapter.
+- `pnpm test:actions-api` => **161/161**;
+- `pnpm test:phase9-regression` => **9/9**;
+- `pnpm build` => successful.
 
-Expected `pnpm test:actions-api`: **161 tests**.
+During validation, phase9 exposed only regression-fixture/guard assumptions: an outdated baseline, source-shape expectations after the intentional extraction, and finally a damaged local Git `HEAD`/branch ref in one checkout. The guard was hardened to inspect current working-tree source directly while historical baselines remain SHA-pinned. No production compiler behavior was changed for those guard repairs.
 
-`prompt.compile` remains `planned` in `ACTIONS.md` until real-checkout validation passes.
+`prompt.compile` is promoted to `implemented`.
 
-## Validation required for this checkpoint
+## Current work: AI-facing public contract / export
 
-Run from the real checkout after `git pull`:
+Core domain/read/compiler stabilization is complete. The next boundary is transport-neutral packaging of the already validated registry so an external agent/model host can discover and invoke Actions without importing internal TypeScript implementation details.
 
-1. `pnpm test:actions-api` — expected **161/161**.
-2. `pnpm test:phase9-regression` — compiler extraction/parity guard must pass.
-3. `pnpm build` — Nuxt/TypeScript integration must succeed.
+Target responsibilities:
 
-If all three are green:
+1. export stable public action descriptors: ID, description, input schema and explicit operation metadata;
+2. define a provider-neutral invocation envelope, e.g. action ID + input + canonical Draft/context, without embedding OpenAI/Gemini-specific logic into domains;
+3. define a provider-neutral result envelope around the existing structured Action result (`ok`, draft, issues, read data);
+4. ensure only public actions are exported and internal foundation helpers/domain functions are not accidentally exposed;
+5. serialize the repository-owned input schema into a JSON-safe contract suitable for tool/function adapters;
+6. add discovery/export/invocation integration tests and compatibility checks for stable action IDs.
 
-- promote `prompt.compile` to `implemented`;
-- record the 161-test/compiler/build checkpoint;
-- move to AI-facing public schema/export packaging and final branch readiness audit.
+Provider-specific adapters, if needed later, should consume this neutral contract rather than becoming part of domain/action implementations.
 
-## Remaining branch work after Prompt Compile
+## Remaining branch work
 
 1. **AI-facing Actions contract / export**
-   - expose stable discovery descriptors/input schemas in a consumer-friendly form;
-   - define the transport-neutral invocation/result contract for ChatGPT/Gemini/agent consumers;
-   - add integration tests without introducing provider-specific domain logic.
+   - implement the transport-neutral public manifest + invocation/result bridge;
+   - add integration tests;
+   - document compatibility/freeze rules.
 2. **Final readiness audit**
    - full Actions suite;
    - compiler regression suite;
    - production build;
    - compare branch against baseline/main for accidental scope changes;
    - freeze/document public IDs and explicitly deferred work;
-   - leave the branch merge-ready without moving `main` automatically.
+   - leave branch merge-ready without moving `main` automatically.
 
 ## Intentionally deferred / non-blocking
 
