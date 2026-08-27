@@ -31,6 +31,14 @@ export {
   registerPoseAssignmentActions,
 } from "./poseAssignments";
 export {
+  expressionAssignmentActions,
+  expressionAssignmentApplyPresetAction,
+  expressionAssignmentCreateAction,
+  expressionAssignmentDeleteAction,
+  expressionAssignmentUpdateAction,
+  registerExpressionAssignmentActions,
+} from "./expressionAssignments";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
