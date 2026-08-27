@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
+import { readFileSync } from "node:fs";
 import test from "node:test";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
@@ -14,15 +15,25 @@ const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const baseline = "83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c";
 const promptCompileBaseline = "73f28f35e49d68d0ac285f4e05bbf4583a2a2931";
 
-function committedSource(ref: string, path: string) {
-  return execFileSync("git", ["show", `${ref}:${path}`], {
-    cwd: repoRoot,
-    encoding: "utf8",
-  });
+function normalizeSource(value: string) {
+  return value.replace(/\r\n/g, "\n");
 }
 
-function assertCommitPathUnchanged(path: string, ref = baseline) {
-  execFileSync("git", ["diff", "--quiet", ref, "HEAD", "--", path], {
+function committedSource(ref: string, path: string) {
+  return normalizeSource(
+    execFileSync("git", ["show", `${ref}:${path}`], {
+      cwd: repoRoot,
+      encoding: "utf8",
+    }),
+  );
+}
+
+function currentSource(path: string) {
+  return normalizeSource(readFileSync(resolve(repoRoot, path), "utf8"));
+}
+
+function assertWorkingPathUnchanged(path: string, ref = baseline) {
+  execFileSync("git", ["diff", "--quiet", ref, "--", path], {
     cwd: repoRoot,
   });
 }
@@ -96,7 +107,7 @@ function expectedHeadlessPromptCore() {
 }
 
 test("prompt compile extraction does not modify draft persistence/import-export", () => {
-  assertCommitPathUnchanged("app/pages/create.vue", promptCompileBaseline);
+  assertWorkingPathUnchanged("app/pages/create.vue", promptCompileBaseline);
 });
 
 test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from baseline", () => {
@@ -106,12 +117,12 @@ test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from b
     "app/utils/compileExpression.ts",
     "app/utils/compileColorPalette.ts",
     "app/utils/compileTexture.ts",
-  ].forEach((path) => assertCommitPathUnchanged(path));
+  ].forEach((path) => assertWorkingPathUnchanged(path));
 });
 
 test("prompt output core differs from baseline only by the intentional headless extraction", () => {
   assert.equal(
-    committedSource("HEAD", "app/utils/compilePromptCore.ts"),
+    currentSource("app/utils/compilePromptCore.ts"),
     expectedHeadlessPromptCore(),
   );
 });
@@ -179,9 +190,9 @@ test("referenced Scene-resource entity is demand-driven and leaves stable global
 });
 
 test("typed user reference ownership stays pure while UI synchronization remains reversible", () => {
-  const wrapper = committedSource("HEAD", "app/utils/compilePrompt.ts");
-  const pure = committedSource("HEAD", "app/utils/compilePromptPure.ts");
-  const core = committedSource("HEAD", "app/utils/compilePromptCore.ts");
+  const wrapper = currentSource("app/utils/compilePrompt.ts");
+  const pure = currentSource("app/utils/compilePromptPure.ts");
+  const core = currentSource("app/utils/compilePromptCore.ts");
 
   assert.ok(pure.includes("const suppressSubject = ownership.hasSubject || ownership.hasReference;"));
   assert.ok(pure.includes('ownership.hasReference && variable.key === "reference"'));
@@ -213,7 +224,7 @@ test("typed user reference ownership stays pure while UI synchronization remains
 });
 
 test("Scene presentation aliases remain format-specific in the pure final adapter", () => {
-  const pure = committedSource("HEAD", "app/utils/compilePromptPure.ts");
+  const pure = currentSource("app/utils/compilePromptPure.ts");
 
   assert.ok(pure.includes('if (format === "json")'));
   assert.ok(pure.includes("scenes: scene"));
