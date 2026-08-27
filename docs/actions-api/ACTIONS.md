@@ -2,28 +2,33 @@
 
 Canonical inventory of public Actions API operations on `refactor/actions-api`.
 
+Public contract: `prompt-draft.actions.v1`
+
+Current public Action count: **99**
+
 Status values:
 
-- `planned` — accepted/public scope, implementation not yet validated in the real checkout;
-- `foundation` — internal runtime/support primitive;
-- `implemented` — public action exists and its Actions API checkpoint passed;
-- `migrated` — public action exists and the current Expert UI uses the same canonical domain service.
+- `planned` — accepted scope, not implemented/validated for this branch;
+- `foundation` — internal runtime/support primitive, not a public domain mutation;
+- `implemented` — public Action exists and its real-checkout Actions API checkpoint passed;
+- `migrated` — public Action exists and the current Expert UI uses the same canonical domain service.
 
-Once an action is `implemented`, its ID is a compatibility surface.
+Once an Action is `implemented`, its ID is a compatibility surface. The exact v1 public ID set is pinned by `scripts/actions-public-ids.test.ts`.
 
 ## Foundation
 
 | Action / primitive | Status | Notes |
 |---|---|---|
 | Action registry discovery | foundation | `get`, `has`, `list` |
-| Single action execution | foundation | atomic success/failure; caller draft isolation |
+| Single action execution | foundation | atomic success/failure; caller-draft isolation |
 | Input schema validation | foundation | repository-owned schema subset |
 | Deterministic ID injection | foundation | `ActionIdFactory` |
 | Explicit runtime facts | foundation | `ActionEnvironment` |
 | Semantic assignment scope service | foundation | exact identity; no fuzzy retargeting |
 | Capability-scoped semantic sources | foundation | color/material dynamic refs |
 | Subject assignment target resolver | foundation | shared by Pose/Expression/Hair/Outfit |
-| Batch execution | planned | deferred until a real multi-step consumer requires it |
+| Public manifest / invocation bridge | foundation | `prompt-draft.actions.v1`; 99 public Actions |
+| Batch execution | planned | deferred until a real orchestration consumer requires it |
 | Dry run | planned | deferred with batch design |
 
 ## Draft / modules
@@ -35,33 +40,33 @@ Once an action is `implemented`, its ID is a compatibility surface.
 | `module.field.set` | implemented | Set one simple schema-backed field; structured fields reject. |
 | `module.preset.apply` | implemented | Apply one registered preset with canonical sidecar rules. |
 | `module.customMode.set` | implemented | Toggle module Custom Override where supported. |
-| `module.reset` | planned | Deferred until Clear/reset semantics are canonicalized. |
+| `module.reset` | planned | Deferred until generic/specialized Clear semantics are canonicalized. |
 
 ## Variables
 
-| Action ID | Status | Intent |
-|---|---|---|
-| `variable.create` | migrated | Create user variable with stable ID and canonical unique key. |
-| `variable.update` | migrated | Update exact variable while preserving stable ID. |
-| `variable.duplicate` | migrated | Duplicate adjacent with fresh ID/key. |
-| `variable.delete` | migrated | Delete exact stable variable; references are not retargeted. |
-| `variable.setEnabled` | implemented | Toggle exact variable. |
+| Action ID | Status |
+|---|---|
+| `variable.create` | migrated |
+| `variable.update` | migrated |
+| `variable.duplicate` | migrated |
+| `variable.delete` | migrated |
+| `variable.setEnabled` | implemented |
 
-Variables were the first Expert UI migration. Real checkout validation: **107/107 + build + manual Create/Edit/Enabled/Duplicate/Delete/Blueprint regression**. The UI still changes Enabled through general update, so `variable.setEnabled` remains `implemented` rather than `migrated`.
+Variables are the only intentionally completed Expert UI migration in this branch. Accepted migration checkpoint: **107/107 + build + manual Create/Edit/Enabled/Duplicate/Delete/Blueprint regression**.
 
 ## Generic named module entities
 
-| Action ID | Status | Intent |
-|---|---|---|
-| `moduleEntity.create` | implemented | Create named configuration with stable ID and unique key. |
-| `moduleEntity.update` | implemented | Update metadata without changing identity. |
-| `moduleEntity.duplicate` | implemented | Duplicate with deep-copied payload and fresh identity. |
-| `moduleEntity.delete` | implemented | Delete exact entity; external refs remain missing. |
-| `moduleEntity.setEnabled` | implemented | Toggle exact entity availability. |
-| `moduleEntity.setInheritance` | implemented | Toggle global inheritance where capability permits. |
-| `moduleEntity.field.set` | implemented | Set one simple local payload override. |
-| `moduleEntity.field.clear` | implemented | Remove one local override/sidecar. |
-| `moduleEntity.preset.apply` | implemented | Apply eligible preset fields to one entity payload. |
+| Action ID | Status |
+|---|---|
+| `moduleEntity.create` | implemented |
+| `moduleEntity.update` | implemented |
+| `moduleEntity.duplicate` | implemented |
+| `moduleEntity.delete` | implemented |
+| `moduleEntity.setEnabled` | implemented |
+| `moduleEntity.setInheritance` | implemented |
+| `moduleEntity.field.set` | implemented |
+| `moduleEntity.field.clear` | implemented |
+| `moduleEntity.preset.apply` | implemented |
 
 No public arbitrary entity payload/path patch exists.
 
@@ -77,8 +82,6 @@ No public arbitrary entity payload/path patch exists.
 | `typography.text.update` | implemented |
 | `typography.text.delete` | implemented |
 | `typography.text.move` | implemented |
-
-Group/Text mutation identity is exact stable ID; structural tokens remain presentation/reference metadata.
 
 ## Scene
 
@@ -108,7 +111,7 @@ Scene component refs use exact `moduleKey + entityId`; missing refs are explicit
 | `layout.region.assignScene` | implemented |
 | `layout.region.clearScene` | implemented |
 
-Region/Scene binding uses exact stable Scene identity. Generic region update cannot directly patch `contentRef`.
+Region/Scene binding uses exact stable Scene identity. Generic Region update cannot directly patch `contentRef`.
 
 ## Color Palette
 
@@ -123,7 +126,7 @@ Region/Scene binding uses exact stable Scene identity. Generic region update can
 | `colorPalette.swatch.setVariable` | implemented |
 | `colorPalette.swatch.delete` | implemented |
 
-Exact stable assignment/swatch IDs; exact semantic refs; preset replaces colors while preserving scope; variable swatches bind only exact enabled user Color variables. No broad assignment patch action.
+Exact stable assignment/swatch IDs; exact semantic refs; preset replaces colors while preserving scope; variable swatches bind only exact enabled user Color variables.
 
 ## Texture / Material
 
@@ -136,7 +139,7 @@ Exact stable assignment/swatch IDs; exact semantic refs; preset replaces colors 
 | `texture.assignment.property.set` | implemented |
 | `texture.assignment.conditions.set` | implemented |
 
-Exact assignment identity and exact semantic scope; authored freeform values remain authored; property/condition edits detach preset. No broad assignment patch action.
+Exact assignment identity and exact semantic scope; authored freeform values remain authored; property/condition edits detach preset.
 
 ## Pose
 
@@ -147,7 +150,7 @@ Exact assignment identity and exact semantic scope; authored freeform values rem
 | `pose.assignment.delete` | implemented |
 | `pose.assignment.applyPreset` | implemented |
 
-Uses the shared exact subject-target resolver. Payload edits detach preset; target-only edits preserve it. Exact persisted orphans can survive/remove; new missing/unavailable refs reject. Validation checkpoint: **97/97**.
+Validation checkpoint: **97/97**.
 
 ## Expression
 
@@ -158,7 +161,7 @@ Uses the shared exact subject-target resolver. Payload edits detach preset; targ
 | `expression.assignment.delete` | implemented |
 | `expression.assignment.applyPreset` | implemented |
 
-Same exact target primitive as Pose, domain-owned payload/preset semantics. Validation checkpoint: **105/105**.
+Validation checkpoint: **105/105**.
 
 ## Lighting / Effects
 
@@ -171,7 +174,7 @@ Same exact target primitive as Pose, domain-owned payload/preset semantics. Vali
 | `effects.layer.update` | implemented |
 | `effects.layer.delete` | implemented |
 
-Stable source/layer IDs, configured limits/catalog validation, canonical custom transitions, preset detachment only on actual mismatch. Effects preset equality is object-key-order-insensitive. Final checkpoint: **119/119 + build**.
+Stable source/layer IDs, configured limits/catalog validation, canonical custom transitions, and preset detachment only on actual mismatch. Final checkpoint: **119/119 + build**.
 
 ## Hair
 
@@ -190,7 +193,7 @@ Stable source/layer IDs, configured limits/catalog validation, canonical custom 
 | `hair.component.duplicate` | implemented |
 | `hair.component.delete` | implemented |
 
-Exact Style/Component IDs; nested IDs remap on Style duplicate; exact subject/reference behavior; property catalogs are domain-validated; no broad nested patch. Validation checkpoint: **131/131**.
+Exact Style/Component IDs; nested IDs remap on Style duplicate; exact subject/reference behavior; typed property catalogs remain domain-owned. Final checkpoint: **131/131**.
 
 ## Outfit
 
@@ -211,41 +214,49 @@ Exact Style/Component IDs; nested IDs remap on Style duplicate; exact subject/re
 | `outfit.relation.update` | implemented |
 | `outfit.relation.delete` | implemented |
 
-Exact Set/Item/Relation ownership. Set duplicate remaps only known relation endpoints through exact old-ID → new-ID mapping; pre-existing orphan endpoints remain orphaned. Item delete removes only exact connected relations. Relation update validates only changed endpoints so an unchanged orphan can survive and later be explicitly repaired/deleted. Final checkpoint: **147/147**.
+Exact Set/Item/Relation ownership; duplication remaps only known exact relation endpoints; persisted orphan endpoints never fuzzy-repair. Final checkpoint: **147/147**.
 
 ## Prompt read operations
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `prompt.validate` | implemented | Rebuild canonical module outputs headlessly and run existing validation rules without mutating the Draft. |
+| `prompt.validate` | implemented | Rebuild canonical module outputs headlessly and run existing validation rules without mutating caller state. |
 | `prompt.compile` | implemented | Compile canonical Draft headlessly in persisted or explicit `modular | natural | json` format. |
 
-`prompt.validate` passed the real checkout at **153/153** on 2026-08-27.
+`prompt.validate`: **153/153**.
 
-`prompt.compile` uses the same `app/domain/promptRead.ts` output builder validated by `prompt.validate`. Final prompt compilation is not duplicated:
+`prompt.compile`: **161/161 + phase9 compiler regression 9/9 + build**.
 
-- `app/utils/compilePromptCore.ts` is the existing formatting/compiler algorithm made pure by removing only Vue runtime synchronization and exporting the existing system-variable builder;
-- `app/utils/compilePromptPure.ts` owns the previously wrapper-level pure transformations: automatic Scene/Layout rule, typed user Subject/Reference ownership, system-variable filtering, and Scene presentation aliases;
-- `app/utils/compilePrompt.ts` is only the Expert UI runtime adapter that reads Vue variable ownership and synchronizes system variables/subject context around the pure result;
-- `prompt.compile` derives typed user variable ownership from the active canonical Variables module and calls the same pure final adapter;
-- explicit `format` overrides the persisted output format for that read only;
-- compile remains read-only and does not fail merely because the Draft has validation warnings/errors, matching current UI behavior.
+The compiler remains one canonical implementation: core formatting is pure, wrapper-level pure transformations live in `compilePromptPure.ts`, and the current Expert UI retains a runtime synchronization adapter in `compilePrompt.ts`.
 
-Accepted real-checkout validation on 2026-08-27:
+## Public contract / export
 
-- `pnpm test:actions-api` => **161/161**;
-- `pnpm test:phase9-regression` => **9/9**;
-- `pnpm build` => successful.
+Contract: `prompt-draft.actions.v1`.
 
-The phase9 guard was hardened during validation so current working-tree sources are checked without depending on a locally resolvable `HEAD`, while historical baselines remain SHA-pinned. No production compiler behavior changed for that guard fix.
+Public contract checkpoint: **167/167 + successful build**.
+
+Validated public boundary:
+
+- exactly 99 unique public Actions assembled by one registry factory;
+- JSON-safe deterministic manifest;
+- JSON-Schema-compatible schema export;
+- `effect: read | mutation` metadata;
+- model-owned request limited to `{ actionId, input }`;
+- trusted host owns Draft/modules/environment/ID factory;
+- malformed envelope and unknown Action failures remain structured;
+- Action atomic caller-draft semantics are preserved.
+
+The final readiness audit adds `scripts/actions-public-ids.test.ts`, which pins the exact v1 ID set. This adds one test and no production behavior.
+
+Expected final Actions total: **168**.
 
 ## Validation timeline
 
-18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → **161 validated + compiler regression + build**.
+18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → 161 → **167 validated** → **168 final gate pending**.
 
-## Registration rule
+## Registration / compatibility rule
 
-An action becomes `implemented` only after:
+An Action becomes `implemented` only after:
 
 1. canonical operation lives outside Vue components;
 2. rejection/read semantics are structured;
@@ -254,4 +265,6 @@ An action becomes `implemented` only after:
 5. no second domain/compiler implementation is introduced;
 6. the real checkout suite passes.
 
-An action becomes `migrated` only when the current Expert UI uses the same canonical service and regression behavior is checked.
+An Action becomes `migrated` only when the current Expert UI uses the same canonical domain service and regression behavior is checked.
+
+For `prompt-draft.actions.v1`, existing public IDs cannot be renamed/removed/repurposed without an explicit compatibility/version decision. New public IDs require deliberate fixture/docs review.
