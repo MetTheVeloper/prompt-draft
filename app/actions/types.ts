@@ -51,6 +51,8 @@ export type ActionIdFactory = {
   layoutRegion?: () => string;
   typographyGroup?: () => string;
   typographyText?: () => string;
+  colorAssignment?: () => string;
+  colorSwatch?: () => string;
   generic?: (prefix: string) => string;
 };
 
