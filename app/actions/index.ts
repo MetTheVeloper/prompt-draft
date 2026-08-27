@@ -1,6 +1,18 @@
 export { ActionRegistry, createActionRegistry } from "./registry";
 export { validateActionInput } from "./inputSchema";
 export {
+  colorPaletteActions,
+  colorPaletteAssignmentApplyPresetAction,
+  colorPaletteAssignmentCreateAction,
+  colorPaletteAssignmentDeleteAction,
+  colorPaletteAssignmentScopeSetAction,
+  colorPaletteSwatchAddAction,
+  colorPaletteSwatchDeleteAction,
+  colorPaletteSwatchSetLiteralAction,
+  colorPaletteSwatchSetVariableAction,
+  registerColorPaletteActions,
+} from "./colorPalette";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
