@@ -20,6 +20,8 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Input schema validation | foundation | small repository-owned schema |
 | Deterministic test ID injection | foundation | domain-specific factory injection |
 | Explicit runtime environment | foundation | ambient facts are passed through `ActionContext.environment` |
+| Semantic assignment scope service | foundation | internal headless exact-ref normalization/recovery/exclusivity primitive; not a public cross-domain mutation action |
+| Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -112,16 +114,18 @@ Scene invariants:
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `layout.region.create` | planned | Source implemented: create a normalized region with a new stable ID. |
-| `layout.region.update` | planned | Source implemented: update exact region metadata/geometry with canonical clamp rules; direct `contentRef` patching is forbidden. |
-| `layout.region.duplicate` | planned | Source implemented: duplicate adjacent with new stable ID, offset geometry, and preserved explicit binding semantics. |
-| `layout.region.delete` | planned | Source implemented: delete one exact region without rewriting external region refs. |
-| `layout.region.move` | planned | Source implemented: reorder one exact region without silently changing authored `layer`. |
-| `layout.grid.update` | planned | Source implemented: update normalized/clamped grid dimensions while preserving region geometry. |
-| `layout.region.assignScene` | planned | Source implemented: bind one exact active Scene ref and synchronize cached Scene token/label metadata. |
-| `layout.region.clearScene` | planned | Source implemented: explicitly clear Scene binding while preserving unrelated manual content. |
+| `layout.region.create` | implemented | Create a normalized region with a new stable ID. |
+| `layout.region.update` | implemented | Update exact region metadata/geometry with canonical clamp rules; direct `contentRef` patching is forbidden. |
+| `layout.region.duplicate` | implemented | Duplicate adjacent with new stable ID, offset geometry, and preserved explicit binding semantics. |
+| `layout.region.delete` | implemented | Delete one exact region without rewriting external region refs. |
+| `layout.region.move` | implemented | Reorder one exact region without silently changing authored `layer`. |
+| `layout.grid.update` | implemented | Update normalized/clamped grid dimensions while preserving region geometry. |
+| `layout.region.assignScene` | implemented | Bind one exact active Scene ref and synchronize cached Scene token/label metadata. |
+| `layout.region.clearScene` | implemented | Explicitly clear Scene binding while preserving unrelated manual content. |
 
-Layout source invariants:
+Validation checkpoint: `pnpm test:actions-api` passed **65/65** on 2026-08-27 with the Layout suite included.
+
+Layout invariants:
 
 - Region identity is `region.id` and cannot be replaced through metadata update;
 - create/duplicate use deterministic-injectable stable IDs and reject ID conflicts;
@@ -135,22 +139,32 @@ Layout source invariants:
 - manual `contentKey` replacement detaches an existing Scene ref when it no longer matches that ref's cached token;
 - `clearScene` clears `contentKey` only when it is the Scene token being cleared; unrelated manual content is preserved.
 
-Layout actions remain `planned` until `scripts/actions-layouts.test.ts` passes in the real project checkout.
-
 ## Color / Material scopes
+
+Shared scope ownership is an internal foundation service, not a public `assignment.*` mutation namespace. Public consumers must call a domain action such as Color or Texture so scope rules cannot bypass domain payload semantics.
+
+Internal scope invariants:
+
+- exact identity comes from `semanticTargetIdentity`;
+- dynamic refs resolve through the shared reference catalog, never token/name fuzzy lookup;
+- new missing/unavailable dynamic refs reject;
+- an exact persisted missing/unavailable ref may survive unrelated edits and remains explicitly removable;
+- exact target/exception conflicts are removed directionally, matching the existing scope editor;
+- domain-exclusive builtins (`overall`, `all_surfaces`) collapse the target scope and cannot be exceptions;
+- dynamic sources are supplied headlessly through `ActionEnvironment.semanticTargetSources` by capability.
 
 | Action ID | Status | Intent |
 |---|---|---|
 | `colorPalette.assignment.create` | planned | Create color assignment. |
-| `colorPalette.assignment.update` | planned | Update colors/scope/preset according to domain rules. |
+| `colorPalette.assignment.update` | planned | Update colors/scope according to Color-domain rules. |
 | `colorPalette.assignment.delete` | planned | Delete assignment. |
+| `colorPalette.assignment.applyPreset` | planned | Apply/clear a palette preset while preserving semantic scope. |
 | `texture.assignment.create` | planned | Create material assignment. |
-| `texture.assignment.update` | planned | Update material payload/scope. |
-| `texture.assignment.delete` | planned | Delete material assignment. |
-| `assignment.targets.set` | planned | Shared canonical target selection helper where domain-compatible. |
-| `assignment.exceptions.set` | planned | Shared canonical exception selection helper. |
+| `texture.assignment.update` | planned | Update material payload/scope and detach preset when required. |
+| `texture.assignment.delete` | planned | Delete assignment. |
+| `texture.assignment.applyPreset` | planned | Apply/clear a material preset while preserving semantic scope. |
 
-Shared assignment actions must not erase domain-specific assignment payload semantics.
+The previously considered generic public actions `assignment.targets.set` and `assignment.exceptions.set` are deliberately **not** part of the public API. Their job belongs to the internal scope service consumed by specialized domain actions.
 
 ## Pose / Expression
 
