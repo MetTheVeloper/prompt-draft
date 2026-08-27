@@ -685,7 +685,7 @@ test("outfit set delete targets one exact stable ID", () => {
 test("registered Outfit actions expose stable IDs and failures remain atomic", async () => {
   const registry = registerOutfitActions(new ActionRegistry());
   assert.deepEqual(
-    registry.list().map((action) => action.id),
+    registry.list().map((action) => action.id).sort(),
     [
       "outfit.item.create",
       "outfit.item.delete",
