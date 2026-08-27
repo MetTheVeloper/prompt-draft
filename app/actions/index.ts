@@ -13,6 +13,16 @@ export {
   registerColorPaletteActions,
 } from "./colorPalette";
 export {
+  registerTextureAssignmentActions,
+  textureAssignmentActions,
+  textureAssignmentApplyPresetAction,
+  textureAssignmentConditionsSetAction,
+  textureAssignmentCreateAction,
+  textureAssignmentDeleteAction,
+  textureAssignmentPropertySetAction,
+  textureAssignmentScopeSetAction,
+} from "./materialAssignments";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
