@@ -56,6 +56,8 @@ export type ActionIdFactory = {
   materialAssignment?: () => string;
   poseAssignment?: () => string;
   expressionAssignment?: () => string;
+  lightingSource?: () => string;
+  effectLayer?: () => string;
   generic?: (prefix: string) => string;
 };
 
