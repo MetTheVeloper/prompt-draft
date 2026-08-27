@@ -69,6 +69,31 @@ function withUnusedEntity(values: ModuleValues): ModuleValues {
   };
 }
 
+function expectedHeadlessPromptCore() {
+  return committedSource(baseline, "app/utils/compilePrompt.ts")
+    .replace("// app/utils/compilePrompt.ts", "// app/utils/compilePromptCore.ts")
+    .replace(
+      "import { usePromptVariables } from '~/composables/prompt/usePromptVariables'\n",
+      "",
+    )
+    .replace(
+      "import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'\n",
+      "",
+    )
+    .replace(
+      "function getSystemPromptVariables(\n",
+      "export function getSystemPromptVariables(\n",
+    )
+    .replace(
+      /\nfunction syncActiveSystemPromptVariables\([\s\S]*?\nfunction compileModularOutput\(/,
+      "\nfunction compileModularOutput(",
+    )
+    .replace(
+      "  syncActivePromptSubjectContext(settings)\n  syncActiveSystemPromptVariables(settings)\n\n",
+      "",
+    );
+}
+
 test("draft persistence/import-export implementation is unchanged from the refactor baseline", () => {
   assertCommitPathUnchanged("app/pages/create.vue");
 });
@@ -83,10 +108,10 @@ test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from b
   ].forEach(assertCommitPathUnchanged);
 });
 
-test("prompt output core remains byte-identical to the pre-refactor compiler", () => {
+test("prompt output core differs from baseline only by the intentional headless extraction", () => {
   assert.equal(
     committedSource("HEAD", "app/utils/compilePromptCore.ts"),
-    committedSource(baseline, "app/utils/compilePrompt.ts"),
+    expectedHeadlessPromptCore(),
   );
 });
 
@@ -152,28 +177,33 @@ test("referenced Scene-resource entity is demand-driven and leaves stable global
   assert.match(output, /\{style_unused\} = warm tone, entity-only detail/);
 });
 
-test("typed user reference ownership is reversible on the next compile", () => {
+test("typed user reference ownership stays pure while UI synchronization remains reversible", () => {
   const wrapper = committedSource("HEAD", "app/utils/compilePrompt.ts");
+  const pure = committedSource("HEAD", "app/utils/compilePromptPure.ts");
   const core = committedSource("HEAD", "app/utils/compilePromptCore.ts");
 
-  assert.ok(wrapper.includes("const suppressSubject = ownership.hasSubject || ownership.hasReference;"));
-  assert.ok(wrapper.includes('ownership.hasReference && variable.key === "reference"'));
-  assert.ok(wrapper.includes("const compiled = compilePromptOutputCore("));
-  assert.ok(wrapper.includes("filterOwnedSystemVariables(ownership);"));
+  assert.ok(pure.includes("const suppressSubject = ownership.hasSubject || ownership.hasReference;"));
+  assert.ok(pure.includes('ownership.hasReference && variable.key === "reference"'));
+  assert.ok(pure.includes("const compiled = compilePromptOutputCore("));
+  assert.ok(wrapper.includes("const result = compilePromptOutputPure("));
+  assert.ok(wrapper.includes("syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);"));
+  assert.ok(wrapper.includes("setSystemPromptVariables(systemVariables);"));
   assert.ok(
-    wrapper.indexOf("const compiled = compilePromptOutputCore(") <
-      wrapper.indexOf("filterOwnedSystemVariables(ownership);"),
-    "the core must regenerate system variables before ownership filtering",
+    wrapper.indexOf("const result = compilePromptOutputPure(") <
+      wrapper.indexOf("syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);"),
+    "pure compilation must complete before runtime synchronization",
   );
-  assert.ok(core.includes("syncActiveSystemPromptVariables(settings)"));
+  assert.equal(core.includes("usePromptVariables"), false);
+  assert.equal(core.includes("usePromptSubjectContext"), false);
+  assert.equal(pure.includes("~/composables/"), false);
 });
 
-test("Scene presentation aliases remain format-specific without changing the core", () => {
-  const wrapper = committedSource("HEAD", "app/utils/compilePrompt.ts");
+test("Scene presentation aliases remain format-specific in the pure final adapter", () => {
+  const pure = committedSource("HEAD", "app/utils/compilePromptPure.ts");
 
-  assert.ok(wrapper.includes('if (format === "json")'));
-  assert.ok(wrapper.includes("scenes: scene"));
-  assert.ok(wrapper.includes('if (format === "natural")'));
-  assert.ok(wrapper.includes('"$1Scenes:\\n"'));
-  assert.ok(wrapper.includes('"$1{scenes} ="'));
+  assert.ok(pure.includes('if (format === "json")'));
+  assert.ok(pure.includes("scenes: scene"));
+  assert.ok(pure.includes('if (format === "natural")'));
+  assert.ok(pure.includes('"$1Scenes:\\n"'));
+  assert.ok(pure.includes('"$1{scenes} ="'));
 });
