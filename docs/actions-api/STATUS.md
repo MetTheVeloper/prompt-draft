@@ -10,6 +10,8 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
+Latest validated Actions API checkpoint: **89/89 passed** on 2026-08-27.
+
 `main` remains untouched by Actions API development.
 
 ## Completed
@@ -111,8 +113,8 @@ User runtime checkpoint on 2026-08-27: **35/35 passed**.
 
 Services:
 
-- `app/domain/moduleFields.ts` — shared by Global module fields and ModuleEntity payload fields;
-- `app/domain/moduleEntityFields.ts` — entity-local field/preset orchestration.
+- `app/domain/moduleFields.ts`
+- `app/domain/moduleEntityFields.ts`
 
 Implemented actions:
 
@@ -131,11 +133,7 @@ Validated semantics:
 - unrelated payload survives preset application;
 - stale custom sidecars are removed when the preset leaves a custom selection.
 
-User runtime checkpoint on 2026-08-27:
-
-- command: `pnpm test:actions-api`
-- result: **41 tests / 41 passed / 0 failed**
-- suites: Foundation + Variables + Modules + ModuleEntity lifecycle + ModuleEntity fields/presets
+User runtime checkpoint on 2026-08-27: **41/41 passed**.
 
 ### 2E. Typography — IMPLEMENTED + VALIDATED
 
@@ -156,23 +154,13 @@ Validated contract decisions:
 
 - `groupName` and `layerName` are structural tokens derived from stable IDs and are not arbitrary update fields;
 - create resolves the final stable ID first, then derives the structural token from that identity;
-- group update preserves stable group ID/token and all contained text identities;
-- text update preserves stable text ID/layer token;
-- text create/update reject empty authored text, matching the current editor validation;
-- group metadata remains optional, matching the current editor behavior;
-- configured purpose/direction/alignment/distribution/font options validate against the Typography field schema;
-- a structural variable token remains valid as a font-style value;
-- explicit Layout Region positioning requires `positionSource: "layout_region"` plus an exact active region ID;
-- explicit missing-region replacement rejects rather than fuzzy-retargeting;
-- unrelated persisted missing region references are not rewritten by unrelated Typography mutations;
-- move operations use exact stable IDs and explicit target indices;
-- group deletion deletes the contained text blocks as current ownership semantics imply.
+- group/text update preserves stable identity and structural tokens;
+- text create/update reject empty authored text;
+- explicit Layout Region positioning requires exact active region ID;
+- missing persisted Region refs are not silently rewritten;
+- move/delete operations use exact stable IDs.
 
-User runtime checkpoint on 2026-08-27:
-
-- command: `pnpm test:actions-api`
-- result: **49 tests / 49 passed / 0 failed**
-- suites: all prior suites + Typography
+User runtime checkpoint on 2026-08-27: **49/49 passed**.
 
 ### 2F. Scene — IMPLEMENTED + VALIDATED
 
@@ -191,24 +179,15 @@ Implemented actions:
 
 Validated contract decisions:
 
-- canonical Scene identity remains `scene.id`; key/name are editable presentation/semantic metadata;
-- create/duplicate receive deterministic-injectable stable IDs and unique camel-style semantic keys;
-- duplicate is adjacent and deep-copies explicit component refs;
-- delete touches only Scene-owned state, so existing Layout Region `contentRef.entityId` remains missing instead of being rewritten;
+- canonical Scene identity remains `scene.id`;
+- delete leaves Layout Region refs missing rather than retargeting;
 - component identity remains exact `moduleKey + entityId`;
-- attach/replace require the target module to be active, Scene-exposable, and the target entity to exist and be enabled;
-- `single` Scene-selection modules reject implicit replacement during attach; callers must use explicit `scene.component.replace`;
-- `multiple` modules may attach several distinct exact entity refs;
-- duplicate attachment is rejected instead of silently deduplicating an authored mutation;
-- detach intentionally validates only the exact stored reference, not current target availability, so missing/orphan refs can always be explicitly removed;
-- replace can repair an exact missing entity ref when the module is still active/exposable and the replacement entity is exact/available;
-- no Scene action performs token/name/fuzzy reference rescue.
+- attach/replace require active scene-exposable module and exact available entity;
+- `single` modules require explicit replacement;
+- detach can remove missing/orphan refs;
+- no token/name/fuzzy rescue is performed.
 
-User runtime checkpoint on 2026-08-27:
-
-- command: `pnpm test:actions-api`
-- result: **57 tests / 57 passed / 0 failed**
-- suites: all prior suites + Scene
+User runtime checkpoint on 2026-08-27: **57/57 passed**.
 
 ### 2G. Layout — IMPLEMENTED + VALIDATED
 
@@ -227,116 +206,109 @@ Implemented actions:
 
 Validated contract decisions:
 
-- Region identity remains `region.id`; update cannot replace it;
-- create/duplicate receive deterministic-injectable stable IDs and reject ID conflicts;
-- create/update/duplicate reuse canonical `layoutRegions` normalization instead of reimplementing geometry rules;
-- `custom` role requires a non-empty custom-role description;
-- width/height must remain positive after canonical clamp/normalization;
-- duplicate keeps explicit Scene binding metadata, clears duplicated name, offsets geometry by one grid cell where possible, and uses a new authored layer value matching current UI behavior;
-- collection move changes order only; it deliberately does not rewrite authored `layer` values;
-- grid update uses canonical grid min/max/round rules and preserves Region geometry;
-- delete touches Layout-owned state only, so Typography/future external Region refs remain missing until explicitly repaired;
-- direct `contentRef` patching is not exposed through `layout.region.update`;
-- Scene binding requires exact active Scene ID and synchronizes cached token/label plus backward-compatible `contentKey`;
-- manual `contentKey` replacement explicitly detaches the stable Scene ref when it no longer matches the cached Scene token;
-- `clearScene` removes only the Scene binding and clears `contentKey` only when that content was the Scene token being cleared;
-- no Layout action uses legacy token lookup as fallback for an existing/missing stable Scene ref.
+- Region identity remains `region.id`;
+- geometry uses existing canonical normalization/clamp helpers;
+- direct `contentRef` patching is forbidden;
+- Scene binding requires exact active Scene ID and synchronizes cached token/label + `contentKey`;
+- manual content detaches incompatible Scene binding explicitly;
+- delete never rewrites external Region refs.
 
-User runtime checkpoint on 2026-08-27:
+User runtime checkpoint on 2026-08-27: **65/65 passed**.
 
-- command: `pnpm test:actions-api`
-- result: **65 tests / 65 passed / 0 failed**
-- suites: all prior suites + Layout
-
-Scene + Layout now form the first fully validated cross-domain relational write path for future Wizard orchestration.
+Scene + Layout form the first fully validated cross-domain relational write path for Wizard orchestration.
 
 ### 2H. Semantic assignment scope foundation — IMPLEMENTED + VALIDATED
 
-Service:
-
-- `app/domain/assignmentScopes.ts`
+Service: `app/domain/assignmentScopes.ts`
 
 Runtime contract extension:
 
 - `ActionEnvironment.semanticTargetSources`
-- sources are grouped by semantic capability (`color` / `material`)
-- domain code remains independent from `useSemanticTargetCatalog()` and Vue/i18n state
+- sources grouped by semantic capability (`color` / `material`)
+- domain code remains independent from Vue/i18n adapters
 
-Validated scope ownership decisions:
+Validated decisions:
 
-- this service is an internal foundation primitive, not a public generic `assignment.*` action namespace;
-- specialized Color/Texture/Pose/Expression actions call the same scope service, keeping payload ownership local to each domain;
-- exact identity uses `semanticTargetIdentity` and shared reference-catalog resolution;
-- domain builtin slots are merged with optional dynamic semantic sources; a live dynamic source may canonically upgrade the same builtin slot identity;
-- new missing or unavailable dynamic refs reject explicitly;
-- exact persisted missing/unavailable refs may survive unrelated edits so recovery remains possible;
-- exact duplicates are removed by stable identity;
-- target/exception conflicts follow the current editor's directional semantics: the side explicitly changed wins; when both are authored atomically, targets win deterministically;
-- domain-exclusive builtin target values collapse the target scope and cannot be authored as exceptions;
-- custom targets remain valid exact semantic refs and dedupe by normalized semantic identity;
-- no token/name fuzzy recovery is introduced.
+- internal foundation primitive only; no public generic `assignment.*` action namespace;
+- exact identity uses `semanticTargetIdentity` + shared reference catalog;
+- new missing/unavailable dynamic refs reject;
+- persisted exact missing/unavailable refs can survive unrelated edits;
+- target/exception conflicts are resolved directionally;
+- exclusive builtin target collapses target scope and cannot be an exception;
+- no token/name fuzzy recovery.
 
-Public API decision:
+User runtime checkpoint on 2026-08-27: **73/73 passed**.
 
-- generic `assignment.targets.set` and `assignment.exceptions.set` were rejected as public API design;
-- public assignment mutations remain domain-specific (`colorPalette.*`, `texture.*`, `pose.*`, `expression.*`).
+### 2I. Color Palette assignments — IMPLEMENTED + VALIDATED
+
+Service: `app/domain/colorPalette.ts`
+
+Implemented actions:
+
+- `colorPalette.assignment.create`
+- `colorPalette.assignment.delete`
+- `colorPalette.assignment.scope.set`
+- `colorPalette.assignment.applyPreset`
+- `colorPalette.swatch.add`
+- `colorPalette.swatch.setLiteral`
+- `colorPalette.swatch.setVariable`
+- `colorPalette.swatch.delete`
+
+Validated decisions:
+
+- public mutation is granular; no broad arbitrary assignment patch;
+- assignment/swatch mutation uses stable IDs rather than UI indices;
+- new assignment defaults to canonical `overall` scope;
+- scope mutation reuses shared semantic scope service;
+- preset replaces colors only and preserves scope;
+- swatch add/edit/delete detaches active preset;
+- variable swatches bind only to exact enabled user `type="color"` variables;
+- legacy assignment shapes normalize before stable-ID mutation;
+- compiler and Expert UI remain unchanged.
+
+User runtime checkpoint on 2026-08-27: **81/81 passed**.
+
+### 2J. Texture Material assignments — IMPLEMENTED + VALIDATED
+
+Service: `app/domain/materialAssignments.ts`
+
+Actions:
+
+- `texture.assignment.create`
+- `texture.assignment.delete`
+- `texture.assignment.scope.set`
+- `texture.assignment.applyPreset`
+- `texture.assignment.property.set`
+- `texture.assignment.conditions.set`
+
+Validated decisions:
+
+- public surface stays granular; no arbitrary `texture.assignment.update` patch;
+- assignments target exact stable IDs;
+- new assignments default to canonical `all_surfaces` scope;
+- scope mutation reuses the same validated semantic scope foundation with `material` capability;
+- preset application replaces material payload axes/conditions while preserving exact target/exception scope;
+- property/condition mutations detach active preset;
+- authored freeform material/property/condition strings are preserved rather than silently coerced;
+- compatibility metadata remains warning-only and does not block intentional combinations;
+- legacy assignment shapes normalize before exact domain mutation;
+- compiler and Expert UI remain unchanged.
 
 User runtime checkpoint on 2026-08-27:
 
 - command: `pnpm test:actions-api`
-- result: **73 tests / 73 passed / 0 failed**
-- suites: all prior suites + semantic assignment scope foundation
+- result: **89 tests / 89 passed / 0 failed**
+- suites: Foundation + Variables + Modules + ModuleEntity lifecycle/fields + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material assignments
 
-### 2I. Color Palette assignments — SOURCE IMPLEMENTED / VALIDATION PENDING
+Color + Texture now prove the shared semantic assignment scope contract across two distinct payload domains.
 
-Service:
+## Next
 
-- `app/domain/colorPalette.ts`
-
-Actions:
-
-- [x] `colorPalette.assignment.create`
-- [x] `colorPalette.assignment.delete`
-- [x] `colorPalette.assignment.scope.set`
-- [x] `colorPalette.assignment.applyPreset`
-- [x] `colorPalette.swatch.add`
-- [x] `colorPalette.swatch.setLiteral`
-- [x] `colorPalette.swatch.setVariable`
-- [x] `colorPalette.swatch.delete`
-
-Tests:
-
-- `scripts/actions-color-palette.test.ts`
-- included in `pnpm test:actions-api`
-
-Color contract decisions:
-
-- public mutation is granular; no broad arbitrary `colorPalette.assignment.update` patch is exposed;
-- assignment and swatch mutations target stable IDs rather than UI indices;
-- new assignments default to canonical `overall` scope and empty colors;
-- scope mutation delegates to the validated shared semantic scope service;
-- preset apply replaces colors only and preserves target/exception scope, matching current Expert UI behavior;
-- clearing a preset detaches preset metadata without clearing authored colors;
-- any swatch add/edit/delete detaches the active palette preset;
-- literal swatches preserve authored string values; the domain layer does not silently coerce them through the visual color picker;
-- variable swatches bind only to exact enabled user variables with `type="color"`, matching the current Color editor source picker;
-- missing/disabled/non-color variables reject explicit new binding;
-- variable swatches cache token/label presentation metadata while stable ownership remains `variableId`;
-- legacy color assignment shapes are normalized before exact stable-ID mutation;
-- compiler and Expert UI remain unchanged in this checkpoint.
-
-Validation pending:
-
-- [ ] Run updated `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **81**.
-- [ ] Resolve any Color Palette or prior-suite regression before marking these actions `implemented`.
-
-## Next after Color Palette validation
-
-1. Mark the eight Color Palette actions `implemented` if the suite is green.
-2. Implement Texture Material assignment actions on the same semantic scope foundation while preserving Texture-specific preset-detach and payload compatibility semantics.
-3. Continue to Pose and Expression assignment actions after Color/Texture prove the shared scope contract across two different payload domains.
-4. Re-evaluate the first low-risk Expert UI migration boundary after assignment contracts stabilize.
+1. Implement **Pose assignment actions** from the current Expert UI/domain semantics.
+2. Implement **Expression assignment actions** on the same exact-reference/scope principles where applicable.
+3. Preserve domain-specific payload ownership; do not introduce a public generic assignment patch action.
+4. After Pose/Expression validation, re-evaluate the first low-risk Expert UI migration boundary.
+5. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
 
 ## Known deferred decisions
 
@@ -344,7 +316,7 @@ Validation pending:
 - Batch/transaction API — defer until real multi-step Wizard flows justify it.
 - Dry-run semantics — defer with batch design.
 - Third-party schema validator — avoid until action input complexity justifies dependency cost.
-- Headless semantic source builder from canonical draft/compiler outputs — current actions accept explicit capability-scoped sources; extraction of a universal builder is deferred until specialized assignment consumers establish the exact runtime needs.
+- Headless semantic source builder from canonical draft/compiler outputs — defer until specialized consumers establish exact runtime needs.
 - AI-facing tool schema/export format — design after internal registry contract stabilizes.
 - Wizard UI — out of scope until core actions and relational/assignment paths are stable.
 
