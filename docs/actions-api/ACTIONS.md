@@ -47,6 +47,8 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | `variable.delete` | implemented | Remove exact stable variable; references are not retargeted. |
 | `variable.setEnabled` | implemented | Toggle one exact variable. |
 
+First Expert UI migration boundary review on 2026-08-27 selected **Variables** as the lowest-risk path. `VariablesField.vue` and `app/domain/variables.ts` already share the same `PromptVariable[]` boundary, so CRUD can be migrated without full-draft plumbing through `base.vue`/`create.vue`. No Variable action is marked `migrated` until that UI patch and regression check are completed.
+
 ## Generic named module entities
 
 | Action ID | Status | Intent |
@@ -151,7 +153,7 @@ Color invariants:
 Texture invariants:
 
 - no broad arbitrary `texture.assignment.update` public patch;
-- assignment mutations use exact stable IDs;
+- assignment mutations use stable IDs;
 - preset replaces material/finish/surface/optical/prominence/conditions payload while preserving scope;
 - property and conditions mutations detach preset;
 - freeform authored strings are preserved;
@@ -191,16 +193,14 @@ Pose invariants:
 
 ### Expression
 
-Expression implementation and isolated tests are present on `refactor/actions-api`, but public status remains `planned` until the real checkout suite passes.
-
 | Action ID | Status | Intent |
 |---|---|---|
-| `expression.assignment.create` | planned | Create expression assignment with stable ID and first explicit available subject target when supplied. |
-| `expression.assignment.update` | planned | Update only known Expression payload/targets; payload edits detach preset while target-only edits preserve it. |
-| `expression.assignment.delete` | planned | Delete one exact expression assignment by stable ID. |
-| `expression.assignment.applyPreset` | planned | Apply/clear expression preset while preserving exact targets and authored additional details. |
+| `expression.assignment.create` | implemented | Create expression assignment with stable ID and first explicit available subject target when supplied. |
+| `expression.assignment.update` | implemented | Update only known Expression payload/targets; payload edits detach preset while target-only edits preserve it. |
+| `expression.assignment.delete` | implemented | Delete one exact expression assignment by stable ID. |
+| `expression.assignment.applyPreset` | implemented | Apply/clear expression preset while preserving exact targets and authored additional details. |
 
-Expression pending-validation invariants:
+Expression invariants:
 
 - reuses the same exact subject-target resolver validated by Pose; no second resolver exists;
 - known payload axes are `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, and `additionalDetails`;
@@ -211,7 +211,7 @@ Expression pending-validation invariants:
 - no arbitrary structured Expression patch surface;
 - compiler and Expert UI remain unchanged.
 
-Pending suite: `scripts/actions-expression-assignments.test.ts`; when included, `pnpm test:actions-api` should execute **105 tests**.
+Expression validation checkpoint: `pnpm test:actions-api` passed **105/105** on 2026-08-27 in the real user checkout.
 
 ## Lighting / Effects
 
