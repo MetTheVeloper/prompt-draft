@@ -47,7 +47,7 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | `variable.delete` | implemented | Remove exact stable variable; references are not retargeted. |
 | `variable.setEnabled` | implemented | Toggle one exact variable. |
 
-First Expert UI migration boundary review on 2026-08-27 selected **Variables** as the lowest-risk path. `VariablesField.vue` and `app/domain/variables.ts` already share the same `PromptVariable[]` boundary, so CRUD can be migrated without full-draft plumbing through `base.vue`/`create.vue`. No Variable action is marked `migrated` until that UI patch and regression check are completed.
+First Expert UI migration implementation is now present on `refactor/actions-api`: `VariablesField.vue` routes persisted create/update/duplicate/delete and Blueprint insertion through `app/domain/variables.ts` instead of maintaining a second CRUD implementation. Blueprint `source: "user"` metadata is preserved internally by the domain service but is not exposed by public `variable.create`. The four current CRUD actions remain `implemented` until the new **107-test** suite and real Expert UI regression are confirmed; only then may they become `migrated`. `variable.setEnabled` stays `implemented` because the current UI changes enabled state through the general variable-update form rather than the dedicated `setPromptVariableEnabled` service.
 
 ## Generic named module entities
 
@@ -153,7 +153,7 @@ Color invariants:
 Texture invariants:
 
 - no broad arbitrary `texture.assignment.update` public patch;
-- assignment mutations use stable IDs;
+- assignment mutations use exact stable IDs;
 - preset replaces material/finish/surface/optical/prominence/conditions payload while preserving scope;
 - property and conditions mutations detach preset;
 - freeform authored strings are preserved;
