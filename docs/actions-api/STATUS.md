@@ -10,7 +10,7 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **89/89 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **97/97 passed** on 2026-08-27.
 
 `main` remains untouched by Actions API development.
 
@@ -58,7 +58,7 @@ Status: `implemented`, not yet `migrated` to Expert UI.
 Services:
 
 - `app/domain/modules.ts`
-- `app/domain/moduleFields.ts` — shared canonical simple-field validation/write semantics
+- `app/domain/moduleFields.ts`
 
 Implemented actions:
 
@@ -300,60 +300,94 @@ User runtime checkpoint on 2026-08-27:
 - result: **89 tests / 89 passed / 0 failed**
 - suites: Foundation + Variables + Modules + ModuleEntity lifecycle/fields + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material assignments
 
-Color + Texture now prove the shared semantic assignment scope contract across two distinct payload domains.
-
-### 2K. Pose assignments — IMPLEMENTED, AWAITING USER VALIDATION
+### 2K. Pose assignments — IMPLEMENTED + VALIDATED
 
 Services:
 
 - `app/domain/poseAssignments.ts`
-- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive intended for Pose/Expression
+- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive for Pose/Expression
 
-Actions present on branch:
+Implemented actions:
 
 - `pose.assignment.create`
 - `pose.assignment.update`
 - `pose.assignment.delete`
 - `pose.assignment.applyPreset`
 
-Audit/contract decisions:
+Validated decisions:
 
 - Pose uses a subject target list only; it does not have the Color/Texture target+exception builtin scope model;
 - available subject refs are passed explicitly through `ActionEnvironment.subjectAssignmentTargets` rather than read from `useSubjectAssignmentTargets()` inside domain code;
-- exact identity continues to use the shared `semanticTargetIdentity` / semantic reference catalog contract;
+- exact identity continues to use `semanticTargetIdentity` / semantic reference catalog;
 - new missing or unavailable refs reject;
 - an exact persisted missing/unavailable ref may survive when that same identity is explicitly retained, and may be removed explicitly;
-- no token/name fuzzy recovery or retargeting is introduced;
+- `user_variable` and `system_variable` identities remain distinct even if `variableId` text matches;
+- no token/name fuzzy recovery or retargeting;
 - assignment create uses a new stable ID and mirrors current Expert UI default-target semantics by selecting the first available explicit subject source when one exists, otherwise `[]`;
 - update exposes only known Pose payload fields plus `targets`; there is no arbitrary structured patch escape hatch;
 - Pose payload edits detach `presetId`; target-only changes preserve the active preset;
 - preset application replaces preset-owned Pose payload, preserves exact targets and preserves authored `additionalDetails`;
-- legacy assignments without IDs normalize to the existing deterministic `pose-assignment-{index}` compatibility identity before exact mutation;
+- legacy assignments without IDs normalize to deterministic `pose-assignment-{index}` compatibility identity before exact mutation;
+- compiler and Expert UI remain unchanged.
+
+Validation history:
+
+- first real-checkout Pose run: **97 tests / 96 passed / 1 failed**;
+- sole failure was a test-fixture kind mismatch (`system_variable` source vs `user_variable` request), which exact identity correctly classified as missing;
+- fixture corrected without changing domain implementation;
+- corrected real-checkout command: `pnpm test:actions-api`;
+- final result: **97 tests / 97 passed / 0 failed**.
+
+Pose public actions are now promoted to `implemented` in `ACTIONS.md`.
+
+### 2L. Expression assignments — IMPLEMENTED, AWAITING USER VALIDATION
+
+Service:
+
+- `app/domain/expressionAssignments.ts`
+- reuses `app/domain/subjectAssignmentTargets.ts`; no second target resolver was introduced
+
+Actions present on branch:
+
+- `expression.assignment.create`
+- `expression.assignment.update`
+- `expression.assignment.delete`
+- `expression.assignment.applyPreset`
+
+Audit/contract decisions:
+
+- current Expert UI normalizes Expression assignments to stable/compatibility IDs plus `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, `additionalDetails`, and exact subject `targets`;
+- create mirrors the existing Expert UI default-target behavior using the first available explicit `ActionEnvironment.subjectAssignmentTargets` source, otherwise `[]`;
+- target mutation uses the same exact subject resolver already validated by Pose;
+- new missing/unavailable refs reject; exact persisted orphan refs may be retained/removed only by the same identity;
+- no token/name fuzzy recovery or cross-kind retargeting;
+- update exposes only the known Expression payload axes plus `targets`; there is no arbitrary structured patch escape hatch;
+- authored strings are preserved instead of silently coercing to catalog options, matching current UI mutation behavior;
+- payload edits detach `presetId`; target-only changes preserve the preset;
+- preset application replaces the five preset-owned Expression axes while preserving exact targets and authored `additionalDetails`;
+- legacy assignments without IDs normalize to deterministic `expression-assignment-{index}` compatibility identity before exact mutation;
 - compiler and Expert UI remain unchanged.
 
 Test checkpoint added:
 
-- `scripts/actions-pose-assignments.test.ts`
-- `pnpm test:actions-api` now includes the Pose suite
-- coverage includes stable create identity/default target, freeform payload preservation, preset detachment, target-only preset preservation, exact target metadata refresh, new missing/unavailable rejection, persisted orphan preservation, preset application, exact-ID failures, legacy normalization and registry atomicity
+- `scripts/actions-expression-assignments.test.ts`
+- `pnpm test:actions-api` now includes the Expression suite
+- expected total: **105 tests**
+- coverage includes stable create/default target, authored payload preservation, preset detachment, target-only preset preservation, exact live target metadata refresh, new missing/unavailable rejection, persisted orphan preservation, preset application, exact-ID failures, legacy normalization and registry atomicity
 
 Validation status:
 
 - **not yet user-validated**
-- latest accepted real-checkout baseline remains **89/89**
-- first real-checkout Pose run on 2026-08-27 executed **97 tests / 96 passed / 1 failed**
-- the sole failure was a test-fixture identity mismatch: the unavailable source was a `system_variable`, while the requested target was authored as a `user_variable` with the same `variableId`; exact identity correctly classified that request as `missing` rather than fuzzily retargeting it
-- the fixture was corrected to request the exact `system_variable` identity; no Pose domain implementation change was required
-- Pose actions remain `planned` in `ACTIONS.md` until the corrected real-checkout suite passes, per the registry promotion rule
+- latest accepted real-checkout checkpoint remains **97/97**
+- Expression actions remain `planned` in `ACTIONS.md` until the real checkout suite passes, per the registry promotion rule
 
 ## Next
 
-1. Re-run and confirm the corrected Pose checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
-2. If Pose passes, promote its public action statuses to `implemented` and record the new validated test count.
-3. Implement **Expression assignment actions** using the same exact subject-reference primitive and Expression-specific payload/preset semantics.
-4. After Expression validation, re-evaluate the first low-risk Expert UI migration boundary.
-5. Preserve domain-specific payload ownership; do not introduce a public generic assignment patch action.
-6. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
+1. Run and confirm the Expression checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
+2. If Expression passes, promote its public action statuses to `implemented` and record the validated **105/105** checkpoint.
+3. Re-evaluate the first **low-risk Expert UI migration boundary** now that Pose + Expression assignment domains both have canonical headless services.
+4. Do not migrate UI or compiler until that boundary review explicitly selects a path.
+5. Continue specialized domains after the migration-boundary decision: Lighting / Effects, then Hair / Outfit as appropriate.
 
 ## Known deferred decisions
 
