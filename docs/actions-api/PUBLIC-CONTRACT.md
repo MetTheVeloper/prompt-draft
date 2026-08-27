@@ -10,7 +10,7 @@ The contract is provider-neutral. OpenAI tool schemas, Gemini function declarati
 
 The public contract is exposed from `app/actions/public.ts` and re-exported by `app/actions/index.ts`.
 
-Once this contract is validated, public action IDs and the meaning of the invocation/result envelope are compatibility surfaces.
+Public action IDs and the meaning of the invocation/result envelope are compatibility surfaces.
 
 ## Public registry
 
@@ -157,16 +157,32 @@ An adapter may rename transport fields or reshape the public JSON schema to sati
 
 ## Compatibility rules
 
-After validation of this boundary:
+For `prompt-draft.actions.v1`:
 
 1. public Action IDs are frozen compatibility identifiers;
 2. `prompt-draft.actions.v1` remains stable for compatible manifest/envelope changes;
-3. removing or semantically repurposing a public Action requires an explicit compatibility/version decision;
-4. provider-specific behavior must not leak into domains;
-5. host-owned context remains separate from model-owned invocation data;
-6. internal helpers remain non-public unless deliberately promoted through the registry.
+3. removing, renaming, or semantically repurposing a public Action requires an explicit compatibility/version decision;
+4. adding a public Action requires deliberate fixture/docs review rather than silently changing discovery;
+5. registry ordering is not part of the compatibility contract; Action identity is;
+6. provider-specific behavior must not leak into domains;
+7. host-owned context remains separate from model-owned invocation data;
+8. internal helpers remain non-public unless deliberately promoted through the registry.
 
-## Validation
+`scripts/actions-public-ids.test.ts` pins the exact v1 set of all **99 public Action IDs**. This is a compatibility fixture, not generated discovery data.
+
+## Accepted validation
+
+Public contract checkpoint on 2026-08-27:
+
+- `pnpm test:actions-api` => **167/167**;
+- production build => successful;
+- registry => 99 unique public Actions;
+- manifest => deterministic and JSON-safe;
+- invocation bridge => write/read/failure/host-boundary behavior validated.
+
+The final readiness audit adds the exact public-ID compatibility fixture as one additional Actions test. Final expected Actions API total: **168**.
+
+## Test coverage
 
 `scripts/actions-public-contract.test.ts` covers:
 
@@ -180,4 +196,9 @@ After validation of this boundary:
 - rejection of host-owned envelope fields;
 - structured unknown-Action failure.
 
-This suite is included in `pnpm test:actions-api`.
+`scripts/actions-public-ids.test.ts` covers:
+
+- exact v1 Action-ID compatibility set;
+- contract name lock to `prompt-draft.actions.v1`.
+
+Both suites are included in `pnpm test:actions-api`.
