@@ -39,7 +39,7 @@ Initial user runtime checkpoint on 2026-08-27: **18/18 passed**.
 
 ## Current work — Phase 2
 
-### 2A. Variables — IMPLEMENTED + VALIDATED
+### 2A. Variables — IMPLEMENTED + VALIDATED; UI MIGRATION AWAITING VALIDATION
 
 Service: `app/domain/variables.ts`
 
@@ -51,7 +51,7 @@ Implemented actions:
 - `variable.delete`
 - `variable.setEnabled`
 
-Status: `implemented`, not yet `migrated` to Expert UI.
+Action status remains `implemented` until the first Expert UI migration regression checkpoint passes. The Variables UI migration patch is now present on `refactor/actions-api`; see 2M.
 
 ### 2B. Simple modules and presets — IMPLEMENTED + VALIDATED
 
@@ -80,7 +80,7 @@ Validated semantics:
 
 User runtime checkpoint on 2026-08-27: **27/27 passed**.
 
-Deferred: `module.reset` remains planned because generic/specialized Clear semantics are not yet one canonical contract.
+Deferred: `module.reset` remains planned because generic/specialized Clear semantics are not yet canonicalized.
 
 ### 2C. Generic ModuleEntity lifecycle — IMPLEMENTED + VALIDATED
 
@@ -374,49 +374,46 @@ User runtime checkpoint on 2026-08-27:
 - result: **105 tests / 105 passed / 0 failed**
 - Expression public actions are now promoted to `implemented` in `ACTIONS.md`.
 
-### 2M. First Expert UI migration boundary — REVIEW COMPLETE, VARIABLES SELECTED
+### 2M. First Expert UI migration — VARIABLES IMPLEMENTED, AWAITING USER VALIDATION
 
-Audit result: **Variables is the first low-risk migration boundary.**
+Selected boundary: **Variables**.
 
-Why Variables is selected:
+Implementation now present on `refactor/actions-api`:
 
-- `app/components/modules/variables/VariablesField.vue` currently owns direct create/edit/duplicate/delete list mutation and blueprint insertion;
-- `app/domain/variables.ts` already operates directly on `PromptVariable[]`, exactly matching the component's `modelValue` / `update:modelValue` boundary;
-- `VariablesField.vue` already has `activeSystemVariableKeys`, which maps directly to canonical `VariableMutationOptions.blockedKeys`;
-- migration therefore does not require passing a full `PromptDraftState` into the component and does not require Action registry coupling inside Vue;
-- the Variable editor's translation, validation hints, modal orchestration and blueprint configuration remain UI concerns and can stay in place while persisted mutations move to the domain service;
-- blueprint insertion can be applied through repeated canonical `createPromptVariable` calls against a detached working list and emitted once, preserving an atomic UI commit;
-- no compiler behavior needs to change.
+- `app/components/modules/variables/VariablesField.vue` routes persisted create/update/duplicate/delete through `app/domain/variables.ts`;
+- direct array rebuild/splice/filter mutation is no longer the persisted CRUD implementation inside the component;
+- Blueprint insertion accumulates repeated canonical `createPromptVariable` results on a detached working list and emits only after all requested variables succeed;
+- `activeSystemVariableKeys` is passed as canonical `VariableMutationOptions.blockedKeys`, so create/duplicate no longer bypass the system-key invariant;
+- local form drafts, translations, validation hints, modal orchestration, token previews and blueprint configuration remain UI concerns;
+- the UI does not import/use the Action registry because the existing `PromptVariable[]` model boundary already matches the canonical domain service directly;
+- `app/domain/variables.ts` now accepts internal `source: "user"` metadata for Blueprint-created variables so current persisted Blueprint metadata is preserved;
+- `app/actions/variables.ts` deliberately omits that internal `source` property from public `variable.create` input typing/schema;
+- update/duplicate preserve existing variable metadata because canonical mutation clones the current variable rather than rebuilding only visible editor fields;
+- no `base.vue`, `create.vue`, compiler or prompt output code changed in this migration checkpoint.
 
-Why `base.vue` generic module fields are not the first migration:
+Regression coverage added:
 
-- `base.vue` currently owns local reactive `ModuleValues` and `ModulePanelState` slices and emits them separately;
-- canonical module actions operate against the full draft boundary;
-- migrating Base first would require broader prop/context plumbing and would affect many modules at once, making it a poor first regression surface.
-
-Why Pose/Expression assignment UI is not the first migration:
-
-- the shared `SubjectAssignmentsField.vue` is a cross-domain UI abstraction with Vue-derived target catalogs;
-- the new canonical services require module/draft context plus explicit subject source environment;
-- that migration is valuable later, but crosses more adapters than Variables and is therefore not the first low-risk proof.
+- `scripts/actions-variables-ui-migration.test.ts`;
+- verifies Blueprint-style canonical create preserves `source: "user"` through update/duplicate/delete;
+- verifies public `variable.create` rejects the internal `source` property;
+- `pnpm test:actions-api` now includes this suite;
+- expected total after this patch: **107 tests**.
 
 Migration status:
 
-- **review complete; path selected**;
-- no Expert UI file has been changed in this review checkpoint;
-- no compiler file has been changed;
-- Variable actions remain `implemented`, not `migrated`, until the UI patch is applied and regression behavior is checked;
-- when the UI patch lands, `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are candidates for `migrated` status because those current UI paths exist;
-- `variable.setEnabled` remains `implemented` unless/until a current Expert UI path explicitly uses its dedicated canonical `setPromptVariableEnabled` mutation (the existing editor currently changes `enabled` as part of the general variable update form).
+- **implementation present, not yet user-validated**;
+- latest accepted real-checkout checkpoint remains **105/105**;
+- `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` remain `implemented` until the real Actions API suite and Expert UI CRUD/Blueprint regression checks pass;
+- `variable.setEnabled` remains `implemented`: the current editor changes `enabled` as part of the general `updatePromptVariable` form path rather than using the dedicated `setPromptVariableEnabled` mutation.
 
 ## Next
 
-1. Enter the first Expert UI migration checkpoint by refactoring `VariablesField.vue` persisted CRUD/blueprint writes to call `app/domain/variables.ts` instead of directly rebuilding the array.
-2. Keep modal state, translations, validation presentation, and `usePromptVariables()` catalog synchronization in the UI adapter layer.
-3. Do not route this component through a second mutation implementation or introduce full-draft plumbing where the array-level canonical service already fits.
-4. Run `pnpm test:actions-api` after the UI patch and regression-check Variable create/edit/duplicate/delete/blueprint flows in the real app.
-5. Only after that regression checkpoint, promote the corresponding Variable actions from `implemented` to `migrated`.
-6. Continue specialized domains after this first migration proof: Lighting / Effects, then Hair / Outfit as appropriate.
+1. Pull the current `refactor/actions-api` checkpoint and run `pnpm test:actions-api`; expected result is **107/107**.
+2. Regression-check the real Variables Expert UI: create, edit (including enabled), duplicate, delete, and at least one Blueprint insertion.
+3. Confirm generated IDs remain stable across edit, duplicate receives a new ID/unique key, delete targets the exact variable, and Blueprint variables retain expected metadata/values.
+4. If the suite and UI regression are green, promote `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` from `implemented` to `migrated` in `ACTIONS.md`.
+5. Keep `variable.setEnabled` at `implemented` unless a dedicated Expert UI path is intentionally migrated to `setPromptVariableEnabled`.
+6. After this first migration proof, continue specialized domains in the planned order: Lighting / Effects, then Hair / Outfit as appropriate.
 
 ## Known deferred decisions
 
