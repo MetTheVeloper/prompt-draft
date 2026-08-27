@@ -8,7 +8,7 @@
     "generate": "nuxt generate && tsx scripts/generate-offline-manifest.ts",
     "preview": "nuxt preview",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
-    "test:actions-api": "tsx --test scripts/actions-api.test.ts scripts/actions-variables.test.ts scripts/actions-modules.test.ts scripts/actions-module-entities.test.ts scripts/actions-module-entity-fields.test.ts scripts/actions-typography.test.ts scripts/actions-scenes.test.ts scripts/actions-layouts.test.ts scripts/actions-assignment-scopes.test.ts scripts/actions-color-palette.test.ts scripts/actions-material-assignments.test.ts scripts/actions-pose-assignments.test.ts scripts/actions-expression-assignments.test.ts",
+    "test:actions-api": "tsx --test scripts/actions-api.test.ts scripts/actions-variables.test.ts scripts/actions-variables-ui-migration.test.ts scripts/actions-modules.test.ts scripts/actions-module-entities.test.ts scripts/actions-module-entity-fields.test.ts scripts/actions-typography.test.ts scripts/actions-scenes.test.ts scripts/actions-layouts.test.ts scripts/actions-assignment-scopes.test.ts scripts/actions-color-palette.test.ts scripts/actions-material-assignments.test.ts scripts/actions-pose-assignments.test.ts scripts/actions-expression-assignments.test.ts",
     "test:phase8-ux": "node --test scripts/phase8-ux-regression.test.mjs",
     "test:phase9-regression": "tsx --test scripts/phase9-compiler-regression.test.ts",
     "postinstall": "nuxt prepare",
