@@ -87,6 +87,7 @@ export {
   registerOutfitActions,
 } from "./outfitSets";
 export {
+  promptCompileAction,
   promptReadActions,
   promptValidateAction,
   registerPromptReadActions,
