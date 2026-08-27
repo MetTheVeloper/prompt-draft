@@ -39,6 +39,11 @@ export type CreatePromptVariableInput = {
   description?: string;
   type?: UserPromptVariableType;
   enabled?: boolean;
+  /**
+   * Internal persisted metadata used by Expert UI blueprint creation. Public
+   * variable.create intentionally does not expose source as editable input.
+   */
+  source?: "user";
 };
 
 export type UpdatePromptVariableInput = {
@@ -186,6 +191,7 @@ export function createPromptVariable(
     description: input.description || "",
     type: typeResult.value,
     enabled: input.enabled !== false,
+    ...(input.source === "user" ? { source: "user" as const } : {}),
   };
 
   return domainSuccess({
