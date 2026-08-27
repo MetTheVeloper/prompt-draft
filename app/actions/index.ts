@@ -87,6 +87,11 @@ export {
   registerOutfitActions,
 } from "./outfitSets";
 export {
+  promptReadActions,
+  promptValidateAction,
+  registerPromptReadActions,
+} from "./promptRead";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
