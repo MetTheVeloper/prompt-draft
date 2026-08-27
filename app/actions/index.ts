@@ -23,6 +23,14 @@ export {
   textureAssignmentScopeSetAction,
 } from "./materialAssignments";
 export {
+  poseAssignmentActions,
+  poseAssignmentApplyPresetAction,
+  poseAssignmentCreateAction,
+  poseAssignmentDeleteAction,
+  poseAssignmentUpdateAction,
+  registerPoseAssignmentActions,
+} from "./poseAssignments";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
