@@ -1,5 +1,9 @@
 import type { PromptDraftState } from "../modules/promptDraft.types";
-import type { ModuleValues, PromptKeyModule } from "../modules/types";
+import type {
+  ModuleValues,
+  PromptKeyModule,
+  PromptVariable,
+} from "../modules/types";
 import { getModuleEntityConfig } from "../modules/entityContracts";
 import { compileBackgroundModule } from "../utils/compileBackground";
 import { compileCameraModule } from "../utils/compileCamera";
@@ -10,7 +14,15 @@ import {
   compileModule,
   createDefaultModuleValues,
 } from "../utils/compileModules";
-import type { ModuleOutputMap, ModuleOutputValue } from "../utils/compilePromptCore";
+import type {
+  ModuleOutputMap,
+  ModuleOutputValue,
+  PromptOutputFormat,
+} from "../utils/compilePromptCore";
+import {
+  compilePromptOutputPure,
+  type UserVariableOwnership,
+} from "../utils/compilePromptPure";
 import { compileSceneModule, type SceneCompileIssue } from "../utils/compileScene";
 import {
   compileSceneResourceModule,
@@ -28,6 +40,11 @@ export type PromptReadValidation = {
   hasErrors: boolean;
   issues: PromptValidationIssue[];
   outputs: ModuleOutputMap;
+};
+
+export type PromptReadCompile = {
+  format: PromptOutputFormat;
+  output: string;
 };
 
 type PromptReadBuild = {
@@ -185,6 +202,42 @@ function customOverrideIssue(
   };
 }
 
+function isPromptVariable(value: unknown): value is PromptVariable {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return false;
+  const variable = value as Partial<PromptVariable>;
+  return (
+    typeof variable.id === "string" &&
+    typeof variable.key === "string" &&
+    typeof variable.value === "string" &&
+    typeof variable.enabled === "boolean"
+  );
+}
+
+function promptVariableOwnership(
+  readModel: PromptReadBuild,
+): UserVariableOwnership {
+  if (!readModel.modules.some((module) => module.key === "variables")) {
+    return { hasSubject: false, hasReference: false };
+  }
+
+  const rawVariables = readModel.moduleValues.variables?.variables;
+  const variables = Array.isArray(rawVariables)
+    ? rawVariables.filter(isPromptVariable)
+    : [];
+  const enabledVariables = variables.filter((variable) => {
+    return (
+      variable.enabled !== false &&
+      Boolean(variable.key.trim()) &&
+      Boolean(variable.value.trim())
+    );
+  });
+
+  return {
+    hasSubject: enabledVariables.some((variable) => variable.type === "subject"),
+    hasReference: enabledVariables.some((variable) => variable.type === "reference"),
+  };
+}
+
 export function buildPromptReadModel(
   draft: PromptDraftState,
   availableModules: readonly PromptKeyModule[],
@@ -287,5 +340,25 @@ export function validatePromptDraft(
     hasErrors,
     issues,
     outputs: readModel.outputs,
+  };
+}
+
+export function compilePromptDraft(
+  draft: PromptDraftState,
+  availableModules: readonly PromptKeyModule[],
+  format: PromptOutputFormat = draft.outputFormat,
+): PromptReadCompile {
+  const readModel = buildPromptReadModel(draft, availableModules);
+  const result = compilePromptOutputPure(
+    readModel.modules,
+    readModel.outputs,
+    draft.promptSettings,
+    format,
+    promptVariableOwnership(readModel),
+  );
+
+  return {
+    format,
+    output: result.output,
   };
 }
