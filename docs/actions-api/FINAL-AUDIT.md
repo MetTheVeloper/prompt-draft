@@ -8,24 +8,33 @@ Merge baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 ## Executive result
 
-The Actions API branch is in final validation. Core mutation/read/compiler work is complete, the provider-neutral public contract is implemented, and the branch has no merge-base drift from `main`.
+The Actions API branch is **merge-ready**.
 
-At the start of the final audit the branch was **191 commits ahead / 0 behind** the baseline. `main` remained exactly at the recorded baseline commit.
+Core mutation/read/compiler work is complete, the provider-neutral public contract is implemented and compatibility-frozen, and the complete final validation gate passed in the real checkout.
+
+At the start of the final audit the branch was **191 commits ahead / 0 behind** the baseline. `main` remained exactly at the recorded baseline commit throughout validation.
 
 One final compatibility hardening was added during this audit: an exact v1 public Action-ID fixture. This turns the already validated 99-action count/uniqueness check into a true compatibility freeze against accidental renames/removals/additions.
 
 No domain, compiler, or UI production behavior was changed by that hardening.
 
-## Accepted validation before the final audit
+## Final accepted validation
 
-- `pnpm test:actions-api` => **167/167**;
+The full merge-readiness gate passed on 2026-08-27:
+
+- `pnpm test:actions-api` => **168/168**;
+- `pnpm test:reference-catalog` => **15/15**;
+- `pnpm test:phase8-ux` => **5/5**;
+- `pnpm test:phase9-regression` => **9/9**;
+- `pnpm build` => **successful**.
+
+Additional accepted checkpoints remain part of the evidence trail:
+
 - public registry => **99 unique public Actions**;
 - public manifest/invocation bridge => validated;
-- `pnpm test:phase9-regression` => **9/9** at the Prompt Compile checkpoint;
-- production build => successful at the Prompt Compile checkpoint and again after the public-contract checkpoint;
-- Variables Expert UI migration => previously validated by Actions tests, build, and manual Create/Edit/Enabled/Duplicate/Delete/Blueprint regression.
-
-The final exact-ID guard adds one Actions API test, so the final expected total is **168**.
+- Prompt Compile checkpoint => **161/161 + phase9 9/9 + build**;
+- Public Contract checkpoint => **167/167 + build**;
+- Variables Expert UI migration => Actions tests, build, and manual Create/Edit/Enabled/Duplicate/Delete/Blueprint regression.
 
 ## Branch-to-main scope audit
 
@@ -56,7 +65,7 @@ Observed change:
 - Create/Update/Duplicate/Delete and Blueprint insertion call the canonical Variables domain service;
 - existing modal/presentation behavior remains UI-owned;
 - runtime system-variable key conflicts are passed explicitly to the domain service;
-- migration was previously accepted with **107/107 + build + manual UI regression**.
+- migration was accepted with **107/107 + build + manual UI regression**.
 
 No broader Expert UI migration is required for this branch.
 
@@ -72,7 +81,7 @@ Observed change:
 - current Expert UI keeps a runtime adapter in `compilePrompt.ts`;
 - `prompt.compile` uses the same pure path.
 
-Accepted compiler evidence: **161/161 Actions + phase9 9/9 + successful build**. The phase9 guard proves the core differs from the historical compiler only by the intentional headless extraction.
+Final compiler evidence includes the dedicated Prompt Compile checkpoint and the final **phase9 9/9** regression run. The guard proves the core differs from the historical compiler only by the intentional headless extraction.
 
 ### `package.json`
 
@@ -98,7 +107,7 @@ Provider-specific OpenAI/Gemini/MCP/REST adapters are intentionally not part of 
 
 ## Public ID compatibility freeze
 
-`scripts/actions-public-ids.test.ts` now pins the exact v1 set of all 99 public Action IDs.
+`scripts/actions-public-ids.test.ts` pins the exact v1 set of all 99 public Action IDs and passed in the final **168/168** Actions suite.
 
 Compatibility policy:
 
@@ -134,20 +143,18 @@ The following are intentionally outside merge readiness for this branch:
 
 These are deferred scope, not incomplete implementation of the current contract.
 
-## Final validation gate
+## Final validation gate — PASSED
 
-After pulling the final audit commits, run:
+1. `pnpm test:actions-api` => **168/168**;
+2. `pnpm test:reference-catalog` => **15/15**;
+3. `pnpm test:phase8-ux` => **5/5**;
+4. `pnpm test:phase9-regression` => **9/9**;
+5. `pnpm build` => **successful**.
 
-1. `pnpm test:actions-api` — expected **168/168**;
-2. `pnpm test:reference-catalog` — must pass;
-3. `pnpm test:phase8-ux` — must pass;
-4. `pnpm test:phase9-regression` — expected **9/9**;
-5. `pnpm build` — must succeed.
-
-If all five are green, no known blocker remains for declaring `refactor/actions-api` merge-ready.
+No known Actions API blocker remains. `refactor/actions-api` is **merge-ready**.
 
 ## Merge rule
 
-This audit does **not** move or modify `main`.
+This audit does **not** itself move or modify `main`.
 
-After final validation, merge/update of `main` remains an explicit user decision.
+Merging/updating `main` is now a release/integration decision, not an Actions API readiness blocker.
