@@ -233,9 +233,12 @@ test("prompt.validate returns validation as read data without mutating caller dr
   assert.notEqual(result.draft, original);
 });
 
-test("registered prompt read action has stable discovery ID and invalid input is atomic", async () => {
+test("registered prompt read actions expose stable discovery IDs and invalid validate input is atomic", async () => {
   const registry = registerPromptReadActions(new ActionRegistry());
-  assert.deepEqual(registry.list().map((action) => action.id), ["prompt.validate"]);
+  assert.deepEqual(
+    registry.list().map((action) => action.id).sort(),
+    ["prompt.compile", "prompt.validate"],
+  );
 
   const original = createDraft();
   const result = await registry.execute(
