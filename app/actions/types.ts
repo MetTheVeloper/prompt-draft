@@ -1,5 +1,9 @@
-import type { PromptKeyModule } from "../modules/types";
+import type {
+  PromptKeyModule,
+  SemanticTargetCapability,
+} from "../modules/types";
 import type { PromptDraftState } from "../modules/promptDraft.types";
+import type { SemanticReferenceCatalogSource } from "../utils/semanticReferenceCatalog";
 
 export type ActionIssue = {
   code: string;
@@ -57,6 +61,16 @@ export type ActionIdFactory = {
  */
 export type ActionEnvironment = {
   activeSystemVariableKeys?: readonly string[];
+
+  /**
+   * Headless semantic-reference sources grouped by capability. Specialized
+   * assignment actions consume these exact refs instead of reading the Vue
+   * `useSemanticTargetCatalog` adapter. Builtin slots remain domain-owned and
+   * are merged with these dynamic sources by the assignment scope service.
+   */
+  semanticTargetSources?: Partial<
+    Record<SemanticTargetCapability, readonly SemanticReferenceCatalogSource[]>
+  >;
 };
 
 export type ActionContext = {
