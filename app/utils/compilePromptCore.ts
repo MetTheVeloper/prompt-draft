@@ -1,4 +1,4 @@
-// app/utils/compilePrompt.ts
+// app/utils/compilePromptCore.ts
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
 import { compileLayoutNaturalBlock } from './compileLayoutNatural'
@@ -6,8 +6,6 @@ import { compileTypographyNaturalBlock } from './compileTypographyNatural'
 import { formatHairOutputForReferences } from './compileHair'
 import { formatOutfitOutputForReferences } from './compileOutfit'
 import { VARIABLES_MODULE_KEY, variableDefinitionsToRecord } from './promptVariables'
-import { usePromptVariables } from '~/composables/prompt/usePromptVariables'
-import { usePromptSubjectContext } from '~/composables/prompt/usePromptSubjectContext'
 import {
   getAspectRatioRatio,
   getDefaultAspectRatioValue,
@@ -596,7 +594,7 @@ function createSystemVariable(
   }
 }
 
-function getSystemPromptVariables(
+export function getSystemPromptVariables(
   settings: PromptSettings,
 ) {
   const variables = [
@@ -847,20 +845,6 @@ function getReferencedSystemVariableDefinitions(
     .map((variable) => formatPromptDefinition(variable.key, variable.value))
     .filter(Boolean)
     .join('\n')
-}
-
-function syncActiveSystemPromptVariables(
-  settings: PromptSettings,
-) {
-  const { setSystemPromptVariables } = usePromptVariables()
-
-  setSystemPromptVariables(getSystemPromptVariables(settings))
-}
-
-function syncActivePromptSubjectContext(settings: PromptSettings) {
-  const { setSubjectType } = usePromptSubjectContext()
-
-  setSubjectType(settings.subjectType || 'unspecified')
 }
 
 function compileModularOutput(
@@ -1133,9 +1117,6 @@ export function compilePromptOutput(
     settings,
     variablesOutput,
   )
-
-  syncActivePromptSubjectContext(settings)
-  syncActiveSystemPromptVariables(settings)
 
   const hasSettingsOutput =
     settings.idea.trim() ||
