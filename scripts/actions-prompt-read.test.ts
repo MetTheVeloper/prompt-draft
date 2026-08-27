@@ -227,5 +227,7 @@ test("registered prompt read action has stable discovery ID and invalid input is
 
   assert.equal(result.ok, false);
   assert.equal(result.draft, original);
-  if (!result.ok) assert.equal(result.issues[0]?.code, "unexpected_property");
+  if (!result.ok) {
+    assert.equal(result.issues[0]?.code, "action_input_unknown_property");
+  }
 });
