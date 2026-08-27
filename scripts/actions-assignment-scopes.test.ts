@@ -56,7 +56,7 @@ test("exclusive builtin target collapses the authored target scope", () => {
   assert.equal(result.ok, true);
   if (!result.ok) return;
   assert.deepEqual(result.value.targets, [
-    { kind: "builtin", value: "overall", variableId: undefined, entityId: undefined, moduleKey: undefined, token: undefined, label: undefined, parentLabel: undefined },
+    { kind: "builtin", value: "overall" },
   ]);
 });
 
