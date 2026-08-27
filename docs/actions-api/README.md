@@ -1,136 +1,137 @@
 # Prompt Draft Actions API
 
-Status: Phase 1 — foundation and canonical draft boundary
+Status: **Final readiness validation**
 
 Working branch: `refactor/actions-api`
 
 Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
+Public contract: `prompt-draft.actions.v1`
+
+Public Action surface: **99 Actions**
+
 ## Purpose
 
-The Actions API is the canonical application/domain mutation layer for Prompt Draft. It exists so the current Expert UI, future guided/wizard experiences, templates, tests, and later AI-driven planners can perform the same operations through one implementation of each domain mutation.
+The Actions API is the canonical application/domain operation layer for Prompt Draft. Expert UI adapters, future guided flows, templates, tests, and external agent/model hosts should reuse the same domain services rather than implement mutation semantics independently.
 
-The project is not an attempt to replace Prompt Draft's domain model with a generic object-patching API. Existing module schemas, stable identities, compilers, catalogs, and specialized domain models remain authoritative.
+The project is deliberately **not** a generic JSON/path patch API. Existing schemas, stable identities, catalogs, specialized domains, validators, and compilers remain authoritative.
 
-## Core rule
-
-> There must be one canonical implementation of every domain mutation.
-
-A Scene created from the Expert UI, a wizard, a template, or an AI action must ultimately pass through the same Scene domain service. Consumers may differ in presentation and orchestration, but not in mutation semantics.
-
-## Target architecture
+## Core architecture
 
 ```text
-Expert UI ---------┐
-Wizard ------------┤
-Templates ---------┤
-AI planner --------┤
-                   v
-             Actions API
-                   |
-                   v
-            Domain Services
-                   |
-                   v
-        Canonical Draft State
-                   |
-     Normalizers / Resolvers /
-      Validators / Compilers
+Expert UI / Wizard / Templates / Agent Host
+                    |
+             Public/Actions API
+                    |
+              Domain Services
+                    |
+          Canonical PromptDraftState
+                    |
+       Normalizers / Resolvers / Validators
+                    |
+              Pure Compiler Path
 ```
 
-Vue composables and components may adapt these services for reactive UI use, but domain services must not depend on component instances or modal/editor state.
+Vue components/composables may adapt canonical services for reactive UI behavior, but domain services and public Action execution remain headless.
 
 ## Architectural invariants
 
-1. Stable IDs remain canonical persistence identity. Labels, names, tokens, and editable keys are presentation/reference metadata unless an existing domain contract explicitly says otherwise.
-2. Missing stable references must never silently retarget by matching a token, name, or label.
-3. Existing compiler behavior is preserved unless a separately documented bug is intentionally fixed.
-4. Generic field actions are allowed for simple scalar/module fields. Structured domains keep explicit domain operations.
-5. Actions validate and normalize inputs before mutating canonical state.
-6. UI-only state such as expanded cards, open modals, pending picker choices, and transient drafts is not part of the Actions API domain contract.
-7. Domain services are headless. They must be usable from tests without mounting Vue components.
-8. Actions should be deterministic given the same canonical input state and explicit operation input, except for generated opaque IDs/timestamps where generation is part of the operation.
-9. Cross-domain references are updated only by explicit domain rules. No consumer may directly rewrite another domain's persisted reference shape.
-10. No new action should expose an unrestricted `object.patch`, `array.add`, or equivalent escape hatch over structured state.
+1. Stable IDs are canonical persistence identity.
+2. Missing stable references never silently retarget by token/name/label.
+3. Generic field Actions are limited to simple schema/scalar fields.
+4. Scene, Layout, Color/Material, Pose/Expression, Hair, Outfit, Typography, Lighting, and Effects keep explicit domain operations where required.
+5. No unrestricted public object/path patch escape hatch exists.
+6. Runtime-only facts are passed explicitly through `ActionEnvironment`.
+7. Generated IDs are injected through `ActionIdFactory` where deterministic testing is required.
+8. Failed Action execution returns the original caller Draft.
+9. Current compiler behavior is reused through one canonical pure path; there is no second Actions-only compiler.
+10. Provider-specific OpenAI/Gemini/MCP behavior stays outside domain/action implementations.
+
+## Current validated boundaries
+
+Completed and validated:
+
+- canonical `PromptDraftState` boundary;
+- Action registry, discovery, input validation, atomic execution;
+- Variables;
+- Modules / presets / Custom Mode;
+- generic ModuleEntity lifecycle + simple fields/presets;
+- Typography;
+- Scene;
+- Layout;
+- semantic assignment scope foundation;
+- Color Palette;
+- Texture / Material;
+- Pose;
+- Expression;
+- Lighting / Effects;
+- Hair;
+- Outfit;
+- `prompt.validate`;
+- `prompt.compile`;
+- provider-neutral public manifest/invocation contract.
+
+The only intentionally completed Expert UI migration in this branch is Variables CRUD/Blueprint insertion.
+
+## Public contract
+
+`app/actions/public.ts` exposes:
+
+- `createPublicActionRegistry()`;
+- `exportPublicActionManifest()`;
+- `invokePublicAction()`;
+- JSON-Schema-compatible discovery data;
+- `effect: read | mutation` metadata;
+- strict separation between model-owned `{ actionId, input }` and trusted host-owned `ActionContext`.
+
+The exact v1 public Action-ID set is pinned by `scripts/actions-public-ids.test.ts`.
+
+## Validation state
+
+Accepted checkpoints include:
+
+- Prompt Compile: **161/161 + phase9 9/9 + build**;
+- Public Contract: **167/167 + build**.
+
+The exact public-ID compatibility guard adds one final Actions API test, so the final expected Actions total is **168**.
 
 ## Documents
 
-- [`AUDIT.md`](./AUDIT.md) — source audit and extraction map.
-- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — canonical draft/session boundary, domain services, action runtime, transactions, and discovery.
-- [`ACTIONS.md`](./ACTIONS.md) — planned and implemented action registry.
-- [`STATUS.md`](./STATUS.md) — current phase, checkpoints, completed work, next work, and validation gates.
+- [`AUDIT.md`](./AUDIT.md) — original source audit and extraction map.
+- [`ARCHITECTURE.md`](./ARCHITECTURE.md) — architectural contracts and runtime model.
+- [`ACTIONS.md`](./ACTIONS.md) — canonical public Action inventory/status.
+- [`PUBLIC-CONTRACT.md`](./PUBLIC-CONTRACT.md) — provider-neutral discovery/invocation contract.
+- [`STATUS.md`](./STATUS.md) — accepted checkpoints and remaining gate.
+- [`FINAL-AUDIT.md`](./FINAL-AUDIT.md) — branch-to-main scope audit and merge-readiness checklist.
 
-## Delivery phases
+## Intentionally deferred
 
-### Phase 0 — Audit and scope
+Non-blocking for this branch:
 
-- [x] Audit the current read/resolve/compile architecture.
-- [x] Identify UI-coupled mutation logic.
-- [x] Define the one-canonical-mutation rule.
-- [x] Create a dedicated branch and durable documentation set.
+- `module.reset` until Clear/reset semantics are canonicalized;
+- batch/transaction and dry-run semantics;
+- Wizard UI;
+- provider-specific OpenAI/Gemini/MCP adapters;
+- additional Expert UI migrations;
+- third-party schema validator.
 
-### Phase 1 — Canonical draft boundary and action primitives
+## Final readiness gate
 
-- [ ] Extract reusable `PromptDraftState` / snapshot contracts from the create page.
-- [ ] Introduce headless immutable draft helpers.
-- [ ] Define `ActionDefinition`, `ActionContext`, `ActionResult`, error contracts, and registry discovery.
-- [ ] Define action execution semantics without persistence/UI coupling.
-- [ ] Add isolated tests for the action runtime and draft helpers.
+After pulling the final audit commits:
 
-### Phase 2 — Low-risk domain services
+```bash
+pnpm test:actions-api
+pnpm test:reference-catalog
+pnpm test:phase8-ux
+pnpm test:phase9-regression
+pnpm build
+```
 
-- [ ] Variables CRUD service.
-- [ ] Simple module field/default/preset service.
-- [ ] Generic named `ModuleEntity` lifecycle service.
-- [ ] Typography group/text lifecycle service.
-- [ ] Add action definitions that wrap these canonical services.
+Expected Actions total: **168/168**.
+Expected phase9 compiler regression: **9/9**.
 
-### Phase 3 — Relational domains
+When the complete final gate is green, the branch is merge-ready from the Actions API scope perspective.
 
-- [ ] Scene lifecycle and component reference service.
-- [ ] Layout region lifecycle and Scene binding service.
-- [ ] Semantic target query/resolution headless adapter.
-- [ ] Color/Material/Pose/Expression assignment mutation services.
+## Main branch rule
 
-### Phase 4 — Specialized structured domains
-
-- [ ] Lighting source lifecycle.
-- [ ] Effects layer lifecycle.
-- [ ] Hair style/component operations.
-- [ ] Outfit set/item/relation operations.
-- [ ] Preserve domain-specific ID remapping and cleanup rules.
-
-### Phase 5 — Headless validation/compile surface
-
-- [ ] Make draft validation callable without page/component state.
-- [ ] Make prompt compilation callable from a canonical draft context.
-- [ ] Preserve user-variable ownership and Scene/Layout behavior.
-
-### Phase 6 — Transactions and orchestration
-
-- [ ] Define batch execution semantics.
-- [ ] Add atomic/dry-run support if validation confirms it is needed.
-- [ ] Provide action discovery/schema metadata suitable for Wizard and later AI planner use.
-
-### Phase 7 — Expert UI migration
-
-- [ ] Migrate existing UI mutations incrementally to domain services.
-- [ ] Remove duplicated component-owned mutation implementations.
-- [ ] Keep current UX behavior stable.
-
-### Phase 8 — Guided/Wizard consumer
-
-- [ ] Build guided flows on top of the same Actions API.
-- [ ] No Wizard-only domain mutation logic.
-
-### Phase 9 — Regression and merge readiness
-
-- [ ] Old draft import/export compatibility.
-- [ ] Stable-reference regression suite.
-- [ ] Prompt-output equivalence checks.
-- [ ] Runtime mobile/desktop validation where affected.
-- [ ] Source-of-truth finalization and merge review.
-
-## Current execution rule
-
-All Actions API work happens on `refactor/actions-api`. `main` is a baseline/reference branch and must not be moved or modified as part of this work without explicit approval.
+All work remains on `refactor/actions-api`. Do not move/update `main` without explicit user approval.
