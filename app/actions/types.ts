@@ -2,6 +2,7 @@ import type {
   PromptKeyModule,
   SemanticTargetCapability,
 } from "../modules/types";
+import type { HairReferenceRef } from "../modules/hair.types";
 import type { PromptDraftState } from "../modules/promptDraft.types";
 import type { SemanticReferenceCatalogSource } from "../utils/semanticReferenceCatalog";
 
@@ -58,6 +59,8 @@ export type ActionIdFactory = {
   expressionAssignment?: () => string;
   lightingSource?: () => string;
   effectLayer?: () => string;
+  hairStyle?: () => string;
+  hairComponent?: () => string;
   generic?: (prefix: string) => string;
 };
 
@@ -80,12 +83,22 @@ export type ActionEnvironment = {
   >;
 
   /**
-   * Exact subject-variable catalog used by Pose/Expression assignment actions.
+   * Exact subject-variable catalog used by Pose/Expression/Hair target lists.
    * Ordering is meaningful for create: the first available source mirrors the
    * Expert UI's current default-target behavior. Missing/unavailable persisted
    * refs are never reconstructed by token/name matching.
    */
   subjectAssignmentTargets?: readonly SemanticReferenceCatalogSource[];
+
+  /**
+   * Exact enabled reference-variable catalog for Hair source/property
+   * references. `{reference}` remains a domain-owned builtin fallback; all
+   * variable-backed references resolve by exact persisted identity.
+   */
+  hairReferenceSources?: readonly {
+    reference: HairReferenceRef;
+    disabled?: boolean;
+  }[];
 };
 
 export type ActionContext = {
