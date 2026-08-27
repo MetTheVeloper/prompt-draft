@@ -2,7 +2,7 @@
 
 ## Current checkpoint
 
-Phase: **2 — Core write services**
+Phase: **2 — Core operations / read boundary stabilization**
 
 Branch: `refactor/actions-api`
 
@@ -10,9 +10,9 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **131/131 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **147/147 passed** on 2026-08-27.
 
-The latest separately confirmed production build remains the **119/119 Lighting / Effects** checkpoint. Hair validation supplied a green Actions API test run; no separate Hair build result has been recorded yet.
+The latest separately confirmed production build remains the **119/119 Lighting / Effects** checkpoint. Hair and Outfit have confirmed green Actions API suites, but no newer build result has been recorded yet.
 
 `main` remains untouched by Actions API development.
 
@@ -35,9 +35,10 @@ The latest separately confirmed production build remains the **119/119 Lighting 
 | Variables Expert UI migration | 107/107 | validated + build + manual UI |
 | Lighting / Effects | 119/119 | validated + build |
 | Hair | 131/131 | validated |
-| Outfit | expected 147 | awaiting real-checkout validation |
+| Outfit | 147/147 | validated |
+| Prompt validation read boundary | expected 153 | awaiting real-checkout validation |
 
-Detailed public action status and domain invariants live in `docs/actions-api/ACTIONS.md`; this file tracks phase/checkpoint state and migration readiness.
+Detailed public action status and domain invariants live in `docs/actions-api/ACTIONS.md`; this file tracks phase/checkpoint state and migration/readiness decisions.
 
 ## Completed foundations
 
@@ -48,7 +49,7 @@ Detailed public action status and domain invariants live in `docs/actions-api/AC
 - [x] Atomic failure / caller-draft isolation.
 - [x] Exact semantic reference catalogs; no fuzzy stable-reference rescue.
 - [x] Shared exact subject-target resolver for Pose / Expression / Hair / Outfit.
-- [x] Compiler behavior kept unchanged throughout Phase 2 unless an intentional fix is explicitly documented.
+- [x] Compiler behavior kept unchanged throughout write-domain stabilization unless an intentional fix was explicitly documented.
 
 ## Validated Phase 2 write domains
 
@@ -67,10 +68,11 @@ The following boundaries are implemented and validated in the real project check
 - Expression
 - Lighting / Effects
 - Hair
+- Outfit
 
 ### Variables Expert UI migration — COMPLETE + VALIDATED
 
-`VariablesField.vue` is still the first deliberately migrated Expert UI boundary. Persisted create/update/duplicate/delete and Blueprint insertion route through `app/domain/variables.ts`; UI-only form/modal/translation concerns remain local to the component.
+`VariablesField.vue` remains the first deliberately migrated Expert UI boundary. Persisted create/update/duplicate/delete and Blueprint insertion route through `app/domain/variables.ts`; UI-only form/modal/translation concerns remain local to the component.
 
 Accepted validation:
 
@@ -82,11 +84,6 @@ Accepted validation:
 
 ### Lighting / Effects — IMPLEMENTED + VALIDATED
 
-Services:
-
-- `app/domain/lightingSources.ts`
-- `app/domain/effectLayers.ts`
-
 The first 119-test checkout exposed one Effects preset-equality bug: raw nested-object serialization was order-sensitive. The domain comparison was changed to recursive object-key-order-insensitive equality, matching current Expert UI behavior. No compiler/UI/action-schema change was required.
 
 Final accepted checkpoint:
@@ -96,110 +93,96 @@ Final accepted checkpoint:
 
 ### Hair — IMPLEMENTED + VALIDATED
 
-Services:
+Service/action boundary:
 
 - `app/domain/hairStyles.ts`
 - `app/actions/hairStyles.ts`
+- 12 public Hair actions covering Style + Component lifecycle/source/property/preset operations
 
-Public Hair actions:
+Accepted real-checkout validation:
 
-- `hair.style.create`
-- `hair.style.update`
-- `hair.style.duplicate`
-- `hair.style.delete`
-- `hair.style.setSource`
-- `hair.style.setProperty`
-- `hair.style.applyPreset`
-- `hair.component.create`
-- `hair.component.update`
-- `hair.component.setProperty`
-- `hair.component.duplicate`
-- `hair.component.delete`
+- `pnpm test:actions-api` => **131/131**
+- exact stable style/component identities, subject/reference behavior, property validation, presets and nested-ID remapping all passed
+- no compiler or Expert UI migration was part of this checkpoint
 
-Validated contract highlights:
+### Outfit — IMPLEMENTED + VALIDATED
 
-- exact stable style/component IDs own mutation identity;
-- keys remain canonical unique presentation/reference tokens only;
-- legacy missing IDs normalize through current Hair compatibility behavior;
-- style duplication remaps all nested component IDs and clears copied preset identity;
-- exact subject-target resolver is reused; no second resolver exists;
-- reference variables resolve through `ActionEnvironment.hairReferenceSources`, with domain-owned `{reference}` fallback;
-- missing/unavailable new references reject; exact persisted orphans may be retained without fuzzy recovery;
-- typed property states validate catalog capabilities;
-- specialized property/source/preset/component actions prevent broad nested patching;
-- compiler and Expert UI were unchanged for this checkpoint.
-
-Accepted real-checkout validation on 2026-08-27:
-
-- `pnpm test:actions-api` => **131 tests / 131 passed / 0 failed**
-- Hair actions are promoted to `implemented` in `ACTIONS.md`.
-
-## Current work
-
-### Outfit — IMPLEMENTED, AWAITING USER VALIDATION
-
-Services/actions now present on `refactor/actions-api`:
+Service/action boundary:
 
 - `app/domain/outfitSets.ts`
 - `app/actions/outfitSets.ts`
-- `outfit.set.create`
-- `outfit.set.update`
-- `outfit.set.duplicate`
-- `outfit.set.delete`
-- `outfit.set.applyPreset`
-- `outfit.item.create`
-- `outfit.item.update`
-- `outfit.item.setSource`
-- `outfit.item.setProperty`
-- `outfit.item.duplicate`
-- `outfit.item.delete`
-- `outfit.relation.create`
-- `outfit.relation.update`
-- `outfit.relation.delete`
+- 14 public Outfit actions covering Set + Item + Relation operations
 
-Contract decisions:
+Validated graph decisions:
 
-- canonical set identity is exact `set.id`;
-- item identity is exact owning `set.id + item.id`;
-- relation identity is exact owning `set.id + relation.id`;
-- editable set/item keys stay unique canonical presentation/reference tokens and never replace stable identity;
-- legacy missing IDs normalize through current Outfit compatibility IDs before exact mutation;
-- Set duplication allocates fresh set/item/relation IDs, then remaps relation endpoints only through an exact old-item-ID → new-item-ID map;
-- a relation endpoint already orphaned before duplication remains orphaned instead of being repaired from key/name/type metadata;
-- Item duplication creates a new item but deliberately does not clone relation edges;
-- Item deletion removes only relations whose exact source/target endpoint equals the deleted item ID;
-- relation creation requires exact current item endpoints;
-- relation update validates endpoints only when that endpoint changes, so an unchanged persisted orphan may survive unrelated relation edits and can later be explicitly repaired or deleted;
-- relation deletion works by exact stable relation ID even when its endpoints are orphaned;
-- set target edits reuse the exact subject-target resolver already validated by Pose / Expression / Hair;
-- Outfit item references are supplied headlessly via `ActionEnvironment.outfitReferenceSources`; `{reference}` remains a domain-owned builtin fallback;
-- new missing/unavailable references reject; exact persisted orphan references can be retained without token/name fuzzy rescue;
-- item property mutation validates the exact current type/profile, option-set membership, select vs multi-select shape, and custom/reference/absent capabilities;
-- item/source/property/relation structural mutations detach the active Outfit preset;
-- set metadata/target edits preserve the preset, while authored set details detach it, matching current Expert UI ownership;
-- preset application rebuilds recipe-owned `items + relations` with fresh IDs while preserving set targets and authored set details; clearing only removes `presetId`;
-- no broad arbitrary nested object/path patch was introduced;
-- compiler and Expert UI remain unchanged in this checkpoint.
+- Set identity is exact `set.id`; Item/Relation identity is scoped by owning Set plus stable child ID.
+- Set duplication remaps known relation endpoints only through the exact old-item-ID → new-item-ID map.
+- Existing orphan endpoints remain orphaned; no key/name/type fuzzy repair exists.
+- Item duplication does not clone relation edges.
+- Item deletion removes only relations connected to the exact deleted Item ID.
+- Relation create requires exact current endpoints; relation update validates only changed endpoints so a persisted orphan may survive unrelated edits and later be repaired/deleted explicitly.
+- Item references resolve through exact `ActionEnvironment.outfitReferenceSources` identities with domain-owned `{reference}` fallback.
+- Property mutation validates exact current type/profile, option-set shape and custom/reference/absent capabilities.
+- Structural Item/Relation changes detach the active preset; Set metadata/targets preserve it while authored Set details detach it.
+- Preset application rebuilds recipe-owned Items + Relations with fresh IDs and preserves Set targets/details.
+- Compiler and Expert UI were unchanged.
 
-Regression coverage:
+Validation history:
 
-- `scripts/actions-outfit.test.ts`
-- **16 new tests** cover Set lifecycle, exact targets, presets, item type/starter/custom creation, exact reference source behavior, profile/option-set property validation, Set duplication endpoint remapping, Item deletion relation cleanup, unchanged orphan preservation, explicit relation repair, legacy compatibility IDs, identity conflicts, registry discovery and atomic failure.
-- `pnpm test:actions-api` now includes the Outfit suite.
-- expected total: **147 tests**.
+- first real-checkout run => **147 tests / 146 passed / 1 failed**; all domain/graph tests passed and the sole failure was a registry-discovery order assertion;
+- an intermediate test-only patch accidentally rewrote too much of the Outfit regression fixture and temporarily produced two false Relation failures;
+- that test file was fully restored to the original 718-line suite; the only retained change was order-insensitive discovery comparison using `.sort()`, matching Hair's existing pattern;
+- no Outfit production domain/action behavior changed for those fixture fixes;
+- final real-checkout `pnpm test:actions-api` => **147/147**.
 
-Validation status:
+All 14 Outfit public actions are promoted to `implemented` in `ACTIONS.md`.
 
-- Outfit public actions remain `planned` in `ACTIONS.md` until the real checkout suite passes.
-- No Expert UI or compiler migration is included in this checkpoint.
+## Current work
+
+### Prompt validation read boundary — IMPLEMENTED, AWAITING USER VALIDATION
+
+The next boundary was selected after auditing `prompt.validate`, `prompt.compile`, and the current Expert UI/compiler ownership.
+
+Why validation first:
+
+- `moduleOutputs` are currently derived by module panels and are not persisted inside `PromptDraftState`;
+- `app/utils/compilePrompt.ts` and `compilePromptCore.ts` still contain Vue-composable/runtime side effects (`usePromptVariables`, `usePromptSubjectContext` and system-variable synchronization);
+- exposing `prompt.compile` directly from those files would violate the headless-domain rule or create a second compiler implementation;
+- validation itself can be separated safely by rebuilding module outputs headlessly with the same existing module compiler primitives, then reusing `validatePromptSettings`.
+
+Implementation now present:
+
+- `app/domain/promptRead.ts`
+  - builds active module outputs from canonical `PromptDraftState` + module registry;
+  - mirrors persisted Custom Mode behavior;
+  - reproduces Scene, Form, Camera and Scene-resource output ownership using the existing compiler helpers;
+  - derives exact Scene-referenced entity IDs only when both Scene and Layout are active;
+  - maps Scene compile issues into existing prompt-validation issue codes;
+  - runs the existing `validatePromptSettings` rules and adds `no_modules_selected` / custom-override issues without Vue coupling.
+- `app/actions/promptRead.ts`
+  - exposes `prompt.validate` as a read operation;
+  - validation errors/warnings are returned as read data rather than making Action execution fail;
+  - caller-draft isolation remains enforced by the Action registry.
+- `scripts/actions-prompt-read.test.ts`
+  - 6 tests for active output derivation, Custom Mode, global setup errors, variable-reference warnings, read-only execution and registry/schema behavior.
+
+Status:
+
+- `prompt.validate` remains `planned` until the new real-checkout suite passes.
+- expected `pnpm test:actions-api` total: **153 tests**.
+- no Expert UI file and no existing compiler file has been modified in this checkpoint.
+
+### Prompt compile — DEFERRED TO NEXT CHECKPOINT
+
+`prompt.compile` remains `planned`. The next implementation must extract a pure compiler adapter from the existing final compiler behavior instead of importing Vue composables into the Actions API or duplicating compiler logic. This starts only after the 153-test `prompt.validate` checkpoint is validated.
 
 ## Next
 
 1. Pull the current `refactor/actions-api` checkpoint.
-2. Run `pnpm test:actions-api`; expected result is **147/147**.
+2. Run `pnpm test:actions-api`; expected result is **153/153**.
 3. Run `pnpm build` for TypeScript/Nuxt integration validation.
-4. If green, promote all Outfit actions from `planned` to `implemented` and record the 147-test/build checkpoint.
-5. Re-evaluate the next low-risk boundary only after Outfit validation; do not perform a broad Expert UI migration automatically.
+4. If green, promote `prompt.validate` from `planned` to `implemented` and record the checkpoint.
+5. Then extract the pure final-compile adapter and implement `prompt.compile` without changing current Expert UI output semantics.
 
 ## Known deferred decisions
 
@@ -207,10 +190,8 @@ Validation status:
 - Batch/transaction API — defer until real multi-step Wizard flows justify it.
 - Dry-run semantics — defer with batch design.
 - Third-party schema validator — avoid until action input complexity justifies dependency cost.
-- Headless semantic source builder from canonical draft/compiler outputs — defer until specialized consumers establish exact runtime needs.
-- `prompt.validate` / `prompt.compile` read operations — design after write-domain stabilization and Outfit validation.
-- AI-facing tool schema/export format — design after internal registry contract stabilizes.
-- Wizard UI — out of scope until core actions and relational/assignment paths are stable.
+- AI-facing tool schema/export format — design after internal registry/read contracts stabilize.
+- Wizard UI — out of scope until core actions and read/compile paths are stable.
 
 ## Regression guardrails
 
@@ -221,7 +202,7 @@ Every implementation phase must preserve:
 - current draft import/export compatibility;
 - prompt compiler behavior unless an intentional fix is documented;
 - current Expert UI behavior until that UI path is deliberately migrated;
-- one canonical implementation for every domain mutation.
+- one canonical implementation for every domain operation.
 
 ## Main branch rule
 
