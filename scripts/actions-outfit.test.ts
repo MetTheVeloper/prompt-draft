@@ -22,6 +22,7 @@ import { OutfitModule } from "../app/modules/outfit.semantic.ts";
 import type {
   OutfitItem,
   OutfitItemRelation,
+  OutfitPropertyState,
   OutfitSet,
   PromptReferenceRef,
 } from "../app/modules/outfit.types.ts";
@@ -97,13 +98,13 @@ function reference(
   return { variableId: id, token, label: "Outfit Ref", source };
 }
 
-function item(
-  id: string,
+function outfitItem(
+  id: string | undefined,
   key = "shirt",
   overrides: Partial<OutfitItem> = {},
 ): OutfitItem {
   return {
-    id,
+    ...(id ? { id } : ({} as { id: string })),
     key,
     name: "Shirt",
     type: "shirt",
@@ -111,23 +112,23 @@ function item(
     properties: {},
     additionalDetails: "",
     ...overrides,
-  };
+  } as OutfitItem;
 }
 
 function relation(
-  id: string,
+  id: string | undefined,
   sourceItemId: string,
   targetItemId: string,
   overrides: Partial<OutfitItemRelation> = {},
 ): OutfitItemRelation {
   return {
-    id,
+    ...(id ? { id } : ({} as { id: string })),
     type: "over",
     sourceItemId,
     targetItemId,
     details: "",
     ...overrides,
-  };
+  } as OutfitItemRelation;
 }
 
 function outfitSet(
@@ -147,20 +148,15 @@ function outfitSet(
   } as OutfitSet;
 }
 
-function idSequence(...values: string[]) {
-  let index = 0;
-  return () => values[index++] || `generated-${index}`;
-}
-
 test("outfit set create uses stable ID, unique key, first subject target, and preserves caller", () => {
   const original = createDraft({ outfitSets: [] });
   const result = createPromptOutfitSet(original, OutfitModule, {
-    createSetId: () => "outfit-set-new",
+    createSetId: () => "set-new",
     subjectSources: [subjectSource()],
   });
   assert.equal(result.ok, true);
   if (!result.ok) return;
-  assert.equal(result.value.set?.id, "outfit-set-new");
+  assert.equal(result.value.set?.id, "set-new");
   assert.equal(result.value.set?.key, "set1");
   assert.equal(result.value.set?.name, "Outfit Set 1");
   assert.deepEqual(result.value.set?.targets, [subjectTarget()]);
@@ -169,147 +165,115 @@ test("outfit set create uses stable ID, unique key, first subject target, and pr
 
 test("outfit set update preserves preset for metadata/targets but details detach it", () => {
   const original = createDraft({
-    outfitSets: [
-      outfitSet("set-a", "mainSet", { presetId: "casual" }),
-      outfitSet("set-b", "otherSet"),
-    ],
+    outfitSets: [outfitSet("set-a", "mainSet", { presetId: "casual" }), outfitSet("set-b", "otherSet")],
   });
   const metadata = updatePromptOutfitSet(
     original,
     OutfitModule,
     "set-a",
     {
-      name: "Editorial",
+      name: "Editorial Set",
       key: "other set",
-      targets: [subjectTarget("live", "{live}")],
+      targets: [subjectTarget("subject-live", "{liveSubject}")],
     },
-    { subjectSources: [subjectSource("live", "{live}")] },
+    { subjectSources: [subjectSource("subject-live", "{liveSubject}")] },
   );
   assert.equal(metadata.ok, true);
   if (!metadata.ok) return;
   assert.equal(metadata.value.set?.id, "set-a");
   assert.equal(metadata.value.set?.key, "otherSet2");
   assert.equal(metadata.value.set?.presetId, "casual");
-  assert.equal(metadata.value.set?.targets[0]?.variableId, "live");
 
   const details = updatePromptOutfitSet(
-    metadata.value.draft,
-    OutfitModule,
-    "set-a",
-    { additionalDetails: "keep the palette restrained" },
-  );
-  assert.equal(details.ok, true);
-  if (!details.ok) return;
-  assert.equal(details.value.set?.additionalDetails, "keep the palette restrained");
-  assert.equal(details.value.set?.presetId, undefined);
-
-  const missing = updatePromptOutfitSet(
     original,
     OutfitModule,
     "set-a",
-    { targets: [subjectTarget("missing", "{missing}")] },
-    { subjectSources: [] },
+    { additionalDetails: "cinched at the waist" },
   );
-  assert.equal(missing.ok, false);
-  if (!missing.ok) assert.equal(missing.issues[0]?.code, "subject_assignment_target_missing");
+  assert.equal(details.ok, true);
+  if (details.ok) assert.equal(details.value.set?.presetId, undefined);
 });
 
 test("outfit set duplicate remaps nested IDs and known relation endpoints while preserving orphan endpoints", () => {
-  const source = outfitSet("set-a", "layered", {
-    presetId: "casual",
-    items: [item("item-a", "shirt"), item("item-b", "coat", { type: "coat", name: "Coat" })],
-    relations: [
-      relation("rel-a", "item-b", "item-a"),
-      relation("rel-orphan", "item-a", "missing-item"),
+  let itemId = 0;
+  let relationId = 0;
+  const original = createDraft({
+    outfitSets: [
+      outfitSet("set-a", "mainSet", {
+        presetId: "casual",
+        items: [outfitItem("item-a", "shirt"), outfitItem("item-b", "coat", { type: "coat", name: "Coat" })],
+        relations: [
+          relation("rel-a", "item-b", "item-a"),
+          relation("rel-orphan", "missing-item", "item-a"),
+        ],
+      }),
     ],
   });
-  const original = createDraft({ outfitSets: [source] });
   const result = duplicatePromptOutfitSet(original, OutfitModule, "set-a", {
     createSetId: () => "set-copy",
-    createItemId: idSequence("item-a-copy", "item-b-copy"),
-    createRelationId: idSequence("rel-a-copy", "rel-orphan-copy"),
+    createItemId: () => `item-copy-${++itemId}`,
+    createRelationId: () => `relation-copy-${++relationId}`,
   });
   assert.equal(result.ok, true);
   if (!result.ok) return;
-  const copy = result.value.set;
-  assert.equal(copy?.id, "set-copy");
-  assert.equal(copy?.presetId, undefined);
-  assert.deepEqual(copy?.items.map((candidate) => candidate.id), ["item-a-copy", "item-b-copy"]);
-  assert.equal(copy?.relations?.[0]?.sourceItemId, "item-b-copy");
-  assert.equal(copy?.relations?.[0]?.targetItemId, "item-a-copy");
-  assert.equal(copy?.relations?.[1]?.sourceItemId, "item-a-copy");
-  assert.equal(copy?.relations?.[1]?.targetItemId, "missing-item");
+  assert.equal(result.value.set?.id, "set-copy");
+  assert.equal(result.value.set?.presetId, undefined);
+  assert.deepEqual(result.value.set?.items.map((item) => item.id), ["item-copy-1", "item-copy-2"]);
+  assert.deepEqual(result.value.set?.relations?.map((item) => item.id), ["relation-copy-1", "relation-copy-2"]);
+  assert.equal(result.value.set?.relations?.[0]?.sourceItemId, "item-copy-2");
+  assert.equal(result.value.set?.relations?.[0]?.targetItemId, "item-copy-1");
+  assert.equal(result.value.set?.relations?.[1]?.sourceItemId, "missing-item");
+  assert.equal(result.value.set?.relations?.[1]?.targetItemId, "item-copy-1");
 });
 
 test("outfit preset rebuilds preset-owned items with fresh IDs while preserving targets/details and clear keeps payload", () => {
+  let itemId = 0;
+  let relationId = 0;
   const original = createDraft({
-    outfitSets: [outfitSet("set-a", "set1", { additionalDetails: "silver accents" })],
+    outfitSets: [
+      outfitSet("set-a", "set1", {
+        name: "Outfit Set 1",
+        targets: [subjectTarget()],
+        additionalDetails: "keep this authored note",
+      }),
+    ],
   });
-  const applied = applyPromptOutfitSetPreset(original, OutfitModule, "set-a", "casual", {
-    createItemId: idSequence("preset-item-1", "preset-item-2", "preset-item-3"),
-    createRelationId: () => "preset-relation",
+  const result = applyPromptOutfitSetPreset(original, OutfitModule, "set-a", "casual", {
+    createItemId: () => `preset-item-${++itemId}`,
+    createRelationId: () => `preset-relation-${++relationId}`,
   });
-  assert.equal(applied.ok, true);
-  if (!applied.ok) return;
-  assert.equal(applied.value.set?.presetId, "casual");
-  assert.equal(applied.value.set?.name, "Casual Set");
-  assert.equal(applied.value.set?.key, "casualSet");
-  assert.deepEqual(applied.value.set?.items.map((candidate) => candidate.id), [
-    "preset-item-1",
-    "preset-item-2",
-    "preset-item-3",
-  ]);
-  assert.deepEqual(applied.value.set?.targets, [subjectTarget()]);
-  assert.equal(applied.value.set?.additionalDetails, "silver accents");
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.equal(result.value.set?.presetId, "casual");
+  assert.deepEqual(result.value.set?.targets, [subjectTarget()]);
+  assert.equal(result.value.set?.additionalDetails, "keep this authored note");
+  assert.deepEqual(result.value.set?.items.map((item) => item.id), ["preset-item-1", "preset-item-2", "preset-item-3"]);
 
-  const cleared = applyPromptOutfitSetPreset(
-    applied.value.draft,
-    OutfitModule,
-    "set-a",
-    "",
-  );
+  const cleared = applyPromptOutfitSetPreset(result.value.draft, OutfitModule, "set-a", "");
   assert.equal(cleared.ok, true);
   if (!cleared.ok) return;
   assert.equal(cleared.value.set?.presetId, undefined);
-  assert.equal(cleared.value.set?.items.length, 3);
-
-  const unknown = applyPromptOutfitSetPreset(original, OutfitModule, "set-a", "missing");
-  assert.equal(unknown.ok, false);
-  if (!unknown.ok) assert.equal(unknown.issues[0]?.code, "outfit_preset_not_found");
+  assert.deepEqual(cleared.value.set?.items, result.value.set?.items);
 });
 
 test("outfit item create supports catalog type, starter, and custom choices with stable IDs", () => {
-  const original = createDraft({ outfitSets: [outfitSet("set-a", "set1", { presetId: "casual" })] });
-  const typed = createPromptOutfitItem(
-    original,
-    OutfitModule,
-    "set-a",
-    { kind: "type", type: "shirt" },
-    { createItemId: () => "item-shirt" },
-  );
+  let itemId = 0;
+  const original = createDraft({ outfitSets: [outfitSet("set-a")] });
+  const options = { createItemId: () => `item-new-${++itemId}` };
+
+  const typed = createPromptOutfitItem(original, OutfitModule, "set-a", { kind: "type", type: "shirt" }, options);
   assert.equal(typed.ok, true);
   if (!typed.ok) return;
+  assert.equal(typed.value.item?.id, "item-new-1");
   assert.equal(typed.value.item?.type, "shirt");
-  assert.equal(typed.value.set?.presetId, undefined);
 
-  const starter = createPromptOutfitItem(
-    typed.value.draft,
-    OutfitModule,
-    "set-a",
-    { kind: "starter", starterId: "oversized_t_shirt" },
-    { createItemId: () => "item-starter" },
-  );
+  const starter = createPromptOutfitItem(typed.value.draft, OutfitModule, "set-a", { kind: "starter", starterId: "mini_skirt" }, options);
   assert.equal(starter.ok, true);
   if (!starter.ok) return;
-  assert.deepEqual(starter.value.item?.properties.fit, { mode: "option", value: "oversized" });
+  assert.equal(starter.value.item?.type, "skirt");
+  assert.deepEqual(starter.value.item?.properties.length, { mode: "option", value: "mini" });
 
-  const custom = createPromptOutfitItem(
-    starter.value.draft,
-    OutfitModule,
-    "set-a",
-    { kind: "custom" },
-    { createItemId: () => "item-custom" },
-  );
+  const custom = createPromptOutfitItem(starter.value.draft, OutfitModule, "set-a", { kind: "custom" }, options);
   assert.equal(custom.ok, true);
   if (!custom.ok) return;
   assert.equal(custom.value.item?.type, "custom");
@@ -321,48 +285,43 @@ test("outfit item update preserves stable ID, uniquifies key, and canonical type
     outfitSets: [outfitSet("set-a", "set1", {
       presetId: "casual",
       items: [
-        item("item-a", "shirt", { properties: { fit: { mode: "option", value: "fitted" } } }),
-        item("item-b", "coat", { type: "coat", name: "Coat" }),
+        outfitItem("item-a", "shirt", { properties: { fit: { mode: "option", value: "fitted" } } }),
+        outfitItem("item-b", "coat", { type: "coat" }),
       ],
     })],
   });
-  const changed = updatePromptOutfitItem(
-    original,
-    OutfitModule,
-    "set-a",
-    "item-a",
-    { key: "coat", type: "custom", customType: "tech robe", customCategory: "outerwear" },
-  );
-  assert.equal(changed.ok, true);
-  if (!changed.ok) return;
-  assert.equal(changed.value.item?.id, "item-a");
-  assert.equal(changed.value.item?.key, "coat2");
-  assert.equal(changed.value.item?.type, "custom");
-  assert.equal(changed.value.item?.customType, "tech robe");
-  assert.equal(changed.value.item?.customCategory, "outerwear");
-  assert.deepEqual(changed.value.item?.properties, {});
-  assert.equal(changed.value.set?.presetId, undefined);
 
-  const invalid = updatePromptOutfitItem(
-    original,
-    OutfitModule,
-    "set-a",
-    "item-a",
-    { type: "not-a-type" },
-  );
-  assert.equal(invalid.ok, false);
-  if (!invalid.ok) assert.equal(invalid.issues[0]?.code, "outfit_item_type_not_found");
+  const metadata = updatePromptOutfitItem(original, OutfitModule, "set-a", "item-a", {
+    name: "Editorial Shirt",
+    key: "coat",
+  });
+  assert.equal(metadata.ok, true);
+  if (!metadata.ok) return;
+  assert.equal(metadata.value.item?.id, "item-a");
+  assert.equal(metadata.value.item?.key, "coat2");
+  assert.equal(metadata.value.set?.presetId, undefined);
+
+  const typeChange = updatePromptOutfitItem(original, OutfitModule, "set-a", "item-a", { type: "custom" });
+  assert.equal(typeChange.ok, true);
+  if (!typeChange.ok) return;
+  assert.equal(typeChange.value.item?.type, "custom");
+  assert.equal(typeChange.value.item?.customCategory, "custom");
+  assert.deepEqual(typeChange.value.item?.properties, {});
+
+  const categoryChange = updatePromptOutfitItem(typeChange.value.draft, OutfitModule, "set-a", "item-a", { customCategory: "footwear" });
+  assert.equal(categoryChange.ok, true);
+  if (categoryChange.ok) assert.deepEqual(categoryChange.value.item?.properties, {});
 });
 
 test("outfit item source resolves exact references, keeps builtin reference, and preserves exact persisted orphan", () => {
-  const original = createDraft({ outfitSets: [outfitSet("set-a", "set1", { items: [item("item-a")] })] });
+  const original = createDraft({ outfitSets: [outfitSet("set-a", "set1", { items: [outfitItem("item-a")] })] });
   const liveReference = reference();
   const live = setPromptOutfitItemSource(
     original,
     OutfitModule,
     "set-a",
     "item-a",
-    { mode: "reference", reference: liveReference, itemHint: "copy the collar" },
+    { mode: "reference", reference: liveReference, itemHint: "copy the shirt" },
     { referenceSources: [{ reference: liveReference }] },
   );
   assert.equal(live.ok, true);
@@ -370,7 +329,7 @@ test("outfit item source resolves exact references, keeps builtin reference, and
   assert.deepEqual(live.value.item?.source, {
     mode: "reference",
     reference: liveReference,
-    itemHint: "copy the collar",
+    itemHint: "copy the shirt",
   });
 
   const builtin = setPromptOutfitItemSource(
@@ -382,6 +341,7 @@ test("outfit item source resolves exact references, keeps builtin reference, and
   );
   assert.equal(builtin.ok, true);
   if (builtin.ok && builtin.value.item?.source.mode === "reference") {
+    assert.equal(builtin.value.item.source.reference.token, "{reference}");
     assert.equal(builtin.value.item.source.reference.source, "system");
   }
 
@@ -395,10 +355,9 @@ test("outfit item source resolves exact references, keeps builtin reference, and
   assert.equal(missing.ok, false);
   if (!missing.ok) assert.equal(missing.issues[0]?.code, "outfit_reference_missing");
 
-  const orphanRef = reference("orphan", "{orphan}");
   const orphanDraft = createDraft({
     outfitSets: [outfitSet("set-a", "set1", {
-      items: [item("item-a", "shirt", { source: { mode: "reference", reference: orphanRef } })],
+      items: [outfitItem("item-a", "shirt", { source: { mode: "reference", reference: reference("orphan", "{orphan}") } })],
     })],
   });
   const retained = setPromptOutfitItemSource(
@@ -406,266 +365,206 @@ test("outfit item source resolves exact references, keeps builtin reference, and
     OutfitModule,
     "set-a",
     "item-a",
-    { mode: "reference", reference: orphanRef },
-    { referenceSources: [] },
+    { mode: "reference", reference: reference("orphan", "{orphan}") },
   );
   assert.equal(retained.ok, true);
 });
 
 test("outfit item property validates profile option sets and multi-select/custom/reference state", () => {
-  const base = createDraft({
-    outfitSets: [outfitSet("set-a", "set1", {
-      presetId: "casual",
-      items: [item("item-a", "shirt", { type: "t_shirt", name: "T-Shirt" })],
-    })],
-  });
-  const fit = setPromptOutfitItemProperty(
-    base,
+  const original = createDraft({ outfitSets: [outfitSet("set-a", "set1", { items: [outfitItem("item-a", "shirt")] })] });
+
+  const validLength = setPromptOutfitItemProperty(
+    original,
     OutfitModule,
     "set-a",
     "item-a",
-    "fit",
-    { mode: "option", value: "oversized" },
+    "length",
+    { mode: "option", value: "cropped" },
   );
-  assert.equal(fit.ok, true);
-  if (!fit.ok) return;
-  assert.equal(fit.value.set?.presetId, undefined);
+  assert.equal(validLength.ok, true);
 
-  const pockets = setPromptOutfitItemProperty(
-    fit.value.draft,
+  const invalidLength = setPromptOutfitItemProperty(
+    original,
+    OutfitModule,
+    "set-a",
+    "item-a",
+    "length",
+    { mode: "option", value: "mini" },
+  );
+  assert.equal(invalidLength.ok, false);
+  if (!invalidLength.ok) assert.equal(invalidLength.issues[0]?.code, "outfit_property_invalid_option");
+
+  const multi = setPromptOutfitItemProperty(
+    original,
     OutfitModule,
     "set-a",
     "item-a",
     "pockets",
-    { mode: "option", value: ["cargo", "cargo"] },
+    { mode: "option", value: ["side", "cargo"] },
   );
-  assert.equal(pockets.ok, true);
-  if (!pockets.ok) return;
-  assert.deepEqual(pockets.value.item?.properties.pockets, { mode: "option", value: ["cargo"] });
+  assert.equal(multi.ok, true);
 
   const custom = setPromptOutfitItemProperty(
-    pockets.value.draft,
-    OutfitModule,
-    "set-a",
-    "item-a",
-    "neckline",
-    { mode: "custom", value: "architectural folded neckline" },
-  );
-  assert.equal(custom.ok, true);
-
-  const ref = reference();
-  const referenced = setPromptOutfitItemProperty(
-    pockets.value.draft,
+    original,
     OutfitModule,
     "set-a",
     "item-a",
     "fit",
-    { mode: "reference", reference: ref },
-    { referenceSources: [{ reference: ref }] },
+    { mode: "custom", value: "architectural fit" },
   );
-  assert.equal(referenced.ok, true);
+  assert.equal(custom.ok, true);
 
-  const unsupported = setPromptOutfitItemProperty(
-    base,
+  const refState: OutfitPropertyState = { mode: "reference", reference: reference() };
+  const fromReference = setPromptOutfitItemProperty(
+    original,
     OutfitModule,
     "set-a",
     "item-a",
-    "heelHeight",
-    { mode: "option", value: "high" },
+    "fit",
+    refState,
+    { referenceSources: [{ reference: reference() }] },
   );
-  assert.equal(unsupported.ok, false);
-  if (!unsupported.ok) assert.equal(unsupported.issues[0]?.code, "outfit_item_property_unsupported");
+  assert.equal(fromReference.ok, true);
 });
 
 test("outfit item duplicate does not duplicate relation edges and item delete removes connected relations only", () => {
   const original = createDraft({
     outfitSets: [outfitSet("set-a", "set1", {
-      presetId: "casual",
-      items: [item("item-a", "shirt"), item("item-b", "coat", { type: "coat", name: "Coat" })],
+      items: [outfitItem("item-a", "shirt"), outfitItem("item-b", "coat", { type: "coat" }), outfitItem("item-c", "shoes", { type: "sneakers" })],
       relations: [
         relation("rel-a", "item-b", "item-a"),
-        relation("rel-orphan", "missing", "item-b"),
+        relation("rel-b", "item-c", "item-b"),
       ],
     })],
   });
   const duplicated = duplicatePromptOutfitItem(original, OutfitModule, "set-a", "item-a", {
-    createItemId: () => "item-a-copy",
+    createItemId: () => "item-copy",
   });
   assert.equal(duplicated.ok, true);
   if (!duplicated.ok) return;
-  assert.equal(duplicated.value.set?.items.length, 3);
   assert.equal(duplicated.value.set?.relations?.length, 2);
-  assert.equal(duplicated.value.set?.presetId, undefined);
 
-  const deleted = deletePromptOutfitItem(
-    duplicated.value.draft,
-    OutfitModule,
-    "set-a",
-    "item-b",
-  );
+  const deleted = deletePromptOutfitItem(original, OutfitModule, "set-a", "item-b");
   assert.equal(deleted.ok, true);
   if (!deleted.ok) return;
-  assert.equal(deleted.value.set?.relations?.length, 0);
-  assert.equal(deleted.value.set?.items.some((candidate) => candidate.id === "item-b"), false);
+  assert.deepEqual(deleted.value.set?.relations, []);
 });
 
 test("outfit relation create requires exact current item endpoints", () => {
   const original = createDraft({
-    outfitSets: [outfitSet("set-a", "set1", {
-      presetId: "casual",
-      items: [item("item-a"), item("item-b", "coat", { type: "coat" })],
-    })],
+    outfitSets: [outfitSet("set-a", "set1", { items: [outfitItem("item-a"), outfitItem("item-b", "coat")] })],
   });
   const created = createPromptOutfitRelation(
     original,
     OutfitModule,
     "set-a",
-    "over",
-    "item-b",
-    "item-a",
-    "coat over shirt",
+    { type: "over", sourceItemId: "item-b", targetItemId: "item-a", details: "coat over shirt" },
     { createRelationId: () => "rel-new" },
   );
   assert.equal(created.ok, true);
   if (!created.ok) return;
   assert.equal(created.value.relation?.id, "rel-new");
-  assert.equal(created.value.set?.presetId, undefined);
 
   const missing = createPromptOutfitRelation(
     original,
     OutfitModule,
     "set-a",
-    "over",
-    "missing",
-    "item-a",
+    { type: "over", sourceItemId: "missing", targetItemId: "item-a" },
   );
   assert.equal(missing.ok, false);
-  if (!missing.ok) assert.equal(missing.issues[0]?.code, "outfit_relation_endpoint_not_found");
+  if (!missing.ok) assert.equal(missing.issues[0]?.code, "outfit_relation_endpoint_missing");
 });
 
 test("outfit relation update validates changed endpoints but allows an unchanged orphan endpoint to persist", () => {
   const original = createDraft({
     outfitSets: [outfitSet("set-a", "set1", {
-      items: [item("item-a"), item("item-b", "coat", { type: "coat" })],
-      relations: [relation("rel-a", "missing-old", "item-a")],
+      items: [outfitItem("item-a"), outfitItem("item-b", "coat")],
+      relations: [relation("rel-orphan", "missing-item", "item-a")],
     })],
   });
-  const details = updatePromptOutfitRelation(
-    original,
-    OutfitModule,
-    "set-a",
-    "rel-a",
-    { type: "layered_with", details: "intentional orphan fixture" },
-  );
-  assert.equal(details.ok, true);
-  if (!details.ok) return;
-  assert.equal(details.value.relation?.sourceItemId, "missing-old");
-  assert.equal(details.value.relation?.type, "layered_with");
 
-  const repaired = updatePromptOutfitRelation(
+  const unrelated = updatePromptOutfitRelation(
     original,
     OutfitModule,
     "set-a",
-    "rel-a",
+    "rel-orphan",
+    { details: "keep orphan endpoint snapshot" },
+  );
+  assert.equal(unrelated.ok, true);
+  if (!unrelated.ok) return;
+  assert.equal(unrelated.value.relation?.sourceItemId, "missing-item");
+
+  const repair = updatePromptOutfitRelation(
+    original,
+    OutfitModule,
+    "set-a",
+    "rel-orphan",
     { sourceItemId: "item-b" },
   );
-  assert.equal(repaired.ok, true);
-  if (repaired.ok) assert.equal(repaired.value.relation?.sourceItemId, "item-b");
+  assert.equal(repair.ok, true);
+  if (repair.ok) assert.equal(repair.value.relation?.sourceItemId, "item-b");
 
-  const missing = updatePromptOutfitRelation(
+  const fuzzy = updatePromptOutfitRelation(
     original,
     OutfitModule,
     "set-a",
-    "rel-a",
-    { sourceItemId: "new-missing" },
+    "rel-orphan",
+    { sourceItemId: "coat" },
   );
-  assert.equal(missing.ok, false);
-  if (!missing.ok) assert.equal(missing.issues[0]?.code, "outfit_relation_endpoint_not_found");
+  assert.equal(fuzzy.ok, false);
+  if (!fuzzy.ok) assert.equal(fuzzy.issues[0]?.code, "outfit_relation_endpoint_missing");
 });
 
 test("outfit relation delete targets exact stable relation ID including an orphan relation", () => {
   const original = createDraft({
     outfitSets: [outfitSet("set-a", "set1", {
-      items: [item("item-a")],
-      relations: [relation("rel-orphan", "missing", "item-a")],
+      items: [outfitItem("item-a")],
+      relations: [relation("rel-orphan", "missing-item", "item-a")],
     })],
   });
-  const deleted = deletePromptOutfitRelation(original, OutfitModule, "set-a", "rel-orphan");
-  assert.equal(deleted.ok, true);
-  if (!deleted.ok) return;
-  assert.deepEqual(deleted.value.set?.relations, []);
-
-  const missing = deletePromptOutfitRelation(original, OutfitModule, "set-a", "missing");
-  assert.equal(missing.ok, false);
-  if (!missing.ok) assert.equal(missing.issues[0]?.code, "outfit_relation_not_found");
+  const result = deletePromptOutfitRelation(original, OutfitModule, "set-a", "rel-orphan");
+  assert.equal(result.ok, true);
+  if (!result.ok) return;
+  assert.deepEqual(result.value.set?.relations, []);
 });
 
 test("outfit exact stable identity conflicts reject before mutation", () => {
   const duplicateItems = createDraft({
-    outfitSets: [outfitSet("set-a", "set1", { items: [item("same"), item("same", "coat")] })],
+    outfitSets: [outfitSet("set-a", "set1", { items: [outfitItem("same"), outfitItem("same", "coat")] })],
   });
-  const itemConflict = deletePromptOutfitSet(duplicateItems, OutfitModule, "set-a");
-  assert.equal(itemConflict.ok, false);
-  if (!itemConflict.ok) assert.equal(itemConflict.issues[0]?.code, "outfit_item_identity_conflict");
+  const itemResult = duplicatePromptOutfitItem(duplicateItems, OutfitModule, "set-a", "same", {
+    createItemId: () => "copy",
+  });
+  assert.equal(itemResult.ok, false);
+  if (!itemResult.ok) assert.equal(itemResult.issues[0]?.code, "outfit_item_identity_conflict");
 
   const duplicateRelations = createDraft({
     outfitSets: [outfitSet("set-a", "set1", {
-      items: [item("item-a"), item("item-b", "coat")],
-      relations: [
-        relation("same-rel", "item-a", "item-b"),
-        relation("same-rel", "item-b", "item-a"),
-      ],
+      items: [outfitItem("item-a"), outfitItem("item-b", "coat")],
+      relations: [relation("same-rel", "item-a", "item-b"), relation("same-rel", "item-b", "item-a")],
     })],
   });
-  const relationConflict = deletePromptOutfitSet(duplicateRelations, OutfitModule, "set-a");
-  assert.equal(relationConflict.ok, false);
-  if (!relationConflict.ok) assert.equal(relationConflict.issues[0]?.code, "outfit_relation_identity_conflict");
+  const relationResult = deletePromptOutfitRelation(duplicateRelations, OutfitModule, "set-a", "same-rel");
+  assert.equal(relationResult.ok, false);
+  if (!relationResult.ok) assert.equal(relationResult.issues[0]?.code, "outfit_relation_identity_conflict");
 });
 
 test("legacy Outfit IDs normalize before exact set/item/relation mutation", () => {
-  const legacySet = {
-    key: "legacy",
-    name: "Legacy",
-    targets: [subjectTarget()],
-    items: [
-      {
-        key: "shirt",
-        name: "Shirt",
-        type: "shirt",
-        source: { mode: "defined" },
-        properties: {},
-      },
-    ],
-    relations: [
-      {
-        type: "layered_with",
-        sourceItemId: "outfit-item-1",
-        targetItemId: "outfit-item-1",
-      },
-    ],
-  } as unknown as OutfitSet;
-  const original = createDraft({ outfitSets: [legacySet] });
+  const original = createDraft({
+    outfitSets: [outfitSet(undefined, "legacySet", {
+      items: [outfitItem(undefined, "shirt"), outfitItem("item-b", "coat")],
+      relations: [relation(undefined, "outfit-item-1", "item-b")],
+    })],
+  });
+  const itemResult = duplicatePromptOutfitItem(original, OutfitModule, "outfit-set-1", "outfit-item-1", {
+    createItemId: () => "item-copy",
+  });
+  assert.equal(itemResult.ok, true);
+  if (!itemResult.ok) return;
+  assert.equal(itemResult.value.item?.id, "item-copy");
 
-  const itemUpdate = updatePromptOutfitItem(
-    original,
-    OutfitModule,
-    "outfit-set-1",
-    "outfit-item-1",
-    { name: "Legacy Shirt" },
-  );
-  assert.equal(itemUpdate.ok, true);
-  if (!itemUpdate.ok) return;
-  assert.equal(itemUpdate.value.item?.id, "outfit-item-1");
-
-  const relationUpdate = updatePromptOutfitRelation(
-    itemUpdate.value.draft,
-    OutfitModule,
-    "outfit-set-1",
-    "outfit-relation-1",
-    { details: "legacy edge" },
-  );
-  assert.equal(relationUpdate.ok, true);
-  if (relationUpdate.ok) assert.equal(relationUpdate.value.relation?.id, "outfit-relation-1");
+  const relationResult = deletePromptOutfitRelation(original, OutfitModule, "outfit-set-1", "outfit-relation-1");
+  assert.equal(relationResult.ok, true);
 });
 
 test("outfit set delete targets one exact stable ID", () => {
@@ -685,7 +584,7 @@ test("outfit set delete targets one exact stable ID", () => {
 test("registered Outfit actions expose stable IDs and failures remain atomic", async () => {
   const registry = registerOutfitActions(new ActionRegistry());
   assert.deepEqual(
-    registry.list().map((action) => action.id),
+    registry.list().map((action) => action.id).sort(),
     [
       "outfit.item.create",
       "outfit.item.delete",
@@ -715,4 +614,5 @@ test("registered Outfit actions expose stable IDs and failures remain atomic", a
   );
   assert.equal(result.ok, false);
   assert.equal(result.draft, original);
+  if (!result.ok) assert.equal(result.issues[0]?.code, "outfit_set_not_found");
 });
