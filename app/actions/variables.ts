@@ -112,14 +112,14 @@ export const variableCreateAction: ActionDefinition<
 
     if (!result.ok) {
       return {
-        ok: false as const,
+        ok: false,
         draft: context.draft,
         issues: actionIssues(result.issues),
       };
     }
 
     return {
-      ok: true as const,
+      ok: true,
       draft: withDraftVariables(
         context.draft,
         result.value.variables,
@@ -158,14 +158,14 @@ export const variableUpdateAction: ActionDefinition<
 
     if (!result.ok) {
       return {
-        ok: false as const,
+        ok: false,
         draft: context.draft,
         issues: actionIssues(result.issues),
       };
     }
 
     return {
-      ok: true as const,
+      ok: true,
       draft: withDraftVariables(context.draft, result.value.variables),
       data: {
         variable: result.value.variable,
@@ -197,14 +197,14 @@ export const variableDuplicateAction: ActionDefinition<
 
     if (!result.ok) {
       return {
-        ok: false as const,
+        ok: false,
         draft: context.draft,
         issues: actionIssues(result.issues),
       };
     }
 
     return {
-      ok: true as const,
+      ok: true,
       draft: withDraftVariables(context.draft, result.value.variables),
       data: {
         variable: result.value.variable,
@@ -235,14 +235,14 @@ export const variableDeleteAction: ActionDefinition<
 
     if (!result.ok) {
       return {
-        ok: false as const,
+        ok: false,
         draft: context.draft,
         issues: actionIssues(result.issues),
       };
     }
 
     return {
-      ok: true as const,
+      ok: true,
       draft: withDraftVariables(context.draft, result.value.variables),
       data: {
         removed: result.value.removed,
@@ -275,14 +275,14 @@ export const variableSetEnabledAction: ActionDefinition<
 
     if (!result.ok) {
       return {
-        ok: false as const,
+        ok: false,
         draft: context.draft,
         issues: actionIssues(result.issues),
       };
     }
 
     return {
-      ok: true as const,
+      ok: true,
       draft: withDraftVariables(context.draft, result.value.variables),
       data: {
         variable: result.value.variable,
