@@ -10,454 +10,99 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **119/119 passed** on 2026-08-27; production build also succeeded.
+Latest validated Actions API checkpoint: **131/131 passed** on 2026-08-27.
+
+The latest separately confirmed production build remains the **119/119 Lighting / Effects** checkpoint. Hair validation supplied a green Actions API test run; no separate Hair build result has been recorded yet.
 
 `main` remains untouched by Actions API development.
 
-## Completed
-
-### Phase 0 — audit and scope — COMPLETE
-
-- [x] Audited draft/session ownership and persistence boundary.
-- [x] Audited module registry/field schema and current mutation ownership.
-- [x] Audited Variables, ModuleEntity, Scene, Layout, semantic target and assignment domains.
-- [x] Audited Lighting, Effects, Typography, Hair and Outfit specialized semantics.
-- [x] Audited top-level compile coupling.
-- [x] Created `refactor/actions-api` from the accepted main baseline.
-- [x] Created durable source-of-truth docs under `/docs/actions-api`.
-
-### Phase 1 — canonical draft boundary and action primitives — COMPLETE + ACCEPTED
-
-- [x] Extracted canonical `PromptDraftState` contracts/helpers.
-- [x] Migrated `create.vue` to shared draft contracts without persisted schema changes.
-- [x] Added headless Action registry, input validation, structured issues/results and discovery.
-- [x] Added explicit `ActionEnvironment` and deterministic ID factory injection.
-- [x] Enforced atomic failure and caller-draft isolation.
-- [x] Kept compiler code unchanged.
-
-Initial user runtime checkpoint on 2026-08-27: **18/18 passed**.
-
-## Current work — Phase 2
-
-### 2A. Variables — IMPLEMENTED + VALIDATED; EXPERT UI CRUD MIGRATED + VALIDATED
-
-Service: `app/domain/variables.ts`
-
-Actions:
-
-- `variable.create` — `migrated`
-- `variable.update` — `migrated`
-- `variable.duplicate` — `migrated`
-- `variable.delete` — `migrated`
-- `variable.setEnabled` — `implemented`
-
-The first Expert UI migration is accepted. `VariablesField.vue` uses the same canonical domain service for persisted create/update/duplicate/delete and Blueprint insertion. `variable.setEnabled` remains `implemented` because Enabled is currently edited through the general `updatePromptVariable` form path rather than the dedicated `setPromptVariableEnabled` mutation. See 2M for the migration checkpoint.
-
-### 2B. Simple modules and presets — IMPLEMENTED + VALIDATED
-
-Services:
-
-- `app/domain/modules.ts`
-- `app/domain/moduleFields.ts`
-
-Implemented actions:
-
-- `module.activate`
-- `module.deactivate`
-- `module.field.set`
-- `module.preset.apply`
-- `module.customMode.set`
-
-Validated semantics:
-
-- activation preserves inactive stored state and initializes only missing state;
-- deactivation is non-destructive;
-- structured fields reject generic field mutation;
-- freeform and `customInput` contracts remain distinct;
-- preset overlay preserves unrelated state and synchronizes sidecars;
-- active preset clears only after values stop matching;
-- Custom Mode requires an override field.
-
-User runtime checkpoint on 2026-08-27: **27/27 passed**.
-
-Deferred: `module.reset` remains planned because generic/specialized Clear semantics are not yet canonicalized.
-
-### 2C. Generic ModuleEntity lifecycle — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/moduleEntities.ts`
-
-Implemented actions:
-
-- `moduleEntity.create`
-- `moduleEntity.update`
-- `moduleEntity.duplicate`
-- `moduleEntity.delete`
-- `moduleEntity.setEnabled`
-- `moduleEntity.setInheritance`
-
-Validated invariants:
-
-- identity is stable `moduleKey + entityId` ownership;
-- editable key/name never replace identity;
-- create/duplicate receive new stable IDs and unique editable keys;
-- duplicate is adjacent and deep-clones payload;
-- update preserves stable ID;
-- delete removes only the exact entity and never rewrites Scene/Layout/external refs;
-- enabled toggle preserves identity;
-- inheritance mutation requires explicit module capability;
-- inactive/non-entity-capable/missing/conflicting targets reject explicitly.
-
-User runtime checkpoint on 2026-08-27: **35/35 passed**.
-
-### 2D. ModuleEntity simple fields and presets — IMPLEMENTED + VALIDATED
-
-Services:
-
-- `app/domain/moduleFields.ts`
-- `app/domain/moduleEntityFields.ts`
-
-Implemented actions:
-
-- `moduleEntity.field.set`
-- `moduleEntity.field.clear`
-- `moduleEntity.preset.apply`
-
-Validated semantics:
-
-- only simple schema-backed non-override fields are accepted;
-- structured fields require specialized domain actions;
-- `field.set` writes one local payload override and preserves entity identity;
-- `field.clear` removes the local field plus its `customInput` sidecar, restoring inherited/unset semantics;
-- Global and entity simple fields share one canonical validator/mutator implementation;
-- entity preset application overlays only real non-override module fields;
-- unrelated payload survives preset application;
-- stale custom sidecars are removed when the preset leaves a custom selection.
-
-User runtime checkpoint on 2026-08-27: **41/41 passed**.
-
-### 2E. Typography — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/typography.ts`
-
-Implemented actions:
-
-- `typography.group.create`
-- `typography.group.update`
-- `typography.group.delete`
-- `typography.group.move`
-- `typography.text.create`
-- `typography.text.update`
-- `typography.text.delete`
-- `typography.text.move`
-
-Validated contract decisions:
-
-- `groupName` and `layerName` are structural tokens derived from stable IDs and are not arbitrary update fields;
-- create resolves the final stable ID first, then derives the structural token from that identity;
-- group/text update preserves stable identity and structural tokens;
-- text create/update reject empty authored text;
-- explicit Layout Region positioning requires exact active region ID;
-- missing persisted Region refs are not silently rewritten;
-- move/delete operations use exact stable IDs.
-
-User runtime checkpoint on 2026-08-27: **49/49 passed**.
-
-### 2F. Scene — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/scenes.ts`
-
-Implemented actions:
-
-- `scene.create`
-- `scene.update`
-- `scene.duplicate`
-- `scene.delete`
-- `scene.setEnabled`
-- `scene.component.attach`
-- `scene.component.detach`
-- `scene.component.replace`
-
-Validated contract decisions:
-
-- canonical Scene identity remains `scene.id`;
-- delete leaves Layout Region refs missing rather than retargeting;
-- component identity remains exact `moduleKey + entityId`;
-- attach/replace require active scene-exposable module and exact available entity;
-- `single` modules require explicit replacement;
-- detach can remove missing/orphan refs;
-- no token/name/fuzzy rescue is performed.
-
-User runtime checkpoint on 2026-08-27: **57/57 passed**.
-
-### 2G. Layout — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/layouts.ts`
-
-Implemented actions:
-
-- `layout.region.create`
-- `layout.region.update`
-- `layout.region.duplicate`
-- `layout.region.delete`
-- `layout.region.move`
-- `layout.grid.update`
-- `layout.region.assignScene`
-- `layout.region.clearScene`
-
-Validated contract decisions:
-
-- Region identity remains `region.id`;
-- geometry uses existing canonical normalization/clamp helpers;
-- direct `contentRef` patching is forbidden;
-- Scene binding requires exact active Scene ID and synchronizes cached token/label + `contentKey`;
-- manual content detaches incompatible Scene binding explicitly;
-- delete never rewrites external Region refs.
-
-User runtime checkpoint on 2026-08-27: **65/65 passed**.
-
-Scene + Layout form the first fully validated cross-domain relational write path for Wizard orchestration.
-
-### 2H. Semantic assignment scope foundation — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/assignmentScopes.ts`
-
-Runtime contract extension:
-
-- `ActionEnvironment.semanticTargetSources`
-- sources grouped by semantic capability (`color` / `material`)
-- domain code remains independent from Vue/i18n adapters
-
-Validated decisions:
-
-- internal foundation primitive only; no public generic `assignment.*` action namespace;
-- exact identity uses `semanticTargetIdentity` + shared reference catalog;
-- new missing/unavailable dynamic refs reject;
-- persisted exact missing/unavailable refs can survive unrelated edits;
-- target/exception conflicts are resolved directionally;
-- exclusive builtin target collapses target scope and cannot be an exception;
-- no token/name fuzzy recovery.
-
-User runtime checkpoint on 2026-08-27: **73/73 passed**.
-
-### 2I. Color Palette assignments — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/colorPalette.ts`
-
-Implemented actions:
-
-- `colorPalette.assignment.create`
-- `colorPalette.assignment.delete`
-- `colorPalette.assignment.scope.set`
-- `colorPalette.assignment.applyPreset`
-- `colorPalette.swatch.add`
-- `colorPalette.swatch.setLiteral`
-- `colorPalette.swatch.setVariable`
-- `colorPalette.swatch.delete`
-
-Validated decisions:
-
-- public mutation is granular; no broad arbitrary assignment patch;
-- assignment/swatch mutation uses stable IDs rather than UI indices;
-- new assignment defaults to canonical `overall` scope;
-- scope mutation reuses shared semantic scope service;
-- preset replaces colors only and preserves scope;
-- swatch add/edit/delete detaches active preset;
-- variable swatches bind only to exact enabled user `type="color"` variables;
-- legacy assignment shapes normalize before stable-ID mutation;
-- compiler and Expert UI remain unchanged.
-
-User runtime checkpoint on 2026-08-27: **81/81 passed**.
-
-### 2J. Texture Material assignments — IMPLEMENTED + VALIDATED
-
-Service: `app/domain/materialAssignments.ts`
-
-Actions:
-
-- `texture.assignment.create`
-- `texture.assignment.delete`
-- `texture.assignment.scope.set`
-- `texture.assignment.applyPreset`
-- `texture.assignment.property.set`
-- `texture.assignment.conditions.set`
-
-Validated decisions:
-
-- public surface stays granular; no arbitrary `texture.assignment.update` patch;
-- assignments target exact stable IDs;
-- new assignments default to canonical `all_surfaces` scope;
-- scope mutation reuses the same validated semantic scope foundation with `material` capability;
-- preset application replaces material payload axes/conditions while preserving exact target/exception scope;
-- property/condition mutations detach active preset;
-- authored freeform material/property/condition strings are preserved rather than silently coerced;
-- compatibility metadata remains warning-only and does not block intentional combinations;
-- legacy material assignment shapes normalize before exact domain mutation;
-- compiler and Expert UI remain unchanged.
-
-User runtime checkpoint on 2026-08-27:
-
-- command: `pnpm test:actions-api`
-- result: **89 tests / 89 passed / 0 failed**
-- suites: Foundation + Variables + Modules + ModuleEntity lifecycle/fields + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material assignments
-
-### 2K. Pose assignments — IMPLEMENTED + VALIDATED
-
-Services:
-
-- `app/domain/poseAssignments.ts`
-- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target mutation primitive for Pose/Expression/Hair
-
-Implemented actions:
-
-- `pose.assignment.create`
-- `pose.assignment.update`
-- `pose.assignment.delete`
-- `pose.assignment.applyPreset`
-
-Validated decisions:
-
-- Pose uses a subject target list only; it does not have the Color/Texture target+exception builtin scope model;
-- available subject refs are passed explicitly through `ActionEnvironment.subjectAssignmentTargets` rather than read from `useSubjectAssignmentTargets()` inside domain code;
-- exact identity continues to use `semanticTargetIdentity` / semantic reference catalog;
-- new missing or unavailable refs reject;
-- an exact persisted missing/unavailable ref may survive when that same identity is explicitly retained, and may be removed explicitly;
-- `user_variable` and `system_variable` identities remain distinct even if `variableId` text matches;
-- no token/name fuzzy recovery or retargeting;
-- assignment create uses a new stable ID and mirrors current Expert UI default-target semantics by selecting the first available explicit subject source when one exists, otherwise `[]`;
-- update exposes only known Pose payload fields plus `targets`; there is no arbitrary structured patch escape hatch;
-- Pose payload edits detach `presetId`; target-only changes preserve the active preset;
-- preset application replaces preset-owned Pose payload, preserves exact targets and preserves authored `additionalDetails`;
-- legacy assignments without IDs normalize to deterministic `pose-assignment-{index}` compatibility identity before exact mutation;
-- compiler and Expert UI remain unchanged.
-
-Validation history:
-
-- first real-checkout Pose run: **97 tests / 96 passed / 1 failed**;
-- sole failure was a test-fixture kind mismatch (`system_variable` source vs `user_variable` request), which exact identity correctly classified as missing;
-- fixture corrected without changing domain implementation;
-- corrected real-checkout command: `pnpm test:actions-api`;
-- final result: **97 tests / 97 passed / 0 failed**.
-
-Pose public actions are promoted to `implemented` in `ACTIONS.md`.
-
-### 2L. Expression assignments — IMPLEMENTED + VALIDATED
-
-Services:
-
-- `app/domain/expressionAssignments.ts`
-- `app/domain/subjectAssignmentTargets.ts` — shared exact subject-target resolver; no second Expression resolver exists
-
-Implemented actions:
-
-- `expression.assignment.create`
-- `expression.assignment.update`
-- `expression.assignment.delete`
-- `expression.assignment.applyPreset`
-
-Validated decisions:
-
-- Expression assignments use stable/compatibility IDs plus `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, `additionalDetails`, and exact subject `targets`;
-- create mirrors existing Expert UI default-target behavior using the first available explicit `ActionEnvironment.subjectAssignmentTargets` source, otherwise `[]`;
-- target mutation uses the same exact subject resolver already validated by Pose;
-- new missing/unavailable refs reject; exact persisted orphan refs may be retained/removed only by the same identity;
-- no token/name fuzzy recovery or cross-kind retargeting;
-- update exposes only known Expression payload axes plus `targets`; there is no arbitrary structured patch escape hatch;
-- authored strings are preserved instead of silently coercing to catalog options;
-- payload edits detach `presetId`; target-only changes preserve the preset;
-- preset application replaces the five preset-owned Expression axes while preserving exact targets and authored `additionalDetails`;
-- legacy assignments without IDs normalize to deterministic `expression-assignment-{index}` compatibility identity before exact mutation;
-- compiler and Expert UI remain unchanged.
-
-User runtime checkpoint on 2026-08-27:
-
-- command: `pnpm test:actions-api`
-- result: **105 tests / 105 passed / 0 failed**
-- Expression public actions are now promoted to `implemented` in `ACTIONS.md`.
-
-### 2M. First Expert UI migration — VARIABLES COMPLETE + VALIDATED
-
-Selected boundary: **Variables**.
-
-Implementation:
-
-- `app/components/modules/variables/VariablesField.vue` routes persisted create/update/duplicate/delete through `app/domain/variables.ts`;
-- direct array rebuild/splice/filter mutation is no longer the persisted CRUD implementation inside the component;
-- Blueprint insertion accumulates repeated canonical `createPromptVariable` results on a detached working list and emits only after all requested variables succeed;
-- `activeSystemVariableKeys` is passed as canonical `VariableMutationOptions.blockedKeys`, so create/duplicate no longer bypass the system-key invariant;
-- local form drafts, translations, validation hints, modal orchestration, token previews and blueprint configuration remain UI concerns;
-- the UI does not import/use the Action registry because the existing `PromptVariable[]` model boundary already matches the canonical domain service directly;
-- `app/domain/variables.ts` accepts internal `source: "user"` metadata for Blueprint-created variables so current persisted Blueprint metadata is preserved;
-- `app/actions/variables.ts` deliberately omits that internal `source` property from public `variable.create` input typing/schema;
-- update/duplicate preserve existing variable metadata because canonical mutation clones the current variable rather than rebuilding only visible editor fields;
-- no `base.vue`, `create.vue`, compiler or prompt output code changed in this migration checkpoint.
-
-Regression coverage:
-
-- `scripts/actions-variables-ui-migration.test.ts`;
-- Blueprint-style canonical create preserves `source: "user"` through update/duplicate/delete;
-- public `variable.create` rejects the internal `source` property.
-
-Accepted real-checkout validation on 2026-08-27:
-
-- `pnpm test:actions-api` => **107 tests / 107 passed / 0 failed**;
-- `pnpm build` => **successful production build** (warnings only, no build failure);
-- manual Expert UI regression => create, edit including Enabled, duplicate, delete and Blueprint insertion all confirmed working.
-
-Migration result:
-
-- `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are promoted to `migrated` in `ACTIONS.md`;
-- `variable.setEnabled` remains `implemented` because the current UI changes Enabled through the general variable-update form rather than the dedicated set-enabled service.
-
-### 2N. Lighting / Effects — IMPLEMENTED + VALIDATED
+## Validation history
+
+| Boundary | Result | Status |
+|---|---:|---|
+| Foundation | 18/18 | validated |
+| Simple modules / presets | 27/27 | validated |
+| ModuleEntity lifecycle | 35/35 | validated |
+| ModuleEntity fields / presets | 41/41 | validated |
+| Typography | 49/49 | validated |
+| Scene | 57/57 | validated |
+| Layout | 65/65 | validated |
+| Semantic assignment scopes | 73/73 | validated |
+| Color Palette | 81/81 | validated |
+| Texture / Material | 89/89 | validated |
+| Pose | 97/97 | validated |
+| Expression | 105/105 | validated |
+| Variables Expert UI migration | 107/107 | validated + build + manual UI |
+| Lighting / Effects | 119/119 | validated + build |
+| Hair | 131/131 | validated |
+| Outfit | expected 147 | awaiting real-checkout validation |
+
+Detailed public action status and domain invariants live in `docs/actions-api/ACTIONS.md`; this file tracks phase/checkpoint state and migration readiness.
+
+## Completed foundations
+
+- [x] Canonical `PromptDraftState` boundary and helpers.
+- [x] Headless Action registry, input validation, structured issues/results, discovery.
+- [x] Explicit `ActionEnvironment` for runtime facts.
+- [x] Deterministic `ActionIdFactory` injection.
+- [x] Atomic failure / caller-draft isolation.
+- [x] Exact semantic reference catalogs; no fuzzy stable-reference rescue.
+- [x] Shared exact subject-target resolver for Pose / Expression / Hair / Outfit.
+- [x] Compiler behavior kept unchanged throughout Phase 2 unless an intentional fix is explicitly documented.
+
+## Validated Phase 2 write domains
+
+The following boundaries are implemented and validated in the real project checkout:
+
+- Variables
+- Modules / presets / Custom Mode
+- Generic ModuleEntity lifecycle and simple fields
+- Typography
+- Scene
+- Layout
+- Semantic assignment scope foundation
+- Color Palette
+- Texture / Material
+- Pose
+- Expression
+- Lighting / Effects
+- Hair
+
+### Variables Expert UI migration — COMPLETE + VALIDATED
+
+`VariablesField.vue` is still the first deliberately migrated Expert UI boundary. Persisted create/update/duplicate/delete and Blueprint insertion route through `app/domain/variables.ts`; UI-only form/modal/translation concerns remain local to the component.
+
+Accepted validation:
+
+- `pnpm test:actions-api` => **107/107**
+- `pnpm build` => successful
+- manual UI regression => create, edit including Enabled, duplicate, delete, Blueprint insertion
+
+`variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are `migrated`; `variable.setEnabled` remains `implemented` because the UI still changes Enabled through the general update path.
+
+### Lighting / Effects — IMPLEMENTED + VALIDATED
 
 Services:
 
 - `app/domain/lightingSources.ts`
 - `app/domain/effectLayers.ts`
 
-Implemented actions:
+The first 119-test checkout exposed one Effects preset-equality bug: raw nested-object serialization was order-sensitive. The domain comparison was changed to recursive object-key-order-insensitive equality, matching current Expert UI behavior. No compiler/UI/action-schema change was required.
 
-- `lighting.source.create`
-- `lighting.source.update`
-- `lighting.source.delete`
-- `effects.layer.create`
-- `effects.layer.update`
-- `effects.layer.delete`
+Final accepted checkpoint:
 
-Validated contract decisions:
+- `pnpm test:actions-api` => **119/119**
+- `pnpm build` => successful
 
-- Lighting and Effects structured lists use exact stable item IDs; role, source type, effect type and display labels never retarget a mutation;
-- legacy persisted items without IDs normalize to deterministic compatibility IDs matching the current Expert UI fallback (`light-{index}` / `effect-{index}`) before exact mutation;
-- duplicate or blank normalized identities reject explicitly;
-- create respects schema-owned `maxSources` / `maxLayers` limits;
-- Lighting source scalar/features values validate against `lightSources.config` option catalogs;
-- Effects type/intensity values validate against `effectLayers.config` option catalogs;
-- Lighting entering custom color normalizes missing/invalid hex to `#ffffff`, while leaving custom color clears `customColor`;
-- Effects leaving `effectType="custom"` clears `customEffect`; custom effect/details remain authored strings;
-- create/update/delete preserve unrelated module values and caller draft isolation;
-- module-level `activePresetId` clears only if the resulting complete module values no longer match the active preset;
-- Effects preset equality is recursively object-key-order-insensitive, matching the current Expert UI signature comparison;
-- public update schemas expose only known structured properties; no arbitrary object/path patch exists;
-- no compiler or Expert UI file changed in this checkpoint.
+### Hair — IMPLEMENTED + VALIDATED
 
-Validation history on 2026-08-27:
-
-- first real-checkout `pnpm test:actions-api` => **119 tests / 118 passed / 1 failed**;
-- sole failure: a no-op Effects layer update incorrectly detached the active preset because the new domain compared nested objects with order-sensitive raw `JSON.stringify`;
-- fix: canonical recursive object-key sorting before equality in `app/domain/effectLayers.ts`, matching existing `effects.vue` semantics; no UI/compiler/action-schema change;
-- corrected real-checkout `pnpm test:actions-api` => **119 tests / 119 passed / 0 failed**;
-- `pnpm build` => **successful production build**.
-
-The six Lighting/Effects actions are promoted to `implemented` in `ACTIONS.md`.
-
-### 2O. Hair — IMPLEMENTED, AWAITING USER VALIDATION
-
-Fresh source audit selected Hair before Outfit because Hair has nested style/component ownership but no relation-endpoint graph. Outfit remains the higher-risk next domain because set duplication/deletion must remap or clean relation endpoints.
-
-Services/actions now present:
+Services:
 
 - `app/domain/hairStyles.ts`
 - `app/actions/hairStyles.ts`
+
+Public Hair actions:
+
 - `hair.style.create`
 - `hair.style.update`
 - `hair.style.duplicate`
@@ -471,43 +116,90 @@ Services/actions now present:
 - `hair.component.duplicate`
 - `hair.component.delete`
 
+Validated contract highlights:
+
+- exact stable style/component IDs own mutation identity;
+- keys remain canonical unique presentation/reference tokens only;
+- legacy missing IDs normalize through current Hair compatibility behavior;
+- style duplication remaps all nested component IDs and clears copied preset identity;
+- exact subject-target resolver is reused; no second resolver exists;
+- reference variables resolve through `ActionEnvironment.hairReferenceSources`, with domain-owned `{reference}` fallback;
+- missing/unavailable new references reject; exact persisted orphans may be retained without fuzzy recovery;
+- typed property states validate catalog capabilities;
+- specialized property/source/preset/component actions prevent broad nested patching;
+- compiler and Expert UI were unchanged for this checkpoint.
+
+Accepted real-checkout validation on 2026-08-27:
+
+- `pnpm test:actions-api` => **131 tests / 131 passed / 0 failed**
+- Hair actions are promoted to `implemented` in `ACTIONS.md`.
+
+## Current work
+
+### Outfit — IMPLEMENTED, AWAITING USER VALIDATION
+
+Services/actions now present on `refactor/actions-api`:
+
+- `app/domain/outfitSets.ts`
+- `app/actions/outfitSets.ts`
+- `outfit.set.create`
+- `outfit.set.update`
+- `outfit.set.duplicate`
+- `outfit.set.delete`
+- `outfit.set.applyPreset`
+- `outfit.item.create`
+- `outfit.item.update`
+- `outfit.item.setSource`
+- `outfit.item.setProperty`
+- `outfit.item.duplicate`
+- `outfit.item.delete`
+- `outfit.relation.create`
+- `outfit.relation.update`
+- `outfit.relation.delete`
+
 Contract decisions:
 
-- style mutation identity is exact stable `style.id`; nested component identity is exact within the owning style (`style.id + component.id`);
-- editable semantic `key` remains unique/canonical through existing Hair key helpers but never substitutes for stable identity;
-- legacy missing IDs normalize through existing `normalizeHairStyles` compatibility behavior before exact mutation;
-- create uses injected `ActionIdFactory.hairStyle`; nested creation/preset/duplication uses `ActionIdFactory.hairComponent`;
-- style create mirrors the current UI by choosing the first available explicit subject target when supplied, otherwise `[]`;
-- target edits reuse `app/domain/subjectAssignmentTargets.ts`; no second target resolver exists;
-- Hair source references are explicit runtime facts through `ActionEnvironment.hairReferenceSources` and resolve by exact variable/source identity; the builtin `{reference}` fallback is domain-owned;
-- new missing/unavailable variable-backed references reject; an exact persisted orphan may be retained, never reconstructed from label/name;
-- style metadata/targets/source edits preserve `presetId`; base-property and all component payload/lifecycle mutations detach it, matching current UI ownership;
-- property states validate definition capabilities: known option, custom support, reference support and explicit-absent support;
-- component property mutation is separate from `hair.component.update`, avoiding arbitrary nested property patches;
-- component type transition resets properties and canonical catalog name like `HairComponentCard.vue`;
-- style duplication allocates a new style ID/key, clears copied `presetId`, and remaps every nested component ID;
-- preset application/clear is explicit: recipe application replaces recipe-owned properties/components, preserves exact targets/source, preserves authored details when the recipe has none, and allocates fresh component IDs;
-- public style update cannot patch source/properties/components/preset; specialized actions own those mutations;
-- compiler and Expert UI remain unchanged.
+- canonical set identity is exact `set.id`;
+- item identity is exact owning `set.id + item.id`;
+- relation identity is exact owning `set.id + relation.id`;
+- editable set/item keys stay unique canonical presentation/reference tokens and never replace stable identity;
+- legacy missing IDs normalize through current Outfit compatibility IDs before exact mutation;
+- Set duplication allocates fresh set/item/relation IDs, then remaps relation endpoints only through an exact old-item-ID → new-item-ID map;
+- a relation endpoint already orphaned before duplication remains orphaned instead of being repaired from key/name/type metadata;
+- Item duplication creates a new item but deliberately does not clone relation edges;
+- Item deletion removes only relations whose exact source/target endpoint equals the deleted item ID;
+- relation creation requires exact current item endpoints;
+- relation update validates endpoints only when that endpoint changes, so an unchanged persisted orphan may survive unrelated relation edits and can later be explicitly repaired or deleted;
+- relation deletion works by exact stable relation ID even when its endpoints are orphaned;
+- set target edits reuse the exact subject-target resolver already validated by Pose / Expression / Hair;
+- Outfit item references are supplied headlessly via `ActionEnvironment.outfitReferenceSources`; `{reference}` remains a domain-owned builtin fallback;
+- new missing/unavailable references reject; exact persisted orphan references can be retained without token/name fuzzy rescue;
+- item property mutation validates the exact current type/profile, option-set membership, select vs multi-select shape, and custom/reference/absent capabilities;
+- item/source/property/relation structural mutations detach the active Outfit preset;
+- set metadata/target edits preserve the preset, while authored set details detach it, matching current Expert UI ownership;
+- preset application rebuilds recipe-owned `items + relations` with fresh IDs while preserving set targets and authored set details; clearing only removes `presetId`;
+- no broad arbitrary nested object/path patch was introduced;
+- compiler and Expert UI remain unchanged in this checkpoint.
 
 Regression coverage:
 
-- `scripts/actions-hair.test.ts` adds **12 tests** for stable IDs, exact subject targets, Hair reference resolution/orphan retention, property validation/preset detachment, recipe application, nested ID remapping, type/starter/custom component creation, type transitions, component property ownership, exact duplicate/delete, legacy IDs, registry discovery and atomic failure;
-- `pnpm test:actions-api` now includes Hair;
-- expected total: **131 tests**.
+- `scripts/actions-outfit.test.ts`
+- **16 new tests** cover Set lifecycle, exact targets, presets, item type/starter/custom creation, exact reference source behavior, profile/option-set property validation, Set duplication endpoint remapping, Item deletion relation cleanup, unchanged orphan preservation, explicit relation repair, legacy compatibility IDs, identity conflicts, registry discovery and atomic failure.
+- `pnpm test:actions-api` now includes the Outfit suite.
+- expected total: **147 tests**.
 
 Validation status:
 
-- Hair actions remain `planned` in `ACTIONS.md` until the real checkout passes;
-- latest accepted checkpoint remains **119/119 + successful production build**.
+- Outfit public actions remain `planned` in `ACTIONS.md` until the real checkout suite passes.
+- No Expert UI or compiler migration is included in this checkpoint.
 
 ## Next
 
 1. Pull the current `refactor/actions-api` checkpoint.
-2. Run `pnpm test:actions-api`; expected result is **131/131**.
-3. Run `pnpm build` to catch TypeScript/Nuxt integration regressions.
-4. If green, promote all validated Hair actions from `planned` to `implemented` and record the checkpoint.
-5. Then audit/implement Outfit with explicit relation endpoint ownership/remapping; do not reuse Hair mutation semantics for Outfit relations.
+2. Run `pnpm test:actions-api`; expected result is **147/147**.
+3. Run `pnpm build` for TypeScript/Nuxt integration validation.
+4. If green, promote all Outfit actions from `planned` to `implemented` and record the 147-test/build checkpoint.
+5. Re-evaluate the next low-risk boundary only after Outfit validation; do not perform a broad Expert UI migration automatically.
 
 ## Known deferred decisions
 
@@ -516,6 +208,7 @@ Validation status:
 - Dry-run semantics — defer with batch design.
 - Third-party schema validator — avoid until action input complexity justifies dependency cost.
 - Headless semantic source builder from canonical draft/compiler outputs — defer until specialized consumers establish exact runtime needs.
+- `prompt.validate` / `prompt.compile` read operations — design after write-domain stabilization and Outfit validation.
 - AI-facing tool schema/export format — design after internal registry contract stabilizes.
 - Wizard UI — out of scope until core actions and relational/assignment paths are stable.
 
