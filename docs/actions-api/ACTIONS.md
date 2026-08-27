@@ -275,26 +275,24 @@ Hair validation checkpoint: `pnpm test:actions-api` passed **131/131** on 2026-0
 
 ## Outfit
 
-Outfit canonical services/actions are present on `refactor/actions-api`, but remain `planned` until the new real-checkout suite passes.
-
 | Action ID | Status | Intent |
 |---|---|---|
-| `outfit.set.create` | planned | Create Outfit Set with stable ID/key and first explicit subject target. |
-| `outfit.set.update` | planned | Update exact set metadata/targets/details without broad nested patching. |
-| `outfit.set.duplicate` | planned | Duplicate set with fresh set/item/relation IDs and remap known relation endpoints. |
-| `outfit.set.delete` | planned | Delete one exact Outfit Set. |
-| `outfit.set.applyPreset` | planned | Apply/clear a recipe while preserving set targets/details and rebuilding preset-owned items/relations. |
-| `outfit.item.create` | planned | Create one wearable from exact type/starter/custom choice. |
-| `outfit.item.update` | planned | Update exact item metadata/type with canonical unique-key and type-transition rules. |
-| `outfit.item.setSource` | planned | Set defined/reference source through exact reference identity rules. |
-| `outfit.item.setProperty` | planned | Update one property declared by the exact item type/profile. |
-| `outfit.item.duplicate` | planned | Duplicate exact item with new stable ID/key without cloning relation edges. |
-| `outfit.item.delete` | planned | Delete exact item and remove only connected relations. |
-| `outfit.relation.create` | planned | Create relation between exact current item IDs. |
-| `outfit.relation.update` | planned | Update exact relation while validating changed endpoints. |
-| `outfit.relation.delete` | planned | Delete exact relation, including an orphan relation. |
+| `outfit.set.create` | implemented | Create Outfit Set with stable ID/key and first explicit subject target. |
+| `outfit.set.update` | implemented | Update exact set metadata/targets/details without broad nested patching. |
+| `outfit.set.duplicate` | implemented | Duplicate set with fresh set/item/relation IDs and remap known relation endpoints. |
+| `outfit.set.delete` | implemented | Delete one exact Outfit Set. |
+| `outfit.set.applyPreset` | implemented | Apply/clear a recipe while preserving set targets/details and rebuilding preset-owned items/relations. |
+| `outfit.item.create` | implemented | Create one wearable from exact type/starter/custom choice. |
+| `outfit.item.update` | implemented | Update exact item metadata/type with canonical unique-key and type-transition rules. |
+| `outfit.item.setSource` | implemented | Set defined/reference source through exact reference identity rules. |
+| `outfit.item.setProperty` | implemented | Update one property declared by the exact item type/profile. |
+| `outfit.item.duplicate` | implemented | Duplicate exact item with new stable ID/key without cloning relation edges. |
+| `outfit.item.delete` | implemented | Delete exact item and remove only connected relations. |
+| `outfit.relation.create` | implemented | Create relation between exact current item IDs. |
+| `outfit.relation.update` | implemented | Update exact relation while validating changed endpoints. |
+| `outfit.relation.delete` | implemented | Delete exact relation, including an orphan relation. |
 
-Pending-validation invariants:
+Validated invariants:
 
 - set identity is exact stable `set.id`; item and relation identity are scoped by exact owning `set.id` plus their own stable IDs;
 - editable set/item keys remain canonical unique presentation/reference tokens and never replace stable identity;
@@ -309,26 +307,35 @@ Pending-validation invariants:
 - item/source/property/relation mutations detach the active set preset; set metadata/target edits preserve it while authored set details detach it, matching current Expert UI ownership;
 - preset application rebuilds preset-owned `items + relations` with fresh stable IDs while preserving set targets and authored set details; clearing a preset only removes `presetId`;
 - public actions stay granular: source/property/preset/relation structure cannot be changed through a broad arbitrary object/path patch;
-- compiler and Expert UI remain unchanged in this checkpoint.
+- compiler and Expert UI remained unchanged.
 
-Pending suite: `scripts/actions-outfit.test.ts`; `pnpm test:actions-api` should execute **147 tests**.
+Outfit validation history on 2026-08-27:
+
+- first real-checkout run: **147 tests / 146 passed / 1 failed**; every Outfit domain/graph test passed and the sole failure was a discovery assertion that assumed alphabetical registry order;
+- an intermediate test-only patch accidentally rewrote too much of `scripts/actions-outfit.test.ts`, producing two false relation failures; that rewrite was fully reverted to the original 718-line regression suite;
+- the only retained test change was the same order-insensitive `.sort()` discovery pattern already used by Hair; no Outfit domain/action/compiler/UI behavior was changed by the test fix;
+- final real-checkout run: `pnpm test:actions-api` => **147 tests / 147 passed / 0 failed**.
+
+All fourteen Outfit actions are promoted to `implemented`.
 
 ## Prompt read operations
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `prompt.validate` | planned | Headless validation from canonical draft context. |
-| `prompt.compile` | planned | Headless compile from canonical draft context/output format. |
+| `prompt.validate` | planned | Headless validation from canonical draft context; implementation is present and awaiting the 153-test real-checkout checkpoint. |
+| `prompt.compile` | planned | Headless compile from canonical draft context/output format; deferred until the current compiler's Vue/composable side effects are extracted into a pure adapter rather than duplicated. |
+
+`prompt.validate` now uses `app/domain/promptRead.ts` to rebuild active module outputs headlessly from canonical draft state before calling the existing prompt validation rules. The read model mirrors current custom-mode, Scene, Scene-resource, Form, Camera, entity-reference and module-output ownership without importing Vue components/composables. Validation issues are returned as read data; a draft that contains validation errors does not make Action execution itself fail. Six regression tests are included in `scripts/actions-prompt-read.test.ts`, bringing the expected Actions API total to **153 tests**. The action remains `planned` until that suite passes in the real checkout.
 
 ## Registration rule
 
 An action may be marked `implemented` only when:
 
-1. its domain mutation is implemented outside Vue components;
-2. expected rejection returns structured issues rather than relying on UI behavior;
-3. isolated tests cover success and important invariant failures;
+1. its canonical domain operation is implemented outside Vue components;
+2. expected rejection or read-result semantics are structured rather than relying on UI behavior;
+3. isolated tests cover success and important invariant failures/read cases;
 4. its ID/input/result shape is documented here;
-5. it does not introduce a second implementation of an existing mutation;
+5. it does not introduce a second implementation of existing domain/compiler behavior;
 6. the corresponding Actions API suite passes in the real project checkout.
 
 An action may be marked `migrated` only after the existing Expert UI path uses the same canonical domain service and regression behavior is checked.
