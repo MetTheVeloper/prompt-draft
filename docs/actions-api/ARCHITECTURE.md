@@ -92,6 +92,10 @@ Actions receive all required facts explicitly.
 ```ts
 export type ActionEnvironment = {
   activeSystemVariableKeys?: readonly string[]
+  semanticTargetSources?: Partial<
+    Record<SemanticTargetCapability, readonly SemanticReferenceCatalogSource[]>
+  >
+  subjectAssignmentTargets?: readonly SemanticReferenceCatalogSource[]
 }
 
 export type ActionContext = {
@@ -102,7 +106,13 @@ export type ActionContext = {
 }
 ```
 
-`environment` contains runtime/domain facts that are not persisted in the draft but are needed for a deterministic decision. The first concrete example is active system/module variable keys used to reject user-variable key collisions.
+`environment` contains runtime/domain facts that are not persisted in the draft but are needed for a deterministic decision. Concrete examples now include:
+
+- active system/module variable keys used to reject user-variable key collisions;
+- capability-scoped semantic target sources used by Color/Material assignments;
+- exact subject-variable target sources used by Pose/Expression assignments without importing the Vue `useSubjectAssignmentTargets()` adapter.
+
+For subject assignment targets, source ordering is an explicit input: create may select the first available supplied subject source to mirror current Expert UI behavior. Existing missing/unavailable persisted references are still matched only by stable semantic identity; token/name presentation changes never authorize retargeting.
 
 Rules:
 
@@ -179,6 +189,8 @@ prompt
 ```
 
 Services are implementation boundaries; action namespaces are consumer-facing contracts. They do not need a one-to-one mapping.
+
+Shared internal primitives are allowed when they preserve a narrow invariant across specialized domains. For example, `subjectAssignmentTargets` is an internal exact-reference mutation primitive shared by Pose/Expression; it does not publish a generic cross-domain assignment action.
 
 ## 9. Generic vs specialized mutations
 
@@ -284,6 +296,8 @@ All services consuming persisted references follow these rules:
 4. legacy token lookup is restricted to explicit compatibility/upgrade paths where no stable identity exists;
 5. replacement is always explicit.
 
+Pose/Expression subject-target mutation follows the same policy with one additional boundary: new targets must resolve exactly against explicit `subjectAssignmentTargets` environment sources, while an exact already-persisted orphan may be retained or removed without being retargeted.
+
 ## 13. ID generation
 
 Production services use existing domain ID conventions. Tests can inject deterministic factories.
@@ -296,6 +310,10 @@ export type ActionIdFactory = {
   layoutRegion?: () => string
   typographyGroup?: () => string
   typographyText?: () => string
+  colorAssignment?: () => string
+  colorSwatch?: () => string
+  materialAssignment?: () => string
+  poseAssignment?: () => string
   generic?: (prefix: string) => string
 }
 ```
