@@ -205,7 +205,7 @@ test("pose target mutation rejects new missing/unavailable refs but preserves ex
     {
       targets: [
         {
-          kind: "user_variable",
+          kind: "system_variable",
           value: "{disabled}",
           variableId: "disabled-subject",
         },
