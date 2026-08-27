@@ -205,9 +205,28 @@ function validateOption(
   });
 }
 
+function normalizeForComparison(value: unknown): unknown {
+  if (Array.isArray(value)) {
+    return value.map(normalizeForComparison);
+  }
+
+  if (value && typeof value === "object") {
+    return Object.fromEntries(
+      Object.entries(value as Record<string, unknown>)
+        .sort(([firstKey], [secondKey]) => firstKey.localeCompare(secondKey))
+        .map(([key, item]) => [key, normalizeForComparison(item)]),
+    );
+  }
+
+  return value;
+}
+
 function valuesEqual(first: unknown, second: unknown) {
   try {
-    return JSON.stringify(first) === JSON.stringify(second);
+    return (
+      JSON.stringify(normalizeForComparison(first)) ===
+      JSON.stringify(normalizeForComparison(second))
+    );
   } catch {
     return first === second;
   }
