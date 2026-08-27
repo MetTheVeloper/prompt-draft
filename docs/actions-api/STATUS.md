@@ -250,7 +250,7 @@ User runtime checkpoint on 2026-08-27:
 
 Scene + Layout now form the first fully validated cross-domain relational write path for future Wizard orchestration.
 
-### 2H. Semantic assignment scope foundation — SOURCE IMPLEMENTED / VALIDATION PENDING
+### 2H. Semantic assignment scope foundation — IMPLEMENTED + VALIDATED
 
 Service:
 
@@ -262,15 +262,10 @@ Runtime contract extension:
 - sources are grouped by semantic capability (`color` / `material`)
 - domain code remains independent from `useSemanticTargetCatalog()` and Vue/i18n state
 
-Tests:
-
-- `scripts/actions-assignment-scopes.test.ts`
-- included in `pnpm test:actions-api`
-
-Scope ownership decisions:
+Validated scope ownership decisions:
 
 - this service is an internal foundation primitive, not a public generic `assignment.*` action namespace;
-- specialized Color/Texture/Pose/Expression actions will call the same scope service, keeping payload ownership local to each domain;
+- specialized Color/Texture/Pose/Expression actions call the same scope service, keeping payload ownership local to each domain;
 - exact identity uses `semanticTargetIdentity` and shared reference-catalog resolution;
 - domain builtin slots are merged with optional dynamic semantic sources; a live dynamic source may canonically upgrade the same builtin slot identity;
 - new missing or unavailable dynamic refs reject explicitly;
@@ -283,22 +278,65 @@ Scope ownership decisions:
 
 Public API decision:
 
-- the previously considered generic `assignment.targets.set` and `assignment.exceptions.set` operations are rejected as public API design;
+- generic `assignment.targets.set` and `assignment.exceptions.set` were rejected as public API design;
 - public assignment mutations remain domain-specific (`colorPalette.*`, `texture.*`, `pose.*`, `expression.*`).
+
+User runtime checkpoint on 2026-08-27:
+
+- command: `pnpm test:actions-api`
+- result: **73 tests / 73 passed / 0 failed**
+- suites: all prior suites + semantic assignment scope foundation
+
+### 2I. Color Palette assignments — SOURCE IMPLEMENTED / VALIDATION PENDING
+
+Service:
+
+- `app/domain/colorPalette.ts`
+
+Actions:
+
+- [x] `colorPalette.assignment.create`
+- [x] `colorPalette.assignment.delete`
+- [x] `colorPalette.assignment.scope.set`
+- [x] `colorPalette.assignment.applyPreset`
+- [x] `colorPalette.swatch.add`
+- [x] `colorPalette.swatch.setLiteral`
+- [x] `colorPalette.swatch.setVariable`
+- [x] `colorPalette.swatch.delete`
+
+Tests:
+
+- `scripts/actions-color-palette.test.ts`
+- included in `pnpm test:actions-api`
+
+Color contract decisions:
+
+- public mutation is granular; no broad arbitrary `colorPalette.assignment.update` patch is exposed;
+- assignment and swatch mutations target stable IDs rather than UI indices;
+- new assignments default to canonical `overall` scope and empty colors;
+- scope mutation delegates to the validated shared semantic scope service;
+- preset apply replaces colors only and preserves target/exception scope, matching current Expert UI behavior;
+- clearing a preset detaches preset metadata without clearing authored colors;
+- any swatch add/edit/delete detaches the active palette preset;
+- literal swatches preserve authored string values; the domain layer does not silently coerce them through the visual color picker;
+- variable swatches bind only to exact enabled user variables with `type="color"`, matching the current Color editor source picker;
+- missing/disabled/non-color variables reject explicit new binding;
+- variable swatches cache token/label presentation metadata while stable ownership remains `variableId`;
+- legacy color assignment shapes are normalized before exact stable-ID mutation;
+- compiler and Expert UI remain unchanged in this checkpoint.
 
 Validation pending:
 
 - [ ] Run updated `pnpm test:actions-api` in the real project checkout.
-- [ ] Expected current total if all tests pass: **73**.
-- [ ] Resolve any scope or prior-suite regression before treating this foundation as validated.
+- [ ] Expected current total if all tests pass: **81**.
+- [ ] Resolve any Color Palette or prior-suite regression before marking these actions `implemented`.
 
-## Next after semantic scope validation
+## Next after Color Palette validation
 
-1. Mark the semantic assignment scope foundation validated if the suite is green.
-2. Implement Color Palette assignment actions on the shared scope service.
-3. Implement Texture Material assignment actions on the same service while preserving Texture-specific preset-detach and compatibility semantics.
-4. Continue to Pose and Expression assignment actions after Color/Texture prove the shared scope contract across two different payload domains.
-5. Re-evaluate the first low-risk Expert UI migration boundary after assignment contracts stabilize.
+1. Mark the eight Color Palette actions `implemented` if the suite is green.
+2. Implement Texture Material assignment actions on the same semantic scope foundation while preserving Texture-specific preset-detach and payload compatibility semantics.
+3. Continue to Pose and Expression assignment actions after Color/Texture prove the shared scope contract across two different payload domains.
+4. Re-evaluate the first low-risk Expert UI migration boundary after assignment contracts stabilize.
 
 ## Known deferred decisions
 
