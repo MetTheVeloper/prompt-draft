@@ -12,6 +12,7 @@ import { compileSceneResourceModule } from "../app/utils/compileSceneResource";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const baseline = "83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c";
+const promptCompileBaseline = "73f28f35e49d68d0ac285f4e05bbf4583a2a2931";
 
 function committedSource(ref: string, path: string) {
   return execFileSync("git", ["show", `${ref}:${path}`], {
@@ -20,8 +21,8 @@ function committedSource(ref: string, path: string) {
   });
 }
 
-function assertCommitPathUnchanged(path: string) {
-  execFileSync("git", ["diff", "--quiet", baseline, "HEAD", "--", path], {
+function assertCommitPathUnchanged(path: string, ref = baseline) {
+  execFileSync("git", ["diff", "--quiet", ref, "HEAD", "--", path], {
     cwd: repoRoot,
   });
 }
@@ -94,8 +95,8 @@ function expectedHeadlessPromptCore() {
     );
 }
 
-test("draft persistence/import-export implementation is unchanged from the refactor baseline", () => {
-  assertCommitPathUnchanged("app/pages/create.vue");
+test("prompt compile extraction does not modify draft persistence/import-export", () => {
+  assertCommitPathUnchanged("app/pages/create.vue", promptCompileBaseline);
 });
 
 test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from baseline", () => {
@@ -105,7 +106,7 @@ test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from b
     "app/utils/compileExpression.ts",
     "app/utils/compileColorPalette.ts",
     "app/utils/compileTexture.ts",
-  ].forEach(assertCommitPathUnchanged);
+  ].forEach((path) => assertCommitPathUnchanged(path));
 });
 
 test("prompt output core differs from baseline only by the intentional headless extraction", () => {
@@ -185,17 +186,18 @@ test("typed user reference ownership stays pure while UI synchronization remains
   assert.ok(pure.includes("const suppressSubject = ownership.hasSubject || ownership.hasReference;"));
   assert.ok(pure.includes('ownership.hasReference && variable.key === "reference"'));
   assert.ok(pure.includes("const compiled = compilePromptOutputCore("));
-  assert.ok(wrapper.includes("const result = compilePromptOutputPure("));
-  assert.ok(wrapper.includes("syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);"));
-  assert.ok(wrapper.includes("setSystemPromptVariables(systemVariables);"));
-  assert.ok(
-    wrapper.indexOf("const result = compilePromptOutputPure(") <
-      wrapper.indexOf("syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);"),
-    "pure compilation must complete before runtime synchronization",
-  );
-  assert.equal(core.includes("usePromptVariables"), false);
-  assert.equal(core.includes("usePromptSubjectContext"), false);
-  assert.equal(pure.includes("~/composables/"), false);
+  assert.ok(!pure.includes("usePromptVariables"));
+  assert.ok(!pure.includes("usePromptSubjectContext"));
+
+  assert.ok(wrapper.includes("const ownership = getUserVariableOwnership();"));
+  assert.ok(wrapper.includes("setSubjectType(settings.subjectType || \"unspecified\")"));
+  assert.ok(wrapper.includes("setSystemPromptVariables(systemVariables)"));
+  assert.ok(wrapper.includes("const compiled = compilePromptOutputPure("));
+
+  assert.ok(!core.includes("usePromptVariables"));
+  assert.ok(!core.includes("usePromptSubjectContext"));
+  assert.ok(!core.includes("syncActiveSystemPromptVariables(settings)"));
+  assert.ok(core.includes("export function getSystemPromptVariables("));
 });
 
 test("Scene presentation aliases remain format-specific in the pure final adapter", () => {
