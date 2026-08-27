@@ -218,24 +218,30 @@ Exact Set/Item/Relation ownership. Set duplicate remaps only known relation endp
 | Action ID | Status | Intent |
 |---|---|---|
 | `prompt.validate` | implemented | Rebuild canonical module outputs headlessly and run existing validation rules without mutating the Draft. |
-| `prompt.compile` | planned | Compile canonical Draft headlessly in persisted or explicit `modular | natural | json` format. Implementation is present; awaiting the 161-test/compiler/build checkpoint. |
+| `prompt.compile` | implemented | Compile canonical Draft headlessly in persisted or explicit `modular | natural | json` format. |
 
-`prompt.validate` passed the real checkout at **153/153** on 2026-08-27 and is promoted to `implemented`.
+`prompt.validate` passed the real checkout at **153/153** on 2026-08-27.
 
 `prompt.compile` uses the same `app/domain/promptRead.ts` output builder validated by `prompt.validate`. Final prompt compilation is not duplicated:
 
-- `app/utils/compilePromptCore.ts` is now the existing formatting/compiler algorithm made pure by removing only Vue runtime synchronization and exporting the existing system-variable builder;
+- `app/utils/compilePromptCore.ts` is the existing formatting/compiler algorithm made pure by removing only Vue runtime synchronization and exporting the existing system-variable builder;
 - `app/utils/compilePromptPure.ts` owns the previously wrapper-level pure transformations: automatic Scene/Layout rule, typed user Subject/Reference ownership, system-variable filtering, and Scene presentation aliases;
-- `app/utils/compilePrompt.ts` is now only the Expert UI runtime adapter that reads Vue variable ownership and synchronizes system variables/subject context around the pure result;
+- `app/utils/compilePrompt.ts` is only the Expert UI runtime adapter that reads Vue variable ownership and synchronizes system variables/subject context around the pure result;
 - `prompt.compile` derives typed user variable ownership from the active canonical Variables module and calls the same pure final adapter;
 - explicit `format` overrides the persisted output format for that read only;
 - compile remains read-only and does not fail merely because the Draft has validation warnings/errors, matching current UI behavior.
 
-Eight compile regression tests are included in `scripts/actions-prompt-compile.test.ts`; expected Actions API total: **161 tests**. Because compiler ownership changed intentionally, validation also requires `pnpm test:phase9-regression` and `pnpm build`.
+Accepted real-checkout validation on 2026-08-27:
+
+- `pnpm test:actions-api` => **161/161**;
+- `pnpm test:phase9-regression` => **9/9**;
+- `pnpm build` => successful.
+
+The phase9 guard was hardened during validation so current working-tree sources are checked without depending on a locally resolvable `HEAD`, while historical baselines remain SHA-pinned. No production compiler behavior changed for that guard fix.
 
 ## Validation timeline
 
-18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → **153 validated**; **161 pending**.
+18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → **161 validated + compiler regression + build**.
 
 ## Registration rule
 
