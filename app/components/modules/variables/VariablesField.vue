@@ -9,7 +9,15 @@ import type {
   PromptVariableType,
 } from "../../../modules/types";
 import { variableBlueprints } from "../../../modules/variables.blueprints";
-
+import {
+  createPromptVariable as createPromptVariableDomain,
+  deletePromptVariable as deletePromptVariableDomain,
+  duplicatePromptVariable as duplicatePromptVariableDomain,
+  updatePromptVariable as updatePromptVariableDomain,
+  type CreatePromptVariableInput,
+  type UpdatePromptVariableInput,
+  type UserPromptVariableType,
+} from "../../../domain/variables";
 import {
   createUniqueVariableKey,
   formatVariableToken,
@@ -103,17 +111,10 @@ function translate(path: string, fallback = "") {
   return translated === path ? fallback : translated;
 }
 
-function createVariableId() {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-
-  return `variable_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-}
-
 function cloneVariable(variable: PromptVariable): PromptVariable {
   return {
-    id: variable.id || createVariableId(),
+    ...variable,
+    id: variable.id || "",
     key: variable.key || "",
     value: variable.value || "",
     description: variable.description || "",
@@ -124,6 +125,16 @@ function cloneVariable(variable: PromptVariable): PromptVariable {
 
 function updateVariables(nextVariables: PromptVariable[]) {
   emit("update:modelValue", nextVariables);
+}
+
+function variableMutationOptions() {
+  return {
+    blockedKeys: activeSystemVariableKeys.value,
+  };
+}
+
+function reportVariableMutationFailure(operation: string, issues: unknown) {
+  console.error(`Variable ${operation} rejected by canonical domain service:`, issues);
 }
 
 function getExistingVariableKeys(exceptIndex?: number) {
@@ -140,16 +151,37 @@ function getUnavailableVariableKeys() {
   ]));
 }
 
-function createPromptVariable(baseKey = "variable"): PromptVariable {
-  const key = createUniqueVariableKey(baseKey, getExistingVariableKeys());
-
+function createVariableDraft(): PromptVariable {
   return {
-    id: createVariableId(),
-    key,
+    id: "",
+    key: createUniqueVariableKey("variable", getExistingVariableKeys()),
     value: "",
     description: "",
     type: "text",
     enabled: true,
+  };
+}
+
+function createInputFromVariable(
+  variable: Omit<PromptVariable, "id"> | PromptVariable,
+): CreatePromptVariableInput {
+  return {
+    key: variable.key || "",
+    value: variable.value || "",
+    description: variable.description || "",
+    type: (variable.type || "text") as UserPromptVariableType,
+    enabled: variable.enabled !== false,
+    ...(variable.source === "user" ? { source: "user" as const } : {}),
+  };
+}
+
+function updateInputFromVariable(variable: PromptVariable): UpdatePromptVariableInput {
+  return {
+    key: variable.key || "",
+    value: variable.value || "",
+    description: variable.description || "",
+    type: (variable.type || "text") as UserPromptVariableType,
+    enabled: variable.enabled !== false,
   };
 }
 
@@ -231,7 +263,7 @@ function openVariableModal(variableIndex?: number) {
   const isEdit = typeof variableIndex === "number";
   const sourceVariable = isEdit
     ? variables.value[variableIndex]
-    : createPromptVariable();
+    : createVariableDraft();
 
   if (!sourceVariable) return;
 
@@ -262,15 +294,39 @@ function openVariableModal(variableIndex?: number) {
       controller: editorController,
       onSave: (savedVariable: PromptVariable) => {
         if (isEdit) {
-          const nextVariables = variables.value.map((item, index) => {
-            return index === variableIndex ? savedVariable : item;
-          });
+          if (!sourceVariable.id) {
+            reportVariableMutationFailure("update", [{ code: "variable_not_found" }]);
+            return;
+          }
 
-          updateVariables(nextVariables);
+          const result = updatePromptVariableDomain(
+            variables.value,
+            sourceVariable.id,
+            updateInputFromVariable(savedVariable),
+            variableMutationOptions(),
+          );
+
+          if (!result.ok) {
+            reportVariableMutationFailure("update", result.issues);
+            return;
+          }
+
+          updateVariables(result.value.variables);
           return;
         }
 
-        updateVariables([...variables.value, savedVariable]);
+        const result = createPromptVariableDomain(
+          variables.value,
+          createInputFromVariable(savedVariable),
+          variableMutationOptions(),
+        );
+
+        if (!result.ok) {
+          reportVariableMutationFailure("create", result.issues);
+          return;
+        }
+
+        updateVariables(result.value.variables);
       },
     },
     actions: [
@@ -324,12 +380,24 @@ function selectBlueprint(value: ElDropdownValue) {
       typeOptions: getBlueprintTypeOptions(),
       controller,
       onApply: (createdVariables: Array<Omit<PromptVariable, "id">>) => {
-        const nextVariables = createdVariables.map((variable) => ({
-          ...variable,
-          id: createVariableId(),
-        })) as PromptVariable[];
+        let nextVariables = variables.value;
 
-        updateVariables([...variables.value, ...nextVariables]);
+        for (const variable of createdVariables) {
+          const result = createPromptVariableDomain(
+            nextVariables,
+            createInputFromVariable(variable),
+            variableMutationOptions(),
+          );
+
+          if (!result.ok) {
+            reportVariableMutationFailure("blueprint create", result.issues);
+            return;
+          }
+
+          nextVariables = result.value.variables;
+        }
+
+        updateVariables(nextVariables);
       },
     },
     actions: [
@@ -356,31 +424,38 @@ function selectBlueprint(value: ElDropdownValue) {
 }
 
 function removePromptVariable(variableIndex: number) {
-  const nextVariables = variables.value.filter((_, index) => {
-    return index !== variableIndex;
-  });
+  const sourceVariable = variables.value[variableIndex];
+  if (!sourceVariable?.id) return;
 
-  updateVariables(nextVariables);
+  const result = deletePromptVariableDomain(
+    variables.value,
+    sourceVariable.id,
+  );
+
+  if (!result.ok) {
+    reportVariableMutationFailure("delete", result.issues);
+    return;
+  }
+
+  updateVariables(result.value.variables);
 }
 
 function duplicatePromptVariable(variableIndex: number) {
   const sourceVariable = variables.value[variableIndex];
+  if (!sourceVariable?.id) return;
 
-  if (!sourceVariable) return;
+  const result = duplicatePromptVariableDomain(
+    variables.value,
+    sourceVariable.id,
+    variableMutationOptions(),
+  );
 
-  const baseKey = normalizeVariableKey(sourceVariable.key) || "variable";
+  if (!result.ok) {
+    reportVariableMutationFailure("duplicate", result.issues);
+    return;
+  }
 
-  const duplicatedVariable: PromptVariable = {
-    ...cloneVariable(sourceVariable),
-    id: createVariableId(),
-    key: createUniqueVariableKey(baseKey, getExistingVariableKeys()),
-  };
-
-  const nextVariables = [...variables.value];
-
-  nextVariables.splice(variableIndex + 1, 0, duplicatedVariable);
-
-  updateVariables(nextVariables);
+  updateVariables(result.value.variables);
 }
 
 function openDeleteConfirm(variable: PromptVariable, variableIndex: number) {
