@@ -40,9 +40,12 @@ export type PublicJsonSchema = {
   additionalProperties?: boolean;
 };
 
+export type PublicActionEffect = "read" | "mutation";
+
 export type PublicActionDescriptor = {
   id: string;
   description: string;
+  effect: PublicActionEffect;
   inputSchema: PublicJsonSchema;
 };
 
@@ -55,6 +58,8 @@ export type PublicActionInvocation = {
   actionId: string;
   input?: unknown;
 };
+
+export type PublicActionResult<TData = unknown> = ActionExecutionResult<TData>;
 
 const publicActionGroups = [
   moduleActions,
@@ -75,11 +80,17 @@ const publicActionGroups = [
   promptReadActions,
 ] as const;
 
+const publicReadActionIds = new Set(["prompt.validate", "prompt.compile"]);
+
 export const PUBLIC_ACTION_DEFINITIONS: readonly ActionDefinition<any, any>[] =
   publicActionGroups.flatMap((group) => [...group]);
 
 function cloneStrings(values: readonly string[] | undefined) {
   return values ? [...values] : undefined;
+}
+
+export function getPublicActionEffect(actionId: string): PublicActionEffect {
+  return publicReadActionIds.has(actionId) ? "read" : "mutation";
 }
 
 export function toPublicJsonSchema(
@@ -159,6 +170,7 @@ export function exportPublicActionManifest(
     actions: registry.list().map((descriptor) => ({
       id: descriptor.id,
       description: descriptor.description,
+      effect: getPublicActionEffect(descriptor.id),
       inputSchema: publicInputSchema(descriptor.inputSchema),
     })),
   };
