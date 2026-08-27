@@ -10,7 +10,7 @@ Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
 
 Last source audit: 2026-08-27
 
-Latest validated Actions API checkpoint: **105/105 passed** on 2026-08-27.
+Latest validated Actions API checkpoint: **107/107 passed** on 2026-08-27.
 
 `main` remains untouched by Actions API development.
 
@@ -39,19 +39,19 @@ Initial user runtime checkpoint on 2026-08-27: **18/18 passed**.
 
 ## Current work — Phase 2
 
-### 2A. Variables — IMPLEMENTED + VALIDATED; UI MIGRATION AWAITING VALIDATION
+### 2A. Variables — IMPLEMENTED + VALIDATED; EXPERT UI CRUD MIGRATED + VALIDATED
 
 Service: `app/domain/variables.ts`
 
-Implemented actions:
+Actions:
 
-- `variable.create`
-- `variable.update`
-- `variable.duplicate`
-- `variable.delete`
-- `variable.setEnabled`
+- `variable.create` — `migrated`
+- `variable.update` — `migrated`
+- `variable.duplicate` — `migrated`
+- `variable.delete` — `migrated`
+- `variable.setEnabled` — `implemented`
 
-Action status remains `implemented` until the first Expert UI migration regression checkpoint passes. The Variables UI migration patch is now present on `refactor/actions-api`; see 2M.
+The first Expert UI migration is accepted. `VariablesField.vue` uses the same canonical domain service for persisted create/update/duplicate/delete and Blueprint insertion. `variable.setEnabled` remains `implemented` because Enabled is currently edited through the general `updatePromptVariable` form path rather than the dedicated `setPromptVariableEnabled` mutation. See 2M for the migration checkpoint.
 
 ### 2B. Simple modules and presets — IMPLEMENTED + VALIDATED
 
@@ -374,11 +374,11 @@ User runtime checkpoint on 2026-08-27:
 - result: **105 tests / 105 passed / 0 failed**
 - Expression public actions are now promoted to `implemented` in `ACTIONS.md`.
 
-### 2M. First Expert UI migration — VARIABLES IMPLEMENTED, AWAITING USER VALIDATION
+### 2M. First Expert UI migration — VARIABLES COMPLETE + VALIDATED
 
 Selected boundary: **Variables**.
 
-Implementation now present on `refactor/actions-api`:
+Implementation:
 
 - `app/components/modules/variables/VariablesField.vue` routes persisted create/update/duplicate/delete through `app/domain/variables.ts`;
 - direct array rebuild/splice/filter mutation is no longer the persisted CRUD implementation inside the component;
@@ -386,34 +386,79 @@ Implementation now present on `refactor/actions-api`:
 - `activeSystemVariableKeys` is passed as canonical `VariableMutationOptions.blockedKeys`, so create/duplicate no longer bypass the system-key invariant;
 - local form drafts, translations, validation hints, modal orchestration, token previews and blueprint configuration remain UI concerns;
 - the UI does not import/use the Action registry because the existing `PromptVariable[]` model boundary already matches the canonical domain service directly;
-- `app/domain/variables.ts` now accepts internal `source: "user"` metadata for Blueprint-created variables so current persisted Blueprint metadata is preserved;
+- `app/domain/variables.ts` accepts internal `source: "user"` metadata for Blueprint-created variables so current persisted Blueprint metadata is preserved;
 - `app/actions/variables.ts` deliberately omits that internal `source` property from public `variable.create` input typing/schema;
 - update/duplicate preserve existing variable metadata because canonical mutation clones the current variable rather than rebuilding only visible editor fields;
 - no `base.vue`, `create.vue`, compiler or prompt output code changed in this migration checkpoint.
 
-Regression coverage added:
+Regression coverage:
 
 - `scripts/actions-variables-ui-migration.test.ts`;
-- verifies Blueprint-style canonical create preserves `source: "user"` through update/duplicate/delete;
-- verifies public `variable.create` rejects the internal `source` property;
-- `pnpm test:actions-api` now includes this suite;
-- expected total after this patch: **107 tests**.
+- Blueprint-style canonical create preserves `source: "user"` through update/duplicate/delete;
+- public `variable.create` rejects the internal `source` property.
 
-Migration status:
+Accepted real-checkout validation on 2026-08-27:
 
-- **implementation present, not yet user-validated**;
-- latest accepted real-checkout checkpoint remains **105/105**;
-- `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` remain `implemented` until the real Actions API suite and Expert UI CRUD/Blueprint regression checks pass;
-- `variable.setEnabled` remains `implemented`: the current editor changes `enabled` as part of the general `updatePromptVariable` form path rather than using the dedicated `setPromptVariableEnabled` mutation.
+- `pnpm test:actions-api` => **107 tests / 107 passed / 0 failed**;
+- `pnpm build` => **successful production build** (warnings only, no build failure);
+- manual Expert UI regression => create, edit including Enabled, duplicate, delete and Blueprint insertion all confirmed working.
+
+Migration result:
+
+- `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` are promoted to `migrated` in `ACTIONS.md`;
+- `variable.setEnabled` remains `implemented` because the current UI changes Enabled through the general variable-update form rather than the dedicated set-enabled service.
+
+### 2N. Lighting / Effects — IMPLEMENTED, AWAITING USER VALIDATION
+
+Services:
+
+- `app/domain/lightingSources.ts`
+- `app/domain/effectLayers.ts`
+
+Actions present on branch:
+
+- `lighting.source.create`
+- `lighting.source.update`
+- `lighting.source.delete`
+- `effects.layer.create`
+- `effects.layer.update`
+- `effects.layer.delete`
+
+Audit/contract decisions:
+
+- Lighting and Effects structured lists use exact stable item IDs; role, source type, effect type and display labels never retarget a mutation;
+- legacy persisted items without IDs normalize to deterministic compatibility IDs matching the current Expert UI fallback (`light-{index}` / `effect-{index}`) before exact mutation;
+- duplicate or blank normalized identities reject explicitly;
+- create respects schema-owned `maxSources` / `maxLayers` limits;
+- Lighting source scalar/features values validate against `lightSources.config` option catalogs;
+- Effects type/intensity values validate against `effectLayers.config` option catalogs;
+- Lighting entering custom color normalizes missing/invalid hex to `#ffffff`, while leaving custom color clears `customColor`;
+- Effects leaving `effectType="custom"` clears `customEffect`; custom effect/details remain authored strings;
+- create/update/delete preserve unrelated module values and caller draft isolation;
+- module-level `activePresetId` clears only if the resulting complete module values no longer match the active preset, matching current Lighting/Effects Expert UI behavior;
+- public update schemas expose only known structured properties; no arbitrary object/path patch exists;
+- no compiler or Expert UI file changed in this checkpoint.
+
+Regression coverage added:
+
+- `scripts/actions-lighting-effects.test.ts`;
+- 12 tests cover deterministic create IDs, configured limits, custom transitions, catalog validation, preset preserve/detach behavior, legacy compatibility IDs, exact missing/conflicting identities, registry discovery and atomic failure;
+- `pnpm test:actions-api` includes the new suite;
+- expected total: **119 tests**.
+
+Validation status:
+
+- **not yet user-validated**;
+- latest accepted real-checkout checkpoint remains **107/107**;
+- Lighting/Effects public actions remain `planned` in `ACTIONS.md` until the real checkout suite passes.
 
 ## Next
 
-1. Pull the current `refactor/actions-api` checkpoint and run `pnpm test:actions-api`; expected result is **107/107**.
-2. Regression-check the real Variables Expert UI: create, edit (including enabled), duplicate, delete, and at least one Blueprint insertion.
-3. Confirm generated IDs remain stable across edit, duplicate receives a new ID/unique key, delete targets the exact variable, and Blueprint variables retain expected metadata/values.
-4. If the suite and UI regression are green, promote `variable.create`, `variable.update`, `variable.duplicate`, and `variable.delete` from `implemented` to `migrated` in `ACTIONS.md`.
-5. Keep `variable.setEnabled` at `implemented` unless a dedicated Expert UI path is intentionally migrated to `setPromptVariableEnabled`.
-6. After this first migration proof, continue specialized domains in the planned order: Lighting / Effects, then Hair / Outfit as appropriate.
+1. Pull the current `refactor/actions-api` checkpoint.
+2. Run `pnpm test:actions-api`; expected result is **119/119**.
+3. Run `pnpm build` to catch TypeScript/Nuxt integration regressions.
+4. If green, promote the six Lighting/Effects actions from `planned` to `implemented` and record the validated checkpoint.
+5. Continue specialized domains with Hair / Outfit; choose the lower-risk subdomain boundary from a fresh source audit before writing mutations.
 
 ## Known deferred decisions
 
