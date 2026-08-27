@@ -22,7 +22,7 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Explicit runtime environment | foundation | ambient facts passed through `ActionContext.environment` |
 | Semantic assignment scope service | foundation | internal exact-ref normalization/recovery/exclusivity primitive; not public cross-domain mutation |
 | Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
-| Subject assignment target resolver | foundation | internal exact-ref resolver shared by Pose/Expression; preserves exact persisted orphan refs without fuzzy recovery |
+| Subject assignment target resolver | foundation | internal exact-ref resolver shared by Pose/Expression/Hair; preserves exact persisted orphan refs without fuzzy recovery |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -148,7 +148,7 @@ Color invariants:
 | `texture.assignment.scope.set` | implemented | Set targets/exceptions through shared material-capability scope rules. |
 | `texture.assignment.applyPreset` | implemented | Apply/clear material preset while preserving semantic scope. |
 | `texture.assignment.property.set` | implemented | Set one material property axis and detach active preset. |
-| `texture.assignment.conditions.set` | implemented | Set authored condition list and detach active preset. |
+| `texture.assignment.conditions.set` | implemented | Set authored condition list and detach preset. |
 
 Texture invariants:
 
@@ -196,7 +196,7 @@ Pose invariants:
 | Action ID | Status | Intent |
 |---|---|---|
 | `expression.assignment.create` | implemented | Create expression assignment with stable ID and first explicit available subject target when supplied. |
-| `expression.assignment.update` | implemented | Update only known Expression payload/targets; payload edits detach preset while target-only edits preserve it. |
+| `expression.assignment.update` | implemented | Update only known Expression payload/targets; payload edits detach preset while target-only changes preserve it. |
 | `expression.assignment.delete` | implemented | Delete one exact expression assignment by stable ID. |
 | `expression.assignment.applyPreset` | implemented | Apply/clear expression preset while preserving exact targets and authored additional details. |
 
@@ -215,18 +215,16 @@ Expression validation checkpoint: `pnpm test:actions-api` passed **105/105** on 
 
 ## Lighting / Effects
 
-Lighting/Effects canonical services and isolated tests are now present on `refactor/actions-api`, but their public status remains `planned` until the real checkout suite passes.
-
 | Action ID | Status | Intent |
 |---|---|---|
-| `lighting.source.create` | planned | Create source respecting max-source constraints. |
-| `lighting.source.update` | planned | Update exact source including catalog validation and custom-color transition rules. |
-| `lighting.source.delete` | planned | Delete exact source by stable ID. |
-| `effects.layer.create` | planned | Create layer respecting max-layer constraints. |
-| `effects.layer.update` | planned | Update exact layer including catalog validation and custom-effect transition rules. |
-| `effects.layer.delete` | planned | Delete exact layer by stable ID. |
+| `lighting.source.create` | implemented | Create source respecting max-source constraints. |
+| `lighting.source.update` | implemented | Update exact source including catalog validation and custom-color transition rules. |
+| `lighting.source.delete` | implemented | Delete exact source by stable ID. |
+| `effects.layer.create` | implemented | Create layer respecting max-layer constraints. |
+| `effects.layer.update` | implemented | Update exact layer including catalog validation and custom-effect transition rules. |
+| `effects.layer.delete` | implemented | Delete exact layer by stable ID. |
 
-Pending-validation invariants:
+Validated invariants:
 
 - source/layer identity is exact stable ID; role/type/name never retarget a mutation;
 - legacy missing IDs receive deterministic compatibility IDs matching current Expert UI fallback identity (`light-{index}` / `effect-{index}`);
@@ -235,25 +233,47 @@ Pending-validation invariants:
 - Lighting transition to a non-custom color clears `customColor`; entering custom color normalizes missing/invalid hex to `#ffffff` like the current UI;
 - Effects transition to a non-custom type clears `customEffect`; custom authored effect/details remain strings;
 - structured mutation clears the module-level active preset only when resulting module values no longer match that preset;
+- Effects preset equality is canonical/object-key-order-insensitive, matching current Expert UI signature semantics;
 - no generic structured patch surface was introduced;
-- compiler and Expert UI remain unchanged in this checkpoint.
+- compiler and Expert UI remain unchanged.
 
-Pending suite: `scripts/actions-lighting-effects.test.ts`; when included, `pnpm test:actions-api` should execute **119 tests**.
+Validation history: the first real checkout ran **119/118/1** and exposed an order-sensitive Effects preset-comparison bug; the domain equality was corrected without changing UI/compiler/action schemas, then the corrected checkout passed **119/119** and the production build succeeded on 2026-08-27.
 
 ## Hair
 
+Hair canonical services/actions are present on `refactor/actions-api`, but remain `planned` until the new real-checkout suite passes.
+
 | Action ID | Status | Intent |
 |---|---|---|
-| `hair.style.create` | planned | Create style with stable ID/key. |
-| `hair.style.update` | planned | Update style metadata/targets/details. |
-| `hair.style.duplicate` | planned | Duplicate style and nested components with new IDs. |
-| `hair.style.delete` | planned | Delete style. |
-| `hair.style.setSource` | planned | Set defined/reference source using canonical reference rules. |
-| `hair.style.setProperty` | planned | Update typed property state. |
-| `hair.component.create` | planned | Create component from type/starter/custom choice. |
-| `hair.component.update` | planned | Update component. |
-| `hair.component.duplicate` | planned | Duplicate component with new stable ID/key. |
-| `hair.component.delete` | planned | Delete component. |
+| `hair.style.create` | planned | Create style with stable ID/key and first explicit subject target. |
+| `hair.style.update` | planned | Update exact style metadata/targets/details without broad structured patching. |
+| `hair.style.duplicate` | planned | Duplicate style and remap nested component IDs. |
+| `hair.style.delete` | planned | Delete exact style. |
+| `hair.style.setSource` | planned | Set defined/reference source using exact reference identity rules. |
+| `hair.style.setProperty` | planned | Update one typed base property state. |
+| `hair.style.applyPreset` | planned | Apply/clear a Hair recipe while preserving source/targets and allocating fresh component IDs. |
+| `hair.component.create` | planned | Create component from exact type/starter/custom choice. |
+| `hair.component.update` | planned | Update exact component metadata/type; type transition resets properties. |
+| `hair.component.setProperty` | planned | Update one property declared by the exact component type. |
+| `hair.component.duplicate` | planned | Duplicate exact component with new stable ID/key. |
+| `hair.component.delete` | planned | Delete exact nested component. |
+
+Pending-validation invariants:
+
+- style identity is exact stable `style.id`; component identity is exact `style.id + component.id` ownership;
+- editable keys remain canonical/unique presentation tokens and never replace stable identity;
+- legacy missing IDs normalize through the same deterministic compatibility IDs already used by Hair normalization;
+- style duplication remaps every nested component ID and clears the copied preset ID;
+- subject targets reuse the canonical exact subject-target resolver already validated by Pose/Expression;
+- Hair reference variables are explicit runtime facts via `ActionEnvironment.hairReferenceSources`; `{reference}` remains the builtin fallback;
+- new missing/unavailable variable-backed Hair references reject; an exact persisted orphan can be retained without fuzzy token/name recovery;
+- base/component property states validate catalog option/custom/reference/absent capabilities;
+- base property and component mutations detach the style preset, while metadata/targets/source edits preserve it like the current UI;
+- preset recipes replace recipe-owned properties/components, preserve targets/source, and allocate new component IDs;
+- public actions stay granular; source, properties, presets and nested component structure are not writable through a broad style patch;
+- compiler and Expert UI remain unchanged in this checkpoint.
+
+Pending suite: `scripts/actions-hair.test.ts`; `pnpm test:actions-api` should execute **131 tests**.
 
 ## Outfit
 
