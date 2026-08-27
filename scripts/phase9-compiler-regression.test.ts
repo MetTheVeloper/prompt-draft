@@ -189,10 +189,22 @@ test("typed user reference ownership stays pure while UI synchronization remains
   assert.ok(!pure.includes("usePromptVariables"));
   assert.ok(!pure.includes("usePromptSubjectContext"));
 
-  assert.ok(wrapper.includes("const ownership = getUserVariableOwnership();"));
+  assert.ok(wrapper.includes("const result = compilePromptOutputPure("));
+  assert.ok(wrapper.includes("getUserVariableOwnership(),"));
   assert.ok(wrapper.includes("setSubjectType(settings.subjectType || \"unspecified\")"));
   assert.ok(wrapper.includes("setSystemPromptVariables(systemVariables)"));
-  assert.ok(wrapper.includes("const compiled = compilePromptOutputPure("));
+  assert.ok(
+    wrapper.includes(
+      "syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);",
+    ),
+  );
+  assert.ok(
+    wrapper.indexOf("const result = compilePromptOutputPure(") <
+      wrapper.indexOf(
+        "syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);",
+      ),
+    "the pure compile must finish before UI runtime synchronization",
+  );
 
   assert.ok(!core.includes("usePromptVariables"));
   assert.ok(!core.includes("usePromptSubjectContext"));
