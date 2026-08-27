@@ -22,7 +22,7 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Explicit runtime environment | foundation | ambient facts passed through `ActionContext.environment` |
 | Semantic assignment scope service | foundation | internal exact-ref normalization/recovery/exclusivity primitive; not public cross-domain mutation |
 | Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
-| Subject assignment target resolver | foundation | internal exact-ref resolver shared by Pose/Expression/Hair; preserves exact persisted orphan refs without fuzzy recovery |
+| Subject assignment target resolver | foundation | internal exact-ref resolver shared by Pose/Expression/Hair/Outfit; preserves exact persisted orphan refs without fuzzy recovery |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -241,24 +241,22 @@ Validation history: the first real checkout ran **119/118/1** and exposed an ord
 
 ## Hair
 
-Hair canonical services/actions are present on `refactor/actions-api`, but remain `planned` until the new real-checkout suite passes.
-
 | Action ID | Status | Intent |
 |---|---|---|
-| `hair.style.create` | planned | Create style with stable ID/key and first explicit subject target. |
-| `hair.style.update` | planned | Update exact style metadata/targets/details without broad structured patching. |
-| `hair.style.duplicate` | planned | Duplicate style and remap nested component IDs. |
-| `hair.style.delete` | planned | Delete exact style. |
-| `hair.style.setSource` | planned | Set defined/reference source using exact reference identity rules. |
-| `hair.style.setProperty` | planned | Update one typed base property state. |
-| `hair.style.applyPreset` | planned | Apply/clear a Hair recipe while preserving source/targets and allocating fresh component IDs. |
-| `hair.component.create` | planned | Create component from exact type/starter/custom choice. |
-| `hair.component.update` | planned | Update exact component metadata/type; type transition resets properties. |
-| `hair.component.setProperty` | planned | Update one property declared by the exact component type. |
-| `hair.component.duplicate` | planned | Duplicate exact component with new stable ID/key. |
-| `hair.component.delete` | planned | Delete exact nested component. |
+| `hair.style.create` | implemented | Create style with stable ID/key and first explicit subject target. |
+| `hair.style.update` | implemented | Update exact style metadata/targets/details without broad structured patching. |
+| `hair.style.duplicate` | implemented | Duplicate style and remap nested component IDs. |
+| `hair.style.delete` | implemented | Delete exact style. |
+| `hair.style.setSource` | implemented | Set defined/reference source using exact reference identity rules. |
+| `hair.style.setProperty` | implemented | Update one typed base property state. |
+| `hair.style.applyPreset` | implemented | Apply/clear a Hair recipe while preserving source/targets and allocating fresh component IDs. |
+| `hair.component.create` | implemented | Create component from exact type/starter/custom choice. |
+| `hair.component.update` | implemented | Update exact component metadata/type; type transition resets properties. |
+| `hair.component.setProperty` | implemented | Update one property declared by the exact component type. |
+| `hair.component.duplicate` | implemented | Duplicate exact component with new stable ID/key. |
+| `hair.component.delete` | implemented | Delete exact nested component. |
 
-Pending-validation invariants:
+Validated invariants:
 
 - style identity is exact stable `style.id`; component identity is exact `style.id + component.id` ownership;
 - editable keys remain canonical/unique presentation tokens and never replace stable identity;
@@ -271,25 +269,49 @@ Pending-validation invariants:
 - base property and component mutations detach the style preset, while metadata/targets/source edits preserve it like the current UI;
 - preset recipes replace recipe-owned properties/components, preserve targets/source, and allocate new component IDs;
 - public actions stay granular; source, properties, presets and nested component structure are not writable through a broad style patch;
-- compiler and Expert UI remain unchanged in this checkpoint.
+- compiler and Expert UI remained unchanged in the validated checkpoint.
 
-Pending suite: `scripts/actions-hair.test.ts`; `pnpm test:actions-api` should execute **131 tests**.
+Hair validation checkpoint: `pnpm test:actions-api` passed **131/131** on 2026-08-27 in the real user checkout. Hair public actions are promoted to `implemented`.
 
 ## Outfit
 
+Outfit canonical services/actions are present on `refactor/actions-api`, but remain `planned` until the new real-checkout suite passes.
+
 | Action ID | Status | Intent |
 |---|---|---|
-| `outfit.set.create` | planned | Create outfit set with stable ID/key. |
-| `outfit.set.update` | planned | Update set metadata/targets/details. |
-| `outfit.set.duplicate` | planned | Duplicate set and remap nested IDs/relation endpoints. |
-| `outfit.set.delete` | planned | Delete set. |
-| `outfit.item.create` | planned | Create wearable item. |
-| `outfit.item.update` | planned | Update item with unique key rules. |
-| `outfit.item.duplicate` | planned | Duplicate item with new stable ID/key. |
-| `outfit.item.delete` | planned | Delete item and connected relations. |
-| `outfit.relation.create` | planned | Create relation between valid item IDs. |
-| `outfit.relation.update` | planned | Update relation while validating endpoints. |
-| `outfit.relation.delete` | planned | Delete relation. |
+| `outfit.set.create` | planned | Create Outfit Set with stable ID/key and first explicit subject target. |
+| `outfit.set.update` | planned | Update exact set metadata/targets/details without broad nested patching. |
+| `outfit.set.duplicate` | planned | Duplicate set with fresh set/item/relation IDs and remap known relation endpoints. |
+| `outfit.set.delete` | planned | Delete one exact Outfit Set. |
+| `outfit.set.applyPreset` | planned | Apply/clear a recipe while preserving set targets/details and rebuilding preset-owned items/relations. |
+| `outfit.item.create` | planned | Create one wearable from exact type/starter/custom choice. |
+| `outfit.item.update` | planned | Update exact item metadata/type with canonical unique-key and type-transition rules. |
+| `outfit.item.setSource` | planned | Set defined/reference source through exact reference identity rules. |
+| `outfit.item.setProperty` | planned | Update one property declared by the exact item type/profile. |
+| `outfit.item.duplicate` | planned | Duplicate exact item with new stable ID/key without cloning relation edges. |
+| `outfit.item.delete` | planned | Delete exact item and remove only connected relations. |
+| `outfit.relation.create` | planned | Create relation between exact current item IDs. |
+| `outfit.relation.update` | planned | Update exact relation while validating changed endpoints. |
+| `outfit.relation.delete` | planned | Delete exact relation, including an orphan relation. |
+
+Pending-validation invariants:
+
+- set identity is exact stable `set.id`; item and relation identity are scoped by exact owning `set.id` plus their own stable IDs;
+- editable set/item keys remain canonical unique presentation/reference tokens and never replace stable identity;
+- legacy missing IDs normalize through the existing deterministic Outfit compatibility IDs (`outfit-set-{index}`, `outfit-item-{index}`, `outfit-relation-{index}`) before exact mutation;
+- set duplication creates fresh nested item/relation IDs and remaps relation endpoints only through the exact old-item-ID → new-item-ID map;
+- a duplicated relation endpoint that was already orphaned remains orphaned rather than being repaired by key/name/type lookup;
+- item deletion removes only relations whose exact endpoint equals the deleted item ID; unrelated/orphan relations otherwise remain untouched;
+- relation create requires exact current item endpoints; relation update validates only changed endpoints so an unchanged persisted orphan may survive and can be explicitly repaired/deleted;
+- subject targets reuse the same exact subject-target resolver validated by Pose/Expression/Hair;
+- Outfit item reference variables are explicit runtime facts via `ActionEnvironment.outfitReferenceSources`; `{reference}` remains the builtin fallback and no token/name fuzzy rescue is performed;
+- item property mutation validates the current item type/profile, option-set membership, single vs multi-select shape, and custom/reference/absent capabilities;
+- item/source/property/relation mutations detach the active set preset; set metadata/target edits preserve it while authored set details detach it, matching current Expert UI ownership;
+- preset application rebuilds preset-owned `items + relations` with fresh stable IDs while preserving set targets and authored set details; clearing a preset only removes `presetId`;
+- public actions stay granular: source/property/preset/relation structure cannot be changed through a broad arbitrary object/path patch;
+- compiler and Expert UI remain unchanged in this checkpoint.
+
+Pending suite: `scripts/actions-outfit.test.ts`; `pnpm test:actions-api` should execute **147 tests**.
 
 ## Prompt read operations
 
