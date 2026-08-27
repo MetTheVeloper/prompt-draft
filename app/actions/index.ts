@@ -5,13 +5,16 @@ export {
   PUBLIC_ACTION_DEFINITIONS,
   createPublicActionRegistry,
   exportPublicActionManifest,
+  getPublicActionEffect,
   invokePublicAction,
   toPublicJsonSchema,
 } from "./public";
 export type {
   PublicActionDescriptor,
+  PublicActionEffect,
   PublicActionInvocation,
   PublicActionManifest,
+  PublicActionResult,
   PublicJsonSchema,
 } from "./public";
 export {
