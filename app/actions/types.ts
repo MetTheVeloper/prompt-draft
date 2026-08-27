@@ -3,6 +3,7 @@ import type {
   SemanticTargetCapability,
 } from "../modules/types";
 import type { HairReferenceRef } from "../modules/hair.types";
+import type { PromptReferenceRef } from "../modules/outfit.types";
 import type { PromptDraftState } from "../modules/promptDraft.types";
 import type { SemanticReferenceCatalogSource } from "../utils/semanticReferenceCatalog";
 
@@ -61,6 +62,9 @@ export type ActionIdFactory = {
   effectLayer?: () => string;
   hairStyle?: () => string;
   hairComponent?: () => string;
+  outfitSet?: () => string;
+  outfitItem?: () => string;
+  outfitRelation?: () => string;
   generic?: (prefix: string) => string;
 };
 
@@ -83,10 +87,10 @@ export type ActionEnvironment = {
   >;
 
   /**
-   * Exact subject-variable catalog used by Pose/Expression/Hair target lists.
-   * Ordering is meaningful for create: the first available source mirrors the
-   * Expert UI's current default-target behavior. Missing/unavailable persisted
-   * refs are never reconstructed by token/name matching.
+   * Exact subject-variable catalog used by Pose/Expression/Hair/Outfit target
+   * lists. Ordering is meaningful for create: the first available source
+   * mirrors the Expert UI's current default-target behavior. Missing or
+   * unavailable persisted refs are never reconstructed by token/name matching.
    */
   subjectAssignmentTargets?: readonly SemanticReferenceCatalogSource[];
 
@@ -97,6 +101,17 @@ export type ActionEnvironment = {
    */
   hairReferenceSources?: readonly {
     reference: HairReferenceRef;
+    disabled?: boolean;
+  }[];
+
+  /**
+   * Exact enabled reference-variable catalog for Outfit item source/property
+   * references. This remains separate from Hair so each specialized domain can
+   * evolve its reference contract independently while sharing the same exact-ID
+   * policy. `{reference}` is the builtin fallback.
+   */
+  outfitReferenceSources?: readonly {
+    reference: PromptReferenceRef;
     disabled?: boolean;
   }[];
 };
