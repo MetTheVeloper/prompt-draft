@@ -22,7 +22,7 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Explicit runtime environment | foundation | ambient facts passed through `ActionContext.environment` |
 | Semantic assignment scope service | foundation | internal exact-ref normalization/recovery/exclusivity primitive; not public cross-domain mutation |
 | Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
-| Subject assignment target resolver | foundation | internal exact-ref resolver for Pose/Expression subject targets; preserves exact persisted orphan refs without fuzzy recovery |
+| Subject assignment target resolver | foundation | internal exact-ref resolver shared by Pose/Expression; preserves exact persisted orphan refs without fuzzy recovery |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
 
@@ -158,34 +158,60 @@ Texture invariants:
 - compatibility metadata is warning-only, not mutation-blocking;
 - legacy material assignment shapes normalize before exact mutation.
 
-Validation checkpoint: `pnpm test:actions-api` passed **89/89** on 2026-08-27 with Foundation + Variables + Modules + ModuleEntity + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material suites.
+Validation checkpoint before Pose: `pnpm test:actions-api` passed **89/89** on 2026-08-27 with Foundation + Variables + Modules + ModuleEntity + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material suites.
 
 The generic public actions `assignment.targets.set` and `assignment.exceptions.set` are deliberately **not** part of the API.
 
 ## Pose / Expression
 
-Pose implementation is present on `refactor/actions-api` with isolated tests, but remains `planned` until the real checkout `pnpm test:actions-api` checkpoint passes. This deliberately preserves the registry rule that `implemented` means validated.
+Pose and Expression share only the headless exact subject-target resolver. Each domain owns its own assignment lifecycle, payload, preset semantics, action namespace and validation.
+
+### Pose
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `pose.assignment.create` | planned | Create pose assignment with a stable ID and first explicit available subject target when supplied. |
-| `pose.assignment.update` | planned | Update only the known Pose payload/targets; payload edits detach preset while target-only edits preserve it. |
-| `pose.assignment.delete` | planned | Delete one exact pose assignment by stable ID. |
-| `pose.assignment.applyPreset` | planned | Apply/clear pose preset while preserving exact targets and authored additional details. |
-| `expression.assignment.create` | planned | Create expression assignment. |
-| `expression.assignment.update` | planned | Update expression payload and detach preset when required. |
-| `expression.assignment.delete` | planned | Delete expression assignment. |
-| `expression.assignment.applyPreset` | planned | Apply expression preset while preserving target scope. |
+| `pose.assignment.create` | implemented | Create pose assignment with a stable ID and first explicit available subject target when supplied. |
+| `pose.assignment.update` | implemented | Update only known Pose payload/targets; payload edits detach preset while target-only edits preserve it. |
+| `pose.assignment.delete` | implemented | Delete one exact pose assignment by stable ID. |
+| `pose.assignment.applyPreset` | implemented | Apply/clear pose preset while preserving exact targets and authored additional details. |
 
-Pose target invariants pending validation:
+Pose validation checkpoint: `pnpm test:actions-api` passed **97/97** on 2026-08-27 in the real user checkout.
+
+Pose invariants:
 
 - Pose has a target list, not Color/Texture builtin target+exception scope;
 - available subject refs are supplied headlessly through `ActionEnvironment.subjectAssignmentTargets`;
 - target identity resolves exactly through the shared semantic reference catalog;
 - new missing/unavailable refs reject;
 - an exact persisted missing/unavailable ref may be retained or explicitly removed;
+- `user_variable` and `system_variable` identities remain distinct even with the same `variableId`;
 - no token/name fuzzy retargeting;
-- no arbitrary structured Pose patch surface.
+- no arbitrary structured Pose patch surface;
+- preset-owned payload replacement preserves targets and authored `additionalDetails`.
+
+### Expression
+
+Expression implementation and isolated tests are present on `refactor/actions-api`, but public status remains `planned` until the real checkout suite passes.
+
+| Action ID | Status | Intent |
+|---|---|---|
+| `expression.assignment.create` | planned | Create expression assignment with stable ID and first explicit available subject target when supplied. |
+| `expression.assignment.update` | planned | Update only known Expression payload/targets; payload edits detach preset while target-only edits preserve it. |
+| `expression.assignment.delete` | planned | Delete one exact expression assignment by stable ID. |
+| `expression.assignment.applyPreset` | planned | Apply/clear expression preset while preserving exact targets and authored additional details. |
+
+Expression pending-validation invariants:
+
+- reuses the same exact subject-target resolver validated by Pose; no second resolver exists;
+- known payload axes are `coreExpression`, `intensity`, `eyeState`, `browState`, `mouthState`, and `additionalDetails`;
+- authored strings are preserved instead of being silently coerced to catalog values;
+- payload edits detach `presetId`; target-only changes preserve it;
+- preset application replaces only preset-owned expression axes while preserving targets and `additionalDetails`;
+- legacy assignments without IDs normalize to deterministic `expression-assignment-{index}` compatibility identity before exact mutation;
+- no arbitrary structured Expression patch surface;
+- compiler and Expert UI remain unchanged.
+
+Pending suite: `scripts/actions-expression-assignments.test.ts`; when included, `pnpm test:actions-api` should execute **105 tests**.
 
 ## Lighting / Effects
 
