@@ -39,6 +39,20 @@ export {
   registerExpressionAssignmentActions,
 } from "./expressionAssignments";
 export {
+  lightingSourceActions,
+  lightingSourceCreateAction,
+  lightingSourceDeleteAction,
+  lightingSourceUpdateAction,
+  registerLightingSourceActions,
+} from "./lightingSources";
+export {
+  effectsLayerActions,
+  effectsLayerCreateAction,
+  effectsLayerDeleteAction,
+  effectsLayerUpdateAction,
+  registerEffectsLayerActions,
+} from "./effectLayers";
+export {
   layoutActions,
   layoutGridUpdateAction,
   layoutRegionAssignSceneAction,
