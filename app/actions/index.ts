@@ -1,6 +1,20 @@
 export { ActionRegistry, createActionRegistry } from "./registry";
 export { validateActionInput } from "./inputSchema";
 export {
+  PUBLIC_ACTION_CONTRACT,
+  PUBLIC_ACTION_DEFINITIONS,
+  createPublicActionRegistry,
+  exportPublicActionManifest,
+  invokePublicAction,
+  toPublicJsonSchema,
+} from "./public";
+export type {
+  PublicActionDescriptor,
+  PublicActionInvocation,
+  PublicActionManifest,
+  PublicJsonSchema,
+} from "./public";
+export {
   colorPaletteActions,
   colorPaletteAssignmentApplyPresetAction,
   colorPaletteAssignmentCreateAction,
