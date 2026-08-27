@@ -19,8 +19,8 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 | Single action execution | foundation | atomic success/failure result |
 | Input schema validation | foundation | small repository-owned schema |
 | Deterministic test ID injection | foundation | domain-specific factory injection |
-| Explicit runtime environment | foundation | ambient facts are passed through `ActionContext.environment` |
-| Semantic assignment scope service | foundation | internal headless exact-ref normalization/recovery/exclusivity primitive; not a public cross-domain mutation action |
+| Explicit runtime environment | foundation | ambient facts passed through `ActionContext.environment` |
+| Semantic assignment scope service | foundation | internal exact-ref normalization/recovery/exclusivity primitive; not public cross-domain mutation |
 | Capability-scoped semantic sources | foundation | `ActionEnvironment.semanticTargetSources` supplies dynamic `color` / `material` refs without Vue coupling |
 | Batch execution | planned | deferred until Wizard use-cases justify it |
 | Dry run | planned | deferred with batch design |
@@ -29,142 +29,137 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `module.activate` | implemented | Activate a registered module; preserve existing inactive state or initialize missing defaults/panel state. |
-| `module.deactivate` | implemented | Deactivate non-destructively; preserve stored values/panel state. |
-| `module.field.set` | implemented | Set a simple schema-backed field; structured field types reject. |
+| `module.activate` | implemented | Activate registered module; preserve inactive state or initialize missing defaults/panel state. |
+| `module.deactivate` | implemented | Deactivate non-destructively. |
+| `module.field.set` | implemented | Set a simple schema-backed field; structured fields reject. |
 | `module.preset.apply` | implemented | Overlay a registered preset using canonical field/custom-sidecar semantics. |
-| `module.customMode.set` | implemented | Enable/disable module-level Custom Override where an override field exists. |
-| `module.reset` | planned | Deferred until generic/specialized Clear semantics are explicitly canonicalized. |
-
-Validation checkpoint: `pnpm test:actions-api` passed **27/27** on 2026-08-27 with Foundation + Variables + Modules suites.
+| `module.customMode.set` | implemented | Toggle module-level Custom Override where supported. |
+| `module.reset` | planned | Deferred until generic/specialized Clear semantics are canonicalized. |
 
 ## Variables
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `variable.create` | implemented | Create a user variable with canonical unique key and stable ID. |
-| `variable.update` | implemented | Update key/value/type/description/enabled while preserving stable variable ID. |
-| `variable.duplicate` | implemented | Duplicate with a new ID/key and adjacent placement. |
-| `variable.delete` | implemented | Remove one exact stable variable; references are not silently retargeted. |
-| `variable.setEnabled` | implemented | Enable/disable one exact user variable. |
+| `variable.create` | implemented | Create user variable with canonical unique key and stable ID. |
+| `variable.update` | implemented | Update variable while preserving stable ID. |
+| `variable.duplicate` | implemented | Duplicate with new ID/key and adjacent placement. |
+| `variable.delete` | implemented | Remove exact stable variable; references are not retargeted. |
+| `variable.setEnabled` | implemented | Toggle one exact variable. |
 
 ## Generic named module entities
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `moduleEntity.create` | implemented | Create empty-payload named configuration with new stable ID and canonical unique key. |
-| `moduleEntity.update` | implemented | Update editable name/key metadata while preserving stable ID. |
-| `moduleEntity.duplicate` | implemented | Duplicate adjacent with deep-copied payload, new stable ID and unique key. |
-| `moduleEntity.delete` | implemented | Remove one exact entity; external stable refs remain missing and are never retargeted. |
+| `moduleEntity.create` | implemented | Create empty-payload named configuration with new stable ID and unique key. |
+| `moduleEntity.update` | implemented | Update editable metadata while preserving stable ID. |
+| `moduleEntity.duplicate` | implemented | Duplicate adjacent with deep-copied payload and new stable identity. |
+| `moduleEntity.delete` | implemented | Remove exact entity; external refs remain missing rather than retargeting. |
 | `moduleEntity.setEnabled` | implemented | Toggle availability without changing identity. |
-| `moduleEntity.setInheritance` | implemented | Toggle global inheritance only where module capability allows it. |
-| `moduleEntity.field.set` | implemented | Set one simple local payload override with canonical schema/custom-sidecar rules. |
-| `moduleEntity.field.clear` | implemented | Explicitly remove one local override + sidecar to resume inherited/unset semantics. |
-| `moduleEntity.preset.apply` | implemented | Overlay eligible non-override module fields into one entity payload. |
+| `moduleEntity.setInheritance` | implemented | Toggle global inheritance where capability permits. |
+| `moduleEntity.field.set` | implemented | Set one simple local payload override. |
+| `moduleEntity.field.clear` | implemented | Remove one local override + sidecar to resume inherited/unset semantics. |
+| `moduleEntity.preset.apply` | implemented | Overlay eligible non-override fields into one entity payload. |
 
-Validation checkpoints:
-
-- lifecycle suite reached **35/35** on 2026-08-27;
-- lifecycle + field/preset suite reached **41/41** on 2026-08-27.
-
-Generic lifecycle and field actions deliberately do not accept arbitrary payload patches. Structured fields remain owned by specialized domain actions.
+Generic lifecycle/field actions do not accept arbitrary structured payload patches.
 
 ## Typography
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `typography.group.create` | implemented | Create a text group with stable ID and structural group token derived from that ID. |
-| `typography.group.update` | implemented | Update group metadata/position while preserving stable ID/token and contained text identities. |
-| `typography.group.delete` | implemented | Delete one exact group and its contained blocks. |
-| `typography.group.move` | implemented | Reorder one exact group by explicit index. |
-| `typography.text.create` | implemented | Add a non-empty stable text block with structural layer token derived from its ID. |
-| `typography.text.update` | implemented | Update block content/style while preserving ID/layer token. |
-| `typography.text.delete` | implemented | Remove one exact block from one exact group. |
-| `typography.text.move` | implemented | Reorder one exact block inside its current group. |
-
-Validation checkpoint: `pnpm test:actions-api` passed **49/49** on 2026-08-27 with the Typography suite included. Explicit Layout Region replacement validates the exact active region ID; missing persisted region refs are not silently rewritten by unrelated mutations.
+| `typography.group.create` | implemented | Create stable text group and structural token. |
+| `typography.group.update` | implemented | Update metadata/position while preserving identity/token. |
+| `typography.group.delete` | implemented | Delete exact group and contained blocks. |
+| `typography.group.move` | implemented | Reorder exact group by explicit index. |
+| `typography.text.create` | implemented | Add non-empty stable text block with structural layer token. |
+| `typography.text.update` | implemented | Update block content/style while preserving identity/token. |
+| `typography.text.delete` | implemented | Remove exact block from exact group. |
+| `typography.text.move` | implemented | Reorder exact block inside its group. |
 
 ## Scene
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `scene.create` | implemented | Create a Scene with stable ID and unique semantic key. |
-| `scene.update` | implemented | Update Scene metadata/description while preserving stable ID and component refs. |
-| `scene.duplicate` | implemented | Duplicate adjacent with new stable ID/key and copied explicit references. |
-| `scene.delete` | implemented | Delete Scene while leaving Layout refs missing until explicitly repaired/removed. |
-| `scene.setEnabled` | implemented | Toggle Scene availability without changing identity. |
-| `scene.component.attach` | implemented | Attach one exact available module entity while respecting module cardinality. |
-| `scene.component.detach` | implemented | Remove one exact stable module-entity reference, including missing/orphan refs. |
-| `scene.component.replace` | implemented | Explicitly replace one exact ref with another available entity from the same module. |
-
-Validation checkpoint: `pnpm test:actions-api` passed **57/57** on 2026-08-27 with the Scene suite included.
-
-Scene invariants:
-
-- Scene identity is `scene.id`; editable key/name never replace identity;
-- create/duplicate receive deterministic-injectable stable IDs and unique semantic keys;
-- duplicate deep-copies explicit component references and is adjacent to its source;
-- Scene deletion never rewrites Layout Region `contentRef` ownership;
-- new attach/replace requires an active scene-exposable module and exact available entity ID;
-- single-selection modules reject implicit replacement and require `scene.component.replace`;
-- detach intentionally does not require target availability, so missing/orphan refs remain explicitly recoverable;
-- replace may repair an exact missing entity ref but never performs token/name/fuzzy retargeting.
+| `scene.create` | implemented | Create Scene with stable ID and unique semantic key. |
+| `scene.update` | implemented | Update Scene metadata while preserving stable ID/component refs. |
+| `scene.duplicate` | implemented | Duplicate adjacent with new stable ID/key and copied explicit refs. |
+| `scene.delete` | implemented | Delete Scene while leaving Layout refs missing until explicit repair/removal. |
+| `scene.setEnabled` | implemented | Toggle Scene availability. |
+| `scene.component.attach` | implemented | Attach exact available module entity respecting cardinality. |
+| `scene.component.detach` | implemented | Remove exact module-entity ref, including missing/orphan refs. |
+| `scene.component.replace` | implemented | Explicitly replace exact ref with another available entity from same module. |
 
 ## Layout
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `layout.region.create` | implemented | Create a normalized region with a new stable ID. |
-| `layout.region.update` | implemented | Update exact region metadata/geometry with canonical clamp rules; direct `contentRef` patching is forbidden. |
-| `layout.region.duplicate` | implemented | Duplicate adjacent with new stable ID, offset geometry, and preserved explicit binding semantics. |
-| `layout.region.delete` | implemented | Delete one exact region without rewriting external region refs. |
-| `layout.region.move` | implemented | Reorder one exact region without silently changing authored `layer`. |
-| `layout.grid.update` | implemented | Update normalized/clamped grid dimensions while preserving region geometry. |
-| `layout.region.assignScene` | implemented | Bind one exact active Scene ref and synchronize cached Scene token/label metadata. |
-| `layout.region.clearScene` | implemented | Explicitly clear Scene binding while preserving unrelated manual content. |
-
-Validation checkpoint: `pnpm test:actions-api` passed **65/65** on 2026-08-27 with the Layout suite included.
-
-Layout invariants:
-
-- Region identity is `region.id` and cannot be replaced through metadata update;
-- create/duplicate use deterministic-injectable stable IDs and reject ID conflicts;
-- geometry is normalized through the existing `layoutRegions` clamp/normalization helpers;
-- `custom` role requires non-empty `customRole`, matching the current editor validation;
-- zero width/height are rejected after normalization;
-- collection move changes order only and does not rewrite authored layer values;
-- delete affects Layout-owned state only; Typography or future external region refs remain explicitly missing;
-- Scene binding identity is `contentRef.kind="scene" + entityId`; token/label/contentKey are presentation/backward-compatible metadata;
-- `assignScene` requires exact active Scene identity and never falls back to token/name matching;
-- manual `contentKey` replacement detaches an existing Scene ref when it no longer matches that ref's cached token;
-- `clearScene` clears `contentKey` only when it is the Scene token being cleared; unrelated manual content is preserved.
+| `layout.region.create` | implemented | Create normalized Region with new stable ID. |
+| `layout.region.update` | implemented | Update exact Region metadata/geometry; direct `contentRef` patch forbidden. |
+| `layout.region.duplicate` | implemented | Duplicate with new stable ID, offset geometry, preserved binding semantics. |
+| `layout.region.delete` | implemented | Delete exact Region without rewriting external refs. |
+| `layout.region.move` | implemented | Reorder exact Region without silently changing authored layer. |
+| `layout.grid.update` | implemented | Update normalized grid dimensions. |
+| `layout.region.assignScene` | implemented | Bind exact active Scene and sync cached metadata/contentKey. |
+| `layout.region.clearScene` | implemented | Clear Scene binding while preserving unrelated manual content. |
 
 ## Color / Material scopes
 
-Shared scope ownership is an internal foundation service, not a public `assignment.*` mutation namespace. Public consumers must call a domain action such as Color or Texture so scope rules cannot bypass domain payload semantics.
+Shared scope ownership is an internal foundation service, not a public `assignment.*` mutation namespace. Public consumers call specialized domain actions so scope rules cannot bypass payload semantics.
 
 Internal scope invariants:
 
-- exact identity comes from `semanticTargetIdentity`;
-- dynamic refs resolve through the shared reference catalog, never token/name fuzzy lookup;
-- new missing/unavailable dynamic refs reject;
-- an exact persisted missing/unavailable ref may survive unrelated edits and remains explicitly removable;
-- exact target/exception conflicts are removed directionally, matching the existing scope editor;
-- domain-exclusive builtins (`overall`, `all_surfaces`) collapse the target scope and cannot be exceptions;
-- dynamic sources are supplied headlessly through `ActionEnvironment.semanticTargetSources` by capability.
+- exact identity via `semanticTargetIdentity`;
+- dynamic refs through shared reference catalog, never fuzzy token/name lookup;
+- new missing/unavailable refs reject;
+- exact persisted missing/unavailable refs may survive unrelated edits and remain removable;
+- target/exception conflicts resolve directionally;
+- exclusive builtins (`overall`, `all_surfaces`) collapse target scope and cannot be exceptions;
+- dynamic sources supplied through `ActionEnvironment.semanticTargetSources` by capability.
+
+### Color Palette
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `colorPalette.assignment.create` | planned | Create color assignment. |
-| `colorPalette.assignment.update` | planned | Update colors/scope according to Color-domain rules. |
-| `colorPalette.assignment.delete` | planned | Delete assignment. |
-| `colorPalette.assignment.applyPreset` | planned | Apply/clear a palette preset while preserving semantic scope. |
-| `texture.assignment.create` | planned | Create material assignment. |
-| `texture.assignment.update` | planned | Update material payload/scope and detach preset when required. |
-| `texture.assignment.delete` | planned | Delete assignment. |
-| `texture.assignment.applyPreset` | planned | Apply/clear a material preset while preserving semantic scope. |
+| `colorPalette.assignment.create` | implemented | Create stable color assignment with canonical `overall` scope. |
+| `colorPalette.assignment.delete` | implemented | Delete one exact color assignment by stable ID. |
+| `colorPalette.assignment.scope.set` | implemented | Set targets/exceptions through shared semantic scope rules. |
+| `colorPalette.assignment.applyPreset` | implemented | Apply/clear palette preset while preserving semantic scope. |
+| `colorPalette.swatch.add` | implemented | Add literal swatch and detach active preset. |
+| `colorPalette.swatch.setLiteral` | implemented | Set exact swatch to authored literal value and detach preset. |
+| `colorPalette.swatch.setVariable` | implemented | Bind exact swatch to exact enabled user Color variable. |
+| `colorPalette.swatch.delete` | implemented | Delete exact swatch and detach preset. |
 
-The previously considered generic public actions `assignment.targets.set` and `assignment.exceptions.set` are deliberately **not** part of the public API. Their job belongs to the internal scope service consumed by specialized domain actions.
+Color invariants:
+
+- no broad arbitrary `colorPalette.assignment.update` public patch;
+- assignment/swatch mutations use stable IDs;
+- preset replaces colors only and preserves scope;
+- variable source is exact enabled user `type="color"` variable;
+- legacy assignment shapes normalize before exact mutation.
+
+### Texture Material assignments
+
+| Action ID | Status | Intent |
+|---|---|---|
+| `texture.assignment.create` | implemented | Create stable material assignment with canonical `all_surfaces` scope. |
+| `texture.assignment.delete` | implemented | Delete one exact material assignment by stable ID. |
+| `texture.assignment.scope.set` | implemented | Set targets/exceptions through shared material-capability scope rules. |
+| `texture.assignment.applyPreset` | implemented | Apply/clear material preset while preserving semantic scope. |
+| `texture.assignment.property.set` | implemented | Set one material property axis and detach active preset. |
+| `texture.assignment.conditions.set` | implemented | Set authored condition list and detach active preset. |
+
+Texture invariants:
+
+- no broad arbitrary `texture.assignment.update` public patch;
+- assignment mutations use exact stable IDs;
+- preset replaces material/finish/surface/optical/prominence/conditions payload while preserving scope;
+- property and conditions mutations detach preset;
+- freeform authored strings are preserved;
+- compatibility metadata is warning-only, not mutation-blocking;
+- legacy material assignment shapes normalize before exact mutation.
+
+Validation checkpoint: `pnpm test:actions-api` passed **89/89** on 2026-08-27 with Foundation + Variables + Modules + ModuleEntity + Typography + Scene + Layout + semantic scopes + Color Palette + Texture Material suites.
+
+The generic public actions `assignment.targets.set` and `assignment.exceptions.set` are deliberately **not** part of the API.
 
 ## Pose / Expression
 
@@ -186,7 +181,7 @@ The previously considered generic public actions `assignment.targets.set` and `a
 | `lighting.source.create` | planned | Create source respecting max-source constraints. |
 | `lighting.source.update` | planned | Update source including custom-color transition rules. |
 | `lighting.source.delete` | planned | Delete source. |
-| `effects.layer.create` | planned | Create effect layer respecting max-layer constraints. |
+| `effects.layer.create` | planned | Create layer respecting max-layer constraints. |
 | `effects.layer.update` | planned | Update layer including custom-effect transition rules. |
 | `effects.layer.delete` | planned | Delete layer. |
 
@@ -211,31 +206,29 @@ The previously considered generic public actions `assignment.targets.set` and `a
 |---|---|---|
 | `outfit.set.create` | planned | Create outfit set with stable ID/key. |
 | `outfit.set.update` | planned | Update set metadata/targets/details. |
-| `outfit.set.duplicate` | planned | Duplicate set and remap all nested IDs/relation endpoints. |
+| `outfit.set.duplicate` | planned | Duplicate set and remap nested IDs/relation endpoints. |
 | `outfit.set.delete` | planned | Delete set. |
-| `outfit.item.create` | planned | Create wearable item from type/starter/custom choice. |
+| `outfit.item.create` | planned | Create wearable item. |
 | `outfit.item.update` | planned | Update item with unique key rules. |
 | `outfit.item.duplicate` | planned | Duplicate item with new stable ID/key. |
-| `outfit.item.delete` | planned | Delete item and remove connected relations. |
+| `outfit.item.delete` | planned | Delete item and connected relations. |
 | `outfit.relation.create` | planned | Create relation between valid item IDs. |
 | `outfit.relation.update` | planned | Update relation while validating endpoints. |
 | `outfit.relation.delete` | planned | Delete relation. |
 
 ## Prompt read operations
 
-These are action-like public capabilities but do not mutate state.
-
 | Action ID | Status | Intent |
 |---|---|---|
 | `prompt.validate` | planned | Headless validation from canonical draft context. |
-| `prompt.compile` | planned | Headless compile from canonical draft context and output format. |
+| `prompt.compile` | planned | Headless compile from canonical draft context/output format. |
 
 ## Registration rule
 
 An action may be marked `implemented` only when:
 
 1. its domain mutation is implemented outside Vue components;
-2. expected rejection returns a structured issue rather than relying on UI behavior;
+2. expected rejection returns structured issues rather than relying on UI behavior;
 3. isolated tests cover success and important invariant failures;
 4. its ID/input/result shape is documented here;
 5. it does not introduce a second implementation of an existing mutation;
