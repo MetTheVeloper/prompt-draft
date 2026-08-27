@@ -341,12 +341,14 @@ Validation status:
 
 - **not yet user-validated**
 - latest accepted real-checkout baseline remains **89/89**
-- Pose actions remain `planned` in `ACTIONS.md` until the real checkout suite passes, per the registry promotion rule
-- an assistant-side smoke run was attempted, but the execution environment could not resolve GitHub to clone the repository; this does not count as validation or failure of the project suite
+- first real-checkout Pose run on 2026-08-27 executed **97 tests / 96 passed / 1 failed**
+- the sole failure was a test-fixture identity mismatch: the unavailable source was a `system_variable`, while the requested target was authored as a `user_variable` with the same `variableId`; exact identity correctly classified that request as `missing` rather than fuzzily retargeting it
+- the fixture was corrected to request the exact `system_variable` identity; no Pose domain implementation change was required
+- Pose actions remain `planned` in `ACTIONS.md` until the corrected real-checkout suite passes, per the registry promotion rule
 
 ## Next
 
-1. Run and confirm the Pose checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
+1. Re-run and confirm the corrected Pose checkpoint with `pnpm test:actions-api` on the real `refactor/actions-api` checkout.
 2. If Pose passes, promote its public action statuses to `implemented` and record the new validated test count.
 3. Implement **Expression assignment actions** using the same exact subject-reference primitive and Expression-specific payload/preset semantics.
 4. After Expression validation, re-evaluate the first low-risk Expert UI migration boundary.
