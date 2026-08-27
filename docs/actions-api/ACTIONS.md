@@ -41,13 +41,13 @@ Once an action is marked `implemented`, its ID is a compatibility surface. Renam
 
 | Action ID | Status | Intent |
 |---|---|---|
-| `variable.create` | implemented | Create user variable with canonical unique key and stable ID. |
-| `variable.update` | implemented | Update variable while preserving stable ID. |
-| `variable.duplicate` | implemented | Duplicate with new ID/key and adjacent placement. |
-| `variable.delete` | implemented | Remove exact stable variable; references are not retargeted. |
+| `variable.create` | migrated | Create user variable with canonical unique key and stable ID. |
+| `variable.update` | migrated | Update variable while preserving stable ID. |
+| `variable.duplicate` | migrated | Duplicate with new ID/key and adjacent placement. |
+| `variable.delete` | migrated | Remove exact stable variable; references are not retargeted. |
 | `variable.setEnabled` | implemented | Toggle one exact variable. |
 
-First Expert UI migration implementation is now present on `refactor/actions-api`: `VariablesField.vue` routes persisted create/update/duplicate/delete and Blueprint insertion through `app/domain/variables.ts` instead of maintaining a second CRUD implementation. Blueprint `source: "user"` metadata is preserved internally by the domain service but is not exposed by public `variable.create`. The four current CRUD actions remain `implemented` until the new **107-test** suite and real Expert UI regression are confirmed; only then may they become `migrated`. `variable.setEnabled` stays `implemented` because the current UI changes enabled state through the general variable-update form rather than the dedicated `setPromptVariableEnabled` service.
+Variables became the first validated Expert UI migration on 2026-08-27. `VariablesField.vue` routes persisted create/update/duplicate/delete and Blueprint insertion through `app/domain/variables.ts`; the real checkout passed **107/107**, production build completed, and manual Expert UI regression covered create, edit including Enabled, duplicate, delete and Blueprint insertion. `variable.setEnabled` stays `implemented` because the current UI changes Enabled through the general `updatePromptVariable` form path rather than the dedicated `setPromptVariableEnabled` mutation.
 
 ## Generic named module entities
 
@@ -137,7 +137,7 @@ Color invariants:
 - assignment/swatch mutations use stable IDs;
 - preset replaces colors only and preserves scope;
 - variable source is exact enabled user `type="color"` variable;
-- legacy assignment shapes normalize before exact mutation.
+- legacy assignment shapes normalize before stable-ID mutation.
 
 ### Texture Material assignments
 
@@ -215,14 +215,30 @@ Expression validation checkpoint: `pnpm test:actions-api` passed **105/105** on 
 
 ## Lighting / Effects
 
+Lighting/Effects canonical services and isolated tests are now present on `refactor/actions-api`, but their public status remains `planned` until the real checkout suite passes.
+
 | Action ID | Status | Intent |
 |---|---|---|
 | `lighting.source.create` | planned | Create source respecting max-source constraints. |
-| `lighting.source.update` | planned | Update source including custom-color transition rules. |
-| `lighting.source.delete` | planned | Delete source. |
+| `lighting.source.update` | planned | Update exact source including catalog validation and custom-color transition rules. |
+| `lighting.source.delete` | planned | Delete exact source by stable ID. |
 | `effects.layer.create` | planned | Create layer respecting max-layer constraints. |
-| `effects.layer.update` | planned | Update layer including custom-effect transition rules. |
-| `effects.layer.delete` | planned | Delete layer. |
+| `effects.layer.update` | planned | Update exact layer including catalog validation and custom-effect transition rules. |
+| `effects.layer.delete` | planned | Delete exact layer by stable ID. |
+
+Pending-validation invariants:
+
+- source/layer identity is exact stable ID; role/type/name never retarget a mutation;
+- legacy missing IDs receive deterministic compatibility IDs matching current Expert UI fallback identity (`light-{index}` / `effect-{index}`);
+- create respects `maxSources` / `maxLayers` from the module field schema;
+- known dropdown/multi-select values are validated against the module's configured option catalogs;
+- Lighting transition to a non-custom color clears `customColor`; entering custom color normalizes missing/invalid hex to `#ffffff` like the current UI;
+- Effects transition to a non-custom type clears `customEffect`; custom authored effect/details remain strings;
+- structured mutation clears the module-level active preset only when resulting module values no longer match that preset;
+- no generic structured patch surface was introduced;
+- compiler and Expert UI remain unchanged in this checkpoint.
+
+Pending suite: `scripts/actions-lighting-effects.test.ts`; when included, `pnpm test:actions-api` should execute **119 tests**.
 
 ## Hair
 
