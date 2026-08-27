@@ -1,6 +1,6 @@
 # Prompt Draft Actions API
 
-Status: **Final readiness validation**
+Status: **MERGE-READY**
 
 Working branch: `refactor/actions-api`
 
@@ -47,7 +47,7 @@ Vue components/composables may adapt canonical services for reactive UI behavior
 9. Current compiler behavior is reused through one canonical pure path; there is no second Actions-only compiler.
 10. Provider-specific OpenAI/Gemini/MCP behavior stays outside domain/action implementations.
 
-## Current validated boundaries
+## Validated boundaries
 
 Completed and validated:
 
@@ -69,7 +69,8 @@ Completed and validated:
 - Outfit;
 - `prompt.validate`;
 - `prompt.compile`;
-- provider-neutral public manifest/invocation contract.
+- provider-neutral public manifest/invocation contract;
+- exact v1 public Action-ID compatibility freeze.
 
 The only intentionally completed Expert UI migration in this branch is Variables CRUD/Blueprint insertion.
 
@@ -86,14 +87,19 @@ The only intentionally completed Expert UI migration in this branch is Variables
 
 The exact v1 public Action-ID set is pinned by `scripts/actions-public-ids.test.ts`.
 
-## Validation state
+## Final validation
 
-Accepted checkpoints include:
+The complete merge-readiness gate passed on 2026-08-27:
 
-- Prompt Compile: **161/161 + phase9 9/9 + build**;
-- Public Contract: **167/167 + build**.
+```text
+Actions API:       168 / 168
+Reference catalog:  15 / 15
+Phase 8 UX:           5 / 5
+Phase 9 compiler:     9 / 9
+Production build:   successful
+```
 
-The exact public-ID compatibility guard adds one final Actions API test, so the final expected Actions total is **168**.
+No known Actions API blocker remains.
 
 ## Documents
 
@@ -101,8 +107,8 @@ The exact public-ID compatibility guard adds one final Actions API test, so the 
 - [`ARCHITECTURE.md`](./ARCHITECTURE.md) — architectural contracts and runtime model.
 - [`ACTIONS.md`](./ACTIONS.md) — canonical public Action inventory/status.
 - [`PUBLIC-CONTRACT.md`](./PUBLIC-CONTRACT.md) — provider-neutral discovery/invocation contract.
-- [`STATUS.md`](./STATUS.md) — accepted checkpoints and remaining gate.
-- [`FINAL-AUDIT.md`](./FINAL-AUDIT.md) — branch-to-main scope audit and merge-readiness checklist.
+- [`STATUS.md`](./STATUS.md) — accepted checkpoints and merge-ready status.
+- [`FINAL-AUDIT.md`](./FINAL-AUDIT.md) — branch-to-main scope audit and final validation evidence.
 
 ## Intentionally deferred
 
@@ -115,23 +121,6 @@ Non-blocking for this branch:
 - additional Expert UI migrations;
 - third-party schema validator.
 
-## Final readiness gate
-
-After pulling the final audit commits:
-
-```bash
-pnpm test:actions-api
-pnpm test:reference-catalog
-pnpm test:phase8-ux
-pnpm test:phase9-regression
-pnpm build
-```
-
-Expected Actions total: **168/168**.
-Expected phase9 compiler regression: **9/9**.
-
-When the complete final gate is green, the branch is merge-ready from the Actions API scope perspective.
-
 ## Main branch rule
 
-All work remains on `refactor/actions-api`. Do not move/update `main` without explicit user approval.
+`refactor/actions-api` is merge-ready. Updating `main` is an explicit integration operation and should be performed deliberately after pulling the final branch documentation commits.
