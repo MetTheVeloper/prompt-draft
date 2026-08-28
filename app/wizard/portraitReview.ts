@@ -158,13 +158,14 @@ export function buildPortraitWizardReview(
   if (lighting) items.push(lighting);
 
   if (session.wizardVersion === 2) {
-    for (const answerId of [
-      "aspectRatio",
-      "referenceUsage",
-      "transformationStrength",
-    ]) {
-      const item = answerItem(ruledSession, answerId);
-      if (item) items.push(item);
+    const aspectRatio = answerItem(ruledSession, "aspectRatio");
+    if (aspectRatio) items.push(aspectRatio);
+
+    if (derived.promptMode === "image_to_image") {
+      for (const answerId of ["referenceUsage", "transformationStrength"]) {
+        const item = answerItem(ruledSession, answerId);
+        if (item) items.push(item);
+      }
     }
   }
 
