@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-28**
 
-Status: **Architecture baseline documented — implementation not started**
+Status: **Foundation implementation started — `WizardDefinition` + `WizardSession` checkpoint complete**
 
 Working branch: `feature/wizard`
 
@@ -16,26 +16,119 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## Current checkpoint
 
-The Actions API refactor is complete and has been fast-forwarded into `main`.
+The first production Wizard foundation is now implemented on top of the completed Actions API baseline.
 
-Accepted baseline inherited by the Wizard branch:
+Foundation implementation commit:
 
-- Actions API: **168 / 168**;
-- Reference Catalog: **15 / 15**;
-- Phase 8 UX: **5 / 5**;
-- Phase 9 compiler regression: **9 / 9**;
-- production build: **successful**;
-- public Actions surface: **99 stable Actions**;
-- headless `prompt.validate` and `prompt.compile`: available;
-- stable-reference semantics and atomic single-Action failure: established.
+- `51699c6dd61688f17fdde15210eb4e21a6df211f` — `feat(wizard): add definition and session foundation`
 
-`feature/wizard` was created from the final `main` Actions API baseline. No Wizard production code has been implemented yet.
+The checkpoint deliberately stops before the Portrait Action Planner, completion commit adapter, or full Wizard UI.
+
+### Source inspection completed before implementation
+
+The implementation was based on the current source rather than the earlier conceptual model alone:
+
+- `app/actions/public.ts` confirms `invokePublicAction(...)` is the provider-neutral canonical invocation bridge for `prompt-draft.actions.v1`;
+- `app/actions/registry.ts` confirms every Action executes against a cloned Draft and failed Actions return the caller's previous Draft unchanged;
+- `app/modules/promptDraft.types.ts` confirms `PromptDraftState` contains canonical prompt/module state only, while record IDs/timestamps and collection metadata live outside it;
+- `app/utils/promptDraftState.ts` already provides canonical `clonePromptDraftState(...)`;
+- `app/pages/create.vue` currently owns Active Draft persistence/selection/localStorage behavior, so Wizard session state must remain independent from that page-owned persistence layer;
+- `app/modules/registry.ts` remains the canonical module registry supplied by the host when Actions execute;
+- current public Actions expose module/variable/entity/specialized mutation surfaces plus `prompt.validate` / `prompt.compile` reads.
+
+One important integration constraint was identified:
+
+> The current public Actions contract does not expose a dedicated Prompt Settings mutation surface. Portrait mapping must therefore either stay within existing canonical Actions or add the smallest required Prompt Settings capability to the canonical Actions API first. The Wizard must not patch `promptSettings` directly as a workaround.
+
+### Implemented now
+
+#### `app/wizard/definition.ts`
+
+- minimal `WizardDefinition`, Step and Question contracts;
+- only Portrait-required initial question kinds:
+  - `singleChoice`;
+  - `text`;
+  - `variablePicker`;
+- intentionally small visibility condition contract:
+  - `equals`;
+  - `notEquals`;
+- definition validation for:
+  - non-empty IDs/titles;
+  - positive version;
+  - at least one Step;
+  - unique Step IDs;
+  - globally unique Question/answer IDs;
+  - valid single-choice options;
+  - condition references to known answers;
+- first semantic `portraitWizardV1Definition` covering:
+  - Subject;
+  - Portrait intent;
+  - Appearance;
+  - Composition;
+  - Environment with conditional follow-up questions;
+  - Lighting & mood;
+  - Review;
+- Portrait options remain user-facing semantic intent. They do **not** embed Action IDs, module keys, preset IDs, or mutation plans.
+
+#### `app/wizard/session.ts`
+
+- `WizardSession` now separates:
+  - `answers`;
+  - `derived`;
+  - `workingDraft`;
+- answer provenance is explicit through `source: "default" | "user"`;
+- rule/default writes may replace previous defaults but do not overwrite an explicit user answer;
+- session creation clones the supplied Active Draft through canonical `clonePromptDraftState(...)`;
+- basic ordered Back/Next navigation is definition-driven;
+- Step/Question visibility uses only the small current condition evaluator;
+- `executeWizardAction(...)` delegates directly to canonical `invokePublicAction(...)` using host-owned Action context;
+- failed Actions leave the existing Wizard session/Working Draft unchanged;
+- successful Actions advance only `workingDraft`;
+- there is intentionally **no Active Draft commit API inside `WizardSession`**. Applying a completed Working Draft remains a host/completion concern.
+
+No Expert UI component or Create-page persistence code was rewritten in this checkpoint.
+
+---
+
+## Validation status
+
+Added focused tests:
+
+- `scripts/wizard-definition.test.ts` — **3 cases**;
+- `scripts/wizard-session.test.ts` — **6 cases**;
+- package command: `pnpm test:wizard`.
+
+Coverage currently checks:
+
+- Portrait Definition structure and semantic/action-decoupled data;
+- duplicate Question IDs and invalid condition references;
+- Active Draft clone/isolation;
+- default vs user provenance;
+- defaults not overwriting explicit user choices;
+- `answers` vs `derived` separation;
+- Portrait conditional Environment questions;
+- ordered Step navigation;
+- successful canonical `module.activate` execution against Working Draft only;
+- failed canonical Action preserving the current Working Draft/session.
+
+Validation performed in the current tool environment:
+
+- TypeScript parser/transpile syntax check for the four new `.ts` files: **passed**;
+- branch diff checked after commit: only the two Wizard source files, two Wizard tests, and the `test:wizard` package script changed.
+
+Not yet executed here:
+
+- `pnpm test:wizard`;
+- full `pnpm test:actions-api` regression;
+- production build.
+
+The current connector/runtime does not have the repository workspace and pnpm dependencies mounted, and the existing GitHub workflow only runs deployment generation on `main`. These commands remain the next validation gate before expanding the runtime.
 
 ---
 
 ## Accepted architecture decisions
 
-The following decisions are currently accepted and should be treated as the starting point for implementation:
+The following decisions remain accepted and unchanged:
 
 1. The Wizard is a guided, goal-oriented interaction layer over the existing canonical Draft/domain/Actions system.
 2. The Wizard must produce a normal editable `PromptDraftState`, not only a prompt string.
@@ -44,20 +137,22 @@ The following decisions are currently accepted and should be treated as the star
 5. Existing reusable UI primitives/pickers may be reused where they genuinely fit Wizard UX.
 6. The first concrete testcase is a **Portrait Wizard**.
 7. Architecture is developed incrementally from real Wizard examples rather than from a speculative universal DSL.
-8. Wizard state should separate direct `answers`, deterministic `derived` intent, and the resulting `workingDraft`.
+8. Wizard state separates direct `answers`, deterministic `derived` intent, and the resulting `workingDraft`.
 9. Defaults/recommendations must not silently overwrite explicit user choices.
-10. Flow must support basic conditional Steps/Questions for Portrait v1 while leaving an extension path for later branching/nested/repeatable flows.
-11. Portrait v1 should use a temporary Working Draft so Cancel/failure cannot corrupt the user's Active Draft.
-12. Completion should reuse canonical `prompt.validate` and `prompt.compile`.
-13. A generalized Actions batch/transaction/dry-run engine is deferred until a real Wizard demonstrates that Working Draft orchestration is insufficient.
-14. AI planning/AI-generated Wizard flows are deferred. Initial behavior is deterministic and rule-based.
-15. Rich future cases such as Comic/Manga, posters, product layouts, video keyframes and fantasy transformations are architecture pressure tests, not current implementation scope.
+10. Flow supports the minimum conditional Steps/Questions required by Portrait v1 while leaving later extension room.
+11. Portrait v1 uses a temporary Working Draft so Cancel/failure cannot corrupt the user's Active Draft.
+12. Completion will reuse canonical `prompt.validate` and `prompt.compile`.
+13. A generalized Actions batch/transaction/dry-run engine remains deferred until a real Wizard demonstrates that Working Draft orchestration is insufficient.
+14. AI planning/AI-generated Wizard flows remain deferred. Initial behavior is deterministic and rule-based.
+15. Rich future cases such as Comic/Manga, posters, product layouts, video keyframes and fantasy transformations remain architecture pressure tests, not current implementation scope.
+
+No new invariant from this checkpoint required changing [`README.md`](./README.md).
 
 ---
 
 ## Portrait Wizard conceptual flow
 
-Current first-pass UX model:
+Current first-pass UX model remains:
 
 1. **Subject**
    - identify the portrait subject;
@@ -94,27 +189,39 @@ Current first-pass UX model:
    - commit/apply resulting Draft;
    - allow continuation in Expert UI.
 
-This flow is not frozen. It is the first testcase used to discover the minimum real engine requirements.
+The checked-in `portraitWizardV1Definition` is still an implementation-discovery definition, not a frozen public schema.
 
 ---
 
-## Initial implementation components
+## Implementation component status
 
-The next implementation phase should create only the minimum pieces required by Portrait v1:
+### Complete for the current foundation checkpoint
 
-- `WizardDefinition` types;
-- `WizardSession` state/runtime;
-- basic Step/Question renderer;
-- minimal condition evaluator;
-- deterministic rules/derived-intent evaluation;
-- provenance handling for default vs user-selected answers;
+- `WizardDefinition` minimum TypeScript contracts;
+- first Portrait v1 semantic Definition;
+- `WizardSession` minimum state/runtime;
+- default-vs-user answer provenance;
+- Working Draft clone/isolation;
+- basic ordered navigation;
+- minimal `equals` / `notEquals` visibility evaluation;
+- canonical single-Action execution bridge;
+- focused unit/integration-style tests for the above.
+
+### Not implemented yet
+
+- deterministic rule/derived-intent evaluator beyond explicit default setters;
+- `requiredWhen`;
+- `in` / `notIn` conditions;
 - Portrait Action Planner/Mapper;
-- Working Draft lifecycle;
-- Review/completion flow;
-- canonical validate/compile integration;
-- focused automated tests.
+- exact Portrait preset/field/action mapping;
+- Review renderer/UI;
+- completion state machine;
+- `prompt.validate` completion gate;
+- `prompt.compile` completion output;
+- host adapter that replaces Active Draft only after successful completion;
+- full Wizard page/renderer.
 
-Exact file layout and TypeScript contracts have **not** yet been frozen. They should be chosen after inspecting the current application/component structure immediately before implementation.
+These omissions are intentional and keep the current foundation smaller than a universal Wizard engine.
 
 ---
 
@@ -187,16 +294,18 @@ These examples should challenge assumptions such as "one Subject", "one Scene", 
 
 ## Immediate next step
 
-Before writing production code:
+Resume from this exact order:
 
-1. inspect the current `feature/wizard` application/component structure relevant to the Create page, Draft session helpers and reusable UI primitives;
-2. verify the real module field/preset/entity schemas required by the Portrait flow;
-3. define the **minimum** Portrait v1 `WizardDefinition` and `WizardSession` TypeScript contracts;
-4. define the first deterministic rule/condition subset based only on those Portrait requirements;
-5. define the initial Portrait Action mappings using real stable Action inputs/IDs from the repository;
-6. add isolated tests before building the full page experience.
+1. run `pnpm test:wizard` against the branch workspace;
+2. run `pnpm test:actions-api` and production build after the Wizard tests are green;
+3. inspect the exact real Portrait-targeted module presets/fields and specialized Action inputs needed by the semantic answers already defined;
+4. add the smallest deterministic rule/derived-intent evaluator required to translate Portrait choices into planner intent while preserving user overrides;
+5. implement the first Portrait Action Planner/Mapper strictly as `PublicActionInvocation[]`/canonical Action calls;
+6. if Portrait genuinely requires Prompt Settings mutation, add that capability to the canonical Actions API first rather than writing through `PromptDraftState.promptSettings` from Wizard code;
+7. only after the mapper is stable, add Review/completion orchestration using `prompt.validate`, `prompt.compile`, and a host-owned successful Active Draft replacement step;
+8. then build the first renderer/page integration using existing UI primitives where appropriate.
 
-Do not begin with a generalized nested/repeatable engine.
+Do not begin with generalized nested/repeatable flow, AI, batch Actions, or a Wizard-specific mutation layer.
 
 ---
 
