@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { WizardStageDefinition } from "~/wizard/definition";
+import WizardProgress from "./WizardProgress.vue";
 
 const props = defineProps<{
   title: string;
