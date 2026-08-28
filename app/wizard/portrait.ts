@@ -17,6 +17,10 @@ import {
   wizardEntityToPromptVariable,
   type WizardEntityAnswer,
 } from "./entities";
+import {
+  normalizePortraitBackgroundOptions,
+  portraitBackgroundFieldUpdates,
+} from "./portraitBackgroundOptions";
 import type {
   WizardActionHostContext,
   WizardSession,
@@ -1000,6 +1004,22 @@ export async function executePortraitWizardMapping(
     input: { moduleKey: "background", presetId: derived.backgroundPresetId },
   });
   if (!result.ok) return failure(result.issues);
+
+  const backgroundOptions = normalizePortraitBackgroundOptions(
+    answerValue(ruledSession, "backgroundOptions"),
+  );
+  for (const update of portraitBackgroundFieldUpdates(backgroundOptions)) {
+    result = await run({
+      actionId: "module.field.set",
+      input: {
+        moduleKey: "background",
+        fieldId: update.fieldId,
+        value: update.value,
+      },
+    });
+    if (!result.ok) return failure(result.issues);
+  }
+
   if (derived.environmentDetails) {
     result = await run({
       actionId: "module.field.set",
