@@ -68,7 +68,11 @@ function questionById(session: WizardSession, questionId: string) {
   return null;
 }
 
-function questionValueLabel(question: WizardQuestionDefinition, value: unknown) {
+function questionValueLabel(
+  session: WizardSession,
+  question: WizardQuestionDefinition,
+  value: unknown,
+) {
   if (question.type === "singleChoice" && typeof value === "string") {
     return question.options.find((option) => option.value === value)?.label || value;
   }
@@ -95,6 +99,20 @@ function questionValueLabel(question: WizardQuestionDefinition, value: unknown) 
       .join(" · ");
   }
 
+  if (question.type === "subjectOverrides" && isRecord(value)) {
+    const customizedIds = new Set(
+      Object.entries(value)
+        .filter(([, entry]) => isRecord(entry))
+        .map(([subjectId]) => subjectId),
+    );
+    return normalizeWizardEntityAnswers(
+      session.answers[question.subjectsAnswerId]?.value,
+    )
+      .filter((subject) => customizedIds.has(subject.id))
+      .map(getWizardEntityDisplayLabel)
+      .join(", ");
+  }
+
   return cleanText(value);
 }
 
@@ -107,7 +125,8 @@ function answerItem(
   const definition = questionById(session, answerId);
   if (!definition) return null;
 
-  const value = options.value ?? questionValueLabel(definition.question, answer?.value);
+  const value =
+    options.value ?? questionValueLabel(session, definition.question, answer?.value);
   if (!value) return null;
 
   return {
@@ -154,10 +173,13 @@ export function buildPortraitWizardReview(
     "portraitIntent",
     "expressionIntent",
     "expressionOptions",
+    "expressionSubjectOverrides",
     "hairIntent",
     "hairOptions",
+    "hairSubjectOverrides",
     "outfitIntent",
     "outfitOptions",
+    "outfitSubjectOverrides",
     "framingIntent",
     "poseIntent",
     "environmentType",
