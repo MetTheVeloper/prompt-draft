@@ -8,100 +8,171 @@ const props = defineProps<{
 
 const { mobile } = useScreen();
 
-const currentIndex = computed(() =>
-  props.stages.findIndex((stage) => stage.id === props.currentStageId),
-);
+const currentIndex = computed(() => {
+  const index = props.stages.findIndex((stage) => stage.id === props.currentStageId);
+  return index >= 0 ? index : 0;
+});
 
-const currentStage = computed(() =>
-  currentIndex.value >= 0 ? props.stages[currentIndex.value] : null,
-);
+const currentStage = computed(() => props.stages[currentIndex.value] || null);
+
+const progressWidth = computed(() => {
+  if (!props.stages.length) return 0;
+  return ((currentIndex.value + 1) / props.stages.length) * 100;
+});
 </script>
 
 <template>
-  <el-grid v-if="mobile" :gap="7" class="w100">
-    <el-flex rules="rbc" class="w100" :gap="8">
-      <el-text :size="12" :weight="700">
-        {{ currentStage?.title || 'Wizard' }}
-      </el-text>
-      <el-text :size="10" color="normal45">
-        {{ Math.max(currentIndex + 1, 1) }} of {{ stages.length }}
-      </el-text>
-    </el-flex>
-    <div class="wizard-progress-line bg-normal10">
-      <div
-        class="wizard-progress-line__value bg-prim"
-        :style="{ width: `${((Math.max(currentIndex, 0) + 1) / Math.max(stages.length, 1)) * 100}%` }"
-      />
-    </div>
-  </el-grid>
-
-  <el-flex v-else rules="rcc" :gap="0" class="w100 wizard-stage-progress">
-    <template v-for="(stage, index) in stages" :key="stage.id">
-      <el-flex rules="csc" :gap="5" class="wizard-stage-progress__item">
-        <el-flex
-          rules="rcc"
-          :radius="100"
-          :bg="index <= currentIndex ? 'prim' : 'normal10'"
-          class="wizard-stage-progress__dot">
-          <el-icon
-            v-if="index < currentIndex"
-            icon="check"
-            :size="12"
-            color="white"
-          />
-          <el-text
-            v-else
-            :size="9"
-            :weight="800"
-            :color="index === currentIndex ? 'white' : 'normal45'">
-            {{ index + 1 }}
-          </el-text>
-        </el-flex>
-        <el-text
-          :size="9"
-          :weight="index === currentIndex ? 700 : 500"
-          :color="index <= currentIndex ? 'normal' : 'normal40'"
-          class="wsnw">
-          {{ stage.shortTitle || stage.title }}
-        </el-text>
-      </el-flex>
-      <div
-        v-if="index < stages.length - 1"
-        :class="['wizard-stage-progress__connector', index < currentIndex ? 'bg-prim' : 'bg-normal10']"
-      />
+  <div v-if="props.stages.length" class="wizard-progress w100">
+    <template v-if="mobile">
+      <div class="wizard-progress__mobile-head">
+        <span class="wizard-progress__mobile-title">
+          {{ currentStage?.title || 'Wizard' }}
+        </span>
+        <span class="wizard-progress__count">
+          {{ currentIndex + 1 }} of {{ props.stages.length }}
+        </span>
+      </div>
+      <div class="wizard-progress__bar">
+        <div
+          class="wizard-progress__bar-value"
+          :style="{ width: `${progressWidth}%` }"
+        />
+      </div>
     </template>
-  </el-flex>
+
+    <div v-else class="wizard-progress__desktop">
+      <template v-for="(stage, index) in props.stages" :key="stage.id">
+        <div class="wizard-progress__stage">
+          <div
+            :class="[
+              'wizard-progress__dot',
+              index < currentIndex && 'is-complete',
+              index === currentIndex && 'is-current',
+            ]">
+            <span v-if="index < currentIndex">✓</span>
+            <span v-else>{{ index + 1 }}</span>
+          </div>
+          <span
+            :class="[
+              'wizard-progress__label',
+              index <= currentIndex && 'is-active',
+            ]">
+            {{ stage.shortTitle || stage.title }}
+          </span>
+        </div>
+        <div
+          v-if="index < props.stages.length - 1"
+          :class="[
+            'wizard-progress__connector',
+            index < currentIndex && 'is-complete',
+          ]"
+        />
+      </template>
+    </div>
+  </div>
 </template>
 
 <style scoped>
-.wizard-progress-line {
-  width: 100%;
-  height: 3px;
-  border-radius: 999px;
-  overflow: hidden;
+.wizard-progress {
+  display: block;
+  min-height: 38px;
 }
 
-.wizard-progress-line__value {
+.wizard-progress__mobile-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.wizard-progress__mobile-title {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.wizard-progress__count {
+  font-size: 10px;
+  opacity: 0.55;
+}
+
+.wizard-progress__bar {
+  width: 100%;
+  height: 3px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.16);
+}
+
+.wizard-progress__bar-value {
   height: 100%;
   border-radius: inherit;
+  background: var(--color-prim, #5b77f3);
   transition: width 180ms ease;
 }
 
-.wizard-stage-progress__item {
-  min-width: 54px;
+.wizard-progress__desktop {
+  display: flex;
+  align-items: flex-start;
+  width: 100%;
+  max-width: 920px;
+  margin: 0 auto;
 }
 
-.wizard-stage-progress__dot {
+.wizard-progress__stage {
+  display: flex;
+  flex: 0 0 auto;
+  min-width: 58px;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+}
+
+.wizard-progress__dot {
   width: 22px;
   height: 22px;
-  flex: 0 0 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(127, 127, 127, 0.14);
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.72;
 }
 
-.wizard-stage-progress__connector {
-  height: 2px;
+.wizard-progress__dot.is-current,
+.wizard-progress__dot.is-complete {
+  color: white;
+  background: var(--color-prim, #5b77f3);
+  opacity: 1;
+}
+
+.wizard-progress__label {
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 500;
+  opacity: 0.42;
+}
+
+.wizard-progress__label.is-active {
+  opacity: 0.9;
+  font-weight: 700;
+}
+
+.wizard-progress__connector {
+  flex: 1 1 28px;
   min-width: 12px;
-  flex: 1 1 32px;
-  margin: 0 4px 17px;
+  height: 2px;
+  margin: 10px 4px 0;
   border-radius: 999px;
+  background: rgba(127, 127, 127, 0.14);
+}
+
+.wizard-progress__connector.is-complete {
+  background: var(--color-prim, #5b77f3);
 }
 </style>
