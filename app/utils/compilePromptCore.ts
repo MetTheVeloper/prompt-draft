@@ -59,11 +59,11 @@ export function createDefaultPromptSettings(): PromptSettings {
     imageToImage: {
       referenceUsage: 'balanced',
       transformationStrength: 'balanced',
-      preserveMainSubject: true,
-      preserveIdentity: true,
+      preserveMainSubject: false,
+      preserveIdentity: false,
       preservePose: false,
       preserveOutfit: false,
-      preserveComposition: true,
+      preserveComposition: false,
       preserveColors: false,
       preserveMaterials: false,
       preserveLighting: false
@@ -185,17 +185,17 @@ function subjectTypeToReferenceText(type: PromptSubjectType) {
 
 function subjectTypeToNaturalReferenceText(type: PromptSubjectType) {
   const map: Record<PromptSubjectType, string> = {
-    unspecified: 'the subject in the attached reference image',
-    person: 'the person in the attached reference image',
-    object: 'the object in the attached reference image',
-    animal: 'the animal in the attached reference image',
-    building: 'the building or architectural subject in the attached reference image',
-    product: 'the product in the attached reference image',
-    vehicle: 'the vehicle in the attached reference image',
-    scene: 'the scene or environment in the attached reference image',
-    typography: 'the typography in the attached reference image',
-    abstract: 'the abstract forms in the attached reference image',
-    custom: 'the subject in the attached reference image'
+    unspecified: 'the subject in the attached reference image(s)',
+    person: 'the person in the attached reference image(s)',
+    object: 'the object in the attached reference image(s)',
+    animal: 'the animal in the attached reference image(s)',
+    building: 'the building or architectural subject in the attached reference image(s)',
+    product: 'the product in the attached reference image(s)',
+    vehicle: 'the vehicle in the attached reference image(s)',
+    scene: 'the scene or environment in the attached reference image(s)',
+    typography: 'the typography in the attached reference image(s)',
+    abstract: 'the abstract forms in the attached reference image(s)',
+    custom: 'the subject in the attached reference image(s)'
   }
 
   return map[type]
@@ -229,7 +229,7 @@ function buildNaturalSubject(settings: PromptSettings) {
   }
 
   if (subjectType === 'custom' && subjectDetails) {
-    return `${subjectDetails} in the attached reference image`
+    return `${subjectDetails} in the attached reference image(s)`
   }
 
   const baseSubject = subjectTypeToNaturalReferenceText(subjectType)
@@ -239,9 +239,9 @@ function buildNaturalSubject(settings: PromptSettings) {
 
 function referenceUsageToPromptText(usage: ReferenceUsage) {
   const map: Record<ReferenceUsage, string> = {
-    strict: 'strictly follow the attached reference image',
+    strict: 'strictly follow the attached reference image(s)',
     balanced: 'preserve the main reference while allowing controlled stylistic changes',
-    loose: 'use the attached reference image as loose visual inspiration'
+    loose: 'use the attached reference image(s) as loose visual inspiration'
   }
 
   return map[usage]
@@ -249,9 +249,9 @@ function referenceUsageToPromptText(usage: ReferenceUsage) {
 
 function referenceUsageToNaturalSentence(usage: ReferenceUsage) {
   const map: Record<ReferenceUsage, string> = {
-    strict: 'Strictly follow the attached reference image.',
+    strict: 'Strictly follow the attached reference image(s).',
     balanced: 'Preserve the main reference while allowing controlled stylistic changes.',
-    loose: 'Use the attached reference image as loose visual inspiration.'
+    loose: 'Use the attached reference image(s) as loose visual inspiration.'
   }
 
   return map[usage]
@@ -607,7 +607,7 @@ export function getSystemPromptVariables(
 
   if (settings.mode === "image_to_image") {
     variables.push(
-      createSystemVariable("reference", "attached reference image", {
+      createSystemVariable("reference", "attached reference image(s)", {
         insertable: true,
       })
     )
@@ -864,7 +864,7 @@ function compileModularOutput(
   const subject = buildPromptSubject(settings)
 
   if (settings.mode === 'image_to_image') {
-    parts.push('{reference} = attached reference image')
+    parts.push('{reference} = attached reference image(s)')
   }
 
   if (settings.idea.trim()) {
@@ -939,7 +939,7 @@ function compileNaturalOutput(
   const ideaUsesSubjectToken = settings.idea.includes('{subject}')
 
   if (settings.mode === 'image_to_image') {
-    let intro = 'Transform the attached reference image'
+    let intro = 'Transform the attached reference image(s)'
 
     if (subject && !ideaUsesSubjectToken) {
       intro += ` featuring ${subject}`
@@ -1031,7 +1031,7 @@ function compileJsonOutput(
     {
       ...baseOutput,
       reference: {
-        source: 'attached reference image',
+        source: 'attached reference image(s)',
         subjectType: settings.subjectType,
         subject: settings.subject.trim(),
         referenceUsage: settings.imageToImage.referenceUsage,
