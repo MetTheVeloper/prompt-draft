@@ -1,11 +1,38 @@
 import { promptModules } from "../modules/registry";
+import type { PromptDraftState } from "../modules/promptDraft.types";
 import type { PromptVariable } from "../modules/types";
 import { portraitWizardV1Definition, type WizardDefinition } from "./definition";
 import { completePortraitWizard } from "./portraitCompletion";
-import { normalizePortraitSubjectReference } from "./portrait";
+import { applyPortraitWizardRules, normalizePortraitSubjectReference } from "./portrait";
 import { buildPortraitWizardReview } from "./portraitReview";
 import { publicWizardIds, publicWizardRoutes } from "./publicRoutes";
 import type { WizardSession } from "./session";
+
+export type WizardRuntimeReviewItem = {
+  id: string;
+  stepId: string;
+  label: string;
+  value: string;
+  source: "default" | "user" | "derived";
+  answerId?: string;
+};
+
+export type WizardRuntimeReview =
+  | {
+      ok: true;
+      session: WizardSession;
+      items: WizardRuntimeReviewItem[];
+    }
+  | {
+      ok: false;
+      session: WizardSession;
+      items: WizardRuntimeReviewItem[];
+      issues: unknown[];
+    };
+
+export type WizardRuntimeCompletion =
+  | { ok: true; finalDraft: PromptDraftState }
+  | { ok: false; stage: string; issues?: unknown[] };
 
 function createRuntimeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -25,12 +52,7 @@ function createPortraitHostContext(session: WizardSession) {
     modules: promptModules,
     environment: {
       subjectAssignmentTargets: target
-        ? [
-            {
-              label: target.label || "Portrait Subject",
-              target,
-            },
-          ]
+        ? [{ label: target.label || "Portrait Subject", target }]
         : [],
     },
     idFactory: {
@@ -46,15 +68,38 @@ function createPortraitHostContext(session: WizardSession) {
 export type WizardRuntimeEntry = {
   id: string;
   definition: WizardDefinition;
-  buildReview: (session: WizardSession) => unknown;
-  complete: (session: WizardSession) => Promise<unknown>;
+  resolveSession: (session: WizardSession) => WizardSession;
+  buildReview: (session: WizardSession) => WizardRuntimeReview;
+  complete: (session: WizardSession) => Promise<WizardRuntimeCompletion>;
 };
 
 const portraitRuntime: WizardRuntimeEntry = {
   id: "portrait",
   definition: portraitWizardV1Definition,
-  buildReview: buildPortraitWizardReview,
-  complete: (session) => completePortraitWizard(session, createPortraitHostContext(session)),
+  resolveSession: applyPortraitWizardRules,
+  buildReview: (session) => buildPortraitWizardReview(session),
+  complete: async (session) => {
+    const result = await completePortraitWizard(
+      session,
+      createPortraitHostContext(session),
+    );
+
+    if (!result.ok) {
+      return {
+        ok: false,
+        stage: result.stage,
+        issues:
+          result.stage === "mapping"
+            ? result.mapping.issues
+            : result.completion.validationIssues || result.completion.actionIssues || [],
+      };
+    }
+
+    return {
+      ok: true,
+      finalDraft: result.completion.finalDraft,
+    };
+  },
 };
 
 const wizardRegistry = new Map<string, WizardRuntimeEntry>([
