@@ -19,10 +19,7 @@ import {
   loadWizardSession,
   saveWizardSession,
 } from "~/wizard/sessionPersistence";
-import {
-  getWizardEntityDisplayLabel,
-  normalizeWizardEntityAnswers,
-} from "~/wizard/entities";
+import { normalizeWizardEntityAnswers } from "~/wizard/entities";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 
 const route = useRoute();
@@ -164,19 +161,11 @@ async function finish() {
   }
 }
 
-function completedDraftTitle() {
-  const subjects = normalizeWizardEntityAnswers(session.value?.answers.subjects?.value);
-  const first = subjects[0];
-  return first
-    ? `${getWizardEntityDisplayLabel(first)} Portrait`
-    : "Portrait Wizard Prompt";
-}
-
 async function continueInCreate() {
-  if (!completedDraft.value) return;
+  if (!completedDraft.value || !runtime.value || !session.value) return;
   const created = addWizardDraftToCreate(
     completedDraft.value,
-    completedDraftTitle(),
+    runtime.value.draftTitle(session.value),
   );
   if (!created) {
     issueMessage.value = "The finished prompt could not be added to Create.";
