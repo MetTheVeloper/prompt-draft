@@ -387,6 +387,6 @@ function openMobileMenu() {
 <style>
 html.is-native-app .app-header {
   top: 0 !important;
-  padding-top: calc(var(--safe-area-inset-top, env(var(--safe-area-inset-top), 0px)) + 8px) !important;
+  padding-top: calc(var(--safe-area-inset-top, env(--safe-area-inset-top, 0px)) + 8px) !important;
 }
 </style>
