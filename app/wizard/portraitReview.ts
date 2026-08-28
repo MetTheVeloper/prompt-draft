@@ -161,6 +161,7 @@ export function buildPortraitWizardReview(
     "framingIntent",
     "poseIntent",
     "environmentType",
+    "backgroundOptions",
   ]) {
     if (answerId === "poseIntent" && !derived.poseIntent) continue;
     if (answerId === "outfitOptions" && derived.outfitIntent === "keep_reference") {
