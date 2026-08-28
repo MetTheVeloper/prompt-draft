@@ -103,7 +103,11 @@ function expectedHeadlessPromptCore() {
     .replace(
       "  syncActivePromptSubjectContext(settings)\n  syncActiveSystemPromptVariables(settings)\n\n",
       "",
-    );
+    )
+    .replace("preserveMainSubject: true", "preserveMainSubject: false")
+    .replace("preserveIdentity: true", "preserveIdentity: false")
+    .replace("preserveComposition: true", "preserveComposition: false")
+    .replaceAll("attached reference image", "attached reference image(s)");
 }
 
 test("prompt compile extraction does not modify draft persistence/import-export", () => {
@@ -120,7 +124,7 @@ test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from b
   ].forEach((path) => assertWorkingPathUnchanged(path));
 });
 
-test("prompt output core differs from baseline only by the intentional headless extraction", () => {
+test("prompt output core differs from baseline only by headless extraction plus accepted prompt-default semantics", () => {
   assert.equal(
     currentSource("app/utils/compilePromptCore.ts"),
     expectedHeadlessPromptCore(),
