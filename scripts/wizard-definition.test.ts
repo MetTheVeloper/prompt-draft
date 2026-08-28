@@ -59,6 +59,18 @@ test("Portrait Wizard v2 validates with lightweight Stage -> Step -> Question gr
     ?.questions[0];
   assert.equal(subjectQuestion?.type, "entityCollection");
 
+  const startStep = portraitWizardV2Definition.steps.find(
+    (step) => step.id === "start",
+  );
+  const finalStep = portraitWizardV2Definition.steps.find(
+    (step) => step.id === "final-settings",
+  );
+  assert.deepEqual(startStep?.questions.map((question) => question.id), [
+    "creationMode",
+  ]);
+  assert.equal(finalStep?.questions[0]?.id, "idea");
+  assert.equal(finalStep?.questions[0]?.type, "text");
+
   const serialized = JSON.stringify(portraitWizardV2Definition);
   assert.equal(serialized.includes('"actionId"'), false);
   assert.equal(serialized.includes('"moduleKey"'), false);
