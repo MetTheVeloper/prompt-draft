@@ -117,12 +117,8 @@ export function buildPortraitWizardReview(
   const items: PortraitReviewItem[] = [];
 
   if (session.wizardVersion === 2) {
-    for (const answerId of ["idea", "creationMode", "subjects"] as const) {
-      const item = answerItem(ruledSession, answerId, {
-        ...(answerId === "idea" && !cleanText(ruledSession.answers.idea?.value)
-          ? { value: derived.promptIdea, label: "Idea" }
-          : {}),
-      });
+    for (const answerId of ["creationMode", "subjects"] as const) {
+      const item = answerItem(ruledSession, answerId);
       if (item) items.push(item);
     }
   } else {
@@ -158,6 +154,12 @@ export function buildPortraitWizardReview(
   if (lighting) items.push(lighting);
 
   if (session.wizardVersion === 2) {
+    const idea = answerItem(ruledSession, "idea", {
+      value: derived.promptIdea,
+      label: "Idea",
+    });
+    if (idea) items.push(idea);
+
     const aspectRatio = answerItem(ruledSession, "aspectRatio");
     if (aspectRatio) items.push(aspectRatio);
 
