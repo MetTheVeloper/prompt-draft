@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-28**
 
-Status: **Foundation implementation started — `WizardDefinition` + `WizardSession` checkpoint complete**
+Status: **Wizard foundation complete; Actions API Phase 10 Setup/Output extension implemented — validation pending**
 
 Working branch: `feature/wizard`
 
@@ -16,218 +16,223 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## Current checkpoint
 
-The first production Wizard foundation is now implemented on top of the completed Actions API baseline.
+Wizard implementation remains intentionally paused before the Portrait Action Planner while the canonical Actions API closes the persisted Setup/Output mutation gap discovered during source inspection.
+
+### Wizard foundation already complete
 
 Foundation implementation commit:
 
 - `51699c6dd61688f17fdde15210eb4e21a6df211f` — `feat(wizard): add definition and session foundation`
 
-The checkpoint deliberately stops before the Portrait Action Planner, completion commit adapter, or full Wizard UI.
+Implemented foundation:
 
-### Source inspection completed before implementation
+- minimal `WizardDefinition` contracts;
+- first semantic Portrait v1 definition;
+- `WizardSession` with separate `answers`, `derived`, and `workingDraft`;
+- explicit answer provenance `default | user`;
+- defaults cannot overwrite explicit user answers;
+- Working Draft cloned from Active Draft;
+- ordered navigation;
+- minimal `equals` / `notEquals` visibility conditions;
+- canonical single-Action execution through `invokePublicAction(...)`;
+- failed Actions preserve the current Wizard session/Working Draft;
+- no Active Draft persistence mutation inside `WizardSession`.
 
-The implementation was based on the current source rather than the earlier conceptual model alone:
+No Expert UI/Create-page rewrite was performed.
 
-- `app/actions/public.ts` confirms `invokePublicAction(...)` is the provider-neutral canonical invocation bridge for `prompt-draft.actions.v1`;
-- `app/actions/registry.ts` confirms every Action executes against a cloned Draft and failed Actions return the caller's previous Draft unchanged;
-- `app/modules/promptDraft.types.ts` confirms `PromptDraftState` contains canonical prompt/module state only, while record IDs/timestamps and collection metadata live outside it;
-- `app/utils/promptDraftState.ts` already provides canonical `clonePromptDraftState(...)`;
-- `app/pages/create.vue` currently owns Active Draft persistence/selection/localStorage behavior, so Wizard session state must remain independent from that page-owned persistence layer;
-- `app/modules/registry.ts` remains the canonical module registry supplied by the host when Actions execute;
-- current public Actions expose module/variable/entity/specialized mutation surfaces plus `prompt.validate` / `prompt.compile` reads.
+### Actions API gap discovered by Wizard inspection
 
-One important integration constraint was identified:
+`PromptDraftState` persists:
 
-> The current public Actions contract does not expose a dedicated Prompt Settings mutation surface. Portrait mapping must therefore either stay within existing canonical Actions or add the smallest required Prompt Settings capability to the canonical Actions API first. The Wizard must not patch `promptSettings` directly as a workaround.
+- module state;
+- `promptSettings`;
+- `outputFormat`.
 
-### Implemented now
+The accepted 99-Action baseline already exposed canonical module/variable/entity/specialized mutations and `prompt.validate` / `prompt.compile`, but did not expose persisted mutation for `promptSettings` or `outputFormat`.
 
-#### `app/wizard/definition.ts`
+The earlier constraint was therefore:
 
-- minimal `WizardDefinition`, Step and Question contracts;
-- only Portrait-required initial question kinds:
-  - `singleChoice`;
-  - `text`;
-  - `variablePicker`;
-- intentionally small visibility condition contract:
-  - `equals`;
-  - `notEquals`;
-- definition validation for:
-  - non-empty IDs/titles;
-  - positive version;
-  - at least one Step;
-  - unique Step IDs;
-  - globally unique Question/answer IDs;
-  - valid single-choice options;
-  - condition references to known answers;
-- first semantic `portraitWizardV1Definition` covering:
-  - Subject;
-  - Portrait intent;
-  - Appearance;
-  - Composition;
-  - Environment with conditional follow-up questions;
-  - Lighting & mood;
-  - Review;
-- Portrait options remain user-facing semantic intent. They do **not** embed Action IDs, module keys, preset IDs, or mutation plans.
+> Wizard must never patch `PromptDraftState.promptSettings` or `outputFormat` directly; if Portrait needs those capabilities, they must be added to the canonical Actions API first.
 
-#### `app/wizard/session.ts`
+That implementation gap is now closed in code.
 
-- `WizardSession` now separates:
-  - `answers`;
-  - `derived`;
-  - `workingDraft`;
-- answer provenance is explicit through `source: "default" | "user"`;
-- rule/default writes may replace previous defaults but do not overwrite an explicit user answer;
-- session creation clones the supplied Active Draft through canonical `clonePromptDraftState(...)`;
-- basic ordered Back/Next navigation is definition-driven;
-- Step/Question visibility uses only the small current condition evaluator;
-- `executeWizardAction(...)` delegates directly to canonical `invokePublicAction(...)` using host-owned Action context;
-- failed Actions leave the existing Wizard session/Working Draft unchanged;
-- successful Actions advance only `workingDraft`;
-- there is intentionally **no Active Draft commit API inside `WizardSession`**. Applying a completed Working Draft remains a host/completion concern.
+---
 
-No Expert UI component or Create-page persistence code was rewritten in this checkpoint.
+## Actions API Phase 10 checkpoint
+
+Implementation commit:
+
+- `1e3bd96a9119210805eebc3db7ae00008502a110` — `feat(actions): add prompt settings and output mutations`
+
+New canonical public Actions:
+
+### `prompt.settings.update`
+
+Typed closed aggregate mutation for the persisted Setup Prompt Settings:
+
+- `mode`;
+- `idea`;
+- `subject`;
+- `subjectType`;
+- canonical `aspectRatio`;
+- `globalRules`;
+- partial nested `imageToImage` reference/transformation/preserve settings.
+
+It is explicitly **not** an arbitrary path/object patch. Unknown properties and invalid enums are rejected; the domain implementation assigns only known fields.
+
+The Setup module selector remains covered by existing `module.activate` / `module.deactivate`, so no duplicate Setup-specific module mutation was introduced.
+
+### `prompt.outputFormat.set`
+
+Persists `PromptDraftState.outputFormat` as `modular | natural | json`.
+
+Existing `prompt.compile` already consumes the persisted format when its optional read-only override is absent.
+
+### Public surface
+
+- previous accepted surface: **99 Actions**;
+- current additive surface: **101 Actions**;
+- contract remains `prompt-draft.actions.v1`;
+- exact v1 fixture now deliberately pins the 101 reviewed IDs.
+
+This is an additive compatibility extension; no existing Action ID/meaning changed.
 
 ---
 
 ## Validation status
 
-Added focused tests:
+### Previously accepted baseline
 
-- `scripts/wizard-definition.test.ts` — **3 cases**;
-- `scripts/wizard-session.test.ts` — **6 cases**;
-- package command: `pnpm test:wizard`.
+Before Phase 10:
 
-Coverage currently checks:
+- Actions API: **168/168**;
+- Reference Catalog: **15/15**;
+- Phase 8 UX: **5/5**;
+- Phase 9 compiler: **9/9**;
+- production build: **successful**;
+- public Actions: **99**.
 
-- Portrait Definition structure and semantic/action-decoupled data;
-- duplicate Question IDs and invalid condition references;
-- Active Draft clone/isolation;
-- default vs user provenance;
-- defaults not overwriting explicit user choices;
-- `answers` vs `derived` separation;
-- Portrait conditional Environment questions;
-- ordered Step navigation;
-- successful canonical `module.activate` execution against Working Draft only;
-- failed canonical Action preserving the current Working Draft/session.
+### Wizard foundation tests
 
-Validation performed in the current tool environment:
+Existing focused suites:
 
-- TypeScript parser/transpile syntax check for the four new `.ts` files: **passed**;
-- branch diff checked after commit: only the two Wizard source files, two Wizard tests, and the `test:wizard` package script changed.
+- `scripts/wizard-definition.test.ts` — 3 cases;
+- `scripts/wizard-session.test.ts` — 6 cases;
+- command: `pnpm test:wizard`.
 
-Not yet executed here:
+### Phase 10 tests
 
+New `scripts/actions-prompt-settings.test.ts` adds **8 cases** covering:
+
+- full Setup aggregate mutation + caller isolation;
+- nested partial merge;
+- intentional empty-string reset semantics;
+- empty patch failure;
+- invalid enum/unknown property failure;
+- persisted Output mutation;
+- invalid Output failure;
+- downstream `prompt.validate` / `prompt.compile` consumption.
+
+Public manifest and exact-ID fixtures were also updated from 99 to 101 Actions.
+
+Expected full Actions test count: **176**.
+
+### Validation performed in current tool environment
+
+Passed:
+
+- TypeScript parser/transpile syntax checks for Phase 10 TypeScript files;
+- package JSON parse;
+- Git diff/commit inspection.
+
+Still pending in the real checkout:
+
+- `pnpm test:actions-api`;
 - `pnpm test:wizard`;
-- full `pnpm test:actions-api` regression;
+- reference/UX/compiler regression suites;
 - production build.
 
-The current connector/runtime does not have the repository workspace and pnpm dependencies mounted, and the existing GitHub workflow only runs deployment generation on `main`. These commands remain the next validation gate before expanding the runtime.
+Do not treat the new Setup/Output Actions as fully accepted until that gate passes.
 
 ---
 
 ## Accepted architecture decisions
 
-The following decisions remain accepted and unchanged:
+These remain unchanged:
 
-1. The Wizard is a guided, goal-oriented interaction layer over the existing canonical Draft/domain/Actions system.
-2. The Wizard must produce a normal editable `PromptDraftState`, not only a prompt string.
-3. Wizard mutations must use canonical Actions/domain semantics; no parallel mutation implementation is allowed.
-4. Expert UI and Wizard UI are separate presentation layers. The Wizard does not need to embed full Expert UI panels.
-5. Existing reusable UI primitives/pickers may be reused where they genuinely fit Wizard UX.
-6. The first concrete testcase is a **Portrait Wizard**.
-7. Architecture is developed incrementally from real Wizard examples rather than from a speculative universal DSL.
-8. Wizard state separates direct `answers`, deterministic `derived` intent, and the resulting `workingDraft`.
-9. Defaults/recommendations must not silently overwrite explicit user choices.
-10. Flow supports the minimum conditional Steps/Questions required by Portrait v1 while leaving later extension room.
-11. Portrait v1 uses a temporary Working Draft so Cancel/failure cannot corrupt the user's Active Draft.
-12. Completion will reuse canonical `prompt.validate` and `prompt.compile`.
-13. A generalized Actions batch/transaction/dry-run engine remains deferred until a real Wizard demonstrates that Working Draft orchestration is insufficient.
-14. AI planning/AI-generated Wizard flows remain deferred. Initial behavior is deterministic and rule-based.
-15. Rich future cases such as Comic/Manga, posters, product layouts, video keyframes and fantasy transformations remain architecture pressure tests, not current implementation scope.
+1. Wizard is a guided goal-oriented layer over canonical Draft/domain/Actions.
+2. Wizard produces a normal editable `PromptDraftState`, not only a prompt string.
+3. Wizard mutations use canonical public Actions; no parallel mutation implementation.
+4. Expert UI and Wizard are separate presentation layers.
+5. Reuse existing UI primitives/pickers only where they genuinely fit guided UX.
+6. First concrete Wizard is Portrait.
+7. Build abstractions from real Wizard requirements, not a speculative universal DSL.
+8. Session state separates direct `answers`, deterministic `derived`, and `workingDraft`.
+9. Defaults/recommendations never silently overwrite explicit user choices.
+10. Portrait v1 uses only the minimum conditional flow required now.
+11. Working Draft isolates cancel/failure from Active Draft.
+12. Completion reuses `prompt.validate` and `prompt.compile`.
+13. Active Draft replacement happens only after successful completion and stays host-owned.
+14. Batch/transaction/dry-run remains deferred until a real orchestration need proves it necessary.
+15. AI planning/generated Wizard flows remain deferred.
+16. Wizard never directly mutates arbitrary Draft paths, including Setup/Output state.
 
-No new invariant from this checkpoint required changing [`README.md`](./README.md).
+The Phase 10 work confirms the existing canonical-mutation invariant rather than changing the Wizard architecture, so [`README.md`](./README.md) does not require an architectural rewrite.
 
 ---
 
 ## Portrait Wizard conceptual flow
 
-Current first-pass UX model remains:
+Current first-pass flow remains:
 
-1. **Subject**
-   - identify the portrait subject;
-   - reuse/select appropriate Subject variable/reference behavior as required by the real implementation.
+1. Subject
+2. Portrait intent/type
+3. Appearance — Expression, Hair, Outfit
+4. Composition — framing/camera, Pose where useful
+5. Environment — conditional studio/outdoor/abstract follow-up
+6. Lighting & mood
+7. Review
+8. Completion — derive → plan Actions → execute on Working Draft → validate → compile → host applies final Draft
 
-2. **Portrait intent/type**
-   - examples: professional, cinematic, fashion, fantasy;
-   - influences later defaults/recommendations and conditional flow.
-
-3. **Appearance**
-   - simplified guided Expression, Hair and Outfit decisions;
-   - do not expose the full Expert UI unless a reusable picker/control genuinely fits.
-
-4. **Composition**
-   - framing and camera-oriented choices;
-   - may affect whether detailed Pose questions are useful.
-
-5. **Environment**
-   - e.g. studio/outdoor/abstract;
-   - conditional follow-up questions based on the selected environment.
-
-6. **Lighting & mood**
-   - user-facing semantic choices such as soft/dramatic/moody rather than raw Expert UI complexity.
-
-7. **Review**
-   - summarize decisions;
-   - allow navigation back to edit a section.
-
-8. **Completion**
-   - resolve rules;
-   - build/execute Action Plan on Working Draft;
-   - validate;
-   - compile;
-   - commit/apply resulting Draft;
-   - allow continuation in Expert UI.
-
-The checked-in `portraitWizardV1Definition` is still an implementation-discovery definition, not a frozen public schema.
+The checked-in `portraitWizardV1Definition` remains an implementation-discovery definition, not a frozen public schema.
 
 ---
 
 ## Implementation component status
 
-### Complete for the current foundation checkpoint
+### Complete
 
-- `WizardDefinition` minimum TypeScript contracts;
-- first Portrait v1 semantic Definition;
-- `WizardSession` minimum state/runtime;
-- default-vs-user answer provenance;
-- Working Draft clone/isolation;
-- basic ordered navigation;
-- minimal `equals` / `notEquals` visibility evaluation;
-- canonical single-Action execution bridge;
-- focused unit/integration-style tests for the above.
+- minimum `WizardDefinition` contracts;
+- first Portrait semantic definition;
+- minimum `WizardSession` runtime;
+- provenance;
+- Working Draft isolation;
+- ordered navigation;
+- `equals` / `notEquals` visibility;
+- canonical single-Action bridge;
+- Setup mutation capability in canonical Actions API;
+- Output mutation capability in canonical Actions API;
+- focused tests for all above code paths.
 
 ### Not implemented yet
 
 - deterministic rule/derived-intent evaluator beyond explicit default setters;
 - `requiredWhen`;
-- `in` / `notIn` conditions;
+- `in` / `notIn` conditions unless Portrait actually needs them;
+- exact Portrait module/preset/field mapping;
 - Portrait Action Planner/Mapper;
-- exact Portrait preset/field/action mapping;
 - Review renderer/UI;
 - completion state machine;
-- `prompt.validate` completion gate;
-- `prompt.compile` completion output;
-- host adapter that replaces Active Draft only after successful completion;
+- completion `prompt.validate` gate;
+- completion `prompt.compile` output;
+- host adapter that replaces Active Draft after successful completion;
 - full Wizard page/renderer.
-
-These omissions are intentional and keep the current foundation smaller than a universal Wizard engine.
 
 ---
 
 ## Explicitly deferred
 
-Do not implement these unless a real Wizard requirement justifies them:
+Do not implement without a real requirement:
 
 - universal Wizard DSL;
 - arbitrary rule scripting/expression language;
@@ -241,78 +246,30 @@ Do not implement these unless a real Wizard requirement justifies them:
 
 ---
 
-## Future architectural pressure tests
-
-Keep these cases in mind when evaluating abstractions, without implementing them prematurely:
-
-### Comic / Manga
-
-Potential needs:
-
-- multiple Subject variables/characters;
-- multiple Scenes;
-- per-panel composition/framing;
-- Layout Regions;
-- repeatable/nested scene flows;
-- character consistency across panels;
-- Typography/dialogue.
-
-### Video keyframe
-
-Potential needs:
-
-- camera/composition emphasis;
-- pose and environment specificity;
-- downstream image-to-video-oriented guidance.
-
-### Poster / Business card
-
-Potential needs:
-
-- Typography-first flows;
-- structured Layout;
-- visual hierarchy and content placement.
-
-### Product + description
-
-Potential needs:
-
-- product/Subject configuration;
-- photography/style/environment;
-- Layout + Typography composition.
-
-### Fantasy/world transformation
-
-Potential needs:
-
-- heavy Style/Form/Material/Environment orchestration;
-- broad cross-module defaults and overrides.
-
-These examples should challenge assumptions such as "one Subject", "one Scene", "one Region" or "all Wizards are linear".
-
----
-
 ## Immediate next step
 
-Resume from this exact order:
+Resume in this exact order:
 
-1. run `pnpm test:wizard` against the branch workspace;
-2. run `pnpm test:actions-api` and production build after the Wizard tests are green;
-3. inspect the exact real Portrait-targeted module presets/fields and specialized Action inputs needed by the semantic answers already defined;
-4. add the smallest deterministic rule/derived-intent evaluator required to translate Portrait choices into planner intent while preserving user overrides;
-5. implement the first Portrait Action Planner/Mapper strictly as `PublicActionInvocation[]`/canonical Action calls;
-6. if Portrait genuinely requires Prompt Settings mutation, add that capability to the canonical Actions API first rather than writing through `PromptDraftState.promptSettings` from Wizard code;
-7. only after the mapper is stable, add Review/completion orchestration using `prompt.validate`, `prompt.compile`, and a host-owned successful Active Draft replacement step;
-8. then build the first renderer/page integration using existing UI primitives where appropriate.
+1. pull the latest `feature/wizard`;
+2. run `pnpm test:actions-api` — expected **176/176** if Phase 10 is clean;
+3. run `pnpm test:wizard`;
+4. run `pnpm test:reference-catalog`;
+5. run `pnpm test:phase8-ux`;
+6. run `pnpm test:phase9-regression`;
+7. run `pnpm build`;
+8. record/fix any failures before advancing the Wizard;
+9. once green, inspect the exact Portrait-targeted module fields/presets/specialized Action inputs;
+10. implement the smallest deterministic derived-rule layer required by those real mappings;
+11. implement the first Portrait Action Planner/Mapper strictly as public Action invocations;
+12. only then add Review/completion orchestration and the host-owned Active Draft replacement step.
 
-Do not begin with generalized nested/repeatable flow, AI, batch Actions, or a Wizard-specific mutation layer.
+Do not start nested/repeatable flow, AI, batch Actions, or a Wizard-specific mutation layer.
 
 ---
 
 ## Documentation discipline
 
-- [`README.md`](./README.md) is the architectural source of truth.
-- This file is the operational checkpoint for resuming work in a later chat/session.
-- Update this file after meaningful implementation/test checkpoints.
-- Record what is complete, what is currently active, validation results, known issues and the immediate next step.
-- Move a decision into `README.md` only when it becomes an accepted architectural invariant or reusable canonical behavior.
+- [`README.md`](./README.md) is the Wizard architectural source of truth.
+- This file is the operational checkpoint for resuming work.
+- `docs/actions-api/STATUS.md` is the operational source for the Phase 10 Actions acceptance gate.
+- Update status documents after meaningful implementation/test checkpoints.

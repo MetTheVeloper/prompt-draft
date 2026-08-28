@@ -2,192 +2,218 @@
 
 ## Current checkpoint
 
-Phase: **MERGE-READY**
+Phase: **PHASE 10 — IMPLEMENTED, VALIDATION PENDING**
 
-Branch: `refactor/actions-api`
+Working branch: `feature/wizard`
 
-Baseline: `main@3db3294ba738c09a04a8d1f79bdc430f2d7a8e83`
+Phase 10 base: `9922ce22b7b15a45ed1f1eac2cf502fdd8d57640`
 
-Last source audit: 2026-08-27
+Phase 10 implementation commit:
 
-Latest validated Actions API checkpoint: **168/168 passed** on 2026-08-27.
+- `1e3bd96a9119210805eebc3db7ae00008502a110` — `feat(actions): add prompt settings and output mutations`
 
-Final reference-catalog regression: **15/15 passed**.
+Last source audit: **2026-08-28**
 
-Final Phase 8 UX regression: **5/5 passed**.
+Public contract: `prompt-draft.actions.v1`
 
-Final Phase 9 compiler regression: **9/9 passed**.
+Current public surface: **101 Actions**
 
-Final production build: **successful**.
+## Accepted baseline before Phase 10
 
-`main` remained untouched throughout validation and still points to the recorded baseline until an explicit merge/update is performed.
+The Actions API baseline merged before Wizard development was fully validated on 2026-08-27:
 
-## Validation history
+| Gate | Accepted result |
+|---|---:|
+| Actions API | 168/168 |
+| Reference catalog | 15/15 |
+| Phase 8 UX | 5/5 |
+| Phase 9 compiler | 9/9 |
+| Production build | successful |
+| Public Actions | 99 |
 
-| Boundary | Result | Status |
-|---|---:|---|
-| Foundation | 18/18 | validated |
-| Simple modules / presets | 27/27 | validated |
-| ModuleEntity lifecycle | 35/35 | validated |
-| ModuleEntity fields / presets | 41/41 | validated |
-| Typography | 49/49 | validated |
-| Scene | 57/57 | validated |
-| Layout | 65/65 | validated |
-| Semantic assignment scopes | 73/73 | validated |
-| Color Palette | 81/81 | validated |
-| Texture / Material | 89/89 | validated |
-| Pose | 97/97 | validated |
-| Expression | 105/105 | validated |
-| Variables Expert UI migration | 107/107 | validated + build + manual UI |
-| Lighting / Effects | 119/119 | validated + build |
-| Hair | 131/131 | validated |
-| Outfit | 147/147 | validated |
-| Prompt Validate | 153/153 | validated |
-| Prompt Compile | 161/161 | validated + phase9 9/9 + build |
-| Public Contract / Export | 167/167 | validated + build |
-| Exact public-ID freeze / final Actions gate | 168/168 | validated |
-| Reference catalog final regression | 15/15 | validated |
-| Phase 8 UX final regression | 5/5 | validated |
-| Phase 9 compiler final regression | 9/9 | validated |
-| Final production build | successful | validated |
+That accepted baseline remains historical evidence. Phase 10 is an additive extension and must pass a new gate before its two Actions are promoted from implementation-pending to validated.
 
-Detailed Action inventory lives in `docs/actions-api/ACTIONS.md`.
-Public transport contract lives in `docs/actions-api/PUBLIC-CONTRACT.md`.
-Final branch audit lives in `docs/actions-api/FINAL-AUDIT.md`.
+## Why Phase 10 exists
 
-## Completed boundaries
+Wizard source inspection found that `PromptDraftState` includes two persisted areas that were not publicly mutable through the Actions API:
 
-Validated public/domain boundaries:
+- `promptSettings` — the canonical persisted data behind the Prompt Setup panel;
+- `outputFormat` — the canonical persisted selection behind the Output panel.
 
-- canonical `PromptDraftState` + clone/normalize helpers;
-- Action registry/discovery/input schema/atomic caller-draft isolation;
-- explicit `ActionEnvironment` and deterministic `ActionIdFactory`;
-- Variables;
-- Modules / presets / Custom Mode;
-- generic ModuleEntity lifecycle + simple fields/presets;
-- Typography;
-- Scene;
-- Layout;
-- semantic assignment scope foundation;
-- Color Palette;
-- Texture / Material;
-- Pose;
-- Expression;
-- Lighting / Effects;
-- Hair;
-- Outfit;
-- Prompt Validate;
-- Prompt Compile;
-- provider-neutral public registry/manifest/invocation bridge;
-- exact `prompt-draft.actions.v1` public-ID compatibility freeze.
+Leaving those fields outside Actions would force a Wizard to either avoid legitimate Setup/Output behavior or mutate `PromptDraftState` directly, violating the canonical-mutation architecture.
 
-Stable-reference rules remain unchanged: stable IDs are canonical identity, missing refs never fuzzy-retarget, and exact persisted orphans may survive only where the owning domain explicitly permits it.
+The decision is therefore to close this gap before beginning the Portrait Action Mapper.
+
+## Phase 10 implementation
+
+### Domain layer
+
+New: `app/domain/promptSettings.ts`
+
+Provides:
+
+- `updatePromptSettings(...)`;
+- `setPromptOutputFormat(...)`.
+
+Both operate on cloned canonical Draft state and return structured domain results.
+
+`updatePromptSettings(...)` is deliberately explicit: it assigns only known Prompt Settings fields and known nested image-to-image fields. It is not a generic object spread/path patch escape hatch.
+
+### Public Actions
+
+New: `app/actions/promptSettings.ts`
+
+#### `prompt.settings.update`
+
+Closed typed aggregate mutation covering:
+
+- `mode`;
+- `idea`;
+- `subject`;
+- `subjectType`;
+- canonical `aspectRatio` values;
+- `globalRules`;
+- partial nested `imageToImage` settings:
+  - reference usage;
+  - transformation strength;
+  - all existing preserve toggles.
+
+Important behavior:
+
+- nested image-to-image patch is partial-merge;
+- intentional empty authored strings are valid;
+- empty known patch is rejected;
+- unknown properties/invalid enums are rejected before execution;
+- caller Draft remains unchanged on failure;
+- cross-field completeness is intentionally left to canonical `prompt.validate` so intermediate editor/Wizard state remains possible.
+
+#### `prompt.outputFormat.set`
+
+Persists exactly one of:
+
+- `modular`;
+- `natural`;
+- `json`.
+
+`prompt.compile` already reads `draft.outputFormat` when no explicit read-only format override is supplied, so no second compile behavior was introduced.
+
+### Existing Setup module selection
+
+The Setup panel also visually contains the module selector, but that state already has canonical Actions:
+
+- `module.activate`;
+- `module.deactivate`.
+
+No duplicate Setup-specific module mutation was added.
+
+## Public contract extension
+
+The public registry grows from **99 → 101** Actions.
+
+New exact v1 IDs:
+
+- `prompt.settings.update`;
+- `prompt.outputFormat.set`.
+
+`scripts/actions-public-ids.test.ts` has been deliberately updated to pin 101 exact v1 IDs.
+
+The contract remains `prompt-draft.actions.v1` because this is an additive reviewed extension: no existing ID was removed, renamed, or semantically repurposed.
+
+## Test changes
+
+New: `scripts/actions-prompt-settings.test.ts` — **8 focused cases** covering:
+
+1. full canonical Setup aggregate update + caller isolation;
+2. nested image-to-image partial merge;
+3. intentional empty-string reset semantics;
+4. empty patch rejection;
+5. invalid enum/unknown property rejection;
+6. persisted Output mutation;
+7. invalid Output rejection;
+8. downstream `prompt.validate` / `prompt.compile` consumption of Action-mutated state.
+
+Also updated:
+
+- public registry/manifest tests for 101 Actions;
+- exact v1 Action-ID fixture for 101 IDs;
+- `pnpm test:actions-api` to include the new suite.
+
+Expected full Actions suite count after the additive tests: **176**.
+
+This count is not yet accepted validation evidence; it is the expected gate size until run in the real checkout.
+
+## Validation performed in current tool environment
+
+Passed:
+
+- TypeScript parser/transpile syntax checks for all new/modified Phase 10 TypeScript files;
+- `package.json` JSON parse;
+- post-commit diff inspection;
+- branch fast-forward to the Phase 10 implementation commit.
+
+Not available in the current connector/runtime:
+
+- repository-installed `pnpm`/`tsx` workspace execution;
+- full Nuxt production build.
+
+Therefore Phase 10 must remain **validation pending**.
+
+## Required acceptance gate
+
+Run in the real checkout, in this order:
+
+1. `pnpm test:actions-api` — expected **176/176** if no regression exists;
+2. `pnpm test:wizard`;
+3. `pnpm test:reference-catalog`;
+4. `pnpm test:phase8-ux`;
+5. `pnpm test:phase9-regression`;
+6. `pnpm build`.
+
+If any command fails, fix the canonical Actions/domain implementation before continuing the Portrait mapper.
+
+If all commands pass, record the results here and mark the Phase 10 Setup/Output Actions `implemented`/validated.
+
+## Historical validation timeline
+
+Accepted pre-Phase-10 Actions milestones:
+
+18 → 27 → 35 → 41 → 49 → 57 → 65 → 73 → 81 → 89 → 97 → 105 → 107 → 119 → 131 → 147 → 153 → 161 → 167 → **168 validated**.
+
+Phase 10 candidate gate: **176 expected / pending**.
 
 ## Expert UI migration status
 
-### Variables — COMPLETE + VALIDATED
+No Expert UI rewrite/migration was performed for Phase 10.
 
-Persisted Create/Update/Duplicate/Delete and Blueprint insertion in `VariablesField.vue` route through `app/domain/variables.ts`.
+The current Setup and Output components continue to use their existing Vue `v-model` paths. The Actions/domain layer now exists as the canonical headless mutation capability for Wizard/agent/orchestration consumers and future UI migration if justified.
 
-Accepted validation:
+Variables remain the only intentionally completed broad Expert UI mutation migration from the original Actions refactor.
 
-- `pnpm test:actions-api` => **107/107**;
-- `pnpm build` => successful;
-- manual UI regression => Create/Edit including Enabled/Duplicate/Delete/Blueprint.
+## Regression guardrails
 
-The four CRUD actions are `migrated`; `variable.setEnabled` remains `implemented` because the UI uses general update for the Enabled field.
+Phase 10 must preserve:
 
-No other broad Expert UI migration is required for this branch.
-
-## Prompt Validate — IMPLEMENTED + VALIDATED
-
-`prompt.validate` rebuilds active module outputs from canonical Draft state and returns existing validation semantics as read data without Vue/composable dependency or caller-draft mutation.
-
-Final validation: **153/153**.
-
-## Prompt Compile — IMPLEMENTED + VALIDATED
-
-The existing compiler was made headless without duplication:
-
-- `compilePromptCore.ts` owns the existing formatting/compiler algorithm and no longer performs Vue synchronization;
-- `compilePromptPure.ts` owns pure Scene/Layout rule injection, typed user-variable ownership, system-variable filtering, and Scene presentation aliases;
-- `compilePrompt.ts` remains the Expert UI runtime adapter;
-- `prompt.compile` uses the same pure final path from canonical Draft state.
-
-Accepted validation:
-
-- `pnpm test:actions-api` => **161/161**;
-- `pnpm test:phase9-regression` => **9/9**;
-- `pnpm build` => successful.
-
-## Public Contract / Export — IMPLEMENTED + VALIDATED
-
-Contract: `prompt-draft.actions.v1`.
-
-`app/actions/public.ts` provides:
-
-- canonical assembly of all **99 public Actions**;
-- JSON-safe discovery manifest;
-- JSON-Schema-compatible mapping of the repository-owned input schema subset;
-- explicit `effect: read | mutation` metadata;
-- model-owned invocation envelope `{ actionId, input }`;
-- strict separation of trusted host-owned `ActionContext` (`draft`, modules, environment, ID factory);
-- structured invocation/runtime failures through the existing atomic Action result contract.
-
-Accepted validation:
-
-- public-contract checkpoint: **167/167 + successful build**;
-- exact public-ID compatibility set: **168/168 final Actions gate**.
-
-Provider-specific OpenAI/Gemini/MCP/REST adapters remain intentionally outside this branch.
-
-## Branch-to-main audit
-
-At the final audit checkpoint the branch was **191 commits ahead / 0 behind** `main` and shared the exact recorded merge base.
-
-Existing production files modified relative to `main` are intentionally narrow:
-
-- `app/pages/create.vue` — canonical Draft contract/helper extraction; browser persistence/import/export stays page-owned;
-- `app/components/modules/variables/VariablesField.vue` — accepted Variables Expert UI migration;
-- `app/utils/compilePrompt.ts` / `compilePromptCore.ts` — intentional pure compiler extraction validated by phase9;
-- `package.json` — test command coverage only.
-
-All other Actions/domain/compiler additions are new files introduced by this refactor. See `FINAL-AUDIT.md` for the detailed scope review.
-
-## Final validation gate — ACCEPTED
-
-The complete merge-readiness gate passed in the real checkout on 2026-08-27:
-
-1. `pnpm test:actions-api` => **168/168**;
-2. `pnpm test:reference-catalog` => **15/15**;
-3. `pnpm test:phase8-ux` => **5/5**;
-4. `pnpm test:phase9-regression` => **9/9**;
-5. `pnpm build` => **successful**.
-
-No known Actions API blocker remains. `refactor/actions-api` is **merge-ready**.
+- stable-ID/reference semantics in all existing structured domains;
+- draft import/export compatibility;
+- existing compiler output semantics;
+- existing Expert UI behavior;
+- atomic caller-Draft failure semantics;
+- one canonical validator/compiler path;
+- no arbitrary Draft/path mutation API;
+- exact reviewed `prompt-draft.actions.v1` identity set.
 
 ## Intentionally deferred / non-blocking
 
 - `module.reset` until Clear semantics are canonicalized;
-- Batch/transaction API until a real orchestration consumer requires it;
-- Dry-run semantics with batch design;
-- Wizard UI;
-- provider-specific OpenAI/Gemini/MCP adapters;
-- additional Expert UI migrations;
-- third-party schema validator while the repository-owned subset remains sufficient.
+- batch/transaction API;
+- dry-run semantics;
+- provider-specific adapters;
+- broad Expert UI migrations;
+- third-party schema validator;
+- further Wizard mapper/UI work until the Phase 10 acceptance gate is green.
 
-## Regression guardrails
+## Immediate next step
 
-Final state preserves:
+**Do not expand Wizard orchestration yet.**
 
-- stable ID identity semantics;
-- missing/unavailable reference behavior;
-- current draft import/export compatibility;
-- current prompt output semantics;
-- current Expert UI behavior outside the accepted Variables migration;
-- one canonical implementation for every mutation/read/compiler operation;
-- exact `prompt-draft.actions.v1` public Action-ID compatibility set.
-
-## Main branch rule
-
-The branch is merge-ready, but this status update itself does not move `main`. Merge/update of `main` remains an explicit operation.
+First run the Phase 10 acceptance gate above. Once green, the Actions API can be treated as complete for the first Portrait Wizard and work resumes with exact Portrait module/preset/field inspection, deterministic derived rules, then the Portrait Action Mapper.
