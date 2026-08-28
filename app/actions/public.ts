@@ -11,6 +11,7 @@ import { moduleEntityFieldActions } from "./moduleEntityFields";
 import { outfitActions } from "./outfitSets";
 import { poseAssignmentActions } from "./poseAssignments";
 import { promptReadActions } from "./promptRead";
+import { promptSettingsActions } from "./promptSettings";
 import { ActionRegistry } from "./registry";
 import { sceneActions } from "./scenes";
 import { typographyActions } from "./typography";
@@ -77,6 +78,7 @@ const publicActionGroups = [
   effectsLayerActions,
   hairActions,
   outfitActions,
+  promptSettingsActions,
   promptReadActions,
 ] as const;
 

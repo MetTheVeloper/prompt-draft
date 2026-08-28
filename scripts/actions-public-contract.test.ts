@@ -59,10 +59,12 @@ test("public registry assembles the complete frozen action surface", () => {
   const registry = createPublicActionRegistry();
   const ids = registry.list().map((action) => action.id);
 
-  assert.equal(ids.length, 99);
+  assert.equal(ids.length, 101);
   assert.equal(new Set(ids).size, ids.length);
   assert.equal(ids.includes("module.activate"), true);
   assert.equal(ids.includes("outfit.relation.update"), true);
+  assert.equal(ids.includes("prompt.settings.update"), true);
+  assert.equal(ids.includes("prompt.outputFormat.set"), true);
   assert.equal(ids.includes("prompt.validate"), true);
   assert.equal(ids.includes("prompt.compile"), true);
   assert.equal(ids.some((id) => id.startsWith("assignment.")), false);
@@ -74,7 +76,7 @@ test("public manifest is deterministic JSON-safe discovery data", () => {
   const reparsed = JSON.parse(serialized) as typeof manifest;
 
   assert.equal(manifest.contract, PUBLIC_ACTION_CONTRACT);
-  assert.equal(manifest.actions.length, 99);
+  assert.equal(manifest.actions.length, 101);
   assert.deepEqual(reparsed, manifest);
 
   const fieldSet = manifest.actions.find(
@@ -82,6 +84,29 @@ test("public manifest is deterministic JSON-safe discovery data", () => {
   );
   assert.equal(fieldSet?.effect, "mutation");
   assert.deepEqual(fieldSet?.inputSchema.properties?.value, {});
+
+  const settingsUpdate = manifest.actions.find(
+    (action) => action.id === "prompt.settings.update",
+  );
+  assert.equal(settingsUpdate?.effect, "mutation");
+  assert.deepEqual(settingsUpdate?.inputSchema.properties?.mode?.enum, [
+    "text_to_image",
+    "image_to_image",
+  ]);
+  assert.equal(
+    settingsUpdate?.inputSchema.properties?.imageToImage?.additionalProperties,
+    false,
+  );
+
+  const outputSet = manifest.actions.find(
+    (action) => action.id === "prompt.outputFormat.set",
+  );
+  assert.equal(outputSet?.effect, "mutation");
+  assert.deepEqual(outputSet?.inputSchema.properties?.format?.enum, [
+    "modular",
+    "natural",
+    "json",
+  ]);
 
   assert.equal(
     manifest.actions.find((action) => action.id === "prompt.validate")?.effect,

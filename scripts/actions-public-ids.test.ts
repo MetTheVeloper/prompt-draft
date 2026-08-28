@@ -118,13 +118,15 @@ const EXPECTED_PUBLIC_ACTION_IDS_V1 = [
   "outfit.relation.update",
   "outfit.relation.delete",
 
+  "prompt.settings.update",
+  "prompt.outputFormat.set",
   "prompt.validate",
   "prompt.compile",
 ] as const;
 
 test("public v1 action IDs are frozen as an exact compatibility set", () => {
   assert.equal(PUBLIC_ACTION_CONTRACT, "prompt-draft.actions.v1");
-  assert.equal(EXPECTED_PUBLIC_ACTION_IDS_V1.length, 99);
+  assert.equal(EXPECTED_PUBLIC_ACTION_IDS_V1.length, 101);
 
   const actual = createPublicActionRegistry()
     .list()
