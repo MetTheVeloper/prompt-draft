@@ -86,7 +86,7 @@ test("Portrait v2 derives Wizard-owned subject identity and deterministic fallba
     derived.value.promptIdea,
     "Create a professional portrait featuring {sarah_Connor}",
   );
-  assert.equal(derived.value.aspectRatio, "4:5");
+  assert.equal(derived.value.aspectRatio, "common_portrait_4_5");
 });
 
 test("Portrait v2 mapping creates its subject variable inside the isolated Working Draft", async () => {
@@ -102,7 +102,10 @@ test("Portrait v2 mapping creates its subject variable inside the isolated Worki
 
   assert.deepEqual(session.workingDraft, original);
   assert.equal(mapping.session.workingDraft.promptSettings.mode, "text_to_image");
-  assert.equal(mapping.session.workingDraft.promptSettings.aspectRatio, "4:5");
+  assert.equal(
+    mapping.session.workingDraft.promptSettings.aspectRatio,
+    "common_portrait_4_5",
+  );
   assert.equal(
     mapping.session.workingDraft.promptSettings.idea,
     "Create a professional portrait featuring {sarah_Connor}",
