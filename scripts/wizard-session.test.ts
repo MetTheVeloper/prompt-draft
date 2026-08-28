@@ -14,10 +14,12 @@ import {
   getWizardCurrentStage,
   getWizardVisibleQuestions,
   goToNextWizardStep,
+  hydrateWizardSessionDefaults,
   replaceWizardDerived,
   setWizardDefaultAnswer,
   setWizardUserAnswer,
 } from "../app/wizard/session.ts";
+import { normalizeWizardEntityAnswers } from "../app/wizard/entities.ts";
 
 const styleModule: PromptKeyModule = {
   key: "style",
@@ -99,17 +101,41 @@ test("WizardSession clones the active draft and keeps defaults, answers, and der
 
 test("Portrait v2 starts from a clean independent Draft and derives Stage from current Step", () => {
   const session = createFreshWizardSession(portraitWizardV2Definition);
+  const subjects = normalizeWizardEntityAnswers(session.answers.subjects?.value);
 
   assert.equal(session.wizardVersion, 2);
   assert.equal(session.currentStepId, "start");
   assert.deepEqual(session.workingDraft.selectedModuleKeys, []);
   assert.deepEqual(session.workingDraft.moduleValues, {});
   assert.equal(session.workingDraft.promptSettings.idea, "");
-  assert.equal(session.answers.subjects, undefined);
+  assert.equal(subjects.length, 1);
+  assert.equal(subjects[0]?.kind, "person");
+  assert.equal(subjects[0]?.label, "");
+  assert.equal(subjects[0]?.key, "person");
+  assert.equal(session.answers.subjects?.source, "default");
   assert.equal(
     getWizardCurrentStage(portraitWizardV2Definition, session)?.id,
     "start",
   );
+});
+
+test("Portrait v2 repairs an older persisted Session that is missing required entity defaults", () => {
+  const session = createFreshWizardSession(portraitWizardV2Definition);
+  const stale = {
+    ...session,
+    currentStepId: "subjects",
+    answers: Object.fromEntries(
+      Object.entries(session.answers).filter(([key]) => key !== "subjects"),
+    ),
+  };
+
+  const repaired = hydrateWizardSessionDefaults(portraitWizardV2Definition, stale);
+  const subjects = normalizeWizardEntityAnswers(repaired.answers.subjects?.value);
+
+  assert.equal(subjects.length, 1);
+  assert.equal(subjects[0]?.kind, "person");
+  assert.equal(subjects[0]?.key, "person");
+  assert.equal(repaired.answers.subjects?.source, "default");
 });
 
 test("rule defaults may replace defaults but never silently overwrite a user answer", () => {
