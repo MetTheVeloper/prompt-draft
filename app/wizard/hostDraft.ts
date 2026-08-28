@@ -7,60 +7,62 @@ import { clonePromptDraftState } from "../utils/promptDraftState";
 
 const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
 
-function readCollection(): PromptDraftCollection | null {
-  if (!import.meta.client) return null;
+function emptyCollection(): PromptDraftCollection {
+  return {
+    version: 1,
+    activeDraftId: null,
+    drafts: [],
+  };
+}
+
+function readCollection(): PromptDraftCollection {
+  if (!import.meta.client) return emptyCollection();
 
   const raw = localStorage.getItem(DRAFT_COLLECTION_STORAGE_KEY);
-  if (!raw) return null;
+  if (!raw) return emptyCollection();
 
   try {
     const parsed = JSON.parse(raw) as PromptDraftCollection;
-    return parsed.version === 1 && Array.isArray(parsed.drafts) ? parsed : null;
+    return parsed.version === 1 && Array.isArray(parsed.drafts)
+      ? parsed
+      : emptyCollection();
   } catch {
-    return null;
+    return emptyCollection();
   }
 }
 
-export function loadActiveDraftForWizard(): PromptDraftState | null {
-  const collection = readCollection();
-  if (!collection) return null;
-
-  const active =
-    collection.drafts.find((draft) => draft.id === collection.activeDraftId) ||
-    collection.drafts[0];
-
-  return active ? clonePromptDraftState(active) : null;
+function createDraftId() {
+  return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-export function commitWizardFinalDraft(finalDraft: PromptDraftState) {
-  if (!import.meta.client) return false;
+/**
+ * Explicit completion handoff only. A Wizard never reads or overwrites the
+ * Create Active Draft. When the user asks to continue in Create, the finished
+ * Wizard result becomes a brand-new Create Draft and is selected there.
+ */
+export function addWizardDraftToCreate(
+  finalDraft: PromptDraftState,
+  title = "Wizard Prompt",
+) {
+  if (!import.meta.client) return null;
 
   const collection = readCollection();
-  if (!collection) return false;
-
-  const activeIndex = collection.drafts.findIndex(
-    (draft) => draft.id === collection.activeDraftId,
-  );
-  if (activeIndex < 0) return false;
-
-  const current = collection.drafts[activeIndex] as PromptDraftRecord;
-  const updatedAt = new Date().toISOString();
-  const next: PromptDraftRecord = {
-    ...current,
+  const now = new Date().toISOString();
+  const id = createDraftId();
+  const record: PromptDraftRecord = {
     ...clonePromptDraftState(finalDraft),
-    id: current.id,
-    title: current.title,
-    createdAt: current.createdAt,
-    updatedAt,
+    id,
+    title: title.trim() || "Wizard Prompt",
+    createdAt: now,
+    updatedAt: now,
   };
 
-  const drafts = [...collection.drafts];
-  drafts.splice(activeIndex, 1, next);
+  const next: PromptDraftCollection = {
+    version: 1,
+    activeDraftId: id,
+    drafts: [record, ...collection.drafts],
+  };
 
-  localStorage.setItem(
-    DRAFT_COLLECTION_STORAGE_KEY,
-    JSON.stringify({ ...collection, drafts }),
-  );
-
-  return true;
+  localStorage.setItem(DRAFT_COLLECTION_STORAGE_KEY, JSON.stringify(next));
+  return id;
 }
