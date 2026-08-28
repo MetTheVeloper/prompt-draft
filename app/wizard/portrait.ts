@@ -36,6 +36,43 @@ export type PortraitPoseIntent = "natural" | "formal" | "dynamic";
 export type PortraitEnvironmentType = "studio" | "outdoor" | "abstract";
 export type PortraitLightingIntent = "soft" | "dramatic" | "moody" | "clean";
 
+export type PortraitExpressionOptions = Partial<{
+  intensity: "subtle" | "moderate" | "pronounced" | "exaggerated";
+  eyeState: "relaxed" | "soft" | "narrowed" | "wide" | "squinting" | "closed";
+  browState: "relaxed" | "raised" | "furrowed" | "lowered";
+  mouthState:
+    | "neutral"
+    | "slight_smile"
+    | "smile"
+    | "broad_smile"
+    | "smirk"
+    | "frown"
+    | "open"
+    | "gritted_teeth"
+    | "pursed_lips";
+}>;
+
+export type PortraitHairOptions = Partial<{
+  length:
+    | "shaved"
+    | "very_short"
+    | "short"
+    | "chin_length"
+    | "shoulder_length"
+    | "mid_back"
+    | "waist_length"
+    | "very_long";
+  curlPattern: "straight" | "loose_waves" | "wavy" | "curly" | "tight_curls" | "coily";
+  volume: "flat" | "low" | "natural" | "full" | "voluminous" | "extreme";
+  parting: "center" | "side" | "deep_side" | "off_center" | "zigzag" | "no_visible_part";
+}>;
+
+export type PortraitOutfitOptions = Partial<{
+  fitDirection: "tailored" | "fitted" | "relaxed" | "oversized";
+  accessoryDirection: "minimal" | "understated" | "statement";
+  additionalDetails: string;
+}>;
+
 export type PortraitWizardDerived = {
   subjectTarget: SemanticTargetRef;
   subjectTargets: SemanticTargetRef[];
@@ -49,8 +86,11 @@ export type PortraitWizardDerived = {
   referenceUsage: ReferenceUsage;
   transformationStrength: TransformationStrength;
   expressionIntent?: PortraitExpressionIntent;
+  expressionOptions: PortraitExpressionOptions;
   hairIntent?: PortraitHairIntent;
+  hairOptions: PortraitHairOptions;
   outfitIntent?: PortraitOutfitIntent;
+  outfitOptions: PortraitOutfitOptions;
   framingIntent: PortraitFramingIntent;
   framingShotSize: string;
   poseIntent?: PortraitPoseIntent;
@@ -131,6 +171,83 @@ const TRANSFORMATION_STRENGTH = new Set<TransformationStrength>([
   "extreme",
 ]);
 
+const EXPRESSION_INTENSITIES = new Set<NonNullable<PortraitExpressionOptions["intensity"]>>([
+  "subtle",
+  "moderate",
+  "pronounced",
+  "exaggerated",
+]);
+const EXPRESSION_EYE_STATES = new Set<NonNullable<PortraitExpressionOptions["eyeState"]>>([
+  "relaxed",
+  "soft",
+  "narrowed",
+  "wide",
+  "squinting",
+  "closed",
+]);
+const EXPRESSION_BROW_STATES = new Set<NonNullable<PortraitExpressionOptions["browState"]>>([
+  "relaxed",
+  "raised",
+  "furrowed",
+  "lowered",
+]);
+const EXPRESSION_MOUTH_STATES = new Set<NonNullable<PortraitExpressionOptions["mouthState"]>>([
+  "neutral",
+  "slight_smile",
+  "smile",
+  "broad_smile",
+  "smirk",
+  "frown",
+  "open",
+  "gritted_teeth",
+  "pursed_lips",
+]);
+const HAIR_LENGTHS = new Set<NonNullable<PortraitHairOptions["length"]>>([
+  "shaved",
+  "very_short",
+  "short",
+  "chin_length",
+  "shoulder_length",
+  "mid_back",
+  "waist_length",
+  "very_long",
+]);
+const HAIR_CURL_PATTERNS = new Set<NonNullable<PortraitHairOptions["curlPattern"]>>([
+  "straight",
+  "loose_waves",
+  "wavy",
+  "curly",
+  "tight_curls",
+  "coily",
+]);
+const HAIR_VOLUMES = new Set<NonNullable<PortraitHairOptions["volume"]>>([
+  "flat",
+  "low",
+  "natural",
+  "full",
+  "voluminous",
+  "extreme",
+]);
+const HAIR_PARTINGS = new Set<NonNullable<PortraitHairOptions["parting"]>>([
+  "center",
+  "side",
+  "deep_side",
+  "off_center",
+  "zigzag",
+  "no_visible_part",
+]);
+const OUTFIT_FITS = new Set<NonNullable<PortraitOutfitOptions["fitDirection"]>>([
+  "tailored",
+  "fitted",
+  "relaxed",
+  "oversized",
+]);
+const OUTFIT_ACCESSORIES = new Set<NonNullable<PortraitOutfitOptions["accessoryDirection"]>>([
+  "minimal",
+  "understated",
+  "statement",
+]);
+
 const PORTRAIT_ASPECT_RATIO_MAP: Record<string, string> = {
   "1:1": "common_square",
   "4:5": "common_portrait_4_5",
@@ -192,6 +309,11 @@ function answerValue(session: WizardSession, answerId: string) {
   return session.answers[answerId]?.value;
 }
 
+function answerRecord(session: WizardSession, answerId: string) {
+  const value = answerValue(session, answerId);
+  return isRecord(value) ? value : {};
+}
+
 function enumAnswer<T extends string>(
   session: WizardSession,
   answerId: string,
@@ -201,6 +323,53 @@ function enumAnswer<T extends string>(
   return typeof value === "string" && allowed.has(value as T)
     ? (value as T)
     : null;
+}
+
+function recordEnum<T extends string>(
+  record: Record<string, unknown>,
+  key: string,
+  allowed: ReadonlySet<T>,
+): T | undefined {
+  const value = record[key];
+  return typeof value === "string" && allowed.has(value as T)
+    ? (value as T)
+    : undefined;
+}
+
+function hasOptions(value: Record<string, unknown>) {
+  return Object.keys(value).length > 0;
+}
+
+function resolveExpressionOptions(session: WizardSession): PortraitExpressionOptions {
+  if (session.wizardVersion !== 2) return {};
+  const value = answerRecord(session, "expressionOptions");
+  return {
+    intensity: recordEnum(value, "intensity", EXPRESSION_INTENSITIES),
+    eyeState: recordEnum(value, "eyeState", EXPRESSION_EYE_STATES),
+    browState: recordEnum(value, "browState", EXPRESSION_BROW_STATES),
+    mouthState: recordEnum(value, "mouthState", EXPRESSION_MOUTH_STATES),
+  };
+}
+
+function resolveHairOptions(session: WizardSession): PortraitHairOptions {
+  if (session.wizardVersion !== 2) return {};
+  const value = answerRecord(session, "hairOptions");
+  return {
+    length: recordEnum(value, "length", HAIR_LENGTHS),
+    curlPattern: recordEnum(value, "curlPattern", HAIR_CURL_PATTERNS),
+    volume: recordEnum(value, "volume", HAIR_VOLUMES),
+    parting: recordEnum(value, "parting", HAIR_PARTINGS),
+  };
+}
+
+function resolveOutfitOptions(session: WizardSession): PortraitOutfitOptions {
+  if (session.wizardVersion !== 2) return {};
+  const value = answerRecord(session, "outfitOptions");
+  return {
+    fitDirection: recordEnum(value, "fitDirection", OUTFIT_FITS),
+    accessoryDirection: recordEnum(value, "accessoryDirection", OUTFIT_ACCESSORIES),
+    additionalDetails: cleanText(value.additionalDetails) || undefined,
+  };
 }
 
 function issue(code: string, answerId?: string): ActionIssue {
@@ -428,9 +597,12 @@ export function derivePortraitWizardState(
 
   const expressionIntent =
     enumAnswer(session, "expressionIntent", EXPRESSION_INTENTS) || undefined;
+  const expressionOptions = resolveExpressionOptions(session);
   const hairIntent = enumAnswer(session, "hairIntent", HAIR_INTENTS) || undefined;
+  const hairOptions = resolveHairOptions(session);
   const outfitIntent =
     enumAnswer(session, "outfitIntent", OUTFIT_INTENTS) || undefined;
+  const outfitOptions = resolveOutfitOptions(session);
   const poseIntent =
     framingIntent === "headshot"
       ? undefined
@@ -468,8 +640,11 @@ export function derivePortraitWizardState(
       referenceUsage,
       transformationStrength,
       expressionIntent,
+      expressionOptions,
       hairIntent,
+      hairOptions,
       outfitIntent,
+      outfitOptions,
       framingIntent,
       framingShotSize: FRAMING_SHOT_SIZE[framingIntent],
       poseIntent,
@@ -513,6 +688,16 @@ function outfitCustomType(intent: Exclude<PortraitOutfitIntent, "keep_reference"
   if (intent === "professional") return "professional attire";
   if (intent === "fashion") return "fashion-forward attire";
   return "fantasy attire";
+}
+
+function outfitAdditionalDetails(options: PortraitOutfitOptions) {
+  const parts: string[] = [];
+  if (options.fitDirection) parts.push(`${options.fitDirection} fit`);
+  if (options.accessoryDirection) {
+    parts.push(`${options.accessoryDirection} accessories`);
+  }
+  if (options.additionalDetails) parts.push(options.additionalDetails);
+  return parts.join("; ");
 }
 
 function portraitImageToImagePatch(derived: PortraitWizardDerived) {
@@ -608,7 +793,7 @@ export async function executePortraitWizardMapping(
   });
   if (!result.ok) return failure(result.issues);
 
-  if (derived.expressionIntent) {
+  if (derived.expressionIntent || hasOptions(derived.expressionOptions)) {
     result = await run({
       actionId: "module.activate",
       input: { moduleKey: "expression" },
@@ -628,21 +813,31 @@ export async function executePortraitWizardMapping(
     });
     if (!result.ok) return failure(result.issues);
 
-    const payload = expressionPayload(derived.expressionIntent);
-    result =
-      "presetId" in payload
-        ? await run({
-            actionId: "expression.assignment.applyPreset",
-            input: { assignmentId, presetId: payload.presetId },
-          })
-        : await run({
-            actionId: "expression.assignment.update",
-            input: { assignmentId, ...payload.patch },
-          });
-    if (!result.ok) return failure(result.issues);
+    if (derived.expressionIntent) {
+      const payload = expressionPayload(derived.expressionIntent);
+      result =
+        "presetId" in payload
+          ? await run({
+              actionId: "expression.assignment.applyPreset",
+              input: { assignmentId, presetId: payload.presetId },
+            })
+          : await run({
+              actionId: "expression.assignment.update",
+              input: { assignmentId, ...payload.patch },
+            });
+      if (!result.ok) return failure(result.issues);
+    }
+
+    if (hasOptions(derived.expressionOptions)) {
+      result = await run({
+        actionId: "expression.assignment.update",
+        input: { assignmentId, ...derived.expressionOptions },
+      });
+      if (!result.ok) return failure(result.issues);
+    }
   }
 
-  if (derived.hairIntent) {
+  if (derived.hairIntent || hasOptions(derived.hairOptions)) {
     result = await run({
       actionId: "module.activate",
       input: { moduleKey: "hair" },
@@ -672,7 +867,8 @@ export async function executePortraitWizardMapping(
           source: { mode: "reference", reference: MAIN_REFERENCE },
         },
       });
-    } else {
+      if (!result.ok) return failure(result.issues);
+    } else if (derived.hairIntent) {
       result = await run({
         actionId: "hair.style.setProperty",
         input: {
@@ -681,11 +877,29 @@ export async function executePortraitWizardMapping(
           state: hairProperty(derived.hairIntent),
         },
       });
+      if (!result.ok) return failure(result.issues);
     }
-    if (!result.ok) return failure(result.issues);
+
+    for (const [propertyId, value] of Object.entries(derived.hairOptions)) {
+      if (!value) continue;
+      result = await run({
+        actionId: "hair.style.setProperty",
+        input: {
+          styleId,
+          propertyId,
+          state: { mode: "option", value },
+        },
+      });
+      if (!result.ok) return failure(result.issues);
+    }
   }
 
-  if (derived.outfitIntent && derived.outfitIntent !== "keep_reference") {
+  const outfitDetails = outfitAdditionalDetails(derived.outfitOptions);
+  const shouldCreateOutfit =
+    derived.outfitIntent !== "keep_reference" &&
+    (Boolean(derived.outfitIntent) || Boolean(outfitDetails));
+
+  if (shouldCreateOutfit) {
     result = await run({
       actionId: "module.activate",
       input: { moduleKey: "outfit" },
@@ -715,13 +929,18 @@ export async function executePortraitWizardMapping(
     const itemId = entityId(result.data, "item");
     if (!itemId) return failure([issue("portrait_outfit_item_id_missing")]);
 
+    const customType = derived.outfitIntent && derived.outfitIntent !== "keep_reference"
+      ? outfitCustomType(derived.outfitIntent)
+      : "portrait attire";
+
     result = await run({
       actionId: "outfit.item.update",
       input: {
         setId,
         itemId,
-        customType: outfitCustomType(derived.outfitIntent),
+        customType,
         customCategory: "custom",
+        ...(outfitDetails ? { additionalDetails: outfitDetails } : {}),
       },
     });
     if (!result.ok) return failure(result.issues);
