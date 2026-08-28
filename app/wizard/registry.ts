@@ -12,6 +12,7 @@ import {
 import { completePortraitWizard } from "./portraitCompletion";
 import {
   applyPortraitWizardRules,
+  buildPortraitDraftTitle,
   normalizePortraitSubjectReference,
 } from "./portrait";
 import { buildPortraitWizardReview } from "./portraitReview";
@@ -94,6 +95,7 @@ export type WizardRuntimeEntry = {
   resolveSession: (session: WizardSession) => WizardSession;
   buildReview: (session: WizardSession) => WizardRuntimeReview;
   complete: (session: WizardSession) => Promise<WizardRuntimeCompletion>;
+  draftTitle: (session: WizardSession) => string;
 };
 
 const portraitRuntime: WizardRuntimeEntry = {
@@ -123,6 +125,10 @@ const portraitRuntime: WizardRuntimeEntry = {
       finalDraft: result.completion.finalDraft,
     };
   },
+  draftTitle: (session) =>
+    buildPortraitDraftTitle(
+      normalizeWizardEntityAnswers(session.answers.subjects?.value),
+    ),
 };
 
 const wizardRegistry = new Map<string, WizardRuntimeEntry>([
