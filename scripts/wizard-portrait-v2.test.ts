@@ -44,6 +44,18 @@ function completeRequiredAnswers(
   return next;
 }
 
+function completeRequiredAnswersWithoutLook(
+  session: ReturnType<typeof createFreshWizardSession>,
+) {
+  let next = answer(session, "portraitIntent", "professional");
+  next = answer(next, "framingIntent", "head_shoulders");
+  next = answer(next, "poseIntent", "formal");
+  next = answer(next, "environmentType", "studio");
+  next = answer(next, "lightingIntent", "clean");
+  next = answer(next, "aspectRatio", "4:5");
+  return next;
+}
+
 function createV2Session() {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   const person = createWizardEntity("person", [], "Sarah Connor");
@@ -190,6 +202,120 @@ test("Portrait v2 mapping creates its subject variable inside the isolated Worki
   const expression = mapping.session.workingDraft.moduleValues.expression
     ?.expressionAssignments as Array<{ targets: SemanticTargetRef[] }>;
   assert.equal(expression[0]?.targets[0]?.variableId, person.id);
+});
+
+test("Portrait v2 Look more-options refine canonical Expression Hair and Outfit state", async () => {
+  let { session, person } = createV2Session();
+
+  session = answer(session, "expressionOptions", {
+    intensity: "pronounced",
+    eyeState: "narrowed",
+    browState: "raised",
+    mouthState: "smirk",
+  });
+  session = answer(session, "hairOptions", {
+    length: "shoulder_length",
+    curlPattern: "wavy",
+    volume: "full",
+    parting: "side",
+  });
+  session = answer(session, "outfitOptions", {
+    fitDirection: "tailored",
+    accessoryDirection: "minimal",
+    additionalDetails: "structured shoulders",
+  });
+
+  const derived = derivePortraitWizardState(session);
+  assert.equal(derived.ok, true);
+  if (!derived.ok) return;
+
+  assert.deepEqual(derived.value.expressionOptions, {
+    intensity: "pronounced",
+    eyeState: "narrowed",
+    browState: "raised",
+    mouthState: "smirk",
+  });
+  assert.deepEqual(derived.value.hairOptions, {
+    length: "shoulder_length",
+    curlPattern: "wavy",
+    volume: "full",
+    parting: "side",
+  });
+  assert.deepEqual(derived.value.outfitOptions, {
+    fitDirection: "tailored",
+    accessoryDirection: "minimal",
+    additionalDetails: "structured shoulders",
+  });
+
+  const mapping = await executePortraitWizardMapping(
+    session,
+    v2HostContext(person),
+  );
+  assert.equal(mapping.ok, true);
+  if (!mapping.ok) return;
+
+  const expression = mapping.session.workingDraft.moduleValues.expression
+    ?.expressionAssignments as Array<Record<string, unknown>>;
+  assert.equal(expression[0]?.intensity, "pronounced");
+  assert.equal(expression[0]?.eyeState, "narrowed");
+  assert.equal(expression[0]?.browState, "raised");
+  assert.equal(expression[0]?.mouthState, "smirk");
+
+  const hair = mapping.session.workingDraft.moduleValues.hair
+    ?.hairStyles as Array<Record<string, unknown>>;
+  const properties = hair[0]?.properties as Record<string, unknown>;
+  assert.deepEqual(properties.stylingState, {
+    mode: "option",
+    value: "controlled",
+  });
+  assert.deepEqual(properties.length, {
+    mode: "option",
+    value: "shoulder_length",
+  });
+  assert.deepEqual(properties.curlPattern, {
+    mode: "option",
+    value: "wavy",
+  });
+  assert.deepEqual(properties.volume, {
+    mode: "option",
+    value: "full",
+  });
+  assert.deepEqual(properties.parting, {
+    mode: "option",
+    value: "side",
+  });
+
+  const sets = mapping.session.workingDraft.moduleValues.outfit
+    ?.outfitSets as Array<{ items: Array<Record<string, unknown>> }>;
+  const outfitItem = sets[0]?.items[0];
+  assert.equal(outfitItem?.customType, "professional attire");
+  assert.equal(
+    outfitItem?.additionalDetails,
+    "tailored fit; minimal accessories; structured shoulders",
+  );
+});
+
+test("Portrait v2 empty modal option records do not activate optional Look modules", async () => {
+  let session = createFreshWizardSession(portraitWizardV2Definition);
+  const person = createWizardEntity("person", [], "Sarah");
+
+  session = answer(session, "creationMode", "from_description");
+  session = answer(session, "subjects", [person]);
+  session = completeRequiredAnswersWithoutLook(session);
+  session = answer(session, "expressionOptions", {});
+  session = answer(session, "hairOptions", {});
+  session = answer(session, "outfitOptions", {});
+
+  const mapping = await executePortraitWizardMapping(
+    session,
+    v2HostContext(person),
+  );
+  assert.equal(mapping.ok, true);
+  if (!mapping.ok) return;
+
+  assert.equal(mapping.session.workingDraft.selectedModuleKeys.includes("expression"), false);
+  assert.equal(mapping.session.workingDraft.selectedModuleKeys.includes("hair"), false);
+  assert.equal(mapping.session.workingDraft.selectedModuleKeys.includes("outfit"), false);
 });
 
 test("Portrait v2 never turns setup preserve options on, including keep-reference choices", async () => {
