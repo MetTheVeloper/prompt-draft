@@ -19,6 +19,11 @@ export type WizardEntityAnswer = {
   key: string;
 };
 
+export type WizardEntityVariableOptions = {
+  value?: string;
+  description?: string;
+};
+
 const ENTITY_FALLBACK_LABELS: Record<WizardEntityKind, string> = {
   person: "Person",
   animal: "Animal",
@@ -38,6 +43,16 @@ export function getWizardEntityFallbackLabel(kind: WizardEntityKind) {
 
 export function getWizardEntityDisplayLabel(entity: WizardEntityAnswer) {
   return entity.label.trim() || getWizardEntityFallbackLabel(entity.kind);
+}
+
+export function formatWizardEntityLabelList(
+  entities: readonly WizardEntityAnswer[],
+) {
+  const labels = entities.map(getWizardEntityDisplayLabel).filter(Boolean);
+  if (!labels.length) return "";
+  if (labels.length === 1) return labels[0];
+  if (labels.length === 2) return `${labels[0]} and ${labels[1]}`;
+  return `${labels.slice(0, -1).join(", ")}, and ${labels[labels.length - 1]}`;
 }
 
 export function createWizardEntity(
@@ -79,14 +94,19 @@ export function renameWizardEntity(
 
 export function wizardEntityToPromptVariable(
   entity: WizardEntityAnswer,
+  options: WizardEntityVariableOptions = {},
 ): PromptVariable {
   const label = getWizardEntityDisplayLabel(entity);
+  const value = options.value?.trim() || label;
+  const description =
+    options.description?.trim() || `${label} created by the Wizard`;
 
   return {
     id: entity.id,
     key: entity.key,
-    value: label,
-    description: `${label} created by the Wizard`,
+    value,
+    label,
+    description,
     type: entity.kind === "person" || entity.kind === "animal" ? "subject" : "object",
     enabled: true,
   };
