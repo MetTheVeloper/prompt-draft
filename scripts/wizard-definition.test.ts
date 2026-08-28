@@ -65,6 +65,9 @@ test("Portrait Wizard v2 validates with lightweight Stage -> Step -> Question gr
   const appearanceStep = portraitWizardV2Definition.steps.find(
     (step) => step.id === "appearance",
   );
+  const environmentStep = portraitWizardV2Definition.steps.find(
+    (step) => step.id === "environment",
+  );
   const finalStep = portraitWizardV2Definition.steps.find(
     (step) => step.id === "final-settings",
   );
@@ -90,6 +93,23 @@ test("Portrait Wizard v2 validates with lightweight Stage -> Step -> Question gr
       ["fitDirection", "accessoryDirection", "additionalDetails"],
     ],
   );
+
+  const backgroundOptions = environmentStep?.questions.find(
+    (question) => question.id === "backgroundOptions",
+  );
+  assert.equal(backgroundOptions?.type, "modalOptions");
+  if (backgroundOptions?.type === "modalOptions") {
+    assert.deepEqual(
+      backgroundOptions.fields.map((field) => field.id),
+      [
+        "setting",
+        "spatialStructure",
+        "backgroundMaterial",
+        "detailDensity",
+        "backgroundElement",
+      ],
+    );
+  }
 
   const serialized = JSON.stringify(portraitWizardV2Definition);
   assert.equal(serialized.includes('"actionId"'), false);
