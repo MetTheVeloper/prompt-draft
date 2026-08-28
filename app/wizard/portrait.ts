@@ -2,10 +2,13 @@ import type { PublicActionInvocation } from "../actions/public";
 import type { ActionIssue } from "../actions/types";
 import type {
   PromptVariable,
-  ReferenceUsage,
   SemanticTargetRef,
 } from "../modules/types";
-import type { PromptMode, TransformationStrength } from "../utils/compilePromptCore";
+import type {
+  PromptMode,
+  ReferenceUsage,
+  TransformationStrength,
+} from "../utils/compilePromptCore";
 import { normalizeSemanticTarget } from "../utils/semanticTargets";
 import {
   normalizeWizardEntityAnswers,
