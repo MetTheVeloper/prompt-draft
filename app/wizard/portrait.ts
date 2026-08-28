@@ -337,7 +337,9 @@ function recordEnum<T extends string>(
 }
 
 function hasOptions(value: Record<string, unknown>) {
-  return Object.keys(value).length > 0;
+  return Object.values(value).some(
+    (item) => typeof item === "string" && Boolean(item.trim()),
+  );
 }
 
 function resolveExpressionOptions(session: WizardSession): PortraitExpressionOptions {
