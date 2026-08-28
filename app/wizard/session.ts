@@ -18,6 +18,11 @@ import {
   type WizardStageDefinition,
   type WizardStepDefinition,
 } from "./definition";
+import {
+  createWizardEntity,
+  normalizeWizardEntityAnswers,
+  type WizardEntityAnswer,
+} from "./entities";
 
 export type WizardAnswerSource = "default" | "user";
 
@@ -37,21 +42,85 @@ export type WizardSession = {
 
 export type WizardActionHostContext = Omit<ActionContext, "draft">;
 
+function createEntityCollectionDefault(question: Extract<WizardQuestionDefinition, { type: "entityCollection" }>) {
+  const minimum = Math.max(question.min || 0, 0);
+  const fallbackKind = question.allowedKinds[0]?.value;
+  const entities: WizardEntityAnswer[] = [];
+
+  if (!fallbackKind) return entities;
+
+  while (entities.length < minimum) {
+    entities.push(createWizardEntity(fallbackKind, entities));
+  }
+
+  return entities;
+}
+
 function createDefaultAnswers(definition: WizardDefinition) {
   const answers: Record<string, WizardAnswerState> = {};
 
   for (const step of definition.steps) {
     for (const question of step.questions) {
-      if (question.defaultValue === undefined) continue;
+      if (question.defaultValue !== undefined) {
+        answers[question.id] = {
+          value: question.defaultValue,
+          source: "default",
+        };
+        continue;
+      }
 
-      answers[question.id] = {
-        value: question.defaultValue,
-        source: "default",
-      };
+      if (question.type === "entityCollection" && (question.min || 0) > 0) {
+        answers[question.id] = {
+          value: createEntityCollectionDefault(question),
+          source: "default",
+        };
+      }
     }
   }
 
   return answers;
+}
+
+/**
+ * Repairs definition-owned defaults after restoring a persisted Session.
+ * This keeps persistence forward-compatible with presentation-level default
+ * changes without overwriting explicit user answers.
+ */
+export function hydrateWizardSessionDefaults(
+  definition: WizardDefinition,
+  session: WizardSession,
+): WizardSession {
+  const answers = { ...session.answers };
+  let changed = false;
+
+  for (const step of definition.steps) {
+    for (const question of step.questions) {
+      if (question.type !== "entityCollection") continue;
+
+      const minimum = Math.max(question.min || 0, 0);
+      if (!minimum) continue;
+
+      const current = answers[question.id];
+      const entities = normalizeWizardEntityAnswers(current?.value);
+      if (entities.length >= minimum) continue;
+
+      const fallbackKind = question.allowedKinds[0]?.value;
+      if (!fallbackKind) continue;
+
+      const next = [...entities];
+      while (next.length < minimum) {
+        next.push(createWizardEntity(fallbackKind, next));
+      }
+
+      answers[question.id] = {
+        value: next,
+        source: current?.source || "default",
+      };
+      changed = true;
+    }
+  }
+
+  return changed ? { ...session, answers } : session;
 }
 
 function assertSessionDefinition(
