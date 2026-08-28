@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PromptVariable } from "~/modules/types";
 import type { WizardQuestionDefinition } from "~/wizard/definition";
+import WizardEntityQuestion from "./WizardEntityQuestion.vue";
 
 const props = withDefaults(
   defineProps<{
