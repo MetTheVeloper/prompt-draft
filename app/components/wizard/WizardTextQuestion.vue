@@ -1,8 +1,14 @@
 <script setup lang="ts">
-const props = defineProps<{
-  modelValue?: unknown;
-  placeholder?: string;
-}>();
+const props = withDefaults(
+  defineProps<{
+    modelValue?: unknown;
+    placeholder?: string;
+    rows?: number;
+  }>(),
+  {
+    rows: 4,
+  },
+);
 
 const emit = defineEmits<{
   (event: "update:modelValue", value: string): void;
@@ -12,7 +18,8 @@ const emit = defineEmits<{
 <template>
   <el-text-field
     type="textarea"
-    :rows="4"
+    :rows="props.rows"
+    :actions="false"
     :model-value="typeof props.modelValue === 'string' ? props.modelValue : ''"
     :placeholder="props.placeholder || ''"
     @update:model-value="emit('update:modelValue', $event)"
