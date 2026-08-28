@@ -11,8 +11,11 @@ import type {
 } from "../utils/compilePromptCore";
 import { normalizeSemanticTarget } from "../utils/semanticTargets";
 import {
+  formatWizardEntityLabelList,
+  getWizardEntityDisplayLabel,
   normalizeWizardEntityAnswers,
   wizardEntityToPromptVariable,
+  type WizardEntityAnswer,
 } from "./entities";
 import type {
   WizardActionHostContext,
@@ -168,6 +171,15 @@ const ENVIRONMENT_DETAIL_ANSWER: Record<PortraitEnvironmentType, string> = {
   abstract: "abstractDirection",
 };
 
+const SUBJECT_ORDINALS = [
+  "first",
+  "second",
+  "third",
+  "fourth",
+  "fifth",
+  "sixth",
+] as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -200,6 +212,41 @@ function issue(code: string, answerId?: string): ActionIssue {
 
 function variableToken(variable: PromptVariable) {
   return `{${variable.key}}`;
+}
+
+function joinSubjectTokens(tokens: string[]) {
+  if (!tokens.length) return "{person}";
+  if (tokens.length === 1) return tokens[0];
+  if (tokens.length === 2) return `${tokens[0]} and ${tokens[1]}`;
+  return `${tokens.slice(0, -1).join(", ")}, and ${tokens[tokens.length - 1]}`;
+}
+
+function subjectOrdinal(index: number) {
+  return SUBJECT_ORDINALS[index] || `${index + 1}th`;
+}
+
+function portraitEntityVariableValue(
+  entity: WizardEntityAnswer,
+  index: number,
+  total: number,
+  mode: PromptMode,
+) {
+  if (mode === "image_to_image") {
+    return total > 1
+      ? `${subjectOrdinal(index)} person in {reference}`
+      : "person in {reference}";
+  }
+
+  const explicitLabel = cleanText(entity.label);
+  if (explicitLabel) return `a person named ${getWizardEntityDisplayLabel(entity)}`;
+  return total > 1 ? `${subjectOrdinal(index)} person` : "a person";
+}
+
+export function buildPortraitDraftTitle(
+  entities: readonly WizardEntityAnswer[],
+) {
+  const subjectNames = formatWizardEntityLabelList(entities);
+  return subjectNames ? `Portrait of ${subjectNames}` : "Portrait Wizard Prompt";
 }
 
 export function normalizePortraitSubjectReference(
@@ -252,6 +299,13 @@ export function applyPortraitWizardRules(session: WizardSession): WizardSession 
   );
 }
 
+function resolvePromptMode(session: WizardSession): PromptMode {
+  if (session.wizardVersion === 1) return session.workingDraft.promptSettings.mode;
+  return answerValue(session, "creationMode") === "from_description"
+    ? "text_to_image"
+    : "image_to_image";
+}
+
 function resolvePortraitSubjects(session: WizardSession) {
   if (session.wizardVersion === 1) {
     const value = answerValue(session, "subjectReference");
@@ -263,8 +317,14 @@ function resolvePortraitSubjects(session: WizardSession) {
     };
   }
 
-  const variables = normalizeWizardEntityAnswers(answerValue(session, "subjects"))
-    .map(wizardEntityToPromptVariable);
+  const entities = normalizeWizardEntityAnswers(answerValue(session, "subjects"));
+  const mode = resolvePromptMode(session);
+  const variables = entities.map((entity, index) =>
+    wizardEntityToPromptVariable(entity, {
+      value: portraitEntityVariableValue(entity, index, entities.length, mode),
+      description: `${getWizardEntityDisplayLabel(entity)} portrait subject`,
+    }),
+  );
   const targets = variables
     .map((variable) => normalizePortraitSubjectReference(variable))
     .filter((target): target is SemanticTargetRef => Boolean(target));
@@ -272,27 +332,14 @@ function resolvePortraitSubjects(session: WizardSession) {
   return { targets, variables };
 }
 
-function resolvePromptMode(session: WizardSession): PromptMode {
-  if (session.wizardVersion === 1) return session.workingDraft.promptSettings.mode;
-  return answerValue(session, "creationMode") === "from_description"
-    ? "text_to_image"
-    : "image_to_image";
-}
-
 function fallbackPortraitIdea(
-  session: WizardSession,
   intent: PortraitIntent,
   tokens: string[],
 ) {
-  const subjectPhrase = tokens.length > 1
-    ? tokens.slice(0, -1).join(", ") + ` and ${tokens[tokens.length - 1]}`
-    : tokens[0] || "{person}";
-
-  if (resolvePromptMode(session) === "image_to_image") {
-    return `Transform ${subjectPhrase} into a ${intent} portrait`;
-  }
-
-  return `Create a ${intent} portrait featuring ${subjectPhrase}`;
+  const subjectPhrase = joinSubjectTokens(tokens);
+  return tokens.length > 1
+    ? `A ${intent} portrait of ${subjectPhrase} together, with the following settings`
+    : `A ${intent} portrait of ${subjectPhrase} with the following settings`;
 }
 
 export function derivePortraitWizardState(
@@ -376,7 +423,7 @@ export function derivePortraitWizardState(
   const userIdea = cleanText(answerValue(session, "idea"));
   const promptIdea = session.wizardVersion === 1
     ? `${portraitIntent} portrait`
-    : userIdea || fallbackPortraitIdea(session, portraitIntent, subjectTokens);
+    : userIdea || fallbackPortraitIdea(portraitIntent, subjectTokens);
   const promptMode = resolvePromptMode(session);
   const aspectRatioAnswer = cleanText(answerValue(session, "aspectRatio"));
   const aspectRatio = session.wizardVersion === 2
@@ -455,12 +502,14 @@ function portraitImageToImagePatch(derived: PortraitWizardDerived) {
   return {
     referenceUsage: derived.referenceUsage,
     transformationStrength: derived.transformationStrength,
+    preserveMainSubject: false,
+    preserveIdentity: false,
+    preservePose: false,
+    preserveOutfit: derived.outfitIntent === "keep_reference",
     preserveComposition: false,
+    preserveColors: false,
+    preserveMaterials: false,
     preserveLighting: false,
-    ...(derived.posePresetId ? { preservePose: false } : {}),
-    ...(derived.outfitIntent
-      ? { preserveOutfit: derived.outfitIntent === "keep_reference" }
-      : {}),
   };
 }
 
