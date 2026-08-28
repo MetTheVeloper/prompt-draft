@@ -66,6 +66,17 @@ export type WizardModalOptionsQuestionDefinition = WizardQuestionBase & {
   fields: readonly WizardModalFieldDefinition[];
 };
 
+export type WizardSubjectOverridesQuestionDefinition = WizardQuestionBase & {
+  type: "subjectOverrides";
+  subjectsAnswerId: string;
+  sharedIntentAnswerId: string;
+  sharedOptionsAnswerId: string;
+  buttonLabel?: string;
+  modalTitle?: string;
+  intentTitle?: string;
+  hideFieldsWhenIntent?: readonly string[];
+};
+
 export type WizardVariablePickerQuestionDefinition = WizardQuestionBase & {
   type: "variablePicker";
 };
@@ -87,6 +98,7 @@ export type WizardQuestionDefinition =
   | WizardSingleChoiceQuestionDefinition
   | WizardTextQuestionDefinition
   | WizardModalOptionsQuestionDefinition
+  | WizardSubjectOverridesQuestionDefinition
   | WizardVariablePickerQuestionDefinition
   | WizardEntityCollectionQuestionDefinition;
 
@@ -164,6 +176,7 @@ export function assertWizardDefinition(definition: WizardDefinition) {
 
   const stepIds = new Set<string>();
   const questionIds = new Set<string>();
+  const questionsById = new Map<string, WizardQuestionDefinition>();
 
   for (const step of definition.steps) {
     assertNonEmpty(step.id, "Wizard step id");
@@ -193,6 +206,7 @@ export function assertWizardDefinition(definition: WizardDefinition) {
         throw new Error(`Duplicate Wizard question id: ${question.id}`);
       }
       questionIds.add(question.id);
+      questionsById.set(question.id, question);
 
       if (question.type === "singleChoice") {
         assertQuestionOptions(
@@ -234,6 +248,21 @@ export function assertWizardDefinition(definition: WizardDefinition) {
         }
       }
 
+      if (question.type === "subjectOverrides") {
+        assertNonEmpty(
+          question.subjectsAnswerId,
+          `Wizard subjectOverrides question "${question.id}" subjectsAnswerId`,
+        );
+        assertNonEmpty(
+          question.sharedIntentAnswerId,
+          `Wizard subjectOverrides question "${question.id}" sharedIntentAnswerId`,
+        );
+        assertNonEmpty(
+          question.sharedOptionsAnswerId,
+          `Wizard subjectOverrides question "${question.id}" sharedOptionsAnswerId`,
+        );
+      }
+
       if (question.type === "entityCollection") {
         if (!question.allowedKinds.length) {
           throw new Error(
@@ -259,6 +288,29 @@ export function assertWizardDefinition(definition: WizardDefinition) {
       if (!questionIds.has(condition.answerId)) {
         throw new Error(
           `Wizard condition references unknown answer id: ${condition.answerId}`,
+        );
+      }
+    }
+
+    for (const question of step.questions) {
+      if (question.type !== "subjectOverrides") continue;
+      const subjectsQuestion = questionsById.get(question.subjectsAnswerId);
+      const intentQuestion = questionsById.get(question.sharedIntentAnswerId);
+      const optionsQuestion = questionsById.get(question.sharedOptionsAnswerId);
+
+      if (subjectsQuestion?.type !== "entityCollection") {
+        throw new Error(
+          `Wizard subjectOverrides question "${question.id}" must reference an entityCollection subjects question.`,
+        );
+      }
+      if (intentQuestion?.type !== "singleChoice") {
+        throw new Error(
+          `Wizard subjectOverrides question "${question.id}" must reference a singleChoice shared intent question.`,
+        );
+      }
+      if (optionsQuestion?.type !== "modalOptions") {
+        throw new Error(
+          `Wizard subjectOverrides question "${question.id}" must reference a modalOptions shared options question.`,
         );
       }
     }
@@ -618,6 +670,18 @@ export const portraitWizardV2Definition = {
           ],
         },
         {
+          id: "expressionSubjectOverrides",
+          type: "subjectOverrides",
+          title: "Expression per subject",
+          description: "Keep the shared expression for everyone, or customize only the people who should differ.",
+          buttonLabel: "Customize expression per subject",
+          modalTitle: "Expression by subject",
+          intentTitle: "Expression",
+          subjectsAnswerId: "subjects",
+          sharedIntentAnswerId: "expressionIntent",
+          sharedOptionsAnswerId: "expressionOptions",
+        },
+        {
           id: "hairIntent",
           type: "singleChoice",
           title: "Hair direction",
@@ -693,6 +757,18 @@ export const portraitWizardV2Definition = {
           ],
         },
         {
+          id: "hairSubjectOverrides",
+          type: "subjectOverrides",
+          title: "Hair per subject",
+          description: "Keep the shared hair direction for everyone, or customize individual people.",
+          buttonLabel: "Customize hair per subject",
+          modalTitle: "Hair by subject",
+          intentTitle: "Hair direction",
+          subjectsAnswerId: "subjects",
+          sharedIntentAnswerId: "hairIntent",
+          sharedOptionsAnswerId: "hairOptions",
+        },
+        {
           id: "outfitIntent",
           type: "singleChoice",
           title: "Outfit direction",
@@ -746,6 +822,19 @@ export const portraitWizardV2Definition = {
               rows: 3,
             },
           ],
+        },
+        {
+          id: "outfitSubjectOverrides",
+          type: "subjectOverrides",
+          title: "Outfit per subject",
+          description: "Keep the shared outfit for everyone, or assign a different direction to individual people.",
+          buttonLabel: "Customize outfit per subject",
+          modalTitle: "Outfit by subject",
+          intentTitle: "Outfit direction",
+          subjectsAnswerId: "subjects",
+          sharedIntentAnswerId: "outfitIntent",
+          sharedOptionsAnswerId: "outfitOptions",
+          hideFieldsWhenIntent: ["keep_reference"],
         },
       ],
     },
