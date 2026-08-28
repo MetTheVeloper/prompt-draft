@@ -94,6 +94,26 @@ test("Portrait Wizard v2 validates with lightweight Stage -> Step -> Question gr
     ],
   );
 
+  const subjectOverrideQuestions = appearanceStep?.questions.filter(
+    (question) => question.type === "subjectOverrides",
+  );
+  assert.deepEqual(
+    subjectOverrideQuestions?.map((question) => question.id),
+    [
+      "expressionSubjectOverrides",
+      "hairSubjectOverrides",
+      "outfitSubjectOverrides",
+    ],
+  );
+  assert.ok(
+    subjectOverrideQuestions?.every(
+      (question) =>
+        question.subjectsAnswerId === "subjects" &&
+        Boolean(question.sharedIntentAnswerId) &&
+        Boolean(question.sharedOptionsAnswerId),
+    ),
+  );
+
   const backgroundOptions = environmentStep?.questions.find(
     (question) => question.id === "backgroundOptions",
   );
@@ -189,6 +209,47 @@ test("WizardDefinition rejects duplicate modal field ids", () => {
   assert.throws(
     () => assertWizardDefinition(invalidDefinition),
     /Duplicate modal field id "same"/,
+  );
+});
+
+test("WizardDefinition rejects invalid subject override references", () => {
+  const invalidDefinition: WizardDefinition = {
+    id: "invalid-subject-overrides",
+    version: 1,
+    title: "Invalid subject overrides",
+    steps: [
+      {
+        id: "one",
+        title: "One",
+        questions: [
+          {
+            id: "intent",
+            type: "singleChoice",
+            title: "Intent",
+            options: [{ value: "a", label: "A" }],
+          },
+          {
+            id: "details",
+            type: "modalOptions",
+            title: "Details",
+            fields: [{ id: "note", type: "text", title: "Note" }],
+          },
+          {
+            id: "overrides",
+            type: "subjectOverrides",
+            title: "Overrides",
+            subjectsAnswerId: "missing-subjects",
+            sharedIntentAnswerId: "intent",
+            sharedOptionsAnswerId: "details",
+          },
+        ],
+      },
+    ],
+  };
+
+  assert.throws(
+    () => assertWizardDefinition(invalidDefinition),
+    /must reference an entityCollection subjects question/,
   );
 });
 
