@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { PortraitReviewItem } from "~/wizard/portraitReview";
+import type { WizardRuntimeReviewItem } from "~/wizard/registry";
 
 const props = defineProps<{
-  items: PortraitReviewItem[];
+  items: WizardRuntimeReviewItem[];
 }>();
 
 const emit = defineEmits<{
@@ -10,7 +10,7 @@ const emit = defineEmits<{
 }>();
 
 const grouped = computed(() => {
-  const map = new Map<string, PortraitReviewItem[]>();
+  const map = new Map<string, WizardRuntimeReviewItem[]>();
   for (const item of props.items) {
     const group = map.get(item.stepId) || [];
     group.push(item);
