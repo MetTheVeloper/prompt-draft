@@ -37,6 +37,34 @@ export type WizardTextQuestionDefinition = WizardQuestionBase & {
   rows?: number;
 };
 
+export type WizardModalSingleChoiceFieldDefinition = {
+  id: string;
+  type: "singleChoice";
+  title: string;
+  description?: string;
+  options: readonly WizardQuestionOption[];
+};
+
+export type WizardModalTextFieldDefinition = {
+  id: string;
+  type: "text";
+  title: string;
+  description?: string;
+  placeholder?: string;
+  rows?: number;
+};
+
+export type WizardModalFieldDefinition =
+  | WizardModalSingleChoiceFieldDefinition
+  | WizardModalTextFieldDefinition;
+
+export type WizardModalOptionsQuestionDefinition = WizardQuestionBase & {
+  type: "modalOptions";
+  buttonLabel?: string;
+  modalTitle?: string;
+  fields: readonly WizardModalFieldDefinition[];
+};
+
 export type WizardVariablePickerQuestionDefinition = WizardQuestionBase & {
   type: "variablePicker";
 };
@@ -57,6 +85,7 @@ export type WizardEntityCollectionQuestionDefinition = WizardQuestionBase & {
 export type WizardQuestionDefinition =
   | WizardSingleChoiceQuestionDefinition
   | WizardTextQuestionDefinition
+  | WizardModalOptionsQuestionDefinition
   | WizardVariablePickerQuestionDefinition
   | WizardEntityCollectionQuestionDefinition;
 
@@ -88,6 +117,25 @@ export type WizardDefinition = {
 function assertNonEmpty(value: string, label: string) {
   if (!value.trim()) {
     throw new Error(`${label} must be non-empty.`);
+  }
+}
+
+function assertQuestionOptions(
+  options: readonly WizardQuestionOption[],
+  label: string,
+) {
+  if (!options.length) {
+    throw new Error(`${label} requires options.`);
+  }
+
+  const optionValues = new Set<string>();
+  for (const option of options) {
+    assertNonEmpty(option.value, `${label} option value`);
+    assertNonEmpty(option.label, `${label} option label`);
+    if (optionValues.has(option.value)) {
+      throw new Error(`Duplicate option value "${option.value}" in ${label}.`);
+    }
+    optionValues.add(option.value);
   }
 }
 
@@ -146,29 +194,42 @@ export function assertWizardDefinition(definition: WizardDefinition) {
       questionIds.add(question.id);
 
       if (question.type === "singleChoice") {
-        if (!question.options.length) {
+        assertQuestionOptions(
+          question.options,
+          `Wizard singleChoice question "${question.id}"`,
+        );
+      }
+
+      if (question.type === "modalOptions") {
+        if (!question.fields.length) {
           throw new Error(
-            `Wizard singleChoice question "${question.id}" requires options.`,
+            `Wizard modalOptions question "${question.id}" requires fields.`,
           );
         }
 
-        const optionValues = new Set<string>();
-        for (const option of question.options) {
+        const fieldIds = new Set<string>();
+        for (const field of question.fields) {
           assertNonEmpty(
-            option.value,
-            `Wizard question "${question.id}" option value`,
+            field.id,
+            `Wizard modalOptions question "${question.id}" field id`,
           );
           assertNonEmpty(
-            option.label,
-            `Wizard question "${question.id}" option label`,
+            field.title,
+            `Wizard modalOptions question "${question.id}" field "${field.id}" title`,
           );
-
-          if (optionValues.has(option.value)) {
+          if (fieldIds.has(field.id)) {
             throw new Error(
-              `Duplicate option value "${option.value}" in Wizard question "${question.id}".`,
+              `Duplicate modal field id "${field.id}" in Wizard question "${question.id}".`,
             );
           }
-          optionValues.add(option.value);
+          fieldIds.add(field.id);
+
+          if (field.type === "singleChoice") {
+            assertQuestionOptions(
+              field.options,
+              `Wizard modal field "${question.id}.${field.id}"`,
+            );
+          }
         }
       }
 
@@ -495,6 +556,67 @@ export const portraitWizardV2Definition = {
           ],
         },
         {
+          id: "expressionOptions",
+          type: "modalOptions",
+          title: "Expression details",
+          buttonLabel: "More expression options",
+          modalTitle: "Fine-tune expression",
+          description: "Optional details. These refine the selected expression for all portrait subjects.",
+          fields: [
+            {
+              id: "intensity",
+              type: "singleChoice",
+              title: "Intensity",
+              options: [
+                { value: "subtle", label: "Subtle" },
+                { value: "moderate", label: "Moderate" },
+                { value: "pronounced", label: "Pronounced" },
+                { value: "exaggerated", label: "Exaggerated" },
+              ],
+            },
+            {
+              id: "eyeState",
+              type: "singleChoice",
+              title: "Eyes",
+              options: [
+                { value: "relaxed", label: "Relaxed" },
+                { value: "soft", label: "Soft" },
+                { value: "narrowed", label: "Narrowed" },
+                { value: "wide", label: "Wide" },
+                { value: "squinting", label: "Squinting" },
+                { value: "closed", label: "Closed" },
+              ],
+            },
+            {
+              id: "browState",
+              type: "singleChoice",
+              title: "Brows",
+              options: [
+                { value: "relaxed", label: "Relaxed" },
+                { value: "raised", label: "Raised" },
+                { value: "furrowed", label: "Furrowed" },
+                { value: "lowered", label: "Lowered" },
+              ],
+            },
+            {
+              id: "mouthState",
+              type: "singleChoice",
+              title: "Mouth",
+              options: [
+                { value: "neutral", label: "Neutral" },
+                { value: "slight_smile", label: "Slight smile" },
+                { value: "smile", label: "Smile" },
+                { value: "broad_smile", label: "Broad smile" },
+                { value: "smirk", label: "Smirk" },
+                { value: "frown", label: "Frown" },
+                { value: "open", label: "Open" },
+                { value: "gritted_teeth", label: "Gritted teeth" },
+                { value: "pursed_lips", label: "Pursed lips" },
+              ],
+            },
+          ],
+        },
+        {
           id: "hairIntent",
           type: "singleChoice",
           title: "Hair direction",
@@ -506,6 +628,70 @@ export const portraitWizardV2Definition = {
           ],
         },
         {
+          id: "hairOptions",
+          type: "modalOptions",
+          title: "Hair details",
+          buttonLabel: "More hair options",
+          modalTitle: "Fine-tune hair",
+          description: "Optional structured hair details. They apply to the shared portrait hair direction.",
+          fields: [
+            {
+              id: "length",
+              type: "singleChoice",
+              title: "Length",
+              options: [
+                { value: "shaved", label: "Shaved" },
+                { value: "very_short", label: "Very short" },
+                { value: "short", label: "Short" },
+                { value: "chin_length", label: "Chin length" },
+                { value: "shoulder_length", label: "Shoulder length" },
+                { value: "mid_back", label: "Mid-back" },
+                { value: "waist_length", label: "Waist length" },
+                { value: "very_long", label: "Very long" },
+              ],
+            },
+            {
+              id: "curlPattern",
+              type: "singleChoice",
+              title: "Texture / curl pattern",
+              options: [
+                { value: "straight", label: "Straight" },
+                { value: "loose_waves", label: "Loose waves" },
+                { value: "wavy", label: "Wavy" },
+                { value: "curly", label: "Curly" },
+                { value: "tight_curls", label: "Tight curls" },
+                { value: "coily", label: "Coily" },
+              ],
+            },
+            {
+              id: "volume",
+              type: "singleChoice",
+              title: "Volume",
+              options: [
+                { value: "flat", label: "Flat" },
+                { value: "low", label: "Low" },
+                { value: "natural", label: "Natural" },
+                { value: "full", label: "Full" },
+                { value: "voluminous", label: "Voluminous" },
+                { value: "extreme", label: "Extreme" },
+              ],
+            },
+            {
+              id: "parting",
+              type: "singleChoice",
+              title: "Parting",
+              options: [
+                { value: "center", label: "Center" },
+                { value: "side", label: "Side" },
+                { value: "deep_side", label: "Deep side" },
+                { value: "off_center", label: "Off-center" },
+                { value: "zigzag", label: "Zigzag" },
+                { value: "no_visible_part", label: "No visible part" },
+              ],
+            },
+          ],
+        },
+        {
           id: "outfitIntent",
           type: "singleChoice",
           title: "Outfit direction",
@@ -514,6 +700,50 @@ export const portraitWizardV2Definition = {
             { value: "professional", label: "Professional" },
             { value: "fashion", label: "Fashion" },
             { value: "fantasy", label: "Fantasy" },
+          ],
+        },
+        {
+          id: "outfitOptions",
+          type: "modalOptions",
+          title: "Outfit details",
+          buttonLabel: "More outfit options",
+          modalTitle: "Fine-tune outfit",
+          description: "Optional outfit notes. Keep-reference outfits stay untouched and hide these controls.",
+          visibleWhen: {
+            answerId: "outfitIntent",
+            operator: "notEquals",
+            value: "keep_reference",
+          },
+          fields: [
+            {
+              id: "fitDirection",
+              type: "singleChoice",
+              title: "Fit direction",
+              options: [
+                { value: "tailored", label: "Tailored" },
+                { value: "fitted", label: "Fitted" },
+                { value: "relaxed", label: "Relaxed" },
+                { value: "oversized", label: "Oversized" },
+              ],
+            },
+            {
+              id: "accessoryDirection",
+              type: "singleChoice",
+              title: "Accessories",
+              options: [
+                { value: "minimal", label: "Minimal" },
+                { value: "understated", label: "Understated" },
+                { value: "statement", label: "Statement" },
+              ],
+            },
+            {
+              id: "additionalDetails",
+              type: "text",
+              title: "Additional outfit details",
+              description: "Add a short detail only when the quick direction is not specific enough.",
+              placeholder: "e.g. layered styling, structured shoulders, monochrome look...",
+              rows: 3,
+            },
           ],
         },
       ],
