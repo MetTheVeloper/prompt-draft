@@ -3,15 +3,20 @@ import type { PromptVariable } from "~/modules/types";
 import type { WizardQuestionDefinition } from "~/wizard/definition";
 import WizardEntityQuestion from "./WizardEntityQuestion.vue";
 import WizardModalOptionsQuestion from "./WizardModalOptionsQuestion.vue";
+import WizardSubjectOverridesQuestion from "./WizardSubjectOverridesQuestion.vue";
 
 const props = withDefaults(
   defineProps<{
     question: WizardQuestionDefinition;
     modelValue?: unknown;
     variables?: PromptVariable[];
+    answerValues?: Record<string, unknown>;
+    questions?: readonly WizardQuestionDefinition[];
   }>(),
   {
     variables: () => [],
+    answerValues: () => ({}),
+    questions: () => [],
   },
 );
 
@@ -22,7 +27,9 @@ const emit = defineEmits<{
 
 <template>
   <el-grid :gap="10" class="w100">
-    <el-grid v-if="props.question.type !== 'modalOptions'" :gap="4">
+    <el-grid
+      v-if="props.question.type !== 'modalOptions' && props.question.type !== 'subjectOverrides'"
+      :gap="4">
       <el-text :size="16" :weight="700">{{ props.question.title }}</el-text>
       <el-text v-if="props.question.description" :size="12" color="normal55">
         {{ props.question.description }}
@@ -48,6 +55,15 @@ const emit = defineEmits<{
       v-else-if="props.question.type === 'modalOptions'"
       :question="props.question"
       :model-value="props.modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+
+    <WizardSubjectOverridesQuestion
+      v-else-if="props.question.type === 'subjectOverrides'"
+      :question="props.question"
+      :model-value="props.modelValue"
+      :answer-values="props.answerValues"
+      :questions="props.questions"
       @update:model-value="emit('update:modelValue', $event)"
     />
 
