@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-28**
 
-Status: **Portrait mapper accepted; Review + Completion implemented; validation pending**
+Status: **Portrait mapper + Review + Completion accepted; Wizard UI + host integration next**
 
 Working branch: `feature/wizard`
 
@@ -16,101 +16,12 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## Current checkpoint
 
-The first Portrait Action Mapper is now **accepted** after real checkout validation:
-
-```text
-pnpm test:wizard
-17/17 passed
-```
-
-Review and Completion orchestration are now implemented on top of that accepted mapper. This new checkpoint is implementation-complete but runtime-validation-pending.
-
-### Accepted mapper
-
-Implementation commit:
-
-- `4818fdf1e12f1338678589af3bf69894a3cf2dab` — `feat(wizard): add portrait action mapper`
-
-Accepted behaviors include:
-
-- stable Subject normalization;
-- deterministic Portrait defaults/derived intent;
-- user overrides preserved over changing defaults;
-- canonical Expression/Hair/Outfit/Framing/Pose/Background/Lighting Actions;
-- canonical Setup mutation;
-- no direct Draft/path mutation;
-- rollback to pre-mapping Working Draft when a later mapping Action fails.
-
-Accepted Wizard gate after mapper: **17/17**.
-
----
-
-## Review model implemented
-
-New file:
-
-- `app/wizard/portraitReview.ts`
-
-`buildPortraitWizardReview(...)` produces a renderer-neutral semantic review model containing:
-
-- step identity;
-- user-facing label;
-- user-facing resolved value;
-- answer source (`default | user`, or derived fallback);
-- answer identity for later edit/navigation wiring.
-
-The Review intentionally does **not** expose:
-
-- Action IDs;
-- module keys;
-- field IDs;
-- preset IDs;
-- other implementation vocabulary.
-
-Rules are resolved before Review, so recommendations/defaults shown to the user match the state that mapping will consume. Explicit user overrides remain visible and sticky.
-
-This is the semantic Review model only; no renderer/page UI has been added yet.
-
----
-
-## Completion orchestration implemented
-
-New files:
-
-- `app/wizard/completion.ts`
-- `app/wizard/portraitCompletion.ts`
-
-Generic completion now runs canonical read Actions in this exact order:
-
-```text
-Wizard Working Draft
-  ↓
-prompt.validate
-  ↓ only if valid
-prompt.compile
-  ↓
-clone final Draft + compiled output
-```
-
-### Completion invariants
-
-- validation/compile use only the public Actions API;
-- validation errors stop completion before compile;
-- read-action failures are surfaced separately from validation failures;
-- completion does not mutate the Wizard Session while reading;
-- successful `finalDraft` is cloned from the completed Working Draft;
-- no Active Draft reference is accepted or replaced by the completion layer;
-- persisted `outputFormat` is unchanged when compile uses a one-off format override;
-- host/Create-page application of `finalDraft` remains a separate success-only responsibility.
-
-### Portrait pipeline
-
-`completePortraitWizard(...)` now provides the first full deterministic backend flow:
+The deterministic Portrait backend flow is now accepted through the real project checkout:
 
 ```text
 Answers
   ↓
-Portrait rules / derived intent
+Rules / derived intent
   ↓
 Portrait Action Mapper
   ↓
@@ -123,24 +34,108 @@ prompt.compile
 completed finalDraft + output
 ```
 
-A mapping failure never enters validation/compile.
+Accepted Wizard validation on 2026-08-28:
+
+```text
+pnpm test:wizard
+23/23 passed
+```
+
+The next active phase is the first real Wizard presentation/host integration. No new Actions API capability is currently required.
 
 ---
 
-## New tests
+## Accepted Portrait mapper
 
-`wizard-completion.test.ts` adds **6** tests covering:
+Implementation commit:
 
-1. semantic Review values and deterministic defaults;
-2. explicit user override preservation in Review;
-3. validation failure stopping before compile;
-4. end-to-end Portrait map → validate → compile while Active Draft remains unchanged;
-5. compile format override remaining read-only;
-6. mapping failure preventing completion reads.
+- `4818fdf1e12f1338678589af3bf69894a3cf2dab` — `feat(wizard): add portrait action mapper`
 
-If all previously accepted Wizard tests remain green, `pnpm test:wizard` is expected to move from **17** to **23 tests**.
+Accepted behaviors include:
 
-This **23-test gate is pending real checkout validation** and must not be marked accepted until it runs successfully.
+- stable Subject normalization;
+- deterministic Portrait defaults and derived intent;
+- explicit user overrides preserved over changing defaults;
+- canonical Expression/Hair/Outfit/Framing/Pose/Background/Lighting Actions;
+- canonical Setup mutation;
+- no direct Draft/path mutation;
+- rollback to the pre-mapping Working Draft when a later mapping Action fails.
+
+---
+
+## Accepted Review model
+
+Implemented in:
+
+- `app/wizard/portraitReview.ts`
+
+`buildPortraitWizardReview(...)` produces a renderer-neutral semantic review model containing:
+
+- step identity;
+- user-facing label;
+- user-facing resolved value;
+- answer source (`default | user`, or derived fallback);
+- answer identity for later edit/navigation wiring.
+
+The Review intentionally does **not** expose Action IDs, module keys, field IDs, preset IDs, or other implementation vocabulary.
+
+Rules are resolved before Review, so recommendations/defaults shown to the user match the state that mapping consumes. Explicit user overrides remain visible and sticky.
+
+---
+
+## Accepted Completion orchestration
+
+Implemented in:
+
+- `app/wizard/completion.ts`
+- `app/wizard/portraitCompletion.ts`
+
+Generic completion runs canonical read Actions in this exact order:
+
+```text
+Wizard Working Draft
+  ↓
+prompt.validate
+  ↓ only if valid
+prompt.compile
+  ↓
+clone final Draft + compiled output
+```
+
+Accepted invariants:
+
+- validation/compile use only the public Actions API;
+- validation errors stop completion before compile;
+- read-action failures are surfaced separately from validation failures;
+- completion does not mutate the Wizard Session while reading;
+- successful `finalDraft` is cloned from the completed Working Draft;
+- no Active Draft reference is accepted or replaced by the completion layer;
+- persisted `outputFormat` is unchanged when compile uses a one-off format override;
+- host/Create-page application of `finalDraft` remains a separate success-only responsibility;
+- mapping failure never enters validation/compile.
+
+---
+
+## Accepted Wizard tests
+
+Current `pnpm test:wizard` gate: **23/23**.
+
+Coverage includes:
+
+1. Wizard definition validation;
+2. Session isolation, defaults, navigation and canonical Action execution;
+3. Subject normalization;
+4. deterministic rule/default behavior;
+5. Portrait derived-state mapping;
+6. complete Professional/Cinematic mappings;
+7. keep-reference Hair/Outfit semantics;
+8. sequence rollback on mapping failure;
+9. missing Subject rejection before mutation;
+10. semantic Review output and explicit override preservation;
+11. validation stopping before compile;
+12. end-to-end map → validate → compile with the original Active Draft untouched;
+13. compile format override remaining read-only;
+14. mapping failure preventing completion reads.
 
 ---
 
@@ -148,8 +143,9 @@ This **23-test gate is pending real checkout validation** and must not be marked
 
 - Actions API Phase 10: **176/176** accepted;
 - public Actions surface: **101** under `prompt-draft.actions.v1`;
-- Wizard before mapper: **9/9** accepted;
-- Wizard with mapper: **17/17** accepted;
+- Wizard foundation: **9/9** accepted;
+- Wizard + mapper: **17/17** accepted;
+- Wizard + Review/Completion: **23/23** accepted;
 - Reference Catalog: **15/15** accepted baseline;
 - Phase 8 UX: **5/5** accepted baseline;
 - Phase 9 compiler: **9/9** accepted baseline;
@@ -157,11 +153,31 @@ This **23-test gate is pending real checkout validation** and must not be marked
 
 ---
 
+## Next active phase — Wizard UI + host integration
+
+Implement the first real presentation/host boundary while preserving all accepted backend invariants:
+
+1. inspect the current Create-page persistence/session ownership and reusable UI primitives;
+2. build a small reusable Wizard shell/renderer for the current definition types only;
+3. render `singleChoice`, `text`, and `variablePicker` questions;
+4. use existing Variable Picker behavior for Subject selection;
+5. wire Back/Next to the existing `WizardSession` navigation;
+6. render the structured Portrait Review model;
+7. invoke `completePortraitWizard(...)` on Finish;
+8. only after successful completion, hand `finalDraft` to the Create-page host for Active Draft replacement/persistence;
+9. keep Cancel destructive to nothing outside the Wizard Session;
+10. expose validation/completion issues in Wizard-facing context rather than raw domain jargon where practical.
+
+The UI phase should reuse existing design-system primitives, but it should not embed or recreate the full Expert UI panels.
+
+---
+
 ## Still not implemented
 
-- Review renderer/UI;
-- host adapter/Create-page success-only application of `finalDraft`;
-- full Wizard page/renderer;
+- Wizard shell/question renderer;
+- Review UI;
+- Create-page host adapter for success-only `finalDraft` application;
+- user-facing completion/validation state UI;
 - in-progress Wizard persistence;
 - `requiredWhen`;
 - `in` / `notIn` conditions unless a real flow proves they are needed.
@@ -186,17 +202,9 @@ Do not implement without a real requirement:
 
 ## Immediate next step
 
-1. Pull the latest `feature/wizard` checkout.
-2. Run `pnpm test:wizard`.
-3. Expected result if this checkpoint is clean: **23/23**.
-4. If green, mark Review + Completion accepted.
-5. Then implement the first Wizard presentation/host boundary:
-   - render the existing definition/questions;
-   - render the structured Portrait Review model;
-   - invoke `completePortraitWizard(...)` on Finish;
-   - apply returned `finalDraft` to Active Draft only after successful completion;
-   - keep persistence ownership in the existing Create-page host.
-6. After that UI/host checkpoint is stable, run the full regression/build gate again.
+Inspect the current Create-page host/persistence boundary and the existing reusable UI primitives before writing Wizard UI. Then implement the smallest end-to-end Portrait Wizard page/shell that consumes the already accepted Definition, Session, Review, Mapper and Completion layers.
+
+After the first UI/host checkpoint is stable, run the full regression/build gate again.
 
 ---
 
