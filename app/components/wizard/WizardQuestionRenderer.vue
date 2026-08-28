@@ -1,0 +1,46 @@
+<script setup lang="ts">
+import type { PromptVariable } from "~/modules/types";
+import type { WizardQuestionDefinition } from "~/wizard/definition";
+
+const props = defineProps<{
+  question: WizardQuestionDefinition;
+  modelValue?: unknown;
+  variables: PromptVariable[];
+}>();
+
+const emit = defineEmits<{
+  (event: "update:modelValue", value: unknown): void;
+}>();
+</script>
+
+<template>
+  <el-grid :gap="8">
+    <el-grid :gap="3">
+      <el-text :size="15" :weight="700">{{ props.question.title }}</el-text>
+      <el-text v-if="props.question.description" :size="12" color="normal55">
+        {{ props.question.description }}
+      </el-text>
+    </el-grid>
+
+    <WizardChoiceGroup
+      v-if="props.question.type === 'singleChoice'"
+      :options="props.question.options"
+      :model-value="props.modelValue"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+
+    <WizardTextQuestion
+      v-else-if="props.question.type === 'text'"
+      :model-value="props.modelValue"
+      :placeholder="props.question.placeholder"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+
+    <WizardVariableQuestion
+      v-else
+      :model-value="props.modelValue"
+      :variables="props.variables"
+      @update:model-value="emit('update:modelValue', $event)"
+    />
+  </el-grid>
+</template>
