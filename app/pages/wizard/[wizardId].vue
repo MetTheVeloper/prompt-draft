@@ -1,6 +1,9 @@
 <script setup lang="ts">
 import type { PromptVariable } from "~/modules/types";
-import { resolveWizardRuntime } from "~/wizard/registry";
+import {
+  resolveWizardRuntime,
+  type WizardRuntimeReview,
+} from "~/wizard/registry";
 import {
   createWizardSession,
   getWizardVisibleQuestions,
@@ -13,8 +16,6 @@ import {
   commitWizardFinalDraft,
   loadActiveDraftForWizard,
 } from "~/wizard/hostDraft";
-import type { PortraitWizardReview } from "~/wizard/portraitReview";
-import type { PortraitWizardCompletionResult } from "~/wizard/portraitCompletion";
 
 const route = useRoute();
 const router = useRouter();
@@ -22,7 +23,7 @@ const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
 
 const session = ref<WizardSession | null>(null);
-const review = ref<PortraitWizardReview | null>(null);
+const review = ref<WizardRuntimeReview | null>(null);
 const issueMessage = ref("");
 const isBusy = ref(false);
 
@@ -49,9 +50,9 @@ const visibleSteps = computed(() => {
   });
 });
 
-const currentStepIndex = computed(() => {
-  return visibleSteps.value.findIndex((step) => step.id === session.value?.currentStepId);
-});
+const currentStepIndex = computed(() =>
+  visibleSteps.value.findIndex((step) => step.id === session.value?.currentStepId),
+);
 
 const progress = computed(() => {
   if (!visibleSteps.value.length) return 0;
@@ -74,8 +75,9 @@ function isAnswered(questionId: string) {
 }
 
 function setAnswer(questionId: string, value: unknown) {
-  if (!session.value) return;
-  session.value = setWizardUserAnswer(session.value, questionId, value);
+  if (!session.value || !runtime.value) return;
+  const answered = setWizardUserAnswer(session.value, questionId, value);
+  session.value = runtime.value.resolveSession(answered);
   issueMessage.value = "";
 }
 
@@ -91,14 +93,12 @@ function ensureCurrentStepValid() {
 function next() {
   if (!session.value || !runtime.value || !ensureCurrentStepValid()) return;
   session.value = goToNextWizardStep(session.value, runtime.value.definition);
-  refreshReview();
 }
 
 function back() {
   if (!session.value || !runtime.value) return;
   session.value = goToPreviousWizardStep(session.value, runtime.value.definition);
   issueMessage.value = "";
-  refreshReview();
 }
 
 function editStep(stepId: string) {
@@ -112,8 +112,8 @@ function refreshReview() {
     review.value = null;
     return;
   }
-  review.value = runtime.value.buildReview(session.value) as PortraitWizardReview;
-  if (review.value.ok) session.value = review.value.session;
+  review.value = runtime.value.buildReview(session.value);
+  session.value = review.value.session;
 }
 
 async function finish() {
@@ -122,18 +122,17 @@ async function finish() {
   issueMessage.value = "";
 
   try {
-    const result = (await runtime.value.complete(session.value)) as PortraitWizardCompletionResult;
+    const result = await runtime.value.complete(session.value);
     if (!result.ok) {
       issueMessage.value =
         result.stage === "mapping"
-          ? "Some portrait choices could not be applied. Review your answers and try again."
+          ? "Some choices could not be applied. Review your answers and try again."
           : "The generated draft could not be validated or compiled. Review the Wizard choices and try again.";
       return;
     }
 
-    const committed = commitWizardFinalDraft(result.completion.finalDraft);
-    if (!committed) {
-      issueMessage.value = "The portrait was completed, but the active draft could not be updated.";
+    if (!commitWizardFinalDraft(result.finalDraft)) {
+      issueMessage.value = "The Wizard completed, but the active draft could not be updated.";
       return;
     }
 
@@ -158,7 +157,9 @@ onMounted(() => {
     return;
   }
 
-  session.value = createWizardSession(entry.definition, activeDraft);
+  session.value = entry.resolveSession(
+    createWizardSession(entry.definition, activeDraft),
+  );
 });
 
 watch(
@@ -198,6 +199,10 @@ watch(
       :items="review.items"
       @edit="editStep"
     />
+
+    <el-text v-if="review && !review.ok" :size="12" color="red">
+      Some required Wizard information is still missing.
+    </el-text>
 
     <el-text v-if="issueMessage" :size="12" color="red">
       {{ issueMessage }}
