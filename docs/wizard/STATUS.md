@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-28**
 
-Status: **Portrait mapper implemented; validation pending**
+Status: **Portrait mapper accepted; Review + Completion implemented; validation pending**
 
 Working branch: `feature/wizard`
 
@@ -16,181 +16,155 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## Current checkpoint
 
-The Actions API foundation required by Portrait is accepted, the exact Portrait-targeted module/action contracts have been inspected, and the first deterministic Portrait answer → derived intent → canonical Action mapper is now implemented.
+The first Portrait Action Mapper is now **accepted** after real checkout validation:
 
-Portrait mapper implementation commit:
+```text
+pnpm test:wizard
+17/17 passed
+```
+
+Review and Completion orchestration are now implemented on top of that accepted mapper. This new checkpoint is implementation-complete but runtime-validation-pending.
+
+### Accepted mapper
+
+Implementation commit:
 
 - `4818fdf1e12f1338678589af3bf69894a3cf2dab` — `feat(wizard): add portrait action mapper`
 
-This checkpoint is **implementation-complete but runtime-validation-pending**. The new mapper/tests have passed parser/transpile checks in the assistant environment; the real repository `pnpm` gate still needs to run in the user's checkout.
+Accepted behaviors include:
+
+- stable Subject normalization;
+- deterministic Portrait defaults/derived intent;
+- user overrides preserved over changing defaults;
+- canonical Expression/Hair/Outfit/Framing/Pose/Background/Lighting Actions;
+- canonical Setup mutation;
+- no direct Draft/path mutation;
+- rollback to pre-mapping Working Draft when a later mapping Action fails.
+
+Accepted Wizard gate after mapper: **17/17**.
 
 ---
 
-## Accepted validation baseline before mapper
+## Review model implemented
 
-Actions API Phase 10 remains accepted:
+New file:
 
-- `1e3bd96a9119210805eebc3db7ae00008502a110` — `feat(actions): add prompt settings and output mutations`
+- `app/wizard/portraitReview.ts`
 
-Accepted gate from 2026-08-28:
+`buildPortraitWizardReview(...)` produces a renderer-neutral semantic review model containing:
 
-| Gate | Result |
-|---|---:|
-| Actions API | **176/176** |
-| Wizard | **9/9** |
-| Reference Catalog | **15/15** |
-| Phase 8 UX | **5/5** |
-| Phase 9 compiler | **9/9** |
-| Production build | **successful** |
+- step identity;
+- user-facing label;
+- user-facing resolved value;
+- answer source (`default | user`, or derived fallback);
+- answer identity for later edit/navigation wiring.
 
-Public Actions surface remains **101 Actions** under `prompt-draft.actions.v1`.
+The Review intentionally does **not** expose:
+
+- Action IDs;
+- module keys;
+- field IDs;
+- preset IDs;
+- other implementation vocabulary.
+
+Rules are resolved before Review, so recommendations/defaults shown to the user match the state that mapping will consume. Explicit user overrides remain visible and sticky.
+
+This is the semantic Review model only; no renderer/page UI has been added yet.
 
 ---
 
-## Portrait mapper implemented
+## Completion orchestration implemented
 
-New implementation:
+New files:
 
-- `app/wizard/portrait.ts`
-- `scripts/wizard-portrait.test.ts`
-- `package.json` now includes the Portrait test file in `test:wizard`
+- `app/wizard/completion.ts`
+- `app/wizard/portraitCompletion.ts`
 
-### Subject normalization
-
-The Variable Picker returns a complete `PromptVariable`, while structured domains use stable `SemanticTargetRef` identities.
-
-Portrait now normalizes selected user/system variables into canonical subject targets:
+Generic completion now runs canonical read Actions in this exact order:
 
 ```text
-PromptVariable
+Wizard Working Draft
   ↓
-{ kind, value/token, variableId, label }
+prompt.validate
+  ↓ only if valid
+prompt.compile
   ↓
-SemanticTargetRef
+clone final Draft + compiled output
 ```
 
-Module-owned variables are not silently reclassified as user subjects.
+### Completion invariants
 
-### Minimum proven rule layer
+- validation/compile use only the public Actions API;
+- validation errors stop completion before compile;
+- read-action failures are surfaced separately from validation failures;
+- completion does not mutate the Wizard Session while reading;
+- successful `finalDraft` is cloned from the completed Working Draft;
+- no Active Draft reference is accepted or replaced by the completion layer;
+- persisted `outputFormat` is unchanged when compile uses a one-off format override;
+- host/Create-page application of `finalDraft` remains a separate success-only responsibility.
 
-The first real deterministic rule from the architecture source of truth is implemented:
+### Portrait pipeline
 
-- `Cinematic` recommends/defaults Lighting to `Dramatic`;
-- changing away from Cinematic replaces that stale default with the normal `Soft` default;
-- an explicit user Lighting choice is never overwritten.
+`completePortraitWizard(...)` now provides the first full deterministic backend flow:
 
-No generalized rule DSL was added.
+```text
+Answers
+  ↓
+Portrait rules / derived intent
+  ↓
+Portrait Action Mapper
+  ↓
+Working Draft
+  ↓
+prompt.validate
+  ↓
+prompt.compile
+  ↓
+completed finalDraft + output
+```
 
-### Derived mappings
-
-Current deterministic mappings include:
-
-- Framing:
-  - `headshot` → `close_up`
-  - `head_shoulders` → `head_and_shoulders`
-  - `half_body` → `medium_subject`
-  - `full_body` → `full_subject`
-- Pose:
-  - `natural` → `relaxed_standing`
-  - `formal` → `neutral_standing`
-  - `dynamic` → `action_ready`
-- Background:
-  - `studio` → `studio_background`
-  - `outdoor` → `outdoor_environment`
-  - `abstract` → `abstract_background`
-- Lighting:
-  - `soft` → `soft_diffused`
-  - `dramatic` → `low_key`
-  - `moody` → `moody_side`
-  - `clean` → `clean_studio`
-
-Environment follow-up text maps to Background `extraDetails` rather than module Custom Override.
-
-### Conservative appearance mappings
-
-Expression:
-
-- `natural` → `neutral_calm` preset
-- `warm` → `warm_smile` preset
-- `serious` → minimal structured `coreExpression: serious`
-- `confident` → authored assignment detail `confident expression`
-
-The mapper intentionally avoids substituting a more specific expression preset when the Wizard intent is broader than that preset.
-
-Hair:
-
-- `natural` → `stylingState: natural`
-- `polished` → `stylingState: controlled`
-- `editorial` → custom `stylingState: editorial styling`
-- `keep_reference` → canonical Hair source `{reference}`
-
-This avoids using haircut presets that would invent a physical hairstyle the user did not request.
-
-Outfit:
-
-- `professional`, `fashion`, and `fantasy` create a real Outfit Set plus one broad custom wearable item, so the result actually compiles;
-- `keep_reference` uses canonical image-to-image `preserveOutfit: true` and does not create a fake Outfit item.
-
-The mapper does not rely on Outfit Set `additionalDetails` alone because an Outfit Set with zero items is intentionally omitted by the compiler.
-
-### Prompt Setup consistency
-
-Portrait updates Setup through `prompt.settings.update` only.
-
-It sets:
-
-- Portrait idea;
-- selected Subject token;
-- `subjectType: person`;
-- `preserveComposition: false` because Wizard Framing is explicit;
-- `preserveLighting: false` because Wizard Lighting is explicit;
-- `preservePose: false` when Wizard Pose is explicit;
-- `preserveOutfit` according to the Outfit choice when present.
-
-The mapper does **not** force prompt mode, aspect ratio, reference usage, transformation strength, colors, materials, or unrelated Setup state.
-
-### Action orchestration
-
-All mutation remains canonical:
-
-- no direct Draft/path patching;
-- no Wizard-owned Hair/Outfit/Pose/Expression mutation implementation;
-- all changes execute through `executeWizardAction(...)` → `invokePublicAction(...)`;
-- generated stable IDs are read from successful Action results before dependent Actions run;
-- Camera remains untouched because Portrait v1 currently asks no camera-specific question.
-
-If a later Action in the Portrait sequence fails, intermediate Wizard Working Drafts are discarded and the mapper returns the pre-mapping Working Draft plus the derived state/issues. This provides Wizard-sequence isolation without adding an Actions batch/transaction API.
+A mapping failure never enters validation/compile.
 
 ---
 
-## New mapper tests
+## New tests
 
-`wizard-portrait.test.ts` adds **8** focused tests for:
+`wizard-completion.test.ts` adds **6** tests covering:
 
-1. PromptVariable → stable `SemanticTargetRef` normalization;
-2. default-rule replacement vs explicit user override;
-3. semantic derived-state mapping;
-4. complete Professional Portrait mapping through real public Actions;
-5. Cinematic Outdoor mapping and keep-reference Outfit behavior;
-6. keep-reference Hair using canonical `{reference}` source;
-7. rollback to the pre-mapping Working Draft on a late Action failure;
-8. rejecting a missing Subject before mutation planning.
+1. semantic Review values and deterministic defaults;
+2. explicit user override preservation in Review;
+3. validation failure stopping before compile;
+4. end-to-end Portrait map → validate → compile while Active Draft remains unchanged;
+5. compile format override remaining read-only;
+6. mapping failure preventing completion reads.
 
-If all existing Wizard tests remain unchanged, `pnpm test:wizard` is expected to report **17 tests** after this commit. This number is pending real checkout validation and must not be treated as accepted until the command runs successfully.
+If all previously accepted Wizard tests remain green, `pnpm test:wizard` is expected to move from **17** to **23 tests**.
+
+This **23-test gate is pending real checkout validation** and must not be marked accepted until it runs successfully.
+
+---
+
+## Accepted foundation remains unchanged
+
+- Actions API Phase 10: **176/176** accepted;
+- public Actions surface: **101** under `prompt-draft.actions.v1`;
+- Wizard before mapper: **9/9** accepted;
+- Wizard with mapper: **17/17** accepted;
+- Reference Catalog: **15/15** accepted baseline;
+- Phase 8 UX: **5/5** accepted baseline;
+- Phase 9 compiler: **9/9** accepted baseline;
+- production build successful at the previous accepted full gate.
 
 ---
 
 ## Still not implemented
 
-- `requiredWhen`;
-- `in` / `notIn` conditions unless a real Portrait need appears;
 - Review renderer/UI;
-- completion state machine;
-- canonical completion `prompt.validate` gate;
-- canonical completion `prompt.compile` output;
-- host adapter that replaces Active Draft after successful completion;
+- host adapter/Create-page success-only application of `finalDraft`;
 - full Wizard page/renderer;
-- in-progress Wizard persistence.
+- in-progress Wizard persistence;
+- `requiredWhen`;
+- `in` / `notIn` conditions unless a real flow proves they are needed.
 
 ---
 
@@ -212,17 +186,17 @@ Do not implement without a real requirement:
 
 ## Immediate next step
 
-1. Pull `feature/wizard` in a real project checkout.
-2. Run `pnpm test:wizard` first.
-3. If green, run the accepted Actions/reference/compiler regression gates and production build.
-4. Fix any mapper/runtime issue before moving on.
-5. Once this mapper checkpoint is accepted, implement Review/completion orchestration in this order:
-   - resolve/rerun mapper;
-   - `prompt.validate`;
-   - on success `prompt.compile`;
-   - expose successful completed Working Draft/result;
-   - host-owned replacement of Active Draft only after success.
-6. Build the Wizard renderer/page only after completion semantics are stable.
+1. Pull the latest `feature/wizard` checkout.
+2. Run `pnpm test:wizard`.
+3. Expected result if this checkpoint is clean: **23/23**.
+4. If green, mark Review + Completion accepted.
+5. Then implement the first Wizard presentation/host boundary:
+   - render the existing definition/questions;
+   - render the structured Portrait Review model;
+   - invoke `completePortraitWizard(...)` on Finish;
+   - apply returned `finalDraft` to Active Draft only after successful completion;
+   - keep persistence ownership in the existing Create-page host.
+6. After that UI/host checkpoint is stable, run the full regression/build gate again.
 
 ---
 
