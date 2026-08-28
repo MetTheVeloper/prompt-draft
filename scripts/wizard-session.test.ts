@@ -3,10 +3,15 @@ import test from "node:test";
 
 import type { PromptDraftState } from "../app/modules/promptDraft.types.ts";
 import type { PromptKeyModule } from "../app/modules/types.ts";
-import { portraitWizardV1Definition } from "../app/wizard/definition.ts";
 import {
+  portraitWizardV1Definition,
+  portraitWizardV2Definition,
+} from "../app/wizard/definition.ts";
+import {
+  createFreshWizardSession,
   createWizardSession,
   executeWizardAction,
+  getWizardCurrentStage,
   getWizardVisibleQuestions,
   goToNextWizardStep,
   replaceWizardDerived,
@@ -90,6 +95,21 @@ test("WizardSession clones the active draft and keeps defaults, answers, and der
     value: "professional",
     source: "default",
   });
+});
+
+test("Portrait v2 starts from a clean independent Draft and derives Stage from current Step", () => {
+  const session = createFreshWizardSession(portraitWizardV2Definition);
+
+  assert.equal(session.wizardVersion, 2);
+  assert.equal(session.currentStepId, "start");
+  assert.deepEqual(session.workingDraft.selectedModuleKeys, []);
+  assert.deepEqual(session.workingDraft.moduleValues, {});
+  assert.equal(session.workingDraft.promptSettings.idea, "");
+  assert.equal(session.answers.subjects, undefined);
+  assert.equal(
+    getWizardCurrentStage(portraitWizardV2Definition, session)?.id,
+    "start",
+  );
 });
 
 test("rule defaults may replace defaults but never silently overwrite a user answer", () => {
