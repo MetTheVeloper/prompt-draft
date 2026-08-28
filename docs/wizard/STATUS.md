@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-28**
 
-Status: **Portrait mapper + Review + Completion accepted; Wizard UI + host integration next**
+Status: **First Portrait Wizard UI + host integration implemented; manual UI acceptance pending**
 
 Working branch: `feature/wizard`
 
@@ -18,7 +18,7 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## Current checkpoint
 
-The deterministic Portrait backend flow is now accepted through the real project checkout:
+The deterministic Portrait backend remains accepted through the complete canonical flow:
 
 ```text
 Answers
@@ -36,16 +36,165 @@ prompt.compile
 completed finalDraft + output
 ```
 
-Accepted Wizard validation on 2026-08-28:
+The first real Wizard presentation/host layer is now implemented on top of that backend:
+
+```text
+Create host
+  ↓ launch
+/wizard/portrait
+  ↓
+Wizard Registry
+  ↓
+shared Wizard Shell + Question Renderer
+  ↓
+Wizard Session
+  ↓
+semantic Review
+  ↓ Finish
+completePortraitWizard(...)
+  ↓ success only
+hostDraft commit
+  ↓
+/create
+```
+
+Current automated validation on 2026-08-28:
 
 ```text
 pnpm test:wizard
 23/23 passed
 ```
 
-The next active phase is the first real Wizard presentation/host integration. No new Actions API capability is currently required.
+Current static production generation on 2026-08-28:
 
-The accepted presentation/routing baseline for that phase is documented in [`UI.md`](./UI.md): shared Wizard shell/renderers, independent guided UX over shared design primitives, `/wizard/[wizardId]` + registry initialization, static prerendering for supported Wizard URLs, and success-only handoff of `finalDraft` to the existing host.
+```text
+pnpm generate
+success
+```
+
+The generation log explicitly includes:
+
+```text
+/wizard/portrait
+```
+
+among the initial prerender routes, so the supported Portrait Wizard URL is not dependent on accidental crawler discovery.
+
+The next checkpoint is manual UI/host acceptance against the real browser flow before calling this phase accepted.
+
+---
+
+## Implemented Wizard UI / routing
+
+Implemented shared presentation pieces:
+
+```text
+app/components/wizard/
+  WizardShell.vue
+  WizardQuestionRenderer.vue
+  WizardChoiceGroup.vue
+  WizardTextQuestion.vue
+  WizardVariableQuestion.vue
+  WizardReview.vue
+```
+
+Implemented shared route:
+
+```text
+app/pages/wizard/[wizardId].vue
+```
+
+The route resolves the requested Wizard through the Registry and contains no Portrait-specific rendering branches.
+
+Current real question types:
+
+- `singleChoice`;
+- `text`;
+- `variablePicker`.
+
+Back/Next uses the existing Wizard Session navigation and visible-question behavior. Review consumes the renderer-neutral semantic Review model rather than rebuilding Portrait semantics in Vue.
+
+---
+
+## Wizard Registry
+
+Implemented in:
+
+- `app/wizard/registry.ts`;
+- `app/wizard/publicRoutes.ts`.
+
+The Registry currently exposes the Portrait runtime entry and owns the Portrait-specific adapters behind a shared runtime boundary:
+
+- Definition;
+- Review adapter;
+- completion adapter;
+- canonical Action host context construction.
+
+The shared route consumes only the runtime contract. Adding the next Wizard should not require a copied page implementation.
+
+Public Wizard route metadata is kept separate/lightweight so Nuxt static generation can consume the same supported route list without importing browser/domain runtime code into configuration.
+
+---
+
+## Static generation
+
+`nuxt.config.ts` now adds registered public Wizard routes to Nitro prerender configuration.
+
+Accepted build observation from `pnpm generate`:
+
+```text
+Prerendering 10 initial routes with crawler
+...
+├─ /wizard/portrait
+...
+Generated public .output/public
+```
+
+The app remains `ssr: false`; this checkpoint concerns deterministic static route generation rather than SSR HTML rendering.
+
+---
+
+## Host / Active Draft boundary
+
+Implemented in:
+
+- `app/wizard/hostDraft.ts`.
+
+The real Create page remains the owner of Draft collection persistence and Active Draft identity.
+
+Wizard host behavior is intentionally narrow:
+
+1. Create persists its current Active Draft before route teardown through its existing synchronous `saveDraft()` lifecycle;
+2. Wizard reads the persisted Active Draft and clones it into `WizardSession.workingDraft`;
+3. Wizard interaction changes only Session state / Working Draft;
+4. Cancel navigates back without committing Wizard state;
+5. Finish invokes the canonical Portrait completion pipeline;
+6. only a successful completion passes `finalDraft` to the host adapter;
+7. the adapter replaces only the current Active Draft state while preserving its host-owned identity/title/created metadata;
+8. returning to `/create` lets the existing Create restoration path consume the committed record.
+
+No parallel Draft store has been introduced.
+
+---
+
+## Create host launcher
+
+The first discoverable host entry is implemented through the existing shared Header surface.
+
+When the active route is `/create`:
+
+- desktop shows a `Portrait Wizard` action;
+- mobile exposes the same action in the existing drawer menu.
+
+The launcher navigates to:
+
+```text
+/wizard/portrait
+```
+
+It does not mutate Draft state itself. Create's existing teardown persistence remains the host boundary before the Wizard initializes.
+
+This is intentionally a first-Portrait launcher, not a generalized Wizard catalog UI.
 
 ---
 
@@ -71,7 +220,7 @@ Accepted behaviors include:
 
 Implemented in:
 
-- `app/wizard/portraitReview.ts`
+- `app/wizard/portraitReview.ts`.
 
 `buildPortraitWizardReview(...)` produces a renderer-neutral semantic review model containing:
 
@@ -79,7 +228,7 @@ Implemented in:
 - user-facing label;
 - user-facing resolved value;
 - answer source (`default | user`, or derived fallback);
-- answer identity for later edit/navigation wiring.
+- answer identity for edit/navigation wiring.
 
 The Review intentionally does **not** expose Action IDs, module keys, field IDs, preset IDs, or other implementation vocabulary.
 
@@ -91,8 +240,8 @@ Rules are resolved before Review, so recommendations/defaults shown to the user 
 
 Implemented in:
 
-- `app/wizard/completion.ts`
-- `app/wizard/portraitCompletion.ts`
+- `app/wizard/completion.ts`;
+- `app/wizard/portraitCompletion.ts`.
 
 Generic completion runs canonical read Actions in this exact order:
 
@@ -115,7 +264,7 @@ Accepted invariants:
 - successful `finalDraft` is cloned from the completed Working Draft;
 - no Active Draft reference is accepted or replaced by the completion layer;
 - persisted `outputFormat` is unchanged when compile uses a one-off format override;
-- host/Create-page application of `finalDraft` remains a separate success-only responsibility;
+- host application of `finalDraft` remains a separate success-only responsibility;
 - mapping failure never enters validation/compile.
 
 ---
@@ -152,43 +301,39 @@ Coverage includes:
 - Wizard + Review/Completion: **23/23** accepted;
 - Reference Catalog: **15/15** accepted baseline;
 - Phase 8 UX: **5/5** accepted baseline;
-- Phase 9 compiler: **9/9** accepted baseline;
-- production build successful at the previous accepted full gate.
+- Phase 9 compiler: **9/9** accepted baseline.
 
 ---
 
-## Next active phase — Wizard UI + host integration
+## Manual acceptance still required
 
-Implement the first real presentation/host boundary while preserving all accepted backend invariants and following [`UI.md`](./UI.md):
+Before accepting the first UI/host phase, verify in the real app:
 
-1. inspect the current Create-page persistence/session ownership and reusable UI primitives;
-2. add the shared `/wizard/[wizardId]` route + minimum Wizard Registry required by Portrait;
-3. ensure supported Wizard URLs are included in static generation/prerendering;
-4. build a small reusable Wizard shell/renderer for the current definition types only;
-5. render `singleChoice`, `text`, and `variablePicker` questions;
-6. use existing Variable Picker behavior for Subject selection;
-7. wire Back/Next to the existing `WizardSession` navigation;
-8. render the structured Portrait Review model;
-9. invoke `completePortraitWizard(...)` on Finish;
-10. only after successful completion, hand `finalDraft` to the Create-page host for Active Draft replacement/persistence;
-11. keep Cancel destructive to nothing outside the Wizard Session;
-12. expose validation/completion issues in Wizard-facing context rather than raw domain jargon where practical.
-
-The UI phase should reuse existing design-system primitives, but it should not embed or recreate the full Expert UI panels.
+1. Create shows the Portrait Wizard launcher on desktop;
+2. mobile menu exposes the same launcher;
+3. launch opens `/wizard/portrait` with the current Active Draft isolated into the Wizard Session;
+4. Subject picker exposes valid user Subject variables;
+5. all three real question renderers behave correctly;
+6. conditional Pose and Environment questions update correctly;
+7. Back/Next progression is correct;
+8. Review groups semantic values and Edit returns to the expected step;
+9. Cancel leaves the persisted Active Draft unchanged;
+10. Finish succeeds for a valid Portrait flow;
+11. successful Finish updates only the existing Active Draft and returns to Create;
+12. the resulting Draft is editable normally in Expert UI;
+13. failed completion does not overwrite the Active Draft;
+14. desktop/mobile visual layout is usable enough for the first baseline.
 
 ---
 
 ## Still not implemented
 
-- Wizard registry + shared dynamic route;
-- static Wizard route prerender registration;
-- Wizard shell/question renderer;
-- Review UI;
-- Create-page host adapter for success-only `finalDraft` application;
-- user-facing completion/validation state UI;
 - in-progress Wizard persistence;
 - `requiredWhen`;
-- `in` / `notIn` conditions unless a real flow proves they are needed.
+- `in` / `notIn` conditions unless a real flow proves they are needed;
+- generalized Wizard catalog/launcher UI;
+- translated/localized Wizard Definition content and first-pass Wizard UI copy cleanup;
+- additional Wizard definitions.
 
 ---
 
@@ -211,9 +356,9 @@ Do not implement without a real requirement:
 
 ## Immediate next step
 
-Inspect the current Create-page host/persistence boundary, Nuxt prerender configuration, and existing reusable UI primitives before writing Wizard UI. Then implement the smallest end-to-end `/wizard/portrait` flow through the shared route/registry/shell defined in [`UI.md`](./UI.md).
+Pull the latest `feature/wizard`, rerun the focused automated gate after the Header launcher change, then manually exercise `/create → /wizard/portrait → Cancel/Finish → /create` and report UI/runtime issues.
 
-After the first UI/host checkpoint is stable, run the full regression/build gate again.
+Do not accept the UI phase until the browser-level isolation and success-only host commit behavior have been observed directly.
 
 ---
 
@@ -223,4 +368,4 @@ After the first UI/host checkpoint is stable, run the full regression/build gate
 - [`UI.md`](./UI.md) is the scoped source of truth for Wizard presentation, routing, static generation, and host-integration decisions.
 - This file is the operational checkpoint for resuming work.
 - `docs/actions-api/STATUS.md` remains the operational source for the accepted Actions surface.
-- Update status documents after meaningful implementation/test checkpoints.
+- Update this file after meaningful implementation/test checkpoints.
