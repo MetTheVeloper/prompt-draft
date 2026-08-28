@@ -1,4 +1,5 @@
 import type { WizardEntityKind } from "./entities";
+import { portraitBackgroundOptionsQuestion } from "./portraitBackgroundOptions";
 
 export type WizardAnswerScalar = string | number | boolean | null;
 
@@ -833,6 +834,7 @@ export const portraitWizardV2Definition = {
             value: "abstract",
           },
         },
+        portraitBackgroundOptionsQuestion,
       ],
     },
     {
