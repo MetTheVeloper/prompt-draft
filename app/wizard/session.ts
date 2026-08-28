@@ -5,12 +5,18 @@ import type {
 } from "../actions/public";
 import type { ActionContext } from "../actions/types";
 import type { PromptDraftState } from "../modules/promptDraft.types";
-import { clonePromptDraftState } from "../utils/promptDraftState";
+import {
+  clonePromptDraftState,
+  createPromptDraftState,
+} from "../utils/promptDraftState";
+import { createDefaultPromptSettings } from "../utils/compilePromptCore";
 import {
   assertWizardDefinition,
   type WizardCondition,
   type WizardDefinition,
   type WizardQuestionDefinition,
+  type WizardStageDefinition,
+  type WizardStepDefinition,
 } from "./definition";
 
 export type WizardAnswerSource = "default" | "user";
@@ -75,10 +81,10 @@ export function isWizardConditionMet(
   return condition.operator === "equals" ? matches : !matches;
 }
 
-function visibleSteps(
+export function getWizardVisibleSteps(
   definition: WizardDefinition,
   session: WizardSession,
-) {
+): readonly WizardStepDefinition[] {
   assertSessionDefinition(session, definition);
   return definition.steps.filter((step) =>
     isWizardConditionMet(session, step.visibleWhen),
@@ -100,9 +106,26 @@ export function getWizardVisibleQuestions(
   );
 }
 
-export function createWizardSession(
+export function getWizardCurrentStep(
   definition: WizardDefinition,
-  activeDraft: PromptDraftState,
+  session: WizardSession,
+) {
+  assertSessionDefinition(session, definition);
+  return definition.steps.find((step) => step.id === session.currentStepId) || null;
+}
+
+export function getWizardCurrentStage(
+  definition: WizardDefinition,
+  session: WizardSession,
+): WizardStageDefinition | null {
+  const step = getWizardCurrentStep(definition, session);
+  if (!step?.stageId || !definition.stages?.length) return null;
+  return definition.stages.find((stage) => stage.id === step.stageId) || null;
+}
+
+function createSessionFromDraft(
+  definition: WizardDefinition,
+  initialDraft: PromptDraftState,
 ): WizardSession {
   assertWizardDefinition(definition);
 
@@ -117,10 +140,10 @@ export function createWizardSession(
     currentStepId: firstStep.id,
     answers: createDefaultAnswers(definition),
     derived: {},
-    workingDraft: clonePromptDraftState(activeDraft),
+    workingDraft: clonePromptDraftState(initialDraft),
   };
 
-  const firstVisibleStep = visibleSteps(definition, session)[0];
+  const firstVisibleStep = getWizardVisibleSteps(definition, session)[0];
   if (!firstVisibleStep) {
     throw new Error("Wizard definition has no visible initial step.");
   }
@@ -129,6 +152,30 @@ export function createWizardSession(
     ...session,
     currentStepId: firstVisibleStep.id,
   };
+}
+
+/**
+ * Compatibility constructor used by the accepted v1 backend tests and any
+ * explicit caller that intentionally supplies a Draft snapshot.
+ */
+export function createWizardSession(
+  definition: WizardDefinition,
+  activeDraft: PromptDraftState,
+): WizardSession {
+  return createSessionFromDraft(definition, activeDraft);
+}
+
+/**
+ * Standard Wizard product flow. Starts from a clean Draft and therefore has
+ * no dependency on Create-page Active Draft state.
+ */
+export function createFreshWizardSession(
+  definition: WizardDefinition,
+): WizardSession {
+  return createSessionFromDraft(
+    definition,
+    createPromptDraftState(createDefaultPromptSettings()),
+  );
 }
 
 export function setWizardUserAnswer(
@@ -181,7 +228,7 @@ function moveWizardSession(
   definition: WizardDefinition,
   offset: -1 | 1,
 ): WizardSession {
-  const steps = visibleSteps(definition, session);
+  const steps = getWizardVisibleSteps(definition, session);
   const currentIndex = steps.findIndex(
     (step) => step.id === session.currentStepId,
   );
@@ -213,7 +260,6 @@ export function goToPreviousWizardStep(
 /**
  * Executes one canonical public Action against the isolated Working Draft.
  * Failure keeps the session unchanged; success advances only workingDraft.
- * Active Draft commit remains a separate completion responsibility.
  */
 export async function executeWizardAction<TData = unknown>(
   session: WizardSession,
