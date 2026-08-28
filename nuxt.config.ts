@@ -1,3 +1,5 @@
+import { publicWizardRoutes } from "./app/wizard/publicRoutes";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // nuxt.config.ts
 export default defineNuxtConfig({
@@ -7,6 +9,11 @@ export default defineNuxtConfig({
   spaLoadingTemplate: true,
   experimental: {
     spaLoadingTemplateLocation: 'body',
+  },
+  nitro: {
+    prerender: {
+      routes: publicWizardRoutes,
+    },
   },
   vite: {
     optimizeDeps: {
@@ -19,7 +26,7 @@ export default defineNuxtConfig({
         '@ffmpeg/ffmpeg',
         '@vueuse/core',
         'moment-jalaali', // CJS
-        'qrcode', // CJS
+        'qrcode',
       ],
       exclude: [
         '@ffmpeg/ffmpeg',
@@ -36,7 +43,6 @@ export default defineNuxtConfig({
   css: [
     "~/assets/css/material-symbols.css",
     "~/assets/css/zkit.scss",
-    // '~/assets/css/scss.scss',
     "~/assets/css/style.css",
     "~/assets/css/app.scss",
   ],
