@@ -3,10 +3,8 @@ import {
   completeWizardSession,
   type WizardCompletionResult,
 } from "./completion";
-import {
-  executePortraitWizardMapping,
-  type PortraitWizardMappingResult,
-} from "./portrait";
+import type { PortraitWizardMappingResult } from "./portrait";
+import { executePortraitWizardMappingWithSubjectOverrides } from "./portraitSubjectOverrides";
 import type {
   WizardActionHostContext,
   WizardSession,
@@ -33,7 +31,7 @@ export type PortraitWizardCompletionResult =
 
 /**
  * Canonical Portrait completion pipeline:
- * answers/rules -> mapper -> prompt.validate -> prompt.compile.
+ * answers/rules -> mapper -> per-subject overrides -> prompt.validate -> prompt.compile.
  * Successful output is still not persisted/applied to the Active Draft here.
  */
 export async function completePortraitWizard(
@@ -41,7 +39,10 @@ export async function completePortraitWizard(
   hostContext: WizardActionHostContext,
   options: { format?: PromptOutputFormat } = {},
 ): Promise<PortraitWizardCompletionResult> {
-  const mapping = await executePortraitWizardMapping(session, hostContext);
+  const mapping = await executePortraitWizardMappingWithSubjectOverrides(
+    session,
+    hostContext,
+  );
   if (!mapping.ok) {
     return {
       ok: false,
