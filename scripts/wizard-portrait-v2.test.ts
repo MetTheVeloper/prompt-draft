@@ -9,6 +9,7 @@ import {
   wizardEntityToPromptVariable,
 } from "../app/wizard/entities.ts";
 import {
+  applyPortraitWizardRules,
   buildPortraitDraftTitle,
   derivePortraitWizardState,
   executePortraitWizardMapping,
@@ -101,6 +102,36 @@ test("Portrait v2 derives Wizard-owned subject identity and deterministic fallba
   assert.equal(derived.value.aspectRatio, "common_portrait_4_5");
 });
 
+test("Portrait v2 keeps generated idea as a replaceable default until the user edits it", () => {
+  let session = createFreshWizardSession(portraitWizardV2Definition);
+  const met = createWizardEntity("person", [], "Met");
+  const zahra = createWizardEntity("person", [met], "Zahra");
+
+  session = answer(session, "creationMode", "from_image");
+  session = answer(session, "subjects", [met, zahra]);
+  session = answer(session, "portraitIntent", "fashion");
+  session = applyPortraitWizardRules(session);
+
+  assert.deepEqual(session.answers.idea, {
+    value:
+      "A fashion portrait of {met} and {zahra} together, with the following settings",
+    source: "default",
+  });
+
+  session = answer(
+    session,
+    "idea",
+    "A custom editorial portrait of {met} and {zahra} together",
+  );
+  session = answer(session, "portraitIntent", "cinematic");
+  session = applyPortraitWizardRules(session);
+
+  assert.deepEqual(session.answers.idea, {
+    value: "A custom editorial portrait of {met} and {zahra} together",
+    source: "user",
+  });
+});
+
 test("Portrait v2 image mode grounds multiple named subjects by reference position", () => {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   const met = createWizardEntity("person", [], "Met");
@@ -161,12 +192,14 @@ test("Portrait v2 mapping creates its subject variable inside the isolated Worki
   assert.equal(expression[0]?.targets[0]?.variableId, person.id);
 });
 
-test("Portrait v2 image mapping keeps preserve opt-in unless a Wizard choice explicitly requests it", async () => {
+test("Portrait v2 never turns setup preserve options on, including keep-reference choices", async () => {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   const person = createWizardEntity("person", [], "Sarah");
   session = answer(session, "creationMode", "from_image");
   session = answer(session, "subjects", [person]);
   session = completeRequiredAnswers(session);
+  session = answer(session, "hairIntent", "keep_reference");
+  session = answer(session, "outfitIntent", "keep_reference");
 
   const mapping = await executePortraitWizardMapping(
     session,
