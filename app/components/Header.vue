@@ -129,6 +129,10 @@ function openVectorizer() {
   navigateTo('/vectorizer')
 }
 
+function openPortraitWizard() {
+  navigateTo('/wizard/portrait')
+}
+
 function openToolsMenu() {
   menu.open({
     mode: 'dropdown',
@@ -190,9 +194,24 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
       ]
     : []
 
+  const wizardItems: GlobalMenuItem[] = route.name === 'create'
+    ? [
+        {
+          type: 'divider',
+        },
+        {
+          label: 'Portrait Wizard',
+          icon: 'auto_awesome',
+          color: 'prim15',
+          handler: openPortraitWizard,
+        },
+      ]
+    : []
+
   return [
     ...statusItems,
     ...navigationItems,
+    ...wizardItems,
     {
       type: 'divider',
     },
@@ -295,6 +314,18 @@ function openMobileMenu() {
 
     <div v-else class="fg100" />
 
+    <el-button
+      v-if="!mobile && route.name === 'create'"
+      label="Portrait Wizard"
+      icon="auto_awesome"
+      color="prim"
+      :mode="mini ? 'flat' : 'normal'"
+      :type="mini ? 'fab' : 'default'"
+      :size="12"
+      :p="[8, 12]"
+      @click="openPortraitWizard"
+    />
+
     <el-text
       v-if="!mobile && offlineHeaderLabel"
       type="span"
@@ -356,6 +387,6 @@ function openMobileMenu() {
 <style>
 html.is-native-app .app-header {
   top: 0 !important;
-  padding-top: calc(var(--safe-area-inset-top, env(safe-area-inset-top, 0px)) + 8px) !important;
+  padding-top: calc(var(--safe-area-inset-top, env(var(--safe-area-inset-top), 0px)) + 8px) !important;
 }
 </style>
