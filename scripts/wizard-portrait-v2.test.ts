@@ -318,6 +318,40 @@ test("Portrait v2 empty modal option records do not activate optional Look modul
   assert.equal(mapping.session.workingDraft.selectedModuleKeys.includes("outfit"), false);
 });
 
+test("Portrait v2 Background more-options override the selected Scene preset through canonical fields", async () => {
+  let { session, person } = createV2Session();
+
+  session = answer(session, "environmentType", "outdoor");
+  session = answer(session, "outdoorSetting", "riverbank at golden hour");
+  session = answer(session, "backgroundOptions", {
+    setting: "natural",
+    spatialStructure: "expansive",
+    backgroundMaterial: "stone",
+    detailDensity: "detailed",
+    backgroundElement: "water",
+  });
+
+  const mapping = await executePortraitWizardMapping(
+    session,
+    v2HostContext(person),
+  );
+  assert.equal(mapping.ok, true);
+  if (!mapping.ok) return;
+
+  const background = mapping.session.workingDraft.moduleValues.background as Record<
+    string,
+    unknown
+  >;
+  assert.equal(background.backgroundConcept, "outdoor_environment");
+  assert.equal(background.backgroundType, "environment");
+  assert.equal(background.setting, "natural");
+  assert.equal(background.spatialStructure, "expansive");
+  assert.equal(background.backgroundMaterial, "stone");
+  assert.equal(background.detailDensity, "detailed");
+  assert.deepEqual(background.backgroundElements, ["water"]);
+  assert.equal(background.extraDetails, "riverbank at golden hour");
+});
+
 test("Portrait v2 never turns setup preserve options on, including keep-reference choices", async () => {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   const person = createWizardEntity("person", [], "Sarah");
