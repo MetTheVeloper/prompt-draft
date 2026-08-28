@@ -1,9 +1,19 @@
 import { promptModules } from "../modules/registry";
 import type { PromptDraftState } from "../modules/promptDraft.types";
 import type { PromptVariable } from "../modules/types";
-import { portraitWizardV1Definition, type WizardDefinition } from "./definition";
+import {
+  portraitWizardV2Definition,
+  type WizardDefinition,
+} from "./definition";
+import {
+  normalizeWizardEntityAnswers,
+  wizardEntityToPromptVariable,
+} from "./entities";
 import { completePortraitWizard } from "./portraitCompletion";
-import { applyPortraitWizardRules, normalizePortraitSubjectReference } from "./portrait";
+import {
+  applyPortraitWizardRules,
+  normalizePortraitSubjectReference,
+} from "./portrait";
 import { buildPortraitWizardReview } from "./portraitReview";
 import { publicWizardIds, publicWizardRoutes } from "./publicRoutes";
 import type { WizardSession } from "./session";
@@ -38,24 +48,37 @@ function createRuntimeId(prefix: string) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function getPortraitSubject(session: WizardSession) {
+function getPortraitVariables(session: WizardSession): PromptVariable[] {
+  if (session.wizardVersion === 2) {
+    return normalizeWizardEntityAnswers(session.answers.subjects?.value)
+      .map(wizardEntityToPromptVariable);
+  }
+
   const value = session.answers.subjectReference?.value;
-  if (!value || typeof value !== "object") return null;
-  return value as PromptVariable;
+  return value && typeof value === "object" ? [value as PromptVariable] : [];
 }
 
 function createPortraitHostContext(session: WizardSession) {
-  const subject = getPortraitSubject(session);
-  const target = subject ? normalizePortraitSubjectReference(subject) : null;
+  const variables = getPortraitVariables(session);
+  const targets = variables
+    .map((variable) => ({
+      variable,
+      target: normalizePortraitSubjectReference(variable),
+    }))
+    .filter((item) => Boolean(item.target));
+  let variableIdIndex = 0;
 
   return {
     modules: promptModules,
     environment: {
-      subjectAssignmentTargets: target
-        ? [{ label: target.label || "Portrait Subject", target }]
-        : [],
+      subjectAssignmentTargets: targets.map(({ variable, target }) => ({
+        label: variable.label || variable.value || variable.key || "Portrait Subject",
+        target: target!,
+      })),
     },
     idFactory: {
+      variable: () =>
+        variables[variableIdIndex++]?.id || createRuntimeId("wizard-variable"),
       expressionAssignment: () => createRuntimeId("expression"),
       poseAssignment: () => createRuntimeId("pose"),
       hairStyle: () => createRuntimeId("hair"),
@@ -75,7 +98,7 @@ export type WizardRuntimeEntry = {
 
 const portraitRuntime: WizardRuntimeEntry = {
   id: "portrait",
-  definition: portraitWizardV1Definition,
+  definition: portraitWizardV2Definition,
   resolveSession: applyPortraitWizardRules,
   buildReview: (session) => buildPortraitWizardReview(session),
   complete: async (session) => {
