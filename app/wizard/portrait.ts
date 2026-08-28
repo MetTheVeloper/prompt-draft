@@ -128,6 +128,14 @@ const TRANSFORMATION_STRENGTH = new Set<TransformationStrength>([
   "extreme",
 ]);
 
+const PORTRAIT_ASPECT_RATIO_MAP: Record<string, string> = {
+  "1:1": "common_square",
+  "4:5": "common_portrait_4_5",
+  "3:4": "common_portrait_3_4",
+  "9:16": "common_vertical_9_16",
+  "16:9": "common_widescreen_16_9",
+};
+
 const FRAMING_SHOT_SIZE: Record<PortraitFramingIntent, string> = {
   headshot: "close_up",
   head_shoulders: "head_and_shoulders",
@@ -370,8 +378,9 @@ export function derivePortraitWizardState(
     ? `${portraitIntent} portrait`
     : userIdea || fallbackPortraitIdea(session, portraitIntent, subjectTokens);
   const promptMode = resolvePromptMode(session);
+  const aspectRatioAnswer = cleanText(answerValue(session, "aspectRatio"));
   const aspectRatio = session.wizardVersion === 2
-    ? cleanText(answerValue(session, "aspectRatio")) || session.workingDraft.promptSettings.aspectRatio
+    ? PORTRAIT_ASPECT_RATIO_MAP[aspectRatioAnswer] || session.workingDraft.promptSettings.aspectRatio
     : session.workingDraft.promptSettings.aspectRatio;
   const referenceUsage =
     enumAnswer(session, "referenceUsage", REFERENCE_USAGE) ||
