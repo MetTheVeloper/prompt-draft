@@ -48,6 +48,18 @@ const visibleQuestions = computed(() => {
   return getWizardVisibleQuestions(runtime.value.definition, session.value);
 });
 
+const allQuestions = computed(() =>
+  runtime.value?.definition.steps.flatMap((step) => [...step.questions]) || [],
+);
+
+const answerValues = computed<Record<string, unknown>>(() => {
+  const result: Record<string, unknown> = {};
+  for (const [answerId, answer] of Object.entries(session.value?.answers || {})) {
+    result[answerId] = answer.value;
+  }
+  return result;
+});
+
 const visibleSteps = computed(() => {
   if (!session.value || !runtime.value) return [];
   return getWizardVisibleSteps(runtime.value.definition, session.value);
@@ -302,6 +314,8 @@ onBeforeUnmount(() => {
         :key="question.id"
         :question="question"
         :model-value="session.answers[question.id]?.value"
+        :answer-values="answerValues"
+        :questions="allQuestions"
         @update:model-value="setAnswer(question.id, $event)"
       />
     </el-grid>
