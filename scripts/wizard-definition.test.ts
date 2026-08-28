@@ -4,6 +4,7 @@ import test from "node:test";
 import {
   assertWizardDefinition,
   portraitWizardV1Definition,
+  portraitWizardV2Definition,
   type WizardDefinition,
 } from "../app/wizard/definition.ts";
 
@@ -26,6 +27,39 @@ test("Portrait Wizard v1 definition stays semantic and validates as a minimal da
   );
 
   const serialized = JSON.stringify(portraitWizardV1Definition);
+  assert.equal(serialized.includes('"actionId"'), false);
+  assert.equal(serialized.includes('"moduleKey"'), false);
+  assert.equal(serialized.includes('"presetId"'), false);
+});
+
+test("Portrait Wizard v2 validates with lightweight Stage -> Step -> Question grouping", () => {
+  assert.doesNotThrow(() => assertWizardDefinition(portraitWizardV2Definition));
+  assert.equal(portraitWizardV2Definition.version, 2);
+  assert.deepEqual(
+    portraitWizardV2Definition.stages.map((stage) => stage.id),
+    [
+      "start",
+      "subjects",
+      "portrait",
+      "appearance",
+      "composition",
+      "scene",
+      "final",
+      "review",
+    ],
+  );
+  assert.ok(
+    portraitWizardV2Definition.steps.every((step) =>
+      portraitWizardV2Definition.stages.some((stage) => stage.id === step.stageId),
+    ),
+  );
+
+  const subjectQuestion = portraitWizardV2Definition.steps
+    .find((step) => step.id === "subjects")
+    ?.questions[0];
+  assert.equal(subjectQuestion?.type, "entityCollection");
+
+  const serialized = JSON.stringify(portraitWizardV2Definition);
   assert.equal(serialized.includes('"actionId"'), false);
   assert.equal(serialized.includes('"moduleKey"'), false);
   assert.equal(serialized.includes('"presetId"'), false);
@@ -90,5 +124,27 @@ test("WizardDefinition rejects conditions that reference unknown answers", () =>
   assert.throws(
     () => assertWizardDefinition(invalidDefinition),
     /Wizard condition references unknown answer id: missing/,
+  );
+});
+
+test("WizardDefinition rejects a step that points at an unknown stage", () => {
+  const invalidDefinition: WizardDefinition = {
+    id: "invalid-stage",
+    version: 1,
+    title: "Invalid stage",
+    stages: [{ id: "start", title: "Start" }],
+    steps: [
+      {
+        id: "one",
+        stageId: "missing",
+        title: "One",
+        questions: [],
+      },
+    ],
+  };
+
+  assert.throws(
+    () => assertWizardDefinition(invalidDefinition),
+    /references unknown stage: missing/,
   );
 });
