@@ -66,6 +66,84 @@ export type PortraitBackgroundOptions = Partial<{
   backgroundElement: (typeof PORTRAIT_BACKGROUND_ELEMENTS)[number];
 }>;
 
+export type PortraitBackgroundFieldUpdate = {
+  fieldId:
+    | "setting"
+    | "spatialStructure"
+    | "backgroundMaterial"
+    | "detailDensity"
+    | "backgroundElements";
+  value: string | string[];
+};
+
+const SETTING_SET = new Set<string>(PORTRAIT_BACKGROUND_SETTINGS);
+const STRUCTURE_SET = new Set<string>(PORTRAIT_BACKGROUND_STRUCTURES);
+const MATERIAL_SET = new Set<string>(PORTRAIT_BACKGROUND_MATERIALS);
+const DETAIL_DENSITY_SET = new Set<string>(PORTRAIT_BACKGROUND_DETAIL_DENSITIES);
+const ELEMENT_SET = new Set<string>(PORTRAIT_BACKGROUND_ELEMENTS);
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
+function normalizedValue<T extends string>(
+  record: Record<string, unknown>,
+  key: string,
+  allowed: ReadonlySet<string>,
+): T | undefined {
+  const value = record[key];
+  return typeof value === "string" && allowed.has(value)
+    ? (value as T)
+    : undefined;
+}
+
+export function normalizePortraitBackgroundOptions(
+  value: unknown,
+): PortraitBackgroundOptions {
+  if (!isRecord(value)) return {};
+
+  return {
+    setting: normalizedValue(value, "setting", SETTING_SET),
+    spatialStructure: normalizedValue(value, "spatialStructure", STRUCTURE_SET),
+    backgroundMaterial: normalizedValue(value, "backgroundMaterial", MATERIAL_SET),
+    detailDensity: normalizedValue(value, "detailDensity", DETAIL_DENSITY_SET),
+    backgroundElement: normalizedValue(value, "backgroundElement", ELEMENT_SET),
+  };
+}
+
+export function portraitBackgroundFieldUpdates(
+  options: PortraitBackgroundOptions,
+): PortraitBackgroundFieldUpdate[] {
+  const updates: PortraitBackgroundFieldUpdate[] = [];
+
+  if (options.setting) {
+    updates.push({ fieldId: "setting", value: options.setting });
+  }
+  if (options.spatialStructure) {
+    updates.push({
+      fieldId: "spatialStructure",
+      value: options.spatialStructure,
+    });
+  }
+  if (options.backgroundMaterial) {
+    updates.push({
+      fieldId: "backgroundMaterial",
+      value: options.backgroundMaterial,
+    });
+  }
+  if (options.detailDensity) {
+    updates.push({ fieldId: "detailDensity", value: options.detailDensity });
+  }
+  if (options.backgroundElement) {
+    updates.push({
+      fieldId: "backgroundElements",
+      value: [options.backgroundElement],
+    });
+  }
+
+  return updates;
+}
+
 export const portraitBackgroundOptionsQuestion = {
   id: "backgroundOptions",
   type: "modalOptions",
