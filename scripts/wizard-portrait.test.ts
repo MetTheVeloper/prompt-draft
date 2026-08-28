@@ -260,7 +260,7 @@ test("Professional Portrait mapping produces canonical structured Draft state th
   assert.ok(mapping.actions.every((invocation) => invocation.actionId.length > 0));
 });
 
-test("Cinematic outdoor mapping keeps keep-reference Outfit untouched and uses conservative custom intents", async () => {
+test("Cinematic outdoor mapping keeps keep-reference Outfit module untouched without enabling setup preserve", async () => {
   let session = createWizardSession(portraitWizardV1Definition, createDraft());
   session = answer(session, "subjectReference", subjectVariable);
   session = answer(session, "portraitIntent", "cinematic");
@@ -288,7 +288,7 @@ test("Cinematic outdoor mapping keeps keep-reference Outfit untouched and uses c
   assert.equal(mapping.session.workingDraft.moduleValues.outfit, undefined);
   assert.equal(
     mapping.session.workingDraft.promptSettings.imageToImage.preserveOutfit,
-    true,
+    false,
   );
 
   const expression = mapping.session.workingDraft.moduleValues.expression
