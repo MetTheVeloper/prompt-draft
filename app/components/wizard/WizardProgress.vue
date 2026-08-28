@@ -40,9 +40,9 @@ const currentStage = computed(() =>
       <el-flex rules="csc" :gap="5" class="wizard-stage-progress__item">
         <el-flex
           rules="rcc"
-          :size="22"
           :radius="100"
-          :bg="index <= currentIndex ? 'prim' : 'normal10'">
+          :bg="index <= currentIndex ? 'prim' : 'normal10'"
+          class="wizard-stage-progress__dot">
           <el-icon
             v-if="index < currentIndex"
             icon="check"
@@ -89,6 +89,12 @@ const currentStage = computed(() =>
 
 .wizard-stage-progress__item {
   min-width: 54px;
+}
+
+.wizard-stage-progress__dot {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 22px;
 }
 
 .wizard-stage-progress__connector {
