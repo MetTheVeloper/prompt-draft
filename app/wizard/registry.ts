@@ -4,6 +4,7 @@ import { portraitWizardV1Definition, type WizardDefinition } from "./definition"
 import { completePortraitWizard } from "./portraitCompletion";
 import { normalizePortraitSubjectReference } from "./portrait";
 import { buildPortraitWizardReview } from "./portraitReview";
+import { publicWizardIds, publicWizardRoutes } from "./publicRoutes";
 import type { WizardSession } from "./session";
 
 function createRuntimeId(prefix: string) {
@@ -60,8 +61,7 @@ const wizardRegistry = new Map<string, WizardRuntimeEntry>([
   [portraitRuntime.id, portraitRuntime],
 ]);
 
-export const publicWizardIds = [...wizardRegistry.keys()];
-export const publicWizardRoutes = publicWizardIds.map((id) => `/wizard/${id}`);
+export { publicWizardIds, publicWizardRoutes };
 
 export function resolveWizardRuntime(wizardId: string) {
   return wizardRegistry.get(wizardId) || null;
