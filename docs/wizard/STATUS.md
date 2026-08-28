@@ -10,6 +10,8 @@ Branch baseline: `main@c60490681feb145d90749b1415337850f7c9c88c`
 
 Architecture source of truth: [`README.md`](./README.md)
 
+Wizard UI architecture source of truth: [`UI.md`](./UI.md)
+
 Actions contract: `prompt-draft.actions.v1`
 
 ---
@@ -42,6 +44,8 @@ pnpm test:wizard
 ```
 
 The next active phase is the first real Wizard presentation/host integration. No new Actions API capability is currently required.
+
+The accepted presentation/routing baseline for that phase is documented in [`UI.md`](./UI.md): shared Wizard shell/renderers, independent guided UX over shared design primitives, `/wizard/[wizardId]` + registry initialization, static prerendering for supported Wizard URLs, and success-only handoff of `finalDraft` to the existing host.
 
 ---
 
@@ -155,18 +159,20 @@ Coverage includes:
 
 ## Next active phase — Wizard UI + host integration
 
-Implement the first real presentation/host boundary while preserving all accepted backend invariants:
+Implement the first real presentation/host boundary while preserving all accepted backend invariants and following [`UI.md`](./UI.md):
 
 1. inspect the current Create-page persistence/session ownership and reusable UI primitives;
-2. build a small reusable Wizard shell/renderer for the current definition types only;
-3. render `singleChoice`, `text`, and `variablePicker` questions;
-4. use existing Variable Picker behavior for Subject selection;
-5. wire Back/Next to the existing `WizardSession` navigation;
-6. render the structured Portrait Review model;
-7. invoke `completePortraitWizard(...)` on Finish;
-8. only after successful completion, hand `finalDraft` to the Create-page host for Active Draft replacement/persistence;
-9. keep Cancel destructive to nothing outside the Wizard Session;
-10. expose validation/completion issues in Wizard-facing context rather than raw domain jargon where practical.
+2. add the shared `/wizard/[wizardId]` route + minimum Wizard Registry required by Portrait;
+3. ensure supported Wizard URLs are included in static generation/prerendering;
+4. build a small reusable Wizard shell/renderer for the current definition types only;
+5. render `singleChoice`, `text`, and `variablePicker` questions;
+6. use existing Variable Picker behavior for Subject selection;
+7. wire Back/Next to the existing `WizardSession` navigation;
+8. render the structured Portrait Review model;
+9. invoke `completePortraitWizard(...)` on Finish;
+10. only after successful completion, hand `finalDraft` to the Create-page host for Active Draft replacement/persistence;
+11. keep Cancel destructive to nothing outside the Wizard Session;
+12. expose validation/completion issues in Wizard-facing context rather than raw domain jargon where practical.
 
 The UI phase should reuse existing design-system primitives, but it should not embed or recreate the full Expert UI panels.
 
@@ -174,6 +180,8 @@ The UI phase should reuse existing design-system primitives, but it should not e
 
 ## Still not implemented
 
+- Wizard registry + shared dynamic route;
+- static Wizard route prerender registration;
 - Wizard shell/question renderer;
 - Review UI;
 - Create-page host adapter for success-only `finalDraft` application;
@@ -196,13 +204,14 @@ Do not implement without a real requirement:
 - broad Expert UI migration/rewrite;
 - universal capability/catalog adapter;
 - Wizard-specific compiler/validator;
-- direct arbitrary Draft/path mutation.
+- direct arbitrary Draft/path mutation;
+- one Vue page per Wizard while the shared route/registry model remains sufficient.
 
 ---
 
 ## Immediate next step
 
-Inspect the current Create-page host/persistence boundary and the existing reusable UI primitives before writing Wizard UI. Then implement the smallest end-to-end Portrait Wizard page/shell that consumes the already accepted Definition, Session, Review, Mapper and Completion layers.
+Inspect the current Create-page host/persistence boundary, Nuxt prerender configuration, and existing reusable UI primitives before writing Wizard UI. Then implement the smallest end-to-end `/wizard/portrait` flow through the shared route/registry/shell defined in [`UI.md`](./UI.md).
 
 After the first UI/host checkpoint is stable, run the full regression/build gate again.
 
@@ -210,7 +219,8 @@ After the first UI/host checkpoint is stable, run the full regression/build gate
 
 ## Documentation discipline
 
-- [`README.md`](./README.md) remains the Wizard architectural source of truth.
+- [`README.md`](./README.md) remains the core Wizard architectural source of truth.
+- [`UI.md`](./UI.md) is the scoped source of truth for Wizard presentation, routing, static generation, and host-integration decisions.
 - This file is the operational checkpoint for resuming work.
 - `docs/actions-api/STATUS.md` remains the operational source for the accepted Actions surface.
 - Update status documents after meaningful implementation/test checkpoints.
