@@ -1,5 +1,8 @@
 import type { WizardDefinition } from "./definition";
-import type { WizardSession } from "./session";
+import {
+  hydrateWizardSessionDefaults,
+  type WizardSession,
+} from "./session";
 
 const WIZARD_SESSION_STORAGE_KEY = "prompt-draft:wizard:sessions:v1";
 
@@ -74,7 +77,7 @@ export function loadWizardSession(definition: WizardDefinition): WizardSession |
     return null;
   }
 
-  return cloneJson(session);
+  return hydrateWizardSessionDefaults(definition, cloneJson(session));
 }
 
 export function clearWizardSession(wizardId: string) {
