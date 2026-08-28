@@ -50,6 +50,10 @@ function cleanText(value: unknown) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
 
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
+}
+
 function definitionForSession(session: WizardSession): WizardDefinition {
   return session.wizardVersion === 2
     ? portraitWizardV2Definition
@@ -68,11 +72,29 @@ function questionValueLabel(question: WizardQuestionDefinition, value: unknown) 
   if (question.type === "singleChoice" && typeof value === "string") {
     return question.options.find((option) => option.value === value)?.label || value;
   }
+
   if (question.type === "entityCollection") {
     return normalizeWizardEntityAnswers(value)
       .map(getWizardEntityDisplayLabel)
       .join(", ");
   }
+
+  if (question.type === "modalOptions" && isRecord(value)) {
+    return question.fields
+      .map((field) => {
+        const rawValue = cleanText(value[field.id]);
+        if (!rawValue) return "";
+
+        const displayValue = field.type === "singleChoice"
+          ? field.options.find((option) => option.value === rawValue)?.label || rawValue
+          : rawValue;
+
+        return `${field.title}: ${displayValue}`;
+      })
+      .filter(Boolean)
+      .join(" · ");
+  }
+
   return cleanText(value);
 }
 
@@ -131,13 +153,19 @@ export function buildPortraitWizardReview(
   for (const answerId of [
     "portraitIntent",
     "expressionIntent",
+    "expressionOptions",
     "hairIntent",
+    "hairOptions",
     "outfitIntent",
+    "outfitOptions",
     "framingIntent",
     "poseIntent",
     "environmentType",
   ]) {
     if (answerId === "poseIntent" && !derived.poseIntent) continue;
+    if (answerId === "outfitOptions" && derived.outfitIntent === "keep_reference") {
+      continue;
+    }
     const item = answerItem(ruledSession, answerId);
     if (item) items.push(item);
   }
