@@ -288,17 +288,6 @@ export function normalizePortraitSubjectReference(
   };
 }
 
-export function applyPortraitWizardRules(session: WizardSession): WizardSession {
-  const portraitIntent = enumAnswer(session, "portraitIntent", PORTRAIT_INTENTS);
-  if (!portraitIntent) return session;
-
-  return setWizardDefaultAnswer(
-    session,
-    "lightingIntent",
-    portraitIntent === "cinematic" ? "dramatic" : "soft",
-  );
-}
-
 function resolvePromptMode(session: WizardSession): PromptMode {
   if (session.wizardVersion === 1) return session.workingDraft.promptSettings.mode;
   return answerValue(session, "creationMode") === "from_description"
@@ -340,6 +329,34 @@ function fallbackPortraitIdea(
   return tokens.length > 1
     ? `A ${intent} portrait of ${subjectPhrase} together, with the following settings`
     : `A ${intent} portrait of ${subjectPhrase} with the following settings`;
+}
+
+export function applyPortraitWizardRules(session: WizardSession): WizardSession {
+  const portraitIntent = enumAnswer(session, "portraitIntent", PORTRAIT_INTENTS);
+  if (!portraitIntent) return session;
+
+  let nextSession = setWizardDefaultAnswer(
+    session,
+    "lightingIntent",
+    portraitIntent === "cinematic" ? "dramatic" : "soft",
+  );
+
+  if (session.wizardVersion === 2) {
+    const subjects = resolvePortraitSubjects(nextSession);
+    const subjectTokens = subjects.targets.map((target) =>
+      cleanText(target.token || target.value),
+    );
+
+    if (subjectTokens.length) {
+      nextSession = setWizardDefaultAnswer(
+        nextSession,
+        "idea",
+        fallbackPortraitIdea(portraitIntent, subjectTokens),
+      );
+    }
+  }
+
+  return nextSession;
 }
 
 export function derivePortraitWizardState(
@@ -505,7 +522,7 @@ function portraitImageToImagePatch(derived: PortraitWizardDerived) {
     preserveMainSubject: false,
     preserveIdentity: false,
     preservePose: false,
-    preserveOutfit: derived.outfitIntent === "keep_reference",
+    preserveOutfit: false,
     preserveComposition: false,
     preserveColors: false,
     preserveMaterials: false,
