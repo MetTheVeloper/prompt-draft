@@ -1,7 +1,16 @@
 import type { PublicActionInvocation } from "../actions/public";
 import type { ActionIssue } from "../actions/types";
-import type { PromptVariable, SemanticTargetRef } from "../modules/types";
+import type {
+  PromptVariable,
+  ReferenceUsage,
+  SemanticTargetRef,
+} from "../modules/types";
+import type { PromptMode, TransformationStrength } from "../utils/compilePromptCore";
 import { normalizeSemanticTarget } from "../utils/semanticTargets";
+import {
+  normalizeWizardEntityAnswers,
+  wizardEntityToPromptVariable,
+} from "./entities";
 import type {
   WizardActionHostContext,
   WizardSession,
@@ -23,9 +32,16 @@ export type PortraitLightingIntent = "soft" | "dramatic" | "moody" | "clean";
 
 export type PortraitWizardDerived = {
   subjectTarget: SemanticTargetRef;
+  subjectTargets: SemanticTargetRef[];
   subjectToken: string;
+  subjectTokens: string[];
+  subjectVariables: PromptVariable[];
   portraitIntent: PortraitIntent;
   promptIdea: string;
+  promptMode: PromptMode;
+  aspectRatio: string;
+  referenceUsage: ReferenceUsage;
+  transformationStrength: TransformationStrength;
   expressionIntent?: PortraitExpressionIntent;
   hairIntent?: PortraitHairIntent;
   outfitIntent?: PortraitOutfitIntent;
@@ -100,6 +116,13 @@ const LIGHTING_INTENTS = new Set<PortraitLightingIntent>([
   "dramatic",
   "moody",
   "clean",
+]);
+const REFERENCE_USAGE = new Set<ReferenceUsage>(["strict", "balanced", "loose"]);
+const TRANSFORMATION_STRENGTH = new Set<TransformationStrength>([
+  "subtle",
+  "balanced",
+  "strong",
+  "extreme",
 ]);
 
 const FRAMING_SHOT_SIZE: Record<PortraitFramingIntent, string> = {
@@ -211,8 +234,6 @@ export function applyPortraitWizardRules(session: WizardSession): WizardSession 
   const portraitIntent = enumAnswer(session, "portraitIntent", PORTRAIT_INTENTS);
   if (!portraitIntent) return session;
 
-  // First proven Wizard rule from the architecture source of truth:
-  // Cinematic suggests Dramatic lighting, while explicit user choices remain sticky.
   return setWizardDefaultAnswer(
     session,
     "lightingIntent",
@@ -220,18 +241,67 @@ export function applyPortraitWizardRules(session: WizardSession): WizardSession 
   );
 }
 
+function resolvePortraitSubjects(session: WizardSession) {
+  if (session.wizardVersion === 1) {
+    const value = answerValue(session, "subjectReference");
+    const target = normalizePortraitSubjectReference(value);
+    const variable = isRecord(value) ? (value as PromptVariable) : null;
+    return {
+      targets: target ? [target] : [],
+      variables: target && variable ? [variable] : [],
+    };
+  }
+
+  const variables = normalizeWizardEntityAnswers(answerValue(session, "subjects"))
+    .map(wizardEntityToPromptVariable);
+  const targets = variables
+    .map((variable) => normalizePortraitSubjectReference(variable))
+    .filter((target): target is SemanticTargetRef => Boolean(target));
+
+  return { targets, variables };
+}
+
+function resolvePromptMode(session: WizardSession): PromptMode {
+  if (session.wizardVersion === 1) return session.workingDraft.promptSettings.mode;
+  return answerValue(session, "creationMode") === "from_description"
+    ? "text_to_image"
+    : "image_to_image";
+}
+
+function fallbackPortraitIdea(
+  session: WizardSession,
+  intent: PortraitIntent,
+  tokens: string[],
+) {
+  const subjectPhrase = tokens.length > 1
+    ? tokens.slice(0, -1).join(", ") + ` and ${tokens[tokens.length - 1]}`
+    : tokens[0] || "{person}";
+
+  if (resolvePromptMode(session) === "image_to_image") {
+    return `Transform ${subjectPhrase} into a ${intent} portrait`;
+  }
+
+  return `Create a ${intent} portrait featuring ${subjectPhrase}`;
+}
+
 export function derivePortraitWizardState(
   session: WizardSession,
 ):
   | { ok: true; value: PortraitWizardDerived }
   | { ok: false; issues: ActionIssue[] } {
-  if (session.wizardId !== "portrait" || session.wizardVersion !== 1) {
+  if (
+    session.wizardId !== "portrait" ||
+    (session.wizardVersion !== 1 && session.wizardVersion !== 2)
+  ) {
     return { ok: false, issues: [issue("portrait_wizard_session_mismatch")] };
   }
 
   const issues: ActionIssue[] = [];
-  const subjectTarget = normalizePortraitSubjectReference(
-    answerValue(session, "subjectReference"),
+  const subjects = resolvePortraitSubjects(session);
+  const subjectTargets = subjects.targets;
+  const subjectTarget = subjectTargets[0] || null;
+  const subjectTokens = subjectTargets.map((target) =>
+    cleanText(target.token || target.value),
   );
   const portraitIntent = enumAnswer(
     session,
@@ -255,19 +325,19 @@ export function derivePortraitWizardState(
   );
 
   if (!subjectTarget) {
-    issues.push(issue("portrait_subject_reference_required", "subjectReference"));
+    issues.push(
+      issue(
+        "portrait_subject_reference_required",
+        session.wizardVersion === 1 ? "subjectReference" : "subjects",
+      ),
+    );
   }
-  if (!portraitIntent) {
-    issues.push(issue("portrait_intent_required", "portraitIntent"));
-  }
-  if (!framingIntent) {
-    issues.push(issue("portrait_framing_required", "framingIntent"));
-  }
-  if (!environmentType) {
-    issues.push(issue("portrait_environment_required", "environmentType"));
-  }
-  if (!lightingIntent) {
-    issues.push(issue("portrait_lighting_required", "lightingIntent"));
+  if (!portraitIntent) issues.push(issue("portrait_intent_required", "portraitIntent"));
+  if (!framingIntent) issues.push(issue("portrait_framing_required", "framingIntent"));
+  if (!environmentType) issues.push(issue("portrait_environment_required", "environmentType"));
+  if (!lightingIntent) issues.push(issue("portrait_lighting_required", "lightingIntent"));
+  if (session.wizardVersion === 2 && !answerValue(session, "creationMode")) {
+    issues.push(issue("portrait_creation_mode_required", "creationMode"));
   }
 
   if (
@@ -292,14 +362,35 @@ export function derivePortraitWizardState(
       : enumAnswer(session, "poseIntent", POSE_INTENTS) || undefined;
   const detailAnswerId = ENVIRONMENT_DETAIL_ANSWER[environmentType];
   const environmentDetails = cleanText(answerValue(session, detailAnswerId));
+  const userIdea = cleanText(answerValue(session, "idea"));
+  const promptIdea = session.wizardVersion === 1
+    ? `${portraitIntent} portrait`
+    : userIdea || fallbackPortraitIdea(session, portraitIntent, subjectTokens);
+  const promptMode = resolvePromptMode(session);
+  const aspectRatio = session.wizardVersion === 2
+    ? cleanText(answerValue(session, "aspectRatio")) || session.workingDraft.promptSettings.aspectRatio
+    : session.workingDraft.promptSettings.aspectRatio;
+  const referenceUsage =
+    enumAnswer(session, "referenceUsage", REFERENCE_USAGE) ||
+    session.workingDraft.promptSettings.imageToImage.referenceUsage;
+  const transformationStrength =
+    enumAnswer(session, "transformationStrength", TRANSFORMATION_STRENGTH) ||
+    session.workingDraft.promptSettings.imageToImage.transformationStrength;
 
   return {
     ok: true,
     value: {
       subjectTarget,
-      subjectToken: cleanText(subjectTarget.token || subjectTarget.value),
+      subjectTargets,
+      subjectToken: subjectTokens.join(", "),
+      subjectTokens,
+      subjectVariables: subjects.variables,
       portraitIntent,
-      promptIdea: `${portraitIntent} portrait`,
+      promptIdea,
+      promptMode,
+      aspectRatio,
+      referenceUsage,
+      transformationStrength,
       expressionIntent,
       hairIntent,
       outfitIntent,
@@ -337,12 +428,8 @@ function expressionPayload(intent: PortraitExpressionIntent) {
 }
 
 function hairProperty(intent: Exclude<PortraitHairIntent, "keep_reference">) {
-  if (intent === "natural") {
-    return { mode: "option", value: "natural" } as const;
-  }
-  if (intent === "polished") {
-    return { mode: "option", value: "controlled" } as const;
-  }
+  if (intent === "natural") return { mode: "option", value: "natural" } as const;
+  if (intent === "polished") return { mode: "option", value: "controlled" } as const;
   return { mode: "custom", value: "editorial styling" } as const;
 }
 
@@ -354,6 +441,8 @@ function outfitCustomType(intent: Exclude<PortraitOutfitIntent, "keep_reference"
 
 function portraitImageToImagePatch(derived: PortraitWizardDerived) {
   return {
+    referenceUsage: derived.referenceUsage,
+    transformationStrength: derived.transformationStrength,
     preserveComposition: false,
     preserveLighting: false,
     ...(derived.posePresetId ? { preservePose: false } : {}),
@@ -369,11 +458,6 @@ const MAIN_REFERENCE = {
   source: "system",
 } as const;
 
-/**
- * Maps the Portrait v1 semantic answers into canonical public Actions.
- * The sequence is Wizard-atomic: any failed Action returns the pre-mapping
- * Working Draft while keeping the successfully derived semantic state.
- */
 export async function executePortraitWizardMapping(
   session: WizardSession,
   hostContext: WizardActionHostContext,
@@ -401,9 +485,7 @@ export async function executePortraitWizardMapping(
       request,
       hostContext,
     );
-    if (execution.result.ok) {
-      currentSession = execution.session;
-    }
+    if (execution.result.ok) currentSession = execution.session;
     return execution.result;
   }
 
@@ -417,12 +499,32 @@ export async function executePortraitWizardMapping(
     };
   }
 
-  let result = await run({
+  let result;
+
+  if (session.wizardVersion === 2) {
+    for (const variable of derived.subjectVariables) {
+      result = await run({
+        actionId: "variable.create",
+        input: {
+          key: variable.key,
+          value: variable.value,
+          description: variable.description,
+          type: variable.type,
+          enabled: true,
+        },
+      });
+      if (!result.ok) return failure(result.issues);
+    }
+  }
+
+  result = await run({
     actionId: "prompt.settings.update",
     input: {
+      mode: derived.promptMode,
       idea: derived.promptIdea,
       subject: derived.subjectToken,
       subjectType: "person",
+      aspectRatio: derived.aspectRatio,
       imageToImage: portraitImageToImagePatch(derived),
     },
   });
@@ -444,7 +546,7 @@ export async function executePortraitWizardMapping(
 
     result = await run({
       actionId: "expression.assignment.update",
-      input: { assignmentId, targets: [derived.subjectTarget] },
+      input: { assignmentId, targets: derived.subjectTargets },
     });
     if (!result.ok) return failure(result.issues);
 
@@ -479,7 +581,7 @@ export async function executePortraitWizardMapping(
       input: {
         styleId,
         name: "Portrait Hair",
-        targets: [derived.subjectTarget],
+        targets: derived.subjectTargets,
       },
     });
     if (!result.ok) return failure(result.issues);
@@ -522,7 +624,7 @@ export async function executePortraitWizardMapping(
       input: {
         setId,
         name: "Portrait Outfit",
-        targets: [derived.subjectTarget],
+        targets: derived.subjectTargets,
       },
     });
     if (!result.ok) return failure(result.issues);
@@ -578,7 +680,7 @@ export async function executePortraitWizardMapping(
 
     result = await run({
       actionId: "pose.assignment.update",
-      input: { assignmentId, targets: [derived.subjectTarget] },
+      input: { assignmentId, targets: derived.subjectTargets },
     });
     if (!result.ok) return failure(result.issues);
 
