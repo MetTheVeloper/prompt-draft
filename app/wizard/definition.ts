@@ -415,18 +415,9 @@ export const portraitWizardV2Definition = {
     {
       id: "start",
       stageId: "start",
-      title: "Start with your idea",
-      description: "Tell us what you want to make and where the image should start from.",
+      title: "Choose your starting point",
+      description: "Tell the Wizard whether this portrait starts from an image or from text.",
       questions: [
-        {
-          id: "idea",
-          type: "text",
-          title: "What do you want to create?",
-          description:
-            "Optional. Leave this blank and the Wizard will build a suitable idea from your choices.",
-          placeholder: "Describe the portrait you have in mind...",
-          rows: 4,
-        },
         {
           id: "creationMode",
           type: "singleChoice",
@@ -638,8 +629,17 @@ export const portraitWizardV2Definition = {
       id: "final-settings",
       stageId: "final",
       title: "Final output settings",
-      description: "Finish the technical choices after the creative direction is settled.",
+      description: "Review the generated portrait idea and finish the technical choices.",
       questions: [
+        {
+          id: "idea",
+          type: "text",
+          title: "Generated idea",
+          description:
+            "The Wizard built this from your portrait type and subjects. Edit it only if you want to change the core scene intent.",
+          placeholder: "The Wizard will generate a portrait idea from your choices...",
+          rows: 3,
+        },
         {
           id: "aspectRatio",
           type: "singleChoice",
