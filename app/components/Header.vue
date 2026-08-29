@@ -23,6 +23,8 @@ const {
   openSaveActiveCreateDraftAsTemplate,
 } = usePromptTemplateUi();
 
+const CREATE_DRAFT_COLLECTION_REFRESH_EVENT = 'prompt-draft:create-editor:collection-refresh'
+
 const offlineHeaderLabel = computed(() => {
   if (offlinePackage.state.downloading) {
     if (mini.value) return `${offlinePackage.state.progress}%`
@@ -141,7 +143,7 @@ function openPortraitWizard() {
 
 async function handleTemplateDraftCreated() {
   if (import.meta.client && route.name === 'create') {
-    window.location.reload()
+    window.dispatchEvent(new Event(CREATE_DRAFT_COLLECTION_REFRESH_EVENT))
     return
   }
 
