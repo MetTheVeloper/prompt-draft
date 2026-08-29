@@ -8,12 +8,14 @@ import { getModuleEntityConfig } from "../modules/entityContracts";
 import { compileBackgroundModule } from "../utils/compileBackground";
 import { compileCameraModule } from "../utils/compileCamera";
 import { compileEffectsModule } from "../utils/compileEffects";
+import { compileExpressionModule } from "../utils/compileExpression";
 import { compileFormModule } from "../utils/compileForm";
 import { compileLightingModule } from "../utils/compileLighting";
 import {
   compileModule,
   createDefaultModuleValues,
 } from "../utils/compileModules";
+import { compilePoseModule } from "../utils/compilePose";
 import type {
   ModuleOutputMap,
   ModuleOutputValue,
@@ -107,15 +109,27 @@ function compileBaseLikeModule(
   draft: PromptDraftState,
   module: PromptKeyModule,
   values: ModuleValues,
+  options: { replaceSource?: boolean } = {},
 ): ModuleOutputValue {
   const override = customOverride(draft, module, values);
   if (override !== null) return override;
 
   const fieldId = overrideFieldId(module);
-  return compileModule(
-    module,
-    fieldId ? { ...values, [fieldId]: "" } : values,
-  );
+  const effectiveValues = fieldId ? { ...values, [fieldId]: "" } : values;
+
+  if (module.key === "pose") {
+    return compilePoseModule(module, effectiveValues, {
+      replaceSource: options.replaceSource,
+    });
+  }
+
+  if (module.key === "expression") {
+    return compileExpressionModule(module, effectiveValues, {
+      replaceSource: options.replaceSource,
+    });
+  }
+
+  return compileModule(module, effectiveValues);
 }
 
 function referencedEntityIds(
@@ -213,14 +227,15 @@ function isPromptVariable(value: unknown): value is PromptVariable {
   );
 }
 
-function promptVariableOwnership(
-  readModel: PromptReadBuild,
+function variableOwnership(
+  modules: readonly PromptKeyModule[],
+  moduleValues: Record<string, ModuleValues>,
 ): UserVariableOwnership {
-  if (!readModel.modules.some((module) => module.key === "variables")) {
+  if (!modules.some((module) => module.key === "variables")) {
     return { hasSubject: false, hasReference: false };
   }
 
-  const rawVariables = readModel.moduleValues.variables?.variables;
+  const rawVariables = moduleValues.variables?.variables;
   const variables = Array.isArray(rawVariables)
     ? rawVariables.filter(isPromptVariable)
     : [];
@@ -238,12 +253,21 @@ function promptVariableOwnership(
   };
 }
 
+function promptVariableOwnership(
+  readModel: PromptReadBuild,
+): UserVariableOwnership {
+  return variableOwnership(readModel.modules, readModel.moduleValues);
+}
+
 export function buildPromptReadModel(
   draft: PromptDraftState,
   availableModules: readonly PromptKeyModule[],
 ): PromptReadBuild {
   const modules = activeModules(draft, availableModules);
   const moduleValues = effectiveModuleValues(draft, modules);
+  const ownership = variableOwnership(modules, moduleValues);
+  const replaceSource =
+    draft.promptSettings.mode === "image_to_image" && !ownership.hasReference;
   const outputs: ModuleOutputMap = {};
   const moduleIssues: PromptValidationIssue[] = [];
 
@@ -305,7 +329,9 @@ export function buildPromptReadModel(
       continue;
     }
 
-    outputs[module.key] = compileBaseLikeModule(draft, module, values);
+    outputs[module.key] = compileBaseLikeModule(draft, module, values, {
+      replaceSource,
+    });
   }
 
   return {
