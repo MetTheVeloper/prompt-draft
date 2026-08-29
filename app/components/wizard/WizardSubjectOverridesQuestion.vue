@@ -66,30 +66,38 @@ function cleanStringMap(value: unknown) {
   return result;
 }
 
-function currentValue(): SubjectOverrideState {
-  if (!props.modelValue || typeof props.modelValue !== "object" || Array.isArray(props.modelValue)) {
-    return {};
-  }
+function snapshotOverrideState(
+  value: unknown,
+  validSubjectIds?: ReadonlySet<string>,
+): SubjectOverrideState {
+  if (!value || typeof value !== "object" || Array.isArray(value)) return {};
 
-  const validSubjectIds = new Set(subjects.value.map((subject) => subject.id));
   const result: SubjectOverrideState = {};
-  for (const [subjectId, raw] of Object.entries(props.modelValue as Record<string, unknown>)) {
-    if (!validSubjectIds.has(subjectId) || !raw || typeof raw !== "object" || Array.isArray(raw)) {
-      continue;
-    }
+  for (const [subjectId, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (validSubjectIds && !validSubjectIds.has(subjectId)) continue;
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) continue;
+
     const record = raw as Record<string, unknown>;
-    const intent = typeof record.intent === "string" && record.intent.trim()
-      ? record.intent
-      : undefined;
+    const intent =
+      typeof record.intent === "string" && record.intent.trim()
+        ? record.intent
+        : undefined;
     const options = cleanStringMap(record.options);
+
     if (intent || Object.keys(options).length) {
       result[subjectId] = {
         ...(intent ? { intent } : {}),
-        options,
+        options: { ...options },
       };
     }
   }
+
   return result;
+}
+
+function currentValue(): SubjectOverrideState {
+  const validSubjectIds = new Set(subjects.value.map((subject) => subject.id));
+  return snapshotOverrideState(props.modelValue, validSubjectIds);
 }
 
 const overrideCount = computed(() => Object.keys(currentValue()).length);
@@ -101,7 +109,8 @@ const buttonLabel = computed(() => {
 function openOverrides() {
   if (!intentQuestion.value || !optionsQuestion.value || subjects.value.length < 2) return;
 
-  const state = reactive<SubjectOverrideState>(structuredClone(currentValue()));
+  const validSubjectIds = new Set(subjects.value.map((subject) => subject.id));
+  const state = reactive<SubjectOverrideState>(snapshotOverrideState(currentValue()));
   const sharedIntentRaw = props.answerValues[props.question.sharedIntentAnswerId];
   const sharedIntent = typeof sharedIntentRaw === "string" ? sharedIntentRaw : undefined;
   const sharedOptions = cleanStringMap(
@@ -140,7 +149,11 @@ function openOverrides() {
         icon: "check",
         color: "blue",
         close: true,
-        handler: () => emit("update:modelValue", structuredClone(state)),
+        handler: () =>
+          emit(
+            "update:modelValue",
+            snapshotOverrideState(state, validSubjectIds),
+          ),
       },
     ],
     options: {
