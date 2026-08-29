@@ -21,11 +21,13 @@ import {
 } from "~/wizard/sessionPersistence";
 import { normalizeWizardEntityAnswers } from "~/wizard/entities";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
+import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
 const route = useRoute();
 const router = useRouter();
 const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
+const { openSaveDraftAsTemplate } = usePromptTemplateUi();
 
 const session = ref<WizardSession | null>(null);
 const resumeCandidate = ref<WizardSession | null>(null);
@@ -173,6 +175,20 @@ async function finish() {
   }
 }
 
+function saveCompletedAsTemplate() {
+  if (!completedDraft.value || !runtime.value || !session.value) return;
+
+  openSaveDraftAsTemplate(completedDraft.value, {
+    defaultTitle: runtime.value.draftTitle(session.value),
+    description: `Saved from ${runtime.value.definition.title}.`,
+    source: {
+      kind: "wizard",
+      wizardId: runtime.value.id,
+      wizardVersion: runtime.value.definition.version,
+    },
+  });
+}
+
 async function continueInCreate() {
   if (!completedDraft.value || !runtime.value || !session.value) return;
   const created = addWizardDraftToCreate(
@@ -279,6 +295,13 @@ onBeforeUnmount(() => {
       </el-text>
     </el-grid>
     <el-flex rules="rsc" :gap="8">
+      <el-button
+        label="Save as template"
+        icon="bookmark_add"
+        mode="outline"
+        color="blue"
+        @click="saveCompletedAsTemplate"
+      />
       <el-button label="Start another" mode="flat" color="normal" @click="beginFresh" />
       <el-button
         label="Continue editing in Create"
