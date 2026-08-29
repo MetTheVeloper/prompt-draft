@@ -2,7 +2,7 @@
 
 Last updated: **2026-08-29**
 
-Status: **Portrait v2 + multi-subject Look + Background depth + Prompt Templates implemented; local acceptance of latest Template checkpoint pending**
+Status: **Prompt Templates locally accepted; Portrait v2 real-use-case testing resumed**
 
 Working branch: `feature/wizard`
 
@@ -20,13 +20,13 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## 1. Branch / deployment checkpoint
 
-The last code checkpoint before this documentation refresh was:
+The Template acceptance code checkpoint before this documentation update was:
 
 ```text
-feature/wizard@6f6bdb9f1bb4c5f18198979edec0767b20de5a3f
+feature/wizard@240bddb37db8cfd8f723583a8599109774342236
 ```
 
-That commit fixed the package manifest / lockfile mismatch that had blocked GitHub Actions at `pnpm install --frozen-lockfile`.
+That checkpoint includes the no-reload Start-from-Template flow and canonical Create-equivalent reference compile semantics for Pose/Expression.
 
 For temporary remote testing, the Wizard branch was moved onto `main`, then the user requested `main` be moved back one commit after local power returned.
 
@@ -36,54 +36,49 @@ Current requested `main` position:
 main@85c88867b8f5ded558011ac5366721e49062cea3
 ```
 
-Do **not** continue feature work from `main`. The complete current implementation, including the CI dependency fix and these docs, lives on `feature/wizard`.
+Do **not** continue feature work from `main`. The complete current implementation and acceptance fixes live on `feature/wizard`.
 
 ---
 
 ## 2. Immediate next-chat objective
 
-The next chat should do two things in order:
+Prompt Template acceptance is complete.
 
-1. **accept/fix the Prompt Template system locally**;
-2. **return immediately to Portrait Wizard development and real-use-case testing**.
+The next chat should **continue Portrait Wizard real-use-case testing immediately**.
 
-Do not branch into unrelated product work after Template acceptance.
-
----
-
-## 3. First commands/tests to run locally
-
-After switching to and pulling `feature/wizard`, validate the newest checkpoint in this order:
-
-```bash
-pnpm install --frozen-lockfile
-```
-
-Then:
-
-```bash
-pnpm test:templates
-```
-
-Then:
-
-```bash
-pnpm test:wizard
-```
-
-Then:
-
-```bash
-pnpm generate
-```
-
-Important conversation workflow preference: when validating interactively, give the user **one terminal command at a time** and wait for its result when the result matters.
-
-The user does not want unnecessary `git pull` output unless a specific verification is required.
+Do not expand Template management unless a later successful Wizard use case justifies a new curated built-in or a concrete Template bug is discovered.
 
 ---
 
-## 4. Prompt Template system — implemented scope
+## 3. Latest acceptance checkpoint
+
+The Template acceptance gate has been completed locally.
+
+Latest displayed focused suites:
+
+```text
+pnpm test:templates  → 7/7 passed
+pnpm test:wizard     → 39/39 passed
+```
+
+The user also completed the Template manual acceptance flows successfully, including:
+
+- Start from Template;
+- no page reload when activating a Template from Create;
+- new Draft creation without overwriting the previous Draft;
+- editable LinkedIn snapshot in Expert UI;
+- Save as Template from Create;
+- Save as Template from Wizard success;
+- My Templates persistence/instantiation;
+- source/Create Draft isolation.
+
+The Template system is therefore **accepted**.
+
+Conversation workflow preference: only go command-by-command when the result of one command materially determines the next step. Otherwise group commands/tests to avoid unnecessary chat turns.
+
+---
+
+## 4. Prompt Template system — accepted scope
 
 Prompt Templates are versioned structured Draft snapshots, not raw prompt strings.
 
@@ -116,10 +111,11 @@ app/components/Header.vue
 app/pages/wizard/[wizardId].vue
 ```
 
-Implemented user flows:
+Accepted user flows:
 
 - Create → `Start from a template`;
 - Start from Template always creates a **new Draft**;
+- activation from Create updates in place with **no page reload**;
 - no `Apply Template to Current Draft` feature;
 - Create → `Save as template`;
 - Wizard success → `Save as template`;
@@ -133,13 +129,13 @@ User Template storage key:
 prompt-draft:prompt-templates:v1
 ```
 
-Focused test command:
+Focused regression command:
 
 ```bash
 pnpm test:templates
 ```
 
-Detailed architecture and manual acceptance checklist are in [`TEMPLATES.md`](./TEMPLATES.md).
+Detailed architecture and acceptance checklist are in [`TEMPLATES.md`](./TEMPLATES.md).
 
 ---
 
@@ -167,49 +163,56 @@ lighting                 broad, very soft, front, balanced, low contrast
 preserve flags           all false
 ```
 
+The Template stores the structured canonical Draft state, not the literal compiled prompt string.
+
+In Create/reference mode, Pose and Expression compilation adds explicit replacement semantics such as:
+
+```text
+replace the source/reference facial expression with ...
+replace the source/reference pose with ...
+```
+
+The headless canonical read path now matches those Create semantics.
+
 The user generated several professional portrait outputs from this recipe and considered the LinkedIn test successful.
 
 This successful use case is the product reason the Template system exists.
 
 ---
 
-## 6. Manual Template acceptance still required
+## 6. Template acceptance — complete
 
 ### Start from Template
 
-Verify:
+Accepted:
 
 1. Create exposes Templates.
 2. `LinkedIn Profile Portrait` appears under built-ins.
 3. `Use template` creates and activates a **new** Draft.
-4. the previous Draft remains unchanged in the Draft list.
-5. LinkedIn Setup/module values appear in Expert UI and remain editable.
-6. compiled output matches the expected recipe.
+4. no page refresh is required.
+5. the previous Draft remains unchanged in the Draft list.
+6. LinkedIn Setup/module values appear in Expert UI and remain editable.
+7. compiled output matches the expected recipe.
 
 ### Save from Create
 
-Verify:
+Accepted:
 
-1. modify a Draft;
-2. Save as template;
-3. reopen Start from Template;
-4. user Template appears under `My templates`;
-5. instantiate it;
-6. saved values are preserved;
-7. source Draft remains unchanged.
+1. a modified Draft can be saved as a Template;
+2. it appears under `My templates`;
+3. instantiation preserves the saved canonical values;
+4. the source Draft remains unchanged.
 
 ### Save from Wizard
 
-Verify:
+Accepted:
 
-1. finish Portrait Wizard;
-2. Save as template from the success screen;
-3. open Create → Start from Template;
-4. saved Wizard Template appears under My templates;
-5. instantiate and inspect it;
-6. merely saving the Template must not mutate Create.
+1. a completed Portrait can be saved as a Template from the success screen;
+2. it appears under `My templates` in Create;
+3. it can be instantiated and inspected normally;
+4. merely saving the Template does not mutate Create.
 
-If Template acceptance passes, **stop Template feature expansion** and return to Wizard.
+**Template feature expansion is now stopped. Return to Wizard.**
 
 ---
 
@@ -386,7 +389,7 @@ Finish maps through canonical Actions, validates, compiles, and produces `finalD
 
 Create remains untouched until explicit `Continue editing in Create`, which creates a **new** Create Draft.
 
-The Wizard success screen now also includes `Save as template`.
+The Wizard success screen also includes `Save as template`.
 
 ---
 
@@ -454,17 +457,21 @@ Reference Usage / transformation behavior is also considered reasonable based on
 
 ---
 
-## 11. After Template acceptance — resume Wizard here
+## 11. Current Portrait continuation checkpoint
 
-Once Template tests pass, return to Portrait Wizard rather than expanding Template management.
+The latest Wizard regression gate is already confirmed:
 
-Immediate Wizard continuation should be:
+```text
+pnpm test:wizard → 39/39 passed
+```
 
-1. run/confirm the complete latest Wizard regression gate after multi-subject + Background + Template integration;
-2. manually retest at least one multi-subject Portrait using independent Expression/Hair/Outfit overrides;
-3. inspect the resulting Expert UI assignments/styles/sets, not only the compiled prompt;
+Immediate continuation is now:
+
+1. manually run at least one multi-subject Portrait using independent Expression/Hair/Outfit overrides;
+2. inspect the resulting Expert UI assignments/styles/sets, not only the compiled prompt;
+3. generate with the resulting prompt and judge co-presence, per-subject Look separation, shared Pose/Framing behavior, and Lighting behavior;
 4. continue real use-case-driven Portrait testing;
-5. only add the next Wizard capability when those tests reveal a concrete gap.
+5. only add the next Wizard capability when these tests reveal a concrete gap.
 
 There is currently no accepted requirement to immediately add per-subject Pose/Framing or more Background controls.
 
