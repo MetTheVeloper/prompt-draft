@@ -3,6 +3,11 @@ import test from "node:test";
 
 import { compilePromptDraft } from "../app/domain/promptRead.ts";
 import { promptModules } from "../app/modules/registry.ts";
+import {
+  addPromptTemplateToCreate,
+  CREATE_DRAFT_COLLECTION_STORAGE_KEY,
+  readActiveCreateDraftForTemplate,
+} from "../app/templates/createHost.ts";
 import { instantiatePromptTemplate } from "../app/templates/instantiate.ts";
 import {
   getBuiltInPromptTemplate,
@@ -100,6 +105,57 @@ test("template instantiation deep-clones the canonical Draft snapshot", () => {
   assert.notDeepEqual(first.draft, second.draft);
   assert.equal(
     template.draft.promptSettings.idea,
+    "A professional portrait of {person} with the following settings",
+  );
+});
+
+test("Start from Template creates a new active Create Draft without overwriting the current Draft", () => {
+  const storage = new MemoryStorage();
+  const template = getBuiltInPromptTemplate("linkedin-profile");
+  assert.ok(template);
+
+  const existingDraft = {
+    ...instantiatePromptTemplate(template).draft,
+    id: "existing-draft",
+    title: "Existing work",
+    createdAt: "2026-08-29T00:00:00.000Z",
+    updatedAt: "2026-08-29T00:00:00.000Z",
+  };
+  existingDraft.promptSettings.idea = "Do not overwrite me";
+
+  storage.setItem(
+    CREATE_DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify({
+      version: 1,
+      activeDraftId: existingDraft.id,
+      drafts: [existingDraft],
+    }),
+  );
+
+  const created = addPromptTemplateToCreate(template, storage);
+  assert.ok(created);
+  assert.notEqual(created.id, existingDraft.id);
+  assert.equal(created.title, "LinkedIn Profile Portrait");
+
+  const collection = JSON.parse(
+    storage.getItem(CREATE_DRAFT_COLLECTION_STORAGE_KEY) || "{}",
+  ) as {
+    activeDraftId: string;
+    drafts: Array<{ id: string; promptSettings: { idea: string } }>;
+  };
+
+  assert.equal(collection.activeDraftId, created.id);
+  assert.equal(collection.drafts.length, 2);
+  assert.equal(
+    collection.drafts.find((draft) => draft.id === existingDraft.id)?.promptSettings.idea,
+    "Do not overwrite me",
+  );
+
+  const active = readActiveCreateDraftForTemplate(storage);
+  assert.ok(active);
+  assert.equal(active.id, created.id);
+  assert.equal(
+    active.draft.promptSettings.idea,
     "A professional portrait of {person} with the following settings",
   );
 });
