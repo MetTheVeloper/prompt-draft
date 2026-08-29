@@ -4,6 +4,7 @@ import { useAppStore } from "~/store/app";
 import { NAVIGATION } from '~/config/navigation'
 import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
 import AboutModal from '~/components/modals/about.vue'
+import { usePromptTemplateUi } from '~/composables/usePromptTemplateUi'
 
 const route = useRoute();
 
@@ -15,7 +16,12 @@ const menu = useMenu();
 const modal = useModal();
 const toolsButtonRef = ref();
 const languageButtonRef = ref();
+const templatesButtonRef = ref();
 const offlinePackage = useOfflinePackage();
+const {
+  openStartFromTemplate,
+  openSaveActiveCreateDraftAsTemplate,
+} = usePromptTemplateUi();
 
 const offlineHeaderLabel = computed(() => {
   if (offlinePackage.state.downloading) {
@@ -133,6 +139,51 @@ function openPortraitWizard() {
   navigateTo('/wizard/portrait')
 }
 
+async function handleTemplateDraftCreated() {
+  if (import.meta.client && route.name === 'create') {
+    window.location.reload()
+    return
+  }
+
+  await navigateTo('/create')
+}
+
+function startFromTemplate() {
+  openStartFromTemplate({
+    onCreated: handleTemplateDraftCreated,
+  })
+}
+
+function saveCreateDraftAsTemplate() {
+  openSaveActiveCreateDraftAsTemplate()
+}
+
+function openTemplatesMenu() {
+  menu.open({
+    mode: 'dropdown',
+    anchor: templatesButtonRef.value,
+    placement: isRtl.value ? 'bottom-start' : 'bottom-end',
+    items: [
+      {
+        label: 'Start from a template',
+        icon: 'dashboard_customize',
+        color: 'blue15',
+        handler: startFromTemplate,
+      },
+      {
+        label: 'Save as template',
+        icon: 'bookmark_add',
+        color: 'normal15',
+        handler: saveCreateDraftAsTemplate,
+      },
+    ],
+    options: {
+      minWidth: 220,
+      closeOnSelect: true,
+    },
+  })
+}
+
 function openToolsMenu() {
   menu.open({
     mode: 'dropdown',
@@ -194,10 +245,22 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
       ]
     : []
 
-  const wizardItems: GlobalMenuItem[] = route.name === 'create'
+  const createItems: GlobalMenuItem[] = route.name === 'create'
     ? [
         {
           type: 'divider',
+        },
+        {
+          label: 'Start from a template',
+          icon: 'dashboard_customize',
+          color: 'blue15',
+          handler: startFromTemplate,
+        },
+        {
+          label: 'Save as template',
+          icon: 'bookmark_add',
+          color: 'normal15',
+          handler: saveCreateDraftAsTemplate,
         },
         {
           label: 'Portrait Wizard',
@@ -211,7 +274,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
   return [
     ...statusItems,
     ...navigationItems,
-    ...wizardItems,
+    ...createItems,
     {
       type: 'divider',
     },
@@ -313,6 +376,19 @@ function openMobileMenu() {
     </el-flex>
 
     <div v-else class="fg100" />
+
+    <el-button
+      v-if="!mobile && route.name === 'create'"
+      ref="templatesButtonRef"
+      label="Templates"
+      icon="dashboard_customize"
+      color="blue"
+      mode="flat"
+      :type="mini ? 'fab' : 'default'"
+      :size="12"
+      :p="[8, 12]"
+      @click="openTemplatesMenu"
+    />
 
     <el-button
       v-if="!mobile && route.name === 'create'"
