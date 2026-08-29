@@ -13,6 +13,9 @@ const builtIns = computed(() =>
 const userTemplates = computed(() =>
   props.templates.filter((template) => template.origin === "user"),
 );
+const selectedTemplate = computed(() =>
+  props.templates.find((template) => template.id === props.state.selectedId) || null,
+);
 
 function selectTemplate(templateId: string) {
   props.state.selectedId = templateId;
@@ -28,7 +31,6 @@ function selectTemplate(templateId: string) {
           v-for="template in builtIns"
           :key="template.id"
           :label="template.title"
-          :description="template.description"
           icon="auto_awesome"
           rules="rsc"
           :mode="state.selectedId === template.id ? 'normal' : 'outline'"
@@ -47,7 +49,6 @@ function selectTemplate(templateId: string) {
           v-for="template in userTemplates"
           :key="template.id"
           :label="template.title"
-          :description="template.description"
           icon="bookmark"
           rules="rsc"
           :mode="state.selectedId === template.id ? 'normal' : 'outline'"
@@ -56,6 +57,19 @@ function selectTemplate(templateId: string) {
           @click="selectTemplate(template.id)"
         />
       </el-grid>
+    </el-grid>
+
+    <el-grid
+      v-if="selectedTemplate?.description"
+      :gap="5"
+      :p="12"
+      :radius="12"
+      :br="1"
+      bc="normal10"
+      bg="normal3"
+      class="w100">
+      <el-text :size="12" :weight="700">{{ selectedTemplate.title }}</el-text>
+      <el-text :size="11" color="normal50">{{ selectedTemplate.description }}</el-text>
     </el-grid>
 
     <el-text v-if="!templates.length" :size="12" color="normal50">
