@@ -1,396 +1,518 @@
 # Wizard Development Status
 
-Last updated: **2026-08-28**
+Last updated: **2026-08-29**
 
-Status: **Portrait v2 rewrite implemented; local automated/build validation pending**
+Status: **Portrait v2 + multi-subject Look + Background depth + Prompt Templates implemented; local acceptance of latest Template checkpoint pending**
 
 Working branch: `feature/wizard`
 
-Branch baseline: `main@c60490681feb145d90749b1415337850f7c9c88c`
+Development branch only: continue all implementation/testing from `feature/wizard`, not `main`.
 
 Architecture source of truth: [`README.md`](./README.md)
 
-Wizard UI architecture source of truth: [`UI.md`](./UI.md)
+Wizard UX baseline: [`UI.md`](./UI.md)
+
+Prompt Template architecture/test plan: [`TEMPLATES.md`](./TEMPLATES.md)
 
 Actions contract: `prompt-draft.actions.v1`
 
 ---
 
-## Current checkpoint
+## 1. Branch / deployment checkpoint
 
-The first Portrait UI proved the route/registry/completion integration, then manual UX testing exposed the need for a different product model. The accepted rewrite is now implemented around the architecture recorded in [`UI.md`](./UI.md).
-
-The standard Wizard flow no longer depends on a Create-page Active Draft:
+The last code checkpoint before this documentation refresh was:
 
 ```text
-/wizard/portrait
-  ↓
-Create or restore independent Wizard Session
-  ↓
-fresh isolated Working Draft
-  ↓
-Stage → Step → Question flow
-  ↓
-Wizard-owned Subjects / semantic answers
-  ↓
-canonical Actions mapping
-  ↓
-prompt.validate
-  ↓
-prompt.compile
-  ↓
-completed finalDraft
+feature/wizard@6f6bdb9f1bb4c5f18198979edec0767b20de5a3f
 ```
 
-A completed Wizard does **not** mutate Create automatically. Only the explicit user action **Continue editing in Create** appends the completed result as a **new Create Draft** and makes that new Draft active.
+That commit fixed the package manifest / lockfile mismatch that had blocked GitHub Actions at `pnpm install --frozen-lockfile`.
 
-This checkpoint is implemented in source but has not yet been accepted by local `pnpm test:wizard`, `pnpm generate`, and browser testing after the rewrite.
+For temporary remote testing, the Wizard branch was moved onto `main`, then the user requested `main` be moved back one commit after local power returned.
+
+Current requested `main` position:
+
+```text
+main@85c88867b8f5ded558011ac5366721e49062cea3
+```
+
+Do **not** continue feature work from `main`. The complete current implementation, including the CI dependency fix and these docs, lives on `feature/wizard`.
 
 ---
 
-## Portrait v2 definition
+## 2. Immediate next-chat objective
 
-The runtime Registry now resolves Portrait to `portraitWizardV2Definition`.
+The next chat should do two things in order:
 
-The accepted v1 definition remains in source for regression coverage of the previously accepted backend behavior.
+1. **accept/fix the Prompt Template system locally**;
+2. **return immediately to Portrait Wizard development and real-use-case testing**.
 
-Portrait v2 uses the lightweight model:
+Do not branch into unrelated product work after Template acceptance.
 
-```text
-Stage = high-level UX orientation / progress
-Step = flat execution + navigation unit
-Question = answer unit
+---
+
+## 3. First commands/tests to run locally
+
+After switching to and pulling `feature/wizard`, validate the newest checkpoint in this order:
+
+```bash
+pnpm install --frozen-lockfile
 ```
 
-Stages:
+Then:
+
+```bash
+pnpm test:templates
+```
+
+Then:
+
+```bash
+pnpm test:wizard
+```
+
+Then:
+
+```bash
+pnpm generate
+```
+
+Important conversation workflow preference: when validating interactively, give the user **one terminal command at a time** and wait for its result when the result matters.
+
+The user does not want unnecessary `git pull` output unless a specific verification is required.
+
+---
+
+## 4. Prompt Template system — implemented scope
+
+Prompt Templates are versioned structured Draft snapshots, not raw prompt strings.
+
+Core invariant:
+
+```text
+Template = PromptDraftState snapshot + metadata
+```
+
+Implemented foundation:
+
+```text
+app/templates/
+  types.ts
+  validation.ts
+  registry.ts
+  instantiate.ts
+  storage.ts
+  createHost.ts
+  builtins/linkedin-profile.ts
+```
+
+Implemented UI/integration:
+
+```text
+app/composables/usePromptTemplateUi.ts
+app/components/templates/PromptTemplatePickerModal.vue
+app/components/templates/SavePromptTemplateModal.vue
+app/components/Header.vue
+app/pages/wizard/[wizardId].vue
+```
+
+Implemented user flows:
+
+- Create → `Start from a template`;
+- Start from Template always creates a **new Draft**;
+- no `Apply Template to Current Draft` feature;
+- Create → `Save as template`;
+- Wizard success → `Save as template`;
+- built-ins and user Templates appear separately;
+- user Templates persist locally;
+- Template instantiation deep-clones the stored Draft.
+
+User Template storage key:
+
+```text
+prompt-draft:prompt-templates:v1
+```
+
+Focused test command:
+
+```bash
+pnpm test:templates
+```
+
+Detailed architecture and manual acceptance checklist are in [`TEMPLATES.md`](./TEMPLATES.md).
+
+---
+
+## 5. First built-in Template — LinkedIn Profile Portrait
+
+The first curated built-in came directly from a successful real Portrait Wizard use-case test.
+
+Accepted recipe:
+
+```text
+{person} = person in {reference}
+
+mode                     image-to-image
+idea                     professional portrait
+reference usage          strict
+transformation strength  subtle
+aspect                   4:5
+framing                  head-and-shoulders
+expression               subtle + relaxed eyes/brows + slight smile + confident
+pose                     relaxed standing / shifted weight
+hair                     controlled styling
+outfit                   professional attire
+background               seamless light-gray studio
+lighting                 broad, very soft, front, balanced, low contrast
+preserve flags           all false
+```
+
+The user generated several professional portrait outputs from this recipe and considered the LinkedIn test successful.
+
+This successful use case is the product reason the Template system exists.
+
+---
+
+## 6. Manual Template acceptance still required
+
+### Start from Template
+
+Verify:
+
+1. Create exposes Templates.
+2. `LinkedIn Profile Portrait` appears under built-ins.
+3. `Use template` creates and activates a **new** Draft.
+4. the previous Draft remains unchanged in the Draft list.
+5. LinkedIn Setup/module values appear in Expert UI and remain editable.
+6. compiled output matches the expected recipe.
+
+### Save from Create
+
+Verify:
+
+1. modify a Draft;
+2. Save as template;
+3. reopen Start from Template;
+4. user Template appears under `My templates`;
+5. instantiate it;
+6. saved values are preserved;
+7. source Draft remains unchanged.
+
+### Save from Wizard
+
+Verify:
+
+1. finish Portrait Wizard;
+2. Save as template from the success screen;
+3. open Create → Start from Template;
+4. saved Wizard Template appears under My templates;
+5. instantiate and inspect it;
+6. merely saving the Template must not mutate Create.
+
+If Template acceptance passes, **stop Template feature expansion** and return to Wizard.
+
+---
+
+## 7. Portrait Wizard — current implemented flow
+
+Current high-level stages:
 
 ```text
 Start
 Subjects
 Portrait
-Appearance
+Appearance / Look
 Composition
 Scene
-Final settings
+Final
 Review
 ```
 
-Current Steps remain a flat ordered list and reference their parent Stage through `stageId`. No nested flow tree or general workflow DSL was introduced.
+### Start
 
----
+Current Portrait no longer asks for free-form Idea at the beginning.
 
-## Start Stage
+It asks only:
 
-The first Step asks for both high-level inputs agreed in the UI architecture:
+- Start from an image;
+- Start from a description.
 
-- optional Idea;
-- starting point:
-  - Start from an image;
-  - Start from a description.
+### Subjects
 
-Semantic Wizard values map to canonical Setup values only during mapping:
+- one required Person initialized by the Session;
+- up to four Persons;
+- optional names;
+- stable entity IDs separate from display labels/canonical keys;
+- Variables created through canonical `variable.create` during mapping.
 
-```text
-from_image       → image_to_image
-from_description → text_to_image
-```
-
-Idea does not control Wizard branching.
-
-If Idea is empty, Portrait v2 derives a deterministic fallback near finalization using Wizard-owned Subject tokens and Portrait intent, for example:
+Image-to-image Subject values use reference position where needed:
 
 ```text
-Create a professional portrait featuring {sarah_Connor}
+single:
+{person} = person in {reference}
+
+multiple:
+{met} = first person in {reference}
+{zahra} = second person in {reference}
 ```
 
-or for image-to-image:
+This improved multi-person co-presence substantially in real generation tests.
+
+### Portrait intent
+
+Current quick intents:
+
+- Professional;
+- Cinematic;
+- Fashion;
+- Fantasy.
+
+### Appearance / Look
+
+Quick choices exist for:
+
+- Expression;
+- Hair;
+- Outfit.
+
+Optional More Options exist for each domain.
+
+Expression More Options:
+
+- intensity;
+- eyes;
+- brows;
+- mouth.
+
+Hair More Options:
+
+- length;
+- curl pattern;
+- volume;
+- parting.
+
+Outfit More Options:
+
+- fit;
+- accessories;
+- additional details.
+
+### Multi-subject shared/per-subject controls
+
+Implemented for:
+
+- Expression;
+- Hair;
+- Outfit.
+
+Behavior:
 
 ```text
-Transform {sarah_Connor} into a professional portrait
+one Subject
+→ current shared UI only
+
+multiple Subjects
+→ shared choice by default
+→ optional Customize per subject
+→ overridden Subject removed from shared target set
+→ own canonical assignment/style/set created as needed
 ```
 
----
+Per-subject values inherit shared values for fields not explicitly overridden.
 
-## Wizard-owned Subjects
+A previous Vue `structuredClone(reactiveProxy)` bug in the per-subject modal caused `DataCloneError` and lost settings. It was fixed by serializing a plain snapshot instead of cloning the Vue Proxy directly.
 
-The previous Subject-variable picker is no longer the Portrait v2 entry flow.
+The user confirmed after the fix that Apply Subject Settings persists correctly.
 
-Implemented semantic entity foundation:
+### Composition
 
-```text
-WizardEntityAnswer
-  id     = stable internal identity
-  kind   = semantic entity kind
-  label  = user-facing name
-  key    = canonical variable key
-```
+Current simplified shared controls:
 
-Portrait currently allows Person entities, starts with one Person, and allows adding up to four people through visible entity cards.
+- Framing;
+- Pose.
 
-The name is optional. If omitted, the UI uses the semantic fallback `Person` rather than `Subject 1`.
+Framing includes:
 
-Entity labels and canonical variable keys are intentionally separate. Renaming preserves the entity ID while recalculating a canonical unique key.
+- Headshot;
+- Head & shoulders;
+- Half body;
+- Full body.
 
-At completion/mapping time, Portrait v2 creates its Subject variables through the existing public `variable.create` Action. There is no Wizard-side direct Variables-module mutation.
+Pose remains shared; per-subject Pose is intentionally not implemented yet.
 
-For the current first v2 checkpoint, Appearance/Pose shared choices target all Portrait Subjects. Per-subject customization through Named Configurations is the next domain expansion after this baseline is validated.
+### Scene / Background
 
----
+Environment quick direction plus relevant text detail exists.
 
-## Independent Wizard persistence / resume
+Background More Options currently exposes a curated canonical subset:
 
-Implemented in:
+- setting;
+- spatial structure;
+- visible material;
+- detail density;
+- one key background element.
 
-- `app/wizard/sessionPersistence.ts`.
+The user tested a studio/industrial/concrete-style Background result and considered current Background depth sufficient for now.
 
-Storage key:
+### Lighting
 
-```text
-prompt-draft:wizard:sessions:v1
-```
+Current quick choices remain shared and use canonical Lighting presets/semantics.
 
-Unfinished Wizard sessions persist independently from Create Drafts.
+### Final
 
-The session persists:
+Final contains:
 
-- Wizard ID/version;
-- current Step;
-- answers;
-- derived state;
-- isolated Working Draft.
-
-Opening the Wizard with a compatible unfinished session shows a resume choice:
-
-```text
-Continue previous Wizard
-or
-Start over
-```
-
-The persisted unit is `currentStepId`; Stage is derived from the Step definition and is not separately persisted.
-
----
-
-## Stage progress / shell rewrite
-
-The old raw percentage UI has been replaced by Stage-level progress.
-
-Desktop presents the high-level Stage sequence with completed/current/pending states.
-
-Mobile presents:
-
-```text
-Current Stage
-x of y
-progress line
-```
-
-The rebuilt shell separates:
-
-```text
-Header
-  Exit · Wizard identity/save state · Start over
-  Stage progress
-
-Scrollable centered Stage content
-
-Footer
-  Back · Continue/Create prompt
-```
-
-Core work remains on the page surface rather than being moved into modals.
-
----
-
-## Question presentation
-
-Current renderer types are:
-
-- `singleChoice`;
-- `text`;
-- `entityCollection`;
-- legacy-compatible `variablePicker`.
-
-`entityCollection` is the new semantic Subject-building primitive.
-
-Choice rendering now uses only valid project button modes. The previous invalid selected state (`solid`) was removed; selected choice cards use the supported normal mode and unselected cards use outline mode.
-
-Text questions disable Expert text-field actions by default inside the Wizard.
-
----
-
-## Final settings
-
-Portrait v2 moves technical Setup choices toward the end of the flow.
-
-Current first-pass controls:
-
+- system-generated editable Idea;
 - Aspect Ratio;
 - reference usage for image-to-image;
 - transformation strength for image-to-image.
 
-Wizard-friendly Aspect Ratio values are mapped to canonical Setup IDs during mapping, for example:
+Idea is generated after semantic context is known, for example:
 
 ```text
-1:1  → common_square
-4:5  → common_portrait_4_5
-3:4  → common_portrait_3_4
-9:16 → common_vertical_9_16
-16:9 → common_widescreen_16_9
+A fashion portrait of {person} with the following settings
+A fashion portrait of {met} and {zahra} together, with the following settings
 ```
 
-Reference-only questions are hidden for text-to-image.
+The explicit `together` wording is important for multi-person co-presence.
 
-The fuller preserve-control UX discussed in [`UI.md`](./UI.md) remains a follow-up after this rewrite baseline is accepted.
+Once the user edits generated Idea, it becomes user-owned and is not overwritten by later default recomputation.
 
----
+### Review / completion
 
-## Review
+Review is grouped by Stage.
 
-Portrait Review remains semantic and renderer-neutral.
+Finish maps through canonical Actions, validates, compiles, and produces `finalDraft`.
 
-The UI now groups review rows by Stage rather than exposing raw implementation/module organization.
+Create remains untouched until explicit `Continue editing in Create`, which creates a **new** Create Draft.
 
-Portrait v2 Review includes:
-
-- Idea, including deterministic fallback when the user left it blank;
-- starting point;
-- Subjects;
-- Portrait/Appearance/Composition/Scene choices;
-- Final settings.
-
-Image-reference-only settings are omitted from Review when the selected mode is text-to-image.
-
-Edit currently jumps back to the corresponding Step. A dedicated edit-return-to-Review shortcut can be added after baseline browser acceptance if it proves useful.
+The Wizard success screen now also includes `Save as template`.
 
 ---
 
-## Completion and Create handoff
+## 8. Preserve policy — fixed decision
 
-The accepted completion pipeline is unchanged in principle:
+Wizard must not enable Setup Preserve flags implicitly.
+
+All of these remain false:
 
 ```text
-answers / rules
-  ↓
-canonical mapping
-  ↓
-prompt.validate
-  ↓
-prompt.compile
-  ↓
-finalDraft
+preserveMainSubject
+preserveIdentity
+preservePose
+preserveOutfit
+preserveComposition
+preserveColors
+preserveMaterials
+preserveLighting
 ```
 
-Portrait v2 adds canonical Subject creation and Setup mapping before the existing domain mapping.
+Even Hair/Outfit `Keep reference` choices must not toggle these Setup flags.
 
-After successful completion the Wizard shows a result state. Create remains unchanged until the user explicitly chooses:
-
-```text
-Continue editing in Create
-```
-
-That handoff appends a new Draft record to the existing Create collection and selects it. Existing Create Drafts are not overwritten.
-
-Exit, abandonment, refresh, and Start over never mutate Create Draft state.
+Preserve emphasis is an Expert UI concern unless a future explicit Wizard requirement changes this decision.
 
 ---
 
-## Regression strategy
+## 9. Real generation tests already considered successful
 
-The accepted Portrait v1 backend definition and tests are intentionally retained while Portrait v2 becomes the product/runtime definition.
+### Multi-person Portrait
 
-New coverage has been added for:
+Semantic Subject Variables + explicit generated Idea with `together` successfully produced both referenced people in one image rather than separate images.
 
-- Stage validation and Stage references;
-- Portrait v2 definition shape;
-- fresh independent Wizard Session creation;
-- current Stage derivation from current Step;
-- Wizard-owned Subject identity;
-- deterministic v2 Idea fallback;
-- friendly → canonical Aspect Ratio mapping;
-- canonical `variable.create` Subject creation in the isolated Working Draft;
-- semantic assignment identity targeting the created Subject.
+### Look depth
 
-`package.json` now includes `scripts/wizard-portrait-v2.test.ts` in `pnpm test:wizard`.
+Expression/Hair/Outfit More Options produced visibly strong, domain-specific transformations in a single-person fantasy/fashion test.
 
-**These new tests have not yet been run on the user's local checkout.** The previous accepted gate before this rewrite was **23/23**.
+### Background depth
 
----
+The curated Background More Options successfully controlled visible environment/material/detail semantics.
 
-## Static generation baseline
+### LinkedIn/profile use case
 
-Before the v2 rewrite, `pnpm generate` completed successfully and explicitly prerendered:
+The professional Portrait recipe produced multiple useful clean profile/headshot outputs and led directly to the Prompt Template feature.
 
-```text
-/wizard/portrait
-```
-
-The route and public prerender registration remain shared/dynamic. Generation must be rerun after this rewrite before acceptance.
+These tests validate the current general direction; they do not remove the need for regression tests after code changes.
 
 ---
 
-## Still to validate manually
+## 10. Current known scope boundaries
 
-After automated tests/build pass, verify in the browser:
+Per-subject controls currently exist only for Expression/Hair/Outfit.
 
-1. `/wizard/portrait` works even when Create has no Drafts;
-2. Start shows optional Idea + image/description starting point;
-3. Subjects starts with one Person and does not open a Variable Picker;
-4. Subject name is optional and readable fallback naming works;
-5. adding/removing a second Person works;
-6. refresh or leaving mid-flow offers Resume on return;
-7. Stage progress stays high-level while Scene contains multiple Steps;
-8. conditional Pose/Environment questions still behave correctly;
-9. text-to-image hides reference-only Final Settings;
-10. Review is grouped by Stage;
-11. successful Finish does not change Create;
-12. Continue editing in Create creates a new Draft instead of overwriting an existing Draft;
-13. Exit leaves Create unchanged;
-14. desktop/mobile shell layout is usable and visually coherent.
+Do not automatically expand per-subject support to:
+
+- Pose;
+- Framing;
+- Background;
+- Lighting;
+
+until a real use case demonstrates value.
+
+Background current depth is explicitly considered sufficient for now.
+
+Reference Usage / transformation behavior is also considered reasonable based on current tests: photorealistic inputs may show modest differences while more stylized prompts allow larger transformation. Do not change those semantics without new evidence.
 
 ---
 
-## Next expansions after baseline acceptance
+## 11. After Template acceptance — resume Wizard here
 
-Do not mix these into the first rewrite validation unless a blocking issue requires them:
+Once Template tests pass, return to Portrait Wizard rather than expanding Template management.
 
-- shared vs per-Subject Appearance strategy;
-- per-Subject Outfit/Hair/Pose via existing Named Configuration/assignment capabilities;
-- additional entity kinds for other Wizard definitions;
-- fuller image-to-image preserve controls in Final Settings;
-- edit-from-Review return behavior;
-- optional persistence of the completed result screen across refresh;
-- localization/copy pass for Wizard v2;
-- additional Wizard definitions.
+Immediate Wizard continuation should be:
+
+1. run/confirm the complete latest Wizard regression gate after multi-subject + Background + Template integration;
+2. manually retest at least one multi-subject Portrait using independent Expression/Hair/Outfit overrides;
+3. inspect the resulting Expert UI assignments/styles/sets, not only the compiled prompt;
+4. continue real use-case-driven Portrait testing;
+5. only add the next Wizard capability when those tests reveal a concrete gap.
+
+There is currently no accepted requirement to immediately add per-subject Pose/Framing or more Background controls.
+
+Good next use cases should pressure-test the remaining shared Composition/Lighting semantics and general Portrait usability rather than adding complexity by default.
 
 ---
 
-## Explicitly deferred
+## 12. Template development rule from now on
+
+Do not create a large speculative Template catalog.
+
+During Wizard testing, after a successful scenario ask:
+
+> Is this a stable, useful, reusable starting point for a meaningful user goal?
+
+If yes, normalize the successful Draft and add it as a curated built-in with regression coverage.
+
+If no, keep it only as a test example.
+
+This keeps Template growth tied directly to real Wizard validation.
+
+---
+
+## 13. Deferred work
 
 Do not implement without a real requirement:
 
 - universal Wizard DSL;
 - arbitrary rule scripting/expression language;
 - generalized nested/repeatable flow tree;
-- Actions batch/transaction/dry-run;
+- Actions batch/transaction/dry-run solely for Wizard orchestration;
 - AI-generated Wizard definitions/UI;
 - broad Expert UI rewrite;
 - Wizard-specific compiler/validator;
 - direct arbitrary Draft/path mutation;
-- one Vue page per Wizard while the shared route/registry model remains sufficient.
+- one Vue page per Wizard while shared route/registry is sufficient;
+- Apply Template to Current Draft;
+- Template marketplace/cloud sync/sharing/catalog infrastructure;
+- automatic per-subject targeting for every domain.
 
 ---
 
-## Immediate next step
+## 14. Documentation discipline
 
-Pull the current `feature/wizard` rewrite and run the focused Wizard regression gate. Fix any TypeScript/runtime regressions before production generation or manual UX acceptance.
+- [`README.md`](./README.md) — Wizard architecture source of truth.
+- [`UI.md`](./UI.md) — detailed presentation/UX baseline; when an older example conflicts with later accepted decisions, follow `README.md` + this current status.
+- [`TEMPLATES.md`](./TEMPLATES.md) — Prompt Template architecture and acceptance checklist.
+- This file — operational checkpoint for resuming work in a new chat.
+- `docs/actions-api/STATUS.md` — accepted Actions operational status.
 
----
-
-## Documentation discipline
-
-- [`README.md`](./README.md) remains the core Wizard architectural source of truth.
-- [`UI.md`](./UI.md) is the accepted source of truth for Wizard UX, Stage/Step presentation, independent session ownership, routing, static generation, and Create handoff.
-- This file is the operational checkpoint for resuming implementation/testing.
-- `docs/actions-api/STATUS.md` remains the operational source for the accepted Actions surface.
-- Update this file after each meaningful validated checkpoint.
+Update this file after every meaningful validated checkpoint so a fresh chat can resume without reconstructing conversation history.
