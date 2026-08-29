@@ -6,6 +6,7 @@ import { promptModules } from "../app/modules/registry.ts";
 import {
   addPromptTemplateToCreate,
   CREATE_DRAFT_COLLECTION_STORAGE_KEY,
+  ensureCreateDraftRecord,
   readActiveCreateDraftForTemplate,
 } from "../app/templates/createHost.ts";
 import { instantiatePromptTemplate } from "../app/templates/instantiate.ts";
@@ -162,6 +163,59 @@ test("Start from Template creates a new active Create Draft without overwriting 
   assert.equal(
     active.draft.promptSettings.idea,
     "A professional portrait of {person} with the following settings",
+  );
+});
+
+test("Template Draft survives Create's stale unload persistence during reload", () => {
+  const storage = new MemoryStorage();
+  const template = getBuiltInPromptTemplate("linkedin-profile");
+  assert.ok(template);
+
+  const existingDraft = {
+    ...instantiatePromptTemplate(template).draft,
+    id: "existing-before-reload",
+    title: "Existing before reload",
+    createdAt: "2026-08-29T00:00:00.000Z",
+    updatedAt: "2026-08-29T00:00:00.000Z",
+  };
+  existingDraft.promptSettings.idea = "Keep this Draft unchanged";
+
+  const staleCollection = {
+    version: 1 as const,
+    activeDraftId: existingDraft.id,
+    drafts: [existingDraft],
+  };
+
+  storage.setItem(
+    CREATE_DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify(staleCollection),
+  );
+
+  const created = addPromptTemplateToCreate(template, storage);
+  assert.ok(created);
+
+  // Simulate Create's existing beforeunload save writing its pre-template
+  // in-memory collection after the Template Draft was already persisted.
+  storage.setItem(
+    CREATE_DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify(staleCollection),
+  );
+
+  assert.equal(ensureCreateDraftRecord(created, storage), true);
+
+  const restored = JSON.parse(
+    storage.getItem(CREATE_DRAFT_COLLECTION_STORAGE_KEY) || "{}",
+  ) as {
+    activeDraftId: string;
+    drafts: Array<{ id: string; promptSettings: { idea: string } }>;
+  };
+
+  assert.equal(restored.activeDraftId, created.id);
+  assert.equal(restored.drafts.length, 2);
+  assert.equal(restored.drafts[0]?.id, created.id);
+  assert.equal(
+    restored.drafts.find((draft) => draft.id === existingDraft.id)?.promptSettings.idea,
+    "Keep this Draft unchanged",
   );
 });
 
