@@ -31,6 +31,15 @@ export type SaveDraftAsTemplateOptions = {
   onSaved?: (template: PromptTemplate) => void | Promise<void>;
 };
 
+function flushCreateDraftPersistence() {
+  if (typeof window === "undefined") return;
+
+  // Create already persists synchronously on beforeunload. Dispatching the
+  // event flushes any pending debounced edit before a Template reads/writes
+  // the same Draft collection, without introducing a second persistence path.
+  window.dispatchEvent(new Event("beforeunload"));
+}
+
 export function usePromptTemplateUi() {
   const modal = useModal();
 
@@ -71,6 +80,7 @@ export function usePromptTemplateUi() {
             const template = templates.find((item) => item.id === state.selectedId);
             if (!template) return false;
 
+            flushCreateDraftPersistence();
             const record = addPromptTemplateToCreate(template);
             if (!record) {
               modal.message({
@@ -154,11 +164,7 @@ export function usePromptTemplateUi() {
   function openSaveActiveCreateDraftAsTemplate(
     options: Omit<SaveDraftAsTemplateOptions, "defaultTitle" | "source"> = {},
   ) {
-    if (typeof window !== "undefined") {
-      // Create already persists synchronously on beforeunload. Dispatching the
-      // event here flushes any pending debounced edit before taking the snapshot.
-      window.dispatchEvent(new Event("beforeunload"));
-    }
+    flushCreateDraftPersistence();
 
     const active = readActiveCreateDraftForTemplate();
     if (!active) {
