@@ -82,11 +82,11 @@ test("LinkedIn built-in compiles from canonical Draft state into the validated p
   assert.match(output, /^\{framing\} = head-and-shoulders framing$/m);
   assert.match(
     output,
-    /\{person\}: subtle intensity; relaxed eyes; relaxed brows; slight smile; confident expression/,
+    /\{person\}: replace the source\/reference facial expression with subtle intensity; relaxed eyes; relaxed brows; slight smile; confident expression/,
   );
   assert.match(
     output,
-    /\{person\}: standing; weight shifted to one side; relaxed body tension/,
+    /\{person\}: replace the source\/reference pose with standing; weight shifted to one side; relaxed body tension/,
   );
   assert.match(output, /controlled styling/);
   assert.match(output, /professional attire/);
@@ -166,7 +166,7 @@ test("Start from Template creates a new active Create Draft without overwriting 
   );
 });
 
-test("Template Draft survives Create's stale unload persistence during reload", () => {
+test("Template Draft can be restored after stale Create persistence", () => {
   const storage = new MemoryStorage();
   const template = getBuiltInPromptTemplate("linkedin-profile");
   assert.ok(template);
@@ -194,8 +194,6 @@ test("Template Draft survives Create's stale unload persistence during reload", 
   const created = addPromptTemplateToCreate(template, storage);
   assert.ok(created);
 
-  // Simulate Create's existing beforeunload save writing its pre-template
-  // in-memory collection after the Template Draft was already persisted.
   storage.setItem(
     CREATE_DRAFT_COLLECTION_STORAGE_KEY,
     JSON.stringify(staleCollection),
