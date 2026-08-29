@@ -79,9 +79,14 @@ test("LinkedIn built-in compiles from canonical Draft state into the validated p
   assert.match(output, /^\{transformation_strength\} = subtle transformation$/m);
   assert.match(output, /^\{aspect\} = 4:5$/m);
   assert.match(output, /^\{framing\} = head-and-shoulders framing$/m);
-  assert.match(output, /\{person\}: replace the source\/reference facial expression/);
-  assert.match(output, /subtle intensity; relaxed eyes; relaxed brows; slight smile; confident expression/);
-  assert.match(output, /\{person\}: replace the source\/reference pose with standing; weight shifted to one side; relaxed body tension/);
+  assert.match(
+    output,
+    /\{person\}: subtle intensity; relaxed eyes; relaxed brows; slight smile; confident expression/,
+  );
+  assert.match(
+    output,
+    /\{person\}: standing; weight shifted to one side; relaxed body tension/,
+  );
   assert.match(output, /controlled styling/);
   assert.match(output, /professional attire/);
   assert.match(output, /plain light gray studio backdrop/);
