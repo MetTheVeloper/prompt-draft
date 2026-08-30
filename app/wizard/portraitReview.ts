@@ -188,7 +188,7 @@ export function buildPortraitWizardReview(
   ]) {
     if (
       (answerId === "poseIntent" || answerId === "poseSubjectOverrides") &&
-      !derived.poseIntent
+      derived.framingIntent === "headshot"
     ) continue;
     if (answerId === "outfitOptions" && derived.outfitIntent === "keep_reference") {
       continue;
