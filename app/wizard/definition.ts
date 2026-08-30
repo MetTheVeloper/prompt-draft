@@ -70,7 +70,7 @@ export type WizardSubjectOverridesQuestionDefinition = WizardQuestionBase & {
   type: "subjectOverrides";
   subjectsAnswerId: string;
   sharedIntentAnswerId: string;
-  sharedOptionsAnswerId: string;
+  sharedOptionsAnswerId?: string;
   buttonLabel?: string;
   modalTitle?: string;
   intentTitle?: string;
@@ -257,10 +257,12 @@ export function assertWizardDefinition(definition: WizardDefinition) {
           question.sharedIntentAnswerId,
           `Wizard subjectOverrides question "${question.id}" sharedIntentAnswerId`,
         );
-        assertNonEmpty(
-          question.sharedOptionsAnswerId,
-          `Wizard subjectOverrides question "${question.id}" sharedOptionsAnswerId`,
-        );
+        if (question.sharedOptionsAnswerId) {
+          assertNonEmpty(
+            question.sharedOptionsAnswerId,
+            `Wizard subjectOverrides question "${question.id}" sharedOptionsAnswerId`,
+          );
+        }
       }
 
       if (question.type === "entityCollection") {
@@ -296,7 +298,9 @@ export function assertWizardDefinition(definition: WizardDefinition) {
       if (question.type !== "subjectOverrides") continue;
       const subjectsQuestion = questionsById.get(question.subjectsAnswerId);
       const intentQuestion = questionsById.get(question.sharedIntentAnswerId);
-      const optionsQuestion = questionsById.get(question.sharedOptionsAnswerId);
+      const optionsQuestion = question.sharedOptionsAnswerId
+        ? questionsById.get(question.sharedOptionsAnswerId)
+        : undefined;
 
       if (subjectsQuestion?.type !== "entityCollection") {
         throw new Error(
@@ -308,7 +312,10 @@ export function assertWizardDefinition(definition: WizardDefinition) {
           `Wizard subjectOverrides question "${question.id}" must reference a singleChoice shared intent question.`,
         );
       }
-      if (optionsQuestion?.type !== "modalOptions") {
+      if (
+        question.sharedOptionsAnswerId &&
+        optionsQuestion?.type !== "modalOptions"
+      ) {
         throw new Error(
           `Wizard subjectOverrides question "${question.id}" must reference a modalOptions shared options question.`,
         );
@@ -870,6 +877,23 @@ export const portraitWizardV2Definition = {
             { value: "formal", label: "Formal" },
             { value: "dynamic", label: "Dynamic" },
           ],
+        },
+        {
+          id: "poseSubjectOverrides",
+          type: "subjectOverrides",
+          title: "Pose per subject",
+          description:
+            "Keep the shared pose for everyone, or assign a different pose direction to individual people.",
+          buttonLabel: "Customize pose per subject",
+          modalTitle: "Pose by subject",
+          intentTitle: "Pose direction",
+          subjectsAnswerId: "subjects",
+          sharedIntentAnswerId: "poseIntent",
+          visibleWhen: {
+            answerId: "framingIntent",
+            operator: "notEquals",
+            value: "headshot",
+          },
         },
       ],
     },
