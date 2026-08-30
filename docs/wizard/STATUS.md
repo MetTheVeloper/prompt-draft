@@ -1,224 +1,202 @@
 # Wizard Development Status
 
-Last updated: **2026-08-29**
+Last updated: **2026-08-30**
 
-Status: **Prompt Templates locally accepted; Portrait v2 real-use-case testing resumed**
+Status: **Subject Definition accepted; Lighting gap fixed; per-subject Pose implemented; manual Pose validation next**
 
 Working branch: `feature/wizard`
 
-Development branch only: continue all implementation/testing from `feature/wizard`, not `main`.
+Development branch only: continue implementation/testing from `feature/wizard`, not `main`.
 
 Architecture source of truth: [`README.md`](./README.md)
 
-Wizard UX baseline: [`UI.md`](./UI.md)
+Wizard UX source: [`UI.md`](./UI.md)
 
-Prompt Template architecture/test plan: [`TEMPLATES.md`](./TEMPLATES.md)
+Prompt Template architecture: [`TEMPLATES.md`](./TEMPLATES.md)
 
 Actions contract: `prompt-draft.actions.v1`
 
 ---
 
-## 1. Branch / deployment checkpoint
+## 1. Current branch checkpoint
 
-The Template acceptance code checkpoint before this documentation update was:
-
-```text
-feature/wizard@240bddb37db8cfd8f723583a8599109774342236
-```
-
-That checkpoint includes the no-reload Start-from-Template flow and canonical Create-equivalent reference compile semantics for Pose/Expression.
-
-For temporary remote testing, the Wizard branch was moved onto `main`, then the user requested `main` be moved back one commit after local power returned.
-
-Current requested `main` position:
+Latest code checkpoint before this documentation refresh:
 
 ```text
-main@85c88867b8f5ded558011ac5366721e49062cea3
+feature/wizard@bbf38a18597756c6280fac0c5bc4f5eb93fb8095
 ```
 
-Do **not** continue feature work from `main`. The complete current implementation and acceptance fixes live on `feature/wizard`.
+Important recent commits leading into this checkpoint include:
+
+```text
+ba4da32e5444f7e9ab663c2ada321cffcc53fddf
+→ per-subject Pose / intent-only subject override review support
+
+0034e455659e404b322a862737b102f9b0df1bb4
+→ explicit useScreen import in variable-fab
+
+bbf38a18597756c6280fac0c5bc4f5eb93fb8095
+→ declare @vueuse/core explicitly in package.json
+```
+
+The latest documentation commits come after this checkpoint and do not change runtime behavior.
 
 ---
 
 ## 2. Immediate next-chat objective
 
-Prompt Template acceptance is complete.
+Do **not** return to Template development.
 
-The next chat should **continue Portrait Wizard real-use-case testing immediately**.
+Do **not** re-design Subject Definition again unless a concrete bug is found.
 
-Do not expand Template management unless a later successful Wizard use case justifies a new curated built-in or a concrete Template bug is discovered.
+Immediate continuation:
+
+1. confirm local project remains healthy after frozen install/dev startup;
+2. manually test **Shared + per-subject Pose** with at least two Subjects;
+3. inspect resulting Expert UI Pose assignments/targets;
+4. inspect compiled prompt;
+5. run a real image-generation test and judge whether the distinct Poses materially improve the result;
+6. only then decide the next Wizard capability/gap.
+
+Recommended first Pose test:
+
+```text
+2 Subjects
+Framing: Half body or Full body
+Shared Pose: Natural
+Subject 1: Shared
+Subject 2: Customize → Dynamic
+```
+
+Expected canonical result:
+
+- Subject 1 remains targeted by the shared Natural Pose assignment;
+- Subject 2 is removed from the shared target set;
+- Subject 2 gets its own Dynamic/action-ready Pose assignment;
+- compiled prompt names the two Subject targets separately.
 
 ---
 
-## 3. Latest acceptance checkpoint
+## 3. Latest automated regression checkpoint
 
-The Template acceptance gate has been completed locally.
-
-Latest displayed focused suites:
+The user locally ran:
 
 ```text
-pnpm test:templates  → 7/7 passed
-pnpm test:wizard     → 39/39 passed
+pnpm test:wizard
 ```
 
-The user also completed the Template manual acceptance flows successfully, including:
+Latest displayed result:
+
+```text
+46 tests
+46 passed
+0 failed
+```
+
+The suite now includes coverage for:
+
+- Portrait Wizard definition/session/completion;
+- Subject Definition semantics;
+- unnamed Subject display/key uniqueness;
+- image semantic Subject definitions;
+- custom Subject descriptions;
+- text-to-image Subject definitions;
+- blank Custom rejection;
+- backward compatibility for older Subject sessions;
+- Environment/Lighting regression;
+- shared/per-subject Expression/Hair/Outfit;
+- shared/per-subject Pose.
+
+Latest relevant passing test name:
+
+```text
+Portrait v2 splits shared Look and Pose settings into per-subject canonical assignments/configurations
+```
+
+---
+
+## 4. Runtime/dev issue — resolved checkpoint
+
+A local dev failure appeared after Create refreshed and remained on the boot loader.
+
+Initial browser error:
+
+```text
+GET /_nuxt/composables/useScreen.ts 404
+Failed to fetch dynamically imported module
+```
+
+Further Vite output exposed the real root cause:
+
+```text
+Failed to resolve import "@vueuse/core" from "app/composables/useScreen.ts"
+```
+
+### Root cause
+
+`useScreen.ts` directly imports:
+
+```ts
+import { useWindowSize, useDevicePixelRatio } from "@vueuse/core"
+```
+
+but `@vueuse/core` was missing from the root `package.json` even though the lockfile already contained it. The project had effectively depended on a previously available/transitive node_modules layout.
+
+### Fixes
+
+- `variable-fab.vue` now explicitly imports `useScreen` instead of relying on the problematic auto-import path;
+- stale Prompt Draft Service Workers/caches are cleaned in local development;
+- `@vueuse/core` is now an explicit root dependency:
+
+```text
+@vueuse/core ^14.3.0
+```
+
+- accepted branch state requires `package.json` and `pnpm-lock.yaml` to remain synchronized;
+- frozen install should be used rather than masking drift with `--no-frozen-lockfile`.
+
+The user's local lockfile had stale working-tree state during recovery; restoring the tracked lockfile and reinstalling brought the project back up successfully.
+
+If this issue reappears, inspect actual package/lock state and running dev ports/processes before changing Wizard code.
+
+---
+
+## 5. Prompt Templates — accepted and frozen
+
+Template acceptance is complete.
+
+Accepted flows include:
 
 - Start from Template;
-- no page reload when activating a Template from Create;
-- new Draft creation without overwriting the previous Draft;
-- editable LinkedIn snapshot in Expert UI;
+- no page reload during activation;
+- always creates a NEW Draft;
+- previous Draft remains unchanged;
 - Save as Template from Create;
 - Save as Template from Wizard success;
-- My Templates persistence/instantiation;
-- source/Create Draft isolation.
+- My Templates persistence;
+- instantiation preserves canonical state;
+- source/Create isolation.
 
-The Template system is therefore **accepted**.
+Template invariant:
 
-Conversation workflow preference: only go command-by-command when the result of one command materially determines the next step. Otherwise group commands/tests to avoid unnecessary chat turns.
+```text
+Template = versioned PromptDraftState snapshot
+Template ≠ compiled prompt string
+```
+
+First built-in:
+
+```text
+LinkedIn Profile Portrait
+```
+
+Do not expand Template management unless a concrete bug or a proven reusable Wizard recipe justifies it.
 
 ---
 
-## 4. Prompt Template system — accepted scope
+## 6. Portrait Wizard current flow
 
-Prompt Templates are versioned structured Draft snapshots, not raw prompt strings.
-
-Core invariant:
-
-```text
-Template = PromptDraftState snapshot + metadata
-```
-
-Implemented foundation:
-
-```text
-app/templates/
-  types.ts
-  validation.ts
-  registry.ts
-  instantiate.ts
-  storage.ts
-  createHost.ts
-  builtins/linkedin-profile.ts
-```
-
-Implemented UI/integration:
-
-```text
-app/composables/usePromptTemplateUi.ts
-app/components/templates/PromptTemplatePickerModal.vue
-app/components/templates/SavePromptTemplateModal.vue
-app/components/Header.vue
-app/pages/wizard/[wizardId].vue
-```
-
-Accepted user flows:
-
-- Create → `Start from a template`;
-- Start from Template always creates a **new Draft**;
-- activation from Create updates in place with **no page reload**;
-- no `Apply Template to Current Draft` feature;
-- Create → `Save as template`;
-- Wizard success → `Save as template`;
-- built-ins and user Templates appear separately;
-- user Templates persist locally;
-- Template instantiation deep-clones the stored Draft.
-
-User Template storage key:
-
-```text
-prompt-draft:prompt-templates:v1
-```
-
-Focused regression command:
-
-```bash
-pnpm test:templates
-```
-
-Detailed architecture and acceptance checklist are in [`TEMPLATES.md`](./TEMPLATES.md).
-
----
-
-## 5. First built-in Template — LinkedIn Profile Portrait
-
-The first curated built-in came directly from a successful real Portrait Wizard use-case test.
-
-Accepted recipe:
-
-```text
-{person} = person in {reference}
-
-mode                     image-to-image
-idea                     professional portrait
-reference usage          strict
-transformation strength  subtle
-aspect                   4:5
-framing                  head-and-shoulders
-expression               subtle + relaxed eyes/brows + slight smile + confident
-pose                     relaxed standing / shifted weight
-hair                     controlled styling
-outfit                   professional attire
-background               seamless light-gray studio
-lighting                 broad, very soft, front, balanced, low contrast
-preserve flags           all false
-```
-
-The Template stores the structured canonical Draft state, not the literal compiled prompt string.
-
-In Create/reference mode, Pose and Expression compilation adds explicit replacement semantics such as:
-
-```text
-replace the source/reference facial expression with ...
-replace the source/reference pose with ...
-```
-
-The headless canonical read path now matches those Create semantics.
-
-The user generated several professional portrait outputs from this recipe and considered the LinkedIn test successful.
-
-This successful use case is the product reason the Template system exists.
-
----
-
-## 6. Template acceptance — complete
-
-### Start from Template
-
-Accepted:
-
-1. Create exposes Templates.
-2. `LinkedIn Profile Portrait` appears under built-ins.
-3. `Use template` creates and activates a **new** Draft.
-4. no page refresh is required.
-5. the previous Draft remains unchanged in the Draft list.
-6. LinkedIn Setup/module values appear in Expert UI and remain editable.
-7. compiled output matches the expected recipe.
-
-### Save from Create
-
-Accepted:
-
-1. a modified Draft can be saved as a Template;
-2. it appears under `My templates`;
-3. instantiation preserves the saved canonical values;
-4. the source Draft remains unchanged.
-
-### Save from Wizard
-
-Accepted:
-
-1. a completed Portrait can be saved as a Template from the success screen;
-2. it appears under `My templates` in Create;
-3. it can be instantiated and inspected normally;
-4. merely saving the Template does not mutate Create.
-
-**Template feature expansion is now stopped. Return to Wizard.**
-
----
-
-## 7. Portrait Wizard — current implemented flow
-
-Current high-level stages:
+Current Stages:
 
 ```text
 Start
@@ -233,37 +211,90 @@ Review
 
 ### Start
 
-Current Portrait no longer asks for free-form Idea at the beginning.
-
-It asks only:
+Only asks:
 
 - Start from an image;
 - Start from a description.
 
+Idea is generated near Final, not asked at Start.
+
 ### Subjects
 
-- one required Person initialized by the Session;
-- up to four Persons;
-- optional names;
-- stable entity IDs separate from display labels/canonical keys;
-- Variables created through canonical `variable.create` during mapping.
+Current accepted Subject foundation:
 
-Image-to-image Subject values use reference position where needed:
+- one to four Person Subjects;
+- optional names;
+- stable entity identity;
+- unique canonical keys;
+- indexed fallback labels for unnamed multi-subject flows;
+- separate Subject Definition semantic.
+
+Unnamed display example:
 
 ```text
-single:
-{person} = person in {reference}
-
-multiple:
-{met} = first person in {reference}
-{zahra} = second person in {reference}
+Person 1
+Person 2
 ```
 
-This improved multi-person co-presence substantially in real generation tests.
+Canonical keys may remain:
+
+```text
+{person}
+{person_2}
+```
+
+#### Image-to-image Subject Definition
+
+Current choices:
+
+```text
+By position in reference
+Male person in reference
+Female person in reference
+Custom reference description
+```
+
+Examples:
+
+```text
+{met} = male person in {reference}
+{zahra} = female person in {reference}
+```
+
+A real generation test showed a major improvement in identity reliability compared with sequence-only definitions.
+
+Custom image definition example:
+
+```text
+woman with a short black bob and pearl choker in {reference}
+```
+
+#### Text-to-image Subject Definition
+
+Current choices:
+
+```text
+Person
+Man
+Woman
+Boy
+Girl
+Custom subject
+```
+
+Examples:
+
+```text
+{met} = an adult man
+{zahra} = an adult woman
+{subject} = a black Persian cat with green eyes
+```
+
+The optional variable/name label does not define the Subject description.
+
+Blank Custom definitions are rejected before mapping.
 
 ### Portrait intent
-
-Current quick intents:
 
 - Professional;
 - Cinematic;
@@ -272,132 +303,172 @@ Current quick intents:
 
 ### Appearance / Look
 
-Quick choices exist for:
+Quick + More Options exist for:
 
 - Expression;
 - Hair;
 - Outfit.
 
-Optional More Options exist for each domain.
-
-Expression More Options:
-
-- intensity;
-- eyes;
-- brows;
-- mouth.
-
-Hair More Options:
-
-- length;
-- curl pattern;
-- volume;
-- parting.
-
-Outfit More Options:
-
-- fit;
-- accessories;
-- additional details.
-
-### Multi-subject shared/per-subject controls
-
-Implemented for:
-
-- Expression;
-- Hair;
-- Outfit.
-
-Behavior:
-
-```text
-one Subject
-→ current shared UI only
-
-multiple Subjects
-→ shared choice by default
-→ optional Customize per subject
-→ overridden Subject removed from shared target set
-→ own canonical assignment/style/set created as needed
-```
-
-Per-subject values inherit shared values for fields not explicitly overridden.
-
-A previous Vue `structuredClone(reactiveProxy)` bug in the per-subject modal caused `DataCloneError` and lost settings. It was fixed by serializing a plain snapshot instead of cloning the Vue Proxy directly.
-
-The user confirmed after the fix that Apply Subject Settings persists correctly.
+Per-subject support is accepted for all three.
 
 ### Composition
 
-Current simplified shared controls:
-
-- Framing;
-- Pose.
-
-Framing includes:
+Framing:
 
 - Headshot;
 - Head & shoulders;
 - Half body;
 - Full body.
 
-Pose remains shared; per-subject Pose is intentionally not implemented yet.
+Pose quick intents:
+
+- Natural;
+- Formal;
+- Dynamic.
+
+**Per-subject Pose is now implemented.**
+
+Behavior:
+
+```text
+multiple Subjects
+→ shared Pose by default
+→ Customize pose per subject
+→ overridden Subject removed from shared Pose targets
+→ own canonical PoseAssignment/preset
+```
+
+Pose override currently needs only intent selection; it reuses the generic Subject Overrides UI without requiring a fake More Options record.
+
+Headshot continues to hide/disable Pose semantics.
+
+Manual real-generation acceptance for per-subject Pose is still pending and is the next task.
 
 ### Scene / Background
 
-Environment quick direction plus relevant text detail exists.
-
-Background More Options currently exposes a curated canonical subset:
+Background More Options currently covers:
 
 - setting;
 - spatial structure;
 - visible material;
 - detail density;
-- one key background element.
+- one key element.
 
-The user tested a studio/industrial/concrete-style Background result and considered current Background depth sufficient for now.
+Current depth remains sufficient until a new real test shows otherwise.
 
 ### Lighting
 
-Current quick choices remain shared and use canonical Lighting presets/semantics.
+Lighting remains **shared scene-level state**.
+
+Per-subject Lighting is explicitly not an accepted requirement.
+
+A real Outdoor + Moody use case exposed the old mismatch:
+
+```text
+Outdoor scene
++
+controlled studio-light source
+```
+
+The generic Moody preset was made environment-neutral while preserving its hard side / low ambient / high contrast character.
+
+Current compiled example:
+
+```text
+focused spotlight source from camera-left
+hard directional light
+low/minimal ambient
+high contrast
+```
+
+The user repeated the same real use case and considered the Lighting fix successful.
 
 ### Final
 
-Final contains:
-
-- system-generated editable Idea;
+- generated editable Idea;
 - Aspect Ratio;
-- reference usage for image-to-image;
-- transformation strength for image-to-image.
+- Reference Usage when relevant;
+- Transformation Strength when relevant.
 
-Idea is generated after semantic context is known, for example:
+Multi-subject Idea includes explicit `together`.
 
-```text
-A fashion portrait of {person} with the following settings
-A fashion portrait of {met} and {zahra} together, with the following settings
-```
+### Completion
 
-The explicit `together` wording is important for multi-person co-presence.
+Wizard maps through canonical Actions, validates, compiles, and produces `finalDraft`.
 
-Once the user edits generated Idea, it becomes user-owned and is not overwritten by later default recomputation.
-
-### Review / completion
-
-Review is grouped by Stage.
-
-Finish maps through canonical Actions, validates, compiles, and produces `finalDraft`.
-
-Create remains untouched until explicit `Continue editing in Create`, which creates a **new** Create Draft.
-
-The Wizard success screen also includes `Save as template`.
+Create remains untouched until explicit `Continue editing in Create`, which creates a NEW Draft.
 
 ---
 
-## 8. Preserve policy — fixed decision
+## 7. Multi-subject targeting status
 
-Wizard must not enable Setup Preserve flags implicitly.
+Currently implemented:
 
-All of these remain false:
+```text
+Expression  shared + per-subject
+Hair        shared + per-subject
+Outfit      shared + per-subject
+Pose        shared + per-subject
+```
+
+Currently shared-only:
+
+```text
+Framing
+Background
+Lighting
+```
+
+Do not add per-subject Lighting.
+
+Do not add per-subject Framing unless a concrete use case proves it makes semantic/compositional sense.
+
+Do not automatically convert every targetable Expert capability into Wizard per-subject UI.
+
+---
+
+## 8. Real generation validation completed in this phase
+
+### A. Multi-subject Look separation
+
+Two-person cinematic/fashion tests confirmed:
+
+- co-presence;
+- independent Expression;
+- independent Hair;
+- independent Outfit;
+- shared Framing;
+- shared Pose was usable but motivated testing individualized Pose;
+- shared Lighting is the correct scene-level model.
+
+### B. Environment/Lighting
+
+Outdoor brutalist architecture + Moody Lighting produced a useful result after removing the studio-specific source wording.
+
+### C. Subject Definition
+
+Replacing fragile sequence-only identification with:
+
+```text
+male person in {reference}
+female person in {reference}
+```
+
+produced a notably cleaner and more reliable two-person result using the same reference set.
+
+This Subject model is accepted as the current foundation.
+
+### D. Generation misses vs architecture bugs
+
+Some models may under-follow Hair or fine Expression details even when the compiled prompt is structurally correct.
+
+Do not change Wizard architecture solely because one generation under-executes a correctly compiled semantic instruction.
+
+---
+
+## 9. Preserve policy — fixed
+
+Wizard must keep all Setup Preserve flags false:
 
 ```text
 preserveMainSubject
@@ -410,116 +481,44 @@ preserveMaterials
 preserveLighting
 ```
 
-Even Hair/Outfit `Keep reference` choices must not toggle these Setup flags.
-
-Preserve emphasis is an Expert UI concern unless a future explicit Wizard requirement changes this decision.
+Keep-reference behavior belongs to the relevant domain, not hidden Preserve toggles.
 
 ---
 
-## 9. Real generation tests already considered successful
+## 10. Conversation/workflow preference
 
-### Multi-person Portrait
+Do not force command-by-command interaction unless the result of one command materially determines the next action.
 
-Semantic Subject Variables + explicit generated Idea with `together` successfully produced both referenced people in one image rather than separate images.
+When commands are independent, group them to reduce chat overhead.
 
-### Look depth
-
-Expression/Hair/Outfit More Options produced visibly strong, domain-specific transformations in a single-person fantasy/fashion test.
-
-### Background depth
-
-The curated Background More Options successfully controlled visible environment/material/detail semantics.
-
-### LinkedIn/profile use case
-
-The professional Portrait recipe produced multiple useful clean profile/headshot outputs and led directly to the Prompt Template feature.
-
-These tests validate the current general direction; they do not remove the need for regression tests after code changes.
+Do not claim work is continuing in the background after sending a completed response. If repository work is not actually finished, keep working before replying.
 
 ---
 
-## 10. Current known scope boundaries
+## 11. Deferred work
 
-Per-subject controls currently exist only for Expression/Hair/Outfit.
-
-Do not automatically expand per-subject support to:
-
-- Pose;
-- Framing;
-- Background;
-- Lighting;
-
-until a real use case demonstrates value.
-
-Background current depth is explicitly considered sufficient for now.
-
-Reference Usage / transformation behavior is also considered reasonable based on current tests: photorealistic inputs may show modest differences while more stylized prompts allow larger transformation. Do not change those semantics without new evidence.
-
----
-
-## 11. Current Portrait continuation checkpoint
-
-The latest Wizard regression gate is already confirmed:
-
-```text
-pnpm test:wizard → 39/39 passed
-```
-
-Immediate continuation is now:
-
-1. manually run at least one multi-subject Portrait using independent Expression/Hair/Outfit overrides;
-2. inspect the resulting Expert UI assignments/styles/sets, not only the compiled prompt;
-3. generate with the resulting prompt and judge co-presence, per-subject Look separation, shared Pose/Framing behavior, and Lighting behavior;
-4. continue real use-case-driven Portrait testing;
-5. only add the next Wizard capability when these tests reveal a concrete gap.
-
-There is currently no accepted requirement to immediately add per-subject Pose/Framing or more Background controls.
-
-Good next use cases should pressure-test the remaining shared Composition/Lighting semantics and general Portrait usability rather than adding complexity by default.
-
----
-
-## 12. Template development rule from now on
-
-Do not create a large speculative Template catalog.
-
-During Wizard testing, after a successful scenario ask:
-
-> Is this a stable, useful, reusable starting point for a meaningful user goal?
-
-If yes, normalize the successful Draft and add it as a curated built-in with regression coverage.
-
-If no, keep it only as a test example.
-
-This keeps Template growth tied directly to real Wizard validation.
-
----
-
-## 13. Deferred work
-
-Do not implement without a real requirement:
+Do not implement without a concrete requirement:
 
 - universal Wizard DSL;
-- arbitrary rule scripting/expression language;
-- generalized nested/repeatable flow tree;
-- Actions batch/transaction/dry-run solely for Wizard orchestration;
-- AI-generated Wizard definitions/UI;
-- broad Expert UI rewrite;
+- arbitrary rule scripting;
+- generalized nested workflow tree;
 - Wizard-specific compiler/validator;
-- direct arbitrary Draft/path mutation;
-- one Vue page per Wizard while shared route/registry is sufficient;
+- direct arbitrary Draft mutation;
+- broad Expert UI rewrite;
+- per-subject Lighting;
+- automatic per-subject support for every domain;
 - Apply Template to Current Draft;
-- Template marketplace/cloud sync/sharing/catalog infrastructure;
-- automatic per-subject targeting for every domain.
+- Template marketplace/cloud sync;
+- generalized per-reference asset binding before reference architecture is designed.
 
 ---
 
-## 14. Documentation discipline
+## 12. Documentation discipline
 
 - [`README.md`](./README.md) — Wizard architecture source of truth.
-- [`UI.md`](./UI.md) — detailed presentation/UX baseline; when an older example conflicts with later accepted decisions, follow `README.md` + this current status.
-- [`TEMPLATES.md`](./TEMPLATES.md) — Prompt Template architecture and acceptance checklist.
-- This file — operational checkpoint for resuming work in a new chat.
-- `docs/actions-api/STATUS.md` — accepted Actions operational status.
+- [`UI.md`](./UI.md) — presentation/UX source of truth.
+- [`TEMPLATES.md`](./TEMPLATES.md) — Template architecture/status.
+- This file — exact operational checkpoint and next task.
+- `docs/actions-api/STATUS.md` — accepted Actions API status.
 
-Update this file after every meaningful validated checkpoint so a fresh chat can resume without reconstructing conversation history.
+A new chat should read these files first, then resume from **manual per-subject Pose validation**.
