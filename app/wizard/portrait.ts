@@ -13,7 +13,9 @@ import { normalizeSemanticTarget } from "../utils/semanticTargets";
 import {
   formatWizardEntityLabelList,
   getWizardEntityDisplayLabel,
+  isWizardEntityDefinitionComplete,
   normalizeWizardEntityAnswers,
+  resolveWizardEntityVariableValue,
   wizardEntityToPromptVariable,
   type WizardEntityAnswer,
 } from "./entities";
@@ -292,15 +294,6 @@ const ENVIRONMENT_DETAIL_ANSWER: Record<PortraitEnvironmentType, string> = {
   abstract: "abstractDirection",
 };
 
-const SUBJECT_ORDINALS = [
-  "first",
-  "second",
-  "third",
-  "fourth",
-  "fifth",
-  "sixth",
-] as const;
-
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -396,25 +389,13 @@ function joinSubjectTokens(tokens: string[]) {
   return `${tokens.slice(0, -1).join(", ")}, and ${tokens[tokens.length - 1]}`;
 }
 
-function subjectOrdinal(index: number) {
-  return SUBJECT_ORDINALS[index] || `${index + 1}th`;
-}
-
 function portraitEntityVariableValue(
   entity: WizardEntityAnswer,
   index: number,
   total: number,
   mode: PromptMode,
 ) {
-  if (mode === "image_to_image") {
-    return total > 1
-      ? `${subjectOrdinal(index)} person in {reference}`
-      : "person in {reference}";
-  }
-
-  const explicitLabel = cleanText(entity.label);
-  if (explicitLabel) return `a person named ${getWizardEntityDisplayLabel(entity)}`;
-  return total > 1 ? `${subjectOrdinal(index)} person` : "a person";
+  return resolveWizardEntityVariableValue(entity, mode, index, total);
 }
 
 export function buildPortraitDraftTitle(
@@ -483,12 +464,14 @@ function resolvePortraitSubjects(session: WizardSession) {
 
   const entities = normalizeWizardEntityAnswers(answerValue(session, "subjects"));
   const mode = resolvePromptMode(session);
-  const variables = entities.map((entity, index) =>
-    wizardEntityToPromptVariable(entity, {
+  const variables = entities.map((entity, index) => {
+    const displayLabel = getWizardEntityDisplayLabel(entity, index, entities.length);
+    return wizardEntityToPromptVariable(entity, {
       value: portraitEntityVariableValue(entity, index, entities.length, mode),
-      description: `${getWizardEntityDisplayLabel(entity)} portrait subject`,
-    }),
-  );
+      label: displayLabel,
+      description: `${displayLabel} portrait subject`,
+    });
+  });
   const targets = variables
     .map((variable) => normalizePortraitSubjectReference(variable))
     .filter((target): target is SemanticTargetRef => Boolean(target));
@@ -547,6 +530,13 @@ export function derivePortraitWizardState(
   }
 
   const issues: ActionIssue[] = [];
+  const promptMode = resolvePromptMode(session);
+  if (session.wizardVersion === 2) {
+    const entities = normalizeWizardEntityAnswers(answerValue(session, "subjects"));
+    if (entities.some((entity) => !isWizardEntityDefinitionComplete(entity, promptMode))) {
+      issues.push(issue("portrait_subject_definition_required", "subjects"));
+    }
+  }
   const subjects = resolvePortraitSubjects(session);
   const subjectTargets = subjects.targets;
   const subjectTarget = subjectTargets[0] || null;
@@ -619,7 +609,6 @@ export function derivePortraitWizardState(
   const promptIdea = session.wizardVersion === 1
     ? `${portraitIntent} portrait`
     : userIdea || fallbackPortraitIdea(portraitIntent, subjectTokens);
-  const promptMode = resolvePromptMode(session);
   const aspectRatioAnswer = cleanText(answerValue(session, "aspectRatio"));
   const aspectRatio = session.wizardVersion === 2
     ? PORTRAIT_ASPECT_RATIO_MAP[aspectRatioAnswer] || session.workingDraft.promptSettings.aspectRatio
