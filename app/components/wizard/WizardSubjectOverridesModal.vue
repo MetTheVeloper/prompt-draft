@@ -27,7 +27,7 @@ const props = defineProps<{
   sharedIntent?: string;
   sharedOptions: Record<string, string>;
   intentQuestion: WizardSingleChoiceQuestionDefinition;
-  optionsQuestion: WizardModalOptionsQuestionDefinition;
+  optionsQuestion?: WizardModalOptionsQuestionDefinition;
 }>();
 
 const selectedSubjectId = ref(props.subjects[0]?.id || "");
@@ -174,7 +174,10 @@ function clearOption(fieldId: string) {
           />
         </el-grid>
 
-        <el-grid v-if="!shouldHideFields" :gap="12" class="w100">
+        <el-grid
+          v-if="props.optionsQuestion && !shouldHideFields"
+          :gap="12"
+          class="w100">
           <el-flex
             v-for="field in props.optionsQuestion.fields"
             :key="field.id"
@@ -221,7 +224,10 @@ function clearOption(fieldId: string) {
           </el-flex>
         </el-grid>
 
-        <el-text v-else :size="11" color="normal50">
+        <el-text
+          v-else-if="props.optionsQuestion && shouldHideFields"
+          :size="11"
+          color="normal50">
           This direction keeps the source outfit/reference behavior, so extra details are not applied.
         </el-text>
       </template>
