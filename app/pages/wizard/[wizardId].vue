@@ -19,7 +19,10 @@ import {
   loadWizardSession,
   saveWizardSession,
 } from "~/wizard/sessionPersistence";
-import { normalizeWizardEntityAnswers } from "~/wizard/entities";
+import {
+  isWizardEntityDefinitionComplete,
+  normalizeWizardEntityAnswers,
+} from "~/wizard/entities";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
@@ -79,7 +82,22 @@ function isAnswered(question: (typeof visibleQuestions.value)[number]) {
 
   if (question.type === "entityCollection") {
     const entities = normalizeWizardEntityAnswers(answer.value);
-    return entities.length >= Math.max(question.min || 0, 1);
+    if (entities.length < Math.max(question.min || 0, 1)) return false;
+
+    if (
+      question.id === "subjects" &&
+      session.value?.wizardId === "portrait" &&
+      session.value.wizardVersion === 2
+    ) {
+      const mode = session.value.answers.creationMode?.value === "from_description"
+        ? "text_to_image"
+        : "image_to_image";
+      return entities.every((entity) =>
+        isWizardEntityDefinitionComplete(entity, mode),
+      );
+    }
+
+    return true;
   }
 
   if (typeof answer.value === "string") return Boolean(answer.value.trim());
