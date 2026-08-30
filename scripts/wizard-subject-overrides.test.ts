@@ -84,7 +84,7 @@ function targetIds(value: unknown) {
   return targets.map((target) => target.variableId);
 }
 
-test("Portrait v2 splits shared Look and Pose settings into per-subject canonical assignments/configurations", async () => {
+test("Portrait v2 splits shared Look and detailed Pose settings into per-subject canonical assignments/configurations", async () => {
   let { session, met, zahra } = createMultiSubjectSession();
 
   session = answer(session, "expressionSubjectOverrides", {
@@ -105,10 +105,21 @@ test("Portrait v2 splits shared Look and Pose settings into per-subject canonica
       options: { fitDirection: "tailored" },
     },
   });
+  session = answer(session, "poseOptions", {
+    stance: "standing",
+    posture: "relaxed",
+    weightBalance: "shifted",
+    gesture: "hands_in_pockets",
+  });
   session = answer(session, "poseSubjectOverrides", {
     [zahra.id]: {
       intent: "dynamic",
-      options: {},
+      options: {
+        stance: "standing",
+        posture: "upright",
+        weightBalance: "even",
+        gesture: "arms_crossed",
+      },
     },
   });
 
@@ -169,8 +180,17 @@ test("Portrait v2 splits shared Look and Pose settings into per-subject canonica
   const zahraPose = poseAssignments.find((item) => targetIds(item).includes(zahra.id));
   assert.deepEqual(targetIds(metPose), [met.id]);
   assert.deepEqual(targetIds(zahraPose), [zahra.id]);
-  assert.equal(metPose?.presetId, "relaxed_standing");
-  assert.equal(zahraPose?.presetId, "action_ready");
+
+  assert.equal(metPose?.basePosture, "standing");
+  assert.equal(metPose?.weightBalance, "shifted");
+  assert.equal(metPose?.bodyTension, "relaxed");
+  assert.deepEqual(metPose?.gestures, ["hands_in_pockets"]);
+
+  assert.equal(zahraPose?.basePosture, "standing");
+  assert.equal(zahraPose?.torsoPosture, "upright");
+  assert.equal(zahraPose?.weightBalance, "even");
+  assert.equal(zahraPose?.bodyTension, "tense");
+  assert.deepEqual(zahraPose?.gestures, ["arms_crossed"]);
 });
 
 test("Portrait v2 per-subject keep-reference removes that person from the shared Outfit Set", async () => {
