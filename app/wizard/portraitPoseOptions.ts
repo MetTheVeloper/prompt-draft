@@ -1,4 +1,4 @@
-import type { WizardModalOptionsQuestionDefinition } from "./definition";
+import type { WizardModalOptionsQuestionDefinition } from "./definitionCore";
 
 export type PortraitPoseOptions = Partial<{
   stance: "standing" | "seated";
