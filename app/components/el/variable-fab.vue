@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { useScreen } from "~/composables/useScreen";
 import { usePromptEditor } from "~/composables/prompt/usePromptEditor";
 import { useVariablePickerModal } from "~/composables/prompt/useVariablePickerModal";
 
