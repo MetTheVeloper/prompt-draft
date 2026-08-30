@@ -6,6 +6,11 @@ import {
   type PortraitWizardMappingResult,
 } from "./portrait";
 import {
+  normalizePortraitPoseOptions,
+  PORTRAIT_POSE_OPTION_KEYS,
+  portraitPoseOptionsPatch,
+} from "./portraitPoseOptions";
+import {
   executeWizardAction,
   type WizardActionHostContext,
   type WizardSession,
@@ -35,7 +40,6 @@ const OUTFIT_OPTION_KEYS = new Set([
   "accessoryDirection",
   "additionalDetails",
 ]);
-const POSE_OPTION_KEYS = new Set<string>();
 
 const POSE_PRESET: Record<string, string> = {
   natural: "relaxed_standing",
@@ -193,14 +197,19 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
         "poseSubjectOverrides",
         subjectIds,
         POSE_INTENTS,
-        POSE_OPTION_KEYS,
+        PORTRAIT_POSE_OPTION_KEYS,
       );
+  const sharedPoseOptions = base.derived.framingIntent === "headshot"
+    ? {}
+    : normalizePortraitPoseOptions(session.answers.poseOptions?.value);
+  const sharedPosePatch = portraitPoseOptionsPatch(sharedPoseOptions);
 
   if (
     !Object.keys(expressionOverrides).length &&
     !Object.keys(hairOverrides).length &&
     !Object.keys(outfitOverrides).length &&
-    !Object.keys(poseOverrides).length
+    !Object.keys(poseOverrides).length &&
+    !Object.keys(sharedPosePatch).length
   ) {
     return base;
   }
@@ -282,6 +291,41 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
               actionId: "pose.assignment.delete",
               input: { assignmentId: shared.id },
             });
+  }
+
+  if (Object.keys(sharedPosePatch).length) {
+    let result = await run({ actionId: "module.activate", input: { moduleKey: "pose" } });
+    if (!result.ok) return failure(result.issues);
+
+    let sharedPose = firstArrayItem(
+      currentSession.workingDraft.moduleValues.pose,
+      "poseAssignments",
+    );
+    if (!sharedPose || !isRecord(sharedPose) || typeof sharedPose.id !== "string") {
+      result = await run({ actionId: "pose.assignment.create", input: {} });
+      if (!result.ok) return failure(result.issues);
+      const assignmentId = entityId(result.data, "assignment");
+      if (!assignmentId) {
+        return failure([{ code: "portrait_pose_assignment_id_missing" }]);
+      }
+      result = await run({
+        actionId: "pose.assignment.update",
+        input: { assignmentId, targets: base.derived.subjectTargets },
+      });
+      if (!result.ok) return failure(result.issues);
+      sharedPose = firstArrayItem(
+        currentSession.workingDraft.moduleValues.pose,
+        "poseAssignments",
+      );
+    }
+
+    if (sharedPose && isRecord(sharedPose) && typeof sharedPose.id === "string") {
+      result = await run({
+        actionId: "pose.assignment.update",
+        input: { assignmentId: sharedPose.id, ...sharedPosePatch },
+      });
+      if (!result.ok) return failure(result.issues);
+    }
   }
 
   if (Object.keys(expressionOverrides).length) {
@@ -445,7 +489,7 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
     if (!result.ok) return failure(result.issues);
 
     for (const [subjectId, override] of Object.entries(poseOverrides)) {
-      if (!override.intent) continue;
+      if (!override.intent && !Object.keys(override.options).length) continue;
       const target = targetForVariable(base.derived.subjectTargets, subjectId);
       if (!target) continue;
 
@@ -462,13 +506,25 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
       });
       if (!result.ok) return failure(result.issues);
 
-      const presetId = POSE_PRESET[override.intent];
-      if (!presetId) continue;
-      result = await run({
-        actionId: "pose.assignment.applyPreset",
-        input: { assignmentId, presetId },
-      });
-      if (!result.ok) return failure(result.issues);
+      if (override.intent) {
+        const presetId = POSE_PRESET[override.intent];
+        if (presetId) {
+          result = await run({
+            actionId: "pose.assignment.applyPreset",
+            input: { assignmentId, presetId },
+          });
+          if (!result.ok) return failure(result.issues);
+        }
+      }
+
+      const posePatch = portraitPoseOptionsPatch(override.options);
+      if (Object.keys(posePatch).length) {
+        result = await run({
+          actionId: "pose.assignment.update",
+          input: { assignmentId, ...posePatch },
+        });
+        if (!result.ok) return failure(result.issues);
+      }
     }
   }
 
