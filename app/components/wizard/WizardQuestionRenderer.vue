@@ -71,6 +71,7 @@ const emit = defineEmits<{
       v-else-if="props.question.type === 'entityCollection'"
       :question="props.question"
       :model-value="props.modelValue"
+      :creation-mode="props.answerValues.creationMode"
       @update:model-value="emit('update:modelValue', $event)"
     />
 
