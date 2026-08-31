@@ -59,7 +59,14 @@ export const VariablesModule: PromptKeyModule = {
       },
       config: {
         typeOptions: variableTypeOptions,
-        reservedPatterns: ["text_*", "text_group_*", "layout_region_*"],
+        reservedPatterns: [
+          "text_*",
+          "text_group_*",
+          "layout_region_*",
+          "r_*",
+          "tg_*",
+          "tt_*",
+        ],
         supportVariables: false,
       },
     },
