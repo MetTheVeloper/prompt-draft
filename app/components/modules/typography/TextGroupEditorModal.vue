@@ -258,8 +258,7 @@ function appendSelectedTextVariables(group: TypographyTextGroup) {
     const token = userVariableToken(variable)
     if (existing.has(token)) return
 
-    const block = createTypographyTextBlock()
-    block.text = token
+    const block = createTypographyTextBlock(variable)
     group.texts.push(block)
     existing.add(token)
   })
