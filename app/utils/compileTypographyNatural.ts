@@ -1,6 +1,7 @@
-type TypographyNaturalOptions = {
+export type TypographyNaturalOptions = {
   referencedGroupKeys?: Set<string>
   referencedTextKeys?: Set<string>
+  includeHeading?: boolean
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -104,25 +105,50 @@ function getLegacyTypography(value: Record<string, unknown>) {
   }
 }
 
+function createTextAliasMap(output: Record<string, unknown>) {
+  const aliases = new Map<string, string>()
+  let textIndex = 0
+  const groups = Array.isArray(output.groups) ? output.groups : []
+
+  groups.forEach((group) => {
+    if (!isRecord(group)) return
+    const texts = Array.isArray(group.texts) ? group.texts : []
+
+    texts.forEach((text) => {
+      textIndex += 1
+      if (!isRecord(text)) return
+
+      const key = cleanText(text.key)
+      if (key) aliases.set(key, `{tt_${textIndex}}`)
+    })
+  })
+
+  return aliases
+}
+
 function textReference(
   value: Record<string, unknown>,
   options: TypographyNaturalOptions,
+  textAliases: ReadonlyMap<string, string>,
 ) {
   const content = displayContent(value.content)
   if (!content) return ""
 
   const key = cleanText(value.key)
   const shouldExposeKey = Boolean(key && options.referencedTextKeys?.has(key))
-  return shouldExposeKey ? `${key} (${content})` : content
+  const alias = key ? textAliases.get(key) : ""
+
+  return shouldExposeKey && alias ? `${alias} (${content})` : content
 }
 
 function formatTextInstruction(
   value: unknown,
   options: TypographyNaturalOptions,
+  textAliases: ReadonlyMap<string, string>,
 ) {
   if (!isRecord(value)) return ""
 
-  const reference = textReference(value, options)
+  const reference = textReference(value, options, textAliases)
   if (!reference) return ""
 
   const purpose = cleanText(value.purpose)
@@ -153,16 +179,17 @@ function formatTextInstruction(
     parts.push(description)
   }
 
-  return `• Style ${reference}${parts.length ? ` ${parts.join(", ")}` : ""}.`
+  return `Style ${reference}${parts.length ? ` ${parts.join(", ")}` : ""}.`
 }
 
 function formatGroup(
   value: unknown,
+  groupIndex: number,
   options: TypographyNaturalOptions,
+  textAliases: ReadonlyMap<string, string>,
 ) {
-  if (!isRecord(value)) return [] as string[]
+  if (!isRecord(value)) return ""
 
-  const key = cleanText(value.key)
   const purpose = cleanText(value.purpose)
   const position = formatPosition(value.position)
   const layout = formatGroupLayout(value.layout)
@@ -170,13 +197,12 @@ function formatGroup(
   const rawTexts = Array.isArray(value.texts) ? value.texts : []
   const textRecords = rawTexts.filter(isRecord)
   const contents = textRecords
-    .map((item) => textReference(item, options))
+    .map((item) => textReference(item, options, textAliases))
     .filter(Boolean)
 
-  if (!contents.length) return [] as string[]
+  if (!contents.length) return ""
 
-  const shouldExposeKey = Boolean(key && options.referencedGroupKeys?.has(key))
-  const prefix = shouldExposeKey ? `${key}: ` : ""
+  const alias = `{tg_${groupIndex + 1}}`
   const positionPrefix = position
     ? isVariableToken(position)
       ? `In ${position}, `
@@ -184,7 +210,7 @@ function formatGroup(
     : ""
   const purposeClause = formatPurposeClause(purpose)
 
-  let summary = `• ${prefix}${positionPrefix}${formatArrangement(
+  let summary = `• ${alias}: ${positionPrefix}${formatArrangement(
     naturalJoin(contents),
     layout,
   )}`
@@ -200,10 +226,10 @@ function formatGroup(
   }
 
   const textInstructions = textRecords
-    .map((item) => formatTextInstruction(item, options))
+    .map((item) => formatTextInstruction(item, options, textAliases))
     .filter(Boolean)
 
-  return [summary, ...textInstructions]
+  return [summary, ...textInstructions].join(" ")
 }
 
 function formatAccuracy(output: Record<string, unknown>) {
@@ -226,14 +252,22 @@ export function compileTypographyNaturalBlock(
   output: Record<string, unknown>,
   options: TypographyNaturalOptions = {},
 ) {
+  const textAliases = createTextAliasMap(output)
   const groups = Array.isArray(output.groups)
-    ? output.groups.flatMap((group) => formatGroup(group, options))
+    ? output.groups
+        .map((group, index) => formatGroup(group, index, options, textAliases))
+        .filter(Boolean)
     : []
 
   if (!groups.length) return ""
 
   const extraDetails = cleanText(output.extraDetails)
-  const lines = ["Typography:", ...groups, "", formatAccuracy(output)]
+  const lines = [
+    ...(options.includeHeading === false ? [] : ["Typography:"]),
+    ...groups,
+    "",
+    formatAccuracy(output),
+  ]
 
   if (extraDetails) {
     lines.push("", `Additional typography instructions: ${extraDetails}.`)
