@@ -11,6 +11,9 @@ export const RESERVED_VARIABLE_KEY_PATTERNS = [
   /^text_group_[a-z0-9_]*$/,
   /^outfit_[a-z0-9_]+$/,
   /^hair_[a-z0-9_]+$/,
+  /^r_[0-9]+$/,
+  /^tg_[0-9]+$/,
+  /^tt_[0-9]+$/,
 ];
 
 export type PromptVariableIssueLevel = "error" | "warning";
