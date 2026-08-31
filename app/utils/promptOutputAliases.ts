@@ -154,6 +154,27 @@ function stripUnneededTypographyTextAliases(
   return nextOutput
 }
 
+function removeDuplicateNaturalBlock(
+  output: string,
+  definition: string,
+  standaloneBlock: string,
+) {
+  if (!definition || !standaloneBlock || !output.includes(definition)) {
+    return output
+  }
+
+  const marker = `\n\n${standaloneBlock}`
+  const definitionEnd = output.indexOf(definition) + definition.length
+  const duplicateIndex = output.indexOf(marker, definitionEnd)
+
+  if (duplicateIndex < 0) return output
+
+  return (
+    output.slice(0, duplicateIndex) +
+    output.slice(duplicateIndex + marker.length)
+  )
+}
+
 export function rewritePromptFacingStructuredOutput(
   output: string,
   moduleOutputs: ModuleOutputMap,
@@ -173,25 +194,25 @@ export function rewritePromptFacingStructuredOutput(
   )
 
   let nextOutput = output
+  let layoutBlock = ""
+  let typographyDefinitionBlock = ""
 
   const layoutOutput = moduleOutputs.layout
   if (isRecord(layoutOutput)) {
-    nextOutput = replaceDefinition(
-      nextOutput,
-      "layout",
-      compileLayoutNaturalBlock(layoutOutput),
-    )
+    layoutBlock = compileLayoutNaturalBlock(layoutOutput)
+    nextOutput = replaceDefinition(nextOutput, "layout", layoutBlock)
   }
 
   const typographyOutput = moduleOutputs.typography
   if (isRecord(typographyOutput)) {
+    typographyDefinitionBlock = compileTypographyNaturalBlock(typographyOutput, {
+      referencedTextKeys: referencedTypographyTextKeys,
+      includeHeading: false,
+    })
     nextOutput = replaceDefinition(
       nextOutput,
       "typography",
-      compileTypographyNaturalBlock(typographyOutput, {
-        referencedTextKeys: referencedTypographyTextKeys,
-        includeHeading: false,
-      }),
+      typographyDefinitionBlock,
     )
   }
 
@@ -201,6 +222,35 @@ export function rewritePromptFacingStructuredOutput(
     context,
     referencedTypographyTextKeys,
   )
+
+  if (format === "natural") {
+    const aliasedLayoutBlock = stripUnneededTypographyTextAliases(
+      replaceAliases(layoutBlock, context),
+      context,
+      referencedTypographyTextKeys,
+    )
+    const aliasedTypographyBlock = stripUnneededTypographyTextAliases(
+      replaceAliases(typographyDefinitionBlock, context),
+      context,
+      referencedTypographyTextKeys,
+    )
+
+    if (aliasedLayoutBlock) {
+      nextOutput = removeDuplicateNaturalBlock(
+        nextOutput,
+        `{layout} =\n${aliasedLayoutBlock}`,
+        aliasedLayoutBlock,
+      )
+    }
+
+    if (aliasedTypographyBlock) {
+      nextOutput = removeDuplicateNaturalBlock(
+        nextOutput,
+        `{typography} =\n${aliasedTypographyBlock}`,
+        `Typography:\n${aliasedTypographyBlock}`,
+      )
+    }
+  }
 
   return nextOutput
 }
