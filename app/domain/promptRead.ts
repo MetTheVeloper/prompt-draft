@@ -32,6 +32,7 @@ import {
 } from "../utils/compileSceneResource";
 import { compileTextureModule } from "../utils/compileTexture";
 import { getSceneEntities } from "../utils/scene";
+import { resolveTypographyTextVariableReferences } from "../utils/typography";
 import {
   validatePromptSettings,
   type PromptValidationIssue,
@@ -227,6 +228,27 @@ function isPromptVariable(value: unknown): value is PromptVariable {
   );
 }
 
+function resolveTypographyVariableLinks(
+  modules: readonly PromptKeyModule[],
+  moduleValues: Record<string, ModuleValues>,
+) {
+  const typographyActive = modules.some((module) => module.key === "typography");
+  const variablesActive = modules.some((module) => module.key === "variables");
+
+  if (!typographyActive || !variablesActive) return;
+
+  const typographyValues = moduleValues.typography;
+  const rawVariables = moduleValues.variables?.variables;
+
+  if (!typographyValues || !Array.isArray(rawVariables)) return;
+
+  const variables = rawVariables.filter(isPromptVariable);
+  typographyValues.textGroups = resolveTypographyTextVariableReferences(
+    typographyValues.textGroups,
+    variables,
+  );
+}
+
 function variableOwnership(
   modules: readonly PromptKeyModule[],
   moduleValues: Record<string, ModuleValues>,
@@ -265,6 +287,7 @@ export function buildPromptReadModel(
 ): PromptReadBuild {
   const modules = activeModules(draft, availableModules);
   const moduleValues = effectiveModuleValues(draft, modules);
+  resolveTypographyVariableLinks(modules, moduleValues);
   const ownership = variableOwnership(modules, moduleValues);
   const replaceSource =
     draft.promptSettings.mode === "image_to_image" && !ownership.hasReference;
