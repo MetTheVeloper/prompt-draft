@@ -1,6 +1,6 @@
 # Prompt Draft Wizard
 
-Status: **Portrait Wizard active development; Subject Definition and per-subject Pose implemented, manual Pose validation next**
+Status: **Portrait domain foundation accepted; Living Sentence redesign is the accepted future Wizard UX direction**
 
 Working branch: `feature/wizard`
 
@@ -10,12 +10,12 @@ This document is the **source of truth for Wizard architecture and accepted prod
 
 Related sources:
 
-- Wizard UX and presentation: [`UI.md`](./UI.md)
+- Wizard UX and Living Sentence presentation: [`UI.md`](./UI.md)
 - Prompt Template architecture: [`TEMPLATES.md`](./TEMPLATES.md)
-- Latest implementation/testing checkpoint: [`STATUS.md`](./STATUS.md)
+- Latest implementation/testing checkpoint and next-chat plan: [`STATUS.md`](./STATUS.md)
 - Actions operational status: `docs/actions-api/STATUS.md`
 
-When an older example conflicts with this file or the latest `STATUS.md`, the later accepted decision wins.
+When an older example conflicts with this file, `UI.md`, or the latest `STATUS.md`, the later accepted decision wins.
 
 ---
 
@@ -28,7 +28,7 @@ The Wizard is not a second prompt system.
 ```text
 User intent
   ↓
-Wizard questions / choices
+Wizard experience
   ↓
 Answers + deterministic interpretation
   ↓
@@ -64,9 +64,10 @@ The Wizard must not:
 - use the Create Active Draft as an implicit input;
 - silently overwrite Create state;
 - enable Preserve flags implicitly;
-- add speculative per-subject controls without a real use case.
+- add speculative per-subject controls without a real use case;
+- hard-code generic Wizard infrastructure to Portrait-specific wording or step names.
 
-The preferred development loop is:
+The preferred development loop remains:
 
 ```text
 real use case
@@ -82,7 +83,73 @@ fix only proven gaps
 
 ---
 
-## 3. Independent Wizard lifecycle
+## 3. Reusable Wizard Experience architecture
+
+Portrait is the first Wizard use case and the proving ground, not the permanent shape of every Wizard.
+
+The reusable layer should provide concepts such as:
+
+- session lifecycle and persistence;
+- navigation/history;
+- deterministic branching;
+- answer/default ownership;
+- shared + per-subject override mechanics;
+- progressive disclosure;
+- review/edit navigation;
+- canonical Action mapping;
+- Living Sentence presentation/composition primitives.
+
+Each use case provides its own semantic definition:
+
+- questions/intents;
+- available choices;
+- branch rules;
+- grammar/sentence composition;
+- canonical mappings;
+- technical metadata relevant to that use case.
+
+Conceptually:
+
+```text
+Wizard Experience Engine
+  ├── common lifecycle / navigation / interaction primitives
+  ├── Living Sentence primitives
+  └── use-case definition
+        ├── Portrait
+        ├── future Product Photography
+        ├── future Architecture
+        └── future use cases
+```
+
+Do not build a universal scripting DSL in anticipation of future use cases. Generalize only the behavior that is proven reusable.
+
+---
+
+## 4. Living Sentence — accepted experience model
+
+The accepted future Wizard UX is centered on **Living Sentence**.
+
+The user should feel that they are gradually shaping a natural-language creative intention rather than filling out a form.
+
+Important choices become editable semantic tokens in an evolving sentence. The sentence may **recompose** itself when necessary so that it remains concise and natural English; answers are not mechanically appended in chronological order.
+
+Living Sentence is a **presentation/interaction layer**, not a replacement for canonical domain state.
+
+```text
+Wizard semantic state
+  ├──> Living Sentence composer → user-facing creative sentence
+  └──> canonical mapping         → PromptDraftState
+```
+
+Technical metadata such as Aspect Ratio, Reference Fidelity, and Transformation Strength remains conceptually separate from the creative sentence.
+
+A possible future direction is to seed/generated Idea from the Living Sentence, but this is **not yet an accepted mapping change**. Do not couple Idea generation to Living Sentence until it is explicitly validated.
+
+See [`UI.md`](./UI.md) for the interaction and visual rules.
+
+---
+
+## 5. Independent Wizard lifecycle
 
 A standard Wizard session is independent from Create.
 
@@ -102,19 +169,13 @@ finalDraft
 
 Abandoning, exiting, refreshing, restarting, or merely completing the Wizard must not mutate Create.
 
-Only the explicit action:
-
-```text
-Continue editing in Create
-```
-
-creates a **new** Create Draft from `finalDraft`.
+Only the explicit handoff to Create creates a **new** Create Draft from `finalDraft`.
 
 Existing Create Drafts remain untouched.
 
 ---
 
-## 4. Session and flow model
+## 6. Session and flow model
 
 Wizard session persistence is local-first.
 
@@ -124,38 +185,29 @@ Storage key:
 prompt-draft:wizard:sessions:v1
 ```
 
-Persisted execution is based on a flat ordered Step sequence.
+The current runtime uses a flat ordered Step sequence grouped by Stage metadata.
 
 ```text
 Stage
   ↓
 Step
   ↓
-Question
+Question / micro-state
 ```
 
-Stages are presentation/grouping metadata. `currentStepId` is persisted; current Stage is derived from the Step.
+`currentStepId` is persisted; current Stage is derived from the Step.
+
+The Living Sentence redesign may present several Steps as a continuous sequence of scenes/micro-states. The **number of screens is not a product invariant**.
 
 Do not introduce a universal workflow DSL, arbitrary graph, nested execution tree, or rule scripting language unless a future concrete Wizard proves it necessary.
 
-Current reusable Question capabilities include:
-
-- `singleChoice`;
-- `text`;
-- `entityCollection`;
-- `modalOptions`;
-- `subjectOverrides`;
-- legacy-compatible `variablePicker` where genuinely needed.
-
 ---
 
-## 5. Answers, defaults, and generated values
+## 7. Answers, defaults, and generated values
 
 Explicit user values and system defaults are different states.
 
 A default may be recomputed when upstream context changes. A user-edited value must not be silently overwritten.
-
-This is especially important for generated Idea.
 
 Conceptually:
 
@@ -163,9 +215,11 @@ Conceptually:
 answer = value + source(default | user)
 ```
 
+This remains especially important for generated Idea and any future Living Sentence-derived defaults.
+
 ---
 
-## 6. Subject model — accepted foundation
+## 8. Subject model — accepted foundation
 
 Subjects are constructed inside the Wizard and later mapped to canonical Prompt Variables.
 
@@ -181,33 +235,17 @@ definition       what/who this Subject actually means
 
 Stable assignment targeting follows identity, not display label or variable key text alone.
 
-### 6.1 Optional names
+### 8.1 Optional names
 
 Names are optional and are primarily for UI readability and variable naming.
 
-For multiple unnamed people, display labels are indexed:
+For multiple unnamed people, indexed labels may be used while canonical keys remain independently unique.
 
-```text
-Person 1
-Person 2
-Person 3
-```
-
-Canonical keys remain unique independently, for example:
-
-```text
-{person}
-{person_2}
-{person_3}
-```
-
-### 6.2 Subject Definition is separate from the name
+### 8.2 Subject Definition is separate from the name
 
 The optional Subject name does **not** define age, gender, appearance, or identity semantics.
 
-Each Subject has a semantic definition strategy used to produce the Prompt Variable value.
-
-For **image-to-image**, current Portrait options are:
+For **image-to-image**, accepted Portrait semantic options are:
 
 ```text
 By position in reference
@@ -216,18 +254,7 @@ Female person in reference
 Custom reference description
 ```
 
-Examples:
-
-```text
-{person} = first person in {reference}
-{met} = male person in {reference}
-{zahra} = female person in {reference}
-{subject} = woman with a short black bob and pearl choker in {reference}
-```
-
-Position remains available as a fallback, but semantic definitions are preferred when reference order is fragile or ambiguous.
-
-For **text-to-image**, current options are:
+For **text-to-image**, accepted options are:
 
 ```text
 Person
@@ -238,43 +265,20 @@ Girl
 Custom subject
 ```
 
-Examples:
-
-```text
-{met} = an adult man
-{zahra} = an adult woman
-{subject} = a black Persian cat with green eyes
-```
-
 Custom definitions are required when `Custom` is selected.
 
-The definition is independent from the optional variable/display name.
-
-### 6.3 Why this exists
-
-The previous multi-reference strategy relied heavily on:
-
-```text
-first person in {reference}
-second person in {reference}
-```
-
-That is unsafe as a universal identity strategy because upload/display order can be unstable and multiple similar Subjects can remain ambiguous.
-
-The accepted fix is semantic Subject Definition, not hidden reliance on attachment sequence.
-
-A future asset-level binding system may provide even stronger identity such as one explicit reference asset per Subject, but that is not part of the current Prompt Draft reference model.
+Sequence remains available as a fallback, but semantic definitions are preferred when reference order is fragile or ambiguous.
 
 ---
 
-## 7. Multi-subject shared/per-subject pattern
+## 9. Multi-subject shared/per-subject pattern
 
-The user-facing pattern is:
+The accepted semantic pattern is:
 
 ```text
 Shared choice by default
   ↓
-optional Customize per subject
+optional change for one or more Subjects
   ↓
 only selected Subjects receive overrides
 ```
@@ -298,47 +302,37 @@ Current shared-only domains:
 - Background;
 - Lighting.
 
-Lighting is intentionally scene-level; per-subject Lighting is not an accepted product concept for the current Portrait Wizard.
+Lighting is intentionally scene-level. Do not automatically expand every domain to per-subject behavior.
 
-Do not automatically expand every domain to per-subject behavior.
+The Living Sentence UI should express this as natural intent first (for example, “everyone”) and reveal individual override controls only when requested.
 
 ---
 
-## 8. Portrait Wizard current flow
+## 10. Portrait Wizard semantic flow
 
-Current Stages:
+The accepted semantic chapters remain roughly:
 
 ```text
 Start
-Subjects
+People / Subjects
 Portrait
-Appearance / Look
+Look
 Composition
 Scene
 Final
 Review
 ```
 
+Presentation may split or merge these into micro-states without changing the canonical domain.
+
 ### Start
 
-Ask only:
+- Transform own image(s) → `image_to_image`;
+- Create a photo → `text_to_image`.
 
-- Start from an image;
-- Start from a description.
+### People / Subjects
 
-Internal mapping:
-
-```text
-from_image       → image_to_image
-from_description → text_to_image
-```
-
-Idea is no longer asked here.
-
-### Subjects
-
-Create one to four Person entities with:
-
+- one to four people;
 - optional names;
 - stable identity;
 - Subject Definition appropriate to creation mode.
@@ -352,121 +346,75 @@ Quick intent:
 - Fashion;
 - Fantasy.
 
-### Appearance / Look
+### Look
 
-Quick choices + optional depth for:
+Quick choices + optional refinement for:
 
 - Expression;
 - Hair;
 - Outfit.
 
-Expression More Options:
-
-- intensity;
-- eyes;
-- brows;
-- mouth.
-
-Hair More Options:
-
-- length;
-- curl pattern;
-- volume;
-- parting.
-
-Outfit More Options:
-
-- fit;
-- accessories;
-- additional details.
-
-Expression/Hair/Outfit all support per-subject overrides.
+All three support shared + per-subject overrides.
 
 ### Composition
 
-Framing options:
+Framing:
 
 - Headshot;
 - Head & shoulders;
 - Half body;
 - Full body.
 
-Pose quick intents:
+Pose:
 
 - Natural;
 - Formal;
 - Dynamic.
 
-Pose is now **shared by default with optional per-subject override** for multi-subject Portraits.
-
-Pose per-subject mapping uses canonical `PoseAssignment` targeting and canonical Pose presets. Headshot still suppresses Pose controls.
+Headshot suppresses Pose. Pose supports shared + per-subject overrides when relevant.
 
 ### Scene
 
-Environment direction + optional detail, Background More Options, and Lighting.
+Environment:
 
-Background More Options currently exposes a curated canonical subset:
+- Studio;
+- Outdoor;
+- Abstract.
+
+Optional scene detail and advanced Background refinement may expose a curated canonical subset:
 
 - setting;
 - spatial structure;
 - visible material;
 - detail density;
-- one key background element.
+- key element.
 
-Current Background depth is considered sufficient until a real test shows otherwise.
-
-### Lighting
-
-Lighting remains shared for the scene.
-
-Current quick choices:
+Lighting remains scene-level:
 
 - Soft;
 - Dramatic;
 - Moody;
 - Clean.
 
-A real Outdoor + Moody test exposed a semantic mismatch because the generic `moody_side` preset described a `studio` light source. The preset was made environment-neutral by using a focused spotlight source while preserving side / hard / low-ambient / high-contrast behavior.
-
-Do not couple Lighting to Environment with a large matrix unless future tests require it.
-
 ### Final
 
-Contains:
+Technical settings:
 
-- system-generated editable Idea;
 - Aspect Ratio;
-- reference usage for image-to-image;
-- transformation strength for image-to-image.
+- Reference Fidelity/Usage for image-to-image;
+- Transformation Strength for image-to-image.
+
+Generated Idea remains part of the current domain implementation, but the redesigned presentation intentionally does not make a large Idea textarea part of the main creative flow. Any future Living Sentence → Idea mapping requires a separate accepted decision.
 
 ### Review / completion
 
-Review is grouped by Stage.
+Review presents a polished Living Sentence as the main payoff, with compact creative and technical recap. Important sentence tokens should navigate back to the relevant semantic state.
 
-Finish maps through canonical Actions, validates, compiles, and produces `finalDraft`.
-
----
-
-## 9. Idea semantics
-
-Idea is generated near the end after enough semantic context is known.
-
-Examples:
-
-```text
-A fashion portrait of {person} with the following settings
-A cinematic portrait of {met} and {zahra} together, with the following settings
-```
-
-For multi-subject Portraits, explicit `together` wording is important for co-presence.
-
-Before user editing, generated Idea may update with upstream changes. After user editing, it becomes user-owned and must not be silently replaced.
-
-Idea is descriptive, not a hidden rule engine.
+Finish still maps through canonical Actions, validates, compiles, and produces `finalDraft`.
 
 ---
 
-## 10. Preserve policy
+## 11. Preserve policy
 
 All Wizard Preserve flags remain false unless a future explicit requirement changes the policy.
 
@@ -485,7 +433,7 @@ Hair/Outfit `Keep reference` behavior must be expressed through those domains, n
 
 ---
 
-## 11. Prompt Templates relationship
+## 12. Prompt Templates relationship
 
 Prompt Templates are reusable structured starting points extracted from proven use cases.
 
@@ -496,78 +444,101 @@ Template = versioned PromptDraftState snapshot
 Template ≠ compiled prompt string
 ```
 
-Accepted integration:
+Accepted integration includes Start from Template, built-in/local Templates, Save as Template, and the LinkedIn Profile Portrait built-in.
 
-- Start from Template in Create;
-- built-in registry;
-- local user Templates;
-- Save as Template from Create;
-- Save as Template from Wizard success;
-- first built-in: LinkedIn Profile Portrait.
+Starting from a Template always creates a **new Draft**.
 
-Starting from a Template always creates a **new Draft**. There is no Apply Template to Current Draft flow.
-
-Template infrastructure is accepted and feature expansion is frozen unless a concrete bug or proven reusable Wizard use case justifies more work.
+Template infrastructure is accepted and feature expansion is frozen unless a concrete bug or proven reusable use case justifies more work.
 
 See [`TEMPLATES.md`](./TEMPLATES.md).
 
 ---
 
-## 12. Accepted real-world validation
+## 13. Design-system boundary
 
-Real generation tests have demonstrated:
+Do not discard the existing Prompt Draft component/design system, and do not force the experimental Wizard UX into generic components that cannot express it.
 
-- multi-person co-presence using explicit `together` Idea semantics;
-- independent Expression/Hair/Outfit semantics across multiple Subjects;
-- much stronger identity reliability after semantic Subject Definition (`male person`, `female person`, custom descriptions) replaced fragile sequence-only assumptions;
-- useful shared Pose behavior in multi-person portraits;
-- a concrete product reason for per-subject Pose, now implemented for testing;
-- strong Look transformation from More Options;
-- controlled Background depth;
-- Outdoor + Moody Lighting after removing the studio-specific source mismatch;
-- useful LinkedIn/profile outputs that became the first built-in Template.
-
-A real model may still under-follow detailed Hair/Expression instructions. If the compiled prompt is semantically correct, do not treat every generation miss as a Wizard architecture failure.
-
----
-
-## 13. Runtime / dependency discipline
-
-The project must not rely on undeclared transitive dependencies.
-
-`useScreen.ts` directly imports `@vueuse/core`, therefore `@vueuse/core` is now an explicit root dependency and `package.json` / `pnpm-lock.yaml` must stay synchronized.
-
-Local dev also unregisters stale Prompt Draft Service Workers/caches to avoid old offline state interfering with Nuxt development.
-
-Do not paper over lockfile drift with `--no-frozen-lockfile` in accepted checkpoints; the branch should pass frozen install.
-
----
-
-## 14. Current immediate continuation
-
-The next product validation is **manual per-subject Pose testing**.
-
-Recommended first case:
+Accepted implementation strategy:
 
 ```text
-2 Subjects
-Framing: Half body or Full body
-Shared Pose: Natural
-Subject A: Shared
-Subject B: Customize → Dynamic
+Existing design system
+  ├── tokens / spacing / typography foundations
+  ├── accessibility / focus / input primitives
+  └── global infrastructure
+
+Wizard-specific interaction layer
+  ├── LivingSentence
+  ├── typographic gateways / choices
+  ├── cinematic scene shell
+  ├── ambient visual feedback
+  ├── sentence-token editing
+  └── Wizard-specific motion/layout primitives
 ```
 
-Validate both:
+If a Wizard-specific primitive later proves broadly reusable, promote/extend it into the shared component system deliberately.
 
-1. Expert UI Pose assignments/targets are independent and correct;
-2. compiled prompt gives each Subject the intended Pose;
-3. real generation visibly benefits from the separate Pose semantics.
-
-Only after this test should the next capability be chosen.
+Do not rewrite the whole design system merely to imitate the Figma prototype.
 
 ---
 
-## 15. Deferred architecture
+## 14. Figma Make role
+
+The current Living Sentence prototype was generated in Figma Make as a functional **React + Vite + Tailwind** prototype.
+
+It is a design/interaction reference, not production source code.
+
+Production remains the existing Nuxt/Vue Prompt Draft application. Do not copy the React implementation wholesale or create a parallel runtime.
+
+The migration target is:
+
+```text
+Figma Make behavior / visual intent
+            +
+existing Nuxt/Vue canonical Wizard/domain logic
+            ↓
+production Living Sentence Wizard
+```
+
+---
+
+## 15. Accepted real-world validation
+
+Existing tests and generation checks have demonstrated:
+
+- multi-person co-presence using explicit `together` semantics;
+- independent Expression/Hair/Outfit semantics across multiple Subjects;
+- stronger identity reliability with semantic Subject Definition;
+- useful shared Pose behavior and implemented per-subject Pose support;
+- strong Look transformation from More Options;
+- controlled Background depth;
+- Outdoor + Moody Lighting after removing studio-specific source wording;
+- useful LinkedIn/profile outputs that became the first built-in Template.
+
+A model may still under-follow detailed Hair/Expression instructions. If the compiled prompt is semantically correct, do not treat every generation miss as a Wizard architecture failure.
+
+---
+
+## 16. Current development sequencing
+
+Until the Figma/Living Sentence direction is fully reviewed and locked:
+
+Safe work includes:
+
+- domain/state model;
+- branching and validation;
+- use-case architecture;
+- Living Sentence composition semantics;
+- canonical mapping;
+- shared/per-subject behavior;
+- automated tests.
+
+Avoid spending significant time polishing the current Wizard presentation layer because it is scheduled to be replaced/refactored against the accepted Figma direction.
+
+See [`STATUS.md`](./STATUS.md) for the exact branch/merge plan.
+
+---
+
+## 17. Deferred architecture
 
 Do not implement without a concrete requirement:
 
@@ -586,12 +557,12 @@ Do not implement without a concrete requirement:
 
 ---
 
-## 16. Documentation discipline
+## 18. Documentation discipline
 
-- `README.md` — architectural source of truth;
-- `UI.md` — presentation/UX source;
+- `README.md` — architectural/domain source of truth;
+- `UI.md` — Living Sentence presentation/UX source of truth;
 - `TEMPLATES.md` — Template architecture/status;
-- `STATUS.md` — exact operational checkpoint and next action;
+- `STATUS.md` — exact operational checkpoint, Figma state, branch plan, and next action;
 - `docs/actions-api/STATUS.md` — accepted Actions surface/status.
 
 Update `STATUS.md` after every meaningful validated checkpoint. Change architecture docs when accepted product/domain decisions change.
