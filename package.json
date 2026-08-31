@@ -44,9 +44,9 @@
     "vue-router": "^5.0.7"
   },
   "devDependencies": {
-    "@capacitor/assets": "^3.0.5",
+    "@capacitor/assets": "^9.0.0",
     "@capacitor/cli": "^8.4.0",
-    "@types/qrcode": "^2.0.0",
+    "@types/qrcode": "^1.5.6",
     "prettier": "^3.8.4",
     "sass-embedded": "^1.100.0",
     "tsx": "^4.22.4"
