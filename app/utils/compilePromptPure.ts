@@ -9,6 +9,7 @@ import {
   compilePromptOutput as compilePromptOutputCore,
   getSystemPromptVariables,
 } from "./compilePromptCore";
+import { rewritePromptFacingStructuredOutput } from "./promptOutputAliases";
 
 export type UserVariableOwnership = {
   hasSubject: boolean;
@@ -161,12 +162,20 @@ export function compilePromptOutputPure(
     getSystemPromptVariables(effectiveSettings) as PromptVariable[],
     ownership,
   );
+  const ownershipAdjustedOutput = applyUserVariableOwnership(
+    compiled,
+    format,
+    ownership,
+  );
+  const semanticOutput = rewritePromptFacingStructuredOutput(
+    ownershipAdjustedOutput,
+    outputs,
+    format,
+    JSON.stringify(effectiveSettings),
+  );
 
   return {
-    output: aliasScenePresentation(
-      applyUserVariableOwnership(compiled, format, ownership),
-      format,
-    ),
+    output: aliasScenePresentation(semanticOutput, format),
     effectiveSettings,
     systemVariables,
   };
