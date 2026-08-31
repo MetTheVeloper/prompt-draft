@@ -294,7 +294,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
       handler: openVectorizer,
     },
     {
-      label: translate('tools.about'),
+      label: translate('app.tools.about'),
       icon: 'info',
       color: 'normal15',
       handler: openAboutModal,
