@@ -1,396 +1,462 @@
 # Wizard Development Status
 
-Last updated: **2026-08-28**
+Last updated: **2026-08-31**
 
-Status: **Portrait v2 rewrite implemented; local automated/build validation pending**
+Status: **Portrait logic/domain foundation is healthy; Living Sentence Figma prototype is built and accepted as the future UI direction; production UI migration is intentionally paused until Figma refinement is complete**
 
 Working branch: `feature/wizard`
 
-Branch baseline: `main@c60490681feb145d90749b1415337850f7c9c88c`
-
 Architecture source of truth: [`README.md`](./README.md)
 
-Wizard UI architecture source of truth: [`UI.md`](./UI.md)
+Wizard UX / Living Sentence source: [`UI.md`](./UI.md)
+
+Prompt Template architecture: [`TEMPLATES.md`](./TEMPLATES.md)
 
 Actions contract: `prompt-draft.actions.v1`
 
 ---
 
-## Current checkpoint
+## 1. Current branch checkpoint
 
-The first Portrait UI proved the route/registry/completion integration, then manual UX testing exposed the need for a different product model. The accepted rewrite is now implemented around the architecture recorded in [`UI.md`](./UI.md).
-
-The standard Wizard flow no longer depends on a Create-page Active Draft:
+Latest runtime checkpoint before this documentation refresh:
 
 ```text
-/wizard/portrait
-  ↓
-Create or restore independent Wizard Session
-  ↓
-fresh isolated Working Draft
-  ↓
-Stage → Step → Question flow
-  ↓
-Wizard-owned Subjects / semantic answers
-  ↓
-canonical Actions mapping
-  ↓
-prompt.validate
-  ↓
-prompt.compile
-  ↓
-completed finalDraft
+feature/wizard@998afb15cbf6510004387e0de16049534cecc88c
 ```
 
-A completed Wizard does **not** mutate Create automatically. Only the explicit user action **Continue editing in Create** appends the completed result as a **new Create Draft** and makes that new Draft active.
+Latest runtime commit message:
 
-This checkpoint is implemented in source but has not yet been accepted by local `pnpm test:wizard`, `pnpm generate`, and browser testing after the rewrite.
+```text
+fix(wizard-ui): use normal text token for selected choices
+```
+
+Documentation updates after that checkpoint record the accepted Figma/Living Sentence direction and do not intentionally alter runtime behavior.
+
+The user is currently running a fresh local project/build health check. Do **not** claim that this final check has passed until the user confirms it.
 
 ---
 
-## Portrait v2 definition
+## 2. Major accepted direction change
 
-The runtime Registry now resolves Portrait to `portraitWizardV2Definition`.
+The previous functional Portrait Wizard UI is no longer considered the target visual implementation.
 
-The accepted v1 definition remains in source for regression coverage of the previously accepted backend behavior.
-
-Portrait v2 uses the lightweight model:
+The accepted future experience is **Living Sentence**:
 
 ```text
-Stage = high-level UX orientation / progress
-Step = flat execution + navigation unit
-Question = answer unit
+User intent
+  ↓
+choice becomes language
+  ↓
+evolving natural-language sentence
+  ↓
+review/edit semantic tokens
+  ↓
+canonical mapping / compile
 ```
 
-Stages:
+The existing Nuxt Wizard remains valuable as the domain/runtime foundation. The redesign should replace/refactor presentation without discarding canonical Actions, session semantics, subject targeting, branching, validation, or compile behavior.
 
-```text
-Start
-Subjects
-Portrait
-Appearance
-Composition
-Scene
-Final settings
-Review
-```
-
-Current Steps remain a flat ordered list and reference their parent Stage through `stageId`. No nested flow tree or general workflow DSL was introduced.
+See [`UI.md`](./UI.md) for the complete accepted design direction.
 
 ---
 
-## Start Stage
+## 3. Figma Make checkpoint
 
-The first Step asks for both high-level inputs agreed in the UI architecture:
-
-- optional Idea;
-- starting point:
-  - Start from an image;
-  - Start from a description.
-
-Semantic Wizard values map to canonical Setup values only during mapping:
+Current Make prototype:
 
 ```text
-from_image       → image_to_image
-from_description → text_to_image
+https://www.figma.com/make/jgi1MxTu7e16Dv7AFiRof2/Review-Instructions
 ```
 
-Idea does not control Wizard branching.
+The prototype is substantially more than a static skeleton. It currently contains a React/Vite/Tailwind implementation with:
 
-If Idea is empty, Portrait v2 derives a deterministic fallback near finalization using Wizard-owned Subject tokens and Portrait intent, for example:
-
-```text
-Create a professional portrait featuring {sarah_Connor}
-```
-
-or for image-to-image:
-
-```text
-Transform {sarah_Connor} into a professional portrait
-```
-
----
-
-## Wizard-owned Subjects
-
-The previous Subject-variable picker is no longer the Portrait v2 entry flow.
-
-Implemented semantic entity foundation:
-
-```text
-WizardEntityAnswer
-  id     = stable internal identity
-  kind   = semantic entity kind
-  label  = user-facing name
-  key    = canonical variable key
-```
-
-Portrait currently allows Person entities, starts with one Person, and allows adding up to four people through visible entity cards.
-
-The name is optional. If omitted, the UI uses the semantic fallback `Person` rather than `Subject 1`.
-
-Entity labels and canonical variable keys are intentionally separate. Renaming preserves the entity ID while recalculating a canonical unique key.
-
-At completion/mapping time, Portrait v2 creates its Subject variables through the existing public `variable.create` Action. There is no Wizard-side direct Variables-module mutation.
-
-For the current first v2 checkpoint, Appearance/Pose shared choices target all Portrait Subjects. Per-subject customization through Named Configurations is the next domain expansion after this baseline is validated.
-
----
-
-## Independent Wizard persistence / resume
-
-Implemented in:
-
-- `app/wizard/sessionPersistence.ts`.
-
-Storage key:
-
-```text
-prompt-draft:wizard:sessions:v1
-```
-
-Unfinished Wizard sessions persist independently from Create Drafts.
-
-The session persists:
-
-- Wizard ID/version;
-- current Step;
-- answers;
-- derived state;
-- isolated Working Draft.
-
-Opening the Wizard with a compatible unfinished session shows a resume choice:
-
-```text
-Continue previous Wizard
-or
-Start over
-```
-
-The persisted unit is `currentStepId`; Stage is derived from the Step definition and is not separately persisted.
-
----
-
-## Stage progress / shell rewrite
-
-The old raw percentage UI has been replaced by Stage-level progress.
-
-Desktop presents the high-level Stage sequence with completed/current/pending states.
-
-Mobile presents:
-
-```text
-Current Stage
-x of y
-progress line
-```
-
-The rebuilt shell separates:
-
-```text
-Header
-  Exit · Wizard identity/save state · Start over
-  Stage progress
-
-Scrollable centered Stage content
-
-Footer
-  Back · Continue/Create prompt
-```
-
-Core work remains on the page surface rather than being moved into modals.
-
----
-
-## Question presentation
-
-Current renderer types are:
-
-- `singleChoice`;
-- `text`;
-- `entityCollection`;
-- legacy-compatible `variablePicker`.
-
-`entityCollection` is the new semantic Subject-building primitive.
-
-Choice rendering now uses only valid project button modes. The previous invalid selected state (`solid`) was removed; selected choice cards use the supported normal mode and unselected cards use outline mode.
-
-Text questions disable Expert text-field actions by default inside the Wizard.
-
----
-
-## Final settings
-
-Portrait v2 moves technical Setup choices toward the end of the flow.
-
-Current first-pass controls:
-
+- central Wizard state engine;
+- Entry;
+- People / People Count;
+- Subject configuration;
+- Portrait direction;
+- Expression;
+- Hair;
+- Outfit;
+- Framing;
+- Pose;
+- Scene + environment refinement;
+- Lighting;
 - Aspect Ratio;
-- reference usage for image-to-image;
-- transformation strength for image-to-image.
+- Reference Fidelity;
+- Transformation Strength;
+- Review;
+- Prompt Ready;
+- Living Sentence composition/navigation.
 
-Wizard-friendly Aspect Ratio values are mapped to canonical Setup IDs during mapping, for example:
+Important: this React code is **reference implementation/prototype code only**. Production remains Nuxt/Vue.
+
+Figma AI refinement is currently paused because the user's daily Figma AI credits are exhausted. Resume the design/refinement pass after credits refresh.
+
+---
+
+## 4. Accepted Figma design concepts
+
+The prototype direction is strongly accepted, including:
+
+- dark editorial/cinematic visual language;
+- large expressive typography;
+- two typographic Entry gateways instead of cards;
+- `CHOOSING AN ANSWER = MOVING FORWARD` for simple choices;
+- Living Sentence remaining present and recomposing naturally;
+- progressive disclosure;
+- shared-first multi-person settings;
+- per-person overrides only on demand;
+- framing/crop visual metaphor;
+- ambient Scene/Lighting feedback;
+- proportion-based Aspect Ratio selector;
+- creative sentence separated from technical metadata;
+- editorial Review with clickable semantic sentence tokens;
+- full-screen Prompt Ready scene instead of generic success modal.
+
+The prototype still requires QA/refinement before production implementation. Do not assume every current Figma detail is final merely because the overall direction is accepted.
+
+---
+
+## 5. Next Figma session objective
+
+When Figma AI credits are available again, do **not** restart the design from scratch.
+
+First audit the existing prototype end-to-end and classify findings:
 
 ```text
-1:1  → common_square
-4:5  → common_portrait_4_5
-3:4  → common_portrait_3_4
-9:16 → common_vertical_9_16
-16:9 → common_widescreen_16_9
+KEEP
+CHANGE
+REMOVE
+BUG
+POLISH
 ```
 
-Reference-only questions are hidden for text-to-image.
+Test at least:
 
-The fuller preserve-control UX discussed in [`UI.md`](./UI.md) remains a follow-up after this rewrite baseline is accepted.
+1. Transform → one person;
+2. Transform → multiple people;
+3. multi-person shared + individual overrides;
+4. Create → one person;
+5. Create → multiple people;
+6. Headshot → Pose skip;
+7. Scene free text + environment refinement;
+8. Lighting ambient behavior;
+9. Aspect Ratio;
+10. Transform-only Reference Fidelity + Transformation Strength;
+11. Review token editing;
+12. Generate → Prompt Ready.
+
+Focus review on:
+
+- sentence grammar/naturalness;
+- state pacing;
+- unnecessary micro-states;
+- anything that reverted to SaaS/form patterns;
+- typography/hierarchy;
+- motion meaning;
+- branch correctness;
+- responsive behavior;
+- accessibility.
+
+Then perform one focused refinement pass instead of scattered small prompts.
 
 ---
 
-## Review
+## 6. Production implementation strategy after Figma is locked
 
-Portrait Review remains semantic and renderer-neutral.
+Do not port the Figma React project wholesale.
 
-The UI now groups review rows by Stage rather than exposing raw implementation/module organization.
-
-Portrait v2 Review includes:
-
-- Idea, including deterministic fallback when the user left it blank;
-- starting point;
-- Subjects;
-- Portrait/Appearance/Composition/Scene choices;
-- Final settings.
-
-Image-reference-only settings are omitted from Review when the selected mode is text-to-image.
-
-Edit currently jumps back to the corresponding Step. A dedicated edit-return-to-Review shortcut can be added after baseline browser acceptance if it proves useful.
-
----
-
-## Completion and Create handoff
-
-The accepted completion pipeline is unchanged in principle:
+Target architecture:
 
 ```text
-answers / rules
-  ↓
-canonical mapping
-  ↓
-prompt.validate
-  ↓
-prompt.compile
-  ↓
-finalDraft
+existing Prompt Draft design system
+        +
+Wizard-specific interaction layer
+        +
+existing canonical Wizard/domain logic
+        ↓
+Nuxt/Vue Living Sentence Wizard
 ```
 
-Portrait v2 adds canonical Subject creation and Setup mapping before the existing domain mapping.
+Reuse existing shared components/tokens where they fit.
 
-After successful completion the Wizard shows a result state. Create remains unchanged until the user explicitly chooses:
+Create dedicated Wizard primitives where the interaction genuinely requires them, for example:
+
+- Living Sentence;
+- semantic sentence tokens;
+- cinematic shell;
+- typographic gateway/choice;
+- ambient feedback;
+- proportion selector;
+- Wizard transitions;
+- refinement palette.
+
+Do not rewrite the whole component system for the Wizard. Promote Wizard-specific primitives into the shared system only after they prove broadly reusable.
+
+---
+
+## 7. Reuse across future Wizard use cases
+
+Portrait is the first use case, not the final architecture.
+
+The following should be reusable across future Wizards:
+
+- session/lifecycle;
+- deterministic branching;
+- Living Sentence interaction model;
+- progressive disclosure;
+- creative vs technical separation;
+- review/edit semantic tokens;
+- shared + override mechanics where relevant;
+- canonical mapping boundary.
+
+Each use case should provide its own:
+
+- semantic questions;
+- choices;
+- branch rules;
+- sentence grammar/composition;
+- canonical mappings.
+
+Do **not** hard-code Portrait sentence grammar into the generic Wizard experience layer.
+
+---
+
+## 8. Existing Portrait semantic foundation remains accepted
+
+Current accepted domain capabilities include:
+
+### Subjects
+
+- one to four people;
+- optional names;
+- stable identities;
+- semantic Subject Definition;
+- unique canonical keys.
+
+Image-to-image definitions:
 
 ```text
-Continue editing in Create
+By position in reference
+Male person in reference
+Female person in reference
+Custom reference description
 ```
 
-That handoff appends a new Draft record to the existing Create collection and selects it. Existing Create Drafts are not overwritten.
-
-Exit, abandonment, refresh, and Start over never mutate Create Draft state.
-
----
-
-## Regression strategy
-
-The accepted Portrait v1 backend definition and tests are intentionally retained while Portrait v2 becomes the product/runtime definition.
-
-New coverage has been added for:
-
-- Stage validation and Stage references;
-- Portrait v2 definition shape;
-- fresh independent Wizard Session creation;
-- current Stage derivation from current Step;
-- Wizard-owned Subject identity;
-- deterministic v2 Idea fallback;
-- friendly → canonical Aspect Ratio mapping;
-- canonical `variable.create` Subject creation in the isolated Working Draft;
-- semantic assignment identity targeting the created Subject.
-
-`package.json` now includes `scripts/wizard-portrait-v2.test.ts` in `pnpm test:wizard`.
-
-**These new tests have not yet been run on the user's local checkout.** The previous accepted gate before this rewrite was **23/23**.
-
----
-
-## Static generation baseline
-
-Before the v2 rewrite, `pnpm generate` completed successfully and explicitly prerendered:
+Text-to-image definitions:
 
 ```text
-/wizard/portrait
+Person
+Man
+Woman
+Boy
+Girl
+Custom subject
 ```
 
-The route and public prerender registration remain shared/dynamic. Generation must be rerun after this rewrite before acceptance.
+### Look / targeting
+
+Implemented:
+
+```text
+Expression  shared + per-subject
+Hair        shared + per-subject
+Outfit      shared + per-subject
+Pose        shared + per-subject
+```
+
+Shared-only:
+
+```text
+Framing
+Background
+Lighting
+```
+
+Do not add per-subject Lighting.
+
+### Composition / Scene
+
+- Headshot suppresses Pose;
+- Background refinement currently has sufficient canonical depth;
+- Lighting remains scene-level;
+- the Outdoor + Moody preset mismatch was already corrected.
+
+### Completion
+
+Wizard still maps through canonical Actions, validates, compiles, and produces `finalDraft`.
+
+Create remains untouched until explicit handoff, which creates a NEW Draft.
 
 ---
 
-## Still to validate manually
+## 9. Existing automated validation checkpoint
 
-After automated tests/build pass, verify in the browser:
+Latest previously reported Wizard suite:
 
-1. `/wizard/portrait` works even when Create has no Drafts;
-2. Start shows optional Idea + image/description starting point;
-3. Subjects starts with one Person and does not open a Variable Picker;
-4. Subject name is optional and readable fallback naming works;
-5. adding/removing a second Person works;
-6. refresh or leaving mid-flow offers Resume on return;
-7. Stage progress stays high-level while Scene contains multiple Steps;
-8. conditional Pose/Environment questions still behave correctly;
-9. text-to-image hides reference-only Final Settings;
-10. Review is grouped by Stage;
-11. successful Finish does not change Create;
-12. Continue editing in Create creates a new Draft instead of overwriting an existing Draft;
-13. Exit leaves Create unchanged;
-14. desktop/mobile shell layout is usable and visually coherent.
+```text
+pnpm test:wizard
+46 tests
+46 passed
+0 failed
+```
 
----
+Coverage includes:
 
-## Next expansions after baseline acceptance
+- Portrait definition/session/completion;
+- Subject Definition semantics;
+- unnamed Subject behavior;
+- image/text custom definitions;
+- Environment/Lighting regression;
+- shared/per-subject Expression/Hair/Outfit;
+- shared/per-subject Pose.
 
-Do not mix these into the first rewrite validation unless a blocking issue requires them:
-
-- shared vs per-Subject Appearance strategy;
-- per-Subject Outfit/Hair/Pose via existing Named Configuration/assignment capabilities;
-- additional entity kinds for other Wizard definitions;
-- fuller image-to-image preserve controls in Final Settings;
-- edit-from-Review return behavior;
-- optional persistence of the completed result screen across refresh;
-- localization/copy pass for Wizard v2;
-- additional Wizard definitions.
+This remains useful domain regression protection during the future UI migration.
 
 ---
 
-## Explicitly deferred
+## 10. Immediate branch/merge plan
 
-Do not implement without a real requirement:
+### A. Right now
+
+- documentation has been updated on `feature/wizard`;
+- user runs local build/project health check;
+- do not make further runtime/UI changes until the result is known.
+
+### B. If the user confirms the build is healthy
+
+Before merging the current Wizard foundation to `main`:
+
+1. temporarily hide/remove the **Wizard** and **Template** entry buttons from the main header/navigation;
+2. keep all Wizard/Template implementation code intact;
+3. run final build/tests;
+4. merge the accepted `feature/wizard` foundation into `main`.
+
+Prefer a small feature/config visibility gate over deleting feature code.
+
+### C. Wording/compiler work
+
+After that merge, create a fresh branch from latest `main`, recommended name:
+
+```text
+refactor/module-wording
+```
+
+Use that branch for:
+
+- module output wording cleanup;
+- compile-output concision;
+- removal of internal/system-only identifiers from user-facing compiled prompt text;
+- Layout/Typography wording improvements;
+- redundancy cleanup.
+
+This work is expected to be largely independent from Wizard presentation code.
+
+Merge the completed wording work back to `main` after validation.
+
+### D. Final Living Sentence implementation
+
+Do **not** return to a stale `feature/wizard` branch after `main` has advanced.
+
+After Figma direction is locked and wording work is merged, create a fresh implementation branch from the latest `main`, recommended:
+
+```text
+feature/wizard-figma
+```
+
+Implement the final Living Sentence Nuxt/Vue presentation there.
+
+This sequencing minimizes drift/conflicts:
+
+```text
+Wizard foundation → main
+Module wording     → main
+latest main        → feature/wizard-figma
+```
+
+---
+
+## 11. Work that is safe while Figma design is pending
+
+Safe/valuable:
+
+- domain/state architecture;
+- branching/validation;
+- reusable use-case architecture;
+- sentence composition semantics;
+- canonical mapping;
+- shared/per-subject behavior;
+- tests;
+- module wording/compiler cleanup on its own branch.
+
+Avoid for now:
+
+- polishing current Wizard layout;
+- final Wizard typography;
+- final animation/motion;
+- detailed spacing/styling of the legacy Wizard UI.
+
+Those areas are expected to change during the Living Sentence migration.
+
+---
+
+## 12. Prompt Templates — accepted and frozen
+
+Template behavior remains accepted:
+
+- Start from Template;
+- always creates a NEW Draft;
+- previous Draft remains unchanged;
+- Save as Template from Create;
+- Save as Template from Wizard completion;
+- local user Templates;
+- first built-in: `LinkedIn Profile Portrait`.
+
+Invariant:
+
+```text
+Template = versioned PromptDraftState snapshot
+Template ≠ compiled prompt string
+```
+
+Do not expand Template functionality without a concrete requirement.
+
+The header entry may be temporarily hidden while the feature is not ready for public-facing use; hiding the entry must not remove the implementation.
+
+---
+
+## 13. Deferred work
+
+Do not implement without a concrete requirement:
 
 - universal Wizard DSL;
-- arbitrary rule scripting/expression language;
-- generalized nested/repeatable flow tree;
-- Actions batch/transaction/dry-run;
-- AI-generated Wizard definitions/UI;
-- broad Expert UI rewrite;
+- arbitrary rule scripting;
+- generalized nested workflow tree;
 - Wizard-specific compiler/validator;
-- direct arbitrary Draft/path mutation;
-- one Vue page per Wizard while the shared route/registry model remains sufficient.
+- direct arbitrary Draft mutation;
+- broad Expert UI rewrite;
+- per-subject Lighting;
+- automatic per-subject support for every domain;
+- Apply Template to Current Draft;
+- Template marketplace/cloud sync;
+- generalized per-reference asset binding before reference architecture is designed.
 
 ---
 
-## Immediate next step
+## 14. New-chat continuation instructions
 
-Pull the current `feature/wizard` rewrite and run the focused Wizard regression gate. Fix any TypeScript/runtime regressions before production generation or manual UX acceptance.
+A new Wizard chat should first read:
 
----
+1. [`README.md`](./README.md)
+2. [`UI.md`](./UI.md)
+3. this `STATUS.md`
+4. [`TEMPLATES.md`](./TEMPLATES.md) only if Template behavior is relevant.
 
-## Documentation discipline
+Then determine which phase is current:
 
-- [`README.md`](./README.md) remains the core Wizard architectural source of truth.
-- [`UI.md`](./UI.md) is the accepted source of truth for Wizard UX, Stage/Step presentation, independent session ownership, routing, static generation, and Create handoff.
-- This file is the operational checkpoint for resuming implementation/testing.
-- `docs/actions-api/STATUS.md` remains the operational source for the accepted Actions surface.
-- Update this file after each meaningful validated checkpoint.
+- if Figma credits are available and Figma refinement is not finished → continue the Figma QA/refinement pass;
+- if Figma is locked and latest `main` contains wording changes → create/resume the fresh Living Sentence implementation branch from latest `main`;
+- do not spend time polishing the legacy Wizard UI unless fixing a blocking bug.
+
+Before any merge/runtime change, confirm the latest local build/test result with the user if it has not already been reported.

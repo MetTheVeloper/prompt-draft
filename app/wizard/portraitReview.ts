@@ -182,10 +182,15 @@ export function buildPortraitWizardReview(
     "outfitSubjectOverrides",
     "framingIntent",
     "poseIntent",
+    "poseOptions",
+    "poseSubjectOverrides",
     "environmentType",
     "backgroundOptions",
   ]) {
-    if (answerId === "poseIntent" && !derived.poseIntent) continue;
+    if (
+      ["poseIntent", "poseOptions", "poseSubjectOverrides"].includes(answerId) &&
+      derived.framingIntent === "headshot"
+    ) continue;
     if (answerId === "outfitOptions" && derived.outfitIntent === "keep_reference") {
       continue;
     }

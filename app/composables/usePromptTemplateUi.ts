@@ -7,6 +7,7 @@ import type {
 } from "~/modules/promptDraft.types";
 import {
   addPromptTemplateToCreate,
+  ensureCreateDraftRecord,
   readActiveCreateDraftForTemplate,
 } from "~/templates/createHost";
 import { listAvailablePromptTemplates } from "~/templates/registry";
@@ -42,6 +43,7 @@ function flushCreateDraftPersistence() {
 
 export function usePromptTemplateUi() {
   const modal = useModal();
+  const route = useRoute();
 
   function openStartFromTemplate(options: StartFromTemplateOptions = {}) {
     const templates = listAvailablePromptTemplates();
@@ -89,6 +91,21 @@ export function usePromptTemplateUi() {
                 message: "The new Draft could not be added to Create.",
               });
               return false;
+            }
+
+            // Header currently reloads /create after creating a Template Draft.
+            // Create's existing beforeunload handler then writes its old reactive
+            // collection once more. Reassert the new record on pagehide, which
+            // runs after that unload save, so the reload hydrates the Template
+            // Draft instead of silently losing it.
+            if (import.meta.client && route.name === "create") {
+              window.addEventListener(
+                "pagehide",
+                () => {
+                  ensureCreateDraftRecord(record);
+                },
+                { once: true },
+              );
             }
 
             await options.onCreated?.(record, template);

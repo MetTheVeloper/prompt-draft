@@ -49,13 +49,14 @@ const intentQuestion = computed(() =>
   ),
 );
 
-const optionsQuestion = computed(() =>
-  props.questions.find(
+const optionsQuestion = computed(() => {
+  if (!props.question.sharedOptionsAnswerId) return undefined;
+  return props.questions.find(
     (question): question is WizardModalOptionsQuestionDefinition =>
       question.id === props.question.sharedOptionsAnswerId &&
       question.type === "modalOptions",
-  ),
-);
+  );
+});
 
 function cleanStringMap(value: unknown) {
   if (!value || typeof value !== "object" || Array.isArray(value)) return {};
@@ -107,15 +108,15 @@ const buttonLabel = computed(() => {
 });
 
 function openOverrides() {
-  if (!intentQuestion.value || !optionsQuestion.value || subjects.value.length < 2) return;
+  if (!intentQuestion.value || subjects.value.length < 2) return;
 
   const validSubjectIds = new Set(subjects.value.map((subject) => subject.id));
   const state = reactive<SubjectOverrideState>(snapshotOverrideState(currentValue()));
   const sharedIntentRaw = props.answerValues[props.question.sharedIntentAnswerId];
   const sharedIntent = typeof sharedIntentRaw === "string" ? sharedIntentRaw : undefined;
-  const sharedOptions = cleanStringMap(
-    props.answerValues[props.question.sharedOptionsAnswerId],
-  );
+  const sharedOptions = props.question.sharedOptionsAnswerId
+    ? cleanStringMap(props.answerValues[props.question.sharedOptionsAnswerId])
+    : {};
 
   modal.open({
     header: {
@@ -123,7 +124,7 @@ function openOverrides() {
       title: props.question.modalTitle || props.question.title,
       subtitle:
         props.question.description ||
-        "Keep the shared look for everyone, or customize only the people who should differ.",
+        "Keep the shared settings for everyone, or customize only the people who should differ.",
       color: "blue",
       closeButton: true,
     },
@@ -169,7 +170,7 @@ function openOverrides() {
 
 <template>
   <el-button
-    v-if="subjects.length > 1 && intentQuestion && optionsQuestion"
+    v-if="subjects.length > 1 && intentQuestion"
     :label="buttonLabel"
     icon="group"
     mode="outline"

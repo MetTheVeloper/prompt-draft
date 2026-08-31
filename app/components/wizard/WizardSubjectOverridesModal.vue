@@ -27,13 +27,17 @@ const props = defineProps<{
   sharedIntent?: string;
   sharedOptions: Record<string, string>;
   intentQuestion: WizardSingleChoiceQuestionDefinition;
-  optionsQuestion: WizardModalOptionsQuestionDefinition;
+  optionsQuestion?: WizardModalOptionsQuestionDefinition;
 }>();
 
 const selectedSubjectId = ref(props.subjects[0]?.id || "");
 
 const selectedSubject = computed(() =>
   props.subjects.find((subject) => subject.id === selectedSubjectId.value),
+);
+
+const selectedSubjectIndex = computed(() =>
+  props.subjects.findIndex((subject) => subject.id === selectedSubjectId.value),
 );
 
 const selectedOverride = computed(() =>
@@ -104,7 +108,7 @@ function clearOption(fieldId: string) {
   <el-grid :gap="18" class="w100">
     <el-grid fit="fit" min="150px" max="1fr" :gap="8" class="w100">
       <el-button
-        v-for="subject in props.subjects"
+        v-for="(subject, index) in props.subjects"
         :key="subject.id"
         :mode="selectedSubjectId === subject.id ? 'normal' : 'outline'"
         color="blue"
@@ -112,7 +116,7 @@ function clearOption(fieldId: string) {
         @click="selectedSubjectId = subject.id">
         <el-flex rules="rbc" :gap="8" class="w100">
           <el-text :size="12" :weight="700">
-            {{ getWizardEntityDisplayLabel(subject) }}
+            {{ getWizardEntityDisplayLabel(subject, index, props.subjects.length) }}
           </el-text>
           <el-text :size="9" :color="props.state[subject.id] ? 'blue' : 'normal50'">
             {{ props.state[subject.id] ? 'Custom' : 'Shared' }}
@@ -132,7 +136,7 @@ function clearOption(fieldId: string) {
       <el-flex rules="rbc" :gap="12" class="w100">
         <el-grid :gap="3">
           <el-text :size="15" :weight="800">
-            {{ getWizardEntityDisplayLabel(selectedSubject) }}
+            {{ getWizardEntityDisplayLabel(selectedSubject, selectedSubjectIndex, props.subjects.length) }}
           </el-text>
           <el-text :size="11" color="normal50">
             Shared direction: {{ sharedIntentLabel }}
@@ -170,7 +174,10 @@ function clearOption(fieldId: string) {
           />
         </el-grid>
 
-        <el-grid v-if="!shouldHideFields" :gap="12" class="w100">
+        <el-grid
+          v-if="props.optionsQuestion && !shouldHideFields"
+          :gap="12"
+          class="w100">
           <el-flex
             v-for="field in props.optionsQuestion.fields"
             :key="field.id"
@@ -217,7 +224,10 @@ function clearOption(fieldId: string) {
           </el-flex>
         </el-grid>
 
-        <el-text v-else :size="11" color="normal50">
+        <el-text
+          v-else-if="props.optionsQuestion && shouldHideFields"
+          :size="11"
+          color="normal50">
           This direction keeps the source outfit/reference behavior, so extra details are not applied.
         </el-text>
       </template>

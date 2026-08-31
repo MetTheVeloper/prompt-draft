@@ -9,7 +9,7 @@
     "preview": "nuxt preview",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
     "test:actions-api": "tsx --test scripts/actions-api.test.ts scripts/actions-variables.test.ts scripts/actions-variables-ui-migration.test.ts scripts/actions-modules.test.ts scripts/actions-module-entities.test.ts scripts/actions-module-entity-fields.test.ts scripts/actions-typography.test.ts scripts/actions-scenes.test.ts scripts/actions-layouts.test.ts scripts/actions-assignment-scopes.test.ts scripts/actions-color-palette.test.ts scripts/actions-material-assignments.test.ts scripts/actions-pose-assignments.test.ts scripts/actions-expression-assignments.test.ts scripts/actions-lighting-effects.test.ts scripts/actions-hair.test.ts scripts/actions-outfit.test.ts scripts/actions-prompt-settings.test.ts scripts/actions-prompt-read.test.ts scripts/actions-prompt-compile.test.ts scripts/actions-public-contract.test.ts scripts/actions-public-ids.test.ts",
-    "test:wizard": "tsx --test scripts/wizard-definition.test.ts scripts/wizard-session.test.ts scripts/wizard-portrait.test.ts scripts/wizard-portrait-v2.test.ts scripts/wizard-subject-overrides.test.ts scripts/wizard-completion.test.ts",
+    "test:wizard": "tsx --test scripts/wizard-definition.test.ts scripts/wizard-session.test.ts scripts/wizard-portrait.test.ts scripts/wizard-portrait-v2.test.ts scripts/wizard-subject-overrides.test.ts scripts/wizard-completion.test.ts scripts/wizard-lighting-environment.test.ts scripts/wizard-subject-definitions.test.ts",
     "test:templates": "tsx --test scripts/prompt-templates.test.ts",
     "test:phase8-ux": "node --test scripts/phase8-ux-regression.test.mjs",
     "test:phase9-regression": "tsx --test scripts/phase9-compiler-regression.test.ts",
@@ -35,6 +35,7 @@
     "@ffmpeg/ffmpeg": "^0.12.15",
     "@nuxtjs/i18n": "10.4.0",
     "@pinia/nuxt": "^0.11.3",
+    "@vueuse/core": "^14.3.0",
     "moment-jalaali": "^0.10.4",
     "nuxt": "^4.4.6",
     "pinia": "^3.0.4",
@@ -45,7 +46,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.0",
-    "@types/qrcode": "^8.5.5",
+    "@types/qrcode": "^1.5.6",
     "prettier": "^3.8.4",
     "sass-embedded": "^1.100.0",
     "tsx": "^4.22.4"

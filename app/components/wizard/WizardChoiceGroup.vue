@@ -26,19 +26,19 @@ const emit = defineEmits<{
           v-if="option.icon"
           :icon="option.icon"
           :size="18"
-          :color="props.modelValue === option.value ? 'white' : 'blue'"
+          :color="props.modelValue === option.value ? 'normal' : 'blue'"
         />
         <el-grid :gap="3">
           <el-text
             :size="13"
             :weight="700"
-            :color="props.modelValue === option.value ? 'white' : 'blue'">
+            :color="props.modelValue === option.value ? 'normal' : 'blue'">
             {{ option.label }}
           </el-text>
           <el-text
             v-if="option.description"
             :size="10"
-            :color="props.modelValue === option.value ? 'white' : 'normal50'">
+            :color="props.modelValue === option.value ? 'normal' : 'normal50'">
             {{ option.description }}
           </el-text>
         </el-grid>

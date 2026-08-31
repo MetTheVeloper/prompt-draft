@@ -6,6 +6,11 @@ import {
   type PortraitWizardMappingResult,
 } from "./portrait";
 import {
+  normalizePortraitPoseOptions,
+  PORTRAIT_POSE_OPTION_KEYS,
+  portraitPoseOptionsPatch,
+} from "./portraitPoseOptions";
+import {
   executeWizardAction,
   type WizardActionHostContext,
   type WizardSession,
@@ -21,6 +26,7 @@ export type WizardLookSubjectOverrides = Record<string, WizardLookSubjectOverrid
 const EXPRESSION_INTENTS = new Set(["natural", "confident", "warm", "serious"]);
 const HAIR_INTENTS = new Set(["keep_reference", "natural", "polished", "editorial"]);
 const OUTFIT_INTENTS = new Set(["keep_reference", "professional", "fashion", "fantasy"]);
+const POSE_INTENTS = new Set(["natural", "formal", "dynamic"]);
 
 const EXPRESSION_OPTION_KEYS = new Set([
   "intensity",
@@ -34,6 +40,12 @@ const OUTFIT_OPTION_KEYS = new Set([
   "accessoryDirection",
   "additionalDetails",
 ]);
+
+const POSE_PRESET: Record<string, string> = {
+  natural: "relaxed_standing",
+  formal: "neutral_standing",
+  dynamic: "action_ready",
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -178,11 +190,26 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
     OUTFIT_INTENTS,
     OUTFIT_OPTION_KEYS,
   );
+  const poseOverrides = base.derived.framingIntent === "headshot"
+    ? {}
+    : normalizeOverrides(
+        session,
+        "poseSubjectOverrides",
+        subjectIds,
+        POSE_INTENTS,
+        PORTRAIT_POSE_OPTION_KEYS,
+      );
+  const sharedPoseOptions = base.derived.framingIntent === "headshot"
+    ? {}
+    : normalizePortraitPoseOptions(session.answers.poseOptions?.value);
+  const sharedPosePatch = portraitPoseOptionsPatch(sharedPoseOptions);
 
   if (
     !Object.keys(expressionOverrides).length &&
     !Object.keys(hairOverrides).length &&
-    !Object.keys(outfitOverrides).length
+    !Object.keys(outfitOverrides).length &&
+    !Object.keys(poseOverrides).length &&
+    !Object.keys(sharedPosePatch).length
   ) {
     return base;
   }
@@ -212,7 +239,7 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
   }
 
   async function retargetOrDeleteShared(
-    moduleKey: "expression" | "hair" | "outfit",
+    moduleKey: "expression" | "hair" | "outfit" | "pose",
     overrideIds: ReadonlySet<string>,
   ) {
     if (!overrideIds.size) return { ok: true as const };
@@ -221,7 +248,9 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
       ? firstArrayItem(values, "expressionAssignments")
       : moduleKey === "hair"
         ? firstArrayItem(values, "hairStyles")
-        : firstArrayItem(values, "outfitSets");
+        : moduleKey === "outfit"
+          ? firstArrayItem(values, "outfitSets")
+          : firstArrayItem(values, "poseAssignments");
     if (!shared || !isRecord(shared) || typeof shared.id !== "string") {
       return { ok: true as const };
     }
@@ -238,10 +267,15 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
               actionId: "hair.style.update",
               input: { styleId: shared.id, targets },
             })
-          : run({
-              actionId: "outfit.set.update",
-              input: { setId: shared.id, targets },
-            });
+          : moduleKey === "outfit"
+            ? run({
+                actionId: "outfit.set.update",
+                input: { setId: shared.id, targets },
+              })
+            : run({
+                actionId: "pose.assignment.update",
+                input: { assignmentId: shared.id, targets },
+              });
     }
 
     return moduleKey === "expression"
@@ -251,7 +285,47 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
         })
       : moduleKey === "hair"
         ? run({ actionId: "hair.style.delete", input: { styleId: shared.id } })
-        : run({ actionId: "outfit.set.delete", input: { setId: shared.id } });
+        : moduleKey === "outfit"
+          ? run({ actionId: "outfit.set.delete", input: { setId: shared.id } })
+          : run({
+              actionId: "pose.assignment.delete",
+              input: { assignmentId: shared.id },
+            });
+  }
+
+  if (Object.keys(sharedPosePatch).length) {
+    let result = await run({ actionId: "module.activate", input: { moduleKey: "pose" } });
+    if (!result.ok) return failure(result.issues);
+
+    let sharedPose = firstArrayItem(
+      currentSession.workingDraft.moduleValues.pose,
+      "poseAssignments",
+    );
+    if (!sharedPose || !isRecord(sharedPose) || typeof sharedPose.id !== "string") {
+      result = await run({ actionId: "pose.assignment.create", input: {} });
+      if (!result.ok) return failure(result.issues);
+      const assignmentId = entityId(result.data, "assignment");
+      if (!assignmentId) {
+        return failure([{ code: "portrait_pose_assignment_id_missing" }]);
+      }
+      result = await run({
+        actionId: "pose.assignment.update",
+        input: { assignmentId, targets: base.derived.subjectTargets },
+      });
+      if (!result.ok) return failure(result.issues);
+      sharedPose = firstArrayItem(
+        currentSession.workingDraft.moduleValues.pose,
+        "poseAssignments",
+      );
+    }
+
+    if (sharedPose && isRecord(sharedPose) && typeof sharedPose.id === "string") {
+      result = await run({
+        actionId: "pose.assignment.update",
+        input: { assignmentId: sharedPose.id, ...sharedPosePatch },
+      });
+      if (!result.ok) return failure(result.issues);
+    }
   }
 
   if (Object.keys(expressionOverrides).length) {
@@ -405,6 +479,52 @@ export async function executePortraitWizardMappingWithSubjectOverrides(
         },
       });
       if (!result.ok) return failure(result.issues);
+    }
+  }
+
+  if (Object.keys(poseOverrides).length) {
+    let result = await run({ actionId: "module.activate", input: { moduleKey: "pose" } });
+    if (!result.ok) return failure(result.issues);
+    result = await retargetOrDeleteShared("pose", new Set(Object.keys(poseOverrides)));
+    if (!result.ok) return failure(result.issues);
+
+    for (const [subjectId, override] of Object.entries(poseOverrides)) {
+      if (!override.intent && !Object.keys(override.options).length) continue;
+      const target = targetForVariable(base.derived.subjectTargets, subjectId);
+      if (!target) continue;
+
+      result = await run({ actionId: "pose.assignment.create", input: {} });
+      if (!result.ok) return failure(result.issues);
+      const assignmentId = entityId(result.data, "assignment");
+      if (!assignmentId) {
+        return failure([{ code: "portrait_pose_override_assignment_id_missing" }]);
+      }
+
+      result = await run({
+        actionId: "pose.assignment.update",
+        input: { assignmentId, targets: [target] },
+      });
+      if (!result.ok) return failure(result.issues);
+
+      if (override.intent) {
+        const presetId = POSE_PRESET[override.intent];
+        if (presetId) {
+          result = await run({
+            actionId: "pose.assignment.applyPreset",
+            input: { assignmentId, presetId },
+          });
+          if (!result.ok) return failure(result.issues);
+        }
+      }
+
+      const posePatch = portraitPoseOptionsPatch(override.options);
+      if (Object.keys(posePatch).length) {
+        result = await run({
+          actionId: "pose.assignment.update",
+          input: { assignmentId, ...posePatch },
+        });
+        if (!result.ok) return failure(result.issues);
+      }
     }
   }
 

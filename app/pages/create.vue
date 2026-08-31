@@ -45,6 +45,7 @@ const DRAFT_JSON_MIME_TYPE = "application/json";
 const DRAFT_FILE_EXTENSION = "json";
 const CREATE_VARIABLES_MODULE_KEY = "variables";
 const CREATE_VARIABLES_CONTEXT_ACTION_KEY = "prompt-draft:create:variables-context-action";
+const CREATE_DRAFT_COLLECTION_REFRESH_EVENT = "prompt-draft:create-editor:collection-refresh";
 
 type CreateVariablesContextAction = {
   id: number;
@@ -452,6 +453,10 @@ function restoreDraftCollection() {
     localStorage.removeItem(DRAFT_COLLECTION_STORAGE_KEY);
     return false;
   }
+}
+
+function handleCreateDraftCollectionRefresh() {
+  restoreDraftCollection();
 }
 
 function restoreLegacyDraft() {
@@ -1247,6 +1252,7 @@ onMounted(() => {
   window.addEventListener("beforeunload", saveDraft);
   window.addEventListener("prompt-draft:remove-key-module", handleRemoveKeyModuleEvent);
   window.addEventListener("prompt-draft:open-page-context-menu", handleLayoutPageContextMenuEvent);
+  window.addEventListener(CREATE_DRAFT_COLLECTION_REFRESH_EVENT, handleCreateDraftCollectionRefresh);
 });
 
 onBeforeUnmount(() => {
@@ -1255,6 +1261,7 @@ onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", saveDraft);
   window.removeEventListener("prompt-draft:remove-key-module", handleRemoveKeyModuleEvent);
   window.removeEventListener("prompt-draft:open-page-context-menu", handleLayoutPageContextMenuEvent);
+  window.removeEventListener(CREATE_DRAFT_COLLECTION_REFRESH_EVENT, handleCreateDraftCollectionRefresh);
 });
 
 </script>

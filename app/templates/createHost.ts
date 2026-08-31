@@ -77,6 +77,32 @@ export function readActiveCreateDraftForTemplate(
 }
 
 /**
+ * Idempotently re-inserts an already-created Draft record and makes it active.
+ * This is used when Create itself is reloading: its legacy beforeunload save may
+ * write the pre-template reactive collection once more during navigation.
+ */
+export function ensureCreateDraftRecord(
+  record: PromptDraftRecord,
+  storage?: PromptTemplateStorage | null,
+) {
+  const target = resolveStorage(storage);
+  if (!target) return false;
+
+  const collection = readCreateDraftCollection(target);
+  const next: PromptDraftCollection = {
+    version: 1,
+    activeDraftId: record.id,
+    drafts: [
+      record,
+      ...collection.drafts.filter((draft) => draft.id !== record.id),
+    ],
+  };
+
+  target.setItem(CREATE_DRAFT_COLLECTION_STORAGE_KEY, JSON.stringify(next));
+  return true;
+}
+
+/**
  * Template application always creates a brand-new Create Draft. It never
  * patches or overwrites the current Active Draft.
  */
@@ -87,7 +113,6 @@ export function addPromptTemplateToCreate(
   const target = resolveStorage(storage);
   if (!target) return null;
 
-  const collection = readCreateDraftCollection(target);
   const instance = instantiatePromptTemplate(template);
   const now = new Date().toISOString();
   const id = createDraftId();
@@ -99,13 +124,7 @@ export function addPromptTemplateToCreate(
     updatedAt: now,
   };
 
-  const next: PromptDraftCollection = {
-    version: 1,
-    activeDraftId: id,
-    drafts: [record, ...collection.drafts],
-  };
-
-  target.setItem(CREATE_DRAFT_COLLECTION_STORAGE_KEY, JSON.stringify(next));
+  ensureCreateDraftRecord(record, target);
 
   return record;
 }

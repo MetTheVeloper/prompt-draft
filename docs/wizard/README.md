@@ -1,645 +1,568 @@
 # Prompt Draft Wizard
 
-Status: **Architecture baseline accepted — implementation not started**
+Status: **Portrait domain foundation accepted; Living Sentence redesign is the accepted future Wizard UX direction**
 
 Working branch: `feature/wizard`
 
-Branch baseline: `main@c60490681feb145d90749b1415337850f7c9c88c`
-
 Actions contract: `prompt-draft.actions.v1`
 
-This document is the **source of truth for Wizard architecture and development decisions**. Update it deliberately when an implemented Wizard exposes a real requirement that changes or extends the architecture.
+This document is the **source of truth for Wizard architecture and accepted product/domain decisions**.
 
-For the latest implementation checkpoint, see [`STATUS.md`](./STATUS.md).
+Related sources:
+
+- Wizard UX and Living Sentence presentation: [`UI.md`](./UI.md)
+- Prompt Template architecture: [`TEMPLATES.md`](./TEMPLATES.md)
+- Latest implementation/testing checkpoint and next-chat plan: [`STATUS.md`](./STATUS.md)
+- Actions operational status: `docs/actions-api/STATUS.md`
+
+When an older example conflicts with this file, `UI.md`, or the latest `STATUS.md`, the later accepted decision wins.
 
 ---
 
 ## 1. Purpose
 
-The Wizard is a goal-oriented guided interface for building a real Prompt Draft without requiring the user to understand the full Expert UI, module structure, entity model, assignment semantics, or canonical Action vocabulary.
+The Wizard is a goal-oriented guided interface for producing a normal editable `PromptDraftState` without requiring the user to understand the full Expert UI.
 
-The Wizard does **not** replace Prompt Draft's domain model and does **not** introduce a second prompt-building system.
-
-Its job is to translate user intent into the existing canonical application model:
+The Wizard is not a second prompt system.
 
 ```text
-User Goal
-   ↓
-Wizard Questions / Choices
-   ↓
-Wizard Answers
-   ↓
-Rules / Derived Intent
-   ↓
-Action Plan
-   ↓
-Actions API
-   ↓
+User intent
+  ↓
+Wizard experience
+  ↓
+Answers + deterministic interpretation
+  ↓
+Canonical Actions
+  ↓
 PromptDraftState
-   ↓
-prompt.validate / prompt.compile
-```
-
-The final Wizard result is therefore not only a compiled prompt string. It is a normal editable `PromptDraftState` that can be opened and refined in the Expert UI.
-
----
-
-## 2. Existing foundation
-
-The Wizard starts after completion of the Actions API refactor. The required domain foundation already exists and should be reused rather than recreated.
-
-Available canonical capabilities include:
-
-- `PromptDraftState` as the serializable application-state boundary;
-- the public `prompt-draft.actions.v1` contract;
-- 99 stable public Actions;
-- Variables, including multiple user-defined Subject variables;
-- generic Modules, presets, fields and Custom Mode;
-- generic named Module Entities;
-- Scene and Scene-component composition;
-- Layout and Region/Scene assignment;
-- Typography groups and texts;
-- Color Palette and Material/Texture semantic assignments;
-- Pose and Expression subject assignments;
-- Lighting and Effects;
-- Hair styles/components and subject targeting;
-- Outfit sets/items/relations and subject targeting;
-- stable-reference semantics across specialized domains;
-- atomic single-Action execution;
-- headless `prompt.validate`;
-- headless `prompt.compile`.
-
-The Wizard must treat these capabilities as canonical. It must not implement parallel mutation rules for domains that already have Actions.
-
----
-
-## 3. Expert UI relationship
-
-The **Expert UI** is the current full-detail editing interface where users directly control modules, fields, entities, Scenes, Layout, assignments, Typography and other advanced settings.
-
-The Wizard and Expert UI are two different interaction layers over the same Draft/domain system:
-
-```text
-Expert UI ─────┐
-               ├── Canonical domain / Actions layer ──> PromptDraftState
-Wizard UI ─────┘
-```
-
-The Wizard is **not required to render the full Expert UI panels or reuse their complete panel components**.
-
-Reusable UI primitives and truly reusable pickers/components may be shared where appropriate, but Wizard presentation should be optimized for guided intent rather than exposing domain complexity.
-
-For example, the user may choose `Dramatic lighting` in a Wizard instead of editing every Lighting field manually. The Wizard translates that intent into canonical Actions.
-
-No broad Expert UI rewrite is required to begin Wizard development. Existing Expert UI migration to canonical services remains incremental.
-
----
-
-## 4. Core architectural rule
-
-Every Wizard mutation must ultimately use the canonical Actions/domain behavior.
-
-The Wizard must not:
-
-- directly patch arbitrary Draft object paths;
-- duplicate Scene/Layout/Hair/Outfit/etc. mutation semantics;
-- fuzzy-retarget missing stable references;
-- write directly to localStorage as part of Action execution;
-- make model/AI-owned data responsible for trusted host context;
-- introduce a Wizard-only compiler or validator.
-
-The Wizard is an orchestration consumer, not a new domain layer.
-
-Where practical, Wizard invocation should stay aligned with the provider-neutral public Actions contract so the same Action vocabulary remains reusable by future AI/agent hosts.
-
----
-
-## 5. Development strategy: examples first, abstraction second
-
-Do **not** attempt to design a universal Wizard language before real Wizard flows exist.
-
-Development should follow the same evolutionary approach that successfully shaped the current module system:
-
-```text
-Real Wizard #1
-   ↓
-Implement only required engine capabilities
-   ↓
-Observe actual problems and repetition
-   ↓
-Refine architecture
-   ↓
-Real Wizard #2 / #3
-   ↓
-Extract proven common abstractions
-```
-
-The first implementation target is a **Portrait Wizard**.
-
-Future examples that must remain conceptually possible, but should not be prematurely implemented, include:
-
-- multi-panel Comic/Manga creation with multiple Subjects, Scenes and panel-specific framing;
-- a key frame intended for later image-to-video generation;
-- poster design;
-- business-card design;
-- product photography combined with descriptive Typography/Layout;
-- full fantasy/world/style transformations;
-- other goal-specific guided flows not yet known.
-
-These examples are architectural pressure tests, not current implementation requirements.
-
-A design decision made for Portrait should be questioned if it unnecessarily blocks those future cases, but future complexity must not be implemented without a concrete need.
-
----
-
-## 6. Wizard as a dynamic flow
-
-A Wizard is not assumed to be a fixed linear sequence of pages.
-
-The conceptual model is:
-
-```text
-Goal
- ↓
-Flow
- ├── Step
- │    ├── Question
- │    └── Question
- ├── Conditional Step
- └── Future nested/repeatable flow
-       ↓
-Rules
- ↓
-Derived Intent
- ↓
-Action Plan
-```
-
-For Portrait v1, only the flow capabilities actually required by the Portrait experience should be implemented.
-
-The architecture should avoid preventing future support for:
-
-- conditional steps;
-- conditional questions;
-- branching;
-- nested groups/sub-flows;
-- repeatable flows/collections;
-- dependencies between answers.
-
-However, repeat/nested/collection engines are **deferred until a real Wizard requires them**.
-
----
-
-## 7. Initial Wizard definition model
-
-The first implementation should aim for a data-driven definition rather than one hardcoded Vue component per Wizard.
-
-The working conceptual shape is:
-
-```ts
-type WizardDefinition = {
-  id: string
-  version: number
-
-  title: string
-  description?: string
-
-  steps: WizardStepDefinition[]
-  rules?: WizardRule[]
-  mappings?: WizardActionMapping[]
-  review?: WizardReviewDefinition
-  completion?: WizardCompletionDefinition
-}
-```
-
-This is an initial model, not a compatibility-frozen public contract.
-
-It should evolve only in response to implemented Wizard requirements.
-
----
-
-## 8. Step and Question model
-
-A Step groups one or more user decisions.
-
-Questions should be reusable renderable definitions rather than custom UI for every Wizard.
-
-Likely initial question types include only what Portrait v1 needs, selected from concepts such as:
-
-- `singleChoice`;
-- `multiChoice`;
-- `text` / `textarea`;
-- `boolean`;
-- `number` / `range`;
-- `variablePicker`;
-- other existing reusable selectors only when actually required.
-
-Potential future types such as image choices, entity pickers or preset pickers should be added only when a real flow requires them.
-
-Questions and Steps may have conditions such as `visibleWhen` or `requiredWhen`.
-
-The first condition evaluator should stay intentionally small. Operators such as the following are sufficient candidates for the initial implementation if Portrait needs them:
-
-```text
-equals
-notEquals
-in
-notIn
-```
-
-Do not build a general expression language prematurely.
-
----
-
-## 9. Three-state interpretation model
-
-A key separation is required between what the user actually chose, what the Wizard inferred, and how Prompt Draft represents it.
-
-### 9.1 Answers
-
-`answers` contain direct user-facing decisions.
-
-Example:
-
-```ts
-{
-  portraitType: 'cinematic',
-  framing: 'closeUp',
-  environmentType: 'studio',
-  studioMood: 'dark',
-}
-```
-
-### 9.2 Derived intent
-
-`derived` contains deterministic interpretation produced by Wizard rules.
-
-Example:
-
-```ts
-{
-  styleIntent: 'cinematic',
-  lightingIntent: 'dramatic',
-  poseImportance: 'low',
-}
-```
-
-### 9.3 Draft implementation
-
-The Action Planner translates answers/derived intent into canonical Action requests and therefore into `PromptDraftState`.
-
-```text
-User intent       → answers
-Interpretation    → derived
-Implementation    → Actions
-Canonical result  → Draft
-```
-
-This separation prevents UI options from becoming coupled directly to domain implementation details.
-
----
-
-## 10. Defaults and user overrides
-
-Rule-provided defaults and explicit user choices are not equivalent.
-
-If choosing `Cinematic` suggests `Dramatic` lighting, that suggested/default value must not later overwrite a user who explicitly changes Lighting to `Soft`.
-
-Wizard answer state should therefore be capable of preserving provenance, conceptually:
-
-```ts
-{
-  value: 'dramatic',
-  source: 'default',
-}
-```
-
-versus:
-
-```ts
-{
-  value: 'soft',
-  source: 'user',
-}
-```
-
-The exact runtime representation may evolve, but the invariant is fixed:
-
-> Re-evaluating rules may replace stale defaults, but must not silently overwrite an explicit user override unless the flow deliberately invalidates that answer and communicates it.
-
----
-
-## 11. Rule responsibilities
-
-Rules should remain deterministic in the initial system.
-
-A Rule may influence the Wizard experience or derived planning state, for example:
-
-- show/hide a Step;
-- show/hide a Question;
-- mark a Question required;
-- provide a default;
-- provide a recommendation;
-- derive semantic intent used by Action mappings.
-
-Rules should not become an unrestricted script escape hatch.
-
-A Question Option should generally represent a user-facing value, not contain large embedded lists of domain Actions.
-
-Prefer:
-
-```text
-Question
-   ↓
-Answer
-   ↓
-Rule / Derived Intent
-   ↓
-Action Mapping
-```
-
-rather than coupling every visual Option directly to mutation code.
-
----
-
-## 12. Action Planner / Mapper
-
-The Action Planner converts resolved Wizard state into canonical Actions.
-
-Example conceptually:
-
-```text
-Answer:
-portraitType = cinematic
-
-Derived:
-styleIntent = cinematic
-lightingIntent = dramatic
-
-Action Plan:
-module.activate(...)
-module.preset.apply(...)
-lighting.source.create(...)
-...
-```
-
-The Action Planner must respect the existing Actions contract and stable-reference rules.
-
-It must not recreate domain validation or perform arbitrary JSON/path mutation.
-
-The exact Action IDs, registered preset IDs, field IDs and specialized inputs used by Portrait must be verified against the real repository during implementation rather than guessed from Wizard UX labels.
-
----
-
-## 13. Actions discovery vs Wizard knowledge
-
-The public Actions manifest answers:
-
-> **What can Prompt Draft do?**
-
-A Wizard Definition answers:
-
-> **What should this goal-specific Wizard ask and do?**
-
-Action discovery alone cannot determine good Wizard UX or domain intent.
-
-For example, discovery can describe `module.preset.apply` and its input schema, but it does not decide which preset represents a good Cinematic Portrait.
-
-Goal-specific product knowledge belongs in the Wizard Definition/rules/mappings.
-
-If implemented Wizards repeatedly require richer runtime catalogs or capability discovery, introduce the smallest shared adapter justified by those real requirements. Do not build a universal catalog layer in advance.
-
----
-
-## 14. Wizard Session
-
-The Wizard needs session state separate from the persistent Draft record/session metadata.
-
-Initial conceptual state:
-
-```ts
-type WizardSession = {
-  wizardId: string
-  currentStepId: string
-  answers: Record<string, unknown>
-  derived: Record<string, unknown>
-  workingDraft: PromptDraftState
-}
-```
-
-The exact shape will be refined during Portrait implementation.
-
-Session responsibilities include:
-
-- current flow position;
-- user answers;
-- derived/default state;
-- Back/Next behavior;
-- conditional flow evaluation;
-- temporary Working Draft;
-- review and completion state.
-
-Persistence strategy for an in-progress Wizard is not yet frozen and should be implemented only if required by the first real UX.
-
----
-
-## 15. Working Draft lifecycle
-
-The Wizard should not destructively mutate the user's active Draft while the guided session is incomplete.
-
-Preferred lifecycle:
-
-```text
-Active Draft
-   ↓ clone
-Wizard Working Draft
-   ↓
-Actions execute on working state
-   ↓
+  ↓
 prompt.validate
-   ↓
-Finish / Commit
-   ↓
-Active Draft replaced/applied
-```
-
-Canceling the Wizard leaves the original Active Draft unchanged.
-
-This also gives the Wizard session-level atomic behavior without immediately requiring a new Actions batch/transaction engine.
-
-If an Action fails while building the Working Draft, completion stops and the Active Draft remains untouched.
-
----
-
-## 16. Batch/transaction policy
-
-The Actions API currently guarantees atomicity for one Action.
-
-Do **not** implement `executeBatch`, dry-run or a transaction engine merely because a Wizard may execute multiple Actions.
-
-The Working Draft provides a sufficient first isolation boundary:
-
-- actions may execute sequentially on a temporary Draft;
-- an intermediate failure prevents completion;
-- the user's Active Draft is committed only after successful resolution/validation.
-
-Introduce true batch/transaction semantics only when a concrete implemented Wizard demonstrates a requirement that Working Draft orchestration cannot satisfy cleanly.
-
----
-
-## 17. Validation and compilation
-
-The Wizard must reuse the canonical read Actions:
-
-```text
-prompt.validate
+  ↓
 prompt.compile
 ```
 
-No Wizard-specific compiler or validator should be created.
-
-At completion, the expected flow is conceptually:
+Expert UI and Wizard are separate interaction layers over the same canonical domain.
 
 ```text
-Resolve Wizard state
-   ↓
-Build / execute Action Plan on Working Draft
-   ↓
-prompt.validate
-   ↓
-If valid: prompt.compile
-   ↓
-Commit Draft / expose final result
+Expert UI ─────┐
+               ├── Canonical domain / Actions ──> PromptDraftState
+Wizard UI ─────┘
 ```
-
-Technical Action/validation issues should be mapped back to user-facing Wizard context where possible, for example directing the user to a Subject step rather than exposing an opaque domain error as the primary UX.
 
 ---
 
-## 18. AI policy
+## 2. Core architectural rules
 
-AI-assisted Wizard planning is intentionally **out of scope for the initial implementation**.
+Every Wizard mutation must ultimately use existing canonical Actions/domain behavior.
 
-The initial Wizard should be deterministic and rule-based. This makes the semantics testable and establishes a trustworthy orchestration layer before adding model behavior.
+The Wizard must not:
 
-Future AI assistance should feed the same architecture rather than bypass it:
+- directly mutate arbitrary `moduleValues` paths as its normal mapping strategy;
+- recreate module semantics in Wizard-only code;
+- invent a Wizard compiler or validator;
+- depend on mutable labels as stable assignment identity;
+- use the Create Active Draft as an implicit input;
+- silently overwrite Create state;
+- enable Preserve flags implicitly;
+- add speculative per-subject controls without a real use case;
+- hard-code generic Wizard infrastructure to Portrait-specific wording or step names.
+
+The preferred development loop remains:
 
 ```text
-User Answers ───┐
-                ├── Wizard Intent / Plan ──> Actions API
-AI Suggestion ──┘
+real use case
+  ↓
+small implementation
+  ↓
+automated regression
+  ↓
+real generation test
+  ↓
+fix only proven gaps
 ```
 
-AI should not directly gain ownership of Draft, module registry, `ActionEnvironment`, ID factories or arbitrary object mutation.
+---
+
+## 3. Reusable Wizard Experience architecture
+
+Portrait is the first Wizard use case and the proving ground, not the permanent shape of every Wizard.
+
+The reusable layer should provide concepts such as:
+
+- session lifecycle and persistence;
+- navigation/history;
+- deterministic branching;
+- answer/default ownership;
+- shared + per-subject override mechanics;
+- progressive disclosure;
+- review/edit navigation;
+- canonical Action mapping;
+- Living Sentence presentation/composition primitives.
+
+Each use case provides its own semantic definition:
+
+- questions/intents;
+- available choices;
+- branch rules;
+- grammar/sentence composition;
+- canonical mappings;
+- technical metadata relevant to that use case.
+
+Conceptually:
+
+```text
+Wizard Experience Engine
+  ├── common lifecycle / navigation / interaction primitives
+  ├── Living Sentence primitives
+  └── use-case definition
+        ├── Portrait
+        ├── future Product Photography
+        ├── future Architecture
+        └── future use cases
+```
+
+Do not build a universal scripting DSL in anticipation of future use cases. Generalize only the behavior that is proven reusable.
 
 ---
 
-## 19. Portrait Wizard v1 — first real testcase
+## 4. Living Sentence — accepted experience model
 
-Portrait is the first concrete Wizard used to discover the minimum viable engine.
+The accepted future Wizard UX is centered on **Living Sentence**.
 
-The exact UX will be refined against real module schemas, but the current conceptual flow is:
+The user should feel that they are gradually shaping a natural-language creative intention rather than filling out a form.
 
-1. **Subject** — who/what the portrait is about; reference/user Subject handling as needed.
-2. **Portrait intent/type** — e.g. professional, cinematic, fashion, fantasy.
-3. **Appearance** — simplified guided choices around Expression, Hair and Outfit.
-4. **Composition** — framing and camera-oriented decisions.
-5. **Environment** — studio/outdoor/abstract/etc., with conditional follow-up choices.
-6. **Lighting & mood** — simplified intent-oriented choices rather than the full Expert UI.
-7. **Review** — summarize user decisions and allow correction.
-8. **Completion** — build canonical Draft, validate, compile and allow continuation in Expert UI.
+Important choices become editable semantic tokens in an evolving sentence. The sentence may **recompose** itself when necessary so that it remains concise and natural English; answers are not mechanically appended in chronological order.
 
-The flow may conditionally remove or alter later questions. For example, a close-up framing may make detailed full-body Pose questions unnecessary.
+Living Sentence is a **presentation/interaction layer**, not a replacement for canonical domain state.
 
-The Portrait Wizard should teach us which Definition, Session, Rule and Action-Planning abstractions are actually necessary.
+```text
+Wizard semantic state
+  ├──> Living Sentence composer → user-facing creative sentence
+  └──> canonical mapping         → PromptDraftState
+```
 
----
+Technical metadata such as Aspect Ratio, Reference Fidelity, and Transformation Strength remains conceptually separate from the creative sentence.
 
-## 20. Multi-Subject and advanced-domain awareness
+A possible future direction is to seed/generated Idea from the Living Sentence, but this is **not yet an accepted mapping change**. Do not couple Idea generation to Living Sentence until it is explicitly validated.
 
-Prompt Draft already supports richer structures than the first Portrait Wizard needs.
-
-For example, user-defined Subject variables can support multiple independent characters. This can later be combined with domain capabilities such as:
-
-- subject-targeted Pose/Expression/Hair/Outfit;
-- multiple Scenes;
-- Scene component composition;
-- per-Scene or per-Region layout decisions;
-- multiple unique framings/configurations through existing module/entity semantics;
-- Typography and structured Layout for poster/comic/product flows.
-
-The Wizard engine must not assume that there is always exactly one Subject, one Scene, one Region, one entity, or one linear image composition.
-
-At the same time, Portrait v1 should not implement multi-character Comic orchestration until that Wizard becomes an active testcase.
+See [`UI.md`](./UI.md) for the interaction and visual rules.
 
 ---
 
-## 21. Initial implementation scope
+## 5. Independent Wizard lifecycle
 
-### Build now
+A standard Wizard session is independent from Create.
 
-- minimal `WizardDefinition` types required by Portrait;
-- `WizardSession` state;
-- basic Step/Question renderer;
-- minimal condition/rule evaluator required by Portrait;
-- default vs explicit user-choice behavior;
-- Action Planner/Mapper for Portrait;
-- Working Draft lifecycle;
-- Review flow;
-- completion via canonical `prompt.validate` / `prompt.compile`;
-- focused tests for deterministic flow/rules/planning and Draft isolation.
+```text
+Open Wizard
+  ↓
+Create or restore Wizard Session
+  ↓
+Fresh isolated Working Draft
+  ↓
+Wizard answers + canonical mapping
+  ↓
+validate / compile
+  ↓
+finalDraft
+```
 
-### Reuse as-is
+Abandoning, exiting, refreshing, restarting, or merely completing the Wizard must not mutate Create.
 
-- Actions API;
-- canonical Draft state/helpers;
-- domain services through canonical Actions;
-- existing stable-reference semantics;
-- validation/compiler;
-- reusable design-system primitives and suitable existing pickers.
+Only the explicit handoff to Create creates a **new** Create Draft from `finalDraft`.
 
-### Do not build yet
+Existing Create Drafts remain untouched.
 
-- universal Wizard DSL/expression language;
-- arbitrary scripting inside Wizard definitions;
-- generalized repeat/nested/collection flow engine without a real use case;
-- batch/transaction/dry-run Actions without demonstrated need;
-- AI planning/AI-generated Wizard flows;
-- universal capability/catalog abstraction without repeated need;
+---
+
+## 6. Session and flow model
+
+Wizard session persistence is local-first.
+
+Storage key:
+
+```text
+prompt-draft:wizard:sessions:v1
+```
+
+The current runtime uses a flat ordered Step sequence grouped by Stage metadata.
+
+```text
+Stage
+  ↓
+Step
+  ↓
+Question / micro-state
+```
+
+`currentStepId` is persisted; current Stage is derived from the Step.
+
+The Living Sentence redesign may present several Steps as a continuous sequence of scenes/micro-states. The **number of screens is not a product invariant**.
+
+Do not introduce a universal workflow DSL, arbitrary graph, nested execution tree, or rule scripting language unless a future concrete Wizard proves it necessary.
+
+---
+
+## 7. Answers, defaults, and generated values
+
+Explicit user values and system defaults are different states.
+
+A default may be recomputed when upstream context changes. A user-edited value must not be silently overwritten.
+
+Conceptually:
+
+```text
+answer = value + source(default | user)
+```
+
+This remains especially important for generated Idea and any future Living Sentence-derived defaults.
+
+---
+
+## 8. Subject model — accepted foundation
+
+Subjects are constructed inside the Wizard and later mapped to canonical Prompt Variables.
+
+A Subject has separate concerns:
+
+```text
+entity ID        stable Wizard identity
+label            optional user-facing name
+canonical key    Prompt Variable key
+variable ID      canonical Draft identity
+definition       what/who this Subject actually means
+```
+
+Stable assignment targeting follows identity, not display label or variable key text alone.
+
+### 8.1 Optional names
+
+Names are optional and are primarily for UI readability and variable naming.
+
+For multiple unnamed people, indexed labels may be used while canonical keys remain independently unique.
+
+### 8.2 Subject Definition is separate from the name
+
+The optional Subject name does **not** define age, gender, appearance, or identity semantics.
+
+For **image-to-image**, accepted Portrait semantic options are:
+
+```text
+By position in reference
+Male person in reference
+Female person in reference
+Custom reference description
+```
+
+For **text-to-image**, accepted options are:
+
+```text
+Person
+Man
+Woman
+Boy
+Girl
+Custom subject
+```
+
+Custom definitions are required when `Custom` is selected.
+
+Sequence remains available as a fallback, but semantic definitions are preferred when reference order is fragile or ambiguous.
+
+---
+
+## 9. Multi-subject shared/per-subject pattern
+
+The accepted semantic pattern is:
+
+```text
+Shared choice by default
+  ↓
+optional change for one or more Subjects
+  ↓
+only selected Subjects receive overrides
+```
+
+With one Subject, extra per-subject UI is hidden.
+
+With multiple Subjects, overridden Subjects are removed from the shared target set and receive their own canonical assignment/configuration.
+
+Per-subject overrides inherit shared values for fields that were not explicitly overridden.
+
+Current Portrait support:
+
+- Expression — shared + per-subject;
+- Hair — shared + per-subject;
+- Outfit — shared + per-subject;
+- Pose — shared + per-subject.
+
+Current shared-only domains:
+
+- Framing;
+- Background;
+- Lighting.
+
+Lighting is intentionally scene-level. Do not automatically expand every domain to per-subject behavior.
+
+The Living Sentence UI should express this as natural intent first (for example, “everyone”) and reveal individual override controls only when requested.
+
+---
+
+## 10. Portrait Wizard semantic flow
+
+The accepted semantic chapters remain roughly:
+
+```text
+Start
+People / Subjects
+Portrait
+Look
+Composition
+Scene
+Final
+Review
+```
+
+Presentation may split or merge these into micro-states without changing the canonical domain.
+
+### Start
+
+- Transform own image(s) → `image_to_image`;
+- Create a photo → `text_to_image`.
+
+### People / Subjects
+
+- one to four people;
+- optional names;
+- stable identity;
+- Subject Definition appropriate to creation mode.
+
+### Portrait
+
+Quick intent:
+
+- Professional;
+- Cinematic;
+- Fashion;
+- Fantasy.
+
+### Look
+
+Quick choices + optional refinement for:
+
+- Expression;
+- Hair;
+- Outfit.
+
+All three support shared + per-subject overrides.
+
+### Composition
+
+Framing:
+
+- Headshot;
+- Head & shoulders;
+- Half body;
+- Full body.
+
+Pose:
+
+- Natural;
+- Formal;
+- Dynamic.
+
+Headshot suppresses Pose. Pose supports shared + per-subject overrides when relevant.
+
+### Scene
+
+Environment:
+
+- Studio;
+- Outdoor;
+- Abstract.
+
+Optional scene detail and advanced Background refinement may expose a curated canonical subset:
+
+- setting;
+- spatial structure;
+- visible material;
+- detail density;
+- key element.
+
+Lighting remains scene-level:
+
+- Soft;
+- Dramatic;
+- Moody;
+- Clean.
+
+### Final
+
+Technical settings:
+
+- Aspect Ratio;
+- Reference Fidelity/Usage for image-to-image;
+- Transformation Strength for image-to-image.
+
+Generated Idea remains part of the current domain implementation, but the redesigned presentation intentionally does not make a large Idea textarea part of the main creative flow. Any future Living Sentence → Idea mapping requires a separate accepted decision.
+
+### Review / completion
+
+Review presents a polished Living Sentence as the main payoff, with compact creative and technical recap. Important sentence tokens should navigate back to the relevant semantic state.
+
+Finish still maps through canonical Actions, validates, compiles, and produces `finalDraft`.
+
+---
+
+## 11. Preserve policy
+
+All Wizard Preserve flags remain false unless a future explicit requirement changes the policy.
+
+```text
+preserveMainSubject
+preserveIdentity
+preservePose
+preserveOutfit
+preserveComposition
+preserveColors
+preserveMaterials
+preserveLighting
+```
+
+Hair/Outfit `Keep reference` behavior must be expressed through those domains, not by silently toggling Setup Preserve flags.
+
+---
+
+## 12. Prompt Templates relationship
+
+Prompt Templates are reusable structured starting points extracted from proven use cases.
+
+Invariant:
+
+```text
+Template = versioned PromptDraftState snapshot
+Template ≠ compiled prompt string
+```
+
+Accepted integration includes Start from Template, built-in/local Templates, Save as Template, and the LinkedIn Profile Portrait built-in.
+
+Starting from a Template always creates a **new Draft**.
+
+Template infrastructure is accepted and feature expansion is frozen unless a concrete bug or proven reusable use case justifies more work.
+
+See [`TEMPLATES.md`](./TEMPLATES.md).
+
+---
+
+## 13. Design-system boundary
+
+Do not discard the existing Prompt Draft component/design system, and do not force the experimental Wizard UX into generic components that cannot express it.
+
+Accepted implementation strategy:
+
+```text
+Existing design system
+  ├── tokens / spacing / typography foundations
+  ├── accessibility / focus / input primitives
+  └── global infrastructure
+
+Wizard-specific interaction layer
+  ├── LivingSentence
+  ├── typographic gateways / choices
+  ├── cinematic scene shell
+  ├── ambient visual feedback
+  ├── sentence-token editing
+  └── Wizard-specific motion/layout primitives
+```
+
+If a Wizard-specific primitive later proves broadly reusable, promote/extend it into the shared component system deliberately.
+
+Do not rewrite the whole design system merely to imitate the Figma prototype.
+
+---
+
+## 14. Figma Make role
+
+The current Living Sentence prototype was generated in Figma Make as a functional **React + Vite + Tailwind** prototype.
+
+It is a design/interaction reference, not production source code.
+
+Production remains the existing Nuxt/Vue Prompt Draft application. Do not copy the React implementation wholesale or create a parallel runtime.
+
+The migration target is:
+
+```text
+Figma Make behavior / visual intent
+            +
+existing Nuxt/Vue canonical Wizard/domain logic
+            ↓
+production Living Sentence Wizard
+```
+
+---
+
+## 15. Accepted real-world validation
+
+Existing tests and generation checks have demonstrated:
+
+- multi-person co-presence using explicit `together` semantics;
+- independent Expression/Hair/Outfit semantics across multiple Subjects;
+- stronger identity reliability with semantic Subject Definition;
+- useful shared Pose behavior and implemented per-subject Pose support;
+- strong Look transformation from More Options;
+- controlled Background depth;
+- Outdoor + Moody Lighting after removing studio-specific source wording;
+- useful LinkedIn/profile outputs that became the first built-in Template.
+
+A model may still under-follow detailed Hair/Expression instructions. If the compiled prompt is semantically correct, do not treat every generation miss as a Wizard architecture failure.
+
+---
+
+## 16. Current development sequencing
+
+Until the Figma/Living Sentence direction is fully reviewed and locked:
+
+Safe work includes:
+
+- domain/state model;
+- branching and validation;
+- use-case architecture;
+- Living Sentence composition semantics;
+- canonical mapping;
+- shared/per-subject behavior;
+- automated tests.
+
+Avoid spending significant time polishing the current Wizard presentation layer because it is scheduled to be replaced/refactored against the accepted Figma direction.
+
+See [`STATUS.md`](./STATUS.md) for the exact branch/merge plan.
+
+---
+
+## 17. Deferred architecture
+
+Do not implement without a concrete requirement:
+
+- universal Wizard DSL;
+- arbitrary scripting/expression language;
+- nested/repeatable workflow engine;
+- Wizard-owned compiler/validator;
+- direct arbitrary Draft/path mutation;
+- AI-generated Wizard definitions;
 - broad Expert UI rewrite;
-- Wizard-specific mutation/domain/compiler logic.
+- per-subject Lighting;
+- automatic per-subject targeting for every module;
+- Template merge/apply-to-current semantics;
+- Template marketplace/cloud infrastructure;
+- broad asset-binding system before a concrete reference-management design exists.
 
 ---
 
-## 22. Architecture acceptance principles
+## 18. Documentation discipline
 
-A Wizard architecture change should generally satisfy these questions:
+- `README.md` — architectural/domain source of truth;
+- `UI.md` — Living Sentence presentation/UX source of truth;
+- `TEMPLATES.md` — Template architecture/status;
+- `STATUS.md` — exact operational checkpoint, Figma state, branch plan, and next action;
+- `docs/actions-api/STATUS.md` — accepted Actions surface/status.
 
-1. Does it solve a real implemented Wizard requirement?
-2. Can the requirement be solved by existing Actions/domain capabilities first?
-3. Does it preserve `PromptDraftState` as the canonical result?
-4. Does it preserve stable-reference and Action validation semantics?
-5. Does it separate user-facing answers from derived intent and domain implementation?
-6. Does it preserve explicit user overrides against changing defaults?
-7. Does it avoid coupling the Wizard to full Expert UI panels?
-8. Does it avoid unnecessary abstraction based only on hypothetical future flows?
-9. Does it leave a reasonable extension path for future multi-Subject, multi-Scene, nested or repeatable flows?
-10. Is the new abstraction backed by tests and a real Wizard example?
-
----
-
-## 23. Source-of-truth update rule
-
-This README is intentionally architectural rather than a diary.
-
-Update it when:
-
-- an accepted invariant changes;
-- a new Wizard proves a reusable capability is required;
-- a deferred capability becomes implemented and canonical;
-- the Wizard/Draft/Actions boundary changes;
-- the development strategy or compatibility policy changes.
-
-Do not update it for every small implementation detail.
-
-Use [`STATUS.md`](./STATUS.md) for current progress, test checkpoints, active work, immediate next steps and temporary implementation notes.
+Update `STATUS.md` after every meaningful validated checkpoint. Change architecture docs when accepted product/domain decisions change.
