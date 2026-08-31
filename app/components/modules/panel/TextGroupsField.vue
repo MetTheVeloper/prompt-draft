@@ -14,7 +14,7 @@ import {
   cloneTypographyGroups,
   createTypographyTextBlock,
   createTypographyTextGroup,
-  normalizeTypographyGroups,
+  resolveTypographyTextVariableReferences,
 } from "../../../utils/typography"
 import { usePromptVariables } from "~/composables/prompt/usePromptVariables"
 
@@ -36,18 +36,29 @@ const emit = defineEmits<{
 const { t } = useI18n()
 const { mobile } = useScreen()
 const modal = useModal()
-const { enabledModuleVariableGroups } = usePromptVariables()
+const {
+  enabledModuleVariableGroups,
+  promptVariables,
+} = usePromptVariables()
 
-const groups = computed(() => normalizeTypographyGroups(props.modelValue))
+const groups = computed(() => {
+  return resolveTypographyTextVariableReferences(
+    props.modelValue,
+    promptVariables.value,
+  )
+})
 
 watch(
-  () => props.modelValue,
-  (value) => {
+  [() => props.modelValue, () => promptVariables.value],
+  ([value]) => {
     const source = Array.isArray(value) ? value : []
-    const normalized = normalizeTypographyGroups(source)
+    const resolved = resolveTypographyTextVariableReferences(
+      source,
+      promptVariables.value,
+    )
 
-    if (JSON.stringify(source) !== JSON.stringify(normalized)) {
-      emit("update:modelValue", cloneTypographyGroups(normalized))
+    if (JSON.stringify(source) !== JSON.stringify(resolved)) {
+      emit("update:modelValue", cloneTypographyGroups(resolved))
     }
   },
   { immediate: true, deep: true },
@@ -145,8 +156,7 @@ function appendTextVariables(
     const token = variableToken(variable)
     if (existing.has(token)) return
 
-    const block = createTypographyTextBlock()
-    block.text = token
+    const block = createTypographyTextBlock(variable)
     group.texts.push(block)
     existing.add(token)
   })
