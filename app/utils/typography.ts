@@ -1,4 +1,5 @@
 import type {
+  PromptVariable,
   TypographyTextBlock,
   TypographyTextGroup,
 } from "../modules/types"
@@ -9,6 +10,10 @@ import {
 
 const TYPOGRAPHY_ID_ALPHABET = "abcdefghijklmnopqrstuvwxyz0123456789"
 const TYPOGRAPHY_ID_LENGTH = 3
+
+type LinkedTypographyTextBlock = TypographyTextBlock & {
+  textVariableId?: string
+}
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value)
@@ -36,6 +41,20 @@ function randomSuffix() {
   }).join("")
 }
 
+function variableToken(variable: Pick<PromptVariable, "key">) {
+  return `{${variable.key}}`
+}
+
+function textVariableId(block: TypographyTextBlock) {
+  return (block as LinkedTypographyTextBlock).textVariableId?.trim() || ""
+}
+
+function setTextVariableId(block: TypographyTextBlock, variableId: string) {
+  const cleanedId = variableId.trim()
+  if (!cleanedId) return
+  ;(block as LinkedTypographyTextBlock).textVariableId = cleanedId
+}
+
 export function createTypographyEntityId(prefix: "text-group" | "text") {
   return `${prefix}-${randomSuffix()}`
 }
@@ -48,11 +67,13 @@ export function cloneTypographyTextGroup(group: TypographyTextGroup) {
   return JSON.parse(JSON.stringify(group)) as TypographyTextGroup
 }
 
-export function createTypographyTextBlock(): TypographyTextBlock {
+export function createTypographyTextBlock(
+  variable?: Pick<PromptVariable, "id" | "key">,
+): TypographyTextBlock {
   const block: TypographyTextBlock = {
     id: createTypographyEntityId("text"),
     layerName: "",
-    text: "",
+    text: variable?.key ? variableToken(variable) : "",
     purpose: "",
     customPurpose: "",
     fontStyle: "",
@@ -62,6 +83,10 @@ export function createTypographyTextBlock(): TypographyTextBlock {
     fontWeight: "regular",
     customFontWeight: "",
     additionalDescription: "",
+  }
+
+  if (variable?.id) {
+    setTextVariableId(block, variable.id)
   }
 
   block.layerName = getTypographyTextVariableToken(block)
@@ -126,6 +151,10 @@ export function normalizeTypographyTextBlock(
       typeof source.additionalDescription === "string"
         ? source.additionalDescription
         : "",
+  }
+
+  if (typeof source.textVariableId === "string" && source.textVariableId.trim()) {
+    setTextVariableId(block, source.textVariableId)
   }
 
   if (!block.layerName) {
@@ -215,6 +244,37 @@ export function normalizeTypographyTextGroup(
 export function normalizeTypographyGroups(value: unknown) {
   if (!Array.isArray(value)) return []
   return value.map(normalizeTypographyTextGroup)
+}
+
+export function resolveTypographyTextVariableReferences(
+  value: unknown,
+  variables: readonly PromptVariable[],
+) {
+  const groups = normalizeTypographyGroups(value)
+  const textVariables = variables.filter((variable) => {
+    return Boolean(variable.id?.trim() && variable.key?.trim()) && variable.type === "text"
+  })
+  const variableById = new Map(
+    textVariables.map((variable) => [variable.id, variable]),
+  )
+  const variableByToken = new Map(
+    textVariables.map((variable) => [variableToken(variable), variable]),
+  )
+
+  groups.forEach((group) => {
+    group.texts.forEach((block) => {
+      const linkedId = textVariableId(block)
+      const linkedVariable = linkedId ? variableById.get(linkedId) : undefined
+      const inferredVariable = linkedVariable || variableByToken.get(block.text.trim())
+
+      if (!inferredVariable) return
+
+      setTextVariableId(block, inferredVariable.id)
+      block.text = variableToken(inferredVariable)
+    })
+  })
+
+  return groups
 }
 
 export function cloneTypographyGroups(value: unknown) {
