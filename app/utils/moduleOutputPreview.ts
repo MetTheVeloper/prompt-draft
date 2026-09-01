@@ -3,15 +3,10 @@ import type {
   ModuleOutputValue,
   PromptOutputFormat,
 } from "./compilePrompt";
-import { compileLayoutNaturalBlock } from "./compileLayoutNatural";
-import { compileTypographyNaturalBlock } from "./compileTypographyNatural";
 import { formatHairOutputForReferences } from "./compileHair";
 import { formatOutfitOutputForReferences } from "./compileOutfit";
+import { formatPromptFacingStructuredModuleOutput } from "./promptOutputAliases";
 import { variableDefinitionsToRecord, VARIABLES_MODULE_KEY } from "./promptVariables";
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return Boolean(value) && typeof value === "object" && !Array.isArray(value);
-}
 
 function stringifyOutput(value: ModuleOutputValue, pretty = true) {
   return typeof value === "string"
@@ -64,41 +59,9 @@ function humanizeModuleKey(value: string) {
     .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
-function typographyKeys(output: Record<string, unknown>) {
-  const referencedGroupKeys = new Set<string>();
-  const referencedTextKeys = new Set<string>();
-  const groups = Array.isArray(output.groups) ? output.groups : [];
-
-  groups.forEach((group) => {
-    if (!isRecord(group)) return;
-
-    if (typeof group.key === "string" && group.key.trim()) {
-      referencedGroupKeys.add(group.key.trim());
-    }
-
-    const texts = Array.isArray(group.texts) ? group.texts : [];
-    texts.forEach((text) => {
-      if (!isRecord(text)) return;
-      if (typeof text.key === "string" && text.key.trim()) {
-        referencedTextKeys.add(text.key.trim());
-      }
-    });
-  });
-
-  return { referencedGroupKeys, referencedTextKeys };
-}
-
 function naturalPreview(moduleKey: string, value: ModuleOutputValue) {
   if (moduleKey === VARIABLES_MODULE_KEY || moduleKey === "scene") {
     return stringifyOutput(value);
-  }
-
-  if (moduleKey === "layout" && isRecord(value)) {
-    return compileLayoutNaturalBlock(value);
-  }
-
-  if (moduleKey === "typography" && isRecord(value)) {
-    return compileTypographyNaturalBlock(value, typographyKeys(value));
   }
 
   if (typeof value !== "string") {
@@ -145,6 +108,17 @@ export function formatModuleOutputPreview(
   if (typeof value === "string" && !value.trim()) return "";
 
   const displayValue = prepareDisplayValue(moduleKey, value, outputs);
+
+  if (format !== "json") {
+    const structuredPreview = formatPromptFacingStructuredModuleOutput(
+      moduleKey,
+      displayValue,
+      format,
+      outputs,
+    );
+
+    if (structuredPreview) return structuredPreview;
+  }
 
   if (format === "json") return jsonPreview(moduleKey, displayValue);
   if (format === "natural") return naturalPreview(moduleKey, displayValue);
