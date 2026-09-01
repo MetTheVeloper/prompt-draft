@@ -1,6 +1,12 @@
 import type { ModuleValues, PromptKeyModule } from "../modules/types"
 import { compileLayoutNaturalBlock } from "./compileLayoutNatural"
 import { compileTypographyNaturalBlock } from "./compileTypographyNatural"
+import { formatHairOutputForReferences } from "./compileHair"
+import { formatOutfitOutputForReferences } from "./compileOutfit"
+import {
+  formatHairOutputWithPromptAliases,
+  formatOutfitOutputWithPromptAliases,
+} from "./specializedEntityAliases"
 import type {
   ModuleOutputMap,
   ModuleOutputValue,
@@ -45,14 +51,15 @@ function typographyTextKeys(output: Record<string, unknown>) {
   return keys
 }
 
-function getExternalTypographyReferenceText(
+function getExternalModuleReferenceText(
+  moduleKey: string,
   outputs: ModuleOutputMap,
   extraReferenceText: string,
 ) {
   return [
     extraReferenceText,
     ...Object.entries(outputs)
-      .filter(([key]) => key !== "typography")
+      .filter(([key]) => key !== moduleKey)
       .map(([, value]) => moduleOutputText(value)),
   ]
     .filter(Boolean)
@@ -91,6 +98,50 @@ function replaceDefinition(
   if (!pattern.test(output)) return output
 
   return output.replace(pattern, `{${moduleKey}} =\n${block}`)
+}
+
+function replaceExactBlock(output: string, currentBlock: string, nextBlock: string) {
+  if (!currentBlock || !nextBlock || currentBlock === nextBlock) return output
+  return output.split(currentBlock).join(nextBlock)
+}
+
+function replaceSpecializedEntityBlocks(
+  output: string,
+  moduleOutputs: ModuleOutputMap,
+  extraReferenceText: string,
+  registry: PromptIdentityRegistry,
+) {
+  let nextOutput = output
+
+  const hairOutput = moduleOutputs.hair
+  if (typeof hairOutput === "string" && hairOutput.trim()) {
+    const external = getExternalModuleReferenceText(
+      "hair",
+      moduleOutputs,
+      extraReferenceText,
+    )
+    nextOutput = replaceExactBlock(
+      nextOutput,
+      formatHairOutputForReferences(hairOutput, external),
+      formatHairOutputWithPromptAliases(hairOutput, external, registry.aliases),
+    )
+  }
+
+  const outfitOutput = moduleOutputs.outfit
+  if (typeof outfitOutput === "string" && outfitOutput.trim()) {
+    const external = getExternalModuleReferenceText(
+      "outfit",
+      moduleOutputs,
+      extraReferenceText,
+    )
+    nextOutput = replaceExactBlock(
+      nextOutput,
+      formatOutfitOutputForReferences(outfitOutput, external),
+      formatOutfitOutputWithPromptAliases(outfitOutput, external, registry.aliases),
+    )
+  }
+
+  return nextOutput
 }
 
 function removeDuplicateNaturalBlock(
@@ -135,7 +186,7 @@ export function formatPromptFacingStructuredModuleOutput(
 
   const referencedTextKeys = getReferencedTypographyTextKeys(
     value,
-    getExternalTypographyReferenceText(moduleOutputs, ""),
+    getExternalModuleReferenceText("typography", moduleOutputs, ""),
   )
   const block = registry.rewrite(
     compileTypographyNaturalBlock(value, {
@@ -165,12 +216,18 @@ export function rewritePromptFacingStructuredOutput(
   if (!output || format === "json") return output
 
   const registry = createRegistry(moduleOutputs, context)
-  const externalTypographyReferenceText = getExternalTypographyReferenceText(
+  const externalTypographyReferenceText = getExternalModuleReferenceText(
+    "typography",
     moduleOutputs,
     extraReferenceText,
   )
 
-  let nextOutput = output
+  let nextOutput = replaceSpecializedEntityBlocks(
+    output,
+    moduleOutputs,
+    extraReferenceText,
+    registry,
+  )
   let layoutBlock = ""
   let typographyDefinitionBlock = ""
 
