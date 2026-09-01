@@ -99,7 +99,7 @@ export function getPortraitLivingChapterProgress(
 
   const peopleState = getPortraitLivingPeopleState(session);
   if (peopleState === "count") return 1 / 3;
-  if (peopleState === "configure") return 2 / 3;
+  if (peopleState === "configure") return 1;
   return 0;
 }
 

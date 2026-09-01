@@ -44,6 +44,22 @@ test("Living Sentence recomposes from user-owned creation mode and people answer
   );
 });
 
+test("Living Sentence uses a user-selected Portrait direction instead of the canonical default", () => {
+  let session = createFreshWizardSession(portraitWizardV2Definition);
+  session = setWizardUserAnswer(session, "creationMode", "from_description");
+  session = setWizardUserAnswer(
+    session,
+    "subjects",
+    createPortraitLivingSubjects(1, "text_to_image"),
+  );
+  session = setWizardUserAnswer(session, "portraitIntent", "cinematic");
+
+  assert.equal(
+    sentence(session),
+    "I want to create a cinematic portrait of one person",
+  );
+});
+
 test("People presentation progress follows the relevant micro-states instead of a global percentage", () => {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   session = goToNextWizardStep(session, portraitWizardV2Definition);
@@ -56,7 +72,7 @@ test("People presentation progress follows the relevant micro-states instead of 
   assert.equal(getPortraitLivingChapterProgress(session), 1 / 3);
 
   session = setPortraitLivingPeopleState(session, "configure");
-  assert.equal(getPortraitLivingChapterProgress(session), 2 / 3);
+  assert.equal(getPortraitLivingChapterProgress(session), 1);
 });
 
 test("People helpers create canonical subjects with mode-appropriate definitions", () => {
