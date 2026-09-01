@@ -1,3 +1,4 @@
+import type { ModuleValues, PromptKeyModule } from "../modules/types"
 import { compileLayoutNaturalBlock } from "./compileLayoutNatural"
 import { compileTypographyNaturalBlock } from "./compileTypographyNatural"
 import type {
@@ -5,15 +6,16 @@ import type {
   ModuleOutputValue,
   PromptOutputFormat,
 } from "./compilePromptCore"
+import {
+  createPromptIdentityRegistry,
+  type PromptIdentityRegistry,
+} from "./promptIdentity"
 
-type AliasEntry = {
-  source: string
-  alias: string
-}
-
-type PromptOutputAliasContext = {
-  replacements: Map<string, string>
-  typographyTextAliases: AliasEntry[]
+export type PromptFacingRewriteContext = {
+  modules?: readonly PromptKeyModule[]
+  moduleValues?: Record<string, ModuleValues>
+  reservedKeys?: Iterable<string>
+  registry?: PromptIdentityRegistry
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -28,55 +30,21 @@ function moduleOutputText(value: ModuleOutputValue) {
   return typeof value === "string" ? value : JSON.stringify(value)
 }
 
-function addAlias(
-  context: PromptOutputAliasContext,
-  source: unknown,
-  alias: string,
-  kind?: "typography_text",
-) {
-  const sourceToken = cleanToken(source)
-  if (!sourceToken || context.replacements.has(sourceToken)) return
+function typographyTextKeys(output: Record<string, unknown>) {
+  const keys: string[] = []
+  const groups = Array.isArray(output.groups) ? output.groups : []
 
-  context.replacements.set(sourceToken, alias)
-
-  if (kind === "typography_text") {
-    context.typographyTextAliases.push({ source: sourceToken, alias })
-  }
-}
-
-function createPromptOutputAliasContext(outputs: ModuleOutputMap) {
-  const context: PromptOutputAliasContext = {
-    replacements: new Map(),
-    typographyTextAliases: [],
-  }
-
-  const layoutOutput = outputs.layout
-  if (isRecord(layoutOutput) && Array.isArray(layoutOutput.regions)) {
-    layoutOutput.regions.forEach((region, index) => {
-      if (!isRecord(region)) return
-      addAlias(context, region.key, `{r_${index + 1}}`)
+  groups.forEach((group) => {
+    if (!isRecord(group)) return
+    const texts = Array.isArray(group.texts) ? group.texts : []
+    texts.forEach((text) => {
+      if (!isRecord(text)) return
+      const key = cleanToken(text.key)
+      if (key) keys.push(key)
     })
-  }
+  })
 
-  const typographyOutput = outputs.typography
-  if (isRecord(typographyOutput) && Array.isArray(typographyOutput.groups)) {
-    let textIndex = 0
-
-    typographyOutput.groups.forEach((group, groupIndex) => {
-      if (!isRecord(group)) return
-
-      addAlias(context, group.key, `{tg_${groupIndex + 1}}`)
-
-      const texts = Array.isArray(group.texts) ? group.texts : []
-      texts.forEach((text) => {
-        textIndex += 1
-        if (!isRecord(text)) return
-        addAlias(context, text.key, `{tt_${textIndex}}`, "typography_text")
-      })
-    })
-  }
-
-  return context
+  return keys
 }
 
 function getExternalTypographyReferenceText(
@@ -94,13 +62,11 @@ function getExternalTypographyReferenceText(
 }
 
 function getReferencedTypographyTextKeys(
-  context: PromptOutputAliasContext,
+  output: Record<string, unknown>,
   externalReferenceText: string,
 ) {
   return new Set(
-    context.typographyTextAliases
-      .filter((entry) => externalReferenceText.includes(entry.source))
-      .map((entry) => entry.source),
+    typographyTextKeys(output).filter((key) => externalReferenceText.includes(key)),
   )
 }
 
@@ -115,103 +81,6 @@ function replaceDefinition(
   if (!pattern.test(output)) return output
 
   return output.replace(pattern, `{${moduleKey}} =\n${block}`)
-}
-
-function replaceAliases(
-  output: string,
-  context: PromptOutputAliasContext,
-) {
-  let nextOutput = output
-
-  context.replacements.forEach((alias, source) => {
-    nextOutput = nextOutput.split(source).join(alias)
-  })
-
-  return nextOutput
-}
-
-function escapeRegExp(value: string) {
-  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-}
-
-function stripUnneededTypographyTextAliases(
-  output: string,
-  context: PromptOutputAliasContext,
-  referencedTextKeys: ReadonlySet<string>,
-) {
-  let nextOutput = output
-
-  context.typographyTextAliases.forEach((entry) => {
-    if (referencedTextKeys.has(entry.source)) return
-
-    const pattern = new RegExp(
-      `${escapeRegExp(entry.alias)}\\s*\\(([^()\\n]+)\\)`,
-      "g",
-    )
-    nextOutput = nextOutput.replace(pattern, "$1")
-  })
-
-  return nextOutput
-}
-
-function aliasPromptFacingBlock(
-  block: string,
-  context: PromptOutputAliasContext,
-  referencedTextKeys: ReadonlySet<string>,
-) {
-  return stripUnneededTypographyTextAliases(
-    replaceAliases(block, context),
-    context,
-    referencedTextKeys,
-  )
-}
-
-/**
- * Format one structured module exactly as it should appear to the prompt model.
- * Internal IDs remain untouched in canonical state/JSON; this is display/output only.
- */
-export function formatPromptFacingStructuredModuleOutput(
-  moduleKey: string,
-  value: ModuleOutputValue,
-  format: PromptOutputFormat,
-  outputs: ModuleOutputMap = {},
-  extraReferenceText = "",
-) {
-  if (format === "json" || !isRecord(value)) return ""
-  if (moduleKey !== "layout" && moduleKey !== "typography") return ""
-
-  const effectiveOutputs: ModuleOutputMap = {
-    ...outputs,
-    [moduleKey]: value,
-  }
-  const context = createPromptOutputAliasContext(effectiveOutputs)
-  const externalTypographyReferenceText = getExternalTypographyReferenceText(
-    effectiveOutputs,
-    extraReferenceText,
-  )
-  const referencedTypographyTextKeys = getReferencedTypographyTextKeys(
-    context,
-    externalTypographyReferenceText,
-  )
-
-  const block = moduleKey === "layout"
-    ? compileLayoutNaturalBlock(value)
-    : compileTypographyNaturalBlock(value, {
-        referencedTextKeys: referencedTypographyTextKeys,
-        includeHeading: format === "natural",
-      })
-
-  if (!block) return ""
-
-  const promptFacingBlock = aliasPromptFacingBlock(
-    block,
-    context,
-    referencedTypographyTextKeys,
-  )
-
-  return format === "modular"
-    ? `{${moduleKey}} =\n${promptFacingBlock}`
-    : promptFacingBlock
 }
 
 function removeDuplicateNaturalBlock(
@@ -235,22 +104,32 @@ function removeDuplicateNaturalBlock(
   )
 }
 
+/**
+ * Final prompt-facing semantic pass.
+ *
+ * Canonical module state/output keeps stable internal tokens. This pass formats
+ * protected structured modules and then rewrites complete `{token}` references
+ * through a registry built from stable entity state. No substring/prefix
+ * stripping is used here; every alias has a known source identity.
+ */
 export function rewritePromptFacingStructuredOutput(
   output: string,
   moduleOutputs: ModuleOutputMap,
   format: PromptOutputFormat,
   extraReferenceText = "",
+  context: PromptFacingRewriteContext = {},
 ) {
   if (!output || format === "json") return output
 
-  const context = createPromptOutputAliasContext(moduleOutputs)
+  const registry = context.registry || createPromptIdentityRegistry({
+    modules: context.modules,
+    moduleValues: context.moduleValues,
+    outputs: moduleOutputs,
+    reservedKeys: context.reservedKeys,
+  })
   const externalTypographyReferenceText = getExternalTypographyReferenceText(
     moduleOutputs,
     extraReferenceText,
-  )
-  const referencedTypographyTextKeys = getReferencedTypographyTextKeys(
-    context,
-    externalTypographyReferenceText,
   )
 
   let nextOutput = output
@@ -265,6 +144,10 @@ export function rewritePromptFacingStructuredOutput(
 
   const typographyOutput = moduleOutputs.typography
   if (isRecord(typographyOutput)) {
+    const referencedTypographyTextKeys = getReferencedTypographyTextKeys(
+      typographyOutput,
+      externalTypographyReferenceText,
+    )
     typographyDefinitionBlock = compileTypographyNaturalBlock(typographyOutput, {
       referencedTextKeys: referencedTypographyTextKeys,
       includeHeading: false,
@@ -276,24 +159,11 @@ export function rewritePromptFacingStructuredOutput(
     )
   }
 
-  nextOutput = replaceAliases(nextOutput, context)
-  nextOutput = stripUnneededTypographyTextAliases(
-    nextOutput,
-    context,
-    referencedTypographyTextKeys,
-  )
+  nextOutput = registry.rewrite(nextOutput)
 
   if (format === "natural") {
-    const aliasedLayoutBlock = aliasPromptFacingBlock(
-      layoutBlock,
-      context,
-      referencedTypographyTextKeys,
-    )
-    const aliasedTypographyBlock = aliasPromptFacingBlock(
-      typographyDefinitionBlock,
-      context,
-      referencedTypographyTextKeys,
-    )
+    const aliasedLayoutBlock = registry.rewrite(layoutBlock)
+    const aliasedTypographyBlock = registry.rewrite(typographyDefinitionBlock)
 
     if (aliasedLayoutBlock) {
       nextOutput = removeDuplicateNaturalBlock(
