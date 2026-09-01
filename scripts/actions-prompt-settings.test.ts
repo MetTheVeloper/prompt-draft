@@ -96,8 +96,14 @@ test("prompt.settings.update partially merges nested image-to-image settings", a
 
   assert.equal(result.draft.promptSettings.imageToImage.preservePose, true);
   assert.equal(result.draft.promptSettings.imageToImage.preserveColors, true);
-  assert.equal(result.draft.promptSettings.imageToImage.preserveIdentity, true);
-  assert.equal(result.draft.promptSettings.imageToImage.referenceUsage, "balanced");
+  assert.equal(
+    result.draft.promptSettings.imageToImage.preserveIdentity,
+    original.promptSettings.imageToImage.preserveIdentity,
+  );
+  assert.equal(
+    result.draft.promptSettings.imageToImage.referenceUsage,
+    original.promptSettings.imageToImage.referenceUsage,
+  );
   assert.equal(result.draft.promptSettings.mode, original.promptSettings.mode);
 });
 
