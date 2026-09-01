@@ -261,7 +261,7 @@ All closure criteria are satisfied:
 
 `refactor/module-wording` is **formally complete and approved for integration into `main`**.
 
-Any future work should be treated as a new change/refactor, not as unfinished work from this branch, unless a concrete regression is found against the contracts documented here.
+This checkpoint is the closure record for the branch. After integration, future changes should be treated as new work rather than unfinished work from this refactor, unless a concrete regression is found against the contracts documented here.
 
 ## Source of truth
 
