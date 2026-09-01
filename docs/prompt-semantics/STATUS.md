@@ -4,152 +4,279 @@ Branch: `refactor/module-wording`
 
 Last checkpoint: 2026-09-01
 
-## Current focus
+Status: **VALIDATED / COMPLETE**
 
-Prompt-facing semantic quality, compile structure, and identity presentation. UI redesign is out of scope.
+## Closure summary
+
+The prompt-facing wording and identity refactor is complete.
+
+This branch established a stable separation between canonical/internal module identity and the semantic tokens shown to image-generation models. It also completed the Layout/Typography prompt-facing simplification, stable Text-variable reference handling, shared module-card/final-output presentation, and a global collision-aware identity policy for named configurations and specialized entities.
+
+No further semantic or compiler work is required for this branch before integration into `main`.
+
+UI redesign was intentionally out of scope except for minimal data wiring required to keep references stable and previews consistent with final output.
 
 ## Accepted decisions
 
-- Modular/Natural output should optimize for model-readable semantic prompt text, not mirror internal JS/state structure.
+- Modular/Natural output optimizes for model-readable semantic prompt text rather than mirroring internal JS/state structure.
 - JSON remains the canonical structured/internal output.
-- Layout and Typography use dedicated semantic serializers in prompt-facing output.
-- Layout prompt-facing bounds use percentages.
-- Layout Region identity uses the user-facing Region name normalized to lowerCamelCase (`top left` -> `{topLeft}`), not `{r_n}`.
-- Typography Group identity remains compiler-owned `{tg_n}` because groups currently lack a user-authored semantic name.
-- Typography text style normally targets the user Text variable directly; `{tt_n}` is reserved for genuine external text-entity references.
-- Internal persistence IDs and structural tokens remain stable and are not replaced in saved state merely to improve prompt wording.
-- Generic named configurations use semantic prompt-facing identities without redundant module prefixes when unambiguous.
-- Prompt-facing identity allocation is global per compile and collision-aware.
-- User variable keys have priority; generated aliases qualify around them.
-- Hair/Outfit nested entities participate in the same collision policy.
-- Module-card previews and final Output panel must use the same semantic identity rules.
-- Variable-to-Typography relationships use stable variable identity so variable key renames do not require rebuilding groups.
+- Internal persistence IDs and canonical structural tokens remain stable and are not renamed merely to improve prompt wording.
+- Prompt-facing identity is allocated globally per compile and must preserve the same reference graph as canonical state.
+- Blind prefix deletion is forbidden; complete known tokens are rewritten through an identity-aware registry.
+- User variable keys have priority over generated aliases.
+- Collisions are minimally qualified and deterministic.
+- Module-card previews and final Output use the same prompt-facing identity policy.
 
-## General prompt-facing identity rule
+## Final prompt-facing identity policy
 
-Canonical/internal:
+Canonical/internal examples:
 
 ```text
+{layout_region_abc}
 {scene_scene1}
 {style_clay}
 {form_form1}
 {effects_effects1}
-{layout_region_abc}
 ```
 
-Preferred prompt-facing form:
+Preferred Modular/Natural form:
 
 ```text
+{topLeft}
 {scene1}
 {clay}
 {form1}
 {effects1}
-{topLeft}
 ```
 
-When semantic names collide, minimally qualify:
+When semantic names collide, qualify only as much as needed:
 
 ```text
 {styleMain}
 {effectsMain}
 ```
 
-Do not implement this as blind prefix removal. Use the identity registry documented in `PROMPT-FACING-IDENTITY-REFERENCE.md`.
+### Layout Regions
 
-## Implemented in this branch
+Layout Region identity uses the user-authored Region name normalized to lowerCamelCase:
 
-### Layout / Typography semantic output
+```text
+top left     -> {topLeft}
+top right    -> {topRight}
+bottom left  -> {bottomLeft}
+bottom right -> {bottomRight}
+```
 
-- Modular Layout no longer emits raw structured JSON as prompt wording.
-- Layout Natural/Modular share semantic percentage prose.
-- Modular Typography no longer emits raw group objects.
-- Typography group instructions are compacted into one bullet per group.
-- Internal Typography text IDs are hidden unless semantically required.
-- Final output and module-card preview use the same structured semantic formatter.
+The previous `{r_n}` prompt alias scheme is obsolete and `r_*` is no longer reserved from user variables.
 
-### Reference integrity
+Canonical Layout geometry remains normalized `0..1` in JSON/state. Modular/Natural present bounds as percentages from `0%` to `100%`.
 
-- Typography text blocks can retain stable Text variable IDs.
-- Current variable keys are resolved at compile time.
-- Legacy token-only blocks can backfill stable variable identity when possible.
+### Scene/Layout exactness rule
 
-### Prompt-facing identity registry
+The automatic Scene/Layout rule remains intentionally:
 
-- Added global state-backed alias registry.
-- Added trusted output-backed fallback for final callers that only expose canonical outputs.
-- Added lowerCamelCase semantic name normalization.
-- Added global collision handling.
-- Added user-variable collision protection.
-- Added generic ModuleEntity support for Form, Camera, Framing, Background, Lighting, Style, Effects, and Texture.
-- Added Scene alias simplification.
-- Added named Layout Region aliases.
-- Added Hair/Outfit nested alias handling.
-- Kept Typography `tg_*` / `tt_*` compiler namespaces.
-- Released obsolete `r_*` user-variable reservation.
+```text
+Match each scene's dimensions exactly to its corresponding region in {layout}.
+```
 
-### Regression coverage
+This wording is retained because repeated generation tests produced acceptable near-exact Layout adherence. Do not weaken or remove `exactly` without new empirical evidence showing a regression or a clearly better formulation.
 
-`pnpm test:module-wording` now covers:
+### Typography
 
-- Layout semantic percentage output.
-- named Layout Region aliases.
-- Layout <-> Typography alias consistency.
-- selective Typography text aliases.
-- module-card/final-output consistency.
-- generic named configuration simplification across Scene/Style/Form/Effects.
-- cross-module alias collisions.
-- user-variable precedence on collisions.
-- Hair child collision qualification.
-- unchanged JSON semantics.
-- Text variable rename integrity.
-- active compiler-owned variable reservations.
+Typography Group identity remains compiler-owned `{tg_n}` because groups currently do not expose a user-authored semantic name suitable for prompt identity.
 
-The existing prompt-compile regression expectation for Modular Scene presentation was updated to semantic Scene identity. JSON retains the canonical Scene token.
+Typography text styling normally targets the user Text variable directly:
 
-## Files central to this checkpoint
+```text
+Style {title} as the main title ...
+```
 
-- `app/utils/promptIdentity.ts`
-- `app/utils/promptFacingIdentity.ts`
-- `app/utils/promptOutputAliases.ts`
-- `app/utils/specializedEntityAliases.ts`
-- `app/utils/compileLayoutNatural.ts`
-- `app/utils/compileTypographyNatural.ts`
-- `app/utils/moduleOutputPreview.ts`
-- `app/utils/compilePromptPure.ts`
-- `app/utils/compilePrompt.ts`
-- `app/components/prompt/editor.vue`
-- `app/utils/typography.ts`
-- `app/utils/promptVariables.ts`
-- `scripts/module-wording-output.test.ts`
+`{tt_n}` is emitted only when another semantic relationship genuinely targets a Typography text entity.
 
-## Validation status
+Text-variable relationships use stable variable IDs internally, so changing `{t1}` to `{mainTitle}` no longer requires rebuilding Typography groups. Legacy token-only blocks backfill stable variable identity when the current variable can still be resolved.
 
-Previous Layout/Typography checkpoint was manually verified in the app and its dedicated tests passed.
+### Named configurations
 
-The new global prompt-facing identity changes have been implemented and regression tests updated, but this checkpoint still requires a fresh local run after pulling the latest branch:
+The same semantic identity rule applies to every generic named-configuration module:
+
+- Form
+- Camera
+- Framing
+- Background
+- Lighting
+- Style
+- Effects
+- Texture
+
+Scene uses the same policy for Scene identity.
+
+Hair and Outfit specialized nested entities also participate in the same global collision policy, using parent semantic qualification when needed.
+
+### Effects wording
+
+Named Effects definitions no longer repeat the redundant `Effects:` label inside the `{effects}` module block.
+
+Final form:
+
+```text
+{effects} =
+• {effects1} = subtle composited light-leak overlay; balanced dust-and-scratch film-damage overlay.
+```
+
+Not:
+
+```text
+• {effects1} = Effects: subtle composited light-leak overlay ...
+```
+
+## Implemented architecture
+
+Primary implementation layers:
+
+- `app/utils/promptIdentity.ts` — state-backed identity registry and global collision allocation.
+- `app/utils/promptFacingIdentity.ts` — trusted output-backed fallback for callers that only expose canonical outputs.
+- `app/utils/promptOutputAliases.ts` — final structured-module formatting and semantic rewrite boundary.
+- `app/utils/specializedEntityAliases.ts` — Hair/Outfit specialized alias promotion.
+- `app/utils/moduleOutputPreview.ts` — module-card preview using the same identity policy.
+- `app/utils/compileLayoutNatural.ts` — prompt-facing Layout serialization.
+- `app/utils/compileTypographyNatural.ts` — prompt-facing Typography serialization.
+- `app/utils/typography.ts` — stable user Text-variable binding and rename resolution.
+- `app/utils/compileEffects.ts` — concise Effects wording without redundant `Effects:` prefix.
+
+## Registered-module audit
+
+All registered modules were reviewed against the prompt-facing identity contract:
+
+- Variables
+- Layout
+- Scene
+- Style
+- Form
+- Framing
+- Expression
+- Pose
+- Hair
+- Outfit
+- Background
+- Lighting
+- Camera
+- ColorPalette
+- Typography
+- Effects
+- Texture
+
+Modules that own named/structural entities participate directly in alias allocation. Assignment-oriented modules such as Expression, Pose, and ColorPalette do not invent local alias schemes; references inside their output are rewritten by the global registry.
+
+## Validation completed
+
+### Dedicated prompt-wording regression suite
+
+Command:
 
 ```text
 pnpm test:module-wording
-pnpm test:actions-api
-pnpm dev
 ```
 
-Manual verification should use a multi-scene prompt with named Layout Regions and multiple named configurations. Confirm that Modular/Natural show semantic aliases while JSON remains canonical.
+Final result:
 
-## Next steps
+```text
+13 tests
+13 passed
+0 failed
+```
 
-1. Run the fresh regression suites above.
-2. Verify the user's 4-scene sample produces semantic aliases such as `{topLeft}`, `{scene1}`, `{clay}`, `{form1}`, `{effects1}`.
-3. Exercise at least one alias collision and confirm minimal qualification.
-4. Fix any regression found by the wider action suite.
-5. Once validation is green, update this status to `validated` and prepare the branch for merge/review.
+Coverage includes:
+
+- semantic Layout percentage output
+- named Layout Region aliases
+- Layout <-> Typography identity consistency
+- selective Typography text aliases
+- module-card/final-output consistency
+- Scene/Style/Form/Effects named-configuration simplification
+- cross-module alias collisions
+- user-variable precedence
+- Hair child collision qualification
+- unchanged JSON semantics
+- Text-variable rename integrity
+- active compiler-owned variable reservations
+
+### Full public Actions/API regression suite
+
+Command:
+
+```text
+pnpm test:actions-api
+```
+
+Final result:
+
+```text
+176 tests
+176 passed
+0 failed
+```
+
+Two stale expectations discovered during the first run were corrected without changing runtime behavior:
+
+- `attached reference image` -> canonical `attached reference image(s)` wording.
+- partial image-to-image settings merge now asserts preservation of the current canonical previous value instead of assuming an obsolete default.
+
+### Manual application validation
+
+The dev application was run successfully after restoring `@vueuse/core` through `pnpm` so `package.json` and `pnpm-lock.yaml` remained package-manager generated.
+
+Manual checks confirmed:
+
+- module-card previews match final Output semantics
+- Modular and Natural Layout/Typography output use the intended semantic wording
+- JSON remains canonical
+- Text-variable rename wiring remains stable
+- a four-Scene prompt correctly resolves:
+  - `{topLeft}`, `{topRight}`, `{bottomLeft}`, `{bottomRight}`
+  - `{scene1}` ... `{scene4}`
+  - semantic Style identities such as `{clay}` and `{childlikeDrawing}`
+  - `{form1}` ... `{form4}`
+  - `{effects1}` ... `{effects4}`
+- downstream Expression/Hair references follow the rewritten Scene identities
+- Layout generation behavior remained acceptably near-exact under the retained `exactly` rule
+- Effects definitions render without the redundant `Effects:` prefix
+
+## Completion criteria
+
+All closure criteria are satisfied:
+
+1. Prompt-facing Modular/Natural semantics are concise and model-readable.
+2. Canonical JSON/state identity is preserved.
+3. Cross-module references remain stable.
+4. Named configuration identity follows one global rule.
+5. Collision handling is deterministic and tested.
+6. Module previews and final Output agree.
+7. Layout and Typography output match the intended semantic design.
+8. Variable rename behavior is stable.
+9. Dedicated regression suite is fully green.
+10. Full Actions/API suite is fully green.
+11. Manual multi-module application output is verified.
+
+## Branch disposition
+
+`refactor/module-wording` is **formally complete and approved for integration into `main`**.
+
+Any future work should be treated as a new change/refactor, not as unfinished work from this branch, unless a concrete regression is found against the contracts documented here.
 
 ## Source of truth
 
-For prompt-facing identity and aliasing, use:
+Prompt-facing identity and aliasing:
 
 - `docs/prompt-semantics/PROMPT-FACING-IDENTITY-REFERENCE.md`
 
-For broader semantic module principles, continue to use:
+Layout semantics:
+
+- `docs/prompt-semantics/stage-06-layout-semantics.md`
+
+Typography semantics:
+
+- `docs/prompt-semantics/stage-16-typography-semantics.md`
+
+Broader module semantic principles:
 
 - `docs/prompt-semantics/SEMANTIC-REFACTOR-REFERENCE.md`
