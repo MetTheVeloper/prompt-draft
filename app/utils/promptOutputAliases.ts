@@ -154,6 +154,66 @@ function stripUnneededTypographyTextAliases(
   return nextOutput
 }
 
+function aliasPromptFacingBlock(
+  block: string,
+  context: PromptOutputAliasContext,
+  referencedTextKeys: ReadonlySet<string>,
+) {
+  return stripUnneededTypographyTextAliases(
+    replaceAliases(block, context),
+    context,
+    referencedTextKeys,
+  )
+}
+
+/**
+ * Format one structured module exactly as it should appear to the prompt model.
+ * Internal IDs remain untouched in canonical state/JSON; this is display/output only.
+ */
+export function formatPromptFacingStructuredModuleOutput(
+  moduleKey: string,
+  value: ModuleOutputValue,
+  format: PromptOutputFormat,
+  outputs: ModuleOutputMap = {},
+  extraReferenceText = "",
+) {
+  if (format === "json" || !isRecord(value)) return ""
+  if (moduleKey !== "layout" && moduleKey !== "typography") return ""
+
+  const effectiveOutputs: ModuleOutputMap = {
+    ...outputs,
+    [moduleKey]: value,
+  }
+  const context = createPromptOutputAliasContext(effectiveOutputs)
+  const externalTypographyReferenceText = getExternalTypographyReferenceText(
+    effectiveOutputs,
+    extraReferenceText,
+  )
+  const referencedTypographyTextKeys = getReferencedTypographyTextKeys(
+    context,
+    externalTypographyReferenceText,
+  )
+
+  const block = moduleKey === "layout"
+    ? compileLayoutNaturalBlock(value)
+    : compileTypographyNaturalBlock(value, {
+        referencedTextKeys: referencedTypographyTextKeys,
+        includeHeading: format === "natural",
+      })
+
+  if (!block) return ""
+
+  const promptFacingBlock = aliasPromptFacingBlock(
+    block,
+    context,
+    referencedTypographyTextKeys,
+  )
+
+  return format === "modular"
+    ? `{${moduleKey}} =\n${promptFacingBlock}`
+    : promptFacingBlock
+}
+
 function removeDuplicateNaturalBlock(
   output: string,
   definition: string,
@@ -224,13 +284,13 @@ export function rewritePromptFacingStructuredOutput(
   )
 
   if (format === "natural") {
-    const aliasedLayoutBlock = stripUnneededTypographyTextAliases(
-      replaceAliases(layoutBlock, context),
+    const aliasedLayoutBlock = aliasPromptFacingBlock(
+      layoutBlock,
       context,
       referencedTypographyTextKeys,
     )
-    const aliasedTypographyBlock = stripUnneededTypographyTextAliases(
-      replaceAliases(typographyDefinitionBlock, context),
+    const aliasedTypographyBlock = aliasPromptFacingBlock(
+      typographyDefinitionBlock,
       context,
       referencedTypographyTextKeys,
     )
