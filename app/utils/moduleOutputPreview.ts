@@ -7,8 +7,10 @@ import type {
   ModuleOutputValue,
   PromptOutputFormat,
 } from "./compilePrompt";
-import { formatHairOutputForReferences } from "./compileHair";
-import { formatOutfitOutputForReferences } from "./compileOutfit";
+import {
+  formatHairOutputWithPromptAliases,
+  formatOutfitOutputWithPromptAliases,
+} from "./specializedEntityAliases";
 import { formatPromptFacingStructuredModuleOutput } from "./promptOutputAliases";
 import { createPromptFacingIdentityRegistry } from "./promptFacingIdentity";
 import { variableDefinitionsToRecord, VARIABLES_MODULE_KEY } from "./promptVariables";
@@ -27,6 +29,7 @@ function prepareDisplayValue(
   moduleKey: string,
   value: ModuleOutputValue,
   outputs: ModuleOutputMap,
+  aliases: ReadonlyMap<string, string>,
 ): ModuleOutputValue {
   if (typeof value !== "string") return value;
   if (moduleKey !== "hair" && moduleKey !== "outfit") return value;
@@ -38,8 +41,8 @@ function prepareDisplayValue(
     .join("\n");
 
   return moduleKey === "hair"
-    ? formatHairOutputForReferences(value, externalReferenceText)
-    : formatOutfitOutputForReferences(value, externalReferenceText);
+    ? formatHairOutputWithPromptAliases(value, externalReferenceText, aliases)
+    : formatOutfitOutputWithPromptAliases(value, externalReferenceText, aliases);
 }
 
 function formatDefinition(moduleKey: string, value: ModuleOutputValue) {
@@ -114,7 +117,17 @@ export function formatModuleOutputPreview(
   if (value === undefined || value === null) return "";
   if (typeof value === "string" && !value.trim()) return "";
 
-  const displayValue = prepareDisplayValue(moduleKey, value, outputs);
+  const registry = createPromptFacingIdentityRegistry({
+    modules,
+    moduleValues,
+    outputs,
+  });
+  const displayValue = prepareDisplayValue(
+    moduleKey,
+    value,
+    outputs,
+    registry.aliases,
+  );
 
   if (format !== "json") {
     const structuredPreview = formatPromptFacingStructuredModuleOutput(
@@ -122,7 +135,7 @@ export function formatModuleOutputPreview(
       displayValue,
       format,
       outputs,
-      { modules, moduleValues },
+      { modules, moduleValues, registry },
     );
 
     if (structuredPreview) return structuredPreview;
@@ -133,11 +146,6 @@ export function formatModuleOutputPreview(
   const preview = format === "natural"
     ? naturalPreview(moduleKey, displayValue)
     : formatDefinition(moduleKey, displayValue);
-  const registry = createPromptFacingIdentityRegistry({
-    modules,
-    moduleValues,
-    outputs,
-  });
 
   return registry.rewrite(preview);
 }
