@@ -68,6 +68,18 @@ function getReferencedTypographyTextKeys(
   )
 }
 
+function createRegistry(
+  moduleOutputs: ModuleOutputMap,
+  context: PromptFacingRewriteContext,
+) {
+  return context.registry || createPromptFacingIdentityRegistry({
+    modules: context.modules,
+    moduleValues: context.moduleValues,
+    outputs: moduleOutputs,
+    reservedKeys: context.reservedKeys,
+  })
+}
+
 function replaceDefinition(
   output: string,
   moduleKey: string,
@@ -102,6 +114,39 @@ function removeDuplicateNaturalBlock(
   )
 }
 
+/** Display-only structured module formatter shared by module cards. */
+export function formatPromptFacingStructuredModuleOutput(
+  moduleKey: string,
+  value: ModuleOutputValue,
+  format: PromptOutputFormat,
+  moduleOutputs: ModuleOutputMap,
+  context: PromptFacingRewriteContext = {},
+) {
+  if (format === "json" || !isRecord(value)) return ""
+  if (moduleKey !== "layout" && moduleKey !== "typography") return ""
+
+  const registry = createRegistry(moduleOutputs, context)
+
+  if (moduleKey === "layout") {
+    const block = registry.rewrite(compileLayoutNaturalBlock(value))
+    if (!block) return ""
+    return format === "modular" ? `{layout} =\n${block}` : block
+  }
+
+  const referencedTextKeys = getReferencedTypographyTextKeys(
+    value,
+    getExternalTypographyReferenceText(moduleOutputs, ""),
+  )
+  const block = registry.rewrite(
+    compileTypographyNaturalBlock(value, {
+      referencedTextKeys,
+      includeHeading: format === "natural",
+    }),
+  )
+  if (!block) return ""
+  return format === "modular" ? `{typography} =\n${block}` : block
+}
+
 /**
  * Final prompt-facing semantic pass.
  *
@@ -119,12 +164,7 @@ export function rewritePromptFacingStructuredOutput(
 ) {
   if (!output || format === "json") return output
 
-  const registry = context.registry || createPromptFacingIdentityRegistry({
-    modules: context.modules,
-    moduleValues: context.moduleValues,
-    outputs: moduleOutputs,
-    reservedKeys: context.reservedKeys,
-  })
+  const registry = createRegistry(moduleOutputs, context)
   const externalTypographyReferenceText = getExternalTypographyReferenceText(
     moduleOutputs,
     extraReferenceText,
