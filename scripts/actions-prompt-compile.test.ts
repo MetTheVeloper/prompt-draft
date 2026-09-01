@@ -154,7 +154,7 @@ test("typed user Subject ownership suppresses only the generated subject definit
 
   assert.match(result.output, /^\{hero\} = the authored hero$/m);
   assert.doesNotMatch(result.output, /^\{subject\} =/m);
-  assert.match(result.output, /^\{reference\} = attached reference image$/m);
+  assert.match(result.output, /^\{reference\} = attached reference image\(s\)$/m);
 });
 
 test("typed user Reference ownership suppresses generated subject and reference definitions", () => {
