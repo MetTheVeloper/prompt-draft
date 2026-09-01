@@ -1,4 +1,8 @@
 import type {
+  ModuleValues,
+  PromptKeyModule,
+} from "../modules/types";
+import type {
   ModuleOutputMap,
   ModuleOutputValue,
   PromptOutputFormat,
@@ -6,6 +10,7 @@ import type {
 import { formatHairOutputForReferences } from "./compileHair";
 import { formatOutfitOutputForReferences } from "./compileOutfit";
 import { formatPromptFacingStructuredModuleOutput } from "./promptOutputAliases";
+import { createPromptFacingIdentityRegistry } from "./promptFacingIdentity";
 import { variableDefinitionsToRecord, VARIABLES_MODULE_KEY } from "./promptVariables";
 
 function stringifyOutput(value: ModuleOutputValue, pretty = true) {
@@ -103,6 +108,8 @@ export function formatModuleOutputPreview(
   value: ModuleOutputValue | undefined,
   format: PromptOutputFormat,
   outputs: ModuleOutputMap = {},
+  modules: readonly PromptKeyModule[] = [],
+  moduleValues: Record<string, ModuleValues> = {},
 ) {
   if (value === undefined || value === null) return "";
   if (typeof value === "string" && !value.trim()) return "";
@@ -115,12 +122,22 @@ export function formatModuleOutputPreview(
       displayValue,
       format,
       outputs,
+      { modules, moduleValues },
     );
 
     if (structuredPreview) return structuredPreview;
   }
 
   if (format === "json") return jsonPreview(moduleKey, displayValue);
-  if (format === "natural") return naturalPreview(moduleKey, displayValue);
-  return formatDefinition(moduleKey, displayValue);
+
+  const preview = format === "natural"
+    ? naturalPreview(moduleKey, displayValue)
+    : formatDefinition(moduleKey, displayValue);
+  const registry = createPromptFacingIdentityRegistry({
+    modules,
+    moduleValues,
+    outputs,
+  });
+
+  return registry.rewrite(preview);
 }
