@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { PromptDraftState } from "~/modules/promptDraft.types";
+import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
+import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
+import WizardLivingShell from "~/components/wizard/living/WizardLivingShell.vue";
 import {
   resolveWizardRuntime,
   type WizardRuntimeReview,
@@ -23,6 +26,15 @@ import {
   isWizardEntityDefinitionComplete,
   normalizeWizardEntityAnswers,
 } from "~/wizard/entities";
+import {
+  buildPortraitLivingSentenceTokens,
+  createPortraitLivingSubjects,
+  getPortraitLivingChapterProgress,
+  getPortraitLivingPeopleState,
+  getPortraitLivingPromptMode,
+  PORTRAIT_LIVING_CHAPTERS,
+  setPortraitLivingPeopleState,
+} from "~/wizard/portraitLivingPresentation";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
@@ -57,6 +69,10 @@ const allQuestions = computed(() =>
   runtime.value?.definition.steps.flatMap((step) => [...step.questions]) || [],
 );
 
+const subjectsQuestion = computed(() =>
+  allQuestions.value.find((question) => question.id === "subjects") || null,
+);
+
 const answerValues = computed<Record<string, unknown>>(() => {
   const result: Record<string, unknown> = {};
   for (const [answerId, answer] of Object.entries(session.value?.answers || {})) {
@@ -75,6 +91,24 @@ const currentStepIndex = computed(() =>
 );
 
 const currentStageId = computed(() => currentStep.value?.stageId || "");
+const isPortraitLivingRuntime = computed(() =>
+  runtime.value?.id === "portrait" && session.value?.wizardVersion === 2,
+);
+const isLivingEntry = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.id === "start",
+);
+const isLivingPeople = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.id === "subjects",
+);
+const livingSentenceTokens = computed(() =>
+  session.value ? buildPortraitLivingSentenceTokens(session.value) : [],
+);
+const livingPeopleState = computed(() =>
+  session.value ? getPortraitLivingPeopleState(session.value) : "choice",
+);
+const livingChapterProgress = computed(() =>
+  session.value ? getPortraitLivingChapterProgress(session.value) : null,
+);
 
 function isAnswered(question: (typeof visibleQuestions.value)[number]) {
   const answer = session.value?.answers[question.id];
@@ -111,6 +145,53 @@ function setAnswer(questionId: string, value: unknown) {
   issueMessage.value = "";
 }
 
+function advanceResolvedSession(nextSession: WizardSession) {
+  if (!runtime.value) return;
+  session.value = goToNextWizardStep(
+    runtime.value.resolveSession(nextSession),
+    runtime.value.definition,
+  );
+  issueMessage.value = "";
+}
+
+function chooseCreationMode(value: "from_image" | "from_description") {
+  if (!session.value) return;
+  let nextSession = setWizardUserAnswer(session.value, "creationMode", value);
+  nextSession = setPortraitLivingPeopleState(nextSession, "choice");
+  advanceResolvedSession(nextSession);
+}
+
+function chooseOnePerson() {
+  if (!session.value) return;
+  const mode = getPortraitLivingPromptMode(session.value);
+  let nextSession = setWizardUserAnswer(
+    session.value,
+    "subjects",
+    createPortraitLivingSubjects(1, mode),
+  );
+  nextSession = setPortraitLivingPeopleState(nextSession, "choice");
+  advanceResolvedSession(nextSession);
+}
+
+function chooseMultiplePeople() {
+  if (!session.value) return;
+  session.value = setPortraitLivingPeopleState(session.value, "count");
+  issueMessage.value = "";
+}
+
+function choosePeopleCount(value: 2 | 3 | 4) {
+  if (!session.value || !runtime.value) return;
+  const mode = getPortraitLivingPromptMode(session.value);
+  let nextSession = setWizardUserAnswer(
+    session.value,
+    "subjects",
+    createPortraitLivingSubjects(value, mode),
+  );
+  nextSession = setPortraitLivingPeopleState(nextSession, "configure");
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
 function ensureCurrentStepValid() {
   const missing = visibleQuestions.value.find(
     (question) => question.required && !isAnswered(question),
@@ -130,6 +211,27 @@ function back() {
   if (!session.value || !runtime.value) return;
   session.value = goToPreviousWizardStep(session.value, runtime.value.definition);
   issueMessage.value = "";
+}
+
+function livingBack() {
+  if (!session.value || !isLivingPeople.value) {
+    back();
+    return;
+  }
+
+  if (livingPeopleState.value === "configure") {
+    session.value = setPortraitLivingPeopleState(session.value, "count");
+    issueMessage.value = "";
+    return;
+  }
+
+  if (livingPeopleState.value === "count") {
+    session.value = setPortraitLivingPeopleState(session.value, "choice");
+    issueMessage.value = "";
+    return;
+  }
+
+  back();
 }
 
 function editStep(stepId: string) {
@@ -332,6 +434,76 @@ onBeforeUnmount(() => {
     <el-text v-if="issueMessage" :size="11" color="red">{{ issueMessage }}</el-text>
   </el-grid>
 
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingEntry"
+    :title="runtime.definition.title"
+    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    current-chapter-id="start"
+    :sentence-tokens="livingSentenceTokens"
+    :can-go-back="false"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    :show-nav="false"
+    :show-sentence="false">
+    <WizardLivingEntry :disabled="isBusy" @choose="chooseCreationMode" />
+  </WizardLivingShell>
+
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingPeople"
+    :title="runtime.definition.title"
+    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :current-chapter-id="currentStageId"
+    :sentence-tokens="livingSentenceTokens"
+    :chapter-progress="livingChapterProgress"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingPeople
+      :state="livingPeopleState"
+      :disabled="isBusy"
+      @one="chooseOnePerson"
+      @multiple="chooseMultiplePeople"
+      @count="choosePeopleCount">
+      <el-grid v-if="subjectsQuestion" class="wizard-living-subject-config" :gap="20">
+        <el-grid :gap="7">
+          <el-text :size="19" :weight="700">Tell me who they are</el-text>
+          <el-text :size="12" color="normal45" style="max-width: 620px">
+            The count is set. You can keep the sensible defaults or refine each person before moving on.
+          </el-text>
+        </el-grid>
+
+        <WizardQuestionRenderer
+          :question="subjectsQuestion"
+          :model-value="session.answers.subjects?.value"
+          :answer-values="answerValues"
+          :questions="allQuestions"
+          @update:model-value="setAnswer('subjects', $event)"
+        />
+
+        <el-text v-if="issueMessage" :size="12" color="red">
+          {{ issueMessage }}
+        </el-text>
+      </el-grid>
+    </WizardLivingPeople>
+
+    <template v-if="livingPeopleState === 'configure'" #footer>
+      <el-flex rules="rbc" class="w100">
+        <el-text :size="10" color="normal35">People · 3/3 when confirmed</el-text>
+        <el-button
+          label="Continue"
+          icon="arrow_forward"
+          :invert="true"
+          color="blue"
+          :disable="isBusy"
+          @click="next"
+        />
+      </el-flex>
+    </template>
+  </WizardLivingShell>
+
   <WizardShell
     v-else-if="runtime && session && currentStep"
     :title="runtime.definition.title"
@@ -387,3 +559,10 @@ onBeforeUnmount(() => {
     <el-button label="Back to Create" color="blue" @click="exitWizard" />
   </el-grid>
 </template>
+
+<style scoped>
+.wizard-living-subject-config {
+  width: 100%;
+  max-width: 820px;
+}
+</style>
