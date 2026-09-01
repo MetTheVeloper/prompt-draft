@@ -117,6 +117,8 @@ function getModulePreview(module: PromptKeyModule) {
     moduleOutputs[module.key],
     outputFormat.value,
     moduleOutputs,
+    props.modules,
+    props.moduleValues,
   );
 }
 
