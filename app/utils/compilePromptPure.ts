@@ -14,7 +14,7 @@ import {
   getSystemPromptVariables,
 } from "./compilePromptCore";
 import { rewritePromptFacingStructuredOutput } from "./promptOutputAliases";
-import { createPromptIdentityRegistry } from "./promptIdentity";
+import { createPromptFacingIdentityRegistry } from "./promptFacingIdentity";
 
 export type UserVariableOwnership = {
   hasSubject: boolean;
@@ -159,7 +159,7 @@ export function compilePromptOutputPure(
     allSystemVariables,
     ownership,
   );
-  const identityRegistry = createPromptIdentityRegistry({
+  const identityRegistry = createPromptFacingIdentityRegistry({
     modules,
     moduleValues,
     outputs,
