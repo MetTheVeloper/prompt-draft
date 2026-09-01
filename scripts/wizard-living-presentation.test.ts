@@ -6,7 +6,9 @@ import {
   buildPortraitLivingSentenceTokens,
   createPortraitLivingSubjects,
   getPortraitLivingChapterProgress,
+  getPortraitLivingLookState,
   getPortraitLivingPeopleState,
+  setPortraitLivingLookState,
   setPortraitLivingPeopleState,
 } from "../app/wizard/portraitLivingPresentation.ts";
 import {
@@ -60,6 +62,26 @@ test("Living Sentence uses a user-selected Portrait direction instead of the can
   );
 });
 
+test("Living Sentence surfaces meaningful per-subject Look overrides without leaking subject ids", () => {
+  let session = createFreshWizardSession(portraitWizardV2Definition);
+  const subjects = createPortraitLivingSubjects(2, "image_to_image");
+  subjects[1] = { ...subjects[1]!, label: "Zahra" };
+
+  session = setWizardUserAnswer(session, "creationMode", "from_image");
+  session = setWizardUserAnswer(session, "subjects", subjects);
+  session = setWizardUserAnswer(session, "portraitIntent", "fashion");
+  session = setWizardUserAnswer(session, "expressionIntent", "natural");
+  session = setWizardUserAnswer(session, "expressionSubjectOverrides", {
+    [subjects[1]!.id]: { intent: "serious", options: {} },
+  });
+
+  assert.equal(
+    sentence(session),
+    "I want to transform my image into a fashion portrait featuring 2 people, with natural expressions; Zahra has individual expression direction",
+  );
+  assert.equal(sentence(session).includes(subjects[1]!.id), false);
+});
+
 test("People presentation progress follows the relevant micro-states instead of a global percentage", () => {
   let session = createFreshWizardSession(portraitWizardV2Definition);
   session = goToNextWizardStep(session, portraitWizardV2Definition);
@@ -73,6 +95,63 @@ test("People presentation progress follows the relevant micro-states instead of 
 
   session = setPortraitLivingPeopleState(session, "configure");
   assert.equal(getPortraitLivingChapterProgress(session), 1);
+});
+
+test("Look presentation progress follows Expression Hair and Outfit micro-states", () => {
+  let session = {
+    ...createFreshWizardSession(portraitWizardV2Definition),
+    currentStepId: "appearance",
+  };
+
+  assert.deepEqual(getPortraitLivingLookState(session), {
+    domain: "expression",
+    phase: "choice",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 0);
+
+  session = setPortraitLivingLookState(session, {
+    domain: "expression",
+    phase: "refine",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 1 / 6);
+
+  session = setPortraitLivingLookState(session, {
+    domain: "hair",
+    phase: "choice",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 1 / 3);
+
+  session = setPortraitLivingLookState(session, {
+    domain: "hair",
+    phase: "refine",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 1 / 2);
+
+  session = setPortraitLivingLookState(session, {
+    domain: "outfit",
+    phase: "choice",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 2 / 3);
+
+  session = setPortraitLivingLookState(session, {
+    domain: "outfit",
+    phase: "refine",
+  });
+  assert.equal(getPortraitLivingChapterProgress(session), 1);
+});
+
+test("Look state can recover from user-owned answers when older persisted sessions lack micro-state metadata", () => {
+  let session = {
+    ...createFreshWizardSession(portraitWizardV2Definition),
+    currentStepId: "appearance",
+  };
+  session = setWizardUserAnswer(session, "expressionIntent", "warm");
+  session = setWizardUserAnswer(session, "hairIntent", "editorial");
+
+  assert.deepEqual(getPortraitLivingLookState(session), {
+    domain: "hair",
+    phase: "refine",
+  });
 });
 
 test("People helpers create canonical subjects with mode-appropriate definitions", () => {
