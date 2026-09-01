@@ -1,4 +1,8 @@
-import type { PromptKeyModule, PromptVariable } from "../modules/types";
+import type {
+  ModuleValues,
+  PromptKeyModule,
+  PromptVariable,
+} from "../modules/types";
 import type {
   ModuleOutputMap,
   PromptOutputFormat,
@@ -39,6 +43,7 @@ export function compilePromptOutput(
   outputs: ModuleOutputMap,
   settings: PromptSettings,
   format: PromptOutputFormat = "modular",
+  moduleValues: Record<string, ModuleValues> = {},
 ) {
   const result = compilePromptOutputPure(
     modules,
@@ -46,6 +51,7 @@ export function compilePromptOutput(
     settings,
     format,
     getUserVariableOwnership(),
+    moduleValues,
   );
 
   syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);
