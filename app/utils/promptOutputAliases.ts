@@ -6,10 +6,8 @@ import type {
   ModuleOutputValue,
   PromptOutputFormat,
 } from "./compilePromptCore"
-import {
-  createPromptIdentityRegistry,
-  type PromptIdentityRegistry,
-} from "./promptIdentity"
+import type { PromptIdentityRegistry } from "./promptIdentity"
+import { createPromptFacingIdentityRegistry } from "./promptFacingIdentity"
 
 export type PromptFacingRewriteContext = {
   modules?: readonly PromptKeyModule[]
@@ -121,7 +119,7 @@ export function rewritePromptFacingStructuredOutput(
 ) {
   if (!output || format === "json") return output
 
-  const registry = context.registry || createPromptIdentityRegistry({
+  const registry = context.registry || createPromptFacingIdentityRegistry({
     modules: context.modules,
     moduleValues: context.moduleValues,
     outputs: moduleOutputs,
