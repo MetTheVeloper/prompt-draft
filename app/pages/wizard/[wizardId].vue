@@ -1,10 +1,16 @@
 <script setup lang="ts">
 import type { PromptDraftState } from "~/modules/promptDraft.types";
 import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
+import WizardLivingLook from "~/components/wizard/living/WizardLivingLook.vue";
 import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
 import WizardLivingPortrait from "~/components/wizard/living/WizardLivingPortrait.vue";
 import WizardLivingShell from "~/components/wizard/living/WizardLivingShell.vue";
 import WizardLivingSubjectConfig from "~/components/wizard/living/WizardLivingSubjectConfig.vue";
+import type {
+  WizardModalOptionsQuestionDefinition,
+  WizardSingleChoiceQuestionDefinition,
+  WizardSubjectOverridesQuestionDefinition,
+} from "~/wizard/definition";
 import {
   resolveWizardRuntime,
   type WizardRuntimeReview,
@@ -33,10 +39,14 @@ import {
   buildPortraitLivingSentenceTokens,
   createPortraitLivingSubjects,
   getPortraitLivingChapterProgress,
+  getPortraitLivingLookState,
   getPortraitLivingPeopleState,
   getPortraitLivingPromptMode,
   PORTRAIT_LIVING_CHAPTERS,
+  PORTRAIT_LIVING_LOOK_ANSWER_IDS,
+  setPortraitLivingLookState,
   setPortraitLivingPeopleState,
+  type PortraitLivingLookDomain,
 } from "~/wizard/portraitLivingPresentation";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
@@ -102,11 +112,19 @@ const isLivingPeople = computed(() =>
 const isLivingPortrait = computed(() =>
   isPortraitLivingRuntime.value && currentStep.value?.id === "intent",
 );
+const isLivingLook = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.id === "appearance",
+);
 const livingSentenceTokens = computed(() =>
   session.value ? buildPortraitLivingSentenceTokens(session.value) : [],
 );
 const livingPeopleState = computed(() =>
   session.value ? getPortraitLivingPeopleState(session.value) : "choice",
+);
+const livingLookState = computed(() =>
+  session.value
+    ? getPortraitLivingLookState(session.value)
+    : ({ domain: "expression", phase: "choice" } as const),
 );
 const livingChapterProgress = computed(() =>
   session.value ? getPortraitLivingChapterProgress(session.value) : null,
@@ -117,6 +135,27 @@ const livingPromptMode = computed(() =>
 const livingSubjects = computed(() =>
   normalizeWizardEntityAnswers(session.value?.answers.subjects?.value),
 );
+const livingLookAnswerIds = computed(() =>
+  PORTRAIT_LIVING_LOOK_ANSWER_IDS[livingLookState.value.domain],
+);
+const livingLookIntentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find(
+    (item) => item.id === livingLookAnswerIds.value.intent,
+  );
+  return question?.type === "singleChoice" ? question : null;
+});
+const livingLookOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find(
+    (item) => item.id === livingLookAnswerIds.value.options,
+  );
+  return question?.type === "modalOptions" ? question : null;
+});
+const livingLookOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find(
+    (item) => item.id === livingLookAnswerIds.value.overrides,
+  );
+  return question?.type === "subjectOverrides" ? question : null;
+});
 
 function isAnswered(question: (typeof visibleQuestions.value)[number]) {
   const answer = session.value?.answers[question.id];
@@ -202,9 +241,56 @@ function choosePeopleCount(value: 2 | 3 | 4) {
 
 function choosePortraitIntent(value: PortraitIntent) {
   if (!session.value) return;
-  advanceResolvedSession(
-    setWizardUserAnswer(session.value, "portraitIntent", value),
-  );
+  let nextSession = setWizardUserAnswer(session.value, "portraitIntent", value);
+  nextSession = setPortraitLivingLookState(nextSession, {
+    domain: "expression",
+    phase: "choice",
+  });
+  advanceResolvedSession(nextSession);
+}
+
+function chooseLookIntent(value: string) {
+  if (!session.value || !runtime.value) return;
+  const domain = livingLookState.value.domain;
+  const answerId = PORTRAIT_LIVING_LOOK_ANSWER_IDS[domain].intent;
+  let nextSession = setWizardUserAnswer(session.value, answerId, value);
+  nextSession = setPortraitLivingLookState(nextSession, {
+    domain,
+    phase: "refine",
+  });
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
+function updateLookOptions(value: Record<string, string>) {
+  setAnswer(livingLookAnswerIds.value.options, value);
+}
+
+function updateLookOverrides(
+  value: Record<string, { intent?: string; options?: Record<string, string> }>,
+) {
+  setAnswer(livingLookAnswerIds.value.overrides, value);
+}
+
+function setLookMicroState(domain: PortraitLivingLookDomain, phase: "choice" | "refine") {
+  if (!session.value) return;
+  session.value = setPortraitLivingLookState(session.value, { domain, phase });
+  issueMessage.value = "";
+}
+
+function continueLook() {
+  const state = livingLookState.value;
+  if (state.phase !== "refine") return;
+
+  if (state.domain === "expression") {
+    setLookMicroState("hair", "choice");
+    return;
+  }
+  if (state.domain === "hair") {
+    setLookMicroState("outfit", "choice");
+    return;
+  }
+  next();
 }
 
 function ensureCurrentStepValid() {
@@ -229,7 +315,27 @@ function back() {
 }
 
 function livingBack() {
-  if (!session.value || !isLivingPeople.value) {
+  if (!session.value) return;
+
+  if (isLivingLook.value) {
+    const state = livingLookState.value;
+    if (state.phase === "refine") {
+      setLookMicroState(state.domain, "choice");
+      return;
+    }
+    if (state.domain === "outfit") {
+      setLookMicroState("hair", "refine");
+      return;
+    }
+    if (state.domain === "hair") {
+      setLookMicroState("expression", "refine");
+      return;
+    }
+    back();
+    return;
+  }
+
+  if (!isLivingPeople.value) {
     back();
     return;
   }
@@ -525,6 +631,38 @@ onBeforeUnmount(() => {
       :mode="livingPromptMode"
       :disabled="isBusy"
       @choose="choosePortraitIntent"
+    />
+  </WizardLivingShell>
+
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingLook && livingLookIntentQuestion"
+    :title="runtime.definition.title"
+    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :current-chapter-id="currentStageId"
+    :sentence-tokens="livingSentenceTokens"
+    :chapter-progress="livingChapterProgress"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingLook
+      :domain="livingLookState.domain"
+      :phase="livingLookState.phase"
+      :mode="livingPromptMode"
+      :intent-question="livingLookIntentQuestion"
+      :options-question="livingLookOptionsQuestion"
+      :override-question="livingLookOverrideQuestion"
+      :subjects="livingSubjects"
+      :intent-value="session.answers[livingLookAnswerIds.intent]?.value"
+      :options-value="session.answers[livingLookAnswerIds.options]?.value"
+      :overrides-value="session.answers[livingLookAnswerIds.overrides]?.value"
+      :disabled="isBusy"
+      @choose-intent="chooseLookIntent"
+      @update-options="updateLookOptions"
+      @update-overrides="updateLookOverrides"
+      @continue="continueLook"
     />
   </WizardLivingShell>
 
