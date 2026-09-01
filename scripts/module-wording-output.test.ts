@@ -1,6 +1,9 @@
 import assert from "node:assert/strict"
 import test from "node:test"
-import { rewritePromptFacingStructuredOutput } from "../app/utils/promptOutputAliases.ts"
+import {
+  formatPromptFacingStructuredModuleOutput,
+  rewritePromptFacingStructuredOutput,
+} from "../app/utils/promptOutputAliases.ts"
 import {
   createTypographyTextBlock,
   resolveTypographyTextVariableReferences,
@@ -173,6 +176,54 @@ test("Typography keeps a short text alias only when another module references th
   assert.match(output, /apply emphasis to \{tt_1\}/)
   assert.doesNotMatch(output, /\{text_23u\}/)
   assert.doesNotMatch(output, /\{tt_2\} \(\{description\}\)/)
+})
+
+test("structured module previews use the same prompt-facing aliases as final modular output", () => {
+  const outputs = {
+    layout: layoutOutput,
+    typography: typographyOutput,
+  }
+  const layoutPreview = formatPromptFacingStructuredModuleOutput(
+    "layout",
+    layoutOutput,
+    "modular",
+    outputs,
+  )
+  const typographyPreview = formatPromptFacingStructuredModuleOutput(
+    "typography",
+    typographyOutput,
+    "modular",
+    outputs,
+  )
+
+  assert.match(layoutPreview, /^\{layout\} =\nUse a poster layout/m)
+  assert.match(layoutPreview, /content: \{tg_1\}/)
+  assert.doesNotMatch(layoutPreview, /\{text_group_/)
+
+  assert.match(typographyPreview, /^\{typography\} =\n• \{tg_1\}:/m)
+  assert.match(typographyPreview, /arrange \{mainTitle\} and \{description\}/)
+  assert.doesNotMatch(typographyPreview, /\{text_group_/)
+  assert.doesNotMatch(typographyPreview, /\{text_[a-z0-9]+\}/)
+  assert.doesNotMatch(typographyPreview, /\{tt_[0-9]+\}/)
+})
+
+test("natural Typography preview does not expose text aliases unless externally referenced", () => {
+  const preview = formatPromptFacingStructuredModuleOutput(
+    "typography",
+    typographyOutput,
+    "natural",
+    {
+      layout: layoutOutput,
+      typography: typographyOutput,
+    },
+  )
+
+  assert.match(preview, /^Typography:\n• \{tg_1\}:/m)
+  assert.match(preview, /In \{r_1\}/)
+  assert.match(preview, /Style \{mainTitle\} as the main title/)
+  assert.doesNotMatch(preview, /\{text_group_/)
+  assert.doesNotMatch(preview, /\{text_[a-z0-9]+\}/)
+  assert.doesNotMatch(preview, /\{tt_[0-9]+\}/)
 })
 
 test("JSON output is not rewritten into prompt-facing aliases", () => {
