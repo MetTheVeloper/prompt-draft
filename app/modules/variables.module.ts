@@ -63,7 +63,6 @@ export const VariablesModule: PromptKeyModule = {
           "text_*",
           "text_group_*",
           "layout_region_*",
-          "r_*",
           "tg_*",
           "tt_*",
         ],
