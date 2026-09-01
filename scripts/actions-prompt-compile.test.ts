@@ -207,7 +207,7 @@ test("pure final compiler injects the Scene/Layout rule and modular Scene alias"
     result.output,
     /^\{rules\} = keep detail Match each scene's dimensions exactly to its corresponding region in \{layout\}\.$/m,
   );
-  assert.match(result.output, /^\{scenes\} =\n• \{scene_one\} = portrait scene$/m);
+  assert.match(result.output, /^\{scenes\} =\n• \{one\} = portrait scene$/m);
 });
 
 test("pure final compiler applies the JSON scenes presentation alias", () => {
