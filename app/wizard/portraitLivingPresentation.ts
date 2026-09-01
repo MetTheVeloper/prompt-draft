@@ -1,6 +1,7 @@
 import {
   createWizardEntity,
   defaultWizardEntityDefinition,
+  getWizardEntityDisplayLabel,
   normalizeWizardEntityAnswers,
   type WizardEntityAnswer,
   type WizardEntityPromptMode,
@@ -22,9 +23,17 @@ export type WizardLivingSentenceToken = {
 };
 
 export type PortraitLivingPeopleState = "choice" | "count" | "configure";
+export type PortraitLivingLookDomain = "expression" | "hair" | "outfit";
+export type PortraitLivingLookPhase = "choice" | "refine";
+export type PortraitLivingLookState = {
+  domain: PortraitLivingLookDomain;
+  phase: PortraitLivingLookPhase;
+};
 
 type PortraitLivingUiState = {
   peopleState?: PortraitLivingPeopleState;
+  lookDomain?: PortraitLivingLookDomain;
+  lookPhase?: PortraitLivingLookPhase;
 };
 
 const LIVING_UI_KEY = "livingUi";
@@ -40,6 +49,24 @@ export const PORTRAIT_LIVING_CHAPTERS: readonly WizardLivingChapter[] = [
   { id: "review", label: "REVIEW" },
 ];
 
+export const PORTRAIT_LIVING_LOOK_ANSWER_IDS = {
+  expression: {
+    intent: "expressionIntent",
+    options: "expressionOptions",
+    overrides: "expressionSubjectOverrides",
+  },
+  hair: {
+    intent: "hairIntent",
+    options: "hairOptions",
+    overrides: "hairSubjectOverrides",
+  },
+  outfit: {
+    intent: "outfitIntent",
+    options: "outfitOptions",
+    overrides: "outfitSubjectOverrides",
+  },
+} as const;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -53,19 +80,33 @@ function userAnswer(session: WizardSession, answerId: string) {
   return answer?.source === "user" ? answer.value : undefined;
 }
 
+function isLookDomain(value: unknown): value is PortraitLivingLookDomain {
+  return value === "expression" || value === "hair" || value === "outfit";
+}
+
+function isLookPhase(value: unknown): value is PortraitLivingLookPhase {
+  return value === "choice" || value === "refine";
+}
+
 function livingUiState(session: WizardSession): PortraitLivingUiState {
   const value = session.derived[LIVING_UI_KEY];
   if (!isRecord(value)) return {};
 
   const peopleState = value.peopleState;
-  return peopleState === "choice" || peopleState === "count" || peopleState === "configure"
-    ? { peopleState }
-    : {};
+  const lookDomain = value.lookDomain;
+  const lookPhase = value.lookPhase;
+  return {
+    ...(peopleState === "choice" || peopleState === "count" || peopleState === "configure"
+      ? { peopleState }
+      : {}),
+    ...(isLookDomain(lookDomain) ? { lookDomain } : {}),
+    ...(isLookPhase(lookPhase) ? { lookPhase } : {}),
+  };
 }
 
-export function setPortraitLivingPeopleState(
+function mergeLivingUiState(
   session: WizardSession,
-  peopleState: PortraitLivingPeopleState,
+  patch: Partial<PortraitLivingUiState>,
 ): WizardSession {
   return {
     ...session,
@@ -73,10 +114,17 @@ export function setPortraitLivingPeopleState(
       ...session.derived,
       [LIVING_UI_KEY]: {
         ...livingUiState(session),
-        peopleState,
+        ...patch,
       },
     },
   };
+}
+
+export function setPortraitLivingPeopleState(
+  session: WizardSession,
+  peopleState: PortraitLivingPeopleState,
+): WizardSession {
+  return mergeLivingUiState(session, { peopleState });
 }
 
 export function getPortraitLivingPeopleState(
@@ -92,15 +140,54 @@ export function getPortraitLivingPeopleState(
     : "choice";
 }
 
+export function setPortraitLivingLookState(
+  session: WizardSession,
+  state: PortraitLivingLookState,
+): WizardSession {
+  return mergeLivingUiState(session, {
+    lookDomain: state.domain,
+    lookPhase: state.phase,
+  });
+}
+
+export function getPortraitLivingLookState(
+  session: WizardSession,
+): PortraitLivingLookState {
+  const ui = livingUiState(session);
+  if (ui.lookDomain && ui.lookPhase) {
+    return { domain: ui.lookDomain, phase: ui.lookPhase };
+  }
+
+  if (session.answers.outfitIntent?.source === "user") {
+    return { domain: "outfit", phase: "refine" };
+  }
+  if (session.answers.hairIntent?.source === "user") {
+    return { domain: "hair", phase: "refine" };
+  }
+  if (session.answers.expressionIntent?.source === "user") {
+    return { domain: "expression", phase: "refine" };
+  }
+  return { domain: "expression", phase: "choice" };
+}
+
 export function getPortraitLivingChapterProgress(
   session: WizardSession,
 ): number | null {
-  if (session.currentStepId !== "subjects") return null;
+  if (session.currentStepId === "subjects") {
+    const peopleState = getPortraitLivingPeopleState(session);
+    if (peopleState === "count") return 1 / 3;
+    if (peopleState === "configure") return 1;
+    return 0;
+  }
 
-  const peopleState = getPortraitLivingPeopleState(session);
-  if (peopleState === "count") return 1 / 3;
-  if (peopleState === "configure") return 1;
-  return 0;
+  if (session.currentStepId === "appearance") {
+    const look = getPortraitLivingLookState(session);
+    if (look.domain === "expression") return look.phase === "refine" ? 1 / 6 : 0;
+    if (look.domain === "hair") return look.phase === "refine" ? 1 / 2 : 1 / 3;
+    return look.phase === "refine" ? 1 : 2 / 3;
+  }
+
+  return null;
 }
 
 export function getPortraitLivingPromptMode(
@@ -131,6 +218,31 @@ export function createPortraitLivingSubjects(
 function optionLabel(value: unknown, labels: Record<string, string>) {
   const key = cleanText(value);
   return key ? labels[key] || key.replaceAll("_", " ") : "";
+}
+
+function overrideSubjectLabels(
+  session: WizardSession,
+  subjects: readonly WizardEntityAnswer[],
+  answerId: string,
+) {
+  const value = userAnswer(session, answerId);
+  if (!isRecord(value)) return [];
+  const overrideIds = new Set(Object.keys(value));
+  return subjects
+    .map((subject, index) => ({
+      subject,
+      index,
+      label: getWizardEntityDisplayLabel(subject, index, subjects.length),
+    }))
+    .filter(({ subject }) => overrideIds.has(subject.id))
+    .map(({ label }) => label);
+}
+
+function formatNameList(names: readonly string[]) {
+  if (!names.length) return "";
+  if (names.length === 1) return names[0];
+  if (names.length === 2) return `${names[0]} and ${names[1]}`;
+  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
 }
 
 export function buildPortraitLivingSentenceTokens(
@@ -257,6 +369,38 @@ export function buildPortraitLivingSentenceTokens(
         });
       }
     });
+  }
+
+  if (subjects.length > 1) {
+    const overrideTokens = [
+      {
+        id: "expression-overrides",
+        answerId: "expressionSubjectOverrides",
+        noun: "expression",
+      },
+      {
+        id: "hair-overrides",
+        answerId: "hairSubjectOverrides",
+        noun: "hair",
+      },
+      {
+        id: "outfit-overrides",
+        answerId: "outfitSubjectOverrides",
+        noun: "outfit",
+      },
+    ] as const;
+
+    for (const item of overrideTokens) {
+      const labels = overrideSubjectLabels(session, subjects, item.answerId);
+      if (!labels.length) continue;
+      tokens.push({
+        id: item.id,
+        text: `; ${formatNameList(labels)} ${labels.length === 1 ? "has" : "have"} individual ${item.noun} direction`,
+        answerId: item.answerId,
+        stepId: "appearance",
+        editable: true,
+      });
+    }
   }
 
   const framing = cleanText(userAnswer(session, "framingIntent"));
