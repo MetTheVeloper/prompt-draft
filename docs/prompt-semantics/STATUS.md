@@ -12,7 +12,7 @@ The prompt-facing wording and identity refactor is complete.
 
 This branch established a stable separation between canonical/internal module identity and the semantic tokens shown to image-generation models. It also completed the Layout/Typography prompt-facing simplification, stable Text-variable reference handling, shared module-card/final-output presentation, and a global collision-aware identity policy for named configurations and specialized entities.
 
-No further semantic or compiler work is required for this branch before integration into `main`.
+No further semantic or compiler work is required for this branch.
 
 UI redesign was intentionally out of scope except for minimal data wiring required to keep references stable and previews consistent with final output.
 
@@ -259,7 +259,9 @@ All closure criteria are satisfied:
 
 ## Branch disposition
 
-`refactor/module-wording` is **formally complete and approved for integration into `main`**.
+`refactor/module-wording` is **formally complete**.
+
+The branch is approved for direct fast-forward integration into `main` because `main` is its merge-base and no divergent `main` commits exist at closure time.
 
 This checkpoint is the closure record for the branch. After integration, future changes should be treated as new work rather than unfinished work from this refactor, unless a concrete regression is found against the contracts documented here.
 
