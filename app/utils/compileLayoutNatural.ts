@@ -55,7 +55,10 @@ function formatAlignment(value: unknown) {
 function formatRegion(value: unknown, index: number) {
   if (!isRecord(value)) return ""
 
-  const alias = `{r_${index + 1}}`
+  // Keep the canonical structural token here. Prompt-facing compilation owns
+  // the semantic alias ({topLeft}, etc.) so every cross-module reference is
+  // rewritten from one identity registry instead of inventing a local alias.
+  const sourceToken = cleanText(value.key) || `{layout_region_${index + 1}}`
   const role = cleanText(value.role)
   const contentKey = cleanText(value.contentKey)
   const bounds = formatBounds(value.bounds)
@@ -80,8 +83,8 @@ function formatRegion(value: unknown, index: number) {
   ].filter(Boolean)
 
   return details.length
-    ? `• ${alias} (${details.join("; ")}).`
-    : `• ${alias}.`
+    ? `• ${sourceToken} (${details.join("; ")}).`
+    : `• ${sourceToken}.`
 }
 
 function layoutIntro(output: Record<string, unknown>) {
