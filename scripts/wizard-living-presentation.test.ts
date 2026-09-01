@@ -77,7 +77,7 @@ test("Living Sentence surfaces meaningful per-subject Look overrides without lea
 
   assert.equal(
     sentence(session),
-    "I want to transform my image into a fashion portrait featuring 2 people, with natural expressions; Zahra has individual expression direction",
+    "I want to transform my image into a fashion portrait featuring 2 people, with natural expressions; Zahra has a serious expression",
   );
   assert.equal(sentence(session).includes(subjects[1]!.id), false);
 });
