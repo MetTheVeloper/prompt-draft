@@ -2,7 +2,7 @@
 
 Status: **canonical source of truth** for prompt-facing identity in Modular and Natural output.
 
-Validated on `refactor/module-wording` and approved for integration into `main` on 2026-09-01.
+Validated on `refactor/module-wording` on 2026-09-01. The branch completed with all dedicated and public Actions/API regression tests green and is approved for direct fast-forward integration into `main`.
 
 This document defines how internal module/entity identity is translated into the tokens shown to image-generation models in Modular and Natural output.
 
