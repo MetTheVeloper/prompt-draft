@@ -220,29 +220,43 @@ function optionLabel(value: unknown, labels: Record<string, string>) {
   return key ? labels[key] || key.replaceAll("_", " ") : "";
 }
 
-function overrideSubjectLabels(
-  session: WizardSession,
-  subjects: readonly WizardEntityAnswer[],
-  answerId: string,
-) {
-  const value = userAnswer(session, answerId);
-  if (!isRecord(value)) return [];
-  const overrideIds = new Set(Object.keys(value));
-  return subjects
-    .map((subject, index) => ({
-      subject,
-      index,
-      label: getWizardEntityDisplayLabel(subject, index, subjects.length),
-    }))
-    .filter(({ subject }) => overrideIds.has(subject.id))
-    .map(({ label }) => label);
-}
-
 function formatNameList(names: readonly string[]) {
   if (!names.length) return "";
   if (names.length === 1) return names[0];
   if (names.length === 2) return `${names[0]} and ${names[1]}`;
   return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+}
+
+function lookOverridePhrases(
+  session: WizardSession,
+  subjects: readonly WizardEntityAnswer[],
+  answerId: string,
+  domain: PortraitLivingLookDomain,
+) {
+  const value = userAnswer(session, answerId);
+  if (!isRecord(value)) return [];
+
+  return subjects.flatMap((subject, index) => {
+    const raw = value[subject.id];
+    if (!isRecord(raw)) return [];
+    const label = getWizardEntityDisplayLabel(subject, index, subjects.length);
+    const intent = cleanText(raw.intent);
+
+    if (!intent) {
+      return [`${label} has customized ${domain} details`];
+    }
+    if (domain === "expression") {
+      return [`${label} has a ${optionLabel(intent, {})} expression`];
+    }
+    if (domain === "hair") {
+      return intent === "keep_reference"
+        ? [`${label} keeps their reference hair`]
+        : [`${label} has ${optionLabel(intent, {})} hair`];
+    }
+    return intent === "keep_reference"
+      ? [`${label} keeps their reference outfit`]
+      : [`${label} has a ${optionLabel(intent, {})} outfit`];
+  });
 }
 
 export function buildPortraitLivingSentenceTokens(
@@ -376,26 +390,31 @@ export function buildPortraitLivingSentenceTokens(
       {
         id: "expression-overrides",
         answerId: "expressionSubjectOverrides",
-        noun: "expression",
+        domain: "expression",
       },
       {
         id: "hair-overrides",
         answerId: "hairSubjectOverrides",
-        noun: "hair",
+        domain: "hair",
       },
       {
         id: "outfit-overrides",
         answerId: "outfitSubjectOverrides",
-        noun: "outfit",
+        domain: "outfit",
       },
     ] as const;
 
     for (const item of overrideTokens) {
-      const labels = overrideSubjectLabels(session, subjects, item.answerId);
-      if (!labels.length) continue;
+      const phrases = lookOverridePhrases(
+        session,
+        subjects,
+        item.answerId,
+        item.domain,
+      );
+      if (!phrases.length) continue;
       tokens.push({
         id: item.id,
-        text: `; ${formatNameList(labels)} ${labels.length === 1 ? "has" : "have"} individual ${item.noun} direction`,
+        text: `; ${formatNameList(phrases)}`,
         answerId: item.answerId,
         stepId: "appearance",
         editable: true,
