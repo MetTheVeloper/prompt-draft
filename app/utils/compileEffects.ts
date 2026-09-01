@@ -122,7 +122,7 @@ export function compileEffectsModule(
   const output: string[] = [];
 
   if (compiledLayers.length) {
-    output.push(`Effects: ${compiledLayers.join("; ")}.`);
+    output.push(`${compiledLayers.join("; ")}.`);
   }
 
   if (extraDetails) {
