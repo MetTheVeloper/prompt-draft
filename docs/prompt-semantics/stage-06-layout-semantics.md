@@ -1,8 +1,22 @@
 # Prompt Semantics Refactor — Stage 06: Layout Semantics
 
+## Status
+
+**Semantically closed and revalidated by `refactor/module-wording`.**
+
+The final prompt-facing Layout contract is defined here together with `PROMPT-FACING-IDENTITY-REFERENCE.md`.
+
 ## Goal
 
-Define Layout as the exact spatial schema of a multi-region canvas or artifact while keeping framing, image generation, typography styling, and other content-generation concerns outside Layout ownership.
+Define Layout as the spatial schema of a multi-region canvas or artifact while keeping framing, image generation, typography styling, and other content-generation concerns outside Layout ownership.
+
+Layout is intentionally strict about authored region geometry. The automatic Scene/Layout rule remains:
+
+```text
+Match each scene's dimensions exactly to its corresponding region in {layout}.
+```
+
+This wording is retained because repeated real generation tests produced acceptable near-exact adherence. Do not weaken `exactly` without new empirical evidence.
 
 ## Ownership
 
@@ -26,7 +40,7 @@ Layout does not own:
 - image generation behavior inside a region
 - per-region module stacks
 
-The core contract is:
+Core contract:
 
 ```text
 Layout defines where content goes.
@@ -53,15 +67,46 @@ layer
 description
 ```
 
-`bounds` is the only required spatial semantic and is represented canonically with normalized values from `0` to `1` in structured output.
+`bounds` is the required spatial semantic and is represented canonically with normalized values from `0` to `1` in structured state/JSON.
+
+## Identity
+
+### Persistence identity
+
+Region `id` is stable implementation identity. Renaming a Region must not break bindings.
+
+Canonical structural keys remain derived from stable identity and may use the internal namespace:
+
+```text
+{layout_region_<id-suffix>}
+```
+
+This namespace remains internal/canonical and may appear in JSON.
+
+### Prompt-facing identity
+
+The user-authored Region name is the preferred Modular/Natural identity, normalized to lowerCamelCase.
+
+Examples:
+
+```text
+top left     -> {topLeft}
+top right    -> {topRight}
+bottom left  -> {bottomLeft}
+bottom right -> {bottomRight}
+```
+
+The previous compiler-facing `{r_1}`, `{r_2}`, ... aliases are obsolete.
+
+Prompt-facing identity is not persistence identity. The compiler resolves Region names through the global collision-aware identity registry.
 
 ## Templates
 
 Layout templates are editor helpers implemented through module presets.
 
-They only initialize region geometry and never become a second source of truth.
+They initialize geometry but never become a second source of truth. Once a user edits template-generated regions, the regions remain authoritative.
 
-Current templates include:
+Current template families include:
 
 - Full bleed
 - Vertical split
@@ -73,41 +118,13 @@ Current templates include:
 - Centered stack
 - Layered overlap
 
-Once a user edits template-generated regions, the regions remain authoritative and the preset state may clear normally.
-
-## Removed semantics
-
-The previous `composition` and `hierarchy` fields are no longer compiled by Layout.
-
-They were removed because region geometry and explicit region roles already express the relevant structure without requiring generic semantic duplication.
-
-Legacy stored values containing those keys remain harmless because the compiler ignores them.
-
-## Optional artifact semantics
-
-`layoutType` and `density` have empty defaults and only compile when explicitly selected.
-
-This prevents Layout from injecting assumptions into prompts that only require a spatial schema.
-
 ## Region field semantics
 
 ### Name
 
-`name` is a human-readable label only.
+`name` is an editable human-facing label and the preferred prompt-facing semantic identity.
 
-It does not define identity or references. Renaming a region must not break bindings.
-
-### Structural key
-
-Region structural keys are derived from the stable region `id`:
-
-```text
-{layout_region_<id-suffix>}
-```
-
-The `layout_region_*` namespace is reserved to prevent collisions with user-created variables.
-
-Natural output only shows a region key when another module actually references it.
+Renaming changes the final Modular/Natural alias but does not change stable Region identity or break references.
 
 ### Role
 
@@ -125,149 +142,164 @@ Natural output only shows a region key when another module actually references i
 - empty space
 - custom role
 
-A custom role compiles to its actual custom text rather than the generic word `custom`.
+A custom role compiles to its authored semantic text rather than the generic word `custom`.
 
 ### Content binding
 
-`contentKey` identifies which content entity belongs in the region.
+`contentKey` identifies the concrete content entity bound to the region.
 
-Examples:
-
-```text
-{headline}
-{description}
-{hero_image}
-```
-
-`role` and `contentKey` are complementary:
+Examples may include Scene or Typography identities:
 
 ```text
-role       → what kind of responsibility the region has
-contentKey → which concrete content entity is bound to it
+{scene1}
+{tg_1}
 ```
+
+Prompt-facing bindings use the same global identity registry as the referenced entity definition, so definitions and references cannot drift.
 
 ### Content alignment
 
 Horizontal and vertical alignment describe content placement inside the region container.
 
-This is intentionally distinct from Framing, which owns photographic or compositional framing of a subject.
+This remains distinct from Framing, which owns photographic/compositional framing of subjects.
 
 ### Content fit
 
 Fit describes how content occupies its region container.
 
-Semantic output uses clearer terms where appropriate:
+Semantic output uses:
 
 ```text
-cover   → cover
-contain → contain
-fill    → stretch
-natural → intrinsic
+cover   -> cover
+contain -> contain
+fill    -> stretch
+natural -> intrinsic
 ```
 
 ### Content overflow
 
-Overflow describes whether content may extend beyond the region boundary.
-
 Semantic output uses:
 
 ```text
-visible → visible
-hidden  → clip
+visible -> visible
+hidden  -> clip
 ```
 
 ### Layer
 
-Layer information is emitted only when regions actually overlap and have meaningful differing layer values.
+Layer information is emitted only when regions overlap and have meaningful differing layer values.
 
-This avoids structural noise in ordinary split/grid layouts while preserving exact z-order in layered compositions.
+Ordinary grids/splits do not emit meaningless layer noise; layered compositions preserve z-order.
 
 ### Description
 
-`description` remains an optional region-specific escape hatch for semantic instructions that are not represented by the structured fields.
+`description` remains an optional semantic escape hatch for region-specific instructions not represented by structured fields.
 
 ## Output formats
 
 ### JSON
 
-JSON is the canonical, fully structured representation.
+JSON is the canonical structured representation.
 
-It keeps normalized `0..1` geometry and complete structural region metadata.
+It retains normalized `0..1` geometry, internal IDs, canonical keys, and complete region metadata.
 
 ### Modular
 
-Modular output preserves the structured object but serializes module objects on a single line to avoid excessive line count.
+Modular no longer serializes the Layout object as raw JSON-like prompt text.
 
-Example:
+It uses the same dedicated semantic serializer as Natural while preserving the explicit module definition:
 
 ```text
-{layout} = {"coordinateSystem":"normalized values from 0 to 1","regions":[...]}
+{layout} =
+Use a structured layout.
+Interpret all region bounds as percentages from 0% to 100%.
+
+Regions:
+• {topLeft} (content: {scene1}; bounds: x: 0%, y: 0%, width: 50%, height: 50%).
+• {topRight} (content: {scene2}; bounds: x: 50%, y: 0%, width: 50%, height: 50%).
 ```
 
 ### Natural
 
-Layout uses a dedicated protected Natural block and does not pass structured Layout text through the generic Natural optimizer.
-
-Region coordinates are converted to percentages for readability:
+Natural uses the same semantic Layout block without exposing internal structure:
 
 ```text
 Use a structured layout.
 Interpret all region bounds as percentages from 0% to 100%.
 
 Regions:
-• top (bounds: x: 0%, y: 0%, width: 100%, height: 50%).
-• bottom (bounds: x: 0%, y: 50%, width: 100%, height: 50%).
+• {topLeft} (content: {scene1}; bounds: x: 0%, y: 0%, width: 50%, height: 50%).
+• {topRight} (content: {scene2}; bounds: x: 50%, y: 0%, width: 50%, height: 50%).
 ```
 
-Keys appear only when actually referenced by another module.
+Modular and Natural must resolve the same Region and content identities for the same compile.
 
 ## Typography integration
 
-Typography may bind a text group to a Layout region using the region structural token.
+Typography may bind a text group to a Layout region through stable internal references.
 
-Example structured relationship:
+Prompt-facing relationship:
 
 ```text
-Typography position → {layout_region_top}
-Layout region key   → {layout_region_top}
+Layout region -> {topLeft}
+Typography group -> {tg_1}
 ```
 
-Natural output preserves this relationship explicitly while keeping Layout responsible only for region placement and Typography responsible for text semantics and rendering.
+Example:
 
-Typography structured output also uses its own protected Natural serializer so exact text values and render rules are not altered by the generic optimizer.
+```text
+• {topLeft} (content: {tg_1}; bounds: ...)
+```
 
-## Validation and tests completed
+Typography remains responsible for text organization/rendering; Layout remains responsible for region placement.
 
-The following behaviors were manually verified during Stage 06:
+## Scene integration
 
-- default Layout emits no implicit artifact type or density
-- templates initialize geometry correctly and edited regions remain authoritative
-- Modular and JSON preserve exact normalized region structure
-- Natural output converts geometry to percentages without decimal corruption
-- Natural regions render as a readable bullet list
-- unused region keys are hidden from Natural output
-- referenced region keys appear only for the referenced regions
-- Typography region binding is preserved in Modular and Natural output
-- structured module objects remain one-line in Modular output
+Scene bindings use stable internal IDs but resolve to semantic prompt-facing Scene aliases.
+
+Example:
+
+```text
+• {topLeft} (content: {scene1}; ...)
+```
+
+The automatic rule remains:
+
+```text
+Match each scene's dimensions exactly to its corresponding region in {layout}.
+```
+
+The retained wording is based on observed generation behavior and is part of the validated contract.
+
+## Validation and closure evidence
+
+Final `refactor/module-wording` validation confirmed:
+
+- canonical normalized Layout state remains intact
+- JSON remains fully structured
+- Modular no longer exposes raw Layout object noise
+- Modular and Natural use percentage bounds
+- user-authored Region names become lowerCamelCase prompt identities
+- `{r_n}` aliases are no longer emitted
+- Scene and Typography content bindings resolve through the same global identity registry
 - non-overlapping layouts omit meaningless layer values
-- layered overlapping layouts preserve layer ordering
-- role, alignment, fit, overflow, and description compile conditionally
-- custom region roles remain semantically consistent in compiler output and variable catalog metadata
-- `layout_region_*` is protected as a reserved structural variable namespace
+- overlapping layouts preserve meaningful layer ordering
+- module-card preview matches final Output
+- four-Scene 2x2 Layout emits `{topLeft}`, `{topRight}`, `{bottomLeft}`, `{bottomRight}` with `{scene1}` ... `{scene4}`
+- real generation behavior remained acceptably near-exact under the retained `exactly` rule
 
-## Translation workflow
-
-English wording overrides introduced during this stage are stored in:
+Regression validation:
 
 ```text
-scripts/i18n-patches/en.layout-semantics.ts
-scripts/i18n-patches/en.layout-region-semantics.ts
-```
+pnpm test:module-wording
+13 passed / 0 failed
 
-Locale files are not edited directly on the semantic refactor branch.
+pnpm test:actions-api
+176 passed / 0 failed
+```
 
 ## Closure
 
-Stage 06 is considered complete after a successful project generation/build check.
+> **Stage 06 — Layout Semantics: closed and revalidated.**
 
-The next semantic refactor target is **Framing**.
+Future changes should preserve the distinction between canonical normalized geometry and concise semantic prompt presentation. Any change to the `exactly` rule requires new empirical evidence, not merely theoretical preference.
