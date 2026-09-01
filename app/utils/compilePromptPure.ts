@@ -1,4 +1,8 @@
-import type { PromptVariable, PromptKeyModule } from "../modules/types";
+import type {
+  ModuleValues,
+  PromptVariable,
+  PromptKeyModule,
+} from "../modules/types";
 import type {
   ModuleOutputMap,
   ModuleOutputValue,
@@ -10,6 +14,7 @@ import {
   getSystemPromptVariables,
 } from "./compilePromptCore";
 import { rewritePromptFacingStructuredOutput } from "./promptOutputAliases";
+import { createPromptIdentityRegistry } from "./promptIdentity";
 
 export type UserVariableOwnership = {
   hasSubject: boolean;
@@ -125,16 +130,10 @@ export function aliasScenePresentation(
   }
 
   if (format === "natural") {
-    return output.replace(
-      /(^|\n\n)Scene:\n(?=• \{scene_)/g,
-      "$1Scenes:\n",
-    );
+    return output.replace(/(^|\n\n)Scene:\n(?=•\s+\{)/g, "$1Scenes:\n");
   }
 
-  return output.replace(
-    /(^|\n)\{scene\} =(?=\n• \{scene_)/g,
-    "$1{scenes} =",
-  );
+  return output.replace(/(^|\n)\{scene\} =(?=\n•\s+\{)/g, "$1{scenes} =");
 }
 
 export function compilePromptOutputPure(
@@ -146,21 +145,31 @@ export function compilePromptOutputPure(
     hasSubject: false,
     hasReference: false,
   },
+  moduleValues: Record<string, ModuleValues> = {},
 ): PurePromptCompileResult {
   const effectiveSettings = withAutomaticSceneLayoutRule(
     modules,
     outputs,
     settings,
   );
+  const allSystemVariables = getSystemPromptVariables(
+    effectiveSettings,
+  ) as PromptVariable[];
+  const systemVariables = filterOwnedSystemVariables(
+    allSystemVariables,
+    ownership,
+  );
+  const identityRegistry = createPromptIdentityRegistry({
+    modules,
+    moduleValues,
+    outputs,
+    reservedKeys: allSystemVariables.map((variable) => variable.key),
+  });
   const compiled = compilePromptOutputCore(
     modules,
     outputs,
     effectiveSettings,
     format,
-  );
-  const systemVariables = filterOwnedSystemVariables(
-    getSystemPromptVariables(effectiveSettings) as PromptVariable[],
-    ownership,
   );
   const ownershipAdjustedOutput = applyUserVariableOwnership(
     compiled,
@@ -172,6 +181,12 @@ export function compilePromptOutputPure(
     outputs,
     format,
     JSON.stringify(effectiveSettings),
+    {
+      modules,
+      moduleValues,
+      reservedKeys: allSystemVariables.map((variable) => variable.key),
+      registry: identityRegistry,
+    },
   );
 
   return {
