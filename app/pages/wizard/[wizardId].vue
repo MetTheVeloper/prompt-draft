@@ -6,6 +6,7 @@ import WizardLivingFinal from "~/components/wizard/living/WizardLivingFinal.vue"
 import WizardLivingLook from "~/components/wizard/living/WizardLivingLook.vue";
 import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
 import WizardLivingPortrait from "~/components/wizard/living/WizardLivingPortrait.vue";
+import WizardLivingReview from "~/components/wizard/living/WizardLivingReview.vue";
 import WizardLivingScene from "~/components/wizard/living/WizardLivingScene.vue";
 import WizardLivingShell from "~/components/wizard/living/WizardLivingShell.vue";
 import WizardLivingSubjectConfig from "~/components/wizard/living/WizardLivingSubjectConfig.vue";
@@ -62,6 +63,16 @@ import {
   setPortraitLivingFinalPhase,
   type PortraitLivingFinalPhase,
 } from "~/wizard/portraitLivingFinalPresentation";
+import {
+  beginPortraitLivingReviewEdit,
+  completePortraitLivingReviewConfirmation,
+  getPortraitLivingReviewEditContext,
+  isPortraitLivingReviewEditing,
+  resizePortraitLivingReviewSubjects,
+  resolvePortraitLivingReviewChoice,
+  returnToPortraitLivingReview,
+  type PortraitLivingReviewEditTarget,
+} from "~/wizard/portraitLivingReviewPresentation";
 import {
   clearPortraitLivingEnvironmentDetailAnswers,
   getPortraitLivingEnvironmentDetail,
@@ -162,6 +173,9 @@ const isLivingScene = computed(() =>
 const isLivingFinal = computed(() =>
   isPortraitLivingRuntime.value && currentStep.value?.id === "final-settings",
 );
+const isLivingReview = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.kind === "review",
+);
 
 const livingSentenceTokens = computed(() =>
   session.value
@@ -184,6 +198,9 @@ const livingScenePhase = computed(() =>
 );
 const livingFinalPhase = computed(() =>
   session.value ? getPortraitLivingFinalPhase(session.value) : "aspect-ratio",
+);
+const livingReviewEditContext = computed(() =>
+  session.value ? getPortraitLivingReviewEditContext(session.value) : null,
 );
 const livingChapterProgress = computed(() => {
   if (!session.value) return null;
@@ -332,6 +349,26 @@ function setAnswer(questionId: string, value: unknown) {
   issueMessage.value = "";
 }
 
+function applyReviewChoice(nextSession: WizardSession, answerId: string) {
+  if (!runtime.value || !isPortraitLivingReviewEditing(nextSession)) return false;
+  session.value = runtime.value.resolveSession(
+    resolvePortraitLivingReviewChoice(nextSession, answerId),
+  );
+  issueMessage.value = "";
+  return true;
+}
+
+function completeReviewConfirmation() {
+  if (!session.value || !runtime.value || !isPortraitLivingReviewEditing(session.value)) {
+    return false;
+  }
+  session.value = runtime.value.resolveSession(
+    completePortraitLivingReviewConfirmation(session.value),
+  );
+  issueMessage.value = "";
+  return true;
+}
+
 function advanceResolvedSession(nextSession: WizardSession) {
   if (!runtime.value) return;
   session.value = goToNextWizardStep(
@@ -344,6 +381,7 @@ function advanceResolvedSession(nextSession: WizardSession) {
 function chooseCreationMode(value: "from_image" | "from_description") {
   if (!session.value) return;
   let nextSession = setWizardUserAnswer(session.value, "creationMode", value);
+  if (applyReviewChoice(nextSession, "creationMode")) return;
   nextSession = setPortraitLivingPeopleState(nextSession, "choice");
   advanceResolvedSession(nextSession);
 }
@@ -351,11 +389,11 @@ function chooseCreationMode(value: "from_image" | "from_description") {
 function chooseOnePerson() {
   if (!session.value) return;
   const mode = getPortraitLivingPromptMode(session.value);
-  let nextSession = setWizardUserAnswer(
-    session.value,
-    "subjects",
-    createPortraitLivingSubjects(1, mode),
-  );
+  const subjects = livingReviewEditContext.value?.originAnswerId === "subjects"
+    ? resizePortraitLivingReviewSubjects(livingSubjects.value, 1, mode)
+    : createPortraitLivingSubjects(1, mode);
+  let nextSession = setWizardUserAnswer(session.value, "subjects", subjects);
+  if (applyReviewChoice(nextSession, "subjects")) return;
   nextSession = setPortraitLivingPeopleState(nextSession, "choice");
   advanceResolvedSession(nextSession);
 }
@@ -369,19 +407,26 @@ function chooseMultiplePeople() {
 function choosePeopleCount(value: 2 | 3 | 4) {
   if (!session.value || !runtime.value) return;
   const mode = getPortraitLivingPromptMode(session.value);
-  let nextSession = setWizardUserAnswer(
-    session.value,
-    "subjects",
-    createPortraitLivingSubjects(value, mode),
-  );
+  const subjects = livingReviewEditContext.value?.originAnswerId === "subjects"
+    ? resizePortraitLivingReviewSubjects(livingSubjects.value, value, mode)
+    : createPortraitLivingSubjects(value, mode);
+  let nextSession = setWizardUserAnswer(session.value, "subjects", subjects);
   nextSession = setPortraitLivingPeopleState(nextSession, "configure");
+  if (applyReviewChoice(nextSession, "subjects")) return;
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
+}
+
+function continuePeople() {
+  if (!ensureCurrentStepValid()) return;
+  if (completeReviewConfirmation()) return;
+  next();
 }
 
 function choosePortraitIntent(value: PortraitIntent) {
   if (!session.value) return;
   let nextSession = setWizardUserAnswer(session.value, "portraitIntent", value);
+  if (applyReviewChoice(nextSession, "portraitIntent")) return;
   nextSession = setPortraitLivingLookState(nextSession, {
     domain: "expression",
     phase: "choice",
@@ -394,6 +439,7 @@ function chooseLookIntent(value: string) {
   const domain = livingLookState.value.domain;
   const answerId = PORTRAIT_LIVING_LOOK_ANSWER_IDS[domain].intent;
   let nextSession = setWizardUserAnswer(session.value, answerId, value);
+  if (applyReviewChoice(nextSession, answerId)) return;
   nextSession = setPortraitLivingLookState(nextSession, { domain, phase: "refine" });
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
@@ -416,6 +462,7 @@ function setLookMicroState(domain: PortraitLivingLookDomain, phase: "choice" | "
 }
 
 function continueLook() {
+  if (completeReviewConfirmation()) return;
   const state = livingLookState.value;
   if (state.phase !== "refine") return;
   if (state.domain === "expression") {
@@ -432,6 +479,7 @@ function continueLook() {
 function chooseFraming(value: string) {
   if (!session.value || !runtime.value) return;
   let nextSession = setWizardUserAnswer(session.value, "framingIntent", value);
+  if (applyReviewChoice(nextSession, "framingIntent")) return;
 
   if (value === "headshot") {
     nextSession = clearPortraitLivingPoseAnswers(nextSession);
@@ -448,6 +496,7 @@ function chooseFraming(value: string) {
 function choosePoseIntent(value: string) {
   if (!session.value || !runtime.value) return;
   let nextSession = setWizardUserAnswer(session.value, "poseIntent", value);
+  if (applyReviewChoice(nextSession, "poseIntent")) return;
   nextSession = setPortraitLivingCompositionPhase(nextSession, "pose-refine");
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
@@ -464,6 +513,7 @@ function updatePoseOverrides(
 }
 
 function continueComposition() {
+  if (completeReviewConfirmation()) return;
   if (livingCompositionPhase.value !== "pose-refine") return;
   next();
 }
@@ -481,6 +531,7 @@ function chooseEnvironment(value: string) {
     nextSession = clearPortraitLivingEnvironmentDetailAnswers(nextSession);
   }
   nextSession = setWizardUserAnswer(nextSession, "environmentType", value);
+  if (applyReviewChoice(nextSession, "environmentType")) return;
   nextSession = setPortraitLivingScenePhase(nextSession, "environment-detail");
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
@@ -497,6 +548,7 @@ function updateBackgroundOptions(value: Record<string, string>) {
 }
 
 function continueEnvironment() {
+  if (completeReviewConfirmation()) return;
   if (!session.value || !runtime.value || currentStep.value?.id !== "environment") return;
   const nextSession = setPortraitLivingScenePhase(session.value, "environment-detail");
   session.value = goToNextWizardStep(
@@ -509,6 +561,7 @@ function continueEnvironment() {
 function chooseLighting(value: string) {
   if (!session.value) return;
   let nextSession = setWizardUserAnswer(session.value, "lightingIntent", value);
+  if (applyReviewChoice(nextSession, "lightingIntent")) return;
   nextSession = setPortraitLivingFinalPhase(nextSession, "aspect-ratio");
   advanceResolvedSession(nextSession);
 }
@@ -522,6 +575,7 @@ function setFinalMicroState(value: PortraitLivingFinalPhase) {
 function chooseAspectRatio(value: string) {
   if (!session.value || !runtime.value) return;
   let nextSession = setWizardUserAnswer(session.value, "aspectRatio", value);
+  if (applyReviewChoice(nextSession, "aspectRatio")) return;
 
   if (isPortraitLivingTransformMode(nextSession)) {
     nextSession = setPortraitLivingFinalPhase(nextSession, "reference-fidelity");
@@ -536,6 +590,7 @@ function chooseAspectRatio(value: string) {
 function chooseReferenceUsage(value: string) {
   if (!session.value || !runtime.value) return;
   let nextSession = setWizardUserAnswer(session.value, "referenceUsage", value);
+  if (applyReviewChoice(nextSession, "referenceUsage")) return;
   nextSession = setPortraitLivingFinalPhase(nextSession, "transformation-strength");
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
@@ -544,6 +599,7 @@ function chooseReferenceUsage(value: string) {
 function chooseTransformationStrength(value: string) {
   if (!session.value) return;
   const nextSession = setWizardUserAnswer(session.value, "transformationStrength", value);
+  if (applyReviewChoice(nextSession, "transformationStrength")) return;
   advanceResolvedSession(nextSession);
 }
 
@@ -570,6 +626,14 @@ function back() {
 
 function livingBack() {
   if (!session.value) return;
+
+  if (isPortraitLivingReviewEditing(session.value)) {
+    session.value = runtime.value
+      ? runtime.value.resolveSession(returnToPortraitLivingReview(session.value))
+      : returnToPortraitLivingReview(session.value);
+    issueMessage.value = "";
+    return;
+  }
 
   if (isLivingLook.value) {
     const state = livingLookState.value;
@@ -658,6 +722,14 @@ function livingBack() {
   }
 
   back();
+}
+
+function editLivingReview(target: PortraitLivingReviewEditTarget) {
+  if (!session.value || !runtime.value) return;
+  session.value = runtime.value.resolveSession(
+    beginPortraitLivingReviewEdit(session.value, target),
+  );
+  issueMessage.value = "";
 }
 
 function editStep(stepId: string) {
@@ -843,11 +915,14 @@ onBeforeUnmount(() => {
     :chapters="livingChapters"
     current-chapter-id="start"
     :sentence-tokens="livingSentenceTokens"
-    :can-go-back="false"
+    :can-go-back="Boolean(livingReviewEditContext)"
     :is-saved="isSaved"
     :is-busy="isBusy"
-    :show-nav="false"
-    :show-sentence="false">
+    :show-nav="Boolean(livingReviewEditContext)"
+    :show-sentence="Boolean(livingReviewEditContext)"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
     <WizardLivingEntry :disabled="isBusy" @choose="chooseCreationMode" />
   </WizardLivingShell>
 
@@ -888,7 +963,7 @@ onBeforeUnmount(() => {
           :invert="true"
           color="blue"
           :disable="isBusy"
-          @click="next"
+          @click="continuePeople"
         />
       </el-flex>
     </template>
@@ -1033,6 +1108,29 @@ onBeforeUnmount(() => {
       @choose-aspect-ratio="chooseAspectRatio"
       @choose-reference-usage="chooseReferenceUsage"
       @choose-transformation-strength="chooseTransformationStrength"
+    />
+  </WizardLivingShell>
+
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingReview && review?.ok"
+    :title="runtime.definition.title"
+    :chapters="livingChapters"
+    current-chapter-id="review"
+    :sentence-tokens="livingSentenceTokens"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    :show-sentence="false"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingReview
+      :tokens="livingSentenceTokens"
+      :items="review.items"
+      :mode="livingPromptMode"
+      :disabled="isBusy"
+      @edit="editLivingReview"
+      @finish="finish"
     />
   </WizardLivingShell>
 
