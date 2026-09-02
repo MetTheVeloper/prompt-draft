@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardLivingAction from "./WizardLivingAction.vue";
 import WizardLivingSentence from "./WizardLivingSentence.vue";
 import type { WizardRuntimeReviewItem } from "~/wizard/registry";
 import type {
@@ -201,12 +202,11 @@ function editToken(token: WizardLivingSentenceToken) {
           </div>
 
           <div class="wizard-living-review__action">
-            <button
-              type="button"
+            <WizardLivingAction
+              :label="t('wizard.living.review.generate')"
               :disabled="props.disabled"
-              @click="emit('finish')">
-              {{ t('wizard.living.review.generate') }}
-            </button>
+              @click="emit('finish')"
+            />
           </div>
         </div>
       </div>
@@ -359,8 +359,7 @@ function editToken(token: WizardLivingSentenceToken) {
   transform: translate(2px, -2px);
 }
 
-.wizard-living-review__row:focus-visible,
-.wizard-living-review__action button:focus-visible {
+.wizard-living-review__row:focus-visible {
   outline: 1px solid var(--primary);
   outline-offset: 4px;
 }
@@ -368,26 +367,6 @@ function editToken(token: WizardLivingSentenceToken) {
 .wizard-living-review__action {
   display: flex;
   justify-content: flex-end;
-}
-
-.wizard-living-review__action button {
-  padding: 13px 0 10px;
-  border: 0;
-  border-bottom: 1px solid var(--primary30);
-  background: transparent;
-  color: var(--normalText);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: 0.72rem;
-  font-weight: 650;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  transition: color 180ms ease, border-color 180ms ease;
-}
-
-.wizard-living-review__action button:hover,
-.wizard-living-review__action button:focus-visible {
-  border-bottom-color: var(--primary);
-  color: var(--primary);
 }
 
 @media (min-width: 1080px) {
@@ -429,8 +408,7 @@ function editToken(token: WizardLivingSentenceToken) {
 
 @media (prefers-reduced-motion: reduce) {
   .wizard-living-review__row,
-  .wizard-living-review__row i,
-  .wizard-living-review__action button {
+  .wizard-living-review__row i {
     transition: none;
   }
 }
