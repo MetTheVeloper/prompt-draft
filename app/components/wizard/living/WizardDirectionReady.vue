@@ -5,6 +5,7 @@ import type { WizardLivingSentenceToken } from "~/wizard/portraitLivingPresentat
 const props = defineProps<{
   tokens: readonly WizardLivingSentenceToken[];
   promptPreview: string;
+  issue?: string;
   disabled?: boolean;
 }>();
 
@@ -72,6 +73,10 @@ const preview = computed(() => props.promptPreview.trim());
             {{ t('wizard.living.ready.startAnother') }}
           </button>
         </div>
+
+        <p v-if="props.issue" class="wizard-direction-ready__issue" role="alert">
+          {{ props.issue }}
+        </p>
       </section>
 
       <footer class="wizard-direction-ready__footer">
@@ -271,6 +276,13 @@ const preview = computed(() => props.promptPreview.trim());
 .wizard-direction-ready button:disabled {
   cursor: not-allowed;
   opacity: 0.4;
+}
+
+.wizard-direction-ready__issue {
+  margin: 0;
+  color: var(--themeRed);
+  font-size: 0.75rem;
+  line-height: 1.5;
 }
 
 .wizard-direction-ready__footer {
