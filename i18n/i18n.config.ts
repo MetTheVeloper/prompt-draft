@@ -2,6 +2,8 @@ import en from './locales/en'
 import fa from './locales/fa'
 import wizardEn from './locales/wizard.en'
 import wizardResumeEn from './locales/wizard-resume.en'
+import wizardPresentationEn from './locales/wizard-presentation.en'
+import wizardFa from './locales/wizard.fa'
 import backgroundEn from './locales/background.en'
 import backgroundFa from './locales/background.fa'
 import effectsEn from './locales/effects.en'
@@ -92,7 +94,12 @@ const enMessages = deepMerge(
       ['variables', variablesEn],
       ['scene', sceneEn],
     ]),
-    { wizard: deepMerge(wizardEn, wizardResumeEn) },
+    {
+      wizard: deepMerge(
+        deepMerge(wizardEn, wizardResumeEn),
+        wizardPresentationEn,
+      ),
+    },
   ),
   flatToNested(enConsolidated),
 )
@@ -112,14 +119,17 @@ const faConsolidated = {
 }
 
 const faMessages = deepMerge(
-  withModuleFragments(fa, [
-    ['background', backgroundFa],
-    ['effects', effectsFa],
-    ['hair', hairFa],
-    ['outfit', outfitFa],
-    ['variables', variablesFa],
-    ['scene', sceneFa],
-  ]),
+  deepMerge(
+    withModuleFragments(fa, [
+      ['background', backgroundFa],
+      ['effects', effectsFa],
+      ['hair', hairFa],
+      ['outfit', outfitFa],
+      ['variables', variablesFa],
+      ['scene', sceneFa],
+    ]),
+    { wizard: wizardFa },
+  ),
   flatToNested(faConsolidated),
 )
 
