@@ -99,6 +99,19 @@ const normalizedLabel = computed(() => props.label.replace(/\s*→\s*$/, ""));
   letter-spacing: 0.08em;
 }
 
+.wizard-living-action:dir(rtl) {
+  letter-spacing: 0;
+}
+
+.wizard-living-action:dir(rtl) .wizard-living-action__arrow {
+  transform: scaleX(-1);
+}
+
+.wizard-living-action:dir(rtl):hover .wizard-living-action__arrow,
+.wizard-living-action:dir(rtl):focus-visible .wizard-living-action__arrow {
+  transform: translateX(-3px) scaleX(-1);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wizard-living-action,
   .wizard-living-action__arrow {
