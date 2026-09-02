@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PromptDraftState } from "~/modules/promptDraft.types";
+import WizardDirectionReady from "~/components/wizard/living/WizardDirectionReady.vue";
 import WizardLivingComposition from "~/components/wizard/living/WizardLivingComposition.vue";
 import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
 import WizardLivingFinal from "~/components/wizard/living/WizardLivingFinal.vue";
@@ -96,6 +97,7 @@ const session = ref<WizardSession | null>(null);
 const resumeCandidate = ref<WizardSession | null>(null);
 const review = ref<WizardRuntimeReview | null>(null);
 const completedDraft = ref<PromptDraftState | null>(null);
+const completedPromptPreview = ref("");
 const issueMessage = ref("");
 const isBusy = ref(false);
 const isSaved = ref(false);
@@ -752,6 +754,7 @@ function beginFresh() {
   if (!entry) return;
   clearWizardSession(entry.id);
   completedDraft.value = null;
+  completedPromptPreview.value = "";
   resumeCandidate.value = null;
   session.value = entry.resolveSession(createFreshWizardSession(entry.definition));
   issueMessage.value = "";
@@ -785,11 +788,20 @@ async function finish() {
     }
 
     completedDraft.value = result.finalDraft;
-    clearWizardSession(runtime.value.id);
-    isSaved.value = false;
+    completedPromptPreview.value = result.promptPreview;
+    saveWizardSession(session.value);
+    isSaved.value = true;
   } finally {
     isBusy.value = false;
   }
+}
+
+function editCompletedDirection() {
+  if (!session.value) return;
+  completedDraft.value = null;
+  completedPromptPreview.value = "";
+  session.value = { ...session.value, currentStepId: "review" };
+  issueMessage.value = "";
 }
 
 function saveCompletedAsTemplate() {
@@ -815,6 +827,11 @@ async function continueInCreate() {
     issueMessage.value = "The finished prompt could not be added to Create.";
     return;
   }
+
+  clearWizardSession(runtime.value.id);
+  completedDraft.value = null;
+  completedPromptPreview.value = "";
+  isSaved.value = false;
   await router.push("/create");
 }
 
@@ -884,30 +901,17 @@ onBeforeUnmount(() => {
     </el-flex>
   </el-grid>
 
-  <el-grid
-    v-else-if="completedDraft && runtime"
-    rules="csc"
-    :gap="20"
-    :p="28"
-    :radius="22"
-    :br="1"
-    bc="normal10"
-    bg="surface"
-    style="max-width: 620px; margin: auto">
-    <el-icon icon="check_circle" :size="34" color="green" />
-    <el-grid :gap="6">
-      <el-text :size="24" :weight="800">Your portrait prompt is ready</el-text>
-      <el-text :size="12" color="normal50">
-        The Wizard completed successfully. Nothing in Create has been changed.
-      </el-text>
-    </el-grid>
-    <el-flex rules="rsc" :gap="8">
-      <el-button label="Save as template" icon="bookmark_add" mode="outline" color="blue" @click="saveCompletedAsTemplate" />
-      <el-button label="Start another" mode="flat" color="normal" @click="beginFresh" />
-      <el-button label="Continue editing in Create" icon="edit" :invert="true" color="blue" @click="continueInCreate" />
-    </el-flex>
-    <el-text v-if="issueMessage" :size="11" color="red">{{ issueMessage }}</el-text>
-  </el-grid>
+  <WizardDirectionReady
+    v-else-if="completedDraft && runtime && session"
+    :tokens="livingSentenceTokens"
+    :prompt-preview="completedPromptPreview"
+    :issue="issueMessage"
+    :disabled="isBusy"
+    @open-create="continueInCreate"
+    @save-template="saveCompletedAsTemplate"
+    @start-another="beginFresh"
+    @edit-direction="editCompletedDirection"
+  />
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingEntry"
