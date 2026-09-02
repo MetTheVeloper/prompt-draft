@@ -207,6 +207,21 @@ function canNavigate(index: number, chapterId: string) {
   text-transform: uppercase;
 }
 
+.wizard-chapter-nav:dir(rtl) .wizard-chapter-nav__chapter {
+  text-align: right;
+}
+
+.wizard-chapter-nav:dir(rtl) .wizard-chapter-nav__chapter,
+.wizard-chapter-nav:dir(rtl) .wizard-chapter-nav__actions button,
+.wizard-chapter-nav:dir(rtl) .wizard-chapter-nav__saved {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.wizard-chapter-nav:dir(rtl) .wizard-chapter-nav__progress > span {
+  inset: 0 0 0 auto;
+}
+
 @media (max-width: 900px) {
   .wizard-chapter-nav {
     display: grid;
