@@ -35,6 +35,34 @@ function createDraftId() {
   return `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+export function createWizardDraftHandoff(
+  collection: PromptDraftCollection,
+  finalDraft: PromptDraftState,
+  options: {
+    id: string;
+    now: string;
+    title?: string;
+  },
+) {
+  const title = options.title?.trim() || "Wizard Prompt";
+  const record: PromptDraftRecord = {
+    ...clonePromptDraftState(finalDraft),
+    id: options.id,
+    title,
+    createdAt: options.now,
+    updatedAt: options.now,
+  };
+
+  return {
+    id: options.id,
+    collection: {
+      version: 1,
+      activeDraftId: options.id,
+      drafts: [record, ...collection.drafts],
+    } satisfies PromptDraftCollection,
+  };
+}
+
 /**
  * Explicit completion handoff only. A Wizard never reads or overwrites the
  * Create Active Draft. When the user asks to continue in Create, the finished
@@ -46,23 +74,19 @@ export function addWizardDraftToCreate(
 ) {
   if (!import.meta.client) return null;
 
-  const collection = readCollection();
-  const now = new Date().toISOString();
-  const id = createDraftId();
-  const record: PromptDraftRecord = {
-    ...clonePromptDraftState(finalDraft),
-    id,
-    title: title.trim() || "Wizard Prompt",
-    createdAt: now,
-    updatedAt: now,
-  };
+  const result = createWizardDraftHandoff(
+    readCollection(),
+    finalDraft,
+    {
+      id: createDraftId(),
+      now: new Date().toISOString(),
+      title,
+    },
+  );
 
-  const next: PromptDraftCollection = {
-    version: 1,
-    activeDraftId: id,
-    drafts: [record, ...collection.drafts],
-  };
-
-  localStorage.setItem(DRAFT_COLLECTION_STORAGE_KEY, JSON.stringify(next));
-  return id;
+  localStorage.setItem(
+    DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify(result.collection),
+  );
+  return result.id;
 }
