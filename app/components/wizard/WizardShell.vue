@@ -61,20 +61,22 @@ const emit = defineEmits<{
     </el-grid>
 
     <div class="wizard-shell__stage w100">
-      <el-grid class="wizard-shell__content w100" :gap="24">
-        <el-grid :gap="6" class="w100 tac">
-          <el-text :size="26" :weight="800">{{ props.stepTitle }}</el-text>
-          <el-text
-            v-if="props.stepDescription"
-            :size="13"
-            color="normal50"
-            style="max-width: 620px; margin: 0 auto">
-            {{ props.stepDescription }}
-          </el-text>
-        </el-grid>
+      <div class="wizard-shell__stage-inner w100">
+        <el-grid class="wizard-shell__content w100" :gap="24">
+          <el-grid :gap="6" class="w100 tac">
+            <el-text :size="26" :weight="800">{{ props.stepTitle }}</el-text>
+            <el-text
+              v-if="props.stepDescription"
+              :size="13"
+              color="normal50"
+              style="max-width: 620px; margin: 0 auto">
+              {{ props.stepDescription }}
+            </el-text>
+          </el-grid>
 
-        <slot />
-      </el-grid>
+          <slot />
+        </el-grid>
+      </div>
     </div>
 
     <el-flex class="wizard-shell__footer w100" rules="rbc" :gap="12">
@@ -115,9 +117,16 @@ const emit = defineEmits<{
 
 .wizard-shell__stage {
   min-height: 0;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.wizard-shell__stage-inner {
   display: grid;
+  min-height: 100%;
   place-items: center;
+  box-sizing: border-box;
   padding: 28px 12px 36px;
 }
 
