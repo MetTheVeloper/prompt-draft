@@ -288,7 +288,7 @@ function editToken(token: WizardLivingSentenceToken) {
 }
 
 .wizard-living-review__row > span {
-  color: var(--normalText35);
+  color: var(--normalText40);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.62rem;
   letter-spacing: 0.08em;
@@ -297,7 +297,7 @@ function editToken(token: WizardLivingSentenceToken) {
 
 .wizard-living-review__row strong {
   overflow: hidden;
-  color: var(--normalText70);
+  color: var(--normalText60);
   font-size: 0.82rem;
   font-weight: 450;
   line-height: 1.45;
@@ -330,7 +330,7 @@ function editToken(token: WizardLivingSentenceToken) {
 
 .wizard-living-review__row:focus-visible,
 .wizard-living-review__action button:focus-visible {
-  outline: 1px solid var(--primary70);
+  outline: 1px solid var(--primary);
   outline-offset: 4px;
 }
 
@@ -342,7 +342,7 @@ function editToken(token: WizardLivingSentenceToken) {
 .wizard-living-review__action button {
   padding: 13px 0 10px;
   border: 0;
-  border-bottom: 1px solid var(--primary70);
+  border-bottom: 1px solid var(--primary30);
   background: transparent;
   color: var(--normalText);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
