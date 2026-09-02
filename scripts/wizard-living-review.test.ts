@@ -3,8 +3,10 @@ import test from "node:test";
 
 import { portraitWizardV2Definition } from "../app/wizard/definition.ts";
 import {
+  beginPortraitLivingChapterEdit,
   beginPortraitLivingReviewEdit,
   completePortraitLivingReviewConfirmation,
+  getPortraitLivingEditReturnChapterId,
   getPortraitLivingReviewEditContext,
   resizePortraitLivingReviewSubjects,
   resolvePortraitLivingReviewChoice,
@@ -14,8 +16,14 @@ import {
   getPortraitLivingCompositionPhase,
   getPortraitLivingPeopleState,
 } from "../app/wizard/portraitLivingPresentation.ts";
-import { getPortraitLivingFinalPhase } from "../app/wizard/portraitLivingFinalPresentation.ts";
-import { getPortraitLivingScenePhase } from "../app/wizard/portraitLivingScenePresentation.ts";
+import {
+  getPortraitLivingFinalPhase,
+  setPortraitLivingFinalPhase,
+} from "../app/wizard/portraitLivingFinalPresentation.ts";
+import {
+  getPortraitLivingScenePhase,
+  setPortraitLivingScenePhase,
+} from "../app/wizard/portraitLivingScenePresentation.ts";
 import {
   createFreshWizardSession,
   setWizardUserAnswer,
@@ -170,4 +178,55 @@ test("Scene type edits keep the contextual detail state before returning to Revi
 
   session = completePortraitLivingReviewConfirmation(session);
   assert.equal(session.currentStepId, "review");
+});
+
+test("Completed chapter edits return to the exact state that launched the detour", () => {
+  let session = reviewSession("from_image");
+  session = { ...session, currentStepId: "lighting" };
+  session = setPortraitLivingScenePhase(session, "environment-detail");
+
+  session = beginPortraitLivingChapterEdit(session, "portrait");
+  assert.equal(session.currentStepId, "intent");
+  assert.equal(getPortraitLivingEditReturnChapterId(session), "scene");
+
+  session = answer(session, "portraitIntent", "fashion");
+  session = resolvePortraitLivingReviewChoice(session, "portraitIntent");
+
+  assert.equal(session.currentStepId, "lighting");
+  assert.equal(getPortraitLivingScenePhase(session), "environment-detail");
+  assert.equal(getPortraitLivingReviewEditContext(session), null);
+});
+
+test("Chapter edits resolve new dependencies before returning to their captured anchor", () => {
+  let session = reviewSession("from_image");
+  session = { ...session, currentStepId: "lighting" };
+  session = setPortraitLivingScenePhase(session, "environment-detail");
+
+  session = beginPortraitLivingChapterEdit(session, "composition");
+  session = answer(session, "framingIntent", "half_body");
+  session = resolvePortraitLivingReviewChoice(session, "framingIntent");
+
+  assert.equal(session.currentStepId, "composition");
+  assert.equal(getPortraitLivingCompositionPhase(session), "pose-choice");
+  assert.equal(getPortraitLivingReviewEditContext(session)?.pending, "pose");
+
+  session = answer(session, "poseIntent", "natural");
+  session = resolvePortraitLivingReviewChoice(session, "poseIntent");
+  assert.equal(session.currentStepId, "lighting");
+  assert.equal(getPortraitLivingScenePhase(session), "environment-detail");
+});
+
+test("Retargeting another reached chapter preserves the original return anchor", () => {
+  let session = reviewSession("from_image");
+  session = { ...session, currentStepId: "final-settings" };
+  session = setPortraitLivingFinalPhase(session, "reference-fidelity");
+
+  session = beginPortraitLivingChapterEdit(session, "scene");
+  session = beginPortraitLivingChapterEdit(session, "portrait");
+  assert.equal(getPortraitLivingEditReturnChapterId(session), "final");
+
+  session = answer(session, "portraitIntent", "cinematic");
+  session = resolvePortraitLivingReviewChoice(session, "portraitIntent");
+  assert.equal(session.currentStepId, "final-settings");
+  assert.equal(getPortraitLivingFinalPhase(session), "reference-fidelity");
 });
