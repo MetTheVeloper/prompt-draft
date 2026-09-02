@@ -2,7 +2,7 @@
 
 Last updated: **2026-09-02**
 
-Status: **Phases 0–5 are implemented and locally validated on `feature/wizard-figma`; Phase 6 (Final technical controls) is the active production slice.**
+Status: **Phases 0–6 are implemented and locally validated on `feature/wizard-figma`; Phase 7 (editorial Review + branch-aware edit return) is the active production slice.**
 
 Working branch: `feature/wizard-figma`
 
@@ -20,11 +20,11 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## 1. Validated production checkpoint
 
-Latest locally validated checkpoint before Phase 6:
+Latest locally validated checkpoint before Phase 7:
 
 ```text
-c30976b1f187b77407aaaee6b47f860dd3b0dd40
-Phase 5 Scene + persistent environment refinement + Lighting
+a957ac360d1c4b8424e3573d17853def6ea837f2
+Phase 6 Final technical controls
 ```
 
 Validation reported on **2026-09-02**:
@@ -43,62 +43,86 @@ Implemented and validated through this checkpoint:
 - Phase 3 Expression / Hair / Outfit shared-first flow and optional per-subject customization;
 - Prompt Draft theme-token integration and Wizard i18n conventions;
 - Phase 4 Framing visual selector, top-anchored crop, Headshot → Pose skip, shared-first Pose details and per-subject Pose overrides;
-- Phase 5 Studio / Outdoors / Abstract Living Scene flow;
-- contextual environment detail persisted directly in canonical answers;
-- environment refinement persisted through canonical `backgroundOptions`;
-- Lighting migrated into the Living Scene chapter;
-- Scene Back/resume/progress behavior validated locally.
+- Phase 5 Studio / Outdoors / Abstract Living Scene flow, persistent canonical Background refinement and Lighting;
+- Phase 6 Final technical controls with branch-aware Create/Transform flow;
+- accepted Aspect Ratio set `1:1 / 4:5 / 5:4 / 3:4 / 4:3 / 9:16 / 16:9`;
+- canonical `5:4 → common_landscape_5_4` and `4:3 → common_landscape_4_3` mapping;
+- technical Final controls remain outside the creative Living Sentence.
 
 Canonical Portrait mapping, isolated Wizard session semantics, validation/compile and explicit Create handoff remain authoritative.
 
 ---
 
-## 2. Active phase — Phase 6 Final technical controls
+## 2. Active phase — Phase 7 Review + branch-aware edits
 
-Target flow:
-
-```text
-Create
-  Aspect Ratio
-      ↓
-    Review
-
-Transform
-  Aspect Ratio
-      ↓
-  Reference Fidelity
-      ↓
-  Transformation Strength
-      ↓
-    Review
-```
-
-Accepted Aspect Ratio set:
+Target experience:
 
 ```text
-1:1
-4:5
-5:4
-3:4
-4:3
-9:16
-16:9
+Review
+  ↓
+large editable Living Sentence
+  +
+compact Creative recap
+  +
+compact Technical recap
 ```
 
-Requirements:
+Simple edit behavior:
 
-- each ratio is represented by its actual proportion;
-- `5:4` and `4:3` use the existing canonical Prompt Draft aspect-ratio catalog values;
-- technical controls stay outside the creative Living Sentence;
-- default answer ownership does not silently skip presentation states;
-- Create sees only Aspect Ratio;
-- Transform sees Aspect Ratio → Reference Fidelity → Transformation Strength;
-- Back follows the inverse mode-relevant sequence;
-- Final chapter progress adapts to the current branch;
-- all new visible copy uses Wizard i18n;
-- all new UI styling uses Prompt Draft theme tokens.
+```text
+Review → edit value → Review
+```
 
-After Phase 6 validates locally, continue with **Phase 7 — editorial Review + branch-aware edit return**.
+Branch-changing edits resolve only newly relevant dependencies:
+
+```text
+Headshot → Half Body
+  ↓
+Pose only
+  ↓
+Review
+```
+
+```text
+One Person → Multiple
+  ↓
+count + person configuration only
+  ↓
+Review
+```
+
+```text
+Create → Transform
+  ↓
+Reference Fidelity → Transformation Strength
+  ↓
+Review
+```
+
+```text
+Transform → Create
+  ↓
+remove transform-only answer ownership
+  ↓
+Review
+```
+
+Phase 7 implementation currently includes:
+
+- `WizardLivingReview.vue` editorial Review surface;
+- editable semantic Living Sentence tokens;
+- Creative recap rows for Mode / People / Portrait / Look / Composition / Scene;
+- Technical recap rows for Aspect Ratio and transform-only controls when relevant;
+- persisted Review edit context in `session.derived`;
+- exact answer → presentation micro-state targeting;
+- direct Review return after simple choice edits;
+- Headshot/body Pose dependency resolution;
+- One/Multiple People dependency resolution while preserving existing Subject identity where possible;
+- Create/Transform dependency and invalidation resolution;
+- contextual Scene detail confirmation before Review return;
+- focused Phase 7 regressions wired into `pnpm test:wizard`.
+
+Phase 7 is **not locally validated yet**. Validate before starting Phase 8.
 
 ---
 
@@ -112,15 +136,14 @@ https://www.figma.com/make/jgi1MxTu7e16Dv7AFiRof2/Review-Instructions
 
 The Make file is a visual/interaction reference only. Production remains Nuxt/Vue and uses Prompt Draft theme/i18n/domain conventions.
 
-Accepted Final reference behavior includes:
+Accepted Review behavior:
 
-- proportion-based Aspect Ratio selector;
-- immediate selection/advance;
-- Create → Review after Aspect Ratio;
-- Transform → Reference Fidelity → Transformation Strength → Review;
-- typography-first Reference Fidelity and Transformation Strength choices.
-
-Production uses canonical values from the existing definition/mapping rather than Make-local aliases.
+- Review is editorial, not a stack of settings cards;
+- final Living Sentence is the visual payoff;
+- semantic phrases are clickable/focusable edit targets;
+- recap remains compact;
+- technical controls remain separate from the creative sentence;
+- branch-changing edits must not replay the whole Wizard.
 
 ---
 
@@ -144,19 +167,11 @@ Implemented and validated for Expression, Hair, Outfit and Pose. Lighting and Fr
 
 ### Final ratios
 
-Production must include `5:4` and `4:3` in addition to the older definition set and map them through the existing Prompt Draft aspect-ratio catalog.
+Implemented and validated with the accepted seven-ratio set and canonical Prompt Draft mappings.
 
 ### Review branch-changing edits
 
-Pending Phase 7.
-
-Examples:
-
-```text
-Headshot → Half Body → ask Pose only → Review
-One Person → Multiple → ask count/config only → Review
-Transform ↔ Create → add/remove only mode-specific required states → Review
-```
+Active Phase 7. Production uses explicit persisted edit context and targeted dependency resolution instead of replaying downstream steps.
 
 ---
 
@@ -192,7 +207,7 @@ app/wizard/portraitPoseOptions.ts
 app/wizard/hostDraft.ts
 ```
 
-Living presentation helpers may own presentation micro-state, chapter progress, display wording and Living Sentence tokens. They must not become a second mapping engine.
+Living presentation helpers may own presentation micro-state, chapter progress, display wording, Review edit context and Living Sentence tokens. They must not become a second mapping engine.
 
 ---
 
@@ -205,8 +220,8 @@ Phase 2  Entry / People / Portrait                                validated
 Phase 3  Look + per-subject progressive disclosure               validated
 Phase 4  Composition                                              validated
 Phase 5  Scene + persistent environment refinement + Lighting    validated
-Phase 6  Final technical controls                                 active
-Phase 7  Review + branch-aware edit return                        pending
+Phase 6  Final technical controls                                 validated
+Phase 7  Review + branch-aware edit return                        active
 Phase 8  Direction Ready / Create handoff                         pending
 Phase 9  responsive / accessibility / motion polish              pending
 Phase 10 final regressions / build / generate / real generation   pending
@@ -247,9 +262,10 @@ Lighting
 
 ### Branching
 
-- Headshot suppresses Pose;
+- Headshot suppresses Pose and clears stale Pose answers;
 - Create skips transform-only Final controls;
-- Transform includes Reference Fidelity and Transformation Strength.
+- Transform includes Reference Fidelity and Transformation Strength;
+- Review edits resolve only newly relevant branch dependencies.
 
 ### Living Sentence
 
@@ -267,14 +283,18 @@ pnpm test:wizard
 
 Historical pre-migration baseline was 46/46. That count is historical only; focused Living tests are added as phases land.
 
-Coverage required as migration continues:
+Coverage now includes:
 
 - adaptive People / Look / Composition / Scene / Final progress;
 - Headshot excludes Pose and invalidates stale Pose answers;
 - shared and per-subject Expression/Hair/Outfit/Pose behavior;
 - environment refinement persistence and canonical Background mapping;
 - mode-specific Final flow and canonical Aspect Ratio mapping;
-- Review edit dependency resolution;
+- Review exact-target edit navigation;
+- Review Headshot → body Pose dependency;
+- Review Create ↔ Transform dependency/invalidation behavior;
+- Review One → Multiple configuration dependency;
+- Review Scene contextual confirmation;
 - completion does not mutate Create before explicit handoff.
 
 After every risky slice validate locally with at least:
