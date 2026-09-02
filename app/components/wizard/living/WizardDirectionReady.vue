@@ -26,71 +26,79 @@ const preview = computed(() => props.promptPreview.trim());
     <div class="wizard-direction-ready__ambient" aria-hidden="true" />
 
     <section class="wizard-direction-ready__content">
-      <div class="wizard-direction-ready__left">
-        <header class="wizard-direction-ready__header">
-          <span>{{ t('wizard.living.ready.eyebrow') }}</span>
-          <h1>{{ t('wizard.living.ready.title') }}</h1>
-          <p>{{ t('wizard.living.ready.subcopy') }}</p>
-        </header>
+      <div class="wizard-direction-ready__column">
+        <div class="wizard-direction-ready__column-stage">
+          <div class="wizard-direction-ready__left">
+            <header class="wizard-direction-ready__header">
+              <span>{{ t('wizard.living.ready.eyebrow') }}</span>
+              <h1>{{ t('wizard.living.ready.title') }}</h1>
+              <p>{{ t('wizard.living.ready.subcopy') }}</p>
+            </header>
 
-        <section class="wizard-direction-ready__direction" aria-labelledby="wizard-ready-direction">
-          <span id="wizard-ready-direction" class="wizard-direction-ready__label">
-            {{ t('wizard.living.ready.directionLabel') }}
-          </span>
-          <WizardLivingSentence :tokens="props.tokens" :compact="false" />
-        </section>
+            <section class="wizard-direction-ready__direction" aria-labelledby="wizard-ready-direction">
+              <span id="wizard-ready-direction" class="wizard-direction-ready__label">
+                {{ t('wizard.living.ready.directionLabel') }}
+              </span>
+              <WizardLivingSentence :tokens="props.tokens" :compact="false" />
+            </section>
+          </div>
+        </div>
       </div>
 
-      <div class="wizard-direction-ready__right">
-        <section v-if="preview" class="wizard-direction-ready__artifact" aria-labelledby="wizard-ready-prompt">
-          <div class="wizard-direction-ready__artifact-head">
-            <span id="wizard-ready-prompt" class="wizard-direction-ready__label">
-              {{ t('wizard.living.ready.promptLabel') }}
-            </span>
-            <span>{{ t('wizard.living.ready.promptStatus') }}</span>
+      <div class="wizard-direction-ready__column">
+        <div class="wizard-direction-ready__column-stage">
+          <div class="wizard-direction-ready__right">
+            <section v-if="preview" class="wizard-direction-ready__artifact" aria-labelledby="wizard-ready-prompt">
+              <div class="wizard-direction-ready__artifact-head">
+                <span id="wizard-ready-prompt" class="wizard-direction-ready__label">
+                  {{ t('wizard.living.ready.promptLabel') }}
+                </span>
+                <span>{{ t('wizard.living.ready.promptStatus') }}</span>
+              </div>
+              <p>{{ preview }}</p>
+            </section>
+
+            <section class="wizard-direction-ready__actions">
+              <button
+                type="button"
+                class="wizard-direction-ready__primary"
+                :disabled="props.disabled"
+                @click="emit('open-create')">
+                <span>{{ t('wizard.living.ready.openCreate') }}</span>
+                <i aria-hidden="true">→</i>
+              </button>
+
+              <div class="wizard-direction-ready__secondary-actions">
+                <button
+                  type="button"
+                  :disabled="props.disabled"
+                  @click="emit('save-template')">
+                  {{ t('wizard.living.ready.saveTemplate') }}
+                </button>
+                <button
+                  type="button"
+                  :disabled="props.disabled"
+                  @click="emit('start-another')">
+                  {{ t('wizard.living.ready.startAnother') }}
+                </button>
+              </div>
+
+              <p v-if="props.issue" class="wizard-direction-ready__issue" role="alert">
+                {{ props.issue }}
+              </p>
+            </section>
+
+            <footer class="wizard-direction-ready__footer">
+              <button
+                type="button"
+                :disabled="props.disabled"
+                @click="emit('edit-direction')">
+                {{ t('wizard.living.ready.editDirection') }}
+              </button>
+              <p>{{ t('wizard.living.ready.handoffNote') }}</p>
+            </footer>
           </div>
-          <p>{{ preview }}</p>
-        </section>
-
-        <section class="wizard-direction-ready__actions">
-          <button
-            type="button"
-            class="wizard-direction-ready__primary"
-            :disabled="props.disabled"
-            @click="emit('open-create')">
-            <span>{{ t('wizard.living.ready.openCreate') }}</span>
-            <i aria-hidden="true">→</i>
-          </button>
-
-          <div class="wizard-direction-ready__secondary-actions">
-            <button
-              type="button"
-              :disabled="props.disabled"
-              @click="emit('save-template')">
-              {{ t('wizard.living.ready.saveTemplate') }}
-            </button>
-            <button
-              type="button"
-              :disabled="props.disabled"
-              @click="emit('start-another')">
-              {{ t('wizard.living.ready.startAnother') }}
-            </button>
-          </div>
-
-          <p v-if="props.issue" class="wizard-direction-ready__issue" role="alert">
-            {{ props.issue }}
-          </p>
-        </section>
-
-        <footer class="wizard-direction-ready__footer">
-          <button
-            type="button"
-            :disabled="props.disabled"
-            @click="emit('edit-direction')">
-            {{ t('wizard.living.ready.editDirection') }}
-          </button>
-          <p>{{ t('wizard.living.ready.handoffNote') }}</p>
-        </footer>
+        </div>
       </div>
     </section>
   </main>
@@ -130,12 +138,19 @@ const preview = computed(() => props.promptPreview.trim());
   gap: clamp(34px, 5vh, 56px);
 }
 
+.wizard-direction-ready__column,
+.wizard-direction-ready__column-stage,
+.wizard-direction-ready__left,
+.wizard-direction-ready__right {
+  min-width: 0;
+}
+
 .wizard-direction-ready__left,
 .wizard-direction-ready__right {
   display: grid;
+  width: 100%;
   align-content: start;
   gap: clamp(30px, 4vh, 44px);
-  min-width: 0;
 }
 
 .wizard-direction-ready__header {
@@ -318,19 +333,36 @@ const preview = computed(() => props.promptPreview.trim());
 }
 
 @media (min-width: 1080px) {
+  .wizard-direction-ready {
+    overflow: hidden;
+  }
+
   .wizard-direction-ready__content {
     grid-template-columns: minmax(0, 1.08fr) minmax(400px, 0.92fr);
-    align-items: start;
+    height: 100%;
+    min-height: 0;
+    padding-block: 0;
     column-gap: clamp(56px, 6vw, 104px);
     row-gap: 0;
   }
 
-  .wizard-direction-ready__header h1 {
-    font-size: clamp(3.8rem, 5.8vw, 6.8rem);
+  .wizard-direction-ready__column {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
   }
 
-  .wizard-direction-ready__right {
-    padding-top: clamp(22px, 4vh, 42px);
+  .wizard-direction-ready__column-stage {
+    display: flex;
+    min-height: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    padding-block: clamp(36px, 5vh, 64px);
+  }
+
+  .wizard-direction-ready__header h1 {
+    font-size: clamp(3.8rem, 5.8vw, 6.8rem);
   }
 }
 
