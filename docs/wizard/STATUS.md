@@ -2,7 +2,7 @@
 
 Last updated: **2026-09-02**
 
-Status: **Phases 0–3 are implemented and locally validated on `feature/wizard-figma`; Phase 4 (Composition) is the active production slice.**
+Status: **Phases 0–4 are implemented and locally validated on `feature/wizard-figma`; Phase 5 (Scene + persistent environment refinement + Lighting) is the active production slice.**
 
 Working branch: `feature/wizard-figma`
 
@@ -20,11 +20,11 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## 1. Validated production checkpoint
 
-Latest locally validated checkpoint before Phase 4:
+Latest locally validated checkpoint before Phase 5:
 
 ```text
-71a47574b85d1d7e4d4c54254086e5573e022d89
-refactor(wizard): align living UI with app theme and i18n
+5ad40bdaf03647b0a4dc36554545812fb1b07bce
+feat(wizard): add living composition flow
 ```
 
 Validation reported on **2026-09-02**:
@@ -32,10 +32,8 @@ Validation reported on **2026-09-02**:
 ```text
 pnpm test:wizard  → green
 pnpm build        → green
-manual output     → okay
+manual flow       → okay
 ```
-
-Do not infer an exact current test count from the historical pre-migration baseline. Focused Living tests have been added during the migration.
 
 Implemented and validated through this checkpoint:
 
@@ -43,44 +41,48 @@ Implemented and validated through this checkpoint:
 - Phase 1 Living shell, chapter navigation, Living Sentence and typographic primitives;
 - Phase 2 Entry / People / Subject configuration / Portrait;
 - Phase 3 Expression / Hair / Outfit shared-first flow and optional per-subject customization;
-- Prompt Draft theme-token integration for the Living UI built so far;
+- Prompt Draft theme-token integration for the Living UI;
 - English Wizard copy routed through the project i18n system;
-- Living Sentence wording localized through a presentation localizer.
+- Phase 4 Framing visual selector, top-anchored crop preview, Headshot → Pose skip, shared-first Pose details and per-subject Pose overrides;
+- stale Pose answers are removed when Headshot makes Pose irrelevant.
 
 Canonical Portrait mapping, isolated Wizard session semantics, validation/compile and explicit Create handoff remain authoritative.
 
 ---
 
-## 2. Active phase — Phase 4 Composition
+## 2. Active phase — Phase 5 Scene
 
 Target flow:
 
 ```text
-Framing
+Scene choice
   ↓
-Headshot ───────────────→ Scene
-  ↓ other framing
-Pose shared direction
+contextual optional detail
+  ├── continue / skip
+  └── optional environment refinement
+          ↓
+      canonical backgroundOptions
+          ↓
+Lighting
   ↓
-optional Pose details / optional per-subject overrides
-  ↓
-Scene
+Final
 ```
 
 Requirements:
 
-- Framing uses the accepted visual selector and top-anchored crop metaphor;
-- Headshot suppresses Pose;
-- selecting Headshot removes stale Pose answers so a later branch change cannot silently reuse old Pose state;
-- Pose remains shared-first;
-- optional detailed Pose controls use the existing `poseOptions` answer architecture;
-- optional per-subject Pose customization uses the existing `poseSubjectOverrides` architecture;
-- any relevant Subject can be selected for override;
-- Composition progress derives from branch-relevant presentation micro-states;
-- Living Sentence includes Pose only when the active Framing branch permits it;
-- canonical mapping is not duplicated in presentation code.
+- Studio / Outdoors / Abstract remain semantic `environmentType` choices;
+- contextual detail writes directly to `studioDirection`, `outdoorSetting` or `abstractDirection` while typing;
+- optional environment refinement stays inside the Living Wizard shell;
+- refinement writes directly to the existing canonical `backgroundOptions` answer;
+- no local-only environment model is introduced;
+- refinement survives Back/navigation/session persistence;
+- refinement preview is natural-language presentation state only;
+- Lighting remains shared-only and uses the canonical `lightingIntent` answer;
+- Lighting choice advances naturally to Final;
+- Scene progress derives from relevant micro-states;
+- theme colors use Prompt Draft tokens and all new visible copy uses i18n.
 
-After Phase 4 validates locally, continue with **Phase 5 — Scene + persistent environment refinement + Lighting**.
+After Phase 5 validates locally, continue with **Phase 6 — Final technical controls**.
 
 ---
 
@@ -92,24 +94,17 @@ Reference:
 https://www.figma.com/make/jgi1MxTu7e16Dv7AFiRof2/Review-Instructions
 ```
 
-The Make file is a **visual and interaction reference only**. Production remains Nuxt/Vue and must use the existing Prompt Draft architecture and design-system tokens.
+The Make file is a visual/interaction reference only. Production remains Nuxt/Vue and uses Prompt Draft theme/i18n/domain conventions.
 
-Accepted reference behavior includes:
+Accepted Scene reference behavior includes:
 
-- typography-first interaction;
-- symmetric Entry split and centered `or`;
-- subtle active-chapter progress line;
-- Living Sentence throughout the flow;
-- one-line `MULTIPLE PEOPLE` at normal desktop/laptop widths;
-- top-anchored Framing/crop visualization;
-- Headshot → Pose skip;
-- shared-first Look and Pose intent;
-- Scene contextual refinement;
-- ambient Lighting feedback;
-- editorial Review;
-- `Your direction is ready` completion semantics.
+- typography-first Studio / Outdoors / Abstract selection;
+- contextual optional follow-up text;
+- optional environment refinement;
+- ambient visual feedback;
+- Lighting as large typographic choices with ambient feedback.
 
-Production must correct documented Make logic gaps rather than reproduce them.
+Production correction: Make refinement is local panel state; production must persist the same intent through canonical `backgroundOptions`.
 
 ---
 
@@ -117,28 +112,19 @@ Production must correct documented Make logic gaps rather than reproduce them.
 
 ### PEOPLE progress
 
-Production derives People progress from its relevant micro-states. Implemented in the Living presentation layer.
+Implemented. Progress derives from branch-relevant Living micro-states.
 
 ### SCENE progress / refinement continuity
 
-Pending Phase 5. Environment refinement must remain inside the Wizard shell and preserve Living Sentence/chapter context.
+Active Phase 5. Refinement remains inside the Wizard shell and keeps chapter/Living Sentence orientation.
 
 ### Environment refinement persistence
 
-Pending Phase 5. Refinement must write canonical `backgroundOptions` and map through the existing Background architecture; local-only panel state is not acceptable.
+Active Phase 5. The canonical persistence target is `backgroundOptions`, already mapped by `portraitBackgroundOptions.ts` and `portrait.ts`.
 
 ### Per-subject override usability
 
-Production uses shared-first progressive disclosure for:
-
-```text
-Expression
-Hair
-Outfit
-Pose
-```
-
-Expression/Hair/Outfit are implemented. Pose is Phase 4. Lighting and Framing remain shared-only.
+Implemented for Expression, Hair, Outfit and Pose. Lighting and Framing remain shared-only.
 
 ### Review branch-changing edits
 
@@ -151,8 +137,6 @@ Headshot → Half Body → ask Pose only → Review
 One Person → Multiple → ask count/config only → Review
 Transform ↔ Create → add/remove only mode-specific required states → Review
 ```
-
-Do not replay the whole Wizard after a one-field Review edit.
 
 ---
 
@@ -170,7 +154,7 @@ Wizard-specific Living Sentence presentation layer
 production Portrait Wizard
 ```
 
-Important foundation remains in:
+Important canonical files remain authoritative:
 
 ```text
 app/pages/wizard/[wizardId].vue
@@ -188,7 +172,7 @@ app/wizard/portraitPoseOptions.ts
 app/wizard/hostDraft.ts
 ```
 
-Living presentation helpers may own presentation micro-state, chapter progress, display wording and Living Sentence tokens. They must **not** become a second mapping engine.
+Living presentation helpers may own presentation micro-state, chapter progress, display wording and Living Sentence tokens. They must not become a second mapping engine.
 
 ---
 
@@ -199,8 +183,8 @@ Phase 0  regression baseline                                      validated
 Phase 1  Living foundation                                       validated
 Phase 2  Entry / People / Portrait                                validated
 Phase 3  Look + per-subject progressive disclosure               validated
-Phase 4  Composition                                              active
-Phase 5  Scene + persistent environment refinement + Lighting    pending
+Phase 4  Composition                                              validated
+Phase 5  Scene + persistent environment refinement + Lighting    active
 Phase 6  Final technical controls                                 pending
 Phase 7  Review + branch-aware edit return                        pending
 Phase 8  Direction Ready / Create handoff                         pending
@@ -208,7 +192,7 @@ Phase 9  responsive / accessibility / motion polish              pending
 Phase 10 final regressions / build / generate / real generation   pending
 ```
 
-Keep production slices reviewable; do not replace several pending phases in one large migration commit.
+Keep production slices reviewable; do not combine pending phases into one migration commit.
 
 ---
 
@@ -247,8 +231,6 @@ Lighting
 - Create skips transform-only final controls;
 - Transform includes Reference Fidelity and Transformation Strength.
 
-Do not weaken these semantics while migrating presentation.
-
 ---
 
 ## 8. Regression protection
@@ -259,26 +241,18 @@ Primary Wizard command:
 pnpm test:wizard
 ```
 
-Historical pre-migration baseline:
-
-```text
-46 tests
-46 passed
-0 failed
-```
-
-That number is historical only; new Living tests have been added since then.
+Historical pre-migration baseline was 46/46. That count is historical only; focused Living tests are added as phases land.
 
 Coverage required as migration continues:
 
 - adaptive People / Look / Composition / Scene / Final progress;
-- Headshot excludes Pose and invalidates stale Pose presentation answers;
+- Headshot excludes Pose and invalidates stale Pose answers;
 - shared and per-subject Expression/Hair/Outfit/Pose behavior;
-- environment refinement persistence and canonical mapping;
+- environment refinement persistence and canonical Background mapping;
 - Review edit dependency resolution;
 - completion does not mutate Create before explicit handoff.
 
-After every risky production slice validate locally with at least:
+After every risky slice validate locally with at least:
 
 ```text
 pnpm test:wizard
@@ -310,8 +284,6 @@ OPEN IN CREATE
 create a NEW Create Draft
 ```
 
-The final Wizard UI must not imply that its direction preview is already the fully tuned Create experience.
-
 ---
 
 ## 10. Out of scope
@@ -342,4 +314,4 @@ A new chat continuing `feature/wizard-figma` should:
 6. use Figma Make as reference only;
 7. implement corrected production behavior wherever Make conflicts with documented requirements.
 
-Do **not** return to Figma refinement as the default next step. Production implementation is the active phase.
+Do not return to Figma refinement as the default next step. Production implementation is the active phase.
