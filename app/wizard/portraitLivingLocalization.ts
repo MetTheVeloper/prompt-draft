@@ -24,6 +24,18 @@ const VALUE_GROUP_BY_ANSWER_ID: Record<string, string> = {
   transformationStrength: "transformationStrength",
 };
 
+const SENTENCE_VALUE_ANSWER_BY_KEY: Record<string, string> = {
+  "wizard.living.sentence.expression": "expressionIntent",
+  "wizard.living.sentence.hair": "hairIntent",
+  "wizard.living.sentence.outfit": "outfitIntent",
+  "wizard.living.sentence.pose": "poseIntent",
+  "wizard.living.sentence.lighting": "lightingIntent",
+  "wizard.living.sentence.override.expression": "expressionIntent",
+  "wizard.living.sentence.override.hair": "hairIntent",
+  "wizard.living.sentence.override.outfit": "outfitIntent",
+  "wizard.living.sentence.override.pose": "poseIntent",
+};
+
 function translatedOrFallback(
   localizer: PortraitLivingUiLocalizer,
   key: string,
@@ -84,6 +96,52 @@ export function getPortraitLivingSubjectDisplayLabel(
         "wizard.living.subjects.fallbackSingle",
         "Person",
       );
+}
+
+function localizeFallbackSubjectName(
+  localizer: PortraitLivingUiLocalizer,
+  name: string,
+) {
+  if (name === "Person") {
+    return translatedOrFallback(
+      localizer,
+      "wizard.living.subjects.fallbackSingle",
+      name,
+    );
+  }
+  const match = /^Person\s+(\d+)$/i.exec(name);
+  if (!match) return name;
+  return translatedOrFallback(
+    localizer,
+    "wizard.living.subjects.fallbackNumbered",
+    name,
+    { number: Number(match[1]) },
+  );
+}
+
+export function localizePortraitLivingSentenceParams(
+  localizer: PortraitLivingUiLocalizer,
+  key: string,
+  params?: Record<string, string | number>,
+) {
+  if (!params) return params;
+  const next = { ...params };
+  const answerId = SENTENCE_VALUE_ANSWER_BY_KEY[key];
+  if (answerId && typeof next.value === "string") {
+    next.value = localizePortraitLivingValue(
+      localizer,
+      answerId,
+      next.value,
+      next.value,
+    );
+  }
+  if (key === "wizard.living.sentence.override.customDetails" && typeof next.domain === "string") {
+    next.domain = localizePortraitLivingDomain(localizer, next.domain);
+  }
+  if (typeof next.name === "string") {
+    next.name = localizeFallbackSubjectName(localizer, next.name);
+  }
+  return next;
 }
 
 function questionText(
