@@ -400,18 +400,20 @@ function editToken(token: WizardLivingSentenceToken) {
   }
 
   .wizard-living-review__column {
+    display: flex;
+    flex-direction: column;
     min-height: 0;
+    box-sizing: border-box;
     overflow-x: hidden;
     overflow-y: auto;
     overscroll-behavior-y: contain;
+    padding-block: clamp(18px, 3vh, 34px);
   }
 
   .wizard-living-review__column-stage {
-    display: flex;
-    min-height: 100%;
-    box-sizing: border-box;
-    align-items: center;
-    padding-block: clamp(18px, 3vh, 34px);
+    flex: 0 0 auto;
+    width: 100%;
+    margin-block: auto;
   }
 
   .wizard-living-review__header h1 {
