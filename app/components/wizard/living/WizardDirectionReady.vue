@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import WizardLivingAction from "./WizardLivingAction.vue";
 import WizardLivingSentence from "./WizardLivingSentence.vue";
 import type { WizardLivingSentenceToken } from "~/wizard/portraitLivingPresentation";
 
@@ -59,14 +60,13 @@ const preview = computed(() => props.promptPreview.trim());
             </section>
 
             <section class="wizard-direction-ready__actions">
-              <button
-                type="button"
-                class="wizard-direction-ready__primary"
+              <WizardLivingAction
+                :label="t('wizard.living.ready.openCreate')"
                 :disabled="props.disabled"
-                @click="emit('open-create')">
-                <span>{{ t('wizard.living.ready.openCreate') }}</span>
-                <i aria-hidden="true">→</i>
-              </button>
+                wide
+                size="lg"
+                @click="emit('open-create')"
+              />
 
               <div class="wizard-direction-ready__secondary-actions">
                 <button
@@ -235,43 +235,6 @@ const preview = computed(() => props.promptPreview.trim());
   gap: 22px;
 }
 
-.wizard-direction-ready__primary {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  width: 100%;
-  padding: 18px 0 14px;
-  border: 0;
-  border-bottom: 1px solid var(--primary70);
-  background: transparent;
-  color: var(--normalText);
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  font-size: clamp(0.85rem, 1.6vw, 1.08rem);
-  font-weight: 650;
-  letter-spacing: 0.14em;
-  text-align: left;
-  text-transform: uppercase;
-  transition: color 180ms ease, border-color 180ms ease;
-}
-
-.wizard-direction-ready__primary i {
-  color: var(--primary);
-  font-size: 1.4em;
-  font-style: normal;
-  transition: transform 180ms ease;
-}
-
-.wizard-direction-ready__primary:hover,
-.wizard-direction-ready__primary:focus-visible {
-  border-bottom-color: var(--primary);
-  color: var(--primary);
-}
-
-.wizard-direction-ready__primary:hover i,
-.wizard-direction-ready__primary:focus-visible i {
-  transform: translateX(6px);
-}
-
 .wizard-direction-ready__secondary-actions {
   display: flex;
   flex-wrap: wrap;
@@ -298,7 +261,6 @@ const preview = computed(() => props.promptPreview.trim());
   color: var(--primary);
 }
 
-.wizard-direction-ready__primary:focus-visible,
 .wizard-direction-ready__secondary-actions button:focus-visible,
 .wizard-direction-ready__footer button:focus-visible {
   outline: 1px solid var(--primary70);
@@ -373,8 +335,6 @@ const preview = computed(() => props.promptPreview.trim());
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wizard-direction-ready__primary,
-  .wizard-direction-ready__primary i,
   .wizard-direction-ready__secondary-actions button,
   .wizard-direction-ready__footer button {
     transition: none;
