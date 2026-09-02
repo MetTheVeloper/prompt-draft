@@ -1,5 +1,5 @@
 <script setup lang="ts">
-const appVersion = '0.1.0'
+const appVersion = '2.0.0'
 const { t } = useTheme()
 </script>
 

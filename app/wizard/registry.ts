@@ -42,7 +42,11 @@ export type WizardRuntimeReview =
     };
 
 export type WizardRuntimeCompletion =
-  | { ok: true; finalDraft: PromptDraftState }
+  | {
+      ok: true;
+      finalDraft: PromptDraftState;
+      promptPreview: string;
+    }
   | { ok: false; stage: string; issues?: unknown[] };
 
 function createRuntimeId(prefix: string) {
@@ -123,6 +127,7 @@ const portraitRuntime: WizardRuntimeEntry = {
     return {
       ok: true,
       finalDraft: result.completion.finalDraft,
+      promptPreview: result.completion.compilation.output,
     };
   },
   draftTitle: (session) =>

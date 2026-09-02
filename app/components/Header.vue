@@ -23,7 +23,6 @@ const {
   openSaveActiveCreateDraftAsTemplate,
 } = usePromptTemplateUi();
 
-const SHOW_EXPERIMENTAL_AUTHORING_ENTRY_POINTS = false;
 const CREATE_DRAFT_COLLECTION_REFRESH_EVENT = 'prompt-draft:create-editor:collection-refresh'
 
 const offlineHeaderLabel = computed(() => {
@@ -248,7 +247,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
       ]
     : []
 
-  const createItems: GlobalMenuItem[] = SHOW_EXPERIMENTAL_AUTHORING_ENTRY_POINTS && route.name === 'create'
+  const createItems: GlobalMenuItem[] = route.name === 'create'
     ? [
         {
           type: 'divider',
@@ -340,7 +339,7 @@ function openMobileMenu() {
 
     <el-flex rules="rsc" type="link" to="/">
       <img
-        :src="`img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`"
+        :src="`/img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`"
         class="hp32"
         :alt="$t('app.title')"
       />
@@ -381,7 +380,7 @@ function openMobileMenu() {
     <div v-else class="fg100" />
 
     <el-button
-      v-if="SHOW_EXPERIMENTAL_AUTHORING_ENTRY_POINTS && !mobile && route.name === 'create'"
+      v-if="!mobile && route.name === 'create'"
       ref="templatesButtonRef"
       label="Templates"
       icon="dashboard_customize"
@@ -394,7 +393,7 @@ function openMobileMenu() {
     />
 
     <el-button
-      v-if="SHOW_EXPERIMENTAL_AUTHORING_ENTRY_POINTS && !mobile && route.name === 'create'"
+      v-if="!mobile && route.name === 'create'"
       label="Portrait Wizard"
       icon="auto_awesome"
       color="prim"
