@@ -2,7 +2,7 @@
 
 Last updated: **2026-09-02**
 
-Status: **Phases 0–4 are implemented and locally validated on `feature/wizard-figma`; Phase 5 (Scene + persistent environment refinement + Lighting) is the active production slice.**
+Status: **Phases 0–5 are implemented and locally validated on `feature/wizard-figma`; Phase 6 (Final technical controls) is the active production slice.**
 
 Working branch: `feature/wizard-figma`
 
@@ -20,11 +20,11 @@ Actions contract: `prompt-draft.actions.v1`
 
 ## 1. Validated production checkpoint
 
-Latest locally validated checkpoint before Phase 5:
+Latest locally validated checkpoint before Phase 6:
 
 ```text
-5ad40bdaf03647b0a4dc36554545812fb1b07bce
-feat(wizard): add living composition flow
+c30976b1f187b77407aaaee6b47f860dd3b0dd40
+Phase 5 Scene + persistent environment refinement + Lighting
 ```
 
 Validation reported on **2026-09-02**:
@@ -41,48 +41,64 @@ Implemented and validated through this checkpoint:
 - Phase 1 Living shell, chapter navigation, Living Sentence and typographic primitives;
 - Phase 2 Entry / People / Subject configuration / Portrait;
 - Phase 3 Expression / Hair / Outfit shared-first flow and optional per-subject customization;
-- Prompt Draft theme-token integration for the Living UI;
-- English Wizard copy routed through the project i18n system;
-- Phase 4 Framing visual selector, top-anchored crop preview, Headshot → Pose skip, shared-first Pose details and per-subject Pose overrides;
-- stale Pose answers are removed when Headshot makes Pose irrelevant.
+- Prompt Draft theme-token integration and Wizard i18n conventions;
+- Phase 4 Framing visual selector, top-anchored crop, Headshot → Pose skip, shared-first Pose details and per-subject Pose overrides;
+- Phase 5 Studio / Outdoors / Abstract Living Scene flow;
+- contextual environment detail persisted directly in canonical answers;
+- environment refinement persisted through canonical `backgroundOptions`;
+- Lighting migrated into the Living Scene chapter;
+- Scene Back/resume/progress behavior validated locally.
 
 Canonical Portrait mapping, isolated Wizard session semantics, validation/compile and explicit Create handoff remain authoritative.
 
 ---
 
-## 2. Active phase — Phase 5 Scene
+## 2. Active phase — Phase 6 Final technical controls
 
 Target flow:
 
 ```text
-Scene choice
-  ↓
-contextual optional detail
-  ├── continue / skip
-  └── optional environment refinement
-          ↓
-      canonical backgroundOptions
-          ↓
-Lighting
-  ↓
-Final
+Create
+  Aspect Ratio
+      ↓
+    Review
+
+Transform
+  Aspect Ratio
+      ↓
+  Reference Fidelity
+      ↓
+  Transformation Strength
+      ↓
+    Review
+```
+
+Accepted Aspect Ratio set:
+
+```text
+1:1
+4:5
+5:4
+3:4
+4:3
+9:16
+16:9
 ```
 
 Requirements:
 
-- Studio / Outdoors / Abstract remain semantic `environmentType` choices;
-- contextual detail writes directly to `studioDirection`, `outdoorSetting` or `abstractDirection` while typing;
-- optional environment refinement stays inside the Living Wizard shell;
-- refinement writes directly to the existing canonical `backgroundOptions` answer;
-- no local-only environment model is introduced;
-- refinement survives Back/navigation/session persistence;
-- refinement preview is natural-language presentation state only;
-- Lighting remains shared-only and uses the canonical `lightingIntent` answer;
-- Lighting choice advances naturally to Final;
-- Scene progress derives from relevant micro-states;
-- theme colors use Prompt Draft tokens and all new visible copy uses i18n.
+- each ratio is represented by its actual proportion;
+- `5:4` and `4:3` use the existing canonical Prompt Draft aspect-ratio catalog values;
+- technical controls stay outside the creative Living Sentence;
+- default answer ownership does not silently skip presentation states;
+- Create sees only Aspect Ratio;
+- Transform sees Aspect Ratio → Reference Fidelity → Transformation Strength;
+- Back follows the inverse mode-relevant sequence;
+- Final chapter progress adapts to the current branch;
+- all new visible copy uses Wizard i18n;
+- all new UI styling uses Prompt Draft theme tokens.
 
-After Phase 5 validates locally, continue with **Phase 6 — Final technical controls**.
+After Phase 6 validates locally, continue with **Phase 7 — editorial Review + branch-aware edit return**.
 
 ---
 
@@ -96,15 +112,15 @@ https://www.figma.com/make/jgi1MxTu7e16Dv7AFiRof2/Review-Instructions
 
 The Make file is a visual/interaction reference only. Production remains Nuxt/Vue and uses Prompt Draft theme/i18n/domain conventions.
 
-Accepted Scene reference behavior includes:
+Accepted Final reference behavior includes:
 
-- typography-first Studio / Outdoors / Abstract selection;
-- contextual optional follow-up text;
-- optional environment refinement;
-- ambient visual feedback;
-- Lighting as large typographic choices with ambient feedback.
+- proportion-based Aspect Ratio selector;
+- immediate selection/advance;
+- Create → Review after Aspect Ratio;
+- Transform → Reference Fidelity → Transformation Strength → Review;
+- typography-first Reference Fidelity and Transformation Strength choices.
 
-Production correction: Make refinement is local panel state; production must persist the same intent through canonical `backgroundOptions`.
+Production uses canonical values from the existing definition/mapping rather than Make-local aliases.
 
 ---
 
@@ -112,19 +128,23 @@ Production correction: Make refinement is local panel state; production must per
 
 ### PEOPLE progress
 
-Implemented. Progress derives from branch-relevant Living micro-states.
+Implemented and validated.
 
 ### SCENE progress / refinement continuity
 
-Active Phase 5. Refinement remains inside the Wizard shell and keeps chapter/Living Sentence orientation.
+Implemented and validated.
 
 ### Environment refinement persistence
 
-Active Phase 5. The canonical persistence target is `backgroundOptions`, already mapped by `portraitBackgroundOptions.ts` and `portrait.ts`.
+Implemented and validated through canonical `backgroundOptions`.
 
 ### Per-subject override usability
 
-Implemented for Expression, Hair, Outfit and Pose. Lighting and Framing remain shared-only.
+Implemented and validated for Expression, Hair, Outfit and Pose. Lighting and Framing remain shared-only.
+
+### Final ratios
+
+Production must include `5:4` and `4:3` in addition to the older definition set and map them through the existing Prompt Draft aspect-ratio catalog.
 
 ### Review branch-changing edits
 
@@ -184,8 +204,8 @@ Phase 1  Living foundation                                       validated
 Phase 2  Entry / People / Portrait                                validated
 Phase 3  Look + per-subject progressive disclosure               validated
 Phase 4  Composition                                              validated
-Phase 5  Scene + persistent environment refinement + Lighting    active
-Phase 6  Final technical controls                                 pending
+Phase 5  Scene + persistent environment refinement + Lighting    validated
+Phase 6  Final technical controls                                 active
 Phase 7  Review + branch-aware edit return                        pending
 Phase 8  Direction Ready / Create handoff                         pending
 Phase 9  responsive / accessibility / motion polish              pending
@@ -228,8 +248,12 @@ Lighting
 ### Branching
 
 - Headshot suppresses Pose;
-- Create skips transform-only final controls;
+- Create skips transform-only Final controls;
 - Transform includes Reference Fidelity and Transformation Strength.
+
+### Living Sentence
+
+Creative sentence content remains derived presentation state. Technical Final controls remain outside it.
 
 ---
 
@@ -249,6 +273,7 @@ Coverage required as migration continues:
 - Headshot excludes Pose and invalidates stale Pose answers;
 - shared and per-subject Expression/Hair/Outfit/Pose behavior;
 - environment refinement persistence and canonical Background mapping;
+- mode-specific Final flow and canonical Aspect Ratio mapping;
 - Review edit dependency resolution;
 - completion does not mutate Create before explicit handoff.
 
