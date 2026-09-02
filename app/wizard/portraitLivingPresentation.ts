@@ -39,14 +39,24 @@ export type PortraitLivingLookState = {
   domain: PortraitLivingLookDomain;
   phase: PortraitLivingLookPhase;
 };
+export type PortraitLivingCompositionPhase =
+  | "framing"
+  | "pose-choice"
+  | "pose-refine";
 
 type PortraitLivingUiState = {
   peopleState?: PortraitLivingPeopleState;
   lookDomain?: PortraitLivingLookDomain;
   lookPhase?: PortraitLivingLookPhase;
+  compositionPhase?: PortraitLivingCompositionPhase;
 };
 
 const LIVING_UI_KEY = "livingUi";
+const PORTRAIT_POSE_ANSWER_IDS = [
+  "poseIntent",
+  "poseOptions",
+  "poseSubjectOverrides",
+] as const;
 
 export const PORTRAIT_LIVING_CHAPTERS: readonly WizardLivingChapter[] = [
   { id: "start", label: "wizard.living.chapters.begin" },
@@ -98,6 +108,10 @@ function isLookPhase(value: unknown): value is PortraitLivingLookPhase {
   return value === "choice" || value === "refine";
 }
 
+function isCompositionPhase(value: unknown): value is PortraitLivingCompositionPhase {
+  return value === "framing" || value === "pose-choice" || value === "pose-refine";
+}
+
 function livingUiState(session: WizardSession): PortraitLivingUiState {
   const value = session.derived[LIVING_UI_KEY];
   if (!isRecord(value)) return {};
@@ -105,12 +119,14 @@ function livingUiState(session: WizardSession): PortraitLivingUiState {
   const peopleState = value.peopleState;
   const lookDomain = value.lookDomain;
   const lookPhase = value.lookPhase;
+  const compositionPhase = value.compositionPhase;
   return {
     ...(peopleState === "choice" || peopleState === "count" || peopleState === "configure"
       ? { peopleState }
       : {}),
     ...(isLookDomain(lookDomain) ? { lookDomain } : {}),
     ...(isLookPhase(lookPhase) ? { lookPhase } : {}),
+    ...(isCompositionPhase(compositionPhase) ? { compositionPhase } : {}),
   };
 }
 
@@ -180,6 +196,32 @@ export function getPortraitLivingLookState(
   return { domain: "expression", phase: "choice" };
 }
 
+export function setPortraitLivingCompositionPhase(
+  session: WizardSession,
+  compositionPhase: PortraitLivingCompositionPhase,
+): WizardSession {
+  return mergeLivingUiState(session, { compositionPhase });
+}
+
+export function getPortraitLivingCompositionPhase(
+  session: WizardSession,
+): PortraitLivingCompositionPhase {
+  const explicit = livingUiState(session).compositionPhase;
+  if (explicit) return explicit;
+
+  const framing = cleanText(userAnswer(session, "framingIntent"));
+  if (!framing || framing === "headshot") return "framing";
+  return session.answers.poseIntent?.source === "user"
+    ? "pose-refine"
+    : "pose-choice";
+}
+
+export function clearPortraitLivingPoseAnswers(session: WizardSession): WizardSession {
+  const answers = { ...session.answers };
+  for (const answerId of PORTRAIT_POSE_ANSWER_IDS) delete answers[answerId];
+  return { ...session, answers };
+}
+
 export function getPortraitLivingChapterProgress(
   session: WizardSession,
 ): number | null {
@@ -195,6 +237,13 @@ export function getPortraitLivingChapterProgress(
     if (look.domain === "expression") return look.phase === "refine" ? 1 / 6 : 0;
     if (look.domain === "hair") return look.phase === "refine" ? 1 / 2 : 1 / 3;
     return look.phase === "refine" ? 1 : 2 / 3;
+  }
+
+  if (session.currentStepId === "composition") {
+    const phase = getPortraitLivingCompositionPhase(session);
+    if (phase === "pose-choice") return 1 / 2;
+    if (phase === "pose-refine") return 1;
+    return cleanText(userAnswer(session, "framingIntent")) === "headshot" ? 1 : 0;
   }
 
   return null;
@@ -268,6 +317,31 @@ function lookOverridePhrases(
       : [localizer.t("wizard.living.sentence.override.outfit", {
           name,
           value: optionLabel(intent),
+        })];
+  });
+}
+
+function poseOverridePhrases(
+  session: WizardSession,
+  subjects: readonly WizardEntityAnswer[],
+  localizer: WizardLivingLocalizer,
+) {
+  const value = userAnswer(session, "poseSubjectOverrides");
+  if (!isRecord(value)) return [];
+
+  return subjects.flatMap((subject, index) => {
+    const raw = value[subject.id];
+    if (!isRecord(raw)) return [];
+    const name = getWizardEntityDisplayLabel(subject, index, subjects.length);
+    const intent = cleanText(raw.intent);
+    return [intent
+      ? localizer.t("wizard.living.sentence.override.pose", {
+          name,
+          value: optionLabel(intent),
+        })
+      : localizer.t("wizard.living.sentence.override.customDetails", {
+          name,
+          domain: "pose",
         })];
   });
 }
@@ -438,6 +512,19 @@ export function buildPortraitLivingSentenceTokens(
       stepId: "composition",
       editable: true,
     });
+
+    if (subjects.length > 1) {
+      const phrases = poseOverridePhrases(session, subjects, localizer);
+      if (phrases.length) {
+        tokens.push({
+          id: "pose-overrides",
+          text: t("wizard.living.sentence.overrideLead", { value: localizer.list(phrases) }),
+          answerId: "poseSubjectOverrides",
+          stepId: "composition",
+          editable: true,
+        });
+      }
+    }
   }
 
   const environment = cleanText(userAnswer(session, "environmentType"));

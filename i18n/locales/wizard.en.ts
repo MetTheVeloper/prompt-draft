@@ -121,6 +121,44 @@ export default {
         "This direction keeps the source reference, so extra outfit details are not applied to this person.",
       continue: "Continue →",
     },
+    composition: {
+      framing: {
+        prompt: "I want the portrait framed as...",
+        previewHint: "Hover to preview",
+        descriptions: {
+          headshot: "Tight, face-first",
+          headShoulders: "Shoulders and above",
+          halfBody: "Waist and above",
+          fullBody: "Complete figure",
+        },
+      },
+      pose: {
+        eyebrow: "POSE",
+        prompt: "I want the pose to feel...",
+        promptMultiple: "I want everyone's pose to feel...",
+        sharedFirst:
+          "Start with one shared pose. You can change it for any person before moving on.",
+        resolved: "{value}, as the shared pose direction.",
+        shared: "SHARED",
+        hideFineTuning: "Hide fine-tuning",
+        fineTuneDetails: "Fine-tune pose details",
+        adjustIndividually: "Adjust individually",
+        adjustIndividuallyCount: "Adjust individually · {count}",
+        fineTune: "FINE-TUNE",
+        fineTuneDescription:
+          "Optional pose details refine the shared direction without changing who it applies to.",
+        individual: "INDIVIDUAL",
+        individualDescription:
+          "Everyone follows the shared pose until you explicitly change them here.",
+        subjectsAria: "Portrait subjects",
+        custom: "Custom",
+        sharedStatus: "Shared",
+        sharedDirection: "Shared direction: {value}",
+        useShared: "Use shared",
+        changeForPerson: "Change it for this person",
+        continue: "Continue →",
+      },
+    },
     sentence: {
       placeholder: "I want to...",
       lead: "I want to ",
@@ -148,6 +186,7 @@ export default {
         hair: "{name} has {value} hair",
         outfitReference: "{name} keeps their reference outfit",
         outfit: "{name} has a {value} outfit",
+        pose: "{name} has a {value} pose",
       },
       framing: {
         headshot: ", framed as a headshot",

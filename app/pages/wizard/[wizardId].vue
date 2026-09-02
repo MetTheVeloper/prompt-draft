@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { PromptDraftState } from "~/modules/promptDraft.types";
+import WizardLivingComposition from "~/components/wizard/living/WizardLivingComposition.vue";
 import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
 import WizardLivingLook from "~/components/wizard/living/WizardLivingLook.vue";
 import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
@@ -37,13 +38,16 @@ import {
 import type { PortraitIntent } from "~/wizard/portrait";
 import {
   buildPortraitLivingSentenceTokens,
+  clearPortraitLivingPoseAnswers,
   createPortraitLivingSubjects,
   getPortraitLivingChapterProgress,
+  getPortraitLivingCompositionPhase,
   getPortraitLivingLookState,
   getPortraitLivingPeopleState,
   getPortraitLivingPromptMode,
   PORTRAIT_LIVING_CHAPTERS,
   PORTRAIT_LIVING_LOOK_ANSWER_IDS,
+  setPortraitLivingCompositionPhase,
   setPortraitLivingLookState,
   setPortraitLivingPeopleState,
   type PortraitLivingLookDomain,
@@ -130,6 +134,9 @@ const isLivingPortrait = computed(() =>
 const isLivingLook = computed(() =>
   isPortraitLivingRuntime.value && currentStep.value?.id === "appearance",
 );
+const isLivingComposition = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.id === "composition",
+);
 const livingSentenceTokens = computed(() =>
   session.value
     ? buildPortraitLivingSentenceTokens(session.value, livingLocalizer.value)
@@ -142,6 +149,9 @@ const livingLookState = computed(() =>
   session.value
     ? getPortraitLivingLookState(session.value)
     : ({ domain: "expression", phase: "choice" } as const),
+);
+const livingCompositionPhase = computed(() =>
+  session.value ? getPortraitLivingCompositionPhase(session.value) : "framing",
 );
 const livingChapterProgress = computed(() =>
   session.value ? getPortraitLivingChapterProgress(session.value) : null,
@@ -167,6 +177,32 @@ const livingLookOverrideQuestion = computed<WizardSubjectOverridesQuestionDefini
   const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.overrides);
   return question?.type === "subjectOverrides" ? question : null;
 });
+const livingFramingQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find((item) => item.id === "framingIntent");
+  return question?.type === "singleChoice" ? question : null;
+});
+const livingPoseQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find((item) => item.id === "poseIntent");
+  return question?.type === "singleChoice" ? question : null;
+});
+const livingPoseOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find((item) => item.id === "poseOptions");
+  return question?.type === "modalOptions" ? question : null;
+});
+const livingPoseOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() => {
+  const question = allQuestions.value.find((item) => item.id === "poseSubjectOverrides");
+  return question?.type === "subjectOverrides" ? question : null;
+});
+const livingFramingValue = computed(() =>
+  session.value?.answers.framingIntent?.source === "user"
+    ? session.value.answers.framingIntent.value
+    : undefined,
+);
+const livingPoseValue = computed(() =>
+  session.value?.answers.poseIntent?.source === "user"
+    ? session.value.answers.poseIntent.value
+    : undefined,
+);
 
 function isAnswered(question: (typeof visibleQuestions.value)[number]) {
   const answer = session.value?.answers[question.id];
@@ -297,6 +333,45 @@ function continueLook() {
   next();
 }
 
+function chooseFraming(value: string) {
+  if (!session.value || !runtime.value) return;
+  let nextSession = setWizardUserAnswer(session.value, "framingIntent", value);
+
+  if (value === "headshot") {
+    nextSession = clearPortraitLivingPoseAnswers(nextSession);
+    nextSession = setPortraitLivingCompositionPhase(nextSession, "framing");
+    advanceResolvedSession(nextSession);
+    return;
+  }
+
+  nextSession = setPortraitLivingCompositionPhase(nextSession, "pose-choice");
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
+function choosePoseIntent(value: string) {
+  if (!session.value || !runtime.value) return;
+  let nextSession = setWizardUserAnswer(session.value, "poseIntent", value);
+  nextSession = setPortraitLivingCompositionPhase(nextSession, "pose-refine");
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
+function updatePoseOptions(value: Record<string, string>) {
+  setAnswer("poseOptions", value);
+}
+
+function updatePoseOverrides(
+  value: Record<string, { intent?: string; options?: Record<string, string> }>,
+) {
+  setAnswer("poseSubjectOverrides", value);
+}
+
+function continueComposition() {
+  if (livingCompositionPhase.value !== "pose-refine") return;
+  next();
+}
+
 function ensureCurrentStepValid() {
   const missing = visibleQuestions.value.find(
     (question) => question.required && !isAnswered(question),
@@ -333,6 +408,22 @@ function livingBack() {
     }
     if (state.domain === "hair") {
       setLookMicroState("expression", "refine");
+      return;
+    }
+    back();
+    return;
+  }
+
+  if (isLivingComposition.value) {
+    const phase = livingCompositionPhase.value;
+    if (phase === "pose-refine") {
+      session.value = setPortraitLivingCompositionPhase(session.value, "pose-choice");
+      issueMessage.value = "";
+      return;
+    }
+    if (phase === "pose-choice") {
+      session.value = setPortraitLivingCompositionPhase(session.value, "framing");
+      issueMessage.value = "";
       return;
     }
     back();
@@ -638,6 +729,39 @@ onBeforeUnmount(() => {
       @update-options="updateLookOptions"
       @update-overrides="updateLookOverrides"
       @continue="continueLook"
+    />
+  </WizardLivingShell>
+
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingComposition && livingFramingQuestion && livingPoseQuestion"
+    :title="runtime.definition.title"
+    :chapters="livingChapters"
+    :current-chapter-id="currentStageId"
+    :sentence-tokens="livingSentenceTokens"
+    :chapter-progress="livingChapterProgress"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingComposition
+      :phase="livingCompositionPhase"
+      :framing-question="livingFramingQuestion"
+      :pose-question="livingPoseQuestion"
+      :pose-options-question="livingPoseOptionsQuestion"
+      :pose-override-question="livingPoseOverrideQuestion"
+      :subjects="livingSubjects"
+      :framing-value="livingFramingValue"
+      :pose-value="livingPoseValue"
+      :pose-options-value="session.answers.poseOptions?.value"
+      :pose-overrides-value="session.answers.poseSubjectOverrides?.value"
+      :disabled="isBusy"
+      @choose-framing="chooseFraming"
+      @choose-pose="choosePoseIntent"
+      @update-pose-options="updatePoseOptions"
+      @update-pose-overrides="updatePoseOverrides"
+      @continue="continueComposition"
     />
   </WizardLivingShell>
 
