@@ -369,6 +369,28 @@ function editToken(token: WizardLivingSentenceToken) {
   justify-content: flex-end;
 }
 
+.wizard-living-review:dir(rtl) .wizard-living-review__header,
+.wizard-living-review:dir(rtl) .wizard-living-review__row {
+  text-align: right;
+}
+
+.wizard-living-review:dir(rtl) .wizard-living-review__header h1 {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  letter-spacing: 0;
+  line-height: 1.25;
+}
+
+.wizard-living-review:dir(rtl) .wizard-living-review__header > span,
+.wizard-living-review:dir(rtl) .wizard-living-review__section-label,
+.wizard-living-review:dir(rtl) .wizard-living-review__row > span {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.wizard-living-review:dir(rtl) .wizard-living-review__action {
+  justify-content: flex-start;
+}
+
 @media (min-width: 1080px) {
   .wizard-living-review {
     grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
