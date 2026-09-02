@@ -11,6 +11,7 @@ const props = withDefaults(
     title: string;
     chapters: readonly WizardLivingChapter[];
     currentChapterId: string;
+    maxReachedChapterId?: string;
     sentenceTokens: readonly WizardLivingSentenceToken[];
     chapterProgress?: number | null;
     canGoBack: boolean;
@@ -20,6 +21,7 @@ const props = withDefaults(
     showSentence?: boolean;
   }>(),
   {
+    maxReachedChapterId: undefined,
     chapterProgress: null,
     isSaved: false,
     isBusy: false,
@@ -29,6 +31,7 @@ const props = withDefaults(
 );
 
 const emit = defineEmits<{
+  (event: "chapter", chapterId: string): void;
   (event: "back"): void;
   (event: "restart"): void;
   (event: "exit"): void;
@@ -49,10 +52,12 @@ const emit = defineEmits<{
       <WizardChapterNav
         :chapters="props.chapters"
         :current-chapter-id="props.currentChapterId"
+        :max-reached-chapter-id="props.maxReachedChapterId"
         :progress="props.chapterProgress"
         :can-go-back="props.canGoBack"
         :is-saved="props.isSaved"
         :is-busy="props.isBusy"
+        @chapter="emit('chapter', $event)"
         @back="emit('back')"
         @restart="emit('restart')"
         @exit="emit('exit')"
