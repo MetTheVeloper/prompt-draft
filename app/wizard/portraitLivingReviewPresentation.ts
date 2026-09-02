@@ -7,12 +7,28 @@ import {
 } from "./entities";
 import {
   clearPortraitLivingPoseAnswers,
+  getPortraitLivingCompositionPhase,
+  getPortraitLivingLookState,
+  getPortraitLivingPeopleState,
   setPortraitLivingCompositionPhase,
   setPortraitLivingLookState,
   setPortraitLivingPeopleState,
+  type PortraitLivingCompositionPhase,
+  type PortraitLivingLookDomain,
+  type PortraitLivingLookPhase,
+  type PortraitLivingPeopleState,
 } from "./portraitLivingPresentation";
-import { setPortraitLivingFinalPhase } from "./portraitLivingFinalPresentation";
-import { setPortraitLivingScenePhase } from "./portraitLivingScenePresentation";
+import {
+  getPortraitLivingFinalPhase,
+  isPortraitLivingTransformMode,
+  setPortraitLivingFinalPhase,
+  type PortraitLivingFinalPhase,
+} from "./portraitLivingFinalPresentation";
+import {
+  getPortraitLivingScenePhase,
+  setPortraitLivingScenePhase,
+  type PortraitLivingScenePhase,
+} from "./portraitLivingScenePresentation";
 import type { WizardSession } from "./session";
 
 export type PortraitLivingReviewPending =
@@ -22,12 +38,23 @@ export type PortraitLivingReviewPending =
   | "reference"
   | "strength";
 
+export type PortraitLivingNavigationAnchor = {
+  stepId: string;
+  peopleState?: PortraitLivingPeopleState;
+  lookDomain?: PortraitLivingLookDomain;
+  lookPhase?: PortraitLivingLookPhase;
+  compositionPhase?: PortraitLivingCompositionPhase;
+  scenePhase?: PortraitLivingScenePhase;
+  finalPhase?: PortraitLivingFinalPhase;
+};
+
 export type PortraitLivingReviewEditContext = {
   originAnswerId: string;
   originStepId: string;
   beforeCreationMode: string;
   beforeFraming: string;
   beforeSubjectCount: number;
+  returnAnchor: PortraitLivingNavigationAnchor;
   pending?: PortraitLivingReviewPending;
 };
 
@@ -36,11 +63,24 @@ export type PortraitLivingReviewEditTarget = {
   stepId: string;
 };
 
-const LIVING_REVIEW_EDIT_KEY = "livingReviewEdit";
+const LIVING_EDIT_KEY = "livingEditDetour";
+const LEGACY_LIVING_REVIEW_EDIT_KEY = "livingReviewEdit";
 const TRANSFORM_ONLY_ANSWER_IDS = [
   "referenceUsage",
   "transformationStrength",
 ] as const;
+
+export const PORTRAIT_LIVING_CHAPTER_EDIT_TARGETS: Readonly<
+  Record<string, PortraitLivingReviewEditTarget>
+> = {
+  start: { answerId: "creationMode", stepId: "start" },
+  subjects: { answerId: "subjects", stepId: "subjects" },
+  portrait: { answerId: "portraitIntent", stepId: "intent" },
+  appearance: { answerId: "expressionIntent", stepId: "appearance" },
+  composition: { answerId: "framingIntent", stepId: "composition" },
+  scene: { answerId: "environmentType", stepId: "environment" },
+  final: { answerId: "aspectRatio", stepId: "final-settings" },
+};
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === "object" && !Array.isArray(value);
@@ -58,6 +98,34 @@ function isPending(value: unknown): value is PortraitLivingReviewPending {
     value === "strength";
 }
 
+function isPeopleState(value: unknown): value is PortraitLivingPeopleState {
+  return value === "choice" || value === "count" || value === "configure";
+}
+
+function isLookDomain(value: unknown): value is PortraitLivingLookDomain {
+  return value === "expression" || value === "hair" || value === "outfit";
+}
+
+function isLookPhase(value: unknown): value is PortraitLivingLookPhase {
+  return value === "choice" || value === "refine";
+}
+
+function isCompositionPhase(value: unknown): value is PortraitLivingCompositionPhase {
+  return value === "framing" || value === "pose-choice" || value === "pose-refine";
+}
+
+function isScenePhase(value: unknown): value is PortraitLivingScenePhase {
+  return value === "environment-choice" ||
+    value === "environment-detail" ||
+    value === "environment-refine";
+}
+
+function isFinalPhase(value: unknown): value is PortraitLivingFinalPhase {
+  return value === "aspect-ratio" ||
+    value === "reference-fidelity" ||
+    value === "transformation-strength";
+}
+
 function answerText(session: WizardSession, answerId: string) {
   return cleanText(session.answers[answerId]?.value);
 }
@@ -66,17 +134,80 @@ function isUserOwned(session: WizardSession, answerId: string) {
   return session.answers[answerId]?.source === "user";
 }
 
-function withReviewContext(
+function parseNavigationAnchor(value: unknown): PortraitLivingNavigationAnchor | null {
+  if (!isRecord(value)) return null;
+  const stepId = cleanText(value.stepId);
+  if (!stepId) return null;
+
+  return {
+    stepId,
+    ...(isPeopleState(value.peopleState) ? { peopleState: value.peopleState } : {}),
+    ...(isLookDomain(value.lookDomain) ? { lookDomain: value.lookDomain } : {}),
+    ...(isLookPhase(value.lookPhase) ? { lookPhase: value.lookPhase } : {}),
+    ...(isCompositionPhase(value.compositionPhase)
+      ? { compositionPhase: value.compositionPhase }
+      : {}),
+    ...(isScenePhase(value.scenePhase) ? { scenePhase: value.scenePhase } : {}),
+    ...(isFinalPhase(value.finalPhase) ? { finalPhase: value.finalPhase } : {}),
+  };
+}
+
+export function capturePortraitLivingNavigationAnchor(
+  session: WizardSession,
+): PortraitLivingNavigationAnchor {
+  const anchor: PortraitLivingNavigationAnchor = {
+    stepId: session.currentStepId,
+  };
+
+  if (session.currentStepId === "subjects") {
+    anchor.peopleState = getPortraitLivingPeopleState(session);
+  } else if (session.currentStepId === "appearance") {
+    const look = getPortraitLivingLookState(session);
+    anchor.lookDomain = look.domain;
+    anchor.lookPhase = look.phase;
+  } else if (session.currentStepId === "composition") {
+    anchor.compositionPhase = getPortraitLivingCompositionPhase(session);
+  } else if (
+    session.currentStepId === "environment" ||
+    session.currentStepId === "lighting"
+  ) {
+    anchor.scenePhase = getPortraitLivingScenePhase(session);
+  } else if (session.currentStepId === "final-settings") {
+    anchor.finalPhase = getPortraitLivingFinalPhase(session);
+  }
+
+  return anchor;
+}
+
+export function portraitLivingChapterIdForStep(stepId: string) {
+  if (stepId === "start") return "start";
+  if (stepId === "subjects") return "subjects";
+  if (stepId === "intent") return "portrait";
+  if (stepId === "appearance") return "appearance";
+  if (stepId === "composition") return "composition";
+  if (stepId === "environment" || stepId === "lighting") return "scene";
+  if (stepId === "final-settings") return "final";
+  if (stepId === "review") return "review";
+  return "";
+}
+
+export function getPortraitLivingEditReturnChapterId(session: WizardSession) {
+  const context = getPortraitLivingReviewEditContext(session);
+  return portraitLivingChapterIdForStep(
+    context?.returnAnchor.stepId || session.currentStepId,
+  );
+}
+
+function withEditContext(
   session: WizardSession,
   context: PortraitLivingReviewEditContext,
 ): WizardSession {
-  return {
-    ...session,
-    derived: {
-      ...session.derived,
-      [LIVING_REVIEW_EDIT_KEY]: context,
-    },
+  const derived = {
+    ...session.derived,
+    [LIVING_EDIT_KEY]: context,
   };
+  delete derived[LEGACY_LIVING_REVIEW_EDIT_KEY];
+  return { ...session, derived };
 }
 
 function withPending(
@@ -85,14 +216,15 @@ function withPending(
 ): WizardSession {
   const context = getPortraitLivingReviewEditContext(session);
   return context
-    ? withReviewContext(session, { ...context, pending })
+    ? withEditContext(session, { ...context, pending })
     : session;
 }
 
 export function getPortraitLivingReviewEditContext(
   session: WizardSession,
 ): PortraitLivingReviewEditContext | null {
-  const raw = session.derived[LIVING_REVIEW_EDIT_KEY];
+  const raw = session.derived[LIVING_EDIT_KEY] ||
+    session.derived[LEGACY_LIVING_REVIEW_EDIT_KEY];
   if (!isRecord(raw)) return null;
 
   const originAnswerId = cleanText(raw.originAnswerId);
@@ -108,6 +240,7 @@ export function getPortraitLivingReviewEditContext(
       typeof raw.beforeSubjectCount === "number" && Number.isFinite(raw.beforeSubjectCount)
         ? Math.max(0, Math.floor(raw.beforeSubjectCount))
         : 0,
+    returnAnchor: parseNavigationAnchor(raw.returnAnchor) || { stepId: "review" },
     ...(isPending(raw.pending) ? { pending: raw.pending } : {}),
   };
 }
@@ -116,14 +249,71 @@ export function isPortraitLivingReviewEditing(session: WizardSession) {
   return Boolean(getPortraitLivingReviewEditContext(session));
 }
 
-export function returnToPortraitLivingReview(session: WizardSession): WizardSession {
+function withoutEditContext(session: WizardSession) {
   const derived = { ...session.derived };
-  delete derived[LIVING_REVIEW_EDIT_KEY];
-  return {
+  delete derived[LIVING_EDIT_KEY];
+  delete derived[LEGACY_LIVING_REVIEW_EDIT_KEY];
+  return { ...session, derived };
+}
+
+function restoreNavigationAnchor(
+  session: WizardSession,
+  anchor: PortraitLivingNavigationAnchor,
+): WizardSession {
+  let next = {
     ...session,
-    currentStepId: "review",
-    derived,
+    currentStepId: anchor.stepId,
   };
+
+  if (anchor.stepId === "subjects") {
+    return setPortraitLivingPeopleState(next, anchor.peopleState || "choice");
+  }
+
+  if (anchor.stepId === "appearance") {
+    return setPortraitLivingLookState(next, {
+      domain: anchor.lookDomain || "expression",
+      phase: anchor.lookPhase || "choice",
+    });
+  }
+
+  if (anchor.stepId === "composition") {
+    let phase = anchor.compositionPhase || "framing";
+    if (answerText(next, "framingIntent") === "headshot" && phase !== "framing") {
+      phase = "framing";
+    }
+    return setPortraitLivingCompositionPhase(next, phase);
+  }
+
+  if (anchor.stepId === "environment" || anchor.stepId === "lighting") {
+    return setPortraitLivingScenePhase(
+      next,
+      anchor.scenePhase || "environment-choice",
+    );
+  }
+
+  if (anchor.stepId === "final-settings") {
+    let phase = anchor.finalPhase || "aspect-ratio";
+    if (!isPortraitLivingTransformMode(next) && phase !== "aspect-ratio") {
+      phase = "aspect-ratio";
+    }
+    return setPortraitLivingFinalPhase(next, phase);
+  }
+
+  return next;
+}
+
+export function returnToPortraitLivingEditAnchor(session: WizardSession): WizardSession {
+  const context = getPortraitLivingReviewEditContext(session);
+  const clean = withoutEditContext(session);
+  return restoreNavigationAnchor(
+    clean,
+    context?.returnAnchor || { stepId: "review" },
+  );
+}
+
+/** Backward-compatible alias for the original Review-only edit flow. */
+export function returnToPortraitLivingReview(session: WizardSession): WizardSession {
+  return returnToPortraitLivingEditAnchor(session);
 }
 
 export function clearPortraitLivingTransformOnlyAnswers(
@@ -198,9 +388,10 @@ function prepareReviewTarget(
   return session;
 }
 
-export function beginPortraitLivingReviewEdit(
+function beginEdit(
   session: WizardSession,
   target: PortraitLivingReviewEditTarget,
+  returnAnchor: PortraitLivingNavigationAnchor,
 ): WizardSession {
   const context: PortraitLivingReviewEditContext = {
     originAnswerId: target.answerId,
@@ -208,13 +399,34 @@ export function beginPortraitLivingReviewEdit(
     beforeCreationMode: answerText(session, "creationMode"),
     beforeFraming: answerText(session, "framingIntent"),
     beforeSubjectCount: normalizeWizardEntityAnswers(session.answers.subjects?.value).length,
+    returnAnchor,
   };
 
-  const next = withReviewContext(
+  const next = withEditContext(
     { ...session, currentStepId: target.stepId },
     context,
   );
   return prepareReviewTarget(next, target.answerId);
+}
+
+export function beginPortraitLivingReviewEdit(
+  session: WizardSession,
+  target: PortraitLivingReviewEditTarget,
+): WizardSession {
+  return beginEdit(session, target, { stepId: "review" });
+}
+
+export function beginPortraitLivingChapterEdit(
+  session: WizardSession,
+  chapterId: string,
+): WizardSession {
+  const target = PORTRAIT_LIVING_CHAPTER_EDIT_TARGETS[chapterId];
+  if (!target) return session;
+
+  const existing = getPortraitLivingReviewEditContext(session);
+  const returnAnchor = existing?.returnAnchor ||
+    capturePortraitLivingNavigationAnchor(session);
+  return beginEdit(session, target, returnAnchor);
 }
 
 export function resolvePortraitLivingReviewChoice(
@@ -225,7 +437,7 @@ export function resolvePortraitLivingReviewChoice(
   if (!context) return session;
 
   if (context.pending === "pose" && answerId === "poseIntent") {
-    return returnToPortraitLivingReview(session);
+    return returnToPortraitLivingEditAnchor(session);
   }
 
   if (context.pending === "reference" && answerId === "referenceUsage") {
@@ -235,7 +447,7 @@ export function resolvePortraitLivingReviewChoice(
   }
 
   if (context.pending === "strength" && answerId === "transformationStrength") {
-    return returnToPortraitLivingReview(session);
+    return returnToPortraitLivingEditAnchor(session);
   }
 
   if (answerId !== context.originAnswerId) return session;
@@ -243,7 +455,7 @@ export function resolvePortraitLivingReviewChoice(
   if (answerId === "creationMode") {
     const mode = answerText(session, "creationMode");
     if (mode === "from_description") {
-      return returnToPortraitLivingReview(
+      return returnToPortraitLivingEditAnchor(
         clearPortraitLivingTransformOnlyAnswers(session),
       );
     }
@@ -255,12 +467,12 @@ export function resolvePortraitLivingReviewChoice(
       return setPortraitLivingFinalPhase(next, "reference-fidelity");
     }
 
-    return returnToPortraitLivingReview(session);
+    return returnToPortraitLivingEditAnchor(session);
   }
 
   if (answerId === "subjects") {
     const subjects = normalizeWizardEntityAnswers(session.answers.subjects?.value);
-    if (subjects.length <= 1) return returnToPortraitLivingReview(session);
+    if (subjects.length <= 1) return returnToPortraitLivingEditAnchor(session);
     let next = withPending(session, "people-config");
     next = { ...next, currentStepId: "subjects" };
     return setPortraitLivingPeopleState(next, "configure");
@@ -269,7 +481,7 @@ export function resolvePortraitLivingReviewChoice(
   if (answerId === "framingIntent") {
     const framing = answerText(session, "framingIntent");
     if (framing === "headshot") {
-      return returnToPortraitLivingReview(
+      return returnToPortraitLivingEditAnchor(
         clearPortraitLivingPoseAnswers(session),
       );
     }
@@ -281,7 +493,7 @@ export function resolvePortraitLivingReviewChoice(
       return setPortraitLivingCompositionPhase(next, "pose-choice");
     }
 
-    return returnToPortraitLivingReview(session);
+    return returnToPortraitLivingEditAnchor(session);
   }
 
   if (answerId === "environmentType") {
@@ -290,14 +502,14 @@ export function resolvePortraitLivingReviewChoice(
     return setPortraitLivingScenePhase(next, "environment-detail");
   }
 
-  return returnToPortraitLivingReview(session);
+  return returnToPortraitLivingEditAnchor(session);
 }
 
 export function completePortraitLivingReviewConfirmation(
   session: WizardSession,
 ): WizardSession {
   return isPortraitLivingReviewEditing(session)
-    ? returnToPortraitLivingReview(session)
+    ? returnToPortraitLivingEditAnchor(session)
     : session;
 }
 
