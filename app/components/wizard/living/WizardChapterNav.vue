@@ -112,7 +112,7 @@ function canNavigate(index: number, chapterId: string) {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--normalText10);
+  color: var(--normalText20);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.59rem;
   font-weight: 500;
@@ -129,7 +129,7 @@ function canNavigate(index: number, chapterId: string) {
 }
 
 .wizard-chapter-nav__chapter--past {
-  color: var(--normalText25);
+  color: var(--normalText35);
 }
 
 .wizard-chapter-nav__chapter--clickable {
@@ -157,7 +157,7 @@ function canNavigate(index: number, chapterId: string) {
   height: 1px;
   min-width: 28px;
   overflow: hidden;
-  background: var(--normalText10);
+  background: var(--normalText15);
 }
 
 .wizard-chapter-nav__progress > span {
@@ -173,7 +173,7 @@ function canNavigate(index: number, chapterId: string) {
   display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 14px;
+  gap: 22px;
 }
 
 .wizard-chapter-nav__actions button {
@@ -181,7 +181,7 @@ function canNavigate(index: number, chapterId: string) {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--normalText25);
+  color: var(--normalText35);
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.09em;
@@ -200,7 +200,7 @@ function canNavigate(index: number, chapterId: string) {
 }
 
 .wizard-chapter-nav__saved {
-  color: var(--normalText20);
+  color: var(--normalText30);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.56rem;
   letter-spacing: 0.12em;
@@ -221,7 +221,7 @@ function canNavigate(index: number, chapterId: string) {
 @media (max-width: 620px) {
   .wizard-chapter-nav__actions {
     justify-content: space-between;
-    gap: 10px;
+    gap: 14px;
   }
 
   .wizard-chapter-nav__saved {
