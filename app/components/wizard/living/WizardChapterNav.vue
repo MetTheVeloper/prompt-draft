@@ -4,6 +4,7 @@ import type { WizardLivingChapter } from "~/wizard/portraitLivingPresentation";
 const props = defineProps<{
   chapters: readonly WizardLivingChapter[];
   currentChapterId: string;
+  maxReachedChapterId?: string;
   progress?: number | null;
   canGoBack: boolean;
   isSaved?: boolean;
@@ -11,6 +12,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
+  (event: "chapter", chapterId: string): void;
   (event: "back"): void;
   (event: "restart"): void;
   (event: "exit"): void;
@@ -20,24 +22,40 @@ const { t } = useI18n();
 const currentIndex = computed(() =>
   props.chapters.findIndex((chapter) => chapter.id === props.currentChapterId),
 );
+const reachedIndex = computed(() => {
+  const id = props.maxReachedChapterId || props.currentChapterId;
+  const index = props.chapters.findIndex((chapter) => chapter.id === id);
+  return index >= 0 ? index : currentIndex.value;
+});
 
 const safeProgress = computed(() => {
   if (typeof props.progress !== "number") return null;
   return Math.min(1, Math.max(0, props.progress));
 });
+
+function canNavigate(index: number, chapterId: string) {
+  return !props.isBusy &&
+    chapterId !== props.currentChapterId &&
+    index < reachedIndex.value;
+}
 </script>
 
 <template>
   <div class="wizard-chapter-nav">
     <nav class="wizard-chapter-nav__chapters scrollbar-hidden" :aria-label="t('wizard.living.nav.ariaLabel')">
-      <div
+      <button
         v-for="(chapter, index) in props.chapters"
         :key="chapter.id"
+        type="button"
         class="wizard-chapter-nav__chapter"
         :class="{
           'wizard-chapter-nav__chapter--active': chapter.id === props.currentChapterId,
-          'wizard-chapter-nav__chapter--past': index < currentIndex,
-        }">
+          'wizard-chapter-nav__chapter--past': index < reachedIndex,
+          'wizard-chapter-nav__chapter--clickable': canNavigate(index, chapter.id),
+        }"
+        :disabled="!canNavigate(index, chapter.id)"
+        :aria-current="chapter.id === props.currentChapterId ? 'step' : undefined"
+        @click="emit('chapter', chapter.id)">
         <span>{{ chapter.label }}</span>
         <span
           v-if="chapter.id === props.currentChapterId && safeProgress !== null"
@@ -45,7 +63,7 @@ const safeProgress = computed(() => {
           aria-hidden="true">
           <span :style="{ width: `${safeProgress * 100}%` }" />
         </span>
-      </div>
+      </button>
     </nav>
 
     <div class="wizard-chapter-nav__actions">
@@ -90,18 +108,42 @@ const safeProgress = computed(() => {
   flex: 0 0 auto;
   gap: 6px;
   min-width: 28px;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
   color: var(--normalText10);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.59rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   line-height: 1;
+  text-align: left;
   text-transform: uppercase;
-  transition: color 300ms ease;
+  transition: color 180ms ease;
+}
+
+.wizard-chapter-nav__chapter:disabled {
+  cursor: default;
+  opacity: 1;
 }
 
 .wizard-chapter-nav__chapter--past {
   color: var(--normalText25);
+}
+
+.wizard-chapter-nav__chapter--clickable {
+  cursor: pointer;
+}
+
+.wizard-chapter-nav__chapter--clickable:hover,
+.wizard-chapter-nav__chapter--clickable:focus-visible {
+  color: var(--normalText70);
+}
+
+.wizard-chapter-nav__chapter--clickable:focus-visible {
+  outline: 1px solid var(--primary);
+  outline-offset: 5px;
 }
 
 .wizard-chapter-nav__chapter--active {
