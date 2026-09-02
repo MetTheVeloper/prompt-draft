@@ -274,6 +274,38 @@ export default {
         },
       },
     },
+    final: {
+      aspectRatio: {
+        eyebrow: "ONE LAST THING",
+        prompt: "I want the final image in...",
+        ariaLabel: "Final image aspect ratio",
+        descriptors: {
+          square: "Square",
+          portrait: "Portrait",
+          landscape: "Landscape",
+          vertical: "Vertical",
+        },
+      },
+      referenceFidelity: {
+        eyebrow: "REFERENCE",
+        prompt: "How much should the reference lead?",
+        descriptions: {
+          strict: "The reference leads everything.",
+          balanced: "Reference and creativity in equal weight.",
+          loose: "Reference as inspiration only.",
+        },
+      },
+      transformationStrength: {
+        eyebrow: "TRANSFORMATION",
+        prompt: "I want the transformation to be...",
+        descriptions: {
+          subtle: "Barely changed. Almost the same.",
+          balanced: "Meaningfully transformed, recognizable.",
+          strong: "Substantially different.",
+          extreme: "As far as it can go.",
+        },
+      },
+    },
     sentence: {
       placeholder: "I want to...",
       lead: "I want to ",
