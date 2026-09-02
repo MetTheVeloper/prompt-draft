@@ -997,7 +997,9 @@ export const portraitWizardV2Definition = {
           options: [
             { value: "1:1", label: "Square · 1:1" },
             { value: "4:5", label: "Portrait · 4:5" },
+            { value: "5:4", label: "Landscape · 5:4" },
             { value: "3:4", label: "Portrait · 3:4" },
+            { value: "4:3", label: "Landscape · 4:3" },
             { value: "9:16", label: "Vertical · 9:16" },
             { value: "16:9", label: "Landscape · 16:9" },
           ],
