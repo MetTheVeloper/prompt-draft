@@ -829,9 +829,6 @@ async function continueInCreate() {
   }
 
   clearWizardSession(runtime.value.id);
-  completedDraft.value = null;
-  completedPromptPreview.value = "";
-  isSaved.value = false;
   await router.push("/create");
 }
 
