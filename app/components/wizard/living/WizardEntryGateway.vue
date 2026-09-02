@@ -123,6 +123,23 @@ const emit = defineEmits<{
   transform: translateY(0);
 }
 
+.wizard-entry-gateway:dir(rtl) {
+  text-align: right;
+}
+
+.wizard-entry-gateway:dir(rtl) .wizard-entry-gateway__title,
+.wizard-entry-gateway:dir(rtl) .wizard-entry-gateway__lead,
+.wizard-entry-gateway:dir(rtl) .wizard-entry-gateway__tail {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.wizard-entry-gateway:dir(rtl) .wizard-entry-gateway__description {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  font-style: normal;
+  line-height: 1.8;
+}
+
 @media (max-width: 740px) {
   .wizard-entry-gateway { min-height: 0; padding: 26px 22px; }
   .wizard-entry-gateway__title { font-size: clamp(2.2rem, 13vw, 4.4rem); }
