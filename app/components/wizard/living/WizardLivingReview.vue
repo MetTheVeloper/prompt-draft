@@ -393,8 +393,8 @@ function editToken(token: WizardLivingSentenceToken) {
 @media (min-width: 1080px) {
   .wizard-living-review {
     grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
+    grid-template-rows: minmax(0, 1fr);
     align-self: stretch;
-    height: 100%;
     min-height: 0;
     overflow: hidden;
   }
