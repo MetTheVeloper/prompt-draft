@@ -2,6 +2,7 @@
 import type { PromptDraftState } from "~/modules/promptDraft.types";
 import WizardLivingComposition from "~/components/wizard/living/WizardLivingComposition.vue";
 import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
+import WizardLivingFinal from "~/components/wizard/living/WizardLivingFinal.vue";
 import WizardLivingLook from "~/components/wizard/living/WizardLivingLook.vue";
 import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
 import WizardLivingPortrait from "~/components/wizard/living/WizardLivingPortrait.vue";
@@ -54,6 +55,13 @@ import {
   type PortraitLivingLookDomain,
   type WizardLivingLocalizer,
 } from "~/wizard/portraitLivingPresentation";
+import {
+  getPortraitLivingFinalPhase,
+  getPortraitLivingFinalProgress,
+  isPortraitLivingTransformMode,
+  setPortraitLivingFinalPhase,
+  type PortraitLivingFinalPhase,
+} from "~/wizard/portraitLivingFinalPresentation";
 import {
   clearPortraitLivingEnvironmentDetailAnswers,
   getPortraitLivingEnvironmentDetail,
@@ -151,6 +159,9 @@ const isLivingScene = computed(() =>
   isPortraitLivingRuntime.value &&
   (currentStep.value?.id === "environment" || currentStep.value?.id === "lighting"),
 );
+const isLivingFinal = computed(() =>
+  isPortraitLivingRuntime.value && currentStep.value?.id === "final-settings",
+);
 
 const livingSentenceTokens = computed(() =>
   session.value
@@ -171,11 +182,14 @@ const livingCompositionPhase = computed(() =>
 const livingScenePhase = computed(() =>
   session.value ? getPortraitLivingScenePhase(session.value) : "environment-choice",
 );
+const livingFinalPhase = computed(() =>
+  session.value ? getPortraitLivingFinalPhase(session.value) : "aspect-ratio",
+);
 const livingChapterProgress = computed(() => {
   if (!session.value) return null;
-  return isLivingScene.value
-    ? getPortraitLivingSceneProgress(session.value)
-    : getPortraitLivingChapterProgress(session.value);
+  if (isLivingFinal.value) return getPortraitLivingFinalProgress(session.value);
+  if (isLivingScene.value) return getPortraitLivingSceneProgress(session.value);
+  return getPortraitLivingChapterProgress(session.value);
 });
 const livingPromptMode = computed(() =>
   session.value ? getPortraitLivingPromptMode(session.value) : "image_to_image",
@@ -232,6 +246,15 @@ const livingBackgroundOptionsQuestion = computed<WizardModalOptionsQuestionDefin
 const livingLightingQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
   singleChoiceQuestion("lightingIntent"),
 );
+const livingAspectRatioQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("aspectRatio"),
+);
+const livingReferenceUsageQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("referenceUsage"),
+);
+const livingTransformationStrengthQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("transformationStrength"),
+);
 
 const livingFramingValue = computed(() =>
   session.value?.answers.framingIntent?.source === "user"
@@ -259,6 +282,21 @@ const livingEnvironmentDetailValue = computed(() =>
 const livingLightingValue = computed(() =>
   session.value?.answers.lightingIntent?.source === "user"
     ? session.value.answers.lightingIntent.value
+    : undefined,
+);
+const livingAspectRatioValue = computed(() =>
+  session.value?.answers.aspectRatio?.source === "user"
+    ? session.value.answers.aspectRatio.value
+    : undefined,
+);
+const livingReferenceUsageValue = computed(() =>
+  session.value?.answers.referenceUsage?.source === "user"
+    ? session.value.answers.referenceUsage.value
+    : undefined,
+);
+const livingTransformationStrengthValue = computed(() =>
+  session.value?.answers.transformationStrength?.source === "user"
+    ? session.value.answers.transformationStrength.value
     : undefined,
 );
 
@@ -470,7 +508,42 @@ function continueEnvironment() {
 
 function chooseLighting(value: string) {
   if (!session.value) return;
-  const nextSession = setWizardUserAnswer(session.value, "lightingIntent", value);
+  let nextSession = setWizardUserAnswer(session.value, "lightingIntent", value);
+  nextSession = setPortraitLivingFinalPhase(nextSession, "aspect-ratio");
+  advanceResolvedSession(nextSession);
+}
+
+function setFinalMicroState(value: PortraitLivingFinalPhase) {
+  if (!session.value) return;
+  session.value = setPortraitLivingFinalPhase(session.value, value);
+  issueMessage.value = "";
+}
+
+function chooseAspectRatio(value: string) {
+  if (!session.value || !runtime.value) return;
+  let nextSession = setWizardUserAnswer(session.value, "aspectRatio", value);
+
+  if (isPortraitLivingTransformMode(nextSession)) {
+    nextSession = setPortraitLivingFinalPhase(nextSession, "reference-fidelity");
+    session.value = runtime.value.resolveSession(nextSession);
+    issueMessage.value = "";
+    return;
+  }
+
+  advanceResolvedSession(nextSession);
+}
+
+function chooseReferenceUsage(value: string) {
+  if (!session.value || !runtime.value) return;
+  let nextSession = setWizardUserAnswer(session.value, "referenceUsage", value);
+  nextSession = setPortraitLivingFinalPhase(nextSession, "transformation-strength");
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
+function chooseTransformationStrength(value: string) {
+  if (!session.value) return;
+  const nextSession = setWizardUserAnswer(session.value, "transformationStrength", value);
   advanceResolvedSession(nextSession);
 }
 
@@ -547,6 +620,20 @@ function livingBack() {
     }
     if (phase === "environment-detail") {
       setSceneMicroState("environment-choice");
+      return;
+    }
+    back();
+    return;
+  }
+
+  if (isLivingFinal.value) {
+    const phase = livingFinalPhase.value;
+    if (phase === "transformation-strength") {
+      setFinalMicroState("reference-fidelity");
+      return;
+    }
+    if (phase === "reference-fidelity") {
+      setFinalMicroState("aspect-ratio");
       return;
     }
     back();
@@ -917,6 +1004,35 @@ onBeforeUnmount(() => {
       @phase="setSceneMicroState"
       @continue-environment="continueEnvironment"
       @choose-lighting="chooseLighting"
+    />
+  </WizardLivingShell>
+
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingFinal && livingAspectRatioQuestion"
+    :title="runtime.definition.title"
+    :chapters="livingChapters"
+    :current-chapter-id="currentStageId"
+    :sentence-tokens="livingSentenceTokens"
+    :chapter-progress="livingChapterProgress"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingFinal
+      :phase="livingFinalPhase"
+      :mode="livingPromptMode"
+      :aspect-ratio-question="livingAspectRatioQuestion"
+      :reference-usage-question="livingReferenceUsageQuestion"
+      :transformation-strength-question="livingTransformationStrengthQuestion"
+      :aspect-ratio-value="livingAspectRatioValue"
+      :reference-usage-value="livingReferenceUsageValue"
+      :transformation-strength-value="livingTransformationStrengthValue"
+      :disabled="isBusy"
+      @choose-aspect-ratio="chooseAspectRatio"
+      @choose-reference-usage="chooseReferenceUsage"
+      @choose-transformation-strength="chooseTransformationStrength"
     />
   </WizardLivingShell>
 
