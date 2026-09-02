@@ -64,7 +64,9 @@ const emit = defineEmits<{
     </div>
 
     <main class="wizard-living-shell__main">
-      <slot />
+      <div class="wizard-living-shell__stage">
+        <slot />
+      </div>
     </main>
 
     <footer v-if="$slots.footer" class="wizard-living-shell__footer">
@@ -81,18 +83,12 @@ const emit = defineEmits<{
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid var(--normalText15);
-  border-radius: 20px;
   background: var(--themeBackground);
   color: var(--normalText);
 }
 
 .wizard-living-shell--entry {
   grid-template-rows: minmax(0, 1fr);
-}
-
-.wizard-living-shell--entry .wizard-living-shell__main {
-  padding: clamp(20px, 3vw, 34px) clamp(22px, 4vw, 50px);
 }
 
 .wizard-living-shell__ambient {
@@ -115,15 +111,27 @@ const emit = defineEmits<{
 }
 
 .wizard-living-shell__main {
-  display: flex;
   min-height: 0;
-  align-items: center;
-  padding: clamp(26px, 4vh, 52px) clamp(22px, 6vw, 78px);
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
 }
 
-.wizard-living-shell__main > :deep(*) {
+.wizard-living-shell__stage {
+  display: flex;
+  min-height: 100%;
   width: 100%;
+  box-sizing: border-box;
+  align-items: center;
+  padding: clamp(26px, 4vh, 52px) clamp(22px, 6vw, 78px);
+}
+
+.wizard-living-shell__stage > :deep(*) {
+  width: 100%;
+}
+
+.wizard-living-shell--entry .wizard-living-shell__stage {
+  padding: clamp(20px, 3vw, 34px) clamp(22px, 4vw, 50px);
 }
 
 .wizard-living-shell__footer {
@@ -131,16 +139,12 @@ const emit = defineEmits<{
 }
 
 @media (max-width: 700px) {
-  .wizard-living-shell {
-    border-radius: 16px;
-  }
-
   .wizard-living-shell__header {
     padding-inline: 18px;
   }
 
   .wizard-living-shell__sentence,
-  .wizard-living-shell__main,
+  .wizard-living-shell__stage,
   .wizard-living-shell__footer {
     padding-inline: 20px;
   }
