@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { PromptDraftState } from "~/modules/promptDraft.types";
 import WizardDirectionReady from "~/components/wizard/living/WizardDirectionReady.vue";
+import WizardLivingAction from "~/components/wizard/living/WizardLivingAction.vue";
 import WizardLivingComposition from "~/components/wizard/living/WizardLivingComposition.vue";
 import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue";
 import WizardLivingFinal from "~/components/wizard/living/WizardLivingFinal.vue";
@@ -11,6 +12,7 @@ import WizardLivingReview from "~/components/wizard/living/WizardLivingReview.vu
 import WizardLivingScene from "~/components/wizard/living/WizardLivingScene.vue";
 import WizardLivingShell from "~/components/wizard/living/WizardLivingShell.vue";
 import WizardLivingSubjectConfig from "~/components/wizard/living/WizardLivingSubjectConfig.vue";
+import WizardResumeGateway from "~/components/wizard/living/WizardResumeGateway.vue";
 import type {
   WizardModalOptionsQuestionDefinition,
   WizardSingleChoiceQuestionDefinition,
@@ -884,28 +886,12 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <el-grid
+  <WizardResumeGateway
     v-if="resumeCandidate && runtime"
-    rules="csc"
-    :gap="18"
-    :p="24"
-    :radius="20"
-    :br="1"
-    bc="normal10"
-    bg="surface"
-    style="max-width: 560px; margin: auto">
-    <el-icon icon="history" :size="28" color="prim" />
-    <el-grid :gap="6">
-      <el-text :size="22" :weight="800">Continue your {{ runtime.definition.title }}?</el-text>
-      <el-text :size="12" color="normal50">
-        Your previous Wizard session was saved on this device. Continue where you left off or start again.
-      </el-text>
-    </el-grid>
-    <el-flex rules="rsc" :gap="8">
-      <el-button label="Start over" mode="flat" color="normal" @click="beginFresh" />
-      <el-button label="Continue" icon="arrow_forward" :invert="true" color="blue" @click="resumeSaved" />
-    </el-flex>
-  </el-grid>
+    :title="runtime.definition.title"
+    @continue="resumeSaved"
+    @start-over="beginFresh"
+  />
 
   <WizardDirectionReady
     v-else-if="completedDraft && runtime && session"
@@ -969,12 +955,9 @@ onBeforeUnmount(() => {
     <template v-if="livingPeopleState === 'configure'" #footer>
       <el-flex rules="rbc" class="w100">
         <el-text :size="10" color="normal35">{{ t('wizard.living.people.confirmedProgress') }}</el-text>
-        <el-button
+        <WizardLivingAction
           :label="t('wizard.living.people.continue')"
-          icon="arrow_forward"
-          :invert="true"
-          color="blue"
-          :disable="isBusy"
+          :disabled="isBusy"
           @click="continuePeople"
         />
       </el-flex>
