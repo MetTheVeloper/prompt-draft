@@ -60,6 +60,13 @@ import {
   type WizardLivingLocalizer,
 } from "~/wizard/portraitLivingPresentation";
 import {
+  getPortraitLivingSubjectDisplayLabel,
+  localizePortraitLivingQuestion,
+  localizePortraitLivingSentenceParams,
+  localizePortraitLivingValue,
+  type PortraitLivingUiLocalizer,
+} from "~/wizard/portraitLivingLocalization";
+import {
   getPortraitLivingFinalPhase,
   getPortraitLivingFinalProgress,
   isPortraitLivingTransformMode,
@@ -91,7 +98,7 @@ import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
 const route = useRoute();
 const router = useRouter();
-const { t, locale } = useI18n();
+const { t, te, locale } = useI18n();
 const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
 const { openSaveDraftAsTemplate } = usePromptTemplateUi();
@@ -106,8 +113,18 @@ const isBusy = ref(false);
 const isSaved = ref(false);
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
-const livingLocalizer = computed<WizardLivingLocalizer>(() => ({
+const livingUiLocalizer = computed<PortraitLivingUiLocalizer>(() => ({
   t: (key, params) => t(key, params || {}),
+  te: (key) => te(key),
+}));
+
+const livingLocalizer = computed<WizardLivingLocalizer>(() => ({
+  t: (key, params) => {
+    const nextParams = locale.value === "fa"
+      ? localizePortraitLivingSentenceParams(livingUiLocalizer.value, key, params)
+      : params;
+    return t(key, nextParams || {});
+  },
   list: (items) => new Intl.ListFormat(locale.value, {
     style: "long",
     type: "conjunction",
@@ -219,23 +236,38 @@ const livingPromptMode = computed(() =>
 const livingSubjects = computed(() =>
   normalizeWizardEntityAnswers(session.value?.answers.subjects?.value),
 );
+const livingPresentationSubjects = computed(() =>
+  livingSubjects.value.map((subject, index) => ({
+    ...subject,
+    label: getPortraitLivingSubjectDisplayLabel(
+      livingUiLocalizer.value,
+      subject,
+      index,
+      livingSubjects.value.length,
+    ),
+  })),
+);
 const livingLookAnswerIds = computed(() =>
   PORTRAIT_LIVING_LOOK_ANSWER_IDS[livingLookState.value.domain],
 );
 
+function localizedQuestion<T extends (typeof allQuestions.value)[number]>(question: T) {
+  return localizePortraitLivingQuestion(question, livingUiLocalizer.value);
+}
+
 function singleChoiceQuestion(id: string) {
   const question = allQuestions.value.find((item) => item.id === id);
-  return question?.type === "singleChoice" ? question : null;
+  return question?.type === "singleChoice" ? localizedQuestion(question) : null;
 }
 
 function modalOptionsQuestion(id: string) {
   const question = allQuestions.value.find((item) => item.id === id);
-  return question?.type === "modalOptions" ? question : null;
+  return question?.type === "modalOptions" ? localizedQuestion(question) : null;
 }
 
 function subjectOverridesQuestion(id: string) {
   const question = allQuestions.value.find((item) => item.id === id);
-  return question?.type === "subjectOverrides" ? question : null;
+  return question?.type === "subjectOverrides" ? localizedQuestion(question) : null;
 }
 
 const livingLookIntentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
@@ -321,6 +353,56 @@ const livingTransformationStrengthValue = computed(() =>
     ? session.value.answers.transformationStrength.value
     : undefined,
 );
+
+function localizedReviewValue(answerId: string | undefined, fallback: string) {
+  if (!answerId || !session.value) return fallback;
+  if (answerId === "subjects") {
+    const labels = livingSubjects.value.map((subject, index) =>
+      getPortraitLivingSubjectDisplayLabel(
+        livingUiLocalizer.value,
+        subject,
+        index,
+        livingSubjects.value.length,
+      ),
+    );
+    return labels.length
+      ? new Intl.ListFormat(locale.value, { style: "long", type: "conjunction" }).format(labels)
+      : fallback;
+  }
+  if (answerId === "aspectRatio") {
+    const raw = String(session.value.answers.aspectRatio?.value || "");
+    if (!raw) return fallback;
+    const descriptor = raw === "1:1"
+      ? "square"
+      : raw === "9:16"
+        ? "vertical"
+        : raw === "4:5" || raw === "3:4"
+          ? "portrait"
+          : "landscape";
+    return t("wizard.living.review.aspectRatioValue", {
+      label: t(`wizard.living.final.aspectRatio.descriptors.${descriptor}`),
+      value: raw,
+    });
+  }
+  const raw = session.value.answers[answerId]?.value;
+  if (typeof raw === "string") {
+    return localizePortraitLivingValue(
+      livingUiLocalizer.value,
+      answerId,
+      raw,
+      fallback,
+    );
+  }
+  return fallback;
+}
+
+const livingReviewItems = computed(() => {
+  if (!review.value?.ok) return [];
+  return review.value.items.map((entry) => ({
+    ...entry,
+    value: localizedReviewValue(entry.answerId, entry.value),
+  }));
+});
 
 function isAnswered(question: (typeof visibleQuestions.value)[number]) {
   const answer = session.value?.answers[question.id];
@@ -613,7 +695,7 @@ function ensureCurrentStepValid() {
     (question) => question.required && !isAnswered(question),
   );
   if (!missing) return true;
-  issueMessage.value = `Please answer “${missing.title}” before continuing.`;
+  issueMessage.value = t("wizard.living.errors.required");
   return false;
 }
 
@@ -793,8 +875,8 @@ async function finish() {
     const result = await runtime.value.complete(session.value);
     if (!result.ok) {
       issueMessage.value = result.stage === "mapping"
-        ? "Some choices could not be applied. Review your answers and try again."
-        : "The generated prompt could not be validated or compiled. Review the Wizard choices and try again.";
+        ? t("wizard.living.errors.mapping")
+        : t("wizard.living.errors.compile");
       return;
     }
 
@@ -819,7 +901,9 @@ function saveCompletedAsTemplate() {
   if (!completedDraft.value || !runtime.value || !session.value) return;
   openSaveDraftAsTemplate(completedDraft.value, {
     defaultTitle: runtime.value.draftTitle(session.value),
-    description: `Saved from ${runtime.value.definition.title}.`,
+    description: t("wizard.living.fallback.savedFrom", {
+      title: t("wizard.living.wizardTitle"),
+    }),
     source: {
       kind: "wizard",
       wizardId: runtime.value.id,
@@ -835,7 +919,7 @@ async function continueInCreate() {
     runtime.value.draftTitle(session.value),
   );
   if (!created) {
-    issueMessage.value = "The finished prompt could not be added to Create.";
+    issueMessage.value = t("wizard.living.errors.handoff");
     return;
   }
 
@@ -861,7 +945,7 @@ function scheduleSave() {
 onMounted(() => {
   const entry = runtime.value;
   if (!entry) {
-    issueMessage.value = `Unknown Wizard: ${wizardId.value}`;
+    issueMessage.value = t("wizard.living.errors.unknownWizard", { id: wizardId.value });
     return;
   }
   const persisted = loadWizardSession(entry.definition);
@@ -888,7 +972,7 @@ onBeforeUnmount(() => {
 <template>
   <WizardResumeGateway
     v-if="resumeCandidate && runtime"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     @continue="resumeSaved"
     @start-over="beginFresh"
   />
@@ -907,7 +991,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingEntry"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     current-chapter-id="start"
     :sentence-tokens="livingSentenceTokens"
@@ -925,7 +1009,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingPeople"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -966,7 +1050,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingPortrait"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -982,7 +1066,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingLook && livingLookIntentQuestion"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -1001,7 +1085,7 @@ onBeforeUnmount(() => {
       :intent-question="livingLookIntentQuestion"
       :options-question="livingLookOptionsQuestion"
       :override-question="livingLookOverrideQuestion"
-      :subjects="livingSubjects"
+      :subjects="livingPresentationSubjects"
       :intent-value="session.answers[livingLookAnswerIds.intent]?.value"
       :options-value="session.answers[livingLookAnswerIds.options]?.value"
       :overrides-value="session.answers[livingLookAnswerIds.overrides]?.value"
@@ -1015,7 +1099,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingComposition && livingFramingQuestion && livingPoseQuestion"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -1033,7 +1117,7 @@ onBeforeUnmount(() => {
       :pose-question="livingPoseQuestion"
       :pose-options-question="livingPoseOptionsQuestion"
       :pose-override-question="livingPoseOverrideQuestion"
-      :subjects="livingSubjects"
+      :subjects="livingPresentationSubjects"
       :framing-value="livingFramingValue"
       :pose-value="livingPoseValue"
       :pose-options-value="session.answers.poseOptions?.value"
@@ -1049,7 +1133,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingScene && livingEnvironmentQuestion && livingLightingQuestion"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -1083,7 +1167,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingFinal && livingAspectRatioQuestion"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
@@ -1113,7 +1197,7 @@ onBeforeUnmount(() => {
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingReview && review?.ok"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :chapters="livingChapters"
     current-chapter-id="review"
     :sentence-tokens="livingSentenceTokens"
@@ -1127,7 +1211,7 @@ onBeforeUnmount(() => {
     @exit="exitWizard">
     <WizardLivingReview
       :tokens="livingSentenceTokens"
-      :items="review.items"
+      :items="livingReviewItems"
       :mode="livingPromptMode"
       :disabled="isBusy"
       @edit="editLivingReview"
@@ -1137,7 +1221,7 @@ onBeforeUnmount(() => {
 
   <WizardShell
     v-else-if="runtime && session && currentStep"
-    :title="runtime.definition.title"
+    :title="t('wizard.living.wizardTitle')"
     :step-title="currentStep.title"
     :step-description="currentStep.description"
     :stages="runtime.definition.stages || []"
@@ -1171,7 +1255,7 @@ onBeforeUnmount(() => {
     />
 
     <el-text v-if="review && !review.ok" :size="12" color="red">
-      Some required Wizard information is still missing.
+      {{ t('wizard.living.errors.missingReview') }}
     </el-text>
     <el-text v-if="issueMessage" :size="12" color="red">{{ issueMessage }}</el-text>
   </WizardShell>
@@ -1181,8 +1265,8 @@ onBeforeUnmount(() => {
     rules="csc"
     :gap="12"
     style="max-width: 720px; margin: 40px auto; padding: 16px">
-    <el-text :size="20" :weight="700">Wizard unavailable</el-text>
-    <el-text :size="13" color="normal55">{{ issueMessage || 'Loading Wizard…' }}</el-text>
-    <el-button label="Back to Create" color="blue" @click="exitWizard" />
+    <el-text :size="20" :weight="700">{{ t('wizard.living.fallback.unavailable') }}</el-text>
+    <el-text :size="13" color="normal55">{{ issueMessage || t('wizard.living.fallback.loading') }}</el-text>
+    <el-button :label="t('wizard.living.fallback.backToCreate')" color="blue" @click="exitWizard" />
   </el-grid>
 </template>
