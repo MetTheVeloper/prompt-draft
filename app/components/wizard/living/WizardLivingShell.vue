@@ -151,6 +151,7 @@ const emit = defineEmits<{
     flex: 1 1 auto;
     min-height: 0;
     align-items: stretch;
+    padding-block: 0;
   }
 
   .wizard-living-shell--review .wizard-living-shell__stage > :deep(*) {
