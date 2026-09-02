@@ -5,6 +5,7 @@ import WizardLivingEntry from "~/components/wizard/living/WizardLivingEntry.vue"
 import WizardLivingLook from "~/components/wizard/living/WizardLivingLook.vue";
 import WizardLivingPeople from "~/components/wizard/living/WizardLivingPeople.vue";
 import WizardLivingPortrait from "~/components/wizard/living/WizardLivingPortrait.vue";
+import WizardLivingScene from "~/components/wizard/living/WizardLivingScene.vue";
 import WizardLivingShell from "~/components/wizard/living/WizardLivingShell.vue";
 import WizardLivingSubjectConfig from "~/components/wizard/living/WizardLivingSubjectConfig.vue";
 import type {
@@ -53,6 +54,15 @@ import {
   type PortraitLivingLookDomain,
   type WizardLivingLocalizer,
 } from "~/wizard/portraitLivingPresentation";
+import {
+  clearPortraitLivingEnvironmentDetailAnswers,
+  getPortraitLivingEnvironmentDetail,
+  getPortraitLivingScenePhase,
+  getPortraitLivingSceneProgress,
+  portraitLivingEnvironmentDetailAnswerId,
+  setPortraitLivingScenePhase,
+  type PortraitLivingScenePhase,
+} from "~/wizard/portraitLivingScenePresentation";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
@@ -137,6 +147,11 @@ const isLivingLook = computed(() =>
 const isLivingComposition = computed(() =>
   isPortraitLivingRuntime.value && currentStep.value?.id === "composition",
 );
+const isLivingScene = computed(() =>
+  isPortraitLivingRuntime.value &&
+  (currentStep.value?.id === "environment" || currentStep.value?.id === "lighting"),
+);
+
 const livingSentenceTokens = computed(() =>
   session.value
     ? buildPortraitLivingSentenceTokens(session.value, livingLocalizer.value)
@@ -153,9 +168,15 @@ const livingLookState = computed(() =>
 const livingCompositionPhase = computed(() =>
   session.value ? getPortraitLivingCompositionPhase(session.value) : "framing",
 );
-const livingChapterProgress = computed(() =>
-  session.value ? getPortraitLivingChapterProgress(session.value) : null,
+const livingScenePhase = computed(() =>
+  session.value ? getPortraitLivingScenePhase(session.value) : "environment-choice",
 );
+const livingChapterProgress = computed(() => {
+  if (!session.value) return null;
+  return isLivingScene.value
+    ? getPortraitLivingSceneProgress(session.value)
+    : getPortraitLivingChapterProgress(session.value);
+});
 const livingPromptMode = computed(() =>
   session.value ? getPortraitLivingPromptMode(session.value) : "image_to_image",
 );
@@ -165,34 +186,53 @@ const livingSubjects = computed(() =>
 const livingLookAnswerIds = computed(() =>
   PORTRAIT_LIVING_LOOK_ANSWER_IDS[livingLookState.value.domain],
 );
-const livingLookIntentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.intent);
+
+function singleChoiceQuestion(id: string) {
+  const question = allQuestions.value.find((item) => item.id === id);
   return question?.type === "singleChoice" ? question : null;
-});
-const livingLookOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.options);
+}
+
+function modalOptionsQuestion(id: string) {
+  const question = allQuestions.value.find((item) => item.id === id);
   return question?.type === "modalOptions" ? question : null;
-});
-const livingLookOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.overrides);
+}
+
+function subjectOverridesQuestion(id: string) {
+  const question = allQuestions.value.find((item) => item.id === id);
   return question?.type === "subjectOverrides" ? question : null;
-});
-const livingFramingQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === "framingIntent");
-  return question?.type === "singleChoice" ? question : null;
-});
-const livingPoseQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === "poseIntent");
-  return question?.type === "singleChoice" ? question : null;
-});
-const livingPoseOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === "poseOptions");
-  return question?.type === "modalOptions" ? question : null;
-});
-const livingPoseOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find((item) => item.id === "poseSubjectOverrides");
-  return question?.type === "subjectOverrides" ? question : null;
-});
+}
+
+const livingLookIntentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion(livingLookAnswerIds.value.intent),
+);
+const livingLookOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() =>
+  modalOptionsQuestion(livingLookAnswerIds.value.options),
+);
+const livingLookOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() =>
+  subjectOverridesQuestion(livingLookAnswerIds.value.overrides),
+);
+const livingFramingQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("framingIntent"),
+);
+const livingPoseQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("poseIntent"),
+);
+const livingPoseOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() =>
+  modalOptionsQuestion("poseOptions"),
+);
+const livingPoseOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() =>
+  subjectOverridesQuestion("poseSubjectOverrides"),
+);
+const livingEnvironmentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("environmentType"),
+);
+const livingBackgroundOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() =>
+  modalOptionsQuestion("backgroundOptions"),
+);
+const livingLightingQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() =>
+  singleChoiceQuestion("lightingIntent"),
+);
+
 const livingFramingValue = computed(() =>
   session.value?.answers.framingIntent?.source === "user"
     ? session.value.answers.framingIntent.value
@@ -201,6 +241,24 @@ const livingFramingValue = computed(() =>
 const livingPoseValue = computed(() =>
   session.value?.answers.poseIntent?.source === "user"
     ? session.value.answers.poseIntent.value
+    : undefined,
+);
+const livingEnvironmentValue = computed(() =>
+  session.value?.answers.environmentType?.source === "user"
+    ? session.value.answers.environmentType.value
+    : undefined,
+);
+const livingEnvironmentDetailAnswerId = computed(() =>
+  portraitLivingEnvironmentDetailAnswerId(livingEnvironmentValue.value),
+);
+const livingEnvironmentDetailValue = computed(() =>
+  session.value
+    ? getPortraitLivingEnvironmentDetail(session.value, livingEnvironmentValue.value)
+    : "",
+);
+const livingLightingValue = computed(() =>
+  session.value?.answers.lightingIntent?.source === "user"
+    ? session.value.answers.lightingIntent.value
     : undefined,
 );
 
@@ -372,6 +430,50 @@ function continueComposition() {
   next();
 }
 
+function setSceneMicroState(value: PortraitLivingScenePhase) {
+  if (!session.value) return;
+  session.value = setPortraitLivingScenePhase(session.value, value);
+  issueMessage.value = "";
+}
+
+function chooseEnvironment(value: string) {
+  if (!session.value || !runtime.value) return;
+  let nextSession = session.value;
+  if (livingEnvironmentValue.value !== value) {
+    nextSession = clearPortraitLivingEnvironmentDetailAnswers(nextSession);
+  }
+  nextSession = setWizardUserAnswer(nextSession, "environmentType", value);
+  nextSession = setPortraitLivingScenePhase(nextSession, "environment-detail");
+  session.value = runtime.value.resolveSession(nextSession);
+  issueMessage.value = "";
+}
+
+function updateEnvironmentDetail(value: string) {
+  const answerId = livingEnvironmentDetailAnswerId.value;
+  if (!answerId) return;
+  setAnswer(answerId, value);
+}
+
+function updateBackgroundOptions(value: Record<string, string>) {
+  setAnswer("backgroundOptions", value);
+}
+
+function continueEnvironment() {
+  if (!session.value || !runtime.value || currentStep.value?.id !== "environment") return;
+  const nextSession = setPortraitLivingScenePhase(session.value, "environment-detail");
+  session.value = goToNextWizardStep(
+    runtime.value.resolveSession(nextSession),
+    runtime.value.definition,
+  );
+  issueMessage.value = "";
+}
+
+function chooseLighting(value: string) {
+  if (!session.value) return;
+  const nextSession = setWizardUserAnswer(session.value, "lightingIntent", value);
+  advanceResolvedSession(nextSession);
+}
+
 function ensureCurrentStepValid() {
   const missing = visibleQuestions.value.find(
     (question) => question.required && !isAnswered(question),
@@ -424,6 +526,27 @@ function livingBack() {
     if (phase === "pose-choice") {
       session.value = setPortraitLivingCompositionPhase(session.value, "framing");
       issueMessage.value = "";
+      return;
+    }
+    back();
+    return;
+  }
+
+  if (isLivingScene.value) {
+    if (currentStep.value?.id === "lighting" && runtime.value) {
+      const previous = goToPreviousWizardStep(session.value, runtime.value.definition);
+      session.value = setPortraitLivingScenePhase(previous, "environment-detail");
+      issueMessage.value = "";
+      return;
+    }
+
+    const phase = livingScenePhase.value;
+    if (phase === "environment-refine") {
+      setSceneMicroState("environment-detail");
+      return;
+    }
+    if (phase === "environment-detail") {
+      setSceneMicroState("environment-choice");
       return;
     }
     back();
@@ -666,7 +789,6 @@ onBeforeUnmount(() => {
         :disabled="isBusy"
         @update="setAnswer('subjects', $event)"
       />
-
       <el-text v-if="issueMessage" :size="12" color="red">{{ issueMessage }}</el-text>
     </WizardLivingPeople>
 
@@ -765,6 +887,39 @@ onBeforeUnmount(() => {
     />
   </WizardLivingShell>
 
+  <WizardLivingShell
+    v-else-if="runtime && session && currentStep && isLivingScene && livingEnvironmentQuestion && livingLightingQuestion"
+    :title="runtime.definition.title"
+    :chapters="livingChapters"
+    :current-chapter-id="currentStageId"
+    :sentence-tokens="livingSentenceTokens"
+    :chapter-progress="livingChapterProgress"
+    :can-go-back="true"
+    :is-saved="isSaved"
+    :is-busy="isBusy"
+    @back="livingBack"
+    @restart="restart"
+    @exit="exitWizard">
+    <WizardLivingScene
+      :step="currentStep.id === 'lighting' ? 'lighting' : 'environment'"
+      :phase="livingScenePhase"
+      :environment-question="livingEnvironmentQuestion"
+      :background-options-question="livingBackgroundOptionsQuestion"
+      :lighting-question="livingLightingQuestion"
+      :environment-value="livingEnvironmentValue"
+      :detail-value="livingEnvironmentDetailValue"
+      :background-options-value="session.answers.backgroundOptions?.value"
+      :lighting-value="livingLightingValue"
+      :disabled="isBusy"
+      @choose-environment="chooseEnvironment"
+      @update-detail="updateEnvironmentDetail"
+      @update-background-options="updateBackgroundOptions"
+      @phase="setSceneMicroState"
+      @continue-environment="continueEnvironment"
+      @choose-lighting="chooseLighting"
+    />
+  </WizardLivingShell>
+
   <WizardShell
     v-else-if="runtime && session && currentStep"
     :title="runtime.definition.title"
@@ -803,7 +958,6 @@ onBeforeUnmount(() => {
     <el-text v-if="review && !review.ok" :size="12" color="red">
       Some required Wizard information is still missing.
     </el-text>
-
     <el-text v-if="issueMessage" :size="12" color="red">{{ issueMessage }}</el-text>
   </WizardShell>
 
