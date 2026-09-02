@@ -16,6 +16,8 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "click"): void;
 }>();
+
+const normalizedLabel = computed(() => props.label.replace(/\s*→\s*$/, ""));
 </script>
 
 <template>
@@ -28,7 +30,7 @@ const emit = defineEmits<{
     }"
     :disabled="props.disabled"
     @click="emit('click')">
-    <span>{{ props.label }}</span>
+    <span>{{ normalizedLabel }}</span>
     <span class="wizard-living-action__arrow" aria-hidden="true">→</span>
   </button>
 </template>
@@ -53,8 +55,7 @@ const emit = defineEmits<{
   transition:
     color 180ms ease,
     border-color 180ms ease,
-    background-color 180ms ease,
-    transform 180ms ease;
+    background-color 180ms ease;
 }
 
 .wizard-living-action__arrow {
