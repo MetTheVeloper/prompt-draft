@@ -137,67 +137,79 @@ function editToken(token: WizardLivingSentenceToken) {
 
 <template>
   <section class="wizard-living-review">
-    <header class="wizard-living-review__header">
-      <span>{{ t('wizard.living.review.eyebrow') }}</span>
-      <h1>{{ t('wizard.living.review.title') }}</h1>
-      <p>{{ t('wizard.living.review.subcopy') }}</p>
-    </header>
+    <div class="wizard-living-review__column">
+      <div class="wizard-living-review__column-stage">
+        <div class="wizard-living-review__column-content wizard-living-review__column-content--creative">
+          <header class="wizard-living-review__header">
+            <span>{{ t('wizard.living.review.eyebrow') }}</span>
+            <h1>{{ t('wizard.living.review.title') }}</h1>
+            <p>{{ t('wizard.living.review.subcopy') }}</p>
+          </header>
 
-    <div class="wizard-living-review__sentence">
-      <WizardLivingSentence
-        :tokens="props.tokens"
-        :compact="false"
-        editable
-        @navigate="editToken"
-      />
-      <p class="wizard-living-review__hint">
-        {{ t('wizard.living.review.editHint') }}
-      </p>
+          <div class="wizard-living-review__sentence">
+            <WizardLivingSentence
+              :tokens="props.tokens"
+              :compact="false"
+              editable
+              @navigate="editToken"
+            />
+            <p class="wizard-living-review__hint">
+              {{ t('wizard.living.review.editHint') }}
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <div class="wizard-living-review__recap">
-      <section>
-        <span class="wizard-living-review__section-label">
-          {{ t('wizard.living.review.creative') }}
-        </span>
-        <button
-          v-for="row in creativeRows"
-          :key="row.id"
-          type="button"
-          class="wizard-living-review__row"
-          :disabled="props.disabled"
-          @click="emit('edit', row.target)">
-          <span>{{ row.label }}</span>
-          <strong>{{ row.value }}</strong>
-          <i aria-hidden="true">↗</i>
-        </button>
-      </section>
+    <div class="wizard-living-review__column">
+      <div class="wizard-living-review__column-stage">
+        <div class="wizard-living-review__column-content wizard-living-review__column-content--recap">
+          <div class="wizard-living-review__recap">
+            <section>
+              <span class="wizard-living-review__section-label">
+                {{ t('wizard.living.review.creative') }}
+              </span>
+              <button
+                v-for="row in creativeRows"
+                :key="row.id"
+                type="button"
+                class="wizard-living-review__row"
+                :disabled="props.disabled"
+                @click="emit('edit', row.target)">
+                <span>{{ row.label }}</span>
+                <strong>{{ row.value }}</strong>
+                <i aria-hidden="true">↗</i>
+              </button>
+            </section>
 
-      <section>
-        <span class="wizard-living-review__section-label">
-          {{ t('wizard.living.review.technical') }}
-        </span>
-        <button
-          v-for="row in technicalRows"
-          :key="row.id"
-          type="button"
-          class="wizard-living-review__row"
-          :disabled="props.disabled"
-          @click="emit('edit', row.target)">
-          <span>{{ row.label }}</span>
-          <strong>{{ row.value }}</strong>
-          <i aria-hidden="true">↗</i>
-        </button>
-      </section>
-    </div>
+            <section>
+              <span class="wizard-living-review__section-label">
+                {{ t('wizard.living.review.technical') }}
+              </span>
+              <button
+                v-for="row in technicalRows"
+                :key="row.id"
+                type="button"
+                class="wizard-living-review__row"
+                :disabled="props.disabled"
+                @click="emit('edit', row.target)">
+                <span>{{ row.label }}</span>
+                <strong>{{ row.value }}</strong>
+                <i aria-hidden="true">↗</i>
+              </button>
+            </section>
+          </div>
 
-    <div class="wizard-living-review__action">
-      <button
-        type="button"
-        :disabled="props.disabled"
-        @click="emit('finish')">
-        {{ t('wizard.living.review.generate') }}
-      </button>
+          <div class="wizard-living-review__action">
+            <button
+              type="button"
+              :disabled="props.disabled"
+              @click="emit('finish')">
+              {{ t('wizard.living.review.generate') }}
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   </section>
 </template>
@@ -205,8 +217,29 @@ function editToken(token: WizardLivingSentenceToken) {
 <style scoped>
 .wizard-living-review {
   display: grid;
-  width: min(980px, 100%);
-  gap: clamp(34px, 6vh, 68px);
+  width: min(1420px, 100%);
+  min-width: 0;
+  margin: 0 auto;
+  gap: clamp(36px, 5vw, 76px);
+}
+
+.wizard-living-review__column,
+.wizard-living-review__column-stage,
+.wizard-living-review__column-content {
+  min-width: 0;
+}
+
+.wizard-living-review__column-content {
+  display: grid;
+  width: 100%;
+}
+
+.wizard-living-review__column-content--creative {
+  gap: clamp(28px, 5vh, 52px);
+}
+
+.wizard-living-review__column-content--recap {
+  gap: clamp(26px, 4vh, 42px);
 }
 
 .wizard-living-review__header {
@@ -244,17 +277,15 @@ function editToken(token: WizardLivingSentenceToken) {
 
 .wizard-living-review__sentence {
   display: grid;
-  max-width: 900px;
   gap: 16px;
-  padding: clamp(24px, 4vw, 42px) 0;
+  padding: clamp(24px, 3vw, 36px) 0;
   border-top: 1px solid var(--normalText10);
   border-bottom: 1px solid var(--normalText10);
 }
 
 .wizard-living-review__recap {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.72fr);
-  gap: clamp(30px, 6vw, 72px);
+  gap: clamp(24px, 3vh, 34px);
 }
 
 .wizard-living-review__recap section {
@@ -359,14 +390,46 @@ function editToken(token: WizardLivingSentenceToken) {
   color: var(--primary);
 }
 
+@media (min-width: 1080px) {
+  .wizard-living-review {
+    grid-template-columns: minmax(0, 1.08fr) minmax(420px, 0.92fr);
+    align-self: stretch;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
+  }
+
+  .wizard-living-review__column {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior-y: contain;
+  }
+
+  .wizard-living-review__column-stage {
+    display: flex;
+    min-height: 100%;
+    box-sizing: border-box;
+    align-items: center;
+    padding-block: clamp(18px, 3vh, 34px);
+  }
+
+  .wizard-living-review__header h1 {
+    font-size: clamp(3rem, 4.7vw, 4.8rem);
+  }
+}
+
 @media (max-width: 760px) {
-  .wizard-living-review__recap { grid-template-columns: 1fr; }
-  .wizard-living-review__row { grid-template-columns: 92px minmax(0, 1fr) auto; }
+  .wizard-living-review__row {
+    grid-template-columns: 92px minmax(0, 1fr) auto;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .wizard-living-review__row,
   .wizard-living-review__row i,
-  .wizard-living-review__action button { transition: none; }
+  .wizard-living-review__action button {
+    transition: none;
+  }
 }
 </style>
