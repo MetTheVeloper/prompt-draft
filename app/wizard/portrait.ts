@@ -257,7 +257,9 @@ const OUTFIT_ACCESSORIES = new Set<NonNullable<PortraitOutfitOptions["accessoryD
 const PORTRAIT_ASPECT_RATIO_MAP: Record<string, string> = {
   "1:1": "common_square",
   "4:5": "common_portrait_4_5",
+  "5:4": "common_landscape_5_4",
   "3:4": "common_portrait_3_4",
+  "4:3": "common_landscape_4_3",
   "9:16": "common_vertical_9_16",
   "16:9": "common_widescreen_16_9",
 };
