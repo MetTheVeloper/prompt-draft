@@ -47,12 +47,14 @@ import {
   setPortraitLivingLookState,
   setPortraitLivingPeopleState,
   type PortraitLivingLookDomain,
+  type WizardLivingLocalizer,
 } from "~/wizard/portraitLivingPresentation";
 import { addWizardDraftToCreate } from "~/wizard/hostDraft";
 import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
 const route = useRoute();
 const router = useRouter();
+const { t, locale } = useI18n();
 const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
 const { openSaveDraftAsTemplate } = usePromptTemplateUi();
@@ -66,15 +68,28 @@ const isBusy = ref(false);
 const isSaved = ref(false);
 let saveTimer: ReturnType<typeof setTimeout> | null = null;
 
+const livingLocalizer = computed<WizardLivingLocalizer>(() => ({
+  t: (key, params) => t(key, params || {}),
+  list: (items) => new Intl.ListFormat(locale.value, {
+    style: "long",
+    type: "conjunction",
+  }).format([...items]),
+}));
+
+const livingChapters = computed(() =>
+  PORTRAIT_LIVING_CHAPTERS.map((chapter) => ({
+    ...chapter,
+    label: t(chapter.label),
+  })),
+);
+
 const currentStep = computed(() => {
   if (!session.value || !runtime.value) return null;
   return getWizardCurrentStep(runtime.value.definition, session.value);
 });
 
 const visibleQuestions = computed(() => {
-  if (!session.value || !runtime.value || currentStep.value?.kind === "review") {
-    return [];
-  }
+  if (!session.value || !runtime.value || currentStep.value?.kind === "review") return [];
   return getWizardVisibleQuestions(runtime.value.definition, session.value);
 });
 
@@ -116,7 +131,9 @@ const isLivingLook = computed(() =>
   isPortraitLivingRuntime.value && currentStep.value?.id === "appearance",
 );
 const livingSentenceTokens = computed(() =>
-  session.value ? buildPortraitLivingSentenceTokens(session.value) : [],
+  session.value
+    ? buildPortraitLivingSentenceTokens(session.value, livingLocalizer.value)
+    : [],
 );
 const livingPeopleState = computed(() =>
   session.value ? getPortraitLivingPeopleState(session.value) : "choice",
@@ -139,21 +156,15 @@ const livingLookAnswerIds = computed(() =>
   PORTRAIT_LIVING_LOOK_ANSWER_IDS[livingLookState.value.domain],
 );
 const livingLookIntentQuestion = computed<WizardSingleChoiceQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find(
-    (item) => item.id === livingLookAnswerIds.value.intent,
-  );
+  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.intent);
   return question?.type === "singleChoice" ? question : null;
 });
 const livingLookOptionsQuestion = computed<WizardModalOptionsQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find(
-    (item) => item.id === livingLookAnswerIds.value.options,
-  );
+  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.options);
   return question?.type === "modalOptions" ? question : null;
 });
 const livingLookOverrideQuestion = computed<WizardSubjectOverridesQuestionDefinition | null>(() => {
-  const question = allQuestions.value.find(
-    (item) => item.id === livingLookAnswerIds.value.overrides,
-  );
+  const question = allQuestions.value.find((item) => item.id === livingLookAnswerIds.value.overrides);
   return question?.type === "subjectOverrides" ? question : null;
 });
 
@@ -173,11 +184,8 @@ function isAnswered(question: (typeof visibleQuestions.value)[number]) {
       const mode = session.value.answers.creationMode?.value === "from_description"
         ? "text_to_image"
         : "image_to_image";
-      return entities.every((entity) =>
-        isWizardEntityDefinitionComplete(entity, mode),
-      );
+      return entities.every((entity) => isWizardEntityDefinitionComplete(entity, mode));
     }
-
     return true;
   }
 
@@ -254,10 +262,7 @@ function chooseLookIntent(value: string) {
   const domain = livingLookState.value.domain;
   const answerId = PORTRAIT_LIVING_LOOK_ANSWER_IDS[domain].intent;
   let nextSession = setWizardUserAnswer(session.value, answerId, value);
-  nextSession = setPortraitLivingLookState(nextSession, {
-    domain,
-    phase: "refine",
-  });
+  nextSession = setPortraitLivingLookState(nextSession, { domain, phase: "refine" });
   session.value = runtime.value.resolveSession(nextSession);
   issueMessage.value = "";
 }
@@ -281,7 +286,6 @@ function setLookMicroState(domain: PortraitLivingLookDomain, phase: "choice" | "
 function continueLook() {
   const state = livingLookState.value;
   if (state.phase !== "refine") return;
-
   if (state.domain === "expression") {
     setLookMicroState("hair", "choice");
     return;
@@ -401,10 +405,9 @@ async function finish() {
   try {
     const result = await runtime.value.complete(session.value);
     if (!result.ok) {
-      issueMessage.value =
-        result.stage === "mapping"
-          ? "Some choices could not be applied. Review your answers and try again."
-          : "The generated prompt could not be validated or compiled. Review the Wizard choices and try again.";
+      issueMessage.value = result.stage === "mapping"
+        ? "Some choices could not be applied. Review your answers and try again."
+        : "The generated prompt could not be validated or compiled. Review the Wizard choices and try again.";
       return;
     }
 
@@ -418,7 +421,6 @@ async function finish() {
 
 function saveCompletedAsTemplate() {
   if (!completedDraft.value || !runtime.value || !session.value) return;
-
   openSaveDraftAsTemplate(completedDraft.value, {
     defaultTitle: runtime.value.draftTitle(session.value),
     description: `Saved from ${runtime.value.definition.title}.`,
@@ -464,29 +466,20 @@ onMounted(() => {
     issueMessage.value = `Unknown Wizard: ${wizardId.value}`;
     return;
   }
-
   const persisted = loadWizardSession(entry.definition);
   if (persisted) {
     resumeCandidate.value = persisted;
     return;
   }
-
   beginFresh();
 });
 
-watch(
-  session,
-  () => {
-    scheduleSave();
-    refreshReview();
-  },
-  { deep: true },
-);
+watch(session, () => {
+  scheduleSave();
+  refreshReview();
+}, { deep: true });
 
-watch(
-  () => session.value?.currentStepId,
-  () => refreshReview(),
-);
+watch(() => session.value?.currentStepId, () => refreshReview());
 
 onBeforeUnmount(() => {
   if (saveTimer) clearTimeout(saveTimer);
@@ -536,21 +529,9 @@ onBeforeUnmount(() => {
       </el-text>
     </el-grid>
     <el-flex rules="rsc" :gap="8">
-      <el-button
-        label="Save as template"
-        icon="bookmark_add"
-        mode="outline"
-        color="blue"
-        @click="saveCompletedAsTemplate"
-      />
+      <el-button label="Save as template" icon="bookmark_add" mode="outline" color="blue" @click="saveCompletedAsTemplate" />
       <el-button label="Start another" mode="flat" color="normal" @click="beginFresh" />
-      <el-button
-        label="Continue editing in Create"
-        icon="edit"
-        :invert="true"
-        color="blue"
-        @click="continueInCreate"
-      />
+      <el-button label="Continue editing in Create" icon="edit" :invert="true" color="blue" @click="continueInCreate" />
     </el-flex>
     <el-text v-if="issueMessage" :size="11" color="red">{{ issueMessage }}</el-text>
   </el-grid>
@@ -558,7 +539,7 @@ onBeforeUnmount(() => {
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingEntry"
     :title="runtime.definition.title"
-    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :chapters="livingChapters"
     current-chapter-id="start"
     :sentence-tokens="livingSentenceTokens"
     :can-go-back="false"
@@ -572,7 +553,7 @@ onBeforeUnmount(() => {
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingPeople"
     :title="runtime.definition.title"
-    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
     :chapter-progress="livingChapterProgress"
@@ -595,16 +576,14 @@ onBeforeUnmount(() => {
         @update="setAnswer('subjects', $event)"
       />
 
-      <el-text v-if="issueMessage" :size="12" color="red">
-        {{ issueMessage }}
-      </el-text>
+      <el-text v-if="issueMessage" :size="12" color="red">{{ issueMessage }}</el-text>
     </WizardLivingPeople>
 
     <template v-if="livingPeopleState === 'configure'" #footer>
       <el-flex rules="rbc" class="w100">
-        <el-text :size="10" color="normal35">People · 3/3 when confirmed</el-text>
+        <el-text :size="10" color="normal35">{{ t('wizard.living.people.confirmedProgress') }}</el-text>
         <el-button
-          label="Continue"
+          :label="t('wizard.living.people.continue')"
           icon="arrow_forward"
           :invert="true"
           color="blue"
@@ -618,7 +597,7 @@ onBeforeUnmount(() => {
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingPortrait"
     :title="runtime.definition.title"
-    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
     :can-go-back="true"
@@ -627,17 +606,13 @@ onBeforeUnmount(() => {
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
-    <WizardLivingPortrait
-      :mode="livingPromptMode"
-      :disabled="isBusy"
-      @choose="choosePortraitIntent"
-    />
+    <WizardLivingPortrait :mode="livingPromptMode" :disabled="isBusy" @choose="choosePortraitIntent" />
   </WizardLivingShell>
 
   <WizardLivingShell
     v-else-if="runtime && session && currentStep && isLivingLook && livingLookIntentQuestion"
     :title="runtime.definition.title"
-    :chapters="PORTRAIT_LIVING_CHAPTERS"
+    :chapters="livingChapters"
     :current-chapter-id="currentStageId"
     :sentence-tokens="livingSentenceTokens"
     :chapter-progress="livingChapterProgress"
@@ -681,8 +656,7 @@ onBeforeUnmount(() => {
     @next="next"
     @finish="finish"
     @exit="exitWizard"
-    @restart="restart"
-  >
+    @restart="restart">
     <el-grid v-if="currentStep.kind !== 'review'" :gap="24" class="w100">
       <WizardQuestionRenderer
         v-for="question in visibleQuestions"
@@ -706,9 +680,7 @@ onBeforeUnmount(() => {
       Some required Wizard information is still missing.
     </el-text>
 
-    <el-text v-if="issueMessage" :size="12" color="red">
-      {{ issueMessage }}
-    </el-text>
+    <el-text v-if="issueMessage" :size="12" color="red">{{ issueMessage }}</el-text>
   </WizardShell>
 
   <el-grid

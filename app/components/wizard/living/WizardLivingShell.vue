@@ -75,21 +75,16 @@ const emit = defineEmits<{
 
 <style scoped>
 .wizard-living-shell {
-  --wizard-bg: #0a0a0d;
-  --wizard-ink: #f2ede6;
-  --wizard-accent: #c8a96e;
   position: relative;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   min-height: 0;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid color-mix(in srgb, var(--wizard-ink) 5%, transparent);
+  border: 1px solid var(--normalText15);
   border-radius: 20px;
-  background:
-    radial-gradient(circle at 18% 48%, rgb(200 169 110 / 2.5%), transparent 34%),
-    linear-gradient(155deg, #0d0d11 0%, var(--wizard-bg) 58%, #08080b 100%);
-  color: var(--wizard-ink);
+  background: var(--themeBackground);
+  color: var(--normalText);
 }
 
 .wizard-living-shell--entry {
@@ -106,8 +101,8 @@ const emit = defineEmits<{
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(circle at 75% 18%, rgb(115 137 176 / 2.5%), transparent 31%),
-    radial-gradient(circle at 12% 82%, rgb(200 169 110 / 2%), transparent 30%);
+    radial-gradient(circle at 75% 18%, var(--secondary5), transparent 31%),
+    radial-gradient(circle at 12% 82%, var(--primary5), transparent 30%);
 }
 
 .wizard-living-shell__header {

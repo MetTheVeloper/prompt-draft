@@ -22,6 +22,16 @@ export type WizardLivingSentenceToken = {
   dim?: boolean;
 };
 
+export type WizardLivingTranslate = (
+  key: string,
+  params?: Record<string, string | number>,
+) => string;
+
+export type WizardLivingLocalizer = {
+  t: WizardLivingTranslate;
+  list: (items: readonly string[]) => string;
+};
+
 export type PortraitLivingPeopleState = "choice" | "count" | "configure";
 export type PortraitLivingLookDomain = "expression" | "hair" | "outfit";
 export type PortraitLivingLookPhase = "choice" | "refine";
@@ -39,14 +49,14 @@ type PortraitLivingUiState = {
 const LIVING_UI_KEY = "livingUi";
 
 export const PORTRAIT_LIVING_CHAPTERS: readonly WizardLivingChapter[] = [
-  { id: "start", label: "BEGIN" },
-  { id: "subjects", label: "PEOPLE" },
-  { id: "portrait", label: "PORTRAIT" },
-  { id: "appearance", label: "LOOK" },
-  { id: "composition", label: "COMPOSITION" },
-  { id: "scene", label: "SCENE" },
-  { id: "final", label: "FINAL" },
-  { id: "review", label: "REVIEW" },
+  { id: "start", label: "wizard.living.chapters.begin" },
+  { id: "subjects", label: "wizard.living.chapters.people" },
+  { id: "portrait", label: "wizard.living.chapters.portrait" },
+  { id: "appearance", label: "wizard.living.chapters.look" },
+  { id: "composition", label: "wizard.living.chapters.composition" },
+  { id: "scene", label: "wizard.living.chapters.scene" },
+  { id: "final", label: "wizard.living.chapters.final" },
+  { id: "review", label: "wizard.living.chapters.review" },
 ];
 
 export const PORTRAIT_LIVING_LOOK_ANSWER_IDS = {
@@ -215,16 +225,9 @@ export function createPortraitLivingSubjects(
   return subjects;
 }
 
-function optionLabel(value: unknown, labels: Record<string, string>) {
+function optionLabel(value: unknown) {
   const key = cleanText(value);
-  return key ? labels[key] || key.replaceAll("_", " ") : "";
-}
-
-function formatNameList(names: readonly string[]) {
-  if (!names.length) return "";
-  if (names.length === 1) return names[0];
-  if (names.length === 2) return `${names[0]} and ${names[1]}`;
-  return `${names.slice(0, -1).join(", ")}, and ${names[names.length - 1]}`;
+  return key ? key.replaceAll("_", " ") : "";
 }
 
 function lookOverridePhrases(
@@ -232,6 +235,7 @@ function lookOverridePhrases(
   subjects: readonly WizardEntityAnswer[],
   answerId: string,
   domain: PortraitLivingLookDomain,
+  localizer: WizardLivingLocalizer,
 ) {
   const value = userAnswer(session, answerId);
   if (!isRecord(value)) return [];
@@ -239,46 +243,57 @@ function lookOverridePhrases(
   return subjects.flatMap((subject, index) => {
     const raw = value[subject.id];
     if (!isRecord(raw)) return [];
-    const label = getWizardEntityDisplayLabel(subject, index, subjects.length);
+    const name = getWizardEntityDisplayLabel(subject, index, subjects.length);
     const intent = cleanText(raw.intent);
 
     if (!intent) {
-      return [`${label} has customized ${domain} details`];
+      return [localizer.t("wizard.living.sentence.override.customDetails", { name, domain })];
     }
     if (domain === "expression") {
-      return [`${label} has a ${optionLabel(intent, {})} expression`];
+      return [localizer.t("wizard.living.sentence.override.expression", {
+        name,
+        value: optionLabel(intent),
+      })];
     }
     if (domain === "hair") {
       return intent === "keep_reference"
-        ? [`${label} keeps their reference hair`]
-        : [`${label} has ${optionLabel(intent, {})} hair`];
+        ? [localizer.t("wizard.living.sentence.override.hairReference", { name })]
+        : [localizer.t("wizard.living.sentence.override.hair", {
+            name,
+            value: optionLabel(intent),
+          })];
     }
     return intent === "keep_reference"
-      ? [`${label} keeps their reference outfit`]
-      : [`${label} has a ${optionLabel(intent, {})} outfit`];
+      ? [localizer.t("wizard.living.sentence.override.outfitReference", { name })]
+      : [localizer.t("wizard.living.sentence.override.outfit", {
+          name,
+          value: optionLabel(intent),
+        })];
   });
 }
 
 export function buildPortraitLivingSentenceTokens(
   session: WizardSession,
+  localizer: WizardLivingLocalizer,
 ): WizardLivingSentenceToken[] {
+  const { t } = localizer;
   const creationMode = cleanText(userAnswer(session, "creationMode"));
   if (!creationMode) {
-    return [
-      {
-        id: "intent-placeholder",
-        text: "I want to...",
-        editable: false,
-        dim: true,
-      },
-    ];
+    return [{
+      id: "intent-placeholder",
+      text: t("wizard.living.sentence.placeholder"),
+      editable: false,
+      dim: true,
+    }];
   }
 
   const tokens: WizardLivingSentenceToken[] = [
-    { id: "lead", text: "I want to ", editable: false },
+    { id: "lead", text: t("wizard.living.sentence.lead"), editable: false },
     {
       id: "creation-mode",
-      text: creationMode === "from_description" ? "create" : "transform my image into",
+      text: t(creationMode === "from_description"
+        ? "wizard.living.sentence.create"
+        : "wizard.living.sentence.transform"),
       answerId: "creationMode",
       stepId: "start",
       editable: true,
@@ -287,17 +302,10 @@ export function buildPortraitLivingSentenceTokens(
   ];
 
   const portraitIntent = cleanText(userAnswer(session, "portraitIntent"));
-  const portraitLabel = optionLabel(portraitIntent, {
-    professional: "a professional portrait",
-    cinematic: "a cinematic portrait",
-    fashion: "a fashion portrait",
-    fantasy: "a fantasy portrait",
-  });
-
-  if (portraitLabel) {
+  if (portraitIntent) {
     tokens.push({
       id: "portrait-intent",
-      text: portraitLabel,
+      text: t(`wizard.living.sentence.portrait.${portraitIntent}`),
       answerId: "portraitIntent",
       stepId: "intent",
       editable: true,
@@ -305,7 +313,7 @@ export function buildPortraitLivingSentenceTokens(
   } else {
     tokens.push({
       id: "portrait-placeholder",
-      text: "a portrait",
+      text: t("wizard.living.sentence.portraitPlaceholder"),
       editable: false,
       dim: true,
     });
@@ -319,7 +327,7 @@ export function buildPortraitLivingSentenceTokens(
   if (subjects.length === 1) {
     tokens.push({
       id: "people",
-      text: " of one person",
+      text: t("wizard.living.sentence.onePerson"),
       answerId: "subjects",
       stepId: "subjects",
       editable: true,
@@ -327,18 +335,14 @@ export function buildPortraitLivingSentenceTokens(
   } else if (subjects.length > 1) {
     tokens.push({
       id: "people",
-      text: ` featuring ${subjects.length} people`,
+      text: t("wizard.living.sentence.multiplePeople", { count: subjects.length }),
       answerId: "subjects",
       stepId: "subjects",
       editable: true,
     });
   }
 
-  const lookParts: Array<{
-    id: string;
-    text: string;
-    answerId: string;
-  }> = [];
+  const lookParts: Array<{ id: string; text: string; answerId: string }> = [];
   const expression = cleanText(userAnswer(session, "expressionIntent"));
   const hair = cleanText(userAnswer(session, "hairIntent"));
   const outfit = cleanText(userAnswer(session, "outfitIntent"));
@@ -346,27 +350,27 @@ export function buildPortraitLivingSentenceTokens(
   if (expression) {
     lookParts.push({
       id: "expression",
-      text: `${optionLabel(expression, {})} expressions`,
+      text: t("wizard.living.sentence.expression", { value: optionLabel(expression) }),
       answerId: "expressionIntent",
     });
   }
   if (hair && hair !== "keep_reference") {
     lookParts.push({
       id: "hair",
-      text: `${optionLabel(hair, {})} hair`,
+      text: t("wizard.living.sentence.hair", { value: optionLabel(hair) }),
       answerId: "hairIntent",
     });
   }
   if (outfit && outfit !== "keep_reference") {
     lookParts.push({
       id: "outfit",
-      text: `${optionLabel(outfit, {})} outfits`,
+      text: t("wizard.living.sentence.outfit", { value: optionLabel(outfit) }),
       answerId: "outfitIntent",
     });
   }
 
   if (lookParts.length) {
-    tokens.push({ id: "look-lead", text: ", with ", editable: false });
+    tokens.push({ id: "look-lead", text: t("wizard.living.sentence.lookLead"), editable: false });
     lookParts.forEach((part, index) => {
       tokens.push({
         id: part.id,
@@ -378,7 +382,7 @@ export function buildPortraitLivingSentenceTokens(
       if (index < lookParts.length - 1) {
         tokens.push({
           id: `look-separator-${index}`,
-          text: ", ",
+          text: t("wizard.living.sentence.separator"),
           editable: false,
         });
       }
@@ -387,34 +391,17 @@ export function buildPortraitLivingSentenceTokens(
 
   if (subjects.length > 1) {
     const overrideTokens = [
-      {
-        id: "expression-overrides",
-        answerId: "expressionSubjectOverrides",
-        domain: "expression",
-      },
-      {
-        id: "hair-overrides",
-        answerId: "hairSubjectOverrides",
-        domain: "hair",
-      },
-      {
-        id: "outfit-overrides",
-        answerId: "outfitSubjectOverrides",
-        domain: "outfit",
-      },
+      { id: "expression-overrides", answerId: "expressionSubjectOverrides", domain: "expression" },
+      { id: "hair-overrides", answerId: "hairSubjectOverrides", domain: "hair" },
+      { id: "outfit-overrides", answerId: "outfitSubjectOverrides", domain: "outfit" },
     ] as const;
 
     for (const item of overrideTokens) {
-      const phrases = lookOverridePhrases(
-        session,
-        subjects,
-        item.answerId,
-        item.domain,
-      );
+      const phrases = lookOverridePhrases(session, subjects, item.answerId, item.domain, localizer);
       if (!phrases.length) continue;
       tokens.push({
         id: item.id,
-        text: `; ${formatNameList(phrases)}`,
+        text: t("wizard.living.sentence.overrideLead", { value: localizer.list(phrases) }),
         answerId: item.answerId,
         stepId: "appearance",
         editable: true,
@@ -424,25 +411,29 @@ export function buildPortraitLivingSentenceTokens(
 
   const framing = cleanText(userAnswer(session, "framingIntent"));
   if (framing) {
-    tokens.push({
-      id: "framing",
-      text: `, ${optionLabel(framing, {
-        headshot: "framed as a headshot",
-        head_shoulders: "framed head and shoulders",
-        half_body: "at half body",
-        full_body: "full body",
-      })}`,
-      answerId: "framingIntent",
-      stepId: "composition",
-      editable: true,
-    });
+    const framingKeys: Record<string, string> = {
+      headshot: "headshot",
+      head_shoulders: "headShoulders",
+      half_body: "halfBody",
+      full_body: "fullBody",
+    };
+    const key = framingKeys[framing];
+    if (key) {
+      tokens.push({
+        id: "framing",
+        text: t(`wizard.living.sentence.framing.${key}`),
+        answerId: "framingIntent",
+        stepId: "composition",
+        editable: true,
+      });
+    }
   }
 
   const pose = cleanText(userAnswer(session, "poseIntent"));
   if (pose && framing !== "headshot") {
     tokens.push({
       id: "pose",
-      text: `, in a ${optionLabel(pose, {})} pose`,
+      text: t("wizard.living.sentence.pose", { value: optionLabel(pose) }),
       answerId: "poseIntent",
       stepId: "composition",
       editable: true,
@@ -453,11 +444,7 @@ export function buildPortraitLivingSentenceTokens(
   if (environment) {
     tokens.push({
       id: "scene",
-      text: `, ${optionLabel(environment, {
-        studio: "set in a studio",
-        outdoor: "set outdoors",
-        abstract: "in an abstract space",
-      })}`,
+      text: t(`wizard.living.sentence.scene.${environment}`),
       answerId: "environmentType",
       stepId: "environment",
       editable: true,
@@ -472,7 +459,7 @@ export function buildPortraitLivingSentenceTokens(
     if (detail) {
       tokens.push({
         id: "scene-detail",
-        text: ` — ${detail.toLowerCase()}`,
+        text: t("wizard.living.sentence.scene.detail", { value: detail.toLowerCase() }),
         answerId: detailAnswerId,
         stepId: "environment",
         editable: true,
@@ -484,7 +471,7 @@ export function buildPortraitLivingSentenceTokens(
   if (lighting) {
     tokens.push({
       id: "lighting",
-      text: `, with ${optionLabel(lighting, {})} lighting`,
+      text: t("wizard.living.sentence.lighting", { value: optionLabel(lighting) }),
       answerId: "lightingIntent",
       stepId: "lighting",
       editable: true,

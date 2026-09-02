@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 
+import wizardEn from "../i18n/locales/wizard.en.ts";
 import { portraitWizardV2Definition } from "../app/wizard/definition.ts";
 import {
   buildPortraitLivingSentenceTokens,
@@ -10,6 +11,7 @@ import {
   getPortraitLivingPeopleState,
   setPortraitLivingLookState,
   setPortraitLivingPeopleState,
+  type WizardLivingLocalizer,
 } from "../app/wizard/portraitLivingPresentation.ts";
 import {
   createFreshWizardSession,
@@ -17,8 +19,31 @@ import {
   setWizardUserAnswer,
 } from "../app/wizard/session.ts";
 
+const messages = { wizard: wizardEn } as Record<string, unknown>;
+
+function translate(
+  key: string,
+  params: Record<string, string | number> = {},
+) {
+  let current: unknown = messages;
+  for (const part of key.split(".")) {
+    if (!current || typeof current !== "object" || Array.isArray(current)) return key;
+    current = (current as Record<string, unknown>)[part];
+  }
+  if (typeof current !== "string") return key;
+  return current.replace(/\{(\w+)\}/g, (_, name: string) => String(params[name] ?? `{${name}}`));
+}
+
+const localizer: WizardLivingLocalizer = {
+  t: translate,
+  list: (items) => new Intl.ListFormat("en", {
+    style: "long",
+    type: "conjunction",
+  }).format([...items]),
+};
+
 function sentence(session: ReturnType<typeof createFreshWizardSession>) {
-  return buildPortraitLivingSentenceTokens(session)
+  return buildPortraitLivingSentenceTokens(session, localizer)
     .map((token) => token.text)
     .join("");
 }
@@ -115,28 +140,16 @@ test("Look presentation progress follows Expression Hair and Outfit micro-states
   });
   assert.equal(getPortraitLivingChapterProgress(session), 1 / 6);
 
-  session = setPortraitLivingLookState(session, {
-    domain: "hair",
-    phase: "choice",
-  });
+  session = setPortraitLivingLookState(session, { domain: "hair", phase: "choice" });
   assert.equal(getPortraitLivingChapterProgress(session), 1 / 3);
 
-  session = setPortraitLivingLookState(session, {
-    domain: "hair",
-    phase: "refine",
-  });
+  session = setPortraitLivingLookState(session, { domain: "hair", phase: "refine" });
   assert.equal(getPortraitLivingChapterProgress(session), 1 / 2);
 
-  session = setPortraitLivingLookState(session, {
-    domain: "outfit",
-    phase: "choice",
-  });
+  session = setPortraitLivingLookState(session, { domain: "outfit", phase: "choice" });
   assert.equal(getPortraitLivingChapterProgress(session), 2 / 3);
 
-  session = setPortraitLivingLookState(session, {
-    domain: "outfit",
-    phase: "refine",
-  });
+  session = setPortraitLivingLookState(session, { domain: "outfit", phase: "refine" });
   assert.equal(getPortraitLivingChapterProgress(session), 1);
 });
 

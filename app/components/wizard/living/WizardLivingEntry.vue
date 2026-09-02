@@ -1,31 +1,28 @@
 <script setup lang="ts">
 import WizardEntryGateway from "./WizardEntryGateway.vue";
 
-const props = defineProps<{
-  disabled?: boolean;
-}>();
-
+const props = defineProps<{ disabled?: boolean }>();
 const emit = defineEmits<{
   (event: "choose", value: "from_image" | "from_description"): void;
 }>();
-
+const { t } = useI18n();
 const hovered = ref<"from_image" | "from_description" | null>(null);
 </script>
 
 <template>
   <div class="wizard-living-entry">
     <div class="wizard-living-entry__meta" aria-hidden="true">
-      <span>PROMPT DRAFT</span>
-      <span>BEGIN</span>
+      <span>{{ t('wizard.living.entry.brand') }}</span>
+      <span>{{ t('wizard.living.entry.begin') }}</span>
     </div>
 
-    <p class="wizard-living-entry__lead">I want to...</p>
+    <p class="wizard-living-entry__lead">{{ t('wizard.living.entry.lead') }}</p>
 
     <div class="wizard-living-entry__paths">
       <WizardEntryGateway
-        lead="Transform"
-        :tail="['my own', 'image(s)']"
-        description="Your reference material becomes the foundation. Something familiar, remade."
+        :lead="t('wizard.living.entry.transform')"
+        :tail="[t('wizard.living.entry.transformTailPrimary'), t('wizard.living.entry.transformTailSecondary')]"
+        :description="t('wizard.living.entry.transformDescription')"
         side="left"
         :active="hovered === 'from_image'"
         :dimmed="hovered === 'from_description'"
@@ -36,14 +33,14 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
 
       <div class="wizard-living-entry__divider" aria-hidden="true">
         <span />
-        <em>or</em>
+        <em>{{ t('wizard.living.entry.or') }}</em>
         <span />
       </div>
 
       <WizardEntryGateway
-        lead="Create"
-        :tail="['a photo']"
-        description="Something that hasn’t existed yet. Imagined into being."
+        :lead="t('wizard.living.entry.create')"
+        :tail="[t('wizard.living.entry.createTail')]"
+        :description="t('wizard.living.entry.createDescription')"
         side="right"
         :active="hovered === 'from_description'"
         :dimmed="hovered === 'from_image'"
@@ -53,7 +50,7 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
       />
     </div>
 
-    <span class="wizard-living-entry__hint">Choose a path to begin</span>
+    <span class="wizard-living-entry__hint">{{ t('wizard.living.entry.hint') }}</span>
   </div>
 </template>
 
@@ -72,7 +69,7 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
   z-index: 2;
   display: flex;
   justify-content: space-between;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 18%, transparent);
+  color: var(--normalText20);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.62rem;
   letter-spacing: 0.17em;
@@ -81,16 +78,13 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
 .wizard-living-entry__lead {
   align-self: start;
   margin: clamp(34px, 5vh, 58px) 0 0 clamp(6px, 1vw, 16px);
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 32%, transparent);
+  color: var(--normalText35);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(0.92rem, 1.35vw, 1.12rem);
   font-style: italic;
 }
 
-.wizard-living-entry__paths {
-  display: flex;
-  min-height: 0;
-}
+.wizard-living-entry__paths { display: flex; min-height: 0; }
 
 .wizard-living-entry__divider {
   display: flex;
@@ -98,13 +92,13 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 16%, transparent);
+  color: var(--normalText20);
 }
 
 .wizard-living-entry__divider span {
   width: 1px;
   flex: 1;
-  background: color-mix(in srgb, var(--wizard-ink, #f2ede6) 7%, transparent);
+  background: var(--normalText10);
 }
 
 .wizard-living-entry__divider em {
@@ -116,7 +110,7 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
 
 .wizard-living-entry__hint {
   justify-self: center;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 11%, transparent);
+  color: var(--normalText15);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.54rem;
   letter-spacing: 0.15em;
@@ -124,27 +118,10 @@ const hovered = ref<"from_image" | "from_description" | null>(null);
 }
 
 @media (max-width: 740px) {
-  .wizard-living-entry {
-    min-height: 620px;
-  }
-
-  .wizard-living-entry__paths {
-    flex-direction: column;
-    padding-top: 28px;
-  }
-
-  .wizard-living-entry__divider {
-    flex: 0 0 42px;
-    flex-direction: row;
-  }
-
-  .wizard-living-entry__divider span {
-    width: auto;
-    height: 1px;
-  }
-
-  .wizard-living-entry__divider em {
-    padding: 0 12px;
-  }
+  .wizard-living-entry { min-height: 620px; }
+  .wizard-living-entry__paths { flex-direction: column; padding-top: 28px; }
+  .wizard-living-entry__divider { flex: 0 0 42px; flex-direction: row; }
+  .wizard-living-entry__divider span { width: auto; height: 1px; }
+  .wizard-living-entry__divider em { padding: 0 12px; }
 }
 </style>

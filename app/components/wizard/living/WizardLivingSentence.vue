@@ -7,10 +7,7 @@ const props = withDefaults(
     compact?: boolean;
     editable?: boolean;
   }>(),
-  {
-    compact: true,
-    editable: false,
-  },
+  { compact: true, editable: false },
 );
 
 const emit = defineEmits<{
@@ -19,9 +16,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-  <p
-    class="wizard-living-sentence"
-    :class="{ 'wizard-living-sentence--compact': props.compact }">
+  <p class="wizard-living-sentence" :class="{ 'wizard-living-sentence--compact': props.compact }">
     <template v-for="token in props.tokens" :key="token.id">
       <button
         v-if="props.editable && token.editable"
@@ -43,7 +38,7 @@ const emit = defineEmits<{
 <style scoped>
 .wizard-living-sentence {
   margin: 0;
-  color: var(--wizard-ink, var(--normalText, #f2ede6));
+  color: var(--normalText);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(1.35rem, 2.8vw, 2.15rem);
   font-style: italic;
@@ -54,42 +49,35 @@ const emit = defineEmits<{
 }
 
 .wizard-living-sentence--compact {
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 50%, transparent);
+  color: var(--normalText50);
   font-size: clamp(0.92rem, 1.55vw, 1.18rem);
   letter-spacing: -0.015em;
   line-height: 1.55;
 }
 
-.wizard-living-sentence__token {
-  white-space: pre-wrap;
-}
-
-.wizard-living-sentence__token--dim {
-  opacity: 0.34;
-}
+.wizard-living-sentence__token { white-space: pre-wrap; }
+.wizard-living-sentence__token--dim { opacity: 0.34; }
 
 button.wizard-living-sentence__token--editable {
   display: inline;
   padding: 0;
   border: 0;
-  border-bottom: 1px solid color-mix(in srgb, var(--wizard-accent, #c8a96e) 34%, transparent);
+  border-bottom: 1px solid var(--primary35);
   border-radius: 0;
   background: transparent;
-  color: var(--wizard-accent, #c8a96e);
+  color: var(--primary);
   font: inherit;
-  transition:
-    color 180ms ease,
-    border-color 180ms ease;
+  transition: color 180ms ease, border-color 180ms ease;
 }
 
 button.wizard-living-sentence__token--editable:hover,
 button.wizard-living-sentence__token--editable:focus-visible {
-  border-bottom-color: var(--wizard-accent, #c8a96e);
-  color: var(--wizard-ink, #f2ede6);
+  border-bottom-color: var(--primary);
+  color: var(--normalText);
 }
 
 button.wizard-living-sentence__token--editable:focus-visible {
-  outline: 1px solid var(--wizard-accent, #c8a96e);
+  outline: 1px solid var(--primary);
   outline-offset: 3px;
 }
 </style>

@@ -39,12 +39,8 @@ const emit = defineEmits<{
     :disabled="props.disabled"
     @click="emit('select')">
     <span class="wizard-type-choice__label">{{ props.label }}</span>
-    <span v-if="props.sublabel" class="wizard-type-choice__sublabel">
-      {{ props.sublabel }}
-    </span>
-    <span v-if="props.description" class="wizard-type-choice__description">
-      {{ props.description }}
-    </span>
+    <span v-if="props.sublabel" class="wizard-type-choice__sublabel">{{ props.sublabel }}</span>
+    <span v-if="props.description" class="wizard-type-choice__description">{{ props.description }}</span>
   </button>
 </template>
 
@@ -56,13 +52,11 @@ const emit = defineEmits<{
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: var(--wizard-ink, var(--normalText, #f2ede6));
+  color: var(--normalText);
   text-align: left;
   opacity: 0.76;
   transform: translateX(0);
-  transition:
-    opacity 280ms ease,
-    transform 320ms ease;
+  transition: opacity 280ms ease, transform 320ms ease;
 }
 
 .wizard-type-choice:hover,
@@ -73,25 +67,14 @@ const emit = defineEmits<{
 }
 
 .wizard-type-choice:focus-visible {
-  outline: 1px solid color-mix(in srgb, var(--wizard-accent, #c8a96e) 70%, transparent);
+  outline: 1px solid var(--primary70);
   outline-offset: 8px;
 }
 
-.wizard-type-choice--dimmed {
-  opacity: 0.12;
-}
-
-.wizard-type-choice--xl {
-  --choice-size: clamp(2.1rem, 5.4vw, 5.25rem);
-}
-
-.wizard-type-choice--lg {
-  --choice-size: clamp(1.7rem, 4vw, 3.8rem);
-}
-
-.wizard-type-choice--md {
-  --choice-size: clamp(1.25rem, 2.6vw, 2.2rem);
-}
+.wizard-type-choice--dimmed { opacity: 0.12; }
+.wizard-type-choice--xl { --choice-size: clamp(2.1rem, 5.4vw, 5.25rem); }
+.wizard-type-choice--lg { --choice-size: clamp(1.7rem, 4vw, 3.8rem); }
+.wizard-type-choice--md { --choice-size: clamp(1.25rem, 2.6vw, 2.2rem); }
 
 .wizard-type-choice__label {
   display: block;
@@ -101,9 +84,7 @@ const emit = defineEmits<{
   line-height: 0.98;
   letter-spacing: -0.045em;
   text-transform: uppercase;
-  transition:
-    font-weight 300ms ease,
-    letter-spacing 300ms ease;
+  transition: font-weight 300ms ease, letter-spacing 300ms ease;
 }
 
 .wizard-type-choice:hover .wizard-type-choice__label,
@@ -113,14 +94,12 @@ const emit = defineEmits<{
   letter-spacing: -0.035em;
 }
 
-.wizard-type-choice--nowrap .wizard-type-choice__label {
-  white-space: nowrap;
-}
+.wizard-type-choice--nowrap .wizard-type-choice__label { white-space: nowrap; }
 
 .wizard-type-choice__sublabel {
   display: block;
   margin-top: 7px;
-  color: color-mix(in srgb, var(--wizard-accent, #c8a96e) 76%, transparent);
+  color: var(--primary75);
   font-size: clamp(0.64rem, 1vw, 0.76rem);
   font-weight: 500;
   letter-spacing: 0.13em;
@@ -131,7 +110,7 @@ const emit = defineEmits<{
   display: block;
   max-width: 38ch;
   margin-top: 10px;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 42%, transparent);
+  color: var(--normalText40);
   font-family: Georgia, 'Times New Roman', serif;
   font-size: clamp(0.78rem, 1.05vw, 0.92rem);
   font-style: italic;
@@ -139,9 +118,7 @@ const emit = defineEmits<{
   line-height: 1.55;
   opacity: 0;
   transform: translateY(3px);
-  transition:
-    opacity 280ms ease,
-    transform 280ms ease;
+  transition: opacity 280ms ease, transform 280ms ease;
 }
 
 .wizard-type-choice:hover .wizard-type-choice__description,
@@ -153,8 +130,6 @@ const emit = defineEmits<{
 @media (prefers-reduced-motion: reduce) {
   .wizard-type-choice,
   .wizard-type-choice__label,
-  .wizard-type-choice__description {
-    transition: none;
-  }
+  .wizard-type-choice__description { transition: none; }
 }
 </style>

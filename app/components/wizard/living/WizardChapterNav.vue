@@ -16,6 +16,7 @@ const emit = defineEmits<{
   (event: "exit"): void;
 }>();
 
+const { t } = useI18n();
 const currentIndex = computed(() =>
   props.chapters.findIndex((chapter) => chapter.id === props.currentChapterId),
 );
@@ -28,7 +29,7 @@ const safeProgress = computed(() => {
 
 <template>
   <div class="wizard-chapter-nav">
-    <nav class="wizard-chapter-nav__chapters scrollbar-hidden" aria-label="Wizard chapters">
+    <nav class="wizard-chapter-nav__chapters scrollbar-hidden" :aria-label="t('wizard.living.nav.ariaLabel')">
       <div
         v-for="(chapter, index) in props.chapters"
         :key="chapter.id"
@@ -48,19 +49,19 @@ const safeProgress = computed(() => {
     </nav>
 
     <div class="wizard-chapter-nav__actions">
-      <span v-if="props.isSaved" class="wizard-chapter-nav__saved">Saved</span>
+      <span v-if="props.isSaved" class="wizard-chapter-nav__saved">{{ t('wizard.living.nav.saved') }}</span>
       <button
         v-if="props.canGoBack"
         type="button"
         :disabled="props.isBusy"
         @click="emit('back')">
-        ← Back
+        {{ t('wizard.living.nav.back') }}
       </button>
       <button type="button" :disabled="props.isBusy" @click="emit('restart')">
-        Start over
+        {{ t('wizard.living.nav.startOver') }}
       </button>
       <button type="button" :disabled="props.isBusy" @click="emit('exit')">
-        Exit
+        {{ t('wizard.living.nav.exit') }}
       </button>
     </div>
   </div>
@@ -89,7 +90,7 @@ const safeProgress = computed(() => {
   flex: 0 0 auto;
   gap: 6px;
   min-width: 28px;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 8%, transparent);
+  color: var(--normalText10);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.59rem;
   font-weight: 500;
@@ -100,11 +101,11 @@ const safeProgress = computed(() => {
 }
 
 .wizard-chapter-nav__chapter--past {
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 24%, transparent);
+  color: var(--normalText25);
 }
 
 .wizard-chapter-nav__chapter--active {
-  color: color-mix(in srgb, var(--wizard-accent, #c8a96e) 92%, transparent);
+  color: var(--primary);
 }
 
 .wizard-chapter-nav__progress {
@@ -114,7 +115,7 @@ const safeProgress = computed(() => {
   height: 1px;
   min-width: 28px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--wizard-ink, #f2ede6) 9%, transparent);
+  background: var(--normalText10);
 }
 
 .wizard-chapter-nav__progress > span {
@@ -122,7 +123,7 @@ const safeProgress = computed(() => {
   inset: 0 auto 0 0;
   display: block;
   height: 100%;
-  background: color-mix(in srgb, var(--wizard-accent, #c8a96e) 72%, transparent);
+  background: var(--primary70);
   transition: width 420ms ease;
 }
 
@@ -138,7 +139,7 @@ const safeProgress = computed(() => {
   border: 0;
   border-radius: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 24%, transparent);
+  color: var(--normalText25);
   font-size: 0.68rem;
   font-weight: 500;
   letter-spacing: 0.09em;
@@ -148,16 +149,16 @@ const safeProgress = computed(() => {
 
 .wizard-chapter-nav__actions button:hover,
 .wizard-chapter-nav__actions button:focus-visible {
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 68%, transparent);
+  color: var(--normalText70);
 }
 
 .wizard-chapter-nav__actions button:focus-visible {
-  outline: 1px solid var(--wizard-accent, #c8a96e);
+  outline: 1px solid var(--primary);
   outline-offset: 5px;
 }
 
 .wizard-chapter-nav__saved {
-  color: color-mix(in srgb, var(--wizard-ink, #f2ede6) 18%, transparent);
+  color: var(--normalText20);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: 0.56rem;
   letter-spacing: 0.12em;
