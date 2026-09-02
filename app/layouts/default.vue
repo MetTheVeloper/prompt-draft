@@ -19,11 +19,16 @@ const promptDetailMode = computed(() => {
   );
 });
 
+const wizardMode = computed(() => {
+  return route.path === "/wizard" || route.path.startsWith("/wizard/");
+});
+
 const padding = computed(() => {
   return (
     route.name === "index" ||
     route.name === "collage" ||
     route.name === "vectorizer" ||
+    wizardMode.value ||
     promptDetailMode.value
   )
     ? 0
