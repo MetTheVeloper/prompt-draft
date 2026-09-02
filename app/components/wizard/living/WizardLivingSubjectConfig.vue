@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import {
-  getWizardEntityDisplayLabel,
   normalizeWizardEntityDefinitionForMode,
   renameWizardEntity,
   type WizardEntityAnswer,
@@ -163,7 +162,7 @@ function customDescription(subject: WizardEntityAnswer) {
             :id="`subject-name-${subject.id}`"
             :value="subject.label"
             :disabled="props.disabled"
-            :placeholder="getWizardEntityDisplayLabel({ ...subject, label: '' }, index, props.subjects.length)"
+            :placeholder="fallbackTitle(index)"
             autocomplete="off"
             @input="rename(subject, inputValue($event))"
           />
@@ -259,6 +258,20 @@ function customDescription(subject: WizardEntityAnswer) {
 
 .wizard-subject-config__name-toggle:hover,
 .wizard-subject-config__name-toggle:focus-visible { color: var(--normalText55); }
+
+.wizard-subject-config:dir(rtl) .wizard-subject-config__prompt {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  font-style: normal;
+  letter-spacing: 0;
+  line-height: 1.8;
+}
+
+.wizard-subject-config:dir(rtl) .wizard-subject-config__choice,
+.wizard-subject-config:dir(rtl) .wizard-subject-config__field label,
+.wizard-subject-config:dir(rtl) .wizard-subject-config__name-toggle {
+  letter-spacing: 0;
+  text-transform: none;
+}
 
 @media (max-width: 620px) {
   .wizard-subject-config__person { gap: 16px; padding-block: 22px; }
