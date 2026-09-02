@@ -127,6 +127,28 @@ const emit = defineEmits<{
   transform: translateY(0);
 }
 
+.wizard-type-choice:dir(rtl) {
+  text-align: right;
+}
+
+.wizard-type-choice:dir(rtl):hover,
+.wizard-type-choice:dir(rtl):focus-visible,
+.wizard-type-choice--selected:dir(rtl) {
+  transform: translateX(-7px);
+}
+
+.wizard-type-choice:dir(rtl) .wizard-type-choice__label,
+.wizard-type-choice:dir(rtl) .wizard-type-choice__sublabel {
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.wizard-type-choice:dir(rtl) .wizard-type-choice__description {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  font-style: normal;
+  line-height: 1.8;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .wizard-type-choice,
   .wizard-type-choice__label,
