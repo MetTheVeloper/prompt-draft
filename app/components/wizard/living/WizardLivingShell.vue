@@ -143,13 +143,19 @@ const emit = defineEmits<{
 
 @media (min-width: 1080px) {
   .wizard-living-shell--review .wizard-living-shell__main {
+    display: flex;
     overflow: hidden;
   }
 
   .wizard-living-shell--review .wizard-living-shell__stage {
-    height: 100%;
+    flex: 1 1 auto;
     min-height: 0;
     align-items: stretch;
+  }
+
+  .wizard-living-shell--review .wizard-living-shell__stage > :deep(*) {
+    min-height: 0;
+    align-self: stretch;
   }
 }
 
