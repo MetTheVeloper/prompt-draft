@@ -65,13 +65,14 @@ import {
   type PortraitLivingFinalPhase,
 } from "~/wizard/portraitLivingFinalPresentation";
 import {
+  beginPortraitLivingChapterEdit,
   beginPortraitLivingReviewEdit,
   completePortraitLivingReviewConfirmation,
   getPortraitLivingReviewEditContext,
   isPortraitLivingReviewEditing,
   resizePortraitLivingReviewSubjects,
   resolvePortraitLivingReviewChoice,
-  returnToPortraitLivingReview,
+  returnToPortraitLivingEditAnchor,
   type PortraitLivingReviewEditTarget,
 } from "~/wizard/portraitLivingReviewPresentation";
 import {
@@ -631,8 +632,8 @@ function livingBack() {
 
   if (isPortraitLivingReviewEditing(session.value)) {
     session.value = runtime.value
-      ? runtime.value.resolveSession(returnToPortraitLivingReview(session.value))
-      : returnToPortraitLivingReview(session.value);
+      ? runtime.value.resolveSession(returnToPortraitLivingEditAnchor(session.value))
+      : returnToPortraitLivingEditAnchor(session.value);
     issueMessage.value = "";
     return;
   }
@@ -724,6 +725,14 @@ function livingBack() {
   }
 
   back();
+}
+
+function navigateLivingChapter(chapterId: string) {
+  if (!session.value || !runtime.value) return;
+  session.value = runtime.value.resolveSession(
+    beginPortraitLivingChapterEdit(session.value, chapterId),
+  );
+  issueMessage.value = "";
 }
 
 function editLivingReview(target: PortraitLivingReviewEditTarget) {
@@ -921,6 +930,7 @@ onBeforeUnmount(() => {
     :is-busy="isBusy"
     :show-nav="Boolean(livingReviewEditContext)"
     :show-sentence="Boolean(livingReviewEditContext)"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -937,6 +947,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -979,6 +990,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -995,6 +1007,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -1027,6 +1040,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -1060,6 +1074,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -1093,6 +1108,7 @@ onBeforeUnmount(() => {
     :can-go-back="true"
     :is-saved="isSaved"
     :is-busy="isBusy"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
@@ -1122,6 +1138,7 @@ onBeforeUnmount(() => {
     :is-saved="isSaved"
     :is-busy="isBusy"
     :show-sentence="false"
+    @chapter="navigateLivingChapter"
     @back="livingBack"
     @restart="restart"
     @exit="exitWizard">
