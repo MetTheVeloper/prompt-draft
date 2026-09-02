@@ -96,9 +96,12 @@ const preview = computed(() => props.promptPreview.trim());
 .wizard-direction-ready {
   position: relative;
   isolation: isolate;
-  min-height: min(820px, calc(100vh - 72px));
   width: 100%;
-  overflow: hidden;
+  height: 100%;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   background: var(--themeBackground);
   color: var(--normalText);
 }
