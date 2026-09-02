@@ -327,6 +327,21 @@ export default {
         transformationStrength: "Transformation strength",
       },
     },
+    ready: {
+      eyebrow: "FROM IDEA TO PROMPT",
+      title: "Your direction is ready.",
+      subcopy:
+        "Open it in Create to refine the details, tune the modules, and shape the final prompt from this structured direction.",
+      directionLabel: "CREATIVE DIRECTION",
+      promptLabel: "PROMPT PREVIEW",
+      promptStatus: "COMPILED",
+      openCreate: "OPEN IN CREATE",
+      saveTemplate: "Save as template",
+      startAnother: "Start another",
+      editDirection: "← Edit direction",
+      handoffNote:
+        "Your existing Create draft stays untouched until you explicitly open this direction in Create.",
+    },
     sentence: {
       placeholder: "I want to...",
       lead: "I want to ",
