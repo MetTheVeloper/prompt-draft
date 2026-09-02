@@ -38,7 +38,10 @@ const emit = defineEmits<{
 <template>
   <section
     class="wizard-living-shell w100 h100"
-    :class="{ 'wizard-living-shell--entry': !props.showNav && !props.showSentence }"
+    :class="{
+      'wizard-living-shell--entry': !props.showNav && !props.showSentence,
+      'wizard-living-shell--review': props.currentChapterId === 'review',
+    }"
     :aria-label="props.title">
     <div class="wizard-living-shell__ambient" aria-hidden="true" />
 
@@ -136,6 +139,18 @@ const emit = defineEmits<{
 
 .wizard-living-shell__footer {
   padding: 0 clamp(22px, 6vw, 78px) clamp(22px, 4vh, 36px);
+}
+
+@media (min-width: 1080px) {
+  .wizard-living-shell--review .wizard-living-shell__main {
+    overflow: hidden;
+  }
+
+  .wizard-living-shell--review .wizard-living-shell__stage {
+    height: 100%;
+    min-height: 0;
+    align-items: stretch;
+  }
 }
 
 @media (max-width: 700px) {
