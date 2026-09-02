@@ -80,4 +80,17 @@ button.wizard-living-sentence__token--editable:focus-visible {
   outline: 1px solid var(--primary);
   outline-offset: 3px;
 }
+
+.wizard-living-sentence:dir(rtl) {
+  font-family: var(--app-font-family, system-ui, sans-serif);
+  font-style: normal;
+  letter-spacing: 0;
+  line-height: 1.8;
+  text-align: right;
+}
+
+.wizard-living-sentence--compact:dir(rtl) {
+  letter-spacing: 0;
+  line-height: 1.8;
+}
 </style>
