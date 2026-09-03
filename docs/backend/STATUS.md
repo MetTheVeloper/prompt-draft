@@ -12,15 +12,13 @@ Milestone 1: run an independent local backend in Docker, expose one GET API, cal
 
 ## Verification rule
 
-A phase is marked `DONE` only after the user has run the relevant commands or behavior locally and confirmed the result.
-
-Code creation alone is not sufficient to mark a runtime phase complete.
+A phase is marked `DONE` only after the user has run the relevant commands or behavior locally and confirmed the result. Code creation alone is not sufficient.
 
 ## Progress
 
 ### Phase 0 — prerequisites: DONE
 
-User confirmed Docker CLI, Docker Desktop/daemon, Docker Compose, image pulling, and container execution by successfully running `docker run hello-world`.
+User confirmed Docker Desktop/daemon, Docker CLI, Docker Compose, image pulling, and container execution.
 
 Confirmed versions:
 
@@ -28,6 +26,8 @@ Confirmed versions:
 Docker version 29.7.2, build a7dcaa6
 Docker Compose version v5.4.0
 ```
+
+`docker run hello-world` completed successfully.
 
 ### Phase 1 — minimal backend source: DONE
 
@@ -38,31 +38,20 @@ backend/package.json
 backend/src/index.mjs
 ```
 
-The user locally ran:
+Implementation uses Node built-in `node:http`, binds to `0.0.0.0:4000`, exposes `GET /api/hello`, and returns JSON `404` for unmatched routes.
 
-```bash
+User verified directly on the host:
+
+```powershell
 pnpm --dir backend start
-```
-
-and confirmed:
-
-```text
-Prompt Draft API listening on http://0.0.0.0:4000
-```
-
-Then:
-
-```bash
 curl.exe http://localhost:4000/api/hello
 ```
 
-returned:
+Expected response was confirmed:
 
 ```json
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
-
-This verified the backend itself before Docker was introduced.
 
 ### Phase 2 — Dockerfile: DONE
 
@@ -72,43 +61,19 @@ Created:
 backend/Dockerfile
 ```
 
-Image design:
+Image uses `node:24-alpine` and starts `node src/index.mjs`.
 
-- base image `node:24-alpine`;
-- working directory `/app`;
-- backend source copied into the image;
-- default host `0.0.0.0`;
-- default port `4000`;
-- Node server is the container process.
+User verified the manual Docker flow:
 
-The user confirmed the full manual Docker flow:
-
-```bash
+```powershell
 docker build -t prompt-draft-api ./backend
 docker run --rm -p 4000:4000 prompt-draft-api
-```
-
-The container logged:
-
-```text
-Prompt Draft API listening on http://0.0.0.0:4000
-```
-
-The user then confirmed from a separate PowerShell window:
-
-```bash
 curl.exe http://localhost:4000/api/hello
 ```
 
-returned:
+The API returned the expected JSON through the host-to-container port mapping.
 
-```json
-{"ok":true,"message":"Hello from Prompt Draft API"}
-```
-
-This confirms the API was running inside Docker and was reachable through the host-to-container port mapping.
-
-### Phase 3 — Docker Compose service: CONTAINER HEALTHY, HOST PORT NOT PUBLISHED
+### Phase 3 — Docker Compose service: CONFIG VERIFIED, FRESH RUNTIME TEST PENDING
 
 Created:
 
@@ -130,73 +95,31 @@ services:
       PORT: 4000
 ```
 
-The initial Compose run hit a host-port conflict because the Phase 2 container was still publishing port `4000`. The user identified and stopped container `ad1c110cd65c`, then confirmed no running container still published port `4000`.
+History of the current diagnostic:
 
-A subsequent:
-
-```powershell
-docker compose up --build
-```
-
-started the Compose service and the backend logged:
-
-```text
-api-1  | Prompt Draft API listening on http://0.0.0.0:4000
-```
-
-Further diagnostics showed:
-
-```powershell
-docker compose ps
-```
-
-reported the service as running but its `PORTS` column showed only:
+1. The first Compose run hit a host-port conflict because the Phase 2 container still owned port `4000`.
+2. User identified and stopped container `ad1c110cd65c` and confirmed no running container still published port `4000`.
+3. A subsequent Compose container started and the API was healthy inside the container, but `docker compose ps` showed only `4000/tcp` rather than a host mapping.
+4. Host access failed, while an in-container request succeeded, proving the Node server itself was healthy.
+5. The Compose project was then fully stopped and removed. `docker compose ps -a` returned no containers.
+6. User ran `docker compose config`; the resolved configuration correctly includes:
 
 ```text
-4000/tcp
+mode: ingress
+target: 4000
+published: "4000"
+protocol: tcp
 ```
 
-rather than a host mapping such as:
+This confirms `compose.yaml` itself is correct and explicitly requests host port `4000` publication.
 
-```text
-0.0.0.0:4000->4000/tcp
-```
+The previous non-published container was therefore stale/invalid runtime state rather than a Compose-file configuration error.
 
-Also:
+Phase 3 is not yet `DONE`; it now needs one clean container recreation and host verification.
 
-```powershell
-docker compose port api 4000
-```
+### Phase 4 — direct host/API test: NOT YET VERIFIED FOR CLEAN COMPOSE RUN
 
-returned:
-
-```text
-invalid IP:0
-```
-
-and host access failed for both `localhost` and explicit IPv4 `127.0.0.1`.
-
-However, the user verified the API from inside the running Compose container with:
-
-```powershell
-docker compose exec api node -e "fetch('http://127.0.0.1:4000/api/hello').then(r=>r.text()).then(console.log)"
-```
-
-which returned:
-
-```json
-{"ok":true,"message":"Hello from Prompt Draft API"}
-```
-
-This proves the Node server and container networking are healthy. The unresolved issue is specifically that the current Compose container does not have the expected host port publication.
-
-The most likely explanation is that the Compose container created during the earlier failed port-bind attempt was later reused rather than cleanly recreated after the conflicting container was stopped.
-
-Phase 3 remains incomplete until a freshly recreated Compose container exposes host port `4000` correctly.
-
-### Phase 4 — direct host/API test: NOT YET VERIFIED FOR COMPOSE
-
-Manual Docker host connectivity was previously verified in Phase 2. Current failure is isolated to the Compose-created service's host port publication.
+Manual Docker host connectivity was already verified in Phase 2. This phase will be completed together with Phase 3 after the fresh Compose container is reachable from Windows.
 
 ### Phase 5 — development CORS: NOT STARTED
 
@@ -204,47 +127,35 @@ Manual Docker host connectivity was previously verified in Phase 2. Current fail
 
 ### Phase 7 — browser console end-to-end verification: NOT STARTED
 
-## Next diagnostic action
+## Next action
 
-Stop the attached Compose process if necessary, then fully remove the current Compose container/network state:
+The Compose project is currently down and its resolved port configuration is confirmed correct.
 
-```powershell
-docker compose down
-```
-
-Confirm no Compose container remains:
-
-```powershell
-docker compose ps -a
-```
-
-Inspect the resolved Compose configuration:
-
-```powershell
-docker compose config
-```
-
-The resolved `api` service should still contain a published port mapping for host `4000` to container `4000`.
-
-Then force creation of a fresh container:
+Create a completely fresh service container:
 
 ```powershell
 docker compose up --build --force-recreate
 ```
 
-In another PowerShell window verify:
+Keep that terminal attached. In a second PowerShell window run:
 
 ```powershell
 docker compose ps
 ```
 
-Expected `PORTS` shape:
+Expected `PORTS` output should include a host mapping such as:
 
 ```text
 0.0.0.0:4000->4000/tcp
 ```
 
-Then test:
+Optionally confirm the resolved published endpoint:
+
+```powershell
+docker compose port api 4000
+```
+
+Then test from Windows:
 
 ```powershell
 curl.exe http://127.0.0.1:4000/api/hello
@@ -256,7 +167,9 @@ Expected response:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-Do not modify CORS, Nuxt, backend code, or `compose.yaml` until this clean recreate test is completed.
+If these succeed, mark Phase 3 and Phase 4 `DONE` and proceed to CORS/frontend integration.
+
+Do not modify CORS, Nuxt, backend code, or `compose.yaml` before this verification.
 
 ## New-chat handoff
 
