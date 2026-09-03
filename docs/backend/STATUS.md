@@ -20,18 +20,14 @@ Code creation alone is not sufficient to mark a runtime phase complete.
 
 ### Phase 0 — prerequisites: DONE
 
-User-confirmed local environment:
+User confirmed Docker CLI, Docker Desktop/daemon, Docker Compose, image pulling, and container execution by successfully running `docker run hello-world`.
+
+Confirmed versions:
 
 ```text
 Docker version 29.7.2, build a7dcaa6
 Docker Compose version v5.4.0
 ```
-
-`docker run hello-world` completed successfully and printed `Hello from Docker!`.
-
-This confirms that Docker CLI, Docker Desktop/daemon, image pulling, container execution, and Docker Compose are working locally.
-
-The local repository was also confirmed to be on `feature/docker-local-api` with a clean working tree.
 
 ### Phase 1 — minimal backend source: DONE
 
@@ -42,29 +38,19 @@ backend/package.json
 backend/src/index.mjs
 ```
 
-Implementation:
-
-- independent backend package;
-- Node built-in `node:http` server;
-- no Express/Fastify or external backend dependency;
-- default bind address `0.0.0.0`;
-- default port `4000`;
-- `GET /api/hello` returns the milestone JSON response;
-- unmatched routes return JSON `404`.
-
-User locally ran:
+The user locally ran:
 
 ```bash
 pnpm --dir backend start
 ```
 
-and confirmed the server logged:
+and confirmed:
 
 ```text
 Prompt Draft API listening on http://0.0.0.0:4000
 ```
 
-The user then confirmed:
+Then:
 
 ```bash
 curl.exe http://localhost:4000/api/hello
@@ -76,9 +62,9 @@ returned:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-This verifies the backend itself works correctly before Docker is introduced.
+This verified the backend itself before Docker was introduced.
 
-### Phase 2 — Dockerfile: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 2 — Dockerfile: DONE
 
 Created:
 
@@ -86,23 +72,73 @@ Created:
 backend/Dockerfile
 ```
 
-Current image design:
+Image design:
 
-- base image: `node:24-alpine`;
-- working directory: `/app`;
-- copies `package.json` and `src/`;
-- default `HOST=0.0.0.0`;
-- default `PORT=4000`;
-- documents container port `4000` with `EXPOSE`;
-- starts `node src/index.mjs` as the container process.
+- base image `node:24-alpine`;
+- working directory `/app`;
+- backend source copied into the image;
+- default host `0.0.0.0`;
+- default port `4000`;
+- Node server is the container process.
 
-No dependency-install layer is currently needed because the backend has no external dependencies.
+The user confirmed the full manual Docker flow:
 
-Local verification still required before marking Phase 2 `DONE`.
+```bash
+docker build -t prompt-draft-api ./backend
+docker run --rm -p 4000:4000 prompt-draft-api
+```
 
-### Phase 3 — Docker Compose service: NOT STARTED
+The container logged:
+
+```text
+Prompt Draft API listening on http://0.0.0.0:4000
+```
+
+while the previous host-started Node process had been stopped.
+
+The user then confirmed from a separate PowerShell window:
+
+```bash
+curl.exe http://localhost:4000/api/hello
+```
+
+returned:
+
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
+```
+
+This confirms the API was running inside Docker and was reachable through the host-to-container port mapping.
+
+### Phase 3 — Docker Compose service: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Created:
+
+```text
+compose.yaml
+```
+
+Current Compose service:
+
+```yaml
+services:
+  api:
+    build:
+      context: ./backend
+    ports:
+      - "4000:4000"
+    environment:
+      HOST: 0.0.0.0
+      PORT: 4000
+```
+
+The service is named `api` and builds from `backend/Dockerfile`.
+
+Local verification still required before Phase 3 is marked `DONE`.
 
 ### Phase 4 — direct host/API test: NOT STARTED
+
+This phase will be verified immediately after the Compose service is running by calling `/api/hello` from the host.
 
 ### Phase 5 — development CORS: NOT STARTED
 
@@ -112,41 +148,37 @@ Local verification still required before marking Phase 2 `DONE`.
 
 ## Next action
 
-1. Sync the feature branch locally:
+1. Sync the branch:
 
 ```bash
 git pull
 ```
 
-2. Stop the host-started backend first with `Ctrl+C` if it is still running. Host port `4000` must be free before Docker can publish that same port.
+2. Stop the current manually started Docker container with `Ctrl+C` if it is still running so host port `4000` is free.
 
-3. Build the backend image from the repository root:
-
-```bash
-docker build -t prompt-draft-api ./backend
-```
-
-4. Run a container from the image:
+3. From the repository root run:
 
 ```bash
-docker run --rm -p 4000:4000 prompt-draft-api
+docker compose up --build
 ```
 
-5. In a second PowerShell window, verify:
+Expected behavior: Compose builds if necessary, creates/starts the `api` service, and the backend logs that it is listening on `0.0.0.0:4000`.
+
+4. In another PowerShell window run:
 
 ```bash
 curl.exe http://localhost:4000/api/hello
 ```
 
-Expected result:
+Expected response:
 
 ```json
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-Phase 2 becomes `DONE` only after the user confirms that this response is coming while the host Node process is stopped and the Docker container is running.
+If both are user-confirmed, Phase 3 and Phase 4 can be marked `DONE` together.
 
-Do not add Docker Compose, PostgreSQL, authentication, Wizard persistence, or other backend services before that verification.
+Do not add CORS or modify the Nuxt home page before this verification.
 
 ## New-chat handoff
 
