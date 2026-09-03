@@ -102,6 +102,7 @@ const { t, te, locale } = useI18n();
 const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
 const { openSaveDraftAsTemplate } = usePromptTemplateUi();
+const { createWizardRun } = usePromptDraftApi();
 
 const session = ref<WizardSession | null>(null);
 const resumeCandidate = ref<WizardSession | null>(null);
@@ -884,6 +885,28 @@ async function finish() {
     completedPromptPreview.value = result.promptPreview;
     saveWizardSession(session.value);
     isSaved.value = true;
+
+    try {
+      await createWizardRun({
+        wizardId: session.value.wizardId,
+        wizardVersion: session.value.wizardVersion,
+        output: result.promptPreview,
+        snapshot: {
+          schemaVersion: 1,
+          session: {
+            currentStepId: session.value.currentStepId,
+            answers: session.value.answers,
+            derived: session.value.derived,
+          },
+          finalDraft: result.finalDraft,
+        },
+      });
+    } catch (error) {
+      console.error("[Prompt Draft API] Wizard run persistence failed", error);
+      issueMessage.value = locale.value === "fa"
+        ? "پرامپت با موفقیت ساخته شد، اما این اجرا نتونست در تاریخچه ذخیره بشه. همچنان می‌تونی از خروجی نهایی استفاده کنی."
+        : "Your prompt was generated, but this run could not be saved to history. You can keep using the finished prompt.";
+    }
   } finally {
     isBusy.value = false;
   }
