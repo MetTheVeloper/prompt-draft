@@ -22,14 +22,15 @@ The backend remains independent from Nuxt server routes so the frontend can cont
 
 Replace temporary process memory with durable PostgreSQL storage while preserving the current API concepts.
 
-The learning path is deliberately separated:
+The learning path is intentionally layered:
 
 ```text
 Node process RAM
   -> PostgreSQL container
   -> PostgreSQL data directory
   -> Docker named volume
-  -> API-to-database network connection
+  -> API-to-DB network connection
+  -> explicit SQL schema
   -> durable Wizard-run rows
 ```
 
@@ -62,9 +63,7 @@ Rationale:
 
 ### Phase 1 — PostgreSQL Compose service: DONE
 
-`compose.yaml` has a second service using `postgres:17-alpine`.
-
-The user locally verified both Compose services are running, `pg_isready` reports `accepting connections`, and a real `psql` query returns database/user `prompt_draft`.
+Compose has a `db` service using `postgres:17-alpine` with local-development database/user/password configuration.
 
 PostgreSQL is intentionally not published to the Windows host. Inside Compose its address is:
 
@@ -72,72 +71,29 @@ PostgreSQL is intentionally not published to the Windows host. Inside Compose it
 db:5432
 ```
 
+The user verified both services run, `pg_isready` reports `accepting connections`, and `psql` reports database/user `prompt_draft`.
+
 ### Phase 2 — named volume and persistence proof: DONE
 
-A named volume is attached to PostgreSQL's standard data directory:
-
-```yaml
-db:
-  volumes:
-    - prompt_draft_pgdata:/var/lib/postgresql/data
-
-volumes:
-  prompt_draft_pgdata:
-```
-
-The user verified Docker created:
+PostgreSQL data is backed by:
 
 ```text
-prompt-draft_prompt_draft_pgdata
+prompt_draft_pgdata:/var/lib/postgresql/data
 ```
 
-A temporary SQL probe was created:
+The user created a temporary `persistence_probe` row, ran `docker compose down`, recreated the containers, and confirmed the same row remained.
 
-```text
-persistence_probe
-```
+This proves container lifecycle and data lifecycle are now separate.
 
-with one row:
+### Phase 3 — API database connectivity: DONE
 
-```text
-1 | survives container recreation
-```
-
-After `docker compose down`, the PostgreSQL container was removed. After `docker compose up -d`, a new container mounted the same named volume and the same probe row was still present.
-
-This proves the named volume lifecycle is separate from the PostgreSQL container lifecycle.
-
-Important distinction:
-
-```text
-docker compose down
-```
-
-removes containers/network but retains the named volume.
-
-```text
-docker compose down -v
-```
-
-also removes declared named volumes and therefore destroys this local database data.
-
-### Phase 3 — API database connectivity: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-The backend now has its first external runtime dependency:
+The backend now depends on:
 
 ```text
 pg 8.16.3
 ```
 
-`backend/Dockerfile` now installs production dependencies inside the API image before copying the source.
-
-A dedicated connection helper was added:
-
-```text
-backend/src/database.mjs
-```
-
-It creates a PostgreSQL connection pool from explicit environment configuration:
+`backend/src/database.mjs` owns the PostgreSQL pool. Compose supplies:
 
 ```text
 DB_HOST=db
@@ -147,67 +103,100 @@ DB_USER=prompt_draft
 DB_PASSWORD=prompt_draft_dev
 ```
 
-These are local-development values only; production secret management is deferred.
-
-A temporary diagnostic endpoint was added without changing Wizard endpoint storage behavior:
+The diagnostic endpoint:
 
 ```http
 GET /api/db-check
 ```
 
-The endpoint asks PostgreSQL for:
+performs a SELECT through the API process.
 
-```sql
-SELECT current_database(), current_user, NOW();
-```
-
-Successful path:
+The user verified `HTTP/1.1 200 OK` and a response identifying database/user `prompt_draft`. This proves:
 
 ```text
-Windows/browser request
-  -> API host port 4000
-  -> API container
-  -> pg Pool
-  -> Compose DNS hostname `db`
-  -> PostgreSQL port 5432
-  -> SELECT
-  -> JSON response
+API container
+  -> pg client
+  -> Compose DNS hostname db
+  -> PostgreSQL 5432
+  -> successful query
 ```
 
-Expected success response is conceptually:
+The Wizard endpoints remain in-memory during this phase.
 
-```json
-{
-  "ok": true,
-  "database": "prompt_draft",
-  "user": "prompt_draft",
-  "serverTime": "..."
-}
+### Phase 4 — first `wizard_runs` table: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+The explicit schema source is now versioned in:
+
+```text
+backend/sql/001_create_wizard_runs.sql
 ```
 
-A failed database query returns `503 Database unavailable` rather than altering the existing Wizard API behavior.
+Current SQL:
 
-Important boundary: `POST /api/wizard-runs` and `GET /api/wizard-runs` still use the process-local `wizardRuns` array. Phase 3 proves connection only.
+```sql
+CREATE TABLE IF NOT EXISTS wizard_runs (
+  id UUID PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL,
+  wizard_id TEXT NOT NULL,
+  wizard_version INTEGER NOT NULL CHECK (wizard_version > 0),
+  output TEXT NOT NULL,
+  snapshot JSONB NOT NULL
+);
+```
 
-### Phase 4 — first `wizard_runs` table
+The backend package exposes:
 
-Create the provisional table explicitly.
+```text
+npm run db:schema
+```
 
-For this learning milestone, prefer a transparent schema-creation step before introducing a migrations framework.
+`backend/src/create-schema.mjs` reads that SQL file and executes it through the same PostgreSQL pool/configuration already proven in Phase 3. It then closes the pool explicitly so the one-shot command exits cleanly.
+
+The Docker image copies both:
+
+```text
+src/
+sql/
+```
+
+No migrations framework is introduced yet. This keeps the first schema step transparent: inspect SQL, execute SQL, inspect resulting table.
+
+Local verification should:
+
+```text
+rebuild API image
+  -> docker compose exec api npm run db:schema
+  -> verify wizard_runs exists in PostgreSQL
+  -> inspect its columns/types/constraints
+```
 
 ### Phase 5 — replace POST memory insert with database INSERT
 
-Keep the existing parsing, validation, CORS, and `201 Created` contract, but write accepted runs to PostgreSQL instead of `wizardRuns.push()`.
+Keep current parsing, validation, CORS, UUID/timestamp semantics, and `201 Created`, but replace:
 
-### Phase 6 — replace GET memory listing with database SELECT
+```text
+wizardRuns.push(run)
+```
 
-Keep `GET /api/wizard-runs`, but source its rows from PostgreSQL instead of process memory.
+with a parameterized SQL `INSERT` into `wizard_runs`.
+
+Do not switch GET during the same phase; POST persistence should be verified independently first.
+
+### Phase 6 — replace GET memory list with database SELECT
+
+Keep:
+
+```http
+GET /api/wizard-runs
+```
+
+but query PostgreSQL and map snake_case database columns back to the existing camelCase API shape.
 
 ### Phase 7 — durability verification
 
-Create a run, read it back, recreate the API and PostgreSQL containers, then read the same run again.
+Create a run through the API, read it back, remove/recreate API and PostgreSQL containers without deleting volumes, then read the same run again.
 
-Milestone 3 is complete only after the user confirms that the row survives container recreation because PostgreSQL data lives in the named volume.
+Milestone 3 is complete only after the user confirms that the run survives container recreation because PostgreSQL data lives in the named volume.
 
 ## After Milestone 3
 
