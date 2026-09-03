@@ -94,7 +94,7 @@ GET /api/wizard-runs
   -> ORDER BY created_at DESC, id DESC
   -> limit: default 20, min 1, max 100
   -> opaque cursor based on createdAt + id
-  -> optional wizardId filter in Phase 3
+  -> optional wizardId filter
   -> pageInfo.nextCursor
   -> pageInfo.hasMore
 
@@ -178,7 +178,7 @@ collection regression check before Phase 2
 
 Phase 1 is therefore verified and complete.
 
-### Phase 2 — cursor-paginated summary collection: AWAITING USER VERIFICATION
+### Phase 2 — cursor-paginated summary collection: DONE
 
 Implemented replacement for the old unbounded full-row collection.
 
@@ -217,30 +217,72 @@ GET /api/wizard-runs?cursor=<opaque>
 
 Cursor encoding is backend-owned and uses an opaque base64url representation of the final returned ordering tuple. Frontend callers must not interpret it.
 
-`wizardId` filtering is intentionally not implemented yet; it remains Phase 3.
+User verification completed locally:
 
-Required local verification before Phase 2 can become `DONE`:
+```text
+default GET
+  -> 200
+  -> seven summary rows
+  -> newest first
+  -> no count
+  -> no output/snapshot
+  -> final pageInfo hasMore=false, nextCursor=null
+
+limit=2 pagination
+  -> page 1: 2 rows
+  -> page 2: 2 rows
+  -> page 3: 2 rows
+  -> page 4: 1 row
+  -> all seven existing ids returned exactly once
+  -> final page hasMore=false, nextCursor=null
+
+invalid limit
+  -> 0, 101, abc each return structured 400
+
+invalid cursor
+  -> structured 400
+
+detail regression
+  -> full output/snapshot still returned
+
+POST regression
+  -> 201
+  -> fresh run id 534068a7-b518-4cb2-a155-f61dcdea181f
+```
+
+Phase 2 is therefore verified and complete.
+
+### Phase 3 — wizardId filtering: AWAITING USER VERIFICATION
+
+Implemented:
+
+```text
+GET /api/wizard-runs?wizardId=<id>
+  -> wizardId trimmed at HTTP boundary
+  -> empty/whitespace wizardId -> structured 400
+  -> unknown non-empty wizardId -> 200 empty collection
+  -> database filter uses parameterized wizard_id equality
+  -> pagination remains newest-first inside the filtered result set
+  -> limit + cursor remain composable with wizardId
+```
+
+Database query construction uses only server-owned SQL clause fragments while all runtime filter/cursor values remain PostgreSQL parameters.
+
+Required local verification before Phase 3 can become `DONE`:
 
 ```text
 1. pull latest branch and rebuild API
-2. default GET -> 200 summary contract, newest first
-3. confirm collection rows contain no output/snapshot
-4. limit=2 -> exactly two summaries + hasMore=true + nextCursor
-5. request next page with returned cursor
-6. continue until final page -> hasMore=false + nextCursor=null
-7. confirm no duplicate ids across pages
-8. confirm all existing ids are eventually returned exactly once
-9. invalid limits: 0, 101, abc -> structured 400
-10. invalid cursor -> structured 400
-11. detail GET still returns full output/snapshot
-12. POST still returns 201 and a fresh run appears at the front of a new first-page request
+2. wizardId=portrait -> only portrait summaries
+3. wizardId=portrait&limit=2 -> first filtered page with hasMore=true
+4. use returned cursor with the same wizardId -> next filtered page, no duplicate ids
+5. wizardId=does-not-exist -> 200, runs=[], hasMore=false, nextCursor=null
+6. wizardId= (empty) -> structured 400
+7. unfiltered GET still works
+8. detail GET still returns full output/snapshot
+9. POST still returns 201
 ```
 
-Do not mark Phase 2 `DONE` until the user completes and confirms these checks locally.
-
-### Phase 3 — wizardId filtering: NOT STARTED
-
-Planned filter on the paginated collection. Pagination will operate inside the filtered result set.
+Do not mark Phase 3 `DONE` until the user completes and confirms these checks locally.
 
 ### Phase 4 — typed frontend read boundary: NOT STARTED
 
@@ -274,9 +316,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 5 Phase 2 cursor-pagination and summary-list behavior.
+Locally verify Milestone 5 Phase 3 `wizardId` filtering behavior.
 
-Phase 3 must not start and Phase 2 must not be marked `DONE` until that verification is confirmed.
+Phase 4 must not start and Phase 3 must not be marked `DONE` until that verification is confirmed.
 
 ## New-chat handoff
 
