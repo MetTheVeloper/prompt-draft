@@ -18,7 +18,7 @@ A phase is marked `DONE` only after the user has run the relevant commands or be
 
 ### Phase 0 — prerequisites: DONE
 
-User confirmed Docker Desktop/daemon, Docker CLI, Docker Compose, image pulling, and container execution.
+Docker Desktop/daemon, Docker CLI, Docker Compose, image pulling, and container execution were locally verified.
 
 Confirmed versions:
 
@@ -26,8 +26,6 @@ Confirmed versions:
 Docker version 29.7.2, build a7dcaa6
 Docker Compose version v5.4.0
 ```
-
-`docker run hello-world` completed successfully.
 
 ### Phase 1 — minimal backend source: DONE
 
@@ -38,16 +36,7 @@ backend/package.json
 backend/src/index.mjs
 ```
 
-Implementation uses Node built-in `node:http`, binds to `0.0.0.0:4000`, exposes `GET /api/hello`, and returns JSON `404` for unmatched routes.
-
-User verified directly on the host:
-
-```powershell
-pnpm --dir backend start
-curl.exe http://localhost:4000/api/hello
-```
-
-Confirmed response:
+User verified the Node HTTP server directly on the host and confirmed:
 
 ```json
 {"ok":true,"message":"Hello from Prompt Draft API"}
@@ -61,7 +50,7 @@ Created:
 backend/Dockerfile
 ```
 
-User verified the manual Docker image/container flow and confirmed the API was reachable through `4000:4000`.
+User verified the manual Docker image/container flow and host-to-container `4000:4000` access.
 
 ### Phase 3 — Docker Compose service: DONE
 
@@ -71,27 +60,15 @@ Created:
 compose.yaml
 ```
 
-After resolving an earlier port conflict and stale container state, the user performed a clean recreation:
-
-```powershell
-docker compose up --build --force-recreate
-```
-
-and confirmed:
+After resolving an earlier port conflict and stale runtime state, the clean Compose service was locally verified with:
 
 ```text
 0.0.0.0:4000->4000/tcp, [::]:4000->4000/tcp
 ```
 
-`docker compose port api 4000` returned:
-
-```text
-0.0.0.0:4000
-```
-
 ### Phase 4 — direct host/API test: DONE
 
-While the clean Compose service was running, the user confirmed from Windows:
+While the Compose service was running, the user confirmed from Windows:
 
 ```powershell
 curl.exe http://127.0.0.1:4000/api/hello
@@ -103,13 +80,7 @@ returned:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-This proves:
-
-```text
-Windows host -> published Docker port 4000 -> Compose API container -> Node HTTP server -> JSON response
-```
-
-### Phase 5 — development CORS: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 5 — development CORS: DONE
 
 Updated:
 
@@ -117,69 +88,80 @@ Updated:
 backend/src/index.mjs
 ```
 
-Current CORS behavior:
+CORS policy:
 
-- no external CORS package;
-- default allowlist contains `http://localhost:3000` and `http://127.0.0.1:3000`;
-- the allowlist can later be overridden with comma-separated `CORS_ORIGINS`;
-- allowed origins receive `Access-Control-Allow-Origin` matching the request origin;
-- allowed responses advertise `GET, OPTIONS` and `Content-Type`;
-- `Vary: Origin` is included;
+- default allowed origins: `http://localhost:3000` and `http://127.0.0.1:3000`;
+- optional comma-separated `CORS_ORIGINS` override;
+- allowed origins receive matching `Access-Control-Allow-Origin`;
+- allowed methods: `GET, OPTIONS`;
+- allowed header: `Content-Type`;
+- `Vary: Origin` is emitted;
 - `OPTIONS` returns `204`;
-- origins outside the allowlist receive no `Access-Control-Allow-Origin` header.
+- origins outside the allowlist receive no allow-origin header.
 
-The existing `/api/hello` response and JSON `404` behavior are preserved.
+User locally verified:
 
-Local container rebuild/header verification is required before Phase 5 becomes `DONE`.
+1. an allowed `http://localhost:3000` request returned `200`, the expected CORS headers, and the API JSON;
+2. `http://example.com` received no `Access-Control-Allow-Origin` header;
+3. an allowed-origin `OPTIONS` request returned `204 No Content` with the expected CORS headers.
 
-### Phase 6 — Nuxt home-page GET integration: NOT STARTED
+### Phase 6 — Nuxt home-page GET integration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-### Phase 7 — browser console end-to-end verification: NOT STARTED
+Updated:
+
+```text
+app/pages/index.vue
+```
+
+The home page now makes one development-only request on mount:
+
+```text
+GET http://127.0.0.1:4000/api/hello
+```
+
+and logs either:
+
+```text
+[Prompt Draft API] { ok: true, message: 'Hello from Prompt Draft API' }
+```
+
+or a labeled error.
+
+The request is guarded by `import.meta.dev`, so production/static builds do not attempt to call the local API. No home-page UI was changed.
+
+### Phase 7 — browser console end-to-end verification: NOT YET VERIFIED
+
+This is now the only remaining milestone-1 verification.
 
 ## Next action
 
-Sync the branch and rebuild/recreate the Compose API so the updated source is copied into a new image/container:
+1. Sync the feature branch:
 
 ```powershell
 git pull
-docker compose up --build --force-recreate
 ```
 
-Keep Compose running. In a second PowerShell window test an allowed origin:
+2. Keep the Compose API running. If it is not running, start/rebuild it:
 
 ```powershell
-curl.exe -i -H "Origin: http://localhost:3000" http://127.0.0.1:4000/api/hello
+docker compose up --build
 ```
 
-Expected response includes:
+3. In another terminal, run Prompt Draft in Nuxt development mode:
+
+```powershell
+pnpm dev
+```
+
+4. Confirm the Nuxt dev URL is `http://localhost:3000` (or `http://127.0.0.1:3000`). If Nuxt chooses another port, the current CORS allowlist will not match and should be adjusted rather than bypassed.
+
+5. Open the home page, open browser DevTools -> Console, and verify a log like:
 
 ```text
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: http://localhost:3000
-Access-Control-Allow-Methods: GET, OPTIONS
-Access-Control-Allow-Headers: Content-Type
-Vary: Origin
+[Prompt Draft API] { ok: true, message: 'Hello from Prompt Draft API' }
 ```
 
-and the existing JSON body.
-
-Also verify an origin outside the allowlist:
-
-```powershell
-curl.exe -i -H "Origin: http://example.com" http://127.0.0.1:4000/api/hello
-```
-
-The request may still receive the API JSON because curl does not enforce browser CORS, but the response must NOT contain `Access-Control-Allow-Origin: http://example.com`.
-
-Optionally verify the preflight path:
-
-```powershell
-curl.exe -i -X OPTIONS -H "Origin: http://localhost:3000" http://127.0.0.1:4000/api/hello
-```
-
-Expected status: `204 No Content` with the allowed-origin CORS headers.
-
-Only after user confirmation should Phase 5 be marked `DONE` and `app/pages/index.vue` be modified for Phase 6.
+If that result is user-confirmed, mark Phase 6 and Phase 7 `DONE` and Milestone 1 complete.
 
 Do not add PostgreSQL, authentication, Wizard persistence, or unrelated backend features during this milestone.
 
