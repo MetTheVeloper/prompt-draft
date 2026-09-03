@@ -8,6 +8,11 @@ services:
       HOST: 0.0.0.0
       PORT: 4000
       CORS_ORIGINS: "http://localhost:3030,http://127.0.0.1:3030"
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: prompt_draft
+      DB_USER: prompt_draft
+      DB_PASSWORD: prompt_draft_dev
 
   db:
     image: postgres:17-alpine
