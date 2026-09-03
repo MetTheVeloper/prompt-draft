@@ -69,40 +69,13 @@ Versioned SQL source:
 backend/sql/001_create_wizard_runs.sql
 ```
 
-The user rebuilt the image and directly inspected PostgreSQL with:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d wizard_runs"
-```
-
-PostgreSQL confirmed:
-
-```text
-id              uuid                     NOT NULL
-created_at      timestamp with time zone NOT NULL
-wizard_id       text                     NOT NULL
-wizard_version  integer                  NOT NULL
-output           text                     NOT NULL
-snapshot         jsonb                    NOT NULL
-```
-
-plus primary key `wizard_runs_pkey` on `id` and check constraint `wizard_version > 0`.
-
-This is sufficient direct database verification that the Phase-4 schema exists as designed.
+PostgreSQL confirmed the expected columns, primary key on `id`, and `wizard_version > 0` check constraint.
 
 ### Phase 5 — replace POST memory insert with SQL INSERT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-`backend/src/database.mjs` now exposes `insertWizardRun(run)` using a parameterized PostgreSQL INSERT:
+`backend/src/database.mjs` exposes `insertWizardRun(run)` using a parameterized PostgreSQL INSERT with placeholders and separate values.
 
-```text
-INSERT INTO wizard_runs (...)
-VALUES ($1, $2, $3, $4, $5, $6::jsonb)
-RETURNING ...
-```
-
-The request values are passed separately from SQL text. The returned database row is mapped back to the existing camelCase API shape.
-
-`POST /api/wizard-runs` now:
+`POST /api/wizard-runs` now follows:
 
 ```text
 parse JSON
@@ -113,11 +86,11 @@ parse JSON
   -> 201 JSON response
 ```
 
-The old `wizardRuns.push(run)` has been removed from POST.
+The old `wizardRuns.push(run)` has been removed from POST. `GET /api/wizard-runs` still reads process memory until Phase 6.
 
-Important temporary boundary: `GET /api/wizard-runs` still reads the old process-local array until Phase 6. Therefore Phase-5 verification must inspect PostgreSQL directly rather than expecting GET read-back to show the newly inserted row.
+The first Phase-5 verification attempt was sent from `cmd.exe` using a PowerShell-style single-quoted JSON body. In Windows CMD, single quotes are literal characters rather than string delimiters, so the API correctly received invalid JSON and returned `400 Request body must contain valid JSON`. PostgreSQL contained no inserted row. This is a shell-quoting issue, not evidence of an INSERT/database failure.
 
-Database insert failures currently return `500 Failed to create Wizard run` and are logged by the API.
+Phase 5 remains incomplete until a correctly quoted CMD request returns `201 Created` and the row is confirmed directly in PostgreSQL.
 
 ### Phase 6 — replace GET memory list with SQL SELECT: NOT STARTED
 
@@ -125,22 +98,7 @@ Database insert failures currently return `500 Failed to create Wizard run` and 
 
 ## Next action
 
-Sync and rebuild the API image:
-
-```powershell
-git pull
-docker compose up -d --build --force-recreate
-```
-
-Send one valid POST to `/api/wizard-runs` and confirm `201 Created`.
-
-Then inspect PostgreSQL directly:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT id, wizard_id, wizard_version, output, created_at FROM wizard_runs ORDER BY created_at DESC LIMIT 5;"
-```
-
-The posted row must exist in PostgreSQL. After user confirmation, mark Phase 5 `DONE` and begin Phase 6 only.
+From Windows CMD, send the JSON body with escaped double quotes, confirm `201 Created`, then query `wizard_runs` directly for the inserted output. After user confirmation, mark Phase 5 `DONE` and begin Phase 6 only.
 
 ## New-chat handoff
 
