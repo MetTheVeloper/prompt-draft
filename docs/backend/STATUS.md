@@ -110,7 +110,7 @@ returned:
 
 This confirms the API was running inside Docker and was reachable through the host-to-container port mapping.
 
-### Phase 3 — Docker Compose service: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 3 — Docker Compose service: IMPLEMENTED, RUNTIME BLOCKED BY PORT CONFLICT
 
 Created:
 
@@ -132,13 +132,40 @@ services:
       PORT: 4000
 ```
 
-The service is named `api` and builds from `backend/Dockerfile`.
+The user ran:
 
-Local verification still required before Phase 3 is marked `DONE`.
+```bash
+docker compose up --build
+```
 
-### Phase 4 — direct host/API test: NOT STARTED
+Compose successfully:
 
-This phase will be verified immediately after the Compose service is running by calling `/api/hello` from the host.
+- loaded the Dockerfile;
+- reused/built the backend image;
+- created the `prompt-draft_default` network;
+- created the `prompt-draft-api-1` container.
+
+Runtime startup then failed with:
+
+```text
+Bind for 0.0.0.0:4000 failed: port is already allocated
+```
+
+This means host port `4000` was still owned by another running process/container, most likely the manually started Phase 2 Docker container.
+
+A simultaneous call to:
+
+```bash
+curl.exe http://localhost:4000/api/hello
+```
+
+still returned the expected JSON, which confirms something else was already listening on port `4000`; it does NOT yet verify the Compose-created container.
+
+Phase 3 therefore remains incomplete until the existing owner of port `4000` is stopped and `docker compose up` starts successfully.
+
+### Phase 4 — direct host/API test: NOT YET VERIFIED FOR COMPOSE
+
+The host API response currently works, but because Compose failed to bind port `4000`, the successful response cannot yet be attributed to the Compose service.
 
 ### Phase 5 — development CORS: NOT STARTED
 
@@ -148,25 +175,39 @@ This phase will be verified immediately after the Compose service is running by 
 
 ## Next action
 
-1. Sync the branch:
+Identify the Docker container currently publishing host port `4000`:
 
-```bash
-git pull
+```powershell
+docker ps --filter "publish=4000"
 ```
 
-2. Stop the current manually started Docker container with `Ctrl+C` if it is still running so host port `4000` is free.
+If a container appears, stop it using its container ID or name:
 
-3. From the repository root run:
+```powershell
+docker stop <container-id-or-name>
+```
 
-```bash
+Then confirm port `4000` is no longer owned by a running Docker container:
+
+```powershell
+docker ps --filter "publish=4000"
+```
+
+After the port is free, start Compose again from the repository root:
+
+```powershell
 docker compose up --build
 ```
 
-Expected behavior: Compose builds if necessary, creates/starts the `api` service, and the backend logs that it is listening on `0.0.0.0:4000`.
+Expected successful backend log:
 
-4. In another PowerShell window run:
+```text
+Prompt Draft API listening on http://0.0.0.0:4000
+```
 
-```bash
+Then, in a second PowerShell window:
+
+```powershell
 curl.exe http://localhost:4000/api/hello
 ```
 
@@ -176,7 +217,7 @@ Expected response:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-If both are user-confirmed, Phase 3 and Phase 4 can be marked `DONE` together.
+Only after that user-confirmed run should Phase 3 and Phase 4 be marked `DONE`.
 
 Do not add CORS or modify the Nuxt home page before this verification.
 
