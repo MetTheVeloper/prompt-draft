@@ -94,8 +94,6 @@ The container logged:
 Prompt Draft API listening on http://0.0.0.0:4000
 ```
 
-while the previous host-started Node process had been stopped.
-
 The user then confirmed from a separate PowerShell window:
 
 ```bash
@@ -110,7 +108,7 @@ returned:
 
 This confirms the API was running inside Docker and was reachable through the host-to-container port mapping.
 
-### Phase 3 — Docker Compose service: RUNNING, HOST CONNECTIVITY NOT YET VERIFIED
+### Phase 3 — Docker Compose service: CONTAINER HEALTHY, HOST PORT NOT PUBLISHED
 
 Created:
 
@@ -118,7 +116,7 @@ Created:
 compose.yaml
 ```
 
-Current Compose service:
+Configured service:
 
 ```yaml
 services:
@@ -132,45 +130,73 @@ services:
       PORT: 4000
 ```
 
-The first Compose attempt successfully built the image but could not start because host port `4000` was already owned by the Phase 2 container.
+The initial Compose run hit a host-port conflict because the Phase 2 container was still publishing port `4000`. The user identified and stopped container `ad1c110cd65c`, then confirmed no running container still published port `4000`.
 
-The user identified that container with:
-
-```powershell
-docker ps --filter "publish=4000"
-```
-
-and stopped container `ad1c110cd65c`. A follow-up `docker ps --filter "publish=4000"` showed no container using the port.
-
-The user then ran:
+A subsequent:
 
 ```powershell
 docker compose up --build
 ```
 
-and Compose successfully started the service. The attached log showed:
+started the Compose service and the backend logged:
 
 ```text
 api-1  | Prompt Draft API listening on http://0.0.0.0:4000
 ```
 
-However, a host-side request immediately afterward failed:
+Further diagnostics showed:
 
 ```powershell
-curl.exe http://localhost:4000/api/hello
+docker compose ps
 ```
 
-with:
+reported the service as running but its `PORTS` column showed only:
 
 ```text
-curl: (7) Failed to connect to localhost port 4000: Could not connect to server
+4000/tcp
 ```
 
-Therefore the application process appears to be running inside the Compose container, but host-to-container connectivity has not yet been verified. Do not mark Phase 3 complete yet.
+rather than a host mapping such as:
+
+```text
+0.0.0.0:4000->4000/tcp
+```
+
+Also:
+
+```powershell
+docker compose port api 4000
+```
+
+returned:
+
+```text
+invalid IP:0
+```
+
+and host access failed for both `localhost` and explicit IPv4 `127.0.0.1`.
+
+However, the user verified the API from inside the running Compose container with:
+
+```powershell
+docker compose exec api node -e "fetch('http://127.0.0.1:4000/api/hello').then(r=>r.text()).then(console.log)"
+```
+
+which returned:
+
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
+```
+
+This proves the Node server and container networking are healthy. The unresolved issue is specifically that the current Compose container does not have the expected host port publication.
+
+The most likely explanation is that the Compose container created during the earlier failed port-bind attempt was later reused rather than cleanly recreated after the conflicting container was stopped.
+
+Phase 3 remains incomplete until a freshly recreated Compose container exposes host port `4000` correctly.
 
 ### Phase 4 — direct host/API test: NOT YET VERIFIED FOR COMPOSE
 
-Manual Docker host connectivity was previously verified in Phase 2. The current unresolved issue is specifically the Compose-created service.
+Manual Docker host connectivity was previously verified in Phase 2. Current failure is isolated to the Compose-created service's host port publication.
 
 ### Phase 5 — development CORS: NOT STARTED
 
@@ -180,40 +206,57 @@ Manual Docker host connectivity was previously verified in Phase 2. The current 
 
 ## Next diagnostic action
 
-Keep `docker compose up --build` running in the first terminal.
+Stop the attached Compose process if necessary, then fully remove the current Compose container/network state:
 
-In a second PowerShell window run:
+```powershell
+docker compose down
+```
+
+Confirm no Compose container remains:
+
+```powershell
+docker compose ps -a
+```
+
+Inspect the resolved Compose configuration:
+
+```powershell
+docker compose config
+```
+
+The resolved `api` service should still contain a published port mapping for host `4000` to container `4000`.
+
+Then force creation of a fresh container:
+
+```powershell
+docker compose up --build --force-recreate
+```
+
+In another PowerShell window verify:
 
 ```powershell
 docker compose ps
 ```
 
-Then:
+Expected `PORTS` shape:
 
-```powershell
-docker compose port api 4000
+```text
+0.0.0.0:4000->4000/tcp
 ```
 
-Then try IPv4 explicitly:
+Then test:
 
 ```powershell
 curl.exe http://127.0.0.1:4000/api/hello
 ```
 
-If host access still fails, verify the API from inside the running container:
+Expected response:
 
-```powershell
-docker compose exec api node -e "fetch('http://127.0.0.1:4000/api/hello').then(r=>r.text()).then(console.log)"
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-These results will distinguish among:
-
-1. the Compose container not actually remaining running;
-2. the host port not being published as expected;
-3. a localhost/IPv6 resolution issue on Windows;
-4. a Docker Desktop host-forwarding issue despite the application being healthy inside the container.
-
-Do not modify CORS, Nuxt, or backend code until this host connectivity issue is understood.
+Do not modify CORS, Nuxt, backend code, or `compose.yaml` until this clean recreate test is completed.
 
 ## New-chat handoff
 
