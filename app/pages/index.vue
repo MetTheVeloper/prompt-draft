@@ -2,6 +2,17 @@
 const { t } = useI18n()
 const { mini } = useScreen()
 const offlinePackage = useOfflinePackage()
+
+onMounted(async () => {
+  if (!import.meta.dev) return
+
+  try {
+    const result = await $fetch<{ ok: boolean, message: string }>('http://127.0.0.1:4000/api/hello')
+    console.log('[Prompt Draft API]', result)
+  } catch (error) {
+    console.error('[Prompt Draft API] request failed', error)
+  }
+})
 </script>
 
 <template>
