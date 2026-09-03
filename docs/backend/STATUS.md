@@ -10,7 +10,7 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 
 ## Milestone 1 — COMPLETE
 
-Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP server -> browser console.
+Verified Nuxt -> Docker API local connectivity and browser CORS behavior.
 
 ## Milestone 2 — COMPLETE
 
@@ -26,7 +26,6 @@ Verified end to end:
 HTTP POST
   -> API container
   -> parameterized PostgreSQL INSERT
-  -> PostgreSQL data directory
   -> Docker named volume
   -> API + DB containers removed/recreated
   -> PostgreSQL SELECT
@@ -40,62 +39,43 @@ Goal: make durable Wizard-run persistence belong to the real Wizard product flow
 
 ### Product-flow analysis
 
-The current production Wizard page completes through `finish()` in:
+The real Wizard completion point is `finish()` in:
 
 ```text
 app/pages/wizard/[wizardId].vue
 ```
 
-The sequence is:
+Current flow:
 
 ```text
 runtime.complete(session)
   -> result.ok
-  -> finalDraft
-  -> promptPreview
-  -> completed Ready screen
+  -> finalDraft + promptPreview
+  -> Ready screen
 ```
 
-This is the first point where the run is definitively successful and the final compiled output exists.
+`WizardDirectionReady.vue` currently has no copy action, so successful Wizard completion is the current persistence event rather than clipboard/copy behavior.
 
-The current `WizardDirectionReady` UI has actions for Create handoff, save-template, start-another, and edit-direction. It does not currently expose a copy action. Therefore the current recommended persistence event is successful Wizard completion, not clipboard/copy interaction.
+### Phase 0 — harden server-owned fields: DONE
 
-### Phase 0 — harden server-owned fields: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+The API now creates an explicit allowlisted run object instead of spreading the request body after generated fields.
 
-Previously the API built a run with:
+The user locally verified a malicious/test request containing fake `id`, fake `createdAt`, whitespace around `wizardId`, and an unknown field.
 
-```js
-{
-  id: randomUUID(),
-  createdAt: new Date().toISOString(),
-  ...body,
-}
+Observed result:
+
+```text
+client id        -> ignored
+client createdAt -> ignored
+wizardId         -> normalized to portrait
+unknown field    -> not returned/stored as a run field
 ```
 
-Because client fields were spread last, a request could override generated `id` and `createdAt`.
+The database row used server-generated UUID/timestamp values.
 
-`backend/src/index.mjs` now creates an explicit allowlisted run shape:
+### Phase 1 — production snapshot contract v1: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-```js
-{
-  id: randomUUID(),
-  createdAt: new Date().toISOString(),
-  wizardId: body.wizardId.trim(),
-  wizardVersion: body.wizardVersion,
-  output: body.output,
-  snapshot: body.snapshot,
-}
-```
-
-Unknown body keys are not included in the run object and client-supplied `id`/`createdAt` cannot become stored server fields.
-
-Phase 0 is not `DONE` until the user rebuilds the API and sends a malicious/test payload containing fake `id` and `createdAt`, then confirms the response/database row uses server-generated values instead.
-
-### Phase 1 — production snapshot contract v1: NOT STARTED
-
-Define the meaning of `snapshot` before sending real Wizard sessions to the backend.
-
-Current recommended direction:
+The successful-run snapshot contract is now:
 
 ```json
 {
@@ -105,35 +85,59 @@ Current recommended direction:
     "answers": {},
     "derived": {}
   },
-  "finalDraft": {}
+  "finalDraft": {
+    "version": 1
+  }
 }
 ```
 
-`wizardId`, `wizardVersion`, final compiled `output`, run `id`, and `createdAt` already have first-class columns/API fields and do not need duplication inside the snapshot.
+Semantics:
 
-The final successful Draft is a candidate for inclusion because it preserves the exact product artifact for future history/restore behavior, while intermediate `workingDraft` need not automatically be duplicated.
+- `wizardId` and `wizardVersion` remain first-class run fields and are not duplicated inside the snapshot;
+- compiled prompt text remains the first-class `output` field;
+- session `answers` and `derived` capture Wizard decision/configuration state;
+- `finalDraft` stores the exact successful artifact;
+- intermediate `workingDraft` is intentionally not duplicated in the snapshot.
 
-This contract is still provisional until Phase 1 is explicitly agreed and implemented.
+Backend validation now requires:
+
+```text
+snapshot.schemaVersion === 1
+snapshot.session.currentStepId = non-empty string
+snapshot.session.answers       = object
+snapshot.session.derived       = object
+snapshot.finalDraft            = object
+snapshot.finalDraft.version === 1
+```
+
+After validation, the backend normalizes the snapshot to only the versioned envelope fields above before storing it.
+
+The backend intentionally does not duplicate every nested frontend/domain validator. The versioned snapshot is treated as a frontend-owned serialized document inside a strictly validated envelope.
+
+Phase 1 is not `DONE` until the user rebuilds the API and verifies both:
+
+1. a valid v1 snapshot returns `201 Created` and is normalized;
+2. an invalid/legacy snapshot returns `400 Validation failed` with snapshot-specific field errors.
+
+Temporary development note: the old home-page learning POST still sends the pre-v1 snapshot shape, so it may log a `400` in dev until that learning hook is removed later in this milestone. It is not the final product integration path.
 
 ### Phase 2 — configurable frontend API client/base: NOT STARTED
 
-The current Nuxt config has no public API-base configuration, while the home learning hooks call `http://127.0.0.1:4000` directly.
+Introduce one reusable frontend API boundary so Wizard code does not hardcode `http://127.0.0.1:4000`.
 
-Before real product integration, add one small client/config boundary so Wizard product code does not hardcode a local development address.
-
-Static generation must remain supported.
+Static generation must remain supported and no Nuxt server routes should be introduced.
 
 ### Phase 3 — persist successful Wizard completion: NOT STARTED
 
-After `runtime.complete(session)` succeeds, POST the final versioned snapshot and compiled prompt output to `/api/wizard-runs`.
+After `runtime.complete(session)` succeeds, build snapshot v1 and POST the final prompt output + snapshot to `/api/wizard-runs`.
 
-Do not persist failed mapping/compile attempts.
+Failed mapping/compile attempts must not create successful-run rows.
 
-Persistence failure behavior must be explicitly decided before implementation rather than silently swallowing failures.
+Persistence failure semantics must be chosen explicitly before implementation.
 
 ### Phase 4 — remove home-page learning hooks: NOT STARTED
 
-After the real Wizard integration is verified, remove the development-only GET/POST learning calls from `app/pages/index.vue`.
+Remove the development-only GET/POST calls from `app/pages/index.vue` after the real Wizard integration is verified.
 
 ### Phase 5 — browser end-to-end verification: NOT STARTED
 
@@ -145,10 +149,10 @@ Wizard finish
   -> POST /api/wizard-runs
   -> PostgreSQL INSERT
   -> GET/read-back
-  -> expected versioned snapshot/output
+  -> expected snapshot v1 + output
 ```
 
-Milestone 4 is complete only after the real Wizard path is locally verified and the home-page POST is no longer the product integration point.
+Milestone 4 is complete only after the real Wizard path is locally verified and the home-page hook is no longer the integration point.
 
 ## Still deferred
 
@@ -163,7 +167,7 @@ The temporary `persistence_probe` table also remains as non-product learning dat
 
 ## Next action
 
-Sync/rebuild and verify Phase 0 with a client payload that tries to override server-owned fields.
+Sync/rebuild and verify Phase 1 with one valid snapshot-v1 POST and one invalid/legacy snapshot POST.
 
 Because this update is remote:
 
