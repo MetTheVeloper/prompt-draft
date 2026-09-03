@@ -109,7 +109,7 @@ draft_version    = 1
 
 The non-destructive persistence-failure path is also verified. With only the API container stopped, prompt generation still completed, the Ready screen remained available, the persistence warning appeared, no new Wizard-run row was created, and the API returned normally after restart.
 
-### Phase 4 — remove home-page learning hooks: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 4 — remove home-page learning hooks: DONE
 
 `app/pages/index.vue` no longer creates `usePromptDraftApi()` and no longer has the development-only `onMounted()` block.
 
@@ -123,11 +123,11 @@ hardcoded http://127.0.0.1:4000 learning POST
 
 The Home template and normal offline-status behavior are unchanged.
 
-Phase 4 is not `DONE` until the user syncs the branch, loads `/` in development with DevTools open, and confirms Home itself produces no `/api/hello` or `/api/wizard-runs` Fetch/XHR requests and no `[Prompt Draft API]` learning logs.
+The user locally verified the Home page with DevTools open. Home produced no `/api/hello` or `/api/wizard-runs` Fetch/XHR requests and no backend learning side effects.
 
-### Phase 5 — final product end-to-end verification: NOT STARTED
+### Phase 5 — final product end-to-end verification: READY FOR LOCAL VERIFICATION
 
-After Phase 4 is verified, perform the final product-only proof:
+Perform one final product-only proof with a fresh real Wizard run and track its server-generated UUID through the complete lifecycle:
 
 ```text
 Home has no backend learning side effects
@@ -136,11 +136,15 @@ Wizard finish
   -> POST /api/wizard-runs
   -> PostgreSQL row
   -> GET /api/wizard-runs read-back
-  -> container recreation without -v
-  -> same product-created row survives
+  -> docker compose down
+  -> docker compose up -d
+  -> same UUID survives through named-volume persistence
+  -> GET /api/wizard-runs still returns the run
 ```
 
-Milestone 4 is complete only after this final product path is verified.
+Do not use `docker compose down -v`; that intentionally deletes named volumes.
+
+Milestone 4 is complete only after this final product path is locally verified.
 
 ## Still deferred
 
@@ -155,7 +159,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Sync the branch and verify Home has no backend requests/logs. Then run the final Phase-5 product persistence proof.
+Run the Phase-5 product-only end-to-end proof, preserve the new run UUID, verify API read-back before and after API + DB container recreation, then mark Milestone 4 complete.
 
 ## New-chat handoff
 
