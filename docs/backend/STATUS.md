@@ -24,18 +24,6 @@ Nuxt frontend (localhost:3030)
   -> browser console
 ```
 
-Established capabilities:
-
-- independent backend package;
-- Node HTTP server;
-- `GET /api/hello`;
-- Dockerfile;
-- Docker Compose;
-- host/container networking;
-- explicit local CORS;
-- verified Nuxt-to-backend browser request;
-- static frontend/backend deployment separation preserved.
-
 ## Milestone 2 — IN PROGRESS
 
 Goal: learn JSON POST requests, request-body parsing, validation, status codes, temporary application memory, and browser POST/preflight behavior before PostgreSQL is introduced.
@@ -44,7 +32,7 @@ Product direction: use a Wizard-run-shaped resource so the learning work points 
 
 ### Phase 0 — API contract: DONE
 
-Initial endpoint:
+Endpoint:
 
 ```http
 POST /api/wizard-runs
@@ -64,44 +52,50 @@ Conceptual payload:
 }
 ```
 
-The final production snapshot schema is intentionally not locked yet.
+### Phase 1 — POST happy path: DONE
 
-### Phase 1 — POST happy path: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+Implemented in `backend/src/index.mjs`:
 
-Updated:
+- Node request stream reading;
+- JSON parsing;
+- `POST /api/wizard-runs`;
+- generated UUID with `randomUUID()`;
+- generated ISO `createdAt` timestamp;
+- `201 Created` response;
+- reusable `sendJson()` helper.
+
+The first local attempt used PowerShell backtick continuation syntax inside `cmd.exe`, so the request body was not sent correctly. This was a shell-command issue rather than a backend issue.
+
+The user then ran a correct single-line CMD request and confirmed:
 
 ```text
-backend/src/index.mjs
+HTTP/1.1 201 Created
 ```
 
-New implementation:
+with a response containing generated `id`, `createdAt`, and the submitted Wizard-run-shaped payload.
 
-- imports `randomUUID` from `node:crypto`;
-- adds reusable `sendJson()` response helper;
-- adds `readJsonBody()` using async iteration over the Node request stream;
-- adds `POST /api/wizard-runs`;
-- parsed JSON object is returned as a transient run record;
-- generated fields: `id` and `createdAt`;
-- successful status: `201 Created`;
-- malformed JSON returns a basic `400` response;
-- non-object JSON returns a basic `400` response;
-- CORS method advertisement now includes `POST`.
+`GET /api/hello` remained healthy during the regression check.
 
-Important: accepted runs are **not stored yet**. Phase 3 will introduce temporary in-memory storage.
+Important: accepted runs are still not stored. Phase 3 introduces temporary in-memory storage.
 
-First local POST attempt used PowerShell backtick line continuations inside `cmd.exe`. Command Prompt treated each line as a separate command, so the first request reached the API without a JSON body and correctly returned `400`, while later `-H` and `--data-raw` lines were interpreted as separate shell commands. This does not indicate a backend failure. `GET /api/hello` remained successful.
+### Phase 2 — validation and useful 4xx errors: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Phase 1 remains incomplete until a correctly formed POST request returns `201` with generated `id` and `createdAt`.
+Updated `backend/src/index.mjs` with explicit request validation.
 
-### Phase 2 — validation and useful 4xx errors: NOT STARTED
+Current rules:
 
-Planned validation:
+- request `Content-Type` must resolve to `application/json`;
+- invalid/missing JSON media type returns `415 Unsupported Media Type`;
+- malformed JSON returns `400 Bad Request`;
+- JSON body must be an object;
+- `wizardId` must be a non-empty string;
+- `wizardVersion` must be a positive integer;
+- `output` must be a non-empty string;
+- `snapshot` must be an object;
+- invalid fields return `400 Bad Request` with a structured `errors` array;
+- valid requests still return `201 Created`.
 
-- non-empty `wizardId` string;
-- positive integer `wizardVersion`;
-- non-empty `output` string;
-- plain-object `snapshot`;
-- explicit content-type/error behavior.
+Phase 2 is not `DONE` until the user rebuilds/recreates the API container and locally verifies valid and invalid requests.
 
 ### Phase 3 — temporary in-memory storage/read-back: NOT STARTED
 
@@ -115,9 +109,21 @@ Planned process-local run collection plus a GET read-back endpoint. Container re
 
 ## Next action
 
-The Docker API is running and `GET /api/hello` is healthy. Re-run the Phase 1 POST with syntax appropriate to the active shell. In `cmd.exe`, use a single-line command (or CMD caret continuations); in PowerShell, backtick continuations are valid.
+Sync and rebuild the API:
 
-After the user confirms `201 Created`, mark Phase 1 `DONE` and begin Phase 2 validation.
+```powershell
+git pull
+docker compose up --build --force-recreate
+```
+
+Then verify Phase 2 with:
+
+1. one valid request returning `201`;
+2. one invalid field payload returning `400` with field errors;
+3. one request with a non-JSON `Content-Type` returning `415`;
+4. optionally one malformed JSON body returning `400`.
+
+After user confirmation, mark Phase 2 `DONE` and begin Phase 3 in-memory storage/read-back.
 
 PostgreSQL, authentication, and durable Wizard persistence are not implemented yet.
 
