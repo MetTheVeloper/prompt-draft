@@ -35,8 +35,6 @@ HTTP POST
 
 ## Milestone 4 — COMPLETE: product integration and contract hardening
 
-Durable Wizard-run persistence now belongs to the real Wizard success flow rather than the development Home learning hook.
-
 Verified product behavior:
 
 - server-owned `id` and `createdAt`;
@@ -83,8 +81,6 @@ Authentication, ownership, and historical Wizard restore are not part of Milesto
 
 ### Phase 0 — contract freeze: DONE
 
-The user reviewed and approved the contract.
-
 Frozen read contract:
 
 ```text
@@ -104,7 +100,7 @@ GET /api/wizard-runs/:id
   -> snapshot
 ```
 
-List summary shape:
+List summary fields:
 
 ```text
 id
@@ -113,189 +109,159 @@ wizardId
 wizardVersion
 ```
 
-Full `output` and `snapshot` are intentionally excluded from collection rows.
-
-Detail status semantics:
-
-```text
-existing UUID -> 200
-valid missing UUID -> 404
-malformed id -> 400
-```
-
-The old list `count` field is not promoted into an exact-total contract. Arbitrary sort/search/date/version filters remain deferred.
-
-History detail is read-only. Stored snapshots are not restored/executed as current Wizard sessions during this milestone.
+History detail is read-only. Restore/auth/ownership remain deferred.
 
 ### Phase 1 — single-run detail API: DONE
 
-Implemented:
+Implemented and locally verified:
 
 ```text
-backend/src/database.mjs
-  -> getWizardRunById(id)
-  -> parameterized SELECT by UUID
-  -> full run mapping
-  -> null when no row exists
-
-backend/src/index.mjs
-  -> GET /api/wizard-runs/:id
-  -> UUID validation before PostgreSQL
-  -> 200 { ok: true, run }
-  -> 404 { ok: false, message: "Wizard run not found" }
-  -> 400 { ok: false, message: "Invalid Wizard run id" }
-  -> 500 read failure boundary
+GET /api/wizard-runs/:id
+existing UUID -> 200 full record
+valid missing UUID -> 404
+malformed id -> 400
+fresh POST -> immediate detail read-back
 ```
 
-User verification completed locally:
+Fresh verification run:
 
 ```text
-existing run d409ec15-3c22-40f6-9fc8-bafcd38e555f
-  -> 200
-  -> full output + snapshot returned
-
-00000000-0000-0000-0000-000000000000
-  -> 404 Wizard run not found
-
-not-a-uuid
-  -> 400 Invalid Wizard run id
-
-POST fresh verification run
-  -> 201
-  -> id 37e32eb8-7501-4f46-8c47-70520866e328
-
-immediate detail GET of fresh run
-  -> 200
-  -> output = "Milestone 5 Phase 1 detail verification"
-  -> same snapshot returned
-
-collection regression check before Phase 2
-  -> 200
-  -> count = 7
-  -> fresh run visible
-  -> previous full-list behavior still intact
+37e32eb8-7501-4f46-8c47-70520866e328
+output = Milestone 5 Phase 1 detail verification
 ```
-
-Phase 1 is therefore verified and complete.
 
 ### Phase 2 — cursor-paginated summary collection: DONE
 
-Implemented replacement for the old unbounded full-row collection.
-
-Database behavior:
+Implemented and locally verified:
 
 ```text
-listWizardRuns({ limit, cursor })
-  -> summary projection only
-  -> id, createdAt, wizardId, wizardVersion
-  -> ORDER BY created_at DESC, id DESC
-  -> keyset predicate when cursor exists:
-       (created_at, id) < (cursor.createdAt, cursor.id)
-  -> fetch limit + 1
-  -> derive hasMore
-  -> return at most limit rows
+summary-only collection
+ORDER BY created_at DESC, id DESC
+keyset cursor pagination
+limit + 1 fetch
+hasMore + nextCursor
+no count
+no output/snapshot in list rows
+structured invalid limit/cursor 400
 ```
 
-HTTP behavior:
+User verified seven existing rows across four `limit=2` pages as:
 
 ```text
-GET /api/wizard-runs
-  -> default limit 20
-  -> no count field
-  -> no output field in collection rows
-  -> no snapshot field in collection rows
-  -> pageInfo.nextCursor
-  -> pageInfo.hasMore
-
-GET /api/wizard-runs?limit=N
-  -> N must be integer 1..100
-
-GET /api/wizard-runs?cursor=<opaque>
-  -> cursor decodes to createdAt + id
-  -> invalid cursor -> structured 400
+2 + 2 + 2 + 1
 ```
 
-Cursor encoding is backend-owned and uses an opaque base64url representation of the final returned ordering tuple. Frontend callers must not interpret it.
-
-User verification completed locally:
+with all ids returned exactly once and final:
 
 ```text
-default GET
-  -> 200
-  -> seven summary rows
-  -> newest first
-  -> no count
-  -> no output/snapshot
-  -> final pageInfo hasMore=false, nextCursor=null
-
-limit=2 pagination
-  -> page 1: 2 rows
-  -> page 2: 2 rows
-  -> page 3: 2 rows
-  -> page 4: 1 row
-  -> all seven existing ids returned exactly once
-  -> final page hasMore=false, nextCursor=null
-
-invalid limit
-  -> 0, 101, abc each return structured 400
-
-invalid cursor
-  -> structured 400
-
-detail regression
-  -> full output/snapshot still returned
-
-POST regression
-  -> 201
-  -> fresh run id 534068a7-b518-4cb2-a155-f61dcdea181f
+hasMore=false
+nextCursor=null
 ```
 
-Phase 2 is therefore verified and complete.
+Regression checks also passed for detail and POST.
 
-### Phase 3 — wizardId filtering: AWAITING USER VERIFICATION
+Phase 2 regression POST id:
+
+```text
+534068a7-b518-4cb2-a155-f61dcdea181f
+```
+
+### Phase 3 — wizardId filtering: DONE
+
+Implemented and locally verified:
+
+```text
+wizardId=<trimmed non-empty id>
+known id -> only matching summaries
+unknown id -> 200 empty collection
+empty id -> structured 400
+filter + limit + cursor -> composable
+pagination remains inside filtered result set
+```
+
+Verification probe:
+
+```text
+wizardId = phase3-probe
+id = b7e47e39-4eb9-4333-b891-e42d34d25bd1
+```
+
+Verified results:
+
+```text
+wizardId=phase3-probe
+  -> only probe summary
+
+wizardId=does-not-exist
+  -> runs=[]
+  -> hasMore=false
+  -> nextCursor=null
+
+wizardId=
+  -> 400
+
+wizardId=portrait&limit=2
+  -> first filtered page
+  -> hasMore=true
+  -> nextCursor present
+
+same filter + cursor
+  -> next portrait page
+  -> no phase3-probe row
+  -> no duplicate from prior page
+```
+
+Phase 3 is therefore complete.
+
+### Phase 4 — typed frontend read boundary: AWAITING USER VERIFICATION
 
 Implemented:
 
 ```text
-GET /api/wizard-runs?wizardId=<id>
-  -> wizardId trimmed at HTTP boundary
-  -> empty/whitespace wizardId -> structured 400
-  -> unknown non-empty wizardId -> 200 empty collection
-  -> database filter uses parameterized wizard_id equality
-  -> pagination remains newest-first inside the filtered result set
-  -> limit + cursor remain composable with wizardId
+app/types/wizardRunApi.ts
+  -> WizardRunSummary
+  -> WizardRunRecord
+  -> WizardRunPageInfo
+  -> ListWizardRunsParams
+  -> ListWizardRunsResponse
+  -> GetWizardRunResponse
+
+app/composables/usePromptDraftApi.ts
+  -> listWizardRuns(params = {})
+  -> getWizardRun(id)
 ```
 
-Database query construction uses only server-owned SQL clause fragments while all runtime filter/cursor values remain PostgreSQL parameters.
-
-Required local verification before Phase 3 can become `DONE`:
+Collection and detail are now typed separately:
 
 ```text
-1. pull latest branch and rebuild API
-2. wizardId=portrait -> only portrait summaries
-3. wizardId=portrait&limit=2 -> first filtered page with hasMore=true
-4. use returned cursor with the same wizardId -> next filtered page, no duplicate ids
-5. wizardId=does-not-exist -> 200, runs=[], hasMore=false, nextCursor=null
-6. wizardId= (empty) -> structured 400
-7. unfiltered GET still works
-8. detail GET still returns full output/snapshot
-9. POST still returns 201
+list -> WizardRunSummary[] + pageInfo
+get  -> full WizardRunRecord
 ```
 
-Do not mark Phase 3 `DONE` until the user completes and confirms these checks locally.
+`listWizardRuns()` serializes optional `limit`, `cursor`, and `wizardId`. Cursor remains opaque to frontend code.
 
-### Phase 4 — typed frontend read boundary: NOT STARTED
+`getWizardRun()` URL-encodes the id path segment and uses the existing runtime-configured API base.
 
-Planned typed summary/detail contracts and browser API methods with static generation preserved.
+`createWizardRun()` and API-base normalization remain unchanged.
+
+No Nuxt server route or History page was introduced in this phase.
+
+Required local verification before Phase 4 can become `DONE`:
+
+```text
+1. git pull --ff-only
+2. pnpm generate
+3. confirm generate succeeds
+4. confirm existing Wizard route still prerenders/builds without errors
+```
+
+The first real browser consumption of `listWizardRuns(params)` and `getWizardRun(id)` will happen in Phase 5 History UI. That runtime path will be verified there rather than by adding a temporary diagnostic page.
 
 ### Phase 5 — History UI MVP: NOT STARTED
 
-Target routes:
+History UI will be the first real browser consumer of the typed read client.
 
-```text
-/history
-/history/:id
-```
+Before finalizing route structure, re-check static-hosting behavior for arbitrary historical ids. A dynamic `/history/:id` route cannot be fully prerendered for unknown future UUIDs. If deployment has no SPA fallback, prefer a static `/history` shell with client-side selection/query state instead of relying on direct static generation of arbitrary detail URLs.
 
 ### Phase 6 — Milestone 5 product E2E: NOT STARTED
 
@@ -316,9 +282,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 5 Phase 3 `wizardId` filtering behavior.
+Locally verify Milestone 5 Phase 4 static frontend build.
 
-Phase 4 must not start and Phase 3 must not be marked `DONE` until that verification is confirmed.
+Do not mark Phase 4 `DONE` until the user confirms `pnpm generate` succeeds.
 
 ## New-chat handoff
 
