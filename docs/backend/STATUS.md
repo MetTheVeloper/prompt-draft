@@ -46,19 +46,72 @@ User verified:
 
 This confirms the data exists only in the current Node process RAM and is not durable.
 
-### Phase 4 — POST CORS/preflight verification: READY FOR LOCAL VERIFICATION
+### Phase 4 — POST CORS/preflight verification: DONE
 
-No code change is required. The API already allows the Prompt Draft dev origin and advertises `POST`, `OPTIONS`, and `Content-Type` for CORS.
+The user simulated the browser preflight for a JSON POST from Prompt Draft:
 
-Next test should simulate a browser preflight for a JSON POST from `http://localhost:3030` to `/api/wizard-runs` and verify a `204` response with the expected CORS headers.
+```text
+Origin: http://localhost:3030
+Access-Control-Request-Method: POST
+Access-Control-Request-Headers: content-type
+```
 
-### Phase 5 — Nuxt POST integration: NOT STARTED
+The API returned:
+
+```text
+HTTP/1.1 204 No Content
+Access-Control-Allow-Origin: http://localhost:3030
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Vary: Origin
+```
+
+No backend code change was required for this phase; the existing CORS implementation already supported the required POST preflight contract.
+
+### Phase 5 — Nuxt POST integration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Updated:
+
+```text
+app/pages/index.vue
+```
+
+The existing Milestone-1 dev-only GET remains in place.
+
+A second independent dev-only request now sends:
+
+```http
+POST http://127.0.0.1:4000/api/wizard-runs
+Content-Type: application/json
+```
+
+with a provisional Wizard-shaped body and logs the result as:
+
+```text
+[Prompt Draft API POST] ...
+```
+
+No page UI was changed. The request is inside `onMounted()` and guarded by `import.meta.dev`, so static/production generation does not POST to localhost.
+
+Phase 5 is not `DONE` until the user runs Prompt Draft at `http://localhost:3030`, confirms the browser request succeeds, and sees the `201` run response in DevTools.
 
 ### Phase 6 — browser end-to-end verification: NOT STARTED
 
+Final verification should confirm the real browser path:
+
+```text
+Nuxt :3030
+  -> OPTIONS preflight
+  -> POST /api/wizard-runs
+  -> validation
+  -> in-memory store
+  -> 201 JSON
+  -> browser console
+```
+
 ## Next action
 
-Verify Phase 4 preflight, then proceed to Nuxt POST integration.
+Sync the branch, keep/restart the Docker API, run Nuxt dev, and refresh the home page. Verify the POST in DevTools Console and optionally Network. Then use `GET /api/wizard-runs` to confirm the browser-created run exists in process memory.
 
 PostgreSQL, authentication, and durable Wizard persistence are not implemented yet.
 
