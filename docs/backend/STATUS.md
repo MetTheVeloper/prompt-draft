@@ -33,13 +33,13 @@ HTTP POST
   -> same Wizard run
 ```
 
-## Milestone 4 — IN PROGRESS: product integration and contract hardening
+## Milestone 4 — COMPLETE: product integration and contract hardening
 
-Goal: make durable Wizard-run persistence belong to the real Wizard product flow instead of the development home-page hook.
+Durable Wizard-run persistence now belongs to the real Wizard success flow rather than the development Home learning hook.
 
 ### Phase 0 — harden server-owned fields: DONE
 
-The API creates an explicit allowlisted run object. The user verified client-supplied `id`/`createdAt` values are ignored, `wizardId` is normalized, and unknown request fields do not become stored run fields.
+The API creates an explicit allowlisted run object. Client-supplied `id`/`createdAt` values are ignored, `wizardId` is normalized, and unknown request fields do not become stored run fields.
 
 ### Phase 1 — production snapshot contract v1: DONE
 
@@ -82,74 +82,67 @@ The user verified a PowerShell override to `http://localhost:4000` is respected 
 
 The production Wizard completion point is `finish()` in `app/pages/wizard/[wizardId].vue`.
 
-After `runtime.complete(session)` succeeds, the page keeps the final artifact locally and calls `createWizardRun()` with:
-
-```text
-wizardId      = session.wizardId
-wizardVersion = session.wizardVersion
-output        = result.promptPreview
-snapshot.schemaVersion          = 1
-snapshot.session.currentStepId  = session.currentStepId
-snapshot.session.answers        = session.answers
-snapshot.session.derived        = session.derived
-snapshot.finalDraft             = result.finalDraft
-```
+After `runtime.complete(session)` succeeds, the page preserves the final artifact locally and posts snapshot v1 through `createWizardRun()`.
 
 Failed mapping/compile attempts return before persistence.
 
-The user locally verified the real Portrait Wizard success path. Browser DevTools showed the real `/api/wizard-runs` POST and PostgreSQL stored the product-created row with:
+The real Portrait Wizard success path was locally verified. Browser DevTools showed the product `/api/wizard-runs` POST and PostgreSQL stored Wizard version 2, snapshot version 1, `review` step, finalDraft version 1, and the real compiled output.
+
+The non-destructive persistence-failure path was also verified. With only the API container stopped, generation still completed, the Ready artifact remained usable, the persistence warning appeared, no new row was created, and the API recovered after restart.
+
+### Phase 4 — remove Home learning hooks: DONE
+
+`app/pages/index.vue` no longer contains the development backend learning GET/POST hooks or the hardcoded local Wizard-run POST.
+
+The user verified Home with DevTools open: no `/api/hello` or `/api/wizard-runs` Fetch/XHR requests were produced by Home itself.
+
+### Phase 5 — final product end-to-end verification: DONE
+
+A fresh real Portrait Wizard run was created with server-generated UUID:
+
+```text
+d409ec15-3c22-40f6-9fc8-bafcd38e555f
+```
+
+Before container recreation, both `GET /api/wizard-runs` and direct PostgreSQL lookup returned the run with:
 
 ```text
 wizard_id        = portrait
 wizard_version   = 2
 snapshot_version = 1
-step             = review
-draft_version    = 1
 ```
 
-The non-destructive persistence-failure path is also verified. With only the API container stopped, prompt generation still completed, the Ready screen remained available, the persistence warning appeared, no new Wizard-run row was created, and the API returned normally after restart.
-
-### Phase 4 — remove home-page learning hooks: DONE
-
-`app/pages/index.vue` no longer creates `usePromptDraftApi()` and no longer has the development-only `onMounted()` block.
-
-Removed from Home:
+The user then ran:
 
 ```text
-GET /api/hello learning diagnostic
-POST /api/wizard-runs learning diagnostic
-hardcoded http://127.0.0.1:4000 learning POST
+docker compose down
+docker compose up -d
 ```
 
-The Home template and normal offline-status behavior are unchanged.
+without `-v`.
 
-The user locally verified the Home page with DevTools open. Home produced no `/api/hello` or `/api/wizard-runs` Fetch/XHR requests and no backend learning side effects.
+After both API and DB containers were recreated, the API still returned the same UUID and PostgreSQL still returned the exact row with the original `created_at` value.
 
-### Phase 5 — final product end-to-end verification: READY FOR LOCAL VERIFICATION
-
-Perform one final product-only proof with a fresh real Wizard run and track its server-generated UUID through the complete lifecycle:
+Verified final product path:
 
 ```text
-Home has no backend learning side effects
-Wizard finish
-  -> successful runtime completion
+Home -> no backend learning side effects
+Portrait Wizard finish
+  -> runtime completion success
   -> POST /api/wizard-runs
   -> PostgreSQL row
-  -> GET /api/wizard-runs read-back
-  -> docker compose down
-  -> docker compose up -d
-  -> same UUID survives through named-volume persistence
-  -> GET /api/wizard-runs still returns the run
+  -> GET read-back
+  -> API + DB containers removed/recreated
+  -> named volume survives
+  -> same product-created UUID returned by API and DB
 ```
 
-Do not use `docker compose down -v`; that intentionally deletes named volumes.
+Milestone 4 is therefore complete.
 
-Milestone 4 is complete only after this final product path is locally verified.
-
-## Still deferred
+## Current intentional debt / deferred work
 
 - authentication and user ownership;
-- Wizard history/restore UI;
+- Wizard history/list/restore UI;
 - production migration framework;
 - production secrets/configuration;
 - deployment/domain/HTTPS;
@@ -159,7 +152,17 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Run the Phase-5 product-only end-to-end proof, preserve the new run UUID, verify API read-back before and after API + DB container recreation, then mark Milestone 4 complete.
+Do not start another backend milestone implicitly. Before new code changes, choose the Milestone 5 scope from the remaining product/backend needs and document its contract and verification sequence first.
+
+Likely directions include:
+
+```text
+history/read UX + API querying
+or
+authentication + user ownership
+or
+production migration/config/deployment hardening
+```
 
 ## New-chat handoff
 
