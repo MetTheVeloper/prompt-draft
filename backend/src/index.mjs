@@ -11,6 +11,8 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 )
 
+const wizardRuns = []
+
 function getCorsHeaders(request) {
   const origin = request.headers.origin
 
@@ -125,6 +127,20 @@ const server = createServer(async (request, response) => {
     return
   }
 
+  if (request.method === 'GET' && url.pathname === '/api/wizard-runs') {
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        count: wizardRuns.length,
+        runs: wizardRuns,
+      },
+      corsHeaders,
+    )
+    return
+  }
+
   if (request.method === 'POST' && url.pathname === '/api/wizard-runs') {
     if (!isJsonRequest(request)) {
       sendJson(
@@ -177,6 +193,8 @@ const server = createServer(async (request, response) => {
       createdAt: new Date().toISOString(),
       ...body,
     }
+
+    wizardRuns.push(run)
 
     sendJson(
       response,
