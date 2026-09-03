@@ -166,11 +166,11 @@ and the browser console showed the shared API client resolving `http://localhost
 
 The user also ran the normal static-generation workflow. `pnpm generate` completed successfully and prerendered `/wizard/portrait`, proving the frontend API boundary does not break the static build path.
 
-### Phase 3 — persist successful Wizard completion: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 3 — persist successful Wizard completion: SUCCESS PATH VERIFIED, FAILURE PATH AWAITING
 
-`finish()` now uses `createWizardRun()` only after `runtime.complete(session)` returns success.
+`finish()` uses `createWizardRun()` only after `runtime.complete(session)` returns success.
 
-Successful completion now follows:
+Successful completion follows:
 
 ```text
 runtime.complete(session)
@@ -197,7 +197,27 @@ Failed mapping/compile attempts return before the persistence call and therefore
 
 Persistence failure semantics are intentionally non-destructive: a successful generated artifact remains on the Ready screen even if history storage fails. The page logs the API failure and surfaces a locale-aware persistence warning through the existing Ready-screen issue area.
 
-Phase 3 is not `DONE` until the user completes the real Portrait Wizard locally and confirms the product-created run appears in PostgreSQL / `GET /api/wizard-runs`. The failure path should also be verified by making the API unavailable during a successful completion and confirming the Ready artifact remains visible with the warning.
+The real Portrait Wizard success path is now locally verified. The user completed the Wizard in the browser and DevTools showed a real `/api/wizard-runs` request/response with server-generated run id. PostgreSQL then showed the product-created row:
+
+```text
+id               = 0f5068e4-9987-46f3-8ef3-c890cd5ff820
+wizard_id        = portrait
+wizard_version   = 2
+snapshot_version = 1
+step             = review
+draft_version    = 1
+```
+
+The stored output preview begins with the real compiled Wizard prompt, and the request/response snapshot contains the completed `finalDraft` plus session decision state.
+
+Phase 3 is not `DONE` until the non-destructive persistence-failure path is also verified by making the API unavailable during a successful completion and confirming:
+
+```text
+compile succeeds
+Ready artifact remains visible
+persistence warning is shown
+no new database row is created
+```
 
 ### Phase 4 — remove home-page learning hooks: NOT STARTED
 
@@ -216,7 +236,7 @@ Wizard finish
   -> expected snapshot v1 + output
 ```
 
-Milestone 4 is complete only after the real Wizard path is locally verified and the home-page hook is no longer the integration point.
+Milestone 4 is complete only after the home-page hook is removed and the real Wizard completion path is the verified persistence source.
 
 ## Still deferred
 
@@ -231,7 +251,7 @@ The temporary `persistence_probe` table also remains as non-product learning dat
 
 ## Next action
 
-Sync the branch, restart Nuxt, complete the real Portrait Wizard, and verify the newest `wizard_runs` row comes from the product completion path with snapshot schema version 1 and Wizard version 2. Then verify the non-destructive persistence-failure behavior before marking Phase 3 `DONE`.
+Verify the Phase-3 failure path without changing code: return the completed Wizard to Review, record the current `wizard_runs` count, stop only the API container, generate the prompt again, confirm the Ready artifact remains visible with the persistence warning, confirm the database count did not increase, then restart the API container.
 
 ## New-chat handoff
 
