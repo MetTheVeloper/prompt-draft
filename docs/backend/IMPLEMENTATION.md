@@ -65,34 +65,7 @@ The server binds to `0.0.0.0` by default and uses port `4000`. Both can be overr
 
 ## Phase 2 Dockerfile decision
 
-The first image deliberately stays minimal:
-
-```dockerfile
-FROM node:24-alpine
-
-WORKDIR /app
-
-COPY package.json ./
-COPY src ./src
-
-ENV HOST=0.0.0.0
-ENV PORT=4000
-
-EXPOSE 4000
-
-CMD ["node", "src/index.mjs"]
-```
-
-Important details:
-
-- `node:24-alpine` provides a small Linux environment with Node installed;
-- the Docker build context is `backend/`;
-- there are currently no external backend dependencies, so no package-install step is needed;
-- `WORKDIR /app` sets the container application directory;
-- `COPY` puts the backend files into the image;
-- `ENV` supplies the default host and port;
-- `EXPOSE 4000` documents the container port but does not publish it to Windows;
-- `CMD` starts the Node server.
+The image uses `node:24-alpine`, copies the minimal backend source into `/app`, exposes port `4000`, and starts `node src/index.mjs`.
 
 Manual verification command:
 
@@ -104,7 +77,7 @@ The mapping means host port `4000` forwards traffic to container port `4000`.
 
 ## Phase 3 Docker Compose decision
 
-A root-level `compose.yaml` now defines the local backend service:
+A root-level `compose.yaml` defines the local backend service:
 
 ```yaml
 services:
@@ -118,28 +91,39 @@ services:
       PORT: 4000
 ```
 
-Conceptually this replaces the manual build/run workflow with a declarative service definition.
-
-Instead of remembering both:
-
-```bash
-docker build -t prompt-draft-api ./backend
-docker run --rm -p 4000:4000 prompt-draft-api
-```
-
 Compose can build and run the service from the repository root with:
 
 ```bash
 docker compose up --build
 ```
 
-After an image already exists and no rebuild is needed, the normal start command can be:
+The service name is `api`. Compose manages the container lifecycle and the host-to-container `4000:4000` port mapping.
 
-```bash
-docker compose up
+## Phase 5 CORS decision
+
+The browser frontend runs on a different origin from the local API because the ports differ. The backend therefore applies an explicit development CORS allowlist rather than using `Access-Control-Allow-Origin: *`.
+
+Default allowed origins:
+
+```text
+http://localhost:3000
+http://127.0.0.1:3000
 ```
 
-The service name is `api`. Compose manages the container lifecycle and the host-to-container `4000:4000` port mapping.
+The allowlist can later be overridden with the comma-separated `CORS_ORIGINS` environment variable.
+
+For an allowed request origin, the backend returns:
+
+```text
+Access-Control-Allow-Origin: <matching origin>
+Access-Control-Allow-Methods: GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Vary: Origin
+```
+
+The backend also handles `OPTIONS` with a `204` response so the basic preflight path is already supported. An origin outside the allowlist receives no `Access-Control-Allow-Origin` header, so the browser will not grant that page cross-origin access.
+
+This phase remains intentionally dependency-free and implemented directly with Node's HTTP response headers.
 
 ## Step sequence
 
@@ -172,39 +156,23 @@ Expected response:
 
 ### Phase 2 — containerize backend
 
-Implemented and locally verified by building `prompt-draft-api`, stopping the host Node process, running the Docker container, and calling the API through host port `4000`.
+Implemented and locally verified by building `prompt-draft-api`, running the Docker container, and calling the API through host port `4000`.
 
 ### Phase 3 — Docker Compose
 
-`compose.yaml` is implemented.
-
-Local verification command:
-
-```bash
-docker compose up --build
-```
-
-Success condition: Compose builds/starts the `api` service and the server logs that it is listening on port `4000`.
+Implemented and locally verified after a clean container recreation. Compose correctly publishes `0.0.0.0:4000->4000/tcp`.
 
 ### Phase 4 — independent API verification
 
-While the Compose service is running, call:
+Implemented and locally verified from Windows with:
 
 ```bash
-curl.exe http://localhost:4000/api/hello
+curl.exe http://127.0.0.1:4000/api/hello
 ```
-
-Success condition:
-
-```json
-{"ok":true,"message":"Hello from Prompt Draft API"}
-```
-
-This verifies that the host can reach the backend through the Compose-managed port mapping before the frontend is changed.
 
 ### Phase 5 — CORS
 
-If the frontend runs at `localhost:3000` and the API at `localhost:4000`, configure development CORS explicitly before the browser integration if required.
+Implemented in `backend/src/index.mjs` with a narrow development allowlist and `OPTIONS` support. Local response-header verification is still required before this phase is marked complete.
 
 ### Phase 6 — Nuxt home-page GET test
 
