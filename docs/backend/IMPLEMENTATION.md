@@ -121,13 +121,9 @@ The backend package exposes `npm run db:schema` through `backend/src/create-sche
 
 The user directly inspected `\d wizard_runs` in PostgreSQL and confirmed all columns, the UUID primary key, and the positive-version check constraint.
 
-### Phase 5 — replace POST memory insert with database INSERT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 5 — replace POST memory insert with database INSERT: DONE
 
-`backend/src/database.mjs` now provides:
-
-```text
-insertWizardRun(run)
-```
+`backend/src/database.mjs` provides `insertWizardRun(run)`.
 
 It executes a parameterized statement rather than interpolating request values into SQL:
 
@@ -150,7 +146,7 @@ RETURNING
   snapshot;
 ```
 
-Parameterization keeps SQL structure separate from values and is the correct baseline for avoiding SQL-injection problems.
+Parameterization keeps SQL structure separate from values and is the baseline for avoiding SQL-injection problems.
 
 `POST /api/wizard-runs` preserves the existing request contract:
 
@@ -165,45 +161,56 @@ JSON body
   -> 201 Created
 ```
 
-The response shape remains camelCase even though database columns are snake_case.
+The user verified a valid POST returned `201 Created`, then queried PostgreSQL directly and found the same UUID and output in `wizard_runs`.
 
-Database insert failures are treated as server-side failures and currently return:
+### Phase 6 — replace GET memory list with database SELECT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-```text
-500 Failed to create Wizard run
-```
-
-#### Intentional transitional state
-
-Phase 5 changes POST only.
-
-`GET /api/wizard-runs` still reads the old process-local `wizardRuns` array until Phase 6. The POST no longer pushes into that array, so during this temporary phase a successful POST may exist in PostgreSQL while the GET endpoint still reports an empty in-memory list.
-
-This mismatch is deliberate so POST persistence and GET persistence are learned and verified independently.
-
-Local Phase-5 verification should therefore:
+`backend/src/database.mjs` now provides:
 
 ```text
-POST /api/wizard-runs -> 201
-  -> query wizard_runs directly with psql
-  -> confirm posted row exists in PostgreSQL
+listWizardRuns()
 ```
 
-### Phase 6 — replace GET memory list with database SELECT
+It executes:
 
-Keep:
-
-```http
-GET /api/wizard-runs
+```sql
+SELECT
+  id,
+  created_at AS "createdAt",
+  wizard_id AS "wizardId",
+  wizard_version AS "wizardVersion",
+  output,
+  snapshot
+FROM wizard_runs
+ORDER BY created_at DESC;
 ```
 
-but query PostgreSQL and map snake_case database columns back to the existing camelCase API shape.
+The same row-mapping helper is used for INSERT and SELECT so PostgreSQL timestamps become ISO strings and the public API remains camelCase.
 
-After this phase the process-local `wizardRuns` array can be removed entirely.
+`GET /api/wizard-runs` now queries PostgreSQL and returns:
+
+```json
+{
+  "ok": true,
+  "count": 1,
+  "runs": []
+}
+```
+
+with the real rows in `runs`.
+
+The process-local `wizardRuns` array has been removed entirely. After this implementation both Wizard endpoints are database-backed:
+
+```text
+POST /api/wizard-runs -> PostgreSQL INSERT
+GET  /api/wizard-runs -> PostgreSQL SELECT
+```
+
+Local verification should rebuild/recreate the API and then call GET. The row created during Phase 5 should still appear, proving the GET endpoint is reading PostgreSQL rather than fresh process memory.
 
 ### Phase 7 — durability verification
 
-Create a run through the API, read it back through GET, remove/recreate API and PostgreSQL containers without deleting volumes, then read the same run again.
+Create a new run through POST, read it back through GET, remove/recreate API and PostgreSQL containers without deleting volumes, then read the same run again.
 
 Milestone 3 is complete only after the user confirms that the run survives container recreation because PostgreSQL data lives in the named volume.
 
