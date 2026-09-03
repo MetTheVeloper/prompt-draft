@@ -68,6 +68,83 @@ function isUuid(value) {
   )
 }
 
+function encodeWizardRunCursor(run) {
+  return Buffer.from(
+    JSON.stringify({
+      createdAt: run.createdAt,
+      id: run.id,
+    }),
+    'utf8',
+  ).toString('base64url')
+}
+
+function decodeWizardRunCursor(value) {
+  try {
+    const decoded = Buffer.from(value, 'base64url').toString('utf8')
+    const cursor = JSON.parse(decoded)
+
+    if (
+      !isPlainObject(cursor) ||
+      typeof cursor.createdAt !== 'string' ||
+      Number.isNaN(Date.parse(cursor.createdAt)) ||
+      !isUuid(cursor.id)
+    ) {
+      return null
+    }
+
+    return {
+      createdAt: new Date(cursor.createdAt).toISOString(),
+      id: cursor.id,
+    }
+  } catch {
+    return null
+  }
+}
+
+function parseWizardRunListQuery(url) {
+  const errors = []
+  const rawLimit = url.searchParams.get('limit')
+  let limit = 20
+
+  if (rawLimit !== null) {
+    if (!/^\d+$/.test(rawLimit)) {
+      errors.push({
+        field: 'limit',
+        message: 'limit must be an integer between 1 and 100',
+      })
+    } else {
+      limit = Number(rawLimit)
+
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+        errors.push({
+          field: 'limit',
+          message: 'limit must be an integer between 1 and 100',
+        })
+      }
+    }
+  }
+
+  const rawCursor = url.searchParams.get('cursor')
+  let cursor = null
+
+  if (rawCursor !== null) {
+    cursor = rawCursor.length > 0 ? decodeWizardRunCursor(rawCursor) : null
+
+    if (!cursor) {
+      errors.push({
+        field: 'cursor',
+        message: 'cursor must be a valid Wizard run cursor',
+      })
+    }
+  }
+
+  return {
+    errors,
+    limit,
+    cursor,
+  }
+}
+
 function validateWizardRunSnapshot(snapshot) {
   const errors = []
 
@@ -314,16 +391,39 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/wizard-runs') {
+    const { errors, limit, cursor } = parseWizardRunListQuery(url)
+
+    if (errors.length > 0) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Invalid Wizard run list query',
+          errors,
+        },
+        corsHeaders,
+      )
+      return
+    }
+
     try {
-      const runs = await listWizardRuns()
+      const page = await listWizardRuns({ limit, cursor })
+      const lastRun = page.runs.at(-1) ?? null
+      const nextCursor = page.hasMore && lastRun
+        ? encodeWizardRunCursor(lastRun)
+        : null
 
       sendJson(
         response,
         200,
         {
           ok: true,
-          count: runs.length,
-          runs,
+          runs: page.runs,
+          pageInfo: {
+            nextCursor,
+            hasMore: page.hasMore,
+          },
         },
         corsHeaders,
       )
