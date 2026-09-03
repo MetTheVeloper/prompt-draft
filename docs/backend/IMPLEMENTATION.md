@@ -434,9 +434,9 @@ No `userId`, owner field, auth token, or ownership query parameter is added now.
 
 ## Milestone 5 phases
 
-### Phase 0 — contract freeze: AWAITING USER VERIFICATION
+### Phase 0 — contract freeze: DONE
 
-Document and review:
+The user reviewed and approved:
 
 - collection vs detail separation;
 - full record and summary record shapes;
@@ -447,32 +447,47 @@ Document and review:
 - `wizardId` filtering;
 - restore/auth/deferred boundaries.
 
-No runtime behavior is changed in this phase.
+No runtime behavior was changed in this phase.
 
-Verification requirement:
+### Phase 1 — single-run detail API: AWAITING USER VERIFICATION
 
-```text
-user reviews the documented contract locally
-  -> confirms direction
-  -> only then mark Phase 0 DONE
-```
-
-### Phase 1 — single-run detail API: NOT STARTED
-
-Implement:
+Implemented:
 
 ```text
 database.getWizardRunById(id)
 GET /api/wizard-runs/:id
 ```
 
-Verification:
+Database behavior:
+
+```text
+parameterized UUID lookup
+full record projection
+existing row -> mapped Wizard run
+missing row -> null
+```
+
+HTTP behavior:
+
+```text
+existing valid UUID -> 200 { ok: true, run }
+valid missing UUID -> 404 { ok: false, message: "Wizard run not found" }
+malformed id -> 400 { ok: false, message: "Invalid Wizard run id" }
+unexpected DB/read failure -> 500
+```
+
+UUID format validation happens in the HTTP boundary before PostgreSQL receives the identifier.
+
+Phase 1 intentionally does not change the current collection behavior or frontend typed API boundary.
+
+Verification required before `DONE`:
 
 ```text
 existing UUID -> 200 exact full run
 valid missing UUID -> 404
 malformed id -> 400
 newly POSTed run -> immediately readable by detail endpoint
+GET /api/wizard-runs -> existing list behavior still works
 ```
 
 ### Phase 2 — cursor-paginated summary collection: NOT STARTED
