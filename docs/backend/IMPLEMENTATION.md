@@ -20,108 +20,21 @@ Nuxt frontend :3030
 
 The backend remains independent from Nuxt server routes so the frontend can continue to be statically generated.
 
-## Milestone 3 — COMPLETE: PostgreSQL persistence
-
-Milestone 3 replaced temporary process memory with durable PostgreSQL storage.
-
-Verified capabilities include:
-
-```text
-Docker Compose API + PostgreSQL
-  -> service-name networking
-  -> named-volume persistence
-  -> explicit SQL schema
-  -> parameterized INSERT
-  -> SELECT read-back
-  -> full API + DB container recreation
-  -> same Wizard rows
-```
-
-Current relational shape:
-
-```text
-table: wizard_runs
-
-id              UUID primary key
-created_at      timestamp with time zone
-wizard_id       text
-wizard_version  integer
-output           text
-snapshot         jsonb
-```
-
-The backend uses `pg 8.16.3`, a pool in `backend/src/database.mjs`, and versioned schema source `backend/sql/001_create_wizard_runs.sql`.
-
 ## Milestone 4 objective — real Wizard integration
 
-Move persistence from the home-page learning hook into the actual Wizard success flow while tightening the boundary between client-owned and server-owned data.
+Move persistence from the Home learning hook into the actual Wizard success flow while keeping the API contract explicit and failure behavior non-destructive.
 
 This milestone does not add authentication, history UI, production migrations, or deployment concerns.
-
-## Real Wizard success event
-
-The production Wizard page is:
-
-```text
-app/pages/wizard/[wizardId].vue
-```
-
-Its `finish()` function calls:
-
-```text
-runtime.complete(session)
-```
-
-A successful result supplies:
-
-```text
-result.finalDraft
-result.promptPreview
-```
-
-Only after `result.ok` does the page enter the completed Ready state.
-
-That makes successful `finish()` the current canonical persistence event:
-
-```text
-Wizard session
-  -> runtime.complete(session)
-  -> mapping/compile succeeds
-  -> finalDraft + promptPreview exist
-  -> persist Wizard run
-  -> Ready UI
-```
-
-Failed mapping/compilation attempts must not create successful Wizard-run history rows.
-
-`WizardDirectionReady.vue` currently has Create handoff, save-template, start-another, and edit-direction actions. There is no copy action in the current Ready UI, so persistence is not tied to clipboard behavior.
 
 ## Milestone 4 phases
 
 ### Phase 0 — server-owned field hardening: DONE
 
-The API creates a strict allowlisted run object. The user verified fake client `id`/`createdAt` values are ignored, `wizardId` is trimmed, and unknown top-level request keys are not promoted into the stored run.
+The API constructs an allowlisted run shape. Server-generated `id` and `createdAt` cannot be overridden by request fields, `wizardId` is normalized, and unknown request keys are excluded.
 
 ### Phase 1 — snapshot contract v1: DONE
 
-#### Product/domain reasoning
-
-`WizardSession` contains:
-
-```text
-wizardId
-wizardVersion
-currentStepId
-answers
-derived
-workingDraft
-```
-
-The existing local Wizard persistence stores the whole `WizardSession`, proving it is serializable for resume purposes.
-
-Successful completion validates and compiles against `session.workingDraft` and returns a cloned `finalDraft`. The page does not replace its current session with the completion pipeline's returned session before entering the Ready state.
-
-Therefore the successful-run snapshot stores decision state plus the final artifact rather than an ambiguous intermediate `workingDraft`:
+Successful-run snapshot:
 
 ```json
 {
@@ -137,168 +50,110 @@ Therefore the successful-run snapshot stores decision state plus the final artif
 }
 ```
 
-First-class run fields remain outside the snapshot:
+`wizardId`, `wizardVersion`, `output`, `id`, and `createdAt` remain first-class run fields outside the snapshot.
 
-```text
-run id
-createdAt
-wizardId
-wizardVersion
-compiled output
-```
+`answers` and `derived` capture Wizard decision state. `finalDraft` captures the exact successful product artifact. Intermediate `workingDraft` is intentionally excluded from successful-run history.
 
-`answers` and `derived` capture Wizard decision/configuration state under `wizardVersion`. `finalDraft` is the exact successful product artifact and is already a versioned serializable `PromptDraftState` contract.
-
-#### Backend envelope validation
-
-The backend requires:
-
-```text
-snapshot.schemaVersion === 1
-snapshot.session.currentStepId = non-empty string
-snapshot.session.answers       = plain object
-snapshot.session.derived       = plain object
-snapshot.finalDraft            = plain object
-snapshot.finalDraft.version === 1
-```
-
-After validation the stored snapshot is normalized to the versioned envelope. Unknown snapshot-envelope keys are dropped.
-
-The backend intentionally does not reimplement every nested Wizard-answer or PromptDraft validator. The snapshot is a frontend/domain-owned versioned JSON document inside a strict backend envelope.
-
-#### Local verification
-
-The user verified:
-
-```text
-valid snapshot v1 -> 201 + normalized stored snapshot
-invalid/legacy snapshot -> 400 + snapshot-specific validation errors
-```
-
-Injected envelope noise was absent from the stored JSONB row. The legacy shape produced field errors for `snapshot.schemaVersion`, `snapshot.session`, and `snapshot.finalDraft`.
+The backend validates the snapshot envelope without duplicating every nested frontend domain validator.
 
 ### Phase 2 — frontend API boundary/configuration: DONE
 
-Nuxt exposes:
-
-```text
-runtimeConfig.public.apiBase
-```
-
-configured by:
+Nuxt public runtime config:
 
 ```text
 NUXT_PUBLIC_API_BASE
+  -> runtimeConfig.public.apiBase
 ```
 
-with local default:
-
-```text
-http://127.0.0.1:4000
-```
-
-Typed API contracts live in:
-
-```text
-app/types/wizardRunApi.ts
-```
-
-The reusable client boundary is:
+Reusable frontend boundary:
 
 ```text
 app/composables/usePromptDraftApi.ts
 ```
 
-It normalizes the configured base URL and exposes:
+Typed contracts:
 
 ```text
-hello()
-createWizardRun(input)
-listWizardRuns()
+app/types/wizardRunApi.ts
 ```
 
-No Nuxt server routes are introduced. Requests remain browser -> external API, preserving the static frontend architecture.
+The browser client exposes `hello()`, `createWizardRun(input)`, and `listWizardRuns()` while product code avoids duplicated local URLs.
 
-The user verified that a PowerShell `NUXT_PUBLIC_API_BASE=http://localhost:4000` override is reflected by the browser client and that `hello()` succeeds through that configured base.
+Static generation remains supported and no Nuxt server routes are introduced.
 
-The user also verified the normal `pnpm generate` workflow still succeeds and prerenders `/wizard/portrait`.
+### Phase 3 — persist on successful Wizard completion: DONE
 
-### Phase 3 — persist on successful Wizard completion: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-`finish()` now calls the shared `createWizardRun()` client only after `runtime.complete(session)` succeeds.
-
-The payload is built directly from the successful product result and current Wizard decision state:
+The canonical persistence event is successful `finish()` in:
 
 ```text
-wizardId      = session.wizardId
-wizardVersion = session.wizardVersion
-output        = result.promptPreview
-
-snapshot.schemaVersion          = 1
-snapshot.session.currentStepId  = session.currentStepId
-snapshot.session.answers        = session.answers
-snapshot.session.derived        = session.derived
-snapshot.finalDraft             = result.finalDraft
+app/pages/wizard/[wizardId].vue
 ```
 
-The local successful artifact is established before waiting on history persistence:
+Flow:
 
 ```text
-completedDraft = result.finalDraft
-completedPromptPreview = result.promptPreview
-saveWizardSession(session)
+runtime.complete(session)
+  -> if failure: existing Wizard error, no history row
+  -> finalDraft + promptPreview
+  -> preserve completed artifact locally
+  -> save local Wizard session
+  -> createWizardRun(snapshot v1)
 ```
 
-Then the history POST runs.
+The user verified the real Portrait Wizard creates a PostgreSQL row with Wizard version 2, snapshot version 1, `review` step, finalDraft version 1, and the actual compiled prompt output.
 
-This intentionally gives persistence weaker failure semantics than prompt generation:
+Persistence failure semantics are intentionally weaker than prompt-generation semantics:
 
 ```text
-mapping/compile failure
-  -> no completed artifact
-  -> no Wizard-run POST
-
-mapping/compile success + persistence success
-  -> Ready artifact
-  -> durable Wizard-run row
-
-mapping/compile success + persistence failure
-  -> Ready artifact remains available
-  -> API failure logged
-  -> locale-aware warning shown in existing Ready issue area
+compile success + persistence failure
+  -> completed Ready artifact remains usable
+  -> persistence warning shown
+  -> no new history row
 ```
 
-This avoids destroying a successfully generated product artifact merely because history storage is unavailable.
+The user verified this by stopping only the API container, generating again from Review, seeing the Ready artifact plus warning, confirming no new row was added, then restarting the API successfully.
 
-Local verification for Phase 3 should test both the positive product path and the non-destructive persistence-failure path.
+### Phase 4 — remove development Home API hooks: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-### Phase 4 — remove development home-page API hooks
+`app/pages/index.vue` has been cleaned of all backend learning side effects.
 
-After the real Wizard path is verified:
+Removed:
 
 ```text
-remove learning GET
-remove learning POST
-keep Home free of backend side effects
+usePromptDraftApi() Home diagnostic instance
+onMounted() backend learning block
+GET /api/hello from Home
+legacy POST /api/wizard-runs from Home
+hardcoded http://127.0.0.1:4000 learning POST
 ```
 
-### Phase 5 — real browser E2E verification
+The Home template and offline-package status UI are unchanged.
 
-Locally complete the actual Portrait Wizard and verify:
+Verification requirement:
 
 ```text
-Wizard finish
-  -> runtime completion succeeds
-  -> final prompt output exists
-  -> POST /api/wizard-runs
-  -> PostgreSQL row
-  -> GET /api/wizard-runs
-  -> exact wizardId/version/output/snapshot v1
+load http://localhost:3030/
+open DevTools Fetch/XHR + Console
+refresh Home
+confirm no /api/hello request
+confirm no /api/wizard-runs request
+confirm no [Prompt Draft API] learning logs
 ```
 
-Then recreate containers without deleting the volume and prove the product-created row survives.
+### Phase 5 — final product-only E2E verification
 
-Milestone 4 is complete only after the home-page hook is removed and the real Wizard completion path is the verified persistence source.
+After Phase 4 passes, perform one final proof that the only product persistence source is Wizard completion:
+
+```text
+Home refresh -> no backend request
+Portrait Wizard finish -> POST /api/wizard-runs
+GET /api/wizard-runs -> product-created row visible
+docker compose down
+docker compose up -d
+GET /api/wizard-runs -> same row still visible
+```
+
+Milestone 4 is complete after this final proof.
 
 ## Existing intentional learning shortcuts / later debt
 
