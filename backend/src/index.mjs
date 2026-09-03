@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
-import { getDatabaseStatus } from './database.mjs'
+import { getDatabaseStatus, insertWizardRun } from './database.mjs'
 
 const host = process.env.HOST ?? '0.0.0.0'
 const port = Number(process.env.PORT ?? 4000)
@@ -12,6 +12,7 @@ const allowedOrigins = new Set(
     .filter(Boolean),
 )
 
+// Temporary until Milestone 3 Phase 6. GET still reads process memory.
 const wizardRuns = []
 
 function getCorsHeaders(request) {
@@ -227,17 +228,32 @@ const server = createServer(async (request, response) => {
       ...body,
     }
 
-    wizardRuns.push(run)
+    try {
+      const savedRun = await insertWizardRun(run)
 
-    sendJson(
-      response,
-      201,
-      {
-        ok: true,
-        run,
-      },
-      corsHeaders,
-    )
+      sendJson(
+        response,
+        201,
+        {
+          ok: true,
+          run: savedRun,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] wizard run insert failed', error)
+
+      sendJson(
+        response,
+        500,
+        {
+          ok: false,
+          message: 'Failed to create Wizard run',
+        },
+        corsHeaders,
+      )
+    }
+
     return
   }
 
