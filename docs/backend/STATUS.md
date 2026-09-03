@@ -14,20 +14,7 @@ Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP se
 
 ## Milestone 2 — COMPLETE
 
-Verified end to end:
-
-```text
-Nuxt frontend :3030
-  -> browser CORS/preflight
-  -> POST /api/wizard-runs
-  -> Docker API :4000
-  -> JSON parsing
-  -> validation
-  -> in-memory insert
-  -> 201 JSON response
-  -> browser console
-  -> GET read-back
-```
+Verified end to end: JSON POST -> validation -> CORS/preflight -> temporary in-memory storage -> browser response/read-back.
 
 The user also verified that recreating the API container resets the process-local `wizardRuns` array to empty.
 
@@ -52,47 +39,65 @@ snapshot         jsonb
 
 The snapshot schema remains intentionally flexible/provisional during this milestone.
 
-### Phase 1 — PostgreSQL Compose service: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 1 — PostgreSQL Compose service: DONE
 
-Updated:
+Added `db` service using `postgres:17-alpine`.
+
+The user locally verified:
 
 ```text
-compose.yaml
+docker compose ps
 ```
 
-Added service:
+showed both `api` and `db` running, with PostgreSQL exposed only inside the Compose network as `5432/tcp`.
+
+The user also confirmed:
+
+```powershell
+docker compose exec db pg_isready -U prompt_draft -d prompt_draft
+```
+
+returned `accepting connections`, and:
+
+```powershell
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT current_database(), current_user;"
+```
+
+returned:
+
+```text
+prompt_draft | prompt_draft
+```
+
+This proves the PostgreSQL container starts correctly and accepts a real SQL session.
+
+### Phase 2 — named volume/persistence proof: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Updated `compose.yaml` with a named volume:
 
 ```yaml
 db:
-  image: postgres:17-alpine
-  environment:
-    POSTGRES_DB: prompt_draft
-    POSTGRES_USER: prompt_draft
-    POSTGRES_PASSWORD: prompt_draft_dev
+  volumes:
+    - prompt_draft_pgdata:/var/lib/postgresql/data
+
+volumes:
+  prompt_draft_pgdata:
 ```
 
-Current intentional boundaries:
+The volume is intentionally attached before any real `wizard_runs` table exists. Phase 2 should prove the storage primitive itself first.
 
-- no named volume yet;
-- no host port publication for PostgreSQL;
-- no Node PostgreSQL dependency;
-- API still uses in-memory `wizardRuns`;
-- API does not connect to `db` yet;
-- no `wizard_runs` SQL table exists yet.
-
-The future Compose-internal database address is:
+Important behavior to verify:
 
 ```text
-db:5432
+create a small probe row in PostgreSQL
+  -> docker compose down
+  -> containers removed
+  -> named volume remains
+  -> docker compose up
+  -> probe row still exists
 ```
 
-The local password in Compose is a development-only value and is not a production secret-management design.
-
-Phase 1 is not `DONE` until the user locally confirms the PostgreSQL container starts and accepts a database session.
-
-### Phase 2 — named volume/persistence proof: NOT STARTED
-
-Will attach a named Docker volume and explicitly prove that a database artifact survives PostgreSQL container recreation.
+Do NOT use `docker compose down -v` during the persistence proof because `-v` explicitly deletes named volumes.
 
 ### Phase 3 — API -> PostgreSQL connectivity: NOT STARTED
 
@@ -108,48 +113,9 @@ Will add a minimal Node PostgreSQL client and verify API-container -> `db:5432` 
 
 ## Next action
 
-Sync the branch and start the updated Compose project:
+Sync the branch, recreate the Compose project with the new named volume, create a small persistence probe, remove/recreate the containers without deleting volumes, and confirm the probe remains.
 
-```powershell
-git pull
-docker compose up
-```
-
-The first run may pull the `postgres:17-alpine` image.
-
-In another terminal verify both services are running:
-
-```powershell
-docker compose ps
-```
-
-Then verify PostgreSQL itself is accepting connections:
-
-```powershell
-docker compose exec db pg_isready -U prompt_draft -d prompt_draft
-```
-
-Expected result includes:
-
-```text
-accepting connections
-```
-
-Finally open a real SQL session non-interactively and ask PostgreSQL which database/user are active:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT current_database(), current_user;"
-```
-
-Expected row:
-
-```text
-prompt_draft | prompt_draft
-```
-
-After the user confirms these results, mark Phase 1 `DONE` and implement Phase 2 only.
-
-PostgreSQL is not persistent yet because no named volume is attached.
+PostgreSQL is not yet connected to the Node API. The current Wizard endpoints still use the in-memory `wizardRuns` array.
 
 ## New-chat handoff
 
