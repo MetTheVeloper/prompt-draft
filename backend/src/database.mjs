@@ -11,8 +11,16 @@ const pool = new Pool({
   connectionTimeoutMillis: 3000,
 })
 
+export function queryDatabase(text, values) {
+  return pool.query(text, values)
+}
+
+export function closeDatabase() {
+  return pool.end()
+}
+
 export async function getDatabaseStatus() {
-  const result = await pool.query(`
+  const result = await queryDatabase(`
     SELECT
       current_database() AS database,
       current_user AS "user",
