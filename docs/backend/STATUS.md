@@ -71,34 +71,81 @@ backend/sql/001_create_wizard_runs.sql
 
 PostgreSQL confirmed the expected columns, primary key on `id`, and `wizard_version > 0` check constraint.
 
-### Phase 5 — replace POST memory insert with SQL INSERT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 5 — replace POST memory insert with SQL INSERT: DONE
 
 `backend/src/database.mjs` exposes `insertWizardRun(run)` using a parameterized PostgreSQL INSERT with placeholders and separate values.
 
-`POST /api/wizard-runs` now follows:
+The user sent a correctly quoted Windows CMD request and verified:
 
 ```text
-parse JSON
-  -> validate
-  -> create UUID/timestamp
-  -> INSERT into PostgreSQL
-  -> RETURNING saved row
-  -> 201 JSON response
+POST /api/wizard-runs -> HTTP/1.1 201 Created
 ```
 
-The old `wizardRuns.push(run)` has been removed from POST. `GET /api/wizard-runs` still reads process memory until Phase 6.
+The response returned run id:
 
-The first Phase-5 verification attempt was sent from `cmd.exe` using a PowerShell-style single-quoted JSON body. In Windows CMD, single quotes are literal characters rather than string delimiters, so the API correctly received invalid JSON and returned `400 Request body must contain valid JSON`. PostgreSQL contained no inserted row. This is a shell-quoting issue, not evidence of an INSERT/database failure.
+```text
+6651a8c6-0f79-47c6-84cd-3fbccfe567f3
+```
 
-Phase 5 remains incomplete until a correctly quoted CMD request returns `201 Created` and the row is confirmed directly in PostgreSQL.
+A direct PostgreSQL query then returned the same id with:
 
-### Phase 6 — replace GET memory list with SQL SELECT: NOT STARTED
+```text
+wizard_id      = portrait
+wizard_version = 1
+output          = Persisted in PostgreSQL
+```
+
+This proves the POST path now reaches a real parameterized SQL INSERT and stores the row in PostgreSQL.
+
+### Phase 6 — replace GET memory list with SQL SELECT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+`backend/src/database.mjs` now exposes `listWizardRuns()` using:
+
+```text
+SELECT ... FROM wizard_runs ORDER BY created_at DESC
+```
+
+Database rows are mapped from snake_case columns back to the existing camelCase API shape.
+
+`GET /api/wizard-runs` now:
+
+```text
+HTTP request
+  -> listWizardRuns()
+  -> PostgreSQL SELECT
+  -> { ok, count, runs }
+```
+
+The old process-local `wizardRuns` array has been removed entirely from runtime code.
+
+Database list failures currently return:
+
+```text
+500 Failed to list Wizard runs
+```
+
+Phase 6 is not `DONE` until the user rebuilds/recreates the API and verifies that `GET /api/wizard-runs` returns the row already stored in PostgreSQL during Phase 5.
 
 ### Phase 7 — durable end-to-end verification: NOT STARTED
 
 ## Next action
 
-From Windows CMD, send the JSON body with escaped double quotes, confirm `201 Created`, then query `wizard_runs` directly for the inserted output. After user confirmation, mark Phase 5 `DONE` and begin Phase 6 only.
+Sync and rebuild the API image:
+
+```cmd
+git pull
+docker compose up -d --build --force-recreate
+```
+
+Then call:
+
+```cmd
+curl.exe http://127.0.0.1:4000/api/wizard-runs
+```
+
+The response should include the previously persisted `Persisted in PostgreSQL` run even though the API container was recreated.
+
+After user confirmation, mark Phase 6 `DONE` and begin Phase 7 durability verification only.
 
 ## New-chat handoff
 
