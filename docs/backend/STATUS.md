@@ -43,67 +43,87 @@ The user verified both `api` and `db` services run, PostgreSQL reports `acceptin
 
 ### Phase 2 — named volume/persistence proof: DONE
 
-Compose uses the named volume:
+The user verified `persistence_probe` survives `docker compose down` followed by `docker compose up -d` because PostgreSQL data is stored in the named volume `prompt-draft_prompt_draft_pgdata`.
 
-```text
-prompt-draft_prompt_draft_pgdata
-```
+### Phase 3 — API -> PostgreSQL connectivity: DONE
 
-mounted to PostgreSQL's data directory.
-
-The user created `persistence_probe` with:
-
-```text
-1 | survives container recreation
-```
-
-Then ran `docker compose down`, recreated the Compose project with `docker compose up -d`, and queried the table again without recreating the row. The same row remained.
-
-This locally proves:
-
-```text
-PostgreSQL container removed/recreated
-  -> named volume retained
-  -> database files retained
-  -> SQL data retained
-```
-
-Do not use `docker compose down -v` unless intentionally deleting the local database volume.
-
-### Phase 3 — API -> PostgreSQL connectivity: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-Changes now on the branch:
-
-- `backend/package.json` adds exact dependency `pg 8.16.3`;
-- `backend/Dockerfile` installs production dependencies with npm;
-- added `backend/src/database.mjs` with a `pg` connection pool;
-- `compose.yaml` passes explicit DB configuration to the API:
-
-```text
-DB_HOST=db
-DB_PORT=5432
-DB_NAME=prompt_draft
-DB_USER=prompt_draft
-DB_PASSWORD=prompt_draft_dev
-```
-
-- added diagnostic endpoint:
+The backend now includes `pg 8.16.3`, environment-driven DB settings, a connection pool in `backend/src/database.mjs`, and diagnostic endpoint:
 
 ```http
 GET /api/db-check
 ```
 
-The endpoint performs a simple SELECT through the API process and should return database `prompt_draft`, user `prompt_draft`, and PostgreSQL server time.
-
-The important path to verify is:
+The user rebuilt/recreated Compose and verified:
 
 ```text
-host -> API :4000 -> API container -> pg client -> db:5432 -> PostgreSQL -> SELECT -> JSON
+pg_isready -> accepting connections
 ```
 
-Wizard endpoints are intentionally unchanged and still use the in-memory `wizardRuns` array.
+Then called through the API and received:
 
-### Phase 4 — first `wizard_runs` table: NOT STARTED
+```text
+HTTP/1.1 200 OK
+```
+
+with:
+
+```json
+{
+  "ok": true,
+  "database": "prompt_draft",
+  "user": "prompt_draft",
+  "serverTime": "..."
+}
+```
+
+`GET /api/hello` also remained healthy.
+
+This proves the real network path:
+
+```text
+Windows host
+  -> API :4000
+  -> pg client inside API container
+  -> Compose DNS hostname db
+  -> PostgreSQL :5432
+  -> SELECT
+  -> JSON response
+```
+
+Wizard endpoints still intentionally use the in-memory `wizardRuns` array.
+
+### Phase 4 — first `wizard_runs` table: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Added versioned SQL source:
+
+```text
+backend/sql/001_create_wizard_runs.sql
+```
+
+Schema:
+
+```sql
+CREATE TABLE IF NOT EXISTS wizard_runs (
+  id UUID PRIMARY KEY,
+  created_at TIMESTAMPTZ NOT NULL,
+  wizard_id TEXT NOT NULL,
+  wizard_version INTEGER NOT NULL CHECK (wizard_version > 0),
+  output TEXT NOT NULL,
+  snapshot JSONB NOT NULL
+);
+```
+
+Added explicit schema command:
+
+```text
+npm run db:schema
+```
+
+implemented by `backend/src/create-schema.mjs`. The API image now copies the `sql` directory so the command can run inside the API container using the same database connection configuration already verified in Phase 3.
+
+No migrations framework has been introduced yet. This explicit SQL file is the current schema source for the learning milestone.
+
+Phase 4 is not `DONE` until the user rebuilds the API image, runs the schema command, and verifies the table/columns from PostgreSQL.
 
 ### Phase 5 — replace POST memory insert with SQL INSERT: NOT STARTED
 
@@ -113,48 +133,28 @@ Wizard endpoints are intentionally unchanged and still use the in-memory `wizard
 
 ## Next action
 
-Sync the Phase-3 code and rebuild the API image because it now has an external dependency:
+Sync and rebuild because the Docker image now needs the SQL directory:
 
 ```powershell
 git pull
 docker compose up -d --build --force-recreate
 ```
 
-Wait until PostgreSQL is ready if necessary, then verify the database itself:
+Apply the schema through the API container:
 
 ```powershell
-docker compose exec db pg_isready -U prompt_draft -d prompt_draft
+docker compose exec api npm run db:schema
 ```
 
-Finally call through the API:
+Then verify PostgreSQL sees the table:
 
 ```powershell
-curl.exe -i http://127.0.0.1:4000/api/db-check
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d wizard_runs"
 ```
 
-Expected status:
+After user confirmation, mark Phase 4 `DONE` and begin Phase 5 only.
 
-```text
-HTTP/1.1 200 OK
-```
-
-Expected JSON includes:
-
-```json
-{
-  "ok": true,
-  "database": "prompt_draft",
-  "user": "prompt_draft"
-}
-```
-
-Also regression-check the existing endpoint:
-
-```powershell
-curl.exe http://127.0.0.1:4000/api/hello
-```
-
-After user confirmation, mark Phase 3 `DONE` and begin Phase 4 only.
+PostgreSQL persistence exists, but the Wizard POST/GET endpoints have not yet been switched from RAM to SQL.
 
 ## New-chat handoff
 
