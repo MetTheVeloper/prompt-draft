@@ -14,103 +14,13 @@ Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP se
 
 ## Milestone 2 — COMPLETE
 
-Verified end to end: JSON POST -> validation -> CORS/preflight -> temporary in-memory storage -> browser response/read-back.
-
-The user also verified that recreating the API container destroys process-local Wizard-run data.
+Verified JSON POST, validation, CORS/preflight, temporary process memory, and browser read-back.
 
 ## Milestone 3 — COMPLETE
 
-Goal: replace temporary process memory with durable PostgreSQL storage while preserving the existing Wizard-run API concepts.
+Replaced process memory with PostgreSQL + Docker named-volume persistence.
 
-### Phase 0 — persistence contract/schema direction: DONE
-
-Current provisional table:
-
-```text
-wizard_runs
-
-id              UUID primary key
-created_at      timestamp with time zone
-wizard_id       text
-wizard_version  integer
-output           text
-snapshot         jsonb
-```
-
-### Phase 1 — PostgreSQL Compose service: DONE
-
-The user verified the `db` service runs on PostgreSQL 17, accepts connections, and exposes database/user `prompt_draft` inside the Compose network.
-
-### Phase 2 — named volume/persistence proof: DONE
-
-PostgreSQL data is backed by the Compose named volume `prompt_draft_pgdata`.
-
-The user created a temporary `persistence_probe` row, removed/recreated the containers, and confirmed the row remained. This proved container lifecycle and database-data lifecycle are separate.
-
-### Phase 3 — API -> PostgreSQL connectivity: DONE
-
-The API uses `pg 8.16.3`, environment-driven database settings, and a connection pool in `backend/src/database.mjs`.
-
-The user verified `GET /api/db-check -> 200` through this path:
-
-```text
-Windows host
-  -> API :4000
-  -> pg client inside API container
-  -> Compose DNS hostname db
-  -> PostgreSQL :5432
-  -> SELECT
-  -> JSON response
-```
-
-### Phase 4 — first `wizard_runs` table: DONE
-
-Versioned SQL source:
-
-```text
-backend/sql/001_create_wizard_runs.sql
-```
-
-PostgreSQL confirmed the expected columns, UUID primary key, and `wizard_version > 0` check constraint.
-
-### Phase 5 — POST uses SQL INSERT: DONE
-
-`POST /api/wizard-runs` now validates input and executes a parameterized PostgreSQL INSERT.
-
-The user verified `201 Created` and then directly queried PostgreSQL to confirm the same UUID/output row existed in `wizard_runs`.
-
-### Phase 6 — GET uses SQL SELECT: DONE
-
-`GET /api/wizard-runs` now executes `SELECT ... FROM wizard_runs ORDER BY created_at DESC` and maps database snake_case columns back to the existing camelCase API shape.
-
-The old process-local `wizardRuns` array has been removed entirely.
-
-The first GET verification briefly showed `count: 0` because the running API container still had the older Phase-5 image. Direct PostgreSQL inspection proved the row had never been lost. After rebuilding with Phase-6 code, GET returned the persisted row.
-
-### Phase 7 — durable end-to-end verification: DONE
-
-The user created a fresh run through the API:
-
-```text
-id     = 52d74cf9-d462-4cae-b647-a6ac6ebe2715
-output = Phase 7 survives recreate
-```
-
-Before recreation, `GET /api/wizard-runs` returned both persisted runs.
-
-The user then ran:
-
-```text
-docker compose down
-
-docker compose up -d
-```
-
-This removed both API and PostgreSQL containers and the Compose network while retaining the named volume.
-
-After PostgreSQL reported `accepting connections`, `GET /api/wizard-runs` again returned both rows, including the exact Phase-7 UUID and output.
-
-This proves the full durable path:
+Verified end to end:
 
 ```text
 HTTP POST
@@ -118,52 +28,150 @@ HTTP POST
   -> parameterized PostgreSQL INSERT
   -> PostgreSQL data directory
   -> Docker named volume
-  -> API + DB containers removed
-  -> new API + DB containers
-  -> same named volume
+  -> API + DB containers removed/recreated
   -> PostgreSQL SELECT
   -> HTTP GET
   -> same Wizard run
 ```
 
-## Milestone 3 result
+## Milestone 4 — IN PROGRESS: product integration and contract hardening
 
-Milestone 3 is complete and locally verified end to end.
+Goal: make durable Wizard-run persistence belong to the real Wizard product flow instead of the development home-page hook.
 
-Current backend capabilities now include:
+### Product-flow analysis
 
-- Docker Compose API + PostgreSQL services;
-- Compose service-name networking (`db:5432`);
-- PostgreSQL connection pooling;
-- Docker named-volume persistence;
-- explicit versioned SQL schema source;
-- parameterized SQL INSERT;
-- SQL SELECT list/read-back;
-- durable Wizard-run rows that survive full container recreation.
+The current production Wizard page completes through `finish()` in:
 
-## Next milestone direction — product integration and contract hardening
+```text
+app/pages/wizard/[wizardId].vue
+```
 
-Do not start automatically. Review the direction first.
+The sequence is:
 
-Before connecting persistence to the real Wizard flow, address these items:
+```text
+runtime.complete(session)
+  -> result.ok
+  -> finalDraft
+  -> promptPreview
+  -> completed Ready screen
+```
 
-1. harden server-owned fields: current run construction places `...body` after generated `id`/`createdAt`, so a client can currently override those values; switch to an explicit allowlisted run shape;
-2. inspect the real Wizard success/completion/copy flow and choose the correct persistence event instead of the home-page learning POST;
-3. tighten/version the production snapshot contract without prematurely flattening evolving Wizard state;
-4. remove the home-page development POST once real Wizard integration is verified;
-5. clean up the temporary `persistence_probe` artifact when appropriate.
+This is the first point where the run is definitively successful and the final compiled output exists.
 
-Authentication, user ownership, history/restore UI, production migrations, secret management, and deployment remain deferred.
+The current `WizardDirectionReady` UI has actions for Create handoff, save-template, start-another, and edit-direction. It does not currently expose a copy action. Therefore the current recommended persistence event is successful Wizard completion, not clipboard/copy interaction.
+
+### Phase 0 — harden server-owned fields: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Previously the API built a run with:
+
+```js
+{
+  id: randomUUID(),
+  createdAt: new Date().toISOString(),
+  ...body,
+}
+```
+
+Because client fields were spread last, a request could override generated `id` and `createdAt`.
+
+`backend/src/index.mjs` now creates an explicit allowlisted run shape:
+
+```js
+{
+  id: randomUUID(),
+  createdAt: new Date().toISOString(),
+  wizardId: body.wizardId.trim(),
+  wizardVersion: body.wizardVersion,
+  output: body.output,
+  snapshot: body.snapshot,
+}
+```
+
+Unknown body keys are not included in the run object and client-supplied `id`/`createdAt` cannot become stored server fields.
+
+Phase 0 is not `DONE` until the user rebuilds the API and sends a malicious/test payload containing fake `id` and `createdAt`, then confirms the response/database row uses server-generated values instead.
+
+### Phase 1 — production snapshot contract v1: NOT STARTED
+
+Define the meaning of `snapshot` before sending real Wizard sessions to the backend.
+
+Current recommended direction:
+
+```json
+{
+  "schemaVersion": 1,
+  "session": {
+    "currentStepId": "review",
+    "answers": {},
+    "derived": {}
+  },
+  "finalDraft": {}
+}
+```
+
+`wizardId`, `wizardVersion`, final compiled `output`, run `id`, and `createdAt` already have first-class columns/API fields and do not need duplication inside the snapshot.
+
+The final successful Draft is a candidate for inclusion because it preserves the exact product artifact for future history/restore behavior, while intermediate `workingDraft` need not automatically be duplicated.
+
+This contract is still provisional until Phase 1 is explicitly agreed and implemented.
+
+### Phase 2 — configurable frontend API client/base: NOT STARTED
+
+The current Nuxt config has no public API-base configuration, while the home learning hooks call `http://127.0.0.1:4000` directly.
+
+Before real product integration, add one small client/config boundary so Wizard product code does not hardcode a local development address.
+
+Static generation must remain supported.
+
+### Phase 3 — persist successful Wizard completion: NOT STARTED
+
+After `runtime.complete(session)` succeeds, POST the final versioned snapshot and compiled prompt output to `/api/wizard-runs`.
+
+Do not persist failed mapping/compile attempts.
+
+Persistence failure behavior must be explicitly decided before implementation rather than silently swallowing failures.
+
+### Phase 4 — remove home-page learning hooks: NOT STARTED
+
+After the real Wizard integration is verified, remove the development-only GET/POST learning calls from `app/pages/index.vue`.
+
+### Phase 5 — browser end-to-end verification: NOT STARTED
+
+Complete a real Wizard locally and prove:
+
+```text
+Wizard finish
+  -> successful runtime completion
+  -> POST /api/wizard-runs
+  -> PostgreSQL INSERT
+  -> GET/read-back
+  -> expected versioned snapshot/output
+```
+
+Milestone 4 is complete only after the real Wizard path is locally verified and the home-page POST is no longer the product integration point.
+
+## Still deferred
+
+- authentication and user ownership;
+- Wizard history/restore UI;
+- production migration framework;
+- production secrets/configuration;
+- deployment/domain/HTTPS;
+- Redis.
+
+The temporary `persistence_probe` table also remains as non-product learning data and can be removed during cleanup.
 
 ## Next action
 
-Review and agree on the next milestone scope before making more backend/product changes.
+Sync/rebuild and verify Phase 0 with a client payload that tries to override server-owned fields.
 
-Because this status update is remote, sync the branch before future local work:
+Because this update is remote:
 
 ```cmd
 git pull
 ```
+
+Then rebuild the API image before testing backend behavior.
 
 ## New-chat handoff
 
