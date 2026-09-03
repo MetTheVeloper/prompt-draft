@@ -112,11 +112,70 @@ Persistence failure is intentionally non-destructive: if prompt generation succe
 
 The Home page no longer performs backend learning GET/POST requests.
 
+## Milestone 5 — selected: History / Read API + UX
+
+Milestone 5 will turn stored successful Wizard runs into a real read-only History product surface.
+
+Goal:
+
+```text
+successful Wizard runs
+  -> durable PostgreSQL records
+  -> paginated summary collection API
+  -> full run detail API
+  -> typed frontend read boundary
+  -> static-compatible History UI
+```
+
+The milestone intentionally separates collection reads from detail reads. The list endpoint should return lightweight run summaries rather than every historical `output` and `snapshot`; full historical data belongs to the detail endpoint.
+
+Planned API surface:
+
+```text
+GET /api/wizard-runs
+  -> newest-first paginated summaries
+  -> limit
+  -> opaque cursor
+  -> optional wizardId filter
+
+GET /api/wizard-runs/:id
+  -> one full historical run
+  -> output + snapshot
+```
+
+Canonical list ordering will be stable newest-first ordering by both timestamp and id:
+
+```text
+created_at DESC, id DESC
+```
+
+Pagination will use an opaque cursor derived from the ordering tuple rather than public page-number/offset semantics.
+
+History detail is intentionally not the same as Wizard restore. Milestone 5 may read historical snapshots, but it will not execute or restore them into the current Wizard runtime. Restore requires an explicit compatibility policy across `wizardVersion`, `snapshot.schemaVersion`, and future runtime changes and remains deferred.
+
+Authentication and user ownership are also deferred. Milestone 5 designs a read contract that can later be scoped by ownership without adding ownership now.
+
+### Milestone 5 phases
+
+```text
+Phase 0  contract freeze
+Phase 1  GET /api/wizard-runs/:id
+Phase 2  cursor-paginated summary collection
+Phase 3  wizardId filtering
+Phase 4  typed frontend read client
+Phase 5  /history + /history/:id UX
+Phase 6  full local E2E + documentation
+```
+
+No phase is complete merely because code or documentation exists. Each phase is marked `DONE` only after the user locally verifies the relevant behavior and confirms it.
+
 ## Still deferred
 
 - authentication;
 - users/user ownership;
-- production Wizard history/list/restore UI;
+- Wizard restore/resume from historical runs;
+- delete/rename/favorite history features;
+- arbitrary history search/sorting/date filtering;
 - production migrations strategy;
 - Redis;
 - VPS deployment;
@@ -125,15 +184,11 @@ The Home page no longer performs backend learning GET/POST requests.
 
 A temporary `persistence_probe` table remains from the volume-learning phase and can be removed during a later cleanup step.
 
-## Next milestone
-
-Milestone 5 has not been chosen yet. Select one coherent next product/backend goal before implementation. Reasonable directions include history/read UX and API querying, authentication/user ownership, or production migration/config/deployment hardening.
-
 ## Documentation workflow
 
 `README.md` explains purpose, boundaries, and milestone scope.
 
-`IMPLEMENTATION.md` contains implementation sequence, verified architecture, and technical decisions/debt.
+`IMPLEMENTATION.md` contains implementation sequence, verified architecture, API contracts, and technical decisions/debt.
 
 `STATUS.md` records what has actually been verified and what should happen next.
 
