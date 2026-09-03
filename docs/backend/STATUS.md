@@ -139,10 +139,129 @@ Portrait Wizard finish
 
 Milestone 4 is therefore complete.
 
+## Milestone 5 — IN PROGRESS: History / Read API + UX
+
+Goal:
+
+```text
+durable successful Wizard runs
+  -> production read contract
+  -> paginated History collection
+  -> full run detail
+  -> typed frontend read boundary
+  -> History UI
+```
+
+The milestone preserves the current architecture:
+
+```text
+static-generated Nuxt frontend
+  -> direct browser calls
+  -> independent Dockerized API :4000
+  -> PostgreSQL
+```
+
+Authentication, ownership, and historical Wizard restore are not part of Milestone 5.
+
+### Phase 0 — contract freeze: AWAITING USER VERIFICATION
+
+The contract has been documented but is not `DONE` yet.
+
+Proposed frozen contract:
+
+```text
+GET /api/wizard-runs
+  -> summary records only
+  -> newest first
+  -> ORDER BY created_at DESC, id DESC
+  -> limit: default 20, min 1, max 100
+  -> opaque cursor based on createdAt + id
+  -> optional wizardId filter
+  -> pageInfo.nextCursor
+  -> pageInfo.hasMore
+
+GET /api/wizard-runs/:id
+  -> full run
+  -> output
+  -> snapshot
+```
+
+List summary shape:
+
+```text
+id
+createdAt
+wizardId
+wizardVersion
+```
+
+Full `output` and `snapshot` are intentionally excluded from collection rows.
+
+Detail status semantics:
+
+```text
+existing UUID -> 200
+valid missing UUID -> 404
+malformed id -> 400
+```
+
+The existing list `count` field is not promoted into an exact-total contract. Arbitrary sort/search/date/version filters are deferred.
+
+History detail is read-only. Stored snapshots are not restored/executed as current Wizard sessions during this milestone.
+
+Verification required before Phase 0 can become `DONE`:
+
+```text
+user pulls/reviews the Milestone 5 contract in
+  docs/backend/README.md
+  docs/backend/IMPLEMENTATION.md
+  docs/backend/STATUS.md
+and explicitly confirms the direction
+```
+
+No backend or frontend runtime code has been changed for Milestone 5 yet.
+
+### Phase 1 — single-run detail API: NOT STARTED
+
+Planned:
+
+```text
+GET /api/wizard-runs/:id
+```
+
+Verification will require existing/missing/malformed ids plus immediate read-back of a newly created run.
+
+### Phase 2 — cursor-paginated summary collection: NOT STARTED
+
+Planned replacement for the current unbounded full-row list behavior.
+
+### Phase 3 — wizardId filtering: NOT STARTED
+
+Planned filter on the paginated collection.
+
+### Phase 4 — typed frontend read boundary: NOT STARTED
+
+Planned typed summary/detail contracts and browser API methods with static generation preserved.
+
+### Phase 5 — History UI MVP: NOT STARTED
+
+Target routes:
+
+```text
+/history
+/history/:id
+```
+
+### Phase 6 — Milestone 5 product E2E: NOT STARTED
+
+Will verify a real Wizard-created run through History list/detail and container recreation before marking the milestone complete.
+
 ## Current intentional debt / deferred work
 
 - authentication and user ownership;
-- Wizard history/list/restore UI;
+- Wizard restore/resume from historical snapshots;
+- delete/rename/favorite History operations;
+- arbitrary search/sorting/date/version filtering;
 - production migration framework;
 - production secrets/configuration;
 - deployment/domain/HTTPS;
@@ -152,17 +271,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Do not start another backend milestone implicitly. Before new code changes, choose the Milestone 5 scope from the remaining product/backend needs and document its contract and verification sequence first.
+Review and locally confirm the documented Milestone 5 Phase 0 contract.
 
-Likely directions include:
-
-```text
-history/read UX + API querying
-or
-authentication + user ownership
-or
-production migration/config/deployment hardening
-```
+Do not start Phase 1 implementation and do not mark Phase 0 `DONE` until that confirmation is received.
 
 ## New-chat handoff
 
