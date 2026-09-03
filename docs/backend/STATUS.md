@@ -110,7 +110,7 @@ returned:
 
 This confirms the API was running inside Docker and was reachable through the host-to-container port mapping.
 
-### Phase 3 — Docker Compose service: IMPLEMENTED, RUNTIME BLOCKED BY PORT CONFLICT
+### Phase 3 — Docker Compose service: RUNNING, HOST CONNECTIVITY NOT YET VERIFIED
 
 Created:
 
@@ -132,40 +132,45 @@ services:
       PORT: 4000
 ```
 
-The user ran:
+The first Compose attempt successfully built the image but could not start because host port `4000` was already owned by the Phase 2 container.
 
-```bash
+The user identified that container with:
+
+```powershell
+docker ps --filter "publish=4000"
+```
+
+and stopped container `ad1c110cd65c`. A follow-up `docker ps --filter "publish=4000"` showed no container using the port.
+
+The user then ran:
+
+```powershell
 docker compose up --build
 ```
 
-Compose successfully:
-
-- loaded the Dockerfile;
-- reused/built the backend image;
-- created the `prompt-draft_default` network;
-- created the `prompt-draft-api-1` container.
-
-Runtime startup then failed with:
+and Compose successfully started the service. The attached log showed:
 
 ```text
-Bind for 0.0.0.0:4000 failed: port is already allocated
+api-1  | Prompt Draft API listening on http://0.0.0.0:4000
 ```
 
-This means host port `4000` was still owned by another running process/container, most likely the manually started Phase 2 Docker container.
+However, a host-side request immediately afterward failed:
 
-A simultaneous call to:
-
-```bash
+```powershell
 curl.exe http://localhost:4000/api/hello
 ```
 
-still returned the expected JSON, which confirms something else was already listening on port `4000`; it does NOT yet verify the Compose-created container.
+with:
 
-Phase 3 therefore remains incomplete until the existing owner of port `4000` is stopped and `docker compose up` starts successfully.
+```text
+curl: (7) Failed to connect to localhost port 4000: Could not connect to server
+```
+
+Therefore the application process appears to be running inside the Compose container, but host-to-container connectivity has not yet been verified. Do not mark Phase 3 complete yet.
 
 ### Phase 4 — direct host/API test: NOT YET VERIFIED FOR COMPOSE
 
-The host API response currently works, but because Compose failed to bind port `4000`, the successful response cannot yet be attributed to the Compose service.
+Manual Docker host connectivity was previously verified in Phase 2. The current unresolved issue is specifically the Compose-created service.
 
 ### Phase 5 — development CORS: NOT STARTED
 
@@ -173,53 +178,42 @@ The host API response currently works, but because Compose failed to bind port `
 
 ### Phase 7 — browser console end-to-end verification: NOT STARTED
 
-## Next action
+## Next diagnostic action
 
-Identify the Docker container currently publishing host port `4000`:
+Keep `docker compose up --build` running in the first terminal.
 
-```powershell
-docker ps --filter "publish=4000"
-```
-
-If a container appears, stop it using its container ID or name:
+In a second PowerShell window run:
 
 ```powershell
-docker stop <container-id-or-name>
+docker compose ps
 ```
 
-Then confirm port `4000` is no longer owned by a running Docker container:
+Then:
 
 ```powershell
-docker ps --filter "publish=4000"
+docker compose port api 4000
 ```
 
-After the port is free, start Compose again from the repository root:
+Then try IPv4 explicitly:
 
 ```powershell
-docker compose up --build
+curl.exe http://127.0.0.1:4000/api/hello
 ```
 
-Expected successful backend log:
-
-```text
-Prompt Draft API listening on http://0.0.0.0:4000
-```
-
-Then, in a second PowerShell window:
+If host access still fails, verify the API from inside the running container:
 
 ```powershell
-curl.exe http://localhost:4000/api/hello
+docker compose exec api node -e "fetch('http://127.0.0.1:4000/api/hello').then(r=>r.text()).then(console.log)"
 ```
 
-Expected response:
+These results will distinguish among:
 
-```json
-{"ok":true,"message":"Hello from Prompt Draft API"}
-```
+1. the Compose container not actually remaining running;
+2. the host port not being published as expected;
+3. a localhost/IPv6 resolution issue on Windows;
+4. a Docker Desktop host-forwarding issue despite the application being healthy inside the container.
 
-Only after that user-confirmed run should Phase 3 and Phase 4 be marked `DONE`.
-
-Do not add CORS or modify the Nuxt home page before this verification.
+Do not modify CORS, Nuxt, or backend code until this host connectivity issue is understood.
 
 ## New-chat handoff
 
