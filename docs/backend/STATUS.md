@@ -8,7 +8,9 @@ Base: stable `main` at Prompt Draft v2.0.0 release line.
 
 ## Current milestone
 
-Milestone 1: run an independent local backend in Docker, expose one GET API, call that endpoint from the Prompt Draft home page, and verify the response in the browser console.
+Milestone 1: COMPLETE.
+
+Goal: run an independent local backend in Docker, expose one GET API, call that endpoint from the Prompt Draft home page, and verify the response in the browser console.
 
 ## Verification rule
 
@@ -80,44 +82,26 @@ returned:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-### Phase 5 — development CORS: CORRECTED FOR ACTUAL DEV ORIGIN, AWAITING RE-VERIFICATION
+### Phase 5 — development CORS: DONE
 
-CORS was first implemented with a development allowlist for port `3000` and was successfully verified at the header level:
+The backend applies an explicit local-development CORS allowlist and supports `OPTIONS` preflight requests.
 
-- allowed origin received matching `Access-Control-Allow-Origin`;
-- disallowed `http://example.com` received no allow-origin header;
-- `OPTIONS` returned `204 No Content` with expected headers.
-
-The browser integration then revealed that Prompt Draft intentionally runs Nuxt on:
+The actual Prompt Draft Nuxt development origin is:
 
 ```text
 http://localhost:3030
 ```
 
-rather than port `3000`. The browser therefore correctly blocked the request because the API response did not allow origin `http://localhost:3030`.
-
-The screenshot/user-confirmed browser error was:
+The Docker environment now explicitly allows:
 
 ```text
-Access to fetch at 'http://127.0.0.1:4000/api/hello'
-from origin 'http://localhost:3030'
-has been blocked by CORS policy
+http://localhost:3030
+http://127.0.0.1:3030
 ```
 
-The configuration has now been corrected:
+The user first verified the CORS behavior with direct header tests, then verified the corrected `3030` origin through the real browser integration.
 
-- backend fallback origins: `http://localhost:3030` and `http://127.0.0.1:3030`;
-- `compose.yaml` explicitly sets:
-
-```text
-CORS_ORIGINS=http://localhost:3030,http://127.0.0.1:3030
-```
-
-This keeps the actual local frontend origin explicit in the Docker environment configuration.
-
-A fresh rebuild/recreate and browser verification are still required before Phase 5 is marked `DONE` again.
-
-### Phase 6 — Nuxt home-page GET integration: IMPLEMENTED, FIRST BROWSER ATTEMPT EXPOSED CORS MISMATCH
+### Phase 6 — Nuxt home-page GET integration: DONE
 
 Updated:
 
@@ -125,65 +109,65 @@ Updated:
 app/pages/index.vue
 ```
 
-The home page makes one development-only request on mount:
+The home page performs one development-only request on mount:
 
 ```text
 GET http://127.0.0.1:4000/api/hello
 ```
 
-and logs either the result or a labeled error.
-
 The request is guarded by `import.meta.dev`, so production/static builds do not attempt to call the local API. No home-page UI was changed.
 
-The first browser run used the real Nuxt origin `http://localhost:3030` and failed only because the CORS allowlist still targeted `3000`. The frontend request itself executed as intended.
+The user confirmed the request executes successfully from Prompt Draft running at `http://localhost:3030`.
 
-### Phase 7 — browser console end-to-end verification: NOT YET VERIFIED
+### Phase 7 — browser console end-to-end verification: DONE
 
-This remains the final milestone-1 verification.
-
-## Next action
-
-Sync the corrected CORS configuration:
-
-```powershell
-git pull
-```
-
-Rebuild/recreate the API container so both the backend fallback and Compose environment are current:
-
-```powershell
-docker compose up --build --force-recreate
-```
-
-Nuxt may remain running on:
-
-```text
-http://localhost:3030
-```
-
-Then refresh the Prompt Draft home page and inspect DevTools -> Console.
-
-Expected result:
+The user confirmed the browser console displays:
 
 ```text
 [Prompt Draft API] { ok: true, message: 'Hello from Prompt Draft API' }
 ```
 
-Optionally verify the corrected CORS header before the browser test:
-
-```powershell
-curl.exe -i -H "Origin: http://localhost:3030" http://127.0.0.1:4000/api/hello
-```
-
-Expected header:
+This verifies the complete local path:
 
 ```text
-Access-Control-Allow-Origin: http://localhost:3030
+Nuxt frontend (localhost:3030)
+  -> browser CORS check
+  -> host port 4000
+  -> Docker Compose API container
+  -> Node HTTP server
+  -> JSON response
+  -> browser console
 ```
 
-If the browser console shows the successful API result, mark Phase 5, Phase 6, and Phase 7 `DONE` and Milestone 1 complete.
+## Milestone 1 result
 
-Do not add PostgreSQL, authentication, Wizard persistence, or unrelated backend features during this milestone.
+Milestone 1 is complete and locally verified end to end.
+
+The project now has:
+
+- an independent backend package;
+- a real Node HTTP server;
+- Docker image definition;
+- Docker Compose service;
+- host-to-container networking;
+- explicit local CORS policy;
+- a verified frontend-to-backend request;
+- preserved static/frontend deployment separation.
+
+## Recommended next milestone
+
+Milestone 2 should introduce request data rather than a database immediately:
+
+1. add a real `POST` endpoint;
+2. learn JSON request bodies and HTTP status codes;
+3. validate incoming data and return useful `4xx` errors;
+4. call that POST endpoint from Prompt Draft;
+5. keep storage temporary/in-memory only for this learning step;
+6. after the request/validation flow is understood, add PostgreSQL as the next Compose service and replace temporary storage with persistence.
+
+The POST shape should be chosen to point toward the future Wizard run/snapshot feature rather than using an unrelated Todo-style example.
+
+PostgreSQL, authentication, and Wizard persistence have not been implemented yet.
 
 ## New-chat handoff
 
