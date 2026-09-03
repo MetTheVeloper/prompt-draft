@@ -103,6 +103,17 @@ function validateWizardRunInput(body) {
   return errors
 }
 
+function createWizardRun(body) {
+  return {
+    id: randomUUID(),
+    createdAt: new Date().toISOString(),
+    wizardId: body.wizardId.trim(),
+    wizardVersion: body.wizardVersion,
+    output: body.output,
+    snapshot: body.snapshot,
+  }
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(
     request.url ?? '/',
@@ -240,11 +251,7 @@ const server = createServer(async (request, response) => {
       return
     }
 
-    const run = {
-      id: randomUUID(),
-      createdAt: new Date().toISOString(),
-      ...body,
-    }
+    const run = createWizardRun(body)
 
     try {
       const savedRun = await insertWizardRun(run)
