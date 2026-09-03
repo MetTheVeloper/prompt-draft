@@ -163,11 +163,11 @@ static-generated Nuxt frontend
 
 Authentication, ownership, and historical Wizard restore are not part of Milestone 5.
 
-### Phase 0 — contract freeze: AWAITING USER VERIFICATION
+### Phase 0 — contract freeze: DONE
 
-The contract has been documented but is not `DONE` yet.
+The user reviewed and approved the Milestone 5 direction and contract on 2026-09-03.
 
-Proposed frozen contract:
+Frozen contract:
 
 ```text
 GET /api/wizard-runs
@@ -209,27 +209,41 @@ The existing list `count` field is not promoted into an exact-total contract. Ar
 
 History detail is read-only. Stored snapshots are not restored/executed as current Wizard sessions during this milestone.
 
-Verification required before Phase 0 can become `DONE`:
+### Phase 1 — single-run detail API: AWAITING USER VERIFICATION
+
+Implemented:
 
 ```text
-user pulls/reviews the Milestone 5 contract in
-  docs/backend/README.md
-  docs/backend/IMPLEMENTATION.md
-  docs/backend/STATUS.md
-and explicitly confirms the direction
+backend/src/database.mjs
+  -> getWizardRunById(id)
+  -> parameterized SELECT by UUID
+  -> full run mapping
+  -> null when no row exists
+
+backend/src/index.mjs
+  -> GET /api/wizard-runs/:id
+  -> UUID format validation before PostgreSQL
+  -> 200 { ok: true, run }
+  -> 404 { ok: false, message: "Wizard run not found" }
+  -> 400 { ok: false, message: "Invalid Wizard run id" }
+  -> 500 read failure boundary
 ```
 
-No backend or frontend runtime code has been changed for Milestone 5 yet.
+The existing collection route and POST persistence flow are intentionally unchanged in Phase 1.
 
-### Phase 1 — single-run detail API: NOT STARTED
-
-Planned:
+Required local verification before this phase can become `DONE`:
 
 ```text
-GET /api/wizard-runs/:id
+1. rebuild/restart the API from the latest branch
+2. GET an existing Wizard-run UUID -> 200 and exact full run
+3. GET a syntactically valid but missing UUID -> 404
+4. GET a malformed id -> 400
+5. POST a new valid Wizard run -> 201
+6. immediately GET that returned UUID -> 200 with the same run data
+7. confirm GET /api/wizard-runs still behaves as before Phase 1
 ```
 
-Verification will require existing/missing/malformed ids plus immediate read-back of a newly created run.
+Do not mark Phase 1 `DONE` until the user completes and confirms those checks locally.
 
 ### Phase 2 — cursor-paginated summary collection: NOT STARTED
 
@@ -271,9 +285,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Review and locally confirm the documented Milestone 5 Phase 0 contract.
+Locally verify Milestone 5 Phase 1 detail-read behavior.
 
-Do not start Phase 1 implementation and do not mark Phase 0 `DONE` until that confirmation is received.
+Phase 2 must not start and Phase 1 must not be marked `DONE` until that verification is confirmed.
 
 ## New-chat handoff
 
