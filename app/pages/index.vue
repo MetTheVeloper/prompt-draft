@@ -12,6 +12,37 @@ onMounted(async () => {
   } catch (error) {
     console.error('[Prompt Draft API] request failed', error)
   }
+
+  try {
+    const result = await $fetch<{
+      ok: boolean
+      run: {
+        id: string
+        createdAt: string
+        wizardId: string
+        wizardVersion: number
+        output: string
+        snapshot: Record<string, unknown>
+      }
+    }>('http://127.0.0.1:4000/api/wizard-runs', {
+      method: 'POST',
+      body: {
+        wizardId: 'portrait',
+        wizardVersion: 1,
+        output: 'Created from Prompt Draft Nuxt dev client',
+        snapshot: {
+          answers: {
+            style: 'cinematic',
+          },
+          derived: {},
+        },
+      },
+    })
+
+    console.log('[Prompt Draft API POST]', result)
+  } catch (error) {
+    console.error('[Prompt Draft API POST] request failed', error)
+  }
 })
 </script>
 
