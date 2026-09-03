@@ -172,22 +172,394 @@ The current schema uses one explicit SQL file plus `npm run db:schema`. A produc
 ### Deferred product/platform work
 
 - authentication and user ownership;
-- Wizard history/list/restore UI;
+- Wizard restore/resume from historical runs;
+- delete/rename/favorite history features;
+- arbitrary history search/sorting/date filtering;
 - production migration workflow;
 - production secrets/configuration;
 - deployment/domain/HTTPS;
 - Redis.
 
-## Milestone 5 — not started
+## Milestone 5 — History / Read API + UX
 
-Do not choose Milestone 5 implicitly. Before implementation, select one coherent next scope and define its runtime verification sequence.
+### Goal
 
-Reasonable next directions are:
+Turn durable successful Wizard runs into a real read-only History product surface while preserving the current static-generation frontend and independent backend boundary.
+
+Target path:
 
 ```text
-A) history/read UX + API querying/pagination
-B) authentication + user ownership
-C) production migration/config/deployment hardening
+successful Wizard run
+  -> PostgreSQL wizard_runs
+  -> paginated summary list API
+  -> full run detail API
+  -> typed frontend read client
+  -> /history
+  -> /history/:id
 ```
 
-The choice should be made based on the next product goal rather than simply adding infrastructure for its own sake.
+Milestone 5 does not add authentication, ownership, delete/update semantics, or historical Wizard restore.
+
+### Contract principle: collection != resource detail
+
+The current `GET /api/wizard-runs` returns every full row, including `output` and `snapshot`. That behavior is acceptable as a learning endpoint but is not the desired production History collection contract.
+
+Milestone 5 separates:
+
+```text
+collection read
+  -> lightweight summary records
+
+detail read
+  -> complete historical record
+```
+
+This prevents the History list from transferring every stored snapshot and compiled prompt merely to render a list.
+
+### Full run record
+
+A full run remains:
+
+```json
+{
+  "id": "uuid",
+  "createdAt": "ISO-8601 timestamp",
+  "wizardId": "portrait",
+  "wizardVersion": 2,
+  "output": "compiled prompt",
+  "snapshot": {
+    "schemaVersion": 1,
+    "session": {},
+    "finalDraft": {}
+  }
+}
+```
+
+### Summary run record
+
+The initial collection summary contract is intentionally minimal:
+
+```json
+{
+  "id": "uuid",
+  "createdAt": "ISO-8601 timestamp",
+  "wizardId": "portrait",
+  "wizardVersion": 2
+}
+```
+
+Do not include full `output` or `snapshot` in collection rows.
+
+If the actual History UX later proves that a prompt preview is necessary, add an explicit bounded preview field rather than exposing full `output` by accident.
+
+### Detail endpoint
+
+```text
+GET /api/wizard-runs/:id
+```
+
+Success:
+
+```http
+200 OK
+```
+
+```json
+{
+  "ok": true,
+  "run": {
+    "id": "uuid",
+    "createdAt": "ISO-8601 timestamp",
+    "wizardId": "portrait",
+    "wizardVersion": 2,
+    "output": "compiled prompt",
+    "snapshot": {}
+  }
+}
+```
+
+Valid UUID with no matching row:
+
+```http
+404 Not Found
+```
+
+```json
+{
+  "ok": false,
+  "message": "Wizard run not found"
+}
+```
+
+Malformed run id:
+
+```http
+400 Bad Request
+```
+
+with a structured client error rather than allowing PostgreSQL UUID parsing to become the public validation mechanism.
+
+### Collection endpoint
+
+```text
+GET /api/wizard-runs
+```
+
+Supported query parameters in the Milestone 5 contract:
+
+```text
+limit
+cursor
+wizardId
+```
+
+No other query parameter is part of the initial contract.
+
+### Collection response
+
+```json
+{
+  "ok": true,
+  "runs": [
+    {
+      "id": "uuid",
+      "createdAt": "ISO-8601 timestamp",
+      "wizardId": "portrait",
+      "wizardVersion": 2
+    }
+  ],
+  "pageInfo": {
+    "nextCursor": "opaque-or-null",
+    "hasMore": true
+  }
+}
+```
+
+The previous `count: runs.length` response shape is not retained as a total-count contract. A page-size count would add little value, while an exact total count would introduce separate query and semantic costs that the initial UX does not require.
+
+### Stable ordering
+
+Canonical collection order:
+
+```sql
+ORDER BY created_at DESC, id DESC
+```
+
+Both fields are part of ordering so equal timestamps cannot create ambiguous page boundaries.
+
+The initial API does not expose arbitrary sort direction or ordering fields. History is newest-first.
+
+### Pagination
+
+Use keyset/cursor pagination rather than public page-number/offset pagination.
+
+The cursor is opaque to frontend callers and represents the last ordering tuple:
+
+```text
+createdAt + id
+```
+
+The exact serialization/encoding is an implementation detail of the backend. Frontend code must treat it as an opaque string.
+
+Initial limit rules:
+
+```text
+default limit = 20
+maximum limit = 100
+minimum limit = 1
+```
+
+Invalid `limit` or invalid cursor input returns a structured `400` response.
+
+The database query may fetch `limit + 1` records to determine `hasMore`; only at most `limit` summaries are returned publicly.
+
+### Filtering
+
+Initial supported filter:
+
+```text
+wizardId=<normalized wizard id>
+```
+
+An unknown but syntactically valid `wizardId` is not an error. It returns an empty collection.
+
+Pagination operates inside the filtered result set.
+
+The initial contract does not include:
+
+```text
+wizardVersion
+schemaVersion
+search
+dateFrom
+dateTo
+sort
+direction
+```
+
+These remain deferred until real UX needs justify them.
+
+### Detail vs restore boundary
+
+History detail means:
+
+```text
+read and display the exact historical artifact
+```
+
+Restore means:
+
+```text
+convert a historical snapshot into a session executable by a Wizard runtime
+```
+
+Restore is explicitly outside Milestone 5. It requires a compatibility policy involving at least:
+
+```text
+wizardVersion
+snapshot.schemaVersion
+availability of the historical/current Wizard runtime
+future snapshot/session migration rules
+```
+
+Milestone 5 may fetch and display snapshot-backed historical data but must not silently treat a stored snapshot as safe to execute in the current runtime.
+
+### Ownership boundary
+
+Milestone 5 remains unauthenticated and unowned, matching the current data model.
+
+The read API should still be structured so future ownership can scope the same resource and collection operations rather than requiring a completely different product contract.
+
+No `userId`, owner field, auth token, or ownership query parameter is added now.
+
+## Milestone 5 phases
+
+### Phase 0 — contract freeze: AWAITING USER VERIFICATION
+
+Document and review:
+
+- collection vs detail separation;
+- full record and summary record shapes;
+- detail endpoint status semantics;
+- cursor pagination;
+- stable ordering;
+- `limit` rules;
+- `wizardId` filtering;
+- restore/auth/deferred boundaries.
+
+No runtime behavior is changed in this phase.
+
+Verification requirement:
+
+```text
+user reviews the documented contract locally
+  -> confirms direction
+  -> only then mark Phase 0 DONE
+```
+
+### Phase 1 — single-run detail API: NOT STARTED
+
+Implement:
+
+```text
+database.getWizardRunById(id)
+GET /api/wizard-runs/:id
+```
+
+Verification:
+
+```text
+existing UUID -> 200 exact full run
+valid missing UUID -> 404
+malformed id -> 400
+newly POSTed run -> immediately readable by detail endpoint
+```
+
+### Phase 2 — cursor-paginated summary collection: NOT STARTED
+
+Replace the unbounded full-record collection behavior with the production collection contract.
+
+Implement:
+
+```text
+limit
+opaque cursor
+created_at DESC, id DESC
+summary projection
+pageInfo.nextCursor
+pageInfo.hasMore
+```
+
+Verification includes multiple pages, no duplicate/omitted ids across boundaries, stable newest-first order, final-page semantics, invalid query handling, and confirmation that list records do not contain full `snapshot`/`output`.
+
+### Phase 3 — wizardId filtering: NOT STARTED
+
+Add `wizardId` filtering to the paginated collection.
+
+Verification includes mixed Wizard ids, filtered empty state, and pagination within the filtered set.
+
+### Phase 4 — typed frontend read boundary: NOT STARTED
+
+Evolve:
+
+```text
+app/types/wizardRunApi.ts
+app/composables/usePromptDraftApi.ts
+```
+
+Expected conceptual types/functions:
+
+```text
+WizardRunSummary
+WizardRunRecord
+WizardRunPageInfo
+ListWizardRunsParams
+ListWizardRunsResponse
+GetWizardRunResponse
+
+listWizardRuns(params)
+getWizardRun(id)
+```
+
+Verification includes browser calls, API-base override behavior, and successful `pnpm generate` with no Nuxt server API routes.
+
+### Phase 5 — History UI MVP: NOT STARTED
+
+Target routes:
+
+```text
+/history
+/history/:id
+```
+
+MVP concerns:
+
+```text
+loading
+empty state
+error/retry
+newest-first list
+load-more pagination
+Wizard identity
+timestamp
+open full run detail
+```
+
+The UI remains a static-generated frontend shell whose runtime data comes directly from the independent backend.
+
+### Phase 6 — final Milestone 5 E2E + docs: NOT STARTED
+
+Verification path:
+
+```text
+real Wizard finish
+  -> POST run
+  -> run appears in /history
+  -> collection pagination works
+  -> detail opens exact run
+  -> API + DB containers recreated
+  -> same historical run remains readable
+  -> pnpm generate still succeeds
+```
+
+Only after the user completes and confirms this verification may Milestone 5 be marked complete.
