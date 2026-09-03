@@ -47,7 +47,7 @@ pnpm --dir backend start
 curl.exe http://localhost:4000/api/hello
 ```
 
-Expected response was confirmed:
+Confirmed response:
 
 ```json
 {"ok":true,"message":"Hello from Prompt Draft API"}
@@ -61,17 +61,7 @@ Created:
 backend/Dockerfile
 ```
 
-Image uses `node:24-alpine` and starts `node src/index.mjs`.
-
-User verified the manual Docker flow:
-
-```powershell
-docker build -t prompt-draft-api ./backend
-docker run --rm -p 4000:4000 prompt-draft-api
-curl.exe http://localhost:4000/api/hello
-```
-
-The API returned the expected JSON through the host-to-container port mapping.
+User verified the manual Docker image/container flow and confirmed the API was reachable through `4000:4000`.
 
 ### Phase 3 — Docker Compose service: DONE
 
@@ -81,73 +71,66 @@ Created:
 compose.yaml
 ```
 
-Configured service:
-
-```yaml
-services:
-  api:
-    build:
-      context: ./backend
-    ports:
-      - "4000:4000"
-    environment:
-      HOST: 0.0.0.0
-      PORT: 4000
-```
-
-The first Compose attempt exposed a useful runtime issue: the earlier manually started Phase 2 container still owned host port `4000`. After that container was stopped, one stale Compose container instance still lacked the expected published port. The project was fully removed and the resolved configuration was checked with `docker compose config`, which correctly showed target/published port `4000`.
-
-The user then performed a clean recreation:
+After resolving an earlier port conflict and stale container state, the user performed a clean recreation:
 
 ```powershell
 docker compose up --build --force-recreate
 ```
 
-and confirmed the service started successfully. `docker compose ps` showed:
+and confirmed:
 
 ```text
 0.0.0.0:4000->4000/tcp, [::]:4000->4000/tcp
 ```
 
-The user also confirmed:
-
-```powershell
-docker compose port api 4000
-```
-
-returned:
+`docker compose port api 4000` returned:
 
 ```text
 0.0.0.0:4000
 ```
 
-This verifies Docker Compose is now correctly building, creating, networking, and publishing the Prompt Draft API service.
-
 ### Phase 4 — direct host/API test: DONE
 
-While the clean Compose service was running, the user called from Windows:
+While the clean Compose service was running, the user confirmed from Windows:
 
 ```powershell
 curl.exe http://127.0.0.1:4000/api/hello
 ```
 
-and confirmed:
+returned:
 
 ```json
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-This proves the full local path works:
+This proves:
 
 ```text
 Windows host -> published Docker port 4000 -> Compose API container -> Node HTTP server -> JSON response
 ```
 
-### Phase 5 — development CORS: NOT STARTED
+### Phase 5 — development CORS: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Next task.
+Updated:
 
-The Nuxt dev frontend and local API use different origins (`localhost:3000` and port `4000`), so the browser-facing API request needs an explicit development CORS policy before frontend integration is considered complete.
+```text
+backend/src/index.mjs
+```
+
+Current CORS behavior:
+
+- no external CORS package;
+- default allowlist contains `http://localhost:3000` and `http://127.0.0.1:3000`;
+- the allowlist can later be overridden with comma-separated `CORS_ORIGINS`;
+- allowed origins receive `Access-Control-Allow-Origin` matching the request origin;
+- allowed responses advertise `GET, OPTIONS` and `Content-Type`;
+- `Vary: Origin` is included;
+- `OPTIONS` returns `204`;
+- origins outside the allowlist receive no `Access-Control-Allow-Origin` header.
+
+The existing `/api/hello` response and JSON `404` behavior are preserved.
+
+Local container rebuild/header verification is required before Phase 5 becomes `DONE`.
 
 ### Phase 6 — Nuxt home-page GET integration: NOT STARTED
 
@@ -155,9 +138,48 @@ The Nuxt dev frontend and local API use different origins (`localhost:3000` and 
 
 ## Next action
 
-Implement Phase 5 only first: add a small, explicit development CORS policy to the independent backend while preserving the existing `/api/hello` behavior.
+Sync the branch and rebuild/recreate the Compose API so the updated source is copied into a new image/container:
 
-After rebuilding/restarting the Compose service and confirming the API still works, proceed to the minimal `app/pages/index.vue` GET call and browser-console test.
+```powershell
+git pull
+docker compose up --build --force-recreate
+```
+
+Keep Compose running. In a second PowerShell window test an allowed origin:
+
+```powershell
+curl.exe -i -H "Origin: http://localhost:3000" http://127.0.0.1:4000/api/hello
+```
+
+Expected response includes:
+
+```text
+HTTP/1.1 200 OK
+Access-Control-Allow-Origin: http://localhost:3000
+Access-Control-Allow-Methods: GET, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+Vary: Origin
+```
+
+and the existing JSON body.
+
+Also verify an origin outside the allowlist:
+
+```powershell
+curl.exe -i -H "Origin: http://example.com" http://127.0.0.1:4000/api/hello
+```
+
+The request may still receive the API JSON because curl does not enforce browser CORS, but the response must NOT contain `Access-Control-Allow-Origin: http://example.com`.
+
+Optionally verify the preflight path:
+
+```powershell
+curl.exe -i -X OPTIONS -H "Origin: http://localhost:3000" http://127.0.0.1:4000/api/hello
+```
+
+Expected status: `204 No Content` with the allowed-origin CORS headers.
+
+Only after user confirmation should Phase 5 be marked `DONE` and `app/pages/index.vue` be modified for Phase 6.
 
 Do not add PostgreSQL, authentication, Wizard persistence, or unrelated backend features during this milestone.
 
