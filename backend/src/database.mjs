@@ -70,6 +70,27 @@ export async function insertWizardRun(run) {
   return mapWizardRunRow(result.rows[0])
 }
 
+export async function getWizardRunById(id) {
+  const result = await queryDatabase(
+    `
+      SELECT
+        id,
+        created_at AS "createdAt",
+        wizard_id AS "wizardId",
+        wizard_version AS "wizardVersion",
+        output,
+        snapshot
+      FROM wizard_runs
+      WHERE id = $1
+      LIMIT 1
+    `,
+    [id],
+  )
+
+  const row = result.rows[0]
+  return row ? mapWizardRunRow(row) : null
+}
+
 export async function listWizardRuns() {
   const result = await queryDatabase(`
     SELECT
