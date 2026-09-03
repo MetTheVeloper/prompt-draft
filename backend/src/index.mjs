@@ -138,10 +138,25 @@ function parseWizardRunListQuery(url) {
     }
   }
 
+  const rawWizardId = url.searchParams.get('wizardId')
+  let wizardId = null
+
+  if (rawWizardId !== null) {
+    wizardId = rawWizardId.trim()
+
+    if (wizardId.length === 0) {
+      errors.push({
+        field: 'wizardId',
+        message: 'wizardId must be a non-empty string',
+      })
+    }
+  }
+
   return {
     errors,
     limit,
     cursor,
+    wizardId,
   }
 }
 
@@ -391,7 +406,7 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/wizard-runs') {
-    const { errors, limit, cursor } = parseWizardRunListQuery(url)
+    const { errors, limit, cursor, wizardId } = parseWizardRunListQuery(url)
 
     if (errors.length > 0) {
       sendJson(
@@ -408,7 +423,7 @@ const server = createServer(async (request, response) => {
     }
 
     try {
-      const page = await listWizardRuns({ limit, cursor })
+      const page = await listWizardRuns({ limit, cursor, wizardId })
       const lastRun = page.runs.at(-1) ?? null
       const nextCursor = page.hasMore && lastRun
         ? encodeWizardRunCursor(lastRun)
