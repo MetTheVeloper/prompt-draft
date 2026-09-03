@@ -15,3 +15,8 @@ services:
       POSTGRES_DB: prompt_draft
       POSTGRES_USER: prompt_draft
       POSTGRES_PASSWORD: prompt_draft_dev
+    volumes:
+      - prompt_draft_pgdata:/var/lib/postgresql/data
+
+volumes:
+  prompt_draft_pgdata:
