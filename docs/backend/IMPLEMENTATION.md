@@ -22,13 +22,14 @@ The backend remains independent from Nuxt server routes so the frontend can cont
 
 Replace temporary process memory with durable PostgreSQL storage while preserving the current API concepts.
 
-The learning goal is to move through these layers separately:
+The learning path is deliberately separated:
 
 ```text
 Node process RAM
   -> PostgreSQL container
   -> PostgreSQL data directory
   -> Docker named volume
+  -> API-to-database network connection
   -> durable Wizard-run rows
 ```
 
@@ -61,26 +62,17 @@ Rationale:
 
 ### Phase 1 — PostgreSQL Compose service: DONE
 
-`compose.yaml` has a second service using:
-
-```yaml
-db:
-  image: postgres:17-alpine
-  environment:
-    POSTGRES_DB: prompt_draft
-    POSTGRES_USER: prompt_draft
-    POSTGRES_PASSWORD: prompt_draft_dev
-```
+`compose.yaml` has a second service using `postgres:17-alpine`.
 
 The user locally verified both Compose services are running, `pg_isready` reports `accepting connections`, and a real `psql` query returns database/user `prompt_draft`.
 
-PostgreSQL is intentionally not published to the Windows host. Inside Compose, its future network address is:
+PostgreSQL is intentionally not published to the Windows host. Inside Compose its address is:
 
 ```text
 db:5432
 ```
 
-### Phase 2 — named volume and persistence proof: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 2 — named volume and persistence proof: DONE
 
 A named volume is attached to PostgreSQL's standard data directory:
 
@@ -93,28 +85,27 @@ volumes:
   prompt_draft_pgdata:
 ```
 
-Conceptually:
+The user verified Docker created:
 
 ```text
-PostgreSQL process/container
-        |
-        v
-/var/lib/postgresql/data
-        |
-        v
-Docker named volume: prompt_draft_pgdata
+prompt-draft_prompt_draft_pgdata
 ```
 
-The container is disposable; the named volume has a separate lifecycle.
+A temporary SQL probe was created:
 
-The persistence proof deliberately uses a small temporary `persistence_probe` table rather than creating the real `wizard_runs` table early. The test should:
+```text
+persistence_probe
+```
 
-1. recreate Compose so PostgreSQL initializes with the named volume;
-2. create `persistence_probe` and insert one row;
-3. confirm the row exists;
-4. run `docker compose down` to remove containers while retaining the named volume;
-5. run `docker compose up` again;
-6. confirm the same row/table still exists.
+with one row:
+
+```text
+1 | survives container recreation
+```
+
+After `docker compose down`, the PostgreSQL container was removed. After `docker compose up -d`, a new container mounted the same named volume and the same probe row was still present.
+
+This proves the named volume lifecycle is separate from the PostgreSQL container lifecycle.
 
 Important distinction:
 
@@ -122,26 +113,81 @@ Important distinction:
 docker compose down
 ```
 
-removes containers/network but normally keeps named volumes.
+removes containers/network but retains the named volume.
 
 ```text
 docker compose down -v
 ```
 
-also removes declared named volumes and must not be used during the persistence proof.
+also removes declared named volumes and therefore destroys this local database data.
 
-### Phase 3 — API database connectivity
+### Phase 3 — API database connectivity: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Add a minimal Node PostgreSQL client dependency and environment-based connection configuration.
-
-Verify the network path before changing Wizard endpoint behavior:
+The backend now has its first external runtime dependency:
 
 ```text
-API container
+pg 8.16.3
+```
+
+`backend/Dockerfile` now installs production dependencies inside the API image before copying the source.
+
+A dedicated connection helper was added:
+
+```text
+backend/src/database.mjs
+```
+
+It creates a PostgreSQL connection pool from explicit environment configuration:
+
+```text
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=prompt_draft
+DB_USER=prompt_draft
+DB_PASSWORD=prompt_draft_dev
+```
+
+These are local-development values only; production secret management is deferred.
+
+A temporary diagnostic endpoint was added without changing Wizard endpoint storage behavior:
+
+```http
+GET /api/db-check
+```
+
+The endpoint asks PostgreSQL for:
+
+```sql
+SELECT current_database(), current_user, NOW();
+```
+
+Successful path:
+
+```text
+Windows/browser request
+  -> API host port 4000
+  -> API container
+  -> pg Pool
   -> Compose DNS hostname `db`
   -> PostgreSQL port 5432
-  -> successful query
+  -> SELECT
+  -> JSON response
 ```
+
+Expected success response is conceptually:
+
+```json
+{
+  "ok": true,
+  "database": "prompt_draft",
+  "user": "prompt_draft",
+  "serverTime": "..."
+}
+```
+
+A failed database query returns `503 Database unavailable` rather than altering the existing Wizard API behavior.
+
+Important boundary: `POST /api/wizard-runs` and `GET /api/wizard-runs` still use the process-local `wizardRuns` array. Phase 3 proves connection only.
 
 ### Phase 4 — first `wizard_runs` table
 
