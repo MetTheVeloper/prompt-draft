@@ -80,32 +80,44 @@ returned:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-### Phase 5 — development CORS: DONE
+### Phase 5 — development CORS: CORRECTED FOR ACTUAL DEV ORIGIN, AWAITING RE-VERIFICATION
 
-Updated:
+CORS was first implemented with a development allowlist for port `3000` and was successfully verified at the header level:
+
+- allowed origin received matching `Access-Control-Allow-Origin`;
+- disallowed `http://example.com` received no allow-origin header;
+- `OPTIONS` returned `204 No Content` with expected headers.
+
+The browser integration then revealed that Prompt Draft intentionally runs Nuxt on:
 
 ```text
-backend/src/index.mjs
+http://localhost:3030
 ```
 
-CORS policy:
+rather than port `3000`. The browser therefore correctly blocked the request because the API response did not allow origin `http://localhost:3030`.
 
-- default allowed origins: `http://localhost:3000` and `http://127.0.0.1:3000`;
-- optional comma-separated `CORS_ORIGINS` override;
-- allowed origins receive matching `Access-Control-Allow-Origin`;
-- allowed methods: `GET, OPTIONS`;
-- allowed header: `Content-Type`;
-- `Vary: Origin` is emitted;
-- `OPTIONS` returns `204`;
-- origins outside the allowlist receive no allow-origin header.
+The screenshot/user-confirmed browser error was:
 
-User locally verified:
+```text
+Access to fetch at 'http://127.0.0.1:4000/api/hello'
+from origin 'http://localhost:3030'
+has been blocked by CORS policy
+```
 
-1. an allowed `http://localhost:3000` request returned `200`, the expected CORS headers, and the API JSON;
-2. `http://example.com` received no `Access-Control-Allow-Origin` header;
-3. an allowed-origin `OPTIONS` request returned `204 No Content` with the expected CORS headers.
+The configuration has now been corrected:
 
-### Phase 6 — Nuxt home-page GET integration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+- backend fallback origins: `http://localhost:3030` and `http://127.0.0.1:3030`;
+- `compose.yaml` explicitly sets:
+
+```text
+CORS_ORIGINS=http://localhost:3030,http://127.0.0.1:3030
+```
+
+This keeps the actual local frontend origin explicit in the Docker environment configuration.
+
+A fresh rebuild/recreate and browser verification are still required before Phase 5 is marked `DONE` again.
+
+### Phase 6 — Nuxt home-page GET integration: IMPLEMENTED, FIRST BROWSER ATTEMPT EXPOSED CORS MISMATCH
 
 Updated:
 
@@ -113,55 +125,63 @@ Updated:
 app/pages/index.vue
 ```
 
-The home page now makes one development-only request on mount:
+The home page makes one development-only request on mount:
 
 ```text
 GET http://127.0.0.1:4000/api/hello
 ```
 
-and logs either:
-
-```text
-[Prompt Draft API] { ok: true, message: 'Hello from Prompt Draft API' }
-```
-
-or a labeled error.
+and logs either the result or a labeled error.
 
 The request is guarded by `import.meta.dev`, so production/static builds do not attempt to call the local API. No home-page UI was changed.
 
+The first browser run used the real Nuxt origin `http://localhost:3030` and failed only because the CORS allowlist still targeted `3000`. The frontend request itself executed as intended.
+
 ### Phase 7 — browser console end-to-end verification: NOT YET VERIFIED
 
-This is now the only remaining milestone-1 verification.
+This remains the final milestone-1 verification.
 
 ## Next action
 
-1. Sync the feature branch:
+Sync the corrected CORS configuration:
 
 ```powershell
 git pull
 ```
 
-2. Keep the Compose API running. If it is not running, start/rebuild it:
+Rebuild/recreate the API container so both the backend fallback and Compose environment are current:
 
 ```powershell
-docker compose up --build
+docker compose up --build --force-recreate
 ```
 
-3. In another terminal, run Prompt Draft in Nuxt development mode:
+Nuxt may remain running on:
 
-```powershell
-pnpm dev
+```text
+http://localhost:3030
 ```
 
-4. Confirm the Nuxt dev URL is `http://localhost:3000` (or `http://127.0.0.1:3000`). If Nuxt chooses another port, the current CORS allowlist will not match and should be adjusted rather than bypassed.
+Then refresh the Prompt Draft home page and inspect DevTools -> Console.
 
-5. Open the home page, open browser DevTools -> Console, and verify a log like:
+Expected result:
 
 ```text
 [Prompt Draft API] { ok: true, message: 'Hello from Prompt Draft API' }
 ```
 
-If that result is user-confirmed, mark Phase 6 and Phase 7 `DONE` and Milestone 1 complete.
+Optionally verify the corrected CORS header before the browser test:
+
+```powershell
+curl.exe -i -H "Origin: http://localhost:3030" http://127.0.0.1:4000/api/hello
+```
+
+Expected header:
+
+```text
+Access-Control-Allow-Origin: http://localhost:3030
+```
+
+If the browser console shows the successful API result, mark Phase 5, Phase 6, and Phase 7 `DONE` and Milestone 1 complete.
 
 Do not add PostgreSQL, authentication, Wizard persistence, or unrelated backend features during this milestone.
 
