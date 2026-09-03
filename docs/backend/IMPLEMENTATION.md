@@ -10,13 +10,15 @@ The milestone is deliberately limited to one GET request from the existing Nuxt 
 
 ```text
 Nuxt frontend (host)
-localhost:3000
+localhost:3030
        |
        | GET http://127.0.0.1:4000/api/hello
        v
 Backend service (Docker container)
 localhost:4000 -> container port 4000
 ```
+
+Prompt Draft intentionally uses dev port `3030` so its local browser storage does not share the same origin with unrelated local projects.
 
 No database is required for this milestone.
 
@@ -91,6 +93,7 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 4000
+      CORS_ORIGINS: "http://localhost:3030,http://127.0.0.1:3030"
 ```
 
 Compose can build and run the service from the repository root with:
@@ -99,20 +102,20 @@ Compose can build and run the service from the repository root with:
 docker compose up --build
 ```
 
-The service name is `api`. Compose manages the container lifecycle and the host-to-container `4000:4000` port mapping.
+The service name is `api`. Compose manages the container lifecycle, the host-to-container `4000:4000` port mapping, and the local environment-specific CORS origin configuration.
 
 ## Phase 5 CORS decision
 
 The browser frontend runs on a different origin from the local API because the ports differ. The backend therefore applies an explicit development CORS allowlist rather than using `Access-Control-Allow-Origin: *`.
 
-Default allowed origins:
+Actual Prompt Draft development origins:
 
 ```text
-http://localhost:3000
-http://127.0.0.1:3000
+http://localhost:3030
+http://127.0.0.1:3030
 ```
 
-The allowlist can later be overridden with the comma-separated `CORS_ORIGINS` environment variable.
+The backend also accepts a comma-separated `CORS_ORIGINS` environment variable. Compose sets this explicitly for the Prompt Draft local environment so the allowed browser origins live in environment configuration rather than being dependent only on server defaults.
 
 For an allowed request origin, the backend returns:
 
@@ -125,15 +128,11 @@ Vary: Origin
 
 The backend handles `OPTIONS` with a `204` response. Origins outside the allowlist receive no `Access-Control-Allow-Origin` header.
 
-The user locally verified all three behaviors:
-
-1. allowed origin receives the expected CORS headers and the JSON body;
-2. `http://example.com` receives the JSON response but no allow-origin header;
-3. an `OPTIONS` request from `http://localhost:3000` returns `204 No Content` with the expected CORS headers.
+An earlier header-level verification was performed against port `3000` and behaved correctly, but the browser integration later revealed that Prompt Draft actually runs on port `3030`. The CORS configuration was therefore corrected to the real dev origin and must be re-verified with `3030` before the milestone is complete.
 
 ## Phase 6 frontend integration decision
 
-`app/pages/index.vue` now performs one development-only request when the home page mounts:
+`app/pages/index.vue` performs one development-only request when the home page mounts:
 
 ```ts
 onMounted(async () => {
@@ -154,6 +153,8 @@ Important boundaries:
 - the request runs only in Nuxt development mode;
 - production/static generation does not attempt to call localhost;
 - the goal is only to verify browser-to-Docker API connectivity and log the response.
+
+The first browser attempt correctly exposed the CORS origin mismatch: the page origin was `http://localhost:3030`, while the API still allowed `3000`. No frontend-code change is required for that failure.
 
 ## Step sequence
 
@@ -179,18 +180,18 @@ Implemented and locally verified from Windows.
 
 ### Phase 5 — CORS
 
-Implemented and locally verified.
+Implemented; original behavior was verified on `3000`, then corrected to the actual Prompt Draft dev origin `3030`. Re-verification is required after rebuilding/recreating the API container.
 
 ### Phase 6 — Nuxt home-page GET test
 
-Implemented. Browser verification is still required.
+Implemented. The first browser attempt reached the API URL but was blocked by the now-corrected CORS origin mismatch.
 
 ### Phase 7 — end-to-end verification
 
 Run:
 
 ```text
-Nuxt frontend -> local Docker API -> JSON response -> browser console
+Nuxt frontend :3030 -> local Docker API :4000 -> JSON response -> browser console
 ```
 
 Milestone 1 is complete only after the user confirms the browser console output locally.
