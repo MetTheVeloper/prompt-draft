@@ -16,15 +16,15 @@ Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP se
 
 Verified end to end: JSON POST -> validation -> CORS/preflight -> temporary in-memory storage -> browser response/read-back.
 
-The user also verified that recreating the API container resets the process-local `wizardRuns` array to empty.
+The user also verified that recreating the API container destroys process-local Wizard-run data.
 
-## Milestone 3 — IN PROGRESS
+## Milestone 3 — COMPLETE
 
 Goal: replace temporary process memory with durable PostgreSQL storage while preserving the existing Wizard-run API concepts.
 
 ### Phase 0 — persistence contract/schema direction: DONE
 
-Provisional table:
+Current provisional table:
 
 ```text
 wizard_runs
@@ -39,17 +39,19 @@ snapshot         jsonb
 
 ### Phase 1 — PostgreSQL Compose service: DONE
 
-The user verified both `api` and `db` services run, PostgreSQL reports `accepting connections`, and a real `psql` session returns database/user `prompt_draft`.
+The user verified the `db` service runs on PostgreSQL 17, accepts connections, and exposes database/user `prompt_draft` inside the Compose network.
 
 ### Phase 2 — named volume/persistence proof: DONE
 
-The user verified `persistence_probe` survives `docker compose down` followed by `docker compose up -d` because PostgreSQL data is stored in the named volume `prompt-draft_prompt_draft_pgdata`.
+PostgreSQL data is backed by the Compose named volume `prompt_draft_pgdata`.
+
+The user created a temporary `persistence_probe` row, removed/recreated the containers, and confirmed the row remained. This proved container lifecycle and database-data lifecycle are separate.
 
 ### Phase 3 — API -> PostgreSQL connectivity: DONE
 
-The backend includes `pg 8.16.3`, environment-driven DB settings, a connection pool in `backend/src/database.mjs`, and diagnostic endpoint `GET /api/db-check`.
+The API uses `pg 8.16.3`, environment-driven database settings, and a connection pool in `backend/src/database.mjs`.
 
-The user verified `HTTP/1.1 200 OK` through the API with database/user `prompt_draft`, proving:
+The user verified `GET /api/db-check -> 200` through this path:
 
 ```text
 Windows host
@@ -69,97 +71,99 @@ Versioned SQL source:
 backend/sql/001_create_wizard_runs.sql
 ```
 
-PostgreSQL confirmed the expected columns, primary key on `id`, and `wizard_version > 0` check constraint.
+PostgreSQL confirmed the expected columns, UUID primary key, and `wizard_version > 0` check constraint.
 
-### Phase 5 — replace POST memory insert with SQL INSERT: DONE
+### Phase 5 — POST uses SQL INSERT: DONE
 
-`backend/src/database.mjs` exposes `insertWizardRun(run)` using a parameterized PostgreSQL INSERT with placeholders and separate values.
+`POST /api/wizard-runs` now validates input and executes a parameterized PostgreSQL INSERT.
 
-The user sent a correctly quoted Windows CMD request and verified:
+The user verified `201 Created` and then directly queried PostgreSQL to confirm the same UUID/output row existed in `wizard_runs`.
 
-```text
-POST /api/wizard-runs -> HTTP/1.1 201 Created
-```
+### Phase 6 — GET uses SQL SELECT: DONE
 
-The response returned run id:
+`GET /api/wizard-runs` now executes `SELECT ... FROM wizard_runs ORDER BY created_at DESC` and maps database snake_case columns back to the existing camelCase API shape.
 
-```text
-6651a8c6-0f79-47c6-84cd-3fbccfe567f3
-```
+The old process-local `wizardRuns` array has been removed entirely.
 
-A direct PostgreSQL query then returned the same id with:
+The first GET verification briefly showed `count: 0` because the running API container still had the older Phase-5 image. Direct PostgreSQL inspection proved the row had never been lost. After rebuilding with Phase-6 code, GET returned the persisted row.
 
-```text
-wizard_id      = portrait
-wizard_version = 1
-output          = Persisted in PostgreSQL
-```
+### Phase 7 — durable end-to-end verification: DONE
 
-This proves the POST path now reaches a real parameterized SQL INSERT and stores the row in PostgreSQL.
-
-### Phase 6 — replace GET memory list with SQL SELECT: DONE
-
-`backend/src/database.mjs` exposes `listWizardRuns()` using:
+The user created a fresh run through the API:
 
 ```text
-SELECT ... FROM wizard_runs ORDER BY created_at DESC
+id     = 52d74cf9-d462-4cae-b647-a6ac6ebe2715
+output = Phase 7 survives recreate
 ```
 
-Database rows are mapped from snake_case columns back to the existing camelCase API shape.
+Before recreation, `GET /api/wizard-runs` returned both persisted runs.
 
-The old process-local `wizardRuns` array has been removed entirely from runtime code.
-
-During the first verification attempt, `GET /api/wizard-runs` returned `count: 0` because the running API container was still using the older Phase-5 image. A direct PostgreSQL query confirmed the Phase-5 row still existed in `wizard_runs`.
-
-After the API was refreshed with the Phase-6 code, the user verified:
+The user then ran:
 
 ```text
-GET /api/wizard-runs
+docker compose down
+
+docker compose up -d
 ```
 
-returned:
+This removed both API and PostgreSQL containers and the Compose network while retaining the named volume.
+
+After PostgreSQL reported `accepting connections`, `GET /api/wizard-runs` again returned both rows, including the exact Phase-7 UUID and output.
+
+This proves the full durable path:
 
 ```text
-count: 1
+HTTP POST
+  -> API container
+  -> parameterized PostgreSQL INSERT
+  -> PostgreSQL data directory
+  -> Docker named volume
+  -> API + DB containers removed
+  -> new API + DB containers
+  -> same named volume
+  -> PostgreSQL SELECT
+  -> HTTP GET
+  -> same Wizard run
 ```
 
-and included the previously persisted row with id:
+## Milestone 3 result
 
-```text
-6651a8c6-0f79-47c6-84cd-3fbccfe567f3
-```
+Milestone 3 is complete and locally verified end to end.
 
-and output:
+Current backend capabilities now include:
 
-```text
-Persisted in PostgreSQL
-```
+- Docker Compose API + PostgreSQL services;
+- Compose service-name networking (`db:5432`);
+- PostgreSQL connection pooling;
+- Docker named-volume persistence;
+- explicit versioned SQL schema source;
+- parameterized SQL INSERT;
+- SQL SELECT list/read-back;
+- durable Wizard-run rows that survive full container recreation.
 
-This proves GET now reads PostgreSQL rather than process memory.
+## Next milestone direction — product integration and contract hardening
 
-### Phase 7 — durable end-to-end verification: READY FOR LOCAL VERIFICATION
+Do not start automatically. Review the direction first.
 
-No code change is required for this phase.
+Before connecting persistence to the real Wizard flow, address these items:
 
-Final proof should exercise the complete persistence path:
+1. harden server-owned fields: current run construction places `...body` after generated `id`/`createdAt`, so a client can currently override those values; switch to an explicit allowlisted run shape;
+2. inspect the real Wizard success/completion/copy flow and choose the correct persistence event instead of the home-page learning POST;
+3. tighten/version the production snapshot contract without prematurely flattening evolving Wizard state;
+4. remove the home-page development POST once real Wizard integration is verified;
+5. clean up the temporary `persistence_probe` artifact when appropriate.
 
-```text
-POST a new Wizard run
-  -> GET confirms it
-  -> docker compose down
-  -> API and DB containers removed
-  -> named volume retained
-  -> docker compose up -d
-  -> GET returns the same run
-```
-
-Do not use `docker compose down -v`, because `-v` intentionally deletes the named PostgreSQL volume.
-
-Milestone 3 is complete only after the user confirms the same API-created run survives full container removal/recreation.
+Authentication, user ownership, history/restore UI, production migrations, secret management, and deployment remain deferred.
 
 ## Next action
 
-Create a fresh run specifically for Phase 7, record its id, verify it through GET, run `docker compose down`, run `docker compose up -d`, and verify the same id is still returned by `GET /api/wizard-runs`.
+Review and agree on the next milestone scope before making more backend/product changes.
+
+Because this status update is remote, sync the branch before future local work:
+
+```cmd
+git pull
+```
 
 ## New-chat handoff
 
