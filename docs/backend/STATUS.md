@@ -73,7 +73,7 @@ curl.exe http://localhost:4000/api/hello
 
 The API returned the expected JSON through the host-to-container port mapping.
 
-### Phase 3 — Docker Compose service: CONFIG VERIFIED, FRESH RUNTIME TEST PENDING
+### Phase 3 — Docker Compose service: DONE
 
 Created:
 
@@ -95,33 +95,59 @@ services:
       PORT: 4000
 ```
 
-History of the current diagnostic:
+The first Compose attempt exposed a useful runtime issue: the earlier manually started Phase 2 container still owned host port `4000`. After that container was stopped, one stale Compose container instance still lacked the expected published port. The project was fully removed and the resolved configuration was checked with `docker compose config`, which correctly showed target/published port `4000`.
 
-1. The first Compose run hit a host-port conflict because the Phase 2 container still owned port `4000`.
-2. User identified and stopped container `ad1c110cd65c` and confirmed no running container still published port `4000`.
-3. A subsequent Compose container started and the API was healthy inside the container, but `docker compose ps` showed only `4000/tcp` rather than a host mapping.
-4. Host access failed, while an in-container request succeeded, proving the Node server itself was healthy.
-5. The Compose project was then fully stopped and removed. `docker compose ps -a` returned no containers.
-6. User ran `docker compose config`; the resolved configuration correctly includes:
+The user then performed a clean recreation:
 
-```text
-mode: ingress
-target: 4000
-published: "4000"
-protocol: tcp
+```powershell
+docker compose up --build --force-recreate
 ```
 
-This confirms `compose.yaml` itself is correct and explicitly requests host port `4000` publication.
+and confirmed the service started successfully. `docker compose ps` showed:
 
-The previous non-published container was therefore stale/invalid runtime state rather than a Compose-file configuration error.
+```text
+0.0.0.0:4000->4000/tcp, [::]:4000->4000/tcp
+```
 
-Phase 3 is not yet `DONE`; it now needs one clean container recreation and host verification.
+The user also confirmed:
 
-### Phase 4 — direct host/API test: NOT YET VERIFIED FOR CLEAN COMPOSE RUN
+```powershell
+docker compose port api 4000
+```
 
-Manual Docker host connectivity was already verified in Phase 2. This phase will be completed together with Phase 3 after the fresh Compose container is reachable from Windows.
+returned:
+
+```text
+0.0.0.0:4000
+```
+
+This verifies Docker Compose is now correctly building, creating, networking, and publishing the Prompt Draft API service.
+
+### Phase 4 — direct host/API test: DONE
+
+While the clean Compose service was running, the user called from Windows:
+
+```powershell
+curl.exe http://127.0.0.1:4000/api/hello
+```
+
+and confirmed:
+
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
+```
+
+This proves the full local path works:
+
+```text
+Windows host -> published Docker port 4000 -> Compose API container -> Node HTTP server -> JSON response
+```
 
 ### Phase 5 — development CORS: NOT STARTED
+
+Next task.
+
+The Nuxt dev frontend and local API use different origins (`localhost:3000` and port `4000`), so the browser-facing API request needs an explicit development CORS policy before frontend integration is considered complete.
 
 ### Phase 6 — Nuxt home-page GET integration: NOT STARTED
 
@@ -129,47 +155,11 @@ Manual Docker host connectivity was already verified in Phase 2. This phase will
 
 ## Next action
 
-The Compose project is currently down and its resolved port configuration is confirmed correct.
+Implement Phase 5 only first: add a small, explicit development CORS policy to the independent backend while preserving the existing `/api/hello` behavior.
 
-Create a completely fresh service container:
+After rebuilding/restarting the Compose service and confirming the API still works, proceed to the minimal `app/pages/index.vue` GET call and browser-console test.
 
-```powershell
-docker compose up --build --force-recreate
-```
-
-Keep that terminal attached. In a second PowerShell window run:
-
-```powershell
-docker compose ps
-```
-
-Expected `PORTS` output should include a host mapping such as:
-
-```text
-0.0.0.0:4000->4000/tcp
-```
-
-Optionally confirm the resolved published endpoint:
-
-```powershell
-docker compose port api 4000
-```
-
-Then test from Windows:
-
-```powershell
-curl.exe http://127.0.0.1:4000/api/hello
-```
-
-Expected response:
-
-```json
-{"ok":true,"message":"Hello from Prompt Draft API"}
-```
-
-If these succeed, mark Phase 3 and Phase 4 `DONE` and proceed to CORS/frontend integration.
-
-Do not modify CORS, Nuxt, backend code, or `compose.yaml` before this verification.
+Do not add PostgreSQL, authentication, Wizard persistence, or unrelated backend features during this milestone.
 
 ## New-chat handoff
 
