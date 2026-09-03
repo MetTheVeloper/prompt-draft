@@ -41,7 +41,7 @@ Verified capabilities include:
 - `GET /api/wizard-runs`;
 - JSON body parsing and validation;
 - structured client errors;
-- server-generated UUID/timestamp concepts;
+- server-generated UUID/timestamps;
 - browser CORS/preflight;
 - PostgreSQL service-to-service networking;
 - PostgreSQL connection pooling;
@@ -62,37 +62,23 @@ output           text
 snapshot         jsonb
 ```
 
-## Milestone 4 — in progress
+## Milestone 4 — complete
 
-Goal: move persistence from the development home-page learning hook into the real Wizard success flow and make the API contract safe enough for product use.
+Persistence is now integrated with the real Wizard success flow rather than a development Home hook.
 
-The real Wizard completion event has now been identified in `app/pages/wizard/[wizardId].vue`:
+Verified product path:
 
 ```text
-finish()
+Portrait Wizard finish()
   -> runtime.complete(session)
   -> successful finalDraft + promptPreview
-  -> completed Ready state
+  -> typed frontend API client
+  -> POST /api/wizard-runs
+  -> PostgreSQL
+  -> named volume
 ```
 
-The current Ready UI does not expose a copy action, so the current persistence event is successful completion rather than clipboard interaction.
-
-Milestone 4 sequence:
-
-```text
-server-owned field hardening
-  -> snapshot contract v1
-  -> configurable frontend API client/base
-  -> persist successful Wizard finish
-  -> remove home-page learning hooks
-  -> browser E2E verification
-```
-
-Phase 0 hardening is implemented but must still be locally verified before being marked complete.
-
-## Snapshot direction
-
-The exact production snapshot is still provisional. Current recommended v1 direction is:
+The production snapshot contract is versioned as v1:
 
 ```json
 {
@@ -102,25 +88,35 @@ The exact production snapshot is still provisional. Current recommended v1 direc
     "answers": {},
     "derived": {}
   },
-  "finalDraft": {}
+  "finalDraft": {
+    "version": 1
+  }
 }
 ```
 
-The relational/API fields already carry `wizardId`, `wizardVersion`, compiled `output`, run `id`, and `createdAt`.
+`wizardId`, `wizardVersion`, compiled `output`, run `id`, and `createdAt` remain first-class run fields outside the snapshot.
 
-## Frontend integration boundary
+The frontend API base is configurable through:
 
-The current home-page learning requests hardcode `http://127.0.0.1:4000` and are guarded by `import.meta.dev`.
+```text
+NUXT_PUBLIC_API_BASE
+  -> runtimeConfig.public.apiBase
+  -> usePromptDraftApi()
+```
 
-Before real Wizard integration, use a configurable public API base/helper so product code does not embed a local-only URL and static generation remains supported.
+Static generation remains supported. The user verified `pnpm generate` succeeds and `/wizard/portrait` is prerendered.
 
-The home-page requests must be removed after the real Wizard path is verified.
+The real Wizard persistence path was verified in the browser and directly in PostgreSQL. A product-created run survived full API + DB container recreation and was returned afterward with the same UUID.
+
+Persistence failure is intentionally non-destructive: if prompt generation succeeds but history storage is unavailable, the Ready artifact remains usable and the user sees a persistence warning.
+
+The Home page no longer performs backend learning GET/POST requests.
 
 ## Still deferred
 
 - authentication;
 - users/user ownership;
-- production Wizard history/restore UI;
+- production Wizard history/list/restore UI;
 - production migrations strategy;
 - Redis;
 - VPS deployment;
@@ -128,6 +124,10 @@ The home-page requests must be removed after the real Wizard path is verified.
 - production secrets/configuration.
 
 A temporary `persistence_probe` table remains from the volume-learning phase and can be removed during a later cleanup step.
+
+## Next milestone
+
+Milestone 5 has not been chosen yet. Select one coherent next product/backend goal before implementation. Reasonable directions include history/read UX and API querying, authentication/user ownership, or production migration/config/deployment hardening.
 
 ## Documentation workflow
 
