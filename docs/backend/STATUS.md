@@ -1,20 +1,20 @@
 # Backend / Docker Status
 
-Last updated: 2026-09-03
+Last updated: 2026-09-04
 
 Branch: `feature/docker-local-api`
 
 ## Verification rule
 
-A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result.
+A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is never sufficient.
 
 ## Milestone 1 — COMPLETE
 
-Verified Nuxt -> Docker API local connectivity and browser CORS behavior.
+Verified local Nuxt -> Docker API connectivity and browser CORS behavior.
 
 ## Milestone 2 — COMPLETE
 
-Verified JSON POST, validation, CORS/preflight, temporary process memory, and browser read-back.
+Verified JSON POST parsing, validation, CORS/preflight, temporary Wizard-run state, and browser read-back.
 
 ## Milestone 3 — COMPLETE
 
@@ -37,107 +37,25 @@ HTTP POST
 
 Durable Wizard-run persistence now belongs to the real Wizard success flow rather than the development Home learning hook.
 
-### Phase 0 — harden server-owned fields: DONE
+Verified product behavior:
 
-The API creates an explicit allowlisted run object. Client-supplied `id`/`createdAt` values are ignored, `wizardId` is normalized, and unknown request fields do not become stored run fields.
+- server-owned `id` and `createdAt`;
+- snapshot contract v1;
+- configurable `NUXT_PUBLIC_API_BASE`;
+- real Portrait Wizard persistence after successful `finish()`;
+- failed persistence does not destroy a successfully generated artifact;
+- Home page has no backend learning GET/POST side effects;
+- product-created rows survive `docker compose down/up` through the PostgreSQL named volume;
+- static generation remains supported.
 
-### Phase 1 — production snapshot contract v1: DONE
-
-Successful-run snapshot contract:
-
-```json
-{
-  "schemaVersion": 1,
-  "session": {
-    "currentStepId": "review",
-    "answers": {},
-    "derived": {}
-  },
-  "finalDraft": {
-    "version": 1
-  }
-}
-```
-
-The backend validates the versioned envelope and normalizes stored JSONB to `schemaVersion`, `session`, and `finalDraft`.
-
-The user verified a valid v1 request returns `201 Created`, injected envelope noise is removed, and the legacy snapshot shape returns `400 Validation failed` with snapshot-specific errors.
-
-### Phase 2 — configurable frontend API client/base: DONE
-
-Nuxt exposes:
-
-```text
-NUXT_PUBLIC_API_BASE
-  -> runtimeConfig.public.apiBase
-```
-
-with local default `http://127.0.0.1:4000`.
-
-Typed API contracts live in `app/types/wizardRunApi.ts` and the reusable browser client is `app/composables/usePromptDraftApi.ts`.
-
-The user verified a PowerShell override to `http://localhost:4000` is respected by the browser client and that `pnpm generate` still completes successfully with `/wizard/portrait` prerendered.
-
-### Phase 3 — persist successful Wizard completion: DONE
-
-The production Wizard completion point is `finish()` in `app/pages/wizard/[wizardId].vue`.
-
-After `runtime.complete(session)` succeeds, the page preserves the final artifact locally and posts snapshot v1 through `createWizardRun()`.
-
-Failed mapping/compile attempts return before persistence.
-
-The real Portrait Wizard success path was locally verified. Browser DevTools showed the product `/api/wizard-runs` POST and PostgreSQL stored Wizard version 2, snapshot version 1, `review` step, finalDraft version 1, and the real compiled output.
-
-The non-destructive persistence-failure path was also verified. With only the API container stopped, generation still completed, the Ready artifact remained usable, the persistence warning appeared, no new row was created, and the API recovered after restart.
-
-### Phase 4 — remove Home learning hooks: DONE
-
-`app/pages/index.vue` no longer contains the development backend learning GET/POST hooks or the hardcoded local Wizard-run POST.
-
-The user verified Home with DevTools open: no `/api/hello` or `/api/wizard-runs` Fetch/XHR requests were produced by Home itself.
-
-### Phase 5 — final product end-to-end verification: DONE
-
-A fresh real Portrait Wizard run was created with server-generated UUID:
+Reference verified run:
 
 ```text
 d409ec15-3c22-40f6-9fc8-bafcd38e555f
-```
-
-Before container recreation, both `GET /api/wizard-runs` and direct PostgreSQL lookup returned the run with:
-
-```text
 wizard_id        = portrait
 wizard_version   = 2
 snapshot_version = 1
 ```
-
-The user then ran:
-
-```text
-docker compose down
-docker compose up -d
-```
-
-without `-v`.
-
-After both API and DB containers were recreated, the API still returned the same UUID and PostgreSQL still returned the exact row with the original `created_at` value.
-
-Verified final product path:
-
-```text
-Home -> no backend learning side effects
-Portrait Wizard finish
-  -> runtime completion success
-  -> POST /api/wizard-runs
-  -> PostgreSQL row
-  -> GET read-back
-  -> API + DB containers removed/recreated
-  -> named volume survives
-  -> same product-created UUID returned by API and DB
-```
-
-Milestone 4 is therefore complete.
 
 ## Milestone 5 — IN PROGRESS: History / Read API + UX
 
@@ -152,7 +70,7 @@ durable successful Wizard runs
   -> History UI
 ```
 
-The milestone preserves the current architecture:
+Architecture remains:
 
 ```text
 static-generated Nuxt frontend
@@ -165,9 +83,9 @@ Authentication, ownership, and historical Wizard restore are not part of Milesto
 
 ### Phase 0 — contract freeze: DONE
 
-The user reviewed and approved the Milestone 5 direction and contract on 2026-09-03.
+The user reviewed and approved the contract.
 
-Frozen contract:
+Frozen read contract:
 
 ```text
 GET /api/wizard-runs
@@ -176,7 +94,7 @@ GET /api/wizard-runs
   -> ORDER BY created_at DESC, id DESC
   -> limit: default 20, min 1, max 100
   -> opaque cursor based on createdAt + id
-  -> optional wizardId filter
+  -> optional wizardId filter in Phase 3
   -> pageInfo.nextCursor
   -> pageInfo.hasMore
 
@@ -205,11 +123,11 @@ valid missing UUID -> 404
 malformed id -> 400
 ```
 
-The existing list `count` field is not promoted into an exact-total contract. Arbitrary sort/search/date/version filters are deferred.
+The old list `count` field is not promoted into an exact-total contract. Arbitrary sort/search/date/version filters remain deferred.
 
 History detail is read-only. Stored snapshots are not restored/executed as current Wizard sessions during this milestone.
 
-### Phase 1 — single-run detail API: AWAITING USER VERIFICATION
+### Phase 1 — single-run detail API: DONE
 
 Implemented:
 
@@ -222,36 +140,107 @@ backend/src/database.mjs
 
 backend/src/index.mjs
   -> GET /api/wizard-runs/:id
-  -> UUID format validation before PostgreSQL
+  -> UUID validation before PostgreSQL
   -> 200 { ok: true, run }
   -> 404 { ok: false, message: "Wizard run not found" }
   -> 400 { ok: false, message: "Invalid Wizard run id" }
   -> 500 read failure boundary
 ```
 
-The existing collection route and POST persistence flow are intentionally unchanged in Phase 1.
-
-Required local verification before this phase can become `DONE`:
+User verification completed locally:
 
 ```text
-1. rebuild/restart the API from the latest branch
-2. GET an existing Wizard-run UUID -> 200 and exact full run
-3. GET a syntactically valid but missing UUID -> 404
-4. GET a malformed id -> 400
-5. POST a new valid Wizard run -> 201
-6. immediately GET that returned UUID -> 200 with the same run data
-7. confirm GET /api/wizard-runs still behaves as before Phase 1
+existing run d409ec15-3c22-40f6-9fc8-bafcd38e555f
+  -> 200
+  -> full output + snapshot returned
+
+00000000-0000-0000-0000-000000000000
+  -> 404 Wizard run not found
+
+not-a-uuid
+  -> 400 Invalid Wizard run id
+
+POST fresh verification run
+  -> 201
+  -> id 37e32eb8-7501-4f46-8c47-70520866e328
+
+immediate detail GET of fresh run
+  -> 200
+  -> output = "Milestone 5 Phase 1 detail verification"
+  -> same snapshot returned
+
+collection regression check before Phase 2
+  -> 200
+  -> count = 7
+  -> fresh run visible
+  -> previous full-list behavior still intact
 ```
 
-Do not mark Phase 1 `DONE` until the user completes and confirms those checks locally.
+Phase 1 is therefore verified and complete.
 
-### Phase 2 — cursor-paginated summary collection: NOT STARTED
+### Phase 2 — cursor-paginated summary collection: AWAITING USER VERIFICATION
 
-Planned replacement for the current unbounded full-row list behavior.
+Implemented replacement for the old unbounded full-row collection.
+
+Database behavior:
+
+```text
+listWizardRuns({ limit, cursor })
+  -> summary projection only
+  -> id, createdAt, wizardId, wizardVersion
+  -> ORDER BY created_at DESC, id DESC
+  -> keyset predicate when cursor exists:
+       (created_at, id) < (cursor.createdAt, cursor.id)
+  -> fetch limit + 1
+  -> derive hasMore
+  -> return at most limit rows
+```
+
+HTTP behavior:
+
+```text
+GET /api/wizard-runs
+  -> default limit 20
+  -> no count field
+  -> no output field in collection rows
+  -> no snapshot field in collection rows
+  -> pageInfo.nextCursor
+  -> pageInfo.hasMore
+
+GET /api/wizard-runs?limit=N
+  -> N must be integer 1..100
+
+GET /api/wizard-runs?cursor=<opaque>
+  -> cursor decodes to createdAt + id
+  -> invalid cursor -> structured 400
+```
+
+Cursor encoding is backend-owned and uses an opaque base64url representation of the final returned ordering tuple. Frontend callers must not interpret it.
+
+`wizardId` filtering is intentionally not implemented yet; it remains Phase 3.
+
+Required local verification before Phase 2 can become `DONE`:
+
+```text
+1. pull latest branch and rebuild API
+2. default GET -> 200 summary contract, newest first
+3. confirm collection rows contain no output/snapshot
+4. limit=2 -> exactly two summaries + hasMore=true + nextCursor
+5. request next page with returned cursor
+6. continue until final page -> hasMore=false + nextCursor=null
+7. confirm no duplicate ids across pages
+8. confirm all existing ids are eventually returned exactly once
+9. invalid limits: 0, 101, abc -> structured 400
+10. invalid cursor -> structured 400
+11. detail GET still returns full output/snapshot
+12. POST still returns 201 and a fresh run appears at the front of a new first-page request
+```
+
+Do not mark Phase 2 `DONE` until the user completes and confirms these checks locally.
 
 ### Phase 3 — wizardId filtering: NOT STARTED
 
-Planned filter on the paginated collection.
+Planned filter on the paginated collection. Pagination will operate inside the filtered result set.
 
 ### Phase 4 — typed frontend read boundary: NOT STARTED
 
@@ -285,9 +274,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 5 Phase 1 detail-read behavior.
+Locally verify Milestone 5 Phase 2 cursor-pagination and summary-list behavior.
 
-Phase 2 must not start and Phase 1 must not be marked `DONE` until that verification is confirmed.
+Phase 3 must not start and Phase 2 must not be marked `DONE` until that verification is confirmed.
 
 ## New-chat handoff
 
