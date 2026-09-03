@@ -56,15 +56,9 @@ This shape deliberately points toward future Wizard history while remaining prov
 
 Define the learning endpoint, payload direction, boundaries, and phased implementation.
 
-### Phase 1 — POST happy path: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 1 — POST happy path: DONE
 
-Add:
-
-```http
-POST /api/wizard-runs
-```
-
-The Node request body is read as a stream:
+`POST /api/wizard-runs` reads the Node request body as a stream:
 
 ```text
 request chunks
@@ -79,47 +73,74 @@ A successful request returns:
 201 Created
 ```
 
-with a generated UUID and timestamp:
+with generated `id` and `createdAt` fields.
 
-```json
-{
-  "ok": true,
-  "run": {
-    "id": "...",
-    "createdAt": "...",
-    "wizardId": "portrait",
-    "wizardVersion": 1,
-    "output": "generated prompt...",
-    "snapshot": {}
-  }
-}
-```
+The user locally verified a correct POST from Windows CMD and received the expected `201` response.
 
-Important: this phase does **not** persist the returned run. The record exists only as the response object for that request.
+Important: this phase does **not** store the returned run. The record currently exists only as the response object for that request.
 
 Implementation remains dependency-free and uses Node built-ins:
 
-- `node:http`
-- `node:crypto` `randomUUID()`
+- `node:http`;
+- `node:crypto` `randomUUID()`.
 
-CORS advertises `POST` in preparation for browser integration, but browser POST/preflight verification is a later phase.
+### Phase 2 — validation and client errors: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-### Phase 2 — validation and client errors
+The API now distinguishes parsing/contract problems before creating a run.
 
-Validate the request deliberately instead of trusting parsed JSON.
+Content type:
 
-Planned required fields:
+```text
+Content-Type: application/json
+```
+
+is required. Parameters such as `application/json; charset=utf-8` are accepted because validation compares the media type portion.
+
+Unsupported/missing JSON media type returns:
+
+```http
+415 Unsupported Media Type
+```
+
+Malformed JSON returns:
+
+```http
+400 Bad Request
+```
+
+Required field rules:
 
 - `wizardId`: non-empty string;
 - `wizardVersion`: positive integer;
 - `output`: non-empty string;
-- `snapshot`: plain JSON object.
+- `snapshot`: JSON object, not an array/null/primitive.
 
-Also distinguish useful client errors such as invalid JSON, unsupported content type, and invalid fields with appropriate `4xx` responses.
+Invalid contract data returns:
+
+```http
+400 Bad Request
+```
+
+with a structured body such as:
+
+```json
+{
+  "ok": false,
+  "message": "Validation failed",
+  "errors": [
+    {
+      "field": "wizardVersion",
+      "message": "wizardVersion must be a positive integer"
+    }
+  ]
+}
+```
+
+A valid request must continue returning `201 Created` after validation is introduced.
 
 ### Phase 3 — temporary in-memory storage
 
-Add a process-local collection of accepted runs and a read-back endpoint such as:
+Add a process-local collection of accepted runs and a read-back endpoint:
 
 ```http
 GET /api/wizard-runs
@@ -132,6 +153,15 @@ Restarting/recreating the container will intentionally erase the list.
 ### Phase 4 — POST CORS/preflight verification
 
 Verify the real browser preflight requirements for a JSON POST from Prompt Draft `localhost:3030`.
+
+The current CORS advertisement already includes:
+
+```text
+Access-Control-Allow-Methods: GET, POST, OPTIONS
+Access-Control-Allow-Headers: Content-Type
+```
+
+but browser POST/preflight verification remains a separate user-confirmed phase.
 
 ### Phase 5 — Nuxt POST integration
 
@@ -146,6 +176,7 @@ Nuxt :3030
   -> OPTIONS preflight
   -> POST /api/wizard-runs
   -> Docker API
+  -> validation
   -> 201 JSON
   -> browser console
 ```
@@ -154,6 +185,6 @@ Milestone 2 is complete only after user-confirmed local browser verification.
 
 ## Milestone 3 direction
 
-After Milestone 2, add PostgreSQL as another Compose service, introduce a Docker volume, create the first durable Wizard-run table, and replace the temporary in-memory behavior with database persistence.
+After Milestone 2, add PostgreSQL as another Compose service, introduce a Docker volume, create the first durable Wizard-run table, and replace temporary in-memory behavior with database persistence.
 
 Authentication and production Wizard history UI remain later work.
