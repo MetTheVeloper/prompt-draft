@@ -24,7 +24,7 @@ Goal: replace temporary process memory with durable PostgreSQL storage while pre
 
 ### Phase 0 — persistence contract/schema direction: DONE
 
-Provisional table direction:
+Provisional table:
 
 ```text
 wizard_runs
@@ -47,38 +47,9 @@ The user verified `persistence_probe` survives `docker compose down` followed by
 
 ### Phase 3 — API -> PostgreSQL connectivity: DONE
 
-The backend now includes `pg 8.16.3`, environment-driven DB settings, a connection pool in `backend/src/database.mjs`, and diagnostic endpoint:
+The backend includes `pg 8.16.3`, environment-driven DB settings, a connection pool in `backend/src/database.mjs`, and diagnostic endpoint `GET /api/db-check`.
 
-```http
-GET /api/db-check
-```
-
-The user rebuilt/recreated Compose and verified:
-
-```text
-pg_isready -> accepting connections
-```
-
-Then called through the API and received:
-
-```text
-HTTP/1.1 200 OK
-```
-
-with:
-
-```json
-{
-  "ok": true,
-  "database": "prompt_draft",
-  "user": "prompt_draft",
-  "serverTime": "..."
-}
-```
-
-`GET /api/hello` also remained healthy.
-
-This proves the real network path:
+The user verified `HTTP/1.1 200 OK` through the API with database/user `prompt_draft`, proving:
 
 ```text
 Windows host
@@ -90,42 +61,63 @@ Windows host
   -> JSON response
 ```
 
-Wizard endpoints still intentionally use the in-memory `wizardRuns` array.
+### Phase 4 — first `wizard_runs` table: DONE
 
-### Phase 4 — first `wizard_runs` table: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-Added versioned SQL source:
+Versioned SQL source:
 
 ```text
 backend/sql/001_create_wizard_runs.sql
 ```
 
-Schema:
+The user rebuilt the image and directly inspected PostgreSQL with:
 
-```sql
-CREATE TABLE IF NOT EXISTS wizard_runs (
-  id UUID PRIMARY KEY,
-  created_at TIMESTAMPTZ NOT NULL,
-  wizard_id TEXT NOT NULL,
-  wizard_version INTEGER NOT NULL CHECK (wizard_version > 0),
-  output TEXT NOT NULL,
-  snapshot JSONB NOT NULL
-);
+```powershell
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d wizard_runs"
 ```
 
-Added explicit schema command:
+PostgreSQL confirmed:
 
 ```text
-npm run db:schema
+id              uuid                     NOT NULL
+created_at      timestamp with time zone NOT NULL
+wizard_id       text                     NOT NULL
+wizard_version  integer                  NOT NULL
+output           text                     NOT NULL
+snapshot         jsonb                    NOT NULL
 ```
 
-implemented by `backend/src/create-schema.mjs`. The API image now copies the `sql` directory so the command can run inside the API container using the same database connection configuration already verified in Phase 3.
+plus primary key `wizard_runs_pkey` on `id` and check constraint `wizard_version > 0`.
 
-No migrations framework has been introduced yet. This explicit SQL file is the current schema source for the learning milestone.
+This is sufficient direct database verification that the Phase-4 schema exists as designed.
 
-Phase 4 is not `DONE` until the user rebuilds the API image, runs the schema command, and verifies the table/columns from PostgreSQL.
+### Phase 5 — replace POST memory insert with SQL INSERT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-### Phase 5 — replace POST memory insert with SQL INSERT: NOT STARTED
+`backend/src/database.mjs` now exposes `insertWizardRun(run)` using a parameterized PostgreSQL INSERT:
+
+```text
+INSERT INTO wizard_runs (...)
+VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+RETURNING ...
+```
+
+The request values are passed separately from SQL text. The returned database row is mapped back to the existing camelCase API shape.
+
+`POST /api/wizard-runs` now:
+
+```text
+parse JSON
+  -> validate
+  -> create UUID/timestamp
+  -> INSERT into PostgreSQL
+  -> RETURNING saved row
+  -> 201 JSON response
+```
+
+The old `wizardRuns.push(run)` has been removed from POST.
+
+Important temporary boundary: `GET /api/wizard-runs` still reads the old process-local array until Phase 6. Therefore Phase-5 verification must inspect PostgreSQL directly rather than expecting GET read-back to show the newly inserted row.
+
+Database insert failures currently return `500 Failed to create Wizard run` and are logged by the API.
 
 ### Phase 6 — replace GET memory list with SQL SELECT: NOT STARTED
 
@@ -133,28 +125,22 @@ Phase 4 is not `DONE` until the user rebuilds the API image, runs the schema com
 
 ## Next action
 
-Sync and rebuild because the Docker image now needs the SQL directory:
+Sync and rebuild the API image:
 
 ```powershell
 git pull
 docker compose up -d --build --force-recreate
 ```
 
-Apply the schema through the API container:
+Send one valid POST to `/api/wizard-runs` and confirm `201 Created`.
+
+Then inspect PostgreSQL directly:
 
 ```powershell
-docker compose exec api npm run db:schema
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT id, wizard_id, wizard_version, output, created_at FROM wizard_runs ORDER BY created_at DESC LIMIT 5;"
 ```
 
-Then verify PostgreSQL sees the table:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d wizard_runs"
-```
-
-After user confirmation, mark Phase 4 `DONE` and begin Phase 5 only.
-
-PostgreSQL persistence exists, but the Wizard POST/GET endpoints have not yet been switched from RAM to SQL.
+The posted row must exist in PostgreSQL. After user confirmation, mark Phase 5 `DONE` and begin Phase 6 only.
 
 ## New-chat handoff
 
