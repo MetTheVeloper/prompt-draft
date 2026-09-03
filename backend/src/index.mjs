@@ -60,6 +60,71 @@ function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function validateWizardRunSnapshot(snapshot) {
+  const errors = []
+
+  if (!isPlainObject(snapshot)) {
+    return [
+      {
+        field: 'snapshot',
+        message: 'snapshot must be an object',
+      },
+    ]
+  }
+
+  if (snapshot.schemaVersion !== 1) {
+    errors.push({
+      field: 'snapshot.schemaVersion',
+      message: 'snapshot.schemaVersion must be 1',
+    })
+  }
+
+  if (!isPlainObject(snapshot.session)) {
+    errors.push({
+      field: 'snapshot.session',
+      message: 'snapshot.session must be an object',
+    })
+  } else {
+    if (
+      typeof snapshot.session.currentStepId !== 'string' ||
+      snapshot.session.currentStepId.trim().length === 0
+    ) {
+      errors.push({
+        field: 'snapshot.session.currentStepId',
+        message: 'snapshot.session.currentStepId must be a non-empty string',
+      })
+    }
+
+    if (!isPlainObject(snapshot.session.answers)) {
+      errors.push({
+        field: 'snapshot.session.answers',
+        message: 'snapshot.session.answers must be an object',
+      })
+    }
+
+    if (!isPlainObject(snapshot.session.derived)) {
+      errors.push({
+        field: 'snapshot.session.derived',
+        message: 'snapshot.session.derived must be an object',
+      })
+    }
+  }
+
+  if (!isPlainObject(snapshot.finalDraft)) {
+    errors.push({
+      field: 'snapshot.finalDraft',
+      message: 'snapshot.finalDraft must be an object',
+    })
+  } else if (snapshot.finalDraft.version !== 1) {
+    errors.push({
+      field: 'snapshot.finalDraft.version',
+      message: 'snapshot.finalDraft.version must be 1',
+    })
+  }
+
+  return errors
+}
+
 function validateWizardRunInput(body) {
   const errors = []
 
@@ -93,14 +158,21 @@ function validateWizardRunInput(body) {
     })
   }
 
-  if (!isPlainObject(body.snapshot)) {
-    errors.push({
-      field: 'snapshot',
-      message: 'snapshot must be an object',
-    })
-  }
+  errors.push(...validateWizardRunSnapshot(body.snapshot))
 
   return errors
+}
+
+function normalizeWizardRunSnapshot(snapshot) {
+  return {
+    schemaVersion: 1,
+    session: {
+      currentStepId: snapshot.session.currentStepId.trim(),
+      answers: snapshot.session.answers,
+      derived: snapshot.session.derived,
+    },
+    finalDraft: snapshot.finalDraft,
+  }
 }
 
 function createWizardRun(body) {
@@ -110,7 +182,7 @@ function createWizardRun(body) {
     wizardId: body.wizardId.trim(),
     wizardVersion: body.wizardVersion,
     output: body.output,
-    snapshot: body.snapshot,
+    snapshot: normalizeWizardRunSnapshot(body.snapshot),
   }
 }
 
