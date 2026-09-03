@@ -2,6 +2,8 @@ import type {
   ApiHelloResponse,
   CreateWizardRunInput,
   CreateWizardRunResponse,
+  GetWizardRunResponse,
+  ListWizardRunsParams,
   ListWizardRunsResponse,
 } from "~/types/wizardRunApi";
 
@@ -30,8 +32,33 @@ export function usePromptDraftApi() {
     });
   }
 
-  function listWizardRuns() {
-    return $fetch<ListWizardRunsResponse>(endpoint("/api/wizard-runs"));
+  function listWizardRuns(params: ListWizardRunsParams = {}) {
+    const query = new URLSearchParams();
+
+    if (params.limit !== undefined) {
+      query.set("limit", String(params.limit));
+    }
+
+    if (params.cursor !== undefined) {
+      query.set("cursor", params.cursor);
+    }
+
+    if (params.wizardId !== undefined) {
+      query.set("wizardId", params.wizardId);
+    }
+
+    const queryString = query.toString();
+    const path = queryString
+      ? `/api/wizard-runs?${queryString}`
+      : "/api/wizard-runs";
+
+    return $fetch<ListWizardRunsResponse>(endpoint(path));
+  }
+
+  function getWizardRun(id: string) {
+    return $fetch<GetWizardRunResponse>(
+      endpoint(`/api/wizard-runs/${encodeURIComponent(id)}`),
+    );
   }
 
   return {
@@ -39,5 +66,6 @@ export function usePromptDraftApi() {
     hello,
     createWizardRun,
     listWizardRuns,
+    getWizardRun,
   };
 }
