@@ -10,7 +10,7 @@ The backend remains intentionally independent from Nuxt server routes. Prompt Dr
 
 ## Milestone 1 — complete
 
-Milestone 1 established the local backend path end to end:
+Established the local backend path:
 
 ```text
 Nuxt frontend (localhost:3030)
@@ -19,12 +19,11 @@ Nuxt frontend (localhost:3030)
   -> Docker Compose API container
   -> Node HTTP server
   -> JSON response
-  -> browser console
 ```
 
 ## Milestone 2 — complete
 
-Milestone 2 established the inbound request path and temporary application state:
+Established the inbound HTTP/request path:
 
 ```text
 Nuxt :3030
@@ -34,45 +33,49 @@ Nuxt :3030
   -> Node request stream
   -> JSON parse
   -> validation
-  -> in-memory Wizard run
+  -> temporary in-memory Wizard run
   -> 201 response
   -> GET read-back
+```
+
+The user also verified that process-local data disappears after container/process recreation.
+
+## Milestone 3 — complete
+
+Replaced temporary Wizard-run memory with durable PostgreSQL persistence.
+
+Verified architecture:
+
+```text
+Nuxt/client
+  -> Docker API :4000
+  -> Node HTTP server
+  -> pg connection pool
+  -> Compose service db:5432
+  -> PostgreSQL wizard_runs
+  -> /var/lib/postgresql/data
+  -> Docker named volume prompt_draft_pgdata
 ```
 
 Locally verified capabilities now include:
 
 - `GET /api/hello`;
+- `GET /api/db-check`;
 - `POST /api/wizard-runs`;
 - `GET /api/wizard-runs`;
-- JSON body parsing;
-- structured validation errors;
-- `201`, `400`, `404`, and `415` response behavior;
+- JSON body parsing and validation;
+- structured client errors;
 - UUID/timestamp generation;
-- POST CORS/preflight;
-- browser POST integration from Nuxt;
-- process-local storage that disappears after container/process recreation.
+- browser CORS/preflight;
+- PostgreSQL service-to-service networking;
+- PostgreSQL connection pooling;
+- versioned SQL schema source;
+- parameterized SQL INSERT;
+- SQL SELECT read-back;
+- Docker named-volume persistence;
+- Wizard-run rows that survive full API + DB container removal/recreation.
 
-The Wizard-run payload remains provisional and intentionally points toward future Wizard history without locking the final production snapshot format.
-
-## Current goal — Milestone 3
-
-Add PostgreSQL as a second Docker Compose service and replace temporary in-memory Wizard-run storage with durable database persistence.
-
-The key learning contrast is:
-
-```text
-Node process RAM
-  -> disappears when the process/container is recreated
-```
-
-versus:
-
-```text
-PostgreSQL + Docker named volume
-  -> data should survive container recreation
-```
-
-Recommended provisional database fields:
+Current provisional database shape:
 
 ```text
 id              UUID primary key
@@ -83,27 +86,41 @@ output           text
 snapshot         jsonb
 ```
 
-Milestone 3 should be implemented incrementally: first start PostgreSQL, then prove volume persistence, then connect the API, then create the table, and only then replace the current in-memory POST/GET behavior.
+The exact production Wizard snapshot semantics are still intentionally provisional.
+
+## Next direction — product integration and contract hardening
+
+Milestone 3 proved persistence. The next work should make that persistence belong to the actual product rather than the development learning hook.
+
+Before real Wizard integration:
+
+- harden server-owned fields so clients cannot override generated `id`/`createdAt`;
+- explicitly allowlist fields stored from the POST body;
+- inspect the real Wizard success/completion/copy path;
+- decide the correct persistence event;
+- tighten/version snapshot semantics;
+- remove the home-page development POST after the real integration is verified.
+
+The current home-page API calls are development learning hooks, not the final product integration point.
 
 ## Still deferred
 
-- authentication
-- users/user ownership
-- production Wizard history UI
-- final Wizard snapshot schema
-- production migrations strategy
-- Redis
-- VPS deployment
-- production domain/HTTPS
-- production secrets/configuration
+- authentication;
+- users/user ownership;
+- production Wizard history/restore UI;
+- production migrations strategy;
+- Redis;
+- VPS deployment;
+- production domain/HTTPS;
+- production secrets/configuration.
 
-The current home-page GET/POST calls are development learning hooks. They should not become the final product integration point. After durable persistence is established, the test POST should be replaced by a real successful Wizard completion/copy event.
+A temporary `persistence_probe` table also remains from the volume-learning phase and can be removed during a later cleanup step.
 
 ## Documentation workflow
 
 `README.md` explains purpose, boundaries, and milestone scope.
 
-`IMPLEMENTATION.md` contains implementation sequence and technical decisions.
+`IMPLEMENTATION.md` contains implementation sequence, verified architecture, and technical decisions/debt.
 
 `STATUS.md` records what has actually been verified and what should happen next.
 
