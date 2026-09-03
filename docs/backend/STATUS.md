@@ -97,9 +97,9 @@ output          = Persisted in PostgreSQL
 
 This proves the POST path now reaches a real parameterized SQL INSERT and stores the row in PostgreSQL.
 
-### Phase 6 — replace GET memory list with SQL SELECT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 6 — replace GET memory list with SQL SELECT: DONE
 
-`backend/src/database.mjs` now exposes `listWizardRuns()` using:
+`backend/src/database.mjs` exposes `listWizardRuns()` using:
 
 ```text
 SELECT ... FROM wizard_runs ORDER BY created_at DESC
@@ -107,45 +107,59 @@ SELECT ... FROM wizard_runs ORDER BY created_at DESC
 
 Database rows are mapped from snake_case columns back to the existing camelCase API shape.
 
-`GET /api/wizard-runs` now:
-
-```text
-HTTP request
-  -> listWizardRuns()
-  -> PostgreSQL SELECT
-  -> { ok, count, runs }
-```
-
 The old process-local `wizardRuns` array has been removed entirely from runtime code.
 
-Database list failures currently return:
+During the first verification attempt, `GET /api/wizard-runs` returned `count: 0` because the running API container was still using the older Phase-5 image. A direct PostgreSQL query confirmed the Phase-5 row still existed in `wizard_runs`.
+
+After the API was refreshed with the Phase-6 code, the user verified:
 
 ```text
-500 Failed to list Wizard runs
+GET /api/wizard-runs
 ```
 
-Phase 6 is not `DONE` until the user rebuilds/recreates the API and verifies that `GET /api/wizard-runs` returns the row already stored in PostgreSQL during Phase 5.
+returned:
 
-### Phase 7 — durable end-to-end verification: NOT STARTED
+```text
+count: 1
+```
+
+and included the previously persisted row with id:
+
+```text
+6651a8c6-0f79-47c6-84cd-3fbccfe567f3
+```
+
+and output:
+
+```text
+Persisted in PostgreSQL
+```
+
+This proves GET now reads PostgreSQL rather than process memory.
+
+### Phase 7 — durable end-to-end verification: READY FOR LOCAL VERIFICATION
+
+No code change is required for this phase.
+
+Final proof should exercise the complete persistence path:
+
+```text
+POST a new Wizard run
+  -> GET confirms it
+  -> docker compose down
+  -> API and DB containers removed
+  -> named volume retained
+  -> docker compose up -d
+  -> GET returns the same run
+```
+
+Do not use `docker compose down -v`, because `-v` intentionally deletes the named PostgreSQL volume.
+
+Milestone 3 is complete only after the user confirms the same API-created run survives full container removal/recreation.
 
 ## Next action
 
-Sync and rebuild the API image:
-
-```cmd
-git pull
-docker compose up -d --build --force-recreate
-```
-
-Then call:
-
-```cmd
-curl.exe http://127.0.0.1:4000/api/wizard-runs
-```
-
-The response should include the previously persisted `Persisted in PostgreSQL` run even though the API container was recreated.
-
-After user confirmation, mark Phase 6 `DONE` and begin Phase 7 durability verification only.
+Create a fresh run specifically for Phase 7, record its id, verify it through GET, run `docker compose down`, run `docker compose up -d`, and verify the same id is still returned by `GET /api/wizard-runs`.
 
 ## New-chat handoff
 
