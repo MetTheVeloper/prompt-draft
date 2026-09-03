@@ -18,9 +18,16 @@ export type CreateWizardRunInput = {
   snapshot: WizardRunSnapshotV1;
 };
 
-export type WizardRunRecord = CreateWizardRunInput & {
+export type WizardRunSummary = {
   id: string;
   createdAt: string;
+  wizardId: string;
+  wizardVersion: number;
+};
+
+export type WizardRunRecord = WizardRunSummary & {
+  output: string;
+  snapshot: WizardRunSnapshotV1;
 };
 
 export type CreateWizardRunResponse = {
@@ -28,10 +35,26 @@ export type CreateWizardRunResponse = {
   run: WizardRunRecord;
 };
 
+export type WizardRunPageInfo = {
+  nextCursor: string | null;
+  hasMore: boolean;
+};
+
+export type ListWizardRunsParams = {
+  limit?: number;
+  cursor?: string;
+  wizardId?: string;
+};
+
 export type ListWizardRunsResponse = {
   ok: true;
-  count: number;
-  runs: WizardRunRecord[];
+  runs: WizardRunSummary[];
+  pageInfo: WizardRunPageInfo;
+};
+
+export type GetWizardRunResponse = {
+  ok: true;
+  run: WizardRunRecord;
 };
 
 export type ApiHelloResponse = {
