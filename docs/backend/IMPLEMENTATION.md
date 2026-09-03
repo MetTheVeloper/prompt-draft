@@ -4,7 +4,7 @@
 
 Milestones 1, 2, and 3 are complete and locally verified.
 
-Current verified path:
+Current verified backend path:
 
 ```text
 Nuxt frontend :3030
@@ -22,7 +22,7 @@ The backend remains independent from Nuxt server routes so the frontend can cont
 
 ## Milestone 3 — COMPLETE: PostgreSQL persistence
 
-Milestone 3 replaced temporary process memory with durable PostgreSQL storage while preserving the recognizable Wizard-run API contract.
+Milestone 3 replaced temporary process memory with durable PostgreSQL storage.
 
 Verified capabilities include:
 
@@ -56,7 +56,7 @@ The backend uses `pg 8.16.3`, a pool in `backend/src/database.mjs`, and versione
 
 Move persistence from the home-page learning hook into the actual Wizard success flow while tightening the boundary between client-owned and server-owned data.
 
-This milestone should not add authentication, history UI, production migrations, or deployment concerns.
+This milestone does not add authentication, history UI, production migrations, or deployment concerns.
 
 ## Real Wizard success event
 
@@ -100,21 +100,9 @@ Failed mapping/compilation attempts must not create successful Wizard-run histor
 
 ### Phase 0 — server-owned field hardening: DONE
 
-Previous code constructed runs as:
+The API creates a strict allowlisted run object. The user verified fake client `id`/`createdAt` values are ignored, `wizardId` is trimmed, and unknown top-level request keys are not promoted into the stored run.
 
-```js
-const run = {
-  id: randomUUID(),
-  createdAt: new Date().toISOString(),
-  ...body,
-}
-```
-
-This allowed client-provided `id` and `createdAt` fields to override generated values.
-
-The API now creates a strict allowlisted object. The user verified fake client `id`/`createdAt` values are ignored, `wizardId` is trimmed, and unknown top-level request keys are not promoted into the stored run.
-
-### Phase 1 — snapshot contract v1: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 1 — snapshot contract v1: DONE
 
 #### Product/domain reasoning
 
@@ -131,11 +119,9 @@ workingDraft
 
 The existing local Wizard persistence stores the whole `WizardSession`, proving it is serializable for resume purposes.
 
-However, successful completion validates and compiles against `session.workingDraft` and returns a cloned `finalDraft`. The page does not replace its current session with the completion pipeline's returned session before entering the Ready state.
+Successful completion validates and compiles against `session.workingDraft` and returns a cloned `finalDraft`. The page does not replace its current session with the completion pipeline's returned session before entering the Ready state.
 
-Therefore storing the page's entire `WizardSession` as a successful-run snapshot would make `workingDraft` ambiguous: it is intermediate execution state and is not the authoritative completed artifact.
-
-The v1 successful-run snapshot deliberately stores decision state plus the final artifact instead:
+Therefore the successful-run snapshot stores decision state plus the final artifact rather than an ambiguous intermediate `workingDraft`:
 
 ```json
 {
@@ -151,7 +137,7 @@ The v1 successful-run snapshot deliberately stores decision state plus the final
 }
 ```
 
-Keep outside the snapshot because they already have first-class run fields:
+First-class run fields remain outside the snapshot:
 
 ```text
 run id
@@ -161,27 +147,11 @@ wizardVersion
 compiled output
 ```
 
-Why include `answers` and `derived`:
-
-- they capture Wizard decision/configuration state;
-- they remain naturally interpreted under the first-class `wizardVersion`;
-- they avoid flattening Portrait-specific state into relational columns prematurely.
-
-Why include `finalDraft`:
-
-- `PromptDraftState` is already a versioned serializable application/domain contract;
-- it is the exact successful product artifact produced by completion;
-- it gives future history/restore work a stable artifact rather than requiring re-compilation through future code/definitions.
-
-Why exclude `workingDraft`:
-
-- it is intermediate Wizard execution state;
-- it can be stale/ambiguous relative to the completed artifact at the page boundary;
-- storing both would duplicate potentially large Draft state without a demonstrated product need.
+`answers` and `derived` capture Wizard decision/configuration state under `wizardVersion`. `finalDraft` is the exact successful product artifact and is already a versioned serializable `PromptDraftState` contract.
 
 #### Backend envelope validation
 
-The backend now requires:
+The backend requires:
 
 ```text
 snapshot.schemaVersion === 1
@@ -192,68 +162,75 @@ snapshot.finalDraft            = plain object
 snapshot.finalDraft.version === 1
 ```
 
-After validation the backend normalizes the stored snapshot to:
+After validation the stored snapshot is normalized to the versioned envelope. Unknown snapshot-envelope keys are dropped.
 
-```js
-{
-  schemaVersion: 1,
-  session: {
-    currentStepId,
-    answers,
-    derived,
-  },
-  finalDraft,
-}
-```
+The backend intentionally does not reimplement every nested Wizard-answer or PromptDraft validator. The snapshot is a frontend/domain-owned versioned JSON document inside a strict backend envelope.
 
-Unknown snapshot-envelope keys are dropped.
+#### Local verification
 
-The backend intentionally does not reimplement every nested Wizard-answer or PromptDraft validator. The snapshot is a frontend/domain-owned versioned JSON document inside a strict backend envelope. This avoids creating a second divergent copy of the frontend domain model in the Node API.
-
-#### Temporary dev-hook consequence
-
-`app/pages/index.vue` still sends the older learning snapshot shape:
-
-```json
-{
-  "answers": {},
-  "derived": {}
-}
-```
-
-After Phase 1 backend enforcement, that dev-only POST may return `400` until the learning hook is removed later in Milestone 4. This is acceptable transitional behavior because the home-page POST is explicitly not the product integration path.
-
-Local Phase-1 verification should prove:
+The user verified:
 
 ```text
 valid snapshot v1 -> 201 + normalized stored snapshot
 invalid/legacy snapshot -> 400 + snapshot-specific validation errors
 ```
 
-### Phase 2 — frontend API boundary/configuration
+Injected envelope noise was absent from the stored JSONB row. The legacy shape produced field errors for `snapshot.schemaVersion`, `snapshot.session`, and `snapshot.finalDraft`.
 
-Current home-page learning code directly calls:
+### Phase 2 — frontend API boundary/configuration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Nuxt now exposes:
+
+```text
+runtimeConfig.public.apiBase
+```
+
+configured by:
+
+```text
+NUXT_PUBLIC_API_BASE
+```
+
+with local default:
 
 ```text
 http://127.0.0.1:4000
 ```
 
-`nuxt.config.ts` currently has no public API-base setting.
-
-Before Wizard integration, introduce a small reusable client boundary, conceptually:
+Typed API contracts live in:
 
 ```text
-NUXT_PUBLIC_API_BASE
-  -> runtimeConfig.public.apiBase
-  -> Wizard-run API helper
+app/types/wizardRunApi.ts
 ```
 
-Requirements:
+This defines:
 
-- local dev can target `http://127.0.0.1:4000`;
-- product code must not duplicate local URLs;
-- static generation must remain supported;
-- no Nuxt server routes are introduced.
+```text
+WizardRunSnapshotV1
+CreateWizardRunInput
+WizardRunRecord
+create/list/hello response types
+```
+
+The reusable client boundary is:
+
+```text
+app/composables/usePromptDraftApi.ts
+```
+
+It normalizes the configured base URL and exposes:
+
+```text
+hello()
+createWizardRun(input)
+listWizardRuns()
+```
+
+No Nuxt server routes are introduced. Requests remain browser -> external API, preserving the static frontend architecture.
+
+For local browser verification, the development-only Home GET diagnostic now calls `hello()` through this shared client and logs the resolved API base. The old Home POST remains a temporary learning hook until Phase 4; because it still sends the legacy snapshot shape it may log an expected `400` during this transitional state.
+
+Phase 2 also requires confirming the normal static-generation workflow still succeeds.
 
 ### Phase 3 — persist on successful Wizard completion
 
@@ -263,23 +240,21 @@ Inside `finish()`:
 runtime.complete(session)
   -> if !ok: current error behavior, no persistence
   -> build snapshot v1
-  -> POST final prompt + snapshot
+  -> POST final prompt + snapshot through usePromptDraftApi()
   -> completed Ready state
 ```
 
-Persistence failure semantics must be chosen explicitly. Do not silently report history success if the database write failed.
-
-Recommended first product rule: keep the successfully generated artifact available locally and surface a persistence warning/error rather than discarding a successful compile solely because history storage is unavailable. Confirm this rule before implementing Phase 3.
+Persistence failure semantics must be chosen explicitly. Recommended first product rule: keep the successfully generated artifact available locally and surface a persistence warning/error rather than discarding a successful compile solely because history storage is unavailable. Confirm this rule before implementation.
 
 ### Phase 4 — remove development home-page API hooks
 
-`app/pages/index.vue` currently performs dev-only GET and POST calls on mount.
-
 After the real Wizard path is verified:
 
-- remove the learning GET;
-- remove the learning POST;
-- keep the home page free of backend side effects.
+```text
+remove learning GET
+remove learning POST
+keep Home free of backend side effects
+```
 
 ### Phase 5 — real browser E2E verification
 
