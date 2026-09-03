@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import { getDatabaseStatus } from './database.mjs'
 
 const host = process.env.HOST ?? '0.0.0.0'
 const port = Number(process.env.PORT ?? 4000)
@@ -124,6 +125,38 @@ const server = createServer(async (request, response) => {
       },
       corsHeaders,
     )
+    return
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/db-check') {
+    try {
+      const databaseStatus = await getDatabaseStatus()
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          database: databaseStatus.database,
+          user: databaseStatus.user,
+          serverTime: databaseStatus.serverTime,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] database check failed', error)
+
+      sendJson(
+        response,
+        503,
+        {
+          ok: false,
+          message: 'Database unavailable',
+        },
+        corsHeaders,
+      )
+    }
+
     return
   }
 
