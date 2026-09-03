@@ -14,96 +14,11 @@ Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP se
 
 ## Milestone 2 — COMPLETE
 
-Goal: learn POST bodies, validation, status codes, temporary process memory, CORS/preflight, and frontend POST integration before PostgreSQL.
-
-### Phase 0 — API contract: DONE
-
-Endpoint: `POST /api/wizard-runs`.
-
-### Phase 1 — POST happy path: DONE
-
-User verified a valid request returns `201 Created` with generated `id` and `createdAt`.
-
-### Phase 2 — validation and useful 4xx errors: DONE
-
-User verified:
-
-- valid request -> `201`;
-- invalid fields -> `400` with field errors;
-- unsupported content type -> `415`;
-- malformed JSON -> `400`.
-
-### Phase 3 — temporary in-memory storage/read-back: DONE
-
-Implemented process-local `wizardRuns` storage and `GET /api/wizard-runs`.
-
-User verified:
-
-1. fresh process returned `count: 0`;
-2. POST created one run;
-3. GET returned `count: 1` with that run;
-4. after container recreation, GET returned `count: 0` again.
-
-This proves the data existed only in the current Node process RAM and was not durable.
-
-### Phase 4 — POST CORS/preflight verification: DONE
-
-User verified a simulated browser preflight from `http://localhost:3030` with requested method `POST` and requested header `content-type`.
-
-The API returned:
-
-```text
-HTTP/1.1 204 No Content
-Access-Control-Allow-Origin: http://localhost:3030
-Access-Control-Allow-Methods: GET, POST, OPTIONS
-Access-Control-Allow-Headers: Content-Type
-Vary: Origin
-```
-
-### Phase 5 — Nuxt POST integration: DONE
-
-`app/pages/index.vue` sends a development-only Wizard-shaped POST to:
-
-```http
-POST http://127.0.0.1:4000/api/wizard-runs
-```
-
-No page UI was changed. The test request remains guarded by `import.meta.dev`, so static/production generation does not POST to localhost.
-
-The user verified the browser console displays a successful `[Prompt Draft API POST]` response containing a generated Wizard run.
-
-### Phase 6 — browser end-to-end verification: DONE
-
-The user verified the real browser request path. DevTools Network showed:
-
-```text
-GET  /api/hello        -> 200
-POST /api/wizard-runs  -> 201
-```
-
-The browser console showed the successful POST response, including a generated run id and timestamp.
-
-A direct backend read-back then confirmed the Nuxt-created run exists in current process memory:
-
-```json
-{
-  "ok": true,
-  "count": 1,
-  "runs": [
-    {
-      "wizardId": "portrait",
-      "wizardVersion": 1,
-      "output": "Created from Prompt Draft Nuxt dev client"
-    }
-  ]
-}
-```
-
-This verifies the complete Milestone-2 path:
+Verified end to end:
 
 ```text
 Nuxt frontend :3030
-  -> browser CORS/preflight contract
+  -> browser CORS/preflight
   -> POST /api/wizard-runs
   -> Docker API :4000
   -> JSON parsing
@@ -114,50 +29,127 @@ Nuxt frontend :3030
   -> GET read-back
 ```
 
-## Milestone 2 result
+The user also verified that recreating the API container resets the process-local `wizardRuns` array to empty.
 
-Milestone 2 is complete and locally verified end to end.
+## Milestone 3 — IN PROGRESS
 
-Established capabilities now include:
+Goal: replace temporary process memory with durable PostgreSQL storage while preserving the existing Wizard-run API concepts.
 
-- GET and POST HTTP methods;
-- Node request-stream body reading;
-- JSON parsing;
-- explicit request validation;
-- meaningful `201`, `400`, `404`, and `415` behavior;
-- generated UUIDs and timestamps;
-- POST CORS/preflight behavior;
-- temporary process-local storage;
-- browser POST integration from Nuxt;
-- a concrete demonstration that container/process recreation destroys in-memory data.
+### Phase 0 — persistence contract/schema direction: DONE
 
-## Next milestone — Milestone 3: PostgreSQL persistence
+Provisional table direction:
 
-Milestone 3 should replace the temporary `wizardRuns` array with durable database storage while keeping the existing API contract recognizable.
+```text
+wizard_runs
 
-Recommended learning sequence:
+id              UUID primary key
+created_at      timestamp with time zone
+wizard_id       text
+wizard_version  integer
+output           text
+snapshot         jsonb
+```
 
-1. add PostgreSQL as a second Docker Compose service;
-2. add a named Docker volume and understand container storage vs volume storage;
-3. verify API-container -> PostgreSQL-container networking through the Compose service name;
-4. add a minimal Node PostgreSQL client dependency and environment-based connection configuration;
-5. create the first `wizard_runs` table/schema;
-6. replace in-memory POST storage with an INSERT;
-7. replace in-memory GET listing with a SELECT;
-8. recreate the API and PostgreSQL containers and prove the run still exists because the volume persists data;
-9. only after persistence is understood, tighten the provisional Wizard snapshot schema and connect the API to a real Wizard completion/copy event instead of the home-page test payload.
+The snapshot schema remains intentionally flexible/provisional during this milestone.
 
-Authentication, users, production Wizard-history UI, and deployment are still deferred.
+### Phase 1 — PostgreSQL Compose service: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Updated:
+
+```text
+compose.yaml
+```
+
+Added service:
+
+```yaml
+db:
+  image: postgres:17-alpine
+  environment:
+    POSTGRES_DB: prompt_draft
+    POSTGRES_USER: prompt_draft
+    POSTGRES_PASSWORD: prompt_draft_dev
+```
+
+Current intentional boundaries:
+
+- no named volume yet;
+- no host port publication for PostgreSQL;
+- no Node PostgreSQL dependency;
+- API still uses in-memory `wizardRuns`;
+- API does not connect to `db` yet;
+- no `wizard_runs` SQL table exists yet.
+
+The future Compose-internal database address is:
+
+```text
+db:5432
+```
+
+The local password in Compose is a development-only value and is not a production secret-management design.
+
+Phase 1 is not `DONE` until the user locally confirms the PostgreSQL container starts and accepts a database session.
+
+### Phase 2 — named volume/persistence proof: NOT STARTED
+
+Will attach a named Docker volume and explicitly prove that a database artifact survives PostgreSQL container recreation.
+
+### Phase 3 — API -> PostgreSQL connectivity: NOT STARTED
+
+Will add a minimal Node PostgreSQL client and verify API-container -> `db:5432` networking before changing endpoints.
+
+### Phase 4 — first `wizard_runs` table: NOT STARTED
+
+### Phase 5 — replace POST memory insert with SQL INSERT: NOT STARTED
+
+### Phase 6 — replace GET memory list with SQL SELECT: NOT STARTED
+
+### Phase 7 — durable end-to-end verification: NOT STARTED
 
 ## Next action
 
-Before implementing Milestone 3, review and agree on its phases and PostgreSQL data shape. Do not add database code merely because Milestone 2 is complete.
-
-Because this status file changed remotely, sync the branch before continuing locally:
+Sync the branch and start the updated Compose project:
 
 ```powershell
 git pull
+docker compose up
 ```
+
+The first run may pull the `postgres:17-alpine` image.
+
+In another terminal verify both services are running:
+
+```powershell
+docker compose ps
+```
+
+Then verify PostgreSQL itself is accepting connections:
+
+```powershell
+docker compose exec db pg_isready -U prompt_draft -d prompt_draft
+```
+
+Expected result includes:
+
+```text
+accepting connections
+```
+
+Finally open a real SQL session non-interactively and ask PostgreSQL which database/user are active:
+
+```powershell
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT current_database(), current_user;"
+```
+
+Expected row:
+
+```text
+prompt_draft | prompt_draft
+```
+
+After the user confirms these results, mark Phase 1 `DONE` and implement Phase 2 only.
+
+PostgreSQL is not persistent yet because no named volume is attached.
 
 ## New-chat handoff
 
