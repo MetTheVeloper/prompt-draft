@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
-import { getDatabaseStatus, insertWizardRun } from './database.mjs'
+import {
+  getDatabaseStatus,
+  insertWizardRun,
+  listWizardRuns,
+} from './database.mjs'
 
 const host = process.env.HOST ?? '0.0.0.0'
 const port = Number(process.env.PORT ?? 4000)
@@ -11,9 +15,6 @@ const allowedOrigins = new Set(
     .map((origin) => origin.trim())
     .filter(Boolean),
 )
-
-// Temporary until Milestone 3 Phase 6. GET still reads process memory.
-const wizardRuns = []
 
 function getCorsHeaders(request) {
   const origin = request.headers.origin
@@ -162,16 +163,33 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === 'GET' && url.pathname === '/api/wizard-runs') {
-    sendJson(
-      response,
-      200,
-      {
-        ok: true,
-        count: wizardRuns.length,
-        runs: wizardRuns,
-      },
-      corsHeaders,
-    )
+    try {
+      const runs = await listWizardRuns()
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          count: runs.length,
+          runs,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] wizard run list failed', error)
+
+      sendJson(
+        response,
+        500,
+        {
+          ok: false,
+          message: 'Failed to list Wizard runs',
+        },
+        corsHeaders,
+      )
+    }
+
     return
   }
 
