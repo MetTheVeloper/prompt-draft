@@ -22,7 +22,7 @@ No database is required for this milestone.
 
 ## Planned repository shape
 
-The exact implementation may be adjusted if repository constraints require it. The current milestone shape is:
+The current milestone shape is:
 
 ```text
 prompt-draft/
@@ -33,7 +33,7 @@ prompt-draft/
 │   ├── src/
 │   │   └── index.mjs
 │   ├── package.json
-│   └── Dockerfile          # phase 2
+│   └── Dockerfile
 ├── compose.yaml            # phase 3
 └── ...existing Prompt Draft files
 ```
@@ -66,7 +66,46 @@ pnpm --dir backend dev
 
 for Node watch mode during development.
 
-The server binds to `0.0.0.0` by default so it can later be reached through a Docker port mapping. The default port is `4000`. Both can be overridden with `HOST` and `PORT` environment variables.
+The server binds to `0.0.0.0` by default so it can be reached through a Docker port mapping. The default port is `4000`. Both can be overridden with `HOST` and `PORT` environment variables.
+
+## Phase 2 Dockerfile decision
+
+The first image deliberately stays minimal:
+
+```dockerfile
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY package.json ./
+COPY src ./src
+
+ENV HOST=0.0.0.0
+ENV PORT=4000
+
+EXPOSE 4000
+
+CMD ["node", "src/index.mjs"]
+```
+
+Important details:
+
+- `node:24-alpine` provides a small Linux environment with Node already installed;
+- the Docker build context will be `backend/`;
+- there are currently no external backend dependencies, so no package-install step is needed in the image yet;
+- `WORKDIR /app` sets the container's application directory;
+- `COPY` puts the backend files into the image;
+- `ENV` supplies the default bind host and port;
+- `EXPOSE 4000` documents the container port but does not by itself publish it to Windows;
+- `CMD` is the process Docker starts when a container is created from the image.
+
+For manual Phase 2 verification, publish the container port with:
+
+```bash
+docker run --rm -p 4000:4000 prompt-draft-api
+```
+
+The mapping means host port `4000` forwards traffic to container port `4000`.
 
 ## Step sequence
 
@@ -111,18 +150,25 @@ Current implementation:
 - default port `4000`
 - unmatched routes return a JSON `404`
 
-Phase 1 is not complete until the user runs the backend locally and verifies the GET response.
+Phase 1 was locally verified by the user using `pnpm --dir backend start` and `curl.exe http://localhost:4000/api/hello`.
 
 ### Phase 2 — containerize backend
 
-Create a `Dockerfile` that:
+`backend/Dockerfile` now exists.
 
-1. starts from an appropriate Node image;
-2. installs/copies what the backend needs;
-3. copies the backend source;
-4. exposes/runs the backend server.
+Build the image from the repository root:
 
-Success condition: the backend can run inside a Docker container rather than relying on a host-started backend runtime.
+```bash
+docker build -t prompt-draft-api ./backend
+```
+
+Then run it with a host-to-container port mapping:
+
+```bash
+docker run --rm -p 4000:4000 prompt-draft-api
+```
+
+Success condition: the same API response is reachable while the host-started Node process is stopped and the backend is running only inside Docker.
 
 ### Phase 3 — Docker Compose
 
@@ -132,7 +178,7 @@ Add `compose.yaml` so the local backend can be started with a simple project-lev
 docker compose up
 ```
 
-The backend should be exposed on a clear host port, initially planned as `4000`.
+The backend should be exposed on host port `4000`.
 
 Success condition:
 
