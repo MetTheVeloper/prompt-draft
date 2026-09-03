@@ -2,12 +2,13 @@
 
 ## Architecture baseline
 
-Milestones 1, 2, and 3 are complete and locally verified.
+Milestones 1, 2, 3, and 4 are complete and locally verified.
 
-Current verified backend path:
+Current verified product/backend path:
 
 ```text
 Nuxt frontend :3030
+  -> real Portrait Wizard finish()
   -> browser CORS/preflight
   -> Docker API :4000
   -> Node HTTP server
@@ -18,15 +19,11 @@ Nuxt frontend :3030
   -> Docker named volume
 ```
 
-The backend remains independent from Nuxt server routes so the frontend can continue to be statically generated.
+The backend remains independent from Nuxt server routes, so the frontend can continue to use static generation.
 
-## Milestone 4 objective — real Wizard integration
+## Milestone 4 — COMPLETE: real Wizard integration
 
-Move persistence from the Home learning hook into the actual Wizard success flow while keeping the API contract explicit and failure behavior non-destructive.
-
-This milestone does not add authentication, history UI, production migrations, or deployment concerns.
-
-## Milestone 4 phases
+Milestone 4 moved persistence from a development Home learning hook into the actual Wizard success flow and hardened the client/server contract.
 
 ### Phase 0 — server-owned field hardening: DONE
 
@@ -111,51 +108,58 @@ compile success + persistence failure
   -> no new history row
 ```
 
-The user verified this by stopping only the API container, generating again from Review, seeing the Ready artifact plus warning, confirming no new row was added, then restarting the API successfully.
+That failure behavior was locally verified by stopping only the API container during a successful completion attempt.
 
-### Phase 4 — remove development Home API hooks: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 4 — remove development Home API hooks: DONE
 
-`app/pages/index.vue` has been cleaned of all backend learning side effects.
+`app/pages/index.vue` is free of backend learning side effects.
 
 Removed:
 
 ```text
-usePromptDraftApi() Home diagnostic instance
-onMounted() backend learning block
-GET /api/hello from Home
-legacy POST /api/wizard-runs from Home
-hardcoded http://127.0.0.1:4000 learning POST
+Home GET /api/hello diagnostic
+Home legacy POST /api/wizard-runs
+hardcoded local Wizard-run URL
+Home onMounted backend learning block
 ```
 
-The Home template and offline-package status UI are unchanged.
+Home was locally verified with DevTools: it produces no backend Fetch/XHR side effects of its own.
 
-Verification requirement:
+### Phase 5 — final product-only E2E verification: DONE
+
+A fresh real Wizard run with UUID:
 
 ```text
-load http://localhost:3030/
-open DevTools Fetch/XHR + Console
-refresh Home
-confirm no /api/hello request
-confirm no /api/wizard-runs request
-confirm no [Prompt Draft API] learning logs
+d409ec15-3c22-40f6-9fc8-bafcd38e555f
 ```
 
-### Phase 5 — final product-only E2E verification
-
-After Phase 4 passes, perform one final proof that the only product persistence source is Wizard completion:
+was tracked through the complete lifecycle:
 
 ```text
-Home refresh -> no backend request
-Portrait Wizard finish -> POST /api/wizard-runs
-GET /api/wizard-runs -> product-created row visible
-docker compose down
-docker compose up -d
-GET /api/wizard-runs -> same row still visible
+Portrait Wizard finish
+  -> POST /api/wizard-runs
+  -> PostgreSQL INSERT
+  -> GET /api/wizard-runs read-back
+  -> direct DB lookup
+  -> docker compose down
+  -> docker compose up -d
+  -> PostgreSQL readiness
+  -> GET read-back again
+  -> direct DB lookup again
+  -> same UUID and original row survive
 ```
 
-Milestone 4 is complete after this final proof.
+The final row was verified as:
 
-## Existing intentional learning shortcuts / later debt
+```text
+wizard_id        = portrait
+wizard_version   = 2
+snapshot_version = 1
+```
+
+This proves the product-created run survives full API + DB container recreation through the named PostgreSQL volume.
+
+## Current implementation boundaries
 
 ### Schema workflow
 
@@ -170,6 +174,20 @@ The current schema uses one explicit SQL file plus `npm run db:schema`. A produc
 - authentication and user ownership;
 - Wizard history/list/restore UI;
 - production migration workflow;
-- production secrets;
+- production secrets/configuration;
 - deployment/domain/HTTPS;
 - Redis.
+
+## Milestone 5 — not started
+
+Do not choose Milestone 5 implicitly. Before implementation, select one coherent next scope and define its runtime verification sequence.
+
+Reasonable next directions are:
+
+```text
+A) history/read UX + API querying/pagination
+B) authentication + user ownership
+C) production migration/config/deployment hardening
+```
+
+The choice should be made based on the next product goal rather than simply adding infrastructure for its own sake.
