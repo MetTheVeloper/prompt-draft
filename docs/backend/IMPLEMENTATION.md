@@ -18,19 +18,6 @@ Nuxt frontend :3030
 
 The backend remains independent from Nuxt server routes so the frontend can continue to be statically generated.
 
-## Milestone 2 — COMPLETE
-
-Milestone 2 established:
-
-```http
-POST /api/wizard-runs
-GET /api/wizard-runs
-```
-
-with JSON parsing, validation, meaningful 4xx responses, browser POST/CORS behavior, and temporary process-local `wizardRuns` storage.
-
-The user also verified that recreating the API container destroys that in-memory data.
-
 ## Milestone 3 objective — PostgreSQL persistence
 
 Replace temporary process memory with durable PostgreSQL storage while preserving the current API concepts.
@@ -72,11 +59,9 @@ Rationale:
 - `output` remains directly readable/queryable text;
 - `snapshot` stays flexible as `jsonb` while Wizard state/schema continues to evolve.
 
-The exact production snapshot contract is still provisional and is not being finalized during the first persistence pass.
+### Phase 1 — PostgreSQL Compose service: DONE
 
-### Phase 1 — PostgreSQL Compose service: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-`compose.yaml` now has a second service:
+`compose.yaml` has a second service using:
 
 ```yaml
 db:
@@ -87,37 +72,63 @@ db:
     POSTGRES_PASSWORD: prompt_draft_dev
 ```
 
-Important boundaries for this phase:
+The user locally verified both Compose services are running, `pg_isready` reports `accepting connections`, and a real `psql` query returns database/user `prompt_draft`.
 
-- no Node PostgreSQL client has been added;
-- the API does not connect to PostgreSQL yet;
-- no `wizard_runs` table exists yet;
-- no Docker volume is attached yet;
-- PostgreSQL port `5432` is not published to the Windows host;
-- the committed credentials are local-development-only values, not a production secrets strategy.
-
-Inside the Compose network, the future API connection target will be:
+PostgreSQL is intentionally not published to the Windows host. Inside Compose, its future network address is:
 
 ```text
-host: db
-port: 5432
+db:5432
 ```
 
-The hostname is the Compose service name. It is intentionally not `localhost`, because `localhost` inside the API container refers to that API container itself.
+### Phase 2 — named volume and persistence proof: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Local verification should prove only that PostgreSQL starts and accepts a local database session inside its container.
+A named volume is attached to PostgreSQL's standard data directory:
 
-### Phase 2 — named volume and persistence proof
+```yaml
+db:
+  volumes:
+    - prompt_draft_pgdata:/var/lib/postgresql/data
 
-Attach a named Docker volume to PostgreSQL's standard data directory:
+volumes:
+  prompt_draft_pgdata:
+```
+
+Conceptually:
 
 ```text
+PostgreSQL process/container
+        |
+        v
 /var/lib/postgresql/data
+        |
+        v
+Docker named volume: prompt_draft_pgdata
 ```
 
-Then create a small database artifact, recreate the PostgreSQL container, and prove the artifact remains.
+The container is disposable; the named volume has a separate lifecycle.
 
-This phase is intentionally separate from Phase 1 so the persistence effect of the volume is observable rather than hidden inside the initial database setup.
+The persistence proof deliberately uses a small temporary `persistence_probe` table rather than creating the real `wizard_runs` table early. The test should:
+
+1. recreate Compose so PostgreSQL initializes with the named volume;
+2. create `persistence_probe` and insert one row;
+3. confirm the row exists;
+4. run `docker compose down` to remove containers while retaining the named volume;
+5. run `docker compose up` again;
+6. confirm the same row/table still exists.
+
+Important distinction:
+
+```text
+docker compose down
+```
+
+removes containers/network but normally keeps named volumes.
+
+```text
+docker compose down -v
+```
+
+also removes declared named volumes and must not be used during the persistence proof.
 
 ### Phase 3 — API database connectivity
 
@@ -144,13 +155,7 @@ Keep the existing parsing, validation, CORS, and `201 Created` contract, but wri
 
 ### Phase 6 — replace GET memory listing with database SELECT
 
-Keep:
-
-```http
-GET /api/wizard-runs
-```
-
-but source its rows from PostgreSQL instead of process memory.
+Keep `GET /api/wizard-runs`, but source its rows from PostgreSQL instead of process memory.
 
 ### Phase 7 — durability verification
 
