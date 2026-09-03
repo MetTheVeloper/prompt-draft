@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import {
   getDatabaseStatus,
+  getWizardRunById,
   insertWizardRun,
   listWizardRuns,
 } from './database.mjs'
@@ -58,6 +59,13 @@ function isJsonRequest(request) {
 
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function isUuid(value) {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  )
 }
 
 function validateWizardRunSnapshot(snapshot) {
@@ -237,6 +245,66 @@ const server = createServer(async (request, response) => {
         {
           ok: false,
           message: 'Database unavailable',
+        },
+        corsHeaders,
+      )
+    }
+
+    return
+  }
+
+  const wizardRunDetailMatch = url.pathname.match(/^\/api\/wizard-runs\/([^/]+)$/)
+
+  if (request.method === 'GET' && wizardRunDetailMatch) {
+    const runId = wizardRunDetailMatch[1]
+
+    if (!isUuid(runId)) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Invalid Wizard run id',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    try {
+      const run = await getWizardRunById(runId)
+
+      if (!run) {
+        sendJson(
+          response,
+          404,
+          {
+            ok: false,
+            message: 'Wizard run not found',
+          },
+          corsHeaders,
+        )
+        return
+      }
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          run,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] wizard run detail failed', error)
+
+      sendJson(
+        response,
+        500,
+        {
+          ok: false,
+          message: 'Failed to read Wizard run',
         },
         corsHeaders,
       )
