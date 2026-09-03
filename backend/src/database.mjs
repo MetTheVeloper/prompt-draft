@@ -19,6 +19,13 @@ export function closeDatabase() {
   return pool.end()
 }
 
+function mapWizardRunRow(row) {
+  return {
+    ...row,
+    createdAt: row.createdAt.toISOString(),
+  }
+}
+
 export async function getDatabaseStatus() {
   const result = await queryDatabase(`
     SELECT
@@ -60,10 +67,21 @@ export async function insertWizardRun(run) {
     ],
   )
 
-  const savedRun = result.rows[0]
+  return mapWizardRunRow(result.rows[0])
+}
 
-  return {
-    ...savedRun,
-    createdAt: savedRun.createdAt.toISOString(),
-  }
+export async function listWizardRuns() {
+  const result = await queryDatabase(`
+    SELECT
+      id,
+      created_at AS "createdAt",
+      wizard_id AS "wizardId",
+      wizard_version AS "wizardVersion",
+      output,
+      snapshot
+    FROM wizard_runs
+    ORDER BY created_at DESC
+  `)
+
+  return result.rows.map(mapWizardRunRow)
 }
