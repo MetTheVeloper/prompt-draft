@@ -45,6 +45,59 @@ async function readJsonBody(request) {
   return JSON.parse(rawBody)
 }
 
+function isJsonRequest(request) {
+  const contentType = request.headers['content-type'] ?? ''
+  const mediaType = contentType.split(';', 1)[0].trim().toLowerCase()
+  return mediaType === 'application/json'
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function validateWizardRunInput(body) {
+  const errors = []
+
+  if (!isPlainObject(body)) {
+    return [
+      {
+        field: 'body',
+        message: 'JSON body must be an object',
+      },
+    ]
+  }
+
+  if (typeof body.wizardId !== 'string' || body.wizardId.trim().length === 0) {
+    errors.push({
+      field: 'wizardId',
+      message: 'wizardId must be a non-empty string',
+    })
+  }
+
+  if (!Number.isInteger(body.wizardVersion) || body.wizardVersion <= 0) {
+    errors.push({
+      field: 'wizardVersion',
+      message: 'wizardVersion must be a positive integer',
+    })
+  }
+
+  if (typeof body.output !== 'string' || body.output.trim().length === 0) {
+    errors.push({
+      field: 'output',
+      message: 'output must be a non-empty string',
+    })
+  }
+
+  if (!isPlainObject(body.snapshot)) {
+    errors.push({
+      field: 'snapshot',
+      message: 'snapshot must be an object',
+    })
+  }
+
+  return errors
+}
+
 const server = createServer(async (request, response) => {
   const url = new URL(
     request.url ?? '/',
@@ -73,37 +126,23 @@ const server = createServer(async (request, response) => {
   }
 
   if (request.method === 'POST' && url.pathname === '/api/wizard-runs') {
-    try {
-      const body = await readJsonBody(request)
-
-      if (!body || typeof body !== 'object' || Array.isArray(body)) {
-        sendJson(
-          response,
-          400,
-          {
-            ok: false,
-            message: 'JSON body must be an object',
-          },
-          corsHeaders,
-        )
-        return
-      }
-
-      const run = {
-        id: randomUUID(),
-        createdAt: new Date().toISOString(),
-        ...body,
-      }
-
+    if (!isJsonRequest(request)) {
       sendJson(
         response,
-        201,
+        415,
         {
-          ok: true,
-          run,
+          ok: false,
+          message: 'Content-Type must be application/json',
         },
         corsHeaders,
       )
+      return
+    }
+
+    let body
+
+    try {
+      body = await readJsonBody(request)
     } catch {
       sendJson(
         response,
@@ -114,8 +153,40 @@ const server = createServer(async (request, response) => {
         },
         corsHeaders,
       )
+      return
     }
 
+    const validationErrors = validateWizardRunInput(body)
+
+    if (validationErrors.length > 0) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    const run = {
+      id: randomUUID(),
+      createdAt: new Date().toISOString(),
+      ...body,
+    }
+
+    sendJson(
+      response,
+      201,
+      {
+        ok: true,
+        run,
+      },
+      corsHeaders,
+    )
     return
   }
 
