@@ -54,52 +54,57 @@ Conceptual payload:
 
 ### Phase 1 — POST happy path: DONE
 
-Implemented in `backend/src/index.mjs`:
-
-- Node request stream reading;
-- JSON parsing;
-- `POST /api/wizard-runs`;
-- generated UUID with `randomUUID()`;
-- generated ISO `createdAt` timestamp;
-- `201 Created` response;
-- reusable `sendJson()` helper.
-
-The first local attempt used PowerShell backtick continuation syntax inside `cmd.exe`, so the request body was not sent correctly. This was a shell-command issue rather than a backend issue.
-
-The user then ran a correct single-line CMD request and confirmed:
+The user locally confirmed a correct POST returns:
 
 ```text
 HTTP/1.1 201 Created
 ```
 
-with a response containing generated `id`, `createdAt`, and the submitted Wizard-run-shaped payload.
+with generated UUID `id`, ISO `createdAt`, and the submitted Wizard-run-shaped payload.
 
-`GET /api/hello` remained healthy during the regression check.
+### Phase 2 — validation and useful 4xx errors: DONE
 
-Important: accepted runs are still not stored. Phase 3 introduces temporary in-memory storage.
+Current validation:
 
-### Phase 2 — validation and useful 4xx errors: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+- `Content-Type` must resolve to `application/json`;
+- malformed JSON -> `400 Bad Request`;
+- non-empty `wizardId` string;
+- positive integer `wizardVersion`;
+- non-empty `output` string;
+- plain-object `snapshot`;
+- invalid fields -> `400 Bad Request` with structured `errors`;
+- unsupported media type -> `415 Unsupported Media Type`.
 
-Updated `backend/src/index.mjs` with explicit request validation.
+The user locally verified:
 
-Current rules:
+1. valid request -> `201 Created`;
+2. invalid fields -> `400 Bad Request` with all expected field errors;
+3. `Content-Type: text/plain` -> `415 Unsupported Media Type`;
+4. malformed JSON -> `400 Bad Request`.
 
-- request `Content-Type` must resolve to `application/json`;
-- invalid/missing JSON media type returns `415 Unsupported Media Type`;
-- malformed JSON returns `400 Bad Request`;
-- JSON body must be an object;
-- `wizardId` must be a non-empty string;
-- `wizardVersion` must be a positive integer;
-- `output` must be a non-empty string;
-- `snapshot` must be an object;
-- invalid fields return `400 Bad Request` with a structured `errors` array;
-- valid requests still return `201 Created`.
+### Phase 3 — temporary in-memory storage/read-back: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Phase 2 is not `DONE` until the user rebuilds/recreates the API container and locally verifies valid and invalid requests.
+Updated `backend/src/index.mjs`:
 
-### Phase 3 — temporary in-memory storage/read-back: NOT STARTED
+- added process-local `wizardRuns` array;
+- valid `POST /api/wizard-runs` now pushes the created run into memory;
+- added `GET /api/wizard-runs`;
+- GET returns `{ ok, count, runs }`;
+- no database or volume is involved.
 
-Planned process-local run collection plus a GET read-back endpoint. Container restart/recreation will intentionally erase it.
+Important behavior to verify:
+
+```text
+POST run
+  -> stored in current Node process RAM
+  -> GET list returns it
+
+container recreate/restart
+  -> new Node process
+  -> RAM list is empty again
+```
+
+Phase 3 is not `DONE` until the user verifies both read-back and data loss after container recreation.
 
 ### Phase 4 — POST CORS/preflight verification: NOT STARTED
 
@@ -109,21 +114,22 @@ Planned process-local run collection plus a GET read-back endpoint. Container re
 
 ## Next action
 
-Sync and rebuild the API:
+Sync the branch and recreate the API container:
 
 ```powershell
 git pull
 docker compose up --build --force-recreate
 ```
 
-Then verify Phase 2 with:
+Then:
 
-1. one valid request returning `201`;
-2. one invalid field payload returning `400` with field errors;
-3. one request with a non-JSON `Content-Type` returning `415`;
-4. optionally one malformed JSON body returning `400`.
+1. GET `/api/wizard-runs` and confirm the new process starts with `count: 0`;
+2. POST a valid run;
+3. GET `/api/wizard-runs` and confirm `count: 1` and the posted run is present;
+4. recreate the API container again;
+5. GET `/api/wizard-runs` and confirm the list has reset to `count: 0`.
 
-After user confirmation, mark Phase 2 `DONE` and begin Phase 3 in-memory storage/read-back.
+After user confirmation, mark Phase 3 `DONE` and proceed to Phase 4 POST CORS/preflight verification.
 
 PostgreSQL, authentication, and durable Wizard persistence are not implemented yet.
 
