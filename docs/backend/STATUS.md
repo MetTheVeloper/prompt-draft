@@ -58,9 +58,9 @@ runtime.complete(session)
 
 ### Phase 0 — harden server-owned fields: DONE
 
-The API now creates an explicit allowlisted run object instead of spreading the request body after generated fields.
+The API creates an explicit allowlisted run object rather than spreading the request body after generated fields.
 
-The user locally verified a malicious/test request containing fake `id`, fake `createdAt`, whitespace around `wizardId`, and an unknown field.
+The user locally verified a payload containing fake `id`, fake `createdAt`, whitespace around `wizardId`, and an unknown field.
 
 Observed result:
 
@@ -73,9 +73,9 @@ unknown field    -> not returned/stored as a run field
 
 The database row used server-generated UUID/timestamp values.
 
-### Phase 1 — production snapshot contract v1: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 1 — production snapshot contract v1: DONE
 
-The successful-run snapshot contract is now:
+Successful-run snapshot contract:
 
 ```json
 {
@@ -99,7 +99,7 @@ Semantics:
 - `finalDraft` stores the exact successful artifact;
 - intermediate `workingDraft` is intentionally not duplicated in the snapshot.
 
-Backend validation now requires:
+Backend validation requires:
 
 ```text
 snapshot.schemaVersion === 1
@@ -110,26 +110,61 @@ snapshot.finalDraft            = object
 snapshot.finalDraft.version === 1
 ```
 
-After validation, the backend normalizes the snapshot to only the versioned envelope fields above before storing it.
+The backend normalizes the snapshot to the versioned envelope before storing it.
 
-The backend intentionally does not duplicate every nested frontend/domain validator. The versioned snapshot is treated as a frontend-owned serialized document inside a strictly validated envelope.
+The user locally verified:
 
-Phase 1 is not `DONE` until the user rebuilds the API and verifies both:
+```text
+valid snapshot v1  -> 201 Created
+legacy snapshot    -> 400 Validation failed
+```
 
-1. a valid v1 snapshot returns `201 Created` and is normalized;
-2. an invalid/legacy snapshot returns `400 Validation failed` with snapshot-specific field errors.
+The valid row stored only `schemaVersion`, `session`, and `finalDraft`; injected envelope noise was removed. The legacy request returned field errors for `snapshot.schemaVersion`, `snapshot.session`, and `snapshot.finalDraft`.
 
-Temporary development note: the old home-page learning POST still sends the pre-v1 snapshot shape, so it may log a `400` in dev until that learning hook is removed later in this milestone. It is not the final product integration path.
+### Phase 2 — configurable frontend API client/base: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-### Phase 2 — configurable frontend API client/base: NOT STARTED
+Added public Nuxt runtime configuration:
 
-Introduce one reusable frontend API boundary so Wizard code does not hardcode `http://127.0.0.1:4000`.
+```text
+NUXT_PUBLIC_API_BASE
+  -> runtimeConfig.public.apiBase
+```
 
-Static generation must remain supported and no Nuxt server routes should be introduced.
+Local default:
+
+```text
+http://127.0.0.1:4000
+```
+
+Added typed frontend contract:
+
+```text
+app/types/wizardRunApi.ts
+```
+
+It defines snapshot-v1, create/list request-response types, and the hello response.
+
+Added reusable API composable:
+
+```text
+app/composables/usePromptDraftApi.ts
+```
+
+It owns API-base normalization and currently exposes:
+
+```text
+hello()
+createWizardRun(input)
+listWizardRuns()
+```
+
+The development-only Home GET diagnostic now uses this composable and logs the resolved `apiBase`. The old Home POST remains intentionally untouched until Phase 4 and may continue to log a snapshot-contract `400` in development.
+
+Phase 2 is not `DONE` until the user restarts Nuxt, loads the Home page, and verifies that the shared client resolves the configured API base and `hello()` succeeds in the browser. Static generation should also remain healthy.
 
 ### Phase 3 — persist successful Wizard completion: NOT STARTED
 
-After `runtime.complete(session)` succeeds, build snapshot v1 and POST the final prompt output + snapshot to `/api/wizard-runs`.
+After `runtime.complete(session)` succeeds, build snapshot v1 and POST the final prompt output + snapshot through `usePromptDraftApi()`.
 
 Failed mapping/compile attempts must not create successful-run rows.
 
@@ -167,15 +202,7 @@ The temporary `persistence_probe` table also remains as non-product learning dat
 
 ## Next action
 
-Sync/rebuild and verify Phase 1 with one valid snapshot-v1 POST and one invalid/legacy snapshot POST.
-
-Because this update is remote:
-
-```cmd
-git pull
-```
-
-Then rebuild the API image before testing backend behavior.
+Sync the branch and restart the Nuxt development server because `nuxt.config.ts` changed. Verify the Home browser console shows a successful `hello()` through the shared API client and the resolved API base. Then run the normal static-generation command to confirm this configuration/client boundary does not break the existing static build workflow.
 
 ## New-chat handoff
 
