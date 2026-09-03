@@ -1,78 +1,97 @@
 # Prompt Draft Backend
 
-This directory is the source of truth for the first backend and Docker integration work in Prompt Draft.
-
-## Current goal
-
-Build a minimal backend service that runs locally in Docker, expose one GET API endpoint, call that endpoint from the Prompt Draft home page, and print the response in the browser console.
-
-This phase is intentionally small. It is meant to establish and understand the development path before adding persistence, authentication, Wizard history, or production deployment.
+This directory is the source of truth for backend and Docker integration work in Prompt Draft.
 
 ## Current branch
 
 `feature/docker-local-api`
 
-The branch was created from the current stable `main` after the Prompt Draft v2.0.0 release.
+The backend remains intentionally independent from Nuxt server routes. Prompt Draft can continue to use its static-generation frontend workflow while the backend is developed and deployed separately.
 
-## Target milestone
+## Milestone 1 — complete
 
-The first milestone is complete when all of the following are true:
-
-1. Docker can run the Prompt Draft backend service locally.
-2. A minimal GET endpoint such as `GET /api/hello` is reachable from the host machine.
-3. The Nuxt home page calls the endpoint.
-4. The returned result is visible in the browser console.
-5. The existing static frontend workflow remains intact.
-
-Expected development shape:
+Milestone 1 established the local backend path end to end:
 
 ```text
-Prompt Draft Nuxt frontend
-        |
-        | HTTP GET
-        v
-Local backend API
-        |
-        v
-Docker container
+Nuxt frontend (localhost:3030)
+  -> browser CORS
+  -> host port 4000
+  -> Docker Compose API container
+  -> Node HTTP server
+  -> JSON response
+  -> browser console
 ```
 
-The frontend and backend are intentionally separate. The Nuxt app may continue to be statically generated while the backend becomes an independently deployable service later.
+Locally verified capabilities:
 
-## Scope of this phase
+- independent backend package;
+- Node HTTP server;
+- `GET /api/hello`;
+- Dockerfile;
+- Docker Compose;
+- host/container port mapping;
+- explicit development CORS;
+- Nuxt-to-backend browser request;
+- no dependency on Nuxt server routes.
 
-Included:
+## Current goal — Milestone 2
 
-- local Docker environment
-- independent backend service
-- one minimal GET endpoint
-- Dockerfile
-- Docker Compose configuration
-- localhost port exposure
-- development CORS if required
-- test call from `app/pages/index.vue`
-- browser console verification
+Learn the inbound request path by adding a real POST endpoint that points toward future Wizard run/snapshot persistence.
 
-Not included yet:
+Initial API:
+
+```http
+POST /api/wizard-runs
+```
+
+Initial conceptual request body:
+
+```json
+{
+  "wizardId": "portrait",
+  "wizardVersion": 1,
+  "output": "generated prompt...",
+  "snapshot": {
+    "answers": {},
+    "derived": {}
+  }
+}
+```
+
+The exact production snapshot shape is not being finalized yet. Milestone 2 is about HTTP request bodies, status codes, validation, CORS for POST, and temporary in-memory behavior before PostgreSQL is introduced.
+
+## Milestone 2 phases
+
+1. **POST happy path** — read a JSON request body and return a `201 Created` response.
+2. **Validation/errors** — validate fields and return useful `4xx` responses for bad input.
+3. **Temporary in-memory storage** — keep accepted Wizard runs only for the lifetime of the Node process and expose a simple read-back path.
+4. **POST CORS verification** — support and verify the browser preflight path required by JSON POST requests.
+5. **Nuxt POST integration** — send a development-only Wizard-shaped payload from Prompt Draft.
+6. **Browser end-to-end verification** — confirm Nuxt -> Docker API -> POST response in the browser.
+
+## Not included yet
 
 - PostgreSQL
+- durable persistence
 - Redis
 - authentication
 - users
-- Wizard snapshots/history
-- production domain or HTTPS
+- production Wizard history UI
 - VPS deployment
+- production domain/HTTPS
 - production secrets/configuration
+
+PostgreSQL is intentionally the next milestone after the POST/request/validation flow is understood.
 
 ## Documentation workflow
 
-`README.md` explains the purpose, boundaries, and architecture.
+`README.md` explains purpose, boundaries, and milestone scope.
 
-`IMPLEMENTATION.md` contains the planned implementation sequence and technical decisions.
+`IMPLEMENTATION.md` contains implementation sequence and technical decisions.
 
 `STATUS.md` records what has actually been verified and what should happen next.
 
-A step must not be marked complete merely because code was written. It is marked complete only after the local result has been run and confirmed by the user.
+A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is not sufficient.
 
 For a new chat, read these three files before making backend changes:
 
