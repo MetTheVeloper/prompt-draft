@@ -8,3 +8,10 @@ services:
       HOST: 0.0.0.0
       PORT: 4000
       CORS_ORIGINS: "http://localhost:3030,http://127.0.0.1:3030"
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: prompt_draft
+      POSTGRES_USER: prompt_draft
+      POSTGRES_PASSWORD: prompt_draft_dev
