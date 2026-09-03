@@ -89,7 +89,9 @@ New implementation:
 
 Important: accepted runs are **not stored yet**. Phase 3 will introduce temporary in-memory storage.
 
-Phase 1 is not `DONE` until the user rebuilds/recreates the Docker API and confirms a POST from the Windows host returns `201` and the expected run object.
+First local POST attempt used PowerShell backtick line continuations inside `cmd.exe`. Command Prompt treated each line as a separate command, so the first request reached the API without a JSON body and correctly returned `400`, while later `-H` and `--data-raw` lines were interpreted as separate shell commands. This does not indicate a backend failure. `GET /api/hello` remained successful.
+
+Phase 1 remains incomplete until a correctly formed POST request returns `201` with generated `id` and `createdAt`.
 
 ### Phase 2 — validation and useful 4xx errors: NOT STARTED
 
@@ -113,16 +115,9 @@ Planned process-local run collection plus a GET read-back endpoint. Container re
 
 ## Next action
 
-Sync the branch and rebuild/recreate the API container:
+The Docker API is running and `GET /api/hello` is healthy. Re-run the Phase 1 POST with syntax appropriate to the active shell. In `cmd.exe`, use a single-line command (or CMD caret continuations); in PowerShell, backtick continuations are valid.
 
-```powershell
-git pull
-docker compose up --build --force-recreate
-```
-
-Then, from a second PowerShell window, send a valid JSON request to `POST /api/wizard-runs` and verify `201 Created` plus the generated `id` and `createdAt` fields.
-
-After the user confirms the result, mark Phase 1 `DONE` and begin Phase 2 validation.
+After the user confirms `201 Created`, mark Phase 1 `DONE` and begin Phase 2 validation.
 
 PostgreSQL, authentication, and durable Wizard persistence are not implemented yet.
 
