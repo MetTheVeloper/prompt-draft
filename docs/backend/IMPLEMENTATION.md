@@ -177,9 +177,9 @@ invalid/legacy snapshot -> 400 + snapshot-specific validation errors
 
 Injected envelope noise was absent from the stored JSONB row. The legacy shape produced field errors for `snapshot.schemaVersion`, `snapshot.session`, and `snapshot.finalDraft`.
 
-### Phase 2 — frontend API boundary/configuration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 2 — frontend API boundary/configuration: DONE
 
-Nuxt now exposes:
+Nuxt exposes:
 
 ```text
 runtimeConfig.public.apiBase
@@ -203,15 +203,6 @@ Typed API contracts live in:
 app/types/wizardRunApi.ts
 ```
 
-This defines:
-
-```text
-WizardRunSnapshotV1
-CreateWizardRunInput
-WizardRunRecord
-create/list/hello response types
-```
-
 The reusable client boundary is:
 
 ```text
@@ -228,23 +219,58 @@ listWizardRuns()
 
 No Nuxt server routes are introduced. Requests remain browser -> external API, preserving the static frontend architecture.
 
-For local browser verification, the development-only Home GET diagnostic now calls `hello()` through this shared client and logs the resolved API base. The old Home POST remains a temporary learning hook until Phase 4; because it still sends the legacy snapshot shape it may log an expected `400` during this transitional state.
+The user verified that a PowerShell `NUXT_PUBLIC_API_BASE=http://localhost:4000` override is reflected by the browser client and that `hello()` succeeds through that configured base.
 
-Phase 2 also requires confirming the normal static-generation workflow still succeeds.
+The user also verified the normal `pnpm generate` workflow still succeeds and prerenders `/wizard/portrait`.
 
-### Phase 3 — persist on successful Wizard completion
+### Phase 3 — persist on successful Wizard completion: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Inside `finish()`:
+`finish()` now calls the shared `createWizardRun()` client only after `runtime.complete(session)` succeeds.
+
+The payload is built directly from the successful product result and current Wizard decision state:
 
 ```text
-runtime.complete(session)
-  -> if !ok: current error behavior, no persistence
-  -> build snapshot v1
-  -> POST final prompt + snapshot through usePromptDraftApi()
-  -> completed Ready state
+wizardId      = session.wizardId
+wizardVersion = session.wizardVersion
+output        = result.promptPreview
+
+snapshot.schemaVersion          = 1
+snapshot.session.currentStepId  = session.currentStepId
+snapshot.session.answers        = session.answers
+snapshot.session.derived        = session.derived
+snapshot.finalDraft             = result.finalDraft
 ```
 
-Persistence failure semantics must be chosen explicitly. Recommended first product rule: keep the successfully generated artifact available locally and surface a persistence warning/error rather than discarding a successful compile solely because history storage is unavailable. Confirm this rule before implementation.
+The local successful artifact is established before waiting on history persistence:
+
+```text
+completedDraft = result.finalDraft
+completedPromptPreview = result.promptPreview
+saveWizardSession(session)
+```
+
+Then the history POST runs.
+
+This intentionally gives persistence weaker failure semantics than prompt generation:
+
+```text
+mapping/compile failure
+  -> no completed artifact
+  -> no Wizard-run POST
+
+mapping/compile success + persistence success
+  -> Ready artifact
+  -> durable Wizard-run row
+
+mapping/compile success + persistence failure
+  -> Ready artifact remains available
+  -> API failure logged
+  -> locale-aware warning shown in existing Ready issue area
+```
+
+This avoids destroying a successfully generated product artifact merely because history storage is unavailable.
+
+Local verification for Phase 3 should test both the positive product path and the non-destructive persistence-failure path.
 
 ### Phase 4 — remove development home-page API hooks
 
