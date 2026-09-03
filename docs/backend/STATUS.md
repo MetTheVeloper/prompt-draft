@@ -37,71 +37,71 @@ output           text
 snapshot         jsonb
 ```
 
-The snapshot schema remains intentionally flexible/provisional during this milestone.
-
 ### Phase 1 — PostgreSQL Compose service: DONE
 
-Added `db` service using `postgres:17-alpine`.
+The user verified both `api` and `db` services run, PostgreSQL reports `accepting connections`, and a real `psql` session returns database/user `prompt_draft`.
 
-The user locally verified:
+### Phase 2 — named volume/persistence proof: DONE
 
-```text
-docker compose ps
-```
-
-showed both `api` and `db` running, with PostgreSQL exposed only inside the Compose network as `5432/tcp`.
-
-The user also confirmed:
-
-```powershell
-docker compose exec db pg_isready -U prompt_draft -d prompt_draft
-```
-
-returned `accepting connections`, and:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT current_database(), current_user;"
-```
-
-returned:
+Compose uses the named volume:
 
 ```text
-prompt_draft | prompt_draft
+prompt-draft_prompt_draft_pgdata
 ```
 
-This proves the PostgreSQL container starts correctly and accepts a real SQL session.
+mounted to PostgreSQL's data directory.
 
-### Phase 2 — named volume/persistence proof: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-Updated `compose.yaml` with a named volume:
-
-```yaml
-db:
-  volumes:
-    - prompt_draft_pgdata:/var/lib/postgresql/data
-
-volumes:
-  prompt_draft_pgdata:
-```
-
-The volume is intentionally attached before any real `wizard_runs` table exists. Phase 2 should prove the storage primitive itself first.
-
-Important behavior to verify:
+The user created `persistence_probe` with:
 
 ```text
-create a small probe row in PostgreSQL
-  -> docker compose down
-  -> containers removed
-  -> named volume remains
-  -> docker compose up
-  -> probe row still exists
+1 | survives container recreation
 ```
 
-Do NOT use `docker compose down -v` during the persistence proof because `-v` explicitly deletes named volumes.
+Then ran `docker compose down`, recreated the Compose project with `docker compose up -d`, and queried the table again without recreating the row. The same row remained.
 
-### Phase 3 — API -> PostgreSQL connectivity: NOT STARTED
+This locally proves:
 
-Will add a minimal Node PostgreSQL client and verify API-container -> `db:5432` networking before changing endpoints.
+```text
+PostgreSQL container removed/recreated
+  -> named volume retained
+  -> database files retained
+  -> SQL data retained
+```
+
+Do not use `docker compose down -v` unless intentionally deleting the local database volume.
+
+### Phase 3 — API -> PostgreSQL connectivity: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Changes now on the branch:
+
+- `backend/package.json` adds exact dependency `pg 8.16.3`;
+- `backend/Dockerfile` installs production dependencies with npm;
+- added `backend/src/database.mjs` with a `pg` connection pool;
+- `compose.yaml` passes explicit DB configuration to the API:
+
+```text
+DB_HOST=db
+DB_PORT=5432
+DB_NAME=prompt_draft
+DB_USER=prompt_draft
+DB_PASSWORD=prompt_draft_dev
+```
+
+- added diagnostic endpoint:
+
+```http
+GET /api/db-check
+```
+
+The endpoint performs a simple SELECT through the API process and should return database `prompt_draft`, user `prompt_draft`, and PostgreSQL server time.
+
+The important path to verify is:
+
+```text
+host -> API :4000 -> API container -> pg client -> db:5432 -> PostgreSQL -> SELECT -> JSON
+```
+
+Wizard endpoints are intentionally unchanged and still use the in-memory `wizardRuns` array.
 
 ### Phase 4 — first `wizard_runs` table: NOT STARTED
 
@@ -113,9 +113,48 @@ Will add a minimal Node PostgreSQL client and verify API-container -> `db:5432` 
 
 ## Next action
 
-Sync the branch, recreate the Compose project with the new named volume, create a small persistence probe, remove/recreate the containers without deleting volumes, and confirm the probe remains.
+Sync the Phase-3 code and rebuild the API image because it now has an external dependency:
 
-PostgreSQL is not yet connected to the Node API. The current Wizard endpoints still use the in-memory `wizardRuns` array.
+```powershell
+git pull
+docker compose up -d --build --force-recreate
+```
+
+Wait until PostgreSQL is ready if necessary, then verify the database itself:
+
+```powershell
+docker compose exec db pg_isready -U prompt_draft -d prompt_draft
+```
+
+Finally call through the API:
+
+```powershell
+curl.exe -i http://127.0.0.1:4000/api/db-check
+```
+
+Expected status:
+
+```text
+HTTP/1.1 200 OK
+```
+
+Expected JSON includes:
+
+```json
+{
+  "ok": true,
+  "database": "prompt_draft",
+  "user": "prompt_draft"
+}
+```
+
+Also regression-check the existing endpoint:
+
+```powershell
+curl.exe http://127.0.0.1:4000/api/hello
+```
+
+After user confirmation, mark Phase 3 `DONE` and begin Phase 4 only.
 
 ## New-chat handoff
 
