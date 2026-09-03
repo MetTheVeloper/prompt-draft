@@ -2,12 +2,18 @@
 
 ## Architecture baseline
 
-Milestone 1 is complete and verified:
+Milestone 1 and Milestone 2 are complete and locally verified.
+
+Current verified path:
 
 ```text
 Nuxt frontend :3030
+  -> browser CORS/preflight
   -> Docker API :4000
   -> Node HTTP server
+  -> request parsing + validation
+  -> temporary process memory
+  -> JSON response
 ```
 
 The backend stays independent from Nuxt server routes so the frontend can continue to be statically generated.
@@ -24,14 +30,13 @@ backend/
 compose.yaml
 ```
 
-## Milestone 2 objective
+## Milestone 2 — COMPLETE
 
-Learn the inbound HTTP request path before adding PostgreSQL.
-
-The milestone uses a Wizard-shaped API rather than a Todo/demo resource:
+Milestone 2 used a Wizard-shaped resource rather than a Todo/demo resource:
 
 ```http
 POST /api/wizard-runs
+GET /api/wizard-runs
 ```
 
 Conceptual payload:
@@ -48,17 +53,15 @@ Conceptual payload:
 }
 ```
 
-This shape deliberately points toward future Wizard history while remaining provisional. Durable storage and the final production snapshot schema are not part of Milestone 2.
-
-## Milestone 2 phases
+This shape deliberately points toward future Wizard history while remaining provisional.
 
 ### Phase 0 — API contract: DONE
 
-Define the learning endpoint, payload direction, boundaries, and phased implementation.
+Defined the learning endpoint, payload direction, boundaries, and phased implementation.
 
 ### Phase 1 — POST happy path: DONE
 
-`POST /api/wizard-runs` reads the Node request body as a stream:
+The Node request body is read as a stream:
 
 ```text
 request chunks
@@ -69,123 +72,164 @@ request chunks
 
 A successful request returns `201 Created` with generated `id` and `createdAt` fields.
 
-The user locally verified a correct POST from Windows CMD and received the expected `201` response.
-
-Implementation remains dependency-free and uses Node built-ins:
-
-- `node:http`;
-- `node:crypto` `randomUUID()`.
-
 ### Phase 2 — validation and client errors: DONE
 
-The API now distinguishes parsing and contract problems before creating a run.
+Current rules:
 
-Required content type:
-
-```text
-Content-Type: application/json
-```
-
-Unsupported or missing JSON media type returns `415 Unsupported Media Type`.
-
-Malformed JSON returns `400 Bad Request`.
-
-Required field rules:
-
+- `Content-Type` must resolve to `application/json`;
+- malformed JSON -> `400 Bad Request`;
 - `wizardId`: non-empty string;
 - `wizardVersion`: positive integer;
 - `output`: non-empty string;
-- `snapshot`: JSON object, not an array/null/primitive.
+- `snapshot`: JSON object;
+- invalid contract data -> `400 Bad Request` with structured field errors;
+- unsupported media type -> `415 Unsupported Media Type`.
 
-Invalid contract data returns `400 Bad Request` with a structured `errors` array.
+All behaviors were locally verified.
 
-The user locally verified all of the following after rebuilding the API:
+### Phase 3 — temporary in-memory storage: DONE
 
-1. valid request -> `201 Created`;
-2. invalid field payload -> `400 Bad Request` with field errors;
-3. `Content-Type: text/plain` -> `415 Unsupported Media Type`;
-4. malformed JSON -> `400 Bad Request`.
+The backend owns a process-local `wizardRuns` array.
 
-### Phase 3 — temporary in-memory storage: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-The backend now owns a process-local array:
-
-```text
-wizardRuns
-```
-
-A successfully validated POST pushes the new run into that array.
-
-A new endpoint exposes the current process memory:
+A successfully validated POST inserts into that array, while:
 
 ```http
 GET /api/wizard-runs
 ```
 
-Response shape:
+returns `{ ok, count, runs }`.
 
-```json
-{
-  "ok": true,
-  "count": 1,
-  "runs": [
-    {
-      "id": "...",
-      "createdAt": "...",
-      "wizardId": "portrait",
-      "wizardVersion": 1,
-      "output": "...",
-      "snapshot": {}
-    }
-  ]
-}
-```
+The user verified data is present during the current Node process lifetime and disappears after recreating the container/process.
 
-This is intentionally not persistence. The array exists only inside the current Node process. Recreating/restarting the API container starts a new process and therefore resets the list to empty.
+### Phase 4 — POST CORS/preflight verification: DONE
 
-Local verification should prove both behaviors:
-
-1. POST one or more valid runs, then GET the list and see them;
-2. recreate the API container, then GET the list again and see `count: 0`.
-
-That loss of data is the learning bridge to PostgreSQL in Milestone 3.
-
-### Phase 4 — POST CORS/preflight verification
-
-Verify the real browser preflight requirements for a JSON POST from Prompt Draft `localhost:3030`.
-
-The current CORS advertisement already includes:
+The API advertises:
 
 ```text
 Access-Control-Allow-Methods: GET, POST, OPTIONS
 Access-Control-Allow-Headers: Content-Type
 ```
 
-but browser POST/preflight verification remains a separate user-confirmed phase.
+The user verified a simulated browser preflight from `http://localhost:3030` returns `204 No Content` with the expected CORS headers.
 
-### Phase 5 — Nuxt POST integration
+### Phase 5 — Nuxt POST integration: DONE
 
-Send one development-only Wizard-shaped request from Prompt Draft. Do not redesign product UI during this learning milestone.
+The Prompt Draft home page sends one development-only Wizard-shaped JSON POST to the local API and logs the result.
 
-### Phase 6 — browser end-to-end verification
+No page UI was changed, and the request remains guarded by `import.meta.dev` so production/static generation does not call localhost.
 
-Confirm:
+### Phase 6 — browser end-to-end verification: DONE
+
+The user verified the real browser path:
 
 ```text
 Nuxt :3030
-  -> OPTIONS preflight
+  -> CORS/preflight contract
   -> POST /api/wizard-runs
-  -> Docker API
   -> validation
   -> in-memory insert
   -> 201 JSON
   -> browser console
 ```
 
-Milestone 2 is complete only after user-confirmed local browser verification.
+DevTools showed `POST /api/wizard-runs -> 201`, and a later `GET /api/wizard-runs` confirmed the browser-created run exists in backend process memory.
 
-## Milestone 3 direction
+## Milestone 3 objective — PostgreSQL persistence
 
-After Milestone 2, add PostgreSQL as another Compose service, introduce a Docker volume, create the first durable Wizard-run table, and replace temporary in-memory behavior with database persistence.
+Replace temporary process memory with durable PostgreSQL storage while preserving the current API concepts.
 
-Authentication and production Wizard history UI remain later work.
+The main learning goal is to understand the difference between:
+
+```text
+container filesystem / process RAM
+```
+
+and:
+
+```text
+PostgreSQL data directory backed by a Docker named volume
+```
+
+The first persistence milestone should stay deliberately small. No authentication, user ownership, migrations framework, production deployment, or polished history UI should be mixed into the first database step.
+
+## Proposed Milestone 3 phases
+
+### Phase 0 — persistence contract and schema direction
+
+Agree on the first provisional `wizard_runs` table and decide what should be relational columns versus JSON.
+
+Recommended initial fields:
+
+```text
+id              UUID primary key
+created_at      timestamp with time zone
+wizard_id       text
+wizard_version  integer
+output           text
+snapshot         jsonb
+```
+
+This matches the current API closely while leaving the snapshot flexible.
+
+### Phase 1 — PostgreSQL Compose service
+
+Add a second service to `compose.yaml` using an official PostgreSQL image.
+
+Learn:
+
+- service-to-service networking;
+- database environment variables;
+- internal PostgreSQL port `5432`;
+- why the API should connect to host `db` inside Compose rather than `localhost`.
+
+Do not integrate the Node API yet; first prove the database container itself starts successfully.
+
+### Phase 2 — named volume and persistence proof
+
+Attach a named Docker volume to PostgreSQL's data directory.
+
+Create a small test artifact/database object, recreate the PostgreSQL container, and prove the data remains.
+
+This is the direct contrast to Milestone-2 in-memory loss.
+
+### Phase 3 — API database connectivity
+
+Add the minimal PostgreSQL Node client dependency and connection configuration through environment variables.
+
+Verify:
+
+```text
+API container -> Compose DNS/service name -> PostgreSQL container
+```
+
+before changing the Wizard endpoints.
+
+### Phase 4 — first table/schema
+
+Create the first `wizard_runs` table with the provisional schema.
+
+For this learning milestone, prefer an explicit/simple schema-creation step before introducing a migrations framework.
+
+### Phase 5 — replace POST memory insert with database INSERT
+
+Keep validation and `201 Created` behavior, but write accepted runs to PostgreSQL instead of `wizardRuns.push()`.
+
+### Phase 6 — replace GET memory listing with database SELECT
+
+Return durable rows from PostgreSQL through the existing `GET /api/wizard-runs` endpoint.
+
+### Phase 7 — durability verification
+
+Create a run, verify it through GET, recreate the API and PostgreSQL containers, then verify the same run still exists.
+
+Milestone 3 is complete only after user-confirmed local persistence survives container recreation.
+
+## After Milestone 3
+
+Only after database persistence is understood should the project move toward production product semantics:
+
+- tighten/version the Wizard snapshot contract;
+- remove the home-page test POST and connect persistence to a real successful Wizard completion/copy event;
+- later add authentication and user ownership;
+- later build Wizard history/list/restore UI;
+- later introduce a migrations workflow suitable for production deployments.
