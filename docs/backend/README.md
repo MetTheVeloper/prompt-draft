@@ -10,35 +10,11 @@ The backend remains intentionally independent from Nuxt server routes. Prompt Dr
 
 ## Milestone 1 — complete
 
-Established the local backend path:
-
-```text
-Nuxt frontend (localhost:3030)
-  -> browser CORS
-  -> host port 4000
-  -> Docker Compose API container
-  -> Node HTTP server
-  -> JSON response
-```
+Established the local Dockerized Node API path from Nuxt development frontend to `:4000`.
 
 ## Milestone 2 — complete
 
-Established the inbound HTTP/request path:
-
-```text
-Nuxt :3030
-  -> JSON POST
-  -> browser CORS/preflight
-  -> Docker API :4000
-  -> Node request stream
-  -> JSON parse
-  -> validation
-  -> temporary in-memory Wizard run
-  -> 201 response
-  -> GET read-back
-```
-
-The user also verified that process-local data disappears after container/process recreation.
+Established JSON POST parsing, validation, CORS/preflight, temporary Wizard-run state, and browser integration.
 
 ## Milestone 3 — complete
 
@@ -57,7 +33,7 @@ Nuxt/client
   -> Docker named volume prompt_draft_pgdata
 ```
 
-Locally verified capabilities now include:
+Verified capabilities include:
 
 - `GET /api/hello`;
 - `GET /api/db-check`;
@@ -65,7 +41,7 @@ Locally verified capabilities now include:
 - `GET /api/wizard-runs`;
 - JSON body parsing and validation;
 - structured client errors;
-- UUID/timestamp generation;
+- server-generated UUID/timestamp concepts;
 - browser CORS/preflight;
 - PostgreSQL service-to-service networking;
 - PostgreSQL connection pooling;
@@ -75,7 +51,7 @@ Locally verified capabilities now include:
 - Docker named-volume persistence;
 - Wizard-run rows that survive full API + DB container removal/recreation.
 
-Current provisional database shape:
+Current database shape:
 
 ```text
 id              UUID primary key
@@ -86,22 +62,59 @@ output           text
 snapshot         jsonb
 ```
 
-The exact production Wizard snapshot semantics are still intentionally provisional.
+## Milestone 4 — in progress
 
-## Next direction — product integration and contract hardening
+Goal: move persistence from the development home-page learning hook into the real Wizard success flow and make the API contract safe enough for product use.
 
-Milestone 3 proved persistence. The next work should make that persistence belong to the actual product rather than the development learning hook.
+The real Wizard completion event has now been identified in `app/pages/wizard/[wizardId].vue`:
 
-Before real Wizard integration:
+```text
+finish()
+  -> runtime.complete(session)
+  -> successful finalDraft + promptPreview
+  -> completed Ready state
+```
 
-- harden server-owned fields so clients cannot override generated `id`/`createdAt`;
-- explicitly allowlist fields stored from the POST body;
-- inspect the real Wizard success/completion/copy path;
-- decide the correct persistence event;
-- tighten/version snapshot semantics;
-- remove the home-page development POST after the real integration is verified.
+The current Ready UI does not expose a copy action, so the current persistence event is successful completion rather than clipboard interaction.
 
-The current home-page API calls are development learning hooks, not the final product integration point.
+Milestone 4 sequence:
+
+```text
+server-owned field hardening
+  -> snapshot contract v1
+  -> configurable frontend API client/base
+  -> persist successful Wizard finish
+  -> remove home-page learning hooks
+  -> browser E2E verification
+```
+
+Phase 0 hardening is implemented but must still be locally verified before being marked complete.
+
+## Snapshot direction
+
+The exact production snapshot is still provisional. Current recommended v1 direction is:
+
+```json
+{
+  "schemaVersion": 1,
+  "session": {
+    "currentStepId": "review",
+    "answers": {},
+    "derived": {}
+  },
+  "finalDraft": {}
+}
+```
+
+The relational/API fields already carry `wizardId`, `wizardVersion`, compiled `output`, run `id`, and `createdAt`.
+
+## Frontend integration boundary
+
+The current home-page learning requests hardcode `http://127.0.0.1:4000` and are guarded by `import.meta.dev`.
+
+Before real Wizard integration, use a configurable public API base/helper so product code does not embed a local-only URL and static generation remains supported.
+
+The home-page requests must be removed after the real Wizard path is verified.
 
 ## Still deferred
 
@@ -114,7 +127,7 @@ The current home-page API calls are development learning hooks, not the final pr
 - production domain/HTTPS;
 - production secrets/configuration.
 
-A temporary `persistence_probe` table also remains from the volume-learning phase and can be removed during a later cleanup step.
+A temporary `persistence_probe` table remains from the volume-learning phase and can be removed during a later cleanup step.
 
 ## Documentation workflow
 
