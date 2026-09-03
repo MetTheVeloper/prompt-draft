@@ -29,3 +29,41 @@ export async function getDatabaseStatus() {
 
   return result.rows[0]
 }
+
+export async function insertWizardRun(run) {
+  const result = await queryDatabase(
+    `
+      INSERT INTO wizard_runs (
+        id,
+        created_at,
+        wizard_id,
+        wizard_version,
+        output,
+        snapshot
+      )
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      RETURNING
+        id,
+        created_at AS "createdAt",
+        wizard_id AS "wizardId",
+        wizard_version AS "wizardVersion",
+        output,
+        snapshot
+    `,
+    [
+      run.id,
+      run.createdAt,
+      run.wizardId,
+      run.wizardVersion,
+      run.output,
+      JSON.stringify(run.snapshot),
+    ],
+  )
+
+  const savedRun = result.rows[0]
+
+  return {
+    ...savedRun,
+    createdAt: savedRun.createdAt.toISOString(),
+  }
+}
