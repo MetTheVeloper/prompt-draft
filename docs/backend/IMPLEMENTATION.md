@@ -12,8 +12,7 @@ Nuxt frontend :3030
   -> Docker API :4000
   -> Node HTTP server
   -> request parsing + validation
-  -> temporary process memory
-  -> JSON response
+  -> PostgreSQL connectivity
 ```
 
 The backend remains independent from Nuxt server routes so the frontend can continue to be statically generated.
@@ -65,11 +64,7 @@ Rationale:
 
 Compose has a `db` service using `postgres:17-alpine` with local-development database/user/password configuration.
 
-PostgreSQL is intentionally not published to the Windows host. Inside Compose its address is:
-
-```text
-db:5432
-```
+PostgreSQL is intentionally not published to the Windows host. Inside Compose its address is `db:5432`.
 
 The user verified both services run, `pg_isready` reports `accepting connections`, and `psql` reports database/user `prompt_draft`.
 
@@ -83,15 +78,11 @@ prompt_draft_pgdata:/var/lib/postgresql/data
 
 The user created a temporary `persistence_probe` row, ran `docker compose down`, recreated the containers, and confirmed the same row remained.
 
-This proves container lifecycle and data lifecycle are now separate.
+This proves container lifecycle and data lifecycle are separate.
 
 ### Phase 3 — API database connectivity: DONE
 
-The backend now depends on:
-
-```text
-pg 8.16.3
-```
+The backend depends on `pg 8.16.3`.
 
 `backend/src/database.mjs` owns the PostgreSQL pool. Compose supplies:
 
@@ -103,29 +94,11 @@ DB_USER=prompt_draft
 DB_PASSWORD=prompt_draft_dev
 ```
 
-The diagnostic endpoint:
+`GET /api/db-check` performs a SELECT through the API process. The user verified `HTTP/1.1 200 OK`, proving the API container can resolve `db` through Compose DNS and query PostgreSQL on port 5432.
 
-```http
-GET /api/db-check
-```
+### Phase 4 — first `wizard_runs` table: DONE
 
-performs a SELECT through the API process.
-
-The user verified `HTTP/1.1 200 OK` and a response identifying database/user `prompt_draft`. This proves:
-
-```text
-API container
-  -> pg client
-  -> Compose DNS hostname db
-  -> PostgreSQL 5432
-  -> successful query
-```
-
-The Wizard endpoints remain in-memory during this phase.
-
-### Phase 4 — first `wizard_runs` table: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-The explicit schema source is now versioned in:
+The explicit schema source is versioned in:
 
 ```text
 backend/sql/001_create_wizard_runs.sql
@@ -144,43 +117,77 @@ CREATE TABLE IF NOT EXISTS wizard_runs (
 );
 ```
 
-The backend package exposes:
+The backend package exposes `npm run db:schema` through `backend/src/create-schema.mjs`.
+
+The user directly inspected `\d wizard_runs` in PostgreSQL and confirmed all columns, the UUID primary key, and the positive-version check constraint.
+
+### Phase 5 — replace POST memory insert with database INSERT: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+`backend/src/database.mjs` now provides:
 
 ```text
-npm run db:schema
+insertWizardRun(run)
 ```
 
-`backend/src/create-schema.mjs` reads that SQL file and executes it through the same PostgreSQL pool/configuration already proven in Phase 3. It then closes the pool explicitly so the one-shot command exits cleanly.
+It executes a parameterized statement rather than interpolating request values into SQL:
 
-The Docker image copies both:
+```sql
+INSERT INTO wizard_runs (
+  id,
+  created_at,
+  wizard_id,
+  wizard_version,
+  output,
+  snapshot
+)
+VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+RETURNING
+  id,
+  created_at AS "createdAt",
+  wizard_id AS "wizardId",
+  wizard_version AS "wizardVersion",
+  output,
+  snapshot;
+```
+
+Parameterization keeps SQL structure separate from values and is the correct baseline for avoiding SQL-injection problems.
+
+`POST /api/wizard-runs` preserves the existing request contract:
 
 ```text
-src/
-sql/
+JSON body
+  -> parse
+  -> validate
+  -> randomUUID()
+  -> ISO createdAt
+  -> parameterized INSERT
+  -> RETURNING stored row
+  -> 201 Created
 ```
 
-No migrations framework is introduced yet. This keeps the first schema step transparent: inspect SQL, execute SQL, inspect resulting table.
+The response shape remains camelCase even though database columns are snake_case.
 
-Local verification should:
+Database insert failures are treated as server-side failures and currently return:
 
 ```text
-rebuild API image
-  -> docker compose exec api npm run db:schema
-  -> verify wizard_runs exists in PostgreSQL
-  -> inspect its columns/types/constraints
+500 Failed to create Wizard run
 ```
 
-### Phase 5 — replace POST memory insert with database INSERT
+#### Intentional transitional state
 
-Keep current parsing, validation, CORS, UUID/timestamp semantics, and `201 Created`, but replace:
+Phase 5 changes POST only.
+
+`GET /api/wizard-runs` still reads the old process-local `wizardRuns` array until Phase 6. The POST no longer pushes into that array, so during this temporary phase a successful POST may exist in PostgreSQL while the GET endpoint still reports an empty in-memory list.
+
+This mismatch is deliberate so POST persistence and GET persistence are learned and verified independently.
+
+Local Phase-5 verification should therefore:
 
 ```text
-wizardRuns.push(run)
+POST /api/wizard-runs -> 201
+  -> query wizard_runs directly with psql
+  -> confirm posted row exists in PostgreSQL
 ```
-
-with a parameterized SQL `INSERT` into `wizard_runs`.
-
-Do not switch GET during the same phase; POST persistence should be verified independently first.
 
 ### Phase 6 — replace GET memory list with database SELECT
 
@@ -192,9 +199,11 @@ GET /api/wizard-runs
 
 but query PostgreSQL and map snake_case database columns back to the existing camelCase API shape.
 
+After this phase the process-local `wizardRuns` array can be removed entirely.
+
 ### Phase 7 — durability verification
 
-Create a run through the API, read it back, remove/recreate API and PostgreSQL containers without deleting volumes, then read the same run again.
+Create a run through the API, read it back through GET, remove/recreate API and PostgreSQL containers without deleting volumes, then read the same run again.
 
 Milestone 3 is complete only after the user confirms that the run survives container recreation because PostgreSQL data lives in the named volume.
 
