@@ -67,46 +67,28 @@ request chunks
   -> JSON.parse
 ```
 
-A successful request returns:
-
-```http
-201 Created
-```
-
-with generated `id` and `createdAt` fields.
+A successful request returns `201 Created` with generated `id` and `createdAt` fields.
 
 The user locally verified a correct POST from Windows CMD and received the expected `201` response.
-
-Important: this phase does **not** store the returned run. The record currently exists only as the response object for that request.
 
 Implementation remains dependency-free and uses Node built-ins:
 
 - `node:http`;
 - `node:crypto` `randomUUID()`.
 
-### Phase 2 — validation and client errors: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 2 — validation and client errors: DONE
 
-The API now distinguishes parsing/contract problems before creating a run.
+The API now distinguishes parsing and contract problems before creating a run.
 
-Content type:
+Required content type:
 
 ```text
 Content-Type: application/json
 ```
 
-is required. Parameters such as `application/json; charset=utf-8` are accepted because validation compares the media type portion.
+Unsupported or missing JSON media type returns `415 Unsupported Media Type`.
 
-Unsupported/missing JSON media type returns:
-
-```http
-415 Unsupported Media Type
-```
-
-Malformed JSON returns:
-
-```http
-400 Bad Request
-```
+Malformed JSON returns `400 Bad Request`.
 
 Required field rules:
 
@@ -115,40 +97,58 @@ Required field rules:
 - `output`: non-empty string;
 - `snapshot`: JSON object, not an array/null/primitive.
 
-Invalid contract data returns:
+Invalid contract data returns `400 Bad Request` with a structured `errors` array.
 
-```http
-400 Bad Request
+The user locally verified all of the following after rebuilding the API:
+
+1. valid request -> `201 Created`;
+2. invalid field payload -> `400 Bad Request` with field errors;
+3. `Content-Type: text/plain` -> `415 Unsupported Media Type`;
+4. malformed JSON -> `400 Bad Request`.
+
+### Phase 3 — temporary in-memory storage: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+The backend now owns a process-local array:
+
+```text
+wizardRuns
 ```
 
-with a structured body such as:
+A successfully validated POST pushes the new run into that array.
 
-```json
-{
-  "ok": false,
-  "message": "Validation failed",
-  "errors": [
-    {
-      "field": "wizardVersion",
-      "message": "wizardVersion must be a positive integer"
-    }
-  ]
-}
-```
-
-A valid request must continue returning `201 Created` after validation is introduced.
-
-### Phase 3 — temporary in-memory storage
-
-Add a process-local collection of accepted runs and a read-back endpoint:
+A new endpoint exposes the current process memory:
 
 ```http
 GET /api/wizard-runs
 ```
 
-This teaches the difference between application memory and durable storage.
+Response shape:
 
-Restarting/recreating the container will intentionally erase the list.
+```json
+{
+  "ok": true,
+  "count": 1,
+  "runs": [
+    {
+      "id": "...",
+      "createdAt": "...",
+      "wizardId": "portrait",
+      "wizardVersion": 1,
+      "output": "...",
+      "snapshot": {}
+    }
+  ]
+}
+```
+
+This is intentionally not persistence. The array exists only inside the current Node process. Recreating/restarting the API container starts a new process and therefore resets the list to empty.
+
+Local verification should prove both behaviors:
+
+1. POST one or more valid runs, then GET the list and see them;
+2. recreate the API container, then GET the list again and see `count: 0`.
+
+That loss of data is the learning bridge to PostgreSQL in Milestone 3.
 
 ### Phase 4 — POST CORS/preflight verification
 
@@ -177,6 +177,7 @@ Nuxt :3030
   -> POST /api/wizard-runs
   -> Docker API
   -> validation
+  -> in-memory insert
   -> 201 JSON
   -> browser console
 ```
