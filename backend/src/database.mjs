@@ -91,18 +91,42 @@ export async function getWizardRunById(id) {
   return row ? mapWizardRunRow(row) : null
 }
 
-export async function listWizardRuns() {
-  const result = await queryDatabase(`
-    SELECT
-      id,
-      created_at AS "createdAt",
-      wizard_id AS "wizardId",
-      wizard_version AS "wizardVersion",
-      output,
-      snapshot
-    FROM wizard_runs
-    ORDER BY created_at DESC
-  `)
+export async function listWizardRuns({ limit, cursor }) {
+  const fetchLimit = limit + 1
+  const result = cursor
+    ? await queryDatabase(
+        `
+          SELECT
+            id,
+            created_at AS "createdAt",
+            wizard_id AS "wizardId",
+            wizard_version AS "wizardVersion"
+          FROM wizard_runs
+          WHERE (created_at, id) < ($1::timestamptz, $2::uuid)
+          ORDER BY created_at DESC, id DESC
+          LIMIT $3
+        `,
+        [cursor.createdAt, cursor.id, fetchLimit],
+      )
+    : await queryDatabase(
+        `
+          SELECT
+            id,
+            created_at AS "createdAt",
+            wizard_id AS "wizardId",
+            wizard_version AS "wizardVersion"
+          FROM wizard_runs
+          ORDER BY created_at DESC, id DESC
+          LIMIT $1
+        `,
+        [fetchLimit],
+      )
 
-  return result.rows.map(mapWizardRunRow)
+  const hasMore = result.rows.length > limit
+  const runs = result.rows.slice(0, limit).map(mapWizardRunRow)
+
+  return {
+    runs,
+    hasMore,
+  }
 }
