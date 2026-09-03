@@ -121,9 +121,9 @@ legacy snapshot    -> 400 Validation failed
 
 The valid row stored only `schemaVersion`, `session`, and `finalDraft`; injected envelope noise was removed. The legacy request returned field errors for `snapshot.schemaVersion`, `snapshot.session`, and `snapshot.finalDraft`.
 
-### Phase 2 — configurable frontend API client/base: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+### Phase 2 — configurable frontend API client/base: DONE
 
-Added public Nuxt runtime configuration:
+Public Nuxt runtime configuration:
 
 ```text
 NUXT_PUBLIC_API_BASE
@@ -136,21 +136,19 @@ Local default:
 http://127.0.0.1:4000
 ```
 
-Added typed frontend contract:
+Typed frontend contract:
 
 ```text
 app/types/wizardRunApi.ts
 ```
 
-It defines snapshot-v1, create/list request-response types, and the hello response.
-
-Added reusable API composable:
+Reusable API composable:
 
 ```text
 app/composables/usePromptDraftApi.ts
 ```
 
-It owns API-base normalization and currently exposes:
+It owns API-base normalization and exposes:
 
 ```text
 hello()
@@ -158,17 +156,48 @@ createWizardRun(input)
 listWizardRuns()
 ```
 
-The development-only Home GET diagnostic now uses this composable and logs the resolved `apiBase`. The old Home POST remains intentionally untouched until Phase 4 and may continue to log a snapshot-contract `400` in development.
+The user locally verified a PowerShell override:
 
-Phase 2 is not `DONE` until the user restarts Nuxt, loads the Home page, and verifies that the shared client resolves the configured API base and `hello()` succeeds in the browser. Static generation should also remain healthy.
+```text
+NUXT_PUBLIC_API_BASE=http://localhost:4000
+```
 
-### Phase 3 — persist successful Wizard completion: NOT STARTED
+and the browser console showed the shared API client resolving `http://localhost:4000` and successfully calling `/api/hello`.
 
-After `runtime.complete(session)` succeeds, build snapshot v1 and POST the final prompt output + snapshot through `usePromptDraftApi()`.
+The user also ran the normal static-generation workflow. `pnpm generate` completed successfully and prerendered `/wizard/portrait`, proving the frontend API boundary does not break the static build path.
 
-Failed mapping/compile attempts must not create successful-run rows.
+### Phase 3 — persist successful Wizard completion: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Persistence failure semantics must be chosen explicitly before implementation.
+`finish()` now uses `createWizardRun()` only after `runtime.complete(session)` returns success.
+
+Successful completion now follows:
+
+```text
+runtime.complete(session)
+  -> result.ok
+  -> finalDraft + promptPreview
+  -> keep completed artifact locally
+  -> save local Wizard session
+  -> POST Wizard run snapshot v1
+```
+
+The POST uses:
+
+```text
+wizardId      = session.wizardId
+wizardVersion = session.wizardVersion
+output        = result.promptPreview
+snapshot.session.currentStepId = session.currentStepId
+snapshot.session.answers       = session.answers
+snapshot.session.derived       = session.derived
+snapshot.finalDraft            = result.finalDraft
+```
+
+Failed mapping/compile attempts return before the persistence call and therefore do not create successful-run rows.
+
+Persistence failure semantics are intentionally non-destructive: a successful generated artifact remains on the Ready screen even if history storage fails. The page logs the API failure and surfaces a locale-aware persistence warning through the existing Ready-screen issue area.
+
+Phase 3 is not `DONE` until the user completes the real Portrait Wizard locally and confirms the product-created run appears in PostgreSQL / `GET /api/wizard-runs`. The failure path should also be verified by making the API unavailable during a successful completion and confirming the Ready artifact remains visible with the warning.
 
 ### Phase 4 — remove home-page learning hooks: NOT STARTED
 
@@ -202,7 +231,7 @@ The temporary `persistence_probe` table also remains as non-product learning dat
 
 ## Next action
 
-Sync the branch and restart the Nuxt development server because `nuxt.config.ts` changed. Verify the Home browser console shows a successful `hello()` through the shared API client and the resolved API base. Then run the normal static-generation command to confirm this configuration/client boundary does not break the existing static build workflow.
+Sync the branch, restart Nuxt, complete the real Portrait Wizard, and verify the newest `wizard_runs` row comes from the product completion path with snapshot schema version 1 and Wizard version 2. Then verify the non-destructive persistence-failure behavior before marking Phase 3 `DONE`.
 
 ## New-chat handoff
 
