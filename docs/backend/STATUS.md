@@ -46,17 +46,28 @@ feature/docker-local-api
 
 with a clean working tree and tracking `origin/feature/docker-local-api`.
 
-### Phase 1 — minimal backend source: NOT STARTED
+### Phase 1 — minimal backend source: IMPLEMENTED, AWAITING LOCAL VERIFICATION
 
-Next task.
+Created on the feature branch:
 
-Planned result:
-
-```http
-GET /api/hello
+```text
+backend/package.json
+backend/src/index.mjs
 ```
 
-returns:
+Implementation decisions:
+
+- independent backend package;
+- Node built-in `node:http` server;
+- no Express/Fastify or other external backend dependency yet;
+- default bind address: `0.0.0.0`;
+- default port: `4000`;
+- `GET /api/hello` returns the milestone JSON response;
+- unmatched routes return JSON `404`;
+- `pnpm --dir backend dev` uses Node watch mode;
+- `pnpm --dir backend start` runs normally.
+
+Expected API response:
 
 ```json
 {
@@ -64,6 +75,8 @@ returns:
   "message": "Hello from Prompt Draft API"
 }
 ```
+
+Local verification still required before marking this phase `DONE`.
 
 ### Phase 2 — Dockerfile: NOT STARTED
 
@@ -79,7 +92,34 @@ returns:
 
 ## Next action
 
-Implement only Phase 1 first: create the smallest independent backend source and understand what each file does before containerizing it.
+Sync the feature branch locally, then run the backend directly on the host before containerizing it:
+
+```bash
+git pull
+pnpm --dir backend start
+```
+
+While that process is running, open another PowerShell window in the repository and call:
+
+```bash
+curl.exe http://localhost:4000/api/hello
+```
+
+Expected result:
+
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
+```
+
+Also test an unknown route if desired:
+
+```bash
+curl.exe -i http://localhost:4000/api/unknown
+```
+
+Expected HTTP status: `404`.
+
+Only after the user confirms the local response should Phase 1 be marked `DONE` and Phase 2 (Dockerfile) begin.
 
 Do not add PostgreSQL, authentication, Wizard persistence, or other backend services yet.
 
