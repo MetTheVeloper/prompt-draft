@@ -22,7 +22,7 @@ No database is required for this milestone.
 
 ## Planned repository shape
 
-The exact implementation may be adjusted if repository constraints require it, but the intended separation is:
+The exact implementation may be adjusted if repository constraints require it. The current milestone shape is:
 
 ```text
 prompt-draft/
@@ -31,14 +31,42 @@ prompt-draft/
 │   └── backend/
 ├── backend/
 │   ├── src/
-│   │   └── index.ts
+│   │   └── index.mjs
 │   ├── package.json
-│   └── Dockerfile
-├── compose.yaml
+│   └── Dockerfile          # phase 2
+├── compose.yaml            # phase 3
 └── ...existing Prompt Draft files
 ```
 
-The backend should remain independent from Nuxt server routes. This matters because Prompt Draft currently supports a static generation workflow and the future backend should be deployable separately.
+The backend remains independent from Nuxt server routes. This matters because Prompt Draft currently supports a static generation workflow and the future backend should be deployable separately.
+
+## Phase 1 technical decision
+
+For the first backend server, use Node's built-in `node:http` module rather than Express, Fastify, or another framework.
+
+Reasons:
+
+- no external dependency is required;
+- the HTTP request/response lifecycle stays visible while learning;
+- Docker concepts are not mixed with framework concepts;
+- a framework can be introduced later when its benefits are easier to understand;
+- the implementation remains a real independent HTTP server, not a mock.
+
+The backend package currently provides:
+
+```text
+pnpm --dir backend start
+```
+
+for a normal run, and:
+
+```text
+pnpm --dir backend dev
+```
+
+for Node watch mode during development.
+
+The server binds to `0.0.0.0` by default so it can later be reached through a Docker port mapping. The default port is `4000`. Both can be overridden with `HOST` and `PORT` environment variables.
 
 ## Step sequence
 
@@ -73,18 +101,28 @@ Expected response shape:
 }
 ```
 
-The first implementation should favor clarity over framework complexity.
+Current implementation:
+
+- `backend/package.json`
+- `backend/src/index.mjs`
+- Node built-in HTTP server
+- no external backend dependencies
+- default host `0.0.0.0`
+- default port `4000`
+- unmatched routes return a JSON `404`
+
+Phase 1 is not complete until the user runs the backend locally and verifies the GET response.
 
 ### Phase 2 — containerize backend
 
 Create a `Dockerfile` that:
 
 1. starts from an appropriate Node image;
-2. installs backend dependencies;
+2. installs/copies what the backend needs;
 3. copies the backend source;
 4. exposes/runs the backend server.
 
-Success condition: the backend can run inside a Docker container rather than relying on a host-installed backend runtime.
+Success condition: the backend can run inside a Docker container rather than relying on a host-started backend runtime.
 
 ### Phase 3 — Docker Compose
 
