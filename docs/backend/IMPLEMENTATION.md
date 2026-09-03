@@ -12,7 +12,7 @@ The milestone is deliberately limited to one GET request from the existing Nuxt 
 Nuxt frontend (host)
 localhost:3000
        |
-       | GET http://localhost:4000/api/hello
+       | GET http://127.0.0.1:4000/api/hello
        v
 Backend service (Docker container)
 localhost:4000 -> container port 4000
@@ -25,6 +25,8 @@ No database is required for this milestone.
 ```text
 prompt-draft/
 ├── app/
+│   └── pages/
+│       └── index.vue
 ├── docs/
 │   └── backend/
 ├── backend/
@@ -121,62 +123,67 @@ Access-Control-Allow-Headers: Content-Type
 Vary: Origin
 ```
 
-The backend also handles `OPTIONS` with a `204` response so the basic preflight path is already supported. An origin outside the allowlist receives no `Access-Control-Allow-Origin` header, so the browser will not grant that page cross-origin access.
+The backend handles `OPTIONS` with a `204` response. Origins outside the allowlist receive no `Access-Control-Allow-Origin` header.
 
-This phase remains intentionally dependency-free and implemented directly with Node's HTTP response headers.
+The user locally verified all three behaviors:
+
+1. allowed origin receives the expected CORS headers and the JSON body;
+2. `http://example.com` receives the JSON response but no allow-origin header;
+3. an `OPTIONS` request from `http://localhost:3000` returns `204 No Content` with the expected CORS headers.
+
+## Phase 6 frontend integration decision
+
+`app/pages/index.vue` now performs one development-only request when the home page mounts:
+
+```ts
+onMounted(async () => {
+  if (!import.meta.dev) return
+
+  try {
+    const result = await $fetch<{ ok: boolean, message: string }>('http://127.0.0.1:4000/api/hello')
+    console.log('[Prompt Draft API]', result)
+  } catch (error) {
+    console.error('[Prompt Draft API] request failed', error)
+  }
+})
+```
+
+Important boundaries:
+
+- no home-page UI is changed;
+- the request runs only in Nuxt development mode;
+- production/static generation does not attempt to call localhost;
+- the goal is only to verify browser-to-Docker API connectivity and log the response.
 
 ## Step sequence
 
 ### Phase 0 — prerequisites
 
-Verified locally:
-
-```bash
-docker --version
-docker compose version
-docker run hello-world
-```
+Verified locally.
 
 ### Phase 1 — minimal backend source
 
-Implemented and locally verified:
-
-```http
-GET /api/hello
-```
-
-Expected response:
-
-```json
-{
-  "ok": true,
-  "message": "Hello from Prompt Draft API"
-}
-```
+Implemented and locally verified.
 
 ### Phase 2 — containerize backend
 
-Implemented and locally verified by building `prompt-draft-api`, running the Docker container, and calling the API through host port `4000`.
+Implemented and locally verified.
 
 ### Phase 3 — Docker Compose
 
-Implemented and locally verified after a clean container recreation. Compose correctly publishes `0.0.0.0:4000->4000/tcp`.
+Implemented and locally verified.
 
 ### Phase 4 — independent API verification
 
-Implemented and locally verified from Windows with:
-
-```bash
-curl.exe http://127.0.0.1:4000/api/hello
-```
+Implemented and locally verified from Windows.
 
 ### Phase 5 — CORS
 
-Implemented in `backend/src/index.mjs` with a narrow development allowlist and `OPTIONS` support. Local response-header verification is still required before this phase is marked complete.
+Implemented and locally verified.
 
 ### Phase 6 — Nuxt home-page GET test
 
-Modify `app/pages/index.vue` minimally so the page requests the local API and logs the result. No product UI redesign is part of this test.
+Implemented. Browser verification is still required.
 
 ### Phase 7 — end-to-end verification
 
@@ -186,7 +193,7 @@ Run:
 Nuxt frontend -> local Docker API -> JSON response -> browser console
 ```
 
-Milestone 1 is complete only after the user confirms the result locally.
+Milestone 1 is complete only after the user confirms the browser console output locally.
 
 ## Follow-up milestones — not part of current implementation
 
