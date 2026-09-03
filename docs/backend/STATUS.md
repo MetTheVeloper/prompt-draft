@@ -8,7 +8,7 @@ Base: stable `main` at Prompt Draft v2.0.0 release line.
 
 ## Current milestone
 
-Milestone 1: run an independent local backend in Docker, expose one GET API, call it from the Prompt Draft home page, and verify the response in the browser console.
+Milestone 1: run an independent local backend in Docker, expose one GET API, call that endpoint from the Prompt Draft home page, and verify the response in the browser console.
 
 ## Verification rule
 
@@ -29,56 +29,76 @@ Docker Compose version v5.4.0
 
 `docker run hello-world` completed successfully and printed `Hello from Docker!`.
 
-This confirms that:
+This confirms that Docker CLI, Docker Desktop/daemon, image pulling, container execution, and Docker Compose are working locally.
 
-- Docker CLI is installed;
-- Docker Desktop / daemon is running and reachable;
-- the machine can pull an image;
-- Docker can create and run a container;
-- container output is returned to the host terminal;
-- Docker Compose is available.
+The local repository was also confirmed to be on `feature/docker-local-api` with a clean working tree.
 
-The local repository was also confirmed to be on:
+### Phase 1 — minimal backend source: DONE
 
-```text
-feature/docker-local-api
-```
-
-with a clean working tree and tracking `origin/feature/docker-local-api`.
-
-### Phase 1 — minimal backend source: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-Created on the feature branch:
+Created:
 
 ```text
 backend/package.json
 backend/src/index.mjs
 ```
 
-Implementation decisions:
+Implementation:
 
 - independent backend package;
 - Node built-in `node:http` server;
-- no Express/Fastify or other external backend dependency yet;
-- default bind address: `0.0.0.0`;
-- default port: `4000`;
+- no Express/Fastify or external backend dependency;
+- default bind address `0.0.0.0`;
+- default port `4000`;
 - `GET /api/hello` returns the milestone JSON response;
-- unmatched routes return JSON `404`;
-- `pnpm --dir backend dev` uses Node watch mode;
-- `pnpm --dir backend start` runs normally.
+- unmatched routes return JSON `404`.
 
-Expected API response:
+User locally ran:
 
-```json
-{
-  "ok": true,
-  "message": "Hello from Prompt Draft API"
-}
+```bash
+pnpm --dir backend start
 ```
 
-Local verification still required before marking this phase `DONE`.
+and confirmed the server logged:
 
-### Phase 2 — Dockerfile: NOT STARTED
+```text
+Prompt Draft API listening on http://0.0.0.0:4000
+```
+
+The user then confirmed:
+
+```bash
+curl.exe http://localhost:4000/api/hello
+```
+
+returned:
+
+```json
+{"ok":true,"message":"Hello from Prompt Draft API"}
+```
+
+This verifies the backend itself works correctly before Docker is introduced.
+
+### Phase 2 — Dockerfile: IMPLEMENTED, AWAITING LOCAL VERIFICATION
+
+Created:
+
+```text
+backend/Dockerfile
+```
+
+Current image design:
+
+- base image: `node:24-alpine`;
+- working directory: `/app`;
+- copies `package.json` and `src/`;
+- default `HOST=0.0.0.0`;
+- default `PORT=4000`;
+- documents container port `4000` with `EXPOSE`;
+- starts `node src/index.mjs` as the container process.
+
+No dependency-install layer is currently needed because the backend has no external dependencies.
+
+Local verification still required before marking Phase 2 `DONE`.
 
 ### Phase 3 — Docker Compose service: NOT STARTED
 
@@ -92,14 +112,27 @@ Local verification still required before marking this phase `DONE`.
 
 ## Next action
 
-Sync the feature branch locally, then run the backend directly on the host before containerizing it:
+1. Sync the feature branch locally:
 
 ```bash
 git pull
-pnpm --dir backend start
 ```
 
-While that process is running, open another PowerShell window in the repository and call:
+2. Stop the host-started backend first with `Ctrl+C` if it is still running. Host port `4000` must be free before Docker can publish that same port.
+
+3. Build the backend image from the repository root:
+
+```bash
+docker build -t prompt-draft-api ./backend
+```
+
+4. Run a container from the image:
+
+```bash
+docker run --rm -p 4000:4000 prompt-draft-api
+```
+
+5. In a second PowerShell window, verify:
 
 ```bash
 curl.exe http://localhost:4000/api/hello
@@ -111,17 +144,9 @@ Expected result:
 {"ok":true,"message":"Hello from Prompt Draft API"}
 ```
 
-Also test an unknown route if desired:
+Phase 2 becomes `DONE` only after the user confirms that this response is coming while the host Node process is stopped and the Docker container is running.
 
-```bash
-curl.exe -i http://localhost:4000/api/unknown
-```
-
-Expected HTTP status: `404`.
-
-Only after the user confirms the local response should Phase 1 be marked `DONE` and Phase 2 (Dockerfile) begin.
-
-Do not add PostgreSQL, authentication, Wizard persistence, or other backend services yet.
+Do not add Docker Compose, PostgreSQL, authentication, Wizard persistence, or other backend services before that verification.
 
 ## New-chat handoff
 
