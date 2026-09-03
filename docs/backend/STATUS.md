@@ -12,7 +12,7 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 
 Verified end to end: Nuxt `localhost:3030` -> Docker API `:4000` -> Node HTTP server -> browser console.
 
-## Milestone 2 — IN PROGRESS
+## Milestone 2 — COMPLETE
 
 Goal: learn POST bodies, validation, status codes, temporary process memory, CORS/preflight, and frontend POST integration before PostgreSQL.
 
@@ -44,17 +44,11 @@ User verified:
 3. GET returned `count: 1` with that run;
 4. after container recreation, GET returned `count: 0` again.
 
-This confirms the data exists only in the current Node process RAM and is not durable.
+This proves the data existed only in the current Node process RAM and was not durable.
 
 ### Phase 4 — POST CORS/preflight verification: DONE
 
-The user simulated the browser preflight for a JSON POST from Prompt Draft:
-
-```text
-Origin: http://localhost:3030
-Access-Control-Request-Method: POST
-Access-Control-Request-Headers: content-type
-```
+User verified a simulated browser preflight from `http://localhost:3030` with requested method `POST` and requested header `content-type`.
 
 The API returned:
 
@@ -66,54 +60,104 @@ Access-Control-Allow-Headers: Content-Type
 Vary: Origin
 ```
 
-No backend code change was required for this phase; the existing CORS implementation already supported the required POST preflight contract.
+### Phase 5 — Nuxt POST integration: DONE
 
-### Phase 5 — Nuxt POST integration: IMPLEMENTED, AWAITING LOCAL VERIFICATION
-
-Updated:
-
-```text
-app/pages/index.vue
-```
-
-The existing Milestone-1 dev-only GET remains in place.
-
-A second independent dev-only request now sends:
+`app/pages/index.vue` sends a development-only Wizard-shaped POST to:
 
 ```http
 POST http://127.0.0.1:4000/api/wizard-runs
-Content-Type: application/json
 ```
 
-with a provisional Wizard-shaped body and logs the result as:
+No page UI was changed. The test request remains guarded by `import.meta.dev`, so static/production generation does not POST to localhost.
+
+The user verified the browser console displays a successful `[Prompt Draft API POST]` response containing a generated Wizard run.
+
+### Phase 6 — browser end-to-end verification: DONE
+
+The user verified the real browser request path. DevTools Network showed:
 
 ```text
-[Prompt Draft API POST] ...
+GET  /api/hello        -> 200
+POST /api/wizard-runs  -> 201
 ```
 
-No page UI was changed. The request is inside `onMounted()` and guarded by `import.meta.dev`, so static/production generation does not POST to localhost.
+The browser console showed the successful POST response, including a generated run id and timestamp.
 
-Phase 5 is not `DONE` until the user runs Prompt Draft at `http://localhost:3030`, confirms the browser request succeeds, and sees the `201` run response in DevTools.
+A direct backend read-back then confirmed the Nuxt-created run exists in current process memory:
 
-### Phase 6 — browser end-to-end verification: NOT STARTED
+```json
+{
+  "ok": true,
+  "count": 1,
+  "runs": [
+    {
+      "wizardId": "portrait",
+      "wizardVersion": 1,
+      "output": "Created from Prompt Draft Nuxt dev client"
+    }
+  ]
+}
+```
 
-Final verification should confirm the real browser path:
+This verifies the complete Milestone-2 path:
 
 ```text
-Nuxt :3030
-  -> OPTIONS preflight
+Nuxt frontend :3030
+  -> browser CORS/preflight contract
   -> POST /api/wizard-runs
+  -> Docker API :4000
+  -> JSON parsing
   -> validation
-  -> in-memory store
-  -> 201 JSON
+  -> in-memory insert
+  -> 201 JSON response
   -> browser console
+  -> GET read-back
 ```
+
+## Milestone 2 result
+
+Milestone 2 is complete and locally verified end to end.
+
+Established capabilities now include:
+
+- GET and POST HTTP methods;
+- Node request-stream body reading;
+- JSON parsing;
+- explicit request validation;
+- meaningful `201`, `400`, `404`, and `415` behavior;
+- generated UUIDs and timestamps;
+- POST CORS/preflight behavior;
+- temporary process-local storage;
+- browser POST integration from Nuxt;
+- a concrete demonstration that container/process recreation destroys in-memory data.
+
+## Next milestone — Milestone 3: PostgreSQL persistence
+
+Milestone 3 should replace the temporary `wizardRuns` array with durable database storage while keeping the existing API contract recognizable.
+
+Recommended learning sequence:
+
+1. add PostgreSQL as a second Docker Compose service;
+2. add a named Docker volume and understand container storage vs volume storage;
+3. verify API-container -> PostgreSQL-container networking through the Compose service name;
+4. add a minimal Node PostgreSQL client dependency and environment-based connection configuration;
+5. create the first `wizard_runs` table/schema;
+6. replace in-memory POST storage with an INSERT;
+7. replace in-memory GET listing with a SELECT;
+8. recreate the API and PostgreSQL containers and prove the run still exists because the volume persists data;
+9. only after persistence is understood, tighten the provisional Wizard snapshot schema and connect the API to a real Wizard completion/copy event instead of the home-page test payload.
+
+Authentication, users, production Wizard-history UI, and deployment are still deferred.
 
 ## Next action
 
-Sync the branch, keep/restart the Docker API, run Nuxt dev, and refresh the home page. Verify the POST in DevTools Console and optionally Network. Then use `GET /api/wizard-runs` to confirm the browser-created run exists in process memory.
+Before implementing Milestone 3, review and agree on its phases and PostgreSQL data shape. Do not add database code merely because Milestone 2 is complete.
 
-PostgreSQL, authentication, and durable Wizard persistence are not implemented yet.
+Because this status file changed remotely, sync the branch before continuing locally:
+
+```powershell
+git pull
+```
 
 ## New-chat handoff
 
