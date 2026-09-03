@@ -91,36 +91,45 @@ export async function getWizardRunById(id) {
   return row ? mapWizardRunRow(row) : null
 }
 
-export async function listWizardRuns({ limit, cursor }) {
+export async function listWizardRuns({ limit, cursor, wizardId }) {
+  const values = []
+  const conditions = []
+
+  if (wizardId) {
+    values.push(wizardId)
+    conditions.push(`wizard_id = $${values.length}`)
+  }
+
+  if (cursor) {
+    values.push(cursor.createdAt, cursor.id)
+    const createdAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(created_at, id) < ($${createdAtParameter}::timestamptz, $${idParameter}::uuid)`,
+    )
+  }
+
   const fetchLimit = limit + 1
-  const result = cursor
-    ? await queryDatabase(
-        `
-          SELECT
-            id,
-            created_at AS "createdAt",
-            wizard_id AS "wizardId",
-            wizard_version AS "wizardVersion"
-          FROM wizard_runs
-          WHERE (created_at, id) < ($1::timestamptz, $2::uuid)
-          ORDER BY created_at DESC, id DESC
-          LIMIT $3
-        `,
-        [cursor.createdAt, cursor.id, fetchLimit],
-      )
-    : await queryDatabase(
-        `
-          SELECT
-            id,
-            created_at AS "createdAt",
-            wizard_id AS "wizardId",
-            wizard_version AS "wizardVersion"
-          FROM wizard_runs
-          ORDER BY created_at DESC, id DESC
-          LIMIT $1
-        `,
-        [fetchLimit],
-      )
+  values.push(fetchLimit)
+  const limitParameter = values.length
+  const whereClause = conditions.length > 0
+    ? `WHERE ${conditions.join('\n          AND ')}`
+    : ''
+
+  const result = await queryDatabase(
+    `
+      SELECT
+        id,
+        created_at AS "createdAt",
+        wizard_id AS "wizardId",
+        wizard_version AS "wizardVersion"
+      FROM wizard_runs
+      ${whereClause}
+      ORDER BY created_at DESC, id DESC
+      LIMIT $${limitParameter}
+    `,
+    values,
+  )
 
   const hasMore = result.rows.length > limit
   const runs = result.rows.slice(0, limit).map(mapWizardRunRow)
