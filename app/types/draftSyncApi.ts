@@ -22,3 +22,17 @@ export type GetPromptDraftResponse = {
   ok: true;
   draft: SyncedPromptDraftRecord;
 };
+
+export type ListPromptDraftsParams = {
+  limit?: number;
+  cursor?: string;
+};
+
+export type ListPromptDraftsResponse = {
+  ok: true;
+  drafts: SyncedPromptDraftRecord[];
+  pageInfo: {
+    nextCursor: string | null;
+    hasMore: boolean;
+  };
+};
