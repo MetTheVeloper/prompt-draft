@@ -8,21 +8,48 @@ Branch: `feature/docker-local-api`
 
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is never sufficient.
 
-## Milestones 1–5 — COMPLETE
+## Current checkpoint
 
-The Docker/PostgreSQL backend foundation and Wizard-run reference implementation are complete and locally verified.
+```text
+Milestones 1–12: COMPLETE
+Manage track: CLOSED FOR NOW
+final Manage localization: COMPLETE
+final pnpm generate: VERIFIED
+```
 
-## Reusable API playbook — COMPLETE
+The branch is ready for the user to choose and continue a different backend/product feature in a new chat.
 
-Reusable guidance lives in:
+## Reusable guides
+
+General API/backend work:
 
 ```text
 docs/backend/API_GUIDE.md
 ```
 
-It covers resource-first API design, numbered SQL, typed frontend boundaries, local-first failure semantics, static generation, and three-layer authorization.
+Manage/admin workspace work:
 
-## Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
+```text
+docs/backend/MANAGE_GUIDE.md
+```
+
+Do not rediscover the Manage shell/users/dashboard architecture when adding future Manage sections. Start from `MANAGE_GUIDE.md`.
+
+## Milestones 1–5 — COMPLETE
+
+Verified Docker/PostgreSQL foundation and Wizard-run reference implementation:
+
+```text
+independent Docker API :4000
+browser CORS
+PostgreSQL + named-volume persistence
+Wizard-run durable writes
+cursor-paginated History reads
+typed frontend API boundary
+static-safe History UI
+```
+
+## Milestone 6 — COMPLETE: Auth + Cloud Draft Sync
 
 Verified:
 
@@ -50,9 +77,9 @@ anonymous availability
 pnpm generate
 ```
 
-## Milestone 8 — COMPLETE: Authorization / Roles Foundation
+## Milestone 8 — COMPLETE: Authorization / Roles
 
-Current roles:
+Roles:
 
 ```text
 user
@@ -60,7 +87,22 @@ admin
 super_admin
 ```
 
-Authorization is enforced at three layers:
+Current backend permission policy:
+
+```text
+user
+  -> no privileged permissions
+
+admin
+  -> dashboard.view
+  -> system.metrics.view
+  -> users.view
+
+super_admin
+  -> *
+```
+
+Authorization remains enforced at:
 
 ```text
 UI visibility
@@ -68,35 +110,40 @@ frontend route guard
 backend permission guard (authoritative)
 ```
 
+## Milestone 9 — COMPLETE: Manage Shell
+
 Verified:
-
-```text
-super_admin Dashboard access
-normal user UI denial
-normal user /dashboard 403
-normal user /api/admin/access-check 403
-pnpm generate
-```
-
-## Milestone 9 — COMPLETE: Manage Shell / Admin Workspace Foundation
-
-Verified management workspace:
 
 ```text
 /manage
 /manage/dashboard
 /dashboard compatibility redirect
 permission-aware Manage section navigation
+Profile Menu Manage entry
+normal-user denial
 pnpm generate
 ```
 
-Source-of-truth milestone record:
+Current registry rule:
+
+```text
+app/config/manage.ts
+  -> key / icon / route / requiredPermission only
+
+i18n/locales/manage.en.ts
+  -> English Manage copy
+
+i18n/locales/manage.fa.ts
+  -> Persian Manage copy
+```
+
+Detailed milestone:
 
 ```text
 docs/backend/MILESTONE_9_MANAGE_SHELL.md
 ```
 
-## Milestone 10 — COMPLETE: Manage Users Foundation
+## Milestone 10 — COMPLETE: Manage Users Read Foundation
 
 Verified:
 
@@ -107,12 +154,12 @@ server-side search/filter
 cursor pagination
 admin user detail API
 read-model counts
-EL design-system normalization
+EL design-system UI
 normal-user denial
-pnpm generate
+static generation
 ```
 
-Source-of-truth milestone record:
+Detailed milestone:
 
 ```text
 docs/backend/MILESTONE_10_MANAGE_USERS.md
@@ -120,12 +167,27 @@ docs/backend/MILESTONE_10_MANAGE_USERS.md
 
 ## Milestone 11 — COMPLETE: User Administration Actions
 
-Backend:
+Verified:
 
 ```text
 users.status -> active | suspended
 admin_audit_log
+Change role
+Suspend / Unsuspend
+suspended-account login denial
+Revoke sessions
+Reset Cloud data
+Information central modal
+self-management UI protection
+backend self/super-admin safety rules
+admin audit rows
+Profile Menu follow-up UI
+pnpm generate
+```
 
+Mutation API:
+
+```text
 POST /api/admin/users/:id/role
 POST /api/admin/users/:id/suspend
 POST /api/admin/users/:id/unsuspend
@@ -133,52 +195,22 @@ POST /api/admin/users/:id/revoke-sessions
 POST /api/admin/users/:id/reset-cloud-data
 ```
 
-Verified safety/runtime behavior:
-
-```text
-users.manage authorization
-self mutation blocked
-super-admin protections
-Change role
-Suspend / Unsuspend
-suspended-account login denial
-Revoke sessions
-Reset Cloud data
-Information central modal
-admin audit rows
-Profile Menu follow-up UI
-pnpm generate
-```
-
-Source-of-truth milestone record:
+Detailed milestone:
 
 ```text
 docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md
 ```
 
-## Milestone 12 — IN PROGRESS: Manage Dashboard Summary
+## Milestone 12 — COMPLETE: Manage Dashboard Summary
 
-Source-of-truth contract:
-
-```text
-docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
-```
-
-Goal:
-
-```text
-replace the temporary authorization-proof Dashboard
-with trustworthy live aggregate metrics from existing server data
-```
-
-Implemented endpoint:
+Verified Dashboard API:
 
 ```text
 GET /api/admin/dashboard/summary
 requires: system.metrics.view
 ```
 
-Implemented metrics:
+Verified metric set:
 
 ```text
 Total users
@@ -191,90 +223,144 @@ Drafts updated today
 Admin actions today
 ```
 
-Metric boundaries:
+Current time semantics:
 
 ```text
 Today = 00:00 UTC -> generatedAt
-active account = users.status = active
-active session = unexpired session belonging to an active account
-Drafts updated today = prompt_drafts.server_updated_at since 00:00 UTC
-Admin actions today = admin_audit_log rows since 00:00 UTC
 ```
 
-The Dashboard intentionally does not expose these yet because Prompt Draft does not currently persist the necessary events:
+Dashboard uses only trustworthy persisted data. Site visits, page views, behavioral DAU, and translation request counts remain deferred until event tracking exists.
+
+Detailed milestone:
 
 ```text
-site visits
-page views
-behavioral daily active users
-translation request count
-translation success/failure count
+docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
 ```
 
-Implemented files:
+## Final Manage localization — COMPLETE
+
+The user explicitly confirmed the final Manage localization pass works correctly.
+
+All current Manage UI copy was moved to:
 
 ```text
-backend/src/adminDashboard.mjs
-backend/src/auth.mjs
-app/types/adminDashboardApi.ts
-app/composables/usePromptDraftApi.ts
-app/components/manage/ManageMetricCard.vue
-app/pages/manage/dashboard.vue
-app/config/manage.ts
+i18n/locales/manage.en.ts
+i18n/locales/manage.fa.ts
 ```
 
-Database migration:
+Covered surfaces include:
 
 ```text
-none required
+Manage shell
+Dashboard cards/status/loading/error fallbacks
+Users search/filter/table states
+roles/statuses
+context menu
+Information modal
+Role Change modal
+mutation confirmations
+success/error copy
+self-management safety explanation
+Profile Menu Manage entry
+Manage entry guard copy
 ```
 
-Milestone 12 state:
+A final source scan found no remaining hardcoded Manage user-facing English copy in the migrated Manage surfaces. Technical literals such as routes, icon names, permission ids, colors, and raw API enum values remain intentionally untranslated.
+
+## Final static-generation verification — COMPLETE
+
+User command:
 
 ```text
-contract/documentation: IMPLEMENTED
-backend summary API: IMPLEMENTED
-typed frontend boundary: IMPLEMENTED
-Dashboard live cards: IMPLEMENTED
-local runtime verification: PENDING
-normal-user API denial verification: PENDING
-static generation: PENDING
+pnpm generate
 ```
 
-No Milestone 12 phase is DONE until the user verifies the relevant behavior locally.
+Result on 2026-09-04:
+
+```text
+SUCCESS
+16 initial routes prerendered
+/manage present
+/manage/dashboard present
+/manage/users present
+.output/public generated
+offline manifest generated
+225 files / 62.8 MB
+```
+
+Known non-blocking warnings remain:
+
+```text
+duplicated compilePromptOutput auto-import
+module-preload sourcemap warning
+Nitro cache-driver external-resolution warning
+large client chunks
+```
+
+These warnings did not block generation and are not part of the closed Manage scope.
+
+## Manage track closure
+
+The current Manage foundation is considered complete and closed for now:
+
+```text
+shell
+permission-aware sections
+Users read model
+Users administration actions
+mutation safety
+audit logging
+Dashboard persisted-data metrics
+EL component-system UI
+Global Menu/Modal integration
+English/Persian localization
+static generation
+```
+
+Future Manage features such as `/manage/system`, `/manage/content`, audit-log UI, or analytics should extend this architecture rather than refactor the verified baseline without a concrete need.
 
 ## Deferred work
 
-- account deletion and destructive full-account lifecycle;
-- admin audit-log UI;
-- analytics/page-view/activity/translation usage tracking;
-- `/manage/system` and `/manage/content`;
-- convert Wizard-run `/history` to Draft History;
-- move History into the Drafts menu;
-- stronger Cloud Draft conflict handling;
-- production auth/translation rate limiting;
-- email verification/password recovery/OAuth;
-- production migration framework;
-- production deployment/secrets/domain/HTTPS;
-- Redis.
+Examples currently deferred:
 
-The temporary `persistence_probe` table remains non-product learning data and can be removed during cleanup.
+```text
+account deletion / full destructive account lifecycle
+admin audit-log UI
+/manage/system
+/manage/content
+analytics/event tracking
+site visits/page views/behavioral DAU
+translation request/success/failure metrics
+convert Wizard-run /history to Draft History
+move relevant History access into the Drafts menu
+stronger Cloud Draft conflict handling
+production auth/translation rate limiting
+email verification/password recovery/OAuth
+production migration framework
+production deployment/secrets/domain/HTTPS
+Redis
+```
+
+The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
 
 ## Next action
 
-Rebuild the API and locally verify Milestone 12 summary values and Dashboard rendering.
+No Manage action is pending.
 
-After runtime verification, run the final static generation check and close Milestone 12.
+The next product/backend feature should be selected by the user in a new chat. Do not automatically reopen Manage or start a deferred item.
 
 ## New-chat handoff
 
-Read:
+Always read first:
 
-1. `docs/backend/API_GUIDE.md`
+1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
-4. `docs/backend/STATUS.md`
-5. `docs/backend/MILESTONE_9_MANAGE_SHELL.md`
-6. `docs/backend/MILESTONE_10_MANAGE_USERS.md`
-7. `docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md`
-8. `docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md`
+4. `docs/backend/API_GUIDE.md`
+
+If the next feature touches Manage/admin work, also read:
+
+5. `docs/backend/MANAGE_GUIDE.md`
+6. the relevant `MILESTONE_9` through `MILESTONE_12` document
+
+Current verified branch checkpoint before the documentation-closing commits was based on the completed Manage implementation at `feature/docker-local-api`; fetch the latest branch head before making any new change.
