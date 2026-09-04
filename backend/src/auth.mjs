@@ -17,10 +17,12 @@ import {
   normalizeUserRole,
   resolvePermissionsForRole,
 } from './authorization.mjs'
+import { createProfileState } from './profileRequirements.mjs'
 
 const scryptAsync = promisify(scrypt)
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_PASSWORD_LENGTH = 200
+const PROFILE_FIELDS = new Set(['username', 'email'])
 
 function isJsonRequest(request) {
   const contentType = request.headers['content-type'] ?? ''
@@ -37,6 +39,42 @@ async function readJsonBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function hasOwn(value, key) {
+  return Object.prototype.hasOwnProperty.call(value, key)
+}
+
+function normalizeEmail(value) {
+  if (typeof value !== 'string') return null
+
+  const normalized = value.trim().toLowerCase()
+
+  if (
+    !normalized ||
+    normalized.length > 254 ||
+    !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
+  ) {
+    return null
+  }
+
+  return normalized
+}
+
+function normalizeUsername(value) {
+  if (typeof value !== 'string') return null
+
+  const normalized = value.trim().toLowerCase()
+
+  if (!/^[a-z0-9._-]{3,64}$/.test(normalized)) {
+    return null
+  }
+
+  return normalized
+}
+
 function parseIdentifier(value) {
   if (typeof value !== 'string') return null
 
@@ -44,27 +82,12 @@ function parseIdentifier(value) {
   if (!normalized) return null
 
   if (normalized.includes('@')) {
-    if (
-      normalized.length > 254 ||
-      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalized)
-    ) {
-      return null
-    }
-
-    return {
-      type: 'email',
-      value: normalized,
-    }
+    const email = normalizeEmail(normalized)
+    return email ? { type: 'email', value: email } : null
   }
 
-  if (!/^[a-z0-9._-]{3,64}$/.test(normalized)) {
-    return null
-  }
-
-  return {
-    type: 'username',
-    value: normalized,
-  }
+  const username = normalizeUsername(normalized)
+  return username ? { type: 'username', value: username } : null
 }
 
 function validatePassword(password) {
@@ -89,12 +112,14 @@ function mapUserRow(row) {
     role: normalizeUserRole(row.role),
     status: row.status ?? 'active',
     createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
   }
 }
 
 function createAuthorizationResponse(user) {
   return {
     user,
+    profile: createProfileState(user),
     permissions: resolvePermissionsForRole(user.role),
   }
 }
@@ -110,7 +135,8 @@ async function findUserByIdentifier(identifier) {
         role,
         status,
         password_hash AS "passwordHash",
-        created_at AS "createdAt"
+        created_at AS "createdAt",
+        updated_at AS "updatedAt"
       FROM users
       WHERE LOWER(${field}) = $1
       LIMIT 1
@@ -183,7 +209,8 @@ async function getUserForToken(token) {
         users.email,
         users.role,
         users.status,
-        users.created_at AS "createdAt"
+        users.created_at AS "createdAt",
+        users.updated_at AS "updatedAt"
       FROM auth_sessions
       INNER JOIN users ON users.id = auth_sessions.user_id
       WHERE auth_sessions.token_hash = $1
@@ -254,6 +281,177 @@ function sendIdentifierError(response, corsHeaders, sendJson) {
     },
     corsHeaders,
   )
+}
+
+function validateProfileCompletionBody(body) {
+  if (!isPlainObject(body)) {
+    return {
+      errors: [{ field: 'body', message: 'JSON body must be an object' }],
+      values: null,
+    }
+  }
+
+  const errors = []
+  const unknownFields = Object.keys(body).filter((field) => !PROFILE_FIELDS.has(field))
+
+  if (unknownFields.length) {
+    errors.push({
+      field: 'body',
+      message: `Unsupported profile field: ${unknownFields[0]}`,
+    })
+  }
+
+  const includesUsername = hasOwn(body, 'username')
+  const includesEmail = hasOwn(body, 'email')
+
+  if (!includesUsername && !includesEmail) {
+    errors.push({
+      field: 'body',
+      message: 'At least one profile field is required',
+    })
+  }
+
+  const username = includesUsername ? normalizeUsername(body.username) : null
+  const email = includesEmail ? normalizeEmail(body.email) : null
+
+  if (includesUsername && !username) {
+    errors.push({
+      field: 'username',
+      message: 'Username must be 3-64 characters using English letters, numbers, dot, underscore, or hyphen',
+    })
+  }
+
+  if (includesEmail && !email) {
+    errors.push({
+      field: 'email',
+      message: 'Email must be a valid email address',
+    })
+  }
+
+  return {
+    errors,
+    values: errors.length ? null : { username, email, includesUsername, includesEmail },
+  }
+}
+
+async function handleProfileCompletion({ request, response, corsHeaders, sendJson }) {
+  let user
+
+  try {
+    user = await getUserForToken(getBearerToken(request))
+  } catch (error) {
+    console.error('[Prompt Draft API] profile auth lookup failed', error)
+    sendJson(response, 500, { ok: false, message: 'Failed to authenticate request' }, corsHeaders)
+    return
+  }
+
+  if (!user) {
+    sendJson(response, 401, { ok: false, message: 'Authentication required' }, corsHeaders)
+    return
+  }
+
+  const body = await readAuthBody(request, response, corsHeaders, sendJson)
+  if (!body) return
+
+  const validation = validateProfileCompletionBody(body)
+  if (validation.errors.length || !validation.values) {
+    sendJson(
+      response,
+      400,
+      { ok: false, code: 'PROFILE_VALIDATION', message: 'Invalid profile information', errors: validation.errors },
+      corsHeaders,
+    )
+    return
+  }
+
+  const { username, email, includesUsername, includesEmail } = validation.values
+  const lockedErrors = []
+
+  if (includesUsername && user.username && user.username !== username) {
+    lockedErrors.push({ field: 'username', message: 'Username is already set for this account' })
+  }
+
+  if (includesEmail && user.email && user.email !== email) {
+    lockedErrors.push({ field: 'email', message: 'Email is already set for this account' })
+  }
+
+  if (lockedErrors.length) {
+    sendJson(
+      response,
+      409,
+      { ok: false, code: 'PROFILE_FIELD_LOCKED', message: 'Existing identity fields cannot be changed here', errors: lockedErrors },
+      corsHeaders,
+    )
+    return
+  }
+
+  const additions = []
+
+  if (includesUsername && !user.username) {
+    additions.push({ type: 'username', value: username })
+  }
+
+  if (includesEmail && !user.email) {
+    additions.push({ type: 'email', value: email })
+  }
+
+  try {
+    for (const identifier of additions) {
+      const existing = await findUserByIdentifier(identifier)
+
+      if (existing && existing.id !== user.id) {
+        sendJson(
+          response,
+          409,
+          {
+            ok: false,
+            code: 'PROFILE_FIELD_TAKEN',
+            message: 'Profile value is already in use',
+            errors: [{ field: identifier.type, message: `${identifier.type} is already in use` }],
+          },
+          corsHeaders,
+        )
+        return
+      }
+    }
+
+    if (!additions.length) {
+      sendJson(response, 200, { ok: true, ...createAuthorizationResponse(user) }, corsHeaders)
+      return
+    }
+
+    const nextUsername = user.username ?? username
+    const nextEmail = user.email ?? email
+
+    const result = await queryDatabase(
+      `
+        UPDATE users
+        SET username = $2,
+            email = $3,
+            updated_at = NOW()
+        WHERE id = $1
+        RETURNING id, username, email, role, status,
+                  created_at AS "createdAt",
+                  updated_at AS "updatedAt"
+      `,
+      [user.id, nextUsername, nextEmail],
+    )
+
+    const updatedUser = mapUserRow(result.rows[0])
+    sendJson(response, 200, { ok: true, ...createAuthorizationResponse(updatedUser) }, corsHeaders)
+  } catch (error) {
+    if (error?.code === '23505') {
+      sendJson(
+        response,
+        409,
+        { ok: false, code: 'PROFILE_FIELD_TAKEN', message: 'Profile value is already in use' },
+        corsHeaders,
+      )
+    } else {
+      console.error('[Prompt Draft API] profile completion failed', error)
+      sendJson(response, 500, { ok: false, message: 'Failed to update profile' }, corsHeaders)
+    }
+  }
 }
 
 async function handleAdminAccessCheck({
@@ -472,7 +670,9 @@ export async function handleAuthRequest({
         `
           INSERT INTO users (id, username, email, password_hash)
           VALUES ($1, $2, $3, $4)
-          RETURNING id, username, email, role, status, created_at AS "createdAt"
+          RETURNING id, username, email, role, status,
+                    created_at AS "createdAt",
+                    updated_at AS "updatedAt"
         `,
         [userId, username, email, passwordHash],
       )
@@ -568,6 +768,11 @@ export async function handleAuthRequest({
       sendJson(response, 500, { ok: false, message: 'Failed to read account' }, corsHeaders)
     }
 
+    return true
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/auth/profile/complete') {
+    await handleProfileCompletion({ request, response, corsHeaders, sendJson })
     return true
   }
 
