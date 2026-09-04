@@ -1,12 +1,12 @@
 # Milestone 15 — XP / Score Event Ledger Foundation
 
-Status: **IN PROGRESS — implementation extended, local verification pending**
+Status: **DONE — locally verified and explicitly accepted by the user on 2026-09-04**
 
 This milestone establishes an append-only, idempotent XP ledger that future gamification and behavioral rewards can build on without treating a mutable `users.score` column as the source of truth.
 
 ## Product semantics
 
-Current implemented rules:
+Implemented rules:
 
 ```text
 account created       +1000 XP
@@ -141,17 +141,7 @@ The Cloud Draft save path attempts this award after every successful server save
 
 Gamification failure does not fail the primary Draft save. A later save of the same Draft retries the idempotent award. Auth/Profile refresh reloads the current persisted score read model once events exist.
 
-Future product events should use `awardUserScoreEvent()` with event-specific idempotency keys.
-
-Planned examples:
-
-```text
-draft changed/saved  +10
-draft shared         +10
-wizard completed     TBD
-referral joined      TBD
-streak               TBD
-```
+Future product rewards should use `awardUserScoreEvent()` with event-specific idempotency keys and should be attached to meaningful product milestones rather than routine autosave activity.
 
 ## Auth read model
 
@@ -215,46 +205,51 @@ future leaderboard/audit possibilities
 
 A cached/read-model total may be added later if leaderboard scale requires it, but the ledger remains authoritative.
 
-## Explicitly out of scope
+## Product decision: no Draft edit/save XP
 
-Not yet implemented:
+The previously-considered reward:
 
 ```text
-draft update/save XP
-draft share XP
+draft changed/saved -> +10 XP
+```
+
+is intentionally dropped. Routine edits/autosaves are not a meaningful enough milestone and would create unnecessary farming pressure and score inflation.
+
+Future XP should instead reward clearer achievements or product milestones. Draft share XP is not part of this milestone and is not scheduled as the immediate follow-up.
+
+## Explicitly out of scope / deferred
+
+```text
+additional XP triggers
 leaderboard / global rank
 levels / badges / streaks
+referrals and referral rewards
 admin score adjustment UI
 score history UI
 score-rule management UI
+behavioral analytics/event persistence
 ```
 
-## Verification required before DONE
+## Verification / completion record
 
-Already locally observed during this milestone:
+Locally observed and accepted:
 
 ```text
-identity ledger rows are persisted correctly
+identity ledger rows persist correctly
 account_created is +1000
 profile_email_added is +1000
-email completion moves the tested account to 2000 XP
-repeated Auth reads did not create duplicate identity rows
+email completion updates the account score correctly
+no duplicate identity rewards appear on repeated reads/actions
+username-only score presentation no longer depends on adding email
+Cloud Draft creation awards +50
+repeated edits/saves of the same Draft do not duplicate creation XP
+score behavior is working end-to-end in the local Docker-backed environment
 ```
 
-Still verify after the latest hardening/extension:
+On 2026-09-04 the user explicitly confirmed the behavior is working and requested Milestone 15 be marked complete.
 
-```text
-1. migration 011 applies successfully
-2. username-only account displays 1000 XP when Profile Menu opens
-3. existing Cloud Drafts receive exactly one +50 draft_created backfill each
-4. creating/syncing one new Cloud Draft adds exactly +50 XP
-5. saving/editing that same Draft again does not add another +50
-6. retry/refresh/login does not duplicate draft_created
-7. creating a second distinct Cloud Draft adds another +50
-8. ledger source_type/source_id/idempotency_key identify the Draft correctly
-9. Docker restart preserves XP
-10. EN/FA Profile Menu formatting works
-11. final pnpm generate succeeds
-```
+## Result
 
-Do not mark Milestone 15 DONE until the user explicitly confirms local verification.
+Milestone 15 is **DONE**.
+
+The XP ledger is now a reusable platform primitive. New rewards should be introduced only when there is a product-worthy event with a clear, stable idempotency definition.
