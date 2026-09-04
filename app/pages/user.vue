@@ -7,6 +7,8 @@ import type {
 
 const route = useRoute();
 const auth = useAuth();
+const avatarState = useUserAvatar();
+const coverState = useUserCover();
 const api = useUserProfileApi();
 const { t, locale } = useI18n();
 const { mobile, tablet, mini } = useScreen();
@@ -35,6 +37,32 @@ const displayName = computed(() => {
   const username = profile.value?.username?.trim();
   if (!username) return t("userProfile.fallbackName");
   return `${username.charAt(0).toUpperCase()}${username.slice(1)}`;
+});
+
+const heroAvatarUrl = computed(() => {
+  if (!profile.value) return null;
+
+  if (
+    isOwner.value &&
+    avatarState.loadedUserId.value === profile.value.id
+  ) {
+    return avatarState.url.value;
+  }
+
+  return profile.value.avatarUrl;
+});
+
+const heroCoverUrl = computed(() => {
+  if (!profile.value) return null;
+
+  if (
+    isOwner.value &&
+    coverState.loadedUserId.value === profile.value.id
+  ) {
+    return coverState.fullUrl.value;
+  }
+
+  return profile.value.cover?.fullUrl || null;
 });
 
 const heroTitleSize = computed(() => {
@@ -296,8 +324,8 @@ onMounted(() => {
 
   <div v-else class="user-profile w100 por">
     <visual-slider
-      v-if="profile.cover?.fullUrl"
-      :sources="[profile.cover.fullUrl]"
+      v-if="heroCoverUrl"
+      :sources="[heroCoverUrl]"
       :interval="9000"
       :transition-duration="2600"
       :edge-blur="320"
@@ -319,7 +347,7 @@ onMounted(() => {
         :p="contentPadding">
         <el-flex rules="rsc" :gap="14" wrap class="w100">
           <el-avatar
-            :src="profile.avatarUrl"
+            :src="heroAvatarUrl"
             :name="displayName"
             :size="mobile ? 20 : 28"
             :br="3"
@@ -557,39 +585,41 @@ onMounted(() => {
 <style scoped>
 .user-profile {
   min-height: 100%;
-  background: var(--surface);
+  isolation: isolate;
+  background: #09090d;
+}
+
+.user-profile__fallback-bg,
+.user-profile__cinema-overlay,
+.user-profile__grain {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
 }
 
 .user-profile__fallback-bg {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: min(100vh, 920px);
+  z-index: 0;
   background:
     radial-gradient(circle at 14% 22%, rgba(69, 98, 255, 0.34), transparent 40%),
     radial-gradient(circle at 84% 18%, rgba(133, 64, 255, 0.24), transparent 42%),
     radial-gradient(circle at 54% 88%, rgba(20, 180, 165, 0.14), transparent 45%),
-    linear-gradient(135deg, #171921, #090a0f 78%);
+    #09090d;
 }
 
 .user-profile__cinema-overlay {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: min(100vh, 920px);
-  z-index: 5;
-  pointer-events: none;
+  z-index: 4;
   background:
-    linear-gradient(to bottom, rgba(5, 6, 9, 0.16), rgba(5, 6, 9, 0.3) 48%, rgba(5, 6, 9, 0.88) 100%),
-    linear-gradient(90deg, rgba(5, 6, 9, 0.48), transparent 62%);
+    radial-gradient(circle at 50% 34%, transparent 0%, var(--themeSurface15) 44%, var(--themeSurface78) 100%),
+    linear-gradient(180deg, var(--themeSurface5) 0%, var(--themeSurface18) 42%, var(--themeSurface88) 100%);
 }
 
 .user-profile__grain {
-  position: absolute;
-  inset: 0 0 auto 0;
-  height: min(100vh, 920px);
-  z-index: 6;
-  pointer-events: none;
+  z-index: 5;
   opacity: 0.12;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 180 180' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.38'/%3E%3C/svg%3E");
+  background-image:
+    repeating-radial-gradient(circle at 0 0, var(--themeSurface15) 0, var(--themeSurface15) .6px, transparent .7px, transparent 3px);
+  background-size: 5px 5px;
+  mix-blend-mode: soft-light;
 }
 
 .user-profile__hero {
@@ -599,13 +629,18 @@ onMounted(() => {
 
 .user-profile__hero-content {
   justify-content: flex-end;
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-top: 96px !important;
   padding-bottom: clamp(44px, 8vh, 92px) !important;
 }
 
 .user-profile__title {
   max-width: min(1200px, 94vw);
   line-height: 0.92 !important;
+  letter-spacing: -0.045em;
   text-wrap: balance;
+  text-shadow: 0 10px 50px rgba(0, 0, 0, 0.32);
 }
 
 .user-profile__stat {
@@ -616,19 +651,30 @@ onMounted(() => {
 }
 
 .user-profile__drafts {
-  background: linear-gradient(to bottom, rgba(11, 12, 16, 0.99), var(--surface) 260px);
+  background:
+    linear-gradient(180deg, var(--themeSurface78) 0%, var(--themeSurface92) 28%, var(--themeSurface97) 100%);
+  backdrop-filter: blur(9px);
+  border-top: 1px solid var(--themeSurface85);
+}
+
+.user-profile__drafts > .el-flex {
+  max-width: 1440px;
+  margin-inline: auto;
+  padding-top: 72px !important;
+  padding-bottom: 72px !important;
 }
 
 .user-profile__draft-card {
   min-height: 270px;
   background:
-    linear-gradient(145deg, rgba(255, 255, 255, 0.035), transparent 55%),
-    var(--surface);
+    linear-gradient(145deg, var(--normalText5), transparent 55%),
+    var(--themeBackground);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.16);
   transition: transform 220ms ease, border-color 220ms ease;
 }
 
 .user-profile__draft-card:hover {
   transform: translateY(-3px);
-  border-color: rgba(115, 124, 255, 0.32) !important;
+  border-color: var(--normalText25) !important;
 }
 </style>
