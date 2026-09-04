@@ -122,7 +122,7 @@ Source-of-truth milestone record:
 docs/backend/MILESTONE_9_MANAGE_SHELL.md
 ```
 
-## Milestone 10 — IN PROGRESS: Manage Users Foundation
+## Milestone 10 — COMPLETE: Manage Users Foundation
 
 Source-of-truth contract:
 
@@ -130,53 +130,26 @@ Source-of-truth contract:
 docs/backend/MILESTONE_10_MANAGE_USERS.md
 ```
 
-Selected read-only product path:
+Verified read-only product path:
 
 ```text
 /manage/users
   -> users.view
   -> server-side search/filter
   -> cursor pagination
-  -> static-safe query-based detail
+  -> admin user detail API
 ```
 
-Backend implementation:
+Backend:
 
 ```text
 backend/sql/006_add_admin_user_indexes.sql
 backend/src/adminUsers.mjs
-listAdminUsers(...)
-getAdminUserById(id)
-
 GET /api/admin/users
 GET /api/admin/users/:id
 ```
 
-Collection contract:
-
-```text
-limit   default 20 / max 100
-cursor  opaque keyset cursor
-query   literal username/email substring
-role    user | admin | super_admin
-ordering: created_at DESC, id DESC
-```
-
-Admin user read model:
-
-```text
-id
-username
-email
-role
-createdAt
-cloudDraftCount
-activeSessionCount
-```
-
-Credential/session secrets are never returned.
-
-Frontend implementation:
+Frontend:
 
 ```text
 app/types/adminUsersApi.ts
@@ -184,43 +157,24 @@ usePromptDraftApi().listAdminUsers(...)
 usePromptDraftApi().getAdminUser(id)
 app/config/manage.ts -> Users section
 app/pages/manage/users.vue
-nuxt prerender -> /manage/users
 ```
 
-Functional behavior:
+Locally verified:
 
 ```text
-350ms debounced search
+super_admin Users access
+normal user denial
+server-side search
 role filter
-20-row initial read
-Load more cursor pagination
-Refresh
-query-based detail: /manage/users?user=<uuid>
+read-model counts
+user detail behavior
+EL design-system normalization
+no page-specific scoped CSS for Users layout/table/detail
+pnpm generate succeeds
+16 initial routes include /manage/users
 ```
 
-The user locally confirmed the Manage Users functionality works without functional issues.
-
-### EL design-system normalization
-
-A follow-up UI baseline refactor replaced the page-specific native/CSS implementation in `app/pages/manage/users.vue` with the project's reusable component system:
-
-```text
-el-text-field
-el-dropdown
-el-grid
-el-flex
-el-button
-el-text
-el-divider
-```
-
-The Manage Users page now has no scoped CSS block for its layout/table/detail UI.
-
-`app/pages/manage.vue` and `app/pages/manage/dashboard.vue` were reviewed and were already predominantly EL-system-based with no page-specific CSS needing replacement.
-
-Final visual polish remains deferred; current goal is reusable layout behavior and zero/near-zero page-specific CSS.
-
-### Milestone 10 phases
+Milestone 10 phases:
 
 ```text
 Phase 0 — contract/documentation: DONE
@@ -228,15 +182,102 @@ Phase 1 — database read model + indexes: DONE
 Phase 2 — GET collection + detail APIs: DONE
 Phase 3 — typed frontend API boundary: DONE
 Phase 4 — Manage Users list/search/filter/pagination UI: DONE
-Phase 5 — query-based user detail: DONE
-Phase 6 — authorization regression + static generation: AUTHORIZATION VERIFIED / STATIC CHECK PENDING
+Phase 5 — user detail read flow: DONE
+Phase 6 — authorization regression + static generation: DONE
 ```
 
-Milestone 10 remains open until `pnpm generate` passes after the EL design-system refactor and `/manage/users` is present in the generated route set.
+## Milestone 11 — IN PROGRESS: User Administration Actions
+
+Source-of-truth contract:
+
+```text
+docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md
+```
+
+Implemented backend foundation:
+
+```text
+backend/sql/007_add_user_status_and_admin_audit.sql
+users.status -> active | suspended
+admin_audit_log
+
+POST /api/admin/users/:id/role
+POST /api/admin/users/:id/suspend
+POST /api/admin/users/:id/unsuspend
+POST /api/admin/users/:id/revoke-sessions
+POST /api/admin/users/:id/reset-cloud-data
+```
+
+Mutation authorization:
+
+```text
+users.manage required
+backend guard authoritative
+current admin role remains read-only
+current super_admin wildcard grants management
+```
+
+Safety rules implemented:
+
+```text
+self mutation blocked
+non-super-admin cannot manage super_admin
+non-super-admin cannot promote to super_admin
+last active super_admin cannot be downgraded
+last active super_admin cannot be suspended
+```
+
+Suspension behavior implemented:
+
+```text
+suspend -> status suspended + revoke all sessions
+suspended account -> existing bearer sessions rejected
+suspended account -> new login rejected
+unsuspend -> future login allowed, old sessions remain revoked
+```
+
+Successful mutations create audit records:
+
+```text
+user.role_changed
+user.suspended
+user.unsuspended
+user.sessions_revoked
+user.cloud_data_reset
+```
+
+Manage Users UI now includes:
+
+```text
+trailing three-dot Global Menu per row
+Change role
+Suspend / Unsuspend
+Revoke sessions
+Reset Cloud data
+Information
+central Global Modal confirmations
+central Information modal
+no detail box below the table
+Status column
+search input size 15
+```
+
+Manage section title/description metadata is centralized in `app/config/manage.ts` and rendered by the shared `/manage` shell. Dashboard and Users no longer duplicate child-page heading blocks.
+
+Milestone 11 state:
+
+```text
+implementation: COMPLETE ENOUGH FOR LOCAL VERIFICATION
+local verification: PENDING
+static generation after this milestone: PENDING
+```
+
+No Milestone 11 phase is DONE until the user verifies the relevant action locally.
 
 ## Deferred work
 
-- Manage Users mutations: audit log, role changes, suspend/ban, revoke sessions, reset/delete data;
+- account deletion and destructive full-account lifecycle;
+- admin audit-log UI;
 - real Dashboard metrics;
 - analytics/page-view/activity/translation usage tracking;
 - `/manage/system` and `/manage/content`;
@@ -253,7 +294,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Run final static generation after the EL design-system refactor. If it passes and `/manage/users` is prerendered, mark Milestone 10 COMPLETE.
+Apply migration 007, rebuild the API, and locally verify Milestone 11 actions on a non-critical test account before running the final static generation check.
 
 ## New-chat handoff
 
@@ -265,3 +306,4 @@ Read:
 4. `docs/backend/STATUS.md`
 5. `docs/backend/MILESTONE_9_MANAGE_SHELL.md`
 6. `docs/backend/MILESTONE_10_MANAGE_USERS.md`
+7. `docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md`
