@@ -18,6 +18,8 @@ import sceneEn from './locales/scene.en'
 import sceneFa from './locales/scene.fa'
 import historyEn from './locales/history.en'
 import historyFa from './locales/history.fa'
+import draftSyncEn from './locales/draft-sync.en'
+import draftSyncFa from './locales/draft-sync.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -104,7 +106,13 @@ const enMessages = deepMerge(
         ),
       },
     ),
-    historyEn,
+    deepMerge(historyEn, {
+      create: {
+        draft: {
+          cloud: draftSyncEn,
+        },
+      },
+    }),
   ),
   flatToNested(enConsolidated),
 )
@@ -136,7 +144,13 @@ const faMessages = deepMerge(
       ]),
       { wizard: wizardFa },
     ),
-    historyFa,
+    deepMerge(historyFa, {
+      create: {
+        draft: {
+          cloud: draftSyncFa,
+        },
+      },
+    }),
   ),
   flatToNested(faConsolidated),
 )
