@@ -46,11 +46,11 @@ export async function handleAdminDashboardRequest({
       account_metrics AS (
         SELECT
           COUNT(*)::int AS total,
-          COUNT(*) FILTER (WHERE status = 'active')::int AS active,
-          COUNT(*) FILTER (WHERE status = 'suspended')::int AS suspended,
-          COUNT(*) FILTER (
+          (COUNT(*) FILTER (WHERE status = 'active'))::int AS active,
+          (COUNT(*) FILTER (WHERE status = 'suspended'))::int AS suspended,
+          (COUNT(*) FILTER (
             WHERE created_at >= (SELECT day_start_utc FROM bounds)
-          )::int AS new_today
+          ))::int AS new_today
         FROM users
       ),
       session_metrics AS (
@@ -63,9 +63,9 @@ export async function handleAdminDashboardRequest({
       draft_metrics AS (
         SELECT
           COUNT(*)::int AS total,
-          COUNT(*) FILTER (
+          (COUNT(*) FILTER (
             WHERE server_updated_at >= (SELECT day_start_utc FROM bounds)
-          )::int AS updated_today
+          ))::int AS updated_today
         FROM prompt_drafts
       ),
       audit_metrics AS (
