@@ -58,6 +58,37 @@ export type AdminArchiveUpsertInput = {
   tags: string[];
 };
 
+export type AdminArchiveImageUploadInput = {
+  sourceName?: string;
+  full: {
+    base64: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+  };
+  thumbnail: {
+    base64: string;
+    width: number;
+    height: number;
+    sizeBytes: number;
+  };
+};
+
+export type AdminArchiveImageMutationResponse = {
+  ok: true;
+  image?: {
+    id: string;
+    fullUrl: string;
+    thumbnailUrl: string;
+    telegramMessageId: number;
+  };
+  cleanupFailures?: string[];
+};
+
+export type AdminArchiveImageOrderInput = {
+  imageIds: string[];
+};
+
 export type ListAdminArchiveParams = {
   limit?: number;
   cursor?: string;
