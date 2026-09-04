@@ -34,6 +34,10 @@ export type IdentifyAuthResponse = {
   identifier: string;
 };
 
+export type RegisterAuthOptions = {
+  referralUsername?: string;
+};
+
 export type AuthSessionResponse = {
   ok: true;
   token: string;
