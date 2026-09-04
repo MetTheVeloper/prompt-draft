@@ -11,7 +11,7 @@ definePageMeta({
 
 const auth = useAuth();
 const api = usePromptDraftApi();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 const { width } = useWindowSize({ initialWidth: 1024 });
 
 const summary = ref<AdminDashboardSummary | null>(null);
@@ -33,67 +33,67 @@ const cards = computed(() => {
   return [
     {
       key: "total-users",
-      label: "Total users",
+      label: t("manage.dashboard.cards.totalUsers.label"),
       value: value.accounts.total,
       icon: "group",
       color: "blue",
-      helper: "Registered accounts",
+      helper: t("manage.dashboard.cards.totalUsers.helper"),
     },
     {
       key: "active-accounts",
-      label: "Active accounts",
+      label: t("manage.dashboard.cards.activeAccounts.label"),
       value: value.accounts.active,
       icon: "person_check",
       color: "green",
-      helper: "Accounts allowed to sign in",
+      helper: t("manage.dashboard.cards.activeAccounts.helper"),
     },
     {
       key: "suspended-accounts",
-      label: "Suspended accounts",
+      label: t("manage.dashboard.cards.suspendedAccounts.label"),
       value: value.accounts.suspended,
       icon: "block",
       color: "red",
-      helper: "Accounts blocked from signing in",
+      helper: t("manage.dashboard.cards.suspendedAccounts.helper"),
     },
     {
       key: "new-users-today",
-      label: "New users today",
+      label: t("manage.dashboard.cards.newUsersToday.label"),
       value: value.accounts.newToday,
       icon: "person_add",
       color: "prim",
-      helper: "Since 00:00 UTC",
+      helper: t("manage.dashboard.cards.newUsersToday.helper"),
     },
     {
       key: "active-sessions",
-      label: "Active sessions",
+      label: t("manage.dashboard.cards.activeSessions.label"),
       value: value.sessions.active,
       icon: "devices",
       color: "orange",
-      helper: "Unexpired sessions on active accounts",
+      helper: t("manage.dashboard.cards.activeSessions.helper"),
     },
     {
       key: "cloud-drafts",
-      label: "Cloud drafts",
+      label: t("manage.dashboard.cards.cloudDrafts.label"),
       value: value.cloudDrafts.total,
       icon: "cloud",
       color: "blue",
-      helper: "Drafts currently stored on the server",
+      helper: t("manage.dashboard.cards.cloudDrafts.helper"),
     },
     {
       key: "drafts-updated-today",
-      label: "Drafts updated today",
+      label: t("manage.dashboard.cards.draftsUpdatedToday.label"),
       value: value.cloudDrafts.updatedToday,
       icon: "cloud_sync",
       color: "prim",
-      helper: "Server updates since 00:00 UTC",
+      helper: t("manage.dashboard.cards.draftsUpdatedToday.helper"),
     },
     {
       key: "admin-actions-today",
-      label: "Admin actions today",
+      label: t("manage.dashboard.cards.adminActionsToday.label"),
       value: value.adminActions.today,
       icon: "admin_panel_settings",
       color: "orange",
-      helper: "Audited mutations since 00:00 UTC",
+      helper: t("manage.dashboard.cards.adminActionsToday.helper"),
     },
   ];
 });
@@ -114,11 +114,17 @@ const generatedAtLabel = computed(() => {
   });
 });
 
+const dashboardStatusLabel = computed(() => {
+  return generatedAtLabel.value
+    ? t("manage.dashboard.lastUpdated", { date: generatedAtLabel.value })
+    : t("manage.dashboard.liveSummary");
+});
+
 function getApiErrorMessage(error: unknown) {
   const value = error as { data?: { message?: unknown } };
   return typeof value?.data?.message === "string" && value.data.message.trim()
     ? value.data.message
-    : "Dashboard summary could not be loaded.";
+    : t("manage.dashboard.loadError");
 }
 
 async function loadSummary() {
@@ -147,14 +153,14 @@ onMounted(async () => {
   <el-flex rules="ccs" :gap="16" class="w100">
     <el-flex rules="rbc" :gap="12" class="w100">
       <el-text :size="11" color="normal45">
-        {{ generatedAtLabel ? `Last updated ${generatedAtLabel}` : "Live server summary" }}
+        {{ dashboardStatusLabel }}
       </el-text>
 
       <el-button
         mode="flat"
         color="normal"
         icon="refresh"
-        label="Refresh"
+        :label="t('manage.common.actions.refresh')"
         :disable="loading"
         @click="loadSummary"
       />
@@ -173,7 +179,7 @@ onMounted(async () => {
     </el-flex>
 
     <el-flex v-if="loading && !summary" rules="ccc" class="w100" :p="24">
-      <el-text color="normal55" :size="13">Loading dashboard…</el-text>
+      <el-text color="normal55" :size="13">{{ t("manage.dashboard.loading") }}</el-text>
     </el-flex>
 
     <el-grid
