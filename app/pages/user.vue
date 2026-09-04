@@ -66,9 +66,15 @@ const heroCoverUrl = computed(() => {
 });
 
 const heroTitleSize = computed(() => {
-  if (mobile.value) return 44;
-  if (tablet.value || mini.value) return 62;
-  return 88;
+  if (mobile.value) return 46;
+  if (tablet.value || mini.value) return 64;
+  return 86;
+});
+
+const heroAvatarSize = computed(() => {
+  if (mobile.value) return 30;
+  if (tablet.value || mini.value) return 36;
+  return 44;
 });
 
 const contentPadding = computed(() => {
@@ -341,33 +347,32 @@ onMounted(() => {
 
     <section class="user-profile__hero w100 por zi20" :style="heroStyle">
       <el-flex
-        rules="cbs"
+        rules="ccc"
         class="user-profile__hero-content w100 h100"
         :gap="18"
         :p="contentPadding">
-        <el-flex rules="rsc" :gap="14" wrap class="w100">
-          <el-avatar
-            :src="heroAvatarUrl"
-            :name="displayName"
-            :size="mobile ? 20 : 28"
-            :br="3"
-            bc="white"
-          />
+        <el-avatar
+          :src="heroAvatarUrl"
+          :name="displayName"
+          :size="heroAvatarSize"
+          :br="4"
+          bc="white"
+          class="user-profile__hero-avatar"
+        />
 
-          <el-flex rules="ccs" :gap="6">
-            <el-text
-              :size="10"
-              :weight="900"
-              marker="white"
-              color="black"
-              :p="[3, 7]"
-              :radius="100">
-              {{ t("userProfile.eyebrow") }}
-            </el-text>
-            <el-text :size="mobile ? 11 : 13" color="white">
-              {{ t("userProfile.memberSince", { date: formatDate(profile.createdAt) }) }}
-            </el-text>
-          </el-flex>
+        <el-flex rules="ccc" :gap="6" class="user-profile__identity-meta">
+          <el-text
+            :size="10"
+            :weight="900"
+            marker="white"
+            color="black"
+            :p="[3, 8]"
+            :radius="100">
+            {{ t("userProfile.eyebrow") }}
+          </el-text>
+          <el-text :size="mobile ? 11 : 13" color="white">
+            {{ t("userProfile.memberSince", { date: formatDate(profile.createdAt) }) }}
+          </el-text>
         </el-flex>
 
         <el-text
@@ -376,13 +381,13 @@ onMounted(() => {
           :weight="600"
           color="white"
           effect="glitch"
-          class="user-profile__title">
+          class="user-profile__title tc">
           {{ displayName }}
         </el-text>
 
-        <el-flex rules="rsc" :gap="mobile ? 8 : 14" wrap class="w100">
+        <el-flex rules="rcc" :gap="mobile ? 8 : 12" wrap class="user-profile__stats-row w100">
           <el-flex
-            rules="ccs"
+            rules="ccc"
             :gap="2"
             class="user-profile__stat"
             :p="[10, 14]"
@@ -394,7 +399,7 @@ onMounted(() => {
           </el-flex>
 
           <el-flex
-            rules="ccs"
+            rules="ccc"
             :gap="2"
             class="user-profile__stat"
             :p="[10, 14]"
@@ -409,7 +414,7 @@ onMounted(() => {
 
           <el-flex
             v-if="isOwner"
-            rules="ccs"
+            rules="ccc"
             :gap="2"
             class="user-profile__stat"
             :p="[10, 14]"
@@ -447,8 +452,7 @@ onMounted(() => {
           <el-text
             :size="10"
             :weight="900"
-            marker="prim"
-            color="white"
+            color="prim"
             class="wsnw">
             {{ t("userProfile.drafts.eyebrow") }}
           </el-text>
@@ -534,23 +538,21 @@ onMounted(() => {
               </el-text>
             </el-flex>
 
-            <el-flex rules="ccs" :gap="8" class="w100">
+            <el-flex rules="ccs" :gap="10" class="w100">
               <el-text type="h3" :size="mobile ? 20 : 24" :weight="650">
                 {{ draft.title }}
               </el-text>
-              <el-text :size="10" color="normal40">{{ draft.id }}</el-text>
-            </el-flex>
-
-            <el-flex rules="rsc" :gap="10" wrap class="w100">
-              <el-text :size="10" color="normal55" icon="account_tree" icon-color="normal45">
-                {{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}
-              </el-text>
-              <el-text :size="10" color="normal55" icon="history" icon-color="normal45">
-                {{ t("userProfile.drafts.revision", { revision: draft.revision }) }}
-              </el-text>
-              <el-text :size="10" color="normal55" icon="schedule" icon-color="normal45">
-                {{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}
-              </el-text>
+              <el-flex rules="rsc" :gap="10" wrap class="w100">
+                <el-text :size="10" color="normal55" icon="account_tree" icon-color="normal45">
+                  {{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}
+                </el-text>
+                <el-text :size="10" color="normal55" icon="history" icon-color="normal45">
+                  {{ t("userProfile.drafts.revision", { revision: draft.revision }) }}
+                </el-text>
+                <el-text :size="10" color="normal55" icon="schedule" icon-color="normal45">
+                  {{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}
+                </el-text>
+              </el-flex>
             </el-flex>
 
             <el-button
@@ -628,23 +630,39 @@ onMounted(() => {
 }
 
 .user-profile__hero-content {
-  justify-content: flex-end;
-  max-width: 1440px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  max-width: 1180px;
   margin-inline: auto;
-  padding-top: 96px !important;
-  padding-bottom: clamp(44px, 8vh, 92px) !important;
+  padding-top: clamp(72px, 10vh, 120px) !important;
+  padding-bottom: clamp(52px, 9vh, 110px) !important;
+}
+
+.user-profile__hero-avatar {
+  filter: drop-shadow(0 18px 44px rgba(0, 0, 0, 0.38));
+}
+
+.user-profile__identity-meta {
+  width: 100%;
+  align-items: center !important;
 }
 
 .user-profile__title {
-  max-width: min(1200px, 94vw);
+  max-width: min(1000px, 94vw);
   line-height: 0.92 !important;
   letter-spacing: -0.045em;
   text-wrap: balance;
   text-shadow: 0 10px 50px rgba(0, 0, 0, 0.32);
 }
 
+.user-profile__stats-row {
+  justify-content: center !important;
+}
+
 .user-profile__stat {
   min-width: 116px;
+  text-align: center;
   border: 1px solid rgba(255, 255, 255, 0.16);
   background: rgba(10, 12, 18, 0.34);
   backdrop-filter: blur(14px);
@@ -665,7 +683,7 @@ onMounted(() => {
 }
 
 .user-profile__draft-card {
-  min-height: 270px;
+  min-height: 250px;
   background:
     linear-gradient(145deg, var(--normalText5), transparent 55%),
     var(--themeBackground);
