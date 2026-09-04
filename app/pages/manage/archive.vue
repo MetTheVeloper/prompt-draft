@@ -2,6 +2,7 @@
 import ArchiveImageManager from "~/components/manage/ArchiveImageManager.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type {
+  AdminArchiveImage,
   AdminArchiveItem,
   AdminArchiveStatus,
   AdminArchiveSummary,
@@ -35,6 +36,8 @@ const editorOpen = ref(false);
 const editorLoading = ref(false);
 const saving = ref(false);
 const statusChanging = ref(false);
+const mediaMutating = ref(false);
+const mediaProgress = ref("");
 const editingItem = ref<AdminArchiveItem | null>(null);
 const preparedImages = ref<PreparedArchiveImage[]>([]);
 
@@ -55,12 +58,14 @@ let listRequestVersion = 0;
 let editorRequestVersion = 0;
 
 const canManage = computed(() => auth.can(AUTH_PERMISSIONS.ARCHIVE_MANAGE));
-const isEditing = computed(() => Boolean(editingItem.value));
 const hasPreparedImages = computed(() => preparedImages.value.length > 0);
 const hasPendingPreparedImages = computed(() => (
   preparedImages.value.some(item => item.status !== "ready")
 ));
 const publishBlockedByLocalImages = computed(() => hasPreparedImages.value);
+const editorBusy = computed(() => (
+  saving.value || statusChanging.value || mediaMutating.value || editorLoading.value
+));
 
 const statusFilterItems = computed(() => [
   { value: "draft", label: t("manage.archive.statuses.draft"), icon: "edit_note" },
@@ -95,8 +100,8 @@ const currentStatusLabel = computed(() => (
 const canSave = computed(() => {
   return (
     canManage.value &&
-    !saving.value &&
-    !editorLoading.value &&
+    !editorBusy.value &&
+    !hasPendingPreparedImages.value &&
     /^\d+$/.test(form.telegramMessageId.trim()) &&
     Number(form.telegramMessageId) > 0 &&
     Boolean(form.titleEn.trim()) &&
@@ -164,6 +169,23 @@ function getApiErrorMessage(error: unknown, fallback: string) {
     return value.data.message;
   }
   return fallback;
+}
+
+async function blobToBase64(blob: Blob) {
+  return new Promise<string>((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = typeof reader.result === "string" ? reader.result : "";
+      const comma = result.indexOf(",");
+      if (comma < 0) {
+        reject(new Error("Could not encode Archive image."));
+        return;
+      }
+      resolve(result.slice(comma + 1));
+    };
+    reader.onerror = () => reject(reader.error || new Error("Could not read Archive image."));
+    reader.readAsDataURL(blob);
+  });
 }
 
 async function loadTags() {
@@ -246,9 +268,17 @@ function populateForm(item: AdminArchiveItem) {
   form.tags = [...item.tags];
 }
 
+async function refreshEditingItem(itemId = editingItem.value?.id) {
+  if (!itemId) return;
+  const response = await api.getAdminArchive(itemId);
+  editingItem.value = response.item;
+  populateForm(response.item);
+}
+
 function openCreate() {
   editingItem.value = null;
   preparedImages.value = [];
+  mediaProgress.value = "";
   resetForm();
   editorOpen.value = true;
 }
@@ -259,6 +289,7 @@ async function openEdit(item: AdminArchiveSummary) {
   editorLoading.value = true;
   editingItem.value = null;
   preparedImages.value = [];
+  mediaProgress.value = "";
   resetForm();
 
   try {
@@ -286,6 +317,7 @@ function closeEditor() {
   editorLoading.value = false;
   editingItem.value = null;
   preparedImages.value = [];
+  mediaProgress.value = "";
 }
 
 function buildInput(): AdminArchiveUpsertInput {
@@ -304,6 +336,62 @@ function buildInput(): AdminArchiveUpsertInput {
   };
 }
 
+async function uploadPreparedMedia(itemId: string) {
+  if (!preparedImages.value.length) return;
+  if (hasPendingPreparedImages.value) {
+    throw new Error(t("manage.archive.images.waitForPreparation"));
+  }
+
+  mediaMutating.value = true;
+  const total = preparedImages.value.length;
+  let completed = 0;
+
+  try {
+    while (preparedImages.value.length) {
+      const image = preparedImages.value[0];
+      if (
+        !image.fullBlob ||
+        !image.thumbnailBlob ||
+        !image.fullWidth ||
+        !image.fullHeight ||
+        !image.thumbnailWidth ||
+        !image.thumbnailHeight ||
+        image.fullSize == null ||
+        image.thumbnailSize == null
+      ) {
+        throw new Error(t("manage.archive.images.preparedPayloadMissing"));
+      }
+
+      mediaProgress.value = t("manage.archive.images.uploadProgress", {
+        current: completed + 1,
+        total,
+      });
+
+      await api.uploadAdminArchiveImage(itemId, {
+        sourceName: image.sourceName,
+        full: {
+          base64: await blobToBase64(image.fullBlob),
+          width: image.fullWidth,
+          height: image.fullHeight,
+          sizeBytes: image.fullSize,
+        },
+        thumbnail: {
+          base64: await blobToBase64(image.thumbnailBlob),
+          width: image.thumbnailWidth,
+          height: image.thumbnailHeight,
+          sizeBytes: image.thumbnailSize,
+        },
+      });
+
+      preparedImages.value = preparedImages.value.filter(candidate => candidate.id !== image.id);
+      completed += 1;
+    }
+  } finally {
+    mediaMutating.value = false;
+    mediaProgress.value = "";
+  }
+}
+
 async function saveMetadata() {
   if (!canSave.value) return;
   saving.value = true;
@@ -315,14 +403,30 @@ async function saveMetadata() {
 
     editingItem.value = response.item;
     populateForm(response.item);
+
+    if (preparedImages.value.length) {
+      try {
+        await uploadPreparedMedia(response.item.id);
+      } catch (error) {
+        await refreshEditingItem(response.item.id);
+        await loadArchive();
+        modal.message({
+          type: "error",
+          title: t("manage.archive.editor.mediaUploadFailedTitle"),
+          message: getApiErrorMessage(error, t("manage.archive.editor.mediaUploadFailed")),
+          actionLabel: t("manage.common.actions.close"),
+        });
+        return;
+      }
+    }
+
+    await refreshEditingItem(response.item.id);
     await loadArchive();
 
     modal.message({
       type: "success",
       title: t("manage.archive.editor.savedTitle"),
-      message: hasPreparedImages.value
-        ? t("manage.archive.editor.savedWithLocalImages")
-        : t("manage.archive.editor.saved"),
+      message: t("manage.archive.editor.savedWithMedia"),
       actionLabel: t("manage.common.actions.done"),
     });
   } catch (error) {
@@ -339,7 +443,7 @@ async function saveMetadata() {
 
 async function changeStatus(action: "draft" | "publish" | "archive") {
   const item = editingItem.value;
-  if (!item || !canManage.value || statusChanging.value) return;
+  if (!item || !canManage.value || editorBusy.value) return;
 
   if (action === "publish" && publishBlockedByLocalImages.value) {
     modal.message({
@@ -378,6 +482,62 @@ async function changeStatus(action: "draft" | "publish" | "archive") {
   }
 }
 
+async function deletePersistedImage(image: AdminArchiveImage) {
+  const item = editingItem.value;
+  if (!item || editorBusy.value || !canManage.value) return;
+  if (!window.confirm(t("manage.archive.images.deleteConfirm"))) return;
+
+  mediaMutating.value = true;
+  try {
+    const response = await api.deleteAdminArchiveImage(item.id, image.id);
+    if (response.cleanupFailures?.length) {
+      console.warn("[Manage Archive] storage cleanup warnings", response.cleanupFailures);
+    }
+    await refreshEditingItem(item.id);
+    await loadArchive();
+  } catch (error) {
+    modal.message({
+      type: "error",
+      title: t("manage.archive.images.mutationFailedTitle"),
+      message: getApiErrorMessage(error, t("manage.archive.images.mutationFailed")),
+      actionLabel: t("manage.common.actions.close"),
+    });
+  } finally {
+    mediaMutating.value = false;
+  }
+}
+
+async function movePersistedImage(imageId: string, direction: -1 | 1) {
+  const item = editingItem.value;
+  if (!item || editorBusy.value || !canManage.value) return;
+
+  const currentIndex = item.images.findIndex(image => image.id === imageId);
+  const nextIndex = currentIndex + direction;
+  if (currentIndex < 0 || nextIndex < 0 || nextIndex >= item.images.length) return;
+
+  const reordered = [...item.images];
+  const [target] = reordered.splice(currentIndex, 1);
+  reordered.splice(nextIndex, 0, target);
+
+  mediaMutating.value = true;
+  try {
+    await api.reorderAdminArchiveImages(item.id, {
+      imageIds: reordered.map(image => image.id),
+    });
+    await refreshEditingItem(item.id);
+    await loadArchive();
+  } catch (error) {
+    modal.message({
+      type: "error",
+      title: t("manage.archive.images.mutationFailedTitle"),
+      message: getApiErrorMessage(error, t("manage.archive.images.mutationFailed")),
+      actionLabel: t("manage.common.actions.close"),
+    });
+  } finally {
+    mediaMutating.value = false;
+  }
+}
+
 watch(searchText, scheduleFilterReload);
 watch(statusFilter, scheduleFilterReload);
 watch(modelFilter, scheduleFilterReload);
@@ -405,6 +565,7 @@ onBeforeUnmount(() => {
         icon="arrow_back"
         mode="flat"
         :label="t('manage.archive.actions.backToList')"
+        :disable="editorBusy"
         @click="closeEditor"
       />
     </el-flex>
@@ -444,7 +605,7 @@ onBeforeUnmount(() => {
             <el-text-field
               v-model="form.telegramMessageId"
               :actions="false"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
               :placeholder="t('manage.archive.placeholders.telegramId')"
             />
           </el-flex>
@@ -454,7 +615,7 @@ onBeforeUnmount(() => {
             <el-text-field
               v-model="form.titleEn"
               :actions="false"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
               :placeholder="t('manage.archive.placeholders.titleEn')"
             />
           </el-flex>
@@ -464,7 +625,7 @@ onBeforeUnmount(() => {
             <el-text-field
               v-model="form.titleFa"
               :actions="false"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
               :placeholder="t('manage.archive.placeholders.titleFa')"
             />
           </el-flex>
@@ -477,7 +638,7 @@ onBeforeUnmount(() => {
               v-model="form.publishedAt"
               type="datetime-local"
               class="archive-native-input"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
             >
           </el-flex>
 
@@ -486,7 +647,7 @@ onBeforeUnmount(() => {
             <el-dropdown
               v-model="form.previewModel"
               :items="modelItems"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
               icon="image"
             />
           </el-flex>
@@ -496,7 +657,7 @@ onBeforeUnmount(() => {
             <el-multi-select
               v-model="form.optimizedFor"
               :items="optimizedForItems"
-              :disabled="!canManage"
+              :disabled="!canManage || editorBusy"
               icon="tune"
               :placeholder="t('manage.archive.placeholders.optimizedFor')"
             />
@@ -508,7 +669,7 @@ onBeforeUnmount(() => {
           <el-multi-select
             v-model="form.tags"
             :items="tagItems"
-            :disabled="!canManage"
+            :disabled="!canManage || editorBusy"
             icon="sell"
             :placeholder="t('manage.archive.placeholders.tags')"
           />
@@ -521,7 +682,7 @@ onBeforeUnmount(() => {
             type="textarea"
             :rows="3"
             :actions="false"
-            :disabled="!canManage"
+            :disabled="!canManage || editorBusy"
             :placeholder="t('manage.archive.placeholders.sourceTitle')"
           />
         </el-flex>
@@ -533,7 +694,7 @@ onBeforeUnmount(() => {
             type="textarea"
             :rows="10"
             :actions="false"
-            :disabled="!canManage"
+            :disabled="!canManage || editorBusy"
             :placeholder="t('manage.archive.placeholders.prompt')"
           />
         </el-flex>
@@ -549,15 +710,44 @@ onBeforeUnmount(() => {
         :br="1"
         bc="normal15"
         class="w100">
-        <el-text :size="13" :weight="800">{{ t("manage.archive.images.existingTitle") }}</el-text>
+        <el-flex rules="rsc" :gap="8" class="w100">
+          <el-text :size="13" :weight="800">{{ t("manage.archive.images.existingTitle") }}</el-text>
+          <el-text :size="10" color="normal50">{{ t("manage.archive.images.persistedHint") }}</el-text>
+        </el-flex>
         <div class="archive-existing-images">
           <div
-            v-for="image in editingItem.images"
+            v-for="(image, imageIndex) in editingItem.images"
             :key="image.id"
-            class="archive-existing-image">
-            <img v-if="image.thumbnailUrl || image.fullUrl" :src="image.thumbnailUrl || image.fullUrl || ''" alt="">
-            <el-flex v-else rules="ccc" class="w100 h100"><el-icon icon="hide_image" /></el-flex>
-            <span>#{{ image.position + 1 }}</span>
+            class="archive-existing-image-card">
+            <div class="archive-existing-image">
+              <img v-if="image.thumbnailUrl || image.fullUrl" :src="image.thumbnailUrl || image.fullUrl || ''" alt="">
+              <el-flex v-else rules="ccc" class="w100 h100"><el-icon icon="hide_image" /></el-flex>
+              <span>#{{ image.position + 1 }}</span>
+            </div>
+            <el-flex rules="rcc" :gap="5" class="w100">
+              <el-button
+                type="fab"
+                mode="flat"
+                icon="arrow_back"
+                :disable="editorBusy || imageIndex === 0"
+                @click="movePersistedImage(image.id, -1)"
+              />
+              <el-button
+                type="fab"
+                mode="flat"
+                icon="arrow_forward"
+                :disable="editorBusy || imageIndex === editingItem.images.length - 1"
+                @click="movePersistedImage(image.id, 1)"
+              />
+              <el-button
+                type="fab"
+                mode="flat"
+                color="red"
+                icon="delete"
+                :disable="editorBusy"
+                @click="deletePersistedImage(image)"
+              />
+            </el-flex>
           </div>
         </div>
       </el-flex>
@@ -571,11 +761,14 @@ onBeforeUnmount(() => {
         :br="1"
         bc="normal15"
         class="w100">
-        <ArchiveImageManager v-model="preparedImages" :disabled="!canManage" />
-        <el-flex rules="rsc" :gap="8" bg="orange10" :p="10" :radius="10" class="w100">
-          <el-icon icon="cloud_off" color="orange" />
-          <el-text :size="10" color="orange">
-            {{ t("manage.archive.images.localOnlyNotice") }}
+        <ArchiveImageManager
+          v-model="preparedImages"
+          :disabled="!canManage || editorBusy"
+        />
+        <el-flex rules="rsc" :gap="8" bg="blue10" :p="10" :radius="10" class="w100">
+          <el-icon icon="cloud_upload" color="blue" />
+          <el-text :size="10" color="blue">
+            {{ mediaProgress || t("manage.archive.images.storageNotice") }}
           </el-text>
         </el-flex>
       </el-flex>
@@ -596,7 +789,7 @@ onBeforeUnmount(() => {
             color="green"
             icon="public"
             :label="t('manage.archive.actions.publish')"
-            :disable="statusChanging || saving || publishBlockedByLocalImages || hasPendingPreparedImages"
+            :disable="editorBusy || publishBlockedByLocalImages || hasPendingPreparedImages"
             @click="changeStatus('publish')"
           />
           <el-button
@@ -605,7 +798,7 @@ onBeforeUnmount(() => {
             mode="flat"
             icon="edit_note"
             :label="t('manage.archive.actions.moveToDraft')"
-            :disable="statusChanging || saving"
+            :disable="editorBusy"
             @click="changeStatus('draft')"
           />
           <el-button
@@ -614,7 +807,7 @@ onBeforeUnmount(() => {
             mode="flat"
             icon="inventory_2"
             :label="t('manage.archive.actions.archive')"
-            :disable="statusChanging || saving"
+            :disable="editorBusy"
             @click="changeStatus('archive')"
           />
           <el-button
@@ -623,7 +816,7 @@ onBeforeUnmount(() => {
             mode="flat"
             icon="edit_note"
             :label="t('manage.archive.actions.restoreDraft')"
-            :disable="statusChanging || saving"
+            :disable="editorBusy"
             @click="changeStatus('draft')"
           />
         </template>
@@ -784,8 +977,15 @@ onBeforeUnmount(() => {
 .archive-existing-images {
   width: 100%;
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(125px, 1fr));
   gap: 8px;
+}
+
+.archive-existing-image-card {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
 }
 
 .archive-existing-image {
