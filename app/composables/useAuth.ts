@@ -2,6 +2,7 @@ import type {
   AuthMeResponse,
   AuthProfileField,
   AuthProfileState,
+  AuthScoreState,
   AuthSessionResponse,
   AuthUser,
   CompleteAuthProfileInput,
@@ -22,6 +23,7 @@ const authState = reactive({
   token: null as string | null,
   user: null as AuthUser | null,
   profile: null as AuthProfileState | null,
+  score: null as AuthScoreState | null,
   permissions: [] as AuthGrantedPermission[],
 });
 
@@ -63,6 +65,16 @@ function normalizeProfileState(
   return deriveProfileState(user);
 }
 
+function normalizeScoreState(score?: AuthScoreState | null): AuthScoreState {
+  const totalXp = Number(score?.totalXp ?? 0);
+  const eventCount = Number(score?.eventCount ?? 0);
+
+  return {
+    totalXp: Number.isFinite(totalXp) ? Math.max(0, totalXp) : 0,
+    eventCount: Number.isFinite(eventCount) ? Math.max(0, eventCount) : 0,
+  };
+}
+
 export function useAuth() {
   const config = useRuntimeConfig();
   const apiBase = normalizeApiBase(config.public.apiBase);
@@ -77,6 +89,7 @@ export function useAuth() {
     if (authState.user) return deriveProfileState(authState.user).missingFields;
     return [];
   });
+  const totalXp = computed(() => authState.score?.totalXp ?? 0);
 
   const isSuperAdmin = computed(() => role.value === "super_admin");
   const isAdmin = computed(() => {
@@ -134,16 +147,19 @@ export function useAuth() {
     writeToken(null);
     authState.user = null;
     authState.profile = null;
+    authState.score = null;
     authState.permissions = [];
   }
 
   function applyAuthorizationState(response: {
     user: AuthUser;
     profile?: AuthProfileState | null;
+    score?: AuthScoreState | null;
     permissions: AuthGrantedPermission[];
   }) {
     authState.user = response.user;
     authState.profile = normalizeProfileState(response.user, response.profile);
+    authState.score = normalizeScoreState(response.score);
     authState.permissions = [...response.permissions];
   }
 
@@ -285,6 +301,8 @@ export function useAuth() {
     state: readonly(authState),
     user: computed(() => authState.user),
     profile: computed(() => authState.profile),
+    score: computed(() => authState.score),
+    totalXp,
     token: computed(() => authState.token),
     permissions: computed(() => authState.permissions),
     missingProfileFields,
