@@ -12,6 +12,7 @@ export const PERMISSIONS = Object.freeze({
   DRAFTS_VIEW_ALL: 'drafts.view_all',
   DRAFTS_DELETE_ANY: 'drafts.delete_any',
   SYSTEM_SETTINGS_MANAGE: 'system.settings.manage',
+  COLLAGE_VIEW: 'collage.view',
 })
 
 const ROLE_PERMISSIONS = Object.freeze({
@@ -20,6 +21,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.DASHBOARD_VIEW,
     PERMISSIONS.SYSTEM_METRICS_VIEW,
     PERMISSIONS.USERS_VIEW,
+    PERMISSIONS.COLLAGE_VIEW,
   ]),
   super_admin: Object.freeze(['*']),
 })
