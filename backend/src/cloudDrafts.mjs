@@ -3,6 +3,7 @@ import {
   listPromptDrafts,
   upsertPromptDraft,
 } from './database.mjs'
+import { queryDatabase } from './database.mjs'
 import {
   awardCloudDraftCreatedScore,
   getUserScoreState,
@@ -240,6 +241,105 @@ function parsePromptDraftListQuery(url) {
   return { errors, limit, cursor }
 }
 
+async function handleVisibilityMutation({
+  request,
+  response,
+  corsHeaders,
+  sendJson,
+  user,
+  rawDraftId,
+}) {
+  const draftId = parsePromptDraftId(rawDraftId)
+  if (!draftId) {
+    sendJson(response, 400, { ok: false, message: 'Invalid draft id' }, corsHeaders)
+    return
+  }
+
+  if (!isJsonRequest(request)) {
+    sendJson(
+      response,
+      415,
+      { ok: false, message: 'Content-Type must be application/json' },
+      corsHeaders,
+    )
+    return
+  }
+
+  let body
+  try {
+    body = await readJsonBody(request)
+  } catch {
+    sendJson(
+      response,
+      400,
+      { ok: false, message: 'Request body must contain valid JSON' },
+      corsHeaders,
+    )
+    return
+  }
+
+  if (
+    !isPlainObject(body) ||
+    !['private', 'public'].includes(body.visibility)
+  ) {
+    sendJson(
+      response,
+      400,
+      {
+        ok: false,
+        message: 'visibility must be private or public',
+        errors: [{ field: 'visibility', message: 'visibility must be private or public' }],
+      },
+      corsHeaders,
+    )
+    return
+  }
+
+  try {
+    const result = await queryDatabase(
+      `
+        UPDATE prompt_drafts
+        SET visibility = $3,
+            published_at = CASE
+              WHEN $3 = 'public' THEN COALESCE(published_at, NOW())
+              ELSE published_at
+            END,
+            server_updated_at = NOW()
+        WHERE user_id = $1
+          AND draft_id = $2
+        RETURNING
+          draft_id AS id,
+          visibility,
+          published_at AS "publishedAt"
+      `,
+      [user.id, draftId, body.visibility],
+    )
+
+    const row = result.rows[0]
+    if (!row) {
+      sendJson(response, 404, { ok: false, message: 'Draft not found' }, corsHeaders)
+      return
+    }
+
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        draft: {
+          id: row.id,
+          visibility: row.visibility,
+          publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+        },
+      },
+      corsHeaders,
+    )
+  } catch (error) {
+    console.error('[Prompt Draft API] draft visibility update failed', error)
+    sendJson(response, 500, { ok: false, message: 'Failed to update draft visibility' }, corsHeaders)
+  }
+}
+
 export async function handleCloudDraftRequest({
   request,
   response,
@@ -299,6 +399,19 @@ export async function handleCloudDraftRequest({
       )
     }
 
+    return
+  }
+
+  const visibilityMatch = url.pathname.match(/^\/api\/drafts\/([^/]+)\/visibility$/)
+  if (visibilityMatch && request.method === 'POST') {
+    await handleVisibilityMutation({
+      request,
+      response,
+      corsHeaders,
+      sendJson,
+      user,
+      rawDraftId: visibilityMatch[1],
+    })
     return
   }
 
