@@ -86,6 +86,7 @@ function mapUserRow(row) {
     username: row.username ?? null,
     email: row.email ?? null,
     role: normalizeUserRole(row.role),
+    status: row.status ?? 'active',
     createdAt: row.createdAt.toISOString(),
   }
 }
@@ -106,6 +107,7 @@ async function findUserByIdentifier(identifier) {
         username,
         email,
         role,
+        status,
         password_hash AS "passwordHash",
         created_at AS "createdAt"
       FROM users
@@ -179,11 +181,13 @@ async function getUserForToken(token) {
         users.username,
         users.email,
         users.role,
+        users.status,
         users.created_at AS "createdAt"
       FROM auth_sessions
       INNER JOIN users ON users.id = auth_sessions.user_id
       WHERE auth_sessions.token_hash = $1
         AND auth_sessions.expires_at > NOW()
+        AND users.status = 'active'
       LIMIT 1
     `,
     [hashSessionToken(token)],
@@ -454,7 +458,7 @@ export async function handleAuthRequest({
         `
           INSERT INTO users (id, username, email, password_hash)
           VALUES ($1, $2, $3, $4)
-          RETURNING id, username, email, role, created_at AS "createdAt"
+          RETURNING id, username, email, role, status, created_at AS "createdAt"
         `,
         [userId, username, email, passwordHash],
       )
@@ -504,6 +508,11 @@ export async function handleAuthRequest({
 
       if (!userRow || !validPassword) {
         sendJson(response, 401, { ok: false, message: 'Incorrect username/email or password' }, corsHeaders)
+        return true
+      }
+
+      if (userRow.status === 'suspended') {
+        sendJson(response, 403, { ok: false, message: 'Account suspended' }, corsHeaders)
         return true
       }
 
