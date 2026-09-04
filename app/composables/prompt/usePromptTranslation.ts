@@ -211,6 +211,12 @@ export function usePromptTranslation() {
     translationError.value = null;
 
     try {
+      const available = await checkTranslationAvailability();
+
+      if (!available) {
+        throw new Error("Translation service is not available");
+      }
+
       const raw = await api.translatePrompt({
         text: protectedPayload.requestText,
         source: options.source ?? "auto",
@@ -259,6 +265,10 @@ export function usePromptTranslation() {
     isTranslating.value = false;
     translationError.value = null;
     lastTranslation.value = null;
+  }
+
+  if (import.meta.client) {
+    void checkTranslationAvailability();
   }
 
   return {
