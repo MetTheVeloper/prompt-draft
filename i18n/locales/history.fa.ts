@@ -17,6 +17,14 @@ export default {
       open: "باز کردن",
       copy: "کپی پرامپت",
       copied: "کپی شد",
+      showSnapshot: "نمایش Snapshot ذخیره‌شده",
+      hideSnapshot: "بستن Snapshot ذخیره‌شده",
+    },
+    fields: {
+      wizard: "اجرای Wizard",
+      created: "زمان ایجاد",
+      runId: "شناسه اجرا",
+      actions: "عملیات",
     },
     empty: {
       title: "هنوز تاریخچه‌ای وجود ندارد",
@@ -32,6 +40,7 @@ export default {
     },
     detail: {
       title: "اجرای ذخیره‌شده",
+      description: "پرامپت نهایی و Snapshot دقیق ذخیره‌شده برای این اجرای Wizard را بررسی کنید.",
       loading: "در حال بارگذاری اجرا...",
       errorTitle: "اجرا در دسترس نیست",
       errorDescription: "این اجرای ذخیره‌شده Wizard قابل دریافت نیست.",
