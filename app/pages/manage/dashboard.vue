@@ -38,13 +38,6 @@ onMounted(async () => {
 
 <template>
   <el-flex rules="csc" :gap="16" class="w100">
-    <el-flex rules="ccs" :gap="6">
-      <el-text type="h2" :size="22" :weight="800">Dashboard</el-text>
-      <el-text color="normal55" :size="13">
-        Authorization foundation proof. System metrics and admin tools will be added later.
-      </el-text>
-    </el-flex>
-
     <el-flex rules="csc" :gap="12" bg="surface" :p="20" :radius="16" class="w100 mxw720">
       <el-flex rules="rbc" class="w100" :gap="16">
         <el-text color="normal55" :size="12">Account</el-text>
