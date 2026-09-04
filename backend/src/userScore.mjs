@@ -1,4 +1,4 @@
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { queryDatabase } from './database.mjs'
 
 export const USER_SCORE_RULES = Object.freeze({
@@ -29,6 +29,11 @@ function normalizeMetadata(metadata) {
   }
 
   return metadata
+}
+
+function createDraftCreatedIdempotencyKey(draftId) {
+  const digest = createHash('md5').update(String(draftId)).digest('hex')
+  return `draft_created:v1:${digest}`
 }
 
 export async function awardUserScoreEvent({
@@ -135,7 +140,7 @@ export async function awardCloudDraftCreatedScore(userId, draftId) {
     userId,
     eventType: USER_SCORE_RULES.DRAFT_CREATED.eventType,
     points: USER_SCORE_RULES.DRAFT_CREATED.points,
-    idempotencyKey: `draft_created:v1:${draftId}`,
+    idempotencyKey: createDraftCreatedIdempotencyKey(draftId),
     sourceType: USER_SCORE_RULES.DRAFT_CREATED.sourceType,
     sourceId: draftId,
     metadata: {
