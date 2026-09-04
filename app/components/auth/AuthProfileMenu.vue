@@ -63,6 +63,16 @@ const hasMissingProfileFields = computed(() => {
   return auth.missingProfileFields.value.length > 0;
 });
 
+onMounted(async () => {
+  if (!auth.isLoggedIn.value) return;
+
+  try {
+    await auth.refreshAuthorizationState();
+  } catch (error) {
+    console.warn("[Prompt Draft] profile refresh failed", error);
+  }
+});
+
 function handleCompleteProfile() {
   emit("close");
   completeMissingIdentity();
