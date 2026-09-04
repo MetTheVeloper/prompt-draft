@@ -17,8 +17,8 @@ export default {
       open: "باز کردن",
       copy: "کپی پرامپت",
       copied: "کپی شد",
-      showSnapshot: "نمایش Snapshot ذخیره‌شده",
-      hideSnapshot: "بستن Snapshot ذخیره‌شده",
+      editInCreate: "ویرایش در Create",
+      restoring: "در حال باز کردن...",
     },
     fields: {
       wizard: "اجرای Wizard",
@@ -35,17 +35,20 @@ export default {
       description: "Prompt Draft نتوانست اجراهای ذخیره‌شده Wizard را از backend دریافت کند.",
       loadMore: "بارگذاری صفحه بعدی تاریخچه ناموفق بود.",
     },
+    restore: {
+      draftTitle: "تاریخچه · {id} · نسخه {version}",
+      error: "این اجرای History به‌عنوان Draft قابل ویرایش باز نشد. Draftهای فعلی شما بدون تغییر باقی ماندند.",
+    },
     run: {
       wizard: "{id} · نسخه {version}",
     },
     detail: {
       title: "اجرای ذخیره‌شده",
-      description: "پرامپت نهایی و Snapshot دقیق ذخیره‌شده برای این اجرای Wizard را بررسی کنید.",
+      description: "پرامپت نهایی را بررسی کنید یا نتیجه این Wizard را دوباره به‌صورت Draft قابل ویرایش باز کنید.",
       loading: "در حال بارگذاری اجرا...",
       errorTitle: "اجرا در دسترس نیست",
       errorDescription: "این اجرای ذخیره‌شده Wizard قابل دریافت نیست.",
       output: "پرامپت نهایی",
-      snapshot: "Snapshot ذخیره‌شده",
     },
   },
 };
