@@ -1,6 +1,6 @@
 # Milestone 9 — Manage Shell / Admin Workspace Foundation
 
-Status: PHASES 1–2 IMPLEMENTED — AWAITING USER VERIFICATION
+Status: COMPLETE
 
 ## Goal
 
@@ -17,7 +17,7 @@ Target route family:
 ...
 ```
 
-Milestone 9 implements only the reusable shell and migrates the existing Dashboard proof into it. Real user-management behavior such as ban/reset/role changes is intentionally a later feature.
+Milestone 9 implements only the reusable shell and migrates the existing Dashboard proof into it. Real user-management behavior such as ban/reset/role changes remains a later feature.
 
 ## Product structure
 
@@ -25,7 +25,7 @@ Milestone 9 implements only the reusable shell and migrates the existing Dashboa
 
 It provides persistent management navigation whose visible sections are derived from permissions.
 
-Initial section:
+Current section:
 
 ```text
 Dashboard
@@ -49,13 +49,13 @@ route: /manage/content
 permission: future content-management permission
 ```
 
-Future sections must be added through one shared section configuration rather than hardcoded independently in multiple components.
+Future sections must be added through the shared section configuration rather than hardcoded independently in multiple components.
 
 ## Permission-first contract
 
 Navigation and routing remain permission-driven, not role-name-driven.
 
-Runtime Manage access must use:
+Runtime Manage access uses:
 
 ```text
 auth.can(section.requiredPermission)
@@ -63,9 +63,7 @@ auth.can(section.requiredPermission)
 
 Roles remain permission bundles. Backend authorization remains the authoritative security boundary.
 
-## Central Manage section configuration
-
-Implemented in:
+## Implemented Manage section configuration
 
 ```text
 app/config/manage.ts
@@ -114,7 +112,7 @@ authenticated + no permitted Manage section
   -> 403 Forbidden
 ```
 
-The resolver never assumes that Dashboard will always be the first permitted section.
+The resolver never assumes Dashboard will always be the first permitted section.
 
 ## Manage shell UI
 
@@ -137,7 +135,7 @@ This keeps the normal application Header/default layout and avoids duplicating g
 
 ## Dashboard migration
 
-The existing proof page has one canonical implementation at:
+The canonical Dashboard proof now lives at:
 
 ```text
 /manage/dashboard
@@ -161,13 +159,13 @@ Real system metrics are not part of Milestone 9.
 
 `/dashboard` no longer contains a second Dashboard implementation.
 
-It uses the existing authorization middleware first, then redirects permitted users to:
+It uses authorization first, then redirects permitted users to:
 
 ```text
 /manage/dashboard
 ```
 
-Therefore a normal user cannot use the legacy path to bypass authorization.
+A normal user cannot use the legacy path to bypass authorization.
 
 ## Profile Menu entry
 
@@ -193,28 +191,62 @@ The existing three-layer authorization model remains mandatory:
 
 ```text
 1. UI visibility
-   -> convenience/discoverability
-
 2. frontend route authorization
-   -> blocks unauthorized navigation
-
 3. backend permission guard
-   -> authoritative security boundary
 ```
 
 Future `/manage/users` mutations such as ban, reset, or role changes must each have backend permission checks even if their buttons are hidden in the UI.
 
-## Static-generation contract
+## Local verification
 
-Explicit static routes now include:
+Verified by the user on 2026-09-04.
+
+Super admin:
 
 ```text
-/manage
-/manage/dashboard
-/dashboard
+Profile Menu shows Manage, not Dashboard
+/manage resolves to /manage/dashboard
+Manage shell renders with Dashboard tab active
+Dashboard backend authorization remains Verified
+legacy /dashboard redirects to /manage/dashboard
 ```
 
-`pnpm generate` remains required before Milestone 9 can be marked complete.
+Normal user:
+
+```text
+Profile Menu does not show Manage
+/manage is blocked
+/manage/dashboard is blocked
+/dashboard remains blocked
+```
+
+The user explicitly confirmed all functional tests succeeded.
+
+## Static-generation verification
+
+Final release check also passed:
+
+```text
+pnpm generate succeeds
+15 initial routes prerender successfully
+/manage is present
+/manage/dashboard is present
+/dashboard compatibility route is present
+.output/public generated successfully
+offline manifest generated successfully
+```
+
+Known duplicated-import, sourcemap, and large-chunk warnings remain non-blocking existing build warnings.
+
+## Milestone 9 phases — ALL DONE
+
+```text
+Phase 0 — contract/documentation: DONE
+Phase 1 — central Manage section config + parent shell: DONE
+Phase 2 — Dashboard migration + Profile Menu entry: DONE
+Phase 3 — privileged/normal-user authorization regression: DONE
+Phase 4 — pnpm generate + static route verification: DONE
+```
 
 ## Deferred from Milestone 9
 
@@ -228,40 +260,10 @@ delete-user flow
 system metrics/dashboard analytics
 page-view tracking
 active-user analytics
+translation usage analytics
 admin audit log
 /manage/system
 /manage/content
 ```
 
-## Implementation phases
-
-```text
-Phase 0 — contract/documentation: READY
-Phase 1 — central Manage section config + parent shell: AWAITING USER VERIFICATION
-Phase 2 — Dashboard migration + Profile Menu entry: AWAITING USER VERIFICATION
-Phase 3 — privileged/normal-user authorization regression: NOT STARTED
-Phase 4 — pnpm generate + static route verification: NOT STARTED
-```
-
-## Phase 1–2 local verification target
-
-Verify with the existing `super_admin` account:
-
-```text
-Profile Menu shows Manage, not Dashboard
-Manage -> /manage -> /manage/dashboard
-Manage shell is visible with Dashboard tab active
-Dashboard proof content still shows backend authorization Verified
-legacy /dashboard redirects to /manage/dashboard
-```
-
-Then verify with a normal `user` account:
-
-```text
-Profile Menu does not show Manage
-direct /manage returns 403
-direct /manage/dashboard returns 403
-direct /dashboard remains blocked and cannot bypass authorization
-```
-
-No implementation phase is `DONE` until the user verifies its behavior locally.
+These become later vertical-slice features on top of the verified Manage shell.
