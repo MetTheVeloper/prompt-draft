@@ -41,6 +41,21 @@ export default {
       memberSince: "عضویت از",
       complete: "تکمیل پروفایل",
       logout: "خروج از حساب",
+      avatar: {
+        alt: "آواتار پروفایل",
+        choose: "انتخاب آواتار",
+        change: "تغییر آواتار",
+        save: "ذخیره آواتار",
+        cancel: "لغو",
+        remove: "حذف آواتار",
+        preparing: "در حال آماده‌سازی آواتار ۴۰۰×۴۰۰...",
+        hint: "JPEG، PNG یا WebP · برش مربعی از مرکز به ۴۰۰×۴۰۰ · WebP با کیفیت ۶۰٪.",
+        errors: {
+          prepare: "Prompt Draft نتوانست این تصویر را برای آواتار آماده کند.",
+          save: "ذخیره آواتار انجام نشد.",
+          remove: "حذف آواتار انجام نشد.",
+        },
+      },
     },
     profileCompletion: {
       title: "تکمیل پروفایل",
