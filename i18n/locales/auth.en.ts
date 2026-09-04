@@ -71,6 +71,7 @@ export default {
       sources: {
         generic: "THIS FEATURE",
         globalOutputCopy: "GLOBAL OUTPUT COPY",
+        promptArchive: "PROMPT ARCHIVE",
       },
       emailPlaceholder: "you{'@'}example.com",
       emailHint: "The email becomes an additional sign-in identifier for your account.",
@@ -84,6 +85,13 @@ export default {
       anonymousTitle: "An account comes first",
       anonymousDescription: "Sign in or create an account, then come back to unlock this action with your email.",
       signIn: "Sign in or create account",
+    },
+    promptArchiveAccess: {
+      checking: "Checking access...",
+      title: "Prompt Archive requires an account with email",
+      description: "Sign in to Prompt Draft and add an email address to your account to browse the Prompt Archive.",
+      signIn: "Sign in or create account",
+      addEmail: "Add email to unlock",
     },
   },
 };
