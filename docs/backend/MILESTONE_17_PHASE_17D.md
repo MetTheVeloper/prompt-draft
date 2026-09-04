@@ -1,12 +1,12 @@
 # Milestone 17 — Phase 17D: ArvanCloud Object Storage integration
 
-Status: `LOCALLY VERIFIED / FINAL GENERATE PENDING`
+Status: `DONE / LOCALLY VERIFIED`
 
 Branch: `feature/docker-local-api`
 
 Last verified: 2026-09-04
 
-Phase 17D is functionally complete and explicitly accepted by the user after real local/browser verification. The only remaining closure gate is the project-wide release invariant `pnpm generate` after the final deep-link and Manage pagination fixes.
+Phase 17D is complete and explicitly accepted by the user after real local/browser verification, including the final deep-link and Manage pagination fixes. The project-wide static-generation release invariant was also confirmed before proceeding to Phase 17E.
 
 ## Dedicated Archive media bucket
 
@@ -247,20 +247,7 @@ Archive publish flow
 Manage deep-link refresh behavior
 admin-only Prompt-card Edit action
 Manage cursor Load more pagination fix
+final static generation gate
 ```
 
-## Remaining closure gate
-
-Run after the latest deep-link + cursor-pagination commits:
-
-```powershell
-pnpm generate
-```
-
-When that succeeds, change this document to:
-
-```text
-Status: DONE / LOCALLY VERIFIED
-```
-
-and proceed to Phase 17E.
+Phase 17D is closed. Phase 17E owns snapshot export, fully-local fallback media mirroring, and Milestone 17 closure.
