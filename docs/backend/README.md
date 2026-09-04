@@ -1,6 +1,6 @@
 # Prompt Draft Backend
 
-This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, and Manage integration work in Prompt Draft.
+This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, XP/score, and Manage integration work in Prompt Draft.
 
 ## Current branch
 
@@ -29,6 +29,7 @@ browser CORS is part of the API contract
 backend authorization is authoritative
 local product state must not be destroyed by backend failure
 new schema changes use numbered SQL files
+important product events use explicit idempotency semantics
 ```
 
 ## Reusable development guides
@@ -45,11 +46,21 @@ Manage/admin workspace work:
 docs/backend/MANAGE_GUIDE.md
 ```
 
-The Manage guide captures the verified shell, permission, route, API, EL UI, Global Menu/Modal, mutation safety, audit, localization, and static-generation patterns learned from Milestones 9–12.
-
 ## Milestones 1–5 — COMPLETE: Backend / Wizard-run reference path
 
-The initial backend learning path established Docker networking, browser CORS, PostgreSQL persistence, named-volume durability, typed frontend contracts, Wizard-run persistence, cursor pagination, static-safe History UI, and recoverable failure semantics.
+Established and verified:
+
+```text
+Docker networking
+browser CORS
+PostgreSQL persistence
+named-volume durability
+typed frontend contracts
+Wizard-run persistence
+cursor pagination
+static-safe History routing
+recoverable failure semantics
+```
 
 Reference flow:
 
@@ -72,10 +83,10 @@ anonymous
 
 logged in
   -> local-first Draft workflow
-  -> manual Cloud Save
+  -> account-owned Cloud save
   -> dirty-aware autosync
-  -> account-owned Cloud collection
-  -> same-account multi-device recovery
+  -> Cloud collection/recovery
+  -> same-account multi-device merge
 ```
 
 Auth API:
@@ -127,21 +138,6 @@ admin
 super_admin
 ```
 
-Current backend permission mapping:
-
-```text
-user
-  -> no privileged permissions
-
-admin
-  -> dashboard.view
-  -> system.metrics.view
-  -> users.view
-
-super_admin
-  -> *
-```
-
 Authorization is enforced at three layers:
 
 ```text
@@ -160,7 +156,7 @@ Canonical management workspace:
 /manage/users
 ```
 
-The verified Manage foundation includes:
+Verified foundation:
 
 ```text
 permission-aware shell and section registry
@@ -179,8 +175,6 @@ Manage is **CLOSED FOR NOW**. Future Manage work starts from `docs/backend/MANAG
 
 ## Milestone 13 — COMPLETE: History Workflow
 
-History access and presentation were reworked after the original Wizard-run persistence milestones.
-
 Verified current behavior:
 
 ```text
@@ -193,50 +187,29 @@ Edit in Create creates a new editable local Draft from snapshot.finalDraft
 Wizard-run historical rows remain immutable
 ```
 
-The user locally verified this behavior and ran a successful final `pnpm generate` with `/history` included in the 16 prerendered routes.
-
 Detailed milestone:
 
 ```text
 docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
 ```
 
-## Milestone 14 — IN PROGRESS: Progressive User Profile Foundation
+## Milestone 14 — COMPLETE: Progressive User Profile Foundation
 
-The active foundation allows a low-friction account to grow additional identity data later.
-
-New schema migration:
+Accounts can progressively hold:
 
 ```text
-008_progressive_user_profile.sql
+username only
+email only
+username + email
 ```
 
-New account invariant:
-
-```text
-username only   -> valid
-email only      -> valid
-username+email  -> valid
-neither         -> invalid
-```
-
-New API:
+API:
 
 ```text
 POST /api/auth/profile/complete
 ```
 
-This endpoint:
-
-```text
-requires authentication
-fills only currently-missing username/email fields
-never silently replaces an existing identity value
-reuses the existing case-insensitive unique indexes
-returns refreshed user + profile + permissions
-```
-
-Auth responses now expose a reusable profile-state contract:
+Auth responses expose:
 
 ```text
 profile.supportedFields
@@ -249,12 +222,12 @@ Reusable requirement layers:
 ```text
 backend/src/profileRequirements.mjs
 app/composables/useProfileRequirements.ts
-app/components/auth/ProfileRequirementModal.vue
+app/composables/useEmailRequirement.ts
+ProfileRequirementModal.vue
+EmailRequirementModal.vue
 ```
 
-The Profile Menu exposes `Complete profile` only while a currently-supported identity field is missing.
-
-Milestone 14 is **not DONE** until the user locally verifies completion, login through both identities, error behavior, persistence, EN/FA UI, and a final `pnpm generate`.
+The first verified feature gate requires email before Global Output Copy and resumes the original action after profile completion.
 
 Detailed milestone:
 
@@ -262,9 +235,49 @@ Detailed milestone:
 docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
 ```
 
+## Milestone 15 — COMPLETE: XP / Score Event Ledger Foundation
+
+The authoritative score model is an append-only ledger:
+
+```text
+user_score_events
+```
+
+Implemented rewards:
+
+```text
+account created       -> +1000 XP exactly once
+email added           -> +1000 XP exactly once
+Cloud Draft created   ->   +50 XP exactly once per Draft
+```
+
+Key invariant:
+
+```text
+UNIQUE (user_id, idempotency_key)
+```
+
+The current total is derived from ledger events rather than a mutable `users.score` source of truth.
+
+Frontend/Auth integration exposes current score and refreshes it authoritatively when needed. Missing pre-hydration score state does not render a false zero.
+
+Product decision:
+
+```text
+Draft edit/save XP -> intentionally dropped
+```
+
+Routine edits/autosaves will not be rewarded. Future XP should correspond to clearer product achievements with stable idempotency semantics.
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_15_SCORE_LEDGER.md
+```
+
 ## Current SQL history
 
-Development schema files currently run in lexical order:
+Development schema files run in lexical order:
 
 ```text
 001_create_wizard_runs.sql
@@ -275,34 +288,38 @@ Development schema files currently run in lexical order:
 006_add_admin_user_indexes.sql
 007_add_user_status_and_admin_audit.sql
 008_progressive_user_profile.sql
+009_user_score_events.sql
+010_score_identity_triggers.sql
+011_score_cloud_draft_creation.sql
 ```
 
 New development schema changes should use a new numbered file rather than rewriting applied history. A production-grade migration framework remains deferred.
 
-## Deferred platform/product work
+## Current next-step queue
 
-Examples currently deferred:
+No next milestone is locked. The main candidate areas are:
 
 ```text
-phone/contact model and verification
-email verification/password recovery/OAuth
-user consent foundation (marketing / analytics / model training)
-XP / score ledger and gamification
-leaderboards
-referral relationships / referral codes
-analytics/event tracking
-site/page-view/behavioral activity metrics
+referrals / referral codes / referral rewards
+user_events analytics foundation
+site/page-view/activity metrics
 translation usage metrics
-account deletion / full destructive account lifecycle
+user consent records
+phone/contact verification
+email verification / password recovery / OAuth
+additional meaningful XP events / leaderboard / levels / badges / streaks
+account deletion / destructive account lifecycle
 admin audit-log UI
 /manage/system
 /manage/content
 stronger Cloud Draft conflict handling
-production auth/translation rate limiting
+production rate limiting
 production migration framework
-production deployment/secrets/domain/HTTPS
+production deployment / secrets / domain / HTTPS
 Redis
 ```
+
+The current recommended next vertical slice is **Referral Foundation**, because it can reuse Auth and the score ledger while creating a more meaningful future reward trigger than Draft autosaves.
 
 Do not start deferred work automatically. The user chooses the next feature.
 
