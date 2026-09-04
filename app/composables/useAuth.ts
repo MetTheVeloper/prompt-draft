@@ -14,6 +14,7 @@ import type {
 } from "~/config/authorization";
 
 const AUTH_TOKEN_STORAGE_KEY = "prompt-draft:auth:token:v1";
+const AUTH_PROFILE_FIELDS: AuthProfileField[] = ["username", "email"];
 
 const authState = reactive({
   initialized: false,
@@ -31,6 +32,37 @@ function normalizeApiBase(value: unknown) {
   return base.replace(/\/+$/, "");
 }
 
+function deriveProfileState(user: AuthUser): AuthProfileState {
+  const completedFields: AuthProfileField[] = [];
+
+  if (user.username) completedFields.push("username");
+  if (user.email) completedFields.push("email");
+
+  return {
+    supportedFields: [...AUTH_PROFILE_FIELDS],
+    completedFields,
+    missingFields: AUTH_PROFILE_FIELDS.filter(
+      (field) => !completedFields.includes(field),
+    ),
+  };
+}
+
+function normalizeProfileState(
+  user: AuthUser,
+  profile?: AuthProfileState | null,
+): AuthProfileState {
+  if (
+    profile &&
+    Array.isArray(profile.supportedFields) &&
+    Array.isArray(profile.completedFields) &&
+    Array.isArray(profile.missingFields)
+  ) {
+    return profile;
+  }
+
+  return deriveProfileState(user);
+}
+
 export function useAuth() {
   const config = useRuntimeConfig();
   const apiBase = normalizeApiBase(config.public.apiBase);
@@ -41,7 +73,9 @@ export function useAuth() {
 
   const role = computed(() => authState.user?.role ?? null);
   const missingProfileFields = computed(() => {
-    return authState.profile?.missingFields ?? [];
+    if (authState.profile) return authState.profile.missingFields;
+    if (authState.user) return deriveProfileState(authState.user).missingFields;
+    return [];
   });
 
   const isSuperAdmin = computed(() => role.value === "super_admin");
@@ -65,7 +99,12 @@ export function useAuth() {
   }
 
   function hasProfileField(field: AuthProfileField) {
-    return authState.profile?.completedFields.includes(field) ?? false;
+    if (authState.profile) {
+      return authState.profile.completedFields.includes(field);
+    }
+
+    if (!authState.user) return false;
+    return deriveProfileState(authState.user).completedFields.includes(field);
   }
 
   function endpoint(path: string) {
@@ -100,11 +139,11 @@ export function useAuth() {
 
   function applyAuthorizationState(response: {
     user: AuthUser;
-    profile: AuthProfileState;
+    profile?: AuthProfileState | null;
     permissions: AuthGrantedPermission[];
   }) {
     authState.user = response.user;
-    authState.profile = response.profile;
+    authState.profile = normalizeProfileState(response.user, response.profile);
     authState.permissions = [...response.permissions];
   }
 
