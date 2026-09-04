@@ -1,12 +1,15 @@
 <script setup lang="ts">
 import type {
-  PromptArchiveItem,
+  PromptArchiveDetailItem,
+  PromptArchiveListItem,
+  PromptArchiveListQuery,
   PromptArchiveModel,
 } from '~/types/promptArchive'
 
 const route = useRoute()
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const { mobile, tablet, mini } = useScreen()
+const auth = useAuth()
 const archive = usePromptArchive()
 
 const searchQuery = ref('')
@@ -14,7 +17,8 @@ const modelFilter = ref<'all' | PromptArchiveModel>('all')
 const tagFilter = ref('all')
 const sortMode = ref<'newest' | 'oldest'>('newest')
 const viewMode = ref<'grid' | 'list'>('grid')
-const visibleCount = ref(24)
+
+let filterTimer: ReturnType<typeof setTimeout> | undefined
 
 const hasDetailQuery = computed(() => {
   return typeof route.query.id === 'string' && route.query.id.trim().length > 0
@@ -23,33 +27,15 @@ const hasDetailQuery = computed(() => {
 const detailId = computed(() => {
   if (!hasDetailQuery.value) return null
   const value = Number(route.query.id)
-  return Number.isInteger(value) ? value : null
+  return Number.isInteger(value) && value > 0 ? value : null
 })
 
-const activeItem = computed(() => {
-  if (detailId.value == null) return null
-  return archive.items.value.find(item => item.id === detailId.value) || null
-})
+const activeItem = computed(() => archive.detail.value)
+const previousItem = computed(() => archive.previousItem.value)
+const nextItem = computed(() => archive.nextItem.value)
 
-const activeItemIndex = computed(() => {
-  if (!activeItem.value) return -1
-  return archive.items.value.findIndex(item => item.id === activeItem.value?.id)
-})
-
-const previousItem = computed(() => {
-  if (activeItemIndex.value <= 0) return null
-  return archive.items.value[activeItemIndex.value - 1] || null
-})
-
-const nextItem = computed(() => {
-  if (
-    activeItemIndex.value < 0 ||
-    activeItemIndex.value >= archive.items.value.length - 1
-  ) {
-    return null
-  }
-
-  return archive.items.value[activeItemIndex.value + 1] || null
+const canReadArchive = computed(() => {
+  return auth.isLoggedIn.value && auth.hasProfileField('email')
 })
 
 const cardColumns = computed(() => {
@@ -70,58 +56,20 @@ const sortOptions = computed(() => [
 ])
 
 const tagOptions = computed(() => {
-  const tags = new Set<string>()
-  archive.items.value.forEach((item) => item.tags.forEach((tag) => tags.add(tag)))
-
   return [
     { value: 'all', label: t('prompts.filters.allTags') },
-    ...Array.from(tags)
-      .sort((first, second) => first.localeCompare(second))
-      .map((tag) => ({ value: tag, label: formatTag(tag) })),
+    ...archive.availableTags.value.map((tag) => ({
+      value: tag,
+      label: formatTag(tag),
+    })),
   ]
 })
 
-const normalizedSearch = computed(() => normalizeText(searchQuery.value))
-
-const filteredItems = computed(() => {
-  const result = archive.items.value.filter((item) => {
-    if (
-      modelFilter.value !== 'all' &&
-      item.model.previewGeneratedWith !== modelFilter.value
-    ) {
-      return false
-    }
-
-    if (tagFilter.value !== 'all' && !item.tags.includes(tagFilter.value)) {
-      return false
-    }
-
-    const query = normalizedSearch.value
-    if (!query) return true
-
-    const haystack = normalizeText([
-      item.id,
-      t(item.titleKey),
-      item.sourceTitle,
-      item.prompt,
-      ...item.tags,
-    ].join(' '))
-
-    return haystack.includes(query)
-  })
-
-  return result.sort((first, second) => {
-    const firstTime = new Date(first.publishedAt).getTime()
-    const secondTime = new Date(second.publishedAt).getTime()
-
-    return sortMode.value === 'oldest'
-      ? firstTime - secondTime
-      : secondTime - firstTime
-  })
+const visibleItems = computed(() => archive.items.value)
+const canLoadMore = computed(() => archive.hasMore.value)
+const remainingCount = computed(() => {
+  return Math.max(0, archive.totalCount.value - archive.items.value.length)
 })
-
-const visibleItems = computed(() => filteredItems.value.slice(0, visibleCount.value))
-const canLoadMore = computed(() => visibleItems.value.length < filteredItems.value.length)
 
 const hasActiveFilters = computed(() => {
   return Boolean(searchQuery.value.trim()) ||
@@ -130,27 +78,82 @@ const hasActiveFilters = computed(() => {
     sortMode.value !== 'newest'
 })
 
+const localizedActiveTitle = computed(() => {
+  if (!activeItem.value) return ''
+  return locale.value === 'fa'
+    ? activeItem.value.title.fa
+    : activeItem.value.title.en
+})
+
 useHead(() => ({
   title: activeItem.value
-    ? `${t(activeItem.value.titleKey)} · Prompt Draft`
+    ? `${localizedActiveTitle.value} · Prompt Draft`
     : t('prompts.title'),
 }))
 
-watch([searchQuery, modelFilter, tagFilter, sortMode], () => {
-  visibleCount.value = 24
+watch(
+  [searchQuery, modelFilter, tagFilter, sortMode],
+  () => {
+    if (hasDetailQuery.value || !canReadArchive.value) return
+
+    if (filterTimer) clearTimeout(filterTimer)
+    filterTimer = setTimeout(() => {
+      void loadFirstPage()
+    }, 280)
+  },
+)
+
+watch(
+  () => route.query.id,
+  () => {
+    if (!canReadArchive.value) return
+    void loadCurrentRoute()
+  },
+)
+
+watch(canReadArchive, (allowed) => {
+  if (allowed) void loadCurrentRoute()
 })
 
-onMounted(() => {
-  void archive.load()
+onMounted(async () => {
+  await auth.initialize()
+  if (canReadArchive.value) await loadCurrentRoute()
 })
 
-function normalizeText(value: unknown) {
-  return String(value ?? '')
-    .toLocaleLowerCase()
-    .replaceAll('ي', 'ی')
-    .replaceAll('ك', 'ک')
-    .replace(/\s+/g, ' ')
-    .trim()
+onBeforeUnmount(() => {
+  if (filterTimer) clearTimeout(filterTimer)
+})
+
+function currentListQuery(cursor: string | null = null): PromptArchiveListQuery {
+  return {
+    limit: 24,
+    cursor,
+    search: searchQuery.value.trim(),
+    model: modelFilter.value === 'all' ? null : modelFilter.value,
+    tag: tagFilter.value === 'all' ? null : tagFilter.value,
+    sort: sortMode.value,
+  }
+}
+
+async function loadCurrentRoute() {
+  if (!canReadArchive.value) return
+
+  if (hasDetailQuery.value) {
+    if (detailId.value == null) {
+      archive.clearDetail()
+      return
+    }
+
+    await archive.loadDetail(detailId.value)
+    return
+  }
+
+  archive.clearDetail()
+  await loadFirstPage()
+}
+
+function loadFirstPage() {
+  return archive.loadList(currentListQuery())
 }
 
 function formatTag(tag: string) {
@@ -165,10 +168,24 @@ function clearFilters() {
 }
 
 function loadMore() {
-  visibleCount.value += 24
+  if (!archive.nextCursor.value || archive.pending.value) return
+
+  return archive.loadList(
+    currentListQuery(archive.nextCursor.value),
+    { append: true },
+  )
 }
 
-function openTelegram(item: PromptArchiveItem) {
+function retryList() {
+  return archive.loadList(currentListQuery(), { forceFallbackSnapshot: true })
+}
+
+function retryDetail() {
+  if (detailId.value == null) return
+  return archive.loadDetail(detailId.value, { forceFallbackSnapshot: true })
+}
+
+function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
   if (!import.meta.client) return
   window.open(item.telegramUrl, '_blank', 'noopener,noreferrer')
 }
@@ -177,7 +194,7 @@ function openTelegram(item: PromptArchiveItem) {
 <template>
   <template v-if="hasDetailQuery">
     <el-flex
-      v-if="archive.pending.value && !archive.items.value.length"
+      v-if="archive.detailPending.value"
       rules="ccc"
       class="w100 h100"
       :gap="8"
@@ -189,7 +206,7 @@ function openTelegram(item: PromptArchiveItem) {
     </el-flex>
 
     <el-flex
-      v-else-if="archive.error.value"
+      v-else-if="archive.detailError.value"
       rules="ccc"
       class="w100 h100"
       :gap="10"
@@ -204,7 +221,7 @@ function openTelegram(item: PromptArchiveItem) {
         mode="flat"
         color="red"
         :size="12"
-        @click="archive.load({ force: true })"
+        @click="retryDetail"
       />
     </el-flex>
 
@@ -244,7 +261,8 @@ function openTelegram(item: PromptArchiveItem) {
   <el-flex
     v-else
     rules="csc"
-    class="prompts-page w100 h100 ofya">
+    class="prompts-page w100 h100 ofya"
+    :data-archive-source="archive.source.value || undefined">
     <el-flex
       rules="csc"
       class="prompts-page__content w100"
@@ -263,13 +281,13 @@ function openTelegram(item: PromptArchiveItem) {
           </el-grid>
 
           <el-text
-            v-if="archive.payload.value"
+            v-if="archive.source.value"
             :size="11"
             :p="[6, 9]"
             :radius="100"
             marker="prim15"
             class="wsnw">
-            {{ t('prompts.total', { count: archive.items.value.length }) }}
+            {{ t('prompts.total', { count: archive.totalCount.value }) }}
           </el-text>
         </el-flex>
       </el-grid>
@@ -318,7 +336,7 @@ function openTelegram(item: PromptArchiveItem) {
 
       <el-flex rules="rbc" class="w100" :gap="10" wrap>
         <el-text :size="12" color="normal55">
-          {{ t('prompts.results', { count: filteredItems.length }) }}
+          {{ t('prompts.results', { count: archive.totalCount.value }) }}
         </el-text>
 
         <el-flex rules="rsc" :gap="6" wrap>
@@ -396,12 +414,12 @@ function openTelegram(item: PromptArchiveItem) {
           mode="flat"
           color="red"
           :size="12"
-          @click="archive.load({ force: true })"
+          @click="retryList"
         />
       </el-flex>
 
       <el-flex
-        v-else-if="!filteredItems.length"
+        v-else-if="!visibleItems.length"
         rules="ccc"
         class="w100"
         :gap="8"
@@ -437,14 +455,13 @@ function openTelegram(item: PromptArchiveItem) {
           class="w100"
           :p="8">
           <el-button
-            :label="t('prompts.loadMore', {
-              count: filteredItems.length - visibleItems.length,
-            })"
+            :label="t('prompts.loadMore', { count: remainingCount })"
             icon="arrow_downward"
             mode="flat"
             color="normal"
             :size="12"
             :p="[10, 14]"
+            :loading="archive.pending.value"
             @click="loadMore"
           />
         </el-flex>
