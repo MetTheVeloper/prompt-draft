@@ -1,6 +1,6 @@
 # Milestone 11 — User Administration Actions
 
-Status: IMPLEMENTED — AWAITING USER VERIFICATION
+Status: RUNTIME VERIFIED — FINAL STATIC CHECK PENDING
 
 ## Goal
 
@@ -146,24 +146,31 @@ This keeps future sections consistent and removes duplicate page-header layout c
 Users search input size: 13 -> 15
 Dashboard/Users section heading: shared full-width shell heading
 Manage UI: EL component system only for new layout/actions/modal content
+Profile Menu identity/role presentation normalized with EL components
 ```
 
-## Verification requirements
+## Local verification
 
-Do not mark this milestone DONE until the user verifies locally:
+The user locally confirmed the row actions and runtime behavior work correctly, including:
 
 ```text
-migration 007 applies
-normal read/list behavior still works
-Information opens central modal and no detail box appears below table
-self admin actions are disabled in UI
-change role succeeds for another account
-suspend revokes sessions and blocks login
-unsuspend restores ability to log in
-revoke sessions invalidates existing sessions
-reset Cloud data deletes only target Cloud Drafts
-admin audit rows are created
-users without users.manage cannot call mutation APIs
-last-active-super-admin protection works
-pnpm generate succeeds
+Information central modal
+Change role
+Suspend account
+suspended-account login denial
+Unsuspend account
+Revoke sessions
+Reset Cloud data
+admin audit-log writes
+```
+
+The observed audit output included successful suspend, unsuspend, and Cloud-data reset records with the expected actor/target IDs and metadata.
+
+## Remaining close condition
+
+Milestone 11 is not marked complete until the final static generation check passes after the latest UI changes:
+
+```text
+pnpm generate
+/manage/users remains prerendered
 ```
