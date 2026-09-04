@@ -30,6 +30,7 @@ export default {
       title: "Account",
       username: "Username",
       email: "Email",
+      xp: "XP",
       memberSince: "Member since",
       complete: "Complete profile",
       logout: "Sign out",
