@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1 through 15 are complete and locally verified.
+Milestones 1 through 15 are complete and locally verified. Milestone 16 is implemented and awaiting local verification.
 
 Current platform path:
 
@@ -52,6 +52,7 @@ Current schema files:
 009_user_score_events.sql
 010_score_identity_triggers.sql
 011_score_cloud_draft_creation.sql
+012_create_referrals.sql
 ```
 
 New development schema changes use new numbered files rather than rewriting applied history. A production migration framework remains deferred.
@@ -273,7 +274,7 @@ UNIQUE (user_id, idempotency_key)
 
 Every future reward producer must define a stable logical event and deterministic idempotency key.
 
-## Current rewards
+## Current verified rewards
 
 ```text
 account_created       +1000 XP
@@ -321,6 +322,160 @@ was explicitly dropped after Milestone 15 verification.
 
 Future XP triggers should correspond to meaningful achievements or product milestones and must have clear anti-farming/idempotency semantics.
 
+# Milestone 16 — Referral Foundation
+
+Status:
+
+```text
+implementation present
+local verification pending
+```
+
+## Referral identity model
+
+No generated referral code exists in the current design.
+
+The user's existing username is the referral input used during registration:
+
+```text
+referralUsername = existing username
+```
+
+The persisted relationship never depends on the username after creation:
+
+```text
+referrals.referrer_user_id -> users.id
+referrals.referred_user_id -> users.id
+```
+
+`referral_username_used` preserves the normalized username entered during signup as audit/provenance data.
+
+## Referral relation invariants
+
+Migration:
+
+```text
+backend/sql/012_create_referrals.sql
+```
+
+Core constraints:
+
+```text
+UNIQUE (referred_user_id)
+CHECK (referrer_user_id <> referred_user_id)
+foreign keys to users(id)
+```
+
+Product rules enforced by the registration backend:
+
+```text
+referral is optional
+referral can only be attached during account creation
+username lookup is case-insensitive
+referrer must exist
+referrer must be active
+direct username self-referral is rejected
+invalid or unavailable referral aborts account creation
+```
+
+One referrer can have many referred users; one referred account can have at most one referrer.
+
+## Referral-aware registration contract
+
+Existing endpoint:
+
+```text
+POST /api/auth/register
+```
+
+Optional input:
+
+```text
+referralUsername
+```
+
+Stable referral errors:
+
+```text
+REFERRAL_USERNAME_INVALID
+REFERRAL_USERNAME_NOT_FOUND
+REFERRAL_SELF_REFERENCE
+```
+
+When referral is present, account and referral creation use one PostgreSQL data-modifying CTE:
+
+```text
+eligible_referrer
+  -> inserted_user
+  -> inserted_referral
+```
+
+The referrer is rechecked for active status inside the write statement. A failed referral write cannot leave the requested account created by that statement without its referral relation.
+
+Session creation remains the existing Auth post-registration step and is outside this referral relation statement.
+
+## Referral XP events
+
+A database trigger on `referrals` creates both ledger events as part of the successful referral insert:
+
+```text
+referred user
+  referral_joined  +500 XP
+
+referrer
+  referral_reward  +1000 XP
+```
+
+Both use:
+
+```text
+source_type = referral
+source_id   = referral UUID
+```
+
+Per-user idempotency keys bind the reward to the referral UUID.
+
+Current expected signup totals:
+
+```text
+username-only + referral -> 1500 XP
+email signup + referral  -> 2500 XP
+```
+
+Do not create a second mutable referral score field. The existing `user_score_events` ledger remains authoritative.
+
+## Frontend registration contract
+
+`app/pages/login.vue` shows the optional referral username field only in the account-creation step, directly after Repeat Password.
+
+`useAuth().register()` accepts:
+
+```ts
+register(identifier, password, {
+  referralUsername,
+})
+```
+
+Referral validation errors are mapped to localized EN/FA registration copy.
+
+## Explicitly deferred referral work
+
+Do not fold these into Milestone 16 automatically:
+
+```text
+random/generated referral codes
+referral links / URL prefill
+referral list/profile UI
+leaderboard or referral ranking
+admin referral tooling
+phone/email verification eligibility
+multi-account/device anti-abuse
+reward maturity delays / clawbacks
+campaign-specific referral policies
+```
+
+These can extend the persisted referral foundation later.
+
 # Static-generation contract
 
 Nuxt remains:
@@ -334,9 +489,9 @@ New backend features must preserve static frontend generation unless the archite
 
 `pnpm generate` remains a release invariant.
 
-# How to extend the platform next
+# Current platform resource boundaries
 
-Current reusable resource boundaries are intentionally separated:
+Keep product concepts separate:
 
 ```text
 users / auth / profile
@@ -353,14 +508,14 @@ admin_audit_log
 
 user_score_events
   -> append-only XP ledger
+
+referrals
+  -> referrer_user_id -> referred_user_id relationship
 ```
 
 Recommended future resources should remain separate rather than becoming arbitrary nullable columns or generic JSON on `users`:
 
 ```text
-referrals
-  -> referrer_user_id -> referred_user_id relationships + referral codes
-
 user_events
   -> trustworthy behavioral analytics/event persistence
 
@@ -371,36 +526,4 @@ contacts / verification
   -> phone and verified contact semantics
 ```
 
-## Recommended next milestone candidate
-
-The current recommended next vertical slice is:
-
-```text
-Milestone 16 — Referral Foundation
-```
-
-Suggested narrow scope:
-
-```text
-persisted referral code ownership
-resolve a referral code to a user
-persist one referrer -> referred-user relationship per new account
-prevent self-referral
-prevent duplicate/re-parented referral relationships
-preserve account creation when referral processing fails safely where appropriate
-define future referral XP as a separate idempotent score event, not necessarily in the first slice
-```
-
-This direction reuses the completed Auth and XP foundations and provides a more meaningful future reward trigger than routine Draft activity.
-
-Alternative next directions remain:
-
-```text
-Analytics foundation
-Consent foundation
-Account deletion/lifecycle
-Production hardening
-Contacts/verification
-```
-
-Do not start a deferred resource automatically. Confirm the product direction with the user first.
+Milestone 16 must be locally verified before selecting or starting the next platform resource.
