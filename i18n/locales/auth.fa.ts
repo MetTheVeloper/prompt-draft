@@ -1,0 +1,37 @@
+export default {
+  auth: {
+    header: {
+      login: "ورود",
+      profile: "حساب کاربری",
+    },
+    login: {
+      title: "ورود یا ساخت حساب",
+      subtitle: "ورود اختیاری است. با حساب کاربری می‌توانید داده‌های ابری Prompt Draft را بین دستگاه‌های مختلف در دسترس داشته باشید.",
+      identifierLabel: "نام کاربری یا ایمیل",
+      identifierPlaceholder: "نام کاربری یا ایمیل را وارد کنید",
+      continue: "ادامه",
+      existingTitle: "خوش برگشتی",
+      existingSubtitle: "برای ادامه رمز عبور را وارد کنید.",
+      newTitle: "ساخت حساب کاربری",
+      newSubtitle: "این شناسه هنوز ثبت نشده است. برای ساخت حساب یک رمز عبور انتخاب کنید.",
+      passwordLabel: "رمز عبور",
+      confirmPasswordLabel: "تکرار رمز عبور",
+      passwordHint: "حداقل ۸ کاراکتر و شامل یک حرف انگلیسی و یک عدد.",
+      loginAction: "ورود",
+      registerAction: "ساخت حساب",
+      changeIdentifier: "استفاده از نام کاربری یا ایمیل دیگر",
+      passwordMismatch: "رمزهای عبور یکسان نیستند.",
+      invalidPassword: "رمز عبور باید حداقل ۸ کاراکتر و شامل یک حرف انگلیسی و یک عدد باشد.",
+      genericError: "مشکلی پیش آمد. دوباره تلاش کنید.",
+      optional: "بدون ورود هم می‌توانید از Prompt Draft استفاده کنید.",
+      backToCreate: "ادامه بدون ورود",
+    },
+    profile: {
+      title: "حساب کاربری",
+      username: "نام کاربری",
+      email: "ایمیل",
+      memberSince: "عضویت از",
+      logout: "خروج از حساب",
+    },
+  },
+};
