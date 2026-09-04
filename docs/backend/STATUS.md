@@ -140,7 +140,7 @@ Selected read-only product path:
   -> static-safe query-based detail
 ```
 
-Backend implementation currently includes:
+Backend implementation:
 
 ```text
 backend/sql/006_add_admin_user_indexes.sql
@@ -176,7 +176,7 @@ activeSessionCount
 
 Credential/session secrets are never returned.
 
-Frontend implementation currently includes:
+Frontend implementation:
 
 ```text
 app/types/adminUsersApi.ts
@@ -187,7 +187,7 @@ app/pages/manage/users.vue
 nuxt prerender -> /manage/users
 ```
 
-Initial `/manage/users` behavior:
+Functional behavior:
 
 ```text
 350ms debounced search
@@ -198,19 +198,41 @@ Refresh
 query-based detail: /manage/users?user=<uuid>
 ```
 
+The user locally confirmed the Manage Users functionality works without functional issues.
+
+### EL design-system normalization
+
+A follow-up UI baseline refactor replaced the page-specific native/CSS implementation in `app/pages/manage/users.vue` with the project's reusable component system:
+
+```text
+el-text-field
+el-dropdown
+el-grid
+el-flex
+el-button
+el-text
+el-divider
+```
+
+The Manage Users page now has no scoped CSS block for its layout/table/detail UI.
+
+`app/pages/manage.vue` and `app/pages/manage/dashboard.vue` were reviewed and were already predominantly EL-system-based with no page-specific CSS needing replacement.
+
+Final visual polish remains deferred; current goal is reusable layout behavior and zero/near-zero page-specific CSS.
+
 ### Milestone 10 phases
 
 ```text
-Phase 0 — contract/documentation: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 1 — database read model + indexes: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 2 — GET collection + detail APIs: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 3 — typed frontend API boundary: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 4 — Manage Users list/search/filter/pagination UI: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 5 — query-based user detail: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 6 — authorization regression + static generation: NOT STARTED
+Phase 0 — contract/documentation: DONE
+Phase 1 — database read model + indexes: DONE
+Phase 2 — GET collection + detail APIs: DONE
+Phase 3 — typed frontend API boundary: DONE
+Phase 4 — Manage Users list/search/filter/pagination UI: DONE
+Phase 5 — query-based user detail: DONE
+Phase 6 — authorization regression + static generation: AUTHORIZATION VERIFIED / STATIC CHECK PENDING
 ```
 
-No Milestone 10 phase is `DONE` before explicit local verification.
+Milestone 10 remains open until `pnpm generate` passes after the EL design-system refactor and `/manage/users` is present in the generated route set.
 
 ## Deferred work
 
@@ -231,7 +253,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-User locally verifies Milestone 10 read foundation through the real Manage Users UI and backend authorization. If successful, mark Phases 0–5 `DONE`, then run the final normal-user denial/static-generation checks for Phase 6.
+Run final static generation after the EL design-system refactor. If it passes and `/manage/users` is prerendered, mark Milestone 10 COMPLETE.
 
 ## New-chat handoff
 
