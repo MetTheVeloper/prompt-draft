@@ -145,13 +145,7 @@ no output/snapshot in list rows
 structured invalid limit/cursor 400
 ```
 
-User verified seven existing rows across four `limit=2` pages as:
-
-```text
-2 + 2 + 2 + 1
-```
-
-with all ids returned exactly once and final:
+User verified seven existing rows across four `limit=2` pages as `2 + 2 + 2 + 1`, with all ids returned exactly once and final:
 
 ```text
 hasMore=false
@@ -186,34 +180,9 @@ wizardId = phase3-probe
 id = b7e47e39-4eb9-4333-b891-e42d34d25bd1
 ```
 
-Verified results:
+The user verified the probe, unknown/empty filter semantics, and `portrait + limit + cursor` pagination with no cross-filter rows or duplicates.
 
-```text
-wizardId=phase3-probe
-  -> only probe summary
-
-wizardId=does-not-exist
-  -> runs=[]
-  -> hasMore=false
-  -> nextCursor=null
-
-wizardId=
-  -> 400
-
-wizardId=portrait&limit=2
-  -> first filtered page
-  -> hasMore=true
-  -> nextCursor present
-
-same filter + cursor
-  -> next portrait page
-  -> no phase3-probe row
-  -> no duplicate from prior page
-```
-
-Phase 3 is therefore complete.
-
-### Phase 4 — typed frontend read boundary: AWAITING USER VERIFICATION
+### Phase 4 — typed frontend read boundary: DONE
 
 Implemented:
 
@@ -231,47 +200,100 @@ app/composables/usePromptDraftApi.ts
   -> getWizardRun(id)
 ```
 
-Collection and detail are now typed separately:
+Collection and detail are typed separately:
 
 ```text
 list -> WizardRunSummary[] + pageInfo
 get  -> full WizardRunRecord
 ```
 
-`listWizardRuns()` serializes optional `limit`, `cursor`, and `wizardId`. Cursor remains opaque to frontend code.
+The user locally ran:
 
-`getWizardRun()` URL-encodes the id path segment and uses the existing runtime-configured API base.
+```text
+git pull --ff-only
+pnpm generate
+```
 
-`createWizardRun()` and API-base normalization remain unchanged.
+and Nuxt static generation completed successfully. `/wizard/portrait` still prerendered and Nuxt reported `.output/public` ready for static hosting.
 
-No Nuxt server route or History page was introduced in this phase.
+Existing non-blocking build warnings remain unrelated to Milestone 5:
 
-Required local verification before Phase 4 can become `DONE`:
+```text
+duplicate compilePromptOutput import warning
+sourcemap warning
+large chunk warning
+Nitro cache-driver external warning
+```
+
+Phase 4 is therefore verified and complete.
+
+### Phase 5 — History UI MVP: AWAITING USER VERIFICATION
+
+Implemented first real browser consumer of the typed read API:
+
+```text
+app/pages/history.vue
+  -> GET summary list on load
+  -> newest-first History cards
+  -> loading / empty / error / retry states
+  -> cursor-based Load more
+  -> open one run detail
+  -> GET full run detail
+  -> compiled output display
+  -> copy prompt action
+  -> read-only stored snapshot disclosure
+
+app/config/navigation.ts
+  -> History entry in primary/mobile navigation
+
+i18n/locales/history.en.ts
+i18n/locales/history.fa.ts
+  -> History UI localization
+```
+
+Static-hosting route decision:
+
+```text
+/history
+/history?run=<uuid>
+```
+
+A dynamic `/history/:id` route was intentionally not used because arbitrary future UUIDs are unknown at `pnpm generate` time and the current product must remain safe for pure static hosting without depending on an SPA fallback.
+
+The query-based detail pattern also matches the existing `/prompts?id=...` product pattern.
+
+The backend `wizardId` filter remains available, but the initial History UI does not expose a technical free-text Wizard-id filter. That control is deferred until a real multi-Wizard product catalog makes the UX meaningful.
+
+Required local verification before Phase 5 can become `DONE`:
 
 ```text
 1. git pull --ff-only
-2. pnpm generate
-3. confirm generate succeeds
-4. confirm existing Wizard route still prerenders/builds without errors
+2. pnpm dev (with Docker API running)
+3. open /history
+4. History navigation item is visible
+5. list loads real persisted summaries newest-first
+6. list rows do not expose full snapshot/output
+7. open a row -> URL becomes /history?run=<uuid>
+8. detail loads the exact full run/output
+9. Back to history returns to /history
+10. copy prompt works
+11. stop API -> History shows graceful error/retry behavior
+12. restart API -> retry succeeds
+13. pnpm generate succeeds and /history is generated
 ```
 
-The first real browser consumption of `listWizardRuns(params)` and `getWizardRun(id)` will happen in Phase 5 History UI. That runtime path will be verified there rather than by adding a temporary diagnostic page.
-
-### Phase 5 — History UI MVP: NOT STARTED
-
-History UI will be the first real browser consumer of the typed read client.
-
-Before finalizing route structure, re-check static-hosting behavior for arbitrary historical ids. A dynamic `/history/:id` route cannot be fully prerendered for unknown future UUIDs. If deployment has no SPA fallback, prefer a static `/history` shell with client-side selection/query state instead of relying on direct static generation of arbitrary detail URLs.
+Do not mark Phase 5 `DONE` until the user confirms these behaviors locally.
 
 ### Phase 6 — Milestone 5 product E2E: NOT STARTED
 
-Will verify a real Wizard-created run through History list/detail and container recreation before marking the milestone complete.
+Will verify a fresh real Wizard-created run through History list/detail and container recreation before marking the milestone complete.
 
 ## Current intentional debt / deferred work
 
 - authentication and user ownership;
 - Wizard restore/resume from historical snapshots;
 - delete/rename/favorite History operations;
+- product-level Wizard filter UI/catalog;
 - arbitrary search/sorting/date/version filtering;
 - production migration framework;
 - production secrets/configuration;
@@ -282,9 +304,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 5 Phase 4 static frontend build.
+Locally verify Milestone 5 Phase 5 History UI behavior and static generation.
 
-Do not mark Phase 4 `DONE` until the user confirms `pnpm generate` succeeds.
+Do not mark Phase 5 `DONE` until the user confirms the browser/runtime checks above.
 
 ## New-chat handoff
 
