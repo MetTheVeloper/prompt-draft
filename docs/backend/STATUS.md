@@ -11,13 +11,14 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ## Current checkpoint
 
 ```text
-Milestones 1–12: COMPLETE
+Milestones 1–13: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-final Manage localization: COMPLETE
-final pnpm generate: VERIFIED
+Milestone 14: Progressive User Profile Foundation
+  -> IMPLEMENTED
+  -> LOCAL VERIFICATION PENDING
 ```
 
-The branch is ready for the user to choose and continue a different backend/product feature in a new chat.
+The latest completed product change is the History workflow redesign/restore flow. The active work is now the progressive user-profile foundation.
 
 ## Reusable guides
 
@@ -124,19 +125,6 @@ normal-user denial
 pnpm generate
 ```
 
-Current registry rule:
-
-```text
-app/config/manage.ts
-  -> key / icon / route / requiredPermission only
-
-i18n/locales/manage.en.ts
-  -> English Manage copy
-
-i18n/locales/manage.fa.ts
-  -> Persian Manage copy
-```
-
 Detailed milestone:
 
 ```text
@@ -185,16 +173,6 @@ Profile Menu follow-up UI
 pnpm generate
 ```
 
-Mutation API:
-
-```text
-POST /api/admin/users/:id/role
-POST /api/admin/users/:id/suspend
-POST /api/admin/users/:id/unsuspend
-POST /api/admin/users/:id/revoke-sessions
-POST /api/admin/users/:id/reset-cloud-data
-```
-
 Detailed milestone:
 
 ```text
@@ -223,85 +201,96 @@ Drafts updated today
 Admin actions today
 ```
 
-Current time semantics:
-
-```text
-Today = 00:00 UTC -> generatedAt
-```
-
-Dashboard uses only trustworthy persisted data. Site visits, page views, behavioral DAU, and translation request counts remain deferred until event tracking exists.
-
 Detailed milestone:
 
 ```text
 docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
 ```
 
-## Final Manage localization — COMPLETE
+## Milestone 13 — COMPLETE: History Workflow
 
-The user explicitly confirmed the final Manage localization pass works correctly.
+The user locally verified the History redesign and then ran a successful `pnpm generate`.
 
-All current Manage UI copy was moved to:
+Verified behavior:
 
 ```text
-i18n/locales/manage.en.ts
-i18n/locales/manage.fa.ts
+History removed from global Header navigation
+History entry moved into Drafts menu
+/history list rebuilt with EL component system
+/history?run=<id> detail rebuilt with EL component system
+light/dark compiled-prompt text fixed
+Stored Snapshot removed from product UI
+Edit in Create available from list and detail
+Wizard run finalDraft restores as a new editable local Draft
+historical Wizard run remains immutable
 ```
 
-Covered surfaces include:
+Final static verification:
 
 ```text
-Manage shell
-Dashboard cards/status/loading/error fallbacks
-Users search/filter/table states
-roles/statuses
-context menu
-Information modal
-Role Change modal
-mutation confirmations
-success/error copy
-self-management safety explanation
-Profile Menu Manage entry
-Manage entry guard copy
-```
-
-A final source scan found no remaining hardcoded Manage user-facing English copy in the migrated Manage surfaces. Technical literals such as routes, icon names, permission ids, colors, and raw API enum values remain intentionally untranslated.
-
-## Final static-generation verification — COMPLETE
-
-User command:
-
-```text
-pnpm generate
-```
-
-Result on 2026-09-04:
-
-```text
-SUCCESS
+pnpm generate SUCCESS
 16 initial routes prerendered
-/manage present
-/manage/dashboard present
-/manage/users present
+/history present
 .output/public generated
-offline manifest generated
-225 files / 62.8 MB
+offline manifest generated: 225 files / 62.8 MB
 ```
 
-Known non-blocking warnings remain:
+Detailed milestone:
 
 ```text
-duplicated compilePromptOutput auto-import
-module-preload sourcemap warning
-Nitro cache-driver external-resolution warning
-large client chunks
+docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
 ```
 
-These warnings did not block generation and are not part of the closed Manage scope.
+## Milestone 14 — IN PROGRESS: Progressive User Profile Foundation
+
+Implementation is present; local verification is still required.
+
+Current implementation:
+
+```text
+008_progressive_user_profile.sql
+users may hold username only / email only / both
+at least one identity remains required
+users.updated_at added
+POST /api/auth/profile/complete
+Auth responses expose profile supported/completed/missing fields
+existing identity values are immutable through completion endpoint
+case-insensitive uniqueness remains authoritative
+reusable backend profile-requirement helpers
+reusable frontend useProfileRequirements()
+Global Modal progressive-completion form
+Profile Menu "Complete profile" entry when fields are missing
+EN/FA completion UI
+```
+
+Current supported progressive fields:
+
+```text
+username
+email
+```
+
+Explicitly not yet part of Milestone 14:
+
+```text
+phone
+verification
+consents
+XP / score
+leaderboards
+referrals
+behavioral analytics/events
+```
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
+```
 
 ## Manage track closure
 
-The current Manage foundation is considered complete and closed for now:
+The current Manage foundation remains complete and closed for now:
 
 ```text
 shell
@@ -317,25 +306,38 @@ English/Persian localization
 static generation
 ```
 
-Future Manage features such as `/manage/system`, `/manage/content`, audit-log UI, or analytics should extend this architecture rather than refactor the verified baseline without a concrete need.
+Do not reopen Manage automatically for Milestone 14.
+
+## Known non-blocking build warnings
+
+Existing warnings remain accepted unless their behavior changes:
+
+```text
+duplicated compilePromptOutput auto-import
+module-preload sourcemap warning
+Nitro cache-driver external-resolution warning
+large client chunks
+```
 
 ## Deferred work
 
 Examples currently deferred:
 
 ```text
+phone/contact model + verification
+email verification/password recovery/OAuth
+user consent foundation (marketing / analytics / model training)
+XP / score ledger and gamification
+referral relationships and referral codes
+analytics/event tracking
+site visits/page views/behavioral DAU
+translation request/success/failure metrics
 account deletion / full destructive account lifecycle
 admin audit-log UI
 /manage/system
 /manage/content
-analytics/event tracking
-site visits/page views/behavioral DAU
-translation request/success/failure metrics
-convert Wizard-run /history to Draft History
-move relevant History access into the Drafts menu
 stronger Cloud Draft conflict handling
 production auth/translation rate limiting
-email verification/password recovery/OAuth
 production migration framework
 production deployment/secrets/domain/HTTPS
 Redis
@@ -345,9 +347,15 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-No Manage action is pending.
+Milestone 14 must be locally verified before it can be marked DONE.
 
-The next product/backend feature should be selected by the user in a new chat. Do not automatically reopen Manage or start a deferred item.
+Primary product acceptance path:
+
+```text
+Profile Menu -> Complete profile -> add missing email/username -> save
+```
+
+Then verify logout/login through both identities and run final `pnpm generate`.
 
 ## New-chat handoff
 
@@ -358,9 +366,7 @@ Always read first:
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
 
-If the next feature touches Manage/admin work, also read:
+If future work touches Manage/admin workspace, also read:
 
 5. `docs/backend/MANAGE_GUIDE.md`
 6. the relevant `MILESTONE_9` through `MILESTONE_12` document
-
-Current verified branch checkpoint before the documentation-closing commits was based on the completed Manage implementation at `feature/docker-local-api`; fetch the latest branch head before making any new change.
