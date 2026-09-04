@@ -1,3 +1,4 @@
+import type { AdminDashboardSummaryResponse } from "~/types/adminDashboardApi";
 import type {
   AdminUserMutationResponse,
   GetAdminUserResponse,
@@ -138,6 +139,15 @@ export function usePromptDraftApi() {
     });
   }
 
+  function getAdminDashboardSummary() {
+    return $fetch<AdminDashboardSummaryResponse>(
+      endpoint("/api/admin/dashboard/summary"),
+      {
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   function listAdminUsers(params: ListAdminUsersParams = {}) {
     const query = new URLSearchParams();
 
@@ -239,6 +249,7 @@ export function usePromptDraftApi() {
     getTranslationStatus,
     translatePrompt,
     getAdminAccessCheck,
+    getAdminDashboardSummary,
     listAdminUsers,
     getAdminUser,
     updateAdminUserRole,
