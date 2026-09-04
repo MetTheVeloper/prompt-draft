@@ -4,6 +4,7 @@ import { useAppStore } from "~/store/app";
 import { NAVIGATION } from '~/config/navigation'
 import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
 import AboutModal from '~/components/modals/about.vue'
+import AuthProfileMenu from '~/components/auth/AuthProfileMenu.vue'
 import { usePromptTemplateUi } from '~/composables/usePromptTemplateUi'
 
 const route = useRoute();
@@ -14,8 +15,10 @@ const app = useAppStore();
 const { mini, mobile } = useScreen();
 const menu = useMenu();
 const modal = useModal();
+const auth = useAuth();
 const toolsButtonRef = ref();
 const languageButtonRef = ref();
+const authButtonRef = ref();
 const templatesButtonRef = ref();
 const offlinePackage = useOfflinePackage();
 const {
@@ -221,6 +224,29 @@ function openToolsMenu() {
   })
 }
 
+async function openAuthControl() {
+  if (!auth.isLoggedIn.value) {
+    const next = encodeURIComponent(route.fullPath || '/create')
+    await navigateTo(`/login?next=${next}`)
+    return
+  }
+
+  menu.open({
+    mode: 'dropdown',
+    anchor: authButtonRef.value,
+    placement: isRtl.value ? 'bottom-start' : 'bottom-end',
+    component: AuthProfileMenu,
+    options: {
+      minWidth: 280,
+      maxWidth: 320,
+      closeOnSelect: false,
+      closeOnScroll: false,
+      closeOnOutside: true,
+      closeOnEsc: true,
+    },
+  })
+}
+
 const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
   const navigationItems: GlobalMenuItem[] = NAVIGATION
     .filter(item => item.name !== 'vectorizer')
@@ -321,6 +347,10 @@ function openMobileMenu() {
     },
   })
 }
+
+onMounted(() => {
+  void auth.initialize()
+})
 </script>
 
 <template>
@@ -434,6 +464,18 @@ function openMobileMenu() {
         :label="$t('app.switchLang')"
         icon="language"
         @click="openLanguageMenu"
+      />
+
+      <el-button
+        ref="authButtonRef"
+        :size="14"
+        :p="8"
+        mode="normal"
+        type="fab"
+        :color="auth.isLoggedIn.value ? 'prim' : 'blue'"
+        :label="auth.isLoggedIn.value ? $t('auth.header.profile') : $t('auth.header.login')"
+        :icon="auth.isLoggedIn.value ? 'account_circle' : 'login'"
+        @click="openAuthControl"
       />
 
       <el-button
