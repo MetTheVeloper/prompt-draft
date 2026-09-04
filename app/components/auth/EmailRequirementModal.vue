@@ -97,110 +97,133 @@ async function openLogin() {
 
 <template>
   <el-flex
-    rules="csc"
+    rules="ccc"
     class="w100"
-    :gap="16"
+    :gap="18"
     :data-requirement-from="from">
     <el-flex
-      rules="rsc"
+      rules="ccc"
       class="w100"
-      :gap="8"
-      bg="normal5"
-      :radius="10"
-      :p="10">
-      <el-icon icon="info" color="prim" :size="16" />
-      <el-text :size="11" color="normal60">
-        {{ t("auth.emailRequirement.context", { source: sourceLabel }) }}
+      bg="normal"
+      :radius="24"
+      :p="28"
+      :gap="16"
+      style="aspect-ratio: 1 / 1; text-align: center">
+      <el-flex rules="rcc" :gap="7" :radius="100" :p="[7, 10]" bg="invert10">
+        <el-icon icon="lock_open" color="invert" :size="15" />
+        <el-text :size="10" :weight="800" color="invert">
+          {{ t("auth.emailRequirement.heroEyebrow") }}
+        </el-text>
+      </el-flex>
+
+      <el-text
+        type="h2"
+        :size="30"
+        :weight="900"
+        color="invert"
+        style="max-width: 360px; line-height: 1.08; letter-spacing: -0.025em">
+        {{ t("auth.emailRequirement.heroTitle", { source: sourceLabel }) }}
+      </el-text>
+
+      <el-text
+        :size="12"
+        :weight="400"
+        color="invert70"
+        style="max-width: 330px; line-height: 1.55">
+        {{ t("auth.emailRequirement.heroDescription") }}
       </el-text>
     </el-flex>
 
     <template v-if="isLoggedIn">
-      <el-flex rules="csc" :gap="7" class="w100">
-        <el-text :size="12" :weight="700">
-          {{ t("auth.profile.email") }}
-        </el-text>
+      <el-flex rules="csc" class="w100" :gap="12">
+        <el-flex rules="csc" :gap="7" class="w100">
+          <el-text :size="11" :weight="800" color="normal60">
+            {{ t("auth.emailRequirement.emailLabel") }}
+          </el-text>
 
-        <el-text-field
-          v-model="email"
+          <el-text-field
+            v-model="email"
+            class="w100"
+            type="text"
+            :actions="[]"
+            :placeholder="t('auth.emailRequirement.emailPlaceholder')"
+            :disabled="submitting"
+            @update:model-value="resetError"
+          />
+        </el-flex>
+
+        <el-flex rules="rsc" class="w100" :gap="7">
+          <el-icon icon="verified_user" color="green" :size="15" />
+          <el-text :size="10" color="normal50" style="line-height: 1.45">
+            {{ t("auth.emailRequirement.privacyNote") }}
+          </el-text>
+        </el-flex>
+
+        <el-flex
+          v-if="errorMessage"
+          rules="rsc"
           class="w100"
-          type="text"
-          :actions="[]"
-          :placeholder="t('auth.emailRequirement.emailPlaceholder')"
-          :disabled="submitting"
-          @update:model-value="resetError"
-        />
-
-        <el-text :size="10" color="normal45">
-          {{ t("auth.emailRequirement.emailHint") }}
-        </el-text>
-      </el-flex>
-
-      <el-flex
-        v-if="errorMessage"
-        rules="rsc"
-        class="w100"
-        :gap="8"
-        bg="red10"
-        :radius="10"
-        :p="12">
-        <el-icon icon="warning" color="red" :size="18" />
-        <el-text :size="12" color="red">
-          {{ errorMessage }}
-        </el-text>
-      </el-flex>
-
-      <el-flex rules="rbc" class="w100" :gap="10" wrap>
-        <el-button
-          mode="flat"
-          color="normal"
-          icon="close"
-          :label="t('auth.emailRequirement.cancel')"
-          :disable="submitting"
-          @click="modal.close()"
-        />
+          :gap="8"
+          bg="red10"
+          :radius="10"
+          :p="12">
+          <el-icon icon="warning" color="red" :size="18" />
+          <el-text :size="12" color="red">
+            {{ errorMessage }}
+          </el-text>
+        </el-flex>
 
         <el-button
+          class="w100"
           color="prim"
-          icon="mail"
+          icon="arrow_forward"
           :label="submitting ? t('auth.emailRequirement.saving') : t('auth.emailRequirement.save')"
           :disable="submitting"
           @click="submit"
+        />
+
+        <el-button
+          class="w100"
+          mode="flat"
+          color="normal"
+          :label="t('auth.emailRequirement.cancel')"
+          :disable="submitting"
+          @click="modal.close()"
         />
       </el-flex>
     </template>
 
     <template v-else>
-      <el-flex
-        rules="csc"
-        class="w100"
-        :gap="8"
-        bg="orange5"
-        :radius="12"
-        :br="1"
-        bc="orange20"
-        :p="14">
-        <el-text :size="13" :weight="800" color="orange">
-          {{ t("auth.emailRequirement.anonymousTitle") }}
-        </el-text>
-        <el-text :size="12" color="normal60">
-          {{ t("auth.emailRequirement.anonymousDescription") }}
-        </el-text>
-      </el-flex>
-
-      <el-flex rules="rbc" class="w100" :gap="10" wrap>
-        <el-button
-          mode="flat"
-          color="normal"
-          icon="close"
-          :label="t('auth.emailRequirement.cancel')"
-          @click="modal.close()"
-        />
+      <el-flex rules="csc" class="w100" :gap="12">
+        <el-flex
+          rules="csc"
+          class="w100"
+          :gap="6"
+          bg="normal5"
+          :radius="14"
+          :p="14">
+          <el-text :size="13" :weight="800">
+            {{ t("auth.emailRequirement.anonymousTitle") }}
+          </el-text>
+          <el-text :size="11" color="normal55" style="line-height: 1.5">
+            {{ t("auth.emailRequirement.anonymousDescription") }}
+          </el-text>
+        </el-flex>
 
         <el-button
+          class="w100"
           color="prim"
           icon="login"
           :label="t('auth.emailRequirement.signIn')"
           @click="openLogin"
+        />
+
+        <el-button
+          class="w100"
+          mode="flat"
+          color="normal"
+          :label="t('auth.emailRequirement.cancel')"
+          @click="modal.close()"
         />
       </el-flex>
     </template>
