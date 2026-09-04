@@ -516,7 +516,8 @@ onBeforeUnmount(() => {
             :gap="12"
             align-items="center"
             class="w100"
-            :p="[12, 16]">
+            :p="[12, 16]"
+            @contextmenu.prevent="openUserActions($event, user)">
             <el-flex rules="ccs" :gap="3" class="w100">
               <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
               <el-text color="normal45" :size="10">{{ user.id }}</el-text>
