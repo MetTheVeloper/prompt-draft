@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { useWindowSize } from "@vueuse/core";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type { AdminDashboardSummary } from "~/types/adminDashboardApi";
@@ -11,11 +12,19 @@ definePageMeta({
 const auth = useAuth();
 const api = usePromptDraftApi();
 const { locale } = useI18n();
+const { width } = useWindowSize({ initialWidth: 1024 });
 
 const summary = ref<AdminDashboardSummary | null>(null);
 const generatedAt = ref("");
 const loading = ref(false);
 const errorMessage = ref("");
+
+const isLaptopUp = computed(() => width.value >= 1024);
+const dashboardColumns = computed(() => {
+  if (width.value < 640) return 1;
+  if (width.value < 1024) return 2;
+  return 4;
+});
 
 const cards = computed(() => {
   const value = summary.value;
@@ -169,7 +178,7 @@ onMounted(async () => {
 
     <el-grid
       v-else-if="summary"
-      cols="repeat(auto-fit, minmax(210px, 1fr))"
+      :cols="dashboardColumns"
       :gap="12"
       align-items="stretch"
       class="w100">
@@ -181,6 +190,7 @@ onMounted(async () => {
         :icon="card.icon"
         :color="card.color"
         :helper="card.helper"
+        :large="isLaptopUp"
       />
     </el-grid>
   </el-flex>
