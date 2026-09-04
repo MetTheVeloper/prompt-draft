@@ -11,14 +11,12 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ## Current checkpoint
 
 ```text
-Milestones 1–13: COMPLETE / locally verified
+Milestones 1–14: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-Milestone 14: Progressive User Profile Foundation
-  -> IMPLEMENTED
-  -> LOCAL VERIFICATION PENDING
+Next candidate: XP / Score Event Ledger Foundation
 ```
 
-The latest completed product change is the History workflow redesign/restore flow. The active work is now the progressive user-profile foundation.
+The latest completed product change is the Progressive User Profile Foundation, including a verified real feature gate that requires email before Global Output Copy.
 
 ## Reusable guides
 
@@ -241,11 +239,11 @@ Detailed milestone:
 docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
 ```
 
-## Milestone 14 — IN PROGRESS: Progressive User Profile Foundation
+## Milestone 14 — COMPLETE: Progressive User Profile Foundation
 
-Implementation is present; local verification is still required.
+The user locally verified progressive identity completion and the first real profile-gated feature flow.
 
-Current implementation:
+Verified foundation:
 
 ```text
 008_progressive_user_profile.sql
@@ -259,27 +257,43 @@ case-insensitive uniqueness remains authoritative
 reusable backend profile-requirement helpers
 reusable frontend useProfileRequirements()
 Global Modal progressive-completion form
-Profile Menu "Complete profile" entry when fields are missing
+Profile Menu Complete profile entry when fields are missing
 EN/FA completion UI
 ```
+
+Verified behavior:
+
+```text
+username-only user can add a unique email
+completed profile updates immediately
+login works with username after completion
+login works with added email after completion
+invalid email rejected
+duplicate email -> 409 safe UI
+existing identity cannot be replaced through completion endpoint
+profile persists across backend/database restart
+```
+
+Verified reusable email gate:
+
+```text
+useEmailRequirement()
+EmailRequirementModal.vue
+from/context identifier support
+Global Output Copy requires email
+missing email -> modal -> complete profile -> copy continuation
+existing email -> direct copy
+anonymous -> sign-in/account requirement UI
+EN/FA gate UI
+```
+
+The final typography/proportion experiment for the Email Requirement modal was rolled back to the previously accepted visual version. Further visual polish is deferred and does not block the foundation.
 
 Current supported progressive fields:
 
 ```text
 username
 email
-```
-
-Explicitly not yet part of Milestone 14:
-
-```text
-phone
-verification
-consents
-XP / score
-leaderboards
-referrals
-behavioral analytics/events
 ```
 
 Detailed milestone:
@@ -306,7 +320,7 @@ English/Persian localization
 static generation
 ```
 
-Do not reopen Manage automatically for Milestone 14.
+Do not reopen Manage automatically for the next milestone.
 
 ## Known non-blocking build warnings
 
@@ -341,21 +355,29 @@ production auth/translation rate limiting
 production migration framework
 production deployment/secrets/domain/HTTPS
 Redis
+Email Requirement modal visual polish
 ```
 
 The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
 
-## Next action
+## Next logical milestone
 
-Milestone 14 must be locally verified before it can be marked DONE.
-
-Primary product acceptance path:
+Recommended next vertical slice:
 
 ```text
-Profile Menu -> Complete profile -> add missing email/username -> save
+XP / Score Event Ledger Foundation
 ```
 
-Then verify logout/login through both identities and run final `pnpm generate`.
+Design goal:
+
+```text
+Do not make users.score += N the source of truth.
+Persist append-only score events with provenance and idempotency.
+Derive/cache total XP from those events.
+Allow future Draft saves, Wizard completion, referrals, streaks, publishing, campaigns, and other activities to award points through one reusable service.
+```
+
+A first real event can be attached to an existing durable user action, preferably Cloud Draft creation/save, after the ledger itself is verified.
 
 ## New-chat handoff
 
