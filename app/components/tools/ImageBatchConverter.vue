@@ -6,6 +6,7 @@ import type {
   ImageConverterZipEntry,
 } from '~/types/imageConverter'
 import { createZipBlob } from '~/utils/browserZip'
+import { convertImageFile } from '~/utils/imageProcessing'
 
 const QUALITY_OPTIONS = [30, 40, 50, 60, 70, 80, 90, 100]
 
@@ -253,7 +254,11 @@ async function downloadOutputs() {
 
     for (const item of items.value) {
       try {
-        const blob = await convertImage(item.file, outputFormat.value, outputQuality.value)
+        const converted = await convertImageFile(item.file, {
+          format: outputFormat.value,
+          quality: outputQuality.value / 100,
+        })
+        const blob = converted.blob
         const outputName = createOutputFileName(item.name, outputFormat.value, usedNames)
 
         convertedOriginalSize += item.size
@@ -323,12 +328,6 @@ function formatPercent(percent: number) {
   return percent.toFixed(1)
 }
 
-function getMimeType(format: ImageConverterFormat) {
-  return format === 'jpg'
-    ? 'image/jpeg'
-    : 'image/webp'
-}
-
 function getExtension(format: ImageConverterFormat) {
   return format === 'jpg'
     ? 'jpg'
@@ -363,79 +362,6 @@ function createOutputFileName(
   if (!usedCount) return candidate
 
   return `${baseName}-${usedCount + 1}.${extension}`
-}
-
-async function decodeImage(file: File) {
-  if ('createImageBitmap' in window) {
-    try {
-      return await createImageBitmap(file, {
-        imageOrientation: 'from-image',
-      } as ImageBitmapOptions)
-    } catch {
-      // The HTMLImageElement fallback covers formats/browsers that createImageBitmap cannot decode.
-    }
-  }
-
-  const url = URL.createObjectURL(file)
-
-  try {
-    return await new Promise<HTMLImageElement>((resolve, reject) => {
-      const image = new Image()
-
-      image.onload = () => resolve(image)
-      image.onerror = () => reject(new Error(`Cannot decode ${file.name}`))
-      image.src = url
-    })
-  } finally {
-    URL.revokeObjectURL(url)
-  }
-}
-
-async function convertImage(
-  file: File,
-  format: ImageConverterFormat,
-  quality: number,
-) {
-  const image = await decodeImage(file)
-  const width = image.width
-  const height = image.height
-
-  const canvas = document.createElement('canvas')
-  canvas.width = width
-  canvas.height = height
-
-  const context = canvas.getContext('2d')
-
-  if (!context) {
-    throw new Error('Canvas 2D context is not available.')
-  }
-
-  if (format === 'jpg') {
-    context.fillStyle = '#ffffff'
-    context.fillRect(0, 0, width, height)
-  }
-
-  context.drawImage(image, 0, 0, width, height)
-
-  if ('close' in image && typeof image.close === 'function') {
-    image.close()
-  }
-
-  const blob = await new Promise<Blob>((resolve, reject) => {
-    canvas.toBlob(
-      (output) => {
-        if (output) {
-          resolve(output)
-        } else {
-          reject(new Error('Canvas export failed.'))
-        }
-      },
-      getMimeType(format),
-      quality / 100,
-    )
-  })
-
-  return blob
 }
 
 function downloadBlob(blob: Blob, fileName: string) {
