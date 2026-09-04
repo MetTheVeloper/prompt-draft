@@ -17,6 +17,14 @@ export default {
       open: "Open run",
       copy: "Copy prompt",
       copied: "Copied",
+      showSnapshot: "Show stored snapshot",
+      hideSnapshot: "Hide stored snapshot",
+    },
+    fields: {
+      wizard: "Wizard run",
+      created: "Created",
+      runId: "Run ID",
+      actions: "Actions",
     },
     empty: {
       title: "No history yet",
@@ -32,6 +40,7 @@ export default {
     },
     detail: {
       title: "History run",
+      description: "Review the compiled prompt and the exact snapshot stored for this Wizard run.",
       loading: "Loading run...",
       errorTitle: "Run unavailable",
       errorDescription: "This saved Wizard run could not be loaded.",
