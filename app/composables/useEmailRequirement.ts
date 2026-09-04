@@ -23,7 +23,7 @@ export function useEmailRequirement() {
         onCompleted: options.onCompleted,
       },
       options: {
-        width: 500,
+        width: 470,
         maxHeight: "90vh",
         closeOnBackdrop: true,
         closeOnEsc: true,
