@@ -109,7 +109,7 @@ async function openLogin() {
       :p="28"
       :gap="16"
       style="aspect-ratio: 1 / 1; text-align: center">
-      <el-flex rules="rcc" :gap="7" :radius="100" :p="[7, 10]" bg="invert10">
+      <el-flex rules="rcc" :gap="7" :p="[7, 10]">
         <el-icon icon="lock_open" color="invert" :size="15" />
         <el-text :size="10" :weight="800" color="invert">
           {{ t("auth.emailRequirement.heroEyebrow") }}
@@ -128,8 +128,8 @@ async function openLogin() {
       <el-text
         :size="12"
         :weight="400"
-        color="invert70"
-        style="max-width: 330px; line-height: 1.55">
+        color="invert"
+        style="max-width: 330px; line-height: 1.55; opacity: 0.72">
         {{ t("auth.emailRequirement.heroDescription") }}
       </el-text>
     </el-flex>
