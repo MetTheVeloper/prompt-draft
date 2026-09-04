@@ -15,6 +15,10 @@ services:
       DB_PASSWORD: prompt_draft_dev
       TRANSLATION_BASE_URL: http://translator:5000
       TRANSLATION_TIMEOUT_MS: 20000
+      ARCHIVE_SOURCE_ROOT: /archive-source
+    volumes:
+      - ./public:/archive-source/public:ro
+      - ./i18n/locales:/archive-source/i18n/locales:ro
 
   translator:
     image: libretranslate/libretranslate:v1.9.6
