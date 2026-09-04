@@ -6,6 +6,7 @@ export const AUTH_PERMISSIONS = {
   DRAFTS_VIEW_ALL: "drafts.view_all",
   DRAFTS_DELETE_ANY: "drafts.delete_any",
   SYSTEM_SETTINGS_MANAGE: "system.settings.manage",
+  COLLAGE_VIEW: "collage.view",
 } as const;
 
 export type AuthPermission =
