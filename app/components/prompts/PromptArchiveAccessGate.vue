@@ -107,6 +107,15 @@ onMounted(async () => {
         :p="[10, 16]"
         @click="openRequirement"
       />
+
+      <el-button
+        to="https://t.me/prompt-draft"
+        mode="flat"
+        color="blue"
+        icon="send"
+        label="Prompt Draft on Telegram"
+        :p="[9, 14]"
+      />
     </el-flex>
   </el-flex>
 </template>
