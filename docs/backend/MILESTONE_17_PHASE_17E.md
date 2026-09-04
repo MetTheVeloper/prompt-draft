@@ -1,16 +1,14 @@
 # Milestone 17 — Phase 17E: Snapshot export + platform closure
 
-Status: `PLANNED / NOT STARTED`
+Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
 
 Branch: `feature/docker-local-api`
 
-Phase 17E is the final Milestone 17 phase. It begins only after Phase 17D's post-fix `pnpm generate` succeeds and 17D is marked `DONE / LOCALLY VERIFIED`.
+Phase 17D is complete and locally verified. Phase 17E is the final Milestone 17 phase and closes the gap between the authoritative PostgreSQL/Arvan Archive and the static deploy fallback.
 
-## Goal
+## Implemented target
 
-Close the gap between the now-authoritative PostgreSQL/Arvan Archive and the static deploy fallback.
-
-Current primary path:
+Primary path remains:
 
 ```text
 PostgreSQL
@@ -24,106 +22,132 @@ PostgreSQL
   -> prompt_archive_images
 ```
 
-Current fallback is still based on the pre-platform static snapshot:
+Generated fallback path is now:
 
 ```text
-public/data/prompts.json
-public/prompts/<telegram-message-id>/...
+PostgreSQL published Archive
+  -> pnpm archive:snapshot
+  -> public/data/prompts.json schemaVersion 3
+  -> local fallback media
+  -> /prompts fallback reader
 ```
 
-Phase 17E makes that fallback generated/repeatable instead of manually-maintained legacy state.
+## Snapshot command
 
-## Required work
-
-### 1. Archive snapshot exporter
-
-Add a repeatable command that exports the current published Archive from PostgreSQL into the static fallback contract.
-
-Preferred command shape:
+Root command:
 
 ```text
 pnpm archive:snapshot
 ```
 
-The exporter must:
+It executes the backend exporter inside the running API container:
 
 ```text
-read published Archive items from PostgreSQL
-preserve localized title.en/title.fa
-preserve Telegram IDs and URLs
-preserve prompt body
-preserve dates
-preserve model fields
-preserve canonical tags
-preserve variants
-preserve image ordering
-emit deterministic output
-avoid hand-edit requirements
+backend/src/export-prompt-archive-snapshot.mjs
 ```
 
-The exported runtime contract should be normalized and match the API DTO semantics as closely as practical. The old `titleKey`-based format should no longer be the long-term generated format.
-
-### 2. Fallback compatibility
-
-Update `usePromptArchive()` fallback parsing so the generated normalized snapshot is the canonical fallback format.
-
-A temporary reader for the old V2 JSON may remain only if needed for migration/backward compatibility; it should not remain the format new exports generate.
-
-Fallback must continue to obey the existing security/product rule:
+Docker Compose exposes a dedicated writable snapshot mount:
 
 ```text
-network / timeout / 5xx / unusable response -> fallback allowed
+./public -> /archive-output/public
+ARCHIVE_SNAPSHOT_OUTPUT_ROOT=/archive-output
+```
+
+The existing import source mount remains read-only.
+
+## Normalized V3 snapshot
+
+Generated file:
+
+```text
+public/data/prompts.json
+```
+
+Canonical generated schema is now:
+
+```text
+schemaVersion: 3
+channel
+updatedAt
+modelHistory
+items[]
+  id
+  title.en
+  title.fa
+  sourceTitle
+  publishedAt
+  telegramUrl
+  model.previewGeneratedWith
+  model.optimizedFor
+  images[]
+    position
+    fullUrl
+    thumbnailUrl
+  prompt
+  tags
+  variants
+```
+
+New generated snapshots no longer depend on `titleKey` or runtime locale lookup.
+
+`usePromptArchive()` is V3-first and still accepts the old V2/titleKey snapshot only as backward-compatible migration input.
+
+Fallback security semantics are unchanged:
+
+```text
+network / timeout / 5xx / unusable API response -> fallback allowed
 401 / 403 -> fallback forbidden
 ```
 
-### 3. Managed media fallback strategy
+## Managed media mirroring
 
-New managed Archive media now lives on Arvan. A static fallback snapshot must deliberately handle those images.
+Managed Arvan images are mirrored during snapshot generation using signed backend S3 GET requests.
 
-Preferred resilient option to evaluate:
-
-```text
-snapshot command
-  -> reads managed image URLs
-  -> mirrors required fallback image assets into public/prompts/<telegram-id>/...
-  -> snapshot JSON points at the local mirrored paths
-```
-
-This keeps the fallback independent from both Prompt Draft backend and Arvan availability.
-
-If a different strategy is selected, document the tradeoff explicitly; do not silently call remote CDN URLs a fully-local fallback.
-
-### 4. Legacy media migration decision
-
-Phase 17D verified cloud-backed media for new/managed Archive entries but did not bulk-migrate every legacy `public/prompts` image into Arvan.
-
-Phase 17E must make an explicit decision:
+Local mirror namespace:
 
 ```text
-A. bulk-migrate legacy media to Arvan while retaining local mirrored fallback
-or
-B. keep legacy media local on the server path and use Arvan only for newly-managed media
+public/prompts/_snapshot/<telegram-id>/<image-uuid>/full.webp
+public/prompts/_snapshot/<telegram-id>/<image-uuid>/thumb.webp
 ```
 
-Do not delete the existing local legacy assets during this decision.
+The generated JSON points at those local URLs, not Arvan URLs.
 
-If bulk migration is implemented, it must be rerunnable/idempotent and preserve:
+Therefore the static fallback is independent from both:
 
 ```text
-item/image ordering
-existing image counts
-full vs thumbnail semantics
-fallback local files
+Prompt Draft backend availability
+Arvan Object Storage availability
 ```
 
-### 5. Snapshot parity report
+The mirror namespace is deliberately separate from the historical numeric `public/prompts/<telegram-id>/...` directories.
 
-The generated fallback must be compared against authoritative published DB state.
+Existing referenced mirrors are overwritten from authoritative storage during rerun. Stale mirror directories are pruned only after a successful export/parity pass, so an interrupted export does not intentionally destroy the previous snapshot's media first.
 
-At minimum verify:
+## Legacy media decision
+
+Selected Phase 17E strategy:
+
+```text
+B. retain legacy media locally; use Arvan for newly-managed media
+```
+
+Legacy `source_path` assets continue to use their existing local URLs under:
+
+```text
+public/prompts/<telegram-id>/...
+```
+
+The exporter verifies those files exist and are non-empty before it writes the new snapshot.
+
+No bulk migration of the historical legacy media set to Arvan is performed in Milestone 17. This avoids unnecessary data movement while preserving the already-working local assets and fully-local fallback behavior.
+
+## Snapshot parity / fail-fast behavior
+
+The exporter compares generated content against authoritative published DB state and reports at least:
 
 ```text
 published item count
+snapshot item count
 Telegram IDs
 EN/FA titles
 prompt bodies
@@ -135,42 +159,162 @@ image counts
 image ordering
 ```
 
-The export should fail non-zero on parity/validation failure rather than silently producing a partial deploy snapshot.
+It also verifies every referenced local legacy asset and every mirrored managed full/thumbnail asset exists and is non-empty.
 
-### 6. Final failure-mode verification
-
-Verify all three states:
+Success output includes:
 
 ```text
-backend online
-  -> source=api
-
-backend unavailable/recoverable failure
-  -> source=fallback
-  -> current exported data still visible
-
-401/403
-  -> no fallback downgrade
+archiveSnapshot: PARITY_OK
+mismatchCount: 0
+schemaVersion: 3
+mirroredManagedImageCount
+legacyMediaStrategy: local-assets-retained
 ```
 
-A newly-created managed/published item must be present in the generated fallback after snapshot generation.
+Parity failure exits non-zero and the generated catalog is not treated as valid closure output.
 
-### 7. Final localization + Manage verification
+## Bootstrap compatibility
 
-Confirm:
+`backend/src/import-prompt-archive.mjs` now accepts both:
 
 ```text
-EN UI
-FA UI
-/manage/archive
-/manage/archive?edit=<telegram-id>
-Prompt card admin Edit FAB
-normal-user denial
+legacy V2 snapshot with titleKey + string image paths
+normalized V3 snapshot with title.en/title.fa + image DTOs
 ```
 
-### 8. Final documentation sync
+This matters because after `public/data/prompts.json` is upgraded to V3, a fresh development database can still seed the published catalog from the deploy snapshot.
 
-At Milestone closure update at least:
+Important boundary:
+
+```text
+snapshot/bootstrap contains published Archive only
+```
+
+It is not a full backup of Manage state. Draft and archived admin records are not expected to be reconstructed from the public static snapshot.
+
+The existing fail-fast protection still prevents the bootstrap importer from overwriting rows that have already transitioned into managed ownership on a live database.
+
+## Determinism and rerun behavior
+
+Items are exported in a stable published-date / Telegram-ID order. Tags are sorted, image ordering follows authoritative positions, and `updatedAt` is derived from authoritative persisted timestamps rather than wall-clock export time.
+
+Re-running without Archive changes should not create semantic snapshot drift.
+
+Managed mirror paths are stable because they use Archive item identity indirectly through Telegram directory plus immutable image UUID.
+
+## Local verification gate
+
+Phase 17E is not DONE until the user explicitly confirms the following.
+
+### 1. Pull/rebuild
+
+```powershell
+git pull
+docker compose up -d --build db api
+```
+
+### 2. Generate snapshot
+
+```powershell
+pnpm archive:snapshot
+```
+
+Expected:
+
+```text
+archiveSnapshot = PARITY_OK
+mismatchCount = 0
+schemaVersion = 3
+```
+
+The current published managed test item (`9001`, if still published) should be included and its two managed images should be mirrored locally.
+
+### 3. Inspect generated files
+
+```powershell
+git status --short
+```
+
+Expected generated changes include:
+
+```text
+public/data/prompts.json
+public/prompts/_snapshot/...
+```
+
+Verify the JSON starts with schemaVersion 3 and includes a managed published item such as `9001` when present.
+
+### 4. Backend-online path
+
+With API running, `/prompts` should continue to report/use:
+
+```text
+source=api
+```
+
+### 5. Fully-local fallback path
+
+Keep an already-authenticated SPA tab open, then stop only the API:
+
+```powershell
+docker compose stop api
+```
+
+Trigger an Archive list/detail reload.
+
+Expected:
+
+```text
+source=fallback
+current exported published items remain visible
+managed item media loads from /prompts/_snapshot/... rather than Arvan
+```
+
+This proves the new snapshot is current and media fallback is local.
+
+Restart API afterward:
+
+```powershell
+docker compose start api
+```
+
+### 6. Access semantics
+
+Existing authoritative rule remains:
+
+```text
+401/403 never downgrade to fallback
+```
+
+No Phase 17E code intentionally changes that contract.
+
+### 7. Localization sanity
+
+While exercising fallback, switch EN/FA and confirm titles render from snapshot `title.en/title.fa` without legacy i18n-key dependence.
+
+### 8. Commit generated fallback assets
+
+Because the deploy is static and GitHub Actions currently has no production DB connection, the generated snapshot/media must be committed after verification:
+
+```powershell
+git add public/data/prompts.json public/prompts/_snapshot
+git commit -m "Refresh Prompt Archive fallback snapshot"
+git push
+```
+
+Do not add `.env` or storage credentials.
+
+### 9. Final release invariant
+
+```powershell
+pnpm generate
+```
+
+Milestone 17 can be marked `DONE / LOCALLY VERIFIED` only after the generated snapshot, fallback behavior, and final static generation are explicitly confirmed by the user.
+
+## Milestone closure docs
+
+At final confirmation update:
 
 ```text
 docs/backend/STATUS.md
@@ -181,19 +325,9 @@ docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
 
 Phase documents remain the detailed implementation history.
 
-### 9. Release invariant
+## Non-goals retained
 
-Final command:
-
-```text
-pnpm generate
-```
-
-Milestone 17 is `DONE` only after the user runs the final verification and explicitly confirms it.
-
-## Phase 17E non-goals
-
-Do not expand closure into unrelated product features such as:
+Phase 17E does not add:
 
 ```text
 Telegram bot ingestion
@@ -201,26 +335,8 @@ Telegram scraping
 public submissions
 likes/favorites/comments
 AI tag generation
-new search engine technology
-presigned browser uploads unless a demonstrated scaling need exists
-CDN purge automation when immutable URLs already avoid it
+new search technology
+presigned browser uploads
+CDN purge automation
+full admin-state backup/restore
 ```
-
-## Start checklist
-
-Before implementation, inspect:
-
-```text
-public/data/prompts.json
-public/prompts/
-app/types/promptArchive.ts
-app/composables/usePromptArchive.ts
-backend/src/archive.mjs
-backend/src/archiveStorage.mjs
-backend/src/import-prompt-archive.mjs
-prompt_archive_items
-prompt_archive_images
-prompt_archive_tags
-```
-
-Then confirm the normalized snapshot schema and managed-media mirroring strategy before writing the exporter.
