@@ -25,6 +25,10 @@ export type AuthScoreState = {
   eventCount: number;
 };
 
+export type AuthReferralState = {
+  referredCount: number;
+};
+
 export type AuthIdentifierType = "username" | "email";
 
 export type IdentifyAuthResponse = {
@@ -44,6 +48,7 @@ export type AuthSessionResponse = {
   user: AuthUser;
   profile: AuthProfileState;
   score: AuthScoreState;
+  referrals: AuthReferralState;
   permissions: AuthGrantedPermission[];
 };
 
@@ -52,6 +57,7 @@ export type AuthMeResponse = {
   user: AuthUser;
   profile: AuthProfileState;
   score: AuthScoreState;
+  referrals: AuthReferralState;
   permissions: AuthGrantedPermission[];
 };
 
@@ -65,6 +71,7 @@ export type CompleteAuthProfileResponse = {
   user: AuthUser;
   profile: AuthProfileState;
   score: AuthScoreState;
+  referrals: AuthReferralState;
   permissions: AuthGrantedPermission[];
 };
 
