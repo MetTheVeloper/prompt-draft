@@ -145,7 +145,7 @@ static Nuxt text-field action
 Product boundary:
 
 - translation remains available to anonymous users;
-- the browser must never call LibreTranslate directly;
+- the browser never calls LibreTranslate directly;
 - LibreTranslate port `5000` stays internal to Docker Compose;
 - backend dependency failure returns a stable `503` rather than crashing the API;
 - existing prompt-variable protection/restoration remains a frontend responsibility;
@@ -156,13 +156,13 @@ Product boundary:
 Locally verified by the user on 2026-09-04:
 
 ```text
-translator container pulls and starts successfully
-translator reaches Docker healthy state
-GET /api/translate/status transitions to available:true after model startup
-en + fa languages are exposed
+translator image pulls and container starts
+translator reaches healthy state
+en/fa models load
+GET /api/translate/status transitions to available:true
 POST /api/translate returns Persian -> English translation
-alternatives are returned
-backend returns 503 while translator is still unavailable during startup
+alternative translations are returned
+backend returns 503 while translator is unavailable during startup
 ```
 
 Implemented contract:
@@ -177,44 +177,59 @@ GET  /api/translate/status
 POST /api/translate
 ```
 
-`POST /api/translate` defaults:
+### Phase 2 — DONE: typed frontend migration
+
+Locally verified by the user on 2026-09-04:
 
 ```text
-source       -> auto
-target       -> en
-alternatives -> 3
-max text     -> 5000 characters
+real TextField Translate action works
+browser calls backend :4000 instead of the Nuxt proxy
+translation alternatives modal still works
+protected tokens such as {person} survive translation
 ```
 
-### Phase 2 — AWAITING USER VERIFICATION: typed frontend migration
-
-Implemented:
+Implemented frontend boundary:
 
 ```text
 app/types/translationApi.ts
 usePromptDraftApi.getTranslationStatus()
 usePromptDraftApi.translatePrompt()
 usePromptTranslation routes through NUXT_PUBLIC_API_BASE -> backend :4000
-shared cached translation health state (30-second TTL)
-translation composables check service status on client setup
-translation calls are gated by backend health
-existing variable token protection/restoration preserved
-existing translation alternatives/result modal preserved
+shared cached translation health state
+existing variable protection/restoration preserved
 ```
 
-The legacy Nuxt `server/api/translate.post.ts` still exists during Phase 2, but the prompt translation composable no longer calls it.
+### Phase 3 — AWAITING USER VERIFICATION: retire Nuxt proxy + final health UX/regression
 
-### Phase 3 — NOT STARTED: retire Nuxt translation proxy + final UI/regression
-
-Planned:
+Implemented for final local verification:
 
 ```text
-remove server/api/translate.post.ts
-wire visible Translate action disabled/enabled state to real backend health
-verify translator unavailable/recovery behavior in the menu
-verify anonymous translation
-verify pnpm generate
-update milestone docs and close Milestone 7
+legacy server/api/translate.post.ts removed
+TextField Translate enabled/disabled state uses real backend translation health
+opening either action menu or context menu forces a fresh health check
+short health timeout is independent from the longer translation timeout
+anonymous translation remains allowed
+```
+
+Expected behavior:
+
+```text
+translator healthy
+  -> Translate enabled for a non-empty editable field
+
+translator stopped/unavailable
+  -> Translate disabled after the fresh menu health check
+
+translator restarted/healthy again
+  -> reopening the action menu re-enables Translate without requiring a full page refresh
+```
+
+Final release checks still required:
+
+```text
+translator stop/start UI behavior
+translation still works after recovery
+pnpm generate succeeds
 ```
 
 ## Current intentional debt / deferred work
@@ -238,7 +253,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 7 Phase 2 from the real text-field Translate action. Do not mark Phase 2 `DONE` until the user confirms browser requests go directly to backend `:4000` and the existing translation UI still works.
+Locally verify Milestone 7 Phase 3. Do not mark Phase 3 or Milestone 7 complete until the user confirms translator stop/start behavior and `pnpm generate` succeeds.
 
 ## New-chat handoff
 
