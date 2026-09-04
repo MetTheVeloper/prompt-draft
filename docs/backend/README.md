@@ -275,9 +275,9 @@ Detailed milestone:
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 ```
 
-## Milestone 16 — IN PROGRESS: Referral Foundation
+## Milestone 16 — COMPLETE: Referral Foundation
 
-The current referral implementation uses an existing username as the referral input instead of introducing generated codes.
+The verified referral implementation uses an existing username as the referral input instead of introducing generated codes.
 
 Registration accepts an optional:
 
@@ -296,7 +296,7 @@ referrals
 
 The username is only the lookup/audit value. The durable relationship uses user UUIDs.
 
-Current reward semantics:
+Verified reward semantics:
 
 ```text
 referred user -> +500 XP
@@ -317,7 +317,15 @@ referral insert produces both XP ledger events through a DB trigger
 
 The `/login` registration step exposes the optional referral field after Repeat Password and localizes it in EN/FA.
 
-Milestone 16 remains **IN PROGRESS** until the user locally verifies the registration/reward/persistence behavior and final `pnpm generate`.
+Primary Auth responses also expose an authoritative referral read model:
+
+```text
+referrals.referredCount
+```
+
+Profile Menu displays the localized invited-user count and refreshes it through `/api/auth/me`.
+
+The registration flow, referral relation persistence, XP rewards, Profile Menu count, and final `pnpm generate` are locally verified.
 
 Detailed milestone:
 
@@ -348,7 +356,7 @@ New development schema changes should use a new numbered file rather than rewrit
 
 ## Current next-step queue
 
-Milestone 16 is the active backend milestone. Do not start a later candidate until it is closed.
+No new milestone is currently selected.
 
 Deferred areas include:
 
@@ -372,7 +380,7 @@ production deployment / secrets / domain / HTTPS
 Redis
 ```
 
-Do not start deferred work automatically. The user chooses the next feature after the current milestone is verified.
+Do not start deferred work automatically. The user chooses the next feature.
 
 ## Documentation workflow
 
