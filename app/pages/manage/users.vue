@@ -199,7 +199,7 @@ onBeforeUnmount(() => {
 
 <template>
   <el-flex rules="csc" :gap="16" class="w100">
-    <el-flex rules="csc" :gap="6" class="w100">
+    <el-flex rules="ccs" :gap="6" class="w100">
       <el-text type="h1" :size="24" :weight="800">Users</el-text>
       <el-text color="normal55" :size="13">
         Browse account metadata and current Cloud usage.
@@ -292,7 +292,7 @@ onBeforeUnmount(() => {
               align-items="center"
               class="w100"
               :p="[12, 16]">
-              <el-flex rules="csc" :gap="3" class="w100">
+              <el-flex rules="ccs" :gap="3" class="w100">
                 <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
                 <el-text color="normal45" :size="10">{{ user.id }}</el-text>
               </el-flex>
