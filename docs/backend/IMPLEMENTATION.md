@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1 through 13 are complete and locally verified. Milestone 14 is implemented and awaiting local verification.
+Milestones 1 through 15 are complete and locally verified.
 
 Current platform path:
 
@@ -49,6 +49,9 @@ Current schema files:
 006_add_admin_user_indexes.sql
 007_add_user_status_and_admin_audit.sql
 008_progressive_user_profile.sql
+009_user_score_events.sql
+010_score_identity_triggers.sql
+011_score_cloud_draft_creation.sql
 ```
 
 New development schema changes use new numbered files rather than rewriting applied history. A production migration framework remains deferred.
@@ -117,21 +120,6 @@ admin
 super_admin
 ```
 
-Current backend mapping:
-
-```text
-user
-  -> []
-
-admin
-  -> dashboard.view
-  -> system.metrics.view
-  -> users.view
-
-super_admin
-  -> *
-```
-
 Frontend permission helpers come from the server-resolved permission payload and shared constants.
 
 Three-layer enforcement remains mandatory for privileged features:
@@ -187,32 +175,11 @@ Historical Wizard rows remain immutable. `Edit in Create` reads `snapshot.finalD
 
 The stored Wizard snapshot remains backend data but is no longer exposed as a raw product UI block.
 
-The user locally verified the History workflow and final `pnpm generate`.
-
 # Milestone 14 — Progressive User Profile Foundation
-
-Status:
-
-```text
-implementation present
-local verification pending
-```
 
 ## Identity invariant
 
-Before Milestone 14, `users` required exactly one identity:
-
-```text
-username XOR email
-```
-
-Migration `008_progressive_user_profile.sql` changes this to:
-
-```text
-username OR email must exist
-```
-
-Valid states are now:
+Valid user identity states are:
 
 ```text
 username only
@@ -220,51 +187,35 @@ email only
 username + email
 ```
 
-`users.updated_at` is now a first-class timestamp for account/profile mutation.
+At least one identity must exist.
 
-Existing case-insensitive unique indexes remain in place:
-
-```text
-LOWER(username) WHERE username IS NOT NULL
-LOWER(email) WHERE email IS NOT NULL
-```
+Case-insensitive unique indexes remain authoritative for username/email uniqueness.
 
 ## Auth read model
 
-`AuthUser` now includes:
+Auth session/read responses include:
 
 ```text
-id
-username
-email
-role
-status
-createdAt
-updatedAt
-```
-
-Auth session/read responses also include:
-
-```text
+user
 profile.supportedFields
 profile.completedFields
 profile.missingFields
+permissions
+score
 ```
 
-Current supported progressive fields:
+Current progressive fields:
 
 ```text
 username
 email
 ```
 
-Backend derivation lives in:
+Backend profile derivation and requirement helpers live in:
 
 ```text
 backend/src/profileRequirements.mjs
 ```
-
-That module also owns reusable missing-field and `PROFILE_REQUIREMENT` payload helpers for future feature gates.
 
 ## Progressive completion endpoint
 
@@ -275,110 +226,100 @@ POST /api/auth/profile/complete
 requires bearer auth
 ```
 
-This is deliberately an explicit completion command rather than a generic account-settings PATCH.
-
 Semantics:
 
 ```text
-fills only fields that are currently missing
-existing saved identity values are not renamed/replaced
+fills only currently-missing fields
+existing identity values are not renamed/replaced
 same already-saved value is an idempotent no-op
-username/email normalization matches auth registration/login
-unique conflicts are enforced before write and again by DB unique indexes
+normalization matches auth registration/login
+unique conflicts remain DB-authoritative
 ```
-
-Stable errors:
-
-```text
-400 PROFILE_VALIDATION
-409 PROFILE_FIELD_TAKEN
-409 PROFILE_FIELD_LOCKED
-401 Authentication required
-```
-
-Successful response returns:
-
-```text
-user
-profile
-permissions
-```
-
-and the frontend replaces its in-memory Auth state immediately.
 
 ## Frontend requirement contract
-
-`useAuth()` exposes:
-
-```text
-profile
-missingProfileFields
-hasProfileField(field)
-completeProfile(input)
-```
 
 Reusable product gating lives in:
 
 ```text
 app/composables/useProfileRequirements.ts
+app/composables/useEmailRequirement.ts
 ```
 
-Main methods:
+The verified first real gate is Global Output Copy requiring email. The shared completion flow resumes the requested feature after profile completion.
+
+# Milestone 15 — XP / Score Event Ledger Foundation
+
+## Ledger model
+
+Score is authoritative in:
 
 ```text
-getMissingProfileFields(fields)
-isProfileSatisfied(fields)
-requireProfileFields(fields, options)
-completeMissingIdentity(options)
+user_score_events
 ```
 
-Future feature example:
+Current total:
+
+```sql
+SUM(user_score_events.points)
+```
+
+Do not introduce a mutable `users.score` field as the authoritative source of truth.
+
+Ledger invariant:
 
 ```text
-requireProfileFields(["email"], {
-  onCompleted: continueFeature,
-})
+UNIQUE (user_id, idempotency_key)
 ```
 
-If the requirement is already satisfied, the continuation can run immediately. Otherwise a shared Global Modal requests only the missing field(s).
+Every future reward producer must define a stable logical event and deterministic idempotency key.
 
-## Progressive completion UI
-
-Reusable component:
+## Current rewards
 
 ```text
-app/components/auth/ProfileRequirementModal.vue
+account_created       +1000 XP
+profile_email_added   +1000 XP
+draft_created           +50 XP
 ```
 
-The first real entry point is the Profile Menu:
+Draft creation is one reward per user/Draft regardless of autosave, retry, or multi-device repetition.
+
+Relevant modules/migrations:
 
 ```text
-missing username/email
-  -> Complete profile button visible
-  -> Global Modal
-  -> authoritative completion API
-  -> Auth state refresh
-  -> completion button disappears after all current fields exist
+backend/sql/009_user_score_events.sql
+backend/sql/010_score_identity_triggers.sql
+backend/sql/011_score_cloud_draft_creation.sql
+backend/src/userScore.mjs
 ```
 
-The UI is localized in both EN and FA.
+## Auth/frontend score contract
 
-## Deliberate non-goals for Milestone 14
-
-Do not add these into the same milestone:
+Primary Auth responses expose:
 
 ```text
-phone/contact persistence
-email/phone verification
-identity rename/change account settings
-marketing/analytics/model-training consent
-XP/score ledger
-leaderboard/ranking
-referral graph/codes
-behavioral event tracking
+score.totalXp
+score.eventCount
 ```
 
-Those should extend the foundation as separate product resources and vertical slices.
+`useAuth()` exposes current score state and helpers to refresh/apply authoritative score updates.
+
+Cloud Draft save may return refreshed score after awarding first-create XP.
+
+Profile Menu refreshes `/api/auth/me` when opened so stale sessions/device state do not leave the visible score outdated. Unknown pre-hydration score state must not be rendered as a false zero.
+
+## Product decision: no routine save XP
+
+Do not reward routine Draft edits/autosaves.
+
+The previously-considered rule:
+
+```text
+draft changed/saved -> +10 XP
+```
+
+was explicitly dropped after Milestone 15 verification.
+
+Future XP triggers should correspond to meaningful achievements or product milestones and must have clear anti-farming/idempotency semantics.
 
 # Static-generation contract
 
@@ -389,53 +330,77 @@ ssr: false
 Nitro preset: static
 ```
 
-The progressive-profile feature adds no new route and must preserve existing prerender behavior.
+New backend features must preserve static frontend generation unless the architecture is deliberately changed in a separate decision.
 
 `pnpm generate` remains a release invariant.
 
-# Verification for Milestone 14
+# How to extend the platform next
 
-Required before DONE:
+Current reusable resource boundaries are intentionally separated:
 
 ```text
-username-only existing account still signs in
-email-only account still signs in
-Profile Menu exposes Complete profile only when needed
-username-only account can add unique email
-email-only account can add unique username
-Auth/Profile Menu refresh immediately after completion
-completed account can sign in through either identifier
-invalid value rejected
-unique collision rejected
-existing identity replacement rejected
-EN/FA UI verified
-container/backend restart retains profile completion
-pnpm generate succeeds
+users / auth / profile
+  -> identity and access
+
+prompt_drafts
+  -> account-owned Cloud Draft state
+
+wizard_runs
+  -> historical Wizard execution records
+
+admin_audit_log
+  -> privileged mutation audit trail
+
+user_score_events
+  -> append-only XP ledger
 ```
 
-Do not mark Milestone 14 DONE from code creation alone.
-
-# How to extend the user-data platform next
-
-The progressive identity foundation is intentionally narrow.
-
-Recommended later resource boundaries:
+Recommended future resources should remain separate rather than becoming arbitrary nullable columns or generic JSON on `users`:
 
 ```text
-contacts / verification
-  -> phone and verified contact semantics
+referrals
+  -> referrer_user_id -> referred_user_id relationships + referral codes
+
+user_events
+  -> trustworthy behavioral analytics/event persistence
 
 user_consents
   -> marketing / analytics / model-training purpose records
 
-user_score_events
-  -> append-only XP ledger, not users.score as the source of truth
-
-referrals
-  -> referrer_user_id -> referred_user_id relationships
-
-user_events
-  -> trustworthy behavioral analytics/event persistence
+contacts / verification
+  -> phone and verified contact semantics
 ```
 
-Do not collapse these future concerns into arbitrary nullable columns or an unvalidated generic JSON blob on `users`.
+## Recommended next milestone candidate
+
+The current recommended next vertical slice is:
+
+```text
+Milestone 16 — Referral Foundation
+```
+
+Suggested narrow scope:
+
+```text
+persisted referral code ownership
+resolve a referral code to a user
+persist one referrer -> referred-user relationship per new account
+prevent self-referral
+prevent duplicate/re-parented referral relationships
+preserve account creation when referral processing fails safely where appropriate
+define future referral XP as a separate idempotent score event, not necessarily in the first slice
+```
+
+This direction reuses the completed Auth and XP foundations and provides a more meaningful future reward trigger than routine Draft activity.
+
+Alternative next directions remain:
+
+```text
+Analytics foundation
+Consent foundation
+Account deletion/lifecycle
+Production hardening
+Contacts/verification
+```
+
+Do not start a deferred resource automatically. Confirm the product direction with the user first.
