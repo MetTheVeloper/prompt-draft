@@ -2,6 +2,7 @@
 import type { GlobalMenuItem } from '~/composables/useMenu'
 import { useAppStore } from "~/store/app";
 import { NAVIGATION } from '~/config/navigation'
+import { AUTH_PERMISSIONS } from '~/config/authorization'
 import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
 import AboutModal from '~/components/modals/about.vue'
 import AuthProfileMenu from '~/components/auth/AuthProfileMenu.vue'
@@ -59,6 +60,15 @@ function handleHeaderContextMenu(event: MouseEvent) {
 const isRtl = computed(() => {
   return localeProperties.value?.dir === 'rtl'
 })
+
+function canShowNavigationItem(item: (typeof NAVIGATION)[number]) {
+  if (item.name === 'vectorizer') return false
+  if (item.name === 'collage') {
+    return auth.can(AUTH_PERMISSIONS.COLLAGE_VIEW)
+  }
+
+  return true
+}
 
 const languageMenuItems = computed<GlobalMenuItem[]>(() => {
   return locales.value.map((item) => {
@@ -249,7 +259,7 @@ async function openAuthControl() {
 
 const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
   const navigationItems: GlobalMenuItem[] = NAVIGATION
-    .filter(item => item.name !== 'vectorizer')
+    .filter(canShowNavigationItem)
     .map(item => ({
       label: translate(`app.navigation.${item.name}`),
       icon: item.icon,
@@ -391,10 +401,9 @@ onMounted(() => {
       class="fg100"
       :gap="8">
       <el-button
-        v-for="item in NAVIGATION"
+        v-for="item in NAVIGATION.filter(canShowNavigationItem)"
         :key="item.to"
         :to="item.to"
-        v-show="item.name !== 'vectorizer'"
         :color="route.name === item.name ? 'prim' : 'normal'"
         :effect="true"
         :mode="route.name === item.name ? 'normal' : 'flat'"
