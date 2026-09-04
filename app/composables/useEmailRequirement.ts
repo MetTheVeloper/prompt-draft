@@ -6,7 +6,6 @@ export type EmailRequirementOptions = {
 };
 
 export function useEmailRequirement() {
-  const { t } = useI18n();
   const auth = useAuth();
   const modal = useModal();
 
@@ -17,22 +16,15 @@ export function useEmailRequirement() {
     }
 
     modal.open({
-      header: {
-        icon: "mail",
-        title: t("auth.emailRequirement.title"),
-        subtitle: t("auth.emailRequirement.subtitle"),
-        color: "prim",
-        closeButton: true,
-      },
-      descriptions: t("auth.emailRequirement.description"),
+      header: null,
       component: EmailRequirementModal,
       props: {
         from: options.from,
         onCompleted: options.onCompleted,
       },
       options: {
-        width: 520,
-        maxHeight: "85vh",
+        width: 500,
+        maxHeight: "90vh",
         closeOnBackdrop: true,
         closeOnEsc: true,
         blur: true,
