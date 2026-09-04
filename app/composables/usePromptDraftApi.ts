@@ -1,5 +1,7 @@
 import type {
   GetPromptDraftResponse,
+  ListPromptDraftsParams,
+  ListPromptDraftsResponse,
   UpsertPromptDraftInput,
   UpsertPromptDraftResponse,
 } from "~/types/draftSyncApi";
@@ -20,6 +22,7 @@ function normalizeApiBase(value: unknown) {
 export function usePromptDraftApi() {
   const config = useRuntimeConfig();
   const apiBase = normalizeApiBase(config.public.apiBase);
+  const auth = useAuth();
 
   function endpoint(path: string) {
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -71,6 +74,7 @@ export function usePromptDraftApi() {
       endpoint(`/api/drafts/${encodeURIComponent(id)}`),
       {
         method: "PUT",
+        headers: auth.authHeaders(),
         body: input,
       },
     );
@@ -79,7 +83,29 @@ export function usePromptDraftApi() {
   function getPromptDraft(id: string) {
     return $fetch<GetPromptDraftResponse>(
       endpoint(`/api/drafts/${encodeURIComponent(id)}`),
+      {
+        headers: auth.authHeaders(),
+      },
     );
+  }
+
+  function listPromptDrafts(params: ListPromptDraftsParams = {}) {
+    const query = new URLSearchParams();
+
+    if (params.limit !== undefined) {
+      query.set("limit", String(params.limit));
+    }
+
+    if (params.cursor !== undefined) {
+      query.set("cursor", params.cursor);
+    }
+
+    const queryString = query.toString();
+    const path = queryString ? `/api/drafts?${queryString}` : "/api/drafts";
+
+    return $fetch<ListPromptDraftsResponse>(endpoint(path), {
+      headers: auth.authHeaders(),
+    });
   }
 
   return {
@@ -90,5 +116,6 @@ export function usePromptDraftApi() {
     getWizardRun,
     upsertPromptDraft,
     getPromptDraft,
+    listPromptDrafts,
   };
 }
