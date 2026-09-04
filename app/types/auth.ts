@@ -20,6 +20,11 @@ export type AuthProfileState = {
   missingFields: AuthProfileField[];
 };
 
+export type AuthScoreState = {
+  totalXp: number;
+  eventCount: number;
+};
+
 export type AuthIdentifierType = "username" | "email";
 
 export type IdentifyAuthResponse = {
@@ -34,6 +39,7 @@ export type AuthSessionResponse = {
   token: string;
   user: AuthUser;
   profile: AuthProfileState;
+  score: AuthScoreState;
   permissions: AuthGrantedPermission[];
 };
 
@@ -41,6 +47,7 @@ export type AuthMeResponse = {
   ok: true;
   user: AuthUser;
   profile: AuthProfileState;
+  score: AuthScoreState;
   permissions: AuthGrantedPermission[];
 };
 
@@ -53,6 +60,7 @@ export type CompleteAuthProfileResponse = {
   ok: true;
   user: AuthUser;
   profile: AuthProfileState;
+  score: AuthScoreState;
   permissions: AuthGrantedPermission[];
 };
 
