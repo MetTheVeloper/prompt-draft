@@ -73,6 +73,12 @@ async function readJsonBody(request, response, corsHeaders, sendJson) {
   }
 }
 
+function validationError(message) {
+  const error = new Error(message)
+  error.code = 'ARCHIVE_MEDIA_VALIDATION'
+  return error
+}
+
 function decodeStrictBase64(value, label, maxBytes) {
   if (
     typeof value !== 'string' ||
@@ -80,22 +86,16 @@ function decodeStrictBase64(value, label, maxBytes) {
     value.length % 4 !== 0 ||
     !/^[A-Za-z0-9+/]*={0,2}$/.test(value)
   ) {
-    const error = new Error(`${label} must be standard base64 data`)
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError(`${label} must be standard base64 data`)
   }
 
   const buffer = Buffer.from(value, 'base64')
   if (buffer.length === 0 || buffer.toString('base64') !== value) {
-    const error = new Error(`${label} is not valid base64 data`)
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError(`${label} is not valid base64 data`)
   }
 
   if (buffer.length > maxBytes) {
-    const error = new Error(`${label} exceeds the allowed byte size`)
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError(`${label} exceeds the allowed byte size`)
   }
 
   return buffer
@@ -103,31 +103,23 @@ function decodeStrictBase64(value, label, maxBytes) {
 
 function requireDimension(value, label, maxEdge) {
   if (!Number.isSafeInteger(value) || value <= 0 || value > maxEdge) {
-    const error = new Error(`${label} must be an integer between 1 and ${maxEdge}`)
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError(`${label} must be an integer between 1 and ${maxEdge}`)
   }
   return value
 }
 
 function validateUploadBody(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    const error = new Error('Archive image body must be an object')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('Archive image body must be an object')
   }
 
   const full = body.full
   const thumbnail = body.thumbnail
   if (!full || typeof full !== 'object' || Array.isArray(full)) {
-    const error = new Error('full image payload is required')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('full image payload is required')
   }
   if (!thumbnail || typeof thumbnail !== 'object' || Array.isArray(thumbnail)) {
-    const error = new Error('thumbnail image payload is required')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('thumbnail image payload is required')
   }
 
   const fullBuffer = decodeStrictBase64(full.base64, 'full.base64', MAX_FULL_BYTES)
@@ -151,14 +143,10 @@ function validateUploadBody(body) {
   )
 
   if (Number(full.sizeBytes) !== fullBuffer.length) {
-    const error = new Error('full.sizeBytes does not match decoded image bytes')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('full.sizeBytes does not match decoded image bytes')
   }
   if (Number(thumbnail.sizeBytes) !== thumbnailBuffer.length) {
-    const error = new Error('thumbnail.sizeBytes does not match decoded image bytes')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('thumbnail.sizeBytes does not match decoded image bytes')
   }
 
   return {
@@ -285,7 +273,7 @@ async function uploadArchiveImage(actor, archiveItemId, payload) {
       const countResult = await client.query(
         `
           SELECT COUNT(*)::integer AS count,
-                 COALESCE(MAX(position), -1)::integer AS "maxPosition"
+                 COALESCE(MAX(position) + 1, 0)::integer AS "nextPosition"
           FROM prompt_archive_images
           WHERE archive_item_id = $1
         `,
@@ -293,11 +281,9 @@ async function uploadArchiveImage(actor, archiveItemId, payload) {
       )
       const count = Number(countResult.rows[0]?.count) || 0
       if (count >= MAX_ARCHIVE_IMAGES) {
-        const error = new Error(`Archive items support up to ${MAX_ARCHIVE_IMAGES} images`)
-        error.code = 'ARCHIVE_MEDIA_VALIDATION'
-        throw error
+        throw validationError(`Archive items support up to ${MAX_ARCHIVE_IMAGES} images`)
       }
-      const position = (Number(countResult.rows[0]?.maxPosition) || -1) + 1
+      const position = Number(countResult.rows[0]?.nextPosition)
 
       await client.query(
         `
@@ -382,6 +368,34 @@ async function uploadArchiveImage(actor, archiveItemId, payload) {
   }
 }
 
+async function normalizePositionsAfterDelete(client, archiveItemId) {
+  await client.query(
+    `
+      UPDATE prompt_archive_images
+      SET position = position + 10000,
+          updated_at = NOW()
+      WHERE archive_item_id = $1
+    `,
+    [archiveItemId],
+  )
+
+  await client.query(
+    `
+      WITH ordered AS (
+        SELECT id, ROW_NUMBER() OVER (ORDER BY position ASC, id ASC) - 1 AS next_position
+        FROM prompt_archive_images
+        WHERE archive_item_id = $1
+      )
+      UPDATE prompt_archive_images images
+      SET position = ordered.next_position,
+          updated_at = NOW()
+      FROM ordered
+      WHERE images.id = ordered.id
+    `,
+    [archiveItemId],
+  )
+}
+
 async function deleteArchiveImage(actor, archiveItemId, imageId) {
   let deleted
 
@@ -422,22 +436,7 @@ async function deleteArchiveImage(actor, archiveItemId, imageId) {
       `DELETE FROM prompt_archive_images WHERE id = $1 AND archive_item_id = $2`,
       [imageId, archiveItemId],
     )
-
-    await client.query(
-      `
-        WITH ordered AS (
-          SELECT id, ROW_NUMBER() OVER (ORDER BY position ASC, id ASC) - 1 AS next_position
-          FROM prompt_archive_images
-          WHERE archive_item_id = $1
-        )
-        UPDATE prompt_archive_images images
-        SET position = ordered.next_position,
-            updated_at = NOW()
-        FROM ordered
-        WHERE images.id = ordered.id
-      `,
-      [archiveItemId],
-    )
+    await normalizePositionsAfterDelete(client, archiveItemId)
 
     await client.query(
       `
@@ -461,13 +460,11 @@ async function deleteArchiveImage(actor, archiveItemId, imageId) {
     })
   })
 
-  const config = getArchiveStorageConfig()
-  const cleanupFailures = await cleanupObjects(
-    [deleted?.storage_key, deleted?.thumbnail_storage_key],
-    config,
-  )
+  const keys = [deleted?.storage_key, deleted?.thumbnail_storage_key].filter(Boolean)
+  if (!keys.length) return { cleanupFailures: [] }
 
-  return { cleanupFailures }
+  const config = getArchiveStorageConfig()
+  return { cleanupFailures: await cleanupObjects(keys, config) }
 }
 
 async function reorderArchiveImages(actor, archiveItemId, imageIds) {
@@ -476,9 +473,7 @@ async function reorderArchiveImages(actor, archiveItemId, imageIds) {
     imageIds.some((id) => !isUuid(id)) ||
     new Set(imageIds).size !== imageIds.length
   ) {
-    const error = new Error('imageIds must contain unique Archive image UUIDs')
-    error.code = 'ARCHIVE_MEDIA_VALIDATION'
-    throw error
+    throw validationError('imageIds must contain unique Archive image UUIDs')
   }
 
   await withDatabaseTransaction(async (client) => {
@@ -513,9 +508,7 @@ async function reorderArchiveImages(actor, archiveItemId, imageIds) {
       currentIds.length !== imageIds.length ||
       currentIds.some((id) => !imageIds.includes(id))
     ) {
-      const error = new Error('imageIds must contain every current Archive image exactly once')
-      error.code = 'ARCHIVE_MEDIA_VALIDATION'
-      throw error
+      throw validationError('imageIds must contain every current Archive image exactly once')
     }
 
     await client.query(
@@ -528,7 +521,7 @@ async function reorderArchiveImages(actor, archiveItemId, imageIds) {
       [archiveItemId],
     )
 
-    for (const [position, imageId] of imageIds.entries()) {
+    for (const [position, currentImageId] of imageIds.entries()) {
       await client.query(
         `
           UPDATE prompt_archive_images
@@ -536,7 +529,7 @@ async function reorderArchiveImages(actor, archiveItemId, imageIds) {
               updated_at = NOW()
           WHERE archive_item_id = $1 AND id = $2
         `,
-        [archiveItemId, imageId, position],
+        [archiveItemId, currentImageId, position],
       )
     }
 
