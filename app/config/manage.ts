@@ -4,9 +4,7 @@ import {
 } from "~/config/authorization";
 
 export type ManageSection = {
-  key: string;
-  label: string;
-  description: string;
+  key: "dashboard" | "users";
   icon: string;
   route: string;
   requiredPermission: AuthPermission;
@@ -15,16 +13,12 @@ export type ManageSection = {
 export const MANAGE_SECTIONS: readonly ManageSection[] = [
   {
     key: "dashboard",
-    label: "Dashboard",
-    description: "Live account, session, Cloud Draft, and administration summary.",
     icon: "dashboard",
     route: "/manage/dashboard",
     requiredPermission: AUTH_PERMISSIONS.DASHBOARD_VIEW,
   },
   {
     key: "users",
-    label: "Users",
-    description: "Browse account metadata and current Cloud usage.",
     icon: "group",
     route: "/manage/users",
     requiredPermission: AUTH_PERMISSIONS.USERS_VIEW,
