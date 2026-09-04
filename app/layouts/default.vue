@@ -169,6 +169,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
       <slot />
     </el-flex>
 
+    <CreateDraftCloudRestoreBridge v-if="route.name === 'create'" />
     <CreateDraftCloudSyncButton v-if="route.name === 'create'" />
     <el-pwa />
   </el-flex>
