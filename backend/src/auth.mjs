@@ -91,6 +91,26 @@ function parseIdentifier(value) {
   return username ? { type: 'username', value: username } : null
 }
 
+function parseOptionalReferralUsername(value) {
+  if (value === undefined || value === null) {
+    return { provided: false, value: null }
+  }
+
+  if (typeof value !== 'string') {
+    return { provided: true, value: null }
+  }
+
+  const trimmed = value.trim()
+  if (!trimmed) {
+    return { provided: false, value: null }
+  }
+
+  return {
+    provided: true,
+    value: normalizeUsername(trimmed),
+  }
+}
+
 function validatePassword(password) {
   if (
     typeof password !== 'string' ||
@@ -657,10 +677,87 @@ export async function handleAuthRequest({
       return true
     }
 
+    const referral = parseOptionalReferralUsername(body.referralUsername)
+
+    if (referral.provided && !referral.value) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          code: 'REFERRAL_USERNAME_INVALID',
+          message: 'Invalid referral username',
+          errors: [
+            {
+              field: 'referralUsername',
+              message: 'Referral username must be 3-64 characters using English letters, numbers, dot, underscore, or hyphen',
+            },
+          ],
+        },
+        corsHeaders,
+      )
+      return true
+    }
+
+    if (
+      referral.value &&
+      identifier.type === 'username' &&
+      referral.value === identifier.value
+    ) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          code: 'REFERRAL_SELF_REFERENCE',
+          message: 'You cannot use your own username as a referral',
+          errors: [
+            {
+              field: 'referralUsername',
+              message: 'Use the username of another Prompt Draft user',
+            },
+          ],
+        },
+        corsHeaders,
+      )
+      return true
+    }
+
     try {
       if (await findUserByIdentifier(identifier)) {
         sendJson(response, 409, { ok: false, message: 'Account already exists' }, corsHeaders)
         return true
+      }
+
+      let referrer = null
+
+      if (referral.value) {
+        const candidate = await findUserByIdentifier({
+          type: 'username',
+          value: referral.value,
+        })
+
+        if (!candidate || candidate.status !== 'active') {
+          sendJson(
+            response,
+            400,
+            {
+              ok: false,
+              code: 'REFERRAL_USERNAME_NOT_FOUND',
+              message: 'Referral username was not found',
+              errors: [
+                {
+                  field: 'referralUsername',
+                  message: 'Enter the username of an active Prompt Draft user',
+                },
+              ],
+            },
+            corsHeaders,
+          )
+          return true
+        }
+
+        referrer = candidate
       }
 
       const userId = randomUUID()
@@ -668,16 +765,85 @@ export async function handleAuthRequest({
       const username = identifier.type === 'username' ? identifier.value : null
       const email = identifier.type === 'email' ? identifier.value : null
 
-      const result = await queryDatabase(
-        `
-          INSERT INTO users (id, username, email, password_hash)
-          VALUES ($1, $2, $3, $4)
-          RETURNING id, username, email, role, status,
-                    created_at AS "createdAt",
-                    updated_at AS "updatedAt"
-        `,
-        [userId, username, email, passwordHash],
-      )
+      let result
+
+      if (referrer && referral.value) {
+        const referralId = randomUUID()
+
+        result = await queryDatabase(
+          `
+            WITH eligible_referrer AS (
+              SELECT id
+              FROM users
+              WHERE id = $6
+                AND status = 'active'
+            ),
+            inserted_user AS (
+              INSERT INTO users (id, username, email, password_hash)
+              SELECT $1, $2, $3, $4
+              FROM eligible_referrer
+              RETURNING id, username, email, role, status,
+                        created_at AS "createdAt",
+                        updated_at AS "updatedAt"
+            ),
+            inserted_referral AS (
+              INSERT INTO referrals (
+                id,
+                referrer_user_id,
+                referred_user_id,
+                referral_username_used
+              )
+              SELECT $5, eligible_referrer.id, inserted_user.id, $7
+              FROM eligible_referrer
+              CROSS JOIN inserted_user
+              RETURNING id
+            )
+            SELECT inserted_user.*
+            FROM inserted_user
+            CROSS JOIN inserted_referral
+          `,
+          [
+            userId,
+            username,
+            email,
+            passwordHash,
+            referralId,
+            referrer.id,
+            referral.value,
+          ],
+        )
+
+        if (!result.rows[0]) {
+          sendJson(
+            response,
+            400,
+            {
+              ok: false,
+              code: 'REFERRAL_USERNAME_NOT_FOUND',
+              message: 'Referral username is no longer available',
+              errors: [
+                {
+                  field: 'referralUsername',
+                  message: 'Enter the username of an active Prompt Draft user',
+                },
+              ],
+            },
+            corsHeaders,
+          )
+          return true
+        }
+      } else {
+        result = await queryDatabase(
+          `
+            INSERT INTO users (id, username, email, password_hash)
+            VALUES ($1, $2, $3, $4)
+            RETURNING id, username, email, role, status,
+                      created_at AS "createdAt",
+                      updated_at AS "updatedAt"
+          `,
+          [userId, username, email, passwordHash],
+        )
+      }
 
       const user = mapUserRow(result.rows[0])
       const token = await createSession(user.id)
