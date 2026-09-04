@@ -8,8 +8,16 @@ const translationTimeoutMs =
     ? configuredTimeoutMs
     : 20000
 
-function createTimeoutSignal() {
-  return AbortSignal.timeout(translationTimeoutMs)
+const configuredStatusTimeoutMs = Number(
+  process.env.TRANSLATION_STATUS_TIMEOUT_MS ?? 1500,
+)
+const translationStatusTimeoutMs =
+  Number.isFinite(configuredStatusTimeoutMs) && configuredStatusTimeoutMs > 0
+    ? configuredStatusTimeoutMs
+    : 1500
+
+function createTimeoutSignal(timeoutMs) {
+  return AbortSignal.timeout(timeoutMs)
 }
 
 async function readJsonResponse(response) {
@@ -26,7 +34,7 @@ export async function getTranslationServiceStatus() {
       headers: {
         Accept: 'application/json',
       },
-      signal: createTimeoutSignal(),
+      signal: createTimeoutSignal(translationStatusTimeoutMs),
     })
 
     if (!response.ok) {
@@ -84,7 +92,7 @@ export async function translateText({ text, source, target, alternatives }) {
       format: 'text',
       alternatives,
     }),
-    signal: createTimeoutSignal(),
+    signal: createTimeoutSignal(translationTimeoutMs),
   })
 
   if (!response.ok) {
