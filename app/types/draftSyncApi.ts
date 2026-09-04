@@ -1,4 +1,5 @@
 import type { PromptDraftState } from "~/modules/promptDraft.types";
+import type { AuthScoreState } from "~/types/auth";
 
 export type UpsertPromptDraftInput = {
   title: string;
@@ -16,6 +17,7 @@ export type SyncedPromptDraftRecord = UpsertPromptDraftInput & {
 export type UpsertPromptDraftResponse = {
   ok: true;
   draft: SyncedPromptDraftRecord;
+  score?: AuthScoreState;
 };
 
 export type GetPromptDraftResponse = {
