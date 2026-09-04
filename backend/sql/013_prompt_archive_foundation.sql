@@ -22,6 +22,7 @@ CREATE TABLE IF NOT EXISTS prompt_archive_items (
   optimized_for TEXT[] NOT NULL DEFAULT '{}',
   variants JSONB NOT NULL DEFAULT '[]'::jsonb,
   status TEXT NOT NULL DEFAULT 'published',
+  source_kind TEXT NOT NULL DEFAULT 'managed',
   created_by UUID REFERENCES users(id) ON DELETE SET NULL,
   updated_by UUID REFERENCES users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -30,7 +31,8 @@ CREATE TABLE IF NOT EXISTS prompt_archive_items (
   CHECK (NULLIF(BTRIM(titles ->> 'en'), '') IS NOT NULL),
   CHECK (NULLIF(BTRIM(titles ->> 'fa'), '') IS NOT NULL),
   CHECK (jsonb_typeof(variants) = 'array'),
-  CHECK (status IN ('draft', 'published', 'archived'))
+  CHECK (status IN ('draft', 'published', 'archived')),
+  CHECK (source_kind IN ('managed', 'legacy_json'))
 );
 
 CREATE INDEX IF NOT EXISTS prompt_archive_items_published_at_idx
@@ -65,10 +67,12 @@ CREATE INDEX IF NOT EXISTS prompt_archive_images_item_idx
 CREATE TABLE IF NOT EXISTS prompt_archive_tags (
   id UUID PRIMARY KEY,
   slug TEXT UNIQUE NOT NULL,
+  source_kind TEXT NOT NULL DEFAULT 'managed',
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   CHECK (slug = LOWER(slug)),
   CHECK (slug = BTRIM(slug)),
-  CHECK (slug <> '')
+  CHECK (slug <> ''),
+  CHECK (source_kind IN ('managed', 'legacy_json'))
 );
 
 CREATE TABLE IF NOT EXISTS prompt_archive_item_tags (
