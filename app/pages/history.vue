@@ -1,5 +1,9 @@
 <script setup lang="ts">
 import type {
+  PromptDraftCollection,
+  PromptDraftRecord,
+} from "~/modules/promptDraft.types";
+import type {
   WizardRunPageInfo,
   WizardRunRecord,
   WizardRunSummary,
@@ -7,10 +11,11 @@ import type {
 
 const route = useRoute();
 const { t, locale } = useI18n();
-const { mobile, mini } = useScreen();
+const { mini } = useScreen();
 const { listWizardRuns, getWizardRun } = usePromptDraftApi();
 
 const PAGE_SIZE = 20;
+const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
 
 const runs = ref<WizardRunSummary[]>([]);
 const pageInfo = ref<WizardRunPageInfo>({
@@ -25,7 +30,8 @@ const detailRun = ref<WizardRunRecord | null>(null);
 const detailPending = ref(false);
 const detailError = ref(false);
 const copied = ref(false);
-const snapshotOpen = ref(false);
+const restoringRunId = ref<string | null>(null);
+const restoreError = ref(false);
 
 let detailRequestId = 0;
 let copiedTimer: ReturnType<typeof setTimeout> | null = null;
@@ -52,7 +58,7 @@ onMounted(() => {
 watch(
   detailRunId,
   (id) => {
-    snapshotOpen.value = false;
+    restoreError.value = false;
 
     if (!id) {
       detailRequestId += 1;
@@ -127,7 +133,6 @@ async function loadDetail(id: string) {
   detailError.value = false;
   detailRun.value = null;
   copied.value = false;
-  snapshotOpen.value = false;
 
   try {
     const response = await getWizardRun(id);
@@ -203,6 +208,99 @@ async function copyOutput() {
   }
 }
 
+function createDraftId(usedIds: Set<string>) {
+  let id = "";
+
+  do {
+    id = `draft-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+  } while (usedIds.has(id));
+
+  return id;
+}
+
+function readDraftCollection(): PromptDraftCollection {
+  if (!import.meta.client) {
+    throw new Error("History draft restore requires a browser context");
+  }
+
+  const raw = localStorage.getItem(DRAFT_COLLECTION_STORAGE_KEY);
+
+  if (!raw) {
+    return {
+      version: 1,
+      activeDraftId: null,
+      drafts: [],
+    };
+  }
+
+  const parsed = JSON.parse(raw) as Partial<PromptDraftCollection>;
+
+  if (parsed.version !== 1 || !Array.isArray(parsed.drafts)) {
+    throw new Error("Stored draft collection is invalid");
+  }
+
+  return {
+    version: 1,
+    activeDraftId:
+      typeof parsed.activeDraftId === "string" ? parsed.activeDraftId : null,
+    drafts: parsed.drafts as PromptDraftRecord[],
+  };
+}
+
+function createDraftFromRun(run: WizardRunRecord) {
+  const collection = readDraftCollection();
+  const usedIds = new Set(collection.drafts.map((draft) => draft.id));
+  const now = new Date().toISOString();
+  const draftId = createDraftId(usedIds);
+  const finalDraft = JSON.parse(
+    JSON.stringify(run.snapshot.finalDraft),
+  ) as WizardRunRecord["snapshot"]["finalDraft"];
+
+  const draft: PromptDraftRecord = {
+    ...finalDraft,
+    id: draftId,
+    title: t("history.restore.draftTitle", {
+      id: run.wizardId,
+      version: run.wizardVersion,
+    }),
+    createdAt: now,
+    updatedAt: now,
+  };
+
+  const nextCollection: PromptDraftCollection = {
+    version: 1,
+    activeDraftId: draftId,
+    drafts: [draft, ...collection.drafts],
+  };
+
+  localStorage.setItem(
+    DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify(nextCollection),
+  );
+}
+
+async function editInCreate(id: string) {
+  if (!import.meta.client || restoringRunId.value) return;
+
+  restoringRunId.value = id;
+  restoreError.value = false;
+
+  try {
+    const run =
+      detailRun.value?.id === id
+        ? detailRun.value
+        : (await getWizardRun(id)).run;
+
+    createDraftFromRun(run);
+    await navigateTo("/create");
+  } catch (error) {
+    console.error("[Prompt Draft History] failed to restore run as draft", error);
+    restoreError.value = true;
+  } finally {
+    restoringRunId.value = null;
+  }
+}
+
 function formatCreatedAt(value: string) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
@@ -240,16 +338,42 @@ function formatWizardLabel(
         @click="closeDetail"
       />
 
-      <el-button
-        v-if="detailRun"
-        :label="copied ? t('history.actions.copied') : t('history.actions.copy')"
-        :icon="copied ? 'check' : 'content_copy'"
-        :color="copied ? 'green' : 'prim'"
-        :mode="copied ? 'flat' : 'normal'"
-        :size="12"
-        :p="[8, 12]"
-        @click="copyOutput"
-      />
+      <el-flex v-if="detailRun" rules="rcc" :gap="8" wrap>
+        <el-button
+          :label="restoringRunId === detailRun.id ? t('history.actions.restoring') : t('history.actions.editInCreate')"
+          icon="edit"
+          color="orange"
+          mode="flat"
+          :size="12"
+          :p="[8, 12]"
+          :disable="Boolean(restoringRunId)"
+          @click="editInCreate(detailRun.id)"
+        />
+
+        <el-button
+          :label="copied ? t('history.actions.copied') : t('history.actions.copy')"
+          :icon="copied ? 'check' : 'content_copy'"
+          :color="copied ? 'green' : 'prim'"
+          :mode="copied ? 'flat' : 'normal'"
+          :size="12"
+          :p="[8, 12]"
+          @click="copyOutput"
+        />
+      </el-flex>
+    </el-flex>
+
+    <el-flex
+      v-if="restoreError"
+      rules="rsc"
+      class="w100"
+      :gap="8"
+      bg="red10"
+      :p="12"
+      :radius="10">
+      <el-icon icon="warning" color="red" :size="18" />
+      <el-text color="red" :size="12">
+        {{ t("history.restore.error") }}
+      </el-text>
     </el-flex>
 
     <el-flex
@@ -389,39 +513,6 @@ function formatWizardLabel(
           <pre class="history-code">{{ detailRun.output }}</pre>
         </div>
       </el-flex>
-
-      <el-flex rules="csc" class="w100" :gap="10">
-        <el-button
-          :label="snapshotOpen ? t('history.actions.hideSnapshot') : t('history.actions.showSnapshot')"
-          :icon="snapshotOpen ? 'expand_less' : 'expand_more'"
-          mode="flat"
-          color="normal"
-          :size="12"
-          @click="snapshotOpen = !snapshotOpen"
-        />
-
-        <el-flex
-          v-if="snapshotOpen"
-          rules="csc"
-          class="w100"
-          bg="surface"
-          :radius="14"
-          :br="1"
-          bc="normal15">
-          <el-flex rules="rsc" class="w100" :gap="8" :p="[12, 16]">
-            <el-icon icon="data_object" color="normal55" :size="18" />
-            <el-text :size="12" :weight="800">
-              {{ t("history.detail.snapshot") }}
-            </el-text>
-          </el-flex>
-
-          <el-divider />
-
-          <div class="history-code-wrap history-snapshot-wrap w100">
-            <pre class="history-code">{{ JSON.stringify(detailRun.snapshot, null, 2) }}</pre>
-          </div>
-        </el-flex>
-      </el-flex>
     </template>
   </el-flex>
 
@@ -449,6 +540,20 @@ function formatWizardLabel(
         :disable="listPending || loadMorePending"
         @click="loadFirstPage"
       />
+    </el-flex>
+
+    <el-flex
+      v-if="restoreError"
+      rules="rsc"
+      class="w100"
+      :gap="8"
+      bg="red10"
+      :p="12"
+      :radius="10">
+      <el-icon icon="warning" color="red" :size="18" />
+      <el-text color="red" :size="12">
+        {{ t("history.restore.error") }}
+      </el-text>
     </el-flex>
 
     <el-flex
@@ -528,7 +633,7 @@ function formatWizardLabel(
       <template v-else>
         <template v-if="!mini">
           <el-grid
-            cols="minmax(220px, 1fr) minmax(190px, .7fr) minmax(260px, 1.15fr) 44px"
+            cols="minmax(210px, 1fr) minmax(180px, .7fr) minmax(230px, 1fr) minmax(170px, .7fr)"
             :gap="12"
             align-items="center"
             class="w100"
@@ -551,7 +656,7 @@ function formatWizardLabel(
 
           <template v-for="(run, index) in runs" :key="run.id">
             <el-grid
-              cols="minmax(220px, 1fr) minmax(190px, .7fr) minmax(260px, 1.15fr) 44px"
+              cols="minmax(210px, 1fr) minmax(180px, .7fr) minmax(230px, 1fr) minmax(170px, .7fr)"
               :gap="12"
               align-items="center"
               class="history-row w100"
@@ -575,15 +680,27 @@ function formatWizardLabel(
                 {{ run.id }}
               </el-text>
 
-              <el-button
-                type="fab"
-                mode="flat"
-                color="prim"
-                icon="arrow_forward"
-                :tooltip="t('history.actions.open')"
-                :size="11"
-                @click.stop="openRun(run.id)"
-              />
+              <el-flex rules="rsc" :gap="4">
+                <el-button
+                  :label="restoringRunId === run.id ? t('history.actions.restoring') : t('history.actions.editInCreate')"
+                  icon="edit"
+                  mode="flat"
+                  color="orange"
+                  :size="11"
+                  :disable="Boolean(restoringRunId)"
+                  @click.stop="editInCreate(run.id)"
+                />
+
+                <el-button
+                  type="fab"
+                  mode="flat"
+                  color="prim"
+                  icon="arrow_forward"
+                  :tooltip="t('history.actions.open')"
+                  :size="11"
+                  @click.stop="openRun(run.id)"
+                />
+              </el-flex>
             </el-grid>
 
             <el-divider v-if="index < runs.length - 1" />
@@ -593,33 +710,46 @@ function formatWizardLabel(
         <template v-else>
           <template v-for="(run, index) in runs" :key="run.id">
             <el-flex
-              rules="rbc"
+              rules="csc"
               class="history-row w100"
-              :gap="12"
+              :gap="10"
               :p="14"
               @click="openRun(run.id)">
-              <el-flex rules="ccs" class="fg100" :gap="5">
-                <el-text :size="13" :weight="800">
-                  {{ formatWizardLabel(run) }}
-                </el-text>
-                <el-text :size="11" color="normal55">
-                  {{ formatCreatedAt(run.createdAt) }}
-                </el-text>
-                <el-text
-                  :size="9"
-                  color="normal40"
-                  class="history-run-id">
-                  {{ run.id }}
-                </el-text>
+              <el-flex rules="rbc" class="w100" :gap="12">
+                <el-flex rules="ccs" class="fg100" :gap="5">
+                  <el-text :size="13" :weight="800">
+                    {{ formatWizardLabel(run) }}
+                  </el-text>
+                  <el-text :size="11" color="normal55">
+                    {{ formatCreatedAt(run.createdAt) }}
+                  </el-text>
+                  <el-text
+                    :size="9"
+                    color="normal40"
+                    class="history-run-id">
+                    {{ run.id }}
+                  </el-text>
+                </el-flex>
+
+                <el-button
+                  type="fab"
+                  mode="flat"
+                  color="prim"
+                  icon="arrow_forward"
+                  :size="11"
+                  @click.stop="openRun(run.id)"
+                />
               </el-flex>
 
               <el-button
-                type="fab"
+                class="w100"
+                :label="restoringRunId === run.id ? t('history.actions.restoring') : t('history.actions.editInCreate')"
+                icon="edit"
                 mode="flat"
-                color="prim"
-                icon="arrow_forward"
+                color="orange"
                 :size="11"
-                @click.stop="openRun(run.id)"
+                :disable="Boolean(restoringRunId)"
+                @click.stop="editInCreate(run.id)"
               />
             </el-flex>
 
@@ -673,10 +803,6 @@ function formatWizardLabel(
   padding: 16px;
 }
 
-.history-snapshot-wrap {
-  max-height: 44vh;
-}
-
 .history-code {
   width: 100%;
   margin: 0;
@@ -684,7 +810,7 @@ function formatWizardLabel(
   overflow-wrap: anywhere;
   font-size: 12px;
   line-height: 1.75;
-  color: inherit;
+  color: var(--normalText, currentColor);
 }
 
 @media (max-width: 760px) {
