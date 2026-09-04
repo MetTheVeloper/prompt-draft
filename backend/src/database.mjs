@@ -152,18 +152,19 @@ export async function listWizardRuns({ limit, cursor, wizardId }) {
   }
 }
 
-export async function upsertPromptDraft(draft) {
+export async function upsertPromptDraft(userId, draft) {
   const result = await queryDatabase(
     `
       INSERT INTO prompt_drafts (
+        user_id,
         draft_id,
         title,
         created_at,
         client_updated_at,
         snapshot
       )
-      VALUES ($1, $2, $3, $4, $5::jsonb)
-      ON CONFLICT (draft_id)
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      ON CONFLICT (user_id, draft_id)
       DO UPDATE SET
         title = EXCLUDED.title,
         created_at = LEAST(prompt_drafts.created_at, EXCLUDED.created_at),
@@ -181,6 +182,7 @@ export async function upsertPromptDraft(draft) {
         snapshot
     `,
     [
+      userId,
       draft.id,
       draft.title,
       draft.createdAt,
@@ -192,7 +194,7 @@ export async function upsertPromptDraft(draft) {
   return mapPromptDraftRow(result.rows[0])
 }
 
-export async function getPromptDraftById(id) {
+export async function getPromptDraftById(userId, id) {
   const result = await queryDatabase(
     `
       SELECT
@@ -204,12 +206,57 @@ export async function getPromptDraftById(id) {
         revision,
         snapshot
       FROM prompt_drafts
-      WHERE draft_id = $1
+      WHERE user_id = $1
+        AND draft_id = $2
       LIMIT 1
     `,
-    [id],
+    [userId, id],
   )
 
   const row = result.rows[0]
   return row ? mapPromptDraftRow(row) : null
+}
+
+export async function listPromptDrafts({ userId, limit, cursor }) {
+  const values = [userId]
+  const conditions = ['user_id = $1']
+
+  if (cursor) {
+    values.push(cursor.updatedAt, cursor.id)
+    const updatedAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(client_updated_at < $${updatedAtParameter}::timestamptz OR (client_updated_at = $${updatedAtParameter}::timestamptz AND draft_id < $${idParameter}))`,
+    )
+  }
+
+  const fetchLimit = limit + 1
+  values.push(fetchLimit)
+  const limitParameter = values.length
+
+  const result = await queryDatabase(
+    `
+      SELECT
+        draft_id AS id,
+        title,
+        created_at AS "createdAt",
+        client_updated_at AS "updatedAt",
+        server_updated_at AS "serverUpdatedAt",
+        revision,
+        snapshot
+      FROM prompt_drafts
+      WHERE ${conditions.join('\n        AND ')}
+      ORDER BY client_updated_at DESC, draft_id DESC
+      LIMIT $${limitParameter}
+    `,
+    values,
+  )
+
+  const hasMore = result.rows.length > limit
+  const drafts = result.rows.slice(0, limit).map(mapPromptDraftRow)
+
+  return {
+    drafts,
+    hasMore,
+  }
 }
