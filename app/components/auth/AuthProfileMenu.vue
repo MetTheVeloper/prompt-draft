@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { canAccessManage } from "~/config/manage";
+import { prepareUserAvatarImage } from "~/utils/userAvatarImage";
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -7,9 +8,15 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const auth = useAuth();
+const avatar = useUserAvatar();
 const { completeMissingIdentity } = useProfileRequirements();
 
 const user = computed(() => auth.user.value);
+const avatarInput = ref<HTMLInputElement | null>(null);
+const avatarPreviewUrl = ref("");
+const preparedAvatar = ref<Blob | null>(null);
+const avatarPreparing = ref(false);
+const avatarActionError = ref("");
 
 const identityLabel = computed(() => {
   return user.value?.username || user.value?.email || "";
@@ -21,6 +28,8 @@ const displayIdentityLabel = computed(() => {
 
   return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
 });
+
+const displayedAvatarUrl = computed(() => avatarPreviewUrl.value || avatar.url.value || null);
 
 const roleLabel = computed(() => {
   return user.value?.role?.replaceAll("_", " ") || "";
@@ -75,14 +84,89 @@ const hasMissingProfileFields = computed(() => {
   return auth.missingProfileFields.value.length > 0;
 });
 
+function revokeAvatarPreview() {
+  if (avatarPreviewUrl.value) URL.revokeObjectURL(avatarPreviewUrl.value);
+  avatarPreviewUrl.value = "";
+}
+
+function clearPreparedAvatar() {
+  revokeAvatarPreview();
+  preparedAvatar.value = null;
+  avatarActionError.value = "";
+  if (avatarInput.value) avatarInput.value.value = "";
+}
+
+function openAvatarPicker() {
+  avatarInput.value?.click();
+}
+
+async function handleAvatarSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const file = input.files?.[0];
+  if (!file) return;
+
+  avatarPreparing.value = true;
+  avatarActionError.value = "";
+
+  try {
+    const output = await prepareUserAvatarImage(file);
+    revokeAvatarPreview();
+    preparedAvatar.value = output.blob;
+    avatarPreviewUrl.value = URL.createObjectURL(output.blob);
+  } catch (error) {
+    clearPreparedAvatar();
+    avatarActionError.value = error instanceof Error
+      ? error.message
+      : t("auth.profile.avatar.errors.prepare");
+  } finally {
+    avatarPreparing.value = false;
+    input.value = "";
+  }
+}
+
+async function saveAvatar() {
+  if (!preparedAvatar.value || avatar.saving.value) return;
+  avatarActionError.value = "";
+
+  try {
+    await avatar.upload(preparedAvatar.value);
+    clearPreparedAvatar();
+  } catch (error) {
+    avatarActionError.value = error instanceof Error
+      ? error.message
+      : t("auth.profile.avatar.errors.save");
+  }
+}
+
+async function removeAvatar() {
+  if (avatar.saving.value) return;
+  avatarActionError.value = "";
+
+  try {
+    await avatar.remove();
+    clearPreparedAvatar();
+  } catch (error) {
+    avatarActionError.value = error instanceof Error
+      ? error.message
+      : t("auth.profile.avatar.errors.remove");
+  }
+}
+
 onMounted(async () => {
   if (!auth.isLoggedIn.value) return;
 
   try {
-    await auth.refreshAuthorizationState();
+    await Promise.all([
+      auth.refreshAuthorizationState(),
+      avatar.refresh(),
+    ]);
   } catch (error) {
     console.warn("[Prompt Draft] profile refresh failed", error);
   }
+});
+
+onBeforeUnmount(() => {
+  revokeAvatarPreview();
 });
 
 function handleCompleteProfile() {
@@ -97,16 +181,28 @@ async function handleOpenManage() {
 
 async function handleLogout() {
   await auth.logout();
+  avatar.reset();
   emit("close");
 }
 </script>
 
 <template>
   <el-flex rules="csc" :gap="12" :p="16" class="w100" style="min-width: 280px">
+    <input
+      ref="avatarInput"
+      type="file"
+      accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+      class="profile-avatar-input"
+      @change="handleAvatarSelected"
+    >
+
     <el-flex rules="rsc" :gap="10" class="w100">
-      <el-flex rules="rcc" bg="prim15" :radius="100" :p="10">
-        <el-icon icon="account_circle" color="prim" :size="24" />
-      </el-flex>
+      <el-avatar
+        :src="displayedAvatarUrl"
+        :name="displayIdentityLabel"
+        :alt="t('auth.profile.avatar.alt')"
+        size="big"
+      />
       <el-flex rules="ccs" :gap="4" class="fg100">
         <el-text :size="14" :weight="700">{{ displayIdentityLabel }}</el-text>
         <el-text
@@ -118,6 +214,57 @@ async function handleLogout() {
         </el-text>
       </el-flex>
     </el-flex>
+
+    <el-flex rules="rsc" :gap="6" class="w100">
+      <el-button
+        class="fg100"
+        color="normal"
+        mode="flat"
+        icon="photo_camera"
+        :label="avatar.url.value ? t('auth.profile.avatar.change') : t('auth.profile.avatar.choose')"
+        :disable="avatarPreparing || avatar.saving.value"
+        @click="openAvatarPicker"
+      />
+      <el-button
+        v-if="avatar.url.value && !preparedAvatar"
+        color="red"
+        mode="flat"
+        type="fab"
+        icon="delete"
+        :tooltip="t('auth.profile.avatar.remove')"
+        :disable="avatar.saving.value"
+        @click="removeAvatar"
+      />
+    </el-flex>
+
+    <el-flex v-if="preparedAvatar" rules="rsc" :gap="6" class="w100">
+      <el-button
+        class="fg100"
+        color="prim"
+        icon="save"
+        :label="t('auth.profile.avatar.save')"
+        :disable="avatar.saving.value"
+        @click="saveAvatar"
+      />
+      <el-button
+        color="normal"
+        mode="flat"
+        icon="close"
+        :label="t('auth.profile.avatar.cancel')"
+        :disable="avatar.saving.value"
+        @click="clearPreparedAvatar"
+      />
+    </el-flex>
+
+    <el-text v-if="avatarPreparing" :size="10" color="normal55">
+      {{ t("auth.profile.avatar.preparing") }}
+    </el-text>
+    <el-text v-else :size="10" color="normal45">
+      {{ t("auth.profile.avatar.hint") }}
+    </el-text>
+    <el-text v-if="avatarActionError" :size="10" color="red">
+      {{ avatarActionError }}
+    </el-text>
 
     <el-divider />
 
@@ -187,3 +334,13 @@ async function handleLogout() {
     />
   </el-flex>
 </template>
+
+<style scoped>
+.profile-avatar-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+</style>
