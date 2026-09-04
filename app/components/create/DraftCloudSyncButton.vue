@@ -3,30 +3,25 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef } from 
 import type {
   PromptDraftCollection,
   PromptDraftRecord,
-  PromptDraftState,
 } from "~/modules/promptDraft.types";
 import type { UpsertPromptDraftInput } from "~/types/draftSyncApi";
+import {
+  createDraftFingerprint,
+  getDraftState,
+  getDraftSyncEntry,
+  isDraftSyncedForUser,
+  setDraftSyncEntry,
+} from "~/utils/draftCloudSync";
 
 const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
-const DRAFT_SYNC_STORAGE_KEY = "prompt-draft:create-editor:cloud-sync:v1";
 const AUTOSYNC_INTERVAL_MS = 120_000;
 const STATUS_POLL_INTERVAL_MS = 1_000;
 const LOCAL_SAVE_SETTLE_MS = 450;
 
-type DraftSyncMetadataEntry = {
-  fingerprint: string;
-  syncedAt: string;
-  revision: number;
-};
-
-type DraftSyncMetadata = {
-  version: 1;
-  drafts: Record<string, DraftSyncMetadataEntry>;
-};
-
 type DraftCloudStatus = "idle" | "dirty" | "syncing" | "synced" | "error";
 
 const { t } = useI18n();
+const auth = useAuth();
 const { upsertPromptDraft } = usePromptDraftApi();
 
 const teleportTarget = shallowRef<HTMLElement | null>(null);
@@ -39,7 +34,10 @@ let targetObserver: MutationObserver | null = null;
 let autosyncTimer: ReturnType<typeof setInterval> | null = null;
 let statusTimer: ReturnType<typeof setInterval> | null = null;
 
+const currentUserId = computed(() => auth.user.value?.id ?? null);
+
 const buttonLabel = computed(() => {
+  if (!auth.isLoggedIn.value) return t("auth.header.login");
   if (activeStatus.value === "syncing") return t("create.draft.cloud.syncing");
   if (activeStatus.value === "synced") return t("create.draft.cloud.synced");
   if (activeStatus.value === "error") return t("create.draft.cloud.failed");
@@ -48,6 +46,7 @@ const buttonLabel = computed(() => {
 });
 
 const buttonIcon = computed(() => {
+  if (!auth.isLoggedIn.value) return "login";
   if (activeStatus.value === "syncing") return "sync";
   if (activeStatus.value === "synced") return "cloud_done";
   if (activeStatus.value === "error") return "cloud_off";
@@ -55,6 +54,7 @@ const buttonIcon = computed(() => {
 });
 
 const buttonColor = computed(() => {
+  if (!auth.isLoggedIn.value) return "blue";
   if (activeStatus.value === "synced") return "green";
   if (activeStatus.value === "error") return "red";
   if (activeStatus.value === "syncing") return "orange";
@@ -117,63 +117,6 @@ function getActiveDraft(collection = readDraftCollection()) {
   );
 }
 
-function readSyncMetadata(): DraftSyncMetadata {
-  if (!import.meta.client) {
-    return { version: 1, drafts: {} };
-  }
-
-  const raw = localStorage.getItem(DRAFT_SYNC_STORAGE_KEY);
-  if (!raw) return { version: 1, drafts: {} };
-
-  try {
-    const parsed = JSON.parse(raw) as Partial<DraftSyncMetadata>;
-
-    if (parsed.version !== 1 || !isPlainRecord(parsed.drafts)) {
-      return { version: 1, drafts: {} };
-    }
-
-    return {
-      version: 1,
-      drafts: parsed.drafts as Record<string, DraftSyncMetadataEntry>,
-    };
-  } catch {
-    return { version: 1, drafts: {} };
-  }
-}
-
-function writeSyncMetadata(metadata: DraftSyncMetadata) {
-  if (!import.meta.client) return;
-  localStorage.setItem(DRAFT_SYNC_STORAGE_KEY, JSON.stringify(metadata));
-}
-
-function getDraftState(draft: PromptDraftRecord): PromptDraftState {
-  return {
-    version: 1,
-    selectedModuleKeys: draft.selectedModuleKeys,
-    moduleValues: draft.moduleValues,
-    modulePanelStates: draft.modulePanelStates,
-    promptSettings: draft.promptSettings,
-    outputFormat: draft.outputFormat,
-  };
-}
-
-function createDraftFingerprint(draft: PromptDraftRecord) {
-  const serialized = JSON.stringify({
-    id: draft.id,
-    title: draft.title,
-    state: getDraftState(draft),
-  });
-
-  let hash = 2166136261;
-
-  for (let index = 0; index < serialized.length; index += 1) {
-    hash ^= serialized.charCodeAt(index);
-    hash = Math.imul(hash, 16777619);
-  }
-
-  return (hash >>> 0).toString(16).padStart(8, "0");
-}
-
 function toUpsertInput(draft: PromptDraftRecord): UpsertPromptDraftInput {
   return {
     title: draft.title,
@@ -183,69 +126,71 @@ function toUpsertInput(draft: PromptDraftRecord): UpsertPromptDraftInput {
   };
 }
 
-function isDraftSynced(draft: PromptDraftRecord) {
-  const fingerprint = createDraftFingerprint(draft);
-  const metadata = readSyncMetadata();
-  return metadata.drafts[draft.id]?.fingerprint === fingerprint;
+function getSyncKey(userId: string, draftId: string) {
+  return `${userId}:${draftId}`;
 }
 
 function refreshActiveStatus() {
+  const userId = currentUserId.value;
   const draft = getActiveDraft();
 
   activeDraftId.value = draft?.id || null;
 
-  if (!draft) {
+  if (!userId || !draft) {
     activeStatus.value = "idle";
     return;
   }
 
   const fingerprint = createDraftFingerprint(draft);
+  const syncKey = getSyncKey(userId, draft.id);
 
-  if (inFlightDraftIds.has(draft.id)) {
+  if (inFlightDraftIds.has(syncKey)) {
     activeStatus.value = "syncing";
     return;
   }
 
-  if (failedFingerprints.get(draft.id) === fingerprint) {
+  if (failedFingerprints.get(syncKey) === fingerprint) {
     activeStatus.value = "error";
     return;
   }
 
-  activeStatus.value = isDraftSynced(draft) ? "synced" : "dirty";
+  activeStatus.value = isDraftSyncedForUser(userId, draft) ? "synced" : "dirty";
 }
 
 async function syncDraft(draft: PromptDraftRecord, force = false) {
-  if (inFlightDraftIds.has(draft.id)) return true;
+  const userId = currentUserId.value;
+  if (!userId) return false;
+
+  const syncKey = getSyncKey(userId, draft.id);
+  if (inFlightDraftIds.has(syncKey)) return true;
 
   const fingerprint = createDraftFingerprint(draft);
 
-  if (!force && isDraftSynced(draft)) {
+  if (!force && isDraftSyncedForUser(userId, draft)) {
     refreshActiveStatus();
     return true;
   }
 
-  inFlightDraftIds.add(draft.id);
+  inFlightDraftIds.add(syncKey);
   refreshActiveStatus();
 
   try {
     const response = await upsertPromptDraft(draft.id, toUpsertInput(draft));
-    const metadata = readSyncMetadata();
 
-    metadata.drafts[draft.id] = {
+    setDraftSyncEntry(userId, draft.id, {
       fingerprint,
       syncedAt: response.draft.serverUpdatedAt,
       revision: response.draft.revision,
-    };
+    });
 
-    writeSyncMetadata(metadata);
-    failedFingerprints.delete(draft.id);
+    failedFingerprints.delete(syncKey);
     return true;
   } catch (error) {
     console.error("[Prompt Draft] cloud draft sync failed", error);
-    failedFingerprints.set(draft.id, fingerprint);
+    failedFingerprints.set(syncKey, fingerprint);
     return false;
   } finally {
-    inFlightDraftIds.delete(draft.id);
+    inFlightDraftIds.delete(syncKey);
     refreshActiveStatus();
   }
 }
@@ -257,11 +202,15 @@ async function syncActiveDraft(force = true) {
 }
 
 async function syncDirtyDrafts() {
+  const userId = currentUserId.value;
+  if (!userId) return;
+
   const collection = readDraftCollection();
   if (!collection) return;
 
   for (const draft of collection.drafts) {
-    if (isDraftSynced(draft)) continue;
+    if (!getDraftSyncEntry(userId, draft.id)) continue;
+    if (isDraftSyncedForUser(userId, draft)) continue;
 
     const succeeded = await syncDraft(draft, false);
 
@@ -273,6 +222,13 @@ async function syncDirtyDrafts() {
 
 async function handleManualSync() {
   if (!import.meta.client || activeStatus.value === "syncing") return;
+
+  await auth.initialize();
+
+  if (!auth.isLoggedIn.value) {
+    await navigateTo("/login?next=%2Fcreate");
+    return;
+  }
 
   const activeElement = document.activeElement;
   if (activeElement instanceof HTMLElement) activeElement.blur();
@@ -318,6 +274,7 @@ function resolveTeleportTarget() {
 }
 
 onMounted(async () => {
+  await auth.initialize();
   await nextTick();
   resolveTeleportTarget();
 
