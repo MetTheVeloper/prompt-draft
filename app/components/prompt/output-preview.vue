@@ -3,9 +3,11 @@ import { computed, ref, watch } from "vue";
 import type { PromptOutputFormat } from "../../utils/compilePrompt";
 import type { PromptValidationIssue } from "../../utils/promptValidation";
 import { usePromptOutputFormat } from "~/composables/usePromptOutputFormat";
+import { useEmailRequirement } from "~/composables/useEmailRequirement";
 
 const { t } = useI18n();
 const { setPromptOutputFormat } = usePromptOutputFormat();
+const { requireEmail } = useEmailRequirement();
 
 const props = withDefaults(
   defineProps<{
@@ -155,9 +157,7 @@ function issueIcon(issue: PromptValidationIssue) {
   return issue.level === "error" ? "error" : "warning";
 }
 
-async function copyOutput() {
-  if (!canCopy.value) return;
-
+async function performCopyOutput() {
   try {
     if (navigator.clipboard && window.isSecureContext) {
       await navigator.clipboard.writeText(props.output);
@@ -188,6 +188,14 @@ async function copyOutput() {
   }
 }
 
+async function copyOutput() {
+  if (!canCopy.value) return;
+
+  await requireEmail({
+    from: "globalOutputCopy",
+    onCompleted: performCopyOutput,
+  });
+}
 </script>
 
 <template>
