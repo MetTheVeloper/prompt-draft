@@ -3,6 +3,10 @@ import {
   listPromptDrafts,
   upsertPromptDraft,
 } from './database.mjs'
+import {
+  awardCloudDraftCreatedScore,
+  getUserScoreState,
+} from './userScore.mjs'
 
 function isJsonRequest(request) {
   const contentType = request.headers['content-type'] ?? ''
@@ -387,7 +391,27 @@ export async function handleCloudDraftRequest({
         createPromptDraft(draftId, body),
       )
 
-      sendJson(response, 200, { ok: true, draft: savedDraft }, corsHeaders)
+      let score = null
+
+      try {
+        await awardCloudDraftCreatedScore(user.id, draftId)
+        score = await getUserScoreState(user.id)
+      } catch (scoreError) {
+        // Gamification must not make the primary Draft save fail. A later save or
+        // auth refresh will retry the idempotent award and heal the read model.
+        console.error('[Prompt Draft API] draft creation score award failed', scoreError)
+      }
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          draft: savedDraft,
+          ...(score ? { score } : {}),
+        },
+        corsHeaders,
+      )
     } catch (error) {
       console.error('[Prompt Draft API] account draft upsert failed', error)
       sendJson(
