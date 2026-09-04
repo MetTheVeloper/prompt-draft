@@ -1,16 +1,13 @@
-import { readonly, ref } from "vue";
+import { computed, readonly, ref } from "vue";
+import type {
+  TranslatePromptResponse,
+  TranslationSource,
+  TranslationTarget,
+} from "~/types/translationApi";
 
-export type PromptTranslationSource = "auto" | "fa" | "en";
-export type PromptTranslationTarget = "en" | "fa";
-
-export type PromptTranslationApiResponse = {
-  translatedText?: string;
-  alternatives?: string[];
-  detectedLanguage?: {
-    confidence?: number;
-    language?: string;
-  } | null;
-};
+export type PromptTranslationSource = TranslationSource;
+export type PromptTranslationTarget = TranslationTarget;
+export type PromptTranslationApiResponse = TranslatePromptResponse;
 
 export type ProtectedPromptVariableToken = {
   token: string;
@@ -36,12 +33,23 @@ export type PromptTranslationResult = {
   raw: PromptTranslationApiResponse | null;
 };
 
+type TranslationAvailability =
+  | "unknown"
+  | "checking"
+  | "available"
+  | "unavailable";
+
 const VARIABLE_TOKEN_PATTERN = /\{[a-zA-Z][a-zA-Z0-9_]*\}/g;
+const TRANSLATION_STATUS_TTL_MS = 30_000;
+
+const translationAvailability = ref<TranslationAvailability>("unknown");
+let translationStatusCheckedAt = 0;
+let translationStatusPromise: Promise<boolean> | null = null;
 
 function clampAlternatives(value: number | undefined) {
   if (!Number.isFinite(value)) return 3;
 
-  return Math.min(Math.max(Number(value), 0), 5);
+  return Math.min(Math.max(Math.trunc(Number(value)), 0), 5);
 }
 
 function escapeRegExp(value: string) {
@@ -125,9 +133,58 @@ function restoreProtectedTokens(
 }
 
 export function usePromptTranslation() {
+  const api = usePromptDraftApi();
   const isTranslating = ref(false);
   const translationError = ref<unknown>(null);
   const lastTranslation = ref<PromptTranslationResult | null>(null);
+
+  const isTranslationAvailable = computed(() => {
+    return translationAvailability.value === "available";
+  });
+
+  const isCheckingTranslationAvailability = computed(() => {
+    return translationAvailability.value === "checking";
+  });
+
+  async function checkTranslationAvailability(options: { force?: boolean } = {}) {
+    if (!import.meta.client) return false;
+
+    const now = Date.now();
+    const hasFreshStatus =
+      !options.force &&
+      translationAvailability.value !== "unknown" &&
+      translationAvailability.value !== "checking" &&
+      now - translationStatusCheckedAt < TRANSLATION_STATUS_TTL_MS;
+
+    if (hasFreshStatus) {
+      return translationAvailability.value === "available";
+    }
+
+    if (translationStatusPromise) {
+      return translationStatusPromise;
+    }
+
+    translationAvailability.value = "checking";
+
+    translationStatusPromise = (async () => {
+      try {
+        const status = await api.getTranslationStatus();
+        translationAvailability.value = status.available
+          ? "available"
+          : "unavailable";
+        return status.available;
+      } catch (error) {
+        console.warn("Translation service status check failed:", error);
+        translationAvailability.value = "unavailable";
+        return false;
+      } finally {
+        translationStatusCheckedAt = Date.now();
+        translationStatusPromise = null;
+      }
+    })();
+
+    return translationStatusPromise;
+  }
 
   async function translateText(
     options: PromptTranslationOptions
@@ -154,15 +211,15 @@ export function usePromptTranslation() {
     translationError.value = null;
 
     try {
-      const raw = await $fetch<PromptTranslationApiResponse>("/api/translate", {
-        method: "POST",
-        body: {
-          text: protectedPayload.requestText,
-          source: options.source ?? "auto",
-          target: options.target ?? "en",
-          alternatives: clampAlternatives(options.alternatives),
-        },
+      const raw = await api.translatePrompt({
+        text: protectedPayload.requestText,
+        source: options.source ?? "auto",
+        target: options.target ?? "en",
+        alternatives: clampAlternatives(options.alternatives),
       });
+
+      translationAvailability.value = "available";
+      translationStatusCheckedAt = Date.now();
 
       const translatedText = restoreProtectedTokens(
         raw.translatedText || "",
@@ -189,6 +246,8 @@ export function usePromptTranslation() {
       return result;
     } catch (error) {
       translationError.value = error;
+      translationAvailability.value = "unavailable";
+      translationStatusCheckedAt = Date.now();
 
       throw error;
     } finally {
@@ -206,7 +265,13 @@ export function usePromptTranslation() {
     isTranslating: readonly(isTranslating),
     translationError: readonly(translationError),
     lastTranslation: readonly(lastTranslation),
+    translationAvailability: readonly(translationAvailability),
+    isTranslationAvailable: readonly(isTranslationAvailable),
+    isCheckingTranslationAvailability: readonly(
+      isCheckingTranslationAvailability
+    ),
 
+    checkTranslationAvailability,
     translateText,
     clearTranslationState,
 
