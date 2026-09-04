@@ -17,7 +17,7 @@ export default defineNuxtConfig({
   },
   nitro: {
     prerender: {
-      routes: [...publicWizardRoutes, "/login"],
+      routes: [...publicWizardRoutes, "/login", "/dashboard"],
     },
   },
   vite: {
