@@ -8,6 +8,7 @@ import type {
   CompleteAuthProfileInput,
   CompleteAuthProfileResponse,
   IdentifyAuthResponse,
+  RegisterAuthOptions,
 } from "~/types/auth";
 import type {
   AuthGrantedPermission,
@@ -263,13 +264,22 @@ export function useAuth() {
     }
   }
 
-  async function register(identifier: string, password: string) {
+  async function register(
+    identifier: string,
+    password: string,
+    options: RegisterAuthOptions = {},
+  ) {
     authState.loading = true;
 
     try {
+      const referralUsername = options.referralUsername?.trim();
       const response = await $fetch<AuthSessionResponse>(endpoint("/api/auth/register"), {
         method: "POST",
-        body: { identifier, password },
+        body: {
+          identifier,
+          password,
+          ...(referralUsername ? { referralUsername } : {}),
+        },
       });
       return await applySession(response);
     } finally {
