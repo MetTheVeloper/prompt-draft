@@ -111,7 +111,7 @@ async function handleLogout() {
       class="w100"
       color="blue"
       icon="admin_panel_settings"
-      label="Manage"
+      :label="t('manage.title')"
       @click="handleOpenManage"
     />
 
