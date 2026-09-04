@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import { handleAuthRequest } from './auth.mjs'
 import {
   getDatabaseStatus,
   getPromptDraftById,
@@ -29,7 +30,7 @@ function getCorsHeaders(request) {
   return {
     'Access-Control-Allow-Origin': origin,
     'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     Vary: 'Origin',
   }
 }
@@ -493,6 +494,18 @@ const server = createServer(async (request, response) => {
       )
     }
 
+    return
+  }
+
+  if (
+    await handleAuthRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
     return
   }
 
