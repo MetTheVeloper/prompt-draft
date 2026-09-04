@@ -37,6 +37,7 @@ export default {
       username: "Username",
       email: "Email",
       xp: "XP",
+      invitedUsers: "Invited users",
       memberSince: "Member since",
       complete: "Complete profile",
       logout: "Sign out",
