@@ -73,8 +73,7 @@ export type PromptArchiveDetailResponse = {
 
 export type PromptArchiveReadSource = 'api' | 'fallback'
 
-// Legacy V2 snapshot contract. This remains migration/fallback input only;
-// Prompt Archive UI consumes the normalized contracts above.
+// Legacy V2 snapshot contract. This remains migration/backward-compatible input only.
 export type PromptArchiveLegacyItem = {
   id: number
   titleKey: string
@@ -91,6 +90,22 @@ export type PromptArchiveLegacyItem = {
   variants?: PromptArchiveVariant[]
 }
 
+export type PromptArchiveSnapshotItem = {
+  id: number
+  title: PromptArchiveLocalizedTitle
+  sourceTitle: string
+  publishedAt: string
+  telegramUrl: string
+  model: {
+    previewGeneratedWith: PromptArchiveModel
+    optimizedFor: PromptArchiveModel[]
+  }
+  images: PromptArchiveImage[]
+  prompt: string
+  tags: string[]
+  variants: PromptArchiveVariant[]
+}
+
 export type PromptArchiveModelHistoryItem = {
   fromMessageId: number
   toMessageId?: number
@@ -100,10 +115,20 @@ export type PromptArchiveModelHistoryItem = {
   optimizedFor: PromptArchiveModel[]
 }
 
-export type PromptArchivePayload = {
+export type PromptArchiveLegacyPayload = {
   schemaVersion: number
   channel: string
   updatedAt: string
   modelHistory: PromptArchiveModelHistoryItem[]
   items: PromptArchiveLegacyItem[]
 }
+
+export type PromptArchiveSnapshotPayload = {
+  schemaVersion: 3
+  channel: string
+  updatedAt: string
+  modelHistory: PromptArchiveModelHistoryItem[]
+  items: PromptArchiveSnapshotItem[]
+}
+
+export type PromptArchivePayload = PromptArchiveLegacyPayload | PromptArchiveSnapshotPayload
