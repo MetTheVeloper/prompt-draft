@@ -39,6 +39,12 @@ import type {
   ListWizardRunsResponse,
 } from "~/types/wizardRunApi";
 
+type ResolveAdminArchiveResponse = {
+  ok: true;
+  id: string;
+  telegramMessageId: number;
+};
+
 function normalizeApiBase(value: unknown) {
   const base = typeof value === "string" ? value.trim() : "";
   return base.replace(/\/+$/, "");
@@ -280,6 +286,13 @@ export function usePromptDraftApi() {
     );
   }
 
+  function resolveAdminArchiveByTelegramId(telegramMessageId: number) {
+    return $fetch<ResolveAdminArchiveResponse>(
+      endpoint(`/api/admin/archive/telegram/${telegramMessageId}`),
+      { headers: auth.authHeaders() },
+    );
+  }
+
   function getAdminArchiveTags() {
     return $fetch<AdminArchiveTagsResponse>(endpoint("/api/admin/archive/tags"), {
       headers: auth.authHeaders(),
@@ -374,6 +387,7 @@ export function usePromptDraftApi() {
     resetAdminUserCloudData,
     listAdminArchive,
     getAdminArchive,
+    resolveAdminArchiveByTelegramId,
     getAdminArchiveTags,
     createAdminArchive,
     updateAdminArchive,
