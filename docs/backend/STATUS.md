@@ -11,16 +11,14 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ## Current checkpoint
 
 ```text
-Milestones 1–15: COMPLETE / locally verified
+Milestones 1–16: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-Milestone 16: Referral Foundation
-  -> IMPLEMENTED
-  -> LOCAL VERIFICATION PENDING
+No active backend milestone currently selected
 ```
 
-The latest completed product change is Milestone 15: the XP / Score Event Ledger Foundation, including account/email rewards, idempotent Cloud Draft creation XP, and hardened frontend score hydration.
+The latest completed product change is Milestone 16: the Referral Foundation, including username-based referral signup, persisted user-id relationships, idempotent +500 / +1000 XP rewards, and authoritative invited-user counts in Profile Menu.
 
-Active work is Milestone 16: username-based referrals with persisted user-id relationships and +500 / +1000 XP rewards.
+The user explicitly accepted Milestone 16 as DONE on 2026-09-04, including successful final `pnpm generate`.
 
 ## Reusable guides
 
@@ -315,9 +313,9 @@ Detailed milestone:
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 ```
 
-## Milestone 16 — IN PROGRESS: Referral Foundation
+## Milestone 16 — COMPLETE: Referral Foundation
 
-Current implementation:
+Verified implementation:
 
 ```text
 012_create_referrals.sql
@@ -334,6 +332,10 @@ referred user -> +500 XP
 referrer -> +1000 XP
 registration UI adds optional referral field after Repeat Password
 EN/FA referral registration copy and error handling
+backend referrals read model exposes referrals.referredCount
+Profile Menu shows localized Invited users count
+Profile Menu refreshes the authoritative count through /api/auth/me
+final pnpm generate succeeds
 ```
 
 Current semantics:
@@ -351,8 +353,6 @@ Detailed milestone:
 ```text
 docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
 ```
-
-Milestone 16 remains open until local verification succeeds.
 
 ## Manage track closure
 
@@ -390,7 +390,7 @@ large client chunks
 Current deferred candidates include:
 
 ```text
-referral links / referral UI / anti-abuse eligibility rules
+referral links / invite-list UI / anti-abuse eligibility rules
 user_events behavioral analytics foundation
 site visits / page views / activity metrics
 translation request/success/failure metrics
@@ -415,25 +415,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Milestone 16 requires local verification of:
+No Milestone 17 is selected yet.
 
-```text
-012 migration
-normal registration without referral
-optional referral field placement and EN/FA rendering
-invalid / nonexistent referral rejection without account creation
-valid username-only referral signup -> 1500 XP
-valid email referral signup -> 2500 XP
-referrer +1000 XP
-persisted referral relation provenance
-exactly-once referral_joined / referral_reward ledger events
-direct self-referral rejection
-suspended referrer rejection
-Docker persistence
-final pnpm generate
-```
-
-Do not choose or start Milestone 17 until the user closes Milestone 16.
+Do not start a deferred feature automatically. The next direction must be chosen explicitly with the user.
 
 ## New-chat handoff
 
