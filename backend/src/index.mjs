@@ -2,9 +2,11 @@ import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import {
   getDatabaseStatus,
+  getPromptDraftById,
   getWizardRunById,
   insertWizardRun,
   listWizardRuns,
+  upsertPromptDraft,
 } from './database.mjs'
 
 const host = process.env.HOST ?? '0.0.0.0'
@@ -26,7 +28,7 @@ function getCorsHeaders(request) {
 
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
     Vary: 'Origin',
   }
@@ -66,6 +68,32 @@ function isUuid(value) {
     typeof value === 'string' &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
   )
+}
+
+function parsePromptDraftId(value) {
+  try {
+    const decoded = decodeURIComponent(value).trim()
+
+    if (
+      decoded.length === 0 ||
+      decoded.length > 200 ||
+      /[\u0000-\u001f\u007f]/.test(decoded)
+    ) {
+      return null
+    }
+
+    return decoded
+  } catch {
+    return null
+  }
+}
+
+function normalizeIsoTimestamp(value) {
+  if (typeof value !== 'string' || Number.isNaN(Date.parse(value))) {
+    return null
+  }
+
+  return new Date(value).toISOString()
 }
 
 function encodeWizardRunCursor(run) {
@@ -263,6 +291,108 @@ function validateWizardRunInput(body) {
   return errors
 }
 
+function validatePromptDraftSnapshot(snapshot) {
+  const errors = []
+
+  if (!isPlainObject(snapshot)) {
+    return [
+      {
+        field: 'snapshot',
+        message: 'snapshot must be an object',
+      },
+    ]
+  }
+
+  if (snapshot.version !== 1) {
+    errors.push({
+      field: 'snapshot.version',
+      message: 'snapshot.version must be 1',
+    })
+  }
+
+  if (
+    !Array.isArray(snapshot.selectedModuleKeys) ||
+    snapshot.selectedModuleKeys.some((value) => typeof value !== 'string')
+  ) {
+    errors.push({
+      field: 'snapshot.selectedModuleKeys',
+      message: 'snapshot.selectedModuleKeys must be an array of strings',
+    })
+  }
+
+  if (!isPlainObject(snapshot.moduleValues)) {
+    errors.push({
+      field: 'snapshot.moduleValues',
+      message: 'snapshot.moduleValues must be an object',
+    })
+  }
+
+  if (!isPlainObject(snapshot.modulePanelStates)) {
+    errors.push({
+      field: 'snapshot.modulePanelStates',
+      message: 'snapshot.modulePanelStates must be an object',
+    })
+  }
+
+  if (!isPlainObject(snapshot.promptSettings)) {
+    errors.push({
+      field: 'snapshot.promptSettings',
+      message: 'snapshot.promptSettings must be an object',
+    })
+  }
+
+  if (!['modular', 'natural', 'json'].includes(snapshot.outputFormat)) {
+    errors.push({
+      field: 'snapshot.outputFormat',
+      message: 'snapshot.outputFormat must be modular, natural, or json',
+    })
+  }
+
+  return errors
+}
+
+function validatePromptDraftInput(body) {
+  const errors = []
+
+  if (!isPlainObject(body)) {
+    return [
+      {
+        field: 'body',
+        message: 'JSON body must be an object',
+      },
+    ]
+  }
+
+  if (
+    typeof body.title !== 'string' ||
+    body.title.trim().length === 0 ||
+    body.title.trim().length > 500
+  ) {
+    errors.push({
+      field: 'title',
+      message: 'title must be a non-empty string up to 500 characters',
+    })
+  }
+
+  if (!normalizeIsoTimestamp(body.createdAt)) {
+    errors.push({
+      field: 'createdAt',
+      message: 'createdAt must be a valid timestamp',
+    })
+  }
+
+  if (!normalizeIsoTimestamp(body.updatedAt)) {
+    errors.push({
+      field: 'updatedAt',
+      message: 'updatedAt must be a valid timestamp',
+    })
+  }
+
+  errors.push(...validatePromptDraftSnapshot(body.snapshot))
+
+  return errors
+}
+
 function normalizeWizardRunSnapshot(snapshot) {
   return {
     schemaVersion: 1,
@@ -275,6 +405,17 @@ function normalizeWizardRunSnapshot(snapshot) {
   }
 }
 
+function normalizePromptDraftSnapshot(snapshot) {
+  return {
+    version: 1,
+    selectedModuleKeys: snapshot.selectedModuleKeys,
+    moduleValues: snapshot.moduleValues,
+    modulePanelStates: snapshot.modulePanelStates,
+    promptSettings: snapshot.promptSettings,
+    outputFormat: snapshot.outputFormat,
+  }
+}
+
 function createWizardRun(body) {
   return {
     id: randomUUID(),
@@ -283,6 +424,16 @@ function createWizardRun(body) {
     wizardVersion: body.wizardVersion,
     output: body.output,
     snapshot: normalizeWizardRunSnapshot(body.snapshot),
+  }
+}
+
+function createPromptDraft(id, body) {
+  return {
+    id,
+    title: body.title.trim(),
+    createdAt: normalizeIsoTimestamp(body.createdAt),
+    updatedAt: normalizeIsoTimestamp(body.updatedAt),
+    snapshot: normalizePromptDraftSnapshot(body.snapshot),
   }
 }
 
@@ -337,6 +488,142 @@ const server = createServer(async (request, response) => {
         {
           ok: false,
           message: 'Database unavailable',
+        },
+        corsHeaders,
+      )
+    }
+
+    return
+  }
+
+  const promptDraftDetailMatch = url.pathname.match(/^\/api\/drafts\/([^/]+)$/)
+
+  if (promptDraftDetailMatch && ['GET', 'PUT'].includes(request.method ?? '')) {
+    const draftId = parsePromptDraftId(promptDraftDetailMatch[1])
+
+    if (!draftId) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Invalid draft id',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    if (request.method === 'GET') {
+      try {
+        const draft = await getPromptDraftById(draftId)
+
+        if (!draft) {
+          sendJson(
+            response,
+            404,
+            {
+              ok: false,
+              message: 'Draft not found',
+            },
+            corsHeaders,
+          )
+          return
+        }
+
+        sendJson(
+          response,
+          200,
+          {
+            ok: true,
+            draft,
+          },
+          corsHeaders,
+        )
+      } catch (error) {
+        console.error('[Prompt Draft API] draft detail failed', error)
+
+        sendJson(
+          response,
+          500,
+          {
+            ok: false,
+            message: 'Failed to read draft',
+          },
+          corsHeaders,
+        )
+      }
+
+      return
+    }
+
+    if (!isJsonRequest(request)) {
+      sendJson(
+        response,
+        415,
+        {
+          ok: false,
+          message: 'Content-Type must be application/json',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    let body
+
+    try {
+      body = await readJsonBody(request)
+    } catch {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Request body must contain valid JSON',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    const validationErrors = validatePromptDraftInput(body)
+
+    if (validationErrors.length > 0) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    try {
+      const savedDraft = await upsertPromptDraft(createPromptDraft(draftId, body))
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          draft: savedDraft,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] draft upsert failed', error)
+
+      sendJson(
+        response,
+        500,
+        {
+          ok: false,
+          message: 'Failed to save draft',
         },
         corsHeaders,
       )
