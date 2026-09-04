@@ -83,8 +83,8 @@ export function usePromptDraftApi() {
     );
   }
 
-  function upsertPromptDraft(id: string, input: UpsertPromptDraftInput) {
-    return $fetch<UpsertPromptDraftResponse>(
+  async function upsertPromptDraft(id: string, input: UpsertPromptDraftInput) {
+    const response = await $fetch<UpsertPromptDraftResponse>(
       endpoint(`/api/drafts/${encodeURIComponent(id)}`),
       {
         method: "PUT",
@@ -92,6 +92,12 @@ export function usePromptDraftApi() {
         body: input,
       },
     );
+
+    if (response.score) {
+      auth.applyScoreState(response.score);
+    }
+
+    return response;
   }
 
   function getPromptDraft(id: string) {
