@@ -123,7 +123,7 @@ async function submit() {
         type="text"
         :actions="false"
         :placeholder="t('auth.profileCompletion.usernamePlaceholder')"
-        :disable="submitting"
+        :disabled="submitting"
         @update:model-value="resetError"
       />
       <el-text :size="10" color="normal45">
@@ -138,10 +138,10 @@ async function submit() {
       <el-text-field
         v-model="email"
         class="w100"
-        type="email"
+        type="text"
         :actions="false"
         :placeholder="t('auth.profileCompletion.emailPlaceholder')"
-        :disable="submitting"
+        :disabled="submitting"
         @update:model-value="resetError"
       />
     </el-flex>
