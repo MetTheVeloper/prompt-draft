@@ -21,6 +21,16 @@ export const USER_SCORE_RULES = Object.freeze({
     points: 50,
     sourceType: 'prompt_draft',
   }),
+  REFERRAL_JOINED: Object.freeze({
+    eventType: 'referral_joined',
+    points: 500,
+    sourceType: 'referral',
+  }),
+  REFERRAL_REWARD: Object.freeze({
+    eventType: 'referral_reward',
+    points: 1000,
+    sourceType: 'referral',
+  }),
 })
 
 function normalizeMetadata(metadata) {
