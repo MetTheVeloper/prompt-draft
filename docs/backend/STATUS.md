@@ -1,432 +1,308 @@
 # Backend / Docker Status
 
-Last updated: 2026-09-04
+Last updated: 2026-09-05
 
 Branch: `feature/docker-local-api`
 
 ## Verification rule
 
-A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is never sufficient.
+A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. Code creation alone is never sufficient. `pnpm generate` remains a release invariant for frontend-affecting work.
 
 ## Current checkpoint
 
 ```text
 Milestones 1–16: COMPLETE / locally verified
-Prompt/Collage access gates + 403/404 error surfaces: COMPLETE / locally verified
-Milestone 17 — Prompt Archive Platform: PLANNED / NOT STARTED
+Milestone 17 — Prompt Archive Platform: DONE / locally verified
+Milestone 18 — User Avatar Foundation: DONE / locally verified
+Milestone 19 — Public User Profiles + Cover Media: DONE / locally verified
 ```
 
-The current verified frontend access baseline includes:
+The user explicitly confirmed the final Milestone 19 UX/polish behavior and a successful `pnpm generate` on 2026-09-05.
+
+No next milestone is selected yet. The next chat should start from the verified platform below and wait for the user's next product direction before changing code.
+
+## Current verified platform
 
 ```text
-/prompts Header entry remains visible to everyone
-/prompts archive content requires logged-in account + email
-missing access -> promptArchive Email Requirement modal + blocked state
-Prompt Draft on Telegram action is available from blocked state
-/collage is visible/accessible only with collage.view
-403 and 404 render the dedicated EL-system error page
+static Nuxt frontend
+  -> browser HTTP/CORS
+  -> independent Node API :4000
+  -> auth / authorization / validation
+  -> PostgreSQL
+  -> Arvan Object Storage for managed media
+  -> static/local fallback where explicitly designed
 ```
 
-The user explicitly verified these behaviors and a successful `pnpm generate` on 2026-09-04.
+Important invariants:
 
-Milestone 17 has now been explicitly selected by the user. It reopens Manage only for the new permission-aware `/manage/archive` section and moves Prompt Archive data toward PostgreSQL/API source of truth with local JSON/images retained as a fallback snapshot.
+```text
+Nuxt static generation remains supported
+backend authorization is authoritative
+Cloud Drafts remain account-owned/private unless explicitly published
+public profile APIs never expose email/private Drafts to visitors
+storage credentials remain backend-only
+new schema changes use new numbered SQL files
+important XP/reward events require idempotency semantics
+```
 
-Detailed plan:
+## Milestones 1–16 — verified foundation
+
+The established platform before Archive/profile-media work includes:
+
+```text
+Docker/PostgreSQL backend foundation
+Wizard run persistence + History
+optional Auth + Cloud Draft sync
+server-side translation
+roles/permissions
+Manage shell + Users + Dashboard
+progressive username/email profile completion
+append-only XP/event ledger
+referral foundation
+Prompt/Collage access gates and dedicated 403/404 surfaces
+```
+
+Detailed milestone records remain in `docs/backend/MILESTONE_*.md`.
+
+## Milestone 17 — DONE: Prompt Archive Platform
+
+Prompt Archive is now a complete subsystem rather than a static JSON-only feature.
+
+Verified architecture:
+
+```text
+PostgreSQL = authoritative Archive source
+/api/archive = server-side list/detail/search/filter/pagination
+/prompts = API-first repository
+public/data/prompts.json = generated fallback snapshot
+/manage/archive = permission-aware content management
+Arvan Object Storage = managed Archive media
+```
+
+Archive permissions:
+
+```text
+archive.view
+archive.manage
+```
+
+Verified Manage behavior includes:
+
+```text
+create/edit Drafts
+explicit publish/archive state changes
+EN/FA titles stored with dynamic content
+canonical tags
+browser image preparation
+full + thumbnail WebP upload
+reorder/delete persisted media
+audit events
+/manage/archive?edit=<telegram-id> deep links
+Admin/Super Admin edit FAB on /prompts
+server-side cursor pagination
+```
+
+Archive image preparation:
+
+```text
+input: jpg/jpeg/png/webp
+full: max edge 2048, WebP quality 0.60, no upscale
+thumbnail: max edge 640, WebP quality 0.72, no upscale
+```
+
+Storage capability was locally verified against the real Arvan bucket with:
+
+```text
+HeadBucket
+PutObject
+HeadObject
+signed GetObject
+anonymous PublicGet
+DeleteObject
+```
+
+Snapshot closure:
+
+```text
+pnpm archive:snapshot
+-> public/data/prompts.json schemaVersion 3
+-> localized title.en/title.fa
+-> published DB parity
+-> managed media mirrored to public/prompts/_snapshot/...
+-> legacy media retained under existing local paths
+```
+
+The user verified `PARITY_OK`, API-off fallback mode, local mirrored managed media, and final static generation.
+
+Primary docs:
 
 ```text
 docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+docs/backend/MILESTONE_17_PHASE_17A.md
+docs/backend/MILESTONE_17_PHASE_17B.md
+docs/backend/MILESTONE_17_PHASE_17C.md
+docs/backend/MILESTONE_17_PHASE_17D.md
+docs/backend/MILESTONE_17_PHASE_17E.md
 ```
+
+## Milestone 18 — DONE: User Avatar Foundation
+
+Users now have an optional avatar. No stored default avatar is created.
+
+Verified contract:
+
+```text
+JPEG/PNG/WebP input
+center crop
+exact 400x400 WebP
+quality 0.60
+backend validates WebP dimensions
+Arvan storage under avatars/<user-uuid>/<immutable-uuid>.webp
+replace/remove support
+Header uses reusable el-avatar
+Profile Menu uses reusable el-avatar
+Manage user information can render the same component
+initials -> person icon fallback when no image exists
+```
+
+API:
+
+```text
+GET    /api/profile/avatar
+POST   /api/profile/avatar
+DELETE /api/profile/avatar
+```
+
+Detailed source:
+
+```text
+docs/backend/MILESTONE_18_USER_AVATAR.md
+```
+
+## Milestone 19 — DONE: Public User Profiles + Cover Media
+
+Public profile route:
+
+```text
+/user?id=<USER_UUID>
+```
+
+Public profile privacy boundary:
+
+```text
+owner   -> all own Cloud Draft summaries
+visitor -> public Draft summaries only
+```
+
+Existing and newly-created Cloud Drafts default to:
+
+```text
+visibility = private
+```
+
+Draft publication is explicit through the owner-only visibility mutation. Visitor filtering is enforced in backend/PostgreSQL queries, not by frontend hiding.
+
+Public profile responses do not expose account email. When a user has no username, public UI uses a generic localized fallback name instead of the email.
+
+Cover contract:
+
+```text
+optional cover
+full WebP: max edge 2048, quality 0.60, no upscale
+thumbnail WebP: max edge 640, quality 0.72, no upscale
+aspect ratio preserved
+Arvan storage under covers/<user-uuid>/<immutable-cover-uuid>/...
+```
+
+Verified Profile Menu composition:
+
+```text
+cover thumbnail
+avatar overlapping cover edge
+independent avatar/cover choose/save/remove flows
+compact size=12 Save buttons
+FAB Cancel actions
+View profile action
+```
+
+Verified `/user` presentation:
+
+```text
+Awwwards-like full-screen cover hero
+large centered el-avatar focal point
+centered identity hierarchy
+creator/member-since metadata
+XP/public/total Draft stats
+Saved Draft cards
+owner-only public/private controls
+no Draft UUID exposed in card UI
+```
+
+The shared canvas slider now has intentional single-source behavior:
+
+```text
+pan start -> ease to end -> ease back to start -> repeat
+```
+
+Multi-source transition behavior remains unchanged.
+
+No XP is awarded for public/private visibility toggles. A future Share Draft reward must use a separate idempotent event rather than a farmable toggle.
+
+Detailed source:
+
+```text
+docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
+```
+
+## Current SQL history
+
+Development migrations run lexically:
+
+```text
+001_create_wizard_runs.sql
+002_create_prompt_drafts.sql
+003_create_auth.sql
+004_scope_prompt_drafts_to_users.sql
+005_add_user_roles.sql
+006_add_admin_user_indexes.sql
+007_add_user_status_and_admin_audit.sql
+008_progressive_user_profile.sql
+009_user_score_events.sql
+010_score_identity_triggers.sql
+011_score_cloud_draft_creation.sql
+012_create_referrals.sql
+013_prompt_archive_foundation.sql
+014_archive_media_storage_keys.sql
+015_user_avatar.sql
+016_public_user_profiles.sql
+```
+
+Do not rewrite applied migration history. Add a new numbered migration for future schema changes.
 
 ## Reusable guides
 
-General API/backend work:
+General backend/API work:
 
 ```text
 docs/backend/API_GUIDE.md
 ```
 
-Manage/admin workspace work:
+Manage/admin work:
 
 ```text
 docs/backend/MANAGE_GUIDE.md
 ```
 
-Do not rediscover the Manage shell/users/dashboard architecture when adding `/manage/archive`. Start from `MANAGE_GUIDE.md`.
-
-## Milestones 1–5 — COMPLETE
-
-Verified Docker/PostgreSQL foundation and Wizard-run reference implementation:
+Current architecture/implementation references:
 
 ```text
-independent Docker API :4000
-browser CORS
-PostgreSQL + named-volume persistence
-Wizard-run durable writes
-cursor-paginated History reads
-typed frontend API boundary
-static-safe History UI
+docs/backend/README.md
+docs/backend/IMPLEMENTATION.md
 ```
-
-## Milestone 6 — COMPLETE: Auth + Cloud Draft Sync
-
-Verified:
-
-```text
-optional auth
-account-owned Cloud Drafts
-dirty-aware autosync
-GET /api/drafts recovery
-same-account multi-device merge
-Drafts-menu Cloud state UI
-pnpm generate
-```
-
-## Milestone 7 — COMPLETE: Server-side Translation
-
-Verified:
-
-```text
-Docker-private LibreTranslate
-backend translation/status API
-real TextField translation through :4000
-{person} token preservation
-translator stop/start health UX
-anonymous availability
-pnpm generate
-```
-
-## Milestone 8 — COMPLETE: Authorization / Roles
-
-Roles:
-
-```text
-user
-admin
-super_admin
-```
-
-Current backend permission policy includes:
-
-```text
-user
-  -> no privileged permissions
-
-admin
-  -> dashboard.view
-  -> system.metrics.view
-  -> users.view
-  -> collage.view
-
-super_admin
-  -> *
-```
-
-Authorization remains enforced at:
-
-```text
-UI visibility
-frontend route guard
-backend permission guard (authoritative)
-```
-
-## Milestone 9 — COMPLETE: Manage Shell
-
-Verified:
-
-```text
-/manage
-/manage/dashboard
-/dashboard compatibility redirect
-permission-aware Manage section navigation
-Profile Menu Manage entry
-normal-user denial
-pnpm generate
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_9_MANAGE_SHELL.md
-```
-
-## Milestone 10 — COMPLETE: Manage Users Read Foundation
-
-Verified:
-
-```text
-/manage/users
-users.view
-server-side search/filter
-cursor pagination
-admin user detail API
-read-model counts
-EL design-system UI
-normal-user denial
-static generation
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_10_MANAGE_USERS.md
-```
-
-## Milestone 11 — COMPLETE: User Administration Actions
-
-Verified:
-
-```text
-users.status -> active | suspended
-admin_audit_log
-Change role
-Suspend / Unsuspend
-suspended-account login denial
-Revoke sessions
-Reset Cloud data
-Information central modal
-self-management UI protection
-backend self/super-admin safety rules
-admin audit rows
-Profile Menu follow-up UI
-pnpm generate
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md
-```
-
-## Milestone 12 — COMPLETE: Manage Dashboard Summary
-
-Verified Dashboard API:
-
-```text
-GET /api/admin/dashboard/summary
-requires: system.metrics.view
-```
-
-Verified metric set:
-
-```text
-Total users
-Active accounts
-Suspended accounts
-New users today
-Active sessions
-Cloud drafts
-Drafts updated today
-Admin actions today
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
-```
-
-## Milestone 13 — COMPLETE: History Workflow
-
-Verified behavior:
-
-```text
-History removed from global Header navigation
-History entry moved into Drafts menu
-/history list rebuilt with EL component system
-/history?run=<id> detail rebuilt with EL component system
-light/dark compiled-prompt text fixed
-Stored Snapshot removed from product UI
-Edit in Create available from list and detail
-Wizard run finalDraft restores as a new editable local Draft
-historical Wizard run remains immutable
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
-```
-
-## Milestone 14 — COMPLETE: Progressive User Profile Foundation
-
-Verified foundation:
-
-```text
-008_progressive_user_profile.sql
-users may hold username only / email only / both
-at least one identity remains required
-users.updated_at added
-POST /api/auth/profile/complete
-Auth responses expose profile supported/completed/missing fields
-existing identity values are immutable through completion endpoint
-case-insensitive uniqueness remains authoritative
-reusable backend profile-requirement helpers
-reusable frontend useProfileRequirements()
-Global Modal progressive-completion form
-Profile Menu Complete profile entry when fields are missing
-EN/FA completion UI
-```
-
-Verified reusable email gate:
-
-```text
-useEmailRequirement()
-EmailRequirementModal.vue
-Global Output Copy requires email
-missing email -> modal -> complete profile -> copy continuation
-existing email -> direct copy
-anonymous -> sign-in/account requirement UI
-```
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
-```
-
-## Milestone 15 — COMPLETE: XP / Score Event Ledger Foundation
-
-Verified implementation:
-
-```text
-009_user_score_events.sql
-010_score_identity_triggers.sql
-011_score_cloud_draft_creation.sql
-append-only user_score_events ledger
-per-user idempotency keys
-existing-user XP backfill
-existing-Cloud-Draft XP backfill
-account created -> +1000 XP
-email added -> +1000 XP
-Cloud Draft created -> +50 XP exactly once per Draft
-backend userScore.mjs reusable award/read service
-Auth responses expose score.totalXp + score.eventCount
-Cloud Draft save response can expose refreshed score
-useAuth exposes score + totalXp + refresh/apply score helpers
-Profile Menu refreshes authoritative Auth score when opened
-unknown score state does not render a false zero
-```
-
-Current score semantics:
-
-```text
-username-only account -> 1000 XP
-account with email -> 2000 XP
-adding email later -> +1000 exactly once
-first server save of each distinct Cloud Draft -> +50 exactly once
-later saves/retries/autosaves of the same Draft -> no additional creation XP
-```
-
-Product decision:
-
-```text
-draft changed/saved +10 -> DROPPED
-```
-
-Routine Draft edits/autosaves will not award XP. Future rewards should be attached to more meaningful milestones with clear anti-farming/idempotency semantics.
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_15_SCORE_LEDGER.md
-```
-
-## Milestone 16 — COMPLETE: Referral Foundation
-
-Verified implementation:
-
-```text
-012_create_referrals.sql
-referrals table with user-id relationships
-username acts as the referral input/code
-one referrer per referred account
-DB-level no-self-referral constraint
-active referrer required
-POST /api/auth/register accepts optional referralUsername
-invalid / missing / direct self referral aborts registration
-referral-aware user + relation creation uses one PostgreSQL write statement
-referral relation trigger awards XP through user_score_events
-referred user -> +500 XP
-referrer -> +1000 XP
-registration UI adds optional referral field after Repeat Password
-EN/FA referral registration copy and error handling
-backend referrals read model exposes referrals.referredCount
-Profile Menu shows localized Invited users count
-Profile Menu refreshes the authoritative count through /api/auth/me
-final pnpm generate succeeds
-```
-
-Current semantics:
-
-```text
-username-only signup + referral -> 1500 XP
-email signup + referral         -> 2500 XP
-accepted referral               -> referrer +1000 XP
-```
-
-The username entered during signup is retained as `referral_username_used`, but the authoritative referral relationship uses `referrer_user_id` and `referred_user_id` UUIDs.
-
-Detailed milestone:
-
-```text
-docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
-```
-
-## Milestone 17 — PLANNED: Prompt Archive Platform
-
-Selected direction:
-
-```text
-PostgreSQL becomes the authoritative Prompt Archive data source
-/prompts becomes server-first with local JSON/images fallback
-list/detail API split + server-side search/filter/pagination
-localized titles stored with Archive content, not runtime i18n keys
-current JSON + EN/FA locale titles imported automatically
-canonical tag catalog seeded from all current JSON tags
-/manage/archive added through existing Manage architecture
-archive.view / archive.manage permission model
-admin audit for privileged Archive mutations
-local Archive image preparation before cloud upload
-jpg/jpeg/png/webp input only
-file picker + multi-file drag/drop + clipboard paste
-full WebP output with mandatory quality 0.6
-thumbnail WebP generation
-preview/remove/reorder
-future ArvanCloud/Object Storage adapter with backend-only credentials
-existing local JSON/images retained as deploy fallback snapshot
-```
-
-Implementation is phase-based. Start with data/import parity; do not jump directly to Object Storage.
-
-Detailed source of truth:
-
-```text
-docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
-```
-
-## Manage baseline and Milestone 17 reopening
-
-The verified Manage foundation remains complete:
-
-```text
-shell
-permission-aware sections
-Users read model
-Users administration actions
-mutation safety
-audit logging
-Dashboard persisted-data metrics
-EL component-system UI
-Global Menu/Modal integration
-English/Persian localization
-static generation
-```
-
-Milestone 17 explicitly reopens Manage for `/manage/archive`. Future Archive Manage work must follow `MANAGE_GUIDE.md`; do not redesign the shell.
 
 ## Known non-blocking build warnings
 
-Existing warnings remain accepted unless their behavior changes:
+These existing warnings remain accepted unless their behavior changes:
 
 ```text
 duplicated compilePromptOutput auto-import
@@ -435,45 +311,36 @@ Nitro cache-driver external-resolution warning
 large client chunks
 ```
 
-## Deferred platform/product queue
+## Deferred product/platform queue
 
-Current deferred candidates include:
+Examples still intentionally deferred unless the user selects them:
 
 ```text
-referral links / invite-list UI / anti-abuse eligibility rules
-user_events behavioral analytics foundation
+referral links / richer invite UI / anti-abuse eligibility
+user_events behavioral analytics
 site visits / page views / activity metrics
-translation request/success/failure metrics
-user consent foundation (marketing / analytics / model training)
+translation metrics
+consent foundation
 phone/contact model + verification
 email verification / password recovery / OAuth
-leaderboards / levels / badges / streaks / additional meaningful XP events
-score history / admin score adjustment tooling
-account deletion / full destructive account lifecycle
+leaderboards / levels / badges / streaks
+additional meaningful XP events
+score history / admin score adjustments
+account deletion lifecycle
 admin audit-log UI
 /manage/system
-/manage/content beyond the selected Archive section
 stronger Cloud Draft conflict handling
 production auth/translation rate limiting
 production migration framework
-production deployment / secrets / domain / HTTPS
+production backend deployment / domain / HTTPS
 Redis
-Email Requirement modal visual polish
 ```
-
-The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
-
-## Next action
-
-Start Milestone 17 in a new chat with **Phase 17A — Archive data foundation + import**.
-
-Before changing code, read the six handoff documents below and inspect the current JSON/archive/converter/multi-select/Manage implementation. Confirm schema/import semantics before implementation.
-
-Do not start cloud storage first.
 
 ## New-chat handoff
 
-Always read first:
+No next milestone is preselected.
+
+Before changing code in the next chat, read:
 
 1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
@@ -481,19 +348,7 @@ Always read first:
 4. `docs/backend/API_GUIDE.md`
 5. `docs/backend/MANAGE_GUIDE.md`
 6. `docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md`
+7. `docs/backend/MILESTONE_18_USER_AVATAR.md`
+8. `docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md`
 
-Then inspect at minimum:
-
-```text
-public/data/prompts.json
-public/prompts/
-app/types/promptArchive.ts
-app/composables/usePromptArchive.ts
-app/pages/prompts.vue
-app/components/prompts/PromptItem.vue
-app/components/prompts/PromptDetail.vue
-app/components/tools/ImageBatchConverter.vue
-app/components/el/multi-select.vue
-app/config/manage.ts
-backend authorization/admin patterns
-```
+Then inspect the current implementation relevant to the user's new request. Do not reopen completed milestones unless the new work intentionally extends them.
