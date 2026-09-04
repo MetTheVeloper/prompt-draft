@@ -16,7 +16,7 @@ SELECT
   50,
   'prompt_draft',
   prompt_drafts.draft_id,
-  'draft_created:v1:' || prompt_drafts.draft_id,
+  'draft_created:v1:' || md5(prompt_drafts.draft_id),
   jsonb_build_object('origin', 'migration_backfill'),
   prompt_drafts.created_at
 FROM prompt_drafts
