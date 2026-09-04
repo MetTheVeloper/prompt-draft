@@ -18,8 +18,8 @@ const markerColor = computed(() => `${props.color}15`);
 
 <template>
   <el-flex
-    rules="ccs"
-    :gap="10"
+    rules="cbs"
+    :gap="12"
     class="w100"
     bg="surface"
     :p="16"
@@ -28,12 +28,14 @@ const markerColor = computed(() => `${props.color}15`);
     bc="normal15">
     <el-flex rules="rbc" class="w100" :gap="12">
       <el-flex rules="rcc" :bg="markerColor" :radius="100" :p="8">
-        <el-icon :icon="icon" :color="color" :size="20" />
+        <el-icon :icon="icon" :color="color" :size="22" />
       </el-flex>
-      <el-text :size="26" :weight="800" :localize="true">{{ value }}</el-text>
+      <el-text :size="28" :weight="800" :localize="true">{{ value }}</el-text>
     </el-flex>
 
-    <el-text :size="13" :weight="700">{{ label }}</el-text>
-    <el-text v-if="helper" :size="11" color="normal45">{{ helper }}</el-text>
+    <el-flex rules="ces" :gap="4" class="w100">
+      <el-text :size="14" :weight="700">{{ label }}</el-text>
+      <el-text v-if="helper" :size="12" color="normal45">{{ helper }}</el-text>
+    </el-flex>
   </el-flex>
 </template>
