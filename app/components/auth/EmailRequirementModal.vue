@@ -4,7 +4,7 @@ const props = defineProps<{
   onCompleted?: () => void | Promise<void>;
 }>();
 
-const { t, te, locale } = useI18n();
+const { t, te } = useI18n();
 const route = useRoute();
 const auth = useAuth();
 const modal = useModal();
@@ -14,9 +14,6 @@ const submitting = ref(false);
 const errorMessage = ref("");
 
 const isLoggedIn = computed(() => auth.isLoggedIn.value);
-const isPersian = computed(() => locale.value === "fa");
-const heroLeadSize = computed(() => (isPersian.value ? 24 : 27));
-const heroSourceSize = computed(() => (isPersian.value ? 18 : 21));
 
 const sourceLabel = computed(() => {
   const key = `auth.emailRequirement.sources.${props.from}`;
@@ -101,65 +98,46 @@ async function openLogin() {
 <template>
   <el-flex
     rules="ccc"
-    class="w100 emailRequirementModal"
-    :class="{ isPersian }"
-    :gap="15"
+    class="w100"
+    :gap="18"
     :data-requirement-from="from">
     <el-flex
       rules="ccc"
+      class="w100"
       bg="normal"
-      :radius="22"
-      :p="23"
-      :gap="12"
-      class="emailRequirementHero"
-      style="width: min(100%, 390px); aspect-ratio: 1 / 1; text-align: center">
-      <el-flex rules="rcc" :gap="6" :p="[5, 8]" class="heroEyebrow">
-        <el-icon icon="lock_open" color="invert" :size="13" />
-        <el-text :size="9" :weight="800" color="invert">
+      :radius="24"
+      :p="28"
+      :gap="16"
+      style="aspect-ratio: 1 / 1; text-align: center">
+      <el-flex rules="rcc" :gap="7" :p="[7, 10]">
+        <el-icon icon="lock_open" color="invert" :size="15" />
+        <el-text :size="10" :weight="800" color="invert">
           {{ t("auth.emailRequirement.heroEyebrow") }}
         </el-text>
       </el-flex>
 
-      <el-flex rules="ccc" :gap="5" class="heroMessage">
-        <el-text
-          type="h2"
-          :size="heroLeadSize"
-          :weight="900"
-          color="invert"
-          class="heroLead">
-          {{ t("auth.emailRequirement.heroLead") }}
-        </el-text>
-
-        <el-text
-          :size="11"
-          :weight="700"
-          color="invert"
-          class="heroAction">
-          {{ t("auth.emailRequirement.heroAction") }}
-        </el-text>
-
-        <el-text
-          :size="heroSourceSize"
-          :weight="900"
-          color="invert"
-          class="heroSource">
-          {{ sourceLabel }}
-        </el-text>
-      </el-flex>
+      <el-text
+        type="h2"
+        :size="30"
+        :weight="900"
+        color="invert"
+        style="max-width: 360px; line-height: 1.08; letter-spacing: -0.025em">
+        {{ t("auth.emailRequirement.heroTitle", { source: sourceLabel }) }}
+      </el-text>
 
       <el-text
-        :size="11"
+        :size="12"
         :weight="400"
         color="invert"
-        class="heroDescription">
+        style="max-width: 330px; line-height: 1.55; opacity: 0.72">
         {{ t("auth.emailRequirement.heroDescription") }}
       </el-text>
     </el-flex>
 
     <template v-if="isLoggedIn">
-      <el-flex rules="csc" class="w100 emailRequirementForm" :gap="10">
-        <el-flex rules="csc" :gap="6" class="w100">
-          <el-text :size="10" :weight="800" color="normal60" class="emailLabel">
+      <el-flex rules="csc" class="w100" :gap="12">
+        <el-flex rules="csc" :gap="7" class="w100">
+          <el-text :size="11" :weight="800" color="normal60">
             {{ t("auth.emailRequirement.emailLabel") }}
           </el-text>
 
@@ -175,8 +153,8 @@ async function openLogin() {
         </el-flex>
 
         <el-flex rules="rsc" class="w100" :gap="7">
-          <el-icon icon="verified_user" color="green" :size="14" />
-          <el-text :size="10" color="normal50" class="privacyCopy">
+          <el-icon icon="verified_user" color="green" :size="15" />
+          <el-text :size="10" color="normal50" style="line-height: 1.45">
             {{ t("auth.emailRequirement.privacyNote") }}
           </el-text>
         </el-flex>
@@ -208,7 +186,6 @@ async function openLogin() {
           class="w100"
           mode="flat"
           color="normal"
-          :size="12"
           :label="t('auth.emailRequirement.cancel')"
           :disable="submitting"
           @click="modal.close()"
@@ -217,7 +194,7 @@ async function openLogin() {
     </template>
 
     <template v-else>
-      <el-flex rules="csc" class="w100 emailRequirementForm" :gap="10">
+      <el-flex rules="csc" class="w100" :gap="12">
         <el-flex
           rules="csc"
           class="w100"
@@ -228,7 +205,7 @@ async function openLogin() {
           <el-text :size="13" :weight="800">
             {{ t("auth.emailRequirement.anonymousTitle") }}
           </el-text>
-          <el-text :size="11" color="normal55" class="anonymousCopy">
+          <el-text :size="11" color="normal55" style="line-height: 1.5">
             {{ t("auth.emailRequirement.anonymousDescription") }}
           </el-text>
         </el-flex>
@@ -245,7 +222,6 @@ async function openLogin() {
           class="w100"
           mode="flat"
           color="normal"
-          :size="12"
           :label="t('auth.emailRequirement.cancel')"
           @click="modal.close()"
         />
@@ -253,107 +229,3 @@ async function openLogin() {
     </template>
   </el-flex>
 </template>
-
-<style scoped>
-.emailRequirementHero,
-.emailRequirementForm,
-.heroMessage,
-.heroLead,
-.heroAction,
-.heroSource,
-.heroDescription {
-  min-width: 0;
-}
-
-.emailRequirementForm {
-  max-width: 410px;
-}
-
-.heroMessage {
-  width: 100%;
-  max-width: 330px;
-}
-
-.heroLead,
-.heroSource,
-.heroDescription {
-  width: 100%;
-}
-
-.heroLead :deep(h2) {
-  width: 100%;
-  margin: 0;
-  line-height: 1.16;
-  letter-spacing: -0.025em;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.heroAction :deep(*) {
-  width: 100%;
-  line-height: 1.2;
-  letter-spacing: 0.045em;
-  text-align: center;
-  opacity: 0.62;
-}
-
-.heroSource :deep(*) {
-  width: 100%;
-  line-height: 1.2;
-  letter-spacing: -0.01em;
-  text-align: center;
-  overflow-wrap: anywhere;
-}
-
-.heroDescription {
-  max-width: 292px;
-  opacity: 0.65;
-}
-
-.heroDescription :deep(*) {
-  width: 100%;
-  line-height: 1.5;
-  text-align: center;
-}
-
-.heroEyebrow :deep(*) {
-  letter-spacing: 0.025em;
-}
-
-.emailLabel :deep(*) {
-  letter-spacing: 0.02em;
-}
-
-.privacyCopy :deep(*),
-.anonymousCopy :deep(*) {
-  line-height: 1.45;
-}
-
-.isPersian .heroMessage {
-  max-width: 345px;
-}
-
-.isPersian .heroLead :deep(h2) {
-  line-height: 1.46;
-  letter-spacing: 0;
-}
-
-.isPersian .heroAction :deep(*) {
-  line-height: 1.55;
-  letter-spacing: 0;
-}
-
-.isPersian .heroSource :deep(*) {
-  line-height: 1.5;
-  letter-spacing: 0;
-}
-
-.isPersian .heroDescription :deep(*) {
-  line-height: 1.75;
-}
-
-.isPersian .heroEyebrow :deep(*),
-.isPersian .emailLabel :deep(*) {
-  letter-spacing: 0;
-}
-</style>
