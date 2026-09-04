@@ -22,6 +22,7 @@ import draftSyncEn from './locales/draft-sync.en'
 import draftSyncFa from './locales/draft-sync.fa'
 import authEn from './locales/auth.en'
 import authFa from './locales/auth.fa'
+import manageEn from './locales/manage.en'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -94,30 +95,33 @@ const enMessages = deepMerge(
   deepMerge(
     deepMerge(
       deepMerge(
-        withModuleFragments(en, [
-          ['background', backgroundEn],
-          ['effects', effectsEn],
-          ['hair', hairEn],
-          ['outfit', outfitEn],
-          ['variables', variablesEn],
-          ['scene', sceneEn],
-        ]),
-        {
-          wizard: deepMerge(
-            deepMerge(wizardEn, wizardResumeEn),
-            wizardPresentationEn,
-          ),
-        },
-      ),
-      deepMerge(historyEn, {
-        create: {
-          draft: {
-            cloud: draftSyncEn,
+        deepMerge(
+          withModuleFragments(en, [
+            ['background', backgroundEn],
+            ['effects', effectsEn],
+            ['hair', hairEn],
+            ['outfit', outfitEn],
+            ['variables', variablesEn],
+            ['scene', sceneEn],
+          ]),
+          {
+            wizard: deepMerge(
+              deepMerge(wizardEn, wizardResumeEn),
+              wizardPresentationEn,
+            ),
           },
-        },
-      }),
+        ),
+        deepMerge(historyEn, {
+          create: {
+            draft: {
+              cloud: draftSyncEn,
+            },
+          },
+        }),
+      ),
+      authEn,
     ),
-    authEn,
+    manageEn,
   ),
   flatToNested(enConsolidated),
 )
