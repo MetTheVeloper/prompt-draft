@@ -1,3 +1,11 @@
+import type {
+  AdminArchiveMutationResponse,
+  AdminArchiveTagsResponse,
+  AdminArchiveUpsertInput,
+  GetAdminArchiveResponse,
+  ListAdminArchiveParams,
+  ListAdminArchiveResponse,
+} from "~/types/adminArchiveApi";
 import type { AdminDashboardSummaryResponse } from "~/types/adminDashboardApi";
 import type {
   AdminUserMutationResponse,
@@ -243,6 +251,70 @@ export function usePromptDraftApi() {
     );
   }
 
+  function listAdminArchive(params: ListAdminArchiveParams = {}) {
+    const query = new URLSearchParams();
+
+    if (params.limit !== undefined) query.set("limit", String(params.limit));
+    if (params.cursor !== undefined) query.set("cursor", params.cursor);
+    if (params.query !== undefined) query.set("query", params.query);
+    if (params.status !== undefined) query.set("status", params.status);
+    if (params.model !== undefined) query.set("model", params.model);
+
+    const queryString = query.toString();
+    const path = queryString
+      ? `/api/admin/archive?${queryString}`
+      : "/api/admin/archive";
+
+    return $fetch<ListAdminArchiveResponse>(endpoint(path), {
+      headers: auth.authHeaders(),
+    });
+  }
+
+  function getAdminArchive(id: string) {
+    return $fetch<GetAdminArchiveResponse>(
+      endpoint(`/api/admin/archive/${encodeURIComponent(id)}`),
+      { headers: auth.authHeaders() },
+    );
+  }
+
+  function getAdminArchiveTags() {
+    return $fetch<AdminArchiveTagsResponse>(endpoint("/api/admin/archive/tags"), {
+      headers: auth.authHeaders(),
+    });
+  }
+
+  function createAdminArchive(input: AdminArchiveUpsertInput) {
+    return $fetch<AdminArchiveMutationResponse>(endpoint("/api/admin/archive"), {
+      method: "POST",
+      headers: auth.authHeaders(),
+      body: input,
+    });
+  }
+
+  function updateAdminArchive(id: string, input: AdminArchiveUpsertInput) {
+    return $fetch<AdminArchiveMutationResponse>(
+      endpoint(`/api/admin/archive/${encodeURIComponent(id)}`),
+      {
+        method: "PUT",
+        headers: auth.authHeaders(),
+        body: input,
+      },
+    );
+  }
+
+  function setAdminArchiveStatus(
+    id: string,
+    action: "draft" | "publish" | "archive",
+  ) {
+    return $fetch<AdminArchiveMutationResponse>(
+      endpoint(`/api/admin/archive/${encodeURIComponent(id)}/${action}`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   return {
     apiBase,
     hello,
@@ -263,5 +335,11 @@ export function usePromptDraftApi() {
     unsuspendAdminUser,
     revokeAdminUserSessions,
     resetAdminUserCloudData,
+    listAdminArchive,
+    getAdminArchive,
+    getAdminArchiveTags,
+    createAdminArchive,
+    updateAdminArchive,
+    setAdminArchiveStatus,
   };
 }
