@@ -173,6 +173,14 @@ async function getUserForToken(token) {
   return result.rows[0] ? mapUserRow(result.rows[0]) : null
 }
 
+export function getAuthToken(request) {
+  return getBearerToken(request)
+}
+
+export function getAuthenticatedUser(request) {
+  return getUserForToken(getBearerToken(request))
+}
+
 async function deleteSession(token) {
   if (!token) return
 
