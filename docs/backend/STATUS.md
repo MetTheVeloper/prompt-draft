@@ -22,9 +22,9 @@ static Nuxt frontend
   -> named-volume durability
 ```
 
-Milestone 5 History / Read API + UX is closed.
+Milestone 5 History / Read API + UX remains available as the completed reference implementation.
 
-## Reusable API playbook — ADDED
+## Reusable API playbook — COMPLETE
 
 Reusable API implementation guidance lives in:
 
@@ -32,91 +32,90 @@ Reusable API implementation guidance lives in:
 docs/backend/API_GUIDE.md
 ```
 
-It captures resource-first API design, numbered SQL schema files, parameterized DB access, CORS, typed frontend boundaries, local-first failure semantics, direct UI verification, and `pnpm generate` as a release invariant.
+It captures resource-first API design, numbered SQL schema files, parameterized DB access, HTTP validation/CORS, typed frontend boundaries, local-first failure semantics, direct UI verification, and `pnpm generate` as a release invariant.
 
-## Milestone 6 — IN PROGRESS: Cloud Draft Sync
+## Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
 
-Goal:
+Goal achieved:
 
 ```text
 existing /create local drafts
   -> remain local-first
-  -> dirty-aware server sync
-  -> manual FAB + 2-minute autosync
+  -> optional authenticated account ownership
+  -> manual Cloud Save + dirty-aware autosync
   -> durable PostgreSQL prompt_drafts rows
-  -> account-scoped cloud ownership
-  -> multi-device recovery
+  -> same-account multi-device recovery
+  -> per-draft Cloud status in Drafts menu
 ```
 
-Existing local source remains:
+Authentication is optional at the product level. Anonymous users can continue using Prompt Draft normally; signing in enables account-bound Cloud Draft behavior.
 
-```text
-prompt-draft:create-editor:drafts:v1
-```
-
-Cloud sync metadata is account-scoped and kept separate from canonical draft JSON.
-
-Implemented:
+Implemented backend/schema:
 
 ```text
 backend/sql/002_create_prompt_drafts.sql
+backend/sql/003_create_auth.sql
 backend/sql/004_scope_prompt_drafts_to_users.sql
+
+POST /api/auth/identify
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+
 PUT /api/drafts/:id
 GET /api/drafts/:id
 GET /api/drafts
-app/types/draftSyncApi.ts
-app/components/create/DraftCloudSyncButton.vue
-manual save FAB beside Drafts
-dirty/syncing/synced/failed states
-2-minute dirty-aware autosync
-account ownership via user_id
-account-scoped cloud list
-cloud/local merge on /create
 ```
 
-Locally verified:
+Implemented frontend behavior:
 
 ```text
-Cloud Save writes successfully
-Cloud Save FAB placement beside Drafts
-prompt_drafts.user_id matches the authenticated users.id
-same-account draft writes from incognito reach PostgreSQL
-revision increments correctly on repeated writes
-logged-in /create issues GET /api/drafts on entry/refresh
-Cloud Drafts created/synced in one browser context appear in the other same-account context
-local-only drafts are preserved during Cloud merge
+useAuth() shared auth boundary
+/login two-step identify -> login/register flow
+header login/profile controls
+profile menu + logout
+manual Cloud Save FAB beside Drafts
+2-minute dirty-aware autosync
+account-scoped sync metadata v2
+GET /api/drafts on logged-in /create entry/refresh
+Cloud/local deterministic merge
+preserve local-only drafts
+same-account multi-device recovery
+Drafts-menu Cloud state icons
 ```
 
-### Drafts menu Cloud status — AWAITING USER VERIFICATION
-
-Draft entries in the existing Drafts dropdown now derive their icon/color from account-scoped sync metadata when the menu opens:
+Drafts menu status contract:
 
 ```text
 cloud_done / green
-  -> current local draft fingerprint matches the saved Cloud version
+  -> current local fingerprint matches saved Cloud version
 
 cloud_upload / orange
-  -> this account has a Cloud version, but the local draft has unsynced changes
+  -> Cloud version exists for this account but local changes are dirty
 
 cloud_off / normal
-  -> the draft is local-only for the current account (or the user is anonymous)
+  -> local-only for this account, or anonymous mode
 ```
 
-This is presentation-only and does not add extra API requests; the menu reads the same per-account local sync metadata already maintained by Cloud Save/restore.
-
-Do not mark this final Cloud Draft UI polish verified until the user confirms the icons change as expected for local-only, synced, and dirty-after-sync drafts.
-
-## Auth Foundation — RUNTIME VERIFIED / STATIC CHECK PENDING
-
-Authentication remains optional at the product level. Anonymous users can continue to use Prompt Draft normally. Signing in enables account-bound capabilities such as Cloud Draft ownership and multi-device recovery.
-
-Runtime behavior locally confirmed by the user:
+Locally verified by the user:
 
 ```text
 account registration
 logout
 existing-account login
-header auth controls/profile behavior
+header auth/profile behavior
+Cloud Save writes successfully
+Cloud Save FAB placement beside Drafts
+prompt_drafts.user_id matches authenticated users.id
+repeated writes update the same draft and increment revision
+same-account Incognito/main-browser writes reach PostgreSQL
+logged-in /create issues GET /api/drafts on entry/refresh
+Cloud Drafts created/synced in one browser context recover in the other
+local-only drafts survive Cloud merge
+Drafts-menu offline/synced/dirty status presentation works
+pnpm generate succeeds
+/login, /create and /history are included in the static prerender output
 ```
 
 Auth security contract:
@@ -125,37 +124,24 @@ Auth security contract:
 password hashing     -> Node scrypt + random salt
 raw password         -> never stored
 session token        -> random 32-byte bearer token
-browser token store  -> localStorage (explicit product decision)
+browser token store  -> localStorage (explicit current product decision)
 DB session storage   -> SHA-256 hash of bearer token only
 session lifetime     -> 30 days
 ```
 
 MD5 and IP-based identity are not used.
 
-Auth API:
-
-```text
-POST /api/auth/identify
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
-POST /api/auth/logout
-```
-
-`pnpm generate` verification for the Auth/Cloud Draft changes remains pending before closing the foundation completely.
-
 ## Current intentional debt / deferred work
 
-- final Drafts-menu Cloud-status icon verification;
-- convert `/history` from Wizard runs to Draft History;
-- remove History from primary header navigation and add it to Drafts menu;
+- convert `/history` from Wizard-run History to Draft History when that product work is selected;
+- remove History from primary header navigation and add the relevant History entry to the Drafts menu as previously agreed;
+- server-side Cloud Draft delete semantics;
+- advanced multi-device conflict resolution beyond deterministic `updatedAt` merge;
+- optimistic revision conflict enforcement;
 - production auth rate limiting / abuse controls;
 - email verification;
 - password reset/recovery;
 - OAuth/social login;
-- advanced multi-device conflict resolution beyond deterministic `updatedAt` merge;
-- optimistic revision conflict enforcement;
-- server-side draft delete semantics;
 - production migration framework;
 - production secrets/configuration;
 - deployment/domain/HTTPS;
@@ -165,7 +151,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify the three Drafts-menu Cloud status states, then run `pnpm generate`. After that, close the Auth/Cloud Draft foundation and continue with converting `/history` from Wizard runs to Draft History and moving the History entry from the primary header into the Drafts menu.
+Auth Foundation and Cloud Draft Sync are closed. Wait for the next product feature direction from the user; do not infer or start another feature automatically.
 
 ## New-chat handoff
 
