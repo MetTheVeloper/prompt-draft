@@ -74,7 +74,7 @@ account-scoped cloud list
 cloud/local merge on /create
 ```
 
-Locally verified so far:
+Locally verified:
 
 ```text
 Cloud Save writes successfully
@@ -82,26 +82,29 @@ Cloud Save FAB placement beside Drafts
 prompt_drafts.user_id matches the authenticated users.id
 same-account draft writes from incognito reach PostgreSQL
 revision increments correctly on repeated writes
+logged-in /create issues GET /api/drafts on entry/refresh
+Cloud Drafts created/synced in one browser context appear in the other same-account context
+local-only drafts are preserved during Cloud merge
 ```
 
-### Cloud restore lifecycle — AWAITING USER VERIFICATION
+### Drafts menu Cloud status — AWAITING USER VERIFICATION
 
-A multi-device test exposed that the original standalone restore bridge was not issuing `GET /api/drafts` on `/create` mount in the real UI, so remote drafts could not be discovered even though server persistence and ownership were correct.
-
-The restore flow was moved into the already-mounted `DraftCloudSyncButton` lifecycle so the logged-in `/create` mount now explicitly performs:
+Draft entries in the existing Drafts dropdown now derive their icon/color from account-scoped sync metadata when the menu opens:
 
 ```text
-auth.initialize
-  -> GET /api/drafts
-  -> read all account Cloud Draft pages
-  -> merge with localStorage
-  -> preserve local-only drafts
-  -> prepend newly discovered remote drafts
-  -> dispatch collection-refresh event
-  -> Drafts menu reloads merged collection
+cloud_done / green
+  -> current local draft fingerprint matches the saved Cloud version
+
+cloud_upload / orange
+  -> this account has a Cloud version, but the local draft has unsynced changes
+
+cloud_off / normal
+  -> the draft is local-only for the current account (or the user is anonymous)
 ```
 
-Do not mark multi-device recovery DONE until the user confirms that entering/refreshing `/create` visibly issues `GET /api/drafts` and drafts created/synced in one browser context appear in the other context for the same account.
+This is presentation-only and does not add extra API requests; the menu reads the same per-account local sync metadata already maintained by Cloud Save/restore.
+
+Do not mark this final Cloud Draft UI polish verified until the user confirms the icons change as expected for local-only, synced, and dirty-after-sync drafts.
 
 ## Auth Foundation — RUNTIME VERIFIED / STATIC CHECK PENDING
 
@@ -143,7 +146,7 @@ POST /api/auth/logout
 
 ## Current intentional debt / deferred work
 
-- final multi-device Cloud Draft recovery verification;
+- final Drafts-menu Cloud-status icon verification;
 - convert `/history` from Wizard runs to Draft History;
 - remove History from primary header navigation and add it to Drafts menu;
 - production auth rate limiting / abuse controls;
@@ -162,7 +165,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify that logged-in `/create` now issues `GET /api/drafts` on mount/refresh and that same-account Cloud Drafts created in incognito/main browser contexts are recovered bidirectionally into each context's Drafts menu. Then run `pnpm generate` before marking the Auth/Cloud Draft foundation complete.
+Locally verify the three Drafts-menu Cloud status states, then run `pnpm generate`. After that, close the Auth/Cloud Draft foundation and continue with converting `/history` from Wizard runs to Draft History and moving the History entry from the primary header into the Drafts menu.
 
 ## New-chat handoff
 
