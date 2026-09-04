@@ -1,13 +1,13 @@
-# Backend Implementation Plan
+# Backend Implementation Baseline
 
 ## Architecture baseline
 
-Milestones 1 through 8 are complete and locally verified.
+Milestones 1 through 12 are complete and locally verified.
 
 Current verified platform path:
 
 ```text
-static Nuxt frontend :3030
+static Nuxt frontend
   -> browser CORS/preflight
   -> Docker API :4000
   -> Node HTTP server
@@ -18,15 +18,19 @@ static Nuxt frontend :3030
 
 The backend remains independent from Nuxt server routes so static generation remains supported.
 
-Reusable implementation conventions live in:
+Reusable conventions:
 
 ```text
 docs/backend/API_GUIDE.md
+  -> general API/backend vertical slices
+
+docs/backend/MANAGE_GUIDE.md
+  -> permission-aware Manage/admin features
 ```
 
 ## Schema workflow
 
-The development schema runner discovers all files matching:
+The development schema runner discovers files matching:
 
 ```text
 backend/sql/NNN_*.sql
@@ -42,13 +46,17 @@ Current schema files:
 003_create_auth.sql
 004_scope_prompt_drafts_to_users.sql
 005_add_user_roles.sql
+006_add_admin_user_indexes.sql
+007_add_user_status_and_admin_audit.sql
 ```
 
-New development schema changes should use new numbered files rather than rewriting applied schema history. A production-grade migration framework remains deferred.
+New development schema changes use new numbered files rather than rewriting applied history. A production migration framework remains deferred.
 
-# Completed reference implementation — Wizard runs
+# Completed platform references
 
-The Wizard-run flow remains the first fully verified append-only backend example:
+## Milestones 1–5 — Docker/PostgreSQL + Wizard runs
+
+Verified reference path:
 
 ```text
 real Wizard finish
@@ -60,152 +68,48 @@ real Wizard finish
   -> /history + query-based detail
 ```
 
-It proved Docker networking, CORS, validation, PostgreSQL persistence, named-volume durability, client/server contracts, static routing, and UI recovery behavior.
+This established Docker networking, CORS, validation, named-volume persistence, typed API contracts, keyset pagination, static-safe routing, and recoverable failure behavior.
 
-# Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
+## Milestone 6 — Auth + account-owned Cloud Drafts
 
-## Product contract
-
-The `/create` page remains local-first. Authentication is optional and only enables account-bound Cloud behavior.
+Authentication remains optional.
 
 ```text
-anonymous user
-  -> local draft system continues normally
+anonymous
+  -> local Draft workflow
 
-logged-in user
-  -> same local draft system
-  -> optional/manual Cloud Save
+logged in
+  -> local Draft workflow
+  -> account-owned Cloud Save
   -> dirty-aware autosync
-  -> account-owned Cloud collection
-  -> recovery across browser/device contexts
+  -> Cloud recovery/merge
 ```
 
-## Authentication architecture
-
-Auth uses persisted `users` and `auth_sessions` tables.
-
-Security contract:
+Security baseline:
 
 ```text
 password hashing     -> Node scrypt + random salt
 raw password         -> never stored
-session token        -> random 32-byte bearer token
-browser token store  -> localStorage (current explicit product decision)
-DB session storage   -> SHA-256 hash of bearer token only
+session token        -> random bearer token
+DB session storage   -> SHA-256 token hash only
 session lifetime     -> 30 days
 ```
 
-Auth API:
+Cloud Drafts remain local-first and use stable client-owned draft IDs.
 
-```text
-POST /api/auth/identify
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
-POST /api/auth/logout
-```
-
-`useAuth()` is the shared frontend authentication boundary.
-
-## Cloud Draft ownership and API
-
-Cloud Drafts are account-scoped by authenticated `user_id`. The client never supplies trusted ownership.
-
-```text
-PUT /api/drafts/:id
-GET /api/drafts/:id
-GET /api/drafts
-```
-
-Repeated writes to one account + draft id update the same resource and increment `revision`.
-
-The frontend keeps canonical draft JSON local-first and stores Cloud metadata separately under account-scoped localStorage state.
-
-Multi-device recovery lifecycle:
-
-```text
-/create mount
-  -> auth.initialize()
-  -> GET /api/drafts
-  -> merge Cloud collection with local collection by stable draft id
-  -> newer updatedAt wins for matching ids
-  -> preserve local-only drafts
-  -> persist merged collection
-  -> refresh editor/menu collection
-```
-
-Draft menu Cloud states:
-
-```text
-cloud_done / green
-  -> local fingerprint matches Cloud
-
-cloud_upload / orange
-  -> Cloud exists but local content is dirty
-
-cloud_off / normal
-  -> local-only for current account or anonymous mode
-```
-
-The user locally verified registration/login/logout, ownership, revisions, bidirectional recovery across normal/Incognito contexts, local-only preservation, Cloud state UI, and static generation.
-
-# Milestone 7 — COMPLETE: Server-side Translation
-
-Translation is a backend capability and remains usable without authentication.
+## Milestone 7 — Server-side Translation
 
 ```text
 static Nuxt TextField
   -> Prompt Draft API :4000
   -> Docker-private LibreTranslate :5000
-  -> translation result
 ```
 
-Compose contract:
+The backend owns validation, dependency health, timeout/error semantics, and translation status. Variable tokens are protected/restored around translation.
 
-```text
-translator image       -> libretranslate/libretranslate:v1.9.6
-loaded languages       -> en,fa
-model volume           -> prompt_draft_translation_models
-internal service URL   -> http://translator:5000
-backend env            -> TRANSLATION_BASE_URL
-```
+## Milestone 8 — Authorization / Roles
 
-Backend API:
-
-```text
-GET /api/translate/status
-POST /api/translate
-```
-
-The backend owns validation, timeout/error handling, health, and stable `503` dependency failure semantics.
-
-The frontend calls the backend through typed `usePromptDraftApi()` methods. The old Nuxt `/api/translate` proxy was removed.
-
-`usePromptTranslation()` keeps variable-token protection/restoration and the existing alternatives modal. TextField Translate availability follows real translator health and recovers after translator restart without a page refresh.
-
-The user locally verified Persian-to-English translation, alternatives, `{person}` preservation, Docker stop/start health behavior, anonymous availability, and static generation.
-
-# Milestone 8 — COMPLETE: Authorization / Roles Foundation
-
-## Goal
-
-Add a reusable authorization layer on top of optional authentication so future product/admin capabilities can be granted by permission rather than scattered role checks.
-
-```text
-authenticated account
-  -> persisted role
-  -> backend-resolved permissions
-  -> typed auth session response
-  -> frontend can(...)
-  -> permission-gated UI / routes
-  -> permission-gated backend APIs
-```
-
-Authentication remains optional for the product. Authorization only applies where a capability explicitly requires it.
-
-## Persisted roles
-
-`005_add_user_roles.sql` adds `users.role` with the supported values:
+Persisted roles:
 
 ```text
 user
@@ -213,170 +117,375 @@ admin
 super_admin
 ```
 
-New accounts default to `user`.
-
-The existing `grass` account is promoted once by migration to `super_admin`. Runtime code never checks usernames for privilege; all later access comes from persisted role state.
-
-## Backend-authoritative permission mapping
-
-Role-to-permission mapping lives in the backend authorization module.
-
-Initial permission vocabulary:
-
-```text
-dashboard.view
-system.metrics.view
-users.view
-users.manage
-drafts.view_all
-drafts.delete_any
-system.settings.manage
-```
-
-Current semantics:
+Current backend mapping:
 
 ```text
 user
-  -> no privileged permissions
+  -> []
 
 admin
-  -> selected administrative permissions
+  -> dashboard.view
+  -> system.metrics.view
+  -> users.view
 
 super_admin
-  -> wildcard *
+  -> *
 ```
 
-The frontend receives the resolved permission set from auth responses; it does not duplicate the role-to-permission mapping.
+Frontend permission helpers come from the server-resolved permission payload and shared constants.
 
-## Auth response extension
-
-Login/register/me user payloads now include persisted role and resolved permissions.
-
-Conceptually:
+Three-layer enforcement remains mandatory:
 
 ```text
-user
-  id
-  username/email
-  createdAt
-  role
-
-permissions[]
+1. conditional UI
+2. frontend route authorization
+3. backend permission guard
 ```
 
-Session refresh through `/api/auth/me` therefore refreshes authorization state too.
+# Completed Manage implementation
 
-## Frontend authorization boundary
+## Milestone 9 — Manage Shell / Admin Workspace
 
-`useAuth()` now exposes:
+Canonical routes:
 
 ```text
+/manage
+/manage/dashboard
+/manage/users
+```
+
+Main files:
+
+```text
+app/config/manage.ts
+app/middleware/manage-entry.ts
+app/pages/manage.vue
+app/components/auth/AuthProfileMenu.vue
+```
+
+Current registry shape:
+
+```text
+ManageSection
+  key
+  icon
+  route
+  requiredPermission
+```
+
+User-facing section copy does not live in the registry. The shell resolves:
+
+```text
+manage.sections.<key>.label
+manage.sections.<key>.description
+```
+
+from the locale files.
+
+Exact `/manage` behavior:
+
+```text
+anonymous
+  -> login with next=/manage
+
+authenticated + permitted section
+  -> first permitted MANAGE_SECTIONS route
+
+authenticated + no permitted section
+  -> 403
+```
+
+The Profile Menu exposes one Manage action only when `canAccessManage(auth.can)` is true.
+
+## Milestone 10 — Manage Users Read Foundation
+
+Backend APIs:
+
+```text
+GET /api/admin/users
+GET /api/admin/users/:id
+requires users.view
+```
+
+Collection contract:
+
+```text
+limit   default 20 / min 1 / max 100
+cursor  opaque keyset cursor
+query   username/email substring
+role    user | admin | super_admin
+order   created_at DESC, id DESC
+```
+
+Read model:
+
+```text
+id
+username
+email
 role
-permissions
-isAdmin
-isSuperAdmin
-can(permission)
-canAny(...permissions)
-canAll(...permissions)
+status
+createdAt
+cloudDraftCount
+activeSessionCount
 ```
 
-Permission identifiers live in `app/config/authorization.ts` so callers use shared constants while authority remains backend-side.
+Secret credential/session data never enters the admin response.
 
-## Three-layer enforcement model
-
-Authorization is intentionally enforced at three independent layers:
+UI pattern:
 
 ```text
-1. UI visibility
-   -> useAuth().can(...)
-
-2. route access
-   -> app/middleware/authorization.ts
-
-3. backend resource access
-   -> authenticated backend permission guard
+server-side search with 350ms debounce
+role filter
+cursor Load more
+manual Refresh
+EL component system
 ```
 
-Hiding a button is never treated as security.
+The earlier inline/query detail presentation was later replaced by the central Information modal in Milestone 11.
 
-## Dashboard proof route
+## Milestone 11 — User Administration Actions
 
-`/dashboard` is a deliberately minimal proof route requiring:
+Mutation APIs:
 
 ```text
-dashboard.view
+POST /api/admin/users/:id/role
+POST /api/admin/users/:id/suspend
+POST /api/admin/users/:id/unsuspend
+POST /api/admin/users/:id/revoke-sessions
+POST /api/admin/users/:id/reset-cloud-data
+requires users.manage
 ```
 
-The Profile Menu shows Dashboard only when `can(dashboard.view)` is true.
-
-Direct route access is guarded by the reusable authorization middleware.
-
-The backend proof endpoint:
+Current product meaning:
 
 ```text
-GET /api/admin/access-check
+suspended account
+  -> cannot sign in
+  -> existing bearer sessions are rejected
+  -> sessions are revoked when suspension occurs
+
+reset-cloud-data
+  -> deletes target account prompt_drafts only
+  -> does not delete account/password/unrelated data
 ```
 
-also requires `dashboard.view` and independently returns `403 Forbidden` for an authenticated normal user.
-
-No real analytics/admin product scope is implied by this proof page; future Dashboard and Admin Panel work can reuse this foundation.
-
-## Local verification
-
-The user verified the complete authorization path:
+Authoritative backend safety:
 
 ```text
-super_admin account shows role in Profile Menu
-super_admin sees Dashboard action
-super_admin opens /dashboard successfully
-/dashboard reports backend authorization Verified
-normal user role remains user
-normal user does not see Dashboard action
-normal user direct /dashboard access returns 403
-normal user direct /api/admin/access-check call returns 403
+self mutation blocked
+non-super-admin cannot manage a super-admin
+non-super-admin cannot promote to super_admin
+last active super_admin downgrade blocked
+last active super_admin suspension blocked
 ```
 
-Final static release verification also passed:
+Successful mutations write to:
+
+```text
+admin_audit_log
+```
+
+Current UI interaction pattern:
+
+```text
+row action / right-click
+  -> Global Menu
+  -> Global Modal confirmation
+  -> mutation
+  -> list refresh
+  -> success/error message
+```
+
+Information uses the central modal and the detail read API.
+
+## Milestone 12 — Manage Dashboard Summary
+
+API:
+
+```text
+GET /api/admin/dashboard/summary
+requires system.metrics.view
+```
+
+Current metrics:
+
+```text
+accounts.total
+accounts.active
+accounts.suspended
+accounts.newToday
+sessions.active
+cloudDrafts.total
+cloudDrafts.updatedToday
+adminActions.today
+```
+
+Metric semantics:
+
+```text
+Today
+  -> 00:00 UTC through generatedAt
+
+active account
+  -> users.status = active
+
+active session
+  -> unexpired auth_session for active account
+
+Drafts updated today
+  -> prompt_drafts.server_updated_at since 00:00 UTC
+
+Admin actions today
+  -> admin_audit_log rows since 00:00 UTC
+```
+
+The Dashboard does not expose fake/inferred analytics. Site visits, page views, behavioral DAU, and translation request metrics require future event persistence.
+
+Frontend:
+
+```text
+app/types/adminDashboardApi.ts
+app/composables/usePromptDraftApi.ts
+app/components/manage/ManageMetricCard.vue
+app/pages/manage/dashboard.vue
+```
+
+No migration was required for Milestone 12.
+
+# Manage localization closure
+
+Current Manage copy lives under one namespace:
+
+```text
+i18n/locales/manage.en.ts
+i18n/locales/manage.fa.ts
+```
+
+The i18n registry merges both fragments into their respective language trees.
+
+Localized surfaces include:
+
+```text
+Manage shell
+section tabs/headings/descriptions
+Dashboard cards/status/loading/error fallback
+Users search/filter/table/loading/empty states
+role labels
+status labels
+context-menu actions
+confirmation/success/error copy
+Information modal
+Role Change modal
+self-management safety text
+Manage entry guard copy
+Profile Menu Manage label
+```
+
+Technical values remain technical:
+
+```text
+permission IDs
+route strings
+icon names
+color tokens
+API enums such as super_admin / suspended
+```
+
+Display code translates semantic enums explicitly instead of deriving English labels with string transformations.
+
+# Static-generation contract
+
+Nuxt remains:
+
+```text
+ssr: false
+Nitro preset: static
+```
+
+Canonical explicit prerender routes include:
+
+```text
+/login
+/manage
+/manage/dashboard
+/manage/users
+/dashboard
+public Wizard routes
+```
+
+Dynamic arbitrary admin-ID pages are avoided unless deployment/static-routing assumptions deliberately change.
+
+# Final Manage verification — COMPLETE
+
+The user locally verified the current shell, Users, Dashboard, actions/modals, and English/Persian Manage presentation.
+
+Final release verification on 2026-09-04:
 
 ```text
 pnpm generate
-13 routes prerendered
-/dashboard included in prerender route set
-.output/public generated successfully
+16 initial routes prerendered
+/manage included
+/manage/dashboard included
+/manage/users included
+.output/public generated
+offline manifest generated: 225 files / 62.8 MB
 ```
 
-Existing duplicated-import, sourcemap, and chunk-size warnings remain non-blocking known build warnings.
-
-# Milestone 8 phases — ALL DONE
+Known existing build warnings remained non-blocking:
 
 ```text
-Phase 1 — persisted roles + backend permission resolver: DONE
-Phase 2 — typed frontend authorization helpers: DONE
-Phase 3 — protected Dashboard proof route and conditional Profile UI: DONE
-Phase 4 — normal-user denial + backend bypass test + static generation: DONE
+duplicated compilePromptOutput auto-import
+module-preload sourcemap warning
+Nitro cache-driver external-resolution warning
+large client chunks
+```
+
+Milestones 9–12 and the current Manage track are complete and closed for now.
+
+# How to extend Manage next time
+
+Do not rebuild the architecture.
+
+Start from `docs/backend/MANAGE_GUIDE.md` and implement one vertical slice:
+
+```text
+permission semantics
+  -> backend permission mapping
+  -> frontend shared permission id
+  -> MANAGE_SECTIONS registry entry
+  -> EN/FA section copy
+  -> guarded child page
+  -> protected backend API
+  -> typed usePromptDraftApi boundary
+  -> EL UI
+  -> Global Menu/Modal for contextual actions when useful
+  -> audit contract for privileged mutations
+  -> authorization regressions
+  -> EN/FA hardcoded-copy scan
+  -> pnpm generate
 ```
 
 # Deferred follow-up work
 
-These are intentionally not required for completed Milestones 6–8:
+Current examples:
 
 ```text
-real Dashboard metrics
-admin panel / user-management UI
-analytics/page-view event tracking
-convert current Wizard-run /history to Draft History
-move the relevant History entry into the Drafts menu
-server-side Cloud Draft delete semantics
-advanced multi-device conflict UI/policy
-optimistic revision rejection
-production auth rate limiting / abuse controls
-translation rate limiting / abuse controls
-email verification
-password reset/recovery
-OAuth/social login
+account deletion / destructive full-account lifecycle
+admin audit-log UI
+/manage/system
+/manage/content
+analytics/event tracking
+page-view / visit / behavioral DAU metrics
+translation usage metrics
+convert Wizard-run /history to Draft History
+move relevant History access into Drafts menu
+stronger Cloud Draft conflict policy
+production auth/translation rate limiting
+email verification/password recovery/OAuth
 production migration framework
 production deployment/secrets/domain/HTTPS
 Redis
 ```
 
-Do not start any deferred item automatically. The next product feature is chosen by the user.
+Do not start deferred work automatically. The next feature is selected by the user.
