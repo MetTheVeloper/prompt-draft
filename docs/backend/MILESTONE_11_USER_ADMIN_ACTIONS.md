@@ -1,6 +1,6 @@
 # Milestone 11 — User Administration Actions
 
-Status: RUNTIME VERIFIED — FINAL STATIC CHECK PENDING
+Status: COMPLETE
 
 ## Goal
 
@@ -109,7 +109,7 @@ The UI also disables self-management actions, but that is only convenience. Back
 
 ## Manage Users UI
 
-Each user row now has a trailing `...` action button using the project Global Menu.
+Each user row has a trailing `...` action button using the project Global Menu.
 
 For accounts visible to a caller with `users.manage`:
 
@@ -130,15 +130,13 @@ All mutations use the central Global Modal confirmation flow before calling the 
 
 ## Shared Manage section header
 
-Section title/description metadata now lives in:
+Section title/description metadata lives in:
 
 ```text
 app/config/manage.ts
 ```
 
 The shared `/manage` shell renders the active section heading and description. Child pages no longer repeat their own heading blocks.
-
-This keeps future sections consistent and removes duplicate page-header layout code.
 
 ## UI consistency changes
 
@@ -151,7 +149,7 @@ Profile Menu identity/role presentation normalized with EL components
 
 ## Local verification
 
-The user locally confirmed the row actions and runtime behavior work correctly, including:
+The user locally confirmed:
 
 ```text
 Information central modal
@@ -162,15 +160,11 @@ Unsuspend account
 Revoke sessions
 Reset Cloud data
 admin audit-log writes
+Profile Menu follow-up UI
+pnpm generate
+/manage/users remains compatible with static generation
 ```
 
 The observed audit output included successful suspend, unsuspend, and Cloud-data reset records with the expected actor/target IDs and metadata.
 
-## Remaining close condition
-
-Milestone 11 is not marked complete until the final static generation check passes after the latest UI changes:
-
-```text
-pnpm generate
-/manage/users remains prerendered
-```
+Milestone 11 is complete.
