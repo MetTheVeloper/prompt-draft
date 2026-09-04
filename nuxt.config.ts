@@ -22,6 +22,7 @@ export default defineNuxtConfig({
         "/login",
         "/manage",
         "/manage/dashboard",
+        "/manage/users",
         "/dashboard",
       ],
     },
