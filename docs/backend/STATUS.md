@@ -131,9 +131,9 @@ session lifetime     -> 30 days
 
 MD5 and IP-based identity are not used.
 
-## Milestone 7 — IN PROGRESS: Server-side Translation
+## Milestone 7 — COMPLETE: Server-side Translation
 
-Goal:
+Goal achieved:
 
 ```text
 static Nuxt text-field action
@@ -151,21 +151,7 @@ Product boundary:
 - existing prompt-variable protection/restoration remains a frontend responsibility;
 - static generation remains mandatory.
 
-### Phase 1 — DONE: Docker translator + backend API
-
-Locally verified by the user on 2026-09-04:
-
-```text
-translator image pulls and container starts
-translator reaches healthy state
-en/fa models load
-GET /api/translate/status transitions to available:true
-POST /api/translate returns Persian -> English translation
-alternative translations are returned
-backend returns 503 while translator is unavailable during startup
-```
-
-Implemented contract:
+Implemented infrastructure/API:
 
 ```text
 translator service -> libretranslate/libretranslate:v1.9.6
@@ -177,59 +163,72 @@ GET  /api/translate/status
 POST /api/translate
 ```
 
-### Phase 2 — DONE: typed frontend migration
-
-Locally verified by the user on 2026-09-04:
+Translation request defaults:
 
 ```text
-real TextField Translate action works
-browser calls backend :4000 instead of the Nuxt proxy
-translation alternatives modal still works
-protected tokens such as {person} survive translation
+source       -> auto
+target       -> en
+alternatives -> 3
+max text     -> 5000 characters
 ```
 
-Implemented frontend boundary:
+Implemented frontend behavior:
 
 ```text
 app/types/translationApi.ts
 usePromptDraftApi.getTranslationStatus()
 usePromptDraftApi.translatePrompt()
 usePromptTranslation routes through NUXT_PUBLIC_API_BASE -> backend :4000
-shared cached translation health state
-existing variable protection/restoration preserved
+shared translation-health state with caching
+protected tokens such as {person} survive translation
+existing alternatives/result modal preserved
+TextField action menu refreshes translation health on open
+Translate enabled/disabled state follows real backend service health
+legacy Nuxt server/api/translate.post.ts removed
 ```
 
-### Phase 3 — AWAITING USER VERIFICATION: retire Nuxt proxy + final health UX/regression
-
-Implemented for final local verification:
-
-```text
-legacy server/api/translate.post.ts removed
-TextField Translate enabled/disabled state uses real backend translation health
-opening either action menu or context menu forces a fresh health check
-short health timeout is independent from the longer translation timeout
-anonymous translation remains allowed
-```
-
-Expected behavior:
+Health/failure behavior:
 
 ```text
 translator healthy
-  -> Translate enabled for a non-empty editable field
+  -> Translate enabled for non-empty editable fields
 
 translator stopped/unavailable
-  -> Translate disabled after the fresh menu health check
+  -> backend status reports unavailable
+  -> Translate becomes disabled after a fresh menu health check
 
-translator restarted/healthy again
-  -> reopening the action menu re-enables Translate without requiring a full page refresh
+translator restarted and healthy again
+  -> reopening the menu re-enables Translate without a full page refresh
 ```
 
-Final release checks still required:
+Locally verified by the user on 2026-09-04:
 
 ```text
-translator stop/start UI behavior
-translation still works after recovery
+LibreTranslate image pulls and container starts
+translator reaches Docker healthy state
+en/fa models load
+GET /api/translate/status transitions to available:true
+POST /api/translate returns Persian -> English translation
+alternative translations are returned
+backend returns 503 while translator is unavailable during startup
+real TextField Translate action calls backend :4000
+legacy localhost:3030 /api/translate path is no longer used
+protected {person} token survives translation
+translation alternatives modal works
+translator stop disables Translate
+translator restart re-enables Translate without page refresh
+translation works again after recovery
+anonymous translation remains available
 pnpm generate succeeds
+12 static routes are prerendered, including /create, /login, /history and /wizard/portrait
+```
+
+### Milestone 7 phases — ALL DONE
+
+```text
+Phase 1 — Docker translator + backend API: DONE
+Phase 2 — typed frontend migration: DONE
+Phase 3 — retire Nuxt proxy + health UX + final regression: DONE
 ```
 
 ## Current intentional debt / deferred work
@@ -253,7 +252,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 7 Phase 3. Do not mark Phase 3 or Milestone 7 complete until the user confirms translator stop/start behavior and `pnpm generate` succeeds.
+Milestone 7 is complete. Wait for the user's next product feature direction; do not infer or start another feature automatically.
 
 ## New-chat handoff
 
