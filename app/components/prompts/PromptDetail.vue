@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import type { PromptArchiveItem } from '~/types/promptArchive'
+import type {
+  PromptArchiveDetailItem,
+  PromptArchiveNavigationItem,
+} from '~/types/promptArchive'
 
 const props = defineProps<{
-  item: PromptArchiveItem
-  previousItem?: PromptArchiveItem | null
-  nextItem?: PromptArchiveItem | null
+  item: PromptArchiveDetailItem
+  previousItem?: PromptArchiveNavigationItem | null
+  nextItem?: PromptArchiveNavigationItem | null
 }>()
 
 const emit = defineEmits<{
-  (event: 'telegram', item: PromptArchiveItem): void
+  (event: 'telegram', item: PromptArchiveDetailItem): void
 }>()
 
 const { t, locale } = useI18n()
@@ -19,9 +22,12 @@ const activePromptKey = ref('main')
 const copied = ref(false)
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
 
-const localizedTitle = computed(() => t(props.item.titleKey))
-const coverImage = computed(() => props.item.images[0] || '')
-const hasCanvasSlider = computed(() => props.item.images.length > 1)
+const localizedTitle = computed(() => {
+  return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
+})
+const imageSources = computed(() => props.item.images.map(image => image.fullUrl))
+const coverImage = computed(() => imageSources.value[0] || '')
+const hasCanvasSlider = computed(() => imageSources.value.length > 1)
 
 const modelLabel = computed(() => {
   return props.item.model.previewGeneratedWith === 'gpt-image-1'
@@ -141,8 +147,12 @@ function scrollDetailToTop() {
   })
 }
 
-function detailUrl(item: PromptArchiveItem) {
+function detailUrl(item: PromptArchiveNavigationItem) {
   return `/prompts?id=${item.id}`
+}
+
+function localizedNavigationTitle(item: PromptArchiveNavigationItem) {
+  return locale.value === 'fa' ? item.title.fa : item.title.en
 }
 
 function openTelegram() {
@@ -211,7 +221,7 @@ async function copyPrompt() {
   <div ref="rootRef" class="prompt-detail w100 por">
     <visual-slider
       v-if="hasCanvasSlider"
-      :sources="item.images"
+      :sources="imageSources"
       :interval="4200"
       :transition-duration="2400"
       :edge-blur="320"
@@ -517,7 +527,7 @@ async function copyPrompt() {
             type="h3"
             :size="mobile ? 14 : 18"
             :weight="400">
-            {{ t(previousItem.titleKey) }}
+            {{ localizedNavigationTitle(previousItem) }}
           </el-text>
         </el-flex>
 
@@ -540,7 +550,7 @@ async function copyPrompt() {
             type="h3"
             :size="mobile ? 14 : 18"
             :weight="400">
-            {{ t(nextItem.titleKey) }}
+            {{ localizedNavigationTitle(nextItem) }}
           </el-text>
         </el-flex>
       </el-grid>
