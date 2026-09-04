@@ -1,6 +1,8 @@
 import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
+import { PERMISSIONS, hasPermission } from './authorization.mjs'
 import { getAuthenticatedUser } from './auth.mjs'
+import { queryDatabase } from './database.mjs'
 
 export async function handleAdminArchiveRoute({
   request,
@@ -37,6 +39,63 @@ export async function handleAdminArchiveRoute({
       { ok: false, message: 'Authentication required' },
       corsHeaders,
     )
+    return true
+  }
+
+  const telegramLookupMatch = url.pathname.match(
+    /^\/api\/admin\/archive\/telegram\/(\d+)$/,
+  )
+
+  if (telegramLookupMatch) {
+    if (!hasPermission(user, PERMISSIONS.ARCHIVE_VIEW)) {
+      sendJson(response, 403, { ok: false, message: 'Forbidden' }, corsHeaders)
+      return true
+    }
+
+    if (request.method !== 'GET') {
+      sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, corsHeaders)
+      return true
+    }
+
+    const telegramMessageId = Number(telegramLookupMatch[1])
+    if (!Number.isSafeInteger(telegramMessageId) || telegramMessageId <= 0) {
+      sendJson(response, 400, { ok: false, message: 'Invalid Telegram message id' }, corsHeaders)
+      return true
+    }
+
+    try {
+      const result = await queryDatabase(
+        `
+          SELECT id
+          FROM prompt_archive_items
+          WHERE telegram_message_id = $1
+          LIMIT 1
+        `,
+        [telegramMessageId],
+      )
+      const archiveItemId = result.rows[0]?.id
+
+      if (!archiveItemId) {
+        sendJson(response, 404, { ok: false, message: 'Archive item not found' }, corsHeaders)
+        return true
+      }
+
+      sendJson(
+        response,
+        200,
+        { ok: true, id: archiveItemId, telegramMessageId },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] admin archive Telegram lookup failed', error)
+      sendJson(
+        response,
+        500,
+        { ok: false, message: 'Failed to resolve Archive item' },
+        corsHeaders,
+      )
+    }
+
     return true
   }
 
