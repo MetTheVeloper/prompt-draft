@@ -1,4 +1,9 @@
 import type {
+  GetAdminUserResponse,
+  ListAdminUsersParams,
+  ListAdminUsersResponse,
+} from "~/types/adminUsersApi";
+import type {
   GetPromptDraftResponse,
   ListPromptDraftsParams,
   ListPromptDraftsResponse,
@@ -131,6 +136,44 @@ export function usePromptDraftApi() {
     });
   }
 
+  function listAdminUsers(params: ListAdminUsersParams = {}) {
+    const query = new URLSearchParams();
+
+    if (params.limit !== undefined) {
+      query.set("limit", String(params.limit));
+    }
+
+    if (params.cursor !== undefined) {
+      query.set("cursor", params.cursor);
+    }
+
+    if (params.query !== undefined) {
+      query.set("query", params.query);
+    }
+
+    if (params.role !== undefined) {
+      query.set("role", params.role);
+    }
+
+    const queryString = query.toString();
+    const path = queryString
+      ? `/api/admin/users?${queryString}`
+      : "/api/admin/users";
+
+    return $fetch<ListAdminUsersResponse>(endpoint(path), {
+      headers: auth.authHeaders(),
+    });
+  }
+
+  function getAdminUser(id: string) {
+    return $fetch<GetAdminUserResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}`),
+      {
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   return {
     apiBase,
     hello,
@@ -143,5 +186,7 @@ export function usePromptDraftApi() {
     getTranslationStatus,
     translatePrompt,
     getAdminAccessCheck,
+    listAdminUsers,
+    getAdminUser,
   };
 }
