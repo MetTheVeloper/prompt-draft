@@ -12,13 +12,30 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 
 ```text
 Milestones 1–16: COMPLETE / locally verified
-Manage track: CLOSED FOR NOW
-No active backend milestone currently selected
+Prompt/Collage access gates + 403/404 error surfaces: COMPLETE / locally verified
+Milestone 17 — Prompt Archive Platform: PLANNED / NOT STARTED
 ```
 
-The latest completed product change is Milestone 16: the Referral Foundation, including username-based referral signup, persisted user-id relationships, idempotent +500 / +1000 XP rewards, and authoritative invited-user counts in Profile Menu.
+The current verified frontend access baseline includes:
 
-The user explicitly accepted Milestone 16 as DONE on 2026-09-04, including successful final `pnpm generate`.
+```text
+/prompts Header entry remains visible to everyone
+/prompts archive content requires logged-in account + email
+missing access -> promptArchive Email Requirement modal + blocked state
+Prompt Draft on Telegram action is available from blocked state
+/collage is visible/accessible only with collage.view
+403 and 404 render the dedicated EL-system error page
+```
+
+The user explicitly verified these behaviors and a successful `pnpm generate` on 2026-09-04.
+
+Milestone 17 has now been explicitly selected by the user. It reopens Manage only for the new permission-aware `/manage/archive` section and moves Prompt Archive data toward PostgreSQL/API source of truth with local JSON/images retained as a fallback snapshot.
+
+Detailed plan:
+
+```text
+docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+```
 
 ## Reusable guides
 
@@ -34,7 +51,7 @@ Manage/admin workspace work:
 docs/backend/MANAGE_GUIDE.md
 ```
 
-Do not rediscover the Manage shell/users/dashboard architecture when adding future Manage sections. Start from `MANAGE_GUIDE.md`.
+Do not rediscover the Manage shell/users/dashboard architecture when adding `/manage/archive`. Start from `MANAGE_GUIDE.md`.
 
 ## Milestones 1–5 — COMPLETE
 
@@ -88,7 +105,7 @@ admin
 super_admin
 ```
 
-Current backend permission policy:
+Current backend permission policy includes:
 
 ```text
 user
@@ -98,6 +115,7 @@ admin
   -> dashboard.view
   -> system.metrics.view
   -> users.view
+  -> collage.view
 
 super_admin
   -> *
@@ -354,9 +372,41 @@ Detailed milestone:
 docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
 ```
 
-## Manage track closure
+## Milestone 17 — PLANNED: Prompt Archive Platform
 
-The current Manage foundation remains complete and closed for now:
+Selected direction:
+
+```text
+PostgreSQL becomes the authoritative Prompt Archive data source
+/prompts becomes server-first with local JSON/images fallback
+list/detail API split + server-side search/filter/pagination
+localized titles stored with Archive content, not runtime i18n keys
+current JSON + EN/FA locale titles imported automatically
+canonical tag catalog seeded from all current JSON tags
+/manage/archive added through existing Manage architecture
+archive.view / archive.manage permission model
+admin audit for privileged Archive mutations
+local Archive image preparation before cloud upload
+jpg/jpeg/png/webp input only
+file picker + multi-file drag/drop + clipboard paste
+full WebP output with mandatory quality 0.6
+thumbnail WebP generation
+preview/remove/reorder
+future ArvanCloud/Object Storage adapter with backend-only credentials
+existing local JSON/images retained as deploy fallback snapshot
+```
+
+Implementation is phase-based. Start with data/import parity; do not jump directly to Object Storage.
+
+Detailed source of truth:
+
+```text
+docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+```
+
+## Manage baseline and Milestone 17 reopening
+
+The verified Manage foundation remains complete:
 
 ```text
 shell
@@ -372,7 +422,7 @@ English/Persian localization
 static generation
 ```
 
-Do not reopen Manage automatically for the next milestone.
+Milestone 17 explicitly reopens Manage for `/manage/archive`. Future Archive Manage work must follow `MANAGE_GUIDE.md`; do not redesign the shell.
 
 ## Known non-blocking build warnings
 
@@ -402,7 +452,7 @@ score history / admin score adjustment tooling
 account deletion / full destructive account lifecycle
 admin audit-log UI
 /manage/system
-/manage/content
+/manage/content beyond the selected Archive section
 stronger Cloud Draft conflict handling
 production auth/translation rate limiting
 production migration framework
@@ -415,9 +465,11 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-No Milestone 17 is selected yet.
+Start Milestone 17 in a new chat with **Phase 17A — Archive data foundation + import**.
 
-Do not start a deferred feature automatically. The next direction must be chosen explicitly with the user.
+Before changing code, read the six handoff documents below and inspect the current JSON/archive/converter/multi-select/Manage implementation. Confirm schema/import semantics before implementation.
+
+Do not start cloud storage first.
 
 ## New-chat handoff
 
@@ -427,8 +479,21 @@ Always read first:
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
-
-If future work touches Manage/admin workspace, also read:
-
 5. `docs/backend/MANAGE_GUIDE.md`
-6. the relevant `MILESTONE_9` through `MILESTONE_12` document
+6. `docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md`
+
+Then inspect at minimum:
+
+```text
+public/data/prompts.json
+public/prompts/
+app/types/promptArchive.ts
+app/composables/usePromptArchive.ts
+app/pages/prompts.vue
+app/components/prompts/PromptItem.vue
+app/components/prompts/PromptDetail.vue
+app/components/tools/ImageBatchConverter.vue
+app/components/el/multi-select.vue
+app/config/manage.ts
+backend authorization/admin patterns
+```
