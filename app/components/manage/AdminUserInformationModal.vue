@@ -70,34 +70,50 @@ onMounted(async () => {
       <el-text color="red" :size="12">{{ errorMessage }}</el-text>
     </el-flex>
 
-    <el-grid
-      v-else-if="user"
-      cols="minmax(120px, .4fr) minmax(0, 1fr)"
-      :gap="12"
-      align-items="center"
-      class="w100">
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.account") }}</el-text>
-      <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
+    <template v-else-if="user">
+      <el-flex rules="rsc" :gap="10" class="w100">
+        <el-avatar
+          :src="user.avatarUrl"
+          :name="accountLabel(user)"
+          :alt="accountLabel(user)"
+          size="big"
+        />
+        <el-flex rules="ccs" :gap="3" class="fg100">
+          <el-text :size="14" :weight="800">{{ accountLabel(user) }}</el-text>
+          <el-text color="normal45" :size="10">{{ user.id }}</el-text>
+        </el-flex>
+      </el-flex>
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.userId") }}</el-text>
-      <el-text :size="12" :weight="700">{{ user.id }}</el-text>
+      <el-divider />
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.role") }}</el-text>
-      <el-text :size="12" :weight="700">{{ roleLabel(user.role) }}</el-text>
+      <el-grid
+        cols="minmax(120px, .4fr) minmax(0, 1fr)"
+        :gap="12"
+        align-items="center"
+        class="w100">
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.account") }}</el-text>
+        <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.status") }}</el-text>
-      <el-text :size="12" :weight="700" :color="user.status === 'active' ? 'green' : 'red'">
-        {{ statusLabel(user.status) }}
-      </el-text>
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.userId") }}</el-text>
+        <el-text :size="12" :weight="700">{{ user.id }}</el-text>
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.cloudDrafts") }}</el-text>
-      <el-text :size="12" :weight="700" :localize="true">{{ user.cloudDraftCount }}</el-text>
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.role") }}</el-text>
+        <el-text :size="12" :weight="700">{{ roleLabel(user.role) }}</el-text>
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.activeSessions") }}</el-text>
-      <el-text :size="12" :weight="700" :localize="true">{{ user.activeSessionCount }}</el-text>
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.status") }}</el-text>
+        <el-text :size="12" :weight="700" :color="user.status === 'active' ? 'green' : 'red'">
+          {{ statusLabel(user.status) }}
+        </el-text>
 
-      <el-text color="normal55" :size="12">{{ t("manage.common.fields.joined") }}</el-text>
-      <el-text :size="12" :weight="700">{{ formatDate(user.createdAt) }}</el-text>
-    </el-grid>
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.cloudDrafts") }}</el-text>
+        <el-text :size="12" :weight="700" :localize="true">{{ user.cloudDraftCount }}</el-text>
+
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.activeSessions") }}</el-text>
+        <el-text :size="12" :weight="700" :localize="true">{{ user.activeSessionCount }}</el-text>
+
+        <el-text color="normal55" :size="12">{{ t("manage.common.fields.joined") }}</el-text>
+        <el-text :size="12" :weight="700">{{ formatDate(user.createdAt) }}</el-text>
+      </el-grid>
+    </template>
   </el-flex>
 </template>
