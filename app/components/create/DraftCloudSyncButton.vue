@@ -286,6 +286,14 @@ async function handleManualSync() {
   await syncActiveDraft(true);
 }
 
+function hasDraftMenuLabel(element: HTMLElement) {
+  const menuLabel = t("create.draft.menu").trim();
+
+  return Array.from(element.querySelectorAll<HTMLElement>("*")).some((child) => {
+    return child.textContent?.trim() === menuLabel;
+  });
+}
+
 function resolveTeleportTarget() {
   if (!import.meta.client || teleportTarget.value) return;
 
@@ -293,10 +301,19 @@ function resolveTeleportTarget() {
     ".create-page__draft-title",
   );
 
-  if (titleElement?.parentElement) {
-    teleportTarget.value = titleElement.parentElement;
-    targetObserver?.disconnect();
-    targetObserver = null;
+  if (!titleElement) return;
+
+  let current = titleElement.parentElement;
+
+  while (current && current !== document.body) {
+    if (hasDraftMenuLabel(current)) {
+      teleportTarget.value = current;
+      targetObserver?.disconnect();
+      targetObserver = null;
+      return;
+    }
+
+    current = current.parentElement;
   }
 }
 
