@@ -22,6 +22,10 @@ const isActiveSection = (section: ManageSection) => {
   );
 };
 
+const activeSection = computed(() => {
+  return permittedSections.value.find(isActiveSection) ?? null;
+});
+
 onMounted(() => {
   void auth.initialize();
 });
@@ -55,6 +59,11 @@ onMounted(() => {
         :size="12"
         :p="[8, 12]"
       />
+    </el-flex>
+
+    <el-flex v-if="activeSection" rules="ccs" :gap="6" class="w100">
+      <el-text type="h2" :size="24" :weight="800">{{ activeSection.label }}</el-text>
+      <el-text color="normal55" :size="13">{{ activeSection.description }}</el-text>
     </el-flex>
 
     <NuxtPage />
