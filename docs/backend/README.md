@@ -16,7 +16,7 @@ New backend features should follow:
 docs/backend/API_GUIDE.md
 ```
 
-That guide captures the reusable implementation path learned from the Docker/PostgreSQL, Wizard-run, Auth, Cloud Draft, and Translation work: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
+That guide captures the reusable implementation path learned from the Docker/PostgreSQL, Wizard-run, Auth, Cloud Draft, Translation, and Authorization work: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
 
 ## Milestones 1–5 — complete
 
@@ -174,12 +174,81 @@ translator recovers
   -> reopening the menu re-enables Translate without a page refresh
 ```
 
-The user locally verified direct backend requests, Persian-to-English translation, alternatives, token preservation, translator stop/start recovery, anonymous availability, and a successful static `pnpm generate` with 12 prerendered routes.
+The user locally verified direct backend requests, Persian-to-English translation, alternatives, token preservation, translator stop/start recovery, anonymous availability, and a successful static `pnpm generate`.
+
+## Milestone 8 — complete: Authorization / Roles Foundation
+
+Authentication remains optional, but authenticated accounts now carry a persisted authorization role.
+
+Current roles:
+
+```text
+user
+admin
+super_admin
+```
+
+The backend is authoritative for role-to-permission resolution. Initial permissions include:
+
+```text
+dashboard.view
+system.metrics.view
+users.view
+users.manage
+drafts.view_all
+drafts.delete_any
+system.settings.manage
+```
+
+`super_admin` receives wildcard `*`. Runtime authorization never grants privilege based on username. The existing `grass` account was promoted once by migration `005_add_user_roles.sql`; after that, its access comes from the stored `role` like every other account.
+
+Authorization is enforced at three layers:
+
+```text
+conditional UI
+  -> useAuth().can(...)
+
+protected route
+  -> app/middleware/authorization.ts
+
+protected backend API
+  -> backend permission guard
+```
+
+The proof route `/dashboard` requires `dashboard.view` and is intentionally minimal; real metrics/admin tooling can be layered on later. The profile menu exposes Dashboard only when permitted.
+
+The frontend auth boundary now exposes:
+
+```text
+role
+permissions
+isAdmin
+isSuperAdmin
+can(permission)
+canAny(...)
+canAll(...)
+```
+
+The user locally verified:
+
+```text
+super_admin account sees Dashboard
+super_admin can open /dashboard
+backend authorization is verified for super_admin
+normal user does not see Dashboard
+normal user receives 403 when opening /dashboard directly
+normal user receives 403 when calling /api/admin/access-check directly
+pnpm generate succeeds
+/dashboard is included in the 13-route static prerender output
+```
+
+This establishes a reusable authorization foundation for future Dashboard, system metrics, user-management, and admin-panel features without hardcoding role checks throughout the UI.
 
 ## Still deferred platform/product work
 
 - convert current Wizard-run `/history` to Draft History when selected;
 - move the relevant History entry from the primary header into the Drafts menu as previously agreed;
+- real Dashboard metrics and admin-panel features;
 - server-side Cloud Draft delete semantics;
 - stronger multi-device conflict handling / optimistic revision enforcement;
 - production auth rate limiting / abuse controls;
