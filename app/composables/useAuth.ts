@@ -4,6 +4,10 @@ import type {
   AuthUser,
   IdentifyAuthResponse,
 } from "~/types/auth";
+import type {
+  AuthGrantedPermission,
+  AuthPermission,
+} from "~/config/authorization";
 
 const AUTH_TOKEN_STORAGE_KEY = "prompt-draft:auth:token:v1";
 
@@ -12,6 +16,7 @@ const authState = reactive({
   loading: false,
   token: null as string | null,
   user: null as AuthUser | null,
+  permissions: [] as AuthGrantedPermission[],
 });
 
 let initializePromise: Promise<void> | null = null;
@@ -28,6 +33,28 @@ export function useAuth() {
   const isLoggedIn = computed(() => {
     return Boolean(authState.token && authState.user);
   });
+
+  const role = computed(() => authState.user?.role ?? null);
+
+  const isSuperAdmin = computed(() => role.value === "super_admin");
+  const isAdmin = computed(() => {
+    return role.value === "admin" || role.value === "super_admin";
+  });
+
+  function can(permission: AuthPermission) {
+    return (
+      authState.permissions.includes("*") ||
+      authState.permissions.includes(permission)
+    );
+  }
+
+  function canAny(permissions: AuthPermission[]) {
+    return permissions.some((permission) => can(permission));
+  }
+
+  function canAll(permissions: AuthPermission[]) {
+    return permissions.every((permission) => can(permission));
+  }
 
   function endpoint(path: string) {
     const normalizedPath = path.startsWith("/") ? path : `/${path}`;
@@ -55,6 +82,7 @@ export function useAuth() {
   function clearSession() {
     writeToken(null);
     authState.user = null;
+    authState.permissions = [];
   }
 
   function authHeaders(token = authState.token) {
@@ -88,6 +116,7 @@ export function useAuth() {
           headers: authHeaders(token),
         });
         authState.user = response.user;
+        authState.permissions = [...response.permissions];
       } catch {
         clearSession();
       } finally {
@@ -113,6 +142,7 @@ export function useAuth() {
   async function applySession(response: AuthSessionResponse) {
     writeToken(response.token);
     authState.user = response.user;
+    authState.permissions = [...response.permissions];
     authState.initialized = true;
     return response;
   }
@@ -169,9 +199,16 @@ export function useAuth() {
     state: readonly(authState),
     user: computed(() => authState.user),
     token: computed(() => authState.token),
+    permissions: computed(() => authState.permissions),
+    role,
     initialized: computed(() => authState.initialized),
     loading: computed(() => authState.loading),
     isLoggedIn,
+    isAdmin,
+    isSuperAdmin,
+    can,
+    canAny,
+    canAll,
     initialize,
     identify,
     login,
