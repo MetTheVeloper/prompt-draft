@@ -32,9 +32,14 @@ import { useAppStore } from "~/store/app";
 import { usePageContextMenu } from "~/composables/usePageContextMenu";
 import { useVariablePickerModal } from "~/composables/prompt/useVariablePickerModal";
 import type { GlobalMenuItem } from "~/composables/useMenu";
+import {
+  getDraftSyncEntry,
+  isDraftSyncedForUser,
+} from "~/utils/draftCloudSync";
 
 const { t, locale } = useI18n();
 const app = useAppStore();
+const auth = useAuth();
 const { $menu, $modal } = useNuxtApp();
 const { openPageContextMenu } = usePageContextMenu();
 const { openVariablePicker } = useVariablePickerModal();
@@ -843,6 +848,38 @@ function handleDraftJsonImport(event: Event) {
   importDraftJsonFile(file);
 }
 
+function getDraftMenuCloudState(draft: PromptDraftRecord) {
+  const userId = auth.user.value?.id;
+
+  if (!userId) {
+    return {
+      icon: "cloud_off",
+      color: "normal50",
+    };
+  }
+
+  const syncEntry = getDraftSyncEntry(userId, draft.id);
+
+  if (!syncEntry) {
+    return {
+      icon: "cloud_off",
+      color: "normal50",
+    };
+  }
+
+  if (isDraftSyncedForUser(userId, draft)) {
+    return {
+      icon: "cloud_done",
+      color: "green",
+    };
+  }
+
+  return {
+    icon: "cloud_upload",
+    color: "orange",
+  };
+}
+
 function getDraftMenuItems(): GlobalMenuItem[] {
   const items: GlobalMenuItem[] = [
     {
@@ -874,11 +911,13 @@ function getDraftMenuItems(): GlobalMenuItem[] {
 
   savedDrafts.value.forEach((draft, index) => {
     const isActive = draft.id === activeDraftId.value;
+    const cloudState = getDraftMenuCloudState(draft);
 
     items.push({
       label: draft.title || getDefaultDraftTitle(index),
       description: formatDraftDate(draft.updatedAt),
-      icon: "description",
+      icon: cloudState.icon,
+      color: cloudState.color,
       active: isActive,
       handler: () => selectDraft(draft.id),
     });
