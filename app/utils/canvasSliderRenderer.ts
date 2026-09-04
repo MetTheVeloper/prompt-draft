@@ -591,7 +591,16 @@ export class CanvasSliderRenderer {
       1
     )
 
-    const rawProgress = this.clamp((now - panStartedAt) / panDuration, 0, 1)
+    const elapsed = Math.max(now - panStartedAt, 0)
+    let rawProgress = this.clamp(elapsed / panDuration, 0, 1)
+
+    if (this.slides.length === 1) {
+      const cycleProgress = (elapsed % (panDuration * 2)) / panDuration
+      rawProgress = cycleProgress <= 1
+        ? cycleProgress
+        : 2 - cycleProgress
+    }
+
     const progress = this.smoothstep(rawProgress)
 
     const reverse = imageIndex % 2 === 1
