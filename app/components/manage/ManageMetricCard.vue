@@ -6,14 +6,25 @@ const props = withDefaults(
     icon: string;
     color?: string;
     helper?: string;
+    large?: boolean;
   }>(),
   {
     color: "prim",
     helper: "",
+    large: false,
   },
 );
 
 const markerColor = computed(() => `${props.color}15`);
+const iconSize = computed(() => (props.large ? 30 : 28));
+const valueSize = computed(() => (props.large ? 34 : 32));
+const labelSize = computed(() => (props.large ? 20 : 18));
+const helperSize = computed(() => (props.large ? 16 : 14));
+const formattedValue = computed(() => {
+  return typeof props.value === "number"
+    ? new Intl.NumberFormat("en-US").format(props.value)
+    : props.value;
+});
 </script>
 
 <template>
@@ -28,14 +39,14 @@ const markerColor = computed(() => `${props.color}15`);
     bc="normal15">
     <el-flex rules="rbc" class="w100" :gap="12">
       <el-flex rules="rcc" :bg="markerColor" :radius="100" :p="8">
-        <el-icon :icon="icon" :color="color" :size="22" />
+        <el-icon :icon="icon" :color="color" :size="iconSize" />
       </el-flex>
-      <el-text :size="28" :weight="800" :localize="true">{{ value }}</el-text>
+      <el-text :size="valueSize" :weight="800" :localize="true">{{ formattedValue }}</el-text>
     </el-flex>
 
     <el-flex rules="ces" :gap="4" class="w100">
-      <el-text :size="14" :weight="700">{{ label }}</el-text>
-      <el-text v-if="helper" :size="12" color="normal45">{{ helper }}</el-text>
+      <el-text v-if="helper" :size="helperSize" color="normal45">{{ helper }}</el-text>
+      <el-text :size="labelSize" :weight="700">{{ label }}</el-text>
     </el-flex>
   </el-flex>
 </template>
