@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch src/index.mjs",
     "start": "node src/index.mjs",
-    "db:schema": "node src/create-schema.mjs"
+    "db:schema": "node src/create-schema.mjs",
+    "archive:import": "node src/import-prompt-archive.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"
