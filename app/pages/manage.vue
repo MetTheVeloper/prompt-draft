@@ -29,7 +29,7 @@ onMounted(() => {
 
 <template>
   <el-flex rules="csc" :gap="20" class="w100">
-    <el-flex rules="csc" :gap="6" class="w100">
+    <el-flex rules="ccs" :gap="6" class="w100">
       <el-text type="h1" :size="28" :weight="800">Manage</el-text>
       <el-text color="normal55" :size="13">
         Administrative and system management workspace.
