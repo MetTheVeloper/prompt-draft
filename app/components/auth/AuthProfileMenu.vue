@@ -7,6 +7,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const auth = useAuth();
+const { completeMissingIdentity } = useProfileRequirements();
 
 const user = computed(() => auth.user.value);
 
@@ -52,6 +53,14 @@ const memberSince = computed(() => {
 });
 
 const canOpenManage = computed(() => canAccessManage(auth.can));
+const hasMissingProfileFields = computed(() => {
+  return auth.missingProfileFields.value.length > 0;
+});
+
+function handleCompleteProfile() {
+  emit("close");
+  completeMissingIdentity();
+}
 
 async function handleOpenManage() {
   emit("close");
@@ -105,6 +114,16 @@ async function handleLogout() {
     </el-flex>
 
     <el-divider />
+
+    <el-button
+      v-if="hasMissingProfileFields"
+      class="w100"
+      color="orange"
+      mode="flat"
+      icon="person_add"
+      :label="t('auth.profile.complete')"
+      @click="handleCompleteProfile"
+    />
 
     <el-button
       v-if="canOpenManage"
