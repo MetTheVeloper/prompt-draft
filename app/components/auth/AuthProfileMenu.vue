@@ -53,8 +53,11 @@ const memberSince = computed(() => {
 });
 
 const formattedXp = computed(() => {
+  const score = auth.score.value;
+  if (!score) return "—";
+
   return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(
-    auth.totalXp.value,
+    score.totalXp,
   );
 });
 
