@@ -9,9 +9,17 @@ import {
   listWizardRuns,
   upsertPromptDraft,
 } from './database.mjs'
+import {
+  getTranslationServiceStatus,
+  translateText,
+} from './translation.mjs'
 
 const host = process.env.HOST ?? '0.0.0.0'
 const port = Number(process.env.PORT ?? 4000)
+
+const TRANSLATION_MAX_TEXT_LENGTH = 5000
+const TRANSLATION_SOURCES = new Set(['auto', 'fa', 'en'])
+const TRANSLATION_TARGETS = new Set(['fa', 'en'])
 
 const allowedOrigins = new Set(
   (process.env.CORS_ORIGINS ?? 'http://localhost:3030,http://127.0.0.1:3030')
@@ -186,6 +194,66 @@ function parseWizardRunListQuery(url) {
     limit,
     cursor,
     wizardId,
+  }
+}
+
+function validateTranslationInput(body) {
+  const errors = []
+
+  if (!isPlainObject(body)) {
+    return [
+      {
+        field: 'body',
+        message: 'JSON body must be an object',
+      },
+    ]
+  }
+
+  if (
+    typeof body.text !== 'string' ||
+    body.text.length > TRANSLATION_MAX_TEXT_LENGTH
+  ) {
+    errors.push({
+      field: 'text',
+      message: `text must be a string up to ${TRANSLATION_MAX_TEXT_LENGTH} characters`,
+    })
+  }
+
+  if (body.source !== undefined && !TRANSLATION_SOURCES.has(body.source)) {
+    errors.push({
+      field: 'source',
+      message: 'source must be auto, fa, or en',
+    })
+  }
+
+  if (body.target !== undefined && !TRANSLATION_TARGETS.has(body.target)) {
+    errors.push({
+      field: 'target',
+      message: 'target must be fa or en',
+    })
+  }
+
+  if (
+    body.alternatives !== undefined &&
+    (!Number.isInteger(body.alternatives) ||
+      body.alternatives < 0 ||
+      body.alternatives > 5)
+  ) {
+    errors.push({
+      field: 'alternatives',
+      message: 'alternatives must be an integer between 0 and 5',
+    })
+  }
+
+  return errors
+}
+
+function normalizeTranslationInput(body) {
+  return {
+    text: body.text.trim(),
+    source: body.source ?? 'auto',
+    target: body.target ?? 'en',
+    alternatives: body.alternatives ?? 3,
   }
 }
 
@@ -489,6 +557,115 @@ const server = createServer(async (request, response) => {
         {
           ok: false,
           message: 'Database unavailable',
+        },
+        corsHeaders,
+      )
+    }
+
+    return
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/translate/status') {
+    const status = await getTranslationServiceStatus()
+
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        available: status.available,
+        languages: status.languages,
+      },
+      corsHeaders,
+    )
+    return
+  }
+
+  if (request.method === 'POST' && url.pathname === '/api/translate') {
+    if (!isJsonRequest(request)) {
+      sendJson(
+        response,
+        415,
+        {
+          ok: false,
+          message: 'Content-Type must be application/json',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    let body
+
+    try {
+      body = await readJsonBody(request)
+    } catch {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Request body must contain valid JSON',
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    const validationErrors = validateTranslationInput(body)
+
+    if (validationErrors.length > 0) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Validation failed',
+          errors: validationErrors,
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    const input = normalizeTranslationInput(body)
+
+    if (!input.text) {
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          translatedText: '',
+          alternatives: [],
+          detectedLanguage: null,
+        },
+        corsHeaders,
+      )
+      return
+    }
+
+    try {
+      const result = await translateText(input)
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          ...result,
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] translation failed', error)
+
+      sendJson(
+        response,
+        503,
+        {
+          ok: false,
+          message: 'Translation service is not available',
         },
         corsHeaders,
       )

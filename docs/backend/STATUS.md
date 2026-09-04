@@ -131,6 +131,85 @@ session lifetime     -> 30 days
 
 MD5 and IP-based identity are not used.
 
+## Milestone 7 — IN PROGRESS: Server-side Translation
+
+Goal:
+
+```text
+static Nuxt text-field action
+  -> Prompt Draft API :4000
+  -> private Docker-network LibreTranslate service
+  -> Persian/English translation response
+```
+
+Product boundary:
+
+- translation remains available to anonymous users;
+- the browser must never call LibreTranslate directly;
+- LibreTranslate port `5000` stays internal to Docker Compose;
+- backend dependency failure returns a stable `503` rather than crashing the API;
+- existing prompt-variable protection/restoration remains a frontend responsibility;
+- static generation remains mandatory.
+
+### Phase 1 — AWAITING USER VERIFICATION: Docker translator + backend API
+
+Implemented for local verification:
+
+```text
+translator service -> libretranslate/libretranslate:v1.9.6
+models              -> en,fa only
+model persistence   -> prompt_draft_translation_models named volume
+backend upstream    -> TRANSLATION_BASE_URL=http://translator:5000
+
+GET  /api/translate/status
+POST /api/translate
+```
+
+`POST /api/translate` contract:
+
+```json
+{
+  "text": "...",
+  "source": "auto | fa | en",
+  "target": "fa | en",
+  "alternatives": 0
+}
+```
+
+Defaults:
+
+```text
+source       -> auto
+target       -> en
+alternatives -> 3
+max text     -> 5000 characters
+```
+
+The current frontend still calls the legacy Nuxt `/api/translate` route during Phase 1. It is intentionally not switched until the Docker/backend path is locally verified.
+
+### Phase 2 — NOT STARTED: typed frontend migration
+
+Planned:
+
+```text
+add translation types to frontend API boundary
+route usePromptTranslation through NUXT_PUBLIC_API_BASE / usePromptDraftApi
+use backend status endpoint for real service availability
+preserve variable token protection + translation options UI
+```
+
+### Phase 3 — NOT STARTED: retire Nuxt translation proxy + regression
+
+Planned:
+
+```text
+remove server/api/translate.post.ts
+verify text-field action in real UI
+verify translator unavailable behavior
+verify pnpm generate
+update milestone docs
+```
+
 ## Current intentional debt / deferred work
 
 - convert `/history` from Wizard-run History to Draft History when that product work is selected;
@@ -139,6 +218,7 @@ MD5 and IP-based identity are not used.
 - advanced multi-device conflict resolution beyond deterministic `updatedAt` merge;
 - optimistic revision conflict enforcement;
 - production auth rate limiting / abuse controls;
+- translation rate limiting / abuse controls before public production exposure;
 - email verification;
 - password reset/recovery;
 - OAuth/social login;
@@ -151,7 +231,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Auth Foundation and Cloud Draft Sync are closed. Wait for the next product feature direction from the user; do not infer or start another feature automatically.
+Locally verify Milestone 7 Phase 1. Do not mark it `DONE` until the user confirms the Docker translator reaches healthy state and the backend status/translation endpoints work.
 
 ## New-chat handoff
 
