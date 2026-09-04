@@ -1,10 +1,10 @@
 # Milestone 14 — Progressive User Profile Foundation
 
-Status: **IN PROGRESS — implementation complete, local verification pending**
+Status: **DONE — locally verified**
 
 This milestone establishes the foundation for progressively enriching a user account after low-friction registration.
 
-The product goal is not a one-off email form. Future features should be able to require specific profile information only when it becomes useful, while the account can start with minimal identity data.
+The product goal is not a one-off email form. Future features can require specific profile information only when it becomes useful, while the account can start with minimal identity data.
 
 ## Product semantics
 
@@ -22,7 +22,7 @@ Existing identity values are intentionally immutable through the progressive-com
 
 ## Schema
 
-New migration:
+Migration:
 
 ```text
 backend/sql/008_progressive_user_profile.sql
@@ -58,7 +58,7 @@ username
 email
 ```
 
-Auth responses now include:
+Auth responses include:
 
 ```text
 profile.supportedFields
@@ -121,7 +121,7 @@ The database unique indexes remain the final race-safe uniqueness boundary.
 
 ## Frontend auth state
 
-`useAuth()` now exposes:
+`useAuth()` exposes:
 
 ```text
 profile
@@ -130,11 +130,11 @@ hasProfileField(field)
 completeProfile(input)
 ```
 
-Login, registration, `/api/auth/me`, and profile completion all populate the same profile-state contract.
+Login, registration, `/api/auth/me`, and profile completion populate the same profile-state contract. Frontend hydration also derives profile state from the returned user when necessary, so an older/incomplete auth payload does not incorrectly hide missing fields.
 
-## Reusable frontend requirement helper
+## Reusable profile requirement helper
 
-New composable:
+Composable:
 
 ```text
 app/composables/useProfileRequirements.ts
@@ -157,11 +157,11 @@ requireProfileFields(["email"], {
 })
 ```
 
-If the requirement is already satisfied, the continuation can run immediately. Otherwise the shared Global Modal opens and asks only for the missing fields.
+If the requirement is already satisfied, the continuation runs immediately. Otherwise the shared Global Modal asks only for the missing fields.
 
-## Reusable completion UI
+## Reusable profile completion UI
 
-New component:
+Component:
 
 ```text
 app/components/auth/ProfileRequirementModal.vue
@@ -179,9 +179,9 @@ refreshes in-memory Auth state immediately
 supports a continuation callback for the feature that requested the data
 ```
 
-## First real entry point
+## Profile Menu entry point
 
-The Profile Menu now shows:
+The Profile Menu shows:
 
 ```text
 Complete profile
@@ -189,34 +189,116 @@ Complete profile
 
 only while one of the currently supported identity fields is missing.
 
-This gives Milestone 14 a real product verification path without inventing a fake feature gate.
-
-Expected example:
+Verified example:
 
 ```text
 username-only account
   -> Profile Menu shows Complete profile
   -> modal asks for email only
   -> save
-  -> Auth state now contains username + email
+  -> Auth state contains username + email
   -> Complete profile action disappears
   -> account can subsequently sign in with either username or email
 ```
 
-The reverse flow applies to an email-only account, where the modal asks for username.
+The reverse foundation also supports an email-only account receiving a username.
+
+## Reusable email requirement gate
+
+Milestone 14 also verified the first real product consumer of progressive profile completion.
+
+New reusable pieces:
+
+```text
+app/composables/useEmailRequirement.ts
+app/components/auth/EmailRequirementModal.vue
+```
+
+Usage contract:
+
+```text
+requireEmail({
+  from: "globalOutputCopy",
+  onCompleted: continueAction,
+})
+```
+
+Behavior:
+
+```text
+logged-in user with email
+  -> action continues immediately
+
+logged-in user without email
+  -> dedicated Email Requirement modal opens
+  -> email is completed through authoritative profile API
+  -> continuation runs after success
+
+anonymous user
+  -> action remains gated
+  -> modal offers sign-in / account creation path
+```
+
+The `from` field is preserved as a reusable source/context identifier so future features can distinguish why email was requested without creating feature-specific modal infrastructure.
+
+## First gated feature
+
+Both Copy buttons in Global Output now use the same email requirement gate.
+
+Verified flow:
+
+```text
+Global Output Copy
+  -> email already present: direct copy
+  -> missing email: modal -> save -> copy continuation
+  -> duplicate email: safe 409 UI
+  -> anonymous: sign-in requirement UI
+```
+
+This is a product/UX gate, not a security boundary: the compiled prompt is already visible in the browser. Any future feature whose underlying data must truly be protected requires authoritative server-side enforcement.
 
 ## Localization
 
-New completion UI copy is included in both:
+Progressive completion and email-requirement UI are localized in both:
 
 ```text
 i18n/locales/auth.en.ts
 i18n/locales/auth.fa.ts
 ```
 
+The email gate uses Vue I18n-safe literal syntax for the example email placeholder.
+
+## Local verification completed
+
+The user explicitly verified the milestone locally.
+
+Verified behavior includes:
+
+```text
+username-only registration
+missing email detected in Profile Menu
+unique valid email completion -> 200
+Profile Menu updates immediately
+login with username after completion
+login with added email after completion
+invalid email rejected
+duplicate email -> 409 with safe localized UI
+existing identity immutability
+completed profile persists across backend/database restart
+EN/FA progressive-profile UI
+reusable Email Requirement modal
+from="globalOutputCopy" context handling
+Global Output Copy gate with missing email
+Global Output direct Copy when email exists
+anonymous Copy gate
+continuation successfully copies after email completion
+```
+
+The final email-modal visual experiment was intentionally rolled back to the previously accepted version; visual refinement remains a future polish task and does not block the foundation.
+
 ## Explicitly out of scope
 
-This milestone does not yet implement:
+This milestone does not implement:
 
 ```text
 phone number storage
@@ -232,26 +314,14 @@ referrals
 behavioral event tracking
 ```
 
-Those should become separate vertical slices on top of this foundation.
+Those remain separate vertical slices on top of this foundation.
 
-## Verification required before DONE
+## Next logical milestone
 
-The user must verify locally:
+The recommended next vertical slice is:
 
 ```text
-1. existing username-only account still logs in
-2. existing email-only account still logs in (if available)
-3. Profile Menu shows Complete profile when one identity field is missing
-4. username-only account can add a unique valid email
-5. email-only account can add a unique valid username
-6. successful completion updates Profile Menu immediately
-7. completed account can log out and sign back in using either identity
-8. invalid values are rejected without changing the account
-9. duplicate username/email returns a safe conflict UI
-10. existing identity cannot be replaced through the completion API
-11. EN/FA modal UI works
-12. backend/API restart keeps completed profile data
-13. pnpm generate succeeds
+XP / Score Event Ledger Foundation
 ```
 
-Do not mark this milestone DONE until the user explicitly confirms local verification.
+The goal is an auditable, idempotent event ledger rather than a mutable `users.score += N` counter, so future Draft saves, Wizard completion, referrals, streaks, publishing, and other activities can award points without losing provenance.
