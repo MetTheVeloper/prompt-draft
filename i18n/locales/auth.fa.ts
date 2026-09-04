@@ -63,7 +63,7 @@ export default {
       privacyNote: "ایمیل شما همراه حساب کاربری ذخیره می‌شود و در Prompt Draft به‌صورت عمومی نمایش داده نمی‌شود.",
       sources: {
         generic: "این قابلیت",
-        globalOutputCopy: "کپی GLOBAL OUTPUT",
+        globalOutputCopy: "کپی خروجی کلی",
       },
       emailPlaceholder: "you{'@'}example.com",
       emailHint: "این ایمیل به‌عنوان یک شناسه ورود دیگر برای حساب شما قابل استفاده خواهد بود.",
