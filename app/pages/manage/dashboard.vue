@@ -38,7 +38,7 @@ onMounted(async () => {
 
 <template>
   <el-flex rules="csc" :gap="16" class="w100">
-    <el-flex rules="csc" :gap="6">
+    <el-flex rules="ccs" :gap="6">
       <el-text type="h2" :size="22" :weight="800">Dashboard</el-text>
       <el-text color="normal55" :size="13">
         Authorization foundation proof. System metrics and admin tools will be added later.
