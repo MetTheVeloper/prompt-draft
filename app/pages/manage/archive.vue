@@ -16,8 +16,11 @@ definePageMeta({
   requiredPermission: AUTH_PERMISSIONS.ARCHIVE_VIEW,
 });
 
+const route = useRoute();
+const router = useRouter();
 const auth = useAuth();
 const api = usePromptDraftApi();
+const archiveDeepLink = useAdminArchiveDeepLink();
 const modal = useModal();
 const { locale, t } = useI18n();
 
@@ -56,6 +59,7 @@ const form = reactive({
 let filterTimer: ReturnType<typeof setTimeout> | null = null;
 let listRequestVersion = 0;
 let editorRequestVersion = 0;
+let routeSyncReady = false;
 
 const canManage = computed(() => auth.can(AUTH_PERMISSIONS.ARCHIVE_MANAGE));
 const hasPreparedImages = computed(() => preparedImages.value.length > 0);
@@ -171,6 +175,44 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
+function parseTelegramMessageId(value: unknown) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (typeof raw !== "string" || !/^\d+$/.test(raw)) return null;
+
+  const id = Number(raw);
+  return Number.isSafeInteger(id) && id > 0 ? id : null;
+}
+
+async function setEditQuery(
+  telegramMessageId: number | null,
+  mode: "push" | "replace" = "replace",
+) {
+  const current = parseTelegramMessageId(route.query.edit);
+  const hasRawEdit = route.query.edit !== undefined;
+
+  if (
+    (telegramMessageId === null && !hasRawEdit) ||
+    (telegramMessageId !== null && current === telegramMessageId)
+  ) {
+    return;
+  }
+
+  const query = { ...route.query };
+  if (telegramMessageId === null) delete query.edit;
+  else query.edit = String(telegramMessageId);
+
+  await router[mode]({ path: route.path, query });
+}
+
+function resetEditorState() {
+  editorRequestVersion += 1;
+  editorOpen.value = false;
+  editorLoading.value = false;
+  editingItem.value = null;
+  preparedImages.value = [];
+  mediaProgress.value = "";
+}
+
 async function blobToBase64(blob: Blob) {
   return new Promise<string>((resolve, reject) => {
     const reader = new FileReader();
@@ -283,7 +325,7 @@ function openCreate() {
   editorOpen.value = true;
 }
 
-async function openEdit(item: AdminArchiveSummary) {
+async function openEditByTelegramId(telegramMessageId: number) {
   const requestVersion = ++editorRequestVersion;
   editorOpen.value = true;
   editorLoading.value = true;
@@ -293,31 +335,65 @@ async function openEdit(item: AdminArchiveSummary) {
   resetForm();
 
   try {
-    const response = await api.getAdminArchive(item.id);
+    const resolved = await archiveDeepLink.resolveByTelegramId(telegramMessageId);
+    const response = await api.getAdminArchive(resolved.id);
     if (requestVersion !== editorRequestVersion) return;
     editingItem.value = response.item;
     populateForm(response.item);
   } catch (error) {
     if (requestVersion !== editorRequestVersion) return;
-    editorOpen.value = false;
+    resetEditorState();
     modal.message({
       type: "error",
       title: t("manage.archive.editor.loadFailedTitle"),
       message: getApiErrorMessage(error, t("manage.archive.editor.loadFailed")),
       actionLabel: t("manage.common.actions.close"),
     });
+    await setEditQuery(null, "replace");
   } finally {
     if (requestVersion === editorRequestVersion) editorLoading.value = false;
   }
 }
 
+function openEdit(item: AdminArchiveSummary) {
+  void setEditQuery(item.telegramMessageId, "push");
+}
+
 function closeEditor() {
-  editorRequestVersion += 1;
-  editorOpen.value = false;
-  editorLoading.value = false;
-  editingItem.value = null;
-  preparedImages.value = [];
-  mediaProgress.value = "";
+  if (editorBusy.value) return;
+  resetEditorState();
+  void setEditQuery(null, "replace");
+}
+
+async function syncEditorFromRoute() {
+  if (!routeSyncReady) return;
+
+  if (route.query.edit === undefined) {
+    if (editorOpen.value && editingItem.value) resetEditorState();
+    return;
+  }
+
+  const telegramMessageId = parseTelegramMessageId(route.query.edit);
+  if (telegramMessageId === null) {
+    resetEditorState();
+    modal.message({
+      type: "error",
+      title: t("manage.archive.editor.loadFailedTitle"),
+      message: t("manage.archive.editor.loadFailed"),
+      actionLabel: t("manage.common.actions.close"),
+    });
+    await setEditQuery(null, "replace");
+    return;
+  }
+
+  if (
+    editorOpen.value &&
+    editingItem.value?.telegramMessageId === telegramMessageId
+  ) {
+    return;
+  }
+
+  await openEditByTelegramId(telegramMessageId);
 }
 
 function buildInput(): AdminArchiveUpsertInput {
@@ -403,6 +479,7 @@ async function saveMetadata() {
 
     editingItem.value = response.item;
     populateForm(response.item);
+    await setEditQuery(response.item.telegramMessageId, "replace");
 
     if (preparedImages.value.length) {
       try {
@@ -541,13 +618,22 @@ async function movePersistedImage(imageId: string, direction: -1 | 1) {
 watch(searchText, scheduleFilterReload);
 watch(statusFilter, scheduleFilterReload);
 watch(modelFilter, scheduleFilterReload);
+watch(
+  () => route.query.edit,
+  () => {
+    if (routeSyncReady) void syncEditorFromRoute();
+  },
+);
 
 onMounted(async () => {
   await auth.initialize();
   await Promise.all([loadTags(), loadArchive()]);
+  routeSyncReady = true;
+  await syncEditorFromRoute();
 });
 
 onBeforeUnmount(() => {
+  routeSyncReady = false;
   if (filterTimer) clearTimeout(filterTimer);
 });
 </script>
