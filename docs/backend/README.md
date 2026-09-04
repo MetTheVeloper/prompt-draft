@@ -1,6 +1,6 @@
 # Prompt Draft Backend
 
-This directory is the source of truth for backend, Docker, authorization, Cloud, translation, and Manage integration work in Prompt Draft.
+This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, and Manage integration work in Prompt Draft.
 
 ## Current branch
 
@@ -150,7 +150,7 @@ frontend route guard
 backend permission guard (authoritative)
 ```
 
-## Milestone 9 — COMPLETE: Manage Shell
+## Milestones 9–12 — COMPLETE: Manage Foundation
 
 Canonical management workspace:
 
@@ -160,132 +160,107 @@ Canonical management workspace:
 /manage/users
 ```
 
-The shared shell provides permission-filtered section navigation and nested child rendering.
-
-`app/config/manage.ts` stores only structural section identity:
+The verified Manage foundation includes:
 
 ```text
-key
-icon
-route
-requiredPermission
-```
-
-User-facing section labels/descriptions are localized through `manage.*` i18n keys and are not stored in the config.
-
-The Profile Menu exposes one permission-aware `Manage` entry that navigates to `/manage`, and `manage-entry` resolves the first permitted section.
-
-## Milestone 10 — COMPLETE: Manage Users Read Foundation
-
-Verified `/manage/users` behavior includes:
-
-```text
-users.view authorization
-server-side username/email search
-role filter
-cursor pagination
-admin user detail API
-Cloud Draft count
-active-session count
-EL component-system UI
+permission-aware shell and section registry
+users.view read model
+server-side user search/filter/cursor pagination
+users.manage mutations
+self/super-admin mutation safety
+admin_audit_log
+Dashboard persisted-data metrics
+Global Menu + Global Modal patterns
+EN/FA localization
 static generation
 ```
 
-Backend collection/detail APIs expose only the admin read model and never expose password hashes, bearer tokens, token hashes, or session identifiers.
+Manage is **CLOSED FOR NOW**. Future Manage work starts from `docs/backend/MANAGE_GUIDE.md` and the relevant Milestone 9–12 document.
 
-## Milestone 11 — COMPLETE: User Administration Actions
+## Milestone 13 — COMPLETE: History Workflow
 
-Current mutation endpoints:
+History access and presentation were reworked after the original Wizard-run persistence milestones.
 
-```text
-POST /api/admin/users/:id/role
-POST /api/admin/users/:id/suspend
-POST /api/admin/users/:id/unsuspend
-POST /api/admin/users/:id/revoke-sessions
-POST /api/admin/users/:id/reset-cloud-data
-```
-
-Current backend safety rules include self-mutation protection, super-admin protections, and last-active-super-admin safeguards.
-
-Successful mutations are recorded in:
+Verified current behavior:
 
 ```text
-admin_audit_log
+History removed from global Header navigation
+Drafts menu is the product entry to /history
+History list/detail use the EL component system
+History compiled prompt works in light/dark themes
+Stored Snapshot remains persisted but is not exposed in the product UI
+Edit in Create creates a new editable local Draft from snapshot.finalDraft
+Wizard-run historical rows remain immutable
 ```
 
-The Manage Users UI uses the shared Global Menu and Global Modal systems for contextual actions, confirmation, and user information.
+The user locally verified this behavior and ran a successful final `pnpm generate` with `/history` included in the 16 prerendered routes.
 
-## Milestone 12 — COMPLETE: Manage Dashboard Summary
-
-The temporary authorization-proof Dashboard has been replaced by real persisted-data metrics.
-
-API:
+Detailed milestone:
 
 ```text
-GET /api/admin/dashboard/summary
-requires: system.metrics.view
+docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
 ```
 
-Current metrics:
+## Milestone 14 — IN PROGRESS: Progressive User Profile Foundation
+
+The active foundation allows a low-friction account to grow additional identity data later.
+
+New schema migration:
 
 ```text
-Total users
-Active accounts
-Suspended accounts
-New users today
-Active sessions
-Cloud drafts
-Drafts updated today
-Admin actions today
+008_progressive_user_profile.sql
 ```
 
-`Today` currently means:
+New account invariant:
 
 ```text
-00:00 UTC -> generatedAt
+username only   -> valid
+email only      -> valid
+username+email  -> valid
+neither         -> invalid
 ```
 
-The Dashboard intentionally does not invent analytics that Prompt Draft does not persist. Site visits, page views, behavioral DAU, and translation request counts remain deferred until a real event-tracking foundation exists.
-
-## Manage localization closure — COMPLETE
-
-All current Manage user-facing copy is centralized under:
+New API:
 
 ```text
-i18n/locales/manage.en.ts
-i18n/locales/manage.fa.ts
+POST /api/auth/profile/complete
 ```
 
-This includes shell copy, section labels/descriptions, Dashboard cards, Users fields, role/status labels, placeholders, menu actions, modal copy, safety explanations, and Manage entry-guard copy.
-
-Raw API enum values such as `super_admin` and `suspended` remain technical values for logic; displayed labels are translated explicitly.
-
-## Final verified static checkpoint — 2026-09-04
-
-The user verified the current Manage behavior and then ran a successful final:
+This endpoint:
 
 ```text
-pnpm generate
+requires authentication
+fills only currently-missing username/email fields
+never silently replaces an existing identity value
+reuses the existing case-insensitive unique indexes
+returns refreshed user + profile + permissions
 ```
 
-The build prerendered 16 initial routes, including:
+Auth responses now expose a reusable profile-state contract:
 
 ```text
-/manage
-/manage/dashboard
-/manage/users
+profile.supportedFields
+profile.completedFields
+profile.missingFields
 ```
 
-It produced:
+Reusable requirement layers:
 
 ```text
-.output/public
-offline manifest: 225 files / 62.8 MB
+backend/src/profileRequirements.mjs
+app/composables/useProfileRequirements.ts
+app/components/auth/ProfileRequirementModal.vue
 ```
 
-Existing duplicated-import, sourcemap, unresolved Nitro cache-driver, and large-chunk warnings remain known non-blocking build warnings.
+The Profile Menu exposes `Complete profile` only while a currently-supported identity field is missing.
 
-The current Manage track is closed for now.
+Milestone 14 is **not DONE** until the user locally verifies completion, login through both identities, error behavior, persistence, EN/FA UI, and a final `pnpm generate`.
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
+```
 
 ## Current SQL history
 
@@ -299,6 +274,7 @@ Development schema files currently run in lexical order:
 005_add_user_roles.sql
 006_add_admin_user_indexes.sql
 007_add_user_status_and_admin_audit.sql
+008_progressive_user_profile.sql
 ```
 
 New development schema changes should use a new numbered file rather than rewriting applied history. A production-grade migration framework remains deferred.
@@ -308,18 +284,21 @@ New development schema changes should use a new numbered file rather than rewrit
 Examples currently deferred:
 
 ```text
+phone/contact model and verification
+email verification/password recovery/OAuth
+user consent foundation (marketing / analytics / model training)
+XP / score ledger and gamification
+leaderboards
+referral relationships / referral codes
+analytics/event tracking
+site/page-view/behavioral activity metrics
+translation usage metrics
 account deletion / full destructive account lifecycle
 admin audit-log UI
 /manage/system
 /manage/content
-analytics/event tracking
-site/page-view/behavioral activity metrics
-translation usage metrics
-convert Wizard-run History to Draft History
-move relevant History access into the Drafts menu
 stronger Cloud Draft conflict handling
 production auth/translation rate limiting
-email verification/password recovery/OAuth
 production migration framework
 production deployment/secrets/domain/HTTPS
 Redis
@@ -346,7 +325,7 @@ MANAGE_GUIDE.md
   -> reusable Manage/admin workspace playbook
 
 MILESTONE_*.md
-  -> detailed source-of-truth record for each completed feature milestone
+  -> detailed source-of-truth record for each completed/in-progress feature milestone
 ```
 
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms it. Code creation alone is not sufficient.
