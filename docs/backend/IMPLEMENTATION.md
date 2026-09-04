@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1 through 15 are complete and locally verified. Milestone 16 is implemented and awaiting local verification.
+Milestones 1 through 16 are complete and locally verified.
 
 Current platform path:
 
@@ -203,6 +203,7 @@ profile.completedFields
 profile.missingFields
 permissions
 score
+referrals
 ```
 
 Current progressive fields:
@@ -280,9 +281,11 @@ Every future reward producer must define a stable logical event and deterministi
 account_created       +1000 XP
 profile_email_added   +1000 XP
 draft_created           +50 XP
+referral_joined         +500 XP
+referral_reward        +1000 XP
 ```
 
-Draft creation is one reward per user/Draft regardless of autosave, retry, or multi-device repetition.
+Draft creation is one reward per user/Draft regardless of autosave, retry, or multi-device repetition. Referral rewards are bound to the persisted referral UUID.
 
 Relevant modules/migrations:
 
@@ -290,6 +293,7 @@ Relevant modules/migrations:
 backend/sql/009_user_score_events.sql
 backend/sql/010_score_identity_triggers.sql
 backend/sql/011_score_cloud_draft_creation.sql
+backend/sql/012_create_referrals.sql
 backend/src/userScore.mjs
 ```
 
@@ -327,8 +331,9 @@ Future XP triggers should correspond to meaningful achievements or product miles
 Status:
 
 ```text
-implementation present
-local verification pending
+complete
+locally verified
+final pnpm generate verified
 ```
 
 ## Referral identity model
@@ -435,7 +440,7 @@ source_id   = referral UUID
 
 Per-user idempotency keys bind the reward to the referral UUID.
 
-Current expected signup totals:
+Verified signup totals:
 
 ```text
 username-only + referral -> 1500 XP
@@ -457,6 +462,19 @@ register(identifier, password, {
 ```
 
 Referral validation errors are mapped to localized EN/FA registration copy.
+
+## Referral read model
+
+Referral count is authoritative from the persisted relation:
+
+```text
+referrals.referredCount
+  = COUNT(referrals WHERE referrer_user_id = current user)
+```
+
+Primary Auth responses expose this count. `useAuth()` keeps it in dedicated referral state, and Profile Menu renders the localized `Invited users / کاربران دعوت‌شده` row.
+
+Opening Profile Menu refreshes `/api/auth/me`, so the visible referral count is refreshed from backend state rather than maintained as a client-side counter.
 
 ## Explicitly deferred referral work
 
@@ -526,4 +544,4 @@ contacts / verification
   -> phone and verified contact semantics
 ```
 
-Milestone 16 must be locally verified before selecting or starting the next platform resource.
+No Milestone 17 is selected. Do not start another resource automatically; confirm the next product direction with the user first.
