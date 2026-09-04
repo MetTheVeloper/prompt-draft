@@ -6,13 +6,14 @@ const props = defineProps<{
   onSelect?: (role: AuthUserRole) => void;
 }>();
 
+const { t } = useI18n();
 const selectedRole = ref<AuthUserRole>(props.currentRole);
 
-const roleItems = [
-  { label: "User", value: "user", icon: "person" },
-  { label: "Admin", value: "admin", icon: "admin_panel_settings" },
-  { label: "Super admin", value: "super_admin", icon: "shield_person" },
-];
+const roleItems = computed(() => [
+  { label: t("manage.common.roles.user"), value: "user", icon: "person" },
+  { label: t("manage.common.roles.admin"), value: "admin", icon: "admin_panel_settings" },
+  { label: t("manage.common.roles.superAdmin"), value: "super_admin", icon: "shield_person" },
+]);
 
 watch(selectedRole, (value) => {
   props.onSelect?.(value);
@@ -22,14 +23,14 @@ watch(selectedRole, (value) => {
 <template>
   <el-flex rules="ccs" :gap="12" class="w100">
     <el-text color="normal55" :size="13">
-      Select the new authorization role for this account. This changes the permissions resolved for future requests.
+      {{ t("manage.users.roleChange.description") }}
     </el-text>
 
     <el-dropdown
       v-model="selectedRole"
       class="w100"
       :items="roleItems"
-      placeholder="Select role"
+      :placeholder="t('manage.users.roleChange.placeholder')"
       icon="admin_panel_settings"
     />
   </el-flex>
