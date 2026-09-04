@@ -11,14 +11,14 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ## Current checkpoint
 
 ```text
-Milestones 1–14: COMPLETE / locally verified
+Milestones 1–15: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-Milestone 15: XP / Score Event Ledger Foundation
-  -> IMPLEMENTED + Cloud Draft creation XP wired
-  -> LOCAL VERIFICATION PENDING
+No active backend milestone currently selected
 ```
 
-The latest completed product change is the Progressive User Profile Foundation, including a verified real feature gate that requires email before Global Output Copy. Active work is now the XP / Score Event Ledger Foundation.
+The latest completed product change is Milestone 15: the XP / Score Event Ledger Foundation, including account/email rewards, idempotent Cloud Draft creation XP, and hardened frontend score hydration.
+
+The user explicitly accepted Milestone 15 as DONE on 2026-09-04.
 
 ## Reusable guides
 
@@ -209,8 +209,6 @@ docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
 
 ## Milestone 13 — COMPLETE: History Workflow
 
-The user locally verified the History redesign and then ran a successful `pnpm generate`.
-
 Verified behavior:
 
 ```text
@@ -225,16 +223,6 @@ Wizard run finalDraft restores as a new editable local Draft
 historical Wizard run remains immutable
 ```
 
-Final static verification:
-
-```text
-pnpm generate SUCCESS
-16 initial routes prerendered
-/history present
-.output/public generated
-offline manifest generated: 225 files / 62.8 MB
-```
-
 Detailed milestone:
 
 ```text
@@ -242,8 +230,6 @@ docs/backend/MILESTONE_13_HISTORY_WORKFLOW.md
 ```
 
 ## Milestone 14 — COMPLETE: Progressive User Profile Foundation
-
-The user locally verified progressive identity completion and the first real profile-gated feature flow.
 
 Verified foundation:
 
@@ -263,39 +249,15 @@ Profile Menu Complete profile entry when fields are missing
 EN/FA completion UI
 ```
 
-Verified behavior:
-
-```text
-username-only user can add a unique email
-completed profile updates immediately
-login works with username after completion
-login works with added email after completion
-invalid email rejected
-duplicate email -> 409 safe UI
-existing identity cannot be replaced through completion endpoint
-profile persists across backend/database restart
-```
-
 Verified reusable email gate:
 
 ```text
 useEmailRequirement()
 EmailRequirementModal.vue
-from/context identifier support
 Global Output Copy requires email
 missing email -> modal -> complete profile -> copy continuation
 existing email -> direct copy
 anonymous -> sign-in/account requirement UI
-EN/FA gate UI
-```
-
-The final typography/proportion experiment for the Email Requirement modal was rolled back to the previously accepted visual version. Further visual polish is deferred and does not block the foundation.
-
-Current supported progressive fields:
-
-```text
-username
-email
 ```
 
 Detailed milestone:
@@ -304,9 +266,9 @@ Detailed milestone:
 docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
 ```
 
-## Milestone 15 — IN PROGRESS: XP / Score Event Ledger Foundation
+## Milestone 15 — COMPLETE: XP / Score Event Ledger Foundation
 
-Current implementation:
+Verified implementation:
 
 ```text
 009_user_score_events.sql
@@ -323,10 +285,11 @@ backend userScore.mjs reusable award/read service
 Auth responses expose score.totalXp + score.eventCount
 Cloud Draft save response can expose refreshed score
 useAuth exposes score + totalXp + refresh/apply score helpers
-Profile Menu displays localized XP and refreshes Auth score when opened
+Profile Menu refreshes authoritative Auth score when opened
+unknown score state does not render a false zero
 ```
 
-Current semantics:
+Current score semantics:
 
 ```text
 username-only account -> 1000 XP
@@ -336,9 +299,13 @@ first server save of each distinct Cloud Draft -> +50 exactly once
 later saves/retries/autosaves of the same Draft -> no additional creation XP
 ```
 
-The user locally confirmed that the identity ledger contains the expected `account_created` and `profile_email_added` rows without duplicates. A stale/false `0 XP` presentation was observed before email completion despite the ledger containing +1000; frontend score hydration has now been hardened and must be re-verified.
+Product decision:
 
-Draft update/save +10 and Draft share +10 are intentionally not wired yet. Their anti-farming/idempotency semantics must be defined after creation XP is verified.
+```text
+draft changed/saved +10 -> DROPPED
+```
+
+Routine Draft edits/autosaves will not award XP. Future rewards should be attached to more meaningful milestones with clear anti-farming/idempotency semantics.
 
 Detailed milestone:
 
@@ -377,20 +344,20 @@ Nitro cache-driver external-resolution warning
 large client chunks
 ```
 
-## Deferred work
+## Deferred platform/product queue
 
-Examples currently deferred:
+No next backend milestone is locked yet. Current deferred candidates are:
 
 ```text
-phone/contact model + verification
-email verification/password recovery/OAuth
-user consent foundation (marketing / analytics / model training)
-XP rewards for Draft update/share and broader gamification
-leaderboards / global rank
-referral relationships and referral codes
-analytics/event tracking
-site visits/page views/behavioral DAU
+referrals / referral codes / referral rewards
+user_events behavioral analytics foundation
+site visits / page views / activity metrics
 translation request/success/failure metrics
+user consent foundation (marketing / analytics / model training)
+phone/contact model + verification
+email verification / password recovery / OAuth
+leaderboards / levels / badges / streaks / additional meaningful XP events
+score history / admin score adjustment tooling
 account deletion / full destructive account lifecycle
 admin audit-log UI
 /manage/system
@@ -398,36 +365,55 @@ admin audit-log UI
 stronger Cloud Draft conflict handling
 production auth/translation rate limiting
 production migration framework
-production deployment/secrets/domain/HTTPS
+production deployment / secrets / domain / HTTPS
 Redis
 Email Requirement modal visual polish
 ```
 
 The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
 
-## Next action
+## Recommended next direction
 
-Milestone 15 now requires local verification of:
-
-```text
-011 migration / existing Draft backfill
-username-only Profile Menu showing 1000 XP without requiring email completion
-new Cloud Draft -> +50 once
-same Draft repeated saves -> no duplicate +50
-second distinct Cloud Draft -> another +50
-ledger provenance/idempotency for draft_created
-persistence / EN-FA Profile Menu
-final pnpm generate
-```
-
-After creation XP is verified, the next score candidates are:
+With Auth, progressive profiles, Cloud Drafts, authorization, Manage, History, translation, and the XP ledger all established, the cleanest next user-data vertical slice is **Referrals**:
 
 ```text
-draft changed/saved  +10
-draft shared         +10
+Milestone 16 candidate — Referral Foundation
+
+referral code owned by a user
+  -> another user joins through that code
+  -> persisted referrer -> referred-user relationship
+  -> one relationship per referred account
+  -> deterministic anti-self-referral / anti-duplicate rules
+  -> optional XP reward can later use the existing score ledger
 ```
 
-Exact anti-farming/idempotency semantics for repeated Draft updates must be defined before wiring those rewards.
+Why this is a strong next step:
+
+```text
+reuses Auth/user identity
+reuses the new XP ledger without forcing a reward immediately
+creates a meaningful future XP trigger instead of rewarding autosaves
+adds a real product growth primitive
+can remain a narrow backend/API vertical slice before any public referral UI is designed
+```
+
+Alternative next directions, if product priority is different:
+
+```text
+Analytics foundation
+  -> user_events + trustworthy activity metrics
+
+Consent foundation
+  -> purpose-specific user_consents before broader analytics/marketing
+
+Account lifecycle
+  -> account deletion and destructive-data semantics
+
+Production hardening
+  -> migrations, rate limits, deployment/secrets/HTTPS
+```
+
+Do not start any of these automatically; select the next milestone with the user first.
 
 ## New-chat handoff
 
