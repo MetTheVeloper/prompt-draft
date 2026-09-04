@@ -18,6 +18,7 @@ import {
   resolvePermissionsForRole,
 } from './authorization.mjs'
 import { createProfileState } from './profileRequirements.mjs'
+import { getReferralState } from './referrals.mjs'
 import { createUserScoreState } from './userScore.mjs'
 
 const scryptAsync = promisify(scrypt)
@@ -138,10 +139,16 @@ function mapUserRow(row) {
 }
 
 async function createAuthorizationResponse(user) {
+  const [score, referrals] = await Promise.all([
+    createUserScoreState(user),
+    getReferralState(user.id),
+  ])
+
   return {
     user,
     profile: createProfileState(user),
-    score: await createUserScoreState(user),
+    score,
+    referrals,
     permissions: resolvePermissionsForRole(user.role),
   }
 }
