@@ -44,6 +44,7 @@ function mapAdminUserRow(row) {
     username: row.username ?? null,
     email: row.email ?? null,
     role: row.role,
+    status: row.status,
     createdAt: row.createdAt.toISOString(),
     cloudDraftCount: Number(row.cloudDraftCount),
     activeSessionCount: Number(row.activeSessionCount),
@@ -313,6 +314,7 @@ export async function listAdminUsers({ limit, cursor, query, role }) {
         users.username,
         users.email,
         users.role,
+        users.status,
         users.created_at AS "createdAt",
         (
           SELECT COUNT(*)::int
@@ -350,6 +352,7 @@ export async function getAdminUserById(id) {
         users.username,
         users.email,
         users.role,
+        users.status,
         users.created_at AS "createdAt",
         (
           SELECT COUNT(*)::int
