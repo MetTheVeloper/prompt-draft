@@ -1,10 +1,11 @@
-import type { AuthUserRole } from "~/types/auth";
+import type { AuthUserRole, AuthUserStatus } from "~/types/auth";
 
 export type AdminUserSummary = {
   id: string;
   username: string | null;
   email: string | null;
   role: AuthUserRole;
+  status: AuthUserStatus;
   createdAt: string;
   cloudDraftCount: number;
   activeSessionCount: number;
@@ -31,4 +32,15 @@ export type ListAdminUsersResponse = {
 export type GetAdminUserResponse = {
   ok: true;
   user: AdminUserSummary;
+};
+
+export type UpdateAdminUserRoleInput = {
+  role: AuthUserRole;
+};
+
+export type AdminUserMutationResponse = {
+  ok: true;
+  user: AdminUserSummary;
+  revokedSessionCount?: number;
+  deletedDraftCount?: number;
 };
