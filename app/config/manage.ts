@@ -16,7 +16,7 @@ export const MANAGE_SECTIONS: readonly ManageSection[] = [
   {
     key: "dashboard",
     label: "Dashboard",
-    description: "Authorization foundation proof. System metrics and admin tools will be added later.",
+    description: "Live account, session, Cloud Draft, and administration summary.",
     icon: "dashboard",
     route: "/manage/dashboard",
     requiredPermission: AUTH_PERMISSIONS.DASHBOARD_VIEW,
