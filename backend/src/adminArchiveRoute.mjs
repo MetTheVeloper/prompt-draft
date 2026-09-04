@@ -1,4 +1,5 @@
 import { handleAdminArchiveRequest } from './adminArchive.mjs'
+import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { getAuthenticatedUser } from './auth.mjs'
 
 export async function handleAdminArchiveRoute({
@@ -38,6 +39,16 @@ export async function handleAdminArchiveRoute({
     )
     return true
   }
+
+  const mediaHandled = await handleAdminArchiveMediaRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+    user,
+  })
+  if (mediaHandled) return true
 
   return handleAdminArchiveRequest({
     request,
