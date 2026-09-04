@@ -70,7 +70,7 @@ function normalizeScoreState(score?: AuthScoreState | null): AuthScoreState {
   const eventCount = Number(score?.eventCount ?? 0);
 
   return {
-    totalXp: Number.isFinite(totalXp) ? Math.max(0, totalXp) : 0,
+    totalXp: Number.isFinite(totalXp) ? totalXp : 0,
     eventCount: Number.isFinite(eventCount) ? Math.max(0, eventCount) : 0,
   };
 }
