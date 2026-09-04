@@ -1,12 +1,14 @@
 import type { AuthGrantedPermission, AuthPermission } from "~/config/authorization";
 
 export type AuthUserRole = "user" | "admin" | "super_admin";
+export type AuthUserStatus = "active" | "suspended";
 
 export type AuthUser = {
   id: string;
   username: string | null;
   email: string | null;
   role: AuthUserRole;
+  status: AuthUserStatus;
   createdAt: string;
 };
 
