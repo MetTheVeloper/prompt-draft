@@ -1,6 +1,6 @@
 # Milestone 8 — Authorization / Roles Foundation
 
-Status: AWAITING USER VERIFICATION
+Status: RUNTIME VERIFIED — STATIC CHECK PENDING
 
 ## Goal
 
@@ -54,6 +54,35 @@ Backend mapping is authoritative. `super_admin` receives wildcard `*`.
 - Profile Menu shows Dashboard only when permission is granted
 - `/dashboard` is explicitly prerendered for the static build
 
-## Verification rule
+## Locally verified runtime behavior
 
-Do not mark this milestone complete until the user verifies both privileged access and normal-user denial locally, plus `pnpm generate`.
+Verified by the user on 2026-09-04:
+
+```text
+grass account resolves as super_admin
+super_admin Profile Menu shows Dashboard
+super_admin can enter /dashboard
+super_admin dashboard backend authorization reports Verified
+normal newly-created account resolves as user
+normal user does not see Dashboard in Profile Menu
+direct /dashboard navigation as normal user renders 403 Forbidden
+direct authenticated GET /api/admin/access-check as normal user returns HTTP 403
+```
+
+This verifies all three authorization layers independently:
+
+```text
+conditional UI visibility
+frontend route guard
+backend API permission guard
+```
+
+## Remaining release check
+
+Before marking Milestone 8 complete, run:
+
+```text
+pnpm generate
+```
+
+The generated static output must include `/dashboard` successfully. After that check passes, fold this milestone into the main backend README / IMPLEMENTATION / STATUS documents and mark it COMPLETE.
