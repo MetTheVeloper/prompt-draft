@@ -8,271 +8,234 @@ Branch: `feature/docker-local-api`
 
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is never sufficient.
 
-## Milestone 1 — COMPLETE
+## Milestones 1–5 — COMPLETE
 
-Verified local Nuxt -> Docker API connectivity and browser CORS behavior.
+The Docker/PostgreSQL backend foundation and Wizard-run reference implementation are complete and locally verified.
 
-## Milestone 2 — COMPLETE
-
-Verified JSON POST parsing, validation, CORS/preflight, temporary Wizard-run state, and browser read-back.
-
-## Milestone 3 — COMPLETE
-
-Replaced process memory with PostgreSQL + Docker named-volume persistence.
-
-Verified end to end:
+Verified platform/product capabilities include:
 
 ```text
-HTTP POST
-  -> API container
-  -> parameterized PostgreSQL INSERT
-  -> Docker named volume
-  -> API + DB containers removed/recreated
-  -> PostgreSQL SELECT
-  -> HTTP GET
-  -> same Wizard run
+static Nuxt frontend
+  -> direct browser CORS
+  -> Docker Node API :4000
+  -> PostgreSQL
+  -> named-volume durability
 ```
 
-## Milestone 4 — COMPLETE: product integration and contract hardening
-
-Verified product behavior:
-
-- server-owned `id` and `createdAt`;
-- snapshot contract v1;
-- configurable `NUXT_PUBLIC_API_BASE`;
-- real Portrait Wizard persistence after successful `finish()`;
-- failed persistence does not destroy a successfully generated artifact;
-- Home page has no backend learning GET/POST side effects;
-- product-created rows survive Docker container recreation through the PostgreSQL named volume;
-- static generation remains supported.
-
-Reference verified run:
-
-```text
-d409ec15-3c22-40f6-9fc8-bafcd38e555f
-wizard_id        = portrait
-wizard_version   = 2
-snapshot_version = 1
-```
-
-## Milestone 5 — COMPLETE: History / Read API + UX
-
-Milestone 5 turned durable successful Wizard runs into a real read-only History product surface while preserving the static-generated Nuxt frontend and independent Dockerized backend.
-
-Verified product path:
+and:
 
 ```text
 real Portrait Wizard finish
-  -> POST /api/wizard-runs
-  -> PostgreSQL wizard_runs
-  -> paginated summary History list
-  -> full run detail
-  -> compiled prompt + stored snapshot
-  -> static-compatible /history shell
+  -> durable wizard_run
+  -> paginated History list
+  -> full History detail
+  -> failure/retry behavior
+  -> successful pnpm generate
 ```
 
-Architecture remains:
+Milestone 5 is closed.
+
+## Reusable API playbook — ADDED
+
+New product APIs now have a reusable implementation guide:
 
 ```text
-static-generated Nuxt frontend
-  -> direct browser calls
-  -> independent Dockerized API :4000
-  -> PostgreSQL
+docs/backend/API_GUIDE.md
 ```
 
-Authentication, ownership, and historical Wizard restore remain outside this milestone.
+It records the conventions learned from the completed backend path:
 
-### Phase 0 — contract freeze: DONE
+- resource-first design;
+- server-owned vs client-owned ids;
+- POST vs idempotent PUT semantics;
+- numbered SQL schema files;
+- parameterized DB functions;
+- HTTP validation and stable errors;
+- CORS method updates;
+- typed frontend boundaries;
+- local-first sync/failure semantics;
+- direct UI verification;
+- `pnpm generate` as a release invariant.
 
-Frozen read contract:
+## Milestone 6 — IN PROGRESS: Cloud Draft Sync
+
+Goal:
 
 ```text
-GET /api/wizard-runs
-  -> summary records only
-  -> newest first
-  -> ORDER BY created_at DESC, id DESC
-  -> limit: default 20, min 1, max 100
-  -> opaque cursor based on createdAt + id
-  -> optional wizardId filter
-  -> pageInfo.nextCursor
-  -> pageInfo.hasMore
-
-GET /api/wizard-runs/:id
-  -> full run
-  -> output
-  -> snapshot
+existing /create local drafts
+  -> remain local-first
+  -> dirty-aware server sync
+  -> manual FAB + 2-minute autosync
+  -> durable PostgreSQL prompt_drafts rows
 ```
 
-List summary fields:
+### Existing local source
+
+`/create` already persists:
+
+```text
+prompt-draft:create-editor:drafts:v1
+```
+
+with stable `PromptDraftRecord` ids, titles, timestamps, canonical prompt state, and debounced local saving.
+
+Milestone 6 does not replace that system.
+
+### Cloud Draft contract
+
+Client-owned stable resource id:
+
+```text
+draft-<timestamp>-<random>
+```
+
+API:
+
+```text
+PUT /api/drafts/:id
+  -> create/update same logical draft
+
+GET /api/drafts/:id
+  -> full server copy
+```
+
+Server record:
 
 ```text
 id
-createdAt
-wizardId
-wizardVersion
+ title
+ createdAt
+ updatedAt          # client content timestamp
+ serverUpdatedAt
+ revision
+ snapshot
 ```
 
-History detail is read-only. Restore/auth/ownership remain deferred.
-
-### Phase 1 — single-run detail API: DONE
-
-Locally verified:
+Server table:
 
 ```text
-existing UUID -> 200 full record
-valid missing UUID -> 404
-malformed id -> 400
-fresh POST -> immediate detail read-back
+prompt_drafts
 ```
 
-Fresh verification run:
+Cloud sync metadata remains separate from canonical local draft JSON:
 
 ```text
-37e32eb8-7501-4f46-8c47-70520866e328
-output = Milestone 5 Phase 1 detail verification
+prompt-draft:create-editor:cloud-sync:v1
 ```
 
-### Phase 2 — cursor-paginated summary collection: DONE
+### Phase 0 — reusable API guide + contract: AWAITING USER VERIFICATION
 
-Locally verified:
+Implemented:
 
 ```text
-summary-only collection
-ORDER BY created_at DESC, id DESC
-keyset cursor pagination
-limit + 1 fetch
-hasMore + nextCursor
-no count
-no output/snapshot in list rows
-structured invalid limit/cursor 400
+docs/backend/API_GUIDE.md
+Milestone 6 resource/write/failure boundaries
 ```
 
-The user verified seven existing rows across four `limit=2` pages as `2 + 2 + 2 + 1`, with all ids returned exactly once and final:
+### Phase 1 — schema + backend PUT/GET: AWAITING USER VERIFICATION
+
+Implemented:
 
 ```text
-hasMore=false
-nextCursor=null
+backend/src/create-schema.mjs
+  -> applies all numbered NNN_*.sql files in lexical order
+
+backend/sql/002_create_prompt_drafts.sql
+  -> prompt_drafts table
+  -> client_updated ordering index
+
+backend/src/database.mjs
+  -> upsertPromptDraft()
+  -> getPromptDraftById()
+
+backend/src/index.mjs
+  -> PUT /api/drafts/:id
+  -> GET /api/drafts/:id
+  -> draft validation/normalization
+  -> CORS adds PUT
 ```
 
-Regression checks also passed for detail and POST.
+No direct SQL/backend verification has yet been accepted for this phase. The intended acceptance path is the real `/create` UI plus DB/read-back checks.
 
-### Phase 3 — wizardId filtering: DONE
+### Phase 2 — typed client + manual sync FAB: AWAITING USER VERIFICATION
 
-Locally verified:
-
-```text
-wizardId=<trimmed non-empty id>
-known id -> only matching summaries
-unknown id -> 200 empty collection
-empty id -> structured 400
-filter + limit + cursor -> composable
-pagination remains inside filtered result set
-```
-
-Verification probe:
+Implemented:
 
 ```text
-wizardId = phase3-probe
-id = b7e47e39-4eb9-4333-b891-e42d34d25bd1
-```
-
-The user verified the probe, unknown/empty filter semantics, and `portrait + limit + cursor` pagination with no cross-filter rows or duplicates.
-
-### Phase 4 — typed frontend read boundary: DONE
-
-Implemented and build-verified:
-
-```text
-app/types/wizardRunApi.ts
-  -> WizardRunSummary
-  -> WizardRunRecord
-  -> WizardRunPageInfo
-  -> ListWizardRunsParams
-  -> ListWizardRunsResponse
-  -> GetWizardRunResponse
-
+app/types/draftSyncApi.ts
 app/composables/usePromptDraftApi.ts
-  -> listWizardRuns(params = {})
-  -> getWizardRun(id)
+app/components/create/DraftCloudSyncButton.vue
+app/layouts/default.vue
 ```
 
-Collection and detail are typed separately:
+Behavior:
 
 ```text
-list -> WizardRunSummary[] + pageInfo
-get  -> full WizardRunRecord
+/create only
+  -> FAB appears adjacent to Drafts
+  -> click waits for current local debounce to settle
+  -> PUT active draft
+  -> dirty / syncing / synced / failed status via icon/color/tooltip
 ```
 
-`pnpm generate` completed successfully and `/wizard/portrait` remained prerendered.
+English/Persian sync labels are registered through dedicated locale fragments.
 
-### Phase 5 — History UI MVP: DONE
+### Phase 3 — dirty-aware two-minute autosync: AWAITING USER VERIFICATION
 
-Implemented and locally verified:
+Implemented:
 
 ```text
-/history
-  -> real persisted summaries newest-first
-  -> loading / empty / error / retry states
-  -> cursor-based Load more
-
-/history?run=<uuid>
-  -> exact full run detail
-  -> compiled prompt
-  -> Copy prompt
-  -> read-only stored snapshot disclosure
-  -> Back to history
+content fingerprint excludes incidental timestamps
+separate per-draft sync metadata
+scan local collection every 120 seconds
+sync only dirty drafts
+skip unchanged drafts
+stop the scan after a failed server write to avoid request spam
 ```
 
-Verified UX/runtime behavior:
+The scan covers all dirty locally saved drafts, not only whichever draft happens to be active at the two-minute boundary.
 
-- History appears in primary/mobile navigation;
-- persisted runs load from the backend;
-- list rows remain summary-only;
-- opening a row uses query-based detail state;
-- full output and stored snapshot are readable;
-- Copy prompt writes the exact compiled prompt to the clipboard;
-- stopping the API shows a graceful History-unavailable state;
-- restarting the API and retrying recovers the list without an app crash;
-- Persian localization renders correctly;
-- `pnpm generate` succeeds with `/history` included in generated routes.
-
-Static-hosting route decision:
+Failure semantics:
 
 ```text
-/history
-/history?run=<uuid>
+server failure
+  -> localStorage draft remains intact
+  -> editing/local autosave continues
+  -> cloud status becomes failed
+  -> later manual/autosync can retry
 ```
 
-A dynamic `/history/:id` route is intentionally not required because arbitrary future UUIDs are unknown at generation time and pure static hosting must remain supported.
+### Phase 4 — final product E2E/static/durability: NOT STARTED
 
-### Phase 6 — final Milestone 5 product E2E + docs: DONE
-
-The user completed and confirmed the final product-level verification locally.
-
-Verified final flow:
+Required final verification:
 
 ```text
-real Wizard-created run
-  -> persistence succeeds
-  -> run appears in History
-  -> full detail opens
-  -> compiled output matches the saved run
-  -> stored snapshot remains readable
-  -> History read/recovery behavior works
-  -> static generation still succeeds
+1. pull latest branch
+2. rebuild API image
+3. apply numbered DB schema
+4. run frontend
+5. edit /create draft
+6. manual FAB sends browser PUT successfully
+7. PostgreSQL has one row for that draft id
+8. edit again + save -> same row, higher revision
+9. dirty state returns after content change
+10. autosync uploads dirty content without duplicate draft rows
+11. API down -> local draft still saves, cloud state fails gracefully
+12. API back -> retry succeeds
+13. GET /api/drafts/:id matches server copy
+14. container recreation preserves row
+15. pnpm generate succeeds
 ```
 
-Durability across Docker API/DB recreation is covered by the named-volume persistence verification established in the backend path and retained through the Milestone 5 read surface.
-
-Milestone 5 is therefore COMPLETE.
+Do not mark any Milestone 6 phase `DONE` until the user confirms the relevant local behavior.
 
 ## Current intentional debt / deferred work
 
 - authentication and user ownership;
-- Wizard restore/resume from historical snapshots;
-- delete/rename/favorite History operations;
-- product-level Wizard filter UI/catalog;
-- arbitrary search/sorting/date/version filtering;
+- multi-device merge/conflict resolution;
+- optimistic revision conflict enforcement;
+- remote draft list/restore UI;
+- server-side draft delete semantics;
 - production migration framework;
 - production secrets/configuration;
 - deployment/domain/HTTPS;
@@ -282,12 +245,13 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Milestone 5 is closed. Await the user's next milestone scope before making further backend/product changes.
+Locally verify the first Cloud Draft vertical slice from `/create` through browser PUT and PostgreSQL persistence.
 
 ## New-chat handoff
 
 Before continuing backend work in another chat, read:
 
-1. `docs/backend/README.md`
-2. `docs/backend/IMPLEMENTATION.md`
-3. `docs/backend/STATUS.md`
+1. `docs/backend/API_GUIDE.md`
+2. `docs/backend/README.md`
+3. `docs/backend/IMPLEMENTATION.md`
+4. `docs/backend/STATUS.md`
