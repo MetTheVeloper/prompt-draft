@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto'
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
+import { handleUserCoverRequest } from './userCover.mjs'
+import { handleUserProfileRequest } from './userProfile.mjs'
 import {
   getArchiveStorageConfig,
   getArchiveStoragePublicUrl,
@@ -247,7 +249,33 @@ export async function handleUserAvatarRequest({
   corsHeaders,
   sendJson,
 }) {
-  if (url.pathname !== AVATAR_PATH) return false
+  if (url.pathname !== AVATAR_PATH) {
+    if (
+      await handleUserCoverRequest({
+        request,
+        response,
+        url,
+        corsHeaders,
+        sendJson,
+      })
+    ) {
+      return true
+    }
+
+    if (
+      await handleUserProfileRequest({
+        request,
+        response,
+        url,
+        corsHeaders,
+        sendJson,
+      })
+    ) {
+      return true
+    }
+
+    return false
+  }
 
   const user = await authenticate(request, response, corsHeaders, sendJson)
   if (!user) return true
