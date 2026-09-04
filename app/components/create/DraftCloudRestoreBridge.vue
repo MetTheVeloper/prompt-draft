@@ -111,19 +111,20 @@ async function restoreCloudDrafts() {
   if (!remoteDrafts.length) return;
 
   const collection = readLocalCollection();
-  const drafts = [...collection.drafts];
+  const existingDrafts = [...collection.drafts];
+  const recoveredDrafts: PromptDraftRecord[] = [];
 
   for (const remote of remoteDrafts) {
     const remoteDraft = toLocalDraft(remote);
-    const existingIndex = drafts.findIndex((draft) => draft.id === remote.id);
+    const existingIndex = existingDrafts.findIndex((draft) => draft.id === remote.id);
 
     if (existingIndex < 0) {
-      drafts.push(remoteDraft);
+      recoveredDrafts.push(remoteDraft);
     } else {
-      const localDraft = drafts[existingIndex];
+      const localDraft = existingDrafts[existingIndex];
 
       if (timestamp(remoteDraft.updatedAt) >= timestamp(localDraft.updatedAt)) {
-        drafts.splice(existingIndex, 1, remoteDraft);
+        existingDrafts.splice(existingIndex, 1, remoteDraft);
       }
     }
 
@@ -133,6 +134,11 @@ async function restoreCloudDrafts() {
       revision: remote.revision,
     });
   }
+
+  // The server list is newest-first. Keep recovered drafts at the top so a
+  // draft created on another device is immediately visible, while preserving
+  // the existing local order for drafts already known to this device.
+  const drafts = [...recoveredDrafts, ...existingDrafts];
 
   const activeDraftId =
     collection.activeDraftId && drafts.some((draft) => draft.id === collection.activeDraftId)
