@@ -16,6 +16,7 @@ services:
       TRANSLATION_BASE_URL: http://translator:5000
       TRANSLATION_TIMEOUT_MS: 20000
       ARCHIVE_SOURCE_ROOT: /archive-source
+      ARCHIVE_SNAPSHOT_OUTPUT_ROOT: /archive-output
       ARCHIVE_S3_ENDPOINT: ${ARCHIVE_S3_ENDPOINT:-}
       ARCHIVE_S3_REGION: ${ARCHIVE_S3_REGION:-}
       ARCHIVE_S3_BUCKET: ${ARCHIVE_S3_BUCKET:-}
@@ -27,6 +28,7 @@ services:
       ARCHIVE_S3_SMOKE_PUBLIC_READ: ${ARCHIVE_S3_SMOKE_PUBLIC_READ:-false}
     volumes:
       - ./public:/archive-source/public:ro
+      - ./public:/archive-output/public
       - ./i18n/locales:/archive-source/i18n/locales:ro
 
   translator:
