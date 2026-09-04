@@ -169,6 +169,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
       <slot />
     </el-flex>
 
+    <CreateDraftCloudSyncButton v-if="route.name === 'create'" />
     <el-pwa />
   </el-flex>
 </template>
