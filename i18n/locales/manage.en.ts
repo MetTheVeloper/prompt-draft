@@ -134,5 +134,9 @@ export default {
         loadError: "Failed to load user information.",
       },
     },
+    errors: {
+      forbiddenTitle: "Forbidden",
+      forbiddenMessage: "You do not have permission to access the management workspace.",
+    },
   },
 };
