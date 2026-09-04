@@ -60,6 +60,7 @@ The current schema uses one explicit SQL file plus `npm run db:schema`. A produc
 - authentication and user ownership;
 - Wizard restore/resume from historical runs;
 - delete/rename/favorite history features;
+- product-level Wizard filter UI/catalog;
 - arbitrary history search/sorting/date filtering;
 - production migration workflow;
 - production secrets/configuration;
@@ -80,7 +81,8 @@ successful Wizard run
   -> paginated summary list API
   -> full run detail API
   -> typed frontend read client
-  -> History UI
+  -> /history
+  -> /history?run=<uuid>
 ```
 
 Milestone 5 does not add authentication, ownership, delete/update semantics, or historical Wizard restore.
@@ -204,7 +206,7 @@ Cursor condition:
 
 ### Filtering
 
-Supported filter:
+Supported backend filter:
 
 ```text
 wizardId=<trimmed non-empty wizard id>
@@ -220,6 +222,8 @@ pagination -> operates inside the filtered set
 ```
 
 Runtime filter/cursor values remain PostgreSQL parameters. SQL clause fragments are server-owned.
+
+The initial History UI intentionally does not expose a free-text Wizard-id filter. The API capability remains ready for a future product-level Wizard catalog/filter control.
 
 Deferred collection query features:
 
@@ -245,11 +249,43 @@ Restore remains outside Milestone 5 because it needs an explicit compatibility p
 
 Milestone 5 remains unauthenticated and unowned, matching the current schema. No `userId`, auth token, or ownership filter is added now.
 
+### Static History routing decision
+
+Nuxt is configured with:
+
+```text
+ssr: false
+Nitro preset: static
+pnpm generate
+```
+
+Future historical UUIDs are unknown at generation time. A dynamic route such as:
+
+```text
+/history/:id
+```
+
+cannot be relied on as a standalone prerendered file for arbitrary future ids on pure static hosting without an SPA fallback.
+
+Milestone 5 therefore uses one static shell:
+
+```text
+/history
+```
+
+and client-side detail state in the query string:
+
+```text
+/history?run=<uuid>
+```
+
+This preserves direct-linkable detail state without requiring one generated route per historical UUID. It also follows the existing product pattern used by `/prompts?id=...`.
+
 ## Milestone 5 phases
 
 ### Phase 0 — contract freeze: DONE
 
-The user reviewed and approved collection/detail separation, pagination semantics, stable ordering, limit rules, `wizardId` filtering, and the restore/auth boundaries.
+The user reviewed and approved collection/detail separation, pagination semantics, stable ordering, limit rules, `wizardId` filtering, and restore/auth boundaries.
 
 ### Phase 1 — single-run detail API: DONE
 
@@ -295,7 +331,7 @@ Phase 2 regression POST created:
 
 ### Phase 3 — wizardId filtering: DONE
 
-Implemented:
+Implemented and locally verified:
 
 ```text
 GET /api/wizard-runs?wizardId=<id>
@@ -307,35 +343,16 @@ limit + cursor compose with filter
 pagination remains inside filtered result set
 ```
 
-Local user verification:
+Verification probe:
 
 ```text
-phase3-probe POST -> 201
+wizardId = phase3-probe
 id = b7e47e39-4eb9-4333-b891-e42d34d25bd1
-
-wizardId=phase3-probe
-  -> only the probe summary
-
-wizardId=does-not-exist
-  -> 200, runs=[]
-
-wizardId=
-  -> structured 400
-
-wizardId=portrait&limit=2
-  -> first two portrait summaries
-  -> hasMore=true
-  -> nextCursor present
-
-same portrait filter + returned cursor
-  -> next portrait page
-  -> no phase3-probe row
-  -> no duplicate from prior page
 ```
 
-Phase 3 is therefore verified and complete.
+The user verified the probe, unknown/empty semantics, and filtered `portrait + limit + cursor` continuation with no cross-filter row or duplicate.
 
-### Phase 4 — typed frontend read boundary: AWAITING USER VERIFICATION
+### Phase 4 — typed frontend read boundary: DONE
 
 Implemented in:
 
@@ -344,7 +361,7 @@ app/types/wizardRunApi.ts
 app/composables/usePromptDraftApi.ts
 ```
 
-Types now separate collection summaries from full detail records:
+Types separate collection summaries from full detail records:
 
 ```text
 WizardRunSummary
@@ -354,15 +371,6 @@ ListWizardRunsParams
 ListWizardRunsResponse
 GetWizardRunResponse
 ```
-
-`ListWizardRunsResponse` now matches the production collection contract:
-
-```text
-runs: WizardRunSummary[]
-pageInfo: { nextCursor, hasMore }
-```
-
-The old frontend `count` and `WizardRunRecord[]` list shape are removed.
 
 Client methods:
 
@@ -377,39 +385,66 @@ getWizardRun(id)
   -> calls runtime-configured /api/wizard-runs/:id
 ```
 
-`createWizardRun()` and the existing API-base normalization remain unchanged.
+`createWizardRun()` and API-base normalization remain unchanged.
 
-Phase 4 introduces no page, Nuxt server route, or backend dependency into static generation.
+The user ran `pnpm generate` locally after pulling Phase 4. Static generation completed successfully, `/wizard/portrait` remained prerendered, and Nuxt reported `.output/public` ready for static hosting.
 
-Verification boundary for this phase:
+### Phase 5 — History UI MVP: AWAITING USER VERIFICATION
+
+Implemented:
 
 ```text
-pnpm generate -> succeeds
-existing Wizard compile/persistence code still builds
-no Nuxt server API route added
+app/pages/history.vue
 ```
 
-The first real browser consumer of `listWizardRuns(params)` and `getWizardRun(id)` will be the History UI in Phase 5. Runtime browser behavior of those methods is therefore verified as part of Phase 5 rather than by adding a temporary diagnostic page solely for Phase 4.
-
-Do not mark Phase 4 `DONE` until the user confirms the local static build.
-
-### Phase 5 — History UI MVP: NOT STARTED
-
-History UI will become the first real browser consumer of the Phase 4 typed read client.
-
-Before choosing the final detail-route shape, re-check the static-hosting constraint: arbitrary historical UUIDs are not known at generate time. A dynamic `/history/:id` route is only safe for direct navigation if deployment provides an SPA fallback or equivalent routing support. Otherwise prefer a static `/history` shell with client-side selection/query state.
-
-MVP concerns:
+Runtime behavior:
 
 ```text
-loading
-empty state
-error/retry
-newest-first list
-load-more pagination
-wizard filter
-timestamp
-open full run detail
+/history
+  -> listWizardRuns({ limit: 20 })
+  -> loading / empty / error / retry
+  -> newest-first summary cards
+  -> cursor-based Load more
+
+/history?run=<uuid>
+  -> getWizardRun(uuid)
+  -> full historical record
+  -> compiled output
+  -> copy prompt
+  -> read-only stored snapshot disclosure
+  -> back to /history
+```
+
+Navigation/localization:
+
+```text
+app/config/navigation.ts
+  -> History primary/mobile navigation item
+
+i18n/locales/history.en.ts
+i18n/locales/history.fa.ts
+i18n/i18n.config.ts
+  -> localized History labels and messages
+```
+
+The first page deliberately lists all Wizard ids newest-first. The backend `wizardId` filter remains available but is not surfaced as a technical free-text UI control in this MVP.
+
+Verification required before `DONE`:
+
+```text
+pull latest branch
+run backend + pnpm dev
+open /history
+History nav visible
+real persisted summaries load
+open a row -> /history?run=<uuid>
+exact full output loads
+back works
+copy works
+API-down error/retry works
+restart API and retry recovers
+pnpm generate succeeds
+/history appears in generated routes/output
 ```
 
 ### Phase 6 — final Milestone 5 E2E + docs: NOT STARTED
