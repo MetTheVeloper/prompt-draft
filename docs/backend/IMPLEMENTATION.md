@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1 through 6 are complete and locally verified.
+Milestones 1 through 7 are complete and locally verified.
 
 Current verified platform path:
 
@@ -12,9 +12,8 @@ static Nuxt frontend :3030
   -> Docker API :4000
   -> Node HTTP server
   -> validation + normalization
-  -> PostgreSQL client/pool
-  -> db:5432
-  -> Docker named volume
+  -> PostgreSQL and private backend services
+  -> Docker named volumes
 ```
 
 The backend remains independent from Nuxt server routes so static generation remains supported.
@@ -208,13 +207,13 @@ Queryable metadata remains separate from the canonical draft snapshot:
 
 ```text
 user_id
- draft_id
- title
- created_at
- client_updated_at
- server_updated_at
- revision
- snapshot JSONB
+draft_id
+title
+created_at
+client_updated_at
+server_updated_at
+revision
+snapshot JSONB
 ```
 
 `revision` increments on successful updates and is available for future optimistic-conflict enforcement.
@@ -399,9 +398,201 @@ Verified `GET /api/drafts`, ownership scoping, merge behavior, preservation of l
 
 Verified Cloud Save placement/state, Drafts-menu Cloud status icons, local-first failure model, and successful `pnpm generate`.
 
+# Milestone 7 — COMPLETE: Server-side Translation
+
+## Product/architecture contract
+
+Translation remains usable without authentication and is implemented as a backend capability rather than a Nuxt server-route dependency.
+
+```text
+static Nuxt TextField
+  -> NUXT_PUBLIC_API_BASE
+  -> Prompt Draft Node API :4000
+  -> Docker-private LibreTranslate :5000
+  -> translation result
+```
+
+The browser never calls LibreTranslate directly and port `5000` is not published to the host as an application API.
+
+## Docker translator service
+
+Compose provides:
+
+```text
+translator image       -> libretranslate/libretranslate:v1.9.6
+loaded languages       -> en,fa
+model volume           -> prompt_draft_translation_models
+internal service URL   -> http://translator:5000
+backend env            -> TRANSLATION_BASE_URL
+translation timeout    -> long request timeout
+status timeout         -> short independent health timeout
+```
+
+Model persistence prevents normal container recreation from forcing a model re-download.
+
+The translator service has a Docker healthcheck. During initial boot/model loading, backend health may correctly report unavailable; once the service becomes ready, the same status endpoint reports availability without backend restart.
+
+## Backend Translation API
+
+```text
+GET /api/translate/status
+POST /api/translate
+```
+
+`POST /api/translate` accepts:
+
+```text
+text          required string, max 5000 chars
+source        auto | fa | en; default auto
+target        fa | en; default en
+alternatives  integer 0..5; default 3
+```
+
+Backend responsibilities:
+
+```text
+validate request
+normalize defaults
+call LibreTranslate over Docker network
+normalize upstream response
+return stable JSON
+return 503 when translator is unavailable
+keep API process alive when dependency fails
+```
+
+`GET /api/translate/status` queries LibreTranslate language availability and returns:
+
+```text
+ok
+available
+languages[]
+```
+
+Health checking uses a shorter timeout than a real translation call so opening a TextField menu does not block for the full translation timeout when the translator is down.
+
+## Typed frontend translation boundary
+
+Types live in:
+
+```text
+app/types/translationApi.ts
+```
+
+`usePromptDraftApi()` exposes:
+
+```text
+getTranslationStatus()
+translatePrompt(input)
+```
+
+Both use the configured public API base. The frontend no longer relies on a Nuxt server endpoint for translation.
+
+## Prompt translation composable
+
+`usePromptTranslation()` owns translation-specific client behavior:
+
+```text
+shared cached service availability
+status refresh
+translation loading/error state
+variable token protection/restoration
+translation alternatives normalization
+backend translation call
+```
+
+Translation availability is shared across component instances rather than issuing an uncontrolled health request from every field.
+
+## Variable token safety
+
+Prompt variables are protected before translation:
+
+```text
+{person}
+  -> temporary PDVAR... placeholder
+  -> translation request
+  -> restore placeholder back to {person}
+```
+
+Restoration tolerates modest translator changes to placeholder punctuation/spacing so prompt variable semantics survive.
+
+This was locally verified with `{person}` inside Persian source text.
+
+## TextField health UX
+
+The visible Translate action is tied to real backend health.
+
+Each action-menu/context-menu opening forces a fresh status check, then the menu derives availability from the shared health state:
+
+```text
+editable non-empty field + translator healthy
+  -> Translate enabled
+
+translator unavailable
+  -> Translate disabled
+
+translator restarts and becomes healthy
+  -> reopen menu
+  -> fresh check
+  -> Translate enabled again
+```
+
+No full page refresh is required for service recovery.
+
+## Legacy proxy retirement
+
+The previous Nuxt route:
+
+```text
+server/api/translate.post.ts
+```
+
+was removed after the direct backend path was locally verified.
+
+This preserves the project invariant that production product APIs do not depend on Nuxt server routes in the static frontend deployment.
+
+## Milestone 7 local verification
+
+The user verified:
+
+```text
+Docker image pull and translator startup
+healthy container state
+en/fa language availability
+backend status transition from unavailable to available during startup
+Persian -> English translation
+multiple alternatives
+stable 503 while dependency unavailable
+real TextField translation via backend :4000
+no use of localhost:3030 /api/translate
+translation selection modal behavior
+{person} token preservation
+translator stop -> Translate disabled
+translator start/healthy -> Translate re-enabled without page refresh
+translation works after recovery
+anonymous translation remains allowed
+pnpm generate succeeds
+12 static routes are prerendered
+```
+
+Existing build warnings about duplicated imports, sourcemaps and large chunks remain non-blocking; generation completed successfully.
+
+# Milestone 7 phases — ALL DONE
+
+## Phase 1 — Docker translator + backend API: DONE
+
+Verified Docker-private LibreTranslate, persistent models, status endpoint, translation endpoint, startup unavailability and successful translation.
+
+## Phase 2 — typed frontend migration: DONE
+
+Verified direct frontend-to-backend translation, existing translation modal behavior and variable token safety.
+
+## Phase 3 — proxy retirement + health UX + final regression: DONE
+
+Verified legacy Nuxt proxy removal, health-driven action availability, stop/start recovery without refresh, anonymous behavior and final `pnpm generate`.
+
 # Deferred follow-up work
 
-These are intentionally not required for Milestone 6 completion:
+These are intentionally not required for completed Milestones 6 or 7:
 
 ```text
 convert current Wizard-run /history to Draft History
@@ -410,6 +601,7 @@ server-side Cloud Draft delete semantics
 advanced multi-device conflict UI/policy
 optimistic revision rejection
 production auth rate limiting / abuse controls
+translation rate limiting / abuse controls
 email verification
 password reset/recovery
 OAuth/social login
