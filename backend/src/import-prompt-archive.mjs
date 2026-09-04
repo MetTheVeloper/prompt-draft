@@ -189,6 +189,25 @@ function addMismatch(report, category, identifier, expected, actual) {
   report.categories[category] = (report.categories[category] ?? 0) + 1
 }
 
+async function assertLegacyImporterStillOwnsImportedRows(client) {
+  const result = await client.query(`
+    SELECT telegram_message_id, legacy_title_key
+    FROM prompt_archive_items
+    WHERE source_kind = 'managed'
+      AND legacy_title_key IS NOT NULL
+    ORDER BY telegram_message_id
+    LIMIT 20
+  `)
+
+  if (!result.rows.length) return
+
+  const ids = result.rows.map((row) => row.telegram_message_id).join(', ')
+  throw new Error(
+    `Legacy Archive import is locked because imported rows are now managed by /manage/archive (Telegram ids: ${ids}). ` +
+    'The bootstrap importer must not overwrite managed Archive edits.',
+  )
+}
+
 async function importArchive(client, source) {
   await client.query('BEGIN')
   try {
@@ -515,6 +534,7 @@ try {
   const source = normalizeArchivePayload(payload, enMessages, faMessages)
 
   client = await pool.connect()
+  await assertLegacyImporterStillOwnsImportedRows(client)
   await importArchive(client, source)
   const report = await buildParityReport(client, source)
 
