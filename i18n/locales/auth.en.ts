@@ -41,6 +41,21 @@ export default {
       memberSince: "Member since",
       complete: "Complete profile",
       logout: "Sign out",
+      avatar: {
+        alt: "Profile avatar",
+        choose: "Choose avatar",
+        change: "Change avatar",
+        save: "Save avatar",
+        cancel: "Cancel",
+        remove: "Remove avatar",
+        preparing: "Preparing 400×400 avatar...",
+        hint: "JPEG, PNG or WebP · center-cropped to 400×400 · WebP at 60% quality.",
+        errors: {
+          prepare: "Prompt Draft could not prepare this image.",
+          save: "Prompt Draft could not save your avatar.",
+          remove: "Prompt Draft could not remove your avatar.",
+        },
+      },
     },
     profileCompletion: {
       title: "Complete your profile",
