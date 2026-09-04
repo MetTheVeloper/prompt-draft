@@ -1,7 +1,11 @@
 import type {
   AuthMeResponse,
+  AuthProfileField,
+  AuthProfileState,
   AuthSessionResponse,
   AuthUser,
+  CompleteAuthProfileInput,
+  CompleteAuthProfileResponse,
   IdentifyAuthResponse,
 } from "~/types/auth";
 import type {
@@ -16,6 +20,7 @@ const authState = reactive({
   loading: false,
   token: null as string | null,
   user: null as AuthUser | null,
+  profile: null as AuthProfileState | null,
   permissions: [] as AuthGrantedPermission[],
 });
 
@@ -35,6 +40,9 @@ export function useAuth() {
   });
 
   const role = computed(() => authState.user?.role ?? null);
+  const missingProfileFields = computed(() => {
+    return authState.profile?.missingFields ?? [];
+  });
 
   const isSuperAdmin = computed(() => role.value === "super_admin");
   const isAdmin = computed(() => {
@@ -54,6 +62,10 @@ export function useAuth() {
 
   function canAll(permissions: AuthPermission[]) {
     return permissions.every((permission) => can(permission));
+  }
+
+  function hasProfileField(field: AuthProfileField) {
+    return authState.profile?.completedFields.includes(field) ?? false;
   }
 
   function endpoint(path: string) {
@@ -82,7 +94,18 @@ export function useAuth() {
   function clearSession() {
     writeToken(null);
     authState.user = null;
+    authState.profile = null;
     authState.permissions = [];
+  }
+
+  function applyAuthorizationState(response: {
+    user: AuthUser;
+    profile: AuthProfileState;
+    permissions: AuthGrantedPermission[];
+  }) {
+    authState.user = response.user;
+    authState.profile = response.profile;
+    authState.permissions = [...response.permissions];
   }
 
   function authHeaders(token = authState.token) {
@@ -115,8 +138,7 @@ export function useAuth() {
         const response = await $fetch<AuthMeResponse>(endpoint("/api/auth/me"), {
           headers: authHeaders(token),
         });
-        authState.user = response.user;
-        authState.permissions = [...response.permissions];
+        applyAuthorizationState(response);
       } catch {
         clearSession();
       } finally {
@@ -141,8 +163,7 @@ export function useAuth() {
 
   async function applySession(response: AuthSessionResponse) {
     writeToken(response.token);
-    authState.user = response.user;
-    authState.permissions = [...response.permissions];
+    applyAuthorizationState(response);
     authState.initialized = true;
     return response;
   }
@@ -175,6 +196,32 @@ export function useAuth() {
     }
   }
 
+  async function completeProfile(input: CompleteAuthProfileInput) {
+    const token = authState.token;
+
+    if (!token) {
+      throw new Error("Authentication required");
+    }
+
+    authState.loading = true;
+
+    try {
+      const response = await $fetch<CompleteAuthProfileResponse>(
+        endpoint("/api/auth/profile/complete"),
+        {
+          method: "POST",
+          headers: authHeaders(token),
+          body: input,
+        },
+      );
+
+      applyAuthorizationState(response);
+      return response;
+    } finally {
+      authState.loading = false;
+    }
+  }
+
   async function logout() {
     const token = authState.token;
     authState.loading = true;
@@ -198,8 +245,10 @@ export function useAuth() {
   return {
     state: readonly(authState),
     user: computed(() => authState.user),
+    profile: computed(() => authState.profile),
     token: computed(() => authState.token),
     permissions: computed(() => authState.permissions),
+    missingProfileFields,
     role,
     initialized: computed(() => authState.initialized),
     loading: computed(() => authState.loading),
@@ -209,10 +258,12 @@ export function useAuth() {
     can,
     canAny,
     canAll,
+    hasProfileField,
     initialize,
     identify,
     login,
     register,
+    completeProfile,
     logout,
     clearSession,
     authHeaders,
