@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { AUTH_PERMISSIONS } from "~/config/authorization";
+import { canAccessManage } from "~/config/manage";
 
 const emit = defineEmits<{
   (event: "close"): void;
@@ -31,9 +31,11 @@ const memberSince = computed(() => {
   });
 });
 
-async function handleOpenDashboard() {
+const canOpenManage = computed(() => canAccessManage(auth.can));
+
+async function handleOpenManage() {
   emit("close");
-  await navigateTo("/dashboard");
+  await navigateTo("/manage");
 }
 
 async function handleLogout() {
@@ -79,13 +81,13 @@ async function handleLogout() {
     <el-divider />
 
     <el-button
-      v-if="auth.can(AUTH_PERMISSIONS.DASHBOARD_VIEW)"
+      v-if="canOpenManage"
       class="w100"
       color="prim"
       mode="flat"
-      icon="dashboard"
-      label="Dashboard"
-      @click="handleOpenDashboard"
+      icon="admin_panel_settings"
+      label="Manage"
+      @click="handleOpenManage"
     />
 
     <el-button
