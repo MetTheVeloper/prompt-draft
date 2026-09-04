@@ -68,13 +68,16 @@ account_created:v1
 profile_email_added:v1   (only when email already exists)
 ```
 
-`011_score_cloud_draft_creation.sql` creates one deterministic creation reward for every Cloud Draft already present when the migration runs:
+`011_score_cloud_draft_creation.sql` creates one deterministic creation reward for every Cloud Draft already present when the migration runs.
+
+The Draft id remains visible as `source_id`. The idempotency key uses a bounded deterministic MD5 digest of the Draft id so even the maximum supported Draft id length cannot violate the ledger's idempotency-key length constraint:
 
 ```text
-draft_created:v1:<draftId>
+source_id       = <draftId>
+idempotency_key = draft_created:v1:<md5(draftId)>
 ```
 
-All backfill inserts use the same idempotency keys as runtime awarding and are rerunnable.
+All backfill inserts use the same idempotency-key algorithm as runtime awarding and are rerunnable.
 
 ## Identity-event database guarantee
 
@@ -131,12 +134,12 @@ event_type      = draft_created
 points          = 50
 source_type     = prompt_draft
 source_id       = <draftId>
-idempotency_key = draft_created:v1:<draftId>
+idempotency_key = draft_created:v1:<md5(draftId)>
 ```
 
 The Cloud Draft save path attempts this award after every successful server save. Because the idempotency key is stable per user/Draft, only the first logical creation can add the 50 XP. Later autosaves, retries, and multi-device saves converge to the same event.
 
-Gamification failure does not fail the primary Draft save. A later save or Auth refresh can retry/heal the idempotent score event.
+Gamification failure does not fail the primary Draft save. A later save of the same Draft retries the idempotent award. Auth/Profile refresh reloads the current persisted score read model once events exist.
 
 Future product events should use `awardUserScoreEvent()` with event-specific idempotency keys.
 
@@ -172,7 +175,7 @@ GET  /api/auth/me
 POST /api/auth/profile/complete
 ```
 
-Before returning the read model, the backend idempotently ensures the baseline account/email milestones. This provides a self-healing path if an earlier runtime award was interrupted.
+Before returning the read model, the backend idempotently ensures the baseline account/email milestones. This provides a self-healing path if an earlier identity award was interrupted.
 
 Cloud Draft `PUT /api/drafts/:id` also returns the refreshed `score` state when score processing succeeds.
 
@@ -189,7 +192,7 @@ applyScoreState(score)
 
 Cloud Draft saves feed returned score state back into `useAuth()` through the typed API boundary, so a newly awarded +50 can update the in-memory profile score without logout/reload.
 
-Profile Menu also performs a lightweight `/api/auth/me` refresh when opened. This prevents stale or pre-rollout Auth state from presenting a false `0 XP`, and also picks up score changes made from another device/session.
+Profile Menu performs a lightweight `/api/auth/me` refresh when opened. Missing score state is represented as unknown rather than a false zero, so pre-rollout/stale state displays `—` until the authoritative read completes. The refresh also picks up score changes made from another device/session.
 
 ## Why there is no `users.score` source of truth
 
@@ -242,7 +245,7 @@ Still verify after the latest hardening/extension:
 
 ```text
 1. migration 011 applies successfully
-2. username-only account displays 1000 XP immediately when Profile Menu opens
+2. username-only account displays 1000 XP when Profile Menu opens
 3. existing Cloud Drafts receive exactly one +50 draft_created backfill each
 4. creating/syncing one new Cloud Draft adds exactly +50 XP
 5. saving/editing that same Draft again does not add another +50
