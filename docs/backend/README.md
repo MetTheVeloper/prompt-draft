@@ -33,35 +33,6 @@ Nuxt/client
   -> Docker named volume prompt_draft_pgdata
 ```
 
-Verified capabilities include:
-
-- `GET /api/hello`;
-- `GET /api/db-check`;
-- `POST /api/wizard-runs`;
-- `GET /api/wizard-runs`;
-- JSON body parsing and validation;
-- structured client errors;
-- server-generated UUID/timestamps;
-- browser CORS/preflight;
-- PostgreSQL service-to-service networking;
-- PostgreSQL connection pooling;
-- versioned SQL schema source;
-- parameterized SQL INSERT;
-- SQL SELECT read-back;
-- Docker named-volume persistence;
-- Wizard-run rows that survive full API + DB container removal/recreation.
-
-Current database shape:
-
-```text
-id              UUID primary key
-created_at      timestamp with time zone
-wizard_id       text
-wizard_version  integer
-output           text
-snapshot         jsonb
-```
-
 ## Milestone 4 — complete
 
 Persistence is integrated with the real Wizard success flow rather than a development Home hook.
@@ -104,19 +75,15 @@ NUXT_PUBLIC_API_BASE
   -> usePromptDraftApi()
 ```
 
-Static generation remains supported. The user verified `pnpm generate` succeeds and `/wizard/portrait` is prerendered.
-
-The real Wizard persistence path was verified in the browser and directly in PostgreSQL. A product-created run survived full API + DB container recreation and was returned afterward with the same UUID.
+Static generation remains supported. The real Wizard persistence path was verified in the browser and directly in PostgreSQL, including Docker named-volume durability.
 
 Persistence failure is intentionally non-destructive: if prompt generation succeeds but history storage is unavailable, the Ready artifact remains usable and the user sees a persistence warning.
 
-The Home page no longer performs backend learning GET/POST requests.
+## Milestone 5 — complete: History / Read API + UX
 
-## Milestone 5 — in progress: History / Read API + UX
+Stored successful Wizard runs now have a real read-only History product surface.
 
-Milestone 5 turns stored successful Wizard runs into a real read-only History product surface.
-
-Goal:
+Verified product path:
 
 ```text
 successful Wizard runs
@@ -126,8 +93,6 @@ successful Wizard runs
   -> typed frontend read boundary
   -> static-compatible History UI
 ```
-
-The milestone separates collection reads from detail reads. The list endpoint returns lightweight run summaries; full historical `output` and `snapshot` belong only to the detail endpoint.
 
 Current API surface:
 
@@ -149,9 +114,9 @@ Canonical list ordering is stable newest-first ordering by both timestamp and id
 created_at DESC, id DESC
 ```
 
-Pagination uses an opaque keyset cursor derived from the ordering tuple rather than public page-number/offset semantics.
+Pagination uses opaque keyset cursors. Collection rows are summary-only; full `output` and `snapshot` are returned only by the detail endpoint.
 
-The frontend typed read boundary now exposes:
+The frontend typed read boundary exposes:
 
 ```text
 listWizardRuns(params)
@@ -160,18 +125,31 @@ getWizardRun(id)
 
 with separate summary and full-record TypeScript contracts.
 
-The History UI is implemented as one static route shell:
+The History UI uses one static route shell:
 
 ```text
 /history
 /history?run=<uuid>
 ```
 
-The query-based detail state is intentional. Arbitrary future UUIDs are unknown at `pnpm generate` time, so Milestone 5 does not depend on a dynamic `/history/:id` static route or on deployment-specific SPA fallback behavior. This also follows the existing `/prompts?id=...` product pattern.
+The query-based detail state is intentional. Arbitrary future UUIDs are unknown at `pnpm generate` time, so the product does not depend on a dynamic `/history/:id` static route or on deployment-specific SPA fallback behavior.
 
-History detail is intentionally not the same as Wizard restore. Milestone 5 may read and display historical snapshots, but it does not execute or restore them into the current Wizard runtime. Restore requires an explicit compatibility policy across `wizardVersion`, `snapshot.schemaVersion`, and future runtime changes and remains deferred.
+Verified History behavior includes:
 
-Authentication and user ownership are also deferred. The read contract is structured so future ownership can scope the same collection/resource operations without adding ownership now.
+- History navigation entry;
+- newest-first persisted summaries;
+- full historical detail;
+- compiled prompt display;
+- Copy prompt clipboard action;
+- read-only stored snapshot disclosure;
+- graceful API-down error state;
+- retry recovery after API restart;
+- English/Persian localization;
+- successful `pnpm generate` with `/history` included in generated routes.
+
+History detail is intentionally not Wizard restore. Stored snapshots are displayed read-only and are not executed/restored into the current Wizard runtime.
+
+Authentication and user ownership remain deferred.
 
 ### Milestone 5 phases
 
@@ -181,11 +159,11 @@ Phase 1  GET /api/wizard-runs/:id               DONE
 Phase 2  cursor-paginated summary collection    DONE
 Phase 3  wizardId filtering                     DONE
 Phase 4  typed frontend read client             DONE
-Phase 5  /history + query-based detail UX       AWAITING USER VERIFICATION
-Phase 6  full local E2E + documentation         NOT STARTED
+Phase 5  /history + query-based detail UX       DONE
+Phase 6  full local E2E + documentation         DONE
 ```
 
-No phase is complete merely because code or documentation exists. Each phase is marked `DONE` only after the user locally verifies the relevant behavior and confirms it.
+Milestone 5 is COMPLETE.
 
 ## Still deferred
 
@@ -205,13 +183,17 @@ A temporary `persistence_probe` table remains from the volume-learning phase and
 
 ## Documentation workflow
 
-`README.md` explains purpose, boundaries, and milestone scope.
+`README.md` explains purpose, boundaries, and completed milestone scope.
 
 `IMPLEMENTATION.md` contains implementation sequence, verified architecture, API contracts, and technical decisions/debt.
 
 `STATUS.md` records what has actually been verified and what should happen next.
 
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is not sufficient.
+
+## Next action
+
+Milestone 5 is closed. Await the user's explicit next milestone scope before making further backend/product changes.
 
 For a new chat, read these three files before making backend changes:
 
