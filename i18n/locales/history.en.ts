@@ -17,8 +17,8 @@ export default {
       open: "Open run",
       copy: "Copy prompt",
       copied: "Copied",
-      showSnapshot: "Show stored snapshot",
-      hideSnapshot: "Hide stored snapshot",
+      editInCreate: "Edit in Create",
+      restoring: "Opening...",
     },
     fields: {
       wizard: "Wizard run",
@@ -35,17 +35,20 @@ export default {
       description: "Prompt Draft could not load saved Wizard runs from the backend.",
       loadMore: "Could not load the next History page.",
     },
+    restore: {
+      draftTitle: "History · {id} · v{version}",
+      error: "This History run could not be opened as an editable draft. Your existing drafts were left unchanged.",
+    },
     run: {
       wizard: "{id} · v{version}",
     },
     detail: {
       title: "History run",
-      description: "Review the compiled prompt and the exact snapshot stored for this Wizard run.",
+      description: "Review the compiled prompt or reopen this Wizard result as an editable draft.",
       loading: "Loading run...",
       errorTitle: "Run unavailable",
       errorDescription: "This saved Wizard run could not be loaded.",
       output: "Compiled prompt",
-      snapshot: "Stored snapshot",
     },
   },
 };
