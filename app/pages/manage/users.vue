@@ -20,7 +20,13 @@ const listError = ref("");
 const nextCursor = ref<string | null>(null);
 const hasMore = ref(false);
 const searchText = ref("");
-const roleFilter = ref<"" | AuthUserRole>("");
+const roleFilter = ref("");
+
+const roleFilterItems = [
+  { label: "User", value: "user", icon: "person" },
+  { label: "Admin", value: "admin", icon: "admin_panel_settings" },
+  { label: "Super admin", value: "super_admin", icon: "shield_person" },
+];
 
 const selectedUser = ref<AdminUserSummary | null>(null);
 const detailLoading = ref(false);
@@ -36,6 +42,12 @@ function accountLabel(user: AdminUserSummary) {
 
 function roleLabel(role: AuthUserRole) {
   return role.replaceAll("_", " ");
+}
+
+function normalizedRoleFilter(): AuthUserRole | undefined {
+  return ["user", "admin", "super_admin"].includes(roleFilter.value)
+    ? (roleFilter.value as AuthUserRole)
+    : undefined;
 }
 
 function formatDate(value: string) {
@@ -92,7 +104,7 @@ async function loadUsers(options: { append?: boolean } = {}) {
       limit: 20,
       cursor: append ? nextCursor.value ?? undefined : undefined,
       query: searchText.value.trim() || undefined,
-      role: roleFilter.value || undefined,
+      role: normalizedRoleFilter(),
     });
 
     if (requestVersion !== listRequestVersion) return;
@@ -194,21 +206,28 @@ onBeforeUnmount(() => {
       </el-text>
     </el-flex>
 
-    <el-flex rules="rsc" :gap="10" class="w100 fw">
-      <input
+    <el-grid
+      cols="minmax(240px, 1fr) minmax(180px, 240px) auto"
+      :gap="10"
+      align-items="center"
+      class="w100">
+      <el-text-field
         v-model="searchText"
-        class="manage-users__control manage-users__search"
-        type="search"
-        autocomplete="off"
+        class="w100"
+        type="text"
+        :actions="false"
+        :size="13"
         placeholder="Search username or email"
       />
 
-      <select v-model="roleFilter" class="manage-users__control manage-users__select">
-        <option value="">All roles</option>
-        <option value="user">User</option>
-        <option value="admin">Admin</option>
-        <option value="super_admin">Super admin</option>
-      </select>
+      <el-dropdown
+        v-model="roleFilter"
+        class="w100"
+        :items="roleFilterItems"
+        placeholder="All roles"
+        clearable
+        icon="manage_accounts"
+      />
 
       <el-button
         mode="flat"
@@ -218,48 +237,73 @@ onBeforeUnmount(() => {
         :disable="loading || loadingMore"
         @click="loadUsers()"
       />
-    </el-flex>
+    </el-grid>
 
     <el-flex
       v-if="listError"
       rules="rsc"
       :gap="8"
-      class="w100 manage-users__error"
+      class="w100"
+      bg="red10"
       :p="12"
       :radius="10">
       <el-icon icon="warning" color="red" :size="18" />
       <el-text color="red" :size="12">{{ listError }}</el-text>
     </el-flex>
 
-    <el-flex rules="csc" class="w100 manage-users__table" bg="surface" :radius="14" :br="1" bc="normal15">
-      <div class="manage-users__row manage-users__head">
-        <span>Account</span>
-        <span>Role</span>
-        <span>Cloud drafts</span>
-        <span>Active sessions</span>
-        <span>Joined</span>
-      </div>
+    <el-flex
+      rules="csc"
+      class="w100"
+      bg="surface"
+      :radius="14"
+      :br="1"
+      bc="normal15">
+      <el-grid
+        cols="minmax(220px, 1.8fr) minmax(120px, .8fr) minmax(100px, .6fr) minmax(110px, .7fr) minmax(160px, 1fr)"
+        :gap="12"
+        align-items="center"
+        class="w100"
+        :p="[12, 16]">
+        <el-text color="normal55" :size="11" :weight="800">Account</el-text>
+        <el-text color="normal55" :size="11" :weight="800">Role</el-text>
+        <el-text color="normal55" :size="11" :weight="800">Cloud drafts</el-text>
+        <el-text color="normal55" :size="11" :weight="800">Active sessions</el-text>
+        <el-text color="normal55" :size="11" :weight="800">Joined</el-text>
+      </el-grid>
+
+      <el-divider />
 
       <el-flex v-if="loading" rules="ccc" class="w100" :p="24">
         <el-text color="normal55" :size="13">Loading users…</el-text>
       </el-flex>
 
       <template v-else-if="users.length">
-        <button
-          v-for="user in users"
-          :key="user.id"
-          type="button"
-          class="manage-users__row manage-users__data-row"
-          @click="openUser(user)">
-          <span>
-            <strong>{{ accountLabel(user) }}</strong>
-            <small>{{ user.id }}</small>
-          </span>
-          <span>{{ roleLabel(user.role) }}</span>
-          <span>{{ user.cloudDraftCount }}</span>
-          <span>{{ user.activeSessionCount }}</span>
-          <span>{{ formatDate(user.createdAt) }}</span>
-        </button>
+        <template v-for="(user, index) in users" :key="user.id">
+          <el-button
+            class="w100"
+            mode="flat"
+            color="normal"
+            :p="[0, 0]"
+            :radius="0"
+            @click="openUser(user)">
+            <el-grid
+              cols="minmax(220px, 1.8fr) minmax(120px, .8fr) minmax(100px, .6fr) minmax(110px, .7fr) minmax(160px, 1fr)"
+              :gap="12"
+              align-items="center"
+              class="w100"
+              :p="[12, 16]">
+              <el-flex rules="csc" :gap="3" class="w100">
+                <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
+                <el-text color="normal45" :size="10">{{ user.id }}</el-text>
+              </el-flex>
+              <el-text :size="12">{{ roleLabel(user.role) }}</el-text>
+              <el-text :size="12" :localize="true">{{ user.cloudDraftCount }}</el-text>
+              <el-text :size="12" :localize="true">{{ user.activeSessionCount }}</el-text>
+              <el-text :size="12">{{ formatDate(user.createdAt) }}</el-text>
+            </el-grid>
+          </el-button>
+          <el-divider v-if="index < users.length - 1" />
+        </template>
       </template>
 
       <el-flex v-else rules="ccc" class="w100" :p="24">
@@ -289,124 +333,55 @@ onBeforeUnmount(() => {
       :p="16">
       <el-flex rules="rbc" class="w100" :gap="12">
         <el-text :size="16" :weight="800">User detail</el-text>
-        <el-button mode="flat" color="normal" icon="close" label="Close" @click="closeUser" />
+        <el-button
+          mode="flat"
+          color="normal"
+          icon="close"
+          label="Close"
+          @click="closeUser"
+        />
       </el-flex>
 
-      <el-text v-if="detailLoading" color="normal55" :size="13">Loading user…</el-text>
+      <el-text v-if="detailLoading" color="normal55" :size="13">
+        Loading user…
+      </el-text>
 
-      <el-flex v-else-if="detailError" rules="rsc" :gap="8" class="w100 manage-users__error" :p="12" :radius="10">
+      <el-flex
+        v-else-if="detailError"
+        rules="rsc"
+        :gap="8"
+        class="w100"
+        bg="red10"
+        :p="12"
+        :radius="10">
         <el-icon icon="warning" color="red" :size="18" />
         <el-text color="red" :size="12">{{ detailError }}</el-text>
       </el-flex>
 
-      <template v-else-if="selectedUser">
-        <div class="manage-users__detail-grid">
-          <span>Account</span><strong>{{ accountLabel(selectedUser) }}</strong>
-          <span>User ID</span><strong>{{ selectedUser.id }}</strong>
-          <span>Role</span><strong>{{ roleLabel(selectedUser.role) }}</strong>
-          <span>Cloud drafts</span><strong>{{ selectedUser.cloudDraftCount }}</strong>
-          <span>Active sessions</span><strong>{{ selectedUser.activeSessionCount }}</strong>
-          <span>Joined</span><strong>{{ formatDate(selectedUser.createdAt) }}</strong>
-        </div>
-      </template>
+      <el-grid
+        v-else-if="selectedUser"
+        cols="minmax(120px, .4fr) minmax(0, 1fr)"
+        :gap="12"
+        align-items="center"
+        class="w100">
+        <el-text color="normal55" :size="12">Account</el-text>
+        <el-text :size="12" :weight="700">{{ accountLabel(selectedUser) }}</el-text>
+
+        <el-text color="normal55" :size="12">User ID</el-text>
+        <el-text :size="12" :weight="700">{{ selectedUser.id }}</el-text>
+
+        <el-text color="normal55" :size="12">Role</el-text>
+        <el-text :size="12" :weight="700">{{ roleLabel(selectedUser.role) }}</el-text>
+
+        <el-text color="normal55" :size="12">Cloud drafts</el-text>
+        <el-text :size="12" :weight="700" :localize="true">{{ selectedUser.cloudDraftCount }}</el-text>
+
+        <el-text color="normal55" :size="12">Active sessions</el-text>
+        <el-text :size="12" :weight="700" :localize="true">{{ selectedUser.activeSessionCount }}</el-text>
+
+        <el-text color="normal55" :size="12">Joined</el-text>
+        <el-text :size="12" :weight="700">{{ formatDate(selectedUser.createdAt) }}</el-text>
+      </el-grid>
     </el-flex>
   </el-flex>
 </template>
-
-<style scoped>
-.manage-users__control {
-  min-height: 42px;
-  padding: 8px 12px;
-  border-radius: 10px;
-  border: 1px solid rgba(127, 127, 127, 0.25);
-  background: rgba(127, 127, 127, 0.07);
-  color: inherit;
-  font: inherit;
-  outline: none;
-}
-
-.manage-users__search {
-  flex: 1 1 320px;
-  min-width: min(320px, 100%);
-}
-
-.manage-users__select {
-  flex: 0 0 180px;
-}
-
-.manage-users__table {
-  overflow: hidden;
-}
-
-.manage-users__row {
-  display: grid;
-  grid-template-columns: minmax(220px, 1.8fr) minmax(120px, 0.8fr) minmax(100px, 0.6fr) minmax(110px, 0.7fr) minmax(160px, 1fr);
-  width: 100%;
-  gap: 12px;
-  align-items: center;
-  padding: 12px 16px;
-  text-align: left;
-}
-
-.manage-users__head {
-  font-size: 11px;
-  font-weight: 800;
-  color: rgba(127, 127, 127, 0.85);
-  border-bottom: 1px solid rgba(127, 127, 127, 0.15);
-}
-
-.manage-users__data-row {
-  border: 0;
-  border-bottom: 1px solid rgba(127, 127, 127, 0.12);
-  background: transparent;
-  color: inherit;
-  font: inherit;
-  cursor: pointer;
-}
-
-.manage-users__data-row:hover {
-  background: rgba(127, 127, 127, 0.08);
-}
-
-.manage-users__data-row span:first-child {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.manage-users__data-row small {
-  color: rgba(127, 127, 127, 0.8);
-  font-size: 10px;
-  word-break: break-all;
-}
-
-.manage-users__detail-grid {
-  display: grid;
-  grid-template-columns: minmax(120px, 0.4fr) minmax(0, 1fr);
-  gap: 10px 16px;
-  width: 100%;
-  font-size: 12px;
-}
-
-.manage-users__detail-grid span {
-  color: rgba(127, 127, 127, 0.85);
-}
-
-.manage-users__detail-grid strong {
-  overflow-wrap: anywhere;
-}
-
-.manage-users__error {
-  background: rgba(220, 60, 60, 0.08);
-}
-
-@media (max-width: 900px) {
-  .manage-users__table {
-    overflow-x: auto;
-  }
-
-  .manage-users__row {
-    min-width: 900px;
-  }
-}
-</style>
