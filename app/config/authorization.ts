@@ -7,6 +7,8 @@ export const AUTH_PERMISSIONS = {
   DRAFTS_DELETE_ANY: "drafts.delete_any",
   SYSTEM_SETTINGS_MANAGE: "system.settings.manage",
   COLLAGE_VIEW: "collage.view",
+  ARCHIVE_VIEW: "archive.view",
+  ARCHIVE_MANAGE: "archive.manage",
 } as const;
 
 export type AuthPermission =
