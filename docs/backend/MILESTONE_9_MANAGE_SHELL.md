@@ -1,6 +1,6 @@
 # Milestone 9 — Manage Shell / Admin Workspace Foundation
 
-Status: CONTRACT READY — IMPLEMENTATION NOT STARTED
+Status: PHASES 1–2 IMPLEMENTED — AWAITING USER VERIFICATION
 
 ## Goal
 
@@ -23,7 +23,7 @@ Milestone 9 implements only the reusable shell and migrates the existing Dashboa
 
 `/manage` is a management workspace, not a public navigation section.
 
-It should provide a persistent tab-based management navigation whose visible sections are derived from permissions.
+It provides persistent management navigation whose visible sections are derived from permissions.
 
 Initial section:
 
@@ -53,17 +53,9 @@ Future sections must be added through one shared section configuration rather th
 
 ## Permission-first contract
 
-Navigation and routing must remain permission-driven, not role-name-driven.
+Navigation and routing remain permission-driven, not role-name-driven.
 
-Do not write runtime checks such as:
-
-```text
-role === admin || role === super_admin
-```
-
-for Manage section access.
-
-Instead:
+Runtime Manage access must use:
 
 ```text
 auth.can(section.requiredPermission)
@@ -73,7 +65,13 @@ Roles remain permission bundles. Backend authorization remains the authoritative
 
 ## Central Manage section configuration
 
-Create one reusable frontend configuration conceptually shaped like:
+Implemented in:
+
+```text
+app/config/manage.ts
+```
+
+Current shape:
 
 ```text
 ManageSection
@@ -84,7 +82,7 @@ ManageSection
   requiredPermission
 ```
 
-This configuration drives:
+The same configuration drives:
 
 ```text
 Manage tabs
@@ -93,121 +91,101 @@ Profile Menu Manage visibility
 future responsive Manage navigation
 ```
 
-Adding `/manage/users` later should primarily mean adding a new section definition plus the page/backend APIs, not rebuilding the shell.
+Adding `/manage/users` later should primarily mean adding one section definition plus its page/backend APIs, not rebuilding the shell.
 
 ## `/manage` behavior
 
-`/manage` should resolve the first Manage section the authenticated user is permitted to access.
-
-Example today:
+Implemented resolver:
 
 ```text
-super_admin
-  -> /manage
-  -> /manage/dashboard
+app/middleware/manage-entry.ts
 ```
 
-Future example:
+Exact `/manage` entry behavior:
 
 ```text
-support role
-permissions: users.view
-  -> /manage
-  -> /manage/users
-```
-
-If the user is not authenticated:
-
-```text
-/manage
+anonymous
   -> /login?next=/manage
-```
 
-If authenticated but no Manage section is permitted:
+authenticated + one or more Manage permissions
+  -> first permitted configured section
 
-```text
-/manage
+authenticated + no permitted Manage section
   -> 403 Forbidden
 ```
 
-Do not assume Dashboard is always the first permitted section forever.
+The resolver never assumes that Dashboard will always be the first permitted section.
 
 ## Manage shell UI
 
-The shell should contain:
+Implemented parent shell:
+
+```text
+app/pages/manage.vue
+```
+
+The parent route owns:
 
 ```text
 Manage heading/context
 permission-filtered tab navigation
 active-tab state from current route
-child page content
+nested child page rendering via NuxtPage
 ```
 
-Desktop target: horizontal tab-style navigation.
-
-Responsive/mobile behavior may adapt to the existing UI system, but it must use the same central section configuration and permission filtering.
-
-The shell should be reusable by every `/manage/*` page.
+This keeps the normal application Header/default layout and avoids duplicating global layout wiring.
 
 ## Dashboard migration
 
-Move the existing authorization proof from:
-
-```text
-/dashboard
-```
-
-to:
+The existing proof page has one canonical implementation at:
 
 ```text
 /manage/dashboard
 ```
 
-The page continues to require:
+It continues to require:
 
 ```text
 dashboard.view
 ```
 
-The existing backend proof endpoint may remain during this milestone:
+and continues to verify backend authorization through:
 
 ```text
 GET /api/admin/access-check
 ```
 
-The Dashboard remains a foundation/proof page in Milestone 9. Real system metrics are not part of this milestone.
+Real system metrics are not part of Milestone 9.
 
 ## Legacy `/dashboard` compatibility
 
-Do not leave two independent Dashboard implementations.
+`/dashboard` no longer contains a second Dashboard implementation.
 
-`/dashboard` becomes a compatibility route that redirects/replaces navigation to:
+It uses the existing authorization middleware first, then redirects permitted users to:
 
 ```text
 /manage/dashboard
 ```
 
-Authorization must still be enforced. A normal user must not gain access through the legacy path.
-
-The legacy route may be removed in a later cleanup after the Manage route family is established.
+Therefore a normal user cannot use the legacy path to bypass authorization.
 
 ## Profile Menu entry
 
-Replace the current Profile Menu `Dashboard` action with a higher-level action such as:
+The previous `Dashboard` action has been replaced with:
 
 ```text
 Manage
 ```
 
-The action is visible only when the current user can access at least one configured Manage section.
+Visibility is derived from whether the current user can access at least one configured Manage section.
 
-It navigates to:
+The action navigates to:
 
 ```text
 /manage
 ```
 
-rather than directly hardcoding `/manage/dashboard`.
+so future roles can land on their first permitted section without Profile Menu changes.
 
 ## Security layers
 
@@ -228,23 +206,17 @@ Future `/manage/users` mutations such as ban, reset, or role changes must each h
 
 ## Static-generation contract
 
-Prompt Draft remains a static-generated Nuxt frontend.
-
-Milestone 9 must explicitly include the static Manage shells/routes required for navigation:
+Explicit static routes now include:
 
 ```text
 /manage
 /manage/dashboard
-/dashboard  # temporary compatibility path while retained
+/dashboard
 ```
 
-`pnpm generate` must succeed before Milestone 9 is marked complete.
-
-Arbitrary user/resource identifiers should still use client-side route/query patterns compatible with static hosting when future Manage detail views are designed.
+`pnpm generate` remains required before Milestone 9 can be marked complete.
 
 ## Deferred from Milestone 9
-
-The following are intentionally not implemented as part of the shell foundation:
 
 ```text
 /manage/users real UI
@@ -261,35 +233,35 @@ admin audit log
 /manage/content
 ```
 
-These become later vertical-slice features on top of the Manage shell.
-
-## Proposed implementation phases
+## Implementation phases
 
 ```text
-Phase 0 — contract/documentation
-  -> this document + STATUS direction
-
-Phase 1 — central Manage section config + parent shell
-  -> permission-filtered tabs
-  -> /manage first-permitted-section resolution
-
-Phase 2 — Dashboard migration
-  -> /manage/dashboard
-  -> legacy /dashboard compatibility redirect
-  -> Profile Menu Dashboard -> Manage
-
-Phase 3 — authorization regression
-  -> super_admin allowed
-  -> normal user hidden/403
-  -> backend proof still enforced
-
-Phase 4 — static release verification
-  -> pnpm generate
-  -> /manage and /manage/dashboard present in generated route set
+Phase 0 — contract/documentation: READY
+Phase 1 — central Manage section config + parent shell: AWAITING USER VERIFICATION
+Phase 2 — Dashboard migration + Profile Menu entry: AWAITING USER VERIFICATION
+Phase 3 — privileged/normal-user authorization regression: NOT STARTED
+Phase 4 — pnpm generate + static route verification: NOT STARTED
 ```
 
-## Completion rule
+## Phase 1–2 local verification target
+
+Verify with the existing `super_admin` account:
+
+```text
+Profile Menu shows Manage, not Dashboard
+Manage -> /manage -> /manage/dashboard
+Manage shell is visible with Dashboard tab active
+Dashboard proof content still shows backend authorization Verified
+legacy /dashboard redirects to /manage/dashboard
+```
+
+Then verify with a normal `user` account:
+
+```text
+Profile Menu does not show Manage
+direct /manage returns 403
+direct /manage/dashboard returns 403
+direct /dashboard remains blocked and cannot bypass authorization
+```
 
 No implementation phase is `DONE` until the user verifies its behavior locally.
-
-Milestone 9 is complete only after privileged access, normal-user denial, legacy-route behavior, Manage navigation, and static generation are verified.
