@@ -1,7 +1,9 @@
 import type {
+  AdminUserMutationResponse,
   GetAdminUserResponse,
   ListAdminUsersParams,
   ListAdminUsersResponse,
+  UpdateAdminUserRoleInput,
 } from "~/types/adminUsersApi";
 import type {
   GetPromptDraftResponse,
@@ -174,6 +176,57 @@ export function usePromptDraftApi() {
     );
   }
 
+  function updateAdminUserRole(id: string, input: UpdateAdminUserRoleInput) {
+    return $fetch<AdminUserMutationResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}/role`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+        body: input,
+      },
+    );
+  }
+
+  function suspendAdminUser(id: string) {
+    return $fetch<AdminUserMutationResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}/suspend`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function unsuspendAdminUser(id: string) {
+    return $fetch<AdminUserMutationResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}/unsuspend`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function revokeAdminUserSessions(id: string) {
+    return $fetch<AdminUserMutationResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}/revoke-sessions`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function resetAdminUserCloudData(id: string) {
+    return $fetch<AdminUserMutationResponse>(
+      endpoint(`/api/admin/users/${encodeURIComponent(id)}/reset-cloud-data`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   return {
     apiBase,
     hello,
@@ -188,5 +241,10 @@ export function usePromptDraftApi() {
     getAdminAccessCheck,
     listAdminUsers,
     getAdminUser,
+    updateAdminUserRole,
+    suspendAdminUser,
+    unsuspendAdminUser,
+    revokeAdminUserSessions,
+    resetAdminUserCloudData,
   };
 }
