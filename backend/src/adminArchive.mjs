@@ -102,7 +102,10 @@ function decodeCursor(value) {
     }
 
     return {
-      updatedAt: new Date(decoded.updatedAt).toISOString(),
+      // Preserve the exact PostgreSQL timestamp carried by the cursor. Converting
+      // through Date/toISOString would truncate microseconds to milliseconds and
+      // can skip rows that share the same imported updated_at value.
+      updatedAt: decoded.updatedAt,
       id: decoded.id,
     }
   } catch {
@@ -384,6 +387,10 @@ async function listArchiveItems(params) {
         items.status,
         items.source_kind AS "sourceKind",
         items.updated_at AS "updatedAt",
+        to_char(
+          items.updated_at AT TIME ZONE 'UTC',
+          'YYYY-MM-DD"T"HH24:MI:SS.US"Z"'
+        ) AS "cursorUpdatedAt",
         COALESCE((
           SELECT json_agg(tags.slug ORDER BY tags.slug)
           FROM prompt_archive_item_tags item_tags
@@ -404,14 +411,17 @@ async function listArchiveItems(params) {
   )
 
   const hasMore = result.rows.length > params.limit
-  const items = result.rows.slice(0, params.limit).map(mapSummaryRow)
-  const lastItem = items.at(-1)
+  const pageRows = result.rows.slice(0, params.limit)
+  const items = pageRows.map(mapSummaryRow)
+  const lastRow = pageRows.at(-1)
 
   return {
     items,
     pageInfo: {
       hasMore,
-      nextCursor: hasMore && lastItem ? encodeCursor(lastItem) : null,
+      nextCursor: hasMore && lastRow
+        ? encodeCursor({ updatedAt: lastRow.cursorUpdatedAt, id: lastRow.id })
+        : null,
     },
   }
 }
