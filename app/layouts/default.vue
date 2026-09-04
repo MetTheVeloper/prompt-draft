@@ -132,6 +132,8 @@ function openLayoutDefaultContextMenu(event: MouseEvent) {
 }
 
 function handleLayoutContextMenu(event: MouseEvent) {
+  if (event.defaultPrevented) return;
+
   if (import.meta.client) {
     const pageContextMenuEvent = new CustomEvent("prompt-draft:open-page-context-menu", {
       cancelable: true,
