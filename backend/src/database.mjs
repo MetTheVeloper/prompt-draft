@@ -38,6 +38,18 @@ function mapPromptDraftRow(row) {
   }
 }
 
+function mapAdminUserRow(row) {
+  return {
+    id: row.id,
+    username: row.username ?? null,
+    email: row.email ?? null,
+    role: row.role,
+    createdAt: row.createdAt.toISOString(),
+    cloudDraftCount: Number(row.cloudDraftCount),
+    activeSessionCount: Number(row.activeSessionCount),
+  }
+}
+
 export async function getDatabaseStatus() {
   const result = await queryDatabase(`
     SELECT
@@ -259,4 +271,104 @@ export async function listPromptDrafts({ userId, limit, cursor }) {
     drafts,
     hasMore,
   }
+}
+
+export async function listAdminUsers({ limit, cursor, query, role }) {
+  const values = []
+  const conditions = []
+
+  if (query) {
+    values.push(query)
+    const queryParameter = values.length
+    conditions.push(
+      `(POSITION(LOWER($${queryParameter}) IN LOWER(COALESCE(users.username, ''))) > 0 OR POSITION(LOWER($${queryParameter}) IN LOWER(COALESCE(users.email, ''))) > 0)`,
+    )
+  }
+
+  if (role) {
+    values.push(role)
+    conditions.push(`users.role = $${values.length}`)
+  }
+
+  if (cursor) {
+    values.push(cursor.createdAt, cursor.id)
+    const createdAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(users.created_at, users.id) < ($${createdAtParameter}::timestamptz, $${idParameter}::uuid)`,
+    )
+  }
+
+  const fetchLimit = limit + 1
+  values.push(fetchLimit)
+  const limitParameter = values.length
+  const whereClause = conditions.length > 0
+    ? `WHERE ${conditions.join('\n        AND ')}`
+    : ''
+
+  const result = await queryDatabase(
+    `
+      SELECT
+        users.id,
+        users.username,
+        users.email,
+        users.role,
+        users.created_at AS "createdAt",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+        ) AS "cloudDraftCount",
+        (
+          SELECT COUNT(*)::int
+          FROM auth_sessions
+          WHERE auth_sessions.user_id = users.id
+            AND auth_sessions.expires_at > NOW()
+        ) AS "activeSessionCount"
+      FROM users
+      ${whereClause}
+      ORDER BY users.created_at DESC, users.id DESC
+      LIMIT $${limitParameter}
+    `,
+    values,
+  )
+
+  const hasMore = result.rows.length > limit
+  const users = result.rows.slice(0, limit).map(mapAdminUserRow)
+
+  return {
+    users,
+    hasMore,
+  }
+}
+
+export async function getAdminUserById(id) {
+  const result = await queryDatabase(
+    `
+      SELECT
+        users.id,
+        users.username,
+        users.email,
+        users.role,
+        users.created_at AS "createdAt",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+        ) AS "cloudDraftCount",
+        (
+          SELECT COUNT(*)::int
+          FROM auth_sessions
+          WHERE auth_sessions.user_id = users.id
+            AND auth_sessions.expires_at > NOW()
+        ) AS "activeSessionCount"
+      FROM users
+      WHERE users.id = $1
+      LIMIT 1
+    `,
+    [id],
+  )
+
+  const row = result.rows[0]
+  return row ? mapAdminUserRow(row) : null
 }
