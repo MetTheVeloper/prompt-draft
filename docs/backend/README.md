@@ -1,6 +1,6 @@
 # Prompt Draft Backend
 
-This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, XP/score, referrals, and Manage integration work in Prompt Draft.
+This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, XP/score, referrals, Prompt Archive, and Manage integration work in Prompt Draft.
 
 ## Current branch
 
@@ -148,7 +148,7 @@ backend permission guard (authoritative)
 
 ## Milestones 9–12 — COMPLETE: Manage Foundation
 
-Canonical management workspace:
+Canonical management workspace before the selected Archive extension:
 
 ```text
 /manage
@@ -171,7 +171,7 @@ EN/FA localization
 static generation
 ```
 
-Manage is **CLOSED FOR NOW**. Future Manage work starts from `docs/backend/MANAGE_GUIDE.md` and the relevant Milestone 9–12 document.
+Future Manage extensions start from `docs/backend/MANAGE_GUIDE.md` rather than recreating the shell.
 
 ## Milestone 13 — COMPLETE: History Workflow
 
@@ -333,6 +333,67 @@ Detailed milestone:
 docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
 ```
 
+## Verified Prompt/Collage access baseline
+
+The frontend access layer immediately preceding Milestone 17 is locally verified:
+
+```text
+Prompts Header entry remains public
+/prompts archive content requires logged-in account + email
+missing access uses the reusable Email Requirement modal + persistent blocked state
+Prompt Draft on Telegram CTA is available from the blocked state
+/collage requires collage.view and is limited to admin/super_admin under current role mapping
+dedicated EL-system 403/404 error page
+successful final static generation
+```
+
+## Milestone 17 — PLANNED: Prompt Archive Platform
+
+Milestone 17 has been explicitly selected and is not implemented yet.
+
+Target architecture:
+
+```text
+PostgreSQL Archive source of truth
+  -> backend list/detail APIs
+  -> /prompts server-first reads
+  -> local JSON + local images as recoverable fallback snapshot
+
+/manage/archive
+  -> existing Manage shell
+  -> archive.view / archive.manage
+  -> add/edit/draft/publish/archive
+  -> EN/FA titles stored with dynamic content
+  -> canonical tag catalog
+  -> local upload-ready image preparation
+  -> Object Storage/CDN integration in a later phase
+```
+
+Key decisions:
+
+```text
+current i18n title keys are migration input, not the future dynamic content model
+current JSON + EN/FA locales are imported automatically; no manual re-entry
+canonical tag catalog is seeded from DISTINCT existing JSON tags
+el-multi-select is used for tag selection
+image processing reuses/refactors existing browser canvas converter core
+Archive accepts jpg/jpeg/png/webp inputs only
+file picker + multi-image drag/drop + clipboard paste
+full image -> WebP with mandatory quality 0.6
+thumbnail -> smaller WebP
+aspect ratio preserved; no upscaling
+cloud provider credentials remain backend-only
+ArvanCloud/Object Storage work follows local image processing, not before it
+```
+
+Detailed plan:
+
+```text
+docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+```
+
+Start with Phase 17A data/import parity before changing the live `/prompts` read path.
+
 ## Current SQL history
 
 Development schema files run in lexical order:
@@ -354,33 +415,17 @@ Development schema files run in lexical order:
 
 New development schema changes should use a new numbered file rather than rewriting applied history. A production-grade migration framework remains deferred.
 
-## Current next-step queue
+## Current next step
 
-No new milestone is currently selected.
+Milestone 17 is selected.
 
-Deferred areas include:
+Next implementation phase:
 
 ```text
-referral links / invite-list UI / anti-abuse eligibility rules
-user_events analytics foundation
-site/page-view/activity metrics
-translation usage metrics
-user consent records
-phone/contact verification
-email verification / password recovery / OAuth
-additional meaningful XP events / leaderboard / levels / badges / streaks
-account deletion / destructive account lifecycle
-admin audit-log UI
-/manage/system
-/manage/content
-stronger Cloud Draft conflict handling
-production rate limiting
-production migration framework
-production deployment / secrets / domain / HTTPS
-Redis
+Phase 17A — Archive data foundation + import
 ```
 
-Do not start deferred work automatically. The user chooses the next feature.
+Do not begin with Object Storage. First validate the existing JSON/i18n/image/tag data model, design the schema, import it idempotently, and produce a parity report.
 
 ## Documentation workflow
 
@@ -401,15 +446,16 @@ MANAGE_GUIDE.md
   -> reusable Manage/admin workspace playbook
 
 MILESTONE_*.md
-  -> detailed source-of-truth record for each completed/in-progress feature milestone
+  -> detailed source-of-truth record for each completed/in-progress/planned feature milestone
 ```
 
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms it. Code creation alone is not sufficient.
 
-For a new chat, start with:
+For the Milestone 17 implementation chat, start with:
 
 1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
-5. `docs/backend/MANAGE_GUIDE.md` only if the next feature touches Manage/admin work
+5. `docs/backend/MANAGE_GUIDE.md`
+6. `docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md`
