@@ -4,6 +4,8 @@
 
 Milestones 1 through 16 are complete and locally verified.
 
+Milestone 17 — Prompt Archive Platform — is selected and planned, but implementation has not started.
+
 Current platform path:
 
 ```text
@@ -131,9 +133,11 @@ Three-layer enforcement remains mandatory for privileged features:
 3. backend permission guard
 ```
 
+The verified role/permission baseline now also includes `collage.view` for admins, while super-admin retains `*`.
+
 # Completed Manage implementation — Milestones 9–12
 
-Canonical routes:
+Canonical routes before the selected Archive extension:
 
 ```text
 /manage
@@ -157,7 +161,7 @@ EN/FA Manage localization
 static-generation coverage
 ```
 
-Manage remains closed for now. Future Manage work starts from `docs/backend/MANAGE_GUIDE.md`.
+Future Manage work starts from `docs/backend/MANAGE_GUIDE.md` and extends the existing shell rather than recreating it.
 
 # Milestone 13 — History workflow
 
@@ -248,6 +252,8 @@ app/composables/useEmailRequirement.ts
 ```
 
 The verified first real gate is Global Output Copy requiring email. The shared completion flow resumes the requested feature after profile completion.
+
+The same reusable email gate now protects the Prompt Archive product surface: `/prompts` remains navigable, but archive content requires an authenticated account with email. Missing access uses the `promptArchive` requirement source and a persistent blocked state.
 
 # Milestone 15 — XP / Score Event Ledger Foundation
 
@@ -494,6 +500,228 @@ campaign-specific referral policies
 
 These can extend the persisted referral foundation later.
 
+# Verified Prompt/Collage access + error baseline
+
+The frontend immediately preceding Milestone 17 has been locally verified with successful static generation:
+
+```text
+/prompts route/link remains available to anonymous users
+archive content requires login + email
+missing access opens Email Requirement modal with from = promptArchive
+closing requirement keeps the user on /prompts with blocked CTA
+blocked state includes Prompt Draft on Telegram action
+/collage uses collage.view permission and is admin/super-admin only under current mapping
+dedicated 403/404 EL-system error page with Home + Telegram actions
+```
+
+# Milestone 17 — Prompt Archive Platform
+
+Status:
+
+```text
+selected
+planned
+not started
+```
+
+Detailed source of truth:
+
+```text
+docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+```
+
+## Current Archive source baseline
+
+Current runtime source:
+
+```text
+public/data/prompts.json
+```
+
+Current local images:
+
+```text
+public/prompts/<telegram-message-id>/...
+```
+
+Current runtime loader:
+
+```text
+app/composables/usePromptArchive.ts
+```
+
+Current title model:
+
+```text
+item.titleKey -> t(item.titleKey)
+```
+
+Current list behavior loads the whole JSON payload and filters/sorts in the browser.
+
+## Milestone 17 target boundary
+
+The target architecture is:
+
+```text
+PostgreSQL Archive source of truth
+  -> server list/detail API
+  -> server-first /prompts repository
+  -> normalized DTO
+  -> local JSON/images fallback on recoverable backend failure
+```
+
+Fallback is for network/timeout/5xx/unusable response conditions, not for 401/403.
+
+The local JSON becomes a snapshot/export fallback, not the long-term manually-edited primary catalog.
+
+## Archive localization rule
+
+Dynamic Archive titles live with Archive content:
+
+```text
+title.en
+title.fa
+```
+
+Do not make new managed Archive rows depend on source-code i18n keys.
+
+Existing `prompts.items.<id>.title` keys are migration input only. The import utility resolves current EN/FA values and creates normalized localized records.
+
+## Archive tags rule
+
+Build a canonical tag catalog from the DISTINCT union of all current JSON `tags[]` values.
+
+Target durable model:
+
+```text
+prompt_archive_tags
+prompt_archive_item_tags
+```
+
+`/manage/archive` uses the existing `el-multi-select` for canonical tag selection. Avoid uncontrolled spelling/casing variants.
+
+## Archive image-preparation rule
+
+Reuse the existing browser canvas converter core, but extract low-level processing away from `ImageBatchConverter.vue` into a reusable utility/service.
+
+Current reusable primitives include:
+
+```text
+createImageBitmap decode + HTMLImageElement fallback
+Canvas 2D render
+canvas.toBlob()
+WebP quality export
+object URL lifecycle
+multi-file drag/drop patterns
+```
+
+Archive-specific accepted input is intentionally limited to:
+
+```text
+jpg/jpeg
+png
+webp
+```
+
+Archive image manager UX:
+
+```text
+file picker
+multiple files
+drag/drop
+clipboard paste
+preview
+remove
+reorder
+```
+
+Per image, prepare locally before cloud upload exists:
+
+```text
+full WebP
+  quality = 0.6 mandatory
+  aspect ratio preserved
+  no upscaling
+  bounded/resized for archive delivery
+
+thumbnail WebP
+  smaller dimensions
+  aspect ratio preserved
+  no upscaling
+```
+
+Suggested dimensions to evaluate with real Archive images:
+
+```text
+full max edge 2048px
+thumbnail max edge 640px
+```
+
+These dimensions are not yet verified product constants. The full WebP quality of 0.6 is explicit scope.
+
+The prepared client object should expose full/thumbnail Blobs plus dimensions/size/preview state so a later storage adapter can upload them without redesigning Manage.
+
+## Manage Archive rule
+
+Milestone 17 explicitly reopens the existing Manage workspace for:
+
+```text
+/manage/archive
+```
+
+Follow `MANAGE_GUIDE.md`.
+
+Recommended permissions:
+
+```text
+archive.view
+archive.manage
+```
+
+Initial role mapping may grant both to admin and super_admin.
+
+Use the existing `MANAGE_SECTIONS` registry, authorization middleware, typed API boundary, EN/FA Manage copy and `admin_audit_log` mutation pattern.
+
+Initial content form includes:
+
+```text
+Telegram message id
+English title
+Persian title
+publishedAt
+prompt
+preview model
+optimizedFor
+tags via el-multi-select
+optional source title/caption
+images via Archive image manager
+status = draft | published | archived
+```
+
+Prefer explicit Publish over automatically exposing partially-complete rows.
+
+## Cloud media rule
+
+Object Storage/CDN integration follows local image preparation and DB/read/manage verification.
+
+Credentials must remain backend-only.
+
+At cloud-storage implementation time, verify the current ArvanCloud Object Storage API and choose provider-appropriate direct/presigned versus backend-proxied upload. Keep provider-specific code behind a storage adapter rather than inside Archive UI.
+
+Existing `public/prompts` media remains available for fallback until the fallback strategy is deliberately changed later.
+
+## Implementation phase order
+
+```text
+17A data/schema/import parity
+17B server read APIs + local fallback repository
+17C /manage/archive + local image preparation
+17D Object Storage/CDN
+17E snapshot export + closure
+```
+
+Do not jump directly to 17D.
+
 # Static-generation contract
 
 Nuxt remains:
@@ -506,6 +734,8 @@ Nitro preset: static
 New backend features must preserve static frontend generation unless the architecture is deliberately changed in a separate decision.
 
 `pnpm generate` remains a release invariant.
+
+The future `/manage/archive` static route must be added to prerender coverage as required by the existing Manage static route contract.
 
 # Current platform resource boundaries
 
@@ -529,6 +759,9 @@ user_score_events
 
 referrals
   -> referrer_user_id -> referred_user_id relationship
+
+prompt_archive_*
+  -> channel Prompt Archive content, tags and media metadata
 ```
 
 Recommended future resources should remain separate rather than becoming arbitrary nullable columns or generic JSON on `users`:
@@ -544,4 +777,19 @@ contacts / verification
   -> phone and verified contact semantics
 ```
 
-No Milestone 17 is selected. Do not start another resource automatically; confirm the next product direction with the user first.
+# Current next action
+
+Start Milestone 17 Phase 17A in a new chat.
+
+Before code changes, read:
+
+```text
+docs/backend/STATUS.md
+docs/backend/README.md
+docs/backend/IMPLEMENTATION.md
+docs/backend/API_GUIDE.md
+docs/backend/MANAGE_GUIDE.md
+docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
+```
+
+Then inspect the current JSON/i18n/archive UI, converter core, `el-multi-select`, Manage registry and backend admin patterns. Confirm import/schema semantics first; cloud storage is not the starting phase.
