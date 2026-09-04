@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
 import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
+import { handleUserAvatarRequest } from './userAvatar.mjs'
 import {
   getDatabaseStatus,
   getWizardRunById,
@@ -37,7 +38,7 @@ function getCorsHeaders(request) {
 
   return {
     'Access-Control-Allow-Origin': origin,
-    'Access-Control-Allow-Methods': 'GET, POST, PUT, OPTIONS',
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     Vary: 'Origin',
   }
@@ -538,6 +539,18 @@ const server = createServer(async (request, response) => {
 
   if (
     await handleArchiveRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handleUserAvatarRequest({
       request,
       response,
       url,
