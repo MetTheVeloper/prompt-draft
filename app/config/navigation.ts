@@ -12,6 +12,11 @@ export const NAVIGATION = [
     icon: 'code',
   },
   {
+    name: 'history',
+    to: '/history',
+    icon: 'history',
+  },
+  {
     name: 'collage',
     to: '/collage',
     icon: 'photo_library',
