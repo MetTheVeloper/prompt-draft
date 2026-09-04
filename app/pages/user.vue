@@ -609,8 +609,8 @@ onMounted(() => {
 .user-profile__cinema-overlay {
   z-index: 4;
   background:
-    radial-gradient(circle at 50% 34%, transparent 0%, var(--themeSurface15) 44%, var(--themeSurface78) 100%),
-    linear-gradient(180deg, var(--themeSurface5) 0%, var(--themeSurface18) 42%, var(--themeSurface88) 100%);
+    radial-gradient(circle at 50% 34%, transparent 0%, var(--themeSurface15) 44%, var(--themeSurface75) 100%),
+    linear-gradient(180deg, var(--themeSurface5) 0%, var(--themeSurface20) 42%, var(--themeSurface85) 100%);
 }
 
 .user-profile__grain {
@@ -652,7 +652,7 @@ onMounted(() => {
 
 .user-profile__drafts {
   background:
-    linear-gradient(180deg, var(--themeSurface78) 0%, var(--themeSurface92) 28%, var(--themeSurface97) 100%);
+    linear-gradient(180deg, var(--themeSurface75) 0%, var(--themeSurface90) 28%, var(--themeSurface95) 100%);
   backdrop-filter: blur(9px);
   border-top: 1px solid var(--themeSurface85);
 }
