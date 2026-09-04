@@ -1,6 +1,6 @@
 # Milestone 10 — Manage Users Foundation
 
-Status: IMPLEMENTED — AWAITING USER VERIFICATION
+Status: FUNCTIONALLY VERIFIED — EL DESIGN-SYSTEM REFACTOR IMPLEMENTED — STATIC CHECK PENDING
 
 ## Goal
 
@@ -142,9 +142,7 @@ The shared Manage shell therefore exposes the tab automatically only to permitte
 
 ## `/manage/users` behavior
 
-The initial UI is deliberately functional rather than polished.
-
-It provides:
+The current UI provides:
 
 ```text
 server-side username/email search with 350ms debounce
@@ -161,13 +159,35 @@ User detail selection remains static-hosting-safe:
 /manage/users?user=<uuid>
 ```
 
-Selecting a row updates the query and fetches:
+Selecting a user updates the query and fetches:
 
 ```text
 GET /api/admin/users/:id
 ```
 
 No dynamic `/manage/users/:id` route is introduced.
+
+## EL design-system baseline
+
+After functional verification, the first UI cleanup replaced the one-off native/CSS implementation with the project's reusable EL component system.
+
+`app/pages/manage/users.vue` now uses:
+
+```text
+el-text-field  -> search
+el-dropdown    -> role filter
+el-grid        -> toolbar, user rows, detail layout
+el-flex        -> containers and grouping
+el-button      -> row/action controls
+el-text        -> labels and values
+el-divider     -> separators
+```
+
+The page no longer carries a scoped CSS block for its layout/table/detail implementation.
+
+`app/pages/manage.vue` and `app/pages/manage/dashboard.vue` were reviewed in the same pass and were already built predominantly from EL system components with no page-specific CSS requiring replacement.
+
+This is only the baseline UI normalization. Final visual polish remains intentionally deferred until Manage functionality is broader.
 
 ## Authorization contract
 
@@ -183,6 +203,12 @@ Backend authorization is authoritative.
 
 Current role mapping already grants `users.view` to `admin` and wildcard access to `super_admin`; normal `user` accounts receive neither.
 
+## Functional verification
+
+The user locally confirmed on 2026-09-04 that the implemented Manage Users functionality works without functional issues, including the real `/manage/users` page and its read interactions.
+
+The EL design-system refactor was implemented after that confirmation and must remain behavior-preserving through the final static/build check.
+
 ## Static-generation contract
 
 `/manage/users` is explicitly added to Nuxt prerender routes.
@@ -197,16 +223,16 @@ pnpm generate
 ## Implementation phases
 
 ```text
-Phase 0 — contract/documentation: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 1 — database read model + indexes: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 2 — GET collection + detail admin APIs: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 3 — typed frontend API boundary: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 4 — Manage Users list/search/filter/pagination UI: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 5 — query-based user detail: IMPLEMENTED — AWAITING USER VERIFICATION
-Phase 6 — authorization regression + static generation: NOT STARTED
+Phase 0 — contract/documentation: DONE
+Phase 1 — database read model + indexes: DONE
+Phase 2 — GET collection + detail admin APIs: DONE
+Phase 3 — typed frontend API boundary: DONE
+Phase 4 — Manage Users list/search/filter/pagination UI: DONE
+Phase 5 — query-based user detail: DONE
+Phase 6 — authorization regression + static generation: AUTHORIZATION VERIFIED / STATIC CHECK PENDING
 ```
 
-No phase is `DONE` until the user verifies the relevant behavior locally.
+Milestone 10 is not complete until the final static-generation check passes after the EL design-system refactor.
 
 ## Deferred mutation milestone
 
