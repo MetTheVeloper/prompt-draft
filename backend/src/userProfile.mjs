@@ -1,0 +1,307 @@
+import { getAuthenticatedUser } from './auth.mjs'
+import { queryDatabase } from './database.mjs'
+import { getUserScoreState } from './userScore.mjs'
+
+const PROFILE_MATCH = /^\/api\/users\/([^/]+)\/profile$/
+const DRAFTS_MATCH = /^\/api\/users\/([^/]+)\/drafts$/
+
+function isUuid(value) {
+  return (
+    typeof value === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
+  )
+}
+
+function decodeUserId(value) {
+  try {
+    const decoded = decodeURIComponent(value).trim()
+    return isUuid(decoded) ? decoded : null
+  } catch {
+    return null
+  }
+}
+
+async function resolveViewer(request) {
+  try {
+    return await getAuthenticatedUser(request)
+  } catch (error) {
+    console.error('[Prompt Draft API] public profile viewer lookup failed', error)
+    throw error
+  }
+}
+
+async function readPublicProfile(userId) {
+  const result = await queryDatabase(
+    `
+      SELECT
+        users.id,
+        users.username,
+        users.avatar_url AS "avatarUrl",
+        users.cover_url AS "coverUrl",
+        users.cover_thumbnail_url AS "coverThumbnailUrl",
+        users.cover_width AS "coverWidth",
+        users.cover_height AS "coverHeight",
+        users.cover_thumbnail_width AS "coverThumbnailWidth",
+        users.cover_thumbnail_height AS "coverThumbnailHeight",
+        users.created_at AS "createdAt",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.visibility = 'public'
+        ) AS "publicDraftCount",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+        ) AS "totalDraftCount"
+      FROM users
+      WHERE users.id = $1
+        AND users.status = 'active'
+      LIMIT 1
+    `,
+    [userId],
+  )
+
+  return result.rows[0] ?? null
+}
+
+function mapProfile(row, score, isOwner) {
+  return {
+    id: row.id,
+    username: row.username ?? null,
+    avatarUrl: row.avatarUrl ?? null,
+    cover: row.coverUrl
+      ? {
+          fullUrl: row.coverUrl,
+          thumbnailUrl: row.coverThumbnailUrl,
+          width: Number(row.coverWidth),
+          height: Number(row.coverHeight),
+          thumbnailWidth: Number(row.coverThumbnailWidth),
+          thumbnailHeight: Number(row.coverThumbnailHeight),
+        }
+      : null,
+    createdAt: row.createdAt.toISOString(),
+    totalXp: score.totalXp,
+    publicDraftCount: Number(row.publicDraftCount),
+    ...(isOwner ? { totalDraftCount: Number(row.totalDraftCount) } : {}),
+  }
+}
+
+function encodeDraftCursor(row) {
+  return Buffer.from(
+    JSON.stringify({
+      updatedAt: row.updatedAt,
+      id: row.id,
+    }),
+    'utf8',
+  ).toString('base64url')
+}
+
+function decodeDraftCursor(value) {
+  try {
+    const decoded = Buffer.from(value, 'base64url').toString('utf8')
+    const cursor = JSON.parse(decoded)
+
+    if (
+      !cursor ||
+      typeof cursor !== 'object' ||
+      typeof cursor.updatedAt !== 'string' ||
+      Number.isNaN(Date.parse(cursor.updatedAt)) ||
+      typeof cursor.id !== 'string' ||
+      !cursor.id ||
+      cursor.id.length > 200
+    ) {
+      return null
+    }
+
+    return {
+      updatedAt: new Date(cursor.updatedAt).toISOString(),
+      id: cursor.id,
+    }
+  } catch {
+    return null
+  }
+}
+
+function parseDraftListQuery(url) {
+  const errors = []
+  let limit = 24
+  let cursor = null
+
+  const rawLimit = url.searchParams.get('limit')
+  if (rawLimit !== null) {
+    if (!/^\d+$/.test(rawLimit)) {
+      errors.push({ field: 'limit', message: 'limit must be an integer between 1 and 100' })
+    } else {
+      limit = Number(rawLimit)
+      if (!Number.isSafeInteger(limit) || limit < 1 || limit > 100) {
+        errors.push({ field: 'limit', message: 'limit must be an integer between 1 and 100' })
+      }
+    }
+  }
+
+  const rawCursor = url.searchParams.get('cursor')
+  if (rawCursor !== null) {
+    cursor = rawCursor ? decodeDraftCursor(rawCursor) : null
+    if (!cursor) {
+      errors.push({ field: 'cursor', message: 'cursor must be a valid profile draft cursor' })
+    }
+  }
+
+  return { errors, limit, cursor }
+}
+
+function mapDraftRow(row, isOwner) {
+  return {
+    id: row.id,
+    title: row.title,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    revision: Number(row.revision),
+    outputFormat: row.outputFormat,
+    moduleCount: Number(row.moduleCount),
+    publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+    ...(isOwner ? { visibility: row.visibility } : {}),
+  }
+}
+
+async function listProfileDrafts({ userId, isOwner, limit, cursor }) {
+  const values = [userId]
+  const conditions = ['user_id = $1']
+
+  if (!isOwner) {
+    conditions.push(`visibility = 'public'`)
+  }
+
+  if (cursor) {
+    values.push(cursor.updatedAt, cursor.id)
+    const updatedAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(client_updated_at < $${updatedAtParameter}::timestamptz OR (client_updated_at = $${updatedAtParameter}::timestamptz AND draft_id < $${idParameter}))`,
+    )
+  }
+
+  values.push(limit + 1)
+  const limitParameter = values.length
+
+  const result = await queryDatabase(
+    `
+      SELECT
+        draft_id AS id,
+        title,
+        created_at AS "createdAt",
+        client_updated_at AS "updatedAt",
+        revision,
+        visibility,
+        published_at AS "publishedAt",
+        COALESCE(snapshot->>'outputFormat', 'modular') AS "outputFormat",
+        COALESCE(jsonb_array_length(snapshot->'selectedModuleKeys'), 0)::int AS "moduleCount"
+      FROM prompt_drafts
+      WHERE ${conditions.join('\n        AND ')}
+      ORDER BY client_updated_at DESC, draft_id DESC
+      LIMIT $${limitParameter}
+    `,
+    values,
+  )
+
+  const hasMore = result.rows.length > limit
+  const rows = result.rows.slice(0, limit)
+  const drafts = rows.map(row => mapDraftRow(row, isOwner))
+  const last = rows.at(-1) ?? null
+
+  return {
+    drafts,
+    pageInfo: {
+      nextCursor: hasMore && last
+        ? encodeDraftCursor({
+            id: last.id,
+            updatedAt: last.updatedAt.toISOString(),
+          })
+        : null,
+      hasMore,
+    },
+  }
+}
+
+export async function handleUserProfileRequest({
+  request,
+  response,
+  url,
+  corsHeaders,
+  sendJson,
+}) {
+  const profileMatch = url.pathname.match(PROFILE_MATCH)
+  const draftsMatch = url.pathname.match(DRAFTS_MATCH)
+
+  if (!profileMatch && !draftsMatch) return false
+
+  if (request.method !== 'GET') {
+    sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, corsHeaders)
+    return true
+  }
+
+  const userId = decodeUserId((profileMatch || draftsMatch)[1])
+  if (!userId) {
+    sendJson(response, 400, { ok: false, message: 'Invalid user id' }, corsHeaders)
+    return true
+  }
+
+  try {
+    const [profileRow, viewer] = await Promise.all([
+      readPublicProfile(userId),
+      resolveViewer(request),
+    ])
+
+    if (!profileRow) {
+      sendJson(response, 404, { ok: false, message: 'User profile not found' }, corsHeaders)
+      return true
+    }
+
+    const isOwner = viewer?.id === userId
+
+    if (profileMatch) {
+      const score = await getUserScoreState(userId)
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          profile: mapProfile(profileRow, score, isOwner),
+          viewer: { isOwner },
+        },
+        corsHeaders,
+      )
+      return true
+    }
+
+    const { errors, limit, cursor } = parseDraftListQuery(url)
+    if (errors.length) {
+      sendJson(
+        response,
+        400,
+        { ok: false, message: 'Invalid profile draft query', errors },
+        corsHeaders,
+      )
+      return true
+    }
+
+    const page = await listProfileDrafts({ userId, isOwner, limit, cursor })
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        ...page,
+        viewer: { isOwner },
+      },
+      corsHeaders,
+    )
+    return true
+  } catch (error) {
+    console.error('[Prompt Draft API] public user profile request failed', error)
+    sendJson(response, 500, { ok: false, message: 'Failed to read user profile' }, corsHeaders)
+    return true
+  }
+}
