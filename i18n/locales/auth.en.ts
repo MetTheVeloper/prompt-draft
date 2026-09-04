@@ -1,0 +1,37 @@
+export default {
+  auth: {
+    header: {
+      login: "Sign in",
+      profile: "Account",
+    },
+    login: {
+      title: "Sign in or create an account",
+      subtitle: "Signing in is optional. It lets Prompt Draft connect cloud data to your account across devices.",
+      identifierLabel: "Username or email",
+      identifierPlaceholder: "Enter a username or email",
+      continue: "Continue",
+      existingTitle: "Welcome back",
+      existingSubtitle: "Enter your password to continue.",
+      newTitle: "Create your account",
+      newSubtitle: "This identifier is available. Choose a password to create the account.",
+      passwordLabel: "Password",
+      confirmPasswordLabel: "Repeat password",
+      passwordHint: "At least 8 characters with an English letter and a number.",
+      loginAction: "Sign in",
+      registerAction: "Create account",
+      changeIdentifier: "Use a different username or email",
+      passwordMismatch: "The passwords do not match.",
+      invalidPassword: "Password must be at least 8 characters and include an English letter and a number.",
+      genericError: "Something went wrong. Please try again.",
+      optional: "You can keep using Prompt Draft without signing in.",
+      backToCreate: "Continue without signing in",
+    },
+    profile: {
+      title: "Account",
+      username: "Username",
+      email: "Email",
+      memberSince: "Member since",
+      logout: "Sign out",
+    },
+  },
+};
