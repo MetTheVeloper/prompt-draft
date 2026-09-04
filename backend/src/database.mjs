@@ -26,6 +26,18 @@ function mapWizardRunRow(row) {
   }
 }
 
+function mapPromptDraftRow(row) {
+  return {
+    id: row.id,
+    title: row.title,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    serverUpdatedAt: row.serverUpdatedAt.toISOString(),
+    revision: Number(row.revision),
+    snapshot: row.snapshot,
+  }
+}
+
 export async function getDatabaseStatus() {
   const result = await queryDatabase(`
     SELECT
@@ -138,4 +150,66 @@ export async function listWizardRuns({ limit, cursor, wizardId }) {
     runs,
     hasMore,
   }
+}
+
+export async function upsertPromptDraft(draft) {
+  const result = await queryDatabase(
+    `
+      INSERT INTO prompt_drafts (
+        draft_id,
+        title,
+        created_at,
+        client_updated_at,
+        snapshot
+      )
+      VALUES ($1, $2, $3, $4, $5::jsonb)
+      ON CONFLICT (draft_id)
+      DO UPDATE SET
+        title = EXCLUDED.title,
+        created_at = LEAST(prompt_drafts.created_at, EXCLUDED.created_at),
+        client_updated_at = EXCLUDED.client_updated_at,
+        server_updated_at = NOW(),
+        revision = prompt_drafts.revision + 1,
+        snapshot = EXCLUDED.snapshot
+      RETURNING
+        draft_id AS id,
+        title,
+        created_at AS "createdAt",
+        client_updated_at AS "updatedAt",
+        server_updated_at AS "serverUpdatedAt",
+        revision,
+        snapshot
+    `,
+    [
+      draft.id,
+      draft.title,
+      draft.createdAt,
+      draft.updatedAt,
+      JSON.stringify(draft.snapshot),
+    ],
+  )
+
+  return mapPromptDraftRow(result.rows[0])
+}
+
+export async function getPromptDraftById(id) {
+  const result = await queryDatabase(
+    `
+      SELECT
+        draft_id AS id,
+        title,
+        created_at AS "createdAt",
+        client_updated_at AS "updatedAt",
+        server_updated_at AS "serverUpdatedAt",
+        revision,
+        snapshot
+      FROM prompt_drafts
+      WHERE draft_id = $1
+      LIMIT 1
+    `,
+    [id],
+  )
+
+  const row = result.rows[0]
+  return row ? mapPromptDraftRow(row) : null
 }
