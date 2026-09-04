@@ -64,7 +64,7 @@ export default {
         generic: "THIS FEATURE",
         globalOutputCopy: "GLOBAL OUTPUT COPY",
       },
-      emailPlaceholder: "you@example.com",
+      emailPlaceholder: "you{'@'}example.com",
       emailHint: "The email becomes an additional sign-in identifier for your account.",
       invalidEmail: "Enter a valid email address.",
       taken: "That email is already used by another account.",
