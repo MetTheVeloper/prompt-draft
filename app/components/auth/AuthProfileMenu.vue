@@ -385,18 +385,20 @@ async function handleLogout() {
 
       <el-flex v-if="preparedAvatar" rules="rsc" :gap="6" class="w100">
         <el-button
-          class="fg100"
           color="prim"
           icon="save"
           :label="t('auth.profile.avatar.save')"
+          :size="12"
           :disable="avatar.saving.value"
           @click="saveAvatar"
         />
         <el-button
+          type="fab"
           color="normal"
           mode="flat"
           icon="close"
-          :label="t('auth.profile.avatar.cancel')"
+          :tooltip="t('auth.profile.avatar.cancel')"
+          :size="12"
           :disable="avatar.saving.value"
           @click="clearPreparedAvatar"
         />
@@ -404,18 +406,20 @@ async function handleLogout() {
 
       <el-flex v-if="preparedCover" rules="rsc" :gap="6" class="w100">
         <el-button
-          class="fg100"
           color="blue"
           icon="save"
           :label="t('auth.profile.cover.save')"
+          :size="12"
           :disable="cover.saving.value"
           @click="saveCover"
         />
         <el-button
+          type="fab"
           color="normal"
           mode="flat"
           icon="close"
-          :label="t('auth.profile.cover.cancel')"
+          :tooltip="t('auth.profile.cover.cancel')"
+          :size="12"
           :disable="cover.saving.value"
           @click="clearPreparedCover"
         />
