@@ -99,121 +99,124 @@ Implemented reusable shell pieces:
 
 ```text
 app/config/manage.ts
-  -> central Manage section registry
-
 app/middleware/manage-entry.ts
-  -> auth + first-permitted-section resolution
-
 app/pages/manage.vue
-  -> shared Manage shell
-  -> permission-filtered tab navigation
-  -> nested child rendering
-
-Profile Menu
-  -> one Manage entry when any section is available
+Profile Menu -> Manage
 ```
 
-Permission-first rule remains mandatory:
+Locally verified by the user:
 
 ```text
-Manage visibility/routing -> auth.can(requiredPermission)
-never role-name checks
-backend authorization remains authoritative
-```
-
-Locally verified by the user on 2026-09-04:
-
-```text
-super_admin sees Manage
-/manage resolves to /manage/dashboard
-Dashboard tab/shell render correctly
-backend authorization remains Verified
+super_admin sees Manage and reaches /manage/dashboard
+Dashboard backend proof remains Verified
 legacy /dashboard redirects correctly
-normal user does not see Manage
-normal user cannot access /manage
-normal user cannot access /manage/dashboard
-normal user cannot bypass through /dashboard
-```
-
-Final static release verification:
-
-```text
+normal user sees no Manage entry
+normal user cannot access /manage, /manage/dashboard, or /dashboard
 pnpm generate succeeds
-15 initial routes prerender successfully
-/manage present
-/manage/dashboard present
-/dashboard compatibility route present
-.output/public generated successfully
-offline manifest generated successfully
+15 initial routes include /manage and /manage/dashboard
 ```
 
-Known duplicated-import, sourcemap, and large-chunk warnings remain non-blocking existing build warnings.
-
-### Milestone 9 phases — ALL DONE
+Source-of-truth milestone record:
 
 ```text
-Phase 0 — contract/documentation: DONE
-Phase 1 — central Manage section config + parent shell: DONE
-Phase 2 — Dashboard migration + Profile Menu entry: DONE
-Phase 3 — privileged/normal-user authorization regression: DONE
-Phase 4 — pnpm generate + static route verification: DONE
+docs/backend/MILESTONE_9_MANAGE_SHELL.md
 ```
 
-## Recommended next product direction
+## Milestone 10 — IN PROGRESS: Manage Users Foundation
 
-Prefer `/manage/users` before real Dashboard analytics.
-
-Reason:
+Source-of-truth contract:
 
 ```text
-users + roles + sessions + Cloud Draft ownership already exist
-/manage shell already exists
-users.view and users.manage permissions already exist
+docs/backend/MILESTONE_10_MANAGE_USERS.md
 ```
 
-A user-management vertical slice can therefore become immediately useful without inventing new telemetry.
-
-By contrast, several desired Dashboard metrics do not yet have a trustworthy data source:
+Selected read-only product path:
 
 ```text
-total users          -> available now
-Cloud Draft totals   -> available now
-new drafts today     -> available now
-active users         -> needs activity definition/tracking
-translations count   -> not currently persisted
-site visits          -> not currently tracked
+/manage/users
+  -> users.view
+  -> server-side search/filter
+  -> cursor pagination
+  -> static-safe query-based detail
 ```
 
-Recommended sequence:
+Backend implementation currently includes:
 
 ```text
-Milestone 10 — /manage/users read/list foundation
-  -> paginated/searchable user list
-  -> role/status/account metadata
-  -> static-safe detail selection
+backend/sql/006_add_admin_user_indexes.sql
+backend/src/adminUsers.mjs
+listAdminUsers(...)
+getAdminUserById(id)
 
-then admin mutation foundation
-  -> audit logging first
-  -> role changes
-  -> suspend/ban + session invalidation
-  -> reset/delete data only with explicit destructive contracts
-
-then analytics/event tracking
-  -> visits
-  -> user activity
-  -> translation usage
-
-then real /manage/dashboard summary
-  -> metrics backed by trustworthy stored data
+GET /api/admin/users
+GET /api/admin/users/:id
 ```
+
+Collection contract:
+
+```text
+limit   default 20 / max 100
+cursor  opaque keyset cursor
+query   literal username/email substring
+role    user | admin | super_admin
+ordering: created_at DESC, id DESC
+```
+
+Admin user read model:
+
+```text
+id
+username
+email
+role
+createdAt
+cloudDraftCount
+activeSessionCount
+```
+
+Credential/session secrets are never returned.
+
+Frontend implementation currently includes:
+
+```text
+app/types/adminUsersApi.ts
+usePromptDraftApi().listAdminUsers(...)
+usePromptDraftApi().getAdminUser(id)
+app/config/manage.ts -> Users section
+app/pages/manage/users.vue
+nuxt prerender -> /manage/users
+```
+
+Initial `/manage/users` behavior:
+
+```text
+350ms debounced search
+role filter
+20-row initial read
+Load more cursor pagination
+Refresh
+query-based detail: /manage/users?user=<uuid>
+```
+
+### Milestone 10 phases
+
+```text
+Phase 0 — contract/documentation: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 1 — database read model + indexes: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 2 — GET collection + detail APIs: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 3 — typed frontend API boundary: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 4 — Manage Users list/search/filter/pagination UI: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 5 — query-based user detail: IMPLEMENTED — AWAITING USER VERIFICATION
+Phase 6 — authorization regression + static generation: NOT STARTED
+```
+
+No Milestone 10 phase is `DONE` before explicit local verification.
 
 ## Deferred work
 
+- Manage Users mutations: audit log, role changes, suspend/ban, revoke sessions, reset/delete data;
 - real Dashboard metrics;
-- `/manage/users` mutation features;
-- ban/suspend/role mutation/reset/delete flows;
-- analytics/page-view tracking;
-- Admin audit log;
+- analytics/page-view/activity/translation usage tracking;
 - `/manage/system` and `/manage/content`;
 - convert Wizard-run `/history` to Draft History;
 - move History into the Drafts menu;
@@ -228,7 +231,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Wait for the user's choice of the next vertical slice. Recommended: start `/manage/users` with read-only list/search/pagination before adding destructive admin actions.
+User locally verifies Milestone 10 read foundation through the real Manage Users UI and backend authorization. If successful, mark Phases 0–5 `DONE`, then run the final normal-user denial/static-generation checks for Phase 6.
 
 ## New-chat handoff
 
@@ -239,3 +242,4 @@ Read:
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/STATUS.md`
 5. `docs/backend/MILESTONE_9_MANAGE_SHELL.md`
+6. `docs/backend/MILESTONE_10_MANAGE_USERS.md`
