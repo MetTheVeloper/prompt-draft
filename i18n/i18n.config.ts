@@ -24,6 +24,8 @@ import authEn from './locales/auth.en'
 import authFa from './locales/auth.fa'
 import manageEn from './locales/manage.en'
 import manageFa from './locales/manage.fa'
+import errorsEn from './locales/errors.en'
+import errorsFa from './locales/errors.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -92,7 +94,7 @@ const enConsolidated = {
   ...consolidatedUiCleanupEn,
 }
 
-const enMessages = deepMerge(
+const enMessagesBase = deepMerge(
   deepMerge(
     deepMerge(
       deepMerge(
@@ -127,6 +129,8 @@ const enMessages = deepMerge(
   flatToNested(enConsolidated),
 )
 
+const enMessages = deepMerge(enMessagesBase, errorsEn)
+
 const faConsolidated = {
   ...consolidatedControlsFa,
   ...consolidatedUiCleanupFa,
@@ -141,7 +145,7 @@ const faConsolidated = {
   ...consolidatedStylePoseExpression3Fa,
 }
 
-const faMessages = deepMerge(
+const faMessagesBase = deepMerge(
   deepMerge(
     deepMerge(
       deepMerge(
@@ -170,6 +174,8 @@ const faMessages = deepMerge(
   ),
   flatToNested(faConsolidated),
 )
+
+const faMessages = deepMerge(faMessagesBase, errorsFa)
 
 export default defineI18nConfig(() => ({
   legacy: false,
