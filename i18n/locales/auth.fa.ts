@@ -37,6 +37,7 @@ export default {
       username: "نام کاربری",
       email: "ایمیل",
       xp: "XP",
+      invitedUsers: "کاربران دعوت‌شده",
       memberSince: "عضویت از",
       complete: "تکمیل پروفایل",
       logout: "خروج از حساب",
