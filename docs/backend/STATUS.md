@@ -13,12 +13,14 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ```text
 Milestones 1–15: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-No active backend milestone currently selected
+Milestone 16: Referral Foundation
+  -> IMPLEMENTED
+  -> LOCAL VERIFICATION PENDING
 ```
 
 The latest completed product change is Milestone 15: the XP / Score Event Ledger Foundation, including account/email rewards, idempotent Cloud Draft creation XP, and hardened frontend score hydration.
 
-The user explicitly accepted Milestone 15 as DONE on 2026-09-04.
+Active work is Milestone 16: username-based referrals with persisted user-id relationships and +500 / +1000 XP rewards.
 
 ## Reusable guides
 
@@ -313,6 +315,45 @@ Detailed milestone:
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 ```
 
+## Milestone 16 — IN PROGRESS: Referral Foundation
+
+Current implementation:
+
+```text
+012_create_referrals.sql
+referrals table with user-id relationships
+username acts as the referral input/code
+one referrer per referred account
+DB-level no-self-referral constraint
+active referrer required
+POST /api/auth/register accepts optional referralUsername
+invalid / missing / direct self referral aborts registration
+referral-aware user + relation creation uses one PostgreSQL write statement
+referral relation trigger awards XP through user_score_events
+referred user -> +500 XP
+referrer -> +1000 XP
+registration UI adds optional referral field after Repeat Password
+EN/FA referral registration copy and error handling
+```
+
+Current semantics:
+
+```text
+username-only signup + referral -> 1500 XP
+email signup + referral         -> 2500 XP
+accepted referral               -> referrer +1000 XP
+```
+
+The username entered during signup is retained as `referral_username_used`, but the authoritative referral relationship uses `referrer_user_id` and `referred_user_id` UUIDs.
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
+```
+
+Milestone 16 remains open until local verification succeeds.
+
 ## Manage track closure
 
 The current Manage foundation remains complete and closed for now:
@@ -346,10 +387,10 @@ large client chunks
 
 ## Deferred platform/product queue
 
-No next backend milestone is locked yet. Current deferred candidates are:
+Current deferred candidates include:
 
 ```text
-referrals / referral codes / referral rewards
+referral links / referral UI / anti-abuse eligibility rules
 user_events behavioral analytics foundation
 site visits / page views / activity metrics
 translation request/success/failure metrics
@@ -372,48 +413,27 @@ Email Requirement modal visual polish
 
 The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
 
-## Recommended next direction
+## Next action
 
-With Auth, progressive profiles, Cloud Drafts, authorization, Manage, History, translation, and the XP ledger all established, the cleanest next user-data vertical slice is **Referrals**:
-
-```text
-Milestone 16 candidate — Referral Foundation
-
-referral code owned by a user
-  -> another user joins through that code
-  -> persisted referrer -> referred-user relationship
-  -> one relationship per referred account
-  -> deterministic anti-self-referral / anti-duplicate rules
-  -> optional XP reward can later use the existing score ledger
-```
-
-Why this is a strong next step:
+Milestone 16 requires local verification of:
 
 ```text
-reuses Auth/user identity
-reuses the new XP ledger without forcing a reward immediately
-creates a meaningful future XP trigger instead of rewarding autosaves
-adds a real product growth primitive
-can remain a narrow backend/API vertical slice before any public referral UI is designed
+012 migration
+normal registration without referral
+optional referral field placement and EN/FA rendering
+invalid / nonexistent referral rejection without account creation
+valid username-only referral signup -> 1500 XP
+valid email referral signup -> 2500 XP
+referrer +1000 XP
+persisted referral relation provenance
+exactly-once referral_joined / referral_reward ledger events
+direct self-referral rejection
+suspended referrer rejection
+Docker persistence
+final pnpm generate
 ```
 
-Alternative next directions, if product priority is different:
-
-```text
-Analytics foundation
-  -> user_events + trustworthy activity metrics
-
-Consent foundation
-  -> purpose-specific user_consents before broader analytics/marketing
-
-Account lifecycle
-  -> account deletion and destructive-data semantics
-
-Production hardening
-  -> migrations, rate limits, deployment/secrets/HTTPS
-```
-
-Do not start any of these automatically; select the next milestone with the user first.
+Do not choose or start Milestone 17 until the user closes Milestone 16.
 
 ## New-chat handoff
 
