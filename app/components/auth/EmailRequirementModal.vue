@@ -4,7 +4,7 @@ const props = defineProps<{
   onCompleted?: () => void | Promise<void>;
 }>();
 
-const { t, te } = useI18n();
+const { t, te, locale } = useI18n();
 const route = useRoute();
 const auth = useAuth();
 const modal = useModal();
@@ -14,6 +14,9 @@ const submitting = ref(false);
 const errorMessage = ref("");
 
 const isLoggedIn = computed(() => auth.isLoggedIn.value);
+const isPersian = computed(() => locale.value === "fa");
+const heroLeadSize = computed(() => (isPersian.value ? 25 : 28));
+const heroSourceSize = computed(() => (isPersian.value ? 20 : 22));
 
 const sourceLabel = computed(() => {
   const key = `auth.emailRequirement.sources.${props.from}`;
@@ -99,45 +102,62 @@ async function openLogin() {
   <el-flex
     rules="ccc"
     class="w100"
-    :gap="18"
+    :gap="16"
     :data-requirement-from="from">
     <el-flex
       rules="ccc"
-      class="w100"
       bg="normal"
       :radius="24"
-      :p="28"
-      :gap="16"
-      style="aspect-ratio: 1 / 1; text-align: center">
-      <el-flex rules="rcc" :gap="7" :p="[7, 10]">
-        <el-icon icon="lock_open" color="invert" :size="15" />
-        <el-text :size="10" :weight="800" color="invert">
+      :p="24"
+      :gap="13"
+      style="width: min(100%, 390px); aspect-ratio: 1 / 1; text-align: center">
+      <el-flex rules="rcc" :gap="7" :p="[6, 9]">
+        <el-icon icon="lock_open" color="invert" :size="14" />
+        <el-text :size="9" :weight="800" color="invert" style="letter-spacing: 0.04em">
           {{ t("auth.emailRequirement.heroEyebrow") }}
         </el-text>
       </el-flex>
 
-      <el-text
-        type="h2"
-        :size="30"
-        :weight="900"
-        color="invert"
-        style="max-width: 360px; line-height: 1.08; letter-spacing: -0.025em">
-        {{ t("auth.emailRequirement.heroTitle", { source: sourceLabel }) }}
-      </el-text>
+      <el-flex rules="ccc" :gap="6" style="max-width: 330px">
+        <el-text
+          type="h2"
+          :size="heroLeadSize"
+          :weight="900"
+          color="invert"
+          style="line-height: 1.08; letter-spacing: -0.025em">
+          {{ t("auth.emailRequirement.heroLead") }}
+        </el-text>
+
+        <el-text
+          :size="12"
+          :weight="700"
+          color="invert"
+          style="line-height: 1.15; opacity: 0.68; letter-spacing: 0.03em">
+          {{ t("auth.emailRequirement.heroAction") }}
+        </el-text>
+
+        <el-text
+          :size="heroSourceSize"
+          :weight="900"
+          color="invert"
+          style="line-height: 1.08; letter-spacing: -0.015em">
+          {{ sourceLabel }}
+        </el-text>
+      </el-flex>
 
       <el-text
-        :size="12"
+        :size="11"
         :weight="400"
         color="invert"
-        style="max-width: 330px; line-height: 1.55; opacity: 0.72">
+        style="max-width: 300px; line-height: 1.5; opacity: 0.66">
         {{ t("auth.emailRequirement.heroDescription") }}
       </el-text>
     </el-flex>
 
     <template v-if="isLoggedIn">
-      <el-flex rules="csc" class="w100" :gap="12">
-        <el-flex rules="csc" :gap="7" class="w100">
-          <el-text :size="11" :weight="800" color="normal60">
+      <el-flex rules="csc" class="w100" :gap="10" style="max-width: 430px">
+        <el-flex rules="csc" :gap="6" class="w100">
+          <el-text :size="10" :weight="800" color="normal60" style="letter-spacing: 0.02em">
             {{ t("auth.emailRequirement.emailLabel") }}
           </el-text>
 
@@ -153,8 +173,8 @@ async function openLogin() {
         </el-flex>
 
         <el-flex rules="rsc" class="w100" :gap="7">
-          <el-icon icon="verified_user" color="green" :size="15" />
-          <el-text :size="10" color="normal50" style="line-height: 1.45">
+          <el-icon icon="verified_user" color="green" :size="14" />
+          <el-text :size="10" color="normal50" style="line-height: 1.4">
             {{ t("auth.emailRequirement.privacyNote") }}
           </el-text>
         </el-flex>
@@ -194,7 +214,7 @@ async function openLogin() {
     </template>
 
     <template v-else>
-      <el-flex rules="csc" class="w100" :gap="12">
+      <el-flex rules="csc" class="w100" :gap="10" style="max-width: 430px">
         <el-flex
           rules="csc"
           class="w100"
