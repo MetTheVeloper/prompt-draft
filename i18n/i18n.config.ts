@@ -16,6 +16,8 @@ import variablesEn from './locales/variables.en'
 import variablesFa from './locales/variables.fa'
 import sceneEn from './locales/scene.en'
 import sceneFa from './locales/scene.fa'
+import historyEn from './locales/history.en'
+import historyFa from './locales/history.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -86,20 +88,23 @@ const enConsolidated = {
 
 const enMessages = deepMerge(
   deepMerge(
-    withModuleFragments(en, [
-      ['background', backgroundEn],
-      ['effects', effectsEn],
-      ['hair', hairEn],
-      ['outfit', outfitEn],
-      ['variables', variablesEn],
-      ['scene', sceneEn],
-    ]),
-    {
-      wizard: deepMerge(
-        deepMerge(wizardEn, wizardResumeEn),
-        wizardPresentationEn,
-      ),
-    },
+    deepMerge(
+      withModuleFragments(en, [
+        ['background', backgroundEn],
+        ['effects', effectsEn],
+        ['hair', hairEn],
+        ['outfit', outfitEn],
+        ['variables', variablesEn],
+        ['scene', sceneEn],
+      ]),
+      {
+        wizard: deepMerge(
+          deepMerge(wizardEn, wizardResumeEn),
+          wizardPresentationEn,
+        ),
+      },
+    ),
+    historyEn,
   ),
   flatToNested(enConsolidated),
 )
@@ -120,15 +125,18 @@ const faConsolidated = {
 
 const faMessages = deepMerge(
   deepMerge(
-    withModuleFragments(fa, [
-      ['background', backgroundFa],
-      ['effects', effectsFa],
-      ['hair', hairFa],
-      ['outfit', outfitFa],
-      ['variables', variablesFa],
-      ['scene', sceneFa],
-    ]),
-    { wizard: wizardFa },
+    deepMerge(
+      withModuleFragments(fa, [
+        ['background', backgroundFa],
+        ['effects', effectsFa],
+        ['hair', hairFa],
+        ['outfit', outfitFa],
+        ['variables', variablesFa],
+        ['scene', sceneFa],
+      ]),
+      { wizard: wizardFa },
+    ),
+    historyFa,
   ),
   flatToNested(faConsolidated),
 )
