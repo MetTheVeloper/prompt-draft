@@ -64,7 +64,7 @@ snapshot         jsonb
 
 ## Milestone 4 — complete
 
-Persistence is now integrated with the real Wizard success flow rather than a development Home hook.
+Persistence is integrated with the real Wizard success flow rather than a development Home hook.
 
 Verified product path:
 
@@ -112,9 +112,9 @@ Persistence failure is intentionally non-destructive: if prompt generation succe
 
 The Home page no longer performs backend learning GET/POST requests.
 
-## Milestone 5 — selected: History / Read API + UX
+## Milestone 5 — in progress: History / Read API + UX
 
-Milestone 5 will turn stored successful Wizard runs into a real read-only History product surface.
+Milestone 5 turns stored successful Wizard runs into a real read-only History product surface.
 
 Goal:
 
@@ -127,9 +127,9 @@ successful Wizard runs
   -> static-compatible History UI
 ```
 
-The milestone intentionally separates collection reads from detail reads. The list endpoint should return lightweight run summaries rather than every historical `output` and `snapshot`; full historical data belongs to the detail endpoint.
+The milestone separates collection reads from detail reads. The list endpoint returns lightweight run summaries; full historical `output` and `snapshot` belong only to the detail endpoint.
 
-Planned API surface:
+Current API surface:
 
 ```text
 GET /api/wizard-runs
@@ -143,28 +143,46 @@ GET /api/wizard-runs/:id
   -> output + snapshot
 ```
 
-Canonical list ordering will be stable newest-first ordering by both timestamp and id:
+Canonical list ordering is stable newest-first ordering by both timestamp and id:
 
 ```text
 created_at DESC, id DESC
 ```
 
-Pagination will use an opaque cursor derived from the ordering tuple rather than public page-number/offset semantics.
+Pagination uses an opaque keyset cursor derived from the ordering tuple rather than public page-number/offset semantics.
 
-History detail is intentionally not the same as Wizard restore. Milestone 5 may read historical snapshots, but it will not execute or restore them into the current Wizard runtime. Restore requires an explicit compatibility policy across `wizardVersion`, `snapshot.schemaVersion`, and future runtime changes and remains deferred.
+The frontend typed read boundary now exposes:
 
-Authentication and user ownership are also deferred. Milestone 5 designs a read contract that can later be scoped by ownership without adding ownership now.
+```text
+listWizardRuns(params)
+getWizardRun(id)
+```
+
+with separate summary and full-record TypeScript contracts.
+
+The History UI is implemented as one static route shell:
+
+```text
+/history
+/history?run=<uuid>
+```
+
+The query-based detail state is intentional. Arbitrary future UUIDs are unknown at `pnpm generate` time, so Milestone 5 does not depend on a dynamic `/history/:id` static route or on deployment-specific SPA fallback behavior. This also follows the existing `/prompts?id=...` product pattern.
+
+History detail is intentionally not the same as Wizard restore. Milestone 5 may read and display historical snapshots, but it does not execute or restore them into the current Wizard runtime. Restore requires an explicit compatibility policy across `wizardVersion`, `snapshot.schemaVersion`, and future runtime changes and remains deferred.
+
+Authentication and user ownership are also deferred. The read contract is structured so future ownership can scope the same collection/resource operations without adding ownership now.
 
 ### Milestone 5 phases
 
 ```text
-Phase 0  contract freeze
-Phase 1  GET /api/wizard-runs/:id
-Phase 2  cursor-paginated summary collection
-Phase 3  wizardId filtering
-Phase 4  typed frontend read client
-Phase 5  /history + /history/:id UX
-Phase 6  full local E2E + documentation
+Phase 0  contract freeze                         DONE
+Phase 1  GET /api/wizard-runs/:id               DONE
+Phase 2  cursor-paginated summary collection    DONE
+Phase 3  wizardId filtering                     DONE
+Phase 4  typed frontend read client             DONE
+Phase 5  /history + query-based detail UX       AWAITING USER VERIFICATION
+Phase 6  full local E2E + documentation         NOT STARTED
 ```
 
 No phase is complete merely because code or documentation exists. Each phase is marked `DONE` only after the user locally verifies the relevant behavior and confirms it.
@@ -175,6 +193,7 @@ No phase is complete merely because code or documentation exists. Each phase is 
 - users/user ownership;
 - Wizard restore/resume from historical runs;
 - delete/rename/favorite history features;
+- product-level Wizard filter UI/catalog;
 - arbitrary history search/sorting/date filtering;
 - production migrations strategy;
 - Redis;
