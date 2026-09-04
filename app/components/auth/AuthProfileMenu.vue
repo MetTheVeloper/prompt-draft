@@ -61,6 +61,15 @@ const formattedXp = computed(() => {
   );
 });
 
+const formattedReferralCount = computed(() => {
+  const referrals = auth.referrals.value;
+  if (!referrals) return "—";
+
+  return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(
+    referrals.referredCount,
+  );
+});
+
 const canOpenManage = computed(() => canAccessManage(auth.can));
 const hasMissingProfileFields = computed(() => {
   return auth.missingProfileFields.value.length > 0;
@@ -117,6 +126,13 @@ async function handleLogout() {
         {{ t("auth.profile.xp") }}
       </el-text>
       <el-text :size="13" :weight="800" color="prim">{{ formattedXp }}</el-text>
+    </el-flex>
+
+    <el-flex rules="rbc" class="w100" :gap="16">
+      <el-text :size="12" color="normal55" icon="group_add" icon-color="blue">
+        {{ t("auth.profile.invitedUsers") }}
+      </el-text>
+      <el-text :size="12" :weight="700">{{ formattedReferralCount }}</el-text>
     </el-flex>
 
     <el-flex v-if="user?.username" rules="rbc" class="w100" :gap="16">
