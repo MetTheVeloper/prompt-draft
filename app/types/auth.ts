@@ -2,6 +2,7 @@ import type { AuthGrantedPermission, AuthPermission } from "~/config/authorizati
 
 export type AuthUserRole = "user" | "admin" | "super_admin";
 export type AuthUserStatus = "active" | "suspended";
+export type AuthProfileField = "username" | "email";
 
 export type AuthUser = {
   id: string;
@@ -10,6 +11,13 @@ export type AuthUser = {
   role: AuthUserRole;
   status: AuthUserStatus;
   createdAt: string;
+  updatedAt: string;
+};
+
+export type AuthProfileState = {
+  supportedFields: AuthProfileField[];
+  completedFields: AuthProfileField[];
+  missingFields: AuthProfileField[];
 };
 
 export type AuthIdentifierType = "username" | "email";
@@ -25,12 +33,26 @@ export type AuthSessionResponse = {
   ok: true;
   token: string;
   user: AuthUser;
+  profile: AuthProfileState;
   permissions: AuthGrantedPermission[];
 };
 
 export type AuthMeResponse = {
   ok: true;
   user: AuthUser;
+  profile: AuthProfileState;
+  permissions: AuthGrantedPermission[];
+};
+
+export type CompleteAuthProfileInput = {
+  username?: string;
+  email?: string;
+};
+
+export type CompleteAuthProfileResponse = {
+  ok: true;
+  user: AuthUser;
+  profile: AuthProfileState;
   permissions: AuthGrantedPermission[];
 };
 
