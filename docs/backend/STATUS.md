@@ -264,15 +264,28 @@ search input size 15
 
 Manage section title/description metadata is centralized in `app/config/manage.ts` and rendered by the shared `/manage` shell. Dashboard and Users no longer duplicate child-page heading blocks.
 
+Profile Menu follow-up polish:
+
+```text
+identity stack -> rules="ccs"
+capitalized display identity
+role shown under identity with low-alpha role marker
+Role detail value -> uppercase
+Manage button -> normal blue button instead of flat
+```
+
 Milestone 11 state:
 
 ```text
-implementation: COMPLETE ENOUGH FOR LOCAL VERIFICATION
-local verification: PENDING
-static generation after this milestone: PENDING
+implementation: COMPLETE
+runtime action verification: VERIFIED BY USER
+audit-log verification: VERIFIED BY USER
+final static generation: PENDING
 ```
 
-No Milestone 11 phase is DONE until the user verifies the relevant action locally.
+The user locally confirmed the row actions work correctly, including role/account management, suspend/login denial, unsuspend, session revocation, Cloud-data reset, Information modal behavior, and audit-log writes.
+
+Milestone 11 remains open only until the final static generation check passes after the latest UI polish.
 
 ## Deferred work
 
@@ -294,7 +307,16 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Apply migration 007, rebuild the API, and locally verify Milestone 11 actions on a non-critical test account before running the final static generation check.
+Pull the Profile Menu polish, smoke-check its UI, then run `pnpm generate`.
+
+If static generation passes and `/manage/users` remains prerendered, mark Milestone 11 COMPLETE and start the next selected milestone:
+
+```text
+Milestone 12 — Manage Dashboard Summary
+GET /api/admin/dashboard/summary
+real system/account/content counters
+/manage/dashboard cards
+```
 
 ## New-chat handoff
 
