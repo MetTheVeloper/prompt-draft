@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { AUTH_PERMISSIONS } from "~/config/authorization";
+
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
@@ -10,6 +12,10 @@ const user = computed(() => auth.user.value);
 
 const identityLabel = computed(() => {
   return user.value?.username || user.value?.email || "";
+});
+
+const roleLabel = computed(() => {
+  return user.value?.role?.replaceAll("_", " ") || "";
 });
 
 const memberSince = computed(() => {
@@ -24,6 +30,11 @@ const memberSince = computed(() => {
     day: "numeric",
   });
 });
+
+async function handleOpenDashboard() {
+  emit("close");
+  await navigateTo("/dashboard");
+}
 
 async function handleLogout() {
   await auth.logout();
@@ -55,12 +66,27 @@ async function handleLogout() {
       <el-text :size="12">{{ user.email }}</el-text>
     </el-flex>
 
+    <el-flex v-if="roleLabel" rules="rbc" class="w100" :gap="16">
+      <el-text :size="12" color="normal55">Role</el-text>
+      <el-text :size="12" :weight="700">{{ roleLabel }}</el-text>
+    </el-flex>
+
     <el-flex v-if="memberSince" rules="rbc" class="w100" :gap="16">
       <el-text :size="12" color="normal55">{{ t("auth.profile.memberSince") }}</el-text>
       <el-text :size="12">{{ memberSince }}</el-text>
     </el-flex>
 
     <el-divider />
+
+    <el-button
+      v-if="auth.can(AUTH_PERMISSIONS.DASHBOARD_VIEW)"
+      class="w100"
+      color="prim"
+      mode="flat"
+      icon="dashboard"
+      label="Dashboard"
+      @click="handleOpenDashboard"
+    />
 
     <el-button
       class="w100"
