@@ -40,14 +40,7 @@ ARCHIVE_S3_SMOKE_PUBLIC_READ
 
 Real credentials must never be committed.
 
-Repository policy already ignores:
-
-```text
-.env
-.env.*
-```
-
-while allowing only `.env.example` to be tracked.
+Repository policy already ignores `.env` and `.env.*` while allowing only `.env.example` to be tracked.
 
 For local development:
 
@@ -64,9 +57,7 @@ For production, the same names must be supplied by the backend runtime/platform 
 
 The existing automatic static-site deployment already uses Arvan S3 credentials from GitHub Actions secrets. Phase 17D does not rotate or reuse that secret namespace.
 
-Archive media is runtime backend storage, so its credentials belong to the API runtime rather than the static deployment runner.
-
-This separation avoids breaking the existing deploy workflow and reduces blast radius.
+Archive media is runtime backend storage, so its credentials belong to the API runtime rather than the static deployment runner. This separation avoids breaking the existing deploy workflow and reduces blast radius.
 
 ## Native storage adapter
 
@@ -74,6 +65,7 @@ Phase 17D currently adds:
 
 ```text
 backend/src/archiveStorage.mjs
+backend/src/archive-storage-smoke.mjs
 ```
 
 The first implementation deliberately does not add AWS SDK dependencies. It signs S3-compatible requests with AWS Signature Version 4 using Node's built-in crypto/fetch APIs.
@@ -108,8 +100,10 @@ https://prompt-draft-archive-media.s3.ir-thr-at1.arvanstorage.ir/...
 Command:
 
 ```powershell
-docker compose exec api npm run archive:storage-smoke
+docker compose exec api node src/archive-storage-smoke.mjs
 ```
+
+The smoke script intentionally runs directly with Node so `backend/package.json` remains unchanged and Docker can reuse the existing dependency-install layer.
 
 The script creates a random temporary key under:
 
@@ -127,9 +121,7 @@ signed GetObject + byte equality
 DeleteObject cleanup
 ```
 
-The test output never prints access-key or secret-key values. It reports only whether each secret is configured.
-
-Cleanup is attempted in `finally` even when a later capability step fails.
+The test output never prints access-key or secret-key values. It reports only whether each secret is configured. Cleanup is attempted in `finally` even when a later capability step fails.
 
 ## Public-read test
 
