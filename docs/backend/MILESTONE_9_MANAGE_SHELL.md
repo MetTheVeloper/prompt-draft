@@ -6,50 +6,15 @@ Status: COMPLETE
 
 Turn the temporary `/dashboard` authorization proof into a reusable permission-aware management workspace that can host future admin/system tools without scattering privileged pages across the product.
 
-Target route family:
+Canonical route family:
 
 ```text
 /manage
 /manage/dashboard
 /manage/users
-/manage/system
-/manage/content
-...
 ```
 
-Milestone 9 implements only the reusable shell and migrates the existing Dashboard proof into it. Real user-management behavior such as ban/reset/role changes remains a later feature.
-
-## Product structure
-
-`/manage` is a management workspace, not a public navigation section.
-
-It provides persistent management navigation whose visible sections are derived from permissions.
-
-Current section:
-
-```text
-Dashboard
-route: /manage/dashboard
-permission: dashboard.view
-```
-
-Expected future sections include:
-
-```text
-Users
-route: /manage/users
-permission: users.view
-
-System
-route: /manage/system
-permission: system.settings.manage or a future narrower permission
-
-Content
-route: /manage/content
-permission: future content-management permission
-```
-
-Future sections must be added through the shared section configuration rather than hardcoded independently in multiple components.
+Future routes such as `/manage/system` and `/manage/content` should extend this shell rather than create a separate admin architecture.
 
 ## Permission-first contract
 
@@ -63,24 +28,47 @@ auth.can(section.requiredPermission)
 
 Roles remain permission bundles. Backend authorization remains the authoritative security boundary.
 
-## Implemented Manage section configuration
+## Manage section configuration
 
 ```text
 app/config/manage.ts
 ```
 
-Current shape:
+Current verified shape:
 
 ```text
 ManageSection
   key
-  label
   icon
   route
   requiredPermission
 ```
 
-The same configuration drives:
+Current entries:
+
+```text
+dashboard
+  -> /manage/dashboard
+  -> dashboard.view
+
+users
+  -> /manage/users
+  -> users.view
+```
+
+The registry contains structural identity only.
+
+User-facing labels and descriptions must not be stored in `app/config/manage.ts`. The shell resolves localized copy from:
+
+```text
+i18n/locales/manage.en.ts
+i18n/locales/manage.fa.ts
+
+manage.sections.<key>.label
+manage.sections.<key>.description
+```
+
+The same structural registry drives:
 
 ```text
 Manage tabs
@@ -89,7 +77,7 @@ Profile Menu Manage visibility
 future responsive Manage navigation
 ```
 
-Adding `/manage/users` later should primarily mean adding one section definition plus its page/backend APIs, not rebuilding the shell.
+Adding a future section should primarily mean adding one typed section definition plus its permission/API/page/i18n vertical slice, not rebuilding the shell.
 
 ## `/manage` behavior
 
@@ -109,10 +97,12 @@ authenticated + one or more Manage permissions
   -> first permitted configured section
 
 authenticated + no permitted Manage section
-  -> 403 Forbidden
+  -> 403
 ```
 
 The resolver never assumes Dashboard will always be the first permitted section.
+
+The Manage-specific guard copy is localized under the `manage.*` namespace.
 
 ## Manage shell UI
 
@@ -128,38 +118,35 @@ The parent route owns:
 Manage heading/context
 permission-filtered tab navigation
 active-tab state from current route
+localized active section heading/description
 nested child page rendering via NuxtPage
 ```
 
-This keeps the normal application Header/default layout and avoids duplicating global layout wiring.
+Child pages do not repeat the shared section heading block.
 
-## Dashboard migration
+## Profile Menu entry
 
-The canonical Dashboard proof now lives at:
-
-```text
-/manage/dashboard
-```
-
-It continues to require:
+The Profile Menu exposes one permission-aware:
 
 ```text
-dashboard.view
+Manage
 ```
 
-and continues to verify backend authorization through:
+entry only when the current user can access at least one configured Manage section.
+
+It navigates to:
 
 ```text
-GET /api/admin/access-check
+/manage
 ```
 
-Real system metrics are not part of Milestone 9.
+so the entry does not need to know which section the user can access.
+
+The label is localized through `manage.title`.
 
 ## Legacy `/dashboard` compatibility
 
-`/dashboard` no longer contains a second Dashboard implementation.
-
-It uses authorization first, then redirects permitted users to:
+`/dashboard` remains a compatibility route. Authorization is evaluated first and permitted users are redirected to:
 
 ```text
 /manage/dashboard
@@ -167,27 +154,9 @@ It uses authorization first, then redirects permitted users to:
 
 A normal user cannot use the legacy path to bypass authorization.
 
-## Profile Menu entry
-
-The previous `Dashboard` action has been replaced with:
-
-```text
-Manage
-```
-
-Visibility is derived from whether the current user can access at least one configured Manage section.
-
-The action navigates to:
-
-```text
-/manage
-```
-
-so future roles can land on their first permitted section without Profile Menu changes.
-
 ## Security layers
 
-The existing three-layer authorization model remains mandatory:
+The three-layer model remains mandatory:
 
 ```text
 1. UI visibility
@@ -195,7 +164,7 @@ The existing three-layer authorization model remains mandatory:
 3. backend permission guard
 ```
 
-Future `/manage/users` mutations such as ban, reset, or role changes must each have backend permission checks even if their buttons are hidden in the UI.
+Future Manage mutations must each have backend permission checks even when their UI actions are hidden or disabled.
 
 ## Local verification
 
@@ -204,11 +173,11 @@ Verified by the user on 2026-09-04.
 Super admin:
 
 ```text
-Profile Menu shows Manage, not Dashboard
+Profile Menu shows Manage
 /manage resolves to /manage/dashboard
-Manage shell renders with Dashboard tab active
-Dashboard backend authorization remains Verified
-legacy /dashboard redirects to /manage/dashboard
+Manage shell renders permitted tabs
+Dashboard route works
+legacy /dashboard redirects correctly
 ```
 
 Normal user:
@@ -220,23 +189,30 @@ Profile Menu does not show Manage
 /dashboard remains blocked
 ```
 
-The user explicitly confirmed all functional tests succeeded.
+The user explicitly confirmed the functional shell behavior succeeded.
+
+## Final localization verification
+
+The later Manage localization closure moved all shell/section copy into the English/Persian Manage locale files.
+
+The user confirmed the final English and Persian Manage shell works correctly.
 
 ## Static-generation verification
 
-Final release check also passed:
+Final branch-level release check passed after the full Manage implementation and localization closure:
 
 ```text
 pnpm generate succeeds
-15 initial routes prerender successfully
-/manage is present
-/manage/dashboard is present
-/dashboard compatibility route is present
-.output/public generated successfully
-offline manifest generated successfully
+16 initial routes prerendered
+/manage present
+/manage/dashboard present
+/manage/users present
+/dashboard compatibility route present
+.output/public generated
+offline manifest generated
 ```
 
-Known duplicated-import, sourcemap, and large-chunk warnings remain non-blocking existing build warnings.
+Known duplicated-import, sourcemap, Nitro cache-driver, and large-chunk warnings remain non-blocking existing build warnings.
 
 ## Milestone 9 phases — ALL DONE
 
@@ -245,25 +221,20 @@ Phase 0 — contract/documentation: DONE
 Phase 1 — central Manage section config + parent shell: DONE
 Phase 2 — Dashboard migration + Profile Menu entry: DONE
 Phase 3 — privileged/normal-user authorization regression: DONE
-Phase 4 — pnpm generate + static route verification: DONE
+Phase 4 — static generation: DONE
+Phase 5 — final shell/section localization follow-up: DONE
 ```
 
-## Deferred from Milestone 9
+## Later work built on this milestone
 
 ```text
-/manage/users real UI
-user list/search/pagination
-ban/suspend state
-role mutation API
-user data reset API
-delete-user flow
-system metrics/dashboard analytics
-page-view tracking
-active-user analytics
-translation usage analytics
-admin audit log
-/manage/system
-/manage/content
+Milestone 10 -> Manage Users read foundation
+Milestone 11 -> user administration mutations + audit
+Milestone 12 -> live Dashboard summary
 ```
 
-These become later vertical-slice features on top of the verified Manage shell.
+Reusable future guidance now lives in:
+
+```text
+docs/backend/MANAGE_GUIDE.md
+```
