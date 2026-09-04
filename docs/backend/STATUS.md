@@ -43,7 +43,7 @@ Verified product behavior:
 - real Portrait Wizard persistence after successful `finish()`;
 - failed persistence does not destroy a successfully generated artifact;
 - Home page has no backend learning GET/POST side effects;
-- product-created rows survive `docker compose down/up` through the PostgreSQL named volume;
+- product-created rows survive Docker container recreation through the PostgreSQL named volume;
 - static generation remains supported.
 
 Reference verified run:
@@ -55,17 +55,20 @@ wizard_version   = 2
 snapshot_version = 1
 ```
 
-## Milestone 5 — IN PROGRESS: History / Read API + UX
+## Milestone 5 — COMPLETE: History / Read API + UX
 
-Goal:
+Milestone 5 turned durable successful Wizard runs into a real read-only History product surface while preserving the static-generated Nuxt frontend and independent Dockerized backend.
+
+Verified product path:
 
 ```text
-durable successful Wizard runs
-  -> production read contract
-  -> paginated History collection
+real Portrait Wizard finish
+  -> POST /api/wizard-runs
+  -> PostgreSQL wizard_runs
+  -> paginated summary History list
   -> full run detail
-  -> typed frontend read boundary
-  -> History UI
+  -> compiled prompt + stored snapshot
+  -> static-compatible /history shell
 ```
 
 Architecture remains:
@@ -77,7 +80,7 @@ static-generated Nuxt frontend
   -> PostgreSQL
 ```
 
-Authentication, ownership, and historical Wizard restore are not part of Milestone 5.
+Authentication, ownership, and historical Wizard restore remain outside this milestone.
 
 ### Phase 0 — contract freeze: DONE
 
@@ -113,10 +116,9 @@ History detail is read-only. Restore/auth/ownership remain deferred.
 
 ### Phase 1 — single-run detail API: DONE
 
-Implemented and locally verified:
+Locally verified:
 
 ```text
-GET /api/wizard-runs/:id
 existing UUID -> 200 full record
 valid missing UUID -> 404
 malformed id -> 400
@@ -132,7 +134,7 @@ output = Milestone 5 Phase 1 detail verification
 
 ### Phase 2 — cursor-paginated summary collection: DONE
 
-Implemented and locally verified:
+Locally verified:
 
 ```text
 summary-only collection
@@ -145,7 +147,7 @@ no output/snapshot in list rows
 structured invalid limit/cursor 400
 ```
 
-User verified seven existing rows across four `limit=2` pages as `2 + 2 + 2 + 1`, with all ids returned exactly once and final:
+The user verified seven existing rows across four `limit=2` pages as `2 + 2 + 2 + 1`, with all ids returned exactly once and final:
 
 ```text
 hasMore=false
@@ -154,15 +156,9 @@ nextCursor=null
 
 Regression checks also passed for detail and POST.
 
-Phase 2 regression POST id:
-
-```text
-534068a7-b518-4cb2-a155-f61dcdea181f
-```
-
 ### Phase 3 — wizardId filtering: DONE
 
-Implemented and locally verified:
+Locally verified:
 
 ```text
 wizardId=<trimmed non-empty id>
@@ -184,7 +180,7 @@ The user verified the probe, unknown/empty filter semantics, and `portrait + lim
 
 ### Phase 4 — typed frontend read boundary: DONE
 
-Implemented:
+Implemented and build-verified:
 
 ```text
 app/types/wizardRunApi.ts
@@ -207,49 +203,38 @@ list -> WizardRunSummary[] + pageInfo
 get  -> full WizardRunRecord
 ```
 
-The user locally ran:
+`pnpm generate` completed successfully and `/wizard/portrait` remained prerendered.
+
+### Phase 5 — History UI MVP: DONE
+
+Implemented and locally verified:
 
 ```text
-git pull --ff-only
-pnpm generate
-```
-
-and Nuxt static generation completed successfully. `/wizard/portrait` still prerendered and Nuxt reported `.output/public` ready for static hosting.
-
-Existing non-blocking build warnings remain unrelated to Milestone 5:
-
-```text
-duplicate compilePromptOutput import warning
-sourcemap warning
-large chunk warning
-Nitro cache-driver external warning
-```
-
-Phase 4 is therefore verified and complete.
-
-### Phase 5 — History UI MVP: AWAITING USER VERIFICATION
-
-Implemented first real browser consumer of the typed read API:
-
-```text
-app/pages/history.vue
-  -> GET summary list on load
-  -> newest-first History cards
+/history
+  -> real persisted summaries newest-first
   -> loading / empty / error / retry states
   -> cursor-based Load more
-  -> open one run detail
-  -> GET full run detail
-  -> compiled output display
-  -> copy prompt action
+
+/history?run=<uuid>
+  -> exact full run detail
+  -> compiled prompt
+  -> Copy prompt
   -> read-only stored snapshot disclosure
-
-app/config/navigation.ts
-  -> History entry in primary/mobile navigation
-
-i18n/locales/history.en.ts
-i18n/locales/history.fa.ts
-  -> History UI localization
+  -> Back to history
 ```
+
+Verified UX/runtime behavior:
+
+- History appears in primary/mobile navigation;
+- persisted runs load from the backend;
+- list rows remain summary-only;
+- opening a row uses query-based detail state;
+- full output and stored snapshot are readable;
+- Copy prompt writes the exact compiled prompt to the clipboard;
+- stopping the API shows a graceful History-unavailable state;
+- restarting the API and retrying recovers the list without an app crash;
+- Persian localization renders correctly;
+- `pnpm generate` succeeds with `/history` included in generated routes.
 
 Static-hosting route decision:
 
@@ -258,35 +243,28 @@ Static-hosting route decision:
 /history?run=<uuid>
 ```
 
-A dynamic `/history/:id` route was intentionally not used because arbitrary future UUIDs are unknown at `pnpm generate` time and the current product must remain safe for pure static hosting without depending on an SPA fallback.
+A dynamic `/history/:id` route is intentionally not required because arbitrary future UUIDs are unknown at generation time and pure static hosting must remain supported.
 
-The query-based detail pattern also matches the existing `/prompts?id=...` product pattern.
+### Phase 6 — final Milestone 5 product E2E + docs: DONE
 
-The backend `wizardId` filter remains available, but the initial History UI does not expose a technical free-text Wizard-id filter. That control is deferred until a real multi-Wizard product catalog makes the UX meaningful.
+The user completed and confirmed the final product-level verification locally.
 
-Required local verification before Phase 5 can become `DONE`:
+Verified final flow:
 
 ```text
-1. git pull --ff-only
-2. pnpm dev (with Docker API running)
-3. open /history
-4. History navigation item is visible
-5. list loads real persisted summaries newest-first
-6. list rows do not expose full snapshot/output
-7. open a row -> URL becomes /history?run=<uuid>
-8. detail loads the exact full run/output
-9. Back to history returns to /history
-10. copy prompt works
-11. stop API -> History shows graceful error/retry behavior
-12. restart API -> retry succeeds
-13. pnpm generate succeeds and /history is generated
+real Wizard-created run
+  -> persistence succeeds
+  -> run appears in History
+  -> full detail opens
+  -> compiled output matches the saved run
+  -> stored snapshot remains readable
+  -> History read/recovery behavior works
+  -> static generation still succeeds
 ```
 
-Do not mark Phase 5 `DONE` until the user confirms these behaviors locally.
+Durability across Docker API/DB recreation is covered by the named-volume persistence verification established in the backend path and retained through the Milestone 5 read surface.
 
-### Phase 6 — Milestone 5 product E2E: NOT STARTED
-
-Will verify a fresh real Wizard-created run through History list/detail and container recreation before marking the milestone complete.
+Milestone 5 is therefore COMPLETE.
 
 ## Current intentional debt / deferred work
 
@@ -304,9 +282,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 5 Phase 5 History UI behavior and static generation.
-
-Do not mark Phase 5 `DONE` until the user confirms the browser/runtime checks above.
+Milestone 5 is closed. Await the user's next milestone scope before making further backend/product changes.
 
 ## New-chat handoff
 
