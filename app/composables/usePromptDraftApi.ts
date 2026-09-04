@@ -6,6 +6,11 @@ import type {
   UpsertPromptDraftResponse,
 } from "~/types/draftSyncApi";
 import type {
+  TranslatePromptInput,
+  TranslatePromptResponse,
+  TranslationStatusResponse,
+} from "~/types/translationApi";
+import type {
   ApiHelloResponse,
   CreateWizardRunInput,
   CreateWizardRunResponse,
@@ -108,6 +113,17 @@ export function usePromptDraftApi() {
     });
   }
 
+  function getTranslationStatus() {
+    return $fetch<TranslationStatusResponse>(endpoint("/api/translate/status"));
+  }
+
+  function translatePrompt(input: TranslatePromptInput) {
+    return $fetch<TranslatePromptResponse>(endpoint("/api/translate"), {
+      method: "POST",
+      body: input,
+    });
+  }
+
   return {
     apiBase,
     hello,
@@ -117,5 +133,7 @@ export function usePromptDraftApi() {
     upsertPromptDraft,
     getPromptDraft,
     listPromptDrafts,
+    getTranslationStatus,
+    translatePrompt,
   };
 }
