@@ -6,6 +6,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import { promisify } from 'node:util'
+import { handleCloudDraftRequest } from './cloudDrafts.mjs'
 import { queryDatabase } from './database.mjs'
 
 const scryptAsync = promisify(scrypt)
@@ -239,6 +240,46 @@ export async function handleAuthRequest({
   corsHeaders,
   sendJson,
 }) {
+  const isCloudDraftPath =
+    url.pathname === '/api/drafts' || url.pathname.startsWith('/api/drafts/')
+
+  if (isCloudDraftPath) {
+    let user
+
+    try {
+      user = await getAuthenticatedUser(request)
+    } catch (error) {
+      console.error('[Prompt Draft API] cloud draft auth lookup failed', error)
+      sendJson(
+        response,
+        500,
+        { ok: false, message: 'Failed to authenticate request' },
+        corsHeaders,
+      )
+      return true
+    }
+
+    if (!user) {
+      sendJson(
+        response,
+        401,
+        { ok: false, message: 'Authentication required' },
+        corsHeaders,
+      )
+      return true
+    }
+
+    await handleCloudDraftRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+      user,
+    })
+    return true
+  }
+
   if (!url.pathname.startsWith('/api/auth/')) return false
 
   if (request.method === 'POST' && url.pathname === '/api/auth/identify') {
