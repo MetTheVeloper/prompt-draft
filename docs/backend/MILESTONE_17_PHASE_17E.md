@@ -1,14 +1,16 @@
 # Milestone 17 — Phase 17E: Snapshot export + platform closure
 
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
+Status: `DONE / LOCALLY VERIFIED`
 
 Branch: `feature/docker-local-api`
 
-Phase 17D is complete and locally verified. Phase 17E is the final Milestone 17 phase and closes the gap between the authoritative PostgreSQL/Arvan Archive and the static deploy fallback.
+Verified: 2026-09-04
 
-## Implemented target
+Phase 17E is the final Milestone 17 phase. It closes the gap between the authoritative PostgreSQL/Arvan Archive and the static deploy fallback.
 
-Primary path remains:
+## Final architecture
+
+Primary path:
 
 ```text
 PostgreSQL
@@ -22,7 +24,7 @@ PostgreSQL
   -> prompt_archive_images
 ```
 
-Generated fallback path is now:
+Generated fallback path:
 
 ```text
 PostgreSQL published Archive
@@ -40,22 +42,15 @@ Root command:
 pnpm archive:snapshot
 ```
 
-It executes the backend exporter inside the running API container:
+Backend exporter:
 
 ```text
 backend/src/export-prompt-archive-snapshot.mjs
 ```
 
-Docker Compose exposes a dedicated writable snapshot mount:
+The exporter writes through the dedicated snapshot output mount and does not require the application to manually edit the fallback JSON.
 
-```text
-./public -> /archive-output/public
-ARCHIVE_SNAPSHOT_OUTPUT_ROOT=/archive-output
-```
-
-The existing import source mount remains read-only.
-
-## Normalized V3 snapshot
+## V3 snapshot contract
 
 Generated file:
 
@@ -63,280 +58,116 @@ Generated file:
 public/data/prompts.json
 ```
 
-Canonical generated schema is now:
+Schema:
 
 ```text
-schemaVersion: 3
-channel
-updatedAt
-modelHistory
-items[]
-  id
-  title.en
-  title.fa
-  sourceTitle
-  publishedAt
-  telegramUrl
-  model.previewGeneratedWith
-  model.optimizedFor
-  images[]
-    position
-    fullUrl
-    thumbnailUrl
-  prompt
-  tags
-  variants
+schemaVersion = 3
 ```
 
-New generated snapshots no longer depend on `titleKey` or runtime locale lookup.
-
-`usePromptArchive()` is V3-first and still accepts the old V2/titleKey snapshot only as backward-compatible migration input.
-
-Fallback security semantics are unchanged:
+Localized titles are stored directly:
 
 ```text
-network / timeout / 5xx / unusable API response -> fallback allowed
-401 / 403 -> fallback forbidden
+title.en
+title.fa
 ```
 
-## Managed media mirroring
+The fallback therefore does not depend on runtime i18n title keys.
 
-Managed Arvan images are mirrored during snapshot generation using signed backend S3 GET requests.
+The V3 reader remains backward-compatible with legacy V2 data where required.
 
-Local mirror namespace:
+## Media strategy
+
+Final decision:
 
 ```text
-public/prompts/_snapshot/<telegram-id>/<image-uuid>/full.webp
-public/prompts/_snapshot/<telegram-id>/<image-uuid>/thumb.webp
+legacy Archive media
+  -> stays on existing local public/prompts paths
+
+managed Arvan media
+  -> cloud URL is primary runtime media
+  -> mirrored into public/prompts/_snapshot for fallback
 ```
 
-The generated JSON points at those local URLs, not Arvan URLs.
+Managed mirror paths are stable and local to the generated fallback namespace.
 
-Therefore the static fallback is independent from both:
+The exporter does not delete the previous usable mirror before a new export succeeds. Stale mirrored files are pruned only after successful export/parity completion.
 
-```text
-Prompt Draft backend availability
-Arvan Object Storage availability
-```
-
-The mirror namespace is deliberately separate from the historical numeric `public/prompts/<telegram-id>/...` directories.
-
-Existing referenced mirrors are overwritten from authoritative storage during rerun. Stale mirror directories are pruned only after a successful export/parity pass, so an interrupted export does not intentionally destroy the previous snapshot's media first.
-
-## Legacy media decision
-
-Selected Phase 17E strategy:
-
-```text
-B. retain legacy media locally; use Arvan for newly-managed media
-```
-
-Legacy `source_path` assets continue to use their existing local URLs under:
-
-```text
-public/prompts/<telegram-id>/...
-```
-
-The exporter verifies those files exist and are non-empty before it writes the new snapshot.
-
-No bulk migration of the historical legacy media set to Arvan is performed in Milestone 17. This avoids unnecessary data movement while preserving the already-working local assets and fully-local fallback behavior.
-
-## Snapshot parity / fail-fast behavior
-
-The exporter compares generated content against authoritative published DB state and reports at least:
-
-```text
-published item count
-snapshot item count
-Telegram IDs
-EN/FA titles
-prompt bodies
-published dates
-model fields
-tags
-variants
-image counts
-image ordering
-```
-
-It also verifies every referenced local legacy asset and every mirrored managed full/thumbnail asset exists and is non-empty.
-
-Success output includes:
-
-```text
-archiveSnapshot: PARITY_OK
-mismatchCount: 0
-schemaVersion: 3
-mirroredManagedImageCount
-legacyMediaStrategy: local-assets-retained
-```
-
-Parity failure exits non-zero and the generated catalog is not treated as valid closure output.
+This phase intentionally does not bulk-migrate the existing legacy image library to Arvan solely for uniformity.
 
 ## Bootstrap compatibility
 
-`backend/src/import-prompt-archive.mjs` now accepts both:
-
-```text
-legacy V2 snapshot with titleKey + string image paths
-normalized V3 snapshot with title.en/title.fa + image DTOs
-```
-
-This matters because after `public/data/prompts.json` is upgraded to V3, a fresh development database can still seed the published catalog from the deploy snapshot.
+The Archive importer accepts the new V3 snapshot shape so a fresh database can still bootstrap published Archive catalog state from the generated snapshot.
 
 Important boundary:
 
 ```text
-snapshot/bootstrap contains published Archive only
+snapshot = published catalog fallback/bootstrap
+snapshot != complete Manage backup
 ```
 
-It is not a full backup of Manage state. Draft and archived admin records are not expected to be reconstructed from the public static snapshot.
+Draft/Archived management state is not expected to be reconstructed from the static snapshot.
 
-The existing fail-fast protection still prevents the bootstrap importer from overwriting rows that have already transitioned into managed ownership on a live database.
+Managed takeover safeguards remain active so future bootstrap/import behavior cannot overwrite managed content silently.
 
-## Determinism and rerun behavior
+## Parity gate
 
-Items are exported in a stable published-date / Telegram-ID order. Tags are sorted, image ordering follows authoritative positions, and `updatedAt` is derived from authoritative persisted timestamps rather than wall-clock export time.
+The exporter compares published PostgreSQL state with the generated snapshot and fails when required content diverges.
 
-Re-running without Archive changes should not create semantic snapshot drift.
+Final locally verified run:
 
-Managed mirror paths are stable because they use Archive item identity indirectly through Telegram directory plus immutable image UUID.
-
-## Local verification gate
-
-Phase 17E is not DONE until the user explicitly confirms the following.
-
-### 1. Pull/rebuild
-
-```powershell
-git pull
-docker compose up -d --build db api
+```json
+{
+  "archiveSnapshot": "PARITY_OK",
+  "ok": true,
+  "publishedItemCount": 101,
+  "snapshotItemCount": 101,
+  "mismatchCount": 0,
+  "schemaVersion": 3,
+  "mirroredManagedImageCount": 2,
+  "legacyMediaStrategy": "local-assets-retained"
+}
 ```
 
-### 2. Generate snapshot
+Counts above describe the verification-time catalog and may change as Archive content changes. The invariant is parity, not the hard-coded count.
 
-```powershell
-pnpm archive:snapshot
-```
+## Fallback verification
 
-Expected:
+The user locally verified the final failure mode:
 
 ```text
-archiveSnapshot = PARITY_OK
-mismatchCount = 0
-schemaVersion = 3
+API running
+  -> /prompts source = api
+
+API stopped
+  -> recoverable API request fails
+  -> /prompts source = fallback
+  -> V3 snapshot renders successfully
 ```
 
-The current published managed test item (`9001`, if still published) should be included and its two managed images should be mirrored locally.
-
-### 3. Inspect generated files
-
-```powershell
-git status --short
-```
-
-Expected generated changes include:
+The page exposed:
 
 ```text
-public/data/prompts.json
-public/prompts/_snapshot/...
+data-archive-source = fallback
 ```
 
-Verify the JSON starts with schemaVersion 3 and includes a managed published item such as `9001` when present.
+Managed media was available through the local snapshot mirror rather than requiring Arvan during fallback rendering.
 
-### 4. Backend-online path
+## Release verification
 
-With API running, `/prompts` should continue to report/use:
+The user also confirmed successful:
 
 ```text
-source=api
-```
-
-### 5. Fully-local fallback path
-
-Keep an already-authenticated SPA tab open, then stop only the API:
-
-```powershell
-docker compose stop api
-```
-
-Trigger an Archive list/detail reload.
-
-Expected:
-
-```text
-source=fallback
-current exported published items remain visible
-managed item media loads from /prompts/_snapshot/... rather than Arvan
-```
-
-This proves the new snapshot is current and media fallback is local.
-
-Restart API afterward:
-
-```powershell
-docker compose start api
-```
-
-### 6. Access semantics
-
-Existing authoritative rule remains:
-
-```text
-401/403 never downgrade to fallback
-```
-
-No Phase 17E code intentionally changes that contract.
-
-### 7. Localization sanity
-
-While exercising fallback, switch EN/FA and confirm titles render from snapshot `title.en/title.fa` without legacy i18n-key dependence.
-
-### 8. Commit generated fallback assets
-
-Because the deploy is static and GitHub Actions currently has no production DB connection, the generated snapshot/media must be committed after verification:
-
-```powershell
-git add public/data/prompts.json public/prompts/_snapshot
-git commit -m "Refresh Prompt Archive fallback snapshot"
-git push
-```
-
-Do not add `.env` or storage credentials.
-
-### 9. Final release invariant
-
-```powershell
 pnpm generate
 ```
 
-Milestone 17 can be marked `DONE / LOCALLY VERIFIED` only after the generated snapshot, fallback behavior, and final static generation are explicitly confirmed by the user.
+after Phase 17E.
 
-## Milestone closure docs
+## Completion
 
-At final confirmation update:
+Phase 17E is complete and Milestone 17 is closed.
+
+See final milestone source of truth:
 
 ```text
-docs/backend/STATUS.md
-docs/backend/README.md
-docs/backend/IMPLEMENTATION.md
 docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
-```
-
-Phase documents remain the detailed implementation history.
-
-## Non-goals retained
-
-Phase 17E does not add:
-
-```text
-Telegram bot ingestion
-Telegram scraping
-public submissions
-likes/favorites/comments
-AI tag generation
-new search technology
-presigned browser uploads
-CDN purge automation
-full admin-state backup/restore
 ```
