@@ -30,6 +30,7 @@ export default {
       title: "حساب کاربری",
       username: "نام کاربری",
       email: "ایمیل",
+      xp: "XP",
       memberSince: "عضویت از",
       complete: "تکمیل پروفایل",
       logout: "خروج از حساب",
