@@ -20,6 +20,8 @@ import historyEn from './locales/history.en'
 import historyFa from './locales/history.fa'
 import draftSyncEn from './locales/draft-sync.en'
 import draftSyncFa from './locales/draft-sync.fa'
+import authEn from './locales/auth.en'
+import authFa from './locales/auth.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
@@ -91,28 +93,31 @@ const enConsolidated = {
 const enMessages = deepMerge(
   deepMerge(
     deepMerge(
-      withModuleFragments(en, [
-        ['background', backgroundEn],
-        ['effects', effectsEn],
-        ['hair', hairEn],
-        ['outfit', outfitEn],
-        ['variables', variablesEn],
-        ['scene', sceneEn],
-      ]),
-      {
-        wizard: deepMerge(
-          deepMerge(wizardEn, wizardResumeEn),
-          wizardPresentationEn,
-        ),
-      },
-    ),
-    deepMerge(historyEn, {
-      create: {
-        draft: {
-          cloud: draftSyncEn,
+      deepMerge(
+        withModuleFragments(en, [
+          ['background', backgroundEn],
+          ['effects', effectsEn],
+          ['hair', hairEn],
+          ['outfit', outfitEn],
+          ['variables', variablesEn],
+          ['scene', sceneEn],
+        ]),
+        {
+          wizard: deepMerge(
+            deepMerge(wizardEn, wizardResumeEn),
+            wizardPresentationEn,
+          ),
         },
-      },
-    }),
+      ),
+      deepMerge(historyEn, {
+        create: {
+          draft: {
+            cloud: draftSyncEn,
+          },
+        },
+      }),
+    ),
+    authEn,
   ),
   flatToNested(enConsolidated),
 )
@@ -134,23 +139,26 @@ const faConsolidated = {
 const faMessages = deepMerge(
   deepMerge(
     deepMerge(
-      withModuleFragments(fa, [
-        ['background', backgroundFa],
-        ['effects', effectsFa],
-        ['hair', hairFa],
-        ['outfit', outfitFa],
-        ['variables', variablesFa],
-        ['scene', sceneFa],
-      ]),
-      { wizard: wizardFa },
-    ),
-    deepMerge(historyFa, {
-      create: {
-        draft: {
-          cloud: draftSyncFa,
+      deepMerge(
+        withModuleFragments(fa, [
+          ['background', backgroundFa],
+          ['effects', effectsFa],
+          ['hair', hairFa],
+          ['outfit', outfitFa],
+          ['variables', variablesFa],
+          ['scene', sceneFa],
+        ]),
+        { wizard: wizardFa },
+      ),
+      deepMerge(historyFa, {
+        create: {
+          draft: {
+            cloud: draftSyncFa,
+          },
         },
-      },
-    }),
+      }),
+    ),
+    authFa,
   ),
   flatToNested(faConsolidated),
 )
