@@ -1,6 +1,6 @@
 # Milestone 12 — Manage Dashboard Summary
 
-Status: IMPLEMENTED — AWAITING USER VERIFICATION
+Status: COMPLETE
 
 ## Goal
 
@@ -14,7 +14,7 @@ The first Dashboard version deliberately avoids fake or inferred analytics.
 /manage/dashboard
 ```
 
-The Manage section remains protected by:
+The Manage section is protected by:
 
 ```text
 dashboard.view
@@ -34,7 +34,7 @@ Backend authorization remains authoritative.
 GET /api/admin/dashboard/summary
 ```
 
-Successful response:
+Successful response shape:
 
 ```json
 {
@@ -58,8 +58,8 @@ Successful response:
     }
   },
   "period": {
-    "dayStartUtc": "2026-09-04T00:00:00.000Z",
-    "generatedAt": "2026-09-04T...Z"
+    "dayStartUtc": "ISO timestamp",
+    "generatedAt": "ISO timestamp"
   }
 }
 ```
@@ -101,7 +101,7 @@ updatedToday
   -> prompt_drafts.server_updated_at since 00:00 UTC
 ```
 
-The Dashboard intentionally uses `updatedToday` instead of `newDraftsToday`. `prompt_drafts.created_at` is client-owned data and therefore is not a sufficiently authoritative server metric for new server-side draft creation.
+The Dashboard intentionally uses `updatedToday` instead of `newDraftsToday`. `prompt_drafts.created_at` is client-owned data and is not a sufficiently authoritative server metric for new server-side draft creation.
 
 ### Admin actions
 
@@ -112,7 +112,7 @@ today
 
 ## Time boundary
 
-Milestone 12 v1 defines `Today` as:
+Dashboard v1 defines `Today` as:
 
 ```text
 00:00 UTC -> generatedAt
@@ -120,7 +120,7 @@ Milestone 12 v1 defines `Today` as:
 
 The API returns the exact UTC boundary so the UI does not imply a hidden local-time interpretation.
 
-Timezone-aware reporting is deferred until analytics requirements are defined.
+Timezone-aware reporting remains deferred until analytics requirements are defined.
 
 ## Dashboard UI
 
@@ -139,7 +139,7 @@ Admin actions today
 
 The page includes manual Refresh and a generated-at timestamp.
 
-New Dashboard UI uses the project EL component system and no page-specific CSS.
+The UI uses the project EL component system and no page-specific CSS.
 
 Reusable card:
 
@@ -147,9 +147,34 @@ Reusable card:
 app/components/manage/ManageMetricCard.vue
 ```
 
+The metric card formats numeric values according to the active UI locale.
+
+## Localization closure
+
+All current Dashboard user-facing copy is centralized under:
+
+```text
+i18n/locales/manage.en.ts
+i18n/locales/manage.fa.ts
+```
+
+Covered Dashboard surfaces include:
+
+```text
+section label/description
+live summary text
+last-updated text
+Refresh
+loading/error fallback
+all eight card labels
+all eight card helper descriptions
+```
+
+The shell resolves the Dashboard section copy through `manage.sections.dashboard.*`; `app/config/manage.ts` contains no display copy.
+
 ## Explicitly not included
 
-These values are not currently persisted and therefore are not exposed yet:
+These values are not currently persisted and therefore are not exposed:
 
 ```text
 site visits
@@ -171,21 +196,71 @@ app/composables/usePromptDraftApi.ts
 app/components/manage/ManageMetricCard.vue
 app/pages/manage/dashboard.vue
 app/config/manage.ts
+i18n/locales/manage.en.ts
+i18n/locales/manage.fa.ts
 ```
 
-No database migration is required for this milestone.
+No database migration was required for this milestone.
 
-## Verification requirements
+## Local verification
 
-Do not mark Milestone 12 COMPLETE until the user verifies locally:
+The user locally verified the Dashboard implementation and later confirmed the final Manage localization pass worked correctly.
+
+Verified behavior includes:
 
 ```text
-GET /api/admin/dashboard/summary -> 200 for authorized account
-summary values match direct database counts
-normal user cannot access the summary API
-/manage/dashboard renders all eight live cards
-Refresh retrieves a new generatedAt value
-Users and other Manage routes remain unaffected
-pnpm generate succeeds
-/manage/dashboard remains prerendered
+authorized Dashboard access
+live summary API behavior
+all eight Dashboard cards
+Refresh/generatedAt behavior
+Users/other Manage behavior remains intact
+English Manage Dashboard copy
+Persian Manage Dashboard copy
 ```
+
+## Final static-generation verification
+
+On 2026-09-04 the user ran:
+
+```text
+pnpm generate
+```
+
+and confirmed success.
+
+Result:
+
+```text
+16 initial routes prerendered
+/manage present
+/manage/dashboard present
+/manage/users present
+.output/public generated
+offline manifest generated
+225 files / 62.8 MB
+```
+
+Known duplicated-import, sourcemap, Nitro cache-driver, and large-chunk warnings remained non-blocking.
+
+## Milestone 12 phases — ALL DONE
+
+```text
+contract/documentation: DONE
+backend summary API: DONE
+typed frontend boundary: DONE
+Dashboard live cards: DONE
+local runtime verification: DONE
+authorization regression: DONE
+final EN/FA localization follow-up: DONE
+static generation: DONE
+```
+
+Milestone 12 is complete.
+
+Future Dashboard extensions should follow:
+
+```text
+docs/backend/MANAGE_GUIDE.md
+```
+
+and must continue the rule of reporting only persisted metrics with explicit semantics.
