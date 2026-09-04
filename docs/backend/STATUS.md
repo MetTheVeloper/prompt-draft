@@ -32,7 +32,7 @@ Reusable API implementation guidance lives in:
 docs/backend/API_GUIDE.md
 ```
 
-It captures resource-first API design, numbered SQL schema files, parameterized DB access, HTTP validation/CORS, typed frontend boundaries, local-first failure semantics, direct UI verification, and `pnpm generate` as a release invariant.
+It captures resource-first API design, numbered SQL schema files, parameterized DB access, HTTP validation/CORS, typed frontend boundaries, local-first failure semantics, direct UI verification, static generation, and the current three-layer authorization model.
 
 ## Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
 
@@ -90,7 +90,7 @@ pnpm generate
 
 ## Milestone 8 — COMPLETE: Authorization / Roles Foundation
 
-Goal achieved:
+Verified authorization path:
 
 ```text
 authenticated account
@@ -124,75 +124,99 @@ system.settings.manage
 
 `super_admin` receives wildcard `*`.
 
-Implemented authorization foundation:
+Local verification completed by the user:
 
 ```text
-backend/sql/005_add_user_roles.sql
-backend/src/authorization.mjs
-users.role defaults to user
-one-time migration bootstrap promotes grass to super_admin
-runtime privilege never checks usernames
-auth login/register/me responses include role + resolved permissions
-GET /api/admin/access-check requires dashboard.view
-app/config/authorization.ts permission constants
-useAuth(): role / permissions / isAdmin / isSuperAdmin / can / canAny / canAll
-app/middleware/authorization.ts reusable route guard
-/dashboard proof route requires dashboard.view
-Profile Menu shows Dashboard only when permission is granted
-/dashboard included in static prerender configuration
+super_admin sees Dashboard and can open /dashboard
+/dashboard backend authorization reports Verified
+normal user does not see Dashboard
+normal user direct /dashboard access returns 403
+normal user direct GET /api/admin/access-check returns 403
+pnpm generate succeeds
+13 routes prerender successfully including /dashboard
 ```
 
-Authorization enforcement contract:
+Authorization remains three-layered:
 
 ```text
 UI visibility
-  -> convenience only
-
-route middleware
-  -> blocks unauthorized navigation
-
-backend permission guard
-  -> authoritative security boundary
+frontend route guard
+backend permission guard (authoritative)
 ```
 
-Local verification completed by the user on 2026-09-04:
+## Milestone 9 — IN PROGRESS: Manage Shell / Admin Workspace Foundation
+
+Selected direction:
 
 ```text
-super_admin account shows Role: super admin
-super_admin sees Dashboard action
-super_admin opens /dashboard
-/dashboard backend authorization reports Verified
-normal user shows Role: user
-normal user does not see Dashboard action
-normal user direct /dashboard access returns 403 Forbidden
-normal user direct GET /api/admin/access-check returns 403 Forbidden
+/manage
+  -> permission-aware management workspace
+  -> first permitted management section
+
+/manage/dashboard
+  -> migrated Dashboard proof
+
+/manage/users
+  -> future user-management feature, not part of Milestone 9 implementation
 ```
 
-Final static release verification:
+Source-of-truth contract for this milestone:
 
 ```text
-pnpm generate succeeds
-13 initial routes prerender successfully
-/dashboard is explicitly present in the prerender set
-.output/public generated successfully
-offline manifest generated successfully
+docs/backend/MILESTONE_9_MANAGE_SHELL.md
 ```
 
-Known duplicated-import, sourcemap, and large-chunk warnings remain non-blocking existing build warnings.
-
-### Milestone 8 phases — ALL DONE
+Core design decisions:
 
 ```text
-Phase 1 — persisted roles + backend permission resolver: DONE
-Phase 2 — frontend authorization helpers: DONE
-Phase 3 — Dashboard proof route + conditional UI: DONE
-Phase 4 — normal-user denial + backend bypass check + static generation: DONE
+one central Manage section configuration
+section visibility based on permissions, never role-name checks
+/manage resolves the first section the current account can access
+Manage shell owns tab-based navigation
+/manage/dashboard requires dashboard.view
+Profile Menu exposes a single Manage entry when any Manage section is allowed
+legacy /dashboard becomes a compatibility path to /manage/dashboard
+backend permission checks remain authoritative
+static generation must include /manage and /manage/dashboard
 ```
+
+Future sections such as `/manage/users`, `/manage/system`, and `/manage/content` should plug into the same shell/configuration rather than creating independent admin navigation patterns.
+
+### Milestone 9 scope boundary
+
+Milestone 9 builds the workspace foundation only.
+
+Explicitly deferred to later vertical slices:
+
+```text
+real /manage/users implementation
+user list/search/pagination
+ban/suspend user
+change user role
+reset/delete user data
+real Dashboard metrics
+analytics/page-view tracking
+audit log
+/manage/system
+/manage/content
+```
+
+### Milestone 9 phases
+
+```text
+Phase 0 — contract/documentation: READY
+Phase 1 — central Manage section config + parent shell: NOT STARTED
+Phase 2 — Dashboard migration + Profile Menu entry: NOT STARTED
+Phase 3 — privileged/normal-user authorization regression: NOT STARTED
+Phase 4 — pnpm generate + static route verification: NOT STARTED
+```
+
+No implementation phase is `DONE` until locally verified by the user.
 
 ## Current intentional debt / deferred work
 
 - real Dashboard metrics;
-- Admin Panel / user-management UX;
+- `/manage/users` and future Admin Panel features;
 - analytics/page-view event tracking for metrics such as visits and active users;
 - convert `/history` from Wizard-run History to Draft History when selected;
 - remove History from primary header navigation and add the relevant History entry to the Drafts menu as previously agreed;
@@ -213,13 +237,14 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Milestone 8 is complete. Wait for the user's next product feature direction; do not infer or start another feature automatically.
+Start Milestone 9 Phase 1 only after the Manage-shell contract is accepted as the implementation direction.
 
 ## New-chat handoff
 
-Before continuing backend work in another chat, read:
+Before continuing backend/admin work in another chat, read:
 
 1. `docs/backend/API_GUIDE.md`
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/STATUS.md`
+5. `docs/backend/MILESTONE_9_MANAGE_SHELL.md`
