@@ -129,7 +129,7 @@ async function handleLogout() {
     </el-flex>
 
     <el-flex rules="rbc" class="w100" :gap="16">
-      <el-text :size="12" color="normal55" icon="group_add" icon-color="blue">
+      <el-text :size="12" color="normal55" icon="person_add" icon-color="blue">
         {{ t("auth.profile.invitedUsers") }}
       </el-text>
       <el-text :size="12" :weight="700">{{ formattedReferralCount }}</el-text>
