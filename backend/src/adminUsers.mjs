@@ -408,8 +408,7 @@ async function handleMutation({
   corsHeaders,
   sendJson,
 }) {
-  const requiredMethod = action === 'role' ? 'PATCH' : 'POST'
-  if (request.method !== requiredMethod) {
+  if (request.method !== 'POST') {
     sendJson(
       response,
       405,
