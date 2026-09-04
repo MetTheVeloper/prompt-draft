@@ -4,6 +4,7 @@ export type AdminUserSummary = {
   id: string;
   username: string | null;
   email: string | null;
+  avatarUrl: string | null;
   role: AuthUserRole;
   status: AuthUserStatus;
   createdAt: string;
