@@ -1,6 +1,6 @@
 # Milestone 16 — Referral Foundation
 
-Status: **IN PROGRESS — implementation complete, local verification pending**
+Status: **IN PROGRESS — referral registration/XP core locally verified; Profile Menu invited-count verification pending**
 
 This milestone adds the first persisted referral relationship to Prompt Draft and connects it to the existing XP ledger without introducing a separate referral-code generator.
 
@@ -178,6 +178,39 @@ referrer-not-found error
 self-referral error
 ```
 
+## Profile Menu referral read model
+
+Referral counts are derived from the canonical `referrals` relation, not from XP events.
+
+Backend read model:
+
+```text
+backend/src/referrals.mjs
+
+referrals.referredCount
+  = COUNT(referrals WHERE referrer_user_id = current user)
+```
+
+Primary Auth responses now include:
+
+```json
+{
+  "referrals": {
+    "referredCount": 1
+  }
+}
+```
+
+`useAuth()` stores this as a separate `referrals` state alongside `user`, `profile`, and `score`.
+
+The Profile Menu displays a localized row:
+
+```text
+Invited users / کاربران دعوت‌شده
+```
+
+Because Profile Menu already refreshes `/api/auth/me` when opened, the visible count is refreshed from the backend rather than maintained as a client-side counter.
+
 ## Security / integrity boundaries
 
 Backend validation is authoritative.
@@ -193,6 +226,7 @@ active referrer required
 case-insensitive username lookup
 invalid/nonexistent referrer aborts signup
 XP derives from the persisted referral relation
+invited-user count derives from the persisted referral relation
 ```
 
 ## Explicitly deferred
@@ -217,25 +251,18 @@ The current reward is intentionally simple. Stronger anti-abuse eligibility can 
 
 ## Local verification required before DONE
 
-The user must verify locally:
+The referral registration/XP core was explicitly confirmed locally by the user on 2026-09-04, including persisted relation rows and the paired `referral_joined` / `referral_reward` ledger events.
+
+The final Profile Menu read-model slice still requires local verification:
 
 ```text
-1. migration 012_create_referrals.sql applies successfully
-2. registration without referral still works unchanged
-3. referral field appears only during account creation and after Repeat Password
-4. invalid-format referral -> localized validation error and no account created
-5. nonexistent referral username -> localized error and no account created
-6. valid username-only referral signup -> new user starts with 1500 XP
-7. valid email-based referral signup -> new user starts with 2500 XP
-8. referrer receives exactly +1000 XP for that persisted referral
-9. referrals row stores correct referrer_user_id / referred_user_id / referral_username_used
-10. ledger contains exactly one referral_joined +500 event for referred user
-11. ledger contains exactly one referral_reward +1000 event for referrer
-12. direct username self-referral is rejected
-13. suspended referrer is rejected
-14. EN/FA registration copy and errors render correctly
-15. Docker restart preserves referral relation and XP
-16. final pnpm generate succeeds
+1. rebuild/restart the API after pulling the new backend read-model code
+2. open a referrer's Profile Menu
+3. Invited users shows the authoritative referrals-table count
+4. a user with no referrals shows 0
+5. EN/FA labels and localized digits render correctly
+6. opening Profile Menu refreshes the count through /api/auth/me
+7. final pnpm generate succeeds
 ```
 
-Do not mark Milestone 16 DONE until the user explicitly confirms local verification.
+Do not mark Milestone 16 DONE until the user explicitly confirms this final slice.
