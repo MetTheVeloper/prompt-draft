@@ -1,6 +1,6 @@
 # Milestone 16 — Referral Foundation
 
-Status: **IN PROGRESS — referral registration/XP core locally verified; Profile Menu invited-count verification pending**
+Status: **COMPLETE / locally verified**
 
 This milestone adds the first persisted referral relationship to Prompt Draft and connects it to the existing XP ledger without introducing a separate referral-code generator.
 
@@ -249,20 +249,29 @@ campaign-specific referral rules
 
 The current reward is intentionally simple. Stronger anti-abuse eligibility can later be layered on top of the persisted relationship and XP ledger without changing the core relation model.
 
-## Local verification required before DONE
+## Local verification — COMPLETE
 
-The referral registration/XP core was explicitly confirmed locally by the user on 2026-09-04, including persisted relation rows and the paired `referral_joined` / `referral_reward` ledger events.
+The user explicitly confirmed the full Milestone 16 flow locally on 2026-09-04.
 
-The final Profile Menu read-model slice still requires local verification:
+Verified behavior:
 
 ```text
-1. rebuild/restart the API after pulling the new backend read-model code
-2. open a referrer's Profile Menu
-3. Invited users shows the authoritative referrals-table count
-4. a user with no referrals shows 0
-5. EN/FA labels and localized digits render correctly
-6. opening Profile Menu refreshes the count through /api/auth/me
-7. final pnpm generate succeeds
+012_create_referrals.sql applied successfully
+registration without referral still works
+optional referral field appears in the account-creation step after Repeat Password
+EN/FA registration copy and referral errors render correctly
+invalid / nonexistent / direct self-referral input is rejected
+valid referral signup persists the correct UUID relationship
+username-only referral signup produces the expected 1500 XP total
+email referral signup produces the expected 2500 XP total
+referrer receives exactly +1000 XP
+referral relation survives in PostgreSQL
+ledger contains exactly one referral_joined +500 event for the referred user
+ledger contains exactly one referral_reward +1000 event for the referrer
+Profile Menu shows the authoritative invited-user count
+users with no referrals show zero invited users
+Profile Menu refreshes the count through /api/auth/me
+final pnpm generate succeeds
 ```
 
-Do not mark Milestone 16 DONE until the user explicitly confirms this final slice.
+Milestone 16 is closed. Deferred referral UI, anti-abuse, campaign rules, and other expansion work must not be started automatically.
