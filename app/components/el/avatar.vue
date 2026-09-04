@@ -6,11 +6,15 @@ const props = withDefaults(defineProps<{
   name?: string | null;
   alt?: string;
   size?: string | number;
+  br?: number | string | boolean | Array<number | string | boolean>;
+  bc?: number | string | boolean | Array<number | string | boolean>;
 }>(), {
   src: null,
   name: "",
   alt: "",
   size: "normal",
+  br: false,
+  bc: false,
 });
 
 const app = useAppStore();
@@ -81,6 +85,8 @@ watch(
     rules="rcc"
     bg="normal10"
     :radius="100"
+    :br="br"
+    :bc="bc"
     class="el-avatar ofh usn fsh0"
     :style="{
       width: `${avatarSize}px`,
