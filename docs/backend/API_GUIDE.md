@@ -13,17 +13,19 @@ static-generated Nuxt frontend
   -> direct browser HTTP calls
   -> independent Dockerized Node API :4000
   -> PostgreSQL service db:5432
-  -> Docker named volume
+  -> optional private backend services
+  -> Docker named volumes
 ```
 
 Important consequences:
 
-- do not add Nuxt server API routes for product persistence;
+- do not add Nuxt server API routes for product persistence/capabilities;
 - browser CORS is part of every new API contract;
 - `NUXT_PUBLIC_API_BASE` remains the frontend API boundary;
 - PostgreSQL is the durable server store;
 - `pnpm generate` must continue to succeed;
-- backend failure must not silently destroy valid local/product state.
+- backend failure must not silently destroy valid local/product state;
+- authenticated privilege is enforced by backend permissions, never by hidden UI alone.
 
 ## 1. Start from the product resource, not the HTTP route
 
@@ -33,6 +35,7 @@ Before writing code, define the resource in product terms:
 What is being stored?
 What is its stable identity?
 Who owns the identity: client or server?
+Who owns/accesses the resource?
 Which fields are first-class/queryable?
 Which fields belong in JSONB?
 Is the operation create-only, updateable, or idempotent sync?
@@ -45,7 +48,7 @@ Examples:
 
 ```text
 Wizard completion event -> wizard_runs (append-only historical record)
-Editable local prompt      -> draft resource (stable id, updateable/syncable)
+Editable local prompt   -> draft resource (stable id, updateable/syncable)
 ```
 
 ## 2. Choose write semantics deliberately
@@ -120,9 +123,9 @@ Rules:
 
 The development schema runner must apply all numbered SQL files in lexical order.
 
-## 5. Keep database code behind `database.mjs`
+## 5. Keep database code behind a database boundary
 
-HTTP handlers should not contain raw SQL.
+HTTP handlers should not contain ad-hoc unsafe SQL.
 
 Database functions should:
 
@@ -151,7 +154,7 @@ For every write endpoint:
 2. parse JSON
 3. validate body shape
 4. normalize strings/timestamps/known versions
-5. call database function
+5. call the backend/data function
 6. return a stable response shape
 ```
 
@@ -173,6 +176,8 @@ Common status semantics:
 200 successful read/update
 201 successful create
 400 malformed input/query/id
+401 authentication required
+403 authenticated but not authorized
 404 valid resource id not found
 409 explicit version/conflict condition
 415 wrong Content-Type
@@ -180,9 +185,9 @@ Common status semantics:
 503 dependency unavailable when that distinction is useful
 ```
 
-Do not expose PostgreSQL error text to the browser.
+Do not expose PostgreSQL/internal dependency error text to the browser.
 
-## 7. Keep CORS in sync with new HTTP methods
+## 7. Keep CORS in sync with new HTTP methods/headers
 
 The API is called directly by the browser.
 
@@ -192,7 +197,9 @@ When adding methods such as `PUT`, `PATCH`, or `DELETE`, update:
 Access-Control-Allow-Methods
 ```
 
-and test the browser preflight, not only command-line `curl`.
+When adding bearer-authenticated endpoints, ensure the authorization header is allowed.
+
+Test the browser preflight, not only command-line `curl`.
 
 ## 8. Separate collection and detail contracts when records are large
 
@@ -259,7 +266,70 @@ failed
 
 A manual Save/Sync action should use the same write path as autosync rather than duplicate persistence logic.
 
-## 12. Static generation is a release invariant
+## 12. Add authorization as a permission contract, not scattered role checks
+
+When a capability is not public, define its permission before wiring UI.
+
+Current reusable model:
+
+```text
+users.role
+  -> backend role-to-permission resolver
+  -> resolved permissions returned with auth session
+  -> frontend can(permission)
+```
+
+Supported foundation roles are currently:
+
+```text
+user
+admin
+super_admin
+```
+
+`super_admin` may resolve wildcard `*`, but runtime business code should still ask for a permission rather than checking usernames or special account ids.
+
+Prefer:
+
+```text
+can('dashboard.view')
+```
+
+over:
+
+```text
+role === 'admin' || role === 'super_admin'
+```
+
+except for convenience presentation helpers such as `isAdmin`/`isSuperAdmin`.
+
+### Three-layer authorization rule
+
+Protected product/admin features should normally enforce the same permission in three places:
+
+```text
+1. UI visibility
+   -> hide/disable unavailable actions for clarity
+
+2. route middleware
+   -> block unauthorized client navigation
+
+3. backend guard
+   -> authoritative security boundary
+```
+
+The backend check is mandatory. Hidden UI and route middleware are not security controls by themselves.
+
+Use response semantics consistently:
+
+```text
+missing/invalid session -> 401
+valid session without permission -> 403
+```
+
+The frontend should consume resolved permissions returned by Auth rather than duplicating the backend role-to-permission mapping.
+
+## 13. Static generation is a release invariant
 
 Every frontend-integrated API feature must preserve:
 
@@ -269,7 +339,9 @@ pnpm generate
 
 Do not rely on arbitrary dynamic server-rendered routes for persisted resource ids. For pure static hosting, prefer a generated static shell plus client-side query state where appropriate.
 
-## 13. Verification order for a new API
+If a new protected static route is introduced, explicitly verify that it appears in the prerender output while runtime middleware still controls client access.
+
+## 14. Verification order for a new API
 
 The default fast path is now:
 
@@ -280,31 +352,40 @@ A. schema
 B. backend
   -> write/read contract exists
   -> invalid input is structured
+  -> auth/permission guard exists when required
 
 C. frontend boundary
   -> typed API client compiles
+  -> auth permission helper is used when required
 
 D. real UI
-  -> perform the write from the product UI
+  -> perform the behavior from the product UI
   -> inspect browser Network request/response
   -> verify read-back from the UI/API
 
-E. failure semantics
-  -> stop API when relevant
-  -> local/product state remains usable
-  -> retry recovers after API returns
+E. authorization (when protected)
+  -> permitted account succeeds
+  -> normal account cannot see privileged UI
+  -> direct route access fails
+  -> direct backend call fails with 403
 
-F. durability
+F. failure semantics
+  -> stop API/dependency when relevant
+  -> local/product state remains usable where applicable
+  -> retry/recovery works
+
+G. durability
   -> recreate API + DB containers when persistence durability matters
   -> same resource remains readable
 
-G. static build
+H. static build
   -> pnpm generate succeeds
+  -> new static route is included when applicable
 ```
 
-`curl` and direct SQL remain useful diagnostics, but once the reusable backend pattern is established they are not the primary product acceptance path. Prefer real UI verification for the final contract.
+`curl`, Console fetches, and direct SQL remain useful diagnostics/security verification, but once the reusable backend pattern is established the primary product acceptance path should be real UI verification.
 
-## 14. Documentation/status rule
+## 15. Documentation/status rule
 
 For backend milestones maintain:
 
@@ -328,16 +409,23 @@ Use this checklist before calling a feature complete:
 [ ] write method chosen intentionally (POST/PUT/PATCH)
 [ ] numbered SQL file added
 [ ] development schema runner applies it
-[ ] parameterized database functions added
+[ ] parameterized database/data functions added
 [ ] HTTP validation/normalization added
-[ ] CORS methods updated
+[ ] CORS methods/headers updated
 [ ] stable success/error response types defined
+[ ] authentication requirement defined
+[ ] permission contract defined when protected
+[ ] backend permission guard added when protected
 [ ] frontend TypeScript contract added
 [ ] frontend API composable method added
+[ ] permission-gated UI/route behavior added when protected
 [ ] real UI uses the API
 [ ] local-first failure semantics preserved where applicable
 [ ] browser preflight/request tested
 [ ] persistence/read-back tested
+[ ] permitted account behavior tested when protected
+[ ] unauthorized direct route/API access tested when protected
 [ ] `pnpm generate` tested
+[ ] new static route appears in prerender output when applicable
 [ ] milestone docs/status updated
 ```
