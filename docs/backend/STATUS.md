@@ -14,7 +14,7 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 Milestones 1–14: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
 Milestone 15: XP / Score Event Ledger Foundation
-  -> IMPLEMENTED
+  -> IMPLEMENTED + Cloud Draft creation XP wired
   -> LOCAL VERIFICATION PENDING
 ```
 
@@ -311,15 +311,19 @@ Current implementation:
 ```text
 009_user_score_events.sql
 010_score_identity_triggers.sql
+011_score_cloud_draft_creation.sql
 append-only user_score_events ledger
 per-user idempotency keys
 existing-user XP backfill
+existing-Cloud-Draft XP backfill
 account created -> +1000 XP
 email added -> +1000 XP
+Cloud Draft created -> +50 XP exactly once per Draft
 backend userScore.mjs reusable award/read service
 Auth responses expose score.totalXp + score.eventCount
-useAuth exposes score + totalXp
-Profile Menu displays localized XP
+Cloud Draft save response can expose refreshed score
+useAuth exposes score + totalXp + refresh/apply score helpers
+Profile Menu displays localized XP and refreshes Auth score when opened
 ```
 
 Current semantics:
@@ -328,9 +332,13 @@ Current semantics:
 username-only account -> 1000 XP
 account with email -> 2000 XP
 adding email later -> +1000 exactly once
+first server save of each distinct Cloud Draft -> +50 exactly once
+later saves/retries/autosaves of the same Draft -> no additional creation XP
 ```
 
-Future Draft create/update/share rewards are intentionally not wired until the ledger foundation is locally verified.
+The user locally confirmed that the identity ledger contains the expected `account_created` and `profile_email_added` rows without duplicates. A stale/false `0 XP` presentation was observed before email completion despite the ledger containing +1000; frontend score hydration has now been hardened and must be re-verified.
+
+Draft update/save +10 and Draft share +10 are intentionally not wired yet. Their anti-farming/idempotency semantics must be defined after creation XP is verified.
 
 Detailed milestone:
 
@@ -377,7 +385,7 @@ Examples currently deferred:
 phone/contact model + verification
 email verification/password recovery/OAuth
 user consent foundation (marketing / analytics / model training)
-XP rewards for Draft create/update/share and broader gamification
+XP rewards for Draft update/share and broader gamification
 leaderboards / global rank
 referral relationships and referral codes
 analytics/event tracking
@@ -399,12 +407,22 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Milestone 15 requires local verification of schema application, backfill, new-account XP, email-completion XP, idempotency, persistence, EN/FA Profile Menu rendering, and final `pnpm generate`.
-
-After the ledger foundation is verified, the next candidate vertical slice is Cloud Draft XP:
+Milestone 15 now requires local verification of:
 
 ```text
-draft created        +50
+011 migration / existing Draft backfill
+username-only Profile Menu showing 1000 XP without requiring email completion
+new Cloud Draft -> +50 once
+same Draft repeated saves -> no duplicate +50
+second distinct Cloud Draft -> another +50
+ledger provenance/idempotency for draft_created
+persistence / EN-FA Profile Menu
+final pnpm generate
+```
+
+After creation XP is verified, the next score candidates are:
+
+```text
 draft changed/saved  +10
 draft shared         +10
 ```
