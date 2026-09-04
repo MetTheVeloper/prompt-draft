@@ -10,6 +10,7 @@ const identifier = ref("");
 const normalizedIdentifier = ref("");
 const password = ref("");
 const confirmPassword = ref("");
+const referralUsername = ref("");
 const submitting = ref(false);
 const errorMessage = ref("");
 
@@ -46,10 +47,20 @@ function safeNextPath() {
 function getApiErrorMessage(error: unknown) {
   const value = error as {
     data?: {
+      code?: unknown;
       message?: unknown;
       errors?: Array<{ message?: unknown }>;
     };
   };
+
+  switch (value?.data?.code) {
+    case "REFERRAL_USERNAME_INVALID":
+      return t("auth.login.referralInvalid");
+    case "REFERRAL_USERNAME_NOT_FOUND":
+      return t("auth.login.referralNotFound");
+    case "REFERRAL_SELF_REFERENCE":
+      return t("auth.login.referralSelf");
+  }
 
   const firstFieldMessage = value?.data?.errors?.find((item) => {
     return typeof item?.message === "string";
@@ -87,6 +98,7 @@ async function submitIdentifier() {
     identifier.value = response.identifier;
     password.value = "";
     confirmPassword.value = "";
+    referralUsername.value = "";
     step.value = response.exists ? "login" : "register";
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error);
@@ -115,7 +127,13 @@ async function submitPassword() {
 
   try {
     if (step.value === "register") {
-      await auth.register(normalizedIdentifier.value || identifier.value, password.value);
+      await auth.register(
+        normalizedIdentifier.value || identifier.value,
+        password.value,
+        {
+          referralUsername: referralUsername.value.trim() || undefined,
+        },
+      );
     } else {
       await auth.login(normalizedIdentifier.value || identifier.value, password.value);
     }
@@ -133,6 +151,7 @@ function changeIdentifier() {
   normalizedIdentifier.value = "";
   password.value = "";
   confirmPassword.value = "";
+  referralUsername.value = "";
   resetError();
 }
 
@@ -216,6 +235,25 @@ onMounted(async () => {
             @input="resetError"
             @keydown.enter.prevent="handleEnter"
           />
+        </el-flex>
+
+        <el-flex v-if="step === 'register'" rules="csc" :gap="8" class="w100">
+          <el-text :size="12" :weight="700">{{ t("auth.login.referralLabel") }}</el-text>
+          <input
+            v-model="referralUsername"
+            class="auth-login__input"
+            type="text"
+            autocomplete="off"
+            autocapitalize="none"
+            spellcheck="false"
+            :placeholder="t('auth.login.referralPlaceholder')"
+            :disabled="submitting"
+            @input="resetError"
+            @keydown.enter.prevent="handleEnter"
+          />
+          <el-text :size="11" color="normal50">
+            {{ t("auth.login.referralHint") }}
+          </el-text>
         </el-flex>
       </template>
 
