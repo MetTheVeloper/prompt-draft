@@ -84,36 +84,10 @@ Verified management workspace:
 
 ```text
 /manage
-  -> permission-aware entry resolver
-  -> first permitted configured section
-
 /manage/dashboard
-  -> canonical Dashboard proof
-  -> dashboard.view
-
-/dashboard
-  -> protected compatibility redirect
-```
-
-Implemented reusable shell pieces:
-
-```text
-app/config/manage.ts
-app/middleware/manage-entry.ts
-app/pages/manage.vue
-Profile Menu -> Manage
-```
-
-Locally verified by the user:
-
-```text
-super_admin sees Manage and reaches /manage/dashboard
-Dashboard backend proof remains Verified
-legacy /dashboard redirects correctly
-normal user sees no Manage entry
-normal user cannot access /manage, /manage/dashboard, or /dashboard
-pnpm generate succeeds
-15 initial routes include /manage and /manage/dashboard
+/dashboard compatibility redirect
+permission-aware Manage section navigation
+pnpm generate
 ```
 
 Source-of-truth milestone record:
@@ -124,80 +98,31 @@ docs/backend/MILESTONE_9_MANAGE_SHELL.md
 
 ## Milestone 10 — COMPLETE: Manage Users Foundation
 
-Source-of-truth contract:
+Verified:
+
+```text
+/manage/users
+users.view
+server-side search/filter
+cursor pagination
+admin user detail API
+read-model counts
+EL design-system normalization
+normal-user denial
+pnpm generate
+```
+
+Source-of-truth milestone record:
 
 ```text
 docs/backend/MILESTONE_10_MANAGE_USERS.md
 ```
 
-Verified read-only product path:
-
-```text
-/manage/users
-  -> users.view
-  -> server-side search/filter
-  -> cursor pagination
-  -> admin user detail API
-```
+## Milestone 11 — COMPLETE: User Administration Actions
 
 Backend:
 
 ```text
-backend/sql/006_add_admin_user_indexes.sql
-backend/src/adminUsers.mjs
-GET /api/admin/users
-GET /api/admin/users/:id
-```
-
-Frontend:
-
-```text
-app/types/adminUsersApi.ts
-usePromptDraftApi().listAdminUsers(...)
-usePromptDraftApi().getAdminUser(id)
-app/config/manage.ts -> Users section
-app/pages/manage/users.vue
-```
-
-Locally verified:
-
-```text
-super_admin Users access
-normal user denial
-server-side search
-role filter
-read-model counts
-user detail behavior
-EL design-system normalization
-no page-specific scoped CSS for Users layout/table/detail
-pnpm generate succeeds
-16 initial routes include /manage/users
-```
-
-Milestone 10 phases:
-
-```text
-Phase 0 — contract/documentation: DONE
-Phase 1 — database read model + indexes: DONE
-Phase 2 — GET collection + detail APIs: DONE
-Phase 3 — typed frontend API boundary: DONE
-Phase 4 — Manage Users list/search/filter/pagination UI: DONE
-Phase 5 — user detail read flow: DONE
-Phase 6 — authorization regression + static generation: DONE
-```
-
-## Milestone 11 — IN PROGRESS: User Administration Actions
-
-Source-of-truth contract:
-
-```text
-docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md
-```
-
-Implemented backend foundation:
-
-```text
-backend/sql/007_add_user_status_and_admin_audit.sql
 users.status -> active | suspended
 admin_audit_log
 
@@ -208,90 +133,120 @@ POST /api/admin/users/:id/revoke-sessions
 POST /api/admin/users/:id/reset-cloud-data
 ```
 
-Mutation authorization:
+Verified safety/runtime behavior:
 
 ```text
-users.manage required
-backend guard authoritative
-current admin role remains read-only
-current super_admin wildcard grants management
-```
-
-Safety rules implemented:
-
-```text
+users.manage authorization
 self mutation blocked
-non-super-admin cannot manage super_admin
-non-super-admin cannot promote to super_admin
-last active super_admin cannot be downgraded
-last active super_admin cannot be suspended
-```
-
-Suspension behavior implemented:
-
-```text
-suspend -> status suspended + revoke all sessions
-suspended account -> existing bearer sessions rejected
-suspended account -> new login rejected
-unsuspend -> future login allowed, old sessions remain revoked
-```
-
-Successful mutations create audit records:
-
-```text
-user.role_changed
-user.suspended
-user.unsuspended
-user.sessions_revoked
-user.cloud_data_reset
-```
-
-Manage Users UI now includes:
-
-```text
-trailing three-dot Global Menu per row
+super-admin protections
 Change role
 Suspend / Unsuspend
+suspended-account login denial
 Revoke sessions
 Reset Cloud data
-Information
-central Global Modal confirmations
-central Information modal
-no detail box below the table
-Status column
-search input size 15
+Information central modal
+admin audit rows
+Profile Menu follow-up UI
+pnpm generate
 ```
 
-Manage section title/description metadata is centralized in `app/config/manage.ts` and rendered by the shared `/manage` shell. Dashboard and Users no longer duplicate child-page heading blocks.
-
-Profile Menu follow-up polish:
+Source-of-truth milestone record:
 
 ```text
-identity stack -> rules="ccs"
-capitalized display identity
-role shown under identity with low-alpha role marker
-Role detail value -> uppercase
-Manage button -> normal blue button instead of flat
+docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md
 ```
 
-Milestone 11 state:
+## Milestone 12 — IN PROGRESS: Manage Dashboard Summary
+
+Source-of-truth contract:
 
 ```text
-implementation: COMPLETE
-runtime action verification: VERIFIED BY USER
-audit-log verification: VERIFIED BY USER
-final static generation: PENDING
+docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md
 ```
 
-The user locally confirmed the row actions work correctly, including role/account management, suspend/login denial, unsuspend, session revocation, Cloud-data reset, Information modal behavior, and audit-log writes.
+Goal:
 
-Milestone 11 remains open only until the final static generation check passes after the latest UI polish.
+```text
+replace the temporary authorization-proof Dashboard
+with trustworthy live aggregate metrics from existing server data
+```
+
+Implemented endpoint:
+
+```text
+GET /api/admin/dashboard/summary
+requires: system.metrics.view
+```
+
+Implemented metrics:
+
+```text
+Total users
+Active accounts
+Suspended accounts
+New users today
+Active sessions
+Cloud drafts
+Drafts updated today
+Admin actions today
+```
+
+Metric boundaries:
+
+```text
+Today = 00:00 UTC -> generatedAt
+active account = users.status = active
+active session = unexpired session belonging to an active account
+Drafts updated today = prompt_drafts.server_updated_at since 00:00 UTC
+Admin actions today = admin_audit_log rows since 00:00 UTC
+```
+
+The Dashboard intentionally does not expose these yet because Prompt Draft does not currently persist the necessary events:
+
+```text
+site visits
+page views
+behavioral daily active users
+translation request count
+translation success/failure count
+```
+
+Implemented files:
+
+```text
+backend/src/adminDashboard.mjs
+backend/src/auth.mjs
+app/types/adminDashboardApi.ts
+app/composables/usePromptDraftApi.ts
+app/components/manage/ManageMetricCard.vue
+app/pages/manage/dashboard.vue
+app/config/manage.ts
+```
+
+Database migration:
+
+```text
+none required
+```
+
+Milestone 12 state:
+
+```text
+contract/documentation: IMPLEMENTED
+backend summary API: IMPLEMENTED
+typed frontend boundary: IMPLEMENTED
+Dashboard live cards: IMPLEMENTED
+local runtime verification: PENDING
+normal-user API denial verification: PENDING
+static generation: PENDING
+```
+
+No Milestone 12 phase is DONE until the user verifies the relevant behavior locally.
 
 ## Deferred work
 
 - account deletion and destructive full-account lifecycle;
 - admin audit-log UI;
-- real Dashboard metrics;
 - analytics/page-view/activity/translation usage tracking;
 - `/manage/system` and `/manage/content`;
 - convert Wizard-run `/history` to Draft History;
@@ -307,16 +262,9 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Pull the Profile Menu polish, smoke-check its UI, then run `pnpm generate`.
+Rebuild the API and locally verify Milestone 12 summary values and Dashboard rendering.
 
-If static generation passes and `/manage/users` remains prerendered, mark Milestone 11 COMPLETE and start the next selected milestone:
-
-```text
-Milestone 12 — Manage Dashboard Summary
-GET /api/admin/dashboard/summary
-real system/account/content counters
-/manage/dashboard cards
-```
+After runtime verification, run the final static generation check and close Milestone 12.
 
 ## New-chat handoff
 
@@ -329,3 +277,4 @@ Read:
 5. `docs/backend/MILESTONE_9_MANAGE_SHELL.md`
 6. `docs/backend/MILESTONE_10_MANAGE_USERS.md`
 7. `docs/backend/MILESTONE_11_USER_ADMIN_ACTIONS.md`
+8. `docs/backend/MILESTONE_12_MANAGE_DASHBOARD_SUMMARY.md`
