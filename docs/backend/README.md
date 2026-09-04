@@ -6,7 +6,7 @@ This directory is the source of truth for backend and Docker integration work in
 
 `feature/docker-local-api`
 
-The backend remains intentionally independent from Nuxt server routes. Prompt Draft can continue to use its static-generation frontend workflow while the backend is developed and deployed separately.
+The backend remains intentionally independent from Nuxt server routes. Prompt Draft keeps its static-generation frontend workflow while the backend runs and can later deploy separately.
 
 ## Reusable API guide
 
@@ -16,22 +16,21 @@ New backend features should follow:
 docs/backend/API_GUIDE.md
 ```
 
-That guide captures the reusable implementation path learned from the Docker/PostgreSQL and Wizard-run milestones: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
+That guide captures the reusable implementation path learned from the Docker/PostgreSQL, Wizard-run, Auth, and Cloud Draft work: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
 
 ## Milestones 1–5 — complete
 
-The completed backend learning/product path established:
+The completed backend learning/reference path established:
 
 ```text
 Nuxt/client
   -> Docker API :4000
   -> Node HTTP server
-  -> pg connection pool
   -> PostgreSQL
   -> Docker named volume prompt_draft_pgdata
 ```
 
-It also verified a real product vertical slice:
+The Wizard-run implementation remains the first fully verified historical-resource example:
 
 ```text
 Portrait Wizard finish
@@ -42,27 +41,13 @@ Portrait Wizard finish
   -> /history?run=<uuid>
 ```
 
-Verified capabilities include:
+It proved Docker networking, browser CORS, validation, durable PostgreSQL persistence, cursor pagination, typed client contracts, static routing, and UI recovery behavior.
 
-- direct browser CORS/preflight;
-- structured JSON validation/errors;
-- server-owned historical UUIDs;
-- PostgreSQL named-volume durability;
-- parameterized SQL;
-- typed frontend API contracts;
-- cursor pagination;
-- summary/detail separation;
-- graceful backend failure states;
-- English/Persian History UI;
-- static generation with `pnpm generate`.
+## Milestone 6 — complete: Auth Foundation + Cloud Draft Sync
 
-Wizard-run History remains available as a verified example, but it is not the model for every product resource. Editable resources should use stable identities and update/sync semantics rather than append a new historical row for every save.
+Milestone 6 applies the reusable API pattern to a product-useful editable resource: the drafts already maintained by `/create`.
 
-## Milestone 6 — in progress: Cloud Draft Sync
-
-Milestone 6 applies the reusable API guide to a product-useful resource: the drafts already edited and stored locally by `/create`.
-
-Current local behavior already provides:
+The local editor remains the fast working source:
 
 ```text
 prompt-draft:create-editor:drafts:v1
@@ -73,63 +58,90 @@ prompt-draft:create-editor:drafts:v1
   -> debounced local autosave
 ```
 
-Milestone 6 keeps that local persistence as the working source of truth and adds a durable server mirror.
-
-Target behavior:
+Cloud behavior now layers on top:
 
 ```text
-/create edit
-  -> existing fast local save
-  -> draft becomes dirty for cloud sync
-  -> manual FAB or two-minute autosync
-  -> PUT /api/drafts/:draftId
-  -> PostgreSQL prompt_drafts
-  -> same draft id updates the same row
+/create local draft
+  -> local save always remains available
+  -> optional authenticated account
+  -> manual Cloud Save or dirty-aware autosync
+  -> PUT /api/drafts/:id
+  -> account-owned PostgreSQL row
+  -> GET /api/drafts on logged-in /create entry
+  -> merge Cloud drafts with localStorage
+  -> same-account multi-device recovery
 ```
 
-Current API contract:
+Authentication is optional. Anonymous users can keep using Prompt Draft without an account. Signing in enables account-bound capabilities.
+
+### Auth API
+
+```text
+POST /api/auth/identify
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+```
+
+The first login screen step accepts username or email and identifies whether the account already exists. Existing users proceed to password entry; new users proceed to password + confirmation registration.
+
+Current password policy is intentionally simple:
+
+```text
+minimum 8 characters
+at least one English letter
+at least one number
+```
+
+Passwords are hashed with Node `scrypt` plus a random salt. Raw passwords are never stored. Browser sessions use a random bearer token; only the SHA-256 token hash is stored in PostgreSQL.
+
+### Cloud Draft API
 
 ```text
 PUT /api/drafts/:id
-  -> idempotent create/update of one stable local draft
+  -> create/update one stable account-owned draft
 
 GET /api/drafts/:id
-  -> read back the stored server copy
+  -> read one account-owned draft
+
+GET /api/drafts
+  -> paginated account-owned draft collection
 ```
 
-The server stores queryable metadata separately from the canonical draft snapshot:
+Repeated saves for one `draft-*` id update the same logical resource and increment its server `revision`.
+
+Cloud sync metadata is stored separately from canonical draft JSON under an account-scoped localStorage contract (`cloud-sync:v2`). This preserves the existing draft JSON import/export shape.
+
+Autosync is dirty-aware rather than a blind timer write. A content fingerprint is compared with the last successful sync; unchanged drafts are skipped. A manual FAB beside Drafts performs immediate Cloud Save for the active draft.
+
+On logged-in `/create` entry/refresh, the client fetches the account's Cloud Drafts and merges them into the local collection. Local-only drafts are preserved. Newly discovered same-account drafts from another browser/device become available in the Drafts menu.
+
+Draft menu icons expose Cloud state without extra API requests:
 
 ```text
-draft_id
- title
- created_at
- client_updated_at
- server_updated_at
- revision
- snapshot JSONB
+cloud_done / green  -> current local version matches Cloud
+cloud_upload / orange -> Cloud exists but local changes are dirty
+cloud_off / normal -> local-only for this account or anonymous
 ```
 
-The browser keeps cloud-sync metadata in a separate localStorage key so server metadata does not pollute the existing draft JSON export/import contract.
+If the API is unavailable, local draft saving remains usable. Cloud failure is surfaced as sync state and can be retried later.
 
-Autosync is dirty-aware rather than a blind interval write. A content fingerprint is compared with the last successful sync; unchanged drafts are skipped. Every two minutes the client scans locally saved drafts and uploads only dirty records. The FAB next to Drafts forces an immediate save of the active draft.
+### Verified release invariants
 
-If the API is unavailable, existing local draft saving remains usable. Server sync failure is surfaced as sync state and can be retried.
+The user locally verified registration, logout/login, account ownership, repeated draft updates/revisions, bidirectional same-account recovery between normal/Incognito browser contexts, preservation of local-only drafts, sync-state presentation, and successful `pnpm generate`.
 
-### Intentionally deferred from Milestone 6 MVP
+`/login`, `/create`, `/history`, and the rest of the current static routes are included in the successful generated output.
 
-- authentication and user ownership;
-- multi-device merge/conflict resolution;
-- enforcing optimistic revision conflicts;
-- server-to-local restore/import;
-- server-side delete semantics;
-- remote draft collection/list UI.
+## Still deferred platform/product work
 
-The server already returns a monotonically increasing `revision` so a later conflict policy can build on the contract without changing the local draft state shape.
-
-## Still deferred platform work
-
-- authentication;
-- users/user ownership;
+- convert current Wizard-run `/history` to Draft History when selected;
+- move the relevant History entry from the primary header into the Drafts menu as previously agreed;
+- server-side Cloud Draft delete semantics;
+- stronger multi-device conflict handling / optimistic revision enforcement;
+- production auth rate limiting / abuse controls;
+- email verification and password recovery;
+- OAuth/social login;
 - production migration framework;
 - Redis;
 - VPS deployment;
