@@ -4,410 +4,400 @@
 
 Milestones 1 through 5 are complete and locally verified.
 
-Current verified product/backend path:
+Current verified platform path:
 
 ```text
-Nuxt frontend :3030
-  -> real Portrait Wizard finish()
+static Nuxt frontend :3030
   -> browser CORS/preflight
   -> Docker API :4000
   -> Node HTTP server
-  -> request parsing + validation
+  -> validation + normalization
   -> PostgreSQL client/pool
   -> db:5432
-  -> wizard_runs
   -> Docker named volume
-  -> read-only History UI
 ```
 
-The backend remains independent from Nuxt server routes, so the frontend can continue to use static generation.
+The backend remains independent from Nuxt server routes so static generation remains supported.
 
-## Milestone 4 — COMPLETE: real Wizard integration
-
-Verified decisions:
+Reusable implementation conventions now live in:
 
 ```text
-server-owned id + createdAt
-snapshot schemaVersion = 1
-configurable public API base
-persist after successful runtime.complete(session)
-persistence failure does not destroy successful prompt output
-Home has no backend learning side effects
-PostgreSQL named-volume durability
-static generation preserved
+docs/backend/API_GUIDE.md
 ```
 
-Reference verified product run:
+## Completed reference implementation — Wizard runs
+
+The Wizard-run flow remains the first fully verified backend example:
 
 ```text
-d409ec15-3c22-40f6-9fc8-bafcd38e555f
-wizard_id        = portrait
-wizard_version   = 2
-snapshot_version = 1
+real Wizard finish
+  -> POST /api/wizard-runs
+  -> durable PostgreSQL row
+  -> cursor-paginated summary API
+  -> full detail API
+  -> typed frontend boundary
+  -> /history + query-based detail
 ```
 
-## Current implementation boundaries
+It proved Docker networking, CORS, validation, PostgreSQL persistence, named-volume durability, client/server contracts, static routing, and UI recovery behavior.
 
-### Schema workflow
+Wizard runs are append-only historical resources. Milestone 6 intentionally uses different write semantics because editable drafts are stable resources rather than completion events.
 
-The current schema uses one explicit SQL file plus `npm run db:schema`. A production migration framework remains deferred.
+## Schema workflow
 
-### Temporary database artifact
-
-`persistence_probe` remains from the named-volume learning phase and can be dropped during cleanup.
-
-### Deferred platform work
-
-- authentication and user ownership;
-- Wizard restore/resume from historical runs;
-- delete/rename/favorite history features;
-- product-level Wizard filter UI/catalog;
-- arbitrary history search/sorting/date filtering;
-- production migration workflow;
-- production secrets/configuration;
-- deployment/domain/HTTPS;
-- Redis.
-
-## Milestone 5 — COMPLETE: History / Read API + UX
-
-### Goal achieved
-
-Durable successful Wizard runs are now exposed through a real read-only History product surface while preserving the static-generated frontend and independent backend boundary.
-
-Final path:
+The development schema runner now discovers all files matching:
 
 ```text
-successful Wizard run
-  -> PostgreSQL wizard_runs
-  -> paginated summary list API
-  -> full run detail API
-  -> typed frontend read client
-  -> /history
-  -> /history?run=<uuid>
+backend/sql/NNN_*.sql
 ```
 
-Milestone 5 does not add authentication, ownership, delete/update semantics, or historical Wizard restore.
+and applies them in lexical order.
 
-### Collection vs detail contract
+Current files:
 
-Collection reads are lightweight summaries:
+```text
+001_create_wizard_runs.sql
+002_create_prompt_drafts.sql
+```
+
+This removes the previous one-file hardcoding and makes new development API resources repeatable.
+
+A production-grade migration framework remains deferred. New development schema changes should still use new numbered files rather than rewriting already-applied schema history.
+
+## Milestone 6 — Cloud Draft Sync
+
+### Product goal
+
+The `/create` page already has a useful local draft system. Milestone 6 makes those editable drafts durable on the backend without replacing local-first behavior.
+
+Existing local contract:
+
+```text
+PromptDraftCollection version 1
+  activeDraftId
+  drafts: PromptDraftRecord[]
+
+PromptDraftRecord
+  id
+  title
+  createdAt
+  updatedAt
+  PromptDraftState fields
+```
+
+The current editor saves locally with a short debounce. That remains the fast working-state persistence layer.
+
+New target path:
+
+```text
+editor change
+  -> existing localStorage save
+  -> content differs from last successful cloud fingerprint
+  -> dirty
+  -> manual FAB or two-minute autosync
+  -> PUT /api/drafts/:id
+  -> prompt_drafts
+```
+
+### Resource identity decision
+
+Draft ids are client-owned because `/create` already assigns a stable local id:
+
+```text
+draft-<timestamp>-<random>
+```
+
+That same id identifies the server resource.
+
+This is important: repeated autosaves of one draft must update one row rather than create a new historical record.
+
+### Server schema
+
+`prompt_drafts`:
+
+```text
+draft_id          TEXT primary key
+ title             TEXT
+ created_at        TIMESTAMPTZ
+ client_updated_at TIMESTAMPTZ
+ server_updated_at TIMESTAMPTZ
+ revision          BIGINT
+ snapshot          JSONB
+```
+
+`revision` increments on each successful PUT. It is returned now as future-compatible metadata; Milestone 6 MVP does not yet reject writes based on revision conflicts.
+
+An index supports newest client-updated ordering for a later server collection endpoint:
+
+```text
+(client_updated_at DESC, draft_id DESC)
+```
+
+### API write contract
+
+```text
+PUT /api/drafts/:id
+```
+
+Request:
 
 ```json
 {
-  "id": "uuid",
-  "createdAt": "ISO-8601 timestamp",
-  "wizardId": "portrait",
-  "wizardVersion": 2
-}
-```
-
-Detail reads are complete historical records:
-
-```json
-{
-  "id": "uuid",
-  "createdAt": "ISO-8601 timestamp",
-  "wizardId": "portrait",
-  "wizardVersion": 2,
-  "output": "compiled prompt",
+  "title": "Portrait draft",
+  "createdAt": "ISO timestamp",
+  "updatedAt": "ISO timestamp",
   "snapshot": {
-    "schemaVersion": 1,
-    "session": {},
-    "finalDraft": {}
+    "version": 1,
+    "selectedModuleKeys": [],
+    "moduleValues": {},
+    "modulePanelStates": {},
+    "promptSettings": {},
+    "outputFormat": "modular"
   }
 }
 ```
 
-Full `output` and `snapshot` do not belong in collection rows.
-
-### Detail endpoint
-
-```text
-GET /api/wizard-runs/:id
-```
-
-Semantics:
-
-```text
-existing valid UUID -> 200 { ok: true, run }
-valid missing UUID -> 404 { ok: false, message: "Wizard run not found" }
-malformed id -> 400 { ok: false, message: "Invalid Wizard run id" }
-unexpected DB/read failure -> 500
-```
-
-UUID validation occurs at the HTTP boundary before PostgreSQL receives the id.
-
-### Collection endpoint
-
-```text
-GET /api/wizard-runs
-```
-
-Supported query contract:
-
-```text
-limit
-cursor
-wizardId
-```
-
-Collection response:
+Response:
 
 ```json
 {
   "ok": true,
-  "runs": [
-    {
-      "id": "uuid",
-      "createdAt": "ISO-8601 timestamp",
-      "wizardId": "portrait",
-      "wizardVersion": 2
-    }
-  ],
-  "pageInfo": {
-    "nextCursor": "opaque-or-null",
-    "hasMore": true
+  "draft": {
+    "id": "draft-...",
+    "title": "Portrait draft",
+    "createdAt": "ISO timestamp",
+    "updatedAt": "ISO timestamp",
+    "serverUpdatedAt": "ISO timestamp",
+    "revision": 1,
+    "snapshot": {}
   }
 }
-```
-
-The old `count` field is not retained as a total-count contract.
-
-### Stable ordering and cursor pagination
-
-Canonical ordering:
-
-```sql
-ORDER BY created_at DESC, id DESC
-```
-
-Cursor represents the last returned ordering tuple:
-
-```text
-createdAt + id
-```
-
-The public cursor is opaque. Current backend serialization uses base64url-encoded JSON, but callers must not depend on that encoding.
-
-Limit rules:
-
-```text
-default = 20
-minimum = 1
-maximum = 100
-```
-
-The DB fetches `limit + 1` rows to derive `hasMore`, then exposes at most `limit` summaries.
-
-Cursor condition:
-
-```sql
-(created_at, id) < (cursor.createdAt, cursor.id)
-```
-
-### Filtering
-
-Supported backend filter:
-
-```text
-wizardId=<trimmed non-empty wizard id>
 ```
 
 Semantics:
 
 ```text
-known wizardId -> only matching summaries
-unknown non-empty wizardId -> 200 empty collection
-empty/whitespace wizardId -> structured 400
-pagination -> operates inside the filtered set
+first PUT for id      -> INSERT
+later PUT for same id -> UPDATE same row + revision increment
 ```
 
-Runtime filter/cursor values remain PostgreSQL parameters. SQL clause fragments are server-owned.
+The endpoint is idempotent at the resource-identity level: retrying does not create another logical draft.
 
-The History MVP intentionally does not expose a free-text Wizard-id filter. The API capability remains available for a future product-level Wizard catalog/filter control.
-
-Deferred collection query features:
+### API detail contract
 
 ```text
-wizardVersion
-schemaVersion
-search
-dateFrom
-dateTo
-sort
-direction
+GET /api/drafts/:id
 ```
 
-### Detail vs restore boundary
-
-History detail means reading and displaying the exact historical artifact.
-
-Restore means converting a stored historical snapshot into a currently executable Wizard session.
-
-Restore remains outside Milestone 5 because it needs an explicit compatibility policy across `wizardVersion`, `snapshot.schemaVersion`, available Wizard runtimes, and future migrations.
-
-### Ownership boundary
-
-Milestone 5 remains unauthenticated and unowned, matching the current schema. No `userId`, auth token, or ownership filter is added now.
-
-### Static History routing decision
-
-Nuxt is configured with:
+Semantics:
 
 ```text
-ssr: false
-Nitro preset: static
-pnpm generate
+existing id -> 200 full server draft
+missing id  -> 404
+invalid id  -> 400
 ```
 
-Future historical UUIDs are unknown at generation time. A dynamic route such as `/history/:id` cannot be relied on as a standalone prerendered file for arbitrary future ids on pure static hosting without an SPA fallback.
+### Validation boundary
 
-Milestone 5 therefore uses one static shell:
+The HTTP API validates:
 
 ```text
-/history
+id -> non-empty decoded path id, max 200, no control chars
+title -> non-empty, max 500
+createdAt / updatedAt -> valid timestamps
+snapshot.version -> 1
+selectedModuleKeys -> string[]
+moduleValues -> object
+modulePanelStates -> object
+promptSettings -> object
+outputFormat -> modular | natural | json
 ```
 
-and client-side detail state in the query string:
+Only the known snapshot envelope survives normalization.
+
+### CORS
+
+Direct browser sync adds `PUT`, so allowed methods now include:
 
 ```text
-/history?run=<uuid>
+GET, POST, PUT, OPTIONS
 ```
 
-This preserves direct-linkable detail state without requiring one generated route per historical UUID. It also follows the existing product pattern used by `/prompts?id=...`.
+Browser preflight is part of final UI acceptance.
 
-## Milestone 5 phases
+### Frontend typed boundary
 
-### Phase 0 — contract freeze: DONE
-
-The user reviewed and approved collection/detail separation, pagination semantics, stable ordering, limit rules, `wizardId` filtering, and restore/auth boundaries.
-
-### Phase 1 — single-run detail API: DONE
-
-Implemented and locally verified:
+Added:
 
 ```text
-database.getWizardRunById(id)
-GET /api/wizard-runs/:id
-existing -> 200 full run
-missing valid UUID -> 404
-malformed id -> 400
-fresh POST -> immediate detail read-back
+app/types/draftSyncApi.ts
 ```
 
-### Phase 2 — cursor-paginated summary collection: DONE
-
-Implemented and locally verified:
+Types:
 
 ```text
-summary-only SELECT
-created_at DESC, id DESC
-keyset cursor predicate
-limit + 1 fetch
-hasMore + nextCursor
-structured invalid-query 400
-no output/snapshot in list rows
+UpsertPromptDraftInput
+SyncedPromptDraftRecord
+UpsertPromptDraftResponse
+GetPromptDraftResponse
 ```
 
-The user verified pagination over existing rows with no duplicates, final `hasMore=false`, `nextCursor=null`, invalid-query errors, detail regression, and POST regression.
-
-### Phase 3 — wizardId filtering: DONE
-
-Implemented and locally verified:
+`usePromptDraftApi()` now exposes:
 
 ```text
-GET /api/wizard-runs?wizardId=<id>
-trim at HTTP boundary
-empty -> structured 400
-unknown -> 200 empty collection
-parameterized wizard_id equality
-limit + cursor compose with filter
-pagination remains inside filtered result set
+upsertPromptDraft(id, input)
+getPromptDraft(id)
 ```
 
-### Phase 4 — typed frontend read boundary: DONE
+The UI does not construct API URLs directly.
 
-Implemented in:
+### Sync metadata boundary
+
+Canonical local draft JSON remains unchanged.
+
+Cloud metadata is stored separately under:
 
 ```text
-app/types/wizardRunApi.ts
-app/composables/usePromptDraftApi.ts
+prompt-draft:create-editor:cloud-sync:v1
 ```
 
-Types separate collection summaries from full detail records:
+Per-draft sync metadata contains:
 
 ```text
-WizardRunSummary
-WizardRunRecord
-WizardRunPageInfo
-ListWizardRunsParams
-ListWizardRunsResponse
-GetWizardRunResponse
+fingerprint
+syncedAt
+revision
 ```
 
-Client methods:
+This keeps backend metadata out of existing draft export/import JSON.
+
+### Dirty detection
+
+The sync fingerprint is based on content:
 
 ```text
-listWizardRuns(params = {})
-getWizardRun(id)
+id
+ title
+ PromptDraftState
 ```
 
-`createWizardRun()` and API-base normalization remain unchanged.
+It deliberately excludes `createdAt` / `updatedAt` so incidental local save timestamps do not trigger unnecessary server writes.
 
-Static generation was locally verified after this phase.
+Autosync scans the local draft collection every two minutes and uploads only records whose fingerprint differs from the last successful server sync.
 
-### Phase 5 — History UI MVP: DONE
+If multiple local drafts became dirty before the interval, the scan can persist each dirty draft rather than only the currently active one.
 
-Implemented and locally verified:
+### Manual FAB
+
+A cloud-save FAB is mounted only on `/create` and placed adjacent to the existing Drafts control.
+
+States:
 
 ```text
-/history
-  -> listWizardRuns({ limit: 20 })
-  -> loading / empty / error / retry
-  -> newest-first summary cards
-  -> cursor-based Load more
-
-/history?run=<uuid>
-  -> getWizardRun(uuid)
-  -> full historical record
-  -> compiled output
-  -> copy prompt
-  -> read-only stored snapshot disclosure
-  -> back to /history
+dirty   -> cloud upload
+syncing -> sync
+synced  -> cloud done
+failed  -> cloud off / retry by click
 ```
 
-Navigation/localization:
+Manual click forces the active draft to sync even if its fingerprint already matches the previous successful write.
+
+The control waits briefly for the editor's existing debounced local save to settle before reading the active local draft.
+
+### Failure semantics
+
+Cloud persistence does not replace the local save path.
+
+If backend sync fails:
 
 ```text
-app/config/navigation.ts
-  -> History primary/mobile navigation item
-
-i18n/locales/history.en.ts
-i18n/locales/history.fa.ts
-i18n/i18n.config.ts
-  -> localized History labels and messages
+local draft remains intact and editable
+cloud status becomes failed
+manual click can retry
+future autosync can retry dirty drafts
 ```
 
-The user verified list/detail behavior, clipboard copy, Persian UI, API-down graceful failure, retry recovery after API restart, and successful static generation with `/history` included.
+No local draft is removed because of a server error.
 
-### Phase 6 — final Milestone 5 E2E + docs: DONE
+### MVP boundaries
 
-The user confirmed the final product flow locally:
+Not part of this milestone's first slice:
 
 ```text
-real Wizard-created run
-  -> persistence succeeds
-  -> run appears in History
-  -> detail opens exact saved artifact
-  -> compiled output and snapshot remain readable
-  -> History recovery behavior works
-  -> pnpm generate still succeeds
+authentication / ownership
+remote collection UI
+server -> local restore
+server-side delete
+multi-device merge
+revision conflict enforcement
 ```
 
-Named-volume durability across API/DB recreation remains part of the verified persistence baseline and is compatible with the completed History read surface.
+Those capabilities require explicit product semantics rather than being inferred from local save behavior.
 
-Milestone 5 is therefore complete.
+## Milestone 6 phases
 
-## Next milestone
+### Phase 0 — reusable API playbook + Cloud Draft contract: IMPLEMENTED, AWAITING USER VERIFICATION
 
-Do not infer the next backend/product milestone. Await the user's explicit scope before making further changes.
+Implemented:
+
+```text
+docs/backend/API_GUIDE.md
+resource/id/write/failure semantics documented
+```
+
+### Phase 1 — schema + backend PUT/GET: IMPLEMENTED, AWAITING USER VERIFICATION
+
+Implemented:
+
+```text
+generic numbered schema runner
+002_create_prompt_drafts.sql
+upsertPromptDraft()
+getPromptDraftById()
+PUT /api/drafts/:id
+GET /api/drafts/:id
+PUT CORS support
+```
+
+### Phase 2 — typed client + manual `/create` sync: IMPLEMENTED, AWAITING USER VERIFICATION
+
+Implemented:
+
+```text
+draftSyncApi.ts
+usePromptDraftApi draft methods
+cloud-save FAB and localized status
+```
+
+### Phase 3 — dirty-aware autosync: IMPLEMENTED, AWAITING USER VERIFICATION
+
+Implemented:
+
+```text
+content fingerprints
+separate sync metadata
+2-minute dirty scan
+skip unchanged drafts
+local-first error behavior
+```
+
+### Phase 4 — final product E2E/static/durability: NOT STARTED
+
+Required before Milestone 6 can be complete:
+
+```text
+apply schema
+open /create with API running
+edit active draft
+manual FAB -> browser PUT succeeds
+same draft id -> repeated save updates same PostgreSQL row
+change content -> dirty state returns
+autosync persists dirty content without duplicate logical rows
+API down -> local draft continues saving + cloud status fails gracefully
+API restart -> manual/autosync retry succeeds
+GET read-back matches local saved content
+container recreation retains server copy
+pnpm generate succeeds
+```
+
+No Milestone 6 phase is `DONE` until the user locally verifies and confirms the relevant behavior.
