@@ -14,8 +14,28 @@ const identityLabel = computed(() => {
   return user.value?.username || user.value?.email || "";
 });
 
+const displayIdentityLabel = computed(() => {
+  const value = identityLabel.value.trim();
+  if (!value || value.includes("@")) return value;
+
+  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+});
+
 const roleLabel = computed(() => {
   return user.value?.role?.replaceAll("_", " ") || "";
+});
+
+const roleUpperLabel = computed(() => roleLabel.value.toUpperCase());
+
+const roleMarker = computed(() => {
+  switch (user.value?.role) {
+    case "super_admin":
+      return "prim15";
+    case "admin":
+      return "blue15";
+    default:
+      return "normal15";
+  }
 });
 
 const memberSince = computed(() => {
@@ -50,9 +70,15 @@ async function handleLogout() {
       <el-flex rules="rcc" bg="prim15" :radius="100" :p="10">
         <el-icon icon="account_circle" color="prim" :size="24" />
       </el-flex>
-      <el-flex rules="csc" :gap="4" class="fg100">
-        <el-text :size="14" :weight="700">{{ t("auth.profile.title") }}</el-text>
-        <el-text :size="12" color="normal55">{{ identityLabel }}</el-text>
+      <el-flex rules="ccs" :gap="4" class="fg100">
+        <el-text :size="14" :weight="700">{{ displayIdentityLabel }}</el-text>
+        <el-text
+          v-if="roleLabel"
+          :size="12"
+          color="normal55"
+          :marker="roleMarker">
+          {{ roleLabel }}
+        </el-text>
       </el-flex>
     </el-flex>
 
@@ -70,7 +96,7 @@ async function handleLogout() {
 
     <el-flex v-if="roleLabel" rules="rbc" class="w100" :gap="16">
       <el-text :size="12" color="normal55">Role</el-text>
-      <el-text :size="12" :weight="700">{{ roleLabel }}</el-text>
+      <el-text :size="12" :weight="700">{{ roleUpperLabel }}</el-text>
     </el-flex>
 
     <el-flex v-if="memberSince" rules="rbc" class="w100" :gap="16">
@@ -83,8 +109,7 @@ async function handleLogout() {
     <el-button
       v-if="canOpenManage"
       class="w100"
-      color="prim"
-      mode="flat"
+      color="blue"
       icon="admin_panel_settings"
       label="Manage"
       @click="handleOpenManage"
