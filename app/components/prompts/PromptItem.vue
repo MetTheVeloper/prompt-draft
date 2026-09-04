@@ -1,11 +1,11 @@
 <script setup lang="ts">
-import type { PromptArchiveItem } from '~/types/promptArchive'
+import type { PromptArchiveListItem } from '~/types/promptArchive'
 
 type PromptItemView = 'grid' | 'list'
 
 const props = withDefaults(
   defineProps<{
-    item: PromptArchiveItem
+    item: PromptArchiveListItem
     view?: PromptItemView
   }>(),
   {
@@ -14,7 +14,7 @@ const props = withDefaults(
 )
 
 const emit = defineEmits<{
-  (event: 'telegram', item: PromptArchiveItem): void
+  (event: 'telegram', item: PromptArchiveListItem): void
 }>()
 
 const { t, locale } = useI18n()
@@ -22,9 +22,13 @@ const { mobile } = useScreen()
 
 const isGrid = computed(() => props.view === 'grid')
 
-const coverImage = computed(() => props.item.images[0] || '')
+const coverImage = computed(() => {
+  return props.item.coverImage?.thumbnailUrl || props.item.coverImage?.fullUrl || ''
+})
 const detailUrl = computed(() => `/prompts?id=${props.item.id}`)
-const localizedTitle = computed(() => t(props.item.titleKey))
+const localizedTitle = computed(() => {
+  return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
+})
 
 const visibleTagLimit = computed(() => {
   if (isGrid.value) return 3
@@ -275,11 +279,11 @@ function openTelegram() {
           </el-text>
 
           <el-text
-            v-if="item.images.length"
+            v-if="item.imageCount"
             :size="11"
             color="normal50"
             icon="photo_library">
-            {{ t('prompts.card.imageCount', { count: item.images.length }) }}
+            {{ t('prompts.card.imageCount', { count: item.imageCount }) }}
           </el-text>
         </el-flex>
       </el-grid>
