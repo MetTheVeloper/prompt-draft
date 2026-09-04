@@ -17,6 +17,7 @@ const { mini, mobile } = useScreen();
 const menu = useMenu();
 const modal = useModal();
 const auth = useAuth();
+const avatar = useUserAvatar();
 const toolsButtonRef = ref();
 const languageButtonRef = ref();
 const authButtonRef = ref();
@@ -28,6 +29,10 @@ const {
 } = usePromptTemplateUi();
 
 const CREATE_DRAFT_COLLECTION_REFRESH_EVENT = 'prompt-draft:create-editor:collection-refresh'
+
+const avatarName = computed(() => {
+  return auth.user.value?.username || auth.user.value?.email || '';
+});
 
 const offlineHeaderLabel = computed(() => {
   if (offlinePackage.state.downloading) {
@@ -358,8 +363,26 @@ function openMobileMenu() {
   })
 }
 
-onMounted(() => {
-  void auth.initialize()
+watch(
+  () => auth.user.value?.id ?? null,
+  (userId) => {
+    if (userId) {
+      void avatar.refresh();
+    } else {
+      avatar.reset();
+    }
+  },
+);
+
+onMounted(async () => {
+  await auth.initialize();
+  if (auth.isLoggedIn.value) {
+    try {
+      await avatar.refresh();
+    } catch (error) {
+      console.warn('[Prompt Draft] avatar refresh failed', error);
+    }
+  }
 })
 </script>
 
@@ -476,14 +499,35 @@ onMounted(() => {
       />
 
       <el-button
+        v-if="auth.isLoggedIn.value"
+        ref="authButtonRef"
+        :size="14"
+        :p="[0, 0]"
+        mode="flat"
+        type="fab"
+        color="normal"
+        :label="$t('auth.header.profile')"
+        @click="openAuthControl">
+        <template #icon>
+          <el-avatar
+            :src="avatar.url.value"
+            :name="avatarName"
+            :alt="$t('auth.profile.avatar.alt')"
+            :size="14"
+          />
+        </template>
+      </el-button>
+
+      <el-button
+        v-else
         ref="authButtonRef"
         :size="14"
         :p="8"
         mode="normal"
         type="fab"
-        :color="auth.isLoggedIn.value ? 'prim' : 'blue'"
-        :label="auth.isLoggedIn.value ? $t('auth.header.profile') : $t('auth.header.login')"
-        :icon="auth.isLoggedIn.value ? 'account_circle' : 'login'"
+        color="blue"
+        :label="$t('auth.header.login')"
+        icon="login"
         @click="openAuthControl"
       />
 
