@@ -65,13 +65,19 @@ function normalizeProfileState(
   return deriveProfileState(user);
 }
 
-function normalizeScoreState(score?: AuthScoreState | null): AuthScoreState {
-  const totalXp = Number(score?.totalXp ?? 0);
-  const eventCount = Number(score?.eventCount ?? 0);
+function normalizeScoreState(score?: AuthScoreState | null): AuthScoreState | null {
+  if (!score) return null;
+
+  const totalXp = Number(score.totalXp);
+  const eventCount = Number(score.eventCount);
+
+  if (!Number.isFinite(totalXp) || !Number.isFinite(eventCount)) {
+    return null;
+  }
 
   return {
-    totalXp: Number.isFinite(totalXp) ? totalXp : 0,
-    eventCount: Number.isFinite(eventCount) ? Math.max(0, eventCount) : 0,
+    totalXp,
+    eventCount: Math.max(0, eventCount),
   };
 }
 
@@ -151,6 +157,13 @@ export function useAuth() {
     authState.permissions = [];
   }
 
+  function applyScoreState(score?: AuthScoreState | null) {
+    const normalized = normalizeScoreState(score);
+    if (normalized) {
+      authState.score = normalized;
+    }
+  }
+
   function applyAuthorizationState(response: {
     user: AuthUser;
     profile?: AuthProfileState | null;
@@ -169,6 +182,22 @@ export function useAuth() {
           Authorization: `Bearer ${token}`,
         }
       : {};
+  }
+
+  async function refreshAuthorizationState() {
+    if (!import.meta.client) return null;
+
+    const token = authState.token || readStoredToken();
+    if (!token) return null;
+
+    const response = await $fetch<AuthMeResponse>(endpoint("/api/auth/me"), {
+      headers: authHeaders(token),
+    });
+
+    authState.token = token;
+    applyAuthorizationState(response);
+    authState.initialized = true;
+    return response;
   }
 
   async function initialize(force = false) {
@@ -190,10 +219,7 @@ export function useAuth() {
       authState.token = token;
 
       try {
-        const response = await $fetch<AuthMeResponse>(endpoint("/api/auth/me"), {
-          headers: authHeaders(token),
-        });
-        applyAuthorizationState(response);
+        await refreshAuthorizationState();
       } catch {
         clearSession();
       } finally {
@@ -317,6 +343,8 @@ export function useAuth() {
     canAll,
     hasProfileField,
     initialize,
+    refreshAuthorizationState,
+    applyScoreState,
     identify,
     login,
     register,
