@@ -1,8 +1,10 @@
 # Milestone 19 — Public User Profiles + Cover Media
 
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
+Status: `DONE / LOCALLY VERIFIED`
 
 Branch: `feature/docker-local-api`
+
+Completed: 2026-09-05
 
 ## Goal
 
@@ -19,11 +21,13 @@ Awwwards-like creator hero using cover + foreground el-avatar
 creative cover/avatar composition in Profile Menu
 ```
 
+The user locally verified the feature, the final UI polish, and a successful `pnpm generate`.
+
 ## Privacy contract
 
-Cloud Drafts were account-owned private data before this milestone. The public profile must not silently expose them.
+Cloud Drafts remain account-owned private data by default.
 
-Migration 016 therefore adds:
+Migration 016 adds:
 
 ```text
 prompt_drafts.visibility = private | public
@@ -35,27 +39,27 @@ Default:
 private
 ```
 
-All existing drafts remain private until their owner explicitly publishes them.
+Existing Drafts were verified after migration as `private` with no publication timestamp.
 
 Public profile behavior:
 
 ```text
-profile owner -> sees all own Cloud Draft summaries
-visitor       -> API returns public drafts only
+profile owner -> receives all own Cloud Draft summaries
+visitor       -> backend returns public Draft summaries only
 ```
 
-The distinction is enforced by PostgreSQL queries in the backend, not by frontend hiding.
+Visitor filtering is enforced in backend/PostgreSQL queries, not by frontend hiding.
 
-The public user profile response deliberately does NOT expose:
+Public profile responses deliberately do NOT expose:
 
 ```text
 email
 password/auth data
 sessions
-private drafts to other users
+private Drafts to other users
 ```
 
-A user without a username is rendered publicly as a generic localized `Prompt Draft User` label rather than leaking the account email.
+A user without a username is rendered publicly with a generic localized `Prompt Draft User` label rather than leaking account email.
 
 ## Data model
 
@@ -65,7 +69,7 @@ Migration:
 backend/sql/016_public_user_profiles.sql
 ```
 
-Adds optional cover fields to `users`:
+Optional cover fields on `users`:
 
 ```text
 cover_url
@@ -78,16 +82,16 @@ cover_thumbnail_width
 cover_thumbnail_height
 ```
 
-Cover state is constrained to be fully present or fully absent.
+Cover state is nullable and must be internally consistent.
 
-Adds to `prompt_drafts`:
+Draft visibility fields:
 
 ```text
 visibility TEXT NOT NULL DEFAULT 'private'
 published_at TIMESTAMPTZ NULL
 ```
 
-and an owner/visibility/update index for profile reads.
+The migration also adds the owner/visibility/update indexing needed for profile reads.
 
 ## Cover image preparation
 
@@ -105,7 +109,7 @@ PNG
 WebP
 ```
 
-Cover composition is not center-cropped. The source aspect ratio is preserved and the consuming UI uses cover-style framing.
+Unlike avatar preparation, cover is not force-cropped. Source aspect ratio is preserved and the consuming UI uses cover-style framing.
 
 Outputs:
 
@@ -121,13 +125,13 @@ thumbnail WebP
   quality: 0.72
 ```
 
-The full image is intended for `/user` hero/background use.
+The full image is used by `/user` hero/background rendering.
 
-The thumbnail is intended for Profile Menu and other small surfaces.
+The thumbnail is used by Profile Menu and other compact surfaces.
 
 ## Cover storage
 
-Authenticated self-service route:
+Authenticated self-service API:
 
 ```text
 GET    /api/profile/cover
@@ -142,9 +146,9 @@ covers/<user-uuid>/<immutable-cover-uuid>/full.webp
 covers/<user-uuid>/<immutable-cover-uuid>/thumb.webp
 ```
 
-The browser sends prepared full + thumbnail WebP data. The backend validates actual WebP headers/dimensions, byte limits, maximum edges, and matching aspect ratio before persistence.
+The browser sends prepared full + thumbnail WebP data. The backend validates actual WebP headers/dimensions, byte limits, maximum edges and matching aspect ratio before persistence.
 
-Replacement semantics follow avatar/archive media safety:
+Replacement semantics:
 
 ```text
 upload new immutable objects
@@ -152,9 +156,16 @@ upload new immutable objects
 -> best-effort cleanup previous objects
 ```
 
-Removal clears authoritative DB state first and then attempts object cleanup.
+Removal semantics:
+
+```text
+clear authoritative DB state
+-> best-effort object cleanup
+```
 
 Storage credentials remain backend-only.
+
+The user locally verified real cover persistence, full/thumbnail Arvan URLs and expected storage-key structure.
 
 ## Public profile API
 
@@ -164,7 +175,7 @@ Public-safe profile:
 GET /api/users/:userId/profile
 ```
 
-Response includes only product-public data:
+Response contains product-public fields such as:
 
 ```text
 id
@@ -176,20 +187,22 @@ totalXp
 publicDraftCount
 ```
 
-When the authenticated viewer is the profile owner, the response additionally includes:
+When the authenticated viewer owns the profile, the read model may additionally expose owner-only summary data such as:
 
 ```text
 totalDraftCount
 viewer.isOwner = true
 ```
 
-Public/owner draft summaries:
+Draft summaries:
 
 ```text
 GET /api/users/:userId/drafts?limit=24&cursor=...
 ```
 
-Draft summaries intentionally avoid returning every persisted editor snapshot in the profile list payload. They include lightweight presentation metadata:
+The profile list deliberately returns lightweight presentation metadata rather than full persisted editor snapshots.
+
+Typical summary fields include:
 
 ```text
 id
@@ -200,14 +213,10 @@ revision
 outputFormat
 moduleCount
 publishedAt
-visibility   # owner only
+visibility   # owner-only
 ```
 
-Visitor query filtering is authoritative:
-
-```sql
-visibility = 'public'
-```
+Internal Draft IDs remain part of the API identity contract but are intentionally not displayed in the final card UI.
 
 ## Draft publication API
 
@@ -215,8 +224,11 @@ Authenticated owner mutation:
 
 ```text
 POST /api/drafts/:draftId/visibility
-Content-Type: application/json
+```
 
+Payload:
+
+```json
 {
   "visibility": "public"
 }
@@ -237,9 +249,11 @@ user_id = authenticated user id
 draft_id = requested draft id
 ```
 
-First publication sets `published_at` once. Returning a draft to private does not erase the historical first-published timestamp.
+First publication records `published_at`. Returning the Draft to private does not need to erase the historical first-publication timestamp.
 
-No XP is currently awarded for visibility toggles. A future Share Draft reward should use a separate idempotent score-event rule so private/public toggling cannot farm XP.
+No XP is awarded for visibility toggles.
+
+A future Share Draft reward must use a separate idempotent score event so repeated public/private toggling cannot farm XP.
 
 ## `/user?id=<UUID>`
 
@@ -249,17 +263,26 @@ Page:
 app/pages/user.vue
 ```
 
-Design direction intentionally follows the visual language established by `/prompts?id=...` rather than copying its exact controls:
+The visual direction is inspired by the same cinematic/Awwwards-like language used by Prompt detail without cloning its exact controls.
+
+Final verified hero composition:
 
 ```text
-full-screen cinematic hero
-large typography
-foreground el-avatar
-cover used as visual-slider/background media
-avatar never used as the slider background
+full-screen cover background
+shared canvas slider rendering
+foreground el-avatar only
+large centered avatar focal point
+centered creator identity hierarchy
+creator label + member-since metadata
 large creator name
-XP / draft stats
-scroll transition into a work/drafts section
+XP / public Draft / total Draft stat cards
+Saved Drafts CTA
+```
+
+Important rule:
+
+```text
+avatar is never a slider/background source
 ```
 
 No cover:
@@ -275,216 +298,119 @@ el-avatar initials fallback
 -> person icon fallback
 ```
 
-Owner draft cards:
+The final polish intentionally centers the profile identity instead of aligning it to flex-start and increases avatar prominence.
+
+## Saved Draft cards
+
+Owner cards show all own Cloud Draft summaries and expose publication controls.
+
+Visitor cards receive public Drafts only.
+
+Final card presentation:
 
 ```text
-all Cloud Draft summaries
-Private/Public marker
-Show on profile
-Hide from profile
+output format
+Private/Public status for owner
+title
+module count
+revision
+updated time
+Show on profile / Hide from profile owner action
 ```
 
-Visitor draft cards:
+Internal Draft UUIDs are intentionally not shown in product UI.
+
+The metadata row occupies that information space instead.
+
+## Profile Menu composition
+
+Profile Menu now combines user media creatively rather than presenting avatar and cover as unrelated settings.
+
+Final structure:
 
 ```text
-public drafts only
-no visibility-management controls
+cover thumbnail at top
+avatar overlaps lower cover edge
+identity below
+cover controls in cover surface
+avatar controls near identity
+View profile action
 ```
 
-## Profile Menu
+Avatar and cover preparation remain independent.
 
-The Profile Menu hero is now profile-media aware:
+Selection shows a local prepared preview before any upload.
+
+Final action-button polish:
 
 ```text
-cover thumbnail as the upper visual surface
-fallback visual when no cover exists
-avatar overlaps the lower cover edge
-live local cover preview before Save
-avatar and cover controls remain independent
-View profile action opens /user?id=<current-user-uuid>
+Save avatar -> size 12
+Save cover  -> size 12
+Cancel      -> same-size FAB with close icon + tooltip
 ```
 
-Cover selection does not upload immediately. The prepared thumbnail appears in the menu first; Save cover performs the backend upload.
+This avoids the oversized action rows seen in the first implementation.
+
+## Shared canvas-slider single-source behavior
+
+The original shared renderer could reach the end of its pan motion and appear visually stuck when only one image source existed.
+
+The final verified behavior is now intentional and reusable across every single-source consumer:
+
+```text
+start state
+-> smooth/eased pan to end state
+-> smooth/eased pan back to start
+-> repeat continuously
+```
+
+This is implemented in the shared `canvasSliderRenderer`, not as a `/user`-specific workaround.
+
+Multi-source transition behavior remains unchanged.
+
+This improves both user-cover backgrounds and any Prompt surface that renders a single slider image.
 
 ## EL Avatar follow-up
 
-`el-avatar` now explicitly supports EL border props:
+`el-avatar` explicitly supports EL border props such as:
 
 ```text
 br
 bc
 ```
 
-This allows large profile avatars and overlapping Profile Menu avatars to use the component directly without relying on attribute fallthrough.
-
-## Local verification gate
-
-This milestone is not DONE until the user verifies it locally.
-
-### 1. Pull, rebuild, schema
-
-```powershell
-git pull
-docker compose up -d --build db api
-docker compose exec api npm run db:schema
-```
-
-Expected migration output includes:
+Its size uses the same EL dimension resolver as button height, preserving the design-system invariant:
 
 ```text
-016_public_user_profiles.sql
+same :size on el-avatar and FAB -> same outer height
 ```
 
-### 2. Existing-draft privacy baseline
+## Local verification summary
 
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT user_id, draft_id, visibility, published_at FROM prompt_drafts ORDER BY client_updated_at DESC LIMIT 10;"
-```
-
-Existing rows should initially show:
+The user verified:
 
 ```text
-visibility = private
+016_public_user_profiles.sql applied
+existing Cloud Drafts defaulted to private
+cover selection previews before upload
+cover full + thumbnail persisted to Arvan
+cover metadata/storage keys persisted in PostgreSQL
+/user?id=<uuid> renders cover + foreground avatar
+Profile Menu cover/avatar composition works
+owner sees own Cloud Draft collection
+public/private Draft controls work
+visitor/public privacy behavior works
+avatar regression remains functional
+single-image slider now loops pan forward/backward
+Profile Menu action sizing/FAB Cancel polish is correct
+Saved Draft marker/UI artifact removed
+Draft UUID removed from visible card UI
+centered large-avatar hero polish accepted
+pnpm generate succeeds
 ```
 
-### 3. Cover preparation/save
+## Completion
 
-Open Profile Menu and choose a non-square image.
+Milestone 19 is complete and locally verified.
 
-Expected:
-
-```text
-cover preview appears in Profile Menu before upload
-aspect ratio remains intact
-Save cover -> POST /api/profile/cover -> 200
-```
-
-Database:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT username, cover_url, cover_thumbnail_url, cover_storage_key, cover_thumbnail_storage_key, cover_width, cover_height, cover_thumbnail_width, cover_thumbnail_height FROM users WHERE id = '<USER_UUID>';"
-```
-
-Expected storage keys:
-
-```text
-covers/<user-id>/<uuid>/full.webp
-covers/<user-id>/<uuid>/thumb.webp
-```
-
-Open both public URLs directly.
-
-### 4. Own profile
-
-Open:
-
-```text
-http://localhost:3030/user?id=<YOUR_UUID>
-```
-
-Expected:
-
-```text
-large el-avatar foreground
-cover drives the hero background/slider
-username never replaced by email in public presentation
-XP visible
-all own Cloud Draft summaries visible
-private drafts marked Private
-```
-
-### 5. Publish one draft
-
-Click:
-
-```text
-Show on profile
-```
-
-Expected Network request:
-
-```text
-POST /api/drafts/<draft-id>/visibility
-200
-```
-
-Database row becomes:
-
-```text
-visibility = public
-published_at != NULL
-```
-
-### 6. Anonymous visitor privacy
-
-Open the same `/user?id=...` in Incognito/logged-out state.
-
-Expected:
-
-```text
-profile itself loads without authentication
-only public draft(s) appear
-private draft(s) are absent from the API response, not merely hidden in UI
-email is not present anywhere in public profile API response
-```
-
-Useful direct API checks:
-
-```text
-GET /api/users/<uuid>/profile
-GET /api/users/<uuid>/drafts
-```
-
-### 7. Unpublish
-
-As owner, click:
-
-```text
-Hide from profile
-```
-
-Expected:
-
-```text
-visibility = private
-visitor no longer receives that draft
-```
-
-### 8. Cover replacement/removal
-
-Replace cover and verify immutable new URLs/keys.
-
-Then remove cover.
-
-Expected:
-
-```text
-DELETE /api/profile/cover -> 200
-all cover DB fields -> NULL
-/user falls back to cinematic generated background
-Profile Menu falls back to its generated cover surface
-```
-
-### 9. Avatar regression
-
-Verify existing Milestone 18 behavior still works:
-
-```text
-avatar upload
-avatar replacement
-avatar removal
-Header avatar
-Profile Menu avatar
-```
-
-### 10. Release invariant
-
-```powershell
-pnpm generate
-```
-
-Only after explicit user confirmation should this document become:
-
-```text
-Status: DONE / LOCALLY VERIFIED
-```
+No next milestone is selected in this document. The next product direction should be supplied by the user in a new chat after reading the current status/architecture sources.
