@@ -16,7 +16,7 @@ New backend features should follow:
 docs/backend/API_GUIDE.md
 ```
 
-That guide captures the reusable implementation path learned from the Docker/PostgreSQL, Wizard-run, Auth, and Cloud Draft work: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
+That guide captures the reusable implementation path learned from the Docker/PostgreSQL, Wizard-run, Auth, Cloud Draft, and Translation work: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
 
 ## Milestones 1–5 — complete
 
@@ -120,9 +120,9 @@ On logged-in `/create` entry/refresh, the client fetches the account's Cloud Dra
 Draft menu icons expose Cloud state without extra API requests:
 
 ```text
-cloud_done / green  -> current local version matches Cloud
+cloud_done / green    -> current local version matches Cloud
 cloud_upload / orange -> Cloud exists but local changes are dirty
-cloud_off / normal -> local-only for this account or anonymous
+cloud_off / normal    -> local-only for this account or anonymous
 ```
 
 If the API is unavailable, local draft saving remains usable. Cloud failure is surfaced as sync state and can be retried later.
@@ -133,6 +133,49 @@ The user locally verified registration, logout/login, account ownership, repeate
 
 `/login`, `/create`, `/history`, and the rest of the current static routes are included in the successful generated output.
 
+## Milestone 7 — complete: Server-side Translation
+
+Translation is now a backend capability rather than a Nuxt server-route dependency.
+
+Production-shaped local path:
+
+```text
+static Nuxt TextField action
+  -> Prompt Draft API :4000
+  -> private Docker-network LibreTranslate service :5000
+  -> Persian/English translation response
+```
+
+LibreTranslate runs as a Compose service pinned to `libretranslate/libretranslate:v1.9.6`. Only `en` and `fa` models are loaded and model data is preserved in the `prompt_draft_translation_models` named volume. Port `5000` is not published to the browser.
+
+### Translation API
+
+```text
+GET /api/translate/status
+POST /api/translate
+```
+
+The backend owns validation, timeout/error handling, dependency health, and the stable `503` failure contract. Translation remains available without authentication.
+
+The frontend uses typed methods on `usePromptDraftApi()` and no longer calls a Nuxt `/api/translate` route. The legacy `server/api/translate.post.ts` proxy has been removed.
+
+Prompt variables remain safe across translation. Tokens such as `{person}` are protected before the request and restored after translation, while the existing translation-alternatives modal remains unchanged.
+
+TextField action availability now reflects real translator health:
+
+```text
+translator healthy
+  -> Translate enabled for a non-empty editable field
+
+translator unavailable
+  -> Translate disabled after a fresh action-menu health check
+
+translator recovers
+  -> reopening the menu re-enables Translate without a page refresh
+```
+
+The user locally verified direct backend requests, Persian-to-English translation, alternatives, token preservation, translator stop/start recovery, anonymous availability, and a successful static `pnpm generate` with 12 prerendered routes.
+
 ## Still deferred platform/product work
 
 - convert current Wizard-run `/history` to Draft History when selected;
@@ -140,6 +183,7 @@ The user locally verified registration, logout/login, account ownership, repeate
 - server-side Cloud Draft delete semantics;
 - stronger multi-device conflict handling / optimistic revision enforcement;
 - production auth rate limiting / abuse controls;
+- translation rate limiting / abuse controls before public production exposure;
 - email verification and password recovery;
 - OAuth/social login;
 - production migration framework;
