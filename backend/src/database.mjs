@@ -104,54 +104,11 @@ export async function insertWizardRun(run) {
       run.wizardId,
       run.wizardVersion,
       run.output,
-      run.snapshot,
+      JSON.stringify(run.snapshot),
     ],
   )
 
   return mapWizardRunRow(result.rows[0])
-}
-
-export async function listWizardRuns({ limit, cursor, wizardId }) {
-  const values = []
-  const where = []
-
-  if (wizardId) {
-    values.push(wizardId)
-    where.push(`wizard_id = $${values.length}`)
-  }
-
-  if (cursor) {
-    values.push(cursor.createdAt, cursor.id)
-    where.push(
-      `(created_at, id) < ($${values.length - 1}::timestamptz, $${values.length}::uuid)`,
-    )
-  }
-
-  values.push(limit + 1)
-  const result = await queryDatabase(
-    `
-      SELECT
-        id,
-        created_at AS "createdAt",
-        wizard_id AS "wizardId",
-        wizard_version AS "wizardVersion",
-        output,
-        snapshot
-      FROM wizard_runs
-      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
-      ORDER BY created_at DESC, id DESC
-      LIMIT $${values.length}
-    `,
-    values,
-  )
-
-  const hasMore = result.rows.length > limit
-  const rows = result.rows.slice(0, limit)
-
-  return {
-    runs: rows.map(mapWizardRunRow),
-    hasMore,
-  }
 }
 
 export async function getWizardRunById(id) {
@@ -171,24 +128,80 @@ export async function getWizardRunById(id) {
     [id],
   )
 
-  return result.rows[0] ? mapWizardRunRow(result.rows[0]) : null
+  const row = result.rows[0]
+  return row ? mapWizardRunRow(row) : null
 }
 
-export async function listPromptDrafts({ userId, limit, cursor }) {
-  const values = [userId]
-  const where = ['user_id = $1']
+export async function listWizardRuns({ limit, cursor, wizardId }) {
+  const values = []
+  const conditions = []
+
+  if (wizardId) {
+    values.push(wizardId)
+    conditions.push(`wizard_id = $${values.length}`)
+  }
 
   if (cursor) {
-    values.push(cursor.updatedAt, cursor.id)
-    where.push(
-      `(client_updated_at, draft_id) < ($${values.length - 1}::timestamptz, $${values.length}::text)`,
+    values.push(cursor.createdAt, cursor.id)
+    const createdAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(created_at, id) < ($${createdAtParameter}::timestamptz, $${idParameter}::uuid)`,
     )
   }
 
-  values.push(limit + 1)
+  const fetchLimit = limit + 1
+  values.push(fetchLimit)
+  const limitParameter = values.length
+  const whereClause = conditions.length > 0
+    ? `WHERE ${conditions.join('\n          AND ')}`
+    : ''
+
   const result = await queryDatabase(
     `
       SELECT
+        id,
+        created_at AS "createdAt",
+        wizard_id AS "wizardId",
+        wizard_version AS "wizardVersion"
+      FROM wizard_runs
+      ${whereClause}
+      ORDER BY created_at DESC, id DESC
+      LIMIT $${limitParameter}
+    `,
+    values,
+  )
+
+  const hasMore = result.rows.length > limit
+  const runs = result.rows.slice(0, limit).map(mapWizardRunRow)
+
+  return {
+    runs,
+    hasMore,
+  }
+}
+
+export async function upsertPromptDraft(userId, draft) {
+  const result = await queryDatabase(
+    `
+      INSERT INTO prompt_drafts (
+        user_id,
+        draft_id,
+        title,
+        created_at,
+        client_updated_at,
+        snapshot
+      )
+      VALUES ($1, $2, $3, $4, $5, $6::jsonb)
+      ON CONFLICT (user_id, draft_id)
+      DO UPDATE SET
+        title = EXCLUDED.title,
+        created_at = LEAST(prompt_drafts.created_at, EXCLUDED.created_at),
+        client_updated_at = EXCLUDED.client_updated_at,
+        server_updated_at = NOW(),
+        revision = prompt_drafts.revision + 1,
+        snapshot = EXCLUDED.snapshot
+      RETURNING
         draft_id AS id,
         title,
         created_at AS "createdAt",
@@ -196,19 +209,18 @@ export async function listPromptDrafts({ userId, limit, cursor }) {
         server_updated_at AS "serverUpdatedAt",
         revision,
         snapshot
-      FROM prompt_drafts
-      WHERE ${where.join(' AND ')}
-      ORDER BY client_updated_at DESC, draft_id DESC
-      LIMIT $${values.length}
     `,
-    values,
+    [
+      userId,
+      draft.id,
+      draft.title,
+      draft.createdAt,
+      draft.updatedAt,
+      JSON.stringify(draft.snapshot),
+    ],
   )
 
-  const hasMore = result.rows.length > limit
-  return {
-    drafts: result.rows.slice(0, limit).map(mapPromptDraftRow),
-    hasMore,
-  }
+  return mapPromptDraftRow(result.rows[0])
 }
 
 export async function getPromptDraftById(userId, id) {
@@ -230,30 +242,30 @@ export async function getPromptDraftById(userId, id) {
     [userId, id],
   )
 
-  return result.rows[0] ? mapPromptDraftRow(result.rows[0]) : null
+  const row = result.rows[0]
+  return row ? mapPromptDraftRow(row) : null
 }
 
-export async function upsertPromptDraft(userId, draft) {
+export async function listPromptDrafts({ userId, limit, cursor }) {
+  const values = [userId]
+  const conditions = ['user_id = $1']
+
+  if (cursor) {
+    values.push(cursor.updatedAt, cursor.id)
+    const updatedAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(client_updated_at < $${updatedAtParameter}::timestamptz OR (client_updated_at = $${updatedAtParameter}::timestamptz AND draft_id < $${idParameter}))`,
+    )
+  }
+
+  const fetchLimit = limit + 1
+  values.push(fetchLimit)
+  const limitParameter = values.length
+
   const result = await queryDatabase(
     `
-      INSERT INTO prompt_drafts (
-        user_id,
-        draft_id,
-        title,
-        created_at,
-        client_updated_at,
-        server_updated_at,
-        revision,
-        snapshot
-      )
-      VALUES ($1, $2, $3, $4, $5, NOW(), 1, $6::jsonb)
-      ON CONFLICT (user_id, draft_id) DO UPDATE SET
-        title = EXCLUDED.title,
-        client_updated_at = EXCLUDED.client_updated_at,
-        server_updated_at = NOW(),
-        revision = prompt_drafts.revision + 1,
-        snapshot = EXCLUDED.snapshot
-      RETURNING
+      SELECT
         draft_id AS id,
         title,
         created_at AS "createdAt",
@@ -261,46 +273,56 @@ export async function upsertPromptDraft(userId, draft) {
         server_updated_at AS "serverUpdatedAt",
         revision,
         snapshot
+      FROM prompt_drafts
+      WHERE ${conditions.join('\n        AND ')}
+      ORDER BY client_updated_at DESC, draft_id DESC
+      LIMIT $${limitParameter}
     `,
-    [
-      userId,
-      draft.id,
-      draft.title,
-      draft.createdAt,
-      draft.updatedAt,
-      draft.snapshot,
-    ],
+    values,
   )
 
-  return mapPromptDraftRow(result.rows[0])
+  const hasMore = result.rows.length > limit
+  const drafts = result.rows.slice(0, limit).map(mapPromptDraftRow)
+
+  return {
+    drafts,
+    hasMore,
+  }
 }
 
 export async function listAdminUsers({ limit, cursor, query, role }) {
   const values = []
-  const where = []
+  const conditions = []
 
   if (query) {
-    values.push(`%${query}%`)
-    const parameter = `$${values.length}`
-    where.push(`(
-      COALESCE(username, '') ILIKE ${parameter}
-      OR COALESCE(email, '') ILIKE ${parameter}
-    )`)
+    values.push(query)
+    const queryParameter = values.length
+    conditions.push(
+      `(POSITION(LOWER($${queryParameter}) IN LOWER(COALESCE(users.username, ''))) > 0 OR POSITION(LOWER($${queryParameter}) IN LOWER(COALESCE(users.email, ''))) > 0)`,
+    )
   }
 
   if (role) {
     values.push(role)
-    where.push(`role = $${values.length}`)
+    conditions.push(`users.role = $${values.length}`)
   }
 
   if (cursor) {
     values.push(cursor.createdAt, cursor.id)
-    where.push(
-      `(created_at, id) < ($${values.length - 1}::timestamptz, $${values.length}::uuid)`,
+    const createdAtParameter = values.length - 1
+    const idParameter = values.length
+    conditions.push(
+      `(users.created_at, users.id) < ($${createdAtParameter}::timestamptz, $${idParameter}::uuid)`,
     )
   }
 
-  values.push(limit + 1)
+  const fetchLimit = limit + 1
+  values.push(fetchLimit)
+  const limitParameter = values.length
+  const whereClause = conditions.length > 0
+    ? `WHERE ${conditions.join('\n        AND ')}`
+    : ''
+
   const result = await queryDatabase(
     `
       SELECT
@@ -322,16 +344,18 @@ export async function listAdminUsers({ limit, cursor, query, role }) {
             AND auth_sessions.expires_at > NOW()
         ) AS "activeSessionCount"
       FROM users
-      ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
+      ${whereClause}
       ORDER BY users.created_at DESC, users.id DESC
-      LIMIT $${values.length}
+      LIMIT $${limitParameter}
     `,
     values,
   )
 
   const hasMore = result.rows.length > limit
+  const users = result.rows.slice(0, limit).map(mapAdminUserRow)
+
   return {
-    users: result.rows.slice(0, limit).map(mapAdminUserRow),
+    users,
     hasMore,
   }
 }
@@ -364,5 +388,6 @@ export async function getAdminUserById(id) {
     [id],
   )
 
-  return result.rows[0] ? mapAdminUserRow(result.rows[0]) : null
+  const row = result.rows[0]
+  return row ? mapAdminUserRow(row) : null
 }
