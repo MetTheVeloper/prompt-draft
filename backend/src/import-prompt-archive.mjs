@@ -212,8 +212,8 @@ async function importArchive(client, source) {
     for (const slug of canonicalTags) {
       await client.query(
         `
-          INSERT INTO prompt_archive_tags (id, slug)
-          VALUES ($1, $2)
+          INSERT INTO prompt_archive_tags (id, slug, source_kind)
+          VALUES ($1, $2, 'legacy_json')
           ON CONFLICT (slug) DO NOTHING
         `,
         [randomUUID(), slug],
@@ -226,12 +226,12 @@ async function importArchive(client, source) {
           INSERT INTO prompt_archive_items (
             id, telegram_message_id, channel, titles, legacy_title_key,
             source_title, telegram_url, published_at, prompt, preview_model,
-            optimized_for, variants, status, updated_at
+            optimized_for, variants, status, source_kind, updated_at
           )
           VALUES (
             $1, $2, $3, $4::jsonb, $5,
             $6, $7, $8, $9, $10,
-            $11::text[], $12::jsonb, 'published', NOW()
+            $11::text[], $12::jsonb, 'published', 'legacy_json', NOW()
           )
           ON CONFLICT (telegram_message_id) DO UPDATE SET
             channel = EXCLUDED.channel,
@@ -244,6 +244,7 @@ async function importArchive(client, source) {
             preview_model = EXCLUDED.preview_model,
             optimized_for = EXCLUDED.optimized_for,
             variants = EXCLUDED.variants,
+            source_kind = 'legacy_json',
             updated_at = NOW()
           RETURNING id
         `,
@@ -307,6 +308,25 @@ async function importArchive(client, source) {
       )
     }
 
+    await client.query(
+      `
+        DELETE FROM prompt_archive_items
+        WHERE source_kind = 'legacy_json'
+          AND NOT (telegram_message_id = ANY($1::int[]))
+      `,
+      [source.items.map((item) => item.telegramMessageId)],
+    )
+
+    await client.query(`
+      DELETE FROM prompt_archive_tags t
+      WHERE t.source_kind = 'legacy_json'
+        AND NOT EXISTS (
+          SELECT 1
+          FROM prompt_archive_item_tags it
+          WHERE it.tag_id = t.id
+        )
+    `)
+
     await client.query('COMMIT')
   } catch (error) {
     await client.query('ROLLBACK')
@@ -315,7 +335,8 @@ async function importArchive(client, source) {
 }
 
 async function buildParityReport(client, source) {
-  const [metadataResult, itemsResult, tagsResult, imagesResult] = await Promise.all([
+  const sourceTelegramIds = source.items.map((item) => item.telegramMessageId)
+  const [metadataResult, itemsResult, tagsResult, imagesResult, catalogResult] = await Promise.all([
     client.query(`
       SELECT schema_version, channel, source_updated_at, model_history
       FROM prompt_archive_metadata
@@ -335,33 +356,45 @@ async function buildParityReport(client, source) {
         preview_model,
         optimized_for,
         variants,
-        status
+        status,
+        source_kind
       FROM prompt_archive_items
-      WHERE telegram_message_id = ANY($1::int[])
+      WHERE source_kind = 'legacy_json'
       ORDER BY telegram_message_id
-    `, [source.items.map((item) => item.telegramMessageId)]),
+    `),
     client.query(`
       SELECT i.telegram_message_id, t.slug
       FROM prompt_archive_item_tags it
       JOIN prompt_archive_items i ON i.id = it.archive_item_id
       JOIN prompt_archive_tags t ON t.id = it.tag_id
-      WHERE i.telegram_message_id = ANY($1::int[])
+      WHERE i.source_kind = 'legacy_json'
       ORDER BY i.telegram_message_id, t.slug
-    `, [source.items.map((item) => item.telegramMessageId)]),
+    `),
     client.query(`
       SELECT i.telegram_message_id, pi.position, pi.source_path
       FROM prompt_archive_images pi
       JOIN prompt_archive_items i ON i.id = pi.archive_item_id
-      WHERE i.telegram_message_id = ANY($1::int[])
+      WHERE i.source_kind = 'legacy_json'
       ORDER BY i.telegram_message_id, pi.position
-    `, [source.items.map((item) => item.telegramMessageId)]),
+    `),
+    client.query(`
+      SELECT DISTINCT t.slug
+      FROM prompt_archive_tags t
+      JOIN prompt_archive_item_tags it ON it.tag_id = t.id
+      JOIN prompt_archive_items i ON i.id = it.archive_item_id
+      WHERE i.source_kind = 'legacy_json'
+      ORDER BY t.slug
+    `),
   ])
 
+  const expectedCatalog = [...new Set(source.items.flatMap((item) => item.tags))].sort()
+  const actualCatalog = catalogResult.rows.map((row) => row.slug)
   const report = {
     ok: true,
     sourceItemCount: source.items.length,
     databaseItemCount: itemsResult.rows.length,
-    canonicalTagCount: new Set(source.items.flatMap((item) => item.tags)).size,
+    canonicalTagCount: expectedCatalog.length,
+    databaseCanonicalTagCount: actualCatalog.length,
     mismatchCount: 0,
     categories: {},
     mismatches: [],
@@ -385,6 +418,16 @@ async function buildParityReport(client, source) {
     addMismatch(report, 'itemCount', 'archive', source.items.length, itemsResult.rows.length)
   }
 
+  const actualTelegramIds = itemsResult.rows.map((row) => row.telegram_message_id).sort((a, b) => a - b)
+  const expectedTelegramIds = sourceTelegramIds.slice().sort((a, b) => a - b)
+  if (!sameJson(actualTelegramIds, expectedTelegramIds)) {
+    addMismatch(report, 'telegramIds', 'archive', expectedTelegramIds, actualTelegramIds)
+  }
+
+  if (!sameJson(actualCatalog, expectedCatalog)) {
+    addMismatch(report, 'canonicalTags', 'archive', expectedCatalog, actualCatalog)
+  }
+
   const rowsByTelegramId = new Map(itemsResult.rows.map((row) => [row.telegram_message_id, row]))
   const tagsByTelegramId = new Map()
   for (const row of tagsResult.rows) {
@@ -401,13 +444,14 @@ async function buildParityReport(client, source) {
 
   for (const item of source.items) {
     const row = rowsByTelegramId.get(item.telegramMessageId)
-    if (!row) {
-      addMismatch(report, 'telegramIds', item.telegramMessageId, 'present', 'missing')
-      continue
-    }
+    if (!row) continue
 
+    if (row.channel !== source.channel) addMismatch(report, 'channels', item.telegramMessageId, source.channel, row.channel)
+    if (row.legacy_title_key !== item.titleKey) addMismatch(report, 'legacyTitleKeys', item.telegramMessageId, item.titleKey, row.legacy_title_key)
     if (row.titles?.en !== item.title.en) addMismatch(report, 'titles.en', item.telegramMessageId, item.title.en, row.titles?.en)
     if (row.titles?.fa !== item.title.fa) addMismatch(report, 'titles.fa', item.telegramMessageId, item.title.fa, row.titles?.fa)
+    if (row.source_title !== item.sourceTitle) addMismatch(report, 'sourceTitles', item.telegramMessageId, item.sourceTitle, row.source_title)
+    if (row.telegram_url !== item.telegramUrl) addMismatch(report, 'telegramUrls', item.telegramMessageId, item.telegramUrl, row.telegram_url)
     if (row.prompt !== item.prompt) addMismatch(report, 'promptBodies', item.telegramMessageId, item.prompt, row.prompt)
     if (new Date(row.published_at).getTime() !== new Date(item.publishedAt).getTime()) {
       addMismatch(report, 'publishedDates', item.telegramMessageId, item.publishedAt, row.published_at)
