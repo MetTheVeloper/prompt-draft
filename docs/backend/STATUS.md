@@ -36,204 +36,165 @@ It captures resource-first API design, numbered SQL schema files, parameterized 
 
 ## Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
 
-Goal achieved:
+Verified product path:
 
 ```text
-existing /create local drafts
-  -> remain local-first
-  -> optional authenticated account ownership
+optional account
+  -> local-first /create drafts
   -> manual Cloud Save + dirty-aware autosync
-  -> durable PostgreSQL prompt_drafts rows
-  -> same-account multi-device recovery
-  -> per-draft Cloud status in Drafts menu
-```
-
-Authentication is optional at the product level. Anonymous users can continue using Prompt Draft normally; signing in enables account-bound Cloud Draft behavior.
-
-Implemented backend/schema:
-
-```text
-backend/sql/002_create_prompt_drafts.sql
-backend/sql/003_create_auth.sql
-backend/sql/004_scope_prompt_drafts_to_users.sql
-
-POST /api/auth/identify
-POST /api/auth/register
-POST /api/auth/login
-GET  /api/auth/me
-POST /api/auth/logout
-
-PUT /api/drafts/:id
-GET /api/drafts/:id
-GET /api/drafts
-```
-
-Implemented frontend behavior:
-
-```text
-useAuth() shared auth boundary
-/login two-step identify -> login/register flow
-header login/profile controls
-profile menu + logout
-manual Cloud Save FAB beside Drafts
-2-minute dirty-aware autosync
-account-scoped sync metadata v2
-GET /api/drafts on logged-in /create entry/refresh
-Cloud/local deterministic merge
-preserve local-only drafts
-same-account multi-device recovery
-Drafts-menu Cloud state icons
-```
-
-Drafts menu status contract:
-
-```text
-cloud_done / green
-  -> current local fingerprint matches saved Cloud version
-
-cloud_upload / orange
-  -> Cloud version exists for this account but local changes are dirty
-
-cloud_off / normal
-  -> local-only for this account, or anonymous mode
+  -> account-owned prompt_drafts rows
+  -> GET /api/drafts recovery
+  -> same-account multi-device merge
+  -> per-draft Cloud state UI
 ```
 
 Locally verified by the user:
 
 ```text
-account registration
-logout
-existing-account login
-header auth/profile behavior
-Cloud Save writes successfully
-Cloud Save FAB placement beside Drafts
-prompt_drafts.user_id matches authenticated users.id
-repeated writes update the same draft and increment revision
-same-account Incognito/main-browser writes reach PostgreSQL
-logged-in /create issues GET /api/drafts on entry/refresh
-Cloud Drafts created/synced in one browser context recover in the other
-local-only drafts survive Cloud merge
-Drafts-menu offline/synced/dirty status presentation works
-pnpm generate succeeds
-/login, /create and /history are included in the static prerender output
+registration
+logout and existing-account login
+header profile behavior
+Cloud Save ownership and revision updates
+normal/Incognito same-account recovery
+preservation of local-only drafts
+Drafts-menu synced/dirty/offline states
+pnpm generate
 ```
-
-Auth security contract:
-
-```text
-password hashing     -> Node scrypt + random salt
-raw password         -> never stored
-session token        -> random 32-byte bearer token
-browser token store  -> localStorage (explicit current product decision)
-DB session storage   -> SHA-256 hash of bearer token only
-session lifetime     -> 30 days
-```
-
-MD5 and IP-based identity are not used.
 
 ## Milestone 7 — COMPLETE: Server-side Translation
+
+Verified product path:
+
+```text
+static TextField action
+  -> Prompt Draft API :4000
+  -> Docker-private LibreTranslate :5000
+  -> Persian/English translation
+```
+
+Locally verified by the user:
+
+```text
+translator image and health lifecycle
+en/fa model availability
+backend status + translation endpoints
+stable 503 while translator unavailable
+real TextField translation via backend :4000
+translation alternatives
+{person} token preservation
+translator stop disables Translate
+translator restart re-enables Translate without page refresh
+anonymous translation remains available
+pnpm generate
+```
+
+## Milestone 8 — COMPLETE: Authorization / Roles Foundation
 
 Goal achieved:
 
 ```text
-static Nuxt text-field action
-  -> Prompt Draft API :4000
-  -> private Docker-network LibreTranslate service
-  -> Persian/English translation response
+authenticated account
+  -> persisted role
+  -> backend-authoritative permission resolution
+  -> frontend authorization helpers
+  -> permission-gated UI
+  -> permission-gated routes
+  -> permission-gated backend APIs
 ```
 
-Product boundary:
-
-- translation remains available to anonymous users;
-- the browser never calls LibreTranslate directly;
-- LibreTranslate port `5000` stays internal to Docker Compose;
-- backend dependency failure returns a stable `503` rather than crashing the API;
-- existing prompt-variable protection/restoration remains a frontend responsibility;
-- static generation remains mandatory.
-
-Implemented infrastructure/API:
+Current roles:
 
 ```text
-translator service -> libretranslate/libretranslate:v1.9.6
-models              -> en,fa only
-model persistence   -> prompt_draft_translation_models named volume
-backend upstream    -> TRANSLATION_BASE_URL=http://translator:5000
-
-GET  /api/translate/status
-POST /api/translate
+user
+admin
+super_admin
 ```
 
-Translation request defaults:
+Initial permission vocabulary:
 
 ```text
-source       -> auto
-target       -> en
-alternatives -> 3
-max text     -> 5000 characters
+dashboard.view
+system.metrics.view
+users.view
+users.manage
+drafts.view_all
+drafts.delete_any
+system.settings.manage
 ```
 
-Implemented frontend behavior:
+`super_admin` receives wildcard `*`.
+
+Implemented authorization foundation:
 
 ```text
-app/types/translationApi.ts
-usePromptDraftApi.getTranslationStatus()
-usePromptDraftApi.translatePrompt()
-usePromptTranslation routes through NUXT_PUBLIC_API_BASE -> backend :4000
-shared translation-health state with caching
-protected tokens such as {person} survive translation
-existing alternatives/result modal preserved
-TextField action menu refreshes translation health on open
-Translate enabled/disabled state follows real backend service health
-legacy Nuxt server/api/translate.post.ts removed
+backend/sql/005_add_user_roles.sql
+backend/src/authorization.mjs
+users.role defaults to user
+one-time migration bootstrap promotes grass to super_admin
+runtime privilege never checks usernames
+auth login/register/me responses include role + resolved permissions
+GET /api/admin/access-check requires dashboard.view
+app/config/authorization.ts permission constants
+useAuth(): role / permissions / isAdmin / isSuperAdmin / can / canAny / canAll
+app/middleware/authorization.ts reusable route guard
+/dashboard proof route requires dashboard.view
+Profile Menu shows Dashboard only when permission is granted
+/dashboard included in static prerender configuration
 ```
 
-Health/failure behavior:
+Authorization enforcement contract:
 
 ```text
-translator healthy
-  -> Translate enabled for non-empty editable fields
+UI visibility
+  -> convenience only
 
-translator stopped/unavailable
-  -> backend status reports unavailable
-  -> Translate becomes disabled after a fresh menu health check
+route middleware
+  -> blocks unauthorized navigation
 
-translator restarted and healthy again
-  -> reopening the menu re-enables Translate without a full page refresh
+backend permission guard
+  -> authoritative security boundary
 ```
 
-Locally verified by the user on 2026-09-04:
+Local verification completed by the user on 2026-09-04:
 
 ```text
-LibreTranslate image pulls and container starts
-translator reaches Docker healthy state
-en/fa models load
-GET /api/translate/status transitions to available:true
-POST /api/translate returns Persian -> English translation
-alternative translations are returned
-backend returns 503 while translator is unavailable during startup
-real TextField Translate action calls backend :4000
-legacy localhost:3030 /api/translate path is no longer used
-protected {person} token survives translation
-translation alternatives modal works
-translator stop disables Translate
-translator restart re-enables Translate without page refresh
-translation works again after recovery
-anonymous translation remains available
+super_admin account shows Role: super admin
+super_admin sees Dashboard action
+super_admin opens /dashboard
+/dashboard backend authorization reports Verified
+normal user shows Role: user
+normal user does not see Dashboard action
+normal user direct /dashboard access returns 403 Forbidden
+normal user direct GET /api/admin/access-check returns 403 Forbidden
+```
+
+Final static release verification:
+
+```text
 pnpm generate succeeds
-12 static routes are prerendered, including /create, /login, /history and /wizard/portrait
+13 initial routes prerender successfully
+/dashboard is explicitly present in the prerender set
+.output/public generated successfully
+offline manifest generated successfully
 ```
 
-### Milestone 7 phases — ALL DONE
+Known duplicated-import, sourcemap, and large-chunk warnings remain non-blocking existing build warnings.
+
+### Milestone 8 phases — ALL DONE
 
 ```text
-Phase 1 — Docker translator + backend API: DONE
-Phase 2 — typed frontend migration: DONE
-Phase 3 — retire Nuxt proxy + health UX + final regression: DONE
+Phase 1 — persisted roles + backend permission resolver: DONE
+Phase 2 — frontend authorization helpers: DONE
+Phase 3 — Dashboard proof route + conditional UI: DONE
+Phase 4 — normal-user denial + backend bypass check + static generation: DONE
 ```
 
 ## Current intentional debt / deferred work
 
-- convert `/history` from Wizard-run History to Draft History when that product work is selected;
+- real Dashboard metrics;
+- Admin Panel / user-management UX;
+- analytics/page-view event tracking for metrics such as visits and active users;
+- convert `/history` from Wizard-run History to Draft History when selected;
 - remove History from primary header navigation and add the relevant History entry to the Drafts menu as previously agreed;
 - server-side Cloud Draft delete semantics;
 - advanced multi-device conflict resolution beyond deterministic `updatedAt` merge;
@@ -252,7 +213,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Milestone 7 is complete. Wait for the user's next product feature direction; do not infer or start another feature automatically.
+Milestone 8 is complete. Wait for the user's next product feature direction; do not infer or start another feature automatically.
 
 ## New-chat handoff
 
