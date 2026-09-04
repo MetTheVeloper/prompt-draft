@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { AUTH_PERMISSIONS } from '~/config/authorization'
 import type { PromptArchiveListItem } from '~/types/promptArchive'
 
 type PromptItemView = 'grid' | 'list'
@@ -17,15 +18,18 @@ const emit = defineEmits<{
   (event: 'telegram', item: PromptArchiveListItem): void
 }>()
 
+const auth = useAuth()
 const { t, locale } = useI18n()
 const { mobile } = useScreen()
 
 const isGrid = computed(() => props.view === 'grid')
+const canManageArchive = computed(() => auth.can(AUTH_PERMISSIONS.ARCHIVE_MANAGE))
 
 const coverImage = computed(() => {
   return props.item.coverImage?.thumbnailUrl || props.item.coverImage?.fullUrl || ''
 })
 const detailUrl = computed(() => `/prompts?id=${props.item.id}`)
+const manageEditUrl = computed(() => `/manage/archive?edit=${props.item.id}`)
 const localizedTitle = computed(() => {
   return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
 })
@@ -192,6 +196,19 @@ const viewButtonAttrs = computed(() => {
   }
 })
 
+const editButtonAttrs = computed(() => {
+  return {
+    type: 'fab',
+    to: manageEditUrl.value,
+    label: t('manage.archive.actions.edit'),
+    icon: 'edit',
+    mode: 'flat',
+    color: 'normal',
+    size: 12,
+    p: isGrid.value ? 10 : mobile.value ? 8 : 9,
+  }
+})
+
 function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
 }
@@ -320,6 +337,7 @@ function openTelegram() {
         />
 
         <el-button v-bind="viewButtonAttrs" />
+        <el-button v-if="canManageArchive" v-bind="editButtonAttrs" />
       </el-flex>
     </el-flex>
 
@@ -332,6 +350,7 @@ function openTelegram() {
       />
 
       <el-button v-bind="viewButtonAttrs" />
+      <el-button v-if="canManageArchive" v-bind="editButtonAttrs" />
     </el-flex>
   </el-flex>
 </template>
