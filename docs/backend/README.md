@@ -1,6 +1,6 @@
 # Prompt Draft Backend
 
-This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, XP/score, and Manage integration work in Prompt Draft.
+This directory is the source of truth for backend, Docker, authorization, Cloud, translation, History, progressive profile, XP/score, referrals, and Manage integration work in Prompt Draft.
 
 ## Current branch
 
@@ -275,6 +275,56 @@ Detailed milestone:
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 ```
 
+## Milestone 16 — IN PROGRESS: Referral Foundation
+
+The current referral implementation uses an existing username as the referral input instead of introducing generated codes.
+
+Registration accepts an optional:
+
+```text
+referralUsername
+```
+
+Persisted relationship:
+
+```text
+referrals
+  referrer_user_id
+  referred_user_id
+  referral_username_used
+```
+
+The username is only the lookup/audit value. The durable relationship uses user UUIDs.
+
+Current reward semantics:
+
+```text
+referred user -> +500 XP
+referrer      -> +1000 XP
+```
+
+Integrity rules:
+
+```text
+one referrer per referred account
+direct self-referral rejected
+referrer must exist and be active
+case-insensitive username resolution
+invalid/unavailable referral aborts signup
+user + referral relationship created atomically in one PostgreSQL write statement
+referral insert produces both XP ledger events through a DB trigger
+```
+
+The `/login` registration step exposes the optional referral field after Repeat Password and localizes it in EN/FA.
+
+Milestone 16 remains **IN PROGRESS** until the user locally verifies the registration/reward/persistence behavior and final `pnpm generate`.
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
+```
+
 ## Current SQL history
 
 Development schema files run in lexical order:
@@ -291,16 +341,19 @@ Development schema files run in lexical order:
 009_user_score_events.sql
 010_score_identity_triggers.sql
 011_score_cloud_draft_creation.sql
+012_create_referrals.sql
 ```
 
 New development schema changes should use a new numbered file rather than rewriting applied history. A production-grade migration framework remains deferred.
 
 ## Current next-step queue
 
-No next milestone is locked. The main candidate areas are:
+Milestone 16 is the active backend milestone. Do not start a later candidate until it is closed.
+
+Deferred areas include:
 
 ```text
-referrals / referral codes / referral rewards
+referral links / invite-list UI / anti-abuse eligibility rules
 user_events analytics foundation
 site/page-view/activity metrics
 translation usage metrics
@@ -319,9 +372,7 @@ production deployment / secrets / domain / HTTPS
 Redis
 ```
 
-The current recommended next vertical slice is **Referral Foundation**, because it can reuse Auth and the score ledger while creating a more meaningful future reward trigger than Draft autosaves.
-
-Do not start deferred work automatically. The user chooses the next feature.
+Do not start deferred work automatically. The user chooses the next feature after the current milestone is verified.
 
 ## Documentation workflow
 
