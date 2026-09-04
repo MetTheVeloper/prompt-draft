@@ -134,5 +134,9 @@ export default {
         loadError: "بارگذاری اطلاعات کاربر ناموفق بود.",
       },
     },
+    errors: {
+      forbiddenTitle: "دسترسی ممنوع",
+      forbiddenMessage: "اجازه دسترسی به فضای مدیریت را ندارید.",
+    },
   },
 };
