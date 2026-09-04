@@ -16,6 +16,11 @@ export const USER_SCORE_RULES = Object.freeze({
     sourceType: 'profile_field',
     sourceId: 'email',
   }),
+  DRAFT_CREATED: Object.freeze({
+    eventType: 'draft_created',
+    points: 50,
+    sourceType: 'prompt_draft',
+  }),
 })
 
 function normalizeMetadata(metadata) {
@@ -119,6 +124,25 @@ export async function ensureUserScoreMilestones(user) {
   if (user.email) {
     await ensureRule(user.id, USER_SCORE_RULES.PROFILE_EMAIL_ADDED)
   }
+}
+
+export async function awardCloudDraftCreatedScore(userId, draftId) {
+  if (!userId || !draftId) {
+    throw new Error('Cloud Draft creation score requires userId and draftId')
+  }
+
+  return awardUserScoreEvent({
+    userId,
+    eventType: USER_SCORE_RULES.DRAFT_CREATED.eventType,
+    points: USER_SCORE_RULES.DRAFT_CREATED.points,
+    idempotencyKey: `draft_created:v1:${draftId}`,
+    sourceType: USER_SCORE_RULES.DRAFT_CREATED.sourceType,
+    sourceId: draftId,
+    metadata: {
+      ruleVersion: 1,
+      origin: 'cloud_draft_save',
+    },
+  })
 }
 
 export async function getUserScoreState(userId) {
