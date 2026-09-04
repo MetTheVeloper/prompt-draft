@@ -10,6 +10,7 @@ import type {
   TranslatePromptResponse,
   TranslationStatusResponse,
 } from "~/types/translationApi";
+import type { AdminAccessCheckResponse } from "~/types/auth";
 import type {
   ApiHelloResponse,
   CreateWizardRunInput,
@@ -124,6 +125,12 @@ export function usePromptDraftApi() {
     });
   }
 
+  function getAdminAccessCheck() {
+    return $fetch<AdminAccessCheckResponse>(endpoint("/api/admin/access-check"), {
+      headers: auth.authHeaders(),
+    });
+  }
+
   return {
     apiBase,
     hello,
@@ -135,5 +142,6 @@ export function usePromptDraftApi() {
     listPromptDrafts,
     getTranslationStatus,
     translatePrompt,
+    getAdminAccessCheck,
   };
 }
