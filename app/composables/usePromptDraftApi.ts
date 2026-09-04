@@ -1,4 +1,9 @@
 import type {
+  GetPromptDraftResponse,
+  UpsertPromptDraftInput,
+  UpsertPromptDraftResponse,
+} from "~/types/draftSyncApi";
+import type {
   ApiHelloResponse,
   CreateWizardRunInput,
   CreateWizardRunResponse,
@@ -61,11 +66,29 @@ export function usePromptDraftApi() {
     );
   }
 
+  function upsertPromptDraft(id: string, input: UpsertPromptDraftInput) {
+    return $fetch<UpsertPromptDraftResponse>(
+      endpoint(`/api/drafts/${encodeURIComponent(id)}`),
+      {
+        method: "PUT",
+        body: input,
+      },
+    );
+  }
+
+  function getPromptDraft(id: string) {
+    return $fetch<GetPromptDraftResponse>(
+      endpoint(`/api/drafts/${encodeURIComponent(id)}`),
+    );
+  }
+
   return {
     apiBase,
     hello,
     createWizardRun,
     listWizardRuns,
     getWizardRun,
+    upsertPromptDraft,
+    getPromptDraft,
   };
 }
