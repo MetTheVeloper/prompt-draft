@@ -901,11 +901,20 @@ function getDraftMenuItems(): GlobalMenuItem[] {
       disabled: () => !canExportDraftCollection.value,
       handler: exportDraftCollectionJson,
     },
+    {
+      type: "divider",
+    },
+    {
+      label: t("history.title"),
+      icon: "history",
+      color: "blue",
+      handler: () => navigateTo("/history"),
+    },
   ];
 
   if (savedDrafts.value.length) {
     items.push({
-      divider: true,
+      type: "divider",
     });
   }
 
