@@ -6,7 +6,7 @@ const props = defineProps<{
 }>();
 
 const api = usePromptDraftApi();
-const { locale } = useI18n();
+const { locale, t } = useI18n();
 
 const user = ref<AdminUserSummary | null>(null);
 const loading = ref(true);
@@ -16,8 +16,16 @@ function accountLabel(value: AdminUserSummary) {
   return value.username || value.email || value.id;
 }
 
-function roleLabel(value: string) {
-  return value.replaceAll("_", " ");
+function roleLabel(value: AdminUserSummary["role"]) {
+  if (value === "super_admin") return t("manage.common.roles.superAdmin");
+  if (value === "admin") return t("manage.common.roles.admin");
+  return t("manage.common.roles.user");
+}
+
+function statusLabel(value: AdminUserSummary["status"]) {
+  return value === "active"
+    ? t("manage.common.statuses.active")
+    : t("manage.common.statuses.suspended");
 }
 
 function formatDate(value: string) {
@@ -37,7 +45,7 @@ function getApiErrorMessage(error: unknown) {
   const value = error as { data?: { message?: unknown } };
   return typeof value?.data?.message === "string"
     ? value.data.message
-    : "Failed to load user information.";
+    : t("manage.users.information.loadError");
 }
 
 onMounted(async () => {
@@ -54,7 +62,7 @@ onMounted(async () => {
 <template>
   <el-flex rules="ccs" :gap="12" class="w100">
     <el-text v-if="loading" color="normal55" :size="13">
-      Loading user information…
+      {{ t("manage.users.information.loading") }}
     </el-text>
 
     <el-flex v-else-if="errorMessage" rules="rsc" :gap="8" bg="red10" :p="12" :radius="10" class="w100">
@@ -68,27 +76,27 @@ onMounted(async () => {
       :gap="12"
       align-items="center"
       class="w100">
-      <el-text color="normal55" :size="12">Account</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.account") }}</el-text>
       <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
 
-      <el-text color="normal55" :size="12">User ID</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.userId") }}</el-text>
       <el-text :size="12" :weight="700">{{ user.id }}</el-text>
 
-      <el-text color="normal55" :size="12">Role</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.role") }}</el-text>
       <el-text :size="12" :weight="700">{{ roleLabel(user.role) }}</el-text>
 
-      <el-text color="normal55" :size="12">Status</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.status") }}</el-text>
       <el-text :size="12" :weight="700" :color="user.status === 'active' ? 'green' : 'red'">
-        {{ user.status }}
+        {{ statusLabel(user.status) }}
       </el-text>
 
-      <el-text color="normal55" :size="12">Cloud drafts</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.cloudDrafts") }}</el-text>
       <el-text :size="12" :weight="700" :localize="true">{{ user.cloudDraftCount }}</el-text>
 
-      <el-text color="normal55" :size="12">Active sessions</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.activeSessions") }}</el-text>
       <el-text :size="12" :weight="700" :localize="true">{{ user.activeSessionCount }}</el-text>
 
-      <el-text color="normal55" :size="12">Joined</el-text>
+      <el-text color="normal55" :size="12">{{ t("manage.common.fields.joined") }}</el-text>
       <el-text :size="12" :weight="700">{{ formatDate(user.createdAt) }}</el-text>
     </el-grid>
   </el-flex>
