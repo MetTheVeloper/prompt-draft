@@ -6,6 +6,7 @@ import {
   timingSafeEqual,
 } from 'node:crypto'
 import { promisify } from 'node:util'
+import { handleAdminDashboardRequest } from './adminDashboard.mjs'
 import { handleAdminUsersRequest } from './adminUsers.mjs'
 import { handleCloudDraftRequest } from './cloudDrafts.mjs'
 import { queryDatabase } from './database.mjs'
@@ -286,6 +287,19 @@ async function handleAdminAccessCheck({
       { ok: false, message: 'Authentication required' },
       corsHeaders,
     )
+    return true
+  }
+
+  if (
+    await handleAdminDashboardRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+      user,
+    })
+  ) {
     return true
   }
 
