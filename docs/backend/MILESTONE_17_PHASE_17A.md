@@ -1,14 +1,16 @@
 # Milestone 17 — Phase 17A: Archive data foundation + import
 
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
+Status: `DONE / LOCALLY VERIFIED`
+
+Verified on: `2026-09-04`
 
 Branch: `feature/docker-local-api`
 
-This phase is not DONE until the user runs the local verification below and explicitly confirms the result.
+Phase 17A is complete. The user ran the full local verification gate, confirmed import parity and rerun safety, inspected the imported PostgreSQL data, and completed a successful static `pnpm generate`.
 
-## Scope implemented
+## Scope completed
 
-Phase 17A intentionally implements only the Prompt Archive data/import foundation.
+Phase 17A intentionally implemented only the Prompt Archive data/import foundation.
 
 Implemented:
 
@@ -21,7 +23,7 @@ backend archive.view / archive.manage permission identifiers
 frontend matching permission identifiers
 ```
 
-Intentionally not implemented in this phase:
+Intentionally deferred to later phases:
 
 ```text
 /prompts API cutover
@@ -39,7 +41,7 @@ snapshot export
 
 ### prompt_archive_metadata
 
-Preserves current payload-level source data:
+Preserves payload-level source data:
 
 ```text
 schema_version
@@ -58,7 +60,7 @@ id UUID PRIMARY KEY
 telegram_message_id INTEGER UNIQUE
 ```
 
-The Telegram message ID is the rerunnable natural import key. The UUID is the durable relational identity and is preserved by import reruns.
+Telegram message ID is the rerunnable natural import key. The UUID is the durable relational identity and is preserved by import reruns.
 
 Localized titles are stored with Archive content:
 
@@ -80,7 +82,7 @@ variants JSONB
 status
 ```
 
-`source_kind` separates legacy JSON-imported rows from future managed rows so migration reconciliation does not need to treat all Archive data as disposable import output.
+`source_kind` separates legacy JSON-imported rows from future managed rows.
 
 ### prompt_archive_images
 
@@ -93,7 +95,7 @@ source_path
 mime_type
 ```
 
-The relation already reserves provider-neutral future storage/delivery metadata:
+The relation reserves provider-neutral future storage/delivery metadata without starting Object Storage:
 
 ```text
 storage_key
@@ -104,8 +106,6 @@ thumbnail_width / thumbnail_height
 size_bytes / thumbnail_size_bytes
 ```
 
-This does not start Object Storage. It only avoids a schema redesign when the two-output image pipeline is connected later.
-
 ### canonical tags
 
 Durable catalog:
@@ -115,26 +115,17 @@ prompt_archive_tags
 prompt_archive_item_tags
 ```
 
-Import builds the catalog from the DISTINCT union of current JSON tags. Tag slugs must already be trimmed lowercase canonical values; the importer fails instead of silently normalizing a changed legacy value.
-
-This shape is directly suitable for future catalog-driven `el-multi-select` usage.
+Import builds the catalog from the DISTINCT union of current JSON tags. Legacy tag slugs must already be trimmed lowercase canonical values.
 
 ## Import behavior
 
-Command inside the API container:
+Command:
 
 ```text
 npm run archive:import
 ```
 
-The API container receives read-only source mounts:
-
-```text
-./public -> /archive-source/public
-./i18n/locales -> /archive-source/i18n/locales
-```
-
-The importer reads:
+The API container receives read-only source mounts for:
 
 ```text
 public/data/prompts.json
@@ -142,46 +133,30 @@ i18n/locales/en.ts
 i18n/locales/fa.ts
 ```
 
-Existing `titleKey` values are resolved against both locale objects and stored as localized Archive data.
+Existing `titleKey` values are resolved against both locale objects and persisted as localized Archive data.
 
-The import runs in one PostgreSQL transaction.
-
-Rerun semantics:
+The import runs in one PostgreSQL transaction and is safe to rerun:
 
 ```text
 same telegram_message_id -> same archive item UUID
-source-owned scalar/JSON fields -> updated from current snapshot
+source-owned fields -> reconciled from the snapshot
 tag memberships -> reconciled
 image source path/position -> reconciled
-future storage columns -> not overwritten by the import
-legacy rows removed from the JSON -> removed from the legacy import set
-managed rows -> excluded from legacy-row cleanup
-unreferenced legacy-import tag rows -> cleaned up
+future storage columns -> preserved
+legacy rows removed from JSON -> removed from legacy import set
+managed rows -> excluded from legacy cleanup
+unreferenced legacy-import tags -> cleaned up
 ```
 
-## Parity report
+## Parity verification
 
-After the write transaction, the importer reads PostgreSQL back and prints JSON with:
-
-```text
-archiveImport = PARITY_OK | PARITY_FAILED
-sourceItemCount
-databaseItemCount
-canonicalTagCount
-databaseCanonicalTagCount
-mismatchCount
-categories
-mismatches
-```
-
-Parity checks include at least:
+Importer parity checks cover:
 
 ```text
 payload schemaVersion/channel/updatedAt/modelHistory
 item count
 Telegram IDs
-EN titles
-FA titles
+EN/FA titles
 legacy title keys
 source titles
 Telegram URLs
@@ -191,12 +166,59 @@ preview model
 optimizedFor
 tags
 canonical tag union
-variants (exact structured comparison, stronger than count-only)
+variants
 image counts
 image source paths/order
 ```
 
-A parity mismatch exits with code `2`. Import/schema/source failures exit with code `1`.
+Local result:
+
+```text
+archiveImport: PARITY_OK
+sourceItemCount: 100
+databaseItemCount: 100
+canonicalTagCount: 23
+databaseCanonicalTagCount: 23
+mismatchCount: 0
+```
+
+The import was executed again and returned `PARITY_OK` a second time.
+
+## Idempotency verification
+
+UUID-map hash before rerun:
+
+```text
+519d6e02c2bef2645fa82f261ae43ca7
+```
+
+UUID-map hash after rerun:
+
+```text
+519d6e02c2bef2645fa82f261ae43ca7
+```
+
+The identical hash confirms imported Telegram IDs retained the same durable UUIDs across reruns.
+
+## Direct database inspection
+
+Verified counts:
+
+```text
+legacy archive items: 100
+canonical tags: 23
+image records: 276
+```
+
+Localized title samples were inspected directly in PostgreSQL and correctly contained both English and Persian values.
+
+Variant preservation was inspected directly:
+
+```text
+telegram_message_id 419 -> 1 variant
+```
+
+Canonical tag catalog was inspected directly and contained 23 expected slugs.
 
 ## Permission foundation
 
@@ -207,85 +229,26 @@ archive.view
 archive.manage
 ```
 
-Current initial backend mapping grants both to `admin`; `super_admin` continues to receive them through wildcard `*`.
+The initial backend mapping grants both to `admin`; `super_admin` receives them through wildcard `*`.
 
-No Manage section or Archive admin endpoint exists yet, so these permission identifiers do not expose a new UI surface in Phase 17A.
-
-## Local verification gate
-
-From repository root, rebuild/recreate the API so it contains the new script and receives the new read-only mounts:
-
-```powershell
-docker compose up -d --build db api
-```
-
-Apply schema:
-
-```powershell
-docker compose exec api npm run db:schema
-```
-
-Run import + parity:
-
-```powershell
-docker compose exec api npm run archive:import
-```
-
-Expected final report:
-
-```text
-"archiveImport": "PARITY_OK"
-"mismatchCount": 0
-```
-
-### Rerun safety check
-
-Capture imported UUIDs:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT telegram_message_id, id FROM prompt_archive_items WHERE source_kind = 'legacy_json' ORDER BY telegram_message_id;"
-```
-
-Run import again:
-
-```powershell
-docker compose exec api npm run archive:import
-```
-
-Run the UUID query again. The same Telegram IDs must retain the same UUIDs, and the second import must also return `PARITY_OK`.
-
-### Useful database inspection
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT COUNT(*) AS items FROM prompt_archive_items WHERE source_kind = 'legacy_json'; SELECT COUNT(*) AS tags FROM prompt_archive_tags; SELECT COUNT(*) AS images FROM prompt_archive_images;"
-```
-
-Localized-title sample:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT telegram_message_id, titles->>'en' AS en, titles->>'fa' AS fa FROM prompt_archive_items WHERE source_kind = 'legacy_json' ORDER BY telegram_message_id DESC LIMIT 5;"
-```
-
-Variant sample:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT telegram_message_id, jsonb_array_length(variants) AS variants FROM prompt_archive_items WHERE source_kind = 'legacy_json' AND jsonb_array_length(variants) > 0 ORDER BY telegram_message_id;"
-```
-
-Canonical tags:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT slug FROM prompt_archive_tags ORDER BY slug;"
-```
+No Manage Archive route or Archive admin endpoint was exposed in Phase 17A.
 
 ## Release invariant
 
-After backend/data verification, run:
+The user ran:
 
-```powershell
+```text
 pnpm generate
 ```
 
-Phase 17A remains `AWAITING LOCAL VERIFICATION` until the user confirms the import/parity/rerun behavior and static generation.
+Result: successful static generation on `2026-09-04`.
 
-Do not begin Phase 17B merely because these files exist.
+Existing accepted non-blocking warnings remained present, including duplicate `compilePromptOutput`, sourcemap/cache-driver warnings, and large chunk warnings.
+
+## Phase conclusion
+
+Phase 17A is `DONE / LOCALLY VERIFIED`.
+
+The next planned phase is **Phase 17B — Server read APIs + fallback repository**.
+
+Do not begin Object Storage or `/manage/archive` mutation work before the read-path/fallback layer is implemented and locally verified.
