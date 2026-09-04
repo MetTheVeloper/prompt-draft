@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1 through 5 are complete and locally verified.
+Milestones 1 through 6 are complete and locally verified.
 
 Current verified platform path:
 
@@ -19,7 +19,7 @@ static Nuxt frontend :3030
 
 The backend remains independent from Nuxt server routes so static generation remains supported.
 
-Reusable implementation conventions now live in:
+Reusable implementation conventions live in:
 
 ```text
 docs/backend/API_GUIDE.md
@@ -27,7 +27,7 @@ docs/backend/API_GUIDE.md
 
 ## Completed reference implementation — Wizard runs
 
-The Wizard-run flow remains the first fully verified backend example:
+The Wizard-run flow remains the first fully verified append-only backend example:
 
 ```text
 real Wizard finish
@@ -41,11 +41,11 @@ real Wizard finish
 
 It proved Docker networking, CORS, validation, PostgreSQL persistence, named-volume durability, client/server contracts, static routing, and UI recovery behavior.
 
-Wizard runs are append-only historical resources. Milestone 6 intentionally uses different write semantics because editable drafts are stable resources rather than completion events.
+Wizard runs are append-only historical resources. Editable drafts intentionally use stable resource identities and upsert/sync semantics instead.
 
 ## Schema workflow
 
-The development schema runner now discovers all files matching:
+The development schema runner discovers all files matching:
 
 ```text
 backend/sql/NNN_*.sql
@@ -58,210 +58,235 @@ Current files:
 ```text
 001_create_wizard_runs.sql
 002_create_prompt_drafts.sql
+003_create_auth.sql
+004_scope_prompt_drafts_to_users.sql
 ```
 
-This removes the previous one-file hardcoding and makes new development API resources repeatable.
+New development schema changes should use new numbered files rather than rewriting applied schema history.
 
-A production-grade migration framework remains deferred. New development schema changes should still use new numbered files rather than rewriting already-applied schema history.
+A production-grade migration framework remains deferred.
 
-## Milestone 6 — Cloud Draft Sync
+# Milestone 6 — COMPLETE: Auth Foundation + Account-aware Cloud Draft Sync
 
-### Product goal
+## Product contract
 
-The `/create` page already has a useful local draft system. Milestone 6 makes those editable drafts durable on the backend without replacing local-first behavior.
+The `/create` page remains local-first. Authentication is optional and only enables account-bound Cloud behavior.
 
-Existing local contract:
+```text
+anonymous user
+  -> local draft system continues normally
+
+logged-in user
+  -> same local draft system
+  -> optional/manual Cloud Save
+  -> dirty-aware autosync
+  -> account-owned Cloud collection
+  -> recovery across browser/device contexts
+```
+
+## Local draft contract
+
+Existing local collection remains:
 
 ```text
 PromptDraftCollection version 1
   activeDraftId
   drafts: PromptDraftRecord[]
-
-PromptDraftRecord
-  id
-  title
-  createdAt
-  updatedAt
-  PromptDraftState fields
 ```
 
-The current editor saves locally with a short debounce. That remains the fast working-state persistence layer.
-
-New target path:
-
-```text
-editor change
-  -> existing localStorage save
-  -> content differs from last successful cloud fingerprint
-  -> dirty
-  -> manual FAB or two-minute autosync
-  -> PUT /api/drafts/:id
-  -> prompt_drafts
-```
-
-### Resource identity decision
-
-Draft ids are client-owned because `/create` already assigns a stable local id:
+Each record keeps its stable client-owned id:
 
 ```text
 draft-<timestamp>-<random>
 ```
 
-That same id identifies the server resource.
+The local editor still saves with its existing short debounce. Cloud sync does not replace this path.
 
-This is important: repeated autosaves of one draft must update one row rather than create a new historical record.
+## Authentication architecture
 
-### Server schema
+### Tables
 
-`prompt_drafts`:
+Auth schema provides account/session storage.
 
-```text
-draft_id          TEXT primary key
- title             TEXT
- created_at        TIMESTAMPTZ
- client_updated_at TIMESTAMPTZ
- server_updated_at TIMESTAMPTZ
- revision          BIGINT
- snapshot          JSONB
-```
-
-`revision` increments on each successful PUT. It is returned now as future-compatible metadata; Milestone 6 MVP does not yet reject writes based on revision conflicts.
-
-An index supports newest client-updated ordering for a later server collection endpoint:
+Conceptually:
 
 ```text
-(client_updated_at DESC, draft_id DESC)
+users
+  id UUID
+  username/email identity
+  password hash material
+  created_at
+
+auth_sessions
+  token_hash
+  user_id
+  expires_at
+  created_at
 ```
 
-### API write contract
+### Security contract
+
+```text
+password hashing     -> Node scrypt + random salt
+raw password         -> never stored
+session token        -> random 32-byte bearer token
+browser token store  -> localStorage (current explicit product decision)
+DB session storage   -> SHA-256 hash of bearer token only
+session lifetime     -> 30 days
+```
+
+IP identity and MD5 password storage are explicitly not used.
+
+### Auth API
+
+```text
+POST /api/auth/identify
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
+```
+
+The login UI uses a two-step flow:
+
+```text
+username or email
+  -> POST /api/auth/identify
+  -> existing account: password login
+  -> missing account: password + confirmation registration
+```
+
+Current password rule:
+
+```text
+minimum 8 characters
+at least one English letter
+at least one number
+```
+
+### Frontend auth boundary
+
+`useAuth()` is the shared client boundary for:
+
+```text
+token
+user
+isLoggedIn
+initialize
+identify
+login
+register
+logout
+```
+
+Header behavior:
+
+```text
+anonymous -> blue login FAB -> /login
+logged in -> primary profile FAB -> global menu component
+```
+
+The profile menu exposes current account information and logout.
+
+## Cloud Draft server ownership
+
+`004_scope_prompt_drafts_to_users.sql` makes Cloud Draft resources account-scoped.
+
+A Cloud Draft is identified by the tuple:
+
+```text
+(user_id, draft_id)
+```
+
+The same local `draft-*` id can therefore never expose or overwrite another user's resource.
+
+Legacy pre-auth Cloud Draft rows without trustworthy ownership are intentionally not treated as account data.
+
+## Cloud Draft schema
+
+Queryable metadata remains separate from the canonical draft snapshot:
+
+```text
+user_id
+ draft_id
+ title
+ created_at
+ client_updated_at
+ server_updated_at
+ revision
+ snapshot JSONB
+```
+
+`revision` increments on successful updates and is available for future optimistic-conflict enforcement.
+
+Collection ordering uses client update time plus draft id as deterministic tie-breaker.
+
+## Cloud Draft API
+
+All Cloud Draft endpoints require a valid bearer session.
 
 ```text
 PUT /api/drafts/:id
+GET /api/drafts/:id
+GET /api/drafts
 ```
 
-Request:
+Unauthenticated requests return `401 Authentication required`.
 
-```json
-{
-  "title": "Portrait draft",
-  "createdAt": "ISO timestamp",
-  "updatedAt": "ISO timestamp",
-  "snapshot": {
-    "version": 1,
-    "selectedModuleKeys": [],
-    "moduleValues": {},
-    "modulePanelStates": {},
-    "promptSettings": {},
-    "outputFormat": "modular"
-  }
-}
-```
+### PUT semantics
 
-Response:
-
-```json
-{
-  "ok": true,
-  "draft": {
-    "id": "draft-...",
-    "title": "Portrait draft",
-    "createdAt": "ISO timestamp",
-    "updatedAt": "ISO timestamp",
-    "serverUpdatedAt": "ISO timestamp",
-    "revision": 1,
-    "snapshot": {}
-  }
-}
-```
-
-Semantics:
+Repeated saves for one account + draft id update the same logical resource:
 
 ```text
-first PUT for id      -> INSERT
-later PUT for same id -> UPDATE same row + revision increment
+first PUT  -> INSERT
+later PUT  -> UPDATE same row
+              revision = revision + 1
 ```
 
-The endpoint is idempotent at the resource-identity level: retrying does not create another logical draft.
+The write payload contains normalized draft metadata and snapshot state. Server code never trusts client ownership; `user_id` comes from the authenticated session.
 
-### API detail contract
+### Detail semantics
 
 ```text
 GET /api/drafts/:id
+existing owned id -> 200
+missing/unowned id -> not exposed as another user's data
+invalid id -> validation error
 ```
 
-Semantics:
+### Collection semantics
 
 ```text
-existing id -> 200 full server draft
-missing id  -> 404
-invalid id  -> 400
+GET /api/drafts?limit=...&cursor=...
 ```
 
-### Validation boundary
+returns only drafts owned by the authenticated user, newest client-updated first, with cursor pagination.
 
-The HTTP API validates:
+This collection endpoint is what enables discovery on a browser/device that has no local list of draft ids.
 
-```text
-id -> non-empty decoded path id, max 200, no control chars
-title -> non-empty, max 500
-createdAt / updatedAt -> valid timestamps
-snapshot.version -> 1
-selectedModuleKeys -> string[]
-moduleValues -> object
-modulePanelStates -> object
-promptSettings -> object
-outputFormat -> modular | natural | json
-```
+## Typed frontend boundary
 
-Only the known snapshot envelope survives normalization.
-
-### CORS
-
-Direct browser sync adds `PUT`, so allowed methods now include:
-
-```text
-GET, POST, PUT, OPTIONS
-```
-
-Browser preflight is part of final UI acceptance.
-
-### Frontend typed boundary
-
-Added:
+Cloud Draft API types live under:
 
 ```text
 app/types/draftSyncApi.ts
 ```
 
-Types:
+`usePromptDraftApi()` owns API URL construction and exposes the draft read/write methods. UI components do not manually construct backend URLs.
 
-```text
-UpsertPromptDraftInput
-SyncedPromptDraftRecord
-UpsertPromptDraftResponse
-GetPromptDraftResponse
-```
+## Account-scoped sync metadata
 
-`usePromptDraftApi()` now exposes:
-
-```text
-upsertPromptDraft(id, input)
-getPromptDraft(id)
-```
-
-The UI does not construct API URLs directly.
-
-### Sync metadata boundary
-
-Canonical local draft JSON remains unchanged.
+Canonical draft JSON remains unchanged.
 
 Cloud metadata is stored separately under:
 
 ```text
-prompt-draft:create-editor:cloud-sync:v1
+prompt-draft:create-editor:cloud-sync:v2
 ```
 
-Per-draft sync metadata contains:
+The metadata is partitioned by authenticated `userId` so switching accounts in one browser does not make one account's Cloud state authoritative for another.
+
+Per-draft metadata contains:
 
 ```text
 fingerprint
@@ -269,135 +294,128 @@ syncedAt
 revision
 ```
 
-This keeps backend metadata out of existing draft export/import JSON.
+## Dirty detection and autosync
 
-### Dirty detection
-
-The sync fingerprint is based on content:
+The sync fingerprint is based on meaningful content:
 
 ```text
 id
- title
- PromptDraftState
+title
+PromptDraftState
 ```
 
-It deliberately excludes `createdAt` / `updatedAt` so incidental local save timestamps do not trigger unnecessary server writes.
+It deliberately excludes incidental local timestamps.
 
-Autosync scans the local draft collection every two minutes and uploads only records whose fingerprint differs from the last successful server sync.
+Autosync runs every two minutes and uploads only dirty drafts already associated with the current account. Unchanged drafts are skipped.
 
-If multiple local drafts became dirty before the interval, the scan can persist each dirty draft rather than only the currently active one.
+A manual Cloud Save FAB beside Drafts can establish/refresh the active draft's Cloud copy immediately.
 
-### Manual FAB
-
-A cloud-save FAB is mounted only on `/create` and placed adjacent to the existing Drafts control.
-
-States:
+Failure semantics remain local-first:
 
 ```text
-dirty   -> cloud upload
-syncing -> sync
-synced  -> cloud done
-failed  -> cloud off / retry by click
+backend unavailable
+  -> local save still works
+  -> Cloud status reports failure/dirty state
+  -> later manual/autosync retry can recover
 ```
 
-Manual click forces the active draft to sync even if its fingerprint already matches the previous successful write.
+No server failure deletes or blocks local work.
 
-The control waits briefly for the editor's existing debounced local save to settle before reading the active local draft.
+## Multi-device recovery lifecycle
 
-### Failure semantics
-
-Cloud persistence does not replace the local save path.
-
-If backend sync fails:
+For a logged-in `/create` entry/refresh, Cloud recovery is explicit:
 
 ```text
-local draft remains intact and editable
-cloud status becomes failed
-manual click can retry
-future autosync can retry dirty drafts
+/create mount
+  -> auth.initialize()
+  -> GET /api/drafts
+  -> fetch account Cloud Draft pages
+  -> read local PromptDraftCollection
+  -> merge by stable draft id
+  -> newer updatedAt wins for matching ids
+  -> preserve local-only drafts
+  -> prepend newly discovered remote drafts
+  -> persist merged collection to localStorage
+  -> refresh Drafts menu/editor collection
 ```
 
-No local draft is removed because of a server error.
+The restore call lives in the mounted Cloud Sync control lifecycle so discovery always occurs on real `/create` entry rather than relying on an invisible bridge that may fail to mount.
 
-### MVP boundaries
+This behavior was verified bidirectionally between normal and Incognito browser contexts using the same account.
 
-Not part of this milestone's first slice:
+## Drafts-menu Cloud state
+
+The Drafts dropdown derives presentation from the same account-scoped local sync metadata and does not issue extra API requests just to draw icons.
 
 ```text
-authentication / ownership
-remote collection UI
-server -> local restore
-server-side delete
-multi-device merge
-revision conflict enforcement
+cloud_done / green
+  -> local fingerprint matches last successful Cloud save
+
+cloud_upload / orange
+  -> Cloud version exists but current local content is dirty
+
+cloud_off / normal
+  -> no Cloud association for current account, or anonymous mode
 ```
 
-Those capabilities require explicit product semantics rather than being inferred from local save behavior.
+## Static-generation invariant
 
-## Milestone 6 phases
-
-### Phase 0 — reusable API playbook + Cloud Draft contract: IMPLEMENTED, AWAITING USER VERIFICATION
-
-Implemented:
+Milestone 6 release verification includes:
 
 ```text
-docs/backend/API_GUIDE.md
-resource/id/write/failure semantics documented
+pnpm generate
 ```
 
-### Phase 1 — schema + backend PUT/GET: IMPLEMENTED, AWAITING USER VERIFICATION
-
-Implemented:
+The user confirmed a successful static build after Auth + Cloud Draft integration. The generated route set includes at least:
 
 ```text
-generic numbered schema runner
-002_create_prompt_drafts.sql
-upsertPromptDraft()
-getPromptDraftById()
-PUT /api/drafts/:id
-GET /api/drafts/:id
-PUT CORS support
+/create
+/login
+/history
+/wizard/portrait
 ```
 
-### Phase 2 — typed client + manual `/create` sync: IMPLEMENTED, AWAITING USER VERIFICATION
+Warnings about duplicated imports, sourcemaps, and chunk size remain non-blocking existing build warnings; generation completed successfully.
 
-Implemented:
+# Milestone 6 phases — ALL DONE
+
+## Phase 0 — reusable API playbook + Cloud Draft contract: DONE
+
+Verified reusable API conventions and stable editable-resource semantics.
+
+## Phase 1 — schema + backend Cloud Draft write/read: DONE
+
+Verified numbered schema application, account-owned persistence, repeated upsert behavior, and revision increments.
+
+## Phase 2 — Auth Foundation: DONE
+
+Verified registration, logout, existing-account login, optional-auth product behavior, header controls, profile menu, and session hydration.
+
+## Phase 3 — account-scoped collection + recovery: DONE
+
+Verified `GET /api/drafts`, ownership scoping, merge behavior, preservation of local-only drafts, and bidirectional same-account recovery across browser contexts.
+
+## Phase 4 — sync-state UX + final static verification: DONE
+
+Verified Cloud Save placement/state, Drafts-menu Cloud status icons, local-first failure model, and successful `pnpm generate`.
+
+# Deferred follow-up work
+
+These are intentionally not required for Milestone 6 completion:
 
 ```text
-draftSyncApi.ts
-usePromptDraftApi draft methods
-cloud-save FAB and localized status
+convert current Wizard-run /history to Draft History
+move the relevant History entry into the Drafts menu
+server-side Cloud Draft delete semantics
+advanced multi-device conflict UI/policy
+optimistic revision rejection
+production auth rate limiting / abuse controls
+email verification
+password reset/recovery
+OAuth/social login
+production migration framework
+production deployment/secrets/domain/HTTPS
+Redis
 ```
 
-### Phase 3 — dirty-aware autosync: IMPLEMENTED, AWAITING USER VERIFICATION
-
-Implemented:
-
-```text
-content fingerprints
-separate sync metadata
-2-minute dirty scan
-skip unchanged drafts
-local-first error behavior
-```
-
-### Phase 4 — final product E2E/static/durability: NOT STARTED
-
-Required before Milestone 6 can be complete:
-
-```text
-apply schema
-open /create with API running
-edit active draft
-manual FAB -> browser PUT succeeds
-same draft id -> repeated save updates same PostgreSQL row
-change content -> dirty state returns
-autosync persists dirty content without duplicate logical rows
-API down -> local draft continues saving + cloud status fails gracefully
-API restart -> manual/autosync retry succeeds
-GET read-back matches local saved content
-container recreation retains server copy
-pnpm generate succeeds
-```
-
-No Milestone 6 phase is `DONE` until the user locally verifies and confirms the relevant behavior.
+Do not start any deferred item automatically. The next product feature is chosen by the user.
