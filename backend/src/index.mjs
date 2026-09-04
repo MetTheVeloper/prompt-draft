@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
+import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
 import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
 import {
@@ -515,12 +516,23 @@ const server = createServer(async (request, response) => {
         503,
         {
           ok: false,
-          message: 'Translation service is not available',
-        },
+          message: 'Translation service is not available' },
         corsHeaders,
       )
     }
 
+    return
+  }
+
+  if (
+    await handleAdminArchiveRoute({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
     return
   }
 
@@ -731,8 +743,7 @@ const server = createServer(async (request, response) => {
         500,
         {
           ok: false,
-          message: 'Failed to create Wizard run',
-        },
+          message: 'Failed to create Wizard run' },
         corsHeaders,
       )
     }
@@ -745,8 +756,7 @@ const server = createServer(async (request, response) => {
     404,
     {
       ok: false,
-      message: 'Not Found',
-    },
+      message: 'Not Found' },
     corsHeaders,
   )
 })
