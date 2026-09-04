@@ -4,6 +4,7 @@ export default defineNuxtRouteMiddleware(async (to) => {
   if (!import.meta.client || to.path !== "/manage") return;
 
   const auth = useAuth();
+  const { $i18n } = useNuxtApp();
   await auth.initialize();
 
   if (!auth.isLoggedIn.value) {
@@ -17,8 +18,8 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return abortNavigation(
       createError({
         statusCode: 403,
-        statusMessage: "Forbidden",
-        message: "You do not have permission to access the management workspace.",
+        statusMessage: $i18n.t("manage.errors.forbiddenTitle"),
+        message: $i18n.t("manage.errors.forbiddenMessage"),
       }),
     );
   }
