@@ -1,6 +1,6 @@
 # Milestone 18 — User Avatar Foundation
 
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
+Status: `DONE / LOCALLY VERIFIED`
 
 Branch: `feature/docker-local-api`
 
@@ -206,131 +206,44 @@ avatarUrl
 
 `AdminUserInformationModal` uses the shared `el-avatar` component. The main users table can reuse the same field/component later without another backend/schema change.
 
-## Local verification gate
+## Local verification — COMPLETE
 
-This milestone is not DONE until the user verifies the following locally.
-
-### 1. Pull, rebuild, schema
-
-```powershell
-git pull
-docker compose up -d --build db api
-docker compose exec api npm run db:schema
-```
-
-Expected migration output includes:
+Verified by the user on 2026-09-04:
 
 ```text
-015_user_avatar.sql
+015_user_avatar.sql applied successfully
+empty/default initials avatar state works
+non-square source preparation works
+avatar upload succeeds
+Arvan public avatar URL persists correctly
+Header/Profile Menu update correctly
+anonymous GET /api/profile/avatar returns 401
+final pnpm generate succeeds
 ```
 
-### 2. Empty/default state
-
-Open the Profile Menu for an account that has never uploaded an avatar.
-
-Expected:
+Observed persisted example shape:
 
 ```text
-no stored avatar URL
-el-avatar shows initials from username/email
-Header uses the same initials avatar instead of the old account-circle FAB
+avatar_url
+  -> https://.../avatars/<user-uuid>/<avatar-uuid>.webp
+
+avatar_storage_key
+  -> avatars/<user-uuid>/<avatar-uuid>.webp
 ```
 
-### 3. Prepare and save
+The user explicitly confirmed the logic and functionality are correct and the release invariant (`pnpm generate`) succeeds.
 
-Choose a non-square JPEG/PNG/WebP.
+## Next related milestone
 
-Expected before save:
+Milestone 19 extends the same profile-media foundation with:
 
 ```text
-center-cropped square preview
-400x400 prepared output
-no storage upload until Save avatar is clicked
-```
-
-Save it.
-
-Expected Network request:
-
-```text
-POST /api/profile/avatar
-Content-Type: image/webp
-200 OK
-```
-
-Header and Profile Menu should update immediately without refresh.
-
-### 4. Database
-
-Inspect the current user:
-
-```sql
-SELECT id, username, email, avatar_url, avatar_storage_key
-FROM users
-WHERE id = '<current-user-uuid>';
-```
-
-Expected:
-
-```text
-avatar_url -> Arvan public URL
-avatar_storage_key -> avatars/<user-uuid>/<uuid>.webp
-```
-
-### 5. Public image and dimensions
-
-Open `avatar_url` directly and confirm it loads without Prompt Draft authentication.
-
-The resulting file must be WebP and 400x400.
-
-### 6. Replacement
-
-Choose and save a different image.
-
-Expected:
-
-```text
-new immutable URL/key
-new image visible immediately
-old object cleanup attempted after DB switch
-```
-
-### 7. Removal
-
-Use Remove avatar.
-
-Expected:
-
-```text
-DELETE /api/profile/avatar -> 200
-avatar_url = NULL
-avatar_storage_key = NULL
-Header/Profile Menu immediately return to initials/icon fallback
-```
-
-### 8. Manage reuse
-
-Open a user's Information modal under `/manage/users`.
-
-Expected:
-
-```text
-uploaded avatar shown when present
-same initials/icon fallback when absent
-```
-
-### 9. Authorization
-
-Anonymous requests to `/api/profile/avatar` must return 401.
-
-### 10. Release invariant
-
-```powershell
-pnpm generate
-```
-
-Only after the user explicitly confirms the behavior and final generation should this document become:
-
-```text
-Status: DONE / LOCALLY VERIFIED
+optional user cover media
+public-safe user profile read model
+/user?id=<UUID>
+private/public Cloud Draft visibility
+owner sees own Cloud Drafts
+visitors see public Drafts only
+Awwwards-like profile hero using cover + foreground el-avatar
+creative cover/avatar treatment in Profile Menu
 ```
