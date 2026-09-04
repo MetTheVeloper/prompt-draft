@@ -71,6 +71,7 @@ export default {
       sources: {
         generic: "این قابلیت",
         globalOutputCopy: "کپی GLOBAL OUTPUT",
+        promptArchive: "آرشیو پرامپت‌ها",
       },
       emailPlaceholder: "you{'@'}example.com",
       emailHint: "این ایمیل به‌عنوان یک شناسه ورود دیگر برای حساب شما قابل استفاده خواهد بود.",
@@ -84,6 +85,13 @@ export default {
       anonymousTitle: "اول یک حساب لازم است",
       anonymousDescription: "وارد حساب شوید یا حساب بسازید؛ بعد برگردید و با ثبت ایمیل این عملیات را باز کنید.",
       signIn: "ورود یا ساخت حساب",
+    },
+    promptArchiveAccess: {
+      checking: "در حال بررسی دسترسی...",
+      title: "برای دیدن آرشیو پرامپت‌ها حساب و ایمیل لازم است",
+      description: "برای مرور آرشیو پرامپت‌ها وارد حساب Prompt Draft شوید و یک ایمیل روی حساب خود ثبت کنید.",
+      signIn: "ورود یا ساخت حساب",
+      addEmail: "ثبت ایمیل و باز کردن آرشیو",
     },
   },
 };
