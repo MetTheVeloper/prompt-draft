@@ -1,4 +1,7 @@
 import type {
+  AdminArchiveImageMutationResponse,
+  AdminArchiveImageOrderInput,
+  AdminArchiveImageUploadInput,
   AdminArchiveMutationResponse,
   AdminArchiveTagsResponse,
   AdminArchiveUpsertInput,
@@ -315,6 +318,40 @@ export function usePromptDraftApi() {
     );
   }
 
+  function uploadAdminArchiveImage(id: string, input: AdminArchiveImageUploadInput) {
+    return $fetch<AdminArchiveImageMutationResponse>(
+      endpoint(`/api/admin/archive/${encodeURIComponent(id)}/images`),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+        body: input,
+      },
+    );
+  }
+
+  function deleteAdminArchiveImage(id: string, imageId: string) {
+    return $fetch<AdminArchiveImageMutationResponse>(
+      endpoint(
+        `/api/admin/archive/${encodeURIComponent(id)}/images/${encodeURIComponent(imageId)}`,
+      ),
+      {
+        method: "DELETE",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function reorderAdminArchiveImages(id: string, input: AdminArchiveImageOrderInput) {
+    return $fetch<{ ok: true }>(
+      endpoint(`/api/admin/archive/${encodeURIComponent(id)}/images/order`),
+      {
+        method: "PUT",
+        headers: auth.authHeaders(),
+        body: input,
+      },
+    );
+  }
+
   return {
     apiBase,
     hello,
@@ -341,5 +378,8 @@ export function usePromptDraftApi() {
     createAdminArchive,
     updateAdminArchive,
     setAdminArchiveStatus,
+    uploadAdminArchiveImage,
+    deleteAdminArchiveImage,
+    reorderAdminArchiveImages,
   };
 }
