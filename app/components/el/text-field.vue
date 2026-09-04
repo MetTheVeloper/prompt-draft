@@ -104,7 +104,13 @@ const promptEditor = usePromptEditor();
 
 const modal = useModal();
 
-const { isTranslating, translateText } = usePromptTranslation();
+const {
+  isTranslating,
+  isTranslationAvailable,
+  isCheckingTranslationAvailability,
+  checkTranslationAvailability,
+  translateText,
+} = usePromptTranslation();
 const { hasInsertableVariables, openVariablePicker } = useVariablePickerModal();
 
 const selectedTranslationOption = ref("");
@@ -453,6 +459,7 @@ async function translateFieldContent() {
   if (isLocked.value) return;
   if (!hasValue.value) return;
   if (isTranslating.value) return;
+  if (!isTranslationAvailable.value) return;
 
   let result: PromptTranslationResult;
 
@@ -587,7 +594,12 @@ function getActionMenuItems(): GlobalMenuItem[] {
         : t("components.textField.actions.translate"),
       icon: "translate",
       color: "blue",
-      disabled: () => isLocked.value || !hasValue.value || isTranslating.value,
+      disabled: () =>
+        isLocked.value ||
+        !hasValue.value ||
+        isTranslating.value ||
+        isCheckingTranslationAvailability.value ||
+        !isTranslationAvailable.value,
       handler: translateFieldContent,
     });
 
@@ -657,17 +669,23 @@ function getActionMenuItems(): GlobalMenuItem[] {
   return items;
 }
 
-function openActionMenu(event: MouseEvent) {
+async function openActionMenu(event: MouseEvent) {
   if (!showActionButton.value) return;
 
   event.preventDefault();
   event.stopPropagation();
 
+  const anchor = actionAnchorRef.value || (event.currentTarget as HTMLElement);
+
   updateEditorCursorFromField();
+
+  if (hasAction("translate")) {
+    await checkTranslationAvailability({ force: true });
+  }
 
   $menu.open({
     mode: "dropdown",
-    anchor: actionAnchorRef.value || (event.currentTarget as HTMLElement),
+    anchor,
     placement: "bottom-end",
     options: {
       closeOnScroll: false,
@@ -682,7 +700,7 @@ function focus() {
   fieldRef.value?.focus();
 }
 
-function openContextActionMenu(event: MouseEvent) {
+async function openContextActionMenu(event: MouseEvent) {
   if (!showActionButton.value) return;
 
   event.preventDefault();
@@ -695,6 +713,10 @@ function openContextActionMenu(event: MouseEvent) {
   }
 
   updateEditorCursorFromField();
+
+  if (hasAction("translate")) {
+    await checkTranslationAvailability({ force: true });
+  }
 
   $menu.open({
     mode: "point",
