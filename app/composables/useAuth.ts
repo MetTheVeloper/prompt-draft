@@ -2,6 +2,7 @@ import type {
   AuthMeResponse,
   AuthProfileField,
   AuthProfileState,
+  AuthReferralState,
   AuthScoreState,
   AuthSessionResponse,
   AuthUser,
@@ -25,6 +26,7 @@ const authState = reactive({
   user: null as AuthUser | null,
   profile: null as AuthProfileState | null,
   score: null as AuthScoreState | null,
+  referrals: null as AuthReferralState | null,
   permissions: [] as AuthGrantedPermission[],
 });
 
@@ -79,6 +81,19 @@ function normalizeScoreState(score?: AuthScoreState | null): AuthScoreState | nu
   return {
     totalXp,
     eventCount: Math.max(0, eventCount),
+  };
+}
+
+function normalizeReferralState(
+  referrals?: AuthReferralState | null,
+): AuthReferralState | null {
+  if (!referrals) return null;
+
+  const referredCount = Number(referrals.referredCount);
+  if (!Number.isFinite(referredCount)) return null;
+
+  return {
+    referredCount: Math.max(0, Math.trunc(referredCount)),
   };
 }
 
@@ -155,6 +170,7 @@ export function useAuth() {
     authState.user = null;
     authState.profile = null;
     authState.score = null;
+    authState.referrals = null;
     authState.permissions = [];
   }
 
@@ -169,11 +185,13 @@ export function useAuth() {
     user: AuthUser;
     profile?: AuthProfileState | null;
     score?: AuthScoreState | null;
+    referrals?: AuthReferralState | null;
     permissions: AuthGrantedPermission[];
   }) {
     authState.user = response.user;
     authState.profile = normalizeProfileState(response.user, response.profile);
     authState.score = normalizeScoreState(response.score);
+    authState.referrals = normalizeReferralState(response.referrals);
     authState.permissions = [...response.permissions];
   }
 
@@ -338,6 +356,7 @@ export function useAuth() {
     user: computed(() => authState.user),
     profile: computed(() => authState.profile),
     score: computed(() => authState.score),
+    referrals: computed(() => authState.referrals),
     totalXp,
     token: computed(() => authState.token),
     permissions: computed(() => authState.permissions),
