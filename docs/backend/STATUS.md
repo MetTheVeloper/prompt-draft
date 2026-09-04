@@ -13,10 +13,12 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 ```text
 Milestones 1–14: COMPLETE / locally verified
 Manage track: CLOSED FOR NOW
-Next candidate: XP / Score Event Ledger Foundation
+Milestone 15: XP / Score Event Ledger Foundation
+  -> IMPLEMENTED
+  -> LOCAL VERIFICATION PENDING
 ```
 
-The latest completed product change is the Progressive User Profile Foundation, including a verified real feature gate that requires email before Global Output Copy.
+The latest completed product change is the Progressive User Profile Foundation, including a verified real feature gate that requires email before Global Output Copy. Active work is now the XP / Score Event Ledger Foundation.
 
 ## Reusable guides
 
@@ -302,6 +304,40 @@ Detailed milestone:
 docs/backend/MILESTONE_14_PROGRESSIVE_USER_PROFILE.md
 ```
 
+## Milestone 15 — IN PROGRESS: XP / Score Event Ledger Foundation
+
+Current implementation:
+
+```text
+009_user_score_events.sql
+010_score_identity_triggers.sql
+append-only user_score_events ledger
+per-user idempotency keys
+existing-user XP backfill
+account created -> +1000 XP
+email added -> +1000 XP
+backend userScore.mjs reusable award/read service
+Auth responses expose score.totalXp + score.eventCount
+useAuth exposes score + totalXp
+Profile Menu displays localized XP
+```
+
+Current semantics:
+
+```text
+username-only account -> 1000 XP
+account with email -> 2000 XP
+adding email later -> +1000 exactly once
+```
+
+Future Draft create/update/share rewards are intentionally not wired until the ledger foundation is locally verified.
+
+Detailed milestone:
+
+```text
+docs/backend/MILESTONE_15_SCORE_LEDGER.md
+```
+
 ## Manage track closure
 
 The current Manage foundation remains complete and closed for now:
@@ -341,7 +377,8 @@ Examples currently deferred:
 phone/contact model + verification
 email verification/password recovery/OAuth
 user consent foundation (marketing / analytics / model training)
-XP / score ledger and gamification
+XP rewards for Draft create/update/share and broader gamification
+leaderboards / global rank
 referral relationships and referral codes
 analytics/event tracking
 site visits/page views/behavioral DAU
@@ -360,24 +397,19 @@ Email Requirement modal visual polish
 
 The temporary `persistence_probe` table remains non-product learning data and can be removed during a later cleanup step.
 
-## Next logical milestone
+## Next action
 
-Recommended next vertical slice:
+Milestone 15 requires local verification of schema application, backfill, new-account XP, email-completion XP, idempotency, persistence, EN/FA Profile Menu rendering, and final `pnpm generate`.
 
-```text
-XP / Score Event Ledger Foundation
-```
-
-Design goal:
+After the ledger foundation is verified, the next candidate vertical slice is Cloud Draft XP:
 
 ```text
-Do not make users.score += N the source of truth.
-Persist append-only score events with provenance and idempotency.
-Derive/cache total XP from those events.
-Allow future Draft saves, Wizard completion, referrals, streaks, publishing, campaigns, and other activities to award points through one reusable service.
+draft created        +50
+draft changed/saved  +10
+draft shared         +10
 ```
 
-A first real event can be attached to an existing durable user action, preferably Cloud Draft creation/save, after the ledger itself is verified.
+Exact anti-farming/idempotency semantics for repeated Draft updates must be defined before wiring those rewards.
 
 ## New-chat handoff
 
