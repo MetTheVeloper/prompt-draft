@@ -5,6 +5,7 @@ const { t, locale, setLocale } = useI18n();
 const { t: theme, switchTheme } = useTheme();
 const { mobile, tablet } = useScreen();
 const route = useRoute();
+const auth = useAuth();
 const { openPageContextMenu } = usePageContextMenu();
 
 const currentThemeMode = computed(() => {
@@ -17,6 +18,13 @@ const promptDetailMode = computed(() => {
     typeof route.query.id === "string" &&
     route.query.id.trim().length > 0
   );
+});
+
+const promptArchiveRoute = computed(() => route.name === "prompts");
+const canRenderPromptArchive = computed(() => {
+  if (!promptArchiveRoute.value) return true;
+
+  return auth.isLoggedIn.value && auth.hasProfileField("email");
 });
 
 const wizardMode = computed(() => {
@@ -168,7 +176,10 @@ function handleLayoutContextMenu(event: MouseEvent) {
       class="w100 ofha"
       :p="padding"
       @contextmenu="handleLayoutContextMenu">
-      <slot />
+      <PromptsPromptArchiveAccessGate
+        v-if="promptArchiveRoute && !canRenderPromptArchive"
+      />
+      <slot v-else />
     </el-flex>
 
     <CreateDraftCloudSyncButton v-if="route.name === 'create'" />
