@@ -8,6 +8,13 @@ import {
 import { promisify } from 'node:util'
 import { handleCloudDraftRequest } from './cloudDrafts.mjs'
 import { queryDatabase } from './database.mjs'
+import {
+  PERMISSIONS,
+  getAuthorizationPayload,
+  hasPermission,
+  normalizeUserRole,
+  resolvePermissionsForRole,
+} from './authorization.mjs'
 
 const scryptAsync = promisify(scrypt)
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -77,7 +84,15 @@ function mapUserRow(row) {
     id: row.id,
     username: row.username ?? null,
     email: row.email ?? null,
+    role: normalizeUserRole(row.role),
     createdAt: row.createdAt.toISOString(),
+  }
+}
+
+function createAuthorizationResponse(user) {
+  return {
+    user,
+    permissions: resolvePermissionsForRole(user.role),
   }
 }
 
@@ -89,6 +104,7 @@ async function findUserByIdentifier(identifier) {
         id,
         username,
         email,
+        role,
         password_hash AS "passwordHash",
         created_at AS "createdAt"
       FROM users
@@ -161,6 +177,7 @@ async function getUserForToken(token) {
         users.id,
         users.username,
         users.email,
+        users.role,
         users.created_at AS "createdAt"
       FROM auth_sessions
       INNER JOIN users ON users.id = auth_sessions.user_id
@@ -233,6 +250,72 @@ function sendIdentifierError(response, corsHeaders, sendJson) {
   )
 }
 
+async function handleAdminAccessCheck({
+  request,
+  response,
+  url,
+  corsHeaders,
+  sendJson,
+}) {
+  if (!url.pathname.startsWith('/api/admin/')) return false
+
+  let user
+
+  try {
+    user = await getAuthenticatedUser(request)
+  } catch (error) {
+    console.error('[Prompt Draft API] admin auth lookup failed', error)
+    sendJson(
+      response,
+      500,
+      { ok: false, message: 'Failed to authenticate request' },
+      corsHeaders,
+    )
+    return true
+  }
+
+  if (!user) {
+    sendJson(
+      response,
+      401,
+      { ok: false, message: 'Authentication required' },
+      corsHeaders,
+    )
+    return true
+  }
+
+  if (request.method === 'GET' && url.pathname === '/api/admin/access-check') {
+    const requiredPermission = PERMISSIONS.DASHBOARD_VIEW
+
+    if (!hasPermission(user, requiredPermission)) {
+      sendJson(
+        response,
+        403,
+        { ok: false, message: 'Forbidden' },
+        corsHeaders,
+      )
+      return true
+    }
+
+    const authorization = getAuthorizationPayload(user)
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        user,
+        permissions: authorization.permissions,
+        requiredPermission,
+      },
+      corsHeaders,
+    )
+    return true
+  }
+
+  sendJson(response, 404, { ok: false, message: 'Not Found' }, corsHeaders)
+  return true
+}
+
 export async function handleAuthRequest({
   request,
   response,
@@ -277,6 +360,10 @@ export async function handleAuthRequest({
       sendJson,
       user,
     })
+    return true
+  }
+
+  if (await handleAdminAccessCheck({ request, response, url, corsHeaders, sendJson })) {
     return true
   }
 
@@ -353,15 +440,21 @@ export async function handleAuthRequest({
         `
           INSERT INTO users (id, username, email, password_hash)
           VALUES ($1, $2, $3, $4)
-          RETURNING id, username, email, created_at AS "createdAt"
+          RETURNING id, username, email, role, created_at AS "createdAt"
         `,
         [userId, username, email, passwordHash],
       )
 
       const user = mapUserRow(result.rows[0])
       const token = await createSession(user.id)
+      const authorization = createAuthorizationResponse(user)
 
-      sendJson(response, 201, { ok: true, token, user }, corsHeaders)
+      sendJson(
+        response,
+        201,
+        { ok: true, token, ...authorization },
+        corsHeaders,
+      )
     } catch (error) {
       if (error?.code === '23505') {
         sendJson(response, 409, { ok: false, message: 'Account already exists' }, corsHeaders)
@@ -402,7 +495,14 @@ export async function handleAuthRequest({
 
       const user = mapUserRow(userRow)
       const token = await createSession(user.id)
-      sendJson(response, 200, { ok: true, token, user }, corsHeaders)
+      const authorization = createAuthorizationResponse(user)
+
+      sendJson(
+        response,
+        200,
+        { ok: true, token, ...authorization },
+        corsHeaders,
+      )
     } catch (error) {
       console.error('[Prompt Draft API] auth login failed', error)
       sendJson(response, 500, { ok: false, message: 'Failed to sign in' }, corsHeaders)
@@ -420,7 +520,12 @@ export async function handleAuthRequest({
         return true
       }
 
-      sendJson(response, 200, { ok: true, user }, corsHeaders)
+      sendJson(
+        response,
+        200,
+        { ok: true, ...createAuthorizationResponse(user) },
+        corsHeaders,
+      )
     } catch (error) {
       console.error('[Prompt Draft API] auth me failed', error)
       sendJson(response, 500, { ok: false, message: 'Failed to read account' }, corsHeaders)
