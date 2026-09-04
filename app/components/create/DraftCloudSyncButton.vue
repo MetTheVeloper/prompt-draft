@@ -4,7 +4,10 @@ import type {
   PromptDraftCollection,
   PromptDraftRecord,
 } from "~/modules/promptDraft.types";
-import type { UpsertPromptDraftInput } from "~/types/draftSyncApi";
+import type {
+  SyncedPromptDraftRecord,
+  UpsertPromptDraftInput,
+} from "~/types/draftSyncApi";
 import {
   createDraftFingerprint,
   getDraftState,
@@ -14,6 +17,8 @@ import {
 } from "~/utils/draftCloudSync";
 
 const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
+const CREATE_DRAFT_COLLECTION_REFRESH_EVENT =
+  "prompt-draft:create-editor:collection-refresh";
 const AUTOSYNC_INTERVAL_MS = 120_000;
 const STATUS_POLL_INTERVAL_MS = 1_000;
 const LOCAL_SAVE_SETTLE_MS = 450;
@@ -22,7 +27,7 @@ type DraftCloudStatus = "idle" | "dirty" | "syncing" | "synced" | "error";
 
 const { t } = useI18n();
 const auth = useAuth();
-const { upsertPromptDraft } = usePromptDraftApi();
+const { listPromptDrafts, upsertPromptDraft } = usePromptDraftApi();
 
 const teleportTarget = shallowRef<HTMLElement | null>(null);
 const activeStatus = ref<DraftCloudStatus>("idle");
@@ -115,6 +120,108 @@ function getActiveDraft(collection = readDraftCollection()) {
     collection.drafts[0] ||
     null
   );
+}
+
+function toLocalDraft(remote: SyncedPromptDraftRecord): PromptDraftRecord {
+  return {
+    ...remote.snapshot,
+    version: 1,
+    id: remote.id,
+    title: remote.title,
+    createdAt: remote.createdAt,
+    updatedAt: remote.updatedAt,
+  };
+}
+
+function timestamp(value: string) {
+  const parsed = Date.parse(value);
+  return Number.isNaN(parsed) ? 0 : parsed;
+}
+
+async function readAllCloudDrafts() {
+  const drafts: SyncedPromptDraftRecord[] = [];
+  let cursor: string | undefined;
+
+  do {
+    const response = await listPromptDrafts({
+      limit: 100,
+      ...(cursor ? { cursor } : {}),
+    });
+
+    drafts.push(...response.drafts);
+    cursor = response.pageInfo.nextCursor ?? undefined;
+
+    if (!response.pageInfo.hasMore) break;
+  } while (cursor);
+
+  return drafts;
+}
+
+async function restoreCloudDrafts() {
+  if (!import.meta.client) return;
+
+  const userId = currentUserId.value;
+  if (!userId) return;
+
+  let remoteDrafts: SyncedPromptDraftRecord[];
+
+  try {
+    remoteDrafts = await readAllCloudDrafts();
+  } catch (error) {
+    console.warn("[Prompt Draft] cloud draft restore failed; keeping local drafts", error);
+    return;
+  }
+
+  if (!remoteDrafts.length) return;
+
+  const collection = readDraftCollection() ?? {
+    version: 1 as const,
+    activeDraftId: null,
+    drafts: [],
+  };
+  const drafts = [...collection.drafts];
+  const newRemoteDrafts: PromptDraftRecord[] = [];
+
+  for (const remote of remoteDrafts) {
+    const remoteDraft = toLocalDraft(remote);
+    const existingIndex = drafts.findIndex((draft) => draft.id === remote.id);
+
+    if (existingIndex < 0) {
+      newRemoteDrafts.push(remoteDraft);
+    } else {
+      const localDraft = drafts[existingIndex];
+
+      if (timestamp(remoteDraft.updatedAt) >= timestamp(localDraft.updatedAt)) {
+        drafts.splice(existingIndex, 1, remoteDraft);
+      }
+    }
+
+    setDraftSyncEntry(userId, remote.id, {
+      fingerprint: createDraftFingerprint(remoteDraft),
+      syncedAt: remote.serverUpdatedAt,
+      revision: remote.revision,
+    });
+  }
+
+  const mergedDrafts = [...newRemoteDrafts, ...drafts];
+  const activeDraftId =
+    collection.activeDraftId &&
+    mergedDrafts.some((draft) => draft.id === collection.activeDraftId)
+      ? collection.activeDraftId
+      : mergedDrafts[0]?.id ?? null;
+
+  const mergedCollection: PromptDraftCollection = {
+    version: 1,
+    activeDraftId,
+    drafts: mergedDrafts,
+  };
+
+  localStorage.setItem(
+    DRAFT_COLLECTION_STORAGE_KEY,
+    JSON.stringify(mergedCollection),
+  );
+
+  window.dispatchEvent(new Event(CREATE_DRAFT_COLLECTION_REFRESH_EVENT));
 }
 
 function toUpsertInput(draft: PromptDraftRecord): UpsertPromptDraftInput {
@@ -275,6 +382,7 @@ function resolveTeleportTarget() {
 
 onMounted(async () => {
   await auth.initialize();
+  await restoreCloudDrafts();
   await nextTick();
   resolveTeleportTarget();
 
