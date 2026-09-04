@@ -151,9 +151,21 @@ Product boundary:
 - existing prompt-variable protection/restoration remains a frontend responsibility;
 - static generation remains mandatory.
 
-### Phase 1 — AWAITING USER VERIFICATION: Docker translator + backend API
+### Phase 1 — DONE: Docker translator + backend API
 
-Implemented for local verification:
+Locally verified by the user on 2026-09-04:
+
+```text
+translator container pulls and starts successfully
+translator reaches Docker healthy state
+GET /api/translate/status transitions to available:true after model startup
+en + fa languages are exposed
+POST /api/translate returns Persian -> English translation
+alternatives are returned
+backend returns 503 while translator is still unavailable during startup
+```
+
+Implemented contract:
 
 ```text
 translator service -> libretranslate/libretranslate:v1.9.6
@@ -165,18 +177,7 @@ GET  /api/translate/status
 POST /api/translate
 ```
 
-`POST /api/translate` contract:
-
-```json
-{
-  "text": "...",
-  "source": "auto | fa | en",
-  "target": "fa | en",
-  "alternatives": 0
-}
-```
-
-Defaults:
+`POST /api/translate` defaults:
 
 ```text
 source       -> auto
@@ -185,29 +186,35 @@ alternatives -> 3
 max text     -> 5000 characters
 ```
 
-The current frontend still calls the legacy Nuxt `/api/translate` route during Phase 1. It is intentionally not switched until the Docker/backend path is locally verified.
+### Phase 2 — AWAITING USER VERIFICATION: typed frontend migration
 
-### Phase 2 — NOT STARTED: typed frontend migration
-
-Planned:
+Implemented:
 
 ```text
-add translation types to frontend API boundary
-route usePromptTranslation through NUXT_PUBLIC_API_BASE / usePromptDraftApi
-use backend status endpoint for real service availability
-preserve variable token protection + translation options UI
+app/types/translationApi.ts
+usePromptDraftApi.getTranslationStatus()
+usePromptDraftApi.translatePrompt()
+usePromptTranslation routes through NUXT_PUBLIC_API_BASE -> backend :4000
+shared cached translation health state (30-second TTL)
+translation composables check service status on client setup
+translation calls are gated by backend health
+existing variable token protection/restoration preserved
+existing translation alternatives/result modal preserved
 ```
 
-### Phase 3 — NOT STARTED: retire Nuxt translation proxy + regression
+The legacy Nuxt `server/api/translate.post.ts` still exists during Phase 2, but the prompt translation composable no longer calls it.
+
+### Phase 3 — NOT STARTED: retire Nuxt translation proxy + final UI/regression
 
 Planned:
 
 ```text
 remove server/api/translate.post.ts
-verify text-field action in real UI
-verify translator unavailable behavior
+wire visible Translate action disabled/enabled state to real backend health
+verify translator unavailable/recovery behavior in the menu
+verify anonymous translation
 verify pnpm generate
-update milestone docs
+update milestone docs and close Milestone 7
 ```
 
 ## Current intentional debt / deferred work
@@ -231,7 +238,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify Milestone 7 Phase 1. Do not mark it `DONE` until the user confirms the Docker translator reaches healthy state and the backend status/translation endpoints work.
+Locally verify Milestone 7 Phase 2 from the real text-field Translate action. Do not mark Phase 2 `DONE` until the user confirms browser requests go directly to backend `:4000` and the existing translation UI still works.
 
 ## New-chat handoff
 
