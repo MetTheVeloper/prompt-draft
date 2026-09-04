@@ -8,172 +8,129 @@ This directory is the source of truth for backend and Docker integration work in
 
 The backend remains intentionally independent from Nuxt server routes. Prompt Draft can continue to use its static-generation frontend workflow while the backend is developed and deployed separately.
 
-## Milestone 1 — complete
+## Reusable API guide
 
-Established the local Dockerized Node API path from Nuxt development frontend to `:4000`.
+New backend features should follow:
 
-## Milestone 2 — complete
+```text
+docs/backend/API_GUIDE.md
+```
 
-Established JSON POST parsing, validation, CORS/preflight, temporary Wizard-run state, and browser integration.
+That guide captures the reusable implementation path learned from the Docker/PostgreSQL and Wizard-run milestones: resource design, numbered SQL files, parameterized DB functions, HTTP validation/CORS, typed frontend clients, local-first failure semantics, direct UI verification, and the static-generation invariant.
 
-## Milestone 3 — complete
+## Milestones 1–5 — complete
 
-Replaced temporary Wizard-run memory with durable PostgreSQL persistence.
-
-Verified architecture:
+The completed backend learning/product path established:
 
 ```text
 Nuxt/client
   -> Docker API :4000
   -> Node HTTP server
   -> pg connection pool
-  -> Compose service db:5432
-  -> PostgreSQL wizard_runs
-  -> /var/lib/postgresql/data
+  -> PostgreSQL
   -> Docker named volume prompt_draft_pgdata
 ```
 
-## Milestone 4 — complete
-
-Persistence is integrated with the real Wizard success flow rather than a development Home hook.
-
-Verified product path:
+It also verified a real product vertical slice:
 
 ```text
-Portrait Wizard finish()
-  -> runtime.complete(session)
-  -> successful finalDraft + promptPreview
-  -> typed frontend API client
+Portrait Wizard finish
   -> POST /api/wizard-runs
-  -> PostgreSQL
-  -> named volume
+  -> durable PostgreSQL row
+  -> paginated History API
+  -> /history
+  -> /history?run=<uuid>
 ```
 
-The production snapshot contract is versioned as v1:
+Verified capabilities include:
 
-```json
-{
-  "schemaVersion": 1,
-  "session": {
-    "currentStepId": "review",
-    "answers": {},
-    "derived": {}
-  },
-  "finalDraft": {
-    "version": 1
-  }
-}
-```
+- direct browser CORS/preflight;
+- structured JSON validation/errors;
+- server-owned historical UUIDs;
+- PostgreSQL named-volume durability;
+- parameterized SQL;
+- typed frontend API contracts;
+- cursor pagination;
+- summary/detail separation;
+- graceful backend failure states;
+- English/Persian History UI;
+- static generation with `pnpm generate`.
 
-`wizardId`, `wizardVersion`, compiled `output`, run `id`, and `createdAt` remain first-class run fields outside the snapshot.
+Wizard-run History remains available as a verified example, but it is not the model for every product resource. Editable resources should use stable identities and update/sync semantics rather than append a new historical row for every save.
 
-The frontend API base is configurable through:
+## Milestone 6 — in progress: Cloud Draft Sync
+
+Milestone 6 applies the reusable API guide to a product-useful resource: the drafts already edited and stored locally by `/create`.
+
+Current local behavior already provides:
 
 ```text
-NUXT_PUBLIC_API_BASE
-  -> runtimeConfig.public.apiBase
-  -> usePromptDraftApi()
+prompt-draft:create-editor:drafts:v1
+  -> activeDraftId
+  -> PromptDraftRecord[]
+  -> stable draft-* ids
+  -> createdAt / updatedAt
+  -> debounced local autosave
 ```
 
-Static generation remains supported. The real Wizard persistence path was verified in the browser and directly in PostgreSQL, including Docker named-volume durability.
+Milestone 6 keeps that local persistence as the working source of truth and adds a durable server mirror.
 
-Persistence failure is intentionally non-destructive: if prompt generation succeeds but history storage is unavailable, the Ready artifact remains usable and the user sees a persistence warning.
-
-## Milestone 5 — complete: History / Read API + UX
-
-Stored successful Wizard runs now have a real read-only History product surface.
-
-Verified product path:
+Target behavior:
 
 ```text
-successful Wizard runs
-  -> durable PostgreSQL records
-  -> paginated summary collection API
-  -> full run detail API
-  -> typed frontend read boundary
-  -> static-compatible History UI
+/create edit
+  -> existing fast local save
+  -> draft becomes dirty for cloud sync
+  -> manual FAB or two-minute autosync
+  -> PUT /api/drafts/:draftId
+  -> PostgreSQL prompt_drafts
+  -> same draft id updates the same row
 ```
 
-Current API surface:
+Current API contract:
 
 ```text
-GET /api/wizard-runs
-  -> newest-first paginated summaries
-  -> limit
-  -> opaque cursor
-  -> optional wizardId filter
+PUT /api/drafts/:id
+  -> idempotent create/update of one stable local draft
 
-GET /api/wizard-runs/:id
-  -> one full historical run
-  -> output + snapshot
+GET /api/drafts/:id
+  -> read back the stored server copy
 ```
 
-Canonical list ordering is stable newest-first ordering by both timestamp and id:
+The server stores queryable metadata separately from the canonical draft snapshot:
 
 ```text
-created_at DESC, id DESC
+draft_id
+ title
+ created_at
+ client_updated_at
+ server_updated_at
+ revision
+ snapshot JSONB
 ```
 
-Pagination uses opaque keyset cursors. Collection rows are summary-only; full `output` and `snapshot` are returned only by the detail endpoint.
+The browser keeps cloud-sync metadata in a separate localStorage key so server metadata does not pollute the existing draft JSON export/import contract.
 
-The frontend typed read boundary exposes:
+Autosync is dirty-aware rather than a blind interval write. A content fingerprint is compared with the last successful sync; unchanged drafts are skipped. Every two minutes the client scans locally saved drafts and uploads only dirty records. The FAB next to Drafts forces an immediate save of the active draft.
 
-```text
-listWizardRuns(params)
-getWizardRun(id)
-```
+If the API is unavailable, existing local draft saving remains usable. Server sync failure is surfaced as sync state and can be retried.
 
-with separate summary and full-record TypeScript contracts.
+### Intentionally deferred from Milestone 6 MVP
 
-The History UI uses one static route shell:
+- authentication and user ownership;
+- multi-device merge/conflict resolution;
+- enforcing optimistic revision conflicts;
+- server-to-local restore/import;
+- server-side delete semantics;
+- remote draft collection/list UI.
 
-```text
-/history
-/history?run=<uuid>
-```
+The server already returns a monotonically increasing `revision` so a later conflict policy can build on the contract without changing the local draft state shape.
 
-The query-based detail state is intentional. Arbitrary future UUIDs are unknown at `pnpm generate` time, so the product does not depend on a dynamic `/history/:id` static route or on deployment-specific SPA fallback behavior.
-
-Verified History behavior includes:
-
-- History navigation entry;
-- newest-first persisted summaries;
-- full historical detail;
-- compiled prompt display;
-- Copy prompt clipboard action;
-- read-only stored snapshot disclosure;
-- graceful API-down error state;
-- retry recovery after API restart;
-- English/Persian localization;
-- successful `pnpm generate` with `/history` included in generated routes.
-
-History detail is intentionally not Wizard restore. Stored snapshots are displayed read-only and are not executed/restored into the current Wizard runtime.
-
-Authentication and user ownership remain deferred.
-
-### Milestone 5 phases
-
-```text
-Phase 0  contract freeze                         DONE
-Phase 1  GET /api/wizard-runs/:id               DONE
-Phase 2  cursor-paginated summary collection    DONE
-Phase 3  wizardId filtering                     DONE
-Phase 4  typed frontend read client             DONE
-Phase 5  /history + query-based detail UX       DONE
-Phase 6  full local E2E + documentation         DONE
-```
-
-Milestone 5 is COMPLETE.
-
-## Still deferred
+## Still deferred platform work
 
 - authentication;
 - users/user ownership;
-- Wizard restore/resume from historical runs;
-- delete/rename/favorite history features;
-- product-level Wizard filter UI/catalog;
-- arbitrary history search/sorting/date filtering;
-- production migrations strategy;
+- production migration framework;
 - Redis;
 - VPS deployment;
 - production domain/HTTPS;
@@ -183,20 +140,19 @@ A temporary `persistence_probe` table remains from the volume-learning phase and
 
 ## Documentation workflow
 
-`README.md` explains purpose, boundaries, and completed milestone scope.
+`README.md` explains purpose, boundaries, and milestone scope.
 
-`IMPLEMENTATION.md` contains implementation sequence, verified architecture, API contracts, and technical decisions/debt.
+`IMPLEMENTATION.md` contains concrete implementation decisions and verification sequence.
 
 `STATUS.md` records what has actually been verified and what should happen next.
 
+`API_GUIDE.md` is the reusable playbook for building future APIs without repeating the learning process.
+
 A phase is marked `DONE` only after the user runs the relevant behavior locally and confirms the result. Code creation alone is not sufficient.
 
-## Next action
+For a new chat, read:
 
-Milestone 5 is closed. Await the user's explicit next milestone scope before making further backend/product changes.
-
-For a new chat, read these three files before making backend changes:
-
+- `docs/backend/API_GUIDE.md`
 - `docs/backend/README.md`
 - `docs/backend/IMPLEMENTATION.md`
 - `docs/backend/STATUS.md`
