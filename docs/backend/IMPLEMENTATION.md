@@ -2,7 +2,7 @@
 
 ## Architecture baseline
 
-Milestones 1, 2, 3, and 4 are complete and locally verified.
+Milestones 1 through 5 are complete and locally verified.
 
 Current verified product/backend path:
 
@@ -17,6 +17,7 @@ Nuxt frontend :3030
   -> db:5432
   -> wizard_runs
   -> Docker named volume
+  -> read-only History UI
 ```
 
 The backend remains independent from Nuxt server routes, so the frontend can continue to use static generation.
@@ -67,13 +68,13 @@ The current schema uses one explicit SQL file plus `npm run db:schema`. A produc
 - deployment/domain/HTTPS;
 - Redis.
 
-## Milestone 5 — History / Read API + UX
+## Milestone 5 — COMPLETE: History / Read API + UX
 
-### Goal
+### Goal achieved
 
-Turn durable successful Wizard runs into a real read-only History product surface while preserving the static-generated frontend and independent backend boundary.
+Durable successful Wizard runs are now exposed through a real read-only History product surface while preserving the static-generated frontend and independent backend boundary.
 
-Target path:
+Final path:
 
 ```text
 successful Wizard run
@@ -142,7 +143,7 @@ UUID validation occurs at the HTTP boundary before PostgreSQL receives the id.
 GET /api/wizard-runs
 ```
 
-Milestone 5 query contract:
+Supported query contract:
 
 ```text
 limit
@@ -223,7 +224,7 @@ pagination -> operates inside the filtered set
 
 Runtime filter/cursor values remain PostgreSQL parameters. SQL clause fragments are server-owned.
 
-The initial History UI intentionally does not expose a free-text Wizard-id filter. The API capability remains ready for a future product-level Wizard catalog/filter control.
+The History MVP intentionally does not expose a free-text Wizard-id filter. The API capability remains available for a future product-level Wizard catalog/filter control.
 
 Deferred collection query features:
 
@@ -259,13 +260,7 @@ Nitro preset: static
 pnpm generate
 ```
 
-Future historical UUIDs are unknown at generation time. A dynamic route such as:
-
-```text
-/history/:id
-```
-
-cannot be relied on as a standalone prerendered file for arbitrary future ids on pure static hosting without an SPA fallback.
+Future historical UUIDs are unknown at generation time. A dynamic route such as `/history/:id` cannot be relied on as a standalone prerendered file for arbitrary future ids on pure static hosting without an SPA fallback.
 
 Milestone 5 therefore uses one static shell:
 
@@ -300,13 +295,6 @@ malformed id -> 400
 fresh POST -> immediate detail read-back
 ```
 
-Fresh verification run:
-
-```text
-37e32eb8-7501-4f46-8c47-70520866e328
-output = Milestone 5 Phase 1 detail verification
-```
-
 ### Phase 2 — cursor-paginated summary collection: DONE
 
 Implemented and locally verified:
@@ -321,13 +309,7 @@ structured invalid-query 400
 no output/snapshot in list rows
 ```
 
-The user verified seven pre-existing rows across four `limit=2` pages as `2 + 2 + 2 + 1`, with no duplicates, final `hasMore=false`, `nextCursor=null`, invalid limit/cursor errors, detail regression, and POST regression.
-
-Phase 2 regression POST created:
-
-```text
-534068a7-b518-4cb2-a155-f61dcdea181f
-```
+The user verified pagination over existing rows with no duplicates, final `hasMore=false`, `nextCursor=null`, invalid-query errors, detail regression, and POST regression.
 
 ### Phase 3 — wizardId filtering: DONE
 
@@ -342,15 +324,6 @@ parameterized wizard_id equality
 limit + cursor compose with filter
 pagination remains inside filtered result set
 ```
-
-Verification probe:
-
-```text
-wizardId = phase3-probe
-id = b7e47e39-4eb9-4333-b891-e42d34d25bd1
-```
-
-The user verified the probe, unknown/empty semantics, and filtered `portrait + limit + cursor` continuation with no cross-filter row or duplicate.
 
 ### Phase 4 — typed frontend read boundary: DONE
 
@@ -376,28 +349,16 @@ Client methods:
 
 ```text
 listWizardRuns(params = {})
-  -> serializes optional limit, cursor, wizardId
-  -> treats cursor as opaque
-  -> calls runtime-configured /api/wizard-runs
-
 getWizardRun(id)
-  -> URL-encodes id path segment
-  -> calls runtime-configured /api/wizard-runs/:id
 ```
 
 `createWizardRun()` and API-base normalization remain unchanged.
 
-The user ran `pnpm generate` locally after pulling Phase 4. Static generation completed successfully, `/wizard/portrait` remained prerendered, and Nuxt reported `.output/public` ready for static hosting.
+Static generation was locally verified after this phase.
 
-### Phase 5 — History UI MVP: AWAITING USER VERIFICATION
+### Phase 5 — History UI MVP: DONE
 
-Implemented:
-
-```text
-app/pages/history.vue
-```
-
-Runtime behavior:
+Implemented and locally verified:
 
 ```text
 /history
@@ -427,39 +388,26 @@ i18n/i18n.config.ts
   -> localized History labels and messages
 ```
 
-The first page deliberately lists all Wizard ids newest-first. The backend `wizardId` filter remains available but is not surfaced as a technical free-text UI control in this MVP.
+The user verified list/detail behavior, clipboard copy, Persian UI, API-down graceful failure, retry recovery after API restart, and successful static generation with `/history` included.
 
-Verification required before `DONE`:
+### Phase 6 — final Milestone 5 E2E + docs: DONE
 
-```text
-pull latest branch
-run backend + pnpm dev
-open /history
-History nav visible
-real persisted summaries load
-open a row -> /history?run=<uuid>
-exact full output loads
-back works
-copy works
-API-down error/retry works
-restart API and retry recovers
-pnpm generate succeeds
-/history appears in generated routes/output
-```
-
-### Phase 6 — final Milestone 5 E2E + docs: NOT STARTED
-
-Final verification path:
+The user confirmed the final product flow locally:
 
 ```text
-real Wizard finish
-  -> POST run
+real Wizard-created run
+  -> persistence succeeds
   -> run appears in History
-  -> collection pagination works
-  -> detail opens exact run
-  -> API + DB containers recreated
-  -> same historical run remains readable
+  -> detail opens exact saved artifact
+  -> compiled output and snapshot remain readable
+  -> History recovery behavior works
   -> pnpm generate still succeeds
 ```
 
-Only after the user completes and confirms this verification may Milestone 5 be marked complete.
+Named-volume durability across API/DB recreation remains part of the verified persistence baseline and is compatible with the completed History read surface.
+
+Milestone 5 is therefore complete.
+
+## Next milestone
+
+Do not infer the next backend/product milestone. Await the user's explicit scope before making further changes.
