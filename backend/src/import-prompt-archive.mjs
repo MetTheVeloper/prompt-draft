@@ -27,17 +27,13 @@ async function firstExistingPath(relativeCandidates) {
       }
     }
   }
-
   throw new Error(`Archive source file not found: ${relativeCandidates.join(' or ')}`)
 }
 
 function loadTrustedLocaleObject(source, filePath) {
   const marker = 'export default'
   const markerIndex = source.indexOf(marker)
-  if (markerIndex < 0) {
-    throw new Error(`Locale file has no default export: ${filePath}`)
-  }
-
+  if (markerIndex < 0) throw new Error(`Locale file has no default export: ${filePath}`)
   const objectExpression = source.slice(markerIndex + marker.length).trim()
   try {
     return Function(`"use strict"; return (${objectExpression.replace(/;\s*$/, '')});`)()
@@ -51,16 +47,12 @@ function readByPath(object, keyPath) {
 }
 
 function requireString(value, label) {
-  if (typeof value !== 'string' || !value.trim()) {
-    throw new Error(`${label} must be a non-empty string`)
-  }
+  if (typeof value !== 'string' || !value.trim()) throw new Error(`${label} must be a non-empty string`)
   return value
 }
 
 function requireInteger(value, label) {
-  if (!Number.isInteger(value)) {
-    throw new Error(`${label} must be an integer`)
-  }
+  if (!Number.isInteger(value)) throw new Error(`${label} must be an integer`)
   return value
 }
 
@@ -74,12 +66,8 @@ function requireStringArray(value, label) {
 function normalizeTags(tags, itemId) {
   const canonical = tags.map((tag) => tag.trim().toLowerCase())
   const changed = tags.find((tag, index) => tag !== canonical[index])
-  if (changed) {
-    throw new Error(`Item ${itemId} tag is not already canonical: ${JSON.stringify(changed)}`)
-  }
-  if (new Set(canonical).size !== canonical.length) {
-    throw new Error(`Item ${itemId} contains duplicate tags`)
-  }
+  if (changed) throw new Error(`Item ${itemId} tag is not already canonical: ${JSON.stringify(changed)}`)
+  if (new Set(canonical).size !== canonical.length) throw new Error(`Item ${itemId} contains duplicate tags`)
   return canonical
 }
 
@@ -94,12 +82,41 @@ function validateVariant(variant, itemId, index) {
   return variant
 }
 
+function normalizeImageRecords(images, telegramMessageId, normalizedSnapshot) {
+  if (!Array.isArray(images)) throw new Error(`Item ${telegramMessageId}.images must be an array`)
+
+  if (!normalizedSnapshot) {
+    return requireStringArray(images, `Item ${telegramMessageId}.images`).map((fullUrl, position) => ({
+      position,
+      fullUrl,
+      thumbnailUrl: fullUrl,
+      normalizedSnapshot: false,
+    }))
+  }
+
+  return images.map((image, index) => {
+    if (!image || typeof image !== 'object' || Array.isArray(image)) {
+      throw new Error(`Item ${telegramMessageId}.images[${index}] must be an object`)
+    }
+    const position = requireInteger(image.position, `Item ${telegramMessageId}.images[${index}].position`)
+    if (position !== index) {
+      throw new Error(`Item ${telegramMessageId} image positions must be contiguous from zero`)
+    }
+    const fullUrl = requireString(image.fullUrl, `Item ${telegramMessageId}.images[${index}].fullUrl`)
+    const thumbnailUrl = typeof image.thumbnailUrl === 'string' && image.thumbnailUrl.trim()
+      ? image.thumbnailUrl
+      : fullUrl
+    return { position, fullUrl, thumbnailUrl, normalizedSnapshot: true }
+  })
+}
+
 function normalizeArchivePayload(payload, enMessages, faMessages) {
   if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
     throw new Error('Archive payload must be an object')
   }
 
   const schemaVersion = requireInteger(payload.schemaVersion, 'schemaVersion')
+  const normalizedSnapshot = schemaVersion >= 3
   const channel = requireString(payload.channel, 'channel')
   const updatedAt = requireString(payload.updatedAt, 'updatedAt')
   const modelHistory = Array.isArray(payload.modelHistory) ? payload.modelHistory : null
@@ -117,11 +134,20 @@ function normalizeArchivePayload(payload, enMessages, faMessages) {
     if (seenIds.has(telegramMessageId)) throw new Error(`Duplicate Telegram message id ${telegramMessageId}`)
     seenIds.add(telegramMessageId)
 
-    const titleKey = requireString(item.titleKey, `Item ${telegramMessageId}.titleKey`)
-    const titleEn = readByPath(enMessages, titleKey)
-    const titleFa = readByPath(faMessages, titleKey)
-    requireString(titleEn, `Resolved EN title for ${titleKey}`)
-    requireString(titleFa, `Resolved FA title for ${titleKey}`)
+    let titleKey = null
+    let titleEn
+    let titleFa
+    if (normalizedSnapshot) {
+      titleEn = requireString(item.title?.en, `Item ${telegramMessageId}.title.en`)
+      titleFa = requireString(item.title?.fa, `Item ${telegramMessageId}.title.fa`)
+      titleKey = typeof item.titleKey === 'string' && item.titleKey.trim() ? item.titleKey : null
+    } else {
+      titleKey = requireString(item.titleKey, `Item ${telegramMessageId}.titleKey`)
+      titleEn = readByPath(enMessages, titleKey)
+      titleFa = readByPath(faMessages, titleKey)
+      requireString(titleEn, `Resolved EN title for ${titleKey}`)
+      requireString(titleFa, `Resolved FA title for ${titleKey}`)
+    }
 
     const publishedAt = requireString(item.publishedAt, `Item ${telegramMessageId}.publishedAt`)
     if (Number.isNaN(Date.parse(publishedAt))) {
@@ -136,7 +162,7 @@ function normalizeArchivePayload(payload, enMessages, faMessages) {
       item.model?.optimizedFor,
       `Item ${telegramMessageId}.model.optimizedFor`,
     )
-    const images = requireStringArray(item.images, `Item ${telegramMessageId}.images`)
+    const images = normalizeImageRecords(item.images, telegramMessageId, normalizedSnapshot)
     const tags = normalizeTags(
       requireStringArray(item.tags, `Item ${telegramMessageId}.tags`),
       telegramMessageId,
@@ -161,7 +187,7 @@ function normalizeArchivePayload(payload, enMessages, faMessages) {
     }
   })
 
-  return { schemaVersion, channel, updatedAt, modelHistory, items }
+  return { schemaVersion, channel, updatedAt, modelHistory, items, normalizedSnapshot }
 }
 
 function mimeTypeFromPath(sourcePath) {
@@ -198,7 +224,6 @@ async function assertLegacyImporterStillOwnsImportedRows(client) {
     ORDER BY telegram_message_id
     LIMIT 20
   `)
-
   if (!result.rows.length) return
 
   const ids = result.rows.map((row) => row.telegram_message_id).join(', ')
@@ -230,11 +255,9 @@ async function importArchive(client, source) {
     const canonicalTags = [...new Set(source.items.flatMap((item) => item.tags))].sort()
     for (const slug of canonicalTags) {
       await client.query(
-        `
-          INSERT INTO prompt_archive_tags (id, slug, source_kind)
-          VALUES ($1, $2, 'legacy_json')
-          ON CONFLICT (slug) DO NOTHING
-        `,
+        `INSERT INTO prompt_archive_tags (id, slug, source_kind)
+         VALUES ($1, $2, 'legacy_json')
+         ON CONFLICT (slug) DO NOTHING`,
         [randomUUID(), slug],
       )
     }
@@ -268,71 +291,55 @@ async function importArchive(client, source) {
           RETURNING id
         `,
         [
-          randomUUID(),
-          item.telegramMessageId,
-          source.channel,
-          JSON.stringify(item.title),
-          item.titleKey,
-          item.sourceTitle,
-          item.telegramUrl,
-          item.publishedAt,
-          item.prompt,
-          item.previewGeneratedWith,
-          item.optimizedFor,
-          JSON.stringify(item.variants),
+          randomUUID(), item.telegramMessageId, source.channel, JSON.stringify(item.title), item.titleKey,
+          item.sourceTitle, item.telegramUrl, item.publishedAt, item.prompt, item.previewGeneratedWith,
+          item.optimizedFor, JSON.stringify(item.variants),
         ],
       )
 
       const archiveItemId = itemResult.rows[0].id
-
-      await client.query(
-        'DELETE FROM prompt_archive_item_tags WHERE archive_item_id = $1',
-        [archiveItemId],
-      )
+      await client.query('DELETE FROM prompt_archive_item_tags WHERE archive_item_id = $1', [archiveItemId])
       if (item.tags.length) {
         await client.query(
-          `
-            INSERT INTO prompt_archive_item_tags (archive_item_id, tag_id)
-            SELECT $1, id
-            FROM prompt_archive_tags
-            WHERE slug = ANY($2::text[])
-          `,
+          `INSERT INTO prompt_archive_item_tags (archive_item_id, tag_id)
+           SELECT $1, id FROM prompt_archive_tags WHERE slug = ANY($2::text[])`,
           [archiveItemId, item.tags],
         )
       }
 
-      for (const [position, sourcePath] of item.images.entries()) {
+      for (const image of item.images) {
+        const fullUrl = image.normalizedSnapshot ? image.fullUrl : null
+        const thumbnailUrl = image.normalizedSnapshot ? image.thumbnailUrl : null
         await client.query(
           `
             INSERT INTO prompt_archive_images (
-              id, archive_item_id, position, source_path, mime_type, updated_at
+              id, archive_item_id, position, source_path, full_url, thumbnail_url, mime_type, updated_at
             )
-            VALUES ($1, $2, $3, $4, $5, NOW())
+            VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
             ON CONFLICT (archive_item_id, position) DO UPDATE SET
               source_path = EXCLUDED.source_path,
+              full_url = COALESCE(EXCLUDED.full_url, prompt_archive_images.full_url),
+              thumbnail_url = COALESCE(EXCLUDED.thumbnail_url, prompt_archive_images.thumbnail_url),
               mime_type = EXCLUDED.mime_type,
               updated_at = NOW()
           `,
-          [randomUUID(), archiveItemId, position, sourcePath, mimeTypeFromPath(sourcePath)],
+          [
+            randomUUID(), archiveItemId, image.position, image.fullUrl,
+            fullUrl, thumbnailUrl, mimeTypeFromPath(image.fullUrl),
+          ],
         )
       }
 
       await client.query(
-        `
-          DELETE FROM prompt_archive_images
-          WHERE archive_item_id = $1
-            AND position >= $2
-        `,
+        `DELETE FROM prompt_archive_images WHERE archive_item_id = $1 AND position >= $2`,
         [archiveItemId, item.images.length],
       )
     }
 
     await client.query(
-      `
-        DELETE FROM prompt_archive_items
-        WHERE source_kind = 'legacy_json'
-          AND NOT (telegram_message_id = ANY($1::int[]))
-      `,
+      `DELETE FROM prompt_archive_items
+       WHERE source_kind = 'legacy_json'
+         AND NOT (telegram_message_id = ANY($1::int[]))`,
       [source.items.map((item) => item.telegramMessageId)],
     )
 
@@ -340,9 +347,7 @@ async function importArchive(client, source) {
       DELETE FROM prompt_archive_tags t
       WHERE t.source_kind = 'legacy_json'
         AND NOT EXISTS (
-          SELECT 1
-          FROM prompt_archive_item_tags it
-          WHERE it.tag_id = t.id
+          SELECT 1 FROM prompt_archive_item_tags it WHERE it.tag_id = t.id
         )
     `)
 
@@ -356,27 +361,10 @@ async function importArchive(client, source) {
 async function buildParityReport(client, source) {
   const sourceTelegramIds = source.items.map((item) => item.telegramMessageId)
   const [metadataResult, itemsResult, tagsResult, imagesResult, catalogResult] = await Promise.all([
+    client.query(`SELECT schema_version, channel, source_updated_at, model_history FROM prompt_archive_metadata WHERE id = 1`),
     client.query(`
-      SELECT schema_version, channel, source_updated_at, model_history
-      FROM prompt_archive_metadata
-      WHERE id = 1
-    `),
-    client.query(`
-      SELECT
-        id,
-        telegram_message_id,
-        channel,
-        titles,
-        legacy_title_key,
-        source_title,
-        telegram_url,
-        published_at,
-        prompt,
-        preview_model,
-        optimized_for,
-        variants,
-        status,
-        source_kind
+      SELECT id, telegram_message_id, channel, titles, legacy_title_key, source_title, telegram_url,
+             published_at, prompt, preview_model, optimized_for, variants, status, source_kind
       FROM prompt_archive_items
       WHERE source_kind = 'legacy_json'
       ORDER BY telegram_message_id
@@ -390,7 +378,7 @@ async function buildParityReport(client, source) {
       ORDER BY i.telegram_message_id, t.slug
     `),
     client.query(`
-      SELECT i.telegram_message_id, pi.position, pi.source_path
+      SELECT i.telegram_message_id, pi.position, pi.source_path, pi.full_url, pi.thumbnail_url
       FROM prompt_archive_images pi
       JOIN prompt_archive_items i ON i.id = pi.archive_item_id
       WHERE i.source_kind = 'legacy_json'
@@ -420,32 +408,16 @@ async function buildParityReport(client, source) {
   }
 
   const metadata = metadataResult.rows[0]
-  if (!metadata || metadata.schema_version !== source.schemaVersion) {
-    addMismatch(report, 'metadata.schemaVersion', 'archive', source.schemaVersion, metadata?.schema_version)
-  }
-  if (!metadata || metadata.channel !== source.channel) {
-    addMismatch(report, 'metadata.channel', 'archive', source.channel, metadata?.channel)
-  }
-  if (!metadata || metadata.source_updated_at !== source.updatedAt) {
-    addMismatch(report, 'metadata.updatedAt', 'archive', source.updatedAt, metadata?.source_updated_at)
-  }
-  if (!metadata || !sameJson(metadata.model_history, source.modelHistory)) {
-    addMismatch(report, 'metadata.modelHistory', 'archive', source.modelHistory, metadata?.model_history)
-  }
+  if (!metadata || metadata.schema_version !== source.schemaVersion) addMismatch(report, 'metadata.schemaVersion', 'archive', source.schemaVersion, metadata?.schema_version)
+  if (!metadata || metadata.channel !== source.channel) addMismatch(report, 'metadata.channel', 'archive', source.channel, metadata?.channel)
+  if (!metadata || metadata.source_updated_at !== source.updatedAt) addMismatch(report, 'metadata.updatedAt', 'archive', source.updatedAt, metadata?.source_updated_at)
+  if (!metadata || !sameJson(metadata.model_history, source.modelHistory)) addMismatch(report, 'metadata.modelHistory', 'archive', source.modelHistory, metadata?.model_history)
 
-  if (itemsResult.rows.length !== source.items.length) {
-    addMismatch(report, 'itemCount', 'archive', source.items.length, itemsResult.rows.length)
-  }
-
+  if (itemsResult.rows.length !== source.items.length) addMismatch(report, 'itemCount', 'archive', source.items.length, itemsResult.rows.length)
   const actualTelegramIds = itemsResult.rows.map((row) => row.telegram_message_id).sort((a, b) => a - b)
   const expectedTelegramIds = sourceTelegramIds.slice().sort((a, b) => a - b)
-  if (!sameJson(actualTelegramIds, expectedTelegramIds)) {
-    addMismatch(report, 'telegramIds', 'archive', expectedTelegramIds, actualTelegramIds)
-  }
-
-  if (!sameJson(actualCatalog, expectedCatalog)) {
-    addMismatch(report, 'canonicalTags', 'archive', expectedCatalog, actualCatalog)
-  }
+  if (!sameJson(actualTelegramIds, expectedTelegramIds)) addMismatch(report, 'telegramIds', 'archive', expectedTelegramIds, actualTelegramIds)
+  if (!sameJson(actualCatalog, expectedCatalog)) addMismatch(report, 'canonicalTags', 'archive', expectedCatalog, actualCatalog)
 
   const rowsByTelegramId = new Map(itemsResult.rows.map((row) => [row.telegram_message_id, row]))
   const tagsByTelegramId = new Map()
@@ -457,7 +429,7 @@ async function buildParityReport(client, source) {
   const imagesByTelegramId = new Map()
   for (const row of imagesResult.rows) {
     const list = imagesByTelegramId.get(row.telegram_message_id) ?? []
-    list.push(row.source_path)
+    list.push(row)
     imagesByTelegramId.set(row.telegram_message_id, list)
   }
 
@@ -472,14 +444,10 @@ async function buildParityReport(client, source) {
     if (row.source_title !== item.sourceTitle) addMismatch(report, 'sourceTitles', item.telegramMessageId, item.sourceTitle, row.source_title)
     if (row.telegram_url !== item.telegramUrl) addMismatch(report, 'telegramUrls', item.telegramMessageId, item.telegramUrl, row.telegram_url)
     if (row.prompt !== item.prompt) addMismatch(report, 'promptBodies', item.telegramMessageId, item.prompt, row.prompt)
-    if (new Date(row.published_at).getTime() !== new Date(item.publishedAt).getTime()) {
-      addMismatch(report, 'publishedDates', item.telegramMessageId, item.publishedAt, row.published_at)
-    }
+    if (new Date(row.published_at).getTime() !== new Date(item.publishedAt).getTime()) addMismatch(report, 'publishedDates', item.telegramMessageId, item.publishedAt, row.published_at)
     if (row.preview_model !== item.previewGeneratedWith || !sameJson(row.optimized_for, item.optimizedFor)) {
       addMismatch(
-        report,
-        'modelFields',
-        item.telegramMessageId,
+        report, 'modelFields', item.telegramMessageId,
         { previewGeneratedWith: item.previewGeneratedWith, optimizedFor: item.optimizedFor },
         { previewGeneratedWith: row.preview_model, optimizedFor: row.optimized_for },
       )
@@ -488,17 +456,18 @@ async function buildParityReport(client, source) {
     const actualTags = (tagsByTelegramId.get(item.telegramMessageId) ?? []).slice().sort()
     const expectedTags = item.tags.slice().sort()
     if (!sameJson(actualTags, expectedTags)) addMismatch(report, 'tags', item.telegramMessageId, expectedTags, actualTags)
-
-    if (!sameJson(row.variants, item.variants)) {
-      addMismatch(report, 'variants', item.telegramMessageId, item.variants, row.variants)
-    }
+    if (!sameJson(row.variants, item.variants)) addMismatch(report, 'variants', item.telegramMessageId, item.variants, row.variants)
 
     const actualImages = imagesByTelegramId.get(item.telegramMessageId) ?? []
-    if (actualImages.length !== item.images.length) {
-      addMismatch(report, 'imageCounts', item.telegramMessageId, item.images.length, actualImages.length)
-    }
-    if (!sameJson(actualImages, item.images)) {
-      addMismatch(report, 'imagePaths', item.telegramMessageId, item.images, actualImages)
+    if (actualImages.length !== item.images.length) addMismatch(report, 'imageCounts', item.telegramMessageId, item.images.length, actualImages.length)
+    const actualPaths = actualImages.map((image) => image.source_path)
+    const expectedPaths = item.images.map((image) => image.fullUrl)
+    if (!sameJson(actualPaths, expectedPaths)) addMismatch(report, 'imagePaths', item.telegramMessageId, expectedPaths, actualPaths)
+
+    if (source.normalizedSnapshot) {
+      const actualThumbs = actualImages.map((image) => image.thumbnail_url)
+      const expectedThumbs = item.images.map((image) => image.thumbnailUrl)
+      if (!sameJson(actualThumbs, expectedThumbs)) addMismatch(report, 'thumbnailPaths', item.telegramMessageId, expectedThumbs, actualThumbs)
     }
   }
 
@@ -540,6 +509,8 @@ try {
 
   console.log(JSON.stringify({
     archiveImport: report.ok ? 'PARITY_OK' : 'PARITY_FAILED',
+    sourceSchemaVersion: source.schemaVersion,
+    normalizedSnapshot: source.normalizedSnapshot,
     ...report,
   }, null, 2))
 
