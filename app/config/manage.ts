@@ -19,6 +19,13 @@ export const MANAGE_SECTIONS: readonly ManageSection[] = [
     route: "/manage/dashboard",
     requiredPermission: AUTH_PERMISSIONS.DASHBOARD_VIEW,
   },
+  {
+    key: "users",
+    label: "Users",
+    icon: "group",
+    route: "/manage/users",
+    requiredPermission: AUTH_PERMISSIONS.USERS_VIEW,
+  },
 ];
 
 export function getPermittedManageSections(
