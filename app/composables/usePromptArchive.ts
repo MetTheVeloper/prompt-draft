@@ -3,6 +3,7 @@ import type {
   PromptArchiveDetailResponse,
   PromptArchiveImage,
   PromptArchiveLegacyItem,
+  PromptArchiveLegacyPayload,
   PromptArchiveListItem,
   PromptArchiveListQuery,
   PromptArchiveListResponse,
@@ -11,12 +12,16 @@ import type {
   PromptArchiveNavigationItem,
   PromptArchivePayload,
   PromptArchiveReadSource,
+  PromptArchiveSnapshotItem,
+  PromptArchiveSnapshotPayload,
   PromptArchiveVariant,
 } from '~/types/promptArchive'
 
 const ARCHIVE_SNAPSHOT_URL = '/data/prompts.json'
 const ARCHIVE_REQUEST_TIMEOUT_MS = 5000
 const ARCHIVE_MODELS = new Set<PromptArchiveModel>(['dall-e', 'gpt-image-1'])
+
+type PromptArchiveFallbackItem = PromptArchiveLegacyItem | PromptArchiveSnapshotItem
 
 let snapshotPromise: Promise<PromptArchivePayload> | null = null
 let listRequestVersion = 0
@@ -243,9 +248,9 @@ function getPathValue(source: unknown, path: string) {
   return typeof current === 'string' ? current.trim() : null
 }
 
-function normalizeLegacyPayload(value: unknown): PromptArchivePayload | null {
+function normalizeLegacyPayload(value: unknown): PromptArchiveLegacyPayload | null {
   if (!isPlainObject(value) || !Array.isArray(value.items)) return null
-  if (!Number.isInteger(value.schemaVersion) || typeof value.channel !== 'string') return null
+  if (!Number.isInteger(value.schemaVersion) || value.schemaVersion >= 3 || typeof value.channel !== 'string') return null
   if (typeof value.updatedAt !== 'string' || !Array.isArray(value.modelHistory)) return null
 
   const validItems = value.items.every((item) => {
@@ -271,7 +276,63 @@ function normalizeLegacyPayload(value: unknown): PromptArchivePayload | null {
     )
   })
 
-  return validItems ? value as PromptArchivePayload : null
+  return validItems ? value as PromptArchiveLegacyPayload : null
+}
+
+function normalizeSnapshotPayload(value: unknown): PromptArchiveSnapshotPayload | null {
+  if (!isPlainObject(value) || value.schemaVersion !== 3 || !Array.isArray(value.items)) return null
+  if (typeof value.channel !== 'string' || !value.channel.trim()) return null
+  if (typeof value.updatedAt !== 'string' || Number.isNaN(Date.parse(value.updatedAt))) return null
+  if (!Array.isArray(value.modelHistory)) return null
+
+  const items: PromptArchiveSnapshotItem[] = []
+  for (const rawItem of value.items) {
+    if (!isPlainObject(rawItem)) return null
+
+    const id = Number(rawItem.id)
+    const title = normalizeTitle(rawItem.title)
+    const model = normalizeModel(rawItem.model)
+    const tags = normalizeTags(rawItem.tags)
+    const publishedAt = typeof rawItem.publishedAt === 'string' ? rawItem.publishedAt : ''
+    const telegramUrl = typeof rawItem.telegramUrl === 'string' ? rawItem.telegramUrl.trim() : ''
+    const sourceTitle = typeof rawItem.sourceTitle === 'string' ? rawItem.sourceTitle : ''
+    const prompt = typeof rawItem.prompt === 'string' ? rawItem.prompt : ''
+
+    if (
+      !Number.isInteger(id) || id <= 0 || !title || !model || !tags ||
+      !publishedAt || Number.isNaN(Date.parse(publishedAt)) || !telegramUrl || !prompt ||
+      !Array.isArray(rawItem.images) || !Array.isArray(rawItem.variants)
+    ) return null
+
+    const images = rawItem.images.map(normalizeImage)
+    const variants = rawItem.variants.map(normalizeVariant)
+    if (images.some(image => !image) || variants.some(variant => !variant)) return null
+
+    const normalizedImages = images as PromptArchiveImage[]
+    const positions = normalizedImages.map(image => image.position)
+    if (positions.some((position, index) => position !== index)) return null
+
+    items.push({
+      id,
+      title,
+      sourceTitle,
+      publishedAt: new Date(publishedAt).toISOString(),
+      telegramUrl,
+      model,
+      images: normalizedImages,
+      prompt,
+      tags,
+      variants: variants as PromptArchiveVariant[],
+    })
+  }
+
+  return {
+    schemaVersion: 3,
+    channel: value.channel.trim(),
+    updatedAt: new Date(value.updatedAt).toISOString(),
+    modelHistory: value.modelHistory as PromptArchiveSnapshotPayload['modelHistory'],
+    items,
+  }
 }
 
 function encodeCursor(item: { id: number; publishedAt: string }) {
@@ -329,7 +390,8 @@ async function loadSnapshot(force = false) {
       throw new Error(`Prompt Archive fallback snapshot failed with ${response.status}`)
     }
 
-    const normalized = normalizeLegacyPayload(await response.json())
+    const raw = await response.json()
+    const normalized = normalizeSnapshotPayload(raw) ?? normalizeLegacyPayload(raw)
     if (!normalized) throw new Error('Prompt Archive fallback snapshot is invalid')
     return normalized
   })()
@@ -369,6 +431,10 @@ export function usePromptArchive() {
     return `${apiBase}${normalizedPath}`
   }
 
+  function isNormalizedSnapshotItem(item: PromptArchiveFallbackItem): item is PromptArchiveSnapshotItem {
+    return 'title' in item && isPlainObject(item.title)
+  }
+
   function resolveLegacyTitle(item: PromptArchiveLegacyItem): PromptArchiveLocalizedTitle {
     const en = getPathValue(getLocaleMessage('en'), item.titleKey)
     const fa = getPathValue(getLocaleMessage('fa'), item.titleKey)
@@ -380,20 +446,28 @@ export function usePromptArchive() {
     return { en, fa }
   }
 
-  function normalizeLegacyImages(images: string[]): PromptArchiveImage[] {
-    return images.map((url, position) => ({
+  function resolveFallbackTitle(item: PromptArchiveFallbackItem): PromptArchiveLocalizedTitle {
+    return isNormalizedSnapshotItem(item) ? { ...item.title } : resolveLegacyTitle(item)
+  }
+
+  function resolveFallbackImages(item: PromptArchiveFallbackItem): PromptArchiveImage[] {
+    if (isNormalizedSnapshotItem(item)) {
+      return item.images.map(image => ({ ...image }))
+    }
+
+    return item.images.map((url, position) => ({
       position,
       fullUrl: url,
       thumbnailUrl: url,
     }))
   }
 
-  function mapLegacyListItem(item: PromptArchiveLegacyItem): PromptArchiveListItem {
-    const images = normalizeLegacyImages(item.images)
+  function mapFallbackListItem(item: PromptArchiveFallbackItem): PromptArchiveListItem {
+    const images = resolveFallbackImages(item)
 
     return {
       id: item.id,
-      title: resolveLegacyTitle(item),
+      title: resolveFallbackTitle(item),
       publishedAt: new Date(item.publishedAt).toISOString(),
       telegramUrl: item.telegramUrl,
       model: {
@@ -406,14 +480,14 @@ export function usePromptArchive() {
     }
   }
 
-  function mapLegacyDetailItem(item: PromptArchiveLegacyItem): PromptArchiveDetailItem {
-    const listItem = mapLegacyListItem(item)
+  function mapFallbackDetailItem(item: PromptArchiveFallbackItem): PromptArchiveDetailItem {
+    const listItem = mapFallbackListItem(item)
 
     return {
       ...listItem,
       sourceTitle: item.sourceTitle,
       prompt: item.prompt,
-      images: normalizeLegacyImages(item.images),
+      images: resolveFallbackImages(item),
       variants: (item.variants || []).map(variant => ({
         key: variant.key,
         prompt: variant.prompt,
@@ -478,6 +552,7 @@ export function usePromptArchive() {
 
   async function loadFallbackList(query: PromptArchiveListQuery, force = false): Promise<PromptArchiveListResponse> {
     const payload = await loadSnapshot(force)
+    const snapshotItems = payload.items as PromptArchiveFallbackItem[]
     const search = String(query.search ?? '').trim().toLocaleLowerCase()
     const model = query.model ?? null
     const tag = query.tag ?? null
@@ -485,13 +560,13 @@ export function usePromptArchive() {
     const limit = Math.min(100, Math.max(1, Math.trunc(query.limit ?? 24)))
     const cursor = decodeCursor(query.cursor)
 
-    const filtered = payload.items
+    const filtered = snapshotItems
       .filter((item) => {
         if (model && item.model.previewGeneratedWith !== model) return false
         if (tag && !item.tags.includes(tag)) return false
         if (!search) return true
 
-        const title = resolveLegacyTitle(item)
+        const title = resolveFallbackTitle(item)
         const haystack = [
           item.id,
           title.en,
@@ -503,7 +578,7 @@ export function usePromptArchive() {
 
         return haystack.includes(search)
       })
-      .map(mapLegacyListItem)
+      .map(mapFallbackListItem)
       .sort((first, second) => {
         const comparison = compareArchivePosition(first, second)
         return sort === 'oldest' ? comparison : -comparison
@@ -520,7 +595,7 @@ export function usePromptArchive() {
     const pageItems = afterCursor.slice(0, limit)
     const pageHasMore = afterCursor.length > pageItems.length
     const lastItem = pageItems.at(-1)
-    const tags = Array.from(new Set(payload.items.flatMap(item => item.tags)))
+    const tags = Array.from(new Set(snapshotItems.flatMap(item => item.tags)))
       .sort((first, second) => first.localeCompare(second))
 
     return {
@@ -535,21 +610,22 @@ export function usePromptArchive() {
 
   async function loadFallbackDetail(id: number, force = false): Promise<PromptArchiveDetailResponse | null> {
     const payload = await loadSnapshot(force)
-    const index = payload.items.findIndex(item => item.id === id)
+    const snapshotItems = payload.items as PromptArchiveFallbackItem[]
+    const index = snapshotItems.findIndex(item => item.id === id)
     if (index < 0) return null
 
-    const item = payload.items[index]
-    const previous = index > 0 ? payload.items[index - 1] : null
-    const next = index < payload.items.length - 1 ? payload.items[index + 1] : null
+    const item = snapshotItems[index]
+    const previous = index > 0 ? snapshotItems[index - 1] : null
+    const next = index < snapshotItems.length - 1 ? snapshotItems[index + 1] : null
 
     return {
       ok: true,
-      item: mapLegacyDetailItem(item),
+      item: mapFallbackDetailItem(item),
       previousItem: previous
-        ? { id: previous.id, title: resolveLegacyTitle(previous) }
+        ? { id: previous.id, title: resolveFallbackTitle(previous) }
         : null,
       nextItem: next
-        ? { id: next.id, title: resolveLegacyTitle(next) }
+        ? { id: next.id, title: resolveFallbackTitle(next) }
         : null,
     }
   }
