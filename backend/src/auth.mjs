@@ -18,6 +18,7 @@ import {
   resolvePermissionsForRole,
 } from './authorization.mjs'
 import { createProfileState } from './profileRequirements.mjs'
+import { createUserScoreState } from './userScore.mjs'
 
 const scryptAsync = promisify(scrypt)
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
@@ -116,10 +117,11 @@ function mapUserRow(row) {
   }
 }
 
-function createAuthorizationResponse(user) {
+async function createAuthorizationResponse(user) {
   return {
     user,
     profile: createProfileState(user),
+    score: await createUserScoreState(user),
     permissions: resolvePermissionsForRole(user.role),
   }
 }
@@ -416,7 +418,7 @@ async function handleProfileCompletion({ request, response, corsHeaders, sendJso
     }
 
     if (!additions.length) {
-      sendJson(response, 200, { ok: true, ...createAuthorizationResponse(user) }, corsHeaders)
+      sendJson(response, 200, { ok: true, ...(await createAuthorizationResponse(user)) }, corsHeaders)
       return
     }
 
@@ -438,7 +440,7 @@ async function handleProfileCompletion({ request, response, corsHeaders, sendJso
     )
 
     const updatedUser = mapUserRow(result.rows[0])
-    sendJson(response, 200, { ok: true, ...createAuthorizationResponse(updatedUser) }, corsHeaders)
+    sendJson(response, 200, { ok: true, ...(await createAuthorizationResponse(updatedUser)) }, corsHeaders)
   } catch (error) {
     if (error?.code === '23505') {
       sendJson(
@@ -679,7 +681,7 @@ export async function handleAuthRequest({
 
       const user = mapUserRow(result.rows[0])
       const token = await createSession(user.id)
-      const authorization = createAuthorizationResponse(user)
+      const authorization = await createAuthorizationResponse(user)
 
       sendJson(
         response,
@@ -732,7 +734,7 @@ export async function handleAuthRequest({
 
       const user = mapUserRow(userRow)
       const token = await createSession(user.id)
-      const authorization = createAuthorizationResponse(user)
+      const authorization = await createAuthorizationResponse(user)
 
       sendJson(
         response,
@@ -760,7 +762,7 @@ export async function handleAuthRequest({
       sendJson(
         response,
         200,
-        { ok: true, ...createAuthorizationResponse(user) },
+        { ok: true, ...(await createAuthorizationResponse(user)) },
         corsHeaders,
       )
     } catch (error) {
