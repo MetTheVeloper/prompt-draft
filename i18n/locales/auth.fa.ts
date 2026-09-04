@@ -64,7 +64,7 @@ export default {
         generic: "این قابلیت",
         globalOutputCopy: "کپی GLOBAL OUTPUT",
       },
-      emailPlaceholder: "you@example.com",
+      emailPlaceholder: "you{'@'}example.com",
       emailHint: "این ایمیل به‌عنوان یک شناسه ورود دیگر برای حساب شما قابل استفاده خواهد بود.",
       invalidEmail: "یک ایمیل معتبر وارد کنید.",
       taken: "این ایمیل قبلاً توسط حساب دیگری استفاده شده است.",
