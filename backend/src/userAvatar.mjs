@@ -217,24 +217,6 @@ async function uploadAvatar(user, buffer) {
   return { url }
 }
 
-async function removeAvatar(user) {
-  const result = await queryDatabase(
-    `
-      UPDATE users
-      SET avatar_url = NULL,
-          avatar_storage_key = NULL,
-          updated_at = NOW()
-      WHERE id = $1
-      RETURNING avatar_storage_key
-    `,
-    [user.id],
-  )
-
-  // RETURNING observes the new value, so read the previous key before the clear.
-  // The explicit pre-read keeps deletion cleanup best-effort and user-visible state authoritative.
-  return result.rows[0] ?? null
-}
-
 async function clearAvatar(user) {
   const previous = await readAvatar(user.id)
   await queryDatabase(
