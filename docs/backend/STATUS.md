@@ -12,7 +12,7 @@ A phase is marked `DONE` only after the user runs the relevant behavior locally 
 
 The Docker/PostgreSQL backend foundation and Wizard-run reference implementation are complete and locally verified.
 
-Verified platform/product capabilities include:
+Verified platform path:
 
 ```text
 static Nuxt frontend
@@ -22,40 +22,17 @@ static Nuxt frontend
   -> named-volume durability
 ```
 
-and:
-
-```text
-real Portrait Wizard finish
-  -> durable wizard_run
-  -> paginated History list
-  -> full History detail
-  -> failure/retry behavior
-  -> successful pnpm generate
-```
-
-Milestone 5 is closed.
+Milestone 5 History / Read API + UX is closed.
 
 ## Reusable API playbook — ADDED
 
-New product APIs now have a reusable implementation guide:
+Reusable API implementation guidance lives in:
 
 ```text
 docs/backend/API_GUIDE.md
 ```
 
-It records the conventions learned from the completed backend path:
-
-- resource-first design;
-- server-owned vs client-owned ids;
-- POST vs idempotent PUT semantics;
-- numbered SQL schema files;
-- parameterized DB functions;
-- HTTP validation and stable errors;
-- CORS method updates;
-- typed frontend boundaries;
-- local-first sync/failure semantics;
-- direct UI verification;
-- `pnpm generate` as a release invariant.
+It captures resource-first API design, numbered SQL schema files, parameterized DB access, CORS, typed frontend boundaries, local-first failure semantics, direct UI verification, and `pnpm generate` as a release invariant.
 
 ## Milestone 6 — IN PROGRESS: Cloud Draft Sync
 
@@ -67,174 +44,182 @@ existing /create local drafts
   -> dirty-aware server sync
   -> manual FAB + 2-minute autosync
   -> durable PostgreSQL prompt_drafts rows
+  -> eventually user-owned cloud drafts
 ```
 
-### Existing local source
-
-`/create` already persists:
+Existing local source remains:
 
 ```text
 prompt-draft:create-editor:drafts:v1
 ```
 
-with stable `PromptDraftRecord` ids, titles, timestamps, canonical prompt state, and debounced local saving.
-
-Milestone 6 does not replace that system.
-
-### Cloud Draft contract
-
-Client-owned stable resource id:
-
-```text
-draft-<timestamp>-<random>
-```
-
-API:
-
-```text
-PUT /api/drafts/:id
-  -> create/update same logical draft
-
-GET /api/drafts/:id
-  -> full server copy
-```
-
-Server record:
-
-```text
-id
- title
- createdAt
- updatedAt          # client content timestamp
- serverUpdatedAt
- revision
- snapshot
-```
-
-Server table:
-
-```text
-prompt_drafts
-```
-
-Cloud sync metadata remains separate from canonical local draft JSON:
+Cloud sync metadata remains separate:
 
 ```text
 prompt-draft:create-editor:cloud-sync:v1
 ```
 
-### Phase 0 — reusable API guide + contract: AWAITING USER VERIFICATION
-
-Implemented:
+Implemented before the auth dependency was introduced:
 
 ```text
-docs/backend/API_GUIDE.md
-Milestone 6 resource/write/failure boundaries
+backend/sql/002_create_prompt_drafts.sql
+PUT /api/drafts/:id
+GET /api/drafts/:id
+app/types/draftSyncApi.ts
+app/components/create/DraftCloudSyncButton.vue
+manual save FAB beside Drafts
+dirty/syncing/synced/failed states
+2-minute dirty-aware autosync
 ```
 
-### Phase 1 — schema + backend PUT/GET: AWAITING USER VERIFICATION
+The user locally confirmed that the real `/create` Cloud Save control sends the server write successfully and requested/verified its placement beside the Drafts control.
+
+### Cloud Draft next dependency
+
+A server-side draft list and recovery flow must be scoped to a real account. IP address ownership and password-only identity shortcuts were explicitly rejected because IP is not a stable user identity and those approaches would recreate authentication poorly.
+
+Cloud Draft ownership/list/rehydration is therefore paused until the Auth Foundation below is locally verified.
+
+## Auth Foundation — IN PROGRESS
+
+Authentication is optional at the product level. Anonymous users must continue to use Prompt Draft normally. Signing in enables account-bound capabilities such as future Cloud Draft ownership and multi-device recovery.
+
+### Auth security contract
+
+```text
+password hashing     -> Node scrypt + random salt
+raw password         -> never stored
+session token        -> random 32-byte bearer token
+browser token store  -> localStorage (explicit product decision)
+DB session storage   -> SHA-256 hash of bearer token only
+session lifetime     -> 30 days
+```
+
+MD5 and IP-based identity are not used.
+
+### Auth schema/API — AWAITING USER VERIFICATION
 
 Implemented:
 
 ```text
-backend/src/create-schema.mjs
-  -> applies all numbered NNN_*.sql files in lexical order
+backend/sql/003_create_auth.sql
+  -> users
+  -> auth_sessions
 
-backend/sql/002_create_prompt_drafts.sql
-  -> prompt_drafts table
-  -> client_updated ordering index
-
-backend/src/database.mjs
-  -> upsertPromptDraft()
-  -> getPromptDraftById()
+backend/src/auth.mjs
+  -> POST /api/auth/identify
+  -> POST /api/auth/register
+  -> POST /api/auth/login
+  -> GET  /api/auth/me
+  -> POST /api/auth/logout
 
 backend/src/index.mjs
-  -> PUT /api/drafts/:id
-  -> GET /api/drafts/:id
-  -> draft validation/normalization
-  -> CORS adds PUT
+  -> auth router integration
+  -> Authorization allowed by browser CORS
 ```
 
-No direct SQL/backend verification has yet been accepted for this phase. The intended acceptance path is the real `/create` UI plus DB/read-back checks.
+Identifier contract:
 
-### Phase 2 — typed client + manual sync FAB: AWAITING USER VERIFICATION
+```text
+email
+OR
+3-64 character username using English letters/numbers/._-
+```
+
+Password contract:
+
+```text
+8-200 characters
+at least one English letter
+at least one number
+```
+
+The identify endpoint intentionally reveals whether an account exists because the approved UX chooses login vs registration after the first identifier step.
+
+### Frontend Auth — AWAITING USER VERIFICATION
 
 Implemented:
 
 ```text
-app/types/draftSyncApi.ts
-app/composables/usePromptDraftApi.ts
-app/components/create/DraftCloudSyncButton.vue
-app/layouts/default.vue
+app/types/auth.ts
+app/composables/useAuth.ts
+app/pages/login.vue
+app/components/auth/AuthProfileMenu.vue
+app/components/Header.vue
+i18n/locales/auth.en.ts
+i18n/locales/auth.fa.ts
+nuxt.config.ts
 ```
 
-Behavior:
+Expected flow:
 
 ```text
-/create only
-  -> FAB appears adjacent to Drafts
-  -> click waits for current local debounce to settle
-  -> PUT active draft
-  -> dirty / syncing / synced / failed status via icon/color/tooltip
+anonymous
+  -> blue login FAB in main header
+  -> /login
+  -> username/email identify
+  -> existing account: password -> login
+  -> new account: password + repeat -> register
+  -> token stored locally
+  -> /api/auth/me hydrates shared auth state
+
+logged in
+  -> prim profile FAB between language and More/menu
+  -> global menu custom AuthProfileMenu
+  -> account details
+  -> sign out
 ```
 
-English/Persian sync labels are registered through dedicated locale fragments.
+`useAuth()` is the shared product boundary for token, current user, initialization, `isLoggedIn`, identify, login, registration, and logout.
 
-### Phase 3 — dirty-aware two-minute autosync: AWAITING USER VERIFICATION
+`/login` is explicitly included in static prerender routes.
 
-Implemented:
+### Auth verification still required
+
+Do not mark Auth Foundation DONE until the user locally verifies:
 
 ```text
-content fingerprint excludes incidental timestamps
-separate per-draft sync metadata
-scan local collection every 120 seconds
-sync only dirty drafts
-skip unchanged drafts
-stop the scan after a failed server write to avoid request spam
+1. numbered schema applies 003_create_auth.sql
+2. anonymous app remains usable
+3. anonymous header shows blue Login FAB
+4. unknown identifier enters registration step
+5. weak/mismatched password is rejected in UI
+6. valid registration returns a token and signs in
+7. refresh restores account through local token + /api/auth/me
+8. profile FAB opens the custom global menu
+9. logout clears session and returns header to anonymous state
+10. existing identifier takes the login branch
+11. wrong password shows an inline error
+12. correct password logs in again
+13. pnpm generate succeeds and includes /login
 ```
 
-The scan covers all dirty locally saved drafts, not only whichever draft happens to be active at the two-minute boundary.
+## After Auth verification
 
-Failure semantics:
+Resume Cloud Draft Sync with account ownership:
 
 ```text
-server failure
-  -> localStorage draft remains intact
-  -> editing/local autosave continues
-  -> cloud status becomes failed
-  -> later manual/autosync can retry
+prompt_drafts.user_id
+protected/account-scoped Cloud Draft writes
+GET /api/drafts for current user
+merge/hydrate localStorage on /create
+multi-device draft recovery
+convert /history from Wizard runs to Draft History
+remove History from primary header navigation
+add History entry inside the Drafts menu
 ```
 
-### Phase 4 — final product E2E/static/durability: NOT STARTED
-
-Required final verification:
-
-```text
-1. pull latest branch
-2. rebuild API image
-3. apply numbered DB schema
-4. run frontend
-5. edit /create draft
-6. manual FAB sends browser PUT successfully
-7. PostgreSQL has one row for that draft id
-8. edit again + save -> same row, higher revision
-9. dirty state returns after content change
-10. autosync uploads dirty content without duplicate draft rows
-11. API down -> local draft still saves, cloud state fails gracefully
-12. API back -> retry succeeds
-13. GET /api/drafts/:id matches server copy
-14. container recreation preserves row
-15. pnpm generate succeeds
-```
-
-Do not mark any Milestone 6 phase `DONE` until the user confirms the relevant local behavior.
+Exact local/server merge and conflict policy must be frozen before implementation. Multi-device conflict resolution beyond a simple deterministic policy remains separate work.
 
 ## Current intentional debt / deferred work
 
-- authentication and user ownership;
+- Cloud Draft account ownership/list/rehydration (next after Auth verification);
+- production auth rate limiting / abuse controls;
+- email verification;
+- password reset/recovery;
+- OAuth/social login;
 - multi-device merge/conflict resolution;
 - optimistic revision conflict enforcement;
-- remote draft list/restore UI;
 - server-side draft delete semantics;
 - production migration framework;
 - production secrets/configuration;
@@ -245,7 +230,7 @@ The temporary `persistence_probe` table remains non-product learning data and ca
 
 ## Next action
 
-Locally verify the first Cloud Draft vertical slice from `/create` through browser PUT and PostgreSQL persistence.
+Locally verify the optional Auth Foundation end to end from schema -> `/login` -> header/profile menu -> logout/login -> static generation.
 
 ## New-chat handoff
 
