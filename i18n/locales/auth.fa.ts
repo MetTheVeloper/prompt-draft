@@ -38,6 +38,11 @@ export default {
       email: "ایمیل",
       xp: "XP",
       invitedUsers: "کاربران دعوت‌شده",
+      referral: {
+        copyLink: "کپی لینک دعوت",
+        copied: "لینک دعوت کپی شد",
+        copyFailed: "کپی لینک دعوت انجام نشد",
+      },
       memberSince: "مدت عضویت",
       memberAge: {
         today: "امروز",
