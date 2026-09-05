@@ -5,19 +5,22 @@ import type {
 } from "~/types/promptArchive";
 
 export type AdminArchiveStatus = "draft" | "published" | "archived";
-export type AdminArchiveSourceKind = "managed" | "legacy_json";
+export type AdminArchiveSourceKind = "managed" | "legacy_json" | "user_draft";
 
 export type AdminArchiveSummary = {
   id: string;
-  telegramMessageId: number;
+  publicId: number;
+  telegramMessageId: number | null;
   title: PromptArchiveLocalizedTitle;
   publishedAt: string;
-  telegramUrl: string;
+  telegramUrl: string | null;
   previewModel: PromptArchiveModel;
   optimizedFor: PromptArchiveModel[];
   tags: string[];
   status: AdminArchiveStatus;
   sourceKind: AdminArchiveSourceKind;
+  sourceUserId: string | null;
+  sourceDraftId: string | null;
   imageCount: number;
   updatedAt: string;
 };
@@ -48,7 +51,7 @@ export type AdminArchiveItem = AdminArchiveSummary & {
 };
 
 export type AdminArchiveUpsertInput = {
-  telegramMessageId: number;
+  telegramMessageId: number | null;
   title: PromptArchiveLocalizedTitle;
   sourceTitle?: string | null;
   publishedAt: string;
@@ -80,7 +83,8 @@ export type AdminArchiveImageMutationResponse = {
     id: string;
     fullUrl: string;
     thumbnailUrl: string;
-    telegramMessageId: number;
+    publicId: number;
+    telegramMessageId: number | null;
   };
   cleanupFailures?: string[];
 };
