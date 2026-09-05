@@ -81,6 +81,24 @@ export function setDraftSyncEntry(
   writeDraftSyncMetadata(metadata);
 }
 
+export function removeDraftSyncEntry(userId: string, draftId: string) {
+  if (!userId || !draftId) return;
+
+  const metadata = readDraftSyncMetadata();
+  const userMetadata = metadata.users[userId];
+  if (!userMetadata?.drafts?.[draftId]) return;
+
+  delete userMetadata.drafts[draftId];
+
+  if (Object.keys(userMetadata.drafts).length === 0) {
+    delete metadata.users[userId];
+  } else {
+    metadata.users[userId] = userMetadata;
+  }
+
+  writeDraftSyncMetadata(metadata);
+}
+
 export function getDraftState(draft: PromptDraftRecord): PromptDraftState {
   return {
     version: 1,
