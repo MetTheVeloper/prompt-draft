@@ -8,13 +8,11 @@ Branch: `feature/docker-local-api`
 
 ## Goal
 
-Extend the verified Milestone 19 public-profile foundation without reopening its completed behavior.
+Extend the verified Milestone 19 public-profile foundation without reopening it. Milestone 20 turns `/user` into a richer creator/showcase surface and adds Cloud Draft media, safe deletion semantics, moderation, and deliberate promotion of public user Drafts into the Prompt Archive.
 
-Milestone 20 turns `/user` into a richer creator/showcase surface and introduces the infrastructure needed for user Draft preview media, moderation, and deliberate promotion of public user Drafts into the Prompt Archive.
+Milestone 19 remains closed and verified. Milestone 20 is additive.
 
-Milestone 19 remains closed and verified. Milestone 20 is an additive extension.
-
-## Invariants carried forward
+## Carried invariants
 
 ```text
 static Nuxt generation remains supported
@@ -24,7 +22,6 @@ Cloud Drafts remain private by default
 visitors never receive private Drafts
 public profile APIs never expose email/private account data
 Arvan credentials remain backend-only
-new schema work starts at migration 017
 applied migrations are never rewritten
 important reward events require idempotency semantics
 ```
@@ -35,219 +32,87 @@ Status: `DONE / VERIFIED`
 
 Local verification completed on 2026-09-05, including successful `pnpm generate`.
 
-### Profile Menu
-
-Refine the current cover/avatar composition:
+### Verified work
 
 ```text
-avatar centered on the cover
-avatar overlaps the cover edge by exactly 50% of avatar height
-Profile Menu avatar visual grows by 12px
-avatar becomes an interactive trigger
+Profile Menu avatar centered on cover
+exact half-avatar cover overlap
+Profile Menu avatar visual +12px
+reusable el-avatar fallback: bg="surface50" + bd="b4"
+root + child Global Menu support for nested avatar actions
+avatar Choose/Change + Remove menu
+centered name/role hierarchy
+compact XP badge beside name
+relative member age such as Today / 2D ago
+Manage + View profile FAB + Sign out FAB compact action row
+/user?id=<UUID> remains supported
+/user?un=<username> public-safe alias resolution
+shared tooltip portal fix
+Draft-card border contract normal15 -> normal50 on hover
 ```
 
-Clicking the avatar opens a secondary menu through the project Global Menu system while the parent Profile Menu remains open.
+The shared tooltip component now teleports its floating bubble outside clipped parent layout, fixing overflow/layout regressions globally rather than only inside Profile Menu.
 
-This is implemented as a reusable root/child Global Menu layer rather than a Profile-Menu-only popup. The child layer owns its own open/close/item state, renders above the root menu, and allows Escape to close the child before the parent.
-
-Avatar child-menu actions:
-
-```text
-Choose / change avatar
-Remove avatar (when an avatar exists)
-```
-
-The existing standalone avatar choose/remove FABs are removed. Prepared avatar preview + explicit Save/Cancel remains intact.
-
-The reusable `el-avatar` fallback surface now uses the project glass treatment:
-
-```text
-bg="surface50"
-bd="b4"
-```
-
-This applies to initials/person-icon fallback while real avatar images still fill the component normally.
-
-Identity hierarchy becomes centered:
-
-```text
-name + compact XP badge
-role
-```
-
-XP formatting:
-
-```text
-< 1,000 -> raw number
->= 1,000 -> compact K notation (for example 4.2K)
-large values may use M notation
-```
-
-The previous standalone XP information row is removed.
-
-`Member since` becomes a compact account-age readout based on current time, for example:
-
-```text
-Today
-2D ago
-```
-
-The lower action area becomes one compact row:
-
-```text
-Manage       -> fg100
-View profile -> FAB
-Sign out     -> FAB
-```
-
-Existing progressive-profile completion behavior remains available.
-
-### Global Tooltip portal
-
-The shared `el-tooltip` no longer participates in the trigger/container layout.
-
-Tooltip bubbles are teleported to the project `#teleports` layer and positioned with `position: fixed` from the owning component's DOM rectangle. The floating layer:
-
-```text
-does not change parent width/height
-is not clipped by ancestor overflow:hidden
-keeps pointer-events disabled
-clamps to viewport safe padding
-flips to the opposite side when the preferred side has insufficient room
-tracks resize/scroll while open
-attaches viewport listeners only while visible
-```
-
-This is a central tooltip fix and therefore applies to FAB/button tooltips throughout the project rather than only the Profile Menu.
-
-### Username profile alias
-
-Keep UUID as the canonical backend/user identity.
-
-Support both frontend entry forms:
-
-```text
-/user?id=<USER_UUID>
-/user?un=<username>
-```
-
-Username lookup is case-insensitive and resolves to the existing user UUID/read model. No second profile implementation is introduced.
-
-Implemented public-safe resolver:
+UUID remains canonical user identity. Username resolution is public-safe:
 
 ```text
 GET /api/users/resolve?username=<username>
 ```
 
-The resolver returns only user UUID + username for active users. It does not expose email or private account state.
+The resolver exposes only UUID + username.
 
-### Draft-card border correction
+## Phase 20B — Cloud Draft preview media + Draft card workflow
 
-Draft cards use the EL border-color system rather than direct CSS border-color overrides:
+Status: `DONE / VERIFIED`
 
-```text
-normal -> bc="normal15"
-hover  -> bc="normal50"
-```
+Local verification completed on 2026-09-05, including successful `pnpm generate`.
 
-The existing hover lift remains, but border color is driven through the `el-flex` `bc` prop.
-
-### Phase 20A acceptance
-
-```text
-Profile Menu avatar is centered and overlaps cover by exactly half its height
-Profile Menu avatar is 12px larger than the previous visual
-avatar fallback uses surface50 + backdrop blur 4
-avatar opens a child Global Menu without closing Profile Menu
-avatar choose/remove flows work
-prepared avatar Save/Cancel still work
-name/role are centered
-XP appears as compact badge beside name and old XP row is gone
-member age is compact and relative
-View profile is a FAB beside Manage and Sign out
-Manage grows with fg100; View profile and Sign out remain compact FABs
-shared tooltips render outside clipped containers without changing parent/menu layout
-/user?id=<uuid> still works
-/user?un=<username> resolves the same profile
-Draft cards use normal15/normal50 EL border colors for normal/hover
-EN/FA copy remains valid
-pnpm generate succeeds
-```
-
-Phase 20A is closed.
-
-## Phase 20B — Cloud Draft preview media
-
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
-
-### Relational media model
-
-Migration:
+### Migration 017 — Draft preview media
 
 ```text
 017_cloud_draft_preview_media.sql
 ```
 
-Draft preview media is stored in `prompt_draft_images` rather than inside `prompt_drafts.snapshot`.
+Preview media is relational in `prompt_draft_images`, not embedded in the Draft snapshot.
 
-Each image has:
+Each image stores:
 
 ```text
 stable UUID
-owner user_id
-Cloud Draft draft_id
+user_id + draft_id ownership
 ordered position
 immutable public URL
-immutable Arvan/S3 storage key
-source width + height
+immutable storage key
+width + height
 encoded byte size
 created_at
 ```
 
-The table references the composite Cloud Draft identity `(user_id, draft_id)` and uses `ON DELETE CASCADE`. Position is unique per Draft and is deferrable so primary-image reorder/delete compaction can remain transactional.
+The current cap is 8 images per Cloud Draft.
 
-The current per-Draft safety cap is:
-
-```text
-8 images
-```
-
-### Browser preparation contract
-
-Implemented in `app/utils/draftPreviewImage.ts`:
+Browser preparation contract:
 
 ```text
 input: JPEG / PNG / WebP
 output: WebP
 quality: 0.60
-pixel width/height preserved
+preserve source pixel dimensions
 no crop
 no resize
+max edge: 8192px
+max decoded pixels: 40MP
+max encoded payload: 12 MiB
 ```
 
-The browser rejects unreasonable images rather than silently reducing them:
+Backend independently validates uploaded WebP bytes and dimensions.
 
-```text
-maximum edge: 8192px
-maximum decoded pixels: 40,000,000
-maximum encoded WebP payload: 12 MiB
-```
-
-The backend independently verifies that the uploaded bytes are a valid WebP and enforces equivalent edge/pixel/byte limits. Client-reported dimensions are not trusted.
-
-### Storage namespace
-
-Draft media uses a dedicated immutable namespace separate from Prompt Archive and profile media:
+Storage namespace:
 
 ```text
 draft-media/<USER_UUID>/<IMAGE_UUID>/image.webp
 ```
 
-Objects use immutable cache headers. Arvan credentials remain backend-only.
-
-### Owner media API
-
-Authenticated Cloud Draft routes:
+Owner media API:
 
 ```text
 GET    /api/drafts/:draftId/images
@@ -256,88 +121,150 @@ DELETE /api/drafts/:draftId/images/:imageId
 POST   /api/drafts/:draftId/images/:imageId/primary
 ```
 
-Upload ownership is enforced from the authenticated user. New uploads append to the ordered set. Delete compacts later positions. Making an image primary moves it to position 0 and shifts the previous leading images transactionally.
+Position 0 is the primary/card-preview image. Reordering and deletion preserve deterministic compact positions.
 
-### Public profile read model
+### Preview Manager
 
-`GET /api/users/:userId/drafts` now includes an ordered `images` array on each returned Draft.
+The previous next-image cycling interaction was replaced with the central modal system.
 
-Existing visibility rules remain authoritative:
+`Manage Previews` now provides:
 
 ```text
-owner -> own public + private Drafts and their media metadata
-visitor -> public Drafts only and media for only those returned public Drafts
+all stored images in one modal
+current primary selection
+click any image to make it primary
+per-image Delete FAB
+stacked confirmation modal before image deletion
+multi-image add flow
 ```
 
-No private Draft is added to the public profile response.
+The central Global Modal system already supports real stacked modals, so deletion confirmation stays above the Preview Manager without closing it.
 
-### `/user` card experience
+### Draft action menu
 
-Owner Draft cards now support:
+Owner cards expose a central three-dot menu:
 
 ```text
-add one or multiple preview images
-remove current primary image
-cycle the next stored image into primary position
-publish / unpublish as before
+Edit Draft
+Manage Previews
+Copy Output
+Download JSON
+──────────────
+Show / Hide from Profile
+Delete Draft
 ```
 
-Position 0 is displayed as the card preview. If an owner Draft has no image, the card shows an add-preview affordance. Public visitors see the primary image only when the public Draft has media.
-
-Card rendering is intentionally static:
+`Edit Draft` deep-links to:
 
 ```text
-plain <img>
-lazy loading
-async image decoding
-no per-card Visual Slider
-no continuously animated canvas
+/create?draft=<DRAFT_ID>
 ```
 
-All stored images remain available through the ordered media model for later richer presentation and Archive promotion.
+Cloud restore activates that exact Draft so subsequent saves continue on the same identity.
 
-### Phase 20B acceptance
+`Copy Output` compiles the stored Draft through the existing prompt compiler rather than copying raw snapshot data. `Download JSON` exports the Draft record using the same Draft model consumed by `/create`.
+
+### Migration 018 — soft deletion
 
 ```text
-migration 017 applies successfully
-prompt_draft_images rows cascade when their Cloud Draft is deleted
-owner can upload JPEG / PNG / WebP from /user
-browser output is WebP at quality 0.60 without resize/crop
-backend rejects malformed/non-WebP or unreasonable uploads
-multiple images preserve deterministic ordered positions
-position 0 is the visible card image
-owner can advance another stored image to position 0
-owner can remove the current primary image and positions compact correctly
-owner cannot mutate another user's Draft media
-public profile visitor receives media only for public Drafts
-private Drafts remain absent from visitor responses
-Draft cards remain static rather than running per-card sliders
-EN/FA media copy is valid
+018_soft_delete_prompt_drafts.sql
+```
+
+Cloud Draft deletion is intentionally a tombstone, not a physical database delete:
+
+```text
+deleted_at IS NULL     -> active Draft
+deleted_at IS NOT NULL -> deleted Draft
+```
+
+Owner list, public profile reads, counters, cloud restore and normal Draft detail/list behavior exclude tombstoned Drafts.
+
+A tombstoned Draft cannot be accidentally resurrected by a stale client: a later PUT for that identity returns `409 DRAFT_DELETED`.
+
+The local Cloud Draft mirror also removes server-tracked Drafts that disappear from active server responses, preventing deleted Drafts from returning to the `/create` Draft menu on another device.
+
+The user locally verified that the deleted row remains in PostgreSQL with `deleted_at` populated while disappearing from the UI/read models.
+
+### Final Draft-card showcase design
+
+The verified `/user` Draft cards are image-first square showcase cards:
+
+```text
+aspect-ratio: 1 / 1
+no card padding
+primary image covers full card
+second preview crossfades in on hover when available
+large 2x title typography
+labels + title + metadata pinned to bottom overlay
+absolute top action bar
+three-dot action + Preview Manager + image count
+card effect: { color: 'normal15' }
+soft lower readability gradient
+```
+
+Cards remain lightweight: two static images are used for hover crossfade rather than per-card canvas/slider animation.
+
+Saved Draft count is integrated into the heading:
+
+```text
+Saved drafts (4)
+```
+
+and omitted when count is zero.
+
+### Phase 20B acceptance — verified
+
+```text
+migration 017 applied successfully
+migration 018 applied successfully
+multi-image upload works
+primary selection works for arbitrary image count
+stacked image-delete confirmation works
+soft deletion keeps DB row and hides Draft from active reads
+stale sync cannot resurrect tombstoned Drafts
+Edit Draft opens the correct Draft in /create
+Copy Output works
+Download JSON works
+visibility actions work
+square image-first card design works
+second image appears on hover
+owner/visitor privacy remains correct
 pnpm generate succeeds
 ```
 
-Phase 20B is not `DONE` until migration/API/UI behavior and generation are verified locally.
+Phase 20B is closed.
 
 ## Phase 20C — Moderation + Promote to Prompt Archive
 
-Status: `PLANNED`
+Status: `IN PROGRESS`
 
-### Permissions
+Started after Phase 20B local verification on 2026-09-05.
 
-Use existing permission semantics where possible:
+### Permission contract
+
+Reuse existing permissions:
 
 ```text
-archive.manage     -> Add to prompts
-drafts.delete_any -> delete another user's Cloud Draft
+archive.manage     -> Add to prompts / promotion workflow
+drafts.delete_any -> moderate-delete another user's Draft
 ```
 
-Current role mapping means Admin/Super Admin can manage Archive content while arbitrary Draft deletion remains a Super Admin capability unless the role policy is deliberately changed later.
+Current role mapping intentionally means:
+
+```text
+Admin       -> may promote public Drafts into Prompt Archive
+Super Admin -> may promote + moderate-delete arbitrary visible user Drafts
+```
 
 Backend checks remain authoritative.
 
-### Promote public Draft
+### Promotion UX
 
-Only a public Draft may be promoted from another user's public profile.
+When an Admin/Super Admin visits another user's public profile, each public Draft can expose:
+
+```text
+Add to prompts
+```
 
 The action opens the central modal and asks for:
 
@@ -347,66 +274,64 @@ Persian title
 optional Telegram post/message ID
 ```
 
-Promotion creates a Prompt Archive `draft`, not an automatically published item.
+The rest of the Archive Draft is derived from the source Cloud Draft where possible. Promotion creates an Archive item in `draft` state; it never auto-publishes.
 
-Archive provenance must be explicit. The expected schema extension includes source identity such as:
+### Archive identity / Telegram compatibility
 
-```text
-source_kind = user_draft
-source_user_id
-source_draft_id
-```
+The current Archive historically uses Telegram message ID as both source identity and public numeric ID. Phase 20C must support Archive items with no Telegram source while preserving all existing `/prompts` URLs.
 
-A uniqueness rule should prevent accidental duplicate promotion of the same user Draft.
-
-### Telegram assumptions
-
-Current Archive rows require a Telegram message ID and Telegram URL. User-Draft promotion has no inherent Telegram source.
-
-A later numbered migration must therefore make Telegram-specific fields optional where appropriate and audit all assumptions in:
+The selected direction for migration 019 is:
 
 ```text
-create/edit validation
-search
-ordering
-snapshot export
-public Archive mapping
-Manage deep links
-Telegram URL generation
+introduce stable public_id for Archive routing
+backfill existing public_id = telegram_message_id
+new non-Telegram Archive items receive sequence-backed public_id
+telegram_message_id becomes nullable
+telegram_url becomes nullable
+legacy Telegram public IDs stay unchanged
+source_kind gains user_draft
+source_user_id + source_draft_id store provenance
+unique provenance prevents duplicate promotion of one Draft
 ```
 
-Legacy Telegram-backed items remain fully compatible.
+Existing Telegram-backed Archive behavior must remain compatible.
 
 ### Media independence
 
-When Draft preview images are promoted to Prompt Archive, Archive media becomes independent of the user's Draft media.
+Draft preview images promoted into Archive must become Archive-owned media.
 
-Do not merely point Archive rows at user-owned Draft media URLs. Copy promoted images into Archive-owned storage keys so later user image deletion cannot break published Prompt Archive content.
+Do not retain references to `draft-media/...` as the canonical Archive image source. Promoted images are re-prepared with the existing Archive image contract and uploaded into Archive storage keys so future Draft-preview deletion cannot break `/prompts`.
+
+Archive media contract remains:
+
+```text
+full: max edge 2048, WebP quality 0.60
+thumbnail: max edge 640, WebP quality 0.72
+no upscale
+```
 
 ### Moderation deletion
 
-Super Admin may delete a Draft when `drafts.delete_any` is granted.
+Super Admin moderation deletion uses the existing Draft soft-delete model rather than physical deletion.
 
-Deletion requires:
+Required behavior:
 
 ```text
-confirmation UI
-backend permission enforcement
-audit event
-DB cleanup
-best-effort Arvan object cleanup
+confirmation modal
+backend drafts.delete_any enforcement
+deleted_at tombstone
+audit event with actor + target user/Draft
+Draft disappears from normal owner/public list responses
+stored Draft/media remain available for audit/recovery
+previously promoted Archive item remains independent
 ```
-
-An Archive item previously created from that Draft remains independent.
 
 ## Verification rule
 
-Each phase is locally verified before it is marked complete.
-
-Frontend-affecting closure always includes:
+Each phase is locally verified before it is marked complete. Frontend-affecting closure always includes:
 
 ```text
 pnpm generate
 ```
 
-Milestone 20 is marked `DONE` only after all selected phases are locally verified by the user.
+Milestone 20 is marked `DONE` only after Phase 20C is locally verified.
