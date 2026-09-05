@@ -2,9 +2,16 @@
 import type {
   GlobalMenuPlacement,
   GlobalMenuResolvedAnchor,
+  GlobalMenuScope,
 } from '~/composables/useMenu'
 
-const menuApi = useMenu()
+const props = withDefaults(defineProps<{
+  scope?: GlobalMenuScope
+}>(), {
+  scope: 'root',
+})
+
+const menuApi = props.scope === 'child' ? useChildMenu() : useMenu()
 const menuBox = ref<HTMLElement | null>(null)
 
 const position = reactive({
@@ -130,7 +137,7 @@ const rootStyle = computed(() => {
   const options = getOptions()
 
   return {
-    zIndex: options.zIndex ?? 1000,
+    zIndex: options.zIndex ?? (props.scope === 'child' ? 1100 : 1000),
     '--global-menu-drawer-shift':
       drawerSide.value === 'left'
         ? '-100%'
@@ -394,7 +401,7 @@ async function updatePosition() {
 
   if (!box) {
     console.warn(
-      '[el-global-menu] menuBox ref is null',
+      `[el-global-menu:${props.scope}] menuBox ref is null`,
     )
 
     position.left = menu.value?.x || 12
@@ -429,7 +436,7 @@ function closeByOutside() {
   if (!isOpen.value) return
   if (getOptions().closeOnOutside === false) return
 
-  menuApi.close()
+  menuApi.close('outside')
 }
 
 function handleLayerContextMenu(event: MouseEvent) {
@@ -449,14 +456,14 @@ function handleKeydown(event: KeyboardEvent) {
   if (event.key !== 'Escape') return
   if (getOptions().closeOnEsc === false) return
 
-  menuApi.close()
+  menuApi.close('escape')
 }
 
 function handleResize() {
   if (!isOpen.value) return
   if (getOptions().closeOnResize === false) return
 
-  menuApi.close()
+  menuApi.close('resize')
 }
 
 function handleScroll(event: Event) {
@@ -473,7 +480,7 @@ function handleScroll(event: Event) {
     return
   }
 
-  menuApi.close()
+  menuApi.close('scroll')
 }
 
 watch(
@@ -529,7 +536,7 @@ onBeforeUnmount(() => {
         <div
           v-if="isOpen"
           class="globalMenuRoot"
-          data-el-overlay="menu"
+          :data-el-overlay="props.scope === 'child' ? 'menu-child' : 'menu'"
           :style="rootStyle"
           @pointerdown.stop
           @click.stop
@@ -552,7 +559,7 @@ onBeforeUnmount(() => {
             :class="{
               'globalMenuBox--drawer': isDrawer,
             }"
-            data-el-overlay="menu-box"
+            :data-el-overlay="props.scope === 'child' ? 'menu-child-box' : 'menu-box'"
             :style="boxStyle"
             @pointerdown.stop
             @click.stop
@@ -567,6 +574,7 @@ onBeforeUnmount(() => {
 
             <el-menu-list
               v-else
+              :scope="props.scope"
               :items="menu?.items || []"
             />
           </div>
