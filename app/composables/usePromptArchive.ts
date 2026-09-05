@@ -102,7 +102,9 @@ function normalizeListItem(value: unknown): PromptArchiveListItem | null {
   const model = normalizeModel(value.model)
   const tags = normalizeTags(value.tags)
   const publishedAt = typeof value.publishedAt === 'string' ? value.publishedAt : ''
-  const telegramUrl = typeof value.telegramUrl === 'string' ? value.telegramUrl.trim() : ''
+  const telegramUrl = typeof value.telegramUrl === 'string' && value.telegramUrl.trim()
+    ? value.telegramUrl.trim()
+    : null
   const imageCount = Number(value.imageCount)
   const coverImage = value.coverImage == null ? null : normalizeImage(value.coverImage)
 
@@ -114,7 +116,6 @@ function normalizeListItem(value: unknown): PromptArchiveListItem | null {
     !tags ||
     !publishedAt ||
     Number.isNaN(Date.parse(publishedAt)) ||
-    !telegramUrl ||
     !Number.isInteger(imageCount) ||
     imageCount < 0 ||
     (value.coverImage != null && !coverImage)
@@ -294,13 +295,15 @@ function normalizeSnapshotPayload(value: unknown): PromptArchiveSnapshotPayload 
     const model = normalizeModel(rawItem.model)
     const tags = normalizeTags(rawItem.tags)
     const publishedAt = typeof rawItem.publishedAt === 'string' ? rawItem.publishedAt : ''
-    const telegramUrl = typeof rawItem.telegramUrl === 'string' ? rawItem.telegramUrl.trim() : ''
+    const telegramUrl = typeof rawItem.telegramUrl === 'string' && rawItem.telegramUrl.trim()
+      ? rawItem.telegramUrl.trim()
+      : null
     const sourceTitle = typeof rawItem.sourceTitle === 'string' ? rawItem.sourceTitle : ''
     const prompt = typeof rawItem.prompt === 'string' ? rawItem.prompt : ''
 
     if (
       !Number.isInteger(id) || id <= 0 || !title || !model || !tags ||
-      !publishedAt || Number.isNaN(Date.parse(publishedAt)) || !telegramUrl || !prompt ||
+      !publishedAt || Number.isNaN(Date.parse(publishedAt)) || !prompt ||
       !Array.isArray(rawItem.images) || !Array.isArray(rawItem.variants)
     ) return null
 
