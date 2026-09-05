@@ -806,114 +806,137 @@ onMounted(() => {
           <el-flex
             v-for="draft in drafts"
             :key="draft.id"
-            rules="cbs"
+            rules="ccs"
             class="user-profile__draft-card w100"
-            :gap="18"
-            :p="18"
+            :class="{ 'has-secondary': draft.images.length > 1 }"
+            :gap="0"
             :radius="18"
             :br="1"
             :bc="hoveredDraftId === draft.id ? 'normal50' : 'normal15'"
+            :effect="{ color: 'normal15' }"
             @mouseenter="hoveredDraftId = draft.id"
             @mouseleave="hoveredDraftId = hoveredDraftId === draft.id ? null : hoveredDraftId">
-            <div
-              v-if="draft.images.length"
-              class="user-profile__draft-media w100">
+            <template v-if="draft.images.length">
               <img
                 :src="draft.images[0].url"
                 :alt="draft.title"
-                class="user-profile__draft-media-image"
+                class="user-profile__draft-bg user-profile__draft-bg--primary"
                 loading="lazy"
                 decoding="async"
                 draggable="false"
               >
+              <img
+                v-if="draft.images[1]"
+                :src="draft.images[1].url"
+                :alt="draft.title"
+                class="user-profile__draft-bg user-profile__draft-bg--secondary"
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              >
+            </template>
+            <div v-else class="user-profile__draft-bg-fallback" />
+
+            <div class="user-profile__draft-shade pen" />
+
+            <el-flex
+              v-if="isOwner || draft.images.length"
+              rules="rsc"
+              class="user-profile__draft-topbar w100"
+              :gap="8">
               <el-flex
+                v-if="isOwner"
+                rules="rsc"
+                class="fg100"
+                :gap="8">
+                <el-button
+                  type="fab"
+                  color="normal"
+                  mode="flat"
+                  icon="more_vert"
+                  :tooltip="t('userProfile.drafts.actions.more')"
+                  @click="openDraftActions($event, draft)"
+                />
+
+                <el-button
+                  type="fab"
+                  color="blue"
+                  mode="flat"
+                  icon="add_photo_alternate"
+                  :tooltip="t('userProfile.drafts.actions.managePreviews')"
+                  @click="openPreviewManager(draft)"
+                />
+              </el-flex>
+              <div v-else class="fg100" />
+
+              <el-flex
+                v-if="draft.images.length"
                 rules="rcc"
                 class="user-profile__draft-media-count"
-                :p="[4, 7]"
+                :p="[5, 8]"
                 :radius="100"
                 bg="surface75"
                 bd="b6">
-                <el-text :size="9" :weight="800">
+                <el-text :size="10" :weight="800">
                   {{ t("userProfile.drafts.media.count", {
                     count: draft.images.length,
                     max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
                   }) }}
                 </el-text>
               </el-flex>
-            </div>
-
-            <button
-              v-else-if="isOwner"
-              type="button"
-              class="user-profile__draft-media-empty w100"
-              @click="openPreviewManager(draft)">
-              <el-icon icon="wallpaper" color="normal45" :size="26" />
-              <el-text :size="11" color="normal55">
-                {{ t("userProfile.drafts.media.empty") }}
-              </el-text>
-            </button>
-
-            <el-flex rules="rbc" :gap="8" class="w100">
-              <el-text
-                :size="10"
-                :weight="800"
-                marker="normal10"
-                :p="[3, 6]"
-                :radius="100">
-                {{ formatOutputFormat(draft.outputFormat) }}
-              </el-text>
-
-              <el-text
-                v-if="isOwner && draft.visibility"
-                :size="10"
-                :weight="800"
-                :marker="draft.visibility === 'public' ? 'green15' : 'orange15'"
-                :color="draft.visibility === 'public' ? 'green' : 'orange'"
-                :p="[3, 6]"
-                :radius="100">
-                {{ t(`userProfile.drafts.visibility.${draft.visibility}`) }}
-              </el-text>
-            </el-flex>
-
-            <el-flex rules="ccs" :gap="10" class="w100">
-              <el-text type="h3" :size="mobile ? 20 : 24" :weight="650">
-                {{ draft.title }}
-              </el-text>
-              <el-flex rules="rsc" :gap="10" wrap class="w100">
-                <el-text :size="10" color="normal55" icon="account_tree" icon-color="normal45">
-                  {{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}
-                </el-text>
-                <el-text :size="10" color="normal55" icon="history" icon-color="normal45">
-                  {{ t("userProfile.drafts.revision", { revision: draft.revision }) }}
-                </el-text>
-                <el-text :size="10" color="normal55" icon="schedule" icon-color="normal45">
-                  {{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}
-                </el-text>
-              </el-flex>
             </el-flex>
 
             <el-flex
-              v-if="isOwner"
-              rules="rrc"
-              :gap="8"
-              class="w100">
-              <el-button
-                type="fab"
-                color="blue"
-                mode="flat"
-                icon="add_photo_alternate"
-                :tooltip="t('userProfile.drafts.actions.managePreviews')"
-                @click="openPreviewManager(draft)"
-              />
+              rules="ccs"
+              class="user-profile__draft-content w100"
+              :gap="12">
+              <el-flex rules="rsc" :gap="8" wrap class="w100 fw">
+                <el-text
+                  :size="11"
+                  :weight="800"
+                  marker="surface75"
+                  color="white"
+                  :p="[4, 7]"
+                  :radius="100">
+                  {{ formatOutputFormat(draft.outputFormat) }}
+                </el-text>
 
-              <el-button
-                type="fab"
-                color="normal"
-                mode="flat"
-                icon="more_vert"
-                :tooltip="t('userProfile.drafts.actions.more')"
-                @click="openDraftActions($event, draft)"
-              />
+                <el-text
+                  v-if="isOwner && draft.visibility"
+                  :size="11"
+                  :weight="800"
+                  :marker="draft.visibility === 'public' ? 'green35' : 'orange35'"
+                  color="white"
+                  :p="[4, 7]"
+                  :radius="100">
+                  {{ t(`userProfile.drafts.visibility.${draft.visibility}`) }}
+                </el-text>
+              </el-flex>
+
+              <el-text
+                type="h3"
+                :size="mobile ? 40 : 48"
+                :weight="650"
+                color="white"
+                class="user-profile__draft-title">
+                {{ draft.title }}
+              </el-text>
+
+              <el-flex
+                rules="rsc"
+                :gap="12"
+                wrap
+                class="user-profile__draft-meta w100 fw">
+                <el-text :size="mobile ? 11 : 12" color="white" icon="account_tree" icon-color="white">
+                  {{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}
+                </el-text>
+                <el-text :size="mobile ? 11 : 12" color="white" icon="history" icon-color="white">
+                  {{ t("userProfile.drafts.revision", { revision: draft.revision }) }}
+                </el-text>
+                <el-text :size="mobile ? 11 : 12" color="white" icon="schedule" icon-color="white">
+                  {{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}
+                </el-text>
+              </el-flex>
             </el-flex>
           </el-flex>
         </el-grid>
@@ -1031,65 +1054,115 @@ onMounted(() => {
 }
 
 .user-profile__draft-card {
-  min-height: 250px;
-  background:
-    linear-gradient(145deg, var(--normalText5), transparent 55%),
-    var(--themeBackground);
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.16);
-  transition: transform 220ms ease, border-color 220ms ease;
+  aspect-ratio: 1 / 1;
+  isolation: isolate;
+  overflow: hidden;
+  background: var(--themeBackground);
+  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+  transition: transform 260ms ease, border-color 220ms ease, box-shadow 260ms ease;
 }
 
 .user-profile__draft-card:hover {
-  transform: translateY(-3px);
+  transform: translateY(-4px);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
 }
 
-.user-profile__draft-media,
-.user-profile__draft-media-empty {
-  aspect-ratio: 16 / 10;
-  border-radius: 14px;
-  overflow: hidden;
+.user-profile__draft-card :deep(.effect) {
+  z-index: 4;
+  mix-blend-mode: soft-light;
 }
 
-.user-profile__draft-media {
-  position: relative;
-  background: var(--normalText5);
-}
-
-.user-profile__draft-media-image {
-  display: block;
+.user-profile__draft-bg,
+.user-profile__draft-bg-fallback,
+.user-profile__draft-shade {
+  position: absolute;
+  inset: 0;
   width: 100%;
   height: 100%;
+}
+
+.user-profile__draft-bg {
+  z-index: 1;
+  display: block;
   object-fit: cover;
   object-position: center;
   user-select: none;
   pointer-events: none;
+  transition: opacity 420ms ease, transform 700ms cubic-bezier(.2, .7, .2, 1);
+}
+
+.user-profile__draft-bg--primary {
+  opacity: 1;
+}
+
+.user-profile__draft-bg--secondary {
+  opacity: 0;
+  transform: scale(1.035);
+}
+
+.user-profile__draft-card:hover .user-profile__draft-bg {
+  transform: scale(1.025);
+}
+
+.user-profile__draft-card.has-secondary:hover .user-profile__draft-bg--primary {
+  opacity: 0;
+}
+
+.user-profile__draft-card.has-secondary:hover .user-profile__draft-bg--secondary {
+  opacity: 1;
+  transform: scale(1.025);
+}
+
+.user-profile__draft-bg-fallback {
+  z-index: 1;
+  background:
+    radial-gradient(circle at 18% 18%, var(--primary35), transparent 42%),
+    radial-gradient(circle at 82% 22%, var(--themePurple25), transparent 46%),
+    linear-gradient(145deg, var(--themeSurface20), var(--themeBackground));
+}
+
+.user-profile__draft-shade {
+  z-index: 2;
+  background:
+    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, transparent 30%, rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.86) 100%),
+    linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, transparent 54%);
+}
+
+.user-profile__draft-topbar {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-start: 0;
+  z-index: 6;
+  padding: 14px;
 }
 
 .user-profile__draft-media-count {
+  flex: 0 0 auto;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+}
+
+.user-profile__draft-content {
   position: absolute;
-  inset-block-start: 8px;
-  inset-inline-end: 8px;
-  z-index: 2;
+  inset-inline-start: 0;
+  inset-block-end: 0;
+  z-index: 6;
+  padding: clamp(18px, 4vw, 26px);
 }
 
-.user-profile__draft-media-empty {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  margin: 0;
-  padding: 12px;
-  border: 1px dashed var(--normalText15);
-  color: inherit;
-  background: var(--normalText5);
-  appearance: none;
-  cursor: pointer;
-  transition: border-color 180ms ease, background 180ms ease;
+.user-profile__draft-title {
+  width: 100%;
+  line-height: 1.02 !important;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.42);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
-.user-profile__draft-media-empty:hover {
-  border-color: var(--normalText50);
-  background: var(--normalText10);
+.user-profile__draft-meta {
+  opacity: 0.82;
+  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
 }
 </style>
