@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
 import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
+import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
 import {
   getDatabaseStatus,
@@ -522,6 +523,18 @@ const server = createServer(async (request, response) => {
       )
     }
 
+    return
+  }
+
+  if (
+    await handleProductAnalyticsRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
     return
   }
 
