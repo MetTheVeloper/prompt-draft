@@ -31,7 +31,9 @@ important reward events require idempotency semantics
 
 ## Phase 20A — Profile UX polish + username profile alias
 
-Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
+Status: `DONE / VERIFIED`
+
+Local verification completed on 2026-09-05, including successful `pnpm generate`.
 
 ### Profile Menu
 
@@ -172,50 +174,149 @@ EN/FA copy remains valid
 pnpm generate succeeds
 ```
 
-Phase 20A is not `DONE` until the user verifies the behavior locally.
+Phase 20A is closed.
 
 ## Phase 20B — Cloud Draft preview media
 
-Status: `PLANNED`
+Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
 
-Add a new numbered schema migration, expected to begin at:
+### Relational media model
+
+Migration:
 
 ```text
-017_*.sql
+017_cloud_draft_preview_media.sql
 ```
 
-Draft preview media is a first-class relational resource rather than data embedded into `prompt_drafts.snapshot`.
+Draft preview media is stored in `prompt_draft_images` rather than inside `prompt_drafts.snapshot`.
 
-Expected properties:
+Each image has:
 
 ```text
-multiple images per Cloud Draft
-stable image UUIDs
+stable UUID
+owner user_id
+Cloud Draft draft_id
 ordered position
-owner + draft identity
-immutable Arvan object keys
-full URL + source dimensions/bytes
-cascade with Draft deletion
+immutable public URL
+immutable Arvan/S3 storage key
+source width + height
+encoded byte size
+created_at
 ```
 
-Browser media preparation contract:
+The table references the composite Cloud Draft identity `(user_id, draft_id)` and uses `ON DELETE CASCADE`. Position is unique per Draft and is deferrable so primary-image reorder/delete compaction can remain transactional.
+
+The current per-Draft safety cap is:
+
+```text
+8 images
+```
+
+### Browser preparation contract
+
+Implemented in `app/utils/draftPreviewImage.ts`:
 
 ```text
 input: JPEG / PNG / WebP
 output: WebP
 quality: 0.60
-preserve original pixel dimensions
+pixel width/height preserved
 no crop
 no resize
 ```
 
-Safety limits may reject unreasonable inputs but must not silently resize them.
+The browser rejects unreasonable images rather than silently reducing them:
 
-Draft image storage uses a dedicated immutable namespace separate from Archive media.
+```text
+maximum edge: 8192px
+maximum decoded pixels: 40,000,000
+maximum encoded WebP payload: 12 MiB
+```
 
-Owner `/user` card actions gain media management. Position 0 is the primary card image. Multiple stored images remain available for later richer presentation and Archive promotion.
+The backend independently verifies that the uploaded bytes are a valid WebP and enforces equivalent edge/pixel/byte limits. Client-reported dimensions are not trusted.
 
-Avoid running a continuously animated canvas slider for every card by default; card-grid performance remains a product constraint.
+### Storage namespace
+
+Draft media uses a dedicated immutable namespace separate from Prompt Archive and profile media:
+
+```text
+draft-media/<USER_UUID>/<IMAGE_UUID>/image.webp
+```
+
+Objects use immutable cache headers. Arvan credentials remain backend-only.
+
+### Owner media API
+
+Authenticated Cloud Draft routes:
+
+```text
+GET    /api/drafts/:draftId/images
+POST   /api/drafts/:draftId/images
+DELETE /api/drafts/:draftId/images/:imageId
+POST   /api/drafts/:draftId/images/:imageId/primary
+```
+
+Upload ownership is enforced from the authenticated user. New uploads append to the ordered set. Delete compacts later positions. Making an image primary moves it to position 0 and shifts the previous leading images transactionally.
+
+### Public profile read model
+
+`GET /api/users/:userId/drafts` now includes an ordered `images` array on each returned Draft.
+
+Existing visibility rules remain authoritative:
+
+```text
+owner -> own public + private Drafts and their media metadata
+visitor -> public Drafts only and media for only those returned public Drafts
+```
+
+No private Draft is added to the public profile response.
+
+### `/user` card experience
+
+Owner Draft cards now support:
+
+```text
+add one or multiple preview images
+remove current primary image
+cycle the next stored image into primary position
+publish / unpublish as before
+```
+
+Position 0 is displayed as the card preview. If an owner Draft has no image, the card shows an add-preview affordance. Public visitors see the primary image only when the public Draft has media.
+
+Card rendering is intentionally static:
+
+```text
+plain <img>
+lazy loading
+async image decoding
+no per-card Visual Slider
+no continuously animated canvas
+```
+
+All stored images remain available through the ordered media model for later richer presentation and Archive promotion.
+
+### Phase 20B acceptance
+
+```text
+migration 017 applies successfully
+prompt_draft_images rows cascade when their Cloud Draft is deleted
+owner can upload JPEG / PNG / WebP from /user
+browser output is WebP at quality 0.60 without resize/crop
+backend rejects malformed/non-WebP or unreasonable uploads
+multiple images preserve deterministic ordered positions
+position 0 is the visible card image
+owner can advance another stored image to position 0
+owner can remove the current primary image and positions compact correctly
+owner cannot mutate another user's Draft media
+public profile visitor receives media only for public Drafts
+private Drafts remain absent from visitor responses
+Draft cards remain static rather than running per-card sliders
+EN/FA media copy is valid
+pnpm generate succeeds
+```
+
+Phase 20B is not `DONE` until migration/API/UI behavior and generation are verified locally.
 
 ## Phase 20C — Moderation + Promote to Prompt Archive
 
