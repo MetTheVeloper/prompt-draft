@@ -31,6 +31,7 @@ export type PromptArchiveListItem = {
   }
   tags: string[]
   coverImage: PromptArchiveImage | null
+  secondaryImage: PromptArchiveImage | null
   imageCount: number
 }
 
