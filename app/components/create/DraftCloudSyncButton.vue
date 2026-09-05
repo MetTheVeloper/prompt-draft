@@ -13,6 +13,7 @@ import {
   getDraftState,
   getDraftSyncEntry,
   isDraftSyncedForUser,
+  removeDraftSyncEntry,
   setDraftSyncEntry,
 } from "~/utils/draftCloudSync";
 
@@ -25,6 +26,7 @@ const LOCAL_SAVE_SETTLE_MS = 450;
 
 type DraftCloudStatus = "idle" | "dirty" | "syncing" | "synced" | "error";
 
+const route = useRoute();
 const { t } = useI18n();
 const auth = useAuth();
 const { listPromptDrafts, upsertPromptDraft } = usePromptDraftApi();
@@ -40,6 +42,11 @@ let autosyncTimer: ReturnType<typeof setInterval> | null = null;
 let statusTimer: ReturnType<typeof setInterval> | null = null;
 
 const currentUserId = computed(() => auth.user.value?.id ?? null);
+
+const requestedDraftId = computed(() => {
+  const value = typeof route.query.draft === "string" ? route.query.draft.trim() : "";
+  return value && value.length <= 200 ? value : null;
+});
 
 const buttonLabel = computed(() => {
   if (!auth.isLoggedIn.value) return t("auth.header.login");
@@ -172,14 +179,23 @@ async function restoreCloudDrafts() {
     return;
   }
 
-  if (!remoteDrafts.length) return;
-
   const collection = readDraftCollection() ?? {
     version: 1 as const,
     activeDraftId: null,
     drafts: [],
   };
-  const drafts = [...collection.drafts];
+  const remoteIds = new Set(remoteDrafts.map((draft) => draft.id));
+  const drafts = collection.drafts.filter((draft) => {
+    const wasCloudTracked = Boolean(getDraftSyncEntry(userId, draft.id));
+    const shouldRemove = wasCloudTracked && !remoteIds.has(draft.id);
+
+    if (shouldRemove) {
+      removeDraftSyncEntry(userId, draft.id);
+      return false;
+    }
+
+    return true;
+  });
   const newRemoteDrafts: PromptDraftRecord[] = [];
 
   for (const remote of remoteDrafts) {
@@ -204,11 +220,14 @@ async function restoreCloudDrafts() {
   }
 
   const mergedDrafts = [...newRemoteDrafts, ...drafts];
+  const requestedId = requestedDraftId.value;
   const activeDraftId =
-    collection.activeDraftId &&
-    mergedDrafts.some((draft) => draft.id === collection.activeDraftId)
-      ? collection.activeDraftId
-      : mergedDrafts[0]?.id ?? null;
+    requestedId && mergedDrafts.some((draft) => draft.id === requestedId)
+      ? requestedId
+      : collection.activeDraftId &&
+          mergedDrafts.some((draft) => draft.id === collection.activeDraftId)
+        ? collection.activeDraftId
+        : mergedDrafts[0]?.id ?? null;
 
   const mergedCollection: PromptDraftCollection = {
     version: 1,
