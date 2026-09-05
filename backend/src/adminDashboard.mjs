@@ -67,6 +67,7 @@ export async function handleAdminDashboardRequest({
             WHERE server_updated_at >= (SELECT day_start_utc FROM bounds)
           ))::int AS updated_today
         FROM prompt_drafts
+        WHERE deleted_at IS NULL
       ),
       audit_metrics AS (
         SELECT COUNT(*)::int AS today
