@@ -4,6 +4,7 @@ import { getUserScoreState } from './userScore.mjs'
 
 const PROFILE_MATCH = /^\/api\/users\/([^/]+)\/profile$/
 const DRAFTS_MATCH = /^\/api\/users\/([^/]+)\/drafts$/
+const USERNAME_RESOLVE_PATH = '/api/users/resolve'
 
 function isUuid(value) {
   return (
@@ -21,6 +22,14 @@ function decodeUserId(value) {
   }
 }
 
+function normalizeUsername(value) {
+  if (typeof value !== 'string') return null
+
+  const normalized = value.trim().toLowerCase()
+  if (!/^[a-z0-9._-]{3,64}$/.test(normalized)) return null
+  return normalized
+}
+
 async function resolveViewer(request) {
   try {
     return await getAuthenticatedUser(request)
@@ -28,6 +37,21 @@ async function resolveViewer(request) {
     console.error('[Prompt Draft API] public profile viewer lookup failed', error)
     throw error
   }
+}
+
+async function resolvePublicUserByUsername(username) {
+  const result = await queryDatabase(
+    `
+      SELECT id, username
+      FROM users
+      WHERE LOWER(username) = $1
+        AND status = 'active'
+      LIMIT 1
+    `,
+    [username],
+  )
+
+  return result.rows[0] ?? null
 }
 
 async function readPublicProfile(userId) {
@@ -234,11 +258,60 @@ export async function handleUserProfileRequest({
 }) {
   const profileMatch = url.pathname.match(PROFILE_MATCH)
   const draftsMatch = url.pathname.match(DRAFTS_MATCH)
+  const isUsernameResolve = url.pathname === USERNAME_RESOLVE_PATH
 
-  if (!profileMatch && !draftsMatch) return false
+  if (!profileMatch && !draftsMatch && !isUsernameResolve) return false
 
   if (request.method !== 'GET') {
     sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, corsHeaders)
+    return true
+  }
+
+  if (isUsernameResolve) {
+    const username = normalizeUsername(url.searchParams.get('username'))
+    if (!username) {
+      sendJson(
+        response,
+        400,
+        {
+          ok: false,
+          message: 'Invalid username',
+          errors: [
+            {
+              field: 'username',
+              message: 'username must be 3-64 characters using English letters, numbers, dot, underscore, or hyphen',
+            },
+          ],
+        },
+        corsHeaders,
+      )
+      return true
+    }
+
+    try {
+      const user = await resolvePublicUserByUsername(username)
+      if (!user) {
+        sendJson(response, 404, { ok: false, message: 'User profile not found' }, corsHeaders)
+        return true
+      }
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          user: {
+            id: user.id,
+            username: user.username,
+          },
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] public username resolve failed', error)
+      sendJson(response, 500, { ok: false, message: 'Failed to resolve user profile' }, corsHeaders)
+    }
+
     return true
   }
 
