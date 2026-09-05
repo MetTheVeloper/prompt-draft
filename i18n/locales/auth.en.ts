@@ -161,6 +161,20 @@ export default {
         publish: "Show on profile",
         unpublish: "Hide from profile",
       },
+      media: {
+        add: "Add preview image",
+        nextPrimary: "Use next image as card preview",
+        removePrimary: "Remove current preview image",
+        empty: "Add a preview image",
+        count: "{count}/{max} images",
+        errors: {
+          prepare: "Prompt Draft could not prepare this preview image.",
+          upload: "Prompt Draft could not save this preview image.",
+          remove: "Prompt Draft could not remove this preview image.",
+          primary: "Prompt Draft could not change the primary preview image.",
+          limit: "A Cloud Draft can have up to {max} preview images.",
+        },
+      },
       errors: {
         load: "Prompt Draft could not load this creator's drafts.",
         visibility: "Prompt Draft could not update draft visibility.",
