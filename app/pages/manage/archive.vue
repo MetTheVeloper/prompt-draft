@@ -70,6 +70,13 @@ const publishBlockedByLocalImages = computed(() => hasPreparedImages.value);
 const editorBusy = computed(() => (
   saving.value || statusChanging.value || mediaMutating.value || editorLoading.value
 ));
+const hasValidOptionalTelegramId = computed(() => {
+  const value = form.telegramMessageId.trim();
+  if (!value) return true;
+  if (!/^\d+$/.test(value)) return false;
+  const id = Number(value);
+  return Number.isSafeInteger(id) && id > 0;
+});
 
 const statusFilterItems = computed(() => [
   { value: "draft", label: t("manage.archive.statuses.draft"), icon: "edit_note" },
@@ -91,7 +98,7 @@ const tagItems = computed(() => canonicalTags.value.map(tag => ({
 
 const editorHeading = computed(() => (
   editingItem.value
-    ? t("manage.archive.editor.editTitle", { id: editingItem.value.telegramMessageId })
+    ? t("manage.archive.editor.editTitle", { id: editingItem.value.publicId })
     : t("manage.archive.editor.createTitle")
 ));
 
@@ -106,8 +113,7 @@ const canSave = computed(() => {
     canManage.value &&
     !editorBusy.value &&
     !hasPendingPreparedImages.value &&
-    /^\d+$/.test(form.telegramMessageId.trim()) &&
-    Number(form.telegramMessageId) > 0 &&
+    hasValidOptionalTelegramId.value &&
     Boolean(form.titleEn.trim()) &&
     Boolean(form.titleFa.trim()) &&
     Boolean(form.publishedAt) &&
@@ -131,9 +137,9 @@ function statusColor(status: AdminArchiveStatus) {
 }
 
 function sourceKindLabel(sourceKind: AdminArchiveSummary["sourceKind"]) {
-  return sourceKind === "managed"
-    ? t("manage.archive.sourceKinds.managed")
-    : t("manage.archive.sourceKinds.legacy");
+  if (sourceKind === "managed") return t("manage.archive.sourceKinds.managed");
+  if (sourceKind === "user_draft") return t("manage.archive.sourceKinds.userDraft");
+  return t("manage.archive.sourceKinds.legacy");
 }
 
 function formatDate(value: string) {
@@ -175,7 +181,7 @@ function getApiErrorMessage(error: unknown, fallback: string) {
   return fallback;
 }
 
-function parseTelegramMessageId(value: unknown) {
+function parseArchivePublicId(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value;
   if (typeof raw !== "string" || !/^\d+$/.test(raw)) return null;
 
@@ -184,22 +190,22 @@ function parseTelegramMessageId(value: unknown) {
 }
 
 async function setEditQuery(
-  telegramMessageId: number | null,
+  publicId: number | null,
   mode: "push" | "replace" = "replace",
 ) {
-  const current = parseTelegramMessageId(route.query.edit);
+  const current = parseArchivePublicId(route.query.edit);
   const hasRawEdit = route.query.edit !== undefined;
 
   if (
-    (telegramMessageId === null && !hasRawEdit) ||
-    (telegramMessageId !== null && current === telegramMessageId)
+    (publicId === null && !hasRawEdit) ||
+    (publicId !== null && current === publicId)
   ) {
     return;
   }
 
   const query = { ...route.query };
-  if (telegramMessageId === null) delete query.edit;
-  else query.edit = String(telegramMessageId);
+  if (publicId === null) delete query.edit;
+  else query.edit = String(publicId);
 
   await router[mode]({ path: route.path, query });
 }
@@ -299,7 +305,9 @@ function resetForm() {
 }
 
 function populateForm(item: AdminArchiveItem) {
-  form.telegramMessageId = String(item.telegramMessageId);
+  form.telegramMessageId = item.telegramMessageId == null
+    ? ""
+    : String(item.telegramMessageId);
   form.titleEn = item.title.en;
   form.titleFa = item.title.fa;
   form.sourceTitle = item.sourceTitle || "";
@@ -325,7 +333,7 @@ function openCreate() {
   editorOpen.value = true;
 }
 
-async function openEditByTelegramId(telegramMessageId: number) {
+async function openEditByPublicId(publicId: number) {
   const requestVersion = ++editorRequestVersion;
   editorOpen.value = true;
   editorLoading.value = true;
@@ -335,7 +343,7 @@ async function openEditByTelegramId(telegramMessageId: number) {
   resetForm();
 
   try {
-    const resolved = await archiveDeepLink.resolveByTelegramId(telegramMessageId);
+    const resolved = await archiveDeepLink.resolveByPublicId(publicId);
     const response = await api.getAdminArchive(resolved.id);
     if (requestVersion !== editorRequestVersion) return;
     editingItem.value = response.item;
@@ -356,7 +364,7 @@ async function openEditByTelegramId(telegramMessageId: number) {
 }
 
 function openEdit(item: AdminArchiveSummary) {
-  void setEditQuery(item.telegramMessageId, "push");
+  void setEditQuery(item.publicId, "push");
 }
 
 function closeEditor() {
@@ -373,8 +381,8 @@ async function syncEditorFromRoute() {
     return;
   }
 
-  const telegramMessageId = parseTelegramMessageId(route.query.edit);
-  if (telegramMessageId === null) {
+  const publicId = parseArchivePublicId(route.query.edit);
+  if (publicId === null) {
     resetEditorState();
     modal.message({
       type: "error",
@@ -388,17 +396,19 @@ async function syncEditorFromRoute() {
 
   if (
     editorOpen.value &&
-    editingItem.value?.telegramMessageId === telegramMessageId
+    editingItem.value?.publicId === publicId
   ) {
     return;
   }
 
-  await openEditByTelegramId(telegramMessageId);
+  await openEditByPublicId(publicId);
 }
 
 function buildInput(): AdminArchiveUpsertInput {
+  const telegramMessageId = form.telegramMessageId.trim();
+
   return {
-    telegramMessageId: Number(form.telegramMessageId),
+    telegramMessageId: telegramMessageId ? Number(telegramMessageId) : null,
     title: {
       en: form.titleEn.trim(),
       fa: form.titleFa.trim(),
@@ -479,7 +489,7 @@ async function saveMetadata() {
 
     editingItem.value = response.item;
     populateForm(response.item);
-    await setEditQuery(response.item.telegramMessageId, "replace");
+    await setEditQuery(response.item.publicId, "replace");
 
     if (preparedImages.value.length) {
       try {
@@ -681,13 +691,13 @@ onBeforeUnmount(() => {
             </el-text>
           </el-flex>
           <el-text v-if="editingItem" :size="10" color="normal45">
-            {{ sourceKindLabel(editingItem.sourceKind) }} · {{ editingItem.id }}
+            {{ sourceKindLabel(editingItem.sourceKind) }} · #{{ editingItem.publicId }} · {{ editingItem.id }}
           </el-text>
         </el-flex>
 
         <el-grid cols="minmax(180px, .55fr) minmax(260px, 1fr) minmax(260px, 1fr)" :gap="12" class="w100">
           <el-flex rules="ccs" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.archive.fields.telegramId") }}</el-text>
+            <el-text :size="11" :weight="700">{{ t("manage.archive.fields.telegramIdOptional") }}</el-text>
             <el-text-field
               v-model="form.telegramMessageId"
               :actions="false"
@@ -976,7 +986,7 @@ onBeforeUnmount(() => {
         align-items="center"
         class="w100"
         :p="[12, 16]">
-        <el-text color="normal55" :size="10" :weight="800">{{ t("manage.archive.fields.telegramId") }}</el-text>
+        <el-text color="normal55" :size="10" :weight="800">{{ t("manage.archive.fields.publicId") }}</el-text>
         <el-text color="normal55" :size="10" :weight="800">{{ t("manage.archive.fields.title") }}</el-text>
         <el-text color="normal55" :size="10" :weight="800">{{ t("manage.archive.fields.status") }}</el-text>
         <el-text color="normal55" :size="10" :weight="800">{{ t("manage.archive.fields.previewModel") }}</el-text>
@@ -1000,10 +1010,12 @@ onBeforeUnmount(() => {
             align-items="center"
             class="w100"
             :p="[12, 16]">
-            <el-text :size="11" :weight="800">#{{ item.telegramMessageId }}</el-text>
+            <el-text :size="11" :weight="800">#{{ item.publicId }}</el-text>
             <el-flex rules="ccs" :gap="3" class="w100">
               <el-text :size="12" :weight="700">{{ locale === 'fa' ? item.title.fa : item.title.en }}</el-text>
-              <el-text :size="9" color="normal45">{{ sourceKindLabel(item.sourceKind) }}</el-text>
+              <el-text :size="9" color="normal45">
+                {{ sourceKindLabel(item.sourceKind) }}<template v-if="item.telegramMessageId"> · Telegram #{{ item.telegramMessageId }}</template>
+              </el-text>
             </el-flex>
             <el-text :size="11" :weight="700" :color="statusColor(item.status)">
               {{ statusLabel(item.status) }}
