@@ -38,6 +38,16 @@ export type GetUserProfileResponse = {
   viewer: UserProfileViewer;
 };
 
+export type UserDraftPreviewImage = {
+  id: string;
+  url: string;
+  width: number;
+  height: number;
+  sizeBytes: number;
+  position: number;
+  createdAt: string;
+};
+
 export type UserProfileDraftSummary = {
   id: string;
   title: string;
@@ -47,6 +57,7 @@ export type UserProfileDraftSummary = {
   outputFormat: "modular" | "natural" | "json";
   moduleCount: number;
   publishedAt: string | null;
+  images: UserDraftPreviewImage[];
   visibility?: UserDraftVisibility;
 };
 
@@ -72,4 +83,9 @@ export type UpdateDraftVisibilityResponse = {
     visibility: UserDraftVisibility;
     publishedAt: string | null;
   };
+};
+
+export type UpdateDraftImagesResponse = {
+  ok: true;
+  images: UserDraftPreviewImage[];
 };
