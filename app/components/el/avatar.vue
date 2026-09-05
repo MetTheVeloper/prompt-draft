@@ -87,7 +87,8 @@ watch(
 <template>
   <el-flex
     rules="rcc"
-    bg="normal10"
+    bg="surface50"
+    bd="b4"
     :radius="100"
     :br="br"
     :bc="bc"
