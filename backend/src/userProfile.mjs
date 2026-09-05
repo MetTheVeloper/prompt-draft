@@ -73,11 +73,13 @@ async function readPublicProfile(userId) {
           FROM prompt_drafts
           WHERE prompt_drafts.user_id = users.id
             AND prompt_drafts.visibility = 'public'
+            AND prompt_drafts.deleted_at IS NULL
         ) AS "publicDraftCount",
         (
           SELECT COUNT(*)::int
           FROM prompt_drafts
           WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.deleted_at IS NULL
         ) AS "totalDraftCount"
       FROM users
       WHERE users.id = $1
@@ -203,7 +205,10 @@ function mapDraftRow(row, isOwner) {
 
 async function listProfileDrafts({ userId, isOwner, limit, cursor }) {
   const values = [userId]
-  const conditions = ['prompt_drafts.user_id = $1']
+  const conditions = [
+    'prompt_drafts.user_id = $1',
+    'prompt_drafts.deleted_at IS NULL',
+  ]
 
   if (!isOwner) {
     conditions.push(`prompt_drafts.visibility = 'public'`)
