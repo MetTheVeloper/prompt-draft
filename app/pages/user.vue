@@ -541,7 +541,7 @@ onMounted(() => {
             :p="18"
             :radius="18"
             :br="1"
-            :bc="hoveredDraftId === draft.id ? 'prim' : 'normal'"
+            :bc="hoveredDraftId === draft.id ? 'normal50' : 'normal15'"
             @mouseenter="hoveredDraftId = draft.id"
             @mouseleave="hoveredDraftId = hoveredDraftId === draft.id ? null : hoveredDraftId">
             <el-flex rules="rbc" :gap="8" class="w100">
