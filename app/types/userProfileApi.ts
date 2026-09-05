@@ -24,6 +24,14 @@ export type UserProfileViewer = {
   isOwner: boolean;
 };
 
+export type ResolveUserProfileResponse = {
+  ok: true;
+  user: {
+    id: string;
+    username: string;
+  };
+};
+
 export type GetUserProfileResponse = {
   ok: true;
   profile: PublicUserProfile;
