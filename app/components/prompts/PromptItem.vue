@@ -24,6 +24,7 @@ const { mobile } = useScreen()
 
 const isGrid = computed(() => props.view === 'grid')
 const canManageArchive = computed(() => auth.can(AUTH_PERMISSIONS.ARCHIVE_MANAGE))
+const hasTelegram = computed(() => Boolean(props.item.telegramUrl))
 
 const coverImage = computed(() => {
   return props.item.coverImage?.thumbnailUrl || props.item.coverImage?.fullUrl || ''
@@ -184,15 +185,18 @@ const telegramButtonAttrs = computed(() => {
 })
 
 const viewButtonAttrs = computed(() => {
+  const fillGridSpace = isGrid.value && !hasTelegram.value
+
   return {
-    type: 'fab',
+    class: fillGridSpace ? 'fg100' : undefined,
+    type: fillGridSpace ? 'normal' : 'fab',
     to: detailUrl.value,
     label: t('prompts.actions.view'),
     icon: 'visibility',
     mode: 'flat',
     color: 'normal',
     size: 12,
-    p: isGrid.value ? 10 : mobile.value ? 8 : 9,
+    p: fillGridSpace ? [10, 12] : isGrid.value ? 10 : mobile.value ? 8 : 9,
   }
 })
 
@@ -214,6 +218,7 @@ function formatTag(tag: string) {
 }
 
 function openTelegram() {
+  if (!props.item.telegramUrl) return
   emit('telegram', props.item)
 }
 </script>
@@ -332,6 +337,7 @@ function openTelegram() {
         v-if="isGrid"
         v-bind="actionsAttrs">
         <el-button
+          v-if="hasTelegram"
           v-bind="telegramButtonAttrs"
           @click="openTelegram"
         />
@@ -345,6 +351,7 @@ function openTelegram() {
       v-if="!isGrid"
       v-bind="actionsAttrs">
       <el-button
+        v-if="hasTelegram"
         v-bind="telegramButtonAttrs"
         @click="openTelegram"
       />
