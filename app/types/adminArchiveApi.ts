@@ -22,6 +22,7 @@ export type AdminArchiveSummary = {
   sourceUserId: string | null;
   sourceDraftId: string | null;
   imageCount: number;
+  previewImageUrl: string | null;
   updatedAt: string;
 };
 
