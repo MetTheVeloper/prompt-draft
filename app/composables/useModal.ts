@@ -165,6 +165,18 @@ function normalizeDescriptions(config: Partial<GlobalModalConfig>) {
   return []
 }
 
+function normalizeActions(actions?: GlobalModalAction[]) {
+  if (!Array.isArray(actions)) return []
+
+  return actions.map((action) => ({
+    ...action,
+    // A passive action such as Cancel should naturally close only its own modal
+    // layer. Async/custom actions keep the historical opt-in close semantics so
+    // they can finish work, report errors, or close themselves deliberately.
+    close: action.close ?? (typeof action.handler !== 'function'),
+  }))
+}
+
 function normalizeModal(
   config: GlobalModalConfig = {},
   id: GlobalModalId = createModalId(),
@@ -187,7 +199,7 @@ function normalizeModal(
 
     props: config.props || {},
 
-    actions: Array.isArray(config.actions) ? config.actions : [],
+    actions: normalizeActions(config.actions),
 
     options: {
       ...defaultModal.options,
