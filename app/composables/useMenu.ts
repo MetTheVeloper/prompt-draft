@@ -2,6 +2,7 @@ import { markRaw, reactive, shallowRef } from 'vue'
 import type { Component, ComponentPublicInstance } from 'vue'
 
 export type GlobalMenuMode = 'point' | 'dropdown' | 'drawer'
+export type GlobalMenuScope = 'root' | 'child'
 export type GlobalMenuItemType = 'item' | 'divider' | 'header'
 export type GlobalMenuPlacement =
   | 'bottom-start'
@@ -115,6 +116,13 @@ type GlobalMenuState = {
   version: number
 }
 
+type MenuControllerOptions = {
+  defaultZIndex: number
+  label: string
+  beforeOpen?: () => void
+  beforeClose?: () => void
+}
+
 const defaultMenu: GlobalMenuConfig = {
   mode: 'point',
 
@@ -155,14 +163,6 @@ const defaultMenu: GlobalMenuConfig = {
 
   onClose: undefined,
 }
-
-const state = reactive<GlobalMenuState>({
-  isOpen: false,
-  menu: null,
-  version: 0,
-})
-
-const activeComponent = shallowRef<Component | null>(null)
 
 function hasOwn(obj: object, key: string) {
   return Object.prototype.hasOwnProperty.call(obj, key)
@@ -239,7 +239,10 @@ function hasMenuContent(config: GlobalMenuConfig) {
   return Boolean(config.component) || Boolean(config.items?.length)
 }
 
-function normalizeMenu(config: GlobalMenuConfig = {}): GlobalMenuConfig {
+function normalizeMenu(
+  config: GlobalMenuConfig = {},
+  defaultZIndex = 1000,
+): GlobalMenuConfig {
   const anchor = resolveAnchor(config.anchor)
   const point = getPointFromConfig(config)
   const mode = inferMenuMode(config, anchor)
@@ -271,6 +274,7 @@ function normalizeMenu(config: GlobalMenuConfig = {}): GlobalMenuConfig {
 
     options: {
       ...defaultMenu.options,
+      zIndex: defaultZIndex,
       ...(config.options || {}),
     },
 
@@ -281,198 +285,229 @@ function normalizeMenu(config: GlobalMenuConfig = {}): GlobalMenuConfig {
 function notifyClose(
   menu: GlobalMenuConfig | null,
   reason: GlobalMenuCloseReason,
+  label: string,
 ) {
   if (typeof menu?.onClose !== 'function') return
 
   try {
     menu.onClose(reason)
   } catch (error) {
-    console.error('[useMenu] خطا در اجرای onClose منو:', error)
+    console.error(`[${label}] خطا در اجرای onClose منو:`, error)
   }
 }
 
-function open(config: GlobalMenuConfig = {}) {
-  if (!hasMenuContent(config)) {
-    console.warn('[useMenu] برای باز کردن منو، items یا component الزامی است.')
-    return
-  }
+function createMenuController(options: MenuControllerOptions) {
+  const state = reactive<GlobalMenuState>({
+    isOpen: false,
+    menu: null,
+    version: 0,
+  })
 
-  if (state.isOpen && state.menu) {
-    const previousMenu = state.menu
+  const activeComponent = shallowRef<Component | null>(null)
 
-    state.isOpen = false
-    state.version += 1
-    notifyClose(previousMenu, 'replace')
-  }
+  function open(config: GlobalMenuConfig = {}) {
+    if (!hasMenuContent(config)) {
+      console.warn(`[${options.label}] برای باز کردن منو، items یا component الزامی است.`)
+      return
+    }
 
-  activeComponent.value = config.component
-    ? markRaw(config.component)
-    : null
+    options.beforeOpen?.()
 
-  state.menu = normalizeMenu(config)
-  state.isOpen = true
-  state.version += 1
-}
+    if (state.isOpen && state.menu) {
+      const previousMenu = state.menu
 
-function close(reason: GlobalMenuCloseReason = 'api') {
-  if (!state.isOpen) return
+      state.isOpen = false
+      state.version += 1
+      notifyClose(previousMenu, 'replace', options.label)
+    }
 
-  const closingMenu = state.menu
-
-  state.isOpen = false
-  state.version += 1
-  notifyClose(closingMenu, reason)
-}
-
-function clear() {
-  if (state.isOpen) return
-
-  state.menu = null
-  activeComponent.value = null
-  state.version += 1
-}
-
-function clearAfterClose() {
-  clear()
-}
-
-function update(config: Partial<GlobalMenuConfig> = {}) {
-  if (!state.menu) return
-
-  if (hasOwn(config, 'component')) {
     activeComponent.value = config.component
       ? markRaw(config.component)
       : null
+
+    state.menu = normalizeMenu(config, options.defaultZIndex)
+    state.isOpen = true
+    state.version += 1
   }
 
-  const nextConfig: GlobalMenuConfig = {
-    ...state.menu,
-    ...config,
+  function close(reason: GlobalMenuCloseReason = 'api') {
+    if (!state.isOpen) return
 
-    props: {
-      ...(state.menu.props || {}),
-      ...(config.props || {}),
-    },
+    options.beforeClose?.()
 
-    options: {
-      ...(state.menu.options || {}),
-      ...(config.options || {}),
-    },
+    const closingMenu = state.menu
 
-    items: hasOwn(config, 'items')
-      ? config.items
-      : state.menu.items,
-
-    anchor: hasOwn(config, 'anchor')
-      ? config.anchor
-      : state.menu.anchor,
-
-    x: hasOwn(config, 'x')
-      ? config.x
-      : state.menu.x,
-
-    y: hasOwn(config, 'y')
-      ? config.y
-      : state.menu.y,
-
-    event: hasOwn(config, 'event')
-      ? config.event
-      : undefined,
-
-    placement: hasOwn(config, 'placement')
-      ? config.placement
-      : state.menu.placement,
-
-    mode: hasOwn(config, 'mode')
-      ? config.mode
-      : state.menu.mode,
-
-    onClose: hasOwn(config, 'onClose')
-      ? config.onClose
-      : state.menu.onClose,
+    state.isOpen = false
+    state.version += 1
+    notifyClose(closingMenu, reason, options.label)
   }
 
-  state.menu = normalizeMenu(nextConfig)
-  state.version += 1
-}
+  function clear() {
+    if (state.isOpen) return
 
-function getComponent() {
-  return activeComponent.value
-}
+    state.menu = null
+    activeComponent.value = null
+    state.version += 1
+  }
 
-function isDividerItem(item: GlobalMenuItem) {
-  return item.type === 'divider' || item.divider === true
-}
+  function clearAfterClose() {
+    clear()
+  }
 
-function isHeaderItem(item: GlobalMenuItem) {
-  return item.type === 'header'
-}
+  function update(config: Partial<GlobalMenuConfig> = {}) {
+    if (!state.menu) return
 
-function isInteractiveItem(item: GlobalMenuItem) {
-  return !isDividerItem(item) && !isHeaderItem(item)
-}
+    if (hasOwn(config, 'component')) {
+      activeComponent.value = config.component
+        ? markRaw(config.component)
+        : null
+    }
 
-function isItemDisabled(item: GlobalMenuItem) {
-  if (!item || !isInteractiveItem(item)) return true
+    const nextConfig: GlobalMenuConfig = {
+      ...state.menu,
+      ...config,
 
-  if (typeof item.disabled === 'function') {
+      props: {
+        ...(state.menu.props || {}),
+        ...(config.props || {}),
+      },
+
+      options: {
+        ...(state.menu.options || {}),
+        ...(config.options || {}),
+      },
+
+      items: hasOwn(config, 'items')
+        ? config.items
+        : state.menu.items,
+
+      anchor: hasOwn(config, 'anchor')
+        ? config.anchor
+        : state.menu.anchor,
+
+      x: hasOwn(config, 'x')
+        ? config.x
+        : state.menu.x,
+
+      y: hasOwn(config, 'y')
+        ? config.y
+        : state.menu.y,
+
+      event: hasOwn(config, 'event')
+        ? config.event
+        : undefined,
+
+      placement: hasOwn(config, 'placement')
+        ? config.placement
+        : state.menu.placement,
+
+      mode: hasOwn(config, 'mode')
+        ? config.mode
+        : state.menu.mode,
+
+      onClose: hasOwn(config, 'onClose')
+        ? config.onClose
+        : state.menu.onClose,
+    }
+
+    state.menu = normalizeMenu(nextConfig, options.defaultZIndex)
+    state.version += 1
+  }
+
+  function getComponent() {
+    return activeComponent.value
+  }
+
+  function isDividerItem(item: GlobalMenuItem) {
+    return item.type === 'divider' || item.divider === true
+  }
+
+  function isHeaderItem(item: GlobalMenuItem) {
+    return item.type === 'header'
+  }
+
+  function isInteractiveItem(item: GlobalMenuItem) {
+    return !isDividerItem(item) && !isHeaderItem(item)
+  }
+
+  function isItemDisabled(item: GlobalMenuItem) {
+    if (!item || !isInteractiveItem(item)) return true
+
+    if (typeof item.disabled === 'function') {
+      try {
+        return item.disabled()
+      } catch (error) {
+        console.error(`[${options.label}] خطا در بررسی disabled آیتم منو:`, error)
+        return true
+      }
+    }
+
+    return !!item.disabled
+  }
+
+  async function runItem(item: GlobalMenuItem) {
+    if (
+      !state.menu ||
+      !item ||
+      !isInteractiveItem(item) ||
+      isItemDisabled(item)
+    ) {
+      return
+    }
+
+    let result: void | boolean
+
     try {
-      return item.disabled()
+      result = await item.handler?.({
+        close,
+        update,
+        menu: state.menu,
+        item,
+      })
     } catch (error) {
-      console.error('[useMenu] خطا در بررسی disabled آیتم منو:', error)
-      return true
+      console.error(`[${options.label}] خطا در اجرای handler آیتم منو:`, error)
+      return
+    }
+
+    const shouldClose =
+      result !== false &&
+      item.close !== false &&
+      state.menu.options?.closeOnSelect !== false
+
+    if (shouldClose) {
+      close('select')
     }
   }
 
-  return !!item.disabled
-}
-
-async function runItem(item: GlobalMenuItem) {
-  if (
-    !state.menu ||
-    !item ||
-    !isInteractiveItem(item) ||
-    isItemDisabled(item)
-  ) {
-    return
-  }
-
-  let result: void | boolean
-
-  try {
-    result = await item.handler?.({
-      close,
-      update,
-      menu: state.menu,
-      item,
-    })
-  } catch (error) {
-    console.error('[useMenu] خطا در اجرای handler آیتم منو:', error)
-    return
-  }
-
-  const shouldClose =
-    result !== false &&
-    item.close !== false &&
-    state.menu.options?.closeOnSelect !== false
-
-  if (shouldClose) {
-    close('select')
+  return {
+    state,
+    open,
+    close,
+    update,
+    clear,
+    clearAfterClose,
+    getComponent,
+    isItemDisabled,
+    runItem,
   }
 }
 
-const menuApi = {
-  state,
-  open,
-  close,
-  update,
-  clear,
-  clearAfterClose,
-  getComponent,
-  isItemDisabled,
-  runItem,
-}
+const childMenuApi = createMenuController({
+  defaultZIndex: 1100,
+  label: 'useChildMenu',
+})
+
+const menuApi = createMenuController({
+  defaultZIndex: 1000,
+  label: 'useMenu',
+  beforeOpen: () => childMenuApi.close('replace'),
+  beforeClose: () => childMenuApi.close('replace'),
+})
 
 export function useMenu() {
   return menuApi
+}
+
+export function useChildMenu() {
+  return childMenuApi
 }
