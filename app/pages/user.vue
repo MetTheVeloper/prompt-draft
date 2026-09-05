@@ -24,13 +24,22 @@ const draftsError = ref("");
 const nextCursor = ref<string | null>(null);
 const hasMore = ref(false);
 const visibilityBusyIds = ref<string[]>([]);
+const hoveredDraftId = ref<string | null>(null);
 let requestVersion = 0;
 
-const userId = computed(() => {
+const routeUserId = computed(() => {
   const value = typeof route.query.id === "string" ? route.query.id.trim() : "";
   return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value)
     ? value
     : null;
+});
+
+const routeUsername = computed(() => {
+  const value = typeof route.query.un === "string"
+    ? route.query.un.trim().toLowerCase()
+    : "";
+
+  return /^[a-z0-9._-]{3,64}$/.test(value) ? value : null;
 });
 
 const displayName = computed(() => {
@@ -161,6 +170,14 @@ function scrollToDrafts() {
   });
 }
 
+async function resolveTargetUserId() {
+  if (routeUserId.value) return routeUserId.value;
+  if (!routeUsername.value) return null;
+
+  const response = await api.resolveUsername(routeUsername.value);
+  return response.user.id;
+}
+
 async function loadDrafts(
   targetUserId: string,
   options: { append?: boolean; version?: number } = {},
@@ -206,7 +223,6 @@ async function loadDrafts(
 }
 
 async function loadProfile() {
-  const targetUserId = userId.value;
   const version = ++requestVersion;
 
   loading.value = true;
@@ -217,8 +233,9 @@ async function loadProfile() {
   nextCursor.value = null;
   hasMore.value = false;
   isOwner.value = false;
+  hoveredDraftId.value = null;
 
-  if (!targetUserId) {
+  if (!routeUserId.value && !routeUsername.value) {
     errorMessage.value = t("userProfile.notFoundDescription");
     loading.value = false;
     return;
@@ -227,6 +244,14 @@ async function loadProfile() {
   await auth.initialize();
 
   try {
+    const targetUserId = await resolveTargetUserId();
+    if (version !== requestVersion) return;
+
+    if (!targetUserId) {
+      errorMessage.value = t("userProfile.notFoundDescription");
+      return;
+    }
+
     const response = await api.getProfile(targetUserId);
     if (version !== requestVersion) return;
 
@@ -242,7 +267,7 @@ async function loadProfile() {
 }
 
 async function refreshProfileSummary() {
-  const targetUserId = userId.value;
+  const targetUserId = profile.value?.id;
   if (!targetUserId) return;
 
   try {
@@ -279,12 +304,13 @@ async function setVisibility(
 }
 
 function loadMore() {
-  if (!userId.value) return;
-  return loadDrafts(userId.value, { append: true });
+  const targetUserId = profile.value?.id;
+  if (!targetUserId) return;
+  return loadDrafts(targetUserId, { append: true });
 }
 
 watch(
-  () => route.query.id,
+  () => [route.query.id, route.query.un],
   () => {
     void loadProfile();
   },
@@ -515,7 +541,9 @@ onMounted(() => {
             :p="18"
             :radius="18"
             :br="1"
-            bc="normal12">
+            :bc="hoveredDraftId === draft.id ? 'prim' : 'normal'"
+            @mouseenter="hoveredDraftId = draft.id"
+            @mouseleave="hoveredDraftId = hoveredDraftId === draft.id ? null : hoveredDraftId">
             <el-flex rules="rbc" :gap="8" class="w100">
               <el-text
                 :size="10"
@@ -693,6 +721,5 @@ onMounted(() => {
 
 .user-profile__draft-card:hover {
   transform: translateY(-3px);
-  border-color: var(--normalText25) !important;
 }
 </style>
