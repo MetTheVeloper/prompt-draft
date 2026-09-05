@@ -139,7 +139,7 @@ export default {
       },
     },
     archive: {
-      searchPlaceholder: "Search ID, title, prompt, source title, or tag",
+      searchPlaceholder: "Search public ID, Telegram ID, title, prompt, source title, or tag",
       loading: "Loading Prompt Archive…",
       empty: "No Archive items found.",
       loadError: "Failed to load Prompt Archive.",
@@ -151,13 +151,16 @@ export default {
       sourceKinds: {
         managed: "Managed",
         legacy: "Imported legacy",
+        userDraft: "Promoted user Draft",
       },
       filters: {
         allStatuses: "All statuses",
         allModels: "All models",
       },
       fields: {
+        publicId: "Public ID",
         telegramId: "Telegram ID",
+        telegramIdOptional: "Telegram ID (optional)",
         title: "Title",
         titleEn: "English title",
         titleFa: "Persian title",
@@ -172,7 +175,7 @@ export default {
         updated: "Updated",
       },
       placeholders: {
-        telegramId: "e.g. 512",
+        telegramId: "Optional, e.g. 512",
         titleEn: "English Archive title",
         titleFa: "Persian Archive title",
         optimizedFor: "Select target models",
