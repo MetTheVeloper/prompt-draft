@@ -52,7 +52,7 @@ export type PromptArchiveListQuery = {
   cursor?: string | null
   search?: string
   model?: PromptArchiveModel | null
-  tag?: string | null
+  tags?: string[]
   sort?: 'newest' | 'oldest'
 }
 
