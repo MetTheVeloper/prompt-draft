@@ -1,12 +1,13 @@
 # Backend / Docker Status
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 Branch: `feature/docker-local-api`
+Final implementation checkpoint: `4c67b045abead7e2eb3d7cdc29865859a86ecf6b`
 
 ## Verification rule
 
-A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. `pnpm generate` remains a release invariant for frontend-affecting work.
+A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. `pnpm generate` remains a release invariant for frontend-affecting milestone work.
 
 ## Current checkpoint
 
@@ -28,6 +29,39 @@ Primary Milestone 20 source:
 ```text
 docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
 ```
+
+## Documentation closure audit — 2026-09-06
+
+The canonical Docker/backend docs were re-read against the final branch state.
+
+Result:
+
+```text
+No unfinished in-scope milestone remains.
+No pending Phase 17/18/19/20 work remains.
+Milestones 1–20 are the final verified Docker-branch implementation baseline.
+```
+
+Two canonical guides had stale historical wording even though implementation was complete, and were corrected during this audit:
+
+```text
+docs/backend/IMPLEMENTATION.md
+  -> Milestones 1–20 complete (not 1–19)
+  -> SQL history corrected through 019
+  -> Draft media / soft-delete / promotion baseline recorded
+  -> Archive deep-link identity corrected to publicId
+  -> obsolete "Milestone 20 not selected" handoff removed
+
+docs/backend/MANAGE_GUIDE.md
+  -> /manage/archive added to the verified Manage baseline
+  -> archive.view / archive.manage / drafts.delete_any integration recorded
+  -> stable Archive publicId and promotion/moderation patterns recorded
+  -> old Dashboard+Users-only closure wording replaced
+```
+
+`README.md`, `STATUS.md`, `API_GUIDE.md` and the Milestone 17–20 source documents were otherwise consistent with the completed branch. Historical milestone documents can still contain intentionally scoped "future/out-of-scope" notes; those are not unfinished work unless the relevant milestone status says otherwise.
+
+The Docker branch is therefore documentation-closed as well as implementation-closed.
 
 ## Current verified platform
 
@@ -108,7 +142,7 @@ Public profile entry:
 
 ```text
 /user?id=<USER_UUID>
-/user?un=<username>   # alias added by Milestone 20
+/user?un=<username>
 ```
 
 Privacy boundary:
@@ -244,7 +278,7 @@ large client chunks
 
 ## Current next step
 
-Milestone 20 is closed. No Milestone 21 has been selected yet. Do not reopen closed milestones without a concrete regression or dependency.
+`feature/docker-local-api` is closed. No Milestone 21 is selected by this branch and no in-scope implementation task remains. Child branches may build on this checkpoint without reopening the completed Docker milestone program.
 
 ## New-chat handoff
 
@@ -255,6 +289,7 @@ Before new backend work, read:
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
 5. `docs/backend/MANAGE_GUIDE.md`
-6. relevant milestone source documents
+6. `docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md`
+7. relevant earlier milestone source documents when needed
 
 Release invariant remains `pnpm generate`.
