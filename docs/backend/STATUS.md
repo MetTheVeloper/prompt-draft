@@ -1,12 +1,14 @@
 # Backend / Docker Status
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
-Branch: `feature/docker-local-api`
+Current branch: `feature/create-ui-consolidation`
+Base branch: `feature/docker-local-api`
+Base checkpoint: `4c67b045abead7e2eb3d7cdc29865859a86ecf6b`
 
 ## Verification rule
 
-A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. `pnpm generate` remains a release invariant for frontend-affecting work.
+A phase/branch scope is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. `pnpm generate` remains the release invariant for frontend-affecting milestone work unless the current task is explicitly a later UI-only verification pass whose behavior is locally accepted before release closure.
 
 ## Current checkpoint
 
@@ -19,14 +21,18 @@ Milestone 20 — Profile Showcase, Draft Media & Archive Promotion: DONE / local
   Phase 20A — Profile UX polish + username profile alias: DONE / locally verified
   Phase 20B — Cloud Draft preview media + Draft workflow: DONE / locally verified
   Phase 20C — Moderation + Promote to Prompt Archive: DONE / locally verified
+Post-M20 branch — Create UI Consolidation: DONE / locally verified
 ```
 
 Milestone 20 closed on 2026-09-05 after local behavior verification, Archive snapshot parity and successful `pnpm generate`.
 
-Primary Milestone 20 source:
+The post-M20 UI consolidation branch closed functionally on 2026-09-06 after local verification of `/create`, `/manage/users`, User Information and `/manage/archive` changes.
+
+Primary sources:
 
 ```text
 docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md
 ```
 
 ## Current verified platform
@@ -51,6 +57,7 @@ public profile APIs never expose email/private Drafts to visitors
 storage credentials remain backend-only
 new schema changes use new numbered SQL files
 important XP/reward events require idempotency semantics
+list/admin presentation should avoid N+1 detail requests
 ```
 
 ## Milestones 1–16 — verified foundation
@@ -100,7 +107,7 @@ Arvan immutable storage
 image -> initials -> person icon fallback
 ```
 
-`el-avatar` remains reusable; same-size FAB/avatar height remains the default invariant. Milestone 20 adds only opt-in Profile Menu visual adjustments.
+Reusable UI remains `el-avatar`.
 
 ## Milestone 19 — DONE: Public User Profiles + Cover Media
 
@@ -108,7 +115,7 @@ Public profile entry:
 
 ```text
 /user?id=<USER_UUID>
-/user?un=<username>   # alias added by Milestone 20
+/user?un=<username>
 ```
 
 Privacy boundary:
@@ -205,6 +212,37 @@ schemaVersion = 3
 pnpm generate -> success
 ```
 
+## Post-Milestone-20 Create UI Consolidation — DONE
+
+Verified `/create` behavior:
+
+```text
+Drafts + Cloud Save/Sync + Public/Private remain primary controls
+Share / Download / Manage previews / Delete move to shared Global Menu
+Public/Private uses existing owner visibility API
+DraftPreviewManagerModal is reused from /user
+primary preview can render as full-screen /create background
+primary-image changes update the active background
+```
+
+Verified Manage projection polish:
+
+```text
+/manage/users rows render avatar through el-avatar
+User Information detail includes avatar, cover, email, role/status,
+Draft visibility counts, sessions, XP and account/activity timestamps
+/manage/archive rows render first preview image through el-avatar
+Archive list projects previewImageUrl directly; no N+1 detail fetches
+```
+
+No migration was required by this branch.
+
+Detailed record:
+
+```text
+docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md
+```
+
 ## Current SQL history
 
 ```text
@@ -244,17 +282,20 @@ large client chunks
 
 ## Current next step
 
-Milestone 20 is closed. No Milestone 21 has been selected yet. Do not reopen closed milestones without a concrete regression or dependency.
+The defined scope of `feature/create-ui-consolidation` is closed and locally verified. No in-scope implementation item remains open. Do not reopen Milestones 1–20 or this consolidation pass without a concrete regression/dependency.
+
+No merge to `main` is implied by this status document; branch integration is a separate explicit user decision.
 
 ## New-chat handoff
 
-Before new backend work, read:
+Before new backend/product work, read:
 
 1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
 5. `docs/backend/MANAGE_GUIDE.md`
-6. relevant milestone source documents
+6. `docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md`
+7. `docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md`
 
 Release invariant remains `pnpm generate`.
