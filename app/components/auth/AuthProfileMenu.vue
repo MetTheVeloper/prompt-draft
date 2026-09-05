@@ -29,6 +29,8 @@ const avatarPreparing = ref(false);
 const coverPreparing = ref(false);
 const avatarActionError = ref("");
 const coverActionError = ref("");
+const referralCopyState = ref<"idle" | "copied" | "error">("idle");
+let referralCopyResetTimer: ReturnType<typeof setTimeout> | null = null;
 
 const identityLabel = computed(() => {
   return user.value?.username || user.value?.email || "";
@@ -98,6 +100,18 @@ const formattedReferralCount = computed(() => {
   return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(
     referrals.referredCount,
   );
+});
+
+const referralCopyLabel = computed(() => {
+  if (referralCopyState.value === "copied") {
+    return t("auth.profile.referral.copied");
+  }
+
+  if (referralCopyState.value === "error") {
+    return t("auth.profile.referral.copyFailed");
+  }
+
+  return t("auth.profile.referral.copyLink");
 });
 
 const canOpenManage = computed(() => canAccessManage(auth.can));
@@ -287,6 +301,59 @@ async function removeCover() {
   }
 }
 
+function scheduleReferralCopyReset() {
+  if (referralCopyResetTimer) {
+    clearTimeout(referralCopyResetTimer);
+  }
+
+  referralCopyResetTimer = setTimeout(() => {
+    referralCopyState.value = "idle";
+    referralCopyResetTimer = null;
+  }, 2200);
+}
+
+async function writeReferralLinkToClipboard(value: string) {
+  if (!import.meta.client) return false;
+
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(value);
+      return true;
+    } catch {
+      // Fall through to the legacy DOM copy path.
+    }
+  }
+
+  const textArea = document.createElement("textarea");
+  textArea.value = value;
+  textArea.setAttribute("readonly", "");
+  textArea.style.position = "fixed";
+  textArea.style.opacity = "0";
+  document.body.appendChild(textArea);
+  textArea.focus();
+  textArea.select();
+
+  try {
+    return document.execCommand("copy");
+  } catch {
+    return false;
+  } finally {
+    document.body.removeChild(textArea);
+  }
+}
+
+async function copyReferralLink() {
+  const username = user.value?.username?.trim().toLowerCase() || "";
+  if (!/^[a-z0-9._-]{3,64}$/.test(username) || !import.meta.client) return;
+
+  const url = new URL("/login", window.location.origin);
+  url.searchParams.set("ref", username);
+
+  const copied = await writeReferralLinkToClipboard(url.toString());
+  referralCopyState.value = copied ? "copied" : "error";
+  scheduleReferralCopyReset();
+}
+
 onMounted(async () => {
   if (!auth.isLoggedIn.value) return;
 
@@ -305,6 +372,7 @@ onBeforeUnmount(() => {
   childMenu.close("replace");
   revokeAvatarPreview();
   revokeCoverPreview();
+  if (referralCopyResetTimer) clearTimeout(referralCopyResetTimer);
 });
 
 function handleCompleteProfile() {
@@ -501,6 +569,17 @@ async function handleLogout() {
         </el-text>
         <el-text :size="12" :weight="700">{{ formattedReferralCount }}</el-text>
       </el-flex>
+
+      <el-button
+        v-if="user?.username"
+        class="w100"
+        color="blue"
+        mode="flat"
+        icon="link"
+        :size="12"
+        :label="referralCopyLabel"
+        @click="copyReferralLink"
+      />
 
       <el-flex v-if="user?.username" rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55">{{ t("auth.profile.username") }}</el-text>
