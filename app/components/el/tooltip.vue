@@ -74,6 +74,7 @@ const SAFE_PADDING = 8;
 const TOOLTIP_GAP = 8;
 const ARROW_EDGE_PADDING = 12;
 let frameId = 0;
+let viewportListenersActive = false;
 
 const hasContent = computed(() => Boolean(props.title) || props.body !== "");
 
@@ -131,7 +132,6 @@ function choosePosition(anchor: DOMRect, width: number, height: number) {
 async function updatePosition() {
   if (!props.opened || !hasContent.value || !import.meta.client) return;
 
-  position.ready = false;
   await nextTick();
 
   await new Promise<void>((resolve) => {
@@ -185,6 +185,20 @@ function schedulePosition() {
   });
 }
 
+function setViewportListeners(active: boolean) {
+  if (!import.meta.client || active === viewportListenersActive) return;
+
+  viewportListenersActive = active;
+  if (active) {
+    window.addEventListener("resize", schedulePosition);
+    window.addEventListener("scroll", schedulePosition, true);
+    return;
+  }
+
+  window.removeEventListener("resize", schedulePosition);
+  window.removeEventListener("scroll", schedulePosition, true);
+}
+
 const bubbleStyle = computed(() => ({
   left: `${position.left}px`,
   top: `${position.top}px`,
@@ -225,6 +239,8 @@ const arrowStyle = computed(() => {
 watch(
   () => [props.opened, props.position, props.title, props.body, props.size],
   () => {
+    setViewportListeners(props.opened && hasContent.value);
+
     if (!props.opened) {
       position.ready = false;
       return;
@@ -237,14 +253,15 @@ watch(
 );
 
 onMounted(() => {
-  window.addEventListener("resize", schedulePosition);
-  window.addEventListener("scroll", schedulePosition, true);
+  if (props.opened && hasContent.value) {
+    setViewportListeners(true);
+    schedulePosition();
+  }
 });
 
 onBeforeUnmount(() => {
   if (frameId) cancelAnimationFrame(frameId);
-  window.removeEventListener("resize", schedulePosition);
-  window.removeEventListener("scroll", schedulePosition, true);
+  setViewportListeners(false);
 });
 </script>
 
