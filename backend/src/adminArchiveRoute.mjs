@@ -1,5 +1,6 @@
 import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
+import { handleArchivePromotionRequest } from './archivePromotion.mjs'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
@@ -42,6 +43,16 @@ export async function handleAdminArchiveRoute({
     return true
   }
 
+  const promotionHandled = await handleArchivePromotionRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+    user,
+  })
+  if (promotionHandled) return true
+
   const telegramLookupMatch = url.pathname.match(
     /^\/api\/admin\/archive\/telegram\/(\d+)$/,
   )
@@ -66,16 +77,16 @@ export async function handleAdminArchiveRoute({
     try {
       const result = await queryDatabase(
         `
-          SELECT id
+          SELECT id, public_id AS "publicId"
           FROM prompt_archive_items
           WHERE telegram_message_id = $1
           LIMIT 1
         `,
         [telegramMessageId],
       )
-      const archiveItemId = result.rows[0]?.id
+      const row = result.rows[0]
 
-      if (!archiveItemId) {
+      if (!row) {
         sendJson(response, 404, { ok: false, message: 'Archive item not found' }, corsHeaders)
         return true
       }
@@ -83,7 +94,12 @@ export async function handleAdminArchiveRoute({
       sendJson(
         response,
         200,
-        { ok: true, id: archiveItemId, telegramMessageId },
+        {
+          ok: true,
+          id: row.id,
+          publicId: Number(row.publicId),
+          telegramMessageId,
+        },
         corsHeaders,
       )
     } catch (error) {
