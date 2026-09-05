@@ -208,6 +208,7 @@ function mapSummaryRow(row) {
     sourceUserId: row.sourceUserId ?? null,
     sourceDraftId: row.sourceDraftId ?? null,
     imageCount: Number(row.imageCount) || 0,
+    previewImageUrl: row.previewImageUrl ?? null,
     updatedAt: row.updatedAt.toISOString(),
   }
 }
@@ -297,7 +298,14 @@ async function listArchiveItems(params) {
         INNER JOIN prompt_archive_tags tags ON tags.id = it.tag_id
         WHERE it.archive_item_id = items.id
       ), '[]'::json) AS tags,
-      (SELECT COUNT(*)::integer FROM prompt_archive_images images WHERE images.archive_item_id = items.id) AS "imageCount"
+      (SELECT COUNT(*)::integer FROM prompt_archive_images images WHERE images.archive_item_id = items.id) AS "imageCount",
+      (
+        SELECT COALESCE(images.thumbnail_url, images.full_url, images.source_path)
+        FROM prompt_archive_images images
+        WHERE images.archive_item_id = items.id
+        ORDER BY images.position ASC, images.id ASC
+        LIMIT 1
+      ) AS "previewImageUrl"
     FROM prompt_archive_items items
     ${filter.whereClause}
     ORDER BY items.updated_at DESC, items.id DESC

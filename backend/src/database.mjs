@@ -68,6 +68,28 @@ function mapAdminUserRow(row) {
   }
 }
 
+function mapAdminUserDetailRow(row) {
+  return {
+    ...mapAdminUserRow(row),
+    cover: row.coverUrl
+      ? {
+          fullUrl: row.coverUrl,
+          thumbnailUrl: row.coverThumbnailUrl ?? row.coverUrl,
+          width: Number(row.coverWidth) || 0,
+          height: Number(row.coverHeight) || 0,
+          thumbnailWidth: Number(row.coverThumbnailWidth) || 0,
+          thumbnailHeight: Number(row.coverThumbnailHeight) || 0,
+        }
+      : null,
+    updatedAt: row.updatedAt.toISOString(),
+    lastUpdatedAt: row.lastUpdatedAt.toISOString(),
+    totalDraftCount: Number(row.totalDraftCount),
+    publicDraftCount: Number(row.publicDraftCount),
+    privateDraftCount: Number(row.privateDraftCount),
+    totalXp: Number(row.totalXp),
+  }
+}
+
 export async function getDatabaseStatus() {
   const result = await queryDatabase(`
     SELECT
@@ -374,9 +396,29 @@ export async function getAdminUserById(id) {
         users.username,
         users.email,
         users.avatar_url AS "avatarUrl",
+        users.cover_url AS "coverUrl",
+        users.cover_thumbnail_url AS "coverThumbnailUrl",
+        users.cover_width AS "coverWidth",
+        users.cover_height AS "coverHeight",
+        users.cover_thumbnail_width AS "coverThumbnailWidth",
+        users.cover_thumbnail_height AS "coverThumbnailHeight",
         users.role,
         users.status,
         users.created_at AS "createdAt",
+        users.updated_at AS "updatedAt",
+        GREATEST(
+          users.updated_at,
+          COALESCE((
+            SELECT MAX(prompt_drafts.server_updated_at)
+            FROM prompt_drafts
+            WHERE prompt_drafts.user_id = users.id
+          ), users.updated_at),
+          COALESCE((
+            SELECT MAX(user_score_events.created_at)
+            FROM user_score_events
+            WHERE user_score_events.user_id = users.id
+          ), users.updated_at)
+        ) AS "lastUpdatedAt",
         (
           SELECT COUNT(*)::int
           FROM prompt_drafts
@@ -385,10 +427,35 @@ export async function getAdminUserById(id) {
         ) AS "cloudDraftCount",
         (
           SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.deleted_at IS NULL
+        ) AS "totalDraftCount",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.visibility = 'public'
+            AND prompt_drafts.deleted_at IS NULL
+        ) AS "publicDraftCount",
+        (
+          SELECT COUNT(*)::int
+          FROM prompt_drafts
+          WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.visibility = 'private'
+            AND prompt_drafts.deleted_at IS NULL
+        ) AS "privateDraftCount",
+        (
+          SELECT COUNT(*)::int
           FROM auth_sessions
           WHERE auth_sessions.user_id = users.id
             AND auth_sessions.expires_at > NOW()
-        ) AS "activeSessionCount"
+        ) AS "activeSessionCount",
+        (
+          SELECT COALESCE(SUM(user_score_events.points), 0)::bigint
+          FROM user_score_events
+          WHERE user_score_events.user_id = users.id
+        ) AS "totalXp"
       FROM users
       WHERE users.id = $1
       LIMIT 1
@@ -397,5 +464,5 @@ export async function getAdminUserById(id) {
   )
 
   const row = result.rows[0]
-  return row ? mapAdminUserRow(row) : null
+  return row ? mapAdminUserDetailRow(row) : null
 }

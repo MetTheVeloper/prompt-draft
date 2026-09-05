@@ -1011,11 +1011,19 @@ onBeforeUnmount(() => {
             class="w100"
             :p="[12, 16]">
             <el-text :size="11" :weight="800">#{{ item.publicId }}</el-text>
-            <el-flex rules="ccs" :gap="3" class="w100">
-              <el-text :size="12" :weight="700">{{ locale === 'fa' ? item.title.fa : item.title.en }}</el-text>
-              <el-text :size="9" color="normal45">
-                {{ sourceKindLabel(item.sourceKind) }}<template v-if="item.telegramMessageId"> · Telegram #{{ item.telegramMessageId }}</template>
-              </el-text>
+            <el-flex rules="rsc" :gap="9" class="w100">
+              <el-avatar
+                :src="item.previewImageUrl"
+                :name="locale === 'fa' ? item.title.fa : item.title.en"
+                :alt="locale === 'fa' ? item.title.fa : item.title.en"
+                size="mini"
+              />
+              <el-flex rules="ccs" :gap="3" class="w100">
+                <el-text :size="12" :weight="700">{{ locale === 'fa' ? item.title.fa : item.title.en }}</el-text>
+                <el-text :size="9" color="normal45">
+                  {{ sourceKindLabel(item.sourceKind) }}<template v-if="item.telegramMessageId"> · Telegram #{{ item.telegramMessageId }}</template>
+                </el-text>
+              </el-flex>
             </el-flex>
             <el-text :size="11" :weight="700" :color="statusColor(item.status)">
               {{ statusLabel(item.status) }}

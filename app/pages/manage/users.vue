@@ -527,9 +527,17 @@ onBeforeUnmount(() => {
             class="w100"
             :p="[12, 16]"
             @contextmenu.prevent="openUserActions($event, user)">
-            <el-flex rules="ccs" :gap="3" class="w100">
-              <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
-              <el-text color="normal45" :size="10">{{ user.id }}</el-text>
+            <el-flex rules="rsc" :gap="9" class="w100">
+              <el-avatar
+                :src="user.avatarUrl"
+                :name="accountLabel(user)"
+                :alt="accountLabel(user)"
+                size="mini"
+              />
+              <el-flex rules="ccs" :gap="3" class="w100">
+                <el-text :size="12" :weight="700">{{ accountLabel(user) }}</el-text>
+                <el-text color="normal45" :size="10">{{ user.id }}</el-text>
+              </el-flex>
             </el-flex>
             <el-text :size="12">{{ roleLabel(user.role) }}</el-text>
             <el-text
