@@ -1,19 +1,33 @@
 <script setup lang="ts">
+import DraftPreviewManagerModal from "~/components/modals/DraftPreviewManagerModal.vue";
+import type { PromptDraftCollection } from "~/modules/promptDraft.types";
 import type {
   PublicUserProfile,
+  UserDraftPreviewImage,
   UserDraftVisibility,
   UserProfileDraftSummary,
 } from "~/types/userProfileApi";
+import { DRAFT_PREVIEW_IMAGE_MAX_COUNT } from "~/utils/draftPreviewImage";
 import {
-  DRAFT_PREVIEW_IMAGE_MAX_COUNT,
-  prepareDraftPreviewImage,
-} from "~/utils/draftPreviewImage";
+  compileCloudDraftOutput,
+  copyTextToClipboard,
+  downloadCloudDraftJson,
+} from "~/utils/cloudDraftActions";
+import { removeDraftSyncEntry } from "~/utils/draftCloudSync";
+
+const DRAFT_COLLECTION_STORAGE_KEY = "prompt-draft:create-editor:drafts:v1";
+const CREATE_DRAFT_COLLECTION_REFRESH_EVENT =
+  "prompt-draft:create-editor:collection-refresh";
 
 const route = useRoute();
 const auth = useAuth();
 const avatarState = useUserAvatar();
 const coverState = useUserCover();
 const api = useUserProfileApi();
+const promptApi = usePromptDraftApi();
+const menu = useMenu();
+const modal = useModal();
+const { showToast } = useToast();
 const { t, locale } = useI18n();
 const { mobile, tablet, mini } = useScreen();
 
@@ -28,11 +42,8 @@ const draftsError = ref("");
 const nextCursor = ref<string | null>(null);
 const hasMore = ref(false);
 const visibilityBusyIds = ref<string[]>([]);
+const actionBusyIds = ref<string[]>([]);
 const hoveredDraftId = ref<string | null>(null);
-const draftMediaInput = ref<HTMLInputElement | null>(null);
-const draftMediaTargetId = ref<string | null>(null);
-const draftMediaBusyIds = ref<string[]>([]);
-const draftMediaErrors = reactive<Record<string, string>>({});
 let requestVersion = 0;
 
 const routeUserId = computed(() => {
@@ -123,6 +134,13 @@ const visibleDraftCount = computed(() => {
     : profile.value.publicDraftCount;
 });
 
+const draftsTitle = computed(() => {
+  const title = t("userProfile.drafts.title");
+  return visibleDraftCount.value > 0
+    ? `${title} (${visibleDraftCount.value})`
+    : title;
+});
+
 const draftDescription = computed(() => {
   return isOwner.value
     ? t("userProfile.drafts.ownerDescription")
@@ -178,130 +196,251 @@ function scrollToDrafts() {
   });
 }
 
-function isDraftMediaBusy(draftId: string) {
-  return draftMediaBusyIds.value.includes(draftId);
+function isDraftActionBusy(draftId: string) {
+  return actionBusyIds.value.includes(draftId);
 }
 
-function setDraftMediaBusy(draftId: string, busy: boolean) {
+function setDraftActionBusy(draftId: string, busy: boolean) {
   if (busy) {
-    if (!draftMediaBusyIds.value.includes(draftId)) {
-      draftMediaBusyIds.value = [...draftMediaBusyIds.value, draftId];
+    if (!actionBusyIds.value.includes(draftId)) {
+      actionBusyIds.value = [...actionBusyIds.value, draftId];
     }
     return;
   }
 
-  draftMediaBusyIds.value = draftMediaBusyIds.value.filter(id => id !== draftId);
+  actionBusyIds.value = actionBusyIds.value.filter(id => id !== draftId);
 }
 
-function setDraftMediaError(draftId: string, message = "") {
-  if (message) {
-    draftMediaErrors[draftId] = message;
-  } else {
-    delete draftMediaErrors[draftId];
-  }
+function applyDraftImages(
+  draft: UserProfileDraftSummary,
+  images: UserDraftPreviewImage[],
+) {
+  draft.images = [...images];
 }
 
-function openDraftMediaPicker(draft: UserProfileDraftSummary) {
-  if (!isOwner.value || isDraftMediaBusy(draft.id)) return;
+function openPreviewManager(draft: UserProfileDraftSummary) {
+  if (!isOwner.value) return;
 
-  if (draft.images.length >= DRAFT_PREVIEW_IMAGE_MAX_COUNT) {
-    setDraftMediaError(
-      draft.id,
-      t("userProfile.drafts.media.errors.limit", {
-        max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
-      }),
-    );
-    return;
-  }
-
-  draftMediaTargetId.value = draft.id;
-  setDraftMediaError(draft.id);
-  if (draftMediaInput.value) draftMediaInput.value.value = "";
-  draftMediaInput.value?.click();
+  modal.open({
+    header: {
+      icon: "wallpaper",
+      title: t("userProfile.drafts.media.manageTitle"),
+      subtitle: draft.title,
+      closeButton: true,
+      color: "blue",
+    },
+    component: DraftPreviewManagerModal,
+    props: {
+      draftId: draft.id,
+      title: draft.title,
+      images: draft.images,
+      onImagesChange: (images: UserDraftPreviewImage[]) => {
+        applyDraftImages(draft, images);
+      },
+    },
+    options: {
+      width: 920,
+      maxHeight: "88vh",
+    },
+  });
 }
 
-async function handleDraftMediaSelected(event: Event) {
-  const input = event.target as HTMLInputElement;
-  const targetId = draftMediaTargetId.value;
-  const files = Array.from(input.files || []);
-  input.value = "";
-  draftMediaTargetId.value = null;
+async function editDraft(draft: UserProfileDraftSummary) {
+  await navigateTo({
+    path: "/create",
+    query: { draft: draft.id },
+  });
+}
 
-  if (!targetId || !files.length) return;
+async function copyDraftOutput(draft: UserProfileDraftSummary) {
+  if (isDraftActionBusy(draft.id)) return;
 
-  const draft = drafts.value.find(item => item.id === targetId);
-  if (!draft || !isOwner.value || isDraftMediaBusy(draft.id)) return;
-
-  const remaining = DRAFT_PREVIEW_IMAGE_MAX_COUNT - draft.images.length;
-  if (files.length > remaining) {
-    setDraftMediaError(
-      draft.id,
-      t("userProfile.drafts.media.errors.limit", {
-        max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
-      }),
-    );
-    return;
-  }
-
-  setDraftMediaBusy(draft.id, true);
-  setDraftMediaError(draft.id);
-  let fallback = t("userProfile.drafts.media.errors.prepare");
+  setDraftActionBusy(draft.id, true);
+  draftsError.value = "";
 
   try {
-    for (const file of files) {
-      fallback = t("userProfile.drafts.media.errors.prepare");
-      const prepared = await prepareDraftPreviewImage(file);
-      fallback = t("userProfile.drafts.media.errors.upload");
-      const response = await api.addDraftImage(draft.id, prepared.blob);
-      draft.images = response.images;
+    const response = await promptApi.getPromptDraft(draft.id);
+    const output = compileCloudDraftOutput(response.draft);
+
+    if (!output.trim()) {
+      throw new Error(t("userProfile.drafts.errors.outputEmpty"));
     }
+
+    const copied = await copyTextToClipboard(output);
+    if (!copied) throw new Error(t("userProfile.drafts.errors.copy"));
+
+    showToast("success", t("userProfile.drafts.copySuccess"));
   } catch (error) {
-    setDraftMediaError(draft.id, getApiErrorMessage(error, fallback));
+    const message = error instanceof Error && error.message
+      ? error.message
+      : t("userProfile.drafts.errors.copy");
+    draftsError.value = getApiErrorMessage(error, message);
   } finally {
-    setDraftMediaBusy(draft.id, false);
+    setDraftActionBusy(draft.id, false);
   }
 }
 
-async function removePrimaryDraftImage(draft: UserProfileDraftSummary) {
-  if (!isOwner.value || isDraftMediaBusy(draft.id)) return;
-  const primary = draft.images[0];
-  if (!primary) return;
+async function downloadDraftJson(draft: UserProfileDraftSummary) {
+  if (isDraftActionBusy(draft.id)) return;
 
-  setDraftMediaBusy(draft.id, true);
-  setDraftMediaError(draft.id);
+  setDraftActionBusy(draft.id, true);
+  draftsError.value = "";
 
   try {
-    const response = await api.removeDraftImage(draft.id, primary.id);
-    draft.images = response.images;
+    const response = await promptApi.getPromptDraft(draft.id);
+    downloadCloudDraftJson(response.draft);
   } catch (error) {
-    setDraftMediaError(
-      draft.id,
-      getApiErrorMessage(error, t("userProfile.drafts.media.errors.remove")),
+    draftsError.value = getApiErrorMessage(
+      error,
+      t("userProfile.drafts.errors.download"),
     );
   } finally {
-    setDraftMediaBusy(draft.id, false);
+    setDraftActionBusy(draft.id, false);
   }
 }
 
-async function useNextDraftImageAsPrimary(draft: UserProfileDraftSummary) {
-  if (!isOwner.value || isDraftMediaBusy(draft.id) || draft.images.length < 2) return;
-  const next = draft.images[1];
-  if (!next) return;
+function removeDraftFromLocalMirror(draftId: string) {
+  if (!import.meta.client) return;
 
-  setDraftMediaBusy(draft.id, true);
-  setDraftMediaError(draft.id);
+  const userId = auth.user.value?.id;
+  if (userId) removeDraftSyncEntry(userId, draftId);
+
+  const raw = localStorage.getItem(DRAFT_COLLECTION_STORAGE_KEY);
+  if (!raw) return;
 
   try {
-    const response = await api.makeDraftImagePrimary(draft.id, next.id);
-    draft.images = response.images;
-  } catch (error) {
-    setDraftMediaError(
-      draft.id,
-      getApiErrorMessage(error, t("userProfile.drafts.media.errors.primary")),
+    const collection = JSON.parse(raw) as Partial<PromptDraftCollection>;
+    if (collection.version !== 1 || !Array.isArray(collection.drafts)) return;
+
+    const nextDrafts = collection.drafts.filter((draft) => draft.id !== draftId);
+    const nextActiveId =
+      collection.activeDraftId === draftId
+        ? nextDrafts[0]?.id ?? null
+        : collection.activeDraftId ?? nextDrafts[0]?.id ?? null;
+
+    localStorage.setItem(
+      DRAFT_COLLECTION_STORAGE_KEY,
+      JSON.stringify({
+        version: 1,
+        activeDraftId: nextActiveId,
+        drafts: nextDrafts,
+      } satisfies PromptDraftCollection),
     );
-  } finally {
-    setDraftMediaBusy(draft.id, false);
+
+    window.dispatchEvent(new Event(CREATE_DRAFT_COLLECTION_REFRESH_EVENT));
+  } catch {
+    // A malformed local collection must never block a successful server delete.
   }
+}
+
+function confirmDeleteDraft(draft: UserProfileDraftSummary) {
+  const confirmationId = modal.open({
+    header: {
+      icon: "delete",
+      title: t("userProfile.drafts.deleteTitle"),
+      subtitle: draft.title,
+      closeButton: true,
+      color: "red",
+    },
+    descriptions: [t("userProfile.drafts.deleteDescription")],
+    actions: [
+      {
+        label: t("userProfile.drafts.actions.cancel"),
+        color: "normal",
+        mode: "flat",
+      },
+      {
+        label: t("userProfile.drafts.actions.delete"),
+        icon: "delete",
+        color: "red",
+        mode: "flat",
+        close: false,
+        disable: () => isDraftActionBusy(draft.id),
+        handler: async () => {
+          if (isDraftActionBusy(draft.id)) return false;
+
+          setDraftActionBusy(draft.id, true);
+          draftsError.value = "";
+
+          try {
+            await promptApi.deletePromptDraft(draft.id);
+            drafts.value = drafts.value.filter((item) => item.id !== draft.id);
+            removeDraftFromLocalMirror(draft.id);
+            await refreshProfileSummary();
+            modal.close(confirmationId);
+          } catch (error) {
+            draftsError.value = getApiErrorMessage(
+              error,
+              t("userProfile.drafts.errors.delete"),
+            );
+          } finally {
+            setDraftActionBusy(draft.id, false);
+          }
+
+          return false;
+        },
+      },
+    ],
+    options: {
+      width: 480,
+    },
+  });
+}
+
+function openDraftActions(event: MouseEvent, draft: UserProfileDraftSummary) {
+  if (!isOwner.value) return;
+
+  const isPublic = draft.visibility === "public";
+
+  menu.open({
+    mode: "point",
+    event,
+    items: [
+      {
+        label: t("userProfile.drafts.actions.edit"),
+        icon: "edit",
+        disabled: () => isDraftActionBusy(draft.id),
+        handler: () => editDraft(draft),
+      },
+      {
+        label: t("userProfile.drafts.actions.managePreviews"),
+        icon: "wallpaper",
+        handler: () => openPreviewManager(draft),
+      },
+      {
+        label: t("userProfile.drafts.actions.copyOutput"),
+        icon: "content_copy",
+        disabled: () => isDraftActionBusy(draft.id),
+        handler: () => copyDraftOutput(draft),
+      },
+      {
+        label: t("userProfile.drafts.actions.downloadJson"),
+        icon: "download",
+        disabled: () => isDraftActionBusy(draft.id),
+        handler: () => downloadDraftJson(draft),
+      },
+      { type: "divider" },
+      {
+        label: isPublic
+          ? t("userProfile.drafts.actions.unpublish")
+          : t("userProfile.drafts.actions.publish"),
+        icon: isPublic ? "visibility_off" : "public",
+        color: isPublic ? "orange" : "green",
+        disabled: () => visibilityBusyIds.value.includes(draft.id),
+        handler: () => setVisibility(draft, isPublic ? "private" : "public"),
+      },
+      {
+        label: t("userProfile.drafts.actions.delete"),
+        icon: "delete",
+        color: "red",
+        disabled: () => isDraftActionBusy(draft.id),
+        handler: () => confirmDeleteDraft(draft),
+      },
+    ],
+    options: {
+      minWidth: 220,
+    },
+  });
 }
 
 async function resolveTargetUserId() {
@@ -368,9 +507,7 @@ async function loadProfile() {
   hasMore.value = false;
   isOwner.value = false;
   hoveredDraftId.value = null;
-  draftMediaTargetId.value = null;
-  draftMediaBusyIds.value = [];
-  Object.keys(draftMediaErrors).forEach(key => delete draftMediaErrors[key]);
+  actionBusyIds.value = [];
 
   if (!routeUserId.value && !routeUsername.value) {
     errorMessage.value = t("userProfile.notFoundDescription");
@@ -412,7 +549,7 @@ async function refreshProfileSummary() {
     profile.value = response.profile;
     isOwner.value = response.viewer.isOwner;
   } catch {
-    // Draft visibility already succeeded; a summary refresh failure is non-blocking.
+    // A successful Draft mutation remains authoritative even if summary refresh fails.
   }
 }
 
@@ -492,15 +629,6 @@ onMounted(() => {
   </el-flex>
 
   <div v-else class="user-profile w100 por">
-    <input
-      ref="draftMediaInput"
-      type="file"
-      accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
-      multiple
-      class="user-profile__media-input"
-      @change="handleDraftMediaSelected"
-    >
-
     <visual-slider
       v-if="heroCoverUrl"
       :sources="[heroCoverUrl]"
@@ -632,13 +760,10 @@ onMounted(() => {
             type="h2"
             :size="mobile ? 34 : 54"
             :weight="600">
-            {{ t("userProfile.drafts.title") }}
+            {{ draftsTitle }}
           </el-text>
           <el-text type="p" :size="mobile ? 12 : 14" color="normal55" style="max-width: 760px">
             {{ draftDescription }}
-          </el-text>
-          <el-text :size="11" color="normal45">
-            {{ visibleDraftCount }}
           </el-text>
         </el-grid>
 
@@ -721,8 +846,7 @@ onMounted(() => {
               v-else-if="isOwner"
               type="button"
               class="user-profile__draft-media-empty w100"
-              :disabled="isDraftMediaBusy(draft.id)"
-              @click="openDraftMediaPicker(draft)">
+              @click="openPreviewManager(draft)">
               <el-icon icon="wallpaper" color="normal45" :size="26" />
               <el-text :size="11" color="normal55">
                 {{ t("userProfile.drafts.media.empty") }}
@@ -768,61 +892,27 @@ onMounted(() => {
               </el-flex>
             </el-flex>
 
-            <el-text
-              v-if="draftMediaErrors[draft.id]"
-              :size="10"
-              color="red"
-              class="w100">
-              {{ draftMediaErrors[draft.id] }}
-            </el-text>
-
             <el-flex
-              v-if="isOwner && draft.visibility"
-              rules="rsc"
+              v-if="isOwner"
+              rules="rrc"
               :gap="8"
               class="w100">
-              <el-button
-                class="fg100"
-                :color="draft.visibility === 'public' ? 'orange' : 'green'"
-                mode="flat"
-                :icon="draft.visibility === 'public' ? 'visibility_off' : 'public'"
-                :label="draft.visibility === 'public'
-                  ? t('userProfile.drafts.actions.unpublish')
-                  : t('userProfile.drafts.actions.publish')"
-                :disable="visibilityBusyIds.includes(draft.id) || isDraftMediaBusy(draft.id)"
-                @click="setVisibility(draft, draft.visibility === 'public' ? 'private' : 'public')"
-              />
-
               <el-button
                 type="fab"
                 color="blue"
                 mode="flat"
-                icon="wallpaper"
-                :tooltip="t('userProfile.drafts.media.add')"
-                :disable="isDraftMediaBusy(draft.id) || draft.images.length >= DRAFT_PREVIEW_IMAGE_MAX_COUNT"
-                @click="openDraftMediaPicker(draft)"
+                icon="add_photo_alternate"
+                :tooltip="t('userProfile.drafts.actions.managePreviews')"
+                @click="openPreviewManager(draft)"
               />
 
               <el-button
-                v-if="draft.images.length > 1"
                 type="fab"
                 color="normal"
                 mode="flat"
-                icon="swap_horiz"
-                :tooltip="t('userProfile.drafts.media.nextPrimary')"
-                :disable="isDraftMediaBusy(draft.id)"
-                @click="useNextDraftImageAsPrimary(draft)"
-              />
-
-              <el-button
-                v-if="draft.images.length"
-                type="fab"
-                color="red"
-                mode="flat"
-                icon="delete"
-                :tooltip="t('userProfile.drafts.media.removePrimary')"
-                :disable="isDraftMediaBusy(draft.id)"
-                @click="removePrimaryDraftImage(draft)"
+                icon="more_vert"
+                :tooltip="t('userProfile.drafts.actions.more')"
+                @click="openDraftActions($event, draft)"
               />
             </el-flex>
           </el-flex>
@@ -847,14 +937,6 @@ onMounted(() => {
   min-height: 100%;
   isolation: isolate;
   background: #09090d;
-}
-
-.user-profile__media-input {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  opacity: 0;
-  pointer-events: none;
 }
 
 .user-profile__fallback-bg,
@@ -1009,10 +1091,5 @@ onMounted(() => {
 .user-profile__draft-media-empty:hover {
   border-color: var(--normalText50);
   background: var(--normalText10);
-}
-
-.user-profile__draft-media-empty:disabled {
-  opacity: 0.55;
-  cursor: wait;
 }
 </style>
