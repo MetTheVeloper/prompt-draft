@@ -269,6 +269,21 @@ async function importArchive(client, source) {
       WHERE t.source_kind = 'legacy_json'
         AND NOT EXISTS (SELECT 1 FROM prompt_archive_item_tags it WHERE it.tag_id = t.id)
     `)
+
+    // Snapshots may already contain sequence-backed non-Telegram public IDs.
+    // Prime the next generated ID above every imported row while retaining the
+    // reserved high namespace introduced by migration 019.
+    await client.query(`
+      SELECT setval(
+        'prompt_archive_public_id_seq',
+        GREATEST(
+          COALESCE((SELECT MAX(public_id) FROM prompt_archive_items), 0) + 1,
+          1000000000
+        ),
+        false
+      )
+    `)
+
     await client.query('COMMIT')
   } catch (error) {
     await client.query('ROLLBACK')
