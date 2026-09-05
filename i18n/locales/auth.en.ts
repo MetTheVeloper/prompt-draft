@@ -39,6 +39,10 @@ export default {
       xp: "XP",
       invitedUsers: "Invited users",
       memberSince: "Member since",
+      memberAge: {
+        today: "Today",
+        days: "{count}D ago",
+      },
       complete: "Complete profile",
       viewProfile: "View profile",
       logout: "Sign out",
