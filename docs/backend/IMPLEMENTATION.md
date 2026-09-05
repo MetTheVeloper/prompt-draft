@@ -1,12 +1,13 @@
 # Backend Implementation Baseline
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
 Branch: `feature/docker-local-api`
+Final implementation checkpoint: `4c67b045abead7e2eb3d7cdc29865859a86ecf6b`
 
 ## Current verified state
 
-Milestones 1 through 19 are complete and locally verified.
+Milestones 1 through 20 are complete and locally verified.
 
 Current platform path:
 
@@ -61,9 +62,12 @@ Current schema history:
 014_archive_media_storage_keys.sql
 015_user_avatar.sql
 016_public_user_profiles.sql
+017_cloud_draft_preview_media.sql
+018_soft_delete_prompt_drafts.sql
+019_archive_user_draft_promotion.sql
 ```
 
-Never rewrite applied migration history. Add a new numbered migration for future schema changes.
+Never rewrite applied migration history. The next real schema change must use `020_*.sql`.
 
 # Core product boundaries
 
@@ -110,22 +114,23 @@ Privileged behavior must keep three-layer enforcement:
 3. backend permission guard (authoritative)
 ```
 
-Archive adds:
+Relevant verified permissions now include Manage/user permissions plus:
 
 ```text
 archive.view
 archive.manage
+drafts.delete_any
 ```
 
 Do not rely on frontend hiding as the security boundary.
 
-## Cloud Draft ownership
+## Cloud Draft ownership, visibility and deletion
 
 `prompt_drafts` is account-scoped by `user_id`.
 
 Normal Cloud Draft API behavior is owner-only. A user cannot request arbitrary another-user Draft content through the private Cloud Draft API.
 
-Milestone 19 adds a separate public-safe profile read path rather than weakening that ownership model.
+Public profile behavior uses a separate public-safe read path instead of weakening the ownership model.
 
 Visibility model:
 
@@ -146,21 +151,26 @@ Public profile visitor queries filter at the backend/database layer:
 visibility = 'public'
 ```
 
-Owner profile reads may include all own Draft summaries.
+Owner profile reads may include all own active Draft summaries.
+
+Milestone 20 adds soft-delete tombstones:
+
+```text
+deleted_at IS NULL     -> active Draft
+deleted_at IS NOT NULL -> deleted Draft
+```
+
+Normal Draft reads, profile reads, counters and cloud restore exclude tombstones. A stale client cannot resurrect a deleted Draft; write attempts against a tombstoned identity are rejected.
 
 Do not expose full editor snapshots or account-private fields merely because a Draft summary is public.
 
 ## Public user profile privacy
 
-Public profile endpoint:
+Public profile endpoints:
 
 ```text
+GET /api/users/resolve?username=<username>
 GET /api/users/:userId/profile
-```
-
-Public draft summaries:
-
-```text
 GET /api/users/:userId/drafts
 ```
 
@@ -175,7 +185,7 @@ private Drafts to non-owners
 
 When username is missing, public UI uses a localized generic name instead of email fallback.
 
-Owner mutation:
+Owner visibility mutation:
 
 ```text
 POST /api/drafts/:draftId/visibility
@@ -193,7 +203,7 @@ Managed media uses the backend-only Arvan/S3-compatible adapter established in M
 
 Credentials must remain server-side environment variables. Never expose Access Key or Secret Key through Nuxt runtime/public config or browser requests.
 
-The currently verified storage supports:
+The verified storage adapter supports:
 
 ```text
 HEAD bucket
@@ -275,8 +285,6 @@ image
 -> person icon
 ```
 
-`el-avatar` sizing uses the same EL dimension resolver as button height, so a same-size FAB and avatar align by height.
-
 ## User cover
 
 Migration:
@@ -285,9 +293,7 @@ Migration:
 016_public_user_profiles.sql
 ```
 
-Cover is optional.
-
-Unlike avatar, cover is not force-cropped. Aspect ratio is preserved and consuming UI uses cover-style framing.
+Cover is optional and preserves source aspect ratio.
 
 Browser outputs:
 
@@ -312,6 +318,36 @@ covers/<user-uuid>/<immutable-cover-uuid>/thumb.webp
 
 Profile Menu uses thumbnail; `/user` hero uses full cover.
 
+## Cloud Draft preview media
+
+Migration:
+
+```text
+017_cloud_draft_preview_media.sql
+```
+
+Preview media is relational in `prompt_draft_images`.
+
+Verified contract:
+
+```text
+up to 8 images per Draft
+JPEG/PNG/WebP input
+WebP quality 0.60
+preserve source dimensions
+no crop
+no resize
+position 0 = primary preview
+```
+
+Storage namespace:
+
+```text
+draft-media/<USER_UUID>/<IMAGE_UUID>/image.webp
+```
+
+Owner media endpoints support list/add/delete/primary selection. The central Preview Manager is the reusable UI surface.
+
 # Prompt Archive implementation baseline
 
 ## Authoritative source
@@ -328,7 +364,16 @@ prompt_archive_tags
 prompt_archive_item_tags
 ```
 
-Telegram message ID is the natural import/content identifier while DB rows keep independent UUID primary keys.
+After Milestone 20, Archive route identity is the stable numeric `public_id`. Telegram linkage is optional source metadata rather than the route identity.
+
+```text
+public_id              -> required stable public route identity
+telegram_message_id    -> nullable
+telegram_url           -> nullable
+source_kind            -> managed | legacy_json | user_draft
+source_user_id         -> nullable provenance
+source_draft_id        -> nullable provenance
+```
 
 Dynamic localized titles are stored with content:
 
@@ -379,7 +424,13 @@ Canonical route:
 Deep-link edit route:
 
 ```text
-/manage/archive?edit=<telegram-message-id>
+/manage/archive?edit=<publicId>
+```
+
+Resolution endpoint:
+
+```text
+GET /api/admin/archive/public/:publicId
 ```
 
 Manage extends the existing shell and uses existing permission/audit conventions.
@@ -388,30 +439,54 @@ Mutating Archive media or content returns the item to Draft where required so pu
 
 Importer is a bootstrap/migration tool, not a permanent sync engine. Once source rows have been taken over as managed state, import safeguards prevent legacy import from overwriting managed content.
 
+## User Draft promotion
+
+Migration:
+
+```text
+019_archive_user_draft_promotion.sql
+```
+
+Authorized promotion requires a public active source Draft and creates a new Archive item in Draft state.
+
+```text
+archive.manage
+  -> promote eligible public user Draft
+
+drafts.delete_any
+  -> moderation soft-delete of another user's Draft
+```
+
+Promotion copies/re-prepares source Draft preview media into independent Archive-owned `archive/...` keys. The promoted item therefore survives later source-Draft moderation/removal.
+
+Duplicate promotion is prevented by source provenance uniqueness.
+
 # Public profile UI baseline
 
-Route:
+Routes:
 
 ```text
 /user?id=<USER_UUID>
+/user?un=<username>
 ```
 
-Current verified visual direction:
+Verified visual/product direction after Milestone 20:
 
 ```text
 full-screen cinematic cover hero
 cover in canvas slider/background layer
 large foreground el-avatar
 centered identity hierarchy
-large creator name
-member-since metadata
-XP / public Draft / total Draft stats
-Saved Drafts section
+compact member age + XP presentation
+Saved Drafts image-first showcase cards
+owner Draft actions through shared Global Menu
 owner visibility controls
 visitor public-only content
 ```
 
-Draft cards intentionally do not display internal Draft UUIDs. They show product metadata such as modules, revision and updated time instead.
+Draft cards intentionally do not display internal Draft UUIDs.
+
+Milestone 20 card behavior includes primary full-background preview, optional second-image hover crossfade, Preview Manager access, Edit/Copy/Download actions and soft Delete.
 
 ## Shared canvas-slider single-source rule
 
@@ -425,8 +500,6 @@ pan start
 -> eased movement back to start
 -> repeat continuously
 ```
-
-This behavior applies anywhere the shared renderer is used with one source, including user cover/profile backgrounds and single-preview prompt detail surfaces.
 
 Multi-source slider behavior remains unchanged.
 
@@ -461,7 +534,7 @@ Every new reward producer must define a stable logical event and deterministic i
 
 # Release/verification rules
 
-For frontend-affecting changes:
+For frontend-affecting milestone changes:
 
 ```text
 pnpm generate
@@ -471,11 +544,17 @@ must succeed before the milestone is considered complete.
 
 Backend/API/database behavior must also be locally exercised by the user before `DONE` status.
 
-# Current next step
+# Closure state
 
-No Milestone 20 or other next feature is selected yet.
+`feature/docker-local-api` is complete through Milestone 20. There is no unfinished in-scope milestone in this branch.
 
-For a new chat, read:
+The final verified milestone source is:
+
+```text
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+```
+
+For a new chat or child branch, read:
 
 ```text
 docs/backend/STATUS.md
@@ -486,6 +565,7 @@ docs/backend/MANAGE_GUIDE.md
 docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
 docs/backend/MILESTONE_18_USER_AVATAR.md
 docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
 ```
 
 Then inspect the current implementation related to the user's new direction before editing code.
