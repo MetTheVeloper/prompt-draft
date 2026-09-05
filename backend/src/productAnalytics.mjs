@@ -10,11 +10,18 @@ const SUPPORTED_LOCALES = new Set(['en', 'fa'])
 const EVENT_RULES = Object.freeze({
   prompt_archive_view: Object.freeze({
     resourceType: 'prompt_archive_item',
+    resourceIdKind: 'positive_numeric_id',
     metadataKeys: Object.freeze(['source']),
   }),
   prompt_archive_copy: Object.freeze({
     resourceType: 'prompt_archive_item',
+    resourceIdKind: 'positive_numeric_id',
     metadataKeys: Object.freeze(['variantKey']),
+  }),
+  referral_link_open: Object.freeze({
+    resourceType: 'referral_username',
+    resourceIdKind: 'username',
+    metadataKeys: Object.freeze([]),
   }),
 })
 
@@ -25,6 +32,10 @@ function isPlainObject(value) {
 function isUuid(value) {
   return typeof value === 'string' &&
     /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)
+}
+
+function isUsername(value) {
+  return typeof value === 'string' && /^[a-z0-9._-]{3,64}$/.test(value)
 }
 
 function isJsonRequest(request) {
@@ -73,6 +84,27 @@ async function readJsonBody(request) {
   }
 }
 
+function validateResourceId(id, rule, errors) {
+  if (rule.resourceIdKind === 'positive_numeric_id') {
+    if (!/^[1-9]\d{0,19}$/.test(id)) {
+      errors.push(validationError('resource.id', 'resource.id must be a positive numeric public id'))
+    }
+    return
+  }
+
+  if (rule.resourceIdKind === 'username') {
+    if (!isUsername(id)) {
+      errors.push(validationError(
+        'resource.id',
+        'resource.id must be a normalized 3-64 character username',
+      ))
+    }
+    return
+  }
+
+  errors.push(validationError('resource.id', 'resource.id validator is not configured'))
+}
+
 function validateResource(value, rule, errors) {
   if (!isPlainObject(value)) {
     errors.push(validationError('resource', 'resource must be an object'))
@@ -86,9 +118,7 @@ function validateResource(value, rule, errors) {
     errors.push(validationError('resource.type', `resource.type must be ${rule.resourceType}`))
   }
 
-  if (!/^[1-9]\d{0,19}$/.test(id)) {
-    errors.push(validationError('resource.id', 'resource.id must be a positive numeric public id'))
-  }
+  validateResourceId(id, rule, errors)
 
   return errors.length ? null : { type, id }
 }
@@ -135,6 +165,10 @@ function validateMetadata(eventName, value, rule, errors) {
     }
 
     return { variantKey }
+  }
+
+  if (eventName === 'referral_link_open') {
+    return {}
   }
 
   return {}
