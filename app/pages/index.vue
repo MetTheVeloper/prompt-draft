@@ -13,6 +13,7 @@ const discovery = useDiscoveryPreferences()
 const draftInterests = ref<DiscoveryInterestKey[]>([])
 const editingPreferences = ref(false)
 const preferenceError = ref(false)
+const preferencesReady = ref(false)
 
 const selectedDefinitions = computed(() => {
   const selected = new Set(discovery.interests.value)
@@ -20,12 +21,13 @@ const selectedDefinitions = computed(() => {
 })
 
 const showPreferenceEditor = computed(() => {
-  if (!auth.isLoggedIn.value || discovery.loading.value) return false
+  if (!preferencesReady.value || !auth.isLoggedIn.value || discovery.loading.value) return false
   return editingPreferences.value || discovery.interests.value.length === 0
 })
 
 const showPersonalizedDiscovery = computed(() => {
-  return auth.isLoggedIn.value &&
+  return preferencesReady.value &&
+    auth.isLoggedIn.value &&
     !discovery.loading.value &&
     !showPreferenceEditor.value &&
     selectedDefinitions.value.length > 0
@@ -34,15 +36,22 @@ const showPersonalizedDiscovery = computed(() => {
 onMounted(async () => {
   await auth.initialize()
   if (!auth.isLoggedIn.value) return
+  await loadPreferences()
+})
+
+async function loadPreferences() {
+  preferenceError.value = false
+  preferencesReady.value = false
 
   try {
-    await discovery.load()
+    await discovery.load(true)
     draftInterests.value = [...discovery.interests.value]
+    preferencesReady.value = true
   } catch (error) {
     console.warn('[Prompt Draft] discovery preferences load failed', error)
     preferenceError.value = true
   }
-})
+}
 
 function isDraftInterestSelected(key: DiscoveryInterestKey) {
   return draftInterests.value.includes(key)
@@ -66,6 +75,7 @@ async function savePreferences() {
   try {
     await discovery.save(draftInterests.value)
     draftInterests.value = [...discovery.interests.value]
+    preferencesReady.value = true
     editingPreferences.value = false
   } catch (error) {
     console.warn('[Prompt Draft] discovery preferences save failed', error)
@@ -161,6 +171,19 @@ function openInterest(primaryTag: string) {
           <el-text :size="12" color="normal55">
             {{ t('growth.discovery.common.loading') }}
           </el-text>
+        </template>
+
+        <template v-else-if="!preferencesReady">
+          <el-text :size="12" color="red">
+            {{ t('growth.discovery.onboarding.error') }}
+          </el-text>
+          <el-button
+            color="normal"
+            mode="flat"
+            icon="refresh"
+            :label="t('prompts.error.retry')"
+            @click="loadPreferences"
+          />
         </template>
 
         <template v-else-if="showPreferenceEditor">
