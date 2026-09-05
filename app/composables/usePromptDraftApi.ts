@@ -18,6 +18,7 @@ import type {
   UpdateAdminUserRoleInput,
 } from "~/types/adminUsersApi";
 import type {
+  DeletePromptDraftResponse,
   GetPromptDraftResponse,
   ListPromptDraftsParams,
   ListPromptDraftsResponse,
@@ -121,6 +122,16 @@ export function usePromptDraftApi() {
     return $fetch<GetPromptDraftResponse>(
       endpoint(`/api/drafts/${encodeURIComponent(id)}`),
       {
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function deletePromptDraft(id: string) {
+    return $fetch<DeletePromptDraftResponse>(
+      endpoint(`/api/drafts/${encodeURIComponent(id)}`),
+      {
+        method: "DELETE",
         headers: auth.authHeaders(),
       },
     );
@@ -373,6 +384,7 @@ export function usePromptDraftApi() {
     getWizardRun,
     upsertPromptDraft,
     getPromptDraft,
+    deletePromptDraft,
     listPromptDrafts,
     getTranslationStatus,
     translatePrompt,
