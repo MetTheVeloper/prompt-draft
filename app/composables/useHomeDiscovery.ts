@@ -88,15 +88,13 @@ export function useHomeDiscovery() {
   }
 
   async function loadSections(definitions: readonly DiscoveryInterestDefinition[]) {
-    const sections = await Promise.all(
+    return Promise.all(
       definitions.map(async (definition) => ({
         key: definition.key,
         definition,
         items: await loadShowcase(definition.tags, 5),
       })),
     )
-
-    return sections.filter(section => section.items.length > 0)
   }
 
   return {
