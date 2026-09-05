@@ -88,13 +88,23 @@ export function useHomeDiscovery() {
   }
 
   async function loadSections(definitions: readonly DiscoveryInterestDefinition[]) {
-    return Promise.all(
-      definitions.map(async (definition) => ({
+    const results = await Promise.allSettled(
+      definitions.map(definition => loadShowcase(definition.tags, 5)),
+    )
+
+    return definitions.map((definition, index) => {
+      const result = results[index]
+
+      if (result?.status === 'rejected') {
+        console.warn(`[Prompt Draft] home showcase failed for ${definition.key}`, result.reason)
+      }
+
+      return {
         key: definition.key,
         definition,
-        items: await loadShowcase(definition.tags, 5),
-      })),
-    )
+        items: result?.status === 'fulfilled' ? result.value : [],
+      }
+    })
   }
 
   return {
