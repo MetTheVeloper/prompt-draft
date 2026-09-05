@@ -38,3 +38,11 @@ export type ListPromptDraftsResponse = {
     hasMore: boolean;
   };
 };
+
+export type DeletePromptDraftResponse = {
+  ok: true;
+  draft: {
+    id: string;
+    deletedAt: string;
+  };
+};
