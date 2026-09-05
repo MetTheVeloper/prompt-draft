@@ -4,6 +4,10 @@ import type {
   UserDraftVisibility,
   UserProfileDraftSummary,
 } from "~/types/userProfileApi";
+import {
+  DRAFT_PREVIEW_IMAGE_MAX_COUNT,
+  prepareDraftPreviewImage,
+} from "~/utils/draftPreviewImage";
 
 const route = useRoute();
 const auth = useAuth();
@@ -25,6 +29,10 @@ const nextCursor = ref<string | null>(null);
 const hasMore = ref(false);
 const visibilityBusyIds = ref<string[]>([]);
 const hoveredDraftId = ref<string | null>(null);
+const draftMediaInput = ref<HTMLInputElement | null>(null);
+const draftMediaTargetId = ref<string | null>(null);
+const draftMediaBusyIds = ref<string[]>([]);
+const draftMediaErrors = reactive<Record<string, string>>({});
 let requestVersion = 0;
 
 const routeUserId = computed(() => {
@@ -170,6 +178,132 @@ function scrollToDrafts() {
   });
 }
 
+function isDraftMediaBusy(draftId: string) {
+  return draftMediaBusyIds.value.includes(draftId);
+}
+
+function setDraftMediaBusy(draftId: string, busy: boolean) {
+  if (busy) {
+    if (!draftMediaBusyIds.value.includes(draftId)) {
+      draftMediaBusyIds.value = [...draftMediaBusyIds.value, draftId];
+    }
+    return;
+  }
+
+  draftMediaBusyIds.value = draftMediaBusyIds.value.filter(id => id !== draftId);
+}
+
+function setDraftMediaError(draftId: string, message = "") {
+  if (message) {
+    draftMediaErrors[draftId] = message;
+  } else {
+    delete draftMediaErrors[draftId];
+  }
+}
+
+function openDraftMediaPicker(draft: UserProfileDraftSummary) {
+  if (!isOwner.value || isDraftMediaBusy(draft.id)) return;
+
+  if (draft.images.length >= DRAFT_PREVIEW_IMAGE_MAX_COUNT) {
+    setDraftMediaError(
+      draft.id,
+      t("userProfile.drafts.media.errors.limit", {
+        max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
+      }),
+    );
+    return;
+  }
+
+  draftMediaTargetId.value = draft.id;
+  setDraftMediaError(draft.id);
+  if (draftMediaInput.value) draftMediaInput.value.value = "";
+  draftMediaInput.value?.click();
+}
+
+async function handleDraftMediaSelected(event: Event) {
+  const input = event.target as HTMLInputElement;
+  const targetId = draftMediaTargetId.value;
+  const files = Array.from(input.files || []);
+  input.value = "";
+  draftMediaTargetId.value = null;
+
+  if (!targetId || !files.length) return;
+
+  const draft = drafts.value.find(item => item.id === targetId);
+  if (!draft || !isOwner.value || isDraftMediaBusy(draft.id)) return;
+
+  const remaining = DRAFT_PREVIEW_IMAGE_MAX_COUNT - draft.images.length;
+  if (files.length > remaining) {
+    setDraftMediaError(
+      draft.id,
+      t("userProfile.drafts.media.errors.limit", {
+        max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
+      }),
+    );
+    return;
+  }
+
+  setDraftMediaBusy(draft.id, true);
+  setDraftMediaError(draft.id);
+  let fallback = t("userProfile.drafts.media.errors.prepare");
+
+  try {
+    for (const file of files) {
+      fallback = t("userProfile.drafts.media.errors.prepare");
+      const prepared = await prepareDraftPreviewImage(file);
+      fallback = t("userProfile.drafts.media.errors.upload");
+      const response = await api.addDraftImage(draft.id, prepared.blob);
+      draft.images = response.images;
+    }
+  } catch (error) {
+    setDraftMediaError(draft.id, getApiErrorMessage(error, fallback));
+  } finally {
+    setDraftMediaBusy(draft.id, false);
+  }
+}
+
+async function removePrimaryDraftImage(draft: UserProfileDraftSummary) {
+  if (!isOwner.value || isDraftMediaBusy(draft.id)) return;
+  const primary = draft.images[0];
+  if (!primary) return;
+
+  setDraftMediaBusy(draft.id, true);
+  setDraftMediaError(draft.id);
+
+  try {
+    const response = await api.removeDraftImage(draft.id, primary.id);
+    draft.images = response.images;
+  } catch (error) {
+    setDraftMediaError(
+      draft.id,
+      getApiErrorMessage(error, t("userProfile.drafts.media.errors.remove")),
+    );
+  } finally {
+    setDraftMediaBusy(draft.id, false);
+  }
+}
+
+async function useNextDraftImageAsPrimary(draft: UserProfileDraftSummary) {
+  if (!isOwner.value || isDraftMediaBusy(draft.id) || draft.images.length < 2) return;
+  const next = draft.images[1];
+  if (!next) return;
+
+  setDraftMediaBusy(draft.id, true);
+  setDraftMediaError(draft.id);
+
+  try {
+    const response = await api.makeDraftImagePrimary(draft.id, next.id);
+    draft.images = response.images;
+  } catch (error) {
+    setDraftMediaError(
+      draft.id,
+      getApiErrorMessage(error, t("userProfile.drafts.media.errors.primary")),
+    );
+  } finally {
+    setDraftMediaBusy(draft.id, false);
+  }
+}
+
 async function resolveTargetUserId() {
   if (routeUserId.value) return routeUserId.value;
   if (!routeUsername.value) return null;
@@ -234,6 +368,9 @@ async function loadProfile() {
   hasMore.value = false;
   isOwner.value = false;
   hoveredDraftId.value = null;
+  draftMediaTargetId.value = null;
+  draftMediaBusyIds.value = [];
+  Object.keys(draftMediaErrors).forEach(key => delete draftMediaErrors[key]);
 
   if (!routeUserId.value && !routeUsername.value) {
     errorMessage.value = t("userProfile.notFoundDescription");
@@ -355,6 +492,15 @@ onMounted(() => {
   </el-flex>
 
   <div v-else class="user-profile w100 por">
+    <input
+      ref="draftMediaInput"
+      type="file"
+      accept="image/jpeg,image/png,image/webp,.jpg,.jpeg,.png,.webp"
+      multiple
+      class="user-profile__media-input"
+      @change="handleDraftMediaSelected"
+    >
+
     <visual-slider
       v-if="heroCoverUrl"
       :sources="[heroCoverUrl]"
@@ -537,13 +683,52 @@ onMounted(() => {
             :key="draft.id"
             rules="cbs"
             class="user-profile__draft-card w100"
-            :gap="22"
+            :gap="18"
             :p="18"
             :radius="18"
             :br="1"
             :bc="hoveredDraftId === draft.id ? 'normal50' : 'normal15'"
             @mouseenter="hoveredDraftId = draft.id"
             @mouseleave="hoveredDraftId = hoveredDraftId === draft.id ? null : hoveredDraftId">
+            <div
+              v-if="draft.images.length"
+              class="user-profile__draft-media w100">
+              <img
+                :src="draft.images[0].url"
+                :alt="draft.title"
+                class="user-profile__draft-media-image"
+                loading="lazy"
+                decoding="async"
+                draggable="false"
+              >
+              <el-flex
+                rules="rcc"
+                class="user-profile__draft-media-count"
+                :p="[4, 7]"
+                :radius="100"
+                bg="surface75"
+                bd="b6">
+                <el-text :size="9" :weight="800">
+                  {{ t("userProfile.drafts.media.count", {
+                    count: draft.images.length,
+                    max: DRAFT_PREVIEW_IMAGE_MAX_COUNT,
+                  }) }}
+                </el-text>
+              </el-flex>
+            </div>
+
+            <button
+              v-else-if="isOwner"
+              type="button"
+              class="user-profile__draft-media-empty w100"
+              :disabled="isDraftMediaBusy(draft.id)"
+              @click="openDraftMediaPicker(draft)">
+              <el-icon icon="wallpaper" color="normal45" :size="26" />
+              <el-text :size="11" color="normal55">
+                {{ t("userProfile.drafts.media.empty") }}
+              </el-text>
+            </button>
+
             <el-flex rules="rbc" :gap="8" class="w100">
               <el-text
                 :size="10"
@@ -583,18 +768,63 @@ onMounted(() => {
               </el-flex>
             </el-flex>
 
-            <el-button
+            <el-text
+              v-if="draftMediaErrors[draft.id]"
+              :size="10"
+              color="red"
+              class="w100">
+              {{ draftMediaErrors[draft.id] }}
+            </el-text>
+
+            <el-flex
               v-if="isOwner && draft.visibility"
-              class="w100"
-              :color="draft.visibility === 'public' ? 'orange' : 'green'"
-              mode="flat"
-              :icon="draft.visibility === 'public' ? 'visibility_off' : 'public'"
-              :label="draft.visibility === 'public'
-                ? t('userProfile.drafts.actions.unpublish')
-                : t('userProfile.drafts.actions.publish')"
-              :disable="visibilityBusyIds.includes(draft.id)"
-              @click="setVisibility(draft, draft.visibility === 'public' ? 'private' : 'public')"
-            />
+              rules="rsc"
+              :gap="8"
+              class="w100">
+              <el-button
+                class="fg100"
+                :color="draft.visibility === 'public' ? 'orange' : 'green'"
+                mode="flat"
+                :icon="draft.visibility === 'public' ? 'visibility_off' : 'public'"
+                :label="draft.visibility === 'public'
+                  ? t('userProfile.drafts.actions.unpublish')
+                  : t('userProfile.drafts.actions.publish')"
+                :disable="visibilityBusyIds.includes(draft.id) || isDraftMediaBusy(draft.id)"
+                @click="setVisibility(draft, draft.visibility === 'public' ? 'private' : 'public')"
+              />
+
+              <el-button
+                type="fab"
+                color="blue"
+                mode="flat"
+                icon="wallpaper"
+                :tooltip="t('userProfile.drafts.media.add')"
+                :disable="isDraftMediaBusy(draft.id) || draft.images.length >= DRAFT_PREVIEW_IMAGE_MAX_COUNT"
+                @click="openDraftMediaPicker(draft)"
+              />
+
+              <el-button
+                v-if="draft.images.length > 1"
+                type="fab"
+                color="normal"
+                mode="flat"
+                icon="swap_horiz"
+                :tooltip="t('userProfile.drafts.media.nextPrimary')"
+                :disable="isDraftMediaBusy(draft.id)"
+                @click="useNextDraftImageAsPrimary(draft)"
+              />
+
+              <el-button
+                v-if="draft.images.length"
+                type="fab"
+                color="red"
+                mode="flat"
+                icon="delete"
+                :tooltip="t('userProfile.drafts.media.removePrimary')"
+                :disable="isDraftMediaBusy(draft.id)"
+                @click="removePrimaryDraftImage(draft)"
+              />
+            </el-flex>
           </el-flex>
         </el-grid>
 
@@ -617,6 +847,14 @@ onMounted(() => {
   min-height: 100%;
   isolation: isolate;
   background: #09090d;
+}
+
+.user-profile__media-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
 }
 
 .user-profile__fallback-bg,
@@ -721,5 +959,60 @@ onMounted(() => {
 
 .user-profile__draft-card:hover {
   transform: translateY(-3px);
+}
+
+.user-profile__draft-media,
+.user-profile__draft-media-empty {
+  aspect-ratio: 16 / 10;
+  border-radius: 14px;
+  overflow: hidden;
+}
+
+.user-profile__draft-media {
+  position: relative;
+  background: var(--normalText5);
+}
+
+.user-profile__draft-media-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  user-select: none;
+  pointer-events: none;
+}
+
+.user-profile__draft-media-count {
+  position: absolute;
+  inset-block-start: 8px;
+  inset-inline-end: 8px;
+  z-index: 2;
+}
+
+.user-profile__draft-media-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px dashed var(--normalText15);
+  color: inherit;
+  background: var(--normalText5);
+  appearance: none;
+  cursor: pointer;
+  transition: border-color 180ms ease, background 180ms ease;
+}
+
+.user-profile__draft-media-empty:hover {
+  border-color: var(--normalText50);
+  background: var(--normalText10);
+}
+
+.user-profile__draft-media-empty:disabled {
+  opacity: 0.55;
+  cursor: wait;
 }
 </style>
