@@ -28,6 +28,7 @@ const localizedTitle = computed(() => {
 const imageSources = computed(() => props.item.images.map(image => image.fullUrl))
 const coverImage = computed(() => imageSources.value[0] || '')
 const hasCanvasSlider = computed(() => imageSources.value.length > 1)
+const hasTelegram = computed(() => Boolean(props.item.telegramUrl))
 
 const modelLabel = computed(() => {
   return props.item.model.previewGeneratedWith === 'gpt-image-1'
@@ -156,6 +157,7 @@ function localizedNavigationTitle(item: PromptArchiveNavigationItem) {
 }
 
 function openTelegram() {
+  if (!props.item.telegramUrl) return
   emit('telegram', props.item)
 }
 
@@ -356,6 +358,7 @@ async function copyPrompt() {
           />
 
           <el-button
+            v-if="hasTelegram"
             :label="t('prompts.detail.openTelegram')"
             icon="send"
             color="blue"
@@ -489,6 +492,7 @@ async function copyPrompt() {
             </el-text>
 
             <el-button
+              v-if="hasTelegram"
               :label="t('prompts.detail.openTelegram')"
               icon="send"
               mode="flat"
