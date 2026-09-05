@@ -35,6 +35,7 @@ const props = withDefaults(defineProps<{
   count?: number
   basePath?: string
   extension?: string
+  sources?: string[]
 
   /**
    * Time each image set stays fully active after transition.
@@ -166,12 +167,22 @@ const getSlideSrc = (index: number) => {
   return `${props.basePath}/${index + 1}.${props.extension}`
 }
 
+const getSlideSources = () => {
+  const explicitSources = props.sources
+    ?.map(source => source.trim())
+    .filter(Boolean)
+
+  if (explicitSources?.length) return explicitSources
+
+  return Array.from({ length: props.count }, (_, index) => getSlideSrc(index))
+}
+
 const createSlides = () => {
-  slides = Array.from({ length: props.count }, (_, index) => {
+  slides = getSlideSources().map((src) => {
     const image = new Image()
 
     const slide: SliderImage = {
-      src: getSlideSrc(index),
+      src,
       image,
       loaded: false,
       failed: false,
@@ -291,7 +302,7 @@ const getNextImageBatch = () => {
 }
 
 const createInitialIndexes = () => {
-  const indexes = Array.from({ length: props.count }, (_, index) => index)
+  const indexes = Array.from({ length: slides.length }, (_, index) => index)
   const ordered = props.random ? shuffle(indexes) : indexes
 
   return Array.from({ length: TILE_COUNT }, (_, index) => {
