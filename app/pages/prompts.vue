@@ -14,7 +14,7 @@ const archive = usePromptArchive()
 
 const searchQuery = ref('')
 const modelFilter = ref<'all' | PromptArchiveModel>('all')
-const tagFilter = ref('all')
+const tagFilter = ref(normalizeRouteTag(route.query.tag))
 const sortMode = ref<'newest' | 'oldest'>('newest')
 const viewMode = ref<'grid' | 'list'>('grid')
 const ambientBackground = ref('')
@@ -124,6 +124,14 @@ watch(
 )
 
 watch(
+  () => route.query.tag,
+  (value) => {
+    const nextTag = normalizeRouteTag(value)
+    if (tagFilter.value !== nextTag) tagFilter.value = nextTag
+  },
+)
+
+watch(
   backgroundSources,
   (sources) => {
     selectAmbientBackground(sources)
@@ -153,6 +161,13 @@ onBeforeUnmount(() => {
   if (ambientSwapTimer) clearTimeout(ambientSwapTimer)
   ambientPreloadVersion += 1
 })
+
+function normalizeRouteTag(value: unknown) {
+  if (typeof value !== 'string') return 'all'
+  const normalized = value.trim().toLowerCase()
+  if (!normalized || normalized.length > 100 || /\s/.test(normalized)) return 'all'
+  return normalized
+}
 
 function currentListQuery(cursor: string | null = null): PromptArchiveListQuery {
   return {
