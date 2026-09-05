@@ -1,11 +1,17 @@
 # Milestone 21A — Behavioral Analytics Design
 
-Status: **DESIGN COMPLETE / CODE NOT YET STARTED**
+Status: **DESIGN COMPLETE / IMPLEMENTED / AWAITING LOCAL VERIFICATION**
 
 Parent:
 
 ```text
 Milestone 21 — Growth Foundation
+```
+
+Implementation handoff:
+
+```text
+docs/strategy/MILESTONE_21A_IMPLEMENTATION.md
 ```
 
 ---
@@ -153,7 +159,7 @@ Properties:
 
 Client-generated ephemeral UUID representing a browser/app analytics session.
 
-Initial session policy may use a simple inactivity/new-tab lifecycle; exact rotation behavior can be implemented in the frontend analytics composable.
+The implemented V1 uses per-tab `sessionStorage`, giving a simple ephemeral browser-session boundary without fingerprinting.
 
 Analytics identity is observational only.
 
@@ -171,21 +177,21 @@ Do not reuse analytics `event_id` as an economic transaction id.
 
 ---
 
-# 8. Proposed schema
+# 8. Implemented schema
 
-Next migration must be numbered:
+Migration:
 
 ```text
 020_product_analytics_events.sql
 ```
 
-Proposed table:
+Table:
 
 ```text
 product_analytics_events
   id UUID PRIMARY KEY
   event_name TEXT NOT NULL
-  user_id UUID NULL REFERENCES users(id)
+  user_id UUID NULL REFERENCES users(id) ON DELETE SET NULL
   anonymous_id UUID NOT NULL
   session_id UUID NOT NULL
   resource_type TEXT NULL
@@ -197,9 +203,7 @@ product_analytics_events
   received_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 ```
 
-Recommended constraints/limits should be enforced primarily at the API boundary, with DB checks for critical bounded vocabularies where stable.
-
-Recommended indexes:
+Implemented indexes:
 
 ```text
 (event_name, received_at DESC)
@@ -209,13 +213,13 @@ Recommended indexes:
 (session_id, received_at DESC)
 ```
 
-Do not add high-cardinality metadata indexes without a real query requirement.
+No high-cardinality metadata index is present.
 
 ---
 
 # 9. API contract
 
-Proposed endpoint:
+Implemented endpoint:
 
 ```text
 POST /api/analytics/events
@@ -244,35 +248,44 @@ Example request:
 }
 ```
 
-Response:
+First delivery response:
 
 ```json
 {
   "ok": true,
-  "accepted": true
+  "accepted": true,
+  "duplicate": false
 }
 ```
 
-Repeated same `eventId` should return success/no duplicate rather than create another row.
+Repeated same `eventId` returns success without a second row:
+
+```json
+{
+  "ok": true,
+  "accepted": true,
+  "duplicate": true
+}
+```
 
 ---
 
 # 10. Validation / abuse boundaries
 
-Because the endpoint is public, it must not accept arbitrary unlimited payloads.
+Because the endpoint is public, it does not accept arbitrary unlimited payloads.
 
-V1 requirements:
+Implemented V1 boundaries:
 
 - allowlisted event names;
 - UUID validation;
 - bounded path/resource strings;
-- bounded locale;
-- small metadata object;
+- `en | fa` locale allowlist;
+- 8 KiB request-body ceiling;
 - per-event metadata allowlist;
-- no prompt text/output snapshots;
-- no email/password/token values;
+- unknown top-level field rejection;
+- no prompt text/output snapshots in the accepted metadata contract;
+- no email/password/token fields;
 - no arbitrary nested large objects;
-- body-size limit appropriate for small events;
 - server-controlled `user_id` resolution.
 
 Analytics is not trusted evidence for financial payouts or permissions.
@@ -281,7 +294,7 @@ Analytics is not trusted evidence for financial payouts or permissions.
 
 # 11. Initial event taxonomy
 
-Keep V1 intentionally small.
+V1 intentionally starts small.
 
 ## `prompt_archive_view`
 
@@ -295,13 +308,13 @@ Resource:
 prompt_archive_item:<publicId>
 ```
 
-Suggested metadata:
+Metadata:
 
 ```text
-source: api | fallback
+source?: api | fallback
 ```
 
-Do not send prompt text/title as event metadata.
+No prompt text/title is sent as event metadata.
 
 ## `prompt_archive_copy`
 
@@ -309,7 +322,7 @@ Meaning:
 
 The clipboard operation for a Prompt Archive prompt/variant completed successfully.
 
-Suggested metadata:
+Metadata:
 
 ```text
 variantKey
@@ -319,21 +332,11 @@ This is behavioral usage, not yet a purchase/unlock transaction.
 
 ## `prompt_archive_link_copy`
 
-Meaning:
-
-User intentionally copied/shared the canonical Prompt page link.
-
-The current product does not yet expose this action; the event becomes active when the UI action is added.
+Reserved for a later UI action. Not accepted by the first implemented API allowlist yet.
 
 ## `referral_link_open`
 
-Meaning:
-
-A registration/landing session arrived with a valid-looking referral username/link parameter.
-
-Do not treat this as a successful referral.
-
-Authoritative success remains the existing `referrals` row.
+Reserved for Phase 21B. Not accepted by the first implemented API allowlist yet.
 
 ## `preferences_completed`
 
@@ -376,9 +379,9 @@ Do not emit duplicate generic analytics merely to increase event volume.
 
 ---
 
-# 13. Frontend integration proposal
+# 13. Frontend integration
 
-Create a focused composable rather than scattering `$fetch` calls:
+Implemented composable:
 
 ```text
 app/composables/useProductAnalytics.ts
@@ -386,8 +389,8 @@ app/composables/useProductAnalytics.ts
 
 Responsibilities:
 
-- create/load anonymous UUID;
-- maintain session UUID;
+- create/load anonymous UUID in localStorage;
+- maintain session UUID in sessionStorage;
 - construct event IDs;
 - attach path/locale;
 - include Auth header through existing Auth infrastructure;
@@ -404,19 +407,17 @@ Product rule:
 
 ## Archive detail view
 
-Current integration area:
+Implemented in:
 
 ```text
-app/pages/prompts.vue
+app/components/prompts/PromptDetail.vue
 ```
 
-Emit only after a valid detail item is loaded.
-
-Avoid duplicate view emission from reactive rerenders.
+Emit after a valid detail item is mounted and when navigation changes to a different item.
 
 ## Prompt copy
 
-Current integration area:
+Implemented in:
 
 ```text
 app/components/prompts/PromptDetail.vue
@@ -424,13 +425,13 @@ app/components/prompts/PromptDetail.vue
 
 Emit only after clipboard/fallback copy reports success.
 
-Current `copyPrompt()` is the correct single action boundary for both visible Copy buttons.
+Current `copyPrompt()` remains the single action boundary for both visible Copy buttons.
 
 ---
 
-# 15. Backend integration proposal
+# 15. Backend integration
 
-Create focused module:
+Implemented module:
 
 ```text
 backend/src/productAnalytics.mjs
@@ -445,9 +446,13 @@ Responsibilities:
 - insert/dedupe;
 - stable response.
 
-Database boundary may use a focused function/module or existing database helper conventions.
+Central API routing is wired through:
 
-Do not place analytics SQL directly in unrelated Archive/UI handlers.
+```text
+backend/src/index.mjs
+```
+
+Analytics SQL is not placed inside unrelated Archive/UI handlers.
 
 ---
 
@@ -459,9 +464,9 @@ Creator product removal does not imply deletion of historical analytics rows und
 
 Long-term analysis/reporting should prefer aggregate/anonymized data.
 
-V1 should avoid storing unnecessary personal data in the first place.
+V1 avoids storing unnecessary personal data in the first place.
 
-No raw IP fingerprinting is required by this design.
+No raw IP fingerprinting is required or implemented.
 
 ---
 
@@ -474,6 +479,8 @@ Exact raw-event retention duration is not yet selected.
 For V1/local growth experiments, retain events in PostgreSQL and design future aggregation/anonymization before scale demands archival policies.
 
 Do not implement automatic deletion without a separately approved privacy/compliance requirement.
+
+For timeline reporting, prefer server-controlled `received_at`; client `occurred_at` is observational and must not become financial/security authority.
 
 ---
 
@@ -504,20 +511,14 @@ Current Archive snapshot/detail contracts predate commerce and should not be tre
 
 ---
 
-# 19. Implementation sequence
+# 19. Implementation state
 
-After this design is accepted as branch baseline:
+The first slice has been implemented in code.
+
+Verification sequence and exact local commands are maintained in:
 
 ```text
-A. add 020_product_analytics_events.sql
-B. add backend analytics module + insert function
-C. wire central API route
-D. add frontend analytics composable
-E. instrument Archive view
-F. instrument successful Prompt copy
-G. add local verification queries
-H. pnpm generate
-I. user verifies UI/network/database behavior
+docs/strategy/MILESTONE_21A_IMPLEMENTATION.md
 ```
 
 No Growth dashboard is required before event persistence itself is verified.
@@ -526,10 +527,11 @@ No Growth dashboard is required before event persistence itself is verified.
 
 # 20. Acceptance criteria
 
-Phase 21A first slice is complete when local verification proves:
+Phase 21A first slice is complete only when local verification proves:
 
-- anonymous detail view creates one valid event per intended view emission;
-- authenticated event resolves canonical `user_id` server-side;
+- authenticated Prompt detail view creates the intended view event;
+- the public analytics API accepts an anonymous event with `user_id = null`;
+- authenticated events resolve canonical `user_id` server-side;
 - successful Copy creates a copy event;
 - failed Copy does not create a copy event;
 - retry with same `eventId` does not duplicate;
@@ -539,3 +541,5 @@ Phase 21A first slice is complete when local verification proves:
 - persisted events are queryable in PostgreSQL;
 - existing XP/admin audit behavior is unchanged;
 - `pnpm generate` succeeds.
+
+Do not mark this document `DONE / LOCALLY VERIFIED` until explicit user acceptance.
