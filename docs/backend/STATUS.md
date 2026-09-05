@@ -15,11 +15,21 @@ Milestones 1–16: COMPLETE / locally verified
 Milestone 17 — Prompt Archive Platform: DONE / locally verified
 Milestone 18 — User Avatar Foundation: DONE / locally verified
 Milestone 19 — Public User Profiles + Cover Media: DONE / locally verified
+Milestone 20 — Profile Showcase, Draft Media & Archive Promotion: IN PROGRESS
+  Phase 20A — Profile UX polish + username profile alias: IMPLEMENTED / awaiting local verification
+  Phase 20B — Cloud Draft preview media: PLANNED
+  Phase 20C — Moderation + Promote to Prompt Archive: PLANNED
 ```
 
 The user explicitly confirmed the final Milestone 19 UX/polish behavior and a successful `pnpm generate` on 2026-09-05.
 
-No next milestone is selected yet. The next chat should start from the verified platform below and wait for the user's next product direction before changing code.
+Milestone 20 was selected on 2026-09-05 as an additive extension. Milestone 19 remains closed. Phase 20A implementation has started and must not be marked `DONE` until the user verifies the behavior locally and `pnpm generate` succeeds.
+
+Primary Milestone 20 source:
+
+```text
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+```
 
 ## Current verified platform
 
@@ -254,6 +264,26 @@ Detailed source:
 docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
 ```
 
+## Milestone 20 — IN PROGRESS
+
+Selected extension:
+
+```text
+20A -> Profile Menu polish + nested child Global Menu + /user?un=<username> + Draft-card border correction
+20B -> multi-image Cloud Draft preview media on Arvan
+20C -> moderation + public Draft promotion into Prompt Archive
+```
+
+Current Phase 20A implementation includes a reusable root/child Global Menu layer, centered Profile Menu identity/avatar composition, compact XP/account-age presentation, a public-safe username resolver and EL-prop-driven Draft-card border colors.
+
+No new SQL migration is part of 20A. Phase 20B is expected to begin schema work at migration `017_*.sql` after 20A local verification.
+
+Detailed source:
+
+```text
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+```
+
 ## Current SQL history
 
 Development migrations run lexically:
@@ -338,9 +368,9 @@ Redis
 
 ## New-chat handoff
 
-No next milestone is preselected.
+Milestone 20 is selected and in progress. Phase 20A is implemented but awaiting local verification.
 
-Before changing code in the next chat, read:
+Before continuing implementation in a new chat, read:
 
 1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
@@ -350,5 +380,6 @@ Before changing code in the next chat, read:
 6. `docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md`
 7. `docs/backend/MILESTONE_18_USER_AVATAR.md`
 8. `docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md`
+9. `docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md`
 
-Then inspect the current implementation relevant to the user's new request. Do not reopen completed milestones unless the new work intentionally extends them.
+Do not mark 20A complete until the user verifies the behavior locally and `pnpm generate` succeeds. Do not start 20B schema work by rewriting applied migrations; the next schema migration begins after `016_public_user_profiles.sql`.
