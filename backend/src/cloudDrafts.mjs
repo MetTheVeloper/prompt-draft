@@ -308,6 +308,7 @@ async function handleVisibilityMutation({
             server_updated_at = NOW()
         WHERE user_id = $1
           AND draft_id = $2
+          AND deleted_at IS NULL
         RETURNING
           draft_id AS id,
           visibility,
@@ -338,6 +339,47 @@ async function handleVisibilityMutation({
   } catch (error) {
     console.error('[Prompt Draft API] draft visibility update failed', error)
     sendJson(response, 500, { ok: false, message: 'Failed to update draft visibility' }, corsHeaders)
+  }
+}
+
+async function softDeleteDraft({ response, corsHeaders, sendJson, user, draftId }) {
+  try {
+    const result = await queryDatabase(
+      `
+        UPDATE prompt_drafts
+        SET deleted_at = COALESCE(deleted_at, NOW()),
+            server_updated_at = NOW()
+        WHERE user_id = $1
+          AND draft_id = $2
+          AND deleted_at IS NULL
+        RETURNING
+          draft_id AS id,
+          deleted_at AS "deletedAt"
+      `,
+      [user.id, draftId],
+    )
+
+    const row = result.rows[0]
+    if (!row) {
+      sendJson(response, 404, { ok: false, message: 'Draft not found' }, corsHeaders)
+      return
+    }
+
+    sendJson(
+      response,
+      200,
+      {
+        ok: true,
+        draft: {
+          id: row.id,
+          deletedAt: row.deletedAt.toISOString(),
+        },
+      },
+      corsHeaders,
+    )
+  } catch (error) {
+    console.error('[Prompt Draft API] draft soft delete failed', error)
+    sendJson(response, 500, { ok: false, message: 'Failed to delete draft' }, corsHeaders)
   }
 }
 
@@ -431,7 +473,7 @@ export async function handleCloudDraftRequest({
 
   const detailMatch = url.pathname.match(/^\/api\/drafts\/([^/]+)$/)
 
-  if (detailMatch && ['GET', 'PUT'].includes(request.method ?? '')) {
+  if (detailMatch && ['GET', 'PUT', 'DELETE'].includes(request.method ?? '')) {
     const draftId = parsePromptDraftId(detailMatch[1])
 
     if (!draftId) {
@@ -441,6 +483,17 @@ export async function handleCloudDraftRequest({
         { ok: false, message: 'Invalid draft id' },
         corsHeaders,
       )
+      return
+    }
+
+    if (request.method === 'DELETE') {
+      await softDeleteDraft({
+        response,
+        corsHeaders,
+        sendJson,
+        user,
+        draftId,
+      })
       return
     }
 
@@ -517,6 +570,20 @@ export async function handleCloudDraftRequest({
         user.id,
         createPromptDraft(draftId, body),
       )
+
+      if (!savedDraft) {
+        sendJson(
+          response,
+          409,
+          {
+            ok: false,
+            code: 'DRAFT_DELETED',
+            message: 'Deleted Drafts cannot be overwritten',
+          },
+          corsHeaders,
+        )
+        return
+      }
 
       let score = null
 
