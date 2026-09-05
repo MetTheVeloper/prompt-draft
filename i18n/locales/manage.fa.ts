@@ -139,7 +139,7 @@ export default {
       },
     },
     archive: {
-      searchPlaceholder: "جستجو با شناسه، عنوان، پرامپت، عنوان منبع یا تگ",
+      searchPlaceholder: "جستجو با شناسه عمومی، شناسه تلگرام، عنوان، پرامپت، عنوان منبع یا تگ",
       loading: "در حال بارگذاری آرشیو پرامپت…",
       empty: "آیتمی در آرشیو پیدا نشد.",
       loadError: "بارگذاری آرشیو پرامپت ناموفق بود.",
@@ -151,13 +151,16 @@ export default {
       sourceKinds: {
         managed: "مدیریت‌شده",
         legacy: "واردشده از آرشیو قدیمی",
+        userDraft: "ارتقایافته از درفت کاربر",
       },
       filters: {
         allStatuses: "همه وضعیت‌ها",
         allModels: "همه مدل‌ها",
       },
       fields: {
+        publicId: "شناسه عمومی",
         telegramId: "شناسه تلگرام",
+        telegramIdOptional: "شناسه تلگرام (اختیاری)",
         title: "عنوان",
         titleEn: "عنوان انگلیسی",
         titleFa: "عنوان فارسی",
@@ -172,7 +175,7 @@ export default {
         updated: "آخرین تغییر",
       },
       placeholders: {
-        telegramId: "مثلاً 512",
+        telegramId: "اختیاری، مثلاً 512",
         titleEn: "عنوان انگلیسی آرشیو",
         titleFa: "عنوان فارسی آرشیو",
         optimizedFor: "مدل‌های هدف را انتخاب کنید",
