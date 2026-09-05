@@ -134,6 +134,7 @@ function confirmDeleteImage(image: UserDraftPreviewImage) {
         label: t("userProfile.drafts.actions.cancel"),
         color: "normal",
         mode: "flat",
+        close: true,
       },
       {
         label: t("userProfile.drafts.media.deleteAction"),
@@ -225,7 +226,7 @@ function confirmDeleteImage(image: UserDraftPreviewImage) {
         :radius="14"
         :br="2"
         :bc="image.id === primaryImageId ? 'prim' : 'normal15'"
-        :disable="busy"
+        :disabled="busy"
         @click="selectPrimary(image)">
         <img
           :src="image.url"
