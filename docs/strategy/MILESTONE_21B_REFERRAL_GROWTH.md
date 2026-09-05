@@ -1,6 +1,6 @@
 # Milestone 21B — Referral Growth Activation
 
-Status: **SELECTED / CAPABILITY AUDIT COMPLETE / IMPLEMENTATION STARTED**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Parent:
 
@@ -21,11 +21,17 @@ Mandatory inherited source:
 docs/backend/MILESTONE_16_REFERRAL_FOUNDATION.md
 ```
 
+Canonical verification record:
+
+```text
+docs/strategy/MILESTONE_21B_VERIFICATION.md
+```
+
 ## 1. Goal
 
 Turn the already-correct referral relation into a usable growth loop without creating another referral identity, reward ledger, or account system.
 
-Desired user journey:
+Verified user journey:
 
 ```text
 existing user has username
@@ -40,7 +46,7 @@ existing user has username
 
 ## 2. Existing capability audit
 
-### COMPLETE / reuse directly
+### COMPLETE / reused directly
 
 ```text
 POST /api/auth/register
@@ -61,7 +67,7 @@ product_analytics_events + POST /api/analytics/events from 21A
 anonymous analytics identity/session from useProductAnalytics()
 ```
 
-### GAP / implement in 21B
+### GAPS CLOSED IN 21B
 
 ```text
 canonical shareable referral URL
@@ -74,7 +80,7 @@ simple referral funnel verification/read queries
 ### DEFERRED unless evidence requires it
 
 ```text
-random/generated invite codes
+random/generated referral codes
 campaign-specific referral codes
 multi-device/account anti-abuse
 reward maturity windows
@@ -94,10 +100,10 @@ Canonical V1 shape:
 /login?ref=<normalizedUsername>
 ```
 
-Example:
+Verified local example:
 
 ```text
-/login?ref=grass
+http://localhost:3030/login?ref=grass
 ```
 
 Why:
@@ -112,23 +118,23 @@ The URL parameter is an input hint only. It is not authoritative attribution. Re
 
 ## 4. Registration prefill contract
 
-`app/pages/login.vue` should:
+`app/pages/login.vue`:
 
-1. read `route.query.ref` on the client;
-2. normalize lowercase/trim;
-3. accept only the existing username grammar:
+1. reads `route.query.ref` on the client;
+2. normalizes lowercase/trim;
+3. accepts only the existing username grammar:
    `^[a-z0-9._-]{3,64}$`;
-4. preserve the value while the login page transitions from identifier step to registration step;
-5. prefill the already-existing `referralUsername` field;
-6. keep the field editable;
-7. never bypass backend validation;
-8. ignore malformed `ref` values rather than treating them as accepted referrals.
+4. preserves the value while the login page transitions from identifier step to registration step;
+5. prefills the already-existing `referralUsername` field;
+6. keeps the field editable;
+7. never bypasses backend validation;
+8. ignores malformed `ref` values rather than treating them as accepted referrals.
 
-The referral value should not be erased by the normal `submitIdentifier()` transition into account creation.
+The referral value is not erased by the normal `submitIdentifier()` transition into account creation.
 
 ## 5. Referral landing analytics
 
-Add a dedicated observational event using the 21A analytics primitive:
+Dedicated observational event:
 
 ```text
 referral_link_open
@@ -144,8 +150,6 @@ Resource:
 referral_username:<normalizedUsername>
 ```
 
-This event is intentionally anonymous-capable and may later be associated with an authenticated user through the normal analytics identity model.
-
 Important:
 
 ```text
@@ -158,43 +162,41 @@ Authoritative successful referral conversion remains:
 referrals row
 ```
 
-Do not award XP from analytics.
+XP is never awarded from analytics.
 
 ## 6. Analytics validation extension
 
-The 21A event endpoint currently validates Prompt Archive resources as positive numeric IDs.
-
-21B should extend the event-rule validation model so resource ID semantics are event-specific:
+The 21A analytics endpoint now uses event-specific resource semantics:
 
 ```text
-prompt_archive_* -> positive numeric public ID
-referral_link_open -> normalized username
+prompt_archive_*    -> positive numeric public ID
+referral_link_open  -> normalized username
 ```
 
-Do not weaken the endpoint into arbitrary resource strings.
+The endpoint was not weakened into arbitrary resource strings.
 
-For `referral_link_open` V1, no arbitrary metadata is required. Path/locale/anonymous/session identity are already part of the common analytics envelope.
+For `referral_link_open` V1, no arbitrary metadata is accepted. Path/locale/anonymous/session identity remain part of the common analytics envelope.
 
 ## 7. Copy referral link surface
 
-Once the URL/prefill contract is verified, expose a compact action from the existing authenticated Profile Menu rather than creating a new referral dashboard.
+The authenticated Profile Menu exposes a compact Copy referral link action when the account has a username.
 
-Requirements:
+Implemented behavior:
 
 ```text
 requires current user.username
 uses current site origin + /login?ref=<username>
-copy to clipboard
-localized EN/FA label/result
+clipboard API with DOM fallback
+localized EN/FA result state
 keeps existing invited-user count
-no new backend endpoint required
+no new backend endpoint
 ```
 
-A user without username cannot have a canonical username referral URL; the existing progressive profile-completion system should be reused rather than inventing an alternate code.
+A user without username does not receive an alternate generated code. Existing progressive profile completion remains the route to acquiring a username.
 
 ## 8. Conversion / funnel truth
 
-V1 funnel sources:
+V1 funnel sources remain separate:
 
 ```text
 landing attempts       -> product_analytics_events where event_name=referral_link_open
@@ -202,7 +204,7 @@ successful referrals   -> referrals
 reward issuance        -> user_score_events referral_joined/referral_reward
 ```
 
-These datasets have different authority and must not be collapsed into one table.
+These datasets have different authority and are not collapsed into one table.
 
 ## 9. Anti-abuse boundary
 
@@ -217,13 +219,15 @@ requested invalid referral aborts signup
 atomic referral relation + reward trigger
 ```
 
-Do not add fingerprinting or speculative device policing in the first Growth experiment.
+21B did not add fingerprinting or speculative device policing.
 
-If actual abuse appears, extend eligibility rules around the authoritative relation/reward transaction rather than trusting analytics identities.
+If actual abuse appears, eligibility rules should be extended around the authoritative relation/reward transaction rather than trusting analytics identities.
 
-## 10. No schema migration required for first 21B slice
+## 10. Schema result
 
-The first 21B activation slice reuses:
+No `021` migration was created for 21B.
+
+21B reused:
 
 ```text
 users
@@ -232,26 +236,26 @@ user_score_events
 product_analytics_events
 ```
 
-Migration `020` is already generic enough for the new observational event. Therefore no `021` migration should be created merely to activate the referral URL flow.
+Migration number `021` therefore remains available for the next real schema change.
 
-## 11. First implementation sequence
+## 11. Completed implementation sequence
 
 ```text
-B1 close 21A verification docs
-B2 add/refine referral_link_open analytics validation
-B3 extend useProductAnalytics event/resource typing
-B4 parse + prefill ?ref= in /login
-B5 emit one referral_link_open per valid referral landing lifecycle
-B6 verify URL prefill + analytics persistence
-B7 add Profile Menu Copy referral link action
-B8 verify real new-account conversion still creates canonical referrals row and existing rewards
-B9 pnpm generate
-B10 mark 21B DONE only after local user acceptance
+B1 close 21A verification docs                                      DONE
+B2 add/refine referral_link_open analytics validation              DONE
+B3 extend useProductAnalytics event/resource typing                DONE
+B4 parse + prefill ?ref= in /login                                 DONE
+B5 emit one referral_link_open per valid referral landing lifecycle DONE
+B6 verify URL prefill + analytics persistence                      DONE
+B7 add Profile Menu Copy referral link action                      DONE
+B8 verify real new-account conversion + existing rewards           DONE
+B9 pnpm generate                                                   PASS
+B10 mark 21B DONE after local user acceptance                      DONE
 ```
 
-## 12. Acceptance criteria
+## 12. Acceptance result
 
-21B is complete when local verification proves:
+Locally verified:
 
 ```text
 /login?ref=<validUsername> preserves/prefills the existing registration referral field
@@ -268,13 +272,30 @@ no second referral-code table/system exists
 pnpm generate succeeds
 ```
 
-## 13. Hard rules
+Verified conversion example:
 
 ```text
-DO NOT create random referral codes in 21B.
+referrer = grass
+referred = m010
+referral = 5f63047f-6d5e-40dd-a2b9-00460a57c8d3
+grass reward = +1000
+m010 joined reward = +500
+Invited users = 3 -> 4
+```
+
+## 13. Hard rules carried forward
+
+```text
+DO NOT create random referral codes without a later explicit need.
 DO NOT use analytics as referral conversion authority.
 DO NOT award XP from referral_link_open.
 DO NOT create a second reward ledger.
 DO NOT bypass backend referral validation because the URL was generated by Prompt Draft.
-DO NOT add a separate referral dashboard before the small activation loop is proven useful.
+DO NOT add a separate referral dashboard before evidence justifies it.
+```
+
+Milestone 21B is closed. Continue with:
+
+```text
+Milestone 21C — User Preferences & Personalized Discovery
 ```
