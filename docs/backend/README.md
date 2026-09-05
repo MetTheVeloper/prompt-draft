@@ -139,7 +139,7 @@ Public Draft privacy:
 
 ```text
 owner   -> active own public + private Cloud Draft summaries
-visitor -> active visibility='public' Draft summaries only
+visitor -> active public Draft summaries only
 ```
 
 Cloud Draft default is `private`. Public profile responses exclude email/private Auth data.
@@ -157,7 +157,7 @@ docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
 ```text
 20A -> DONE / verified
 20B -> DONE / verified
-20C -> IN PROGRESS
+20C -> IMPLEMENTED / pending local verification
 ```
 
 ### Phase 20A — verified
@@ -214,7 +214,7 @@ Verified showcase cards are square, image-first, full-background cards with larg
 
 The user locally verified Phase 20B behavior and a successful `pnpm generate` on 2026-09-05.
 
-### Phase 20C — active
+### Phase 20C — implemented / pending local verification
 
 Permissions:
 
@@ -223,21 +223,25 @@ archive.manage     -> promote a public user Draft into Prompt Archive
 drafts.delete_any -> moderate-delete another user's Draft
 ```
 
-Role behavior remains:
+Role behavior:
 
 ```text
 Admin       -> Archive promotion
 Super Admin -> Archive promotion + arbitrary Draft moderation delete
 ```
 
-Promotion creates an Archive `draft`, not an automatically published item.
+Migration:
 
-Migration `019` will remove the historical assumption that every Archive item is Telegram-backed while preserving existing public URLs. Selected identity model:
+```text
+019_archive_user_draft_promotion.sql
+```
+
+Archive identity no longer assumes every item is Telegram-backed:
 
 ```text
 public_id = stable numeric Archive route identity
 existing rows: public_id = telegram_message_id
-new non-Telegram rows: sequence-backed public_id
+new non-Telegram rows: sequence-backed public_id >= 1,000,000,000
 telegram_message_id nullable
 telegram_url nullable
 source_kind += user_draft
@@ -245,9 +249,36 @@ source_user_id + source_draft_id provenance
 unique user-Draft provenance
 ```
 
-Existing Telegram-based `/prompts/<id>` IDs remain unchanged.
+Existing Telegram-based `/prompts?id=<id>` public IDs remain unchanged. `/api/archive`, `/prompts`, Manage Archive and schemaVersion 3 fallback parsing support non-Telegram entries. Manage Archive deep-links now resolve by `public_id`, and Telegram actions render only when a Telegram URL actually exists.
 
-Promoted Draft preview media must be copied/re-prepared into Archive-owned keys using the existing Archive full/thumbnail media contract. Moderation deletion reuses the verified Draft `deleted_at` tombstone and adds permission enforcement + audit logging.
+Promotion behavior:
+
+```text
+source Draft must be public, active and non-deleted
+prompt output compiled from stored Draft
+Admin supplies EN + FA title
+Telegram message ID optional
+new Archive item starts as draft
+preview media copied through authorized source-image proxy
+media re-prepared with Archive full/thumbnail WebP contract
+copied media stored under Archive-owned archive/... keys
+duplicate promotion prevented by source provenance uniqueness
+```
+
+The snapshot exporter emits public IDs and nullable Telegram URLs. The bootstrap importer restores public IDs and advances the high sequence namespace so a fresh installation cannot collide with sequence-backed IDs already present in a generated snapshot.
+
+Moderation behavior:
+
+```text
+Super Admin drafts.delete_any
+central confirmation UI
+soft delete via prompt_drafts.deleted_at
+draft.moderation_delete audit event
+normal owner/public reads exclude tombstone
+promoted Archive item remains independent
+```
+
+Phase 20C remains open until migration 019, compatibility, promotion/media independence, permission boundaries, moderation/audit, Archive snapshot parity and `pnpm generate` are locally verified.
 
 Detailed source:
 
@@ -297,8 +328,12 @@ GET /api/users/:userId/drafts
 ### Prompt Archive
 
 ```text
-/api/archive...
+GET  /api/archive
+GET  /api/archive/:publicId
 /api/admin/archive...
+GET  /api/admin/archive/public/:publicId
+GET  /api/admin/archive/source-draft/:userId/:draftId
+POST /api/admin/archive/promote-draft
 ```
 
 ## Current SQL history
@@ -322,10 +357,11 @@ GET /api/users/:userId/drafts
 016_public_user_profiles.sql
 017_cloud_draft_preview_media.sql
 018_soft_delete_prompt_drafts.sql
+019_archive_user_draft_promotion.sql
 ```
 
-Do not rewrite applied migrations. Phase 20C begins with `019`.
+Do not rewrite applied migrations. Migration 019 is the active unverified Phase 20C schema change.
 
 ## Current next step
 
-Phase 20C is active. Read the Milestone 20 source before changing Archive identity, promotion media or moderation behavior. Do not mark Phase 20C/Milestone 20 complete until local behavior is accepted and `pnpm generate` succeeds.
+Run the Phase 20C local acceptance pass from the Milestone 20 source: apply migration 019, verify old Archive compatibility, promote a public Draft without Telegram, confirm Archive-owned media independence, test Admin/Super Admin moderation boundaries, generate the Archive snapshot, then run `pnpm generate`.
