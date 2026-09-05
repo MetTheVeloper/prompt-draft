@@ -25,23 +25,45 @@ Content Graph & Lineage         -> documented
 Execution Layer                 -> documented
 Pricing/Internal Economy V1     -> documented
 Execution Roadmap V1            -> documented
-Milestone 21 Growth Foundation  -> SELECTED / design baseline created
-Implementation                  -> not started yet
+Milestone 21 Growth Foundation  -> SELECTED
+Phase 21A capability audit      -> COMPLETE
+Phase 21A analytics design      -> COMPLETE
+Phase 21A implementation        -> NOT STARTED
 ```
+
+## Important 21A audit findings
+
+```text
+/prompts frontend currently requires logged-in user + email before loading Archive
+/api/archive backend currently enforces the same login+email requirement
+Archive list projection does not expose full prompt text
+Archive detail projection does expose prompt + variants
+/data/prompts.json fallback snapshot currently contains full prompt content
+Prompt copy is currently client-side and has no server analytics/access record
+```
+
+Strategic consequence:
+
+> Future Growth/SEO/Marketplace work must separate public discovery metadata from protected/unlocked sellable knowledge rather than simply making the current full Archive detail contract public.
 
 ## Current next step
 
-Start **Phase 21A — Behavioral Analytics Foundation** with an implementation audit.
+Implement the first **Phase 21A — Behavioral Analytics Foundation** slice defined in:
 
-Before migration/code:
+```text
+docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
+```
 
-1. inspect current public Prompt Archive page/detail/copy flows;
-2. inspect current Global Output copy flow;
-3. inspect Wizard completion/start integration points;
-4. inspect Draft create/open integration points;
-5. inspect current backend request routing/database conventions;
-6. define the first event taxonomy, identity, dedupe and privacy contract;
-7. only then create migration `020_*.sql` if the design requires it.
+Implementation order:
+
+1. create `020_product_analytics_events.sql`;
+2. add focused backend analytics event module/API;
+3. add focused frontend analytics composable;
+4. instrument successful Archive detail view and successful Prompt copy;
+5. verify event dedupe, optional auth identity and non-blocking failure behavior;
+6. query PostgreSQL for proof;
+7. run `pnpm generate`;
+8. mark DONE only after local user verification.
 
 ## Hard rules
 
@@ -49,6 +71,8 @@ Before migration/code:
 DO NOT use admin_audit_log as behavioral analytics.
 DO NOT use user_score_events as a generic analytics warehouse.
 DO NOT create a second XP/referral/auth/admin system.
+DO NOT trust analytics events as economic/payout authority.
+DO NOT put prompt text or sellable knowledge into analytics metadata.
 DO NOT break pnpm generate without an explicit rendering architecture decision.
 DO NOT start full Marketplace commerce inside Milestone 21.
 ```
@@ -61,5 +85,6 @@ docs/strategy/PRODUCT_STRATEGY_V1.md
 docs/strategy/FOUNDER_DISCOVERY_QA_V1.md
 docs/strategy/EXECUTION_ROADMAP_V1.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
+docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
