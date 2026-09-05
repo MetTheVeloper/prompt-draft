@@ -654,7 +654,10 @@ onMounted(() => { void loadProfile(); });
               v-if="hasTopbarActions(draft) || draft.images.length"
               rules="rsc"
               class="user-profile__draft-topbar w100"
-              :gap="8">
+              :gap="8"
+              bd="b8"
+              :radius="100"
+              bg="surface10">
               <el-flex v-if="hasTopbarActions(draft)" rules="rsc" class="fg100" :gap="8">
                 <template v-if="isOwner">
                   <el-button
@@ -715,7 +718,7 @@ onMounted(() => { void loadProfile(); });
 
             <el-flex rules="ccs" class="user-profile__draft-content w100" :gap="12">
               <el-flex rules="rsc" :gap="8" wrap class="w100 fw">
-                <el-text :size="11" :weight="800" marker="surface75" color="white" :p="[4, 7]" :radius="100">{{ formatOutputFormat(draft.outputFormat) }}</el-text>
+                <el-text :size="11" :weight="800" marker="surface" color="normal" :p="[4, 7]" :radius="100">{{ formatOutputFormat(draft.outputFormat) }}</el-text>
                 <el-text
                   v-if="isOwner && draft.visibility"
                   :size="11"
