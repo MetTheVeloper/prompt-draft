@@ -6,7 +6,7 @@ Branch: `feature/docker-local-api`
 
 ## Verification rule
 
-A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. Code creation alone is not sufficient. `pnpm generate` remains a release invariant for frontend-affecting work.
+A phase or milestone is marked `DONE` only after the user runs the relevant behavior locally and explicitly confirms it. `pnpm generate` remains a release invariant for frontend-affecting work.
 
 ## Current checkpoint
 
@@ -15,15 +15,13 @@ Milestones 1–16: COMPLETE / locally verified
 Milestone 17 — Prompt Archive Platform: DONE / locally verified
 Milestone 18 — User Avatar Foundation: DONE / locally verified
 Milestone 19 — Public User Profiles + Cover Media: DONE / locally verified
-Milestone 20 — Profile Showcase, Draft Media & Archive Promotion: IN PROGRESS
+Milestone 20 — Profile Showcase, Draft Media & Archive Promotion: DONE / locally verified
   Phase 20A — Profile UX polish + username profile alias: DONE / locally verified
   Phase 20B — Cloud Draft preview media + Draft workflow: DONE / locally verified
-  Phase 20C — Moderation + Promote to Prompt Archive: IMPLEMENTED / PENDING LOCAL VERIFICATION
+  Phase 20C — Moderation + Promote to Prompt Archive: DONE / locally verified
 ```
 
-The user explicitly confirmed Phase 20B functionality, soft-delete persistence, final square showcase-card design and a successful `pnpm generate` on 2026-09-05.
-
-Phase 20C implementation is now complete on the branch. Migration 019 has not yet been locally accepted; Phase 20C remains open until local migration/behavior tests, Archive snapshot parity and `pnpm generate` succeed.
+Milestone 20 closed on 2026-09-05 after local behavior verification, Archive snapshot parity and successful `pnpm generate`.
 
 Primary Milestone 20 source:
 
@@ -57,9 +55,7 @@ important XP/reward events require idempotency semantics
 
 ## Milestones 1–16 — verified foundation
 
-The established platform before Archive/profile-media work includes Docker/PostgreSQL backend foundation, Wizard run persistence + History, optional Auth + Cloud Draft sync, translation, roles/permissions, Manage shell + Users + Dashboard, progressive profile completion, XP/event ledger, referrals and product access gates.
-
-Detailed milestone records remain in `docs/backend/MILESTONE_*.md`.
+The established platform includes Docker/PostgreSQL backend foundation, Wizard run persistence + History, optional Auth + Cloud Draft sync, translation, roles/permissions, Manage shell + Users + Dashboard, progressive profile completion, XP/event ledger, referrals and product access gates.
 
 ## Milestone 17 — DONE: Prompt Archive Platform
 
@@ -74,16 +70,7 @@ public/data/prompts.json = generated fallback snapshot
 Arvan Object Storage = managed Archive media
 ```
 
-Archive permissions:
-
-```text
-archive.view
-archive.manage
-```
-
-Verified Manage behavior includes create/edit Drafts, explicit publish/archive state, EN/FA titles, canonical tags, browser image preparation, full + thumbnail WebP upload, reorder/delete, audit events, Manage deep links and Admin/Super Admin edit access from `/prompts`.
-
-Archive image preparation:
+Archive media contract:
 
 ```text
 full: max edge 2048, WebP quality 0.60, no upscale
@@ -113,14 +100,15 @@ Arvan immutable storage
 image -> initials -> person icon fallback
 ```
 
-`el-avatar` remains the reusable component and same-size FAB/avatar height remains the default invariant. Milestone 20 adds only an opt-in pixel offset for the Profile Menu visual.
+`el-avatar` remains reusable; same-size FAB/avatar height remains the default invariant. Milestone 20 adds only opt-in Profile Menu visual adjustments.
 
 ## Milestone 19 — DONE: Public User Profiles + Cover Media
 
-Public profile:
+Public profile entry:
 
 ```text
 /user?id=<USER_UUID>
+/user?un=<username>   # alias added by Milestone 20
 ```
 
 Privacy boundary:
@@ -132,26 +120,22 @@ visitor -> active public Draft summaries only
 
 Cloud Draft default visibility remains `private`. Public profile responses do not expose email/private account data.
 
-Cover contract remains optional full + thumbnail WebP on Arvan. Single-source `visual-slider` behavior remains eased start/end pan looping without changing multi-source behavior.
+## Milestone 20 — DONE
 
-## Milestone 20 — IN PROGRESS
-
-### Phase 20A — DONE / verified
-
-Verified additions:
+### Phase 20A — verified
 
 ```text
 centered/overlapping Profile Menu avatar
-nested child Global Menu for avatar actions
-surface50 + backdrop-blur avatar fallback
-compact XP + member-age presentation
+nested Global Menu support
+surface50 + blur avatar fallback
+compact XP/member-age presentation
 compact Manage/View profile/Sign out row
 shared portal-based tooltip fix
 /user?un=<username> alias resolver
-Draft-card EL border colors normal15 -> normal50
+Draft-card normal15 -> normal50 border behavior
 ```
 
-### Phase 20B — DONE / verified
+### Phase 20B — verified
 
 Schema:
 
@@ -160,7 +144,7 @@ Schema:
 018_soft_delete_prompt_drafts.sql
 ```
 
-Verified additions:
+Verified behavior:
 
 ```text
 multi-image Draft preview media
@@ -179,26 +163,9 @@ stale clients cannot resurrect tombstones
 Saved drafts (N) heading
 square image-first showcase cards
 second-image hover crossfade
-successful pnpm generate
 ```
 
-Soft-delete proof was locally confirmed: the deleted Draft remained in `prompt_drafts` with a populated `deleted_at` while disappearing from normal read models/UI.
-
-### Phase 20C — IMPLEMENTED / pending local verification
-
-Permission contract:
-
-```text
-archive.manage     -> promote public user Draft to Prompt Archive
-drafts.delete_any -> moderate-delete another user's Draft
-```
-
-Current role behavior:
-
-```text
-Admin       -> promotion
-Super Admin -> promotion + moderation delete
-```
+### Phase 20C — verified
 
 Schema:
 
@@ -206,58 +173,37 @@ Schema:
 019_archive_user_draft_promotion.sql
 ```
 
-Implemented Archive identity strategy:
+Verified behavior:
 
 ```text
-public_id = stable numeric Archive route identity
-existing rows: public_id = telegram_message_id
-non-Telegram rows: sequence-backed public_id >= 1,000,000,000
-telegram_message_id nullable
-telegram_url nullable
-source_kind += user_draft
+archive.manage promotion workflow
+drafts.delete_any moderation workflow
+stable public_id Archive routing
+optional Telegram linkage
 source_user_id + source_draft_id provenance
-unique source Draft promotion
+duplicate source promotion protection
+Archive-owned copied media
+promoted item starts as Archive draft
+published promoted item appears in /prompts
+source Draft moderation uses deleted_at tombstone
+promotion + moderation audit events
+promoted Archive item survives source moderation
 ```
 
-Compatibility work now covers:
+Final local proof included:
 
 ```text
-/api/archive routes by public_id
-old Telegram-backed public IDs remain unchanged
-/manage/archive deep-links by public_id
-optional Telegram field in Manage Archive
-/prompts hides Telegram actions when telegram_url is null
-API and schemaVersion 3 fallback parsers accept telegramUrl = null
-snapshot exporter uses public_id
-snapshot importer restores public IDs and advances the high public-id sequence
+Archive user_draft item published successfully
+source Draft soft-deleted and removed from normal profile reads
+Archive image keys stored under archive/... independent namespace
+admin_audit_log contains archive.promote_user_draft + draft.moderation_delete
+pnpm archive:snapshot -> PARITY_OK
+publishedItemCount = 102
+snapshotItemCount = 102
+mismatchCount = 0
+schemaVersion = 3
+pnpm generate -> success
 ```
-
-Promotion flow now covers:
-
-```text
-public source Draft read under archive.manage
-same compiler used for Draft prompt output
-manual EN + FA Archive title
-optional Telegram ID
-Archive item created as draft only
-source provenance persisted
-source preview images re-prepared with Archive image contract
-Archive-owned archive/... object-storage keys
-duplicate source promotion blocked
-```
-
-Moderation flow now covers:
-
-```text
-Super Admin-only drafts.delete_any enforcement
-central confirmation UI
-prompt_drafts.deleted_at tombstone
-server_updated_at refresh
-draft.moderation_delete audit event
-normal owner/public read models automatically exclude the tombstone
-```
-
-Phase 20C is not `DONE` yet. The local acceptance pass must verify migration 019, old Archive URLs, promotion with and without Telegram, media independence, duplicate prevention, Admin/Super Admin permission boundaries, moderation tombstones/audit, Archive snapshot parity and `pnpm generate`.
 
 ## Current SQL history
 
@@ -283,20 +229,11 @@ Phase 20C is not `DONE` yet. The local acceptance pass must verify migration 019
 019_archive_user_draft_promotion.sql
 ```
 
-Do not rewrite applied migration history. Migration 019 is the active Phase 20C schema change and remains unverified until the local pass.
-
-## Reusable guides
-
-```text
-docs/backend/API_GUIDE.md
-docs/backend/MANAGE_GUIDE.md
-docs/backend/README.md
-docs/backend/IMPLEMENTATION.md
-```
+Do not rewrite applied migration history. The next schema change must use `020_*.sql`.
 
 ## Known non-blocking build warnings
 
-Existing accepted warnings remain unless their behavior changes:
+Accepted warnings remain:
 
 ```text
 duplicated compilePromptOutput auto-import
@@ -305,20 +242,19 @@ Nitro cache-driver external-resolution warning
 large client chunks
 ```
 
+## Current next step
+
+Milestone 20 is closed. No Milestone 21 has been selected yet. Do not reopen closed milestones without a concrete regression or dependency.
+
 ## New-chat handoff
 
-Milestone 20 is selected and in progress. Phases 20A and 20B are closed and locally verified. Phase 20C is implemented and awaiting local verification.
-
-Before continuing, read:
+Before new backend work, read:
 
 1. `docs/backend/STATUS.md`
 2. `docs/backend/README.md`
 3. `docs/backend/IMPLEMENTATION.md`
 4. `docs/backend/API_GUIDE.md`
 5. `docs/backend/MANAGE_GUIDE.md`
-6. `docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md`
-7. `docs/backend/MILESTONE_18_USER_AVATAR.md`
-8. `docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md`
-9. `docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md`
+6. relevant milestone source documents
 
-Do not mark Phase 20C or Milestone 20 complete until local behavior is verified, Archive snapshot parity succeeds and `pnpm generate` succeeds.
+Release invariant remains `pnpm generate`.
