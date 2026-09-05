@@ -28,7 +28,7 @@ Execution Roadmap V1            -> documented
 Milestone 21 Growth Foundation  -> SELECTED
 Phase 21A capability audit      -> COMPLETE
 Phase 21A analytics design      -> COMPLETE
-Phase 21A implementation        -> NOT STARTED
+Phase 21A implementation        -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
 ## Important 21A audit findings
@@ -39,31 +39,52 @@ Phase 21A implementation        -> NOT STARTED
 Archive list projection does not expose full prompt text
 Archive detail projection does expose prompt + variants
 /data/prompts.json fallback snapshot currently contains full prompt content
-Prompt copy is currently client-side and has no server analytics/access record
+Prompt copy was client-side and had no server analytics/access record before 21A
 ```
 
 Strategic consequence:
 
 > Future Growth/SEO/Marketplace work must separate public discovery metadata from protected/unlocked sellable knowledge rather than simply making the current full Archive detail contract public.
 
-## Current next step
-
-Implement the first **Phase 21A — Behavioral Analytics Foundation** slice defined in:
+## Implemented 21A slice awaiting verification
 
 ```text
-docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
+020_product_analytics_events.sql
+product_analytics_events table + focused indexes
+POST /api/analytics/events
+optional backend-resolved auth identity
+anonymous_id + session_id + event_id identity model
+strict event/metadata validation
+same-event delivery dedupe
+useProductAnalytics frontend composable
+prompt_archive_view instrumentation
+prompt_archive_copy instrumentation after successful copy only
+analytics failure isolated from primary product behavior
 ```
 
-Implementation order:
+Verification source:
 
-1. create `020_product_analytics_events.sql`;
-2. add focused backend analytics event module/API;
-3. add focused frontend analytics composable;
-4. instrument successful Archive detail view and successful Prompt copy;
-5. verify event dedupe, optional auth identity and non-blocking failure behavior;
-6. query PostgreSQL for proof;
-7. run `pnpm generate`;
-8. mark DONE only after local user verification.
+```text
+docs/strategy/MILESTONE_21A_IMPLEMENTATION.md
+```
+
+## Current next step
+
+Locally verify Phase 21A before marking it DONE.
+
+Required closure proof:
+
+1. apply migration `020_product_analytics_events.sql`;
+2. verify authenticated view/copy persistence;
+3. verify anonymous API event stores `user_id = null`;
+4. verify same `eventId` retry creates one row;
+5. verify invalid/unapproved payload rejection;
+6. verify no prompt text enters analytics metadata;
+7. verify analytics failure does not block primary UI behavior;
+8. run `pnpm generate`;
+9. mark DONE only after explicit user acceptance.
+
+After 21A closure, select **Phase 21B — Referral Growth Activation**.
 
 ## Hard rules
 
@@ -86,5 +107,6 @@ docs/strategy/FOUNDER_DISCOVERY_QA_V1.md
 docs/strategy/EXECUTION_ROADMAP_V1.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
 docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
+docs/strategy/MILESTONE_21A_IMPLEMENTATION.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
