@@ -1,12 +1,17 @@
 type ProductAnalyticsEventName =
   | 'prompt_archive_view'
   | 'prompt_archive_copy'
+  | 'referral_link_open'
+
+type ProductAnalyticsResourceType =
+  | 'prompt_archive_item'
+  | 'referral_username'
 
 type ProductAnalyticsMetadata = Record<string, string | number | boolean | null>
 
 type ProductAnalyticsTrackOptions = {
   resource: {
-    type: 'prompt_archive_item'
+    type: ProductAnalyticsResourceType
     id: string
   }
   metadata?: ProductAnalyticsMetadata
