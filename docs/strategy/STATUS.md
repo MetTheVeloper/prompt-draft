@@ -28,7 +28,7 @@ Execution Roadmap V1            -> documented
 Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21C Preferences/Discovery -> FIRST PRODUCT SLICE IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21C Preferences/Discovery -> BASE SLICE LOCALLY VERIFIED / HOME EXPERIENCE EXTENSION IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
 ## 21A closure
@@ -74,15 +74,6 @@ invited-user count refreshes from referrals
 pnpm generate PASS
 ```
 
-Verified example:
-
-```text
-referrer = grass
-referred = m010
-referral id = 5f63047f-6d5e-40dd-a2b9-00460a57c8d3
-Invited users = 3 -> 4
-```
-
 Canonical closure:
 
 ```text
@@ -91,37 +82,22 @@ docs/strategy/MILESTONE_21B_VERIFICATION.md
 
 ## Current phase — 21C User Preferences & Personalized Discovery
 
-Capability audit found:
+The base preference/discovery slice is locally verified by the user.
 
-```text
-no persisted account-level discovery preference model exists
-the homepage is currently generic/static
-Archive already has canonical relational tags and tag filtering
-/prompts did not previously initialize its tag filter from ?tag=
-current Archive content is heavily visual and already supports meaningful interest clusters
-future Programming/Education/Marketing domains are not yet distinct enough to ask users to choose them
-```
-
-Design source:
-
-```text
-docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
-```
-
-First implemented slice:
+Verified base capabilities:
 
 ```text
 021_user_preferences.sql
 user_preferences one-row-per-user persistence
 GET /api/preferences/discovery
 PUT /api/preferences/discovery
-useDiscoveryPreferences frontend primitive
 six current visual interest clusters
-signed-in homepage onboarding
-For you homepage state after save
-Edit interests flow
-/prompts?tag=<slug> -> existing Archive tag filter initialization
-EN/FA Growth locale fragment
+multi-tag bundles per interest
+/prompts uses el-multi-select for tags
+/api/archive supports repeated tag query parameters with OR/union semantics
+/prompts query parameters restore real existing tags on load
+multi-tag personalized deep links work
+pnpm generate PASS
 ```
 
 Current V1 interest keys:
@@ -135,61 +111,126 @@ product_fashion
 cinematic_game_art
 ```
 
-Primary discovery routes:
+Current bundles:
 
 ```text
-portrait_photography    -> /prompts?tag=portrait
-three_d_sculpture       -> /prompts?tag=3d
-illustration_animation  -> /prompts?tag=illustration
-poster_editorial        -> /prompts?tag=poster
-product_fashion         -> /prompts?tag=product
-cinematic_game_art      -> /prompts?tag=cinematic
+portrait_photography    -> portrait, photography, avatar
+three_d_sculpture       -> 3d, sculpture
+illustration_animation  -> illustration, animation-style, anime, cartoon
+poster_editorial        -> poster, editorial
+product_fashion         -> product, fashion
+cinematic_game_art      -> cinematic, game-style, pixel-art
 ```
 
-V1 ownership boundary:
+## 21C personalized home experience extension
+
+The initial homepage selector proved preference persistence but did not yet make the homepage itself meaningfully personalized.
+
+The current extension is implemented and awaiting local verification.
+
+New reusable preference UI:
 
 ```text
-anonymous visitor -> generic homepage
-signed-in user     -> account-level server preferences
-no silent anonymous -> account preference merge
+app/components/growth/DiscoveryPreferencesModal.vue
+app/composables/useDiscoveryPreferencesModal.ts
 ```
 
-Current verification handoff:
+Behavior:
 
 ```text
-docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
+signed-in user with no interests -> modal opens on homepage
+existing interests -> no automatic modal
+same modal can be reopened through Tune my feed
+preference persistence remains user_preferences
 ```
 
-## Important Growth architecture finding carried forward
+New homepage preview APIs:
 
 ```text
-/prompts frontend requires logged-in user + email before Archive content loads
-/api/archive backend enforces the same login+email requirement
-Archive list projection does not expose full prompt text
-Archive detail projection does expose prompt + variants
-/data/prompts.json fallback snapshot currently contains full prompt content
+GET /api/home/hero-media?tag=...&limit=50
+GET /api/home/showcase?tag=...&limit=5
+```
+
+Both endpoints:
+
+```text
+use repeated tags with OR/union semantics
+read published Archive presentation data only
+do not return prompt bodies or variants
+leave /api/archive prompt-content access rules unchanged
+```
+
+Hero behavior:
+
+```text
+visual/tile existing explicit sources support is reused
+selected-interest tags -> random Archive media sample up to 50
+no preferences/anonymous -> broad Archive media sample
+API failure -> existing static slider remains fallback
+hero copy rewritten for current product/discovery model
+bottom-centered scroll affordance leads to discovery feed
+```
+
+Showcase feed behavior:
+
+```text
+one immersive section per current interest category
+all six categories remain discoverable
+selected categories are ordered first
+up to five newest matching Archive items per section
+active item's preview covers section background
+autoplay + previous/next + position controls
+category title/description + active item title + tags
+published date + preview count
+owner avatar/username only when source_user_id provides authoritative active-user provenance
+View Prompt + conditional Telegram actions
+```
+
+Responsive composition uses existing `useScreen()`:
+
+```text
+mobile            -> full-width section
+ tablet / laptop  -> up to two half-width sections
+ desktop / wide   -> up to three one-third-width sections
+```
+
+A six-track grid balances odd remainders without empty cells while keeping every row one viewport high.
+
+Canonical extension design/verification handoff:
+
+```text
+docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
+```
+
+## Important access boundary carried forward
+
+```text
+/api/home/* exposes homepage media/presentation metadata only
+/api/archive still owns protected Archive prompt reads
+Archive detail still exposes prompt + variants only through its current access rules
+/data/prompts.json fallback snapshot still contains full prompt content
 ```
 
 Strategic consequence:
 
-> 21C may personalize routes into the current Archive, but it must not remove the Archive access boundary. Public discovery metadata versus protected sellable knowledge is a 21D concern.
+> The home experience can showcase public-facing media and metadata without prematurely solving the broader 21D public discovery/SEO contract.
 
 ## Migration state
 
-Current schema migrations now extend through:
+Current schema migrations extend through:
 
 ```text
 020_product_analytics_events.sql
 021_user_preferences.sql
 ```
 
-The next future schema migration after 21C must use:
+The current home extension requires no migration.
+
+Next future schema migration:
 
 ```text
 022_*.sql
 ```
-
-unless `021` is changed before local acceptance and branch history is deliberately rewritten, which is not the default workflow.
 
 ## Hard rules
 
@@ -199,12 +240,13 @@ DO NOT use user_score_events as a generic analytics warehouse.
 DO NOT create a second XP/referral/auth/admin/profile system.
 DO NOT trust analytics events as economic/payout authority.
 DO NOT put prompt text or sellable knowledge into analytics metadata.
-DO NOT treat referral_link_open as authoritative referral success.
 DO NOT store user preferences in analytics or the score ledger.
 DO NOT replace canonical Archive tags with user-interest keys.
-DO NOT show future preference domains that do not yet change the product experience.
 DO NOT silently merge anonymous preferences into an account in 21C V1.
-DO NOT make protected Archive content public in 21C.
+DO NOT fabricate ownership for legacy/managed Archive items without source_user_id.
+DO NOT introduce multi-ownership in this milestone.
+DO NOT return prompt bodies from /api/home/*.
+DO NOT remove the current /api/archive prompt-content access boundary here.
 DO NOT break pnpm generate without an explicit rendering architecture decision.
 DO NOT start full Marketplace commerce inside Milestone 21.
 ```
@@ -225,5 +267,6 @@ docs/strategy/MILESTONE_21B_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21B_VERIFICATION.md
 docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
 docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
+docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
