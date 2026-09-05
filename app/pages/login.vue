@@ -4,6 +4,7 @@ type LoginStep = "identifier" | "login" | "register";
 const { t } = useI18n();
 const route = useRoute();
 const auth = useAuth();
+const analytics = useProductAnalytics();
 
 const step = ref<LoginStep>("identifier");
 const identifier = ref("");
@@ -11,8 +12,10 @@ const normalizedIdentifier = ref("");
 const password = ref("");
 const confirmPassword = ref("");
 const referralUsername = ref("");
+const referralFromLink = ref("");
 const submitting = ref(false);
 const errorMessage = ref("");
+let trackedReferralUsername = "";
 
 const passwordIsValid = computed(() => {
   return (
@@ -42,6 +45,32 @@ function safeNextPath() {
   }
 
   return "/create";
+}
+
+function normalizeReferralQuery(value: unknown) {
+  if (typeof value !== "string") return "";
+
+  const normalized = value.trim().toLowerCase();
+  return /^[a-z0-9._-]{3,64}$/.test(normalized) ? normalized : "";
+}
+
+function applyReferralFromRoute() {
+  const normalized = normalizeReferralQuery(route.query.ref);
+  referralFromLink.value = normalized;
+
+  if (!normalized) return;
+
+  referralUsername.value = normalized;
+
+  if (trackedReferralUsername === normalized) return;
+  trackedReferralUsername = normalized;
+
+  void analytics.track("referral_link_open", {
+    resource: {
+      type: "referral_username",
+      id: normalized,
+    },
+  });
 }
 
 function getApiErrorMessage(error: unknown) {
@@ -98,7 +127,7 @@ async function submitIdentifier() {
     identifier.value = response.identifier;
     password.value = "";
     confirmPassword.value = "";
-    referralUsername.value = "";
+    referralUsername.value = referralFromLink.value;
     step.value = response.exists ? "login" : "register";
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error);
@@ -151,7 +180,7 @@ function changeIdentifier() {
   normalizedIdentifier.value = "";
   password.value = "";
   confirmPassword.value = "";
-  referralUsername.value = "";
+  referralUsername.value = referralFromLink.value;
   resetError();
 }
 
@@ -163,8 +192,16 @@ function handleEnter() {
   }
 }
 
+watch(
+  () => route.query.ref,
+  () => {
+    applyReferralFromRoute();
+  },
+);
+
 onMounted(async () => {
   await auth.initialize();
+  applyReferralFromRoute();
 
   if (auth.isLoggedIn.value) {
     await navigateTo(safeNextPath());
