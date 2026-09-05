@@ -31,7 +31,7 @@ important reward events require idempotency semantics
 
 ## Phase 20A — Profile UX polish + username profile alias
 
-Status: `IN PROGRESS`
+Status: `IMPLEMENTED / AWAITING LOCAL VERIFICATION`
 
 ### Profile Menu
 
@@ -46,7 +46,7 @@ avatar becomes an interactive trigger
 
 Clicking the avatar opens a secondary menu through the project Global Menu system while the parent Profile Menu remains open.
 
-This requires a reusable nested/child Global Menu layer rather than a Profile-Menu-only popup.
+This is implemented as a reusable root/child Global Menu layer rather than a Profile-Menu-only popup. The child layer owns its own open/close/item state, renders above the root menu, and allows Escape to close the child before the parent.
 
 Avatar child-menu actions:
 
@@ -104,7 +104,13 @@ Support both frontend entry forms:
 
 Username lookup is case-insensitive and resolves to the existing user UUID/read model. No second profile implementation is introduced.
 
-The resolver must only return enough public-safe information to resolve the profile identity; it must not expose email or private account state.
+Implemented public-safe resolver:
+
+```text
+GET /api/users/resolve?username=<username>
+```
+
+The resolver returns only user UUID + username for active users. It does not expose email or private account state.
 
 ### Draft-card border correction
 
@@ -115,7 +121,7 @@ normal -> bc="normal"
 hover  -> bc="prim"
 ```
 
-The existing hover lift may remain, but border color is driven through the `el-flex` `bc` prop.
+The existing hover lift remains, but border color is driven through the `el-flex` `bc` prop.
 
 ### Phase 20A acceptance
 
@@ -191,8 +197,8 @@ Status: `PLANNED`
 Use existing permission semantics where possible:
 
 ```text
-archive.manage      -> Add to prompts
- drafts.delete_any  -> delete another user's Cloud Draft
+archive.manage     -> Add to prompts
+drafts.delete_any -> delete another user's Cloud Draft
 ```
 
 Current role mapping means Admin/Super Admin can manage Archive content while arbitrary Draft deletion remains a Super Admin capability unless the role policy is deliberately changed later.
