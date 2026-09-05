@@ -41,6 +41,7 @@ function mapArchiveListRow(row) {
     },
     tags: Array.isArray(row.tags) ? row.tags : [],
     coverImage: mapArchiveImage(row.coverImage),
+    secondaryImage: mapArchiveImage(row.secondaryImage),
     imageCount: Number(row.imageCount) || 0,
   }
 }
@@ -49,6 +50,7 @@ function mapArchiveDetailRow(row) {
   const base = mapArchiveListRow({
     ...row,
     coverImage: Array.isArray(row.images) ? row.images[0] : null,
+    secondaryImage: Array.isArray(row.images) ? row.images[1] : null,
     imageCount: Array.isArray(row.images) ? row.images.length : 0,
   })
   return {
@@ -195,6 +197,16 @@ async function listArchiveItems(query) {
           WHERE images.archive_item_id = items.id
           ORDER BY images.position ASC LIMIT 1
         ) AS "coverImage",
+        (
+          SELECT json_build_object(
+            'position', images.position,
+            'fullUrl', COALESCE(images.full_url, images.source_path),
+            'thumbnailUrl', COALESCE(images.thumbnail_url, images.full_url, images.source_path)
+          )
+          FROM prompt_archive_images images
+          WHERE images.archive_item_id = items.id
+          ORDER BY images.position ASC LIMIT 1 OFFSET 1
+        ) AS "secondaryImage",
         (SELECT COUNT(*)::integer FROM prompt_archive_images images WHERE images.archive_item_id = items.id) AS "imageCount"
       FROM prompt_archive_items items
       ${listFilter.whereClause}
