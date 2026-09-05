@@ -654,51 +654,50 @@ onMounted(() => { void loadProfile(); });
               v-if="hasTopbarActions(draft) || draft.images.length"
               rules="rsc"
               class="user-profile__draft-topbar w100"
-              :gap="8"
-              bd="b8"
-              :radius="100"
-              bg="surface10">
+              :gap="8">
               <el-flex v-if="hasTopbarActions(draft)" rules="rsc" class="fg100" :gap="8">
-                <template v-if="isOwner">
-                  <el-button
-                    type="fab"
-                    color="normal"
-                    mode="flat"
-                    icon="more_vert"
-                    :tooltip="t('userProfile.drafts.actions.more')"
-                    @click="openDraftActions($event, draft)"
-                  />
-                  <el-button
-                    type="fab"
-                    color="blue"
-                    mode="flat"
-                    icon="add_photo_alternate"
-                    :tooltip="t('userProfile.drafts.actions.managePreviews')"
-                    @click="openPreviewManager(draft)"
-                  />
-                </template>
+                <el-flex rules="rsc" :gap="0" bd="b8" :radius="100" bg="surface10">
+                  <template v-if="isOwner">
+                    <el-button
+                      type="fab"
+                      color="normal"
+                      mode="flat"
+                      icon="more_vert"
+                      :tooltip="t('userProfile.drafts.actions.more')"
+                      @click="openDraftActions($event, draft)"
+                    />
+                    <el-button
+                      type="fab"
+                      color="blue"
+                      mode="flat"
+                      icon="add_photo_alternate"
+                      :tooltip="t('userProfile.drafts.actions.managePreviews')"
+                      @click="openPreviewManager(draft)"
+                    />
+                  </template>
 
-                <el-button
-                  v-if="canPromoteDraft(draft)"
-                  type="fab"
-                  :color="promotedDraftIds.includes(draft.id) ? 'green' : 'prim'"
-                  mode="flat"
-                  :icon="promotedDraftIds.includes(draft.id) ? 'check' : 'library_add'"
-                  :tooltip="promotedDraftIds.includes(draft.id) ? moderationCopy.promoted : moderationCopy.addToPrompts"
-                  :disable="promotedDraftIds.includes(draft.id)"
-                  @click="openPromotion(draft)"
-                />
+                  <el-button
+                    v-if="canPromoteDraft(draft)"
+                    type="fab"
+                    :color="promotedDraftIds.includes(draft.id) ? 'green' : 'prim'"
+                    mode="flat"
+                    :icon="promotedDraftIds.includes(draft.id) ? 'check' : 'library_add'"
+                    :tooltip="promotedDraftIds.includes(draft.id) ? moderationCopy.promoted : moderationCopy.addToPrompts"
+                    :disable="promotedDraftIds.includes(draft.id)"
+                    @click="openPromotion(draft)"
+                  />
 
-                <el-button
-                  v-if="canModerateDraft(draft)"
-                  type="fab"
-                  color="red"
-                  mode="flat"
-                  icon="delete_forever"
-                  :tooltip="moderationCopy.delete"
-                  :disable="isDraftActionBusy(draft.id)"
-                  @click="confirmModerationDelete(draft)"
-                />
+                  <el-button
+                    v-if="canModerateDraft(draft)"
+                    type="fab"
+                    color="red"
+                    mode="flat"
+                    icon="delete_forever"
+                    :tooltip="moderationCopy.delete"
+                    :disable="isDraftActionBusy(draft.id)"
+                    @click="confirmModerationDelete(draft)"
+                  />
+                </el-flex>
               </el-flex>
               <div v-else class="fg100" />
 
