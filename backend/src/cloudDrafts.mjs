@@ -4,6 +4,7 @@ import {
   upsertPromptDraft,
 } from './database.mjs'
 import { queryDatabase } from './database.mjs'
+import { handleDraftMediaRequest } from './draftMedia.mjs'
 import {
   awardCloudDraftCreatedScore,
   getUserScoreState,
@@ -348,6 +349,19 @@ export async function handleCloudDraftRequest({
   sendJson,
   user,
 }) {
+  if (
+    await handleDraftMediaRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+      user,
+    })
+  ) {
+    return
+  }
+
   if (request.method === 'GET' && url.pathname === '/api/drafts') {
     const { errors, limit, cursor } = parsePromptDraftListQuery(url)
 
