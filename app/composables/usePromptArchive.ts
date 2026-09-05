@@ -107,6 +107,7 @@ function normalizeListItem(value: unknown): PromptArchiveListItem | null {
     : null
   const imageCount = Number(value.imageCount)
   const coverImage = value.coverImage == null ? null : normalizeImage(value.coverImage)
+  const secondaryImage = value.secondaryImage == null ? null : normalizeImage(value.secondaryImage)
 
   if (
     !Number.isInteger(id) ||
@@ -118,7 +119,8 @@ function normalizeListItem(value: unknown): PromptArchiveListItem | null {
     Number.isNaN(Date.parse(publishedAt)) ||
     !Number.isInteger(imageCount) ||
     imageCount < 0 ||
-    (value.coverImage != null && !coverImage)
+    (value.coverImage != null && !coverImage) ||
+    (value.secondaryImage != null && !secondaryImage)
   ) {
     return null
   }
@@ -131,6 +133,7 @@ function normalizeListItem(value: unknown): PromptArchiveListItem | null {
     model,
     tags,
     coverImage,
+    secondaryImage,
     imageCount,
   }
 }
@@ -479,6 +482,7 @@ export function usePromptArchive() {
       },
       tags: [...item.tags].sort((first, second) => first.localeCompare(second)),
       coverImage: images[0] ?? null,
+      secondaryImage: images[1] ?? null,
       imageCount: images.length,
     }
   }
