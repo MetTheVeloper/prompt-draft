@@ -18,10 +18,12 @@ Milestone 19 — Public User Profiles + Cover Media: DONE / locally verified
 Milestone 20 — Profile Showcase, Draft Media & Archive Promotion: IN PROGRESS
   Phase 20A — Profile UX polish + username profile alias: DONE / locally verified
   Phase 20B — Cloud Draft preview media + Draft workflow: DONE / locally verified
-  Phase 20C — Moderation + Promote to Prompt Archive: IN PROGRESS
+  Phase 20C — Moderation + Promote to Prompt Archive: IMPLEMENTED / PENDING LOCAL VERIFICATION
 ```
 
 The user explicitly confirmed Phase 20B functionality, soft-delete persistence, final square showcase-card design and a successful `pnpm generate` on 2026-09-05.
+
+Phase 20C implementation is now complete on the branch. Migration 019 has not yet been locally accepted; Phase 20C remains open until local migration/behavior tests, Archive snapshot parity and `pnpm generate` succeed.
 
 Primary Milestone 20 source:
 
@@ -182,9 +184,9 @@ successful pnpm generate
 
 Soft-delete proof was locally confirmed: the deleted Draft remained in `prompt_drafts` with a populated `deleted_at` while disappearing from normal read models/UI.
 
-### Phase 20C — IN PROGRESS
+### Phase 20C — IMPLEMENTED / pending local verification
 
-Selected contract:
+Permission contract:
 
 ```text
 archive.manage     -> promote public user Draft to Prompt Archive
@@ -198,14 +200,18 @@ Admin       -> promotion
 Super Admin -> promotion + moderation delete
 ```
 
-Next schema migration is `019_*.sql`.
-
-The selected Archive identity strategy for non-Telegram promoted items is:
+Schema:
 
 ```text
-new stable public_id for all Archive routing
-existing public_id backfilled from telegram_message_id
-new non-Telegram items use sequence-backed public_id
+019_archive_user_draft_promotion.sql
+```
+
+Implemented Archive identity strategy:
+
+```text
+public_id = stable numeric Archive route identity
+existing rows: public_id = telegram_message_id
+non-Telegram rows: sequence-backed public_id >= 1,000,000,000
 telegram_message_id nullable
 telegram_url nullable
 source_kind += user_draft
@@ -213,11 +219,45 @@ source_user_id + source_draft_id provenance
 unique source Draft promotion
 ```
 
-Existing Telegram-backed public IDs/URLs must remain compatible.
+Compatibility work now covers:
 
-Promotion creates an Archive `draft`, not an automatically published item. Draft preview media must be copied/re-prepared into Archive-owned media keys rather than referenced from `draft-media/...`.
+```text
+/api/archive routes by public_id
+old Telegram-backed public IDs remain unchanged
+/manage/archive deep-links by public_id
+optional Telegram field in Manage Archive
+/prompts hides Telegram actions when telegram_url is null
+API and schemaVersion 3 fallback parsers accept telegramUrl = null
+snapshot exporter uses public_id
+snapshot importer restores public IDs and advances the high public-id sequence
+```
 
-Super Admin moderation deletion reuses the verified `deleted_at` tombstone model and adds backend permission enforcement + audit logging.
+Promotion flow now covers:
+
+```text
+public source Draft read under archive.manage
+same compiler used for Draft prompt output
+manual EN + FA Archive title
+optional Telegram ID
+Archive item created as draft only
+source provenance persisted
+source preview images re-prepared with Archive image contract
+Archive-owned archive/... object-storage keys
+duplicate source promotion blocked
+```
+
+Moderation flow now covers:
+
+```text
+Super Admin-only drafts.delete_any enforcement
+central confirmation UI
+prompt_drafts.deleted_at tombstone
+server_updated_at refresh
+draft.moderation_delete audit event
+normal owner/public read models automatically exclude the tombstone
+```
+
+Phase 20C is not `DONE` yet. The local acceptance pass must verify migration 019, old Archive URLs, promotion with and without Telegram, media independence, duplicate prevention, Admin/Super Admin permission boundaries, moderation tombstones/audit, Archive snapshot parity and `pnpm generate`.
 
 ## Current SQL history
 
@@ -240,9 +280,10 @@ Super Admin moderation deletion reuses the verified `deleted_at` tombstone model
 016_public_user_profiles.sql
 017_cloud_draft_preview_media.sql
 018_soft_delete_prompt_drafts.sql
+019_archive_user_draft_promotion.sql
 ```
 
-Do not rewrite applied migration history. Phase 20C starts at migration `019`.
+Do not rewrite applied migration history. Migration 019 is the active Phase 20C schema change and remains unverified until the local pass.
 
 ## Reusable guides
 
@@ -266,7 +307,7 @@ large client chunks
 
 ## New-chat handoff
 
-Milestone 20 is selected and in progress. Phases 20A and 20B are closed and locally verified. Phase 20C is the active implementation phase.
+Milestone 20 is selected and in progress. Phases 20A and 20B are closed and locally verified. Phase 20C is implemented and awaiting local verification.
 
 Before continuing, read:
 
@@ -280,4 +321,4 @@ Before continuing, read:
 8. `docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md`
 9. `docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md`
 
-Do not mark Phase 20C or Milestone 20 complete until local behavior is verified and `pnpm generate` succeeds.
+Do not mark Phase 20C or Milestone 20 complete until local behavior is verified, Archive snapshot parity succeeds and `pnpm generate` succeeds.
