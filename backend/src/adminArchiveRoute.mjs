@@ -53,6 +53,73 @@ export async function handleAdminArchiveRoute({
   })
   if (promotionHandled) return true
 
+  const publicLookupMatch = url.pathname.match(
+    /^\/api\/admin\/archive\/public\/(\d+)$/,
+  )
+
+  if (publicLookupMatch) {
+    if (!hasPermission(user, PERMISSIONS.ARCHIVE_VIEW)) {
+      sendJson(response, 403, { ok: false, message: 'Forbidden' }, corsHeaders)
+      return true
+    }
+
+    if (request.method !== 'GET') {
+      sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, corsHeaders)
+      return true
+    }
+
+    const publicId = Number(publicLookupMatch[1])
+    if (!Number.isSafeInteger(publicId) || publicId <= 0) {
+      sendJson(response, 400, { ok: false, message: 'Invalid Archive public id' }, corsHeaders)
+      return true
+    }
+
+    try {
+      const result = await queryDatabase(
+        `
+          SELECT
+            id,
+            public_id AS "publicId",
+            telegram_message_id AS "telegramMessageId"
+          FROM prompt_archive_items
+          WHERE public_id = $1
+          LIMIT 1
+        `,
+        [publicId],
+      )
+      const row = result.rows[0]
+
+      if (!row) {
+        sendJson(response, 404, { ok: false, message: 'Archive item not found' }, corsHeaders)
+        return true
+      }
+
+      sendJson(
+        response,
+        200,
+        {
+          ok: true,
+          id: row.id,
+          publicId: Number(row.publicId),
+          telegramMessageId: row.telegramMessageId == null
+            ? null
+            : Number(row.telegramMessageId),
+        },
+        corsHeaders,
+      )
+    } catch (error) {
+      console.error('[Prompt Draft API] admin archive public-id lookup failed', error)
+      sendJson(
+        response,
+        500,
+        { ok: false, message: 'Failed to resolve Archive item' },
+        corsHeaders,
+      )
+    }
+
+    return true
+  }
+
   const telegramLookupMatch = url.pathname.match(
     /^\/api\/admin\/archive\/telegram\/(\d+)$/,
   )
