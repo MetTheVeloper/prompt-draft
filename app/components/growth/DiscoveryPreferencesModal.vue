@@ -149,9 +149,9 @@ async function save() {
   gap: 10px;
   min-width: 0;
   padding: 13px;
-  border: 1px solid color-mix(in srgb, var(--themeNormal) 18%, transparent);
+  border: 1px solid rgba(127, 127, 127, .2);
   border-radius: 14px;
-  background: color-mix(in srgb, var(--themeSurface) 92%, transparent);
+  background: rgba(127, 127, 127, .06);
   color: inherit;
   font: inherit;
   text-align: start;
@@ -161,12 +161,12 @@ async function save() {
 
 .discovery-preferences-modal__interest:hover {
   transform: translateY(-1px);
-  background: color-mix(in srgb, var(--themeNormal) 7%, var(--themeSurface));
+  background: rgba(127, 127, 127, .11);
 }
 
 .discovery-preferences-modal__interest[data-selected='true'] {
   border-color: var(--themePrimary);
-  background: color-mix(in srgb, var(--themePrimary) 12%, var(--themeSurface));
+  background: color-mix(in srgb, var(--themePrimary) 12%, transparent);
 }
 
 .discovery-preferences-modal__copy {
@@ -182,7 +182,7 @@ async function save() {
 }
 
 .discovery-preferences-modal__copy small {
-  color: color-mix(in srgb, currentColor 58%, transparent);
+  color: rgba(127, 127, 127, .92);
   font-size: 10px;
   line-height: 1.45;
 }
