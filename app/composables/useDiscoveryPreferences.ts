@@ -8,7 +8,7 @@ export type DiscoveryInterestKey =
 
 export type DiscoveryInterestDefinition = {
   key: DiscoveryInterestKey
-  primaryTag: string
+  tags: readonly string[]
   icon: string
   messageKey: string
   descriptionKey: string
@@ -17,42 +17,42 @@ export type DiscoveryInterestDefinition = {
 export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   {
     key: 'portrait_photography',
-    primaryTag: 'portrait',
+    tags: ['portrait', 'photography', 'avatar'],
     icon: 'portrait',
     messageKey: 'growth.discovery.interests.portraitPhotography.title',
     descriptionKey: 'growth.discovery.interests.portraitPhotography.description',
   },
   {
     key: 'three_d_sculpture',
-    primaryTag: '3d',
+    tags: ['3d', 'sculpture'],
     icon: 'deployed_code',
     messageKey: 'growth.discovery.interests.threeDSculpture.title',
     descriptionKey: 'growth.discovery.interests.threeDSculpture.description',
   },
   {
     key: 'illustration_animation',
-    primaryTag: 'illustration',
+    tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
     icon: 'brush',
     messageKey: 'growth.discovery.interests.illustrationAnimation.title',
     descriptionKey: 'growth.discovery.interests.illustrationAnimation.description',
   },
   {
     key: 'poster_editorial',
-    primaryTag: 'poster',
+    tags: ['poster', 'editorial'],
     icon: 'view_quilt',
     messageKey: 'growth.discovery.interests.posterEditorial.title',
     descriptionKey: 'growth.discovery.interests.posterEditorial.description',
   },
   {
     key: 'product_fashion',
-    primaryTag: 'product',
+    tags: ['product', 'fashion'],
     icon: 'styler',
     messageKey: 'growth.discovery.interests.productFashion.title',
     descriptionKey: 'growth.discovery.interests.productFashion.description',
   },
   {
     key: 'cinematic_game_art',
-    primaryTag: 'cinematic',
+    tags: ['cinematic', 'game-style', 'pixel-art'],
     icon: 'movie',
     messageKey: 'growth.discovery.interests.cinematicGameArt.title',
     descriptionKey: 'growth.discovery.interests.cinematicGameArt.description',
