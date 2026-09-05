@@ -1,7 +1,8 @@
 type ResolveAdminArchiveResponse = {
   ok: true;
   id: string;
-  telegramMessageId: number;
+  publicId: number;
+  telegramMessageId: number | null;
 };
 
 function normalizeApiBase(value: unknown) {
@@ -19,6 +20,15 @@ export function useAdminArchiveDeepLink() {
     return `${apiBase}${normalizedPath}`;
   }
 
+  function resolveByPublicId(publicId: number) {
+    return $fetch<ResolveAdminArchiveResponse>(
+      endpoint(`/api/admin/archive/public/${publicId}`),
+      {
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   function resolveByTelegramId(telegramMessageId: number) {
     return $fetch<ResolveAdminArchiveResponse>(
       endpoint(`/api/admin/archive/telegram/${telegramMessageId}`),
@@ -29,6 +39,7 @@ export function useAdminArchiveDeepLink() {
   }
 
   return {
+    resolveByPublicId,
     resolveByTelegramId,
   };
 }
