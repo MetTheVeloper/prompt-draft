@@ -5,6 +5,7 @@ import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
 import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
+import { handleUserPreferencesRequest } from './userPreferences.mjs'
 import {
   getDatabaseStatus,
   getWizardRunById,
@@ -564,6 +565,18 @@ const server = createServer(async (request, response) => {
 
   if (
     await handleUserAvatarRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handleUserPreferencesRequest({
       request,
       response,
       url,
