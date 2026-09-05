@@ -6,6 +6,7 @@ const props = withDefaults(defineProps<{
   name?: string | null;
   alt?: string;
   size?: string | number;
+  sizeOffset?: number;
   br?: number | string | boolean | Array<number | string | boolean>;
   bc?: number | string | boolean | Array<number | string | boolean>;
 }>(), {
@@ -13,6 +14,7 @@ const props = withDefaults(defineProps<{
   name: "",
   alt: "",
   size: "normal",
+  sizeOffset: 0,
   br: false,
   bc: false,
 });
@@ -47,7 +49,9 @@ const sizes = computed(() => {
   return dimension(mainSize);
 });
 
-const avatarSize = computed(() => sizes.value.button.height);
+const avatarSize = computed(() => {
+  return Math.max(1, sizes.value.button.height + fixNumber(props.sizeOffset));
+});
 const avatarIconSize = computed(() => sizes.value.button.icon);
 const avatarTextSize = computed(() => Math.max(9, sizes.value.button.label));
 
