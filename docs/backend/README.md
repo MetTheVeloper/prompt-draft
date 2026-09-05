@@ -4,7 +4,16 @@ This directory is the source of truth for Prompt Draft backend, Docker, authoriz
 
 ## Current branch
 
-`feature/docker-local-api`
+`feature/create-ui-consolidation`
+
+Base backend/platform branch:
+
+```text
+feature/docker-local-api
+final checkpoint: 4c67b045abead7e2eb3d7cdc29865859a86ecf6b
+```
+
+The Docker/backend milestone program through Milestone 20 is complete. The current child branch is a completed post-Milestone-20 UI/API-projection consolidation pass documented in `BRANCH_CREATE_UI_CONSOLIDATION.md`.
 
 ## Current verified architecture
 
@@ -29,13 +38,14 @@ public profile APIs must not leak email/private Drafts
 storage credentials remain backend-only
 schema changes use new numbered SQL migrations
 important reward events require idempotency semantics
+admin/list projections should avoid N+1 detail requests
 ```
 
 ## Documentation map
 
 ```text
 STATUS.md
-  -> verified checkpoint + handoff
+  -> verified current checkpoint + handoff
 README.md
   -> architecture + milestone overview
 IMPLEMENTATION.md
@@ -45,10 +55,12 @@ API_GUIDE.md
 MANAGE_GUIDE.md
   -> reusable Manage/admin workspace playbook
 MILESTONE_*.md
-  -> detailed feature source-of-truth records
+  -> detailed milestone source-of-truth records
+BRANCH_CREATE_UI_CONSOLIDATION.md
+  -> post-Milestone-20 /create + Manage projection consolidation record
 ```
 
-A milestone is only `DONE` after local user verification.
+A milestone/branch scope is only `DONE` after local user verification.
 
 ## Milestones 1–16 — COMPLETE
 
@@ -112,7 +124,7 @@ Profile routes:
 
 ```text
 /user?id=<user-uuid>
-/user?un=<username>   # alias added in Milestone 20
+/user?un=<username>
 ```
 
 Public Draft privacy:
@@ -133,8 +145,6 @@ Cloud Draft default is `private`. Public profile responses exclude email/private
 ```
 
 ### Phase 20A
-
-Adds:
 
 ```text
 Profile Menu centered avatar/identity composition
@@ -173,8 +183,6 @@ Show/Hide profile
 soft Delete Draft via deleted_at
 ```
 
-Verified showcase cards are square, image-first cards with full-background media, second-image hover crossfade, large bottom-pinned metadata and compact top actions.
-
 ### Phase 20C
 
 Migration:
@@ -202,48 +210,40 @@ source_user_id + source_draft_id provenance
 unique source-Draft promotion
 ```
 
-Promotion behavior:
-
-```text
-public source Draft required
-stored Draft compiled through normal prompt compiler
-manual EN + FA title
-optional Telegram ID
-new Archive item starts as draft
-preview media copied/re-prepared into Archive-owned archive/... keys
-duplicate promotion blocked
-```
-
-Moderation behavior:
-
-```text
-Super Admin drafts.delete_any
-central confirmation
-soft delete via prompt_drafts.deleted_at
-draft.moderation_delete audit event
-normal reads exclude tombstone
-promoted Archive item remains independent
-```
-
 Final local acceptance on 2026-09-05 confirmed promotion, duplicate protection, publication, moderation tombstone, audit records, Archive-owned media independence, Archive snapshot parity and successful static generation.
-
-Final snapshot proof:
-
-```text
-pnpm archive:snapshot
-PARITY_OK
-publishedItemCount = 102
-snapshotItemCount = 102
-mismatchCount = 0
-schemaVersion = 3
-```
-
-`pnpm generate` also completed successfully.
 
 Detailed source:
 
 ```text
 docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+```
+
+## Post-Milestone-20 Create UI Consolidation — COMPLETE
+
+The current branch completes the deferred UI/API-projection pass:
+
+```text
+/create
+  -> Drafts + Cloud Save/Sync + Public/Private remain primary
+  -> Share / Download / Preview Manager / Delete live under Global Menu
+  -> existing DraftPreviewManagerModal reused
+  -> primary preview can render as the create background
+
+/manage/users
+  -> el-avatar in user rows
+  -> richer authorized User Information detail projection
+
+/manage/archive
+  -> first preview shown with el-avatar
+  -> previewImageUrl projected in list API; no N+1 detail reads
+```
+
+No schema change was required.
+
+Detailed source:
+
+```text
+docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md
 ```
 
 ## Current API/product boundaries
@@ -324,4 +324,4 @@ Do not rewrite applied migrations. The next schema change must use `020_*.sql`.
 
 ## Current next step
 
-Milestone 20 is closed. No Milestone 21 has been selected yet. Read `STATUS.md` before starting the next backend milestone.
+Milestones 1–20 and the defined `feature/create-ui-consolidation` scope are closed. No in-scope implementation item remains open. Read `STATUS.md` before selecting the next product direction. No merge to `main` is implied by this documentation state.
