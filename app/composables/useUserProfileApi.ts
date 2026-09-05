@@ -2,6 +2,7 @@ import type {
   GetUserProfileResponse,
   ListUserProfileDraftsParams,
   ListUserProfileDraftsResponse,
+  ResolveUserProfileResponse,
   UpdateDraftVisibilityResponse,
   UserDraftVisibility,
 } from "~/types/userProfileApi";
@@ -23,6 +24,16 @@ export function useUserProfileApi() {
 
   function optionalAuthHeaders() {
     return auth.token.value ? auth.authHeaders() : {};
+  }
+
+  function resolveUsername(username: string) {
+    const query = new URLSearchParams({ username });
+    return $fetch<ResolveUserProfileResponse>(
+      endpoint(`/api/users/resolve?${query.toString()}`),
+      {
+        headers: optionalAuthHeaders(),
+      },
+    );
   }
 
   function getProfile(userId: string) {
@@ -66,6 +77,7 @@ export function useUserProfileApi() {
   }
 
   return {
+    resolveUsername,
     getProfile,
     listDrafts,
     setDraftVisibility,
