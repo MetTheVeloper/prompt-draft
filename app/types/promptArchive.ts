@@ -24,7 +24,7 @@ export type PromptArchiveListItem = {
   id: number
   title: PromptArchiveLocalizedTitle
   publishedAt: string
-  telegramUrl: string
+  telegramUrl: string | null
   model: {
     previewGeneratedWith: PromptArchiveModel
     optimizedFor: PromptArchiveModel[]
@@ -95,7 +95,7 @@ export type PromptArchiveSnapshotItem = {
   title: PromptArchiveLocalizedTitle
   sourceTitle: string
   publishedAt: string
-  telegramUrl: string
+  telegramUrl: string | null
   model: {
     previewGeneratedWith: PromptArchiveModel
     optimizedFor: PromptArchiveModel[]
