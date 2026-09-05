@@ -236,9 +236,9 @@ Phase 20B is closed.
 
 ## Phase 20C — Moderation + Promote to Prompt Archive
 
-Status: `IN PROGRESS`
+Status: `IMPLEMENTED / PENDING LOCAL VERIFICATION`
 
-Started after Phase 20B local verification on 2026-09-05.
+Implementation completed on branch on 2026-09-05. Local migration/behavior verification and `pnpm generate` are still required before closure.
 
 ### Permission contract
 
@@ -260,13 +260,13 @@ Backend checks remain authoritative.
 
 ### Promotion UX
 
-When an Admin/Super Admin visits another user's public profile, each public Draft can expose:
+When an Admin/Super Admin visits a public user profile, an eligible public Draft exposes:
 
 ```text
 Add to prompts
 ```
 
-The action opens the central modal and asks for:
+The central modal asks for:
 
 ```text
 English title
@@ -274,33 +274,80 @@ Persian title
 optional Telegram post/message ID
 ```
 
-The rest of the Archive Draft is derived from the source Cloud Draft where possible. Promotion creates an Archive item in `draft` state; it never auto-publishes.
+The prompt body is compiled from the stored Cloud Draft with the same compiler used by normal Draft output. Promotion creates an Archive item in `draft` state and never auto-publishes.
 
-### Archive identity / Telegram compatibility
-
-The current Archive historically uses Telegram message ID as both source identity and public numeric ID. Phase 20C must support Archive items with no Telegram source while preserving all existing `/prompts` URLs.
-
-The selected direction for migration 019 is:
+Implemented promotion endpoints:
 
 ```text
-introduce stable public_id for Archive routing
-backfill existing public_id = telegram_message_id
-new non-Telegram Archive items receive sequence-backed public_id
-telegram_message_id becomes nullable
-telegram_url becomes nullable
-legacy Telegram public IDs stay unchanged
-source_kind gains user_draft
-source_user_id + source_draft_id store provenance
-unique provenance prevents duplicate promotion of one Draft
+GET    /api/admin/archive/source-draft/:userId/:draftId
+GET    /api/admin/archive/source-draft/:userId/:draftId/images/:imageId
+POST   /api/admin/archive/promote-draft
+DELETE /api/admin/archive/source-draft/:userId/:draftId   # drafts.delete_any
 ```
 
-Existing Telegram-backed Archive behavior must remain compatible.
+Promotion source reads require an active, non-deleted, public Draft. Duplicate promotion of the same source Draft is prevented by database provenance uniqueness.
+
+### Migration 019 — Archive identity + provenance
+
+```text
+019_archive_user_draft_promotion.sql
+```
+
+Implemented identity model:
+
+```text
+public_id = stable numeric Archive route identity
+existing rows: public_id = telegram_message_id
+new non-Telegram rows: sequence-backed public_id
+sequence-backed namespace starts at 1,000,000,000
+telegram_message_id nullable
+telegram_url nullable
+source_kind += user_draft
+source_user_id + source_draft_id provenance
+unique user-Draft provenance
+```
+
+The high sequence namespace keeps generated non-Telegram identities away from the historical Telegram-ID namespace while preserving every old public route.
+
+For existing Telegram-backed rows:
+
+```text
+/prompts?id=<OLD_TELEGRAM_ID>
+```
+
+continues to resolve the same item because its `public_id` is backfilled to that value.
+
+Admin Archive deep links now resolve by `public_id` rather than assuming the route identity is always a Telegram message ID:
+
+```text
+GET /api/admin/archive/public/:publicId
+/manage/archive?edit=<publicId>
+```
+
+The older Telegram resolver remains available for compatibility.
+
+### Non-Telegram Archive compatibility
+
+`/api/archive`, `/prompts`, detail navigation, Manage Archive and the fallback snapshot all treat Telegram linkage as optional.
+
+Implemented behavior:
+
+```text
+Telegram buttons render only when telegram_url exists
+public Archive list/detail contracts accept telegramUrl = null
+schemaVersion 3 fallback parser accepts telegramUrl = null
+Manage Archive Telegram field is optional
+Manage list/editor display public_id as the primary identity
+Archive search covers public_id and optional telegram_message_id
+```
+
+The snapshot exporter writes public IDs and nullable Telegram URLs. The bootstrap importer reads those public IDs and advances `prompt_archive_public_id_seq` above imported sequence-backed IDs, preventing a fresh-install collision after importing a snapshot that already contains non-Telegram Archive entries.
 
 ### Media independence
 
-Draft preview images promoted into Archive must become Archive-owned media.
+Draft preview images promoted into Archive become Archive-owned media.
 
-Do not retain references to `draft-media/...` as the canonical Archive image source. Promoted images are re-prepared with the existing Archive image contract and uploaded into Archive storage keys so future Draft-preview deletion cannot break `/prompts`.
+The promotion modal reads each source image through an authorized backend proxy, re-prepares it with the existing Archive media contract, and uploads it through the normal Archive media API into `archive/...` storage keys.
 
 Archive media contract remains:
 
@@ -310,20 +357,58 @@ thumbnail: max edge 640, WebP quality 0.72
 no upscale
 ```
 
+Therefore deleting or changing `draft-media/...` after promotion cannot break the promoted Archive media.
+
+If metadata promotion succeeds but one later media copy fails, the already-created Archive item remains a safe `draft`; the UI reports the partial media-copy warning so the Admin can finish it in Manage Archive.
+
+### Provenance preservation during Archive editing
+
+Managed Archive mutations normally mark an item as `managed`. For promoted items, metadata edits, image upload/delete/reorder and status changes preserve `source_kind='user_draft'` plus `source_user_id` / `source_draft_id` rather than erasing promotion provenance.
+
 ### Moderation deletion
 
-Super Admin moderation deletion uses the existing Draft soft-delete model rather than physical deletion.
+Super Admin moderation deletion reuses the existing Draft soft-delete model rather than physical deletion.
 
-Required behavior:
+Implemented behavior:
 
 ```text
 confirmation modal
 backend drafts.delete_any enforcement
 deleted_at tombstone
-audit event with actor + target user/Draft
+server_updated_at refresh
+audit event: draft.moderation_delete
+actor + target user/Draft captured
 Draft disappears from normal owner/public list responses
 stored Draft/media remain available for audit/recovery
 previously promoted Archive item remains independent
+```
+
+Admin does not receive `drafts.delete_any`; Super Admin receives it through the existing wildcard permission model.
+
+### Phase 20C local acceptance checklist
+
+Do not mark Phase 20C complete until all of the following are locally confirmed:
+
+```text
+019 migration applies cleanly
+existing Telegram Archive item still opens at its old /prompts?id=<telegram-id> route
+existing Telegram Archive item still exposes Telegram actions
+Admin can promote another public Draft
+promotion without Telegram creates public_id >= 1,000,000,000
+promoted item starts as Archive draft
+/manage/archive?edit=<publicId> opens promoted non-Telegram item
+promoted images are copied into Archive-owned storage/media rows
+removing/changing source Draft preview does not break promoted Archive media
+publishing promoted item makes /prompts?id=<publicId> readable
+non-Telegram item shows no Telegram action
+same source Draft cannot be promoted twice
+Admin cannot moderation-delete another user's Draft
+Super Admin can moderation-delete it
+moderation delete populates prompt_drafts.deleted_at and audit log
+tombstoned source Draft disappears from normal profile reads
+already-promoted Archive item remains intact
+archive snapshot generation/parity succeeds
+pnpm generate succeeds
 ```
 
 ## Verification rule
