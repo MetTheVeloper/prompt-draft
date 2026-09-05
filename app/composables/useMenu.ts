@@ -120,7 +120,7 @@ type MenuControllerOptions = {
   defaultZIndex: number
   label: string
   beforeOpen?: () => void
-  beforeClose?: () => void
+  beforeClose?: (reason: GlobalMenuCloseReason) => boolean | void
 }
 
 const defaultMenu: GlobalMenuConfig = {
@@ -333,7 +333,7 @@ function createMenuController(options: MenuControllerOptions) {
   function close(reason: GlobalMenuCloseReason = 'api') {
     if (!state.isOpen) return
 
-    options.beforeClose?.()
+    if (options.beforeClose?.(reason) === false) return
 
     const closingMenu = state.menu
 
@@ -501,7 +501,14 @@ const menuApi = createMenuController({
   defaultZIndex: 1000,
   label: 'useMenu',
   beforeOpen: () => childMenuApi.close('replace'),
-  beforeClose: () => childMenuApi.close('replace'),
+  beforeClose: (reason) => {
+    if (reason === 'escape' && childMenuApi.state.isOpen) {
+      childMenuApi.close('escape')
+      return false
+    }
+
+    childMenuApi.close('replace')
+  },
 })
 
 export function useMenu() {
