@@ -186,7 +186,7 @@ function retryDetail() {
 }
 
 function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
-  if (!import.meta.client) return
+  if (!import.meta.client || !item.telegramUrl) return
   window.open(item.telegramUrl, '_blank', 'noopener,noreferrer')
 }
 </script>
