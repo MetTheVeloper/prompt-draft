@@ -95,8 +95,13 @@ function cancelPreferenceEditing() {
   editingPreferences.value = false
 }
 
-function openInterest(primaryTag: string) {
-  return navigateTo(`/prompts?tag=${encodeURIComponent(primaryTag)}`)
+function openInterest(tags: readonly string[]) {
+  return navigateTo({
+    path: '/prompts',
+    query: {
+      tag: [...tags],
+    },
+  })
 }
 </script>
 
@@ -271,7 +276,7 @@ function openInterest(primaryTag: string) {
               :key="interest.key"
               type="button"
               class="home-discovery__interest home-discovery__interest--link"
-              @click="openInterest(interest.primaryTag)">
+              @click="openInterest(interest.tags)">
               <el-icon :icon="interest.icon" :size="19" color="prim" />
               <span class="home-discovery__interest-copy">
                 <strong>{{ t(interest.messageKey) }}</strong>
