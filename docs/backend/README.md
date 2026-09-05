@@ -1,6 +1,6 @@
 # Prompt Draft Backend
 
-This directory is the current source of truth for Prompt Draft backend, Docker, authorization, Cloud Drafts, translation, Manage, XP/referrals, Prompt Archive, profile media and public profile work.
+This directory is the source of truth for Prompt Draft backend, Docker, authorization, Cloud Drafts, translation, Manage, XP/referrals, Prompt Archive, profile media and public profile work.
 
 ## Current branch
 
@@ -35,11 +35,11 @@ important reward events require idempotency semantics
 
 ```text
 STATUS.md
-  -> verified current checkpoint + next-chat handoff
+  -> verified checkpoint + handoff
 README.md
   -> architecture + milestone overview
 IMPLEMENTATION.md
-  -> concrete extension rules and boundaries
+  -> extension rules and boundaries
 API_GUIDE.md
   -> reusable backend/API vertical-slice playbook
 MANAGE_GUIDE.md
@@ -48,7 +48,7 @@ MILESTONE_*.md
   -> detailed feature source-of-truth records
 ```
 
-A milestone is only `DONE` after local user verification. Code creation alone is not sufficient.
+A milestone is only `DONE` after local user verification.
 
 ## Milestones 1–16 — COMPLETE
 
@@ -84,56 +84,36 @@ pnpm archive:snapshot
   -> mirrored managed media under public/prompts/_snapshot
 ```
 
-Current Archive media contract:
+Archive media contract:
 
 ```text
 full: max edge 2048, WebP 0.60, no upscale
 thumbnail: max edge 640, WebP 0.72, no upscale
 ```
 
-Detailed source:
-
-```text
-docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
-```
-
 ## Milestone 18 — COMPLETE: User Avatar Foundation
 
-Avatar contract:
-
 ```text
-optional
-JPEG/PNG/WebP
+optional JPEG/PNG/WebP
 center crop
 400x400 WebP
 quality 0.60
-backend dimension validation
+backend validation
 Arvan immutable object
 replace/remove
 image -> initials -> person icon fallback
 ```
 
-Reusable component:
-
-```text
-app/components/el/avatar.vue
-```
-
-Detailed source:
-
-```text
-docs/backend/MILESTONE_18_USER_AVATAR.md
-```
+Reusable component: `app/components/el/avatar.vue`.
 
 ## Milestone 19 — COMPLETE: Public User Profiles + Cover Media
 
-Public profile canonical entry:
+Profile routes:
 
 ```text
 /user?id=<user-uuid>
+/user?un=<username>   # alias added in Milestone 20
 ```
-
-Milestone 20 additionally provides `/user?un=<username>` as a public-safe alias while UUID remains canonical.
 
 Public Draft privacy:
 
@@ -144,31 +124,22 @@ visitor -> active public Draft summaries only
 
 Cloud Draft default is `private`. Public profile responses exclude email/private Auth data.
 
-Optional cover media remains full + thumbnail WebP on Arvan. The single-source canvas slider keeps eased start/end pan looping and multi-source behavior remains unchanged.
-
-Detailed source:
-
-```text
-docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
-```
-
-## Milestone 20 — IN PROGRESS: Profile Showcase, Draft Media & Archive Promotion
+## Milestone 20 — COMPLETE: Profile Showcase, Draft Media & Archive Promotion
 
 ```text
 20A -> DONE / verified
 20B -> DONE / verified
-20C -> IMPLEMENTED / pending local verification
+20C -> DONE / verified
 ```
 
-### Phase 20A — verified
+### Phase 20A
 
 Adds:
 
 ```text
 Profile Menu centered avatar/identity composition
-avatar +12px visual with exact half-height overlap
-root + child Global Menu layers
-surface50 + blur fallback avatar
+nested Global Menu support
+surface50 + blur avatar fallback
 compact XP + relative account age
 compact Manage / View profile / Sign out actions
 shared portal-based tooltip fix
@@ -176,7 +147,7 @@ shared portal-based tooltip fix
 Draft-card normal15 -> normal50 border behavior
 ```
 
-### Phase 20B — verified
+### Phase 20B
 
 Migrations:
 
@@ -185,36 +156,32 @@ Migrations:
 018_soft_delete_prompt_drafts.sql
 ```
 
-Cloud Draft media:
+Cloud Draft media/workflow:
 
 ```text
-multi-image relational media
+multi-image relational preview media
 Arvan draft-media/<user>/<image>/image.webp
 WebP quality 0.60
 no crop / no resize
 position 0 = primary card preview
 Preview Manager modal
 stacked image-delete confirmation
-```
-
-Draft workflow:
-
-```text
 Edit Draft -> /create?draft=<id>
-Manage Previews
 Copy Output
 Download JSON
 Show/Hide profile
-soft Delete Draft
+soft Delete Draft via deleted_at
 ```
 
-Deletion uses `prompt_drafts.deleted_at`; normal read models exclude tombstones while the DB row remains available for audit/recovery. Stale clients receive `409 DRAFT_DELETED` instead of resurrecting a deleted identity.
+Verified showcase cards are square, image-first cards with full-background media, second-image hover crossfade, large bottom-pinned metadata and compact top actions.
 
-Verified showcase cards are square, image-first, full-background cards with large bottom-pinned metadata, absolute action controls and a second-preview hover crossfade.
+### Phase 20C
 
-The user locally verified Phase 20B behavior and a successful `pnpm generate` on 2026-09-05.
+Migration:
 
-### Phase 20C — implemented / pending local verification
+```text
+019_archive_user_draft_promotion.sql
+```
 
 Permissions:
 
@@ -223,62 +190,55 @@ archive.manage     -> promote a public user Draft into Prompt Archive
 drafts.delete_any -> moderate-delete another user's Draft
 ```
 
-Role behavior:
-
-```text
-Admin       -> Archive promotion
-Super Admin -> Archive promotion + arbitrary Draft moderation delete
-```
-
-Migration:
-
-```text
-019_archive_user_draft_promotion.sql
-```
-
-Archive identity no longer assumes every item is Telegram-backed:
+Archive identity/provenance:
 
 ```text
 public_id = stable numeric Archive route identity
-existing rows: public_id = telegram_message_id
-new non-Telegram rows: sequence-backed public_id >= 1,000,000,000
+existing Telegram rows keep their old public IDs
 telegram_message_id nullable
 telegram_url nullable
 source_kind += user_draft
 source_user_id + source_draft_id provenance
-unique user-Draft provenance
+unique source-Draft promotion
 ```
-
-Existing Telegram-based `/prompts?id=<id>` public IDs remain unchanged. `/api/archive`, `/prompts`, Manage Archive and schemaVersion 3 fallback parsing support non-Telegram entries. Manage Archive deep-links now resolve by `public_id`, and Telegram actions render only when a Telegram URL actually exists.
 
 Promotion behavior:
 
 ```text
-source Draft must be public, active and non-deleted
-prompt output compiled from stored Draft
-Admin supplies EN + FA title
-Telegram message ID optional
+public source Draft required
+stored Draft compiled through normal prompt compiler
+manual EN + FA title
+optional Telegram ID
 new Archive item starts as draft
-preview media copied through authorized source-image proxy
-media re-prepared with Archive full/thumbnail WebP contract
-copied media stored under Archive-owned archive/... keys
-duplicate promotion prevented by source provenance uniqueness
+preview media copied/re-prepared into Archive-owned archive/... keys
+duplicate promotion blocked
 ```
-
-The snapshot exporter emits public IDs and nullable Telegram URLs. The bootstrap importer restores public IDs and advances the high sequence namespace so a fresh installation cannot collide with sequence-backed IDs already present in a generated snapshot.
 
 Moderation behavior:
 
 ```text
 Super Admin drafts.delete_any
-central confirmation UI
+central confirmation
 soft delete via prompt_drafts.deleted_at
 draft.moderation_delete audit event
-normal owner/public reads exclude tombstone
+normal reads exclude tombstone
 promoted Archive item remains independent
 ```
 
-Phase 20C remains open until migration 019, compatibility, promotion/media independence, permission boundaries, moderation/audit, Archive snapshot parity and `pnpm generate` are locally verified.
+Final local acceptance on 2026-09-05 confirmed promotion, duplicate protection, publication, moderation tombstone, audit records, Archive-owned media independence, Archive snapshot parity and successful static generation.
+
+Final snapshot proof:
+
+```text
+pnpm archive:snapshot
+PARITY_OK
+publishedItemCount = 102
+snapshotItemCount = 102
+mismatchCount = 0
+schemaVersion = 3
+```
+
+`pnpm generate` also completed successfully.
 
 Detailed source:
 
@@ -305,7 +265,7 @@ POST /api/auth/profile/complete
 PUT    /api/drafts/:id
 GET    /api/drafts/:id
 GET    /api/drafts
-DELETE /api/drafts/:id        # owner soft-delete
+DELETE /api/drafts/:id
 POST   /api/drafts/:id/visibility
 GET/POST/DELETE /api/drafts/:id/images...
 ```
@@ -360,8 +320,8 @@ POST /api/admin/archive/promote-draft
 019_archive_user_draft_promotion.sql
 ```
 
-Do not rewrite applied migrations. Migration 019 is the active unverified Phase 20C schema change.
+Do not rewrite applied migrations. The next schema change must use `020_*.sql`.
 
 ## Current next step
 
-Run the Phase 20C local acceptance pass from the Milestone 20 source: apply migration 019, verify old Archive compatibility, promote a public Draft without Telegram, confirm Archive-owned media independence, test Admin/Super Admin moderation boundaries, generate the Archive snapshot, then run `pnpm generate`.
+Milestone 20 is closed. No Milestone 21 has been selected yet. Read `STATUS.md` before starting the next backend milestone.
