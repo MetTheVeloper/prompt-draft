@@ -31,6 +31,7 @@ onMounted(() => {
   <el-variable-fab />
 
   <el-global-menu />
+  <el-global-menu scope="child" />
   <el-modal />
 </template>
 
