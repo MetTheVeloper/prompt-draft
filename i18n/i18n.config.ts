@@ -22,6 +22,8 @@ import draftSyncEn from './locales/draft-sync.en'
 import draftSyncFa from './locales/draft-sync.fa'
 import authEn from './locales/auth.en'
 import authFa from './locales/auth.fa'
+import growthEn from './locales/growth.en'
+import growthFa from './locales/growth.fa'
 import manageEn from './locales/manage.en'
 import manageFa from './locales/manage.fa'
 import errorsEn from './locales/errors.en'
@@ -129,7 +131,7 @@ const enMessagesBase = deepMerge(
   flatToNested(enConsolidated),
 )
 
-const enMessages = deepMerge(enMessagesBase, errorsEn)
+const enMessages = deepMerge(deepMerge(enMessagesBase, growthEn), errorsEn)
 
 const faConsolidated = {
   ...consolidatedControlsFa,
@@ -175,7 +177,7 @@ const faMessagesBase = deepMerge(
   flatToNested(faConsolidated),
 )
 
-const faMessages = deepMerge(faMessagesBase, errorsFa)
+const faMessages = deepMerge(deepMerge(faMessagesBase, growthFa), errorsFa)
 
 export default defineI18nConfig(() => ({
   legacy: false,
