@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { GlobalMenuItem } from "~/composables/useMenu";
 import { canAccessManage } from "~/config/manage";
 import { prepareUserAvatarImage } from "~/utils/userAvatarImage";
 import {
@@ -14,6 +15,7 @@ const { t, locale } = useI18n();
 const auth = useAuth();
 const avatar = useUserAvatar();
 const cover = useUserCover();
+const childMenu = useChildMenu();
 const { completeMissingIdentity } = useProfileRequirements();
 
 const user = computed(() => auth.user.value);
@@ -48,8 +50,6 @@ const roleLabel = computed(() => {
   return user.value?.role?.replaceAll("_", " ") || "";
 });
 
-const roleUpperLabel = computed(() => roleLabel.value.toUpperCase());
-
 const roleMarker = computed(() => {
   switch (user.value?.role) {
     case "super_admin":
@@ -61,26 +61,34 @@ const roleMarker = computed(() => {
   }
 });
 
-const memberSince = computed(() => {
+const memberAge = computed(() => {
   if (!user.value?.createdAt) return "";
 
-  const date = new Date(user.value.createdAt);
-  if (Number.isNaN(date.getTime())) return "";
+  const createdAt = new Date(user.value.createdAt);
+  if (Number.isNaN(createdAt.getTime())) return "";
 
-  return date.toLocaleDateString(locale.value === "fa" ? "fa-IR" : "en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+  const elapsedMs = Math.max(0, Date.now() - createdAt.getTime());
+  const days = Math.floor(elapsedMs / 86_400_000);
+
+  if (days === 0) return t("auth.profile.memberAge.today");
+  return t("auth.profile.memberAge.days", { count: days });
 });
+
+function compactXp(value: number) {
+  if (value < 1000) {
+    return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(value);
+  }
+
+  const unit = value >= 1_000_000 ? "M" : "K";
+  const divisor = value >= 1_000_000 ? 1_000_000 : 1000;
+  const compact = (value / divisor).toFixed(1).replace(/\.0$/, "");
+  return `${compact}${unit}`;
+}
 
 const formattedXp = computed(() => {
   const score = auth.score.value;
   if (!score) return "—";
-
-  return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(
-    score.totalXp,
-  );
+  return compactXp(score.totalXp);
 });
 
 const formattedReferralCount = computed(() => {
@@ -95,6 +103,36 @@ const formattedReferralCount = computed(() => {
 const canOpenManage = computed(() => canAccessManage(auth.can));
 const hasMissingProfileFields = computed(() => {
   return auth.missingProfileFields.value.length > 0;
+});
+
+const avatarMenuItems = computed<GlobalMenuItem[]>(() => {
+  const items: GlobalMenuItem[] = [
+    {
+      label: avatar.url.value
+        ? t("auth.profile.avatar.change")
+        : t("auth.profile.avatar.choose"),
+      icon: "photo_camera",
+      color: "normal15",
+      disabled: () => avatarPreparing.value || avatar.saving.value,
+      handler: () => {
+        openAvatarPicker();
+      },
+    },
+  ];
+
+  if (avatar.url.value) {
+    items.push({
+      label: t("auth.profile.avatar.remove"),
+      icon: "delete",
+      color: "red15",
+      disabled: () => avatar.saving.value,
+      handler: async () => {
+        await removeAvatar();
+      },
+    });
+  }
+
+  return items;
 });
 
 function revokeAvatarPreview() {
@@ -123,6 +161,22 @@ function clearPreparedCover() {
 
 function openAvatarPicker() {
   avatarInput.value?.click();
+}
+
+function openAvatarMenu(event: MouseEvent) {
+  childMenu.open({
+    mode: "point",
+    event,
+    items: avatarMenuItems.value,
+    options: {
+      minWidth: 190,
+      closeOnSelect: true,
+      closeOnOutside: true,
+      closeOnEsc: true,
+      closeOnScroll: false,
+      closeOnResize: true,
+    },
+  });
 }
 
 function openCoverPicker() {
@@ -248,6 +302,7 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  childMenu.close("replace");
   revokeAvatarPreview();
   revokeCoverPreview();
 });
@@ -258,10 +313,18 @@ function handleCompleteProfile() {
 }
 
 async function handleOpenProfile() {
+  const username = user.value?.username?.trim();
   const userId = user.value?.id;
-  if (!userId) return;
+  if (!username && !userId) return;
+
   emit("close");
-  await navigateTo(`/user?id=${encodeURIComponent(userId)}`);
+
+  if (username) {
+    await navigateTo(`/user?un=${encodeURIComponent(username)}`);
+    return;
+  }
+
+  await navigateTo(`/user?id=${encodeURIComponent(userId || "")}`);
 }
 
 async function handleOpenManage() {
@@ -334,56 +397,58 @@ async function handleLogout() {
         />
       </el-flex>
 
-      <div class="profile-menu__avatar-wrap">
+      <button
+        type="button"
+        class="profile-menu__avatar-wrap profile-menu__avatar-trigger"
+        :aria-label="avatar.url.value ? t('auth.profile.avatar.change') : t('auth.profile.avatar.choose')"
+        @click="openAvatarMenu">
         <el-avatar
           :src="displayedAvatarUrl"
           :name="displayIdentityLabel"
           :alt="t('auth.profile.avatar.alt')"
           :size="18"
+          :size-offset="12"
           :br="3"
           bc="surface"
         />
-      </div>
+      </button>
     </div>
 
-    <el-flex rules="csc" :gap="12" :p="[44, 16, 16, 16]" class="w100">
-      <el-flex rules="rbc" :gap="10" class="w100">
-        <el-flex rules="ccs" :gap="4" class="fg100">
+    <el-flex rules="csc" :gap="12" :p="[50, 16, 16, 16]" class="w100">
+      <el-flex rules="ccc" :gap="6" class="w100">
+        <el-flex rules="rcc" :gap="6" class="w100">
           <el-text :size="15" :weight="800">{{ displayIdentityLabel }}</el-text>
           <el-text
-            v-if="roleLabel"
-            :size="11"
-            color="normal55"
-            :marker="roleMarker">
-            {{ roleLabel }}
+            :size="12"
+            :weight="800"
+            marker="orange10"
+            color="orange"
+            :p="[2, 5]"
+            :radius="100">
+            {{ formattedXp }}
           </el-text>
         </el-flex>
+
+        <el-text
+          v-if="roleLabel"
+          :size="11"
+          color="normal55"
+          :marker="roleMarker">
+          {{ roleLabel }}
+        </el-text>
+
         <el-button
-          type="fab"
-          mode="flat"
           color="normal"
-          icon="photo_camera"
-          :tooltip="avatar.url.value ? t('auth.profile.avatar.change') : t('auth.profile.avatar.choose')"
-          :size="10"
-          :p="7"
-          :disable="avatarPreparing || avatar.saving.value"
-          @click="openAvatarPicker"
-        />
-        <el-button
-          v-if="avatar.url.value && !preparedAvatar"
-          type="fab"
           mode="flat"
-          color="red"
-          icon="delete"
-          :tooltip="t('auth.profile.avatar.remove')"
-          :size="10"
-          :p="7"
-          :disable="avatar.saving.value"
-          @click="removeAvatar"
+          icon="person"
+          :label="t('auth.profile.viewProfile')"
+          :size="12"
+          :p="[8, 4]"
+          @click="handleOpenProfile"
         />
       </el-flex>
 
-      <el-flex v-if="preparedAvatar" rules="rsc" :gap="6" class="w100">
+      <el-flex v-if="preparedAvatar" rules="rcc" :gap="6" class="w100">
         <el-button
           color="prim"
           icon="save"
@@ -404,7 +469,7 @@ async function handleLogout() {
         />
       </el-flex>
 
-      <el-flex v-if="preparedCover" rules="rsc" :gap="6" class="w100">
+      <el-flex v-if="preparedCover" rules="rcc" :gap="6" class="w100">
         <el-button
           color="blue"
           icon="save"
@@ -441,13 +506,6 @@ async function handleLogout() {
       <el-divider />
 
       <el-flex rules="rbc" class="w100" :gap="16">
-        <el-text :size="12" color="normal55" icon="bolt" icon-color="prim">
-          {{ t("auth.profile.xp") }}
-        </el-text>
-        <el-text :size="13" :weight="800" color="prim">{{ formattedXp }}</el-text>
-      </el-flex>
-
-      <el-flex rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55" icon="person_add" icon-color="blue">
           {{ t("auth.profile.invitedUsers") }}
         </el-text>
@@ -464,26 +522,10 @@ async function handleLogout() {
         <el-text :size="12">{{ user.email }}</el-text>
       </el-flex>
 
-      <el-flex v-if="roleLabel" rules="rbc" class="w100" :gap="16">
-        <el-text :size="12" color="normal55">Role</el-text>
-        <el-text :size="12" :weight="700">{{ roleUpperLabel }}</el-text>
-      </el-flex>
-
-      <el-flex v-if="memberSince" rules="rbc" class="w100" :gap="16">
+      <el-flex v-if="memberAge" rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55">{{ t("auth.profile.memberSince") }}</el-text>
-        <el-text :size="12">{{ memberSince }}</el-text>
+        <el-text :size="12">{{ memberAge }}</el-text>
       </el-flex>
-
-      <el-divider />
-
-      <el-button
-        class="w100"
-        color="prim"
-        mode="flat"
-        icon="person"
-        :label="t('auth.profile.viewProfile')"
-        @click="handleOpenProfile"
-      />
 
       <el-button
         v-if="hasMissingProfileFields"
@@ -495,24 +537,28 @@ async function handleLogout() {
         @click="handleCompleteProfile"
       />
 
-      <el-button
-        v-if="canOpenManage"
-        class="w100"
-        color="blue"
-        icon="admin_panel_settings"
-        :label="t('manage.title')"
-        @click="handleOpenManage"
-      />
+      <el-divider />
 
-      <el-button
-        class="w100"
-        color="red"
-        mode="flat"
-        icon="logout"
-        :label="t('auth.profile.logout')"
-        :disable="auth.loading.value"
-        @click="handleLogout"
-      />
+      <el-flex rules="rsc" :gap="8" class="w100">
+        <el-button
+          v-if="canOpenManage"
+          class="fg100"
+          color="blue"
+          icon="admin_panel_settings"
+          :label="t('manage.title')"
+          @click="handleOpenManage"
+        />
+
+        <el-button
+          type="fab"
+          color="red"
+          mode="flat"
+          icon="logout"
+          :tooltip="t('auth.profile.logout')"
+          :disable="auth.loading.value"
+          @click="handleLogout"
+        />
+      </el-flex>
     </el-flex>
   </el-flex>
 </template>
@@ -564,9 +610,25 @@ async function handleLogout() {
 
 .profile-menu__avatar-wrap {
   position: absolute;
-  inset-inline-start: 16px;
-  inset-block-end: -34px;
+  left: 50%;
+  bottom: 0;
   z-index: 4;
+  transform: translate(-50%, 50%);
   filter: drop-shadow(0 8px 20px rgba(0, 0, 0, 0.28));
+}
+
+.profile-menu__avatar-trigger {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  appearance: none;
+  cursor: pointer;
+}
+
+.profile-menu__avatar-trigger:focus-visible {
+  outline: 2px solid var(--themePrimary);
+  outline-offset: 3px;
 }
 </style>
