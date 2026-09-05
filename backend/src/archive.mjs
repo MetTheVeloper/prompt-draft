@@ -8,6 +8,7 @@ const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 100
 const MAX_SEARCH_LENGTH = 200
 const MAX_TAG_LENGTH = 100
+const MAX_TAG_FILTERS = 24
 
 function normalizeLocalizedTitle(value) {
   const en = typeof value?.en === 'string' ? value.en.trim() : ''
@@ -91,11 +92,28 @@ function parseSearch(value) {
   return normalized.length <= MAX_SEARCH_LENGTH ? normalized : null
 }
 
-function parseTag(value) {
-  if (value == null || value === '' || value === 'all') return ''
-  const normalized = value.trim()
+function normalizeTag(value) {
+  const normalized = typeof value === 'string' ? value.trim() : ''
   if (!normalized || normalized.length > MAX_TAG_LENGTH || normalized !== normalized.toLowerCase() || /\s/.test(normalized)) return null
   return normalized
+}
+
+function parseTags(values) {
+  if (!Array.isArray(values) || values.length === 0) return []
+  if (values.length > MAX_TAG_FILTERS) return null
+
+  const tags = []
+  const seen = new Set()
+
+  for (const value of values) {
+    const tag = normalizeTag(value)
+    if (!tag) return null
+    if (seen.has(tag)) continue
+    seen.add(tag)
+    tags.push(tag)
+  }
+
+  return tags
 }
 
 function encodeCursor(item) {
@@ -120,23 +138,23 @@ function parseListQuery(url) {
   const sort = parseSort(url.searchParams.get('sort'))
   const model = parseModel(url.searchParams.get('model'))
   const search = parseSearch(url.searchParams.get('search'))
-  const tag = parseTag(url.searchParams.get('tag'))
+  const tags = parseTags(url.searchParams.getAll('tag'))
   const cursor = decodeCursor(url.searchParams.get('cursor'))
-  if (limit == null || sort == null || model === undefined || search == null || tag == null || cursor === undefined) return null
-  return { limit, sort, model, search, tag, cursor }
+  if (limit == null || sort == null || model === undefined || search == null || tags == null || cursor === undefined) return null
+  return { limit, sort, model, search, tags, cursor }
 }
 
-function buildFilterSql({ search, model, tag, cursor, sort }, includeCursor = true) {
+function buildFilterSql({ search, model, tags, cursor, sort }, includeCursor = true) {
   const values = []
   const conditions = [`items.status = 'published'`]
 
   if (model) { values.push(model); conditions.push(`items.preview_model = $${values.length}`) }
-  if (tag) {
-    values.push(tag)
+  if (tags.length) {
+    values.push(tags)
     conditions.push(`EXISTS (
       SELECT 1 FROM prompt_archive_item_tags fit
       INNER JOIN prompt_archive_tags ft ON ft.id = fit.tag_id
-      WHERE fit.archive_item_id = items.id AND ft.slug = $${values.length}
+      WHERE fit.archive_item_id = items.id AND ft.slug = ANY($${values.length}::text[])
     )`)
   }
   if (search) {
