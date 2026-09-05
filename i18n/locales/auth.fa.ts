@@ -38,7 +38,11 @@ export default {
       email: "ایمیل",
       xp: "XP",
       invitedUsers: "کاربران دعوت‌شده",
-      memberSince: "عضویت از",
+      memberSince: "مدت عضویت",
+      memberAge: {
+        today: "امروز",
+        days: "{count} روز پیش",
+      },
       complete: "تکمیل پروفایل",
       viewProfile: "مشاهده پروفایل",
       logout: "خروج از حساب",
