@@ -57,12 +57,20 @@ Remove avatar (when an avatar exists)
 
 The existing standalone avatar choose/remove FABs are removed. Prepared avatar preview + explicit Save/Cancel remains intact.
 
+The reusable `el-avatar` fallback surface now uses the project glass treatment:
+
+```text
+bg="surface50"
+bd="b4"
+```
+
+This applies to initials/person-icon fallback while real avatar images still fill the component normally.
+
 Identity hierarchy becomes centered:
 
 ```text
 name + compact XP badge
 role
-small View profile action
 ```
 
 XP formatting:
@@ -82,14 +90,33 @@ Today
 2D ago
 ```
 
-The lower action area becomes one row:
+The lower action area becomes one compact row:
 
 ```text
-Manage -> fg100
-Sign out -> FAB
+Manage       -> fg100
+View profile -> FAB
+Sign out     -> FAB
 ```
 
 Existing progressive-profile completion behavior remains available.
+
+### Global Tooltip portal
+
+The shared `el-tooltip` no longer participates in the trigger/container layout.
+
+Tooltip bubbles are teleported to the project `#teleports` layer and positioned with `position: fixed` from the owning component's DOM rectangle. The floating layer:
+
+```text
+does not change parent width/height
+is not clipped by ancestor overflow:hidden
+keeps pointer-events disabled
+clamps to viewport safe padding
+flips to the opposite side when the preferred side has insufficient room
+tracks resize/scroll while open
+attaches viewport listeners only while visible
+```
+
+This is a central tooltip fix and therefore applies to FAB/button tooltips throughout the project rather than only the Profile Menu.
 
 ### Username profile alias
 
@@ -117,8 +144,8 @@ The resolver returns only user UUID + username for active users. It does not exp
 Draft cards use the EL border-color system rather than direct CSS border-color overrides:
 
 ```text
-normal -> bc="normal"
-hover  -> bc="prim"
+normal -> bc="normal15"
+hover  -> bc="normal50"
 ```
 
 The existing hover lift remains, but border color is driven through the `el-flex` `bc` prop.
@@ -128,17 +155,19 @@ The existing hover lift remains, but border color is driven through the `el-flex
 ```text
 Profile Menu avatar is centered and overlaps cover by exactly half its height
 Profile Menu avatar is 12px larger than the previous visual
+avatar fallback uses surface50 + backdrop blur 4
 avatar opens a child Global Menu without closing Profile Menu
 avatar choose/remove flows work
 prepared avatar Save/Cancel still work
 name/role are centered
 XP appears as compact badge beside name and old XP row is gone
 member age is compact and relative
-View profile uses size=12 and p=[8,4]
-Manage + Sign out share one row; Manage grows and Sign out is FAB
+View profile is a FAB beside Manage and Sign out
+Manage grows with fg100; View profile and Sign out remain compact FABs
+shared tooltips render outside clipped containers without changing parent/menu layout
 /user?id=<uuid> still works
 /user?un=<username> resolves the same profile
-Draft cards use normal/prim EL border colors for normal/hover
+Draft cards use normal15/normal50 EL border colors for normal/hover
 EN/FA copy remains valid
 pnpm generate succeeds
 ```
