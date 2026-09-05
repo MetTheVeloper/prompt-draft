@@ -11,10 +11,45 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{ close: [] }>();
-
 const promotionApi = useArchivePromotionApi();
 const archiveApi = usePromptDraftApi();
-const { t } = useI18n();
+const { locale } = useI18n();
+
+const copy = computed(() => locale.value === "fa"
+  ? {
+      loading: "در حال آماده‌سازی درفت برای آرشیو...",
+      titleEn: "عنوان انگلیسی",
+      titleFa: "عنوان فارسی",
+      telegramId: "شناسه پست تلگرام",
+      telegramOptional: "اختیاری",
+      derivedHint: (count: number) => `متن پرامپت از خود درفت ساخته می‌شود و ${count} تصویر پیش‌نمایش نیز در صورت وجود به فضای مستقل آرشیو منتقل می‌شود.`,
+      cancel: "لغو",
+      add: "افزودن به پرامپت‌ها",
+      adding: "در حال افزودن...",
+      successTitle: "درفت آرشیو ساخته شد",
+      successDescription: (id: number) => `آیتم #${id} به‌صورت Draft در Prompt Archive ساخته شد.`,
+      mediaWarning: "آیتم آرشیو ساخته شد، اما انتقال همه تصاویر کامل نشد. می‌توانید تصاویر را در Manage Archive تکمیل کنید.",
+      done: "انجام شد",
+      sourceError: "خواندن درفت منبع برای انتقال به آرشیو انجام نشد.",
+      createError: "ساخت آیتم Prompt Archive انجام نشد.",
+    }
+  : {
+      loading: "Preparing this Draft for Prompt Archive...",
+      titleEn: "English title",
+      titleFa: "Persian title",
+      telegramId: "Telegram post ID",
+      telegramOptional: "Optional",
+      derivedHint: (count: number) => `Prompt output is compiled from the Draft and ${count} preview image(s) will be copied into Archive-owned media when available.`,
+      cancel: "Cancel",
+      add: "Add to prompts",
+      adding: "Adding...",
+      successTitle: "Archive Draft created",
+      successDescription: (id: number) => `Item #${id} was created as a Draft in Prompt Archive.`,
+      mediaWarning: "The Archive item was created, but not every image could be copied. You can finish the media in Manage Archive.",
+      done: "Done",
+      sourceError: "Prompt Draft could not read the source Draft for promotion.",
+      createError: "Prompt Draft could not create the Prompt Archive item.",
+    });
 
 const loading = ref(true);
 const submitting = ref(false);
@@ -86,16 +121,10 @@ async function loadSource() {
     const source = response.draft;
     compiledPrompt.value = compileCloudDraftOutput(toCompileRecord(source));
     sourceImageIds.value = source.images.map(image => image.id);
-
-    // Draft title is a useful starting point, while both localized Archive
-    // titles remain explicitly editable before promotion.
     form.titleEn = source.title || props.draftTitle;
     form.titleFa = "";
   } catch (error) {
-    errorMessage.value = getApiErrorMessage(
-      error,
-      t("userProfile.drafts.promotion.errors.source"),
-    );
+    errorMessage.value = getApiErrorMessage(error, copy.value.sourceError);
   } finally {
     loading.value = false;
   }
@@ -115,7 +144,6 @@ async function copySourceImages(archiveItemId: string) {
       { type: "image/webp", lastModified: Date.now() },
     );
     const prepared = await prepareArchiveImage(file);
-
     await archiveApi.uploadAdminArchiveImage(archiveItemId, {
       sourceName: file.name,
       full: {
@@ -147,131 +175,81 @@ async function submit() {
     const response = await promotionApi.promoteDraft({
       sourceUserId: props.sourceUserId,
       sourceDraftId: props.draftId,
-      title: {
-        en: form.titleEn.trim(),
-        fa: form.titleFa.trim(),
-      },
+      title: { en: form.titleEn.trim(), fa: form.titleFa.trim() },
       telegramMessageId: telegramRaw ? Number(telegramRaw) : null,
       prompt: compiledPrompt.value,
     });
 
     promotedPublicId.value = response.item.publicId;
-    props.onPromoted?.({
-      archiveItemId: response.item.id,
-      publicId: response.item.publicId,
-    });
+    props.onPromoted?.({ archiveItemId: response.item.id, publicId: response.item.publicId });
 
     if (sourceImageIds.value.length) {
-      try {
-        await copySourceImages(response.item.id);
-      } catch (error) {
+      try { await copySourceImages(response.item.id); }
+      catch (error) {
         console.error("[Prompt Draft] promoted Draft media copy failed", error);
-        mediaWarning.value = t("userProfile.drafts.promotion.mediaWarning");
+        mediaWarning.value = copy.value.mediaWarning;
       }
     }
   } catch (error) {
-    errorMessage.value = getApiErrorMessage(
-      error,
-      t("userProfile.drafts.promotion.errors.create"),
-    );
+    errorMessage.value = getApiErrorMessage(error, copy.value.createError);
   } finally {
     submitting.value = false;
   }
 }
 
-onMounted(() => {
-  void loadSource();
-});
+onMounted(() => { void loadSource(); });
 </script>
 
 <template>
   <el-flex rules="ccs" class="w100" :gap="14">
     <el-flex v-if="loading" rules="ccc" class="w100" :gap="8" :p="32">
       <el-icon icon="refresh" color="prim" :size="28" />
-      <el-text :size="11" color="normal55">
-        {{ t("userProfile.drafts.promotion.loading") }}
-      </el-text>
+      <el-text :size="11" color="normal55">{{ copy.loading }}</el-text>
     </el-flex>
 
     <template v-else-if="promotedPublicId !== null">
       <el-flex rules="ccs" class="w100" :gap="8" :p="16" bg="green10" :radius="14">
-        <el-text :size="15" :weight="800" color="green">
-          {{ t("userProfile.drafts.promotion.successTitle") }}
-        </el-text>
-        <el-text :size="11" color="normal65">
-          {{ t("userProfile.drafts.promotion.successDescription", { id: promotedPublicId }) }}
-        </el-text>
-        <el-text v-if="mediaWarning" :size="11" color="orange">
-          {{ mediaWarning }}
-        </el-text>
+        <el-text :size="15" :weight="800" color="green">{{ copy.successTitle }}</el-text>
+        <el-text :size="11" color="normal65">{{ copy.successDescription(promotedPublicId) }}</el-text>
+        <el-text v-if="mediaWarning" :size="11" color="orange">{{ mediaWarning }}</el-text>
       </el-flex>
-
       <el-flex rules="rrc" class="w100">
-        <el-button
-          :label="t('userProfile.drafts.promotion.done')"
-          icon="check"
-          color="green"
-          @click="emit('close')"
-        />
+        <el-button :label="copy.done" icon="check" color="green" @click="emit('close')" />
       </el-flex>
     </template>
 
     <template v-else>
       <el-flex rules="ccs" class="w100" :gap="4">
-        <el-text :size="11" :weight="700">
-          {{ t("userProfile.drafts.promotion.titleEn") }}
-        </el-text>
-        <el-text-field
-          v-model="form.titleEn"
-          :actions="false"
-          :disabled="submitting"
-        />
+        <el-text :size="11" :weight="700">{{ copy.titleEn }}</el-text>
+        <el-text-field v-model="form.titleEn" :actions="false" :disabled="submitting" />
       </el-flex>
 
       <el-flex rules="ccs" class="w100" :gap="4">
-        <el-text :size="11" :weight="700">
-          {{ t("userProfile.drafts.promotion.titleFa") }}
-        </el-text>
-        <el-text-field
-          v-model="form.titleFa"
-          :actions="false"
-          :disabled="submitting"
-        />
+        <el-text :size="11" :weight="700">{{ copy.titleFa }}</el-text>
+        <el-text-field v-model="form.titleFa" :actions="false" :disabled="submitting" />
       </el-flex>
 
       <el-flex rules="ccs" class="w100" :gap="4">
-        <el-text :size="11" :weight="700">
-          {{ t("userProfile.drafts.promotion.telegramId") }}
-        </el-text>
+        <el-text :size="11" :weight="700">{{ copy.telegramId }}</el-text>
         <el-text-field
           v-model="form.telegramMessageId"
           :actions="false"
           :disabled="submitting"
-          :placeholder="t('userProfile.drafts.promotion.telegramOptional')"
+          :placeholder="copy.telegramOptional"
         />
       </el-flex>
 
       <el-flex rules="rsc" class="w100" :gap="8" :p="10" bg="blue10" :radius="10">
         <el-icon icon="auto_awesome" color="blue" />
-        <el-text :size="10" color="blue">
-          {{ t("userProfile.drafts.promotion.derivedHint", { count: sourceImageIds.length }) }}
-        </el-text>
+        <el-text :size="10" color="blue">{{ copy.derivedHint(sourceImageIds.length) }}</el-text>
       </el-flex>
 
-      <el-text v-if="errorMessage" :size="11" color="red" class="w100">
-        {{ errorMessage }}
-      </el-text>
+      <el-text v-if="errorMessage" :size="11" color="red" class="w100">{{ errorMessage }}</el-text>
 
       <el-flex rules="rbc" class="w100" :gap="8">
+        <el-button :label="copy.cancel" mode="flat" color="normal" :disable="submitting" @click="emit('close')" />
         <el-button
-          :label="t('userProfile.drafts.promotion.cancel')"
-          mode="flat"
-          color="normal"
-          :disable="submitting"
-          @click="emit('close')"
-        />
-        <el-button
-          :label="submitting ? t('userProfile.drafts.promotion.adding') : t('userProfile.drafts.promotion.add')"
+          :label="submitting ? copy.adding : copy.add"
           icon="library_add"
           color="prim"
           :disable="!canSubmit"
