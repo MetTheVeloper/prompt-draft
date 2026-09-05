@@ -17,8 +17,12 @@ const modelFilter = ref<'all' | PromptArchiveModel>('all')
 const tagFilter = ref('all')
 const sortMode = ref<'newest' | 'oldest'>('newest')
 const viewMode = ref<'grid' | 'list'>('grid')
+const ambientBackground = ref('')
+const previousAmbientBackground = ref('')
 
 let filterTimer: ReturnType<typeof setTimeout> | undefined
+let ambientSwapTimer: ReturnType<typeof setTimeout> | undefined
+let ambientPreloadVersion = 0
 
 const hasDetailQuery = computed(() => {
   return typeof route.query.id === 'string' && route.query.id.trim().length > 0
@@ -73,7 +77,7 @@ const backgroundSources = computed(() => {
 
   for (const item of visibleItems.value) {
     for (const image of [item.coverImage, item.secondaryImage]) {
-      const source = image?.fullUrl || image?.thumbnailUrl || ''
+      const source = image?.thumbnailUrl || image?.fullUrl || ''
       if (!source || seen.has(source)) continue
       seen.add(source)
       sources.push(source)
@@ -82,7 +86,6 @@ const backgroundSources = computed(() => {
 
   return sources
 })
-const backgroundSliderKey = computed(() => backgroundSources.value.join('|'))
 const canLoadMore = computed(() => archive.hasMore.value)
 const remainingCount = computed(() => {
   return Math.max(0, archive.totalCount.value - archive.items.value.length)
@@ -121,6 +124,13 @@ watch(
 )
 
 watch(
+  backgroundSources,
+  (sources) => {
+    selectAmbientBackground(sources)
+  },
+)
+
+watch(
   () => route.query.id,
   () => {
     if (!canReadArchive.value) return
@@ -135,10 +145,13 @@ watch(canReadArchive, (allowed) => {
 onMounted(async () => {
   await auth.initialize()
   if (canReadArchive.value) await loadCurrentRoute()
+  if (!ambientBackground.value) selectAmbientBackground(backgroundSources.value)
 })
 
 onBeforeUnmount(() => {
   if (filterTimer) clearTimeout(filterTimer)
+  if (ambientSwapTimer) clearTimeout(ambientSwapTimer)
+  ambientPreloadVersion += 1
 })
 
 function currentListQuery(cursor: string | null = null): PromptArchiveListQuery {
@@ -175,6 +188,46 @@ function loadFirstPage() {
 
 function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
+}
+
+function selectAmbientBackground(sources = backgroundSources.value) {
+  if (!import.meta.client) return
+
+  if (!sources.length) {
+    ambientPreloadVersion += 1
+    if (ambientSwapTimer) clearTimeout(ambientSwapTimer)
+    previousAmbientBackground.value = ''
+    ambientBackground.value = ''
+    return
+  }
+
+  const current = ambientBackground.value
+  const candidates = sources.filter(source => source !== current)
+  const pool = candidates.length ? candidates : sources
+  const next = pool[Math.floor(Math.random() * pool.length)] || ''
+
+  if (!next || next === current) return
+
+  const preloadVersion = ++ambientPreloadVersion
+  const image = new Image()
+
+  image.decoding = 'async'
+  image.onload = () => {
+    if (preloadVersion !== ambientPreloadVersion) return
+
+    previousAmbientBackground.value = ambientBackground.value
+    ambientBackground.value = next
+
+    if (ambientSwapTimer) clearTimeout(ambientSwapTimer)
+    ambientSwapTimer = setTimeout(() => {
+      previousAmbientBackground.value = ''
+    }, 900)
+  }
+  image.onerror = () => {
+    if (preloadVersion !== ambientPreloadVersion) return
+    previousAmbientBackground.value = ''
+  }
+  image.src = next
 }
 
 function clearFilters() {
@@ -279,17 +332,29 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
     v-else
     class="prompts-page w100 por"
     :data-archive-source="archive.source.value || undefined">
-    <visual-tile
-      v-if="backgroundSources.length >= 3"
-      :key="backgroundSliderKey"
-      :sources="backgroundSources"
-      :interval="2600"
-      :transition-duration="5000"
-      :edge-blur="400"
-      :random="true"
-      :z-index="0"
-      :opacity="1"
-    />
+    <div
+      v-if="ambientBackground || previousAmbientBackground"
+      class="prompts-page__ambient pen">
+      <img
+        v-if="previousAmbientBackground"
+        :src="previousAmbientBackground"
+        alt=""
+        aria-hidden="true"
+        class="prompts-page__ambient-image prompts-page__ambient-image--previous"
+        decoding="async"
+        draggable="false"
+      />
+      <img
+        v-if="ambientBackground"
+        :key="ambientBackground"
+        :src="ambientBackground"
+        alt=""
+        aria-hidden="true"
+        class="prompts-page__ambient-image prompts-page__ambient-image--current"
+        decoding="async"
+        draggable="false"
+      />
+    </div>
     <div v-else class="prompts-page__fallback-bg pen" />
     <div class="prompts-page__grain pen" />
 
@@ -521,10 +586,40 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
   background: #09090d;
 }
 
+.prompts-page__ambient,
 .prompts-page__fallback-bg,
 .prompts-page__grain {
   position: fixed;
   inset: 0;
+}
+
+.prompts-page__ambient {
+  z-index: 0;
+  overflow: hidden;
+  background: #09090d;
+}
+
+.prompts-page__ambient-image {
+  position: absolute;
+  inset: -8%;
+  width: 116%;
+  height: 116%;
+  display: block;
+  object-fit: cover;
+  object-position: center;
+  opacity: 0.32;
+  filter: blur(48px) saturate(1.05);
+  transform: scale(1.1);
+  pointer-events: none;
+  user-select: none;
+}
+
+.prompts-page__ambient-image--current {
+  animation: promptsAmbientFadeIn 700ms ease both;
+}
+
+.prompts-page__ambient-image--previous {
+  opacity: 0.32;
 }
 
 .prompts-page__fallback-bg {
@@ -567,6 +662,17 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
 
 .prompts-page__filters {
   box-shadow: 0 16px 50px rgba(0, 0, 0, 0.08);
+}
+
+@keyframes promptsAmbientFadeIn {
+  from { opacity: 0; }
+  to { opacity: 0.32; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prompts-page__ambient-image--current {
+    animation: none;
+  }
 }
 
 @media (max-width: 640px) {
