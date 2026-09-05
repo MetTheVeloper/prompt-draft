@@ -3,6 +3,7 @@ import { createServer } from 'node:http'
 import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
 import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
+import { handleHomeDiscoveryRequest } from './homeDiscovery.mjs'
 import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
 import { handleUserPreferencesRequest } from './userPreferences.mjs'
@@ -524,6 +525,18 @@ const server = createServer(async (request, response) => {
       )
     }
 
+    return
+  }
+
+  if (
+    await handleHomeDiscoveryRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
     return
   }
 
