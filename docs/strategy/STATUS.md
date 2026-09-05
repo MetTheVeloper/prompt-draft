@@ -29,7 +29,7 @@ Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A capability audit      -> COMPLETE
 Phase 21A analytics design      -> COMPLETE
 Phase 21A implementation        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21B referral activation   -> FIRST SLICE IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21B referral activation   -> SECOND SLICE IMPLEMENTED / LANDING VERIFIED / AWAITING FULL CONVERSION VERIFICATION
 ```
 
 ## 21A closure
@@ -102,16 +102,36 @@ referrer +1000 XP
 GET /api/auth/me referredCount
 ```
 
-First implemented 21B slice:
+### Verified first 21B slice
+
+The user locally verified:
 
 ```text
 canonical URL: /login?ref=<username>
 valid URL referral username -> existing registration-field prefill
+prefill remains editable
 prefill survives identifier-step transitions
-new observational event: referral_link_open
-resource: referral_username:<username>
-event-specific analytics resource validation
-no new database migration
+malformed referral URL ignored
+referral_link_open persisted
+signed-out landing stored user_id = NULL
+resource_type = referral_username
+resource_id = grass in the verified local example
+path = /login?ref=grass
+metadata = {}
+```
+
+### Implemented second 21B slice
+
+The authenticated Profile Menu now has a compact Copy referral link action when the account has a username.
+
+```text
+uses current browser origin
+creates /login?ref=<normalizedUsername>
+clipboard API + DOM fallback
+localized EN/FA action/result state
+no new backend endpoint
+no new referral-code entity
+no schema migration
 ```
 
 Important authority boundary:
@@ -122,13 +142,23 @@ referrals           -> successful referral truth
 user_score_events   -> reward truth
 ```
 
-Local verification instructions:
+Current verification handoff:
 
 ```text
 docs/strategy/MILESTONE_21B_IMPLEMENTATION.md
 ```
 
-After the first slice is verified, the next slice is the existing Profile Menu **Copy referral link** action followed by one full real referral conversion verification and `pnpm generate`.
+Remaining 21B closure gate:
+
+```text
+verify Profile Menu copied URL
+complete one real signup from copied link
+verify exactly one referrals row
+verify referral_joined +500 exactly once
+verify referral_reward +1000 exactly once
+verify invited-user count increases from referrals
+pnpm generate PASS
+```
 
 ## Hard rules
 
