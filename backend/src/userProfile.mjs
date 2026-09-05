@@ -186,16 +186,27 @@ function mapDraftRow(row, isOwner) {
     outputFormat: row.outputFormat,
     moduleCount: Number(row.moduleCount),
     publishedAt: row.publishedAt ? row.publishedAt.toISOString() : null,
+    images: Array.isArray(row.images)
+      ? row.images.map(image => ({
+          id: image.id,
+          url: image.url,
+          width: Number(image.width),
+          height: Number(image.height),
+          sizeBytes: Number(image.sizeBytes),
+          position: Number(image.position),
+          createdAt: String(image.createdAt),
+        }))
+      : [],
     ...(isOwner ? { visibility: row.visibility } : {}),
   }
 }
 
 async function listProfileDrafts({ userId, isOwner, limit, cursor }) {
   const values = [userId]
-  const conditions = ['user_id = $1']
+  const conditions = ['prompt_drafts.user_id = $1']
 
   if (!isOwner) {
-    conditions.push(`visibility = 'public'`)
+    conditions.push(`prompt_drafts.visibility = 'public'`)
   }
 
   if (cursor) {
@@ -203,7 +214,7 @@ async function listProfileDrafts({ userId, isOwner, limit, cursor }) {
     const updatedAtParameter = values.length - 1
     const idParameter = values.length
     conditions.push(
-      `(client_updated_at < $${updatedAtParameter}::timestamptz OR (client_updated_at = $${updatedAtParameter}::timestamptz AND draft_id < $${idParameter}))`,
+      `(prompt_drafts.client_updated_at < $${updatedAtParameter}::timestamptz OR (prompt_drafts.client_updated_at = $${updatedAtParameter}::timestamptz AND prompt_drafts.draft_id < $${idParameter}))`,
     )
   }
 
@@ -213,18 +224,38 @@ async function listProfileDrafts({ userId, isOwner, limit, cursor }) {
   const result = await queryDatabase(
     `
       SELECT
-        draft_id AS id,
-        title,
-        created_at AS "createdAt",
-        client_updated_at AS "updatedAt",
-        revision,
-        visibility,
-        published_at AS "publishedAt",
-        COALESCE(snapshot->>'outputFormat', 'modular') AS "outputFormat",
-        COALESCE(jsonb_array_length(snapshot->'selectedModuleKeys'), 0)::int AS "moduleCount"
+        prompt_drafts.draft_id AS id,
+        prompt_drafts.title,
+        prompt_drafts.created_at AS "createdAt",
+        prompt_drafts.client_updated_at AS "updatedAt",
+        prompt_drafts.revision,
+        prompt_drafts.visibility,
+        prompt_drafts.published_at AS "publishedAt",
+        COALESCE(prompt_drafts.snapshot->>'outputFormat', 'modular') AS "outputFormat",
+        COALESCE(jsonb_array_length(prompt_drafts.snapshot->'selectedModuleKeys'), 0)::int AS "moduleCount",
+        COALESCE(
+          (
+            SELECT jsonb_agg(
+              jsonb_build_object(
+                'id', media.id,
+                'url', media.url,
+                'width', media.width,
+                'height', media.height,
+                'sizeBytes', media.size_bytes,
+                'position', media.position,
+                'createdAt', media.created_at
+              )
+              ORDER BY media.position ASC, media.created_at ASC, media.id ASC
+            )
+            FROM prompt_draft_images media
+            WHERE media.user_id = prompt_drafts.user_id
+              AND media.draft_id = prompt_drafts.draft_id
+          ),
+          '[]'::jsonb
+        ) AS images
       FROM prompt_drafts
       WHERE ${conditions.join('\n        AND ')}
-      ORDER BY client_updated_at DESC, draft_id DESC
+      ORDER BY prompt_drafts.client_updated_at DESC, prompt_drafts.draft_id DESC
       LIMIT $${limitParameter}
     `,
     values,
