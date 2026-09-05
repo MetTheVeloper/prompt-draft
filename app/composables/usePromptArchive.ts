@@ -76,6 +76,23 @@ function normalizeTags(value: unknown) {
   return value.map(tag => tag.trim()).filter(Boolean)
 }
 
+function normalizeQueryTags(value: unknown): string[] {
+  if (!Array.isArray(value)) return []
+
+  const seen = new Set<string>()
+  const tags: string[] = []
+
+  for (const rawTag of value) {
+    if (typeof rawTag !== 'string') continue
+    const tag = rawTag.trim().toLowerCase()
+    if (!tag || seen.has(tag)) continue
+    seen.add(tag)
+    tags.push(tag)
+  }
+
+  return tags
+}
+
 function normalizeImage(value: unknown): PromptArchiveImage | null {
   if (!isPlainObject(value)) return null
 
@@ -562,7 +579,7 @@ export function usePromptArchive() {
     const snapshotItems = payload.items as PromptArchiveFallbackItem[]
     const search = String(query.search ?? '').trim().toLocaleLowerCase()
     const model = query.model ?? null
-    const tag = query.tag ?? null
+    const tags = normalizeQueryTags(query.tags)
     const sort = query.sort ?? 'newest'
     const limit = Math.min(100, Math.max(1, Math.trunc(query.limit ?? 24)))
     const cursor = decodeCursor(query.cursor)
@@ -570,7 +587,7 @@ export function usePromptArchive() {
     const filtered = snapshotItems
       .filter((item) => {
         if (model && item.model.previewGeneratedWith !== model) return false
-        if (tag && !item.tags.includes(tag)) return false
+        if (tags.length && !tags.some(tag => item.tags.includes(tag))) return false
         if (!search) return true
 
         const title = resolveFallbackTitle(item)
@@ -602,7 +619,7 @@ export function usePromptArchive() {
     const pageItems = afterCursor.slice(0, limit)
     const pageHasMore = afterCursor.length > pageItems.length
     const lastItem = pageItems.at(-1)
-    const tags = Array.from(new Set(snapshotItems.flatMap(item => item.tags)))
+    const allTags = Array.from(new Set(snapshotItems.flatMap(item => item.tags)))
       .sort((first, second) => first.localeCompare(second))
 
     return {
@@ -611,7 +628,7 @@ export function usePromptArchive() {
       totalCount: total,
       hasMore: pageHasMore,
       nextCursor: pageHasMore && lastItem ? encodeCursor(lastItem) : null,
-      availableTags: tags,
+      availableTags: allTags,
     }
   }
 
@@ -645,7 +662,7 @@ export function usePromptArchive() {
     if (query.cursor) params.set('cursor', query.cursor)
     if (query.search?.trim()) params.set('search', query.search.trim())
     if (query.model) params.set('model', query.model)
-    if (query.tag) params.set('tag', query.tag)
+    for (const tag of normalizeQueryTags(query.tags)) params.append('tag', tag)
 
     return `/api/archive?${params.toString()}`
   }
