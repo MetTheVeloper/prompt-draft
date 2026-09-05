@@ -3,6 +3,7 @@ import type {
   ListUserProfileDraftsParams,
   ListUserProfileDraftsResponse,
   ResolveUserProfileResponse,
+  UpdateDraftImagesResponse,
   UpdateDraftVisibilityResponse,
   UserDraftVisibility,
 } from "~/types/userProfileApi";
@@ -76,10 +77,51 @@ export function useUserProfileApi() {
     );
   }
 
+  function addDraftImage(draftId: string, image: Blob) {
+    return $fetch<UpdateDraftImagesResponse>(
+      endpoint(`/api/drafts/${encodeURIComponent(draftId)}/images`),
+      {
+        method: "POST",
+        headers: {
+          ...auth.authHeaders(),
+          "Content-Type": "image/webp",
+        },
+        body: image,
+      },
+    );
+  }
+
+  function removeDraftImage(draftId: string, imageId: string) {
+    return $fetch<UpdateDraftImagesResponse>(
+      endpoint(
+        `/api/drafts/${encodeURIComponent(draftId)}/images/${encodeURIComponent(imageId)}`,
+      ),
+      {
+        method: "DELETE",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function makeDraftImagePrimary(draftId: string, imageId: string) {
+    return $fetch<UpdateDraftImagesResponse>(
+      endpoint(
+        `/api/drafts/${encodeURIComponent(draftId)}/images/${encodeURIComponent(imageId)}/primary`,
+      ),
+      {
+        method: "POST",
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
   return {
     resolveUsername,
     getProfile,
     listDrafts,
     setDraftVisibility,
+    addDraftImage,
+    removeDraftImage,
+    makeDraftImagePrimary,
   };
 }
