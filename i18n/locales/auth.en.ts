@@ -38,6 +38,11 @@ export default {
       email: "Email",
       xp: "XP",
       invitedUsers: "Invited users",
+      referral: {
+        copyLink: "Copy referral link",
+        copied: "Referral link copied",
+        copyFailed: "Could not copy referral link",
+      },
       memberSince: "Member since",
       memberAge: {
         today: "Today",
