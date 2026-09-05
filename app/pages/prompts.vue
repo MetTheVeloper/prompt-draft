@@ -67,6 +67,22 @@ const tagOptions = computed(() => {
 })
 
 const visibleItems = computed(() => archive.items.value)
+const backgroundSources = computed(() => {
+  const seen = new Set<string>()
+  const sources: string[] = []
+
+  for (const item of visibleItems.value) {
+    for (const image of [item.coverImage, item.secondaryImage]) {
+      const source = image?.fullUrl || image?.thumbnailUrl || ''
+      if (!source || seen.has(source)) continue
+      seen.add(source)
+      sources.push(source)
+    }
+  }
+
+  return sources
+})
+const backgroundSliderKey = computed(() => backgroundSources.value.join('|'))
 const canLoadMore = computed(() => archive.hasMore.value)
 const remainingCount = computed(() => {
   return Math.max(0, archive.totalCount.value - archive.items.value.length)
@@ -261,16 +277,29 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
 
   <div
     v-else
-    class="prompts-page w100 h100 ofya por"
+    class="prompts-page w100 por"
     :data-archive-source="archive.source.value || undefined">
-    <div class="prompts-page__ambient pen" />
+    <visual-tile
+      v-if="backgroundSources.length >= 3"
+      :key="backgroundSliderKey"
+      :sources="backgroundSources"
+      :interval="2600"
+      :transition-duration="5000"
+      :edge-blur="400"
+      :random="true"
+      :z-index="0"
+      :opacity="1"
+    />
+    <div v-else class="prompts-page__fallback-bg pen" />
     <div class="prompts-page__grain pen" />
 
     <el-flex
       rules="csc"
-      class="prompts-page__content w100 por zi10"
+      class="prompts-page__surface w100 por zi10"
       :gap="24"
-      :p="contentPadding">
+      :p="contentPadding"
+      bg="normal15"
+      bd="b8">
       <el-flex rules="rbe" class="prompts-page__heading w100" :gap="18" wrap>
         <el-grid :gap="8" class="fg100">
           <el-text :size="10" :weight="900" color="prim" class="wsnw">
@@ -489,26 +518,25 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
 .prompts-page {
   min-height: 100%;
   isolation: isolate;
-  background:
-    linear-gradient(180deg, var(--themeSurface75) 0%, var(--themeSurface90) 28%, var(--themeSurface95) 100%);
+  background: #09090d;
 }
 
-.prompts-page__ambient,
+.prompts-page__fallback-bg,
 .prompts-page__grain {
   position: fixed;
   inset: 0;
 }
 
-.prompts-page__ambient {
+.prompts-page__fallback-bg {
   z-index: 0;
   background:
-    radial-gradient(circle at 14% 10%, var(--primary15), transparent 34%),
-    radial-gradient(circle at 84% 16%, var(--themePurple15), transparent 38%);
-  opacity: 0.9;
+    radial-gradient(circle at 14% 16%, var(--primary35), transparent 40%),
+    radial-gradient(circle at 84% 20%, var(--themePurple25), transparent 44%),
+    linear-gradient(145deg, var(--themeSurface20), var(--themeBackground));
 }
 
 .prompts-page__grain {
-  z-index: 1;
+  z-index: 2;
   opacity: 0.08;
   background-image:
     repeating-radial-gradient(circle at 0 0, var(--themeSurface15) 0, var(--themeSurface15) .6px, transparent .7px, transparent 3px);
@@ -516,10 +544,9 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
   mix-blend-mode: soft-light;
 }
 
-.prompts-page__content {
-  max-width: 1440px;
+.prompts-page__surface {
   min-height: 100%;
-  margin-inline: auto;
+  margin-inline: 0;
   padding-top: 64px !important;
   padding-bottom: 72px !important;
 }
@@ -543,7 +570,7 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
 }
 
 @media (max-width: 640px) {
-  .prompts-page__content {
+  .prompts-page__surface {
     padding-top: 36px !important;
     padding-bottom: 48px !important;
   }
