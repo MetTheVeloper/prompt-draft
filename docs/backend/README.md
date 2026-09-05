@@ -157,7 +157,7 @@ image
 -> person icon
 ```
 
-`el-avatar` uses the same sizing system as EL buttons so an avatar and same-size FAB align by height.
+`el-avatar` uses the same sizing system as EL buttons so an avatar and same-size FAB align by height. Milestone 20 adds an optional pixel `sizeOffset` for intentional one-off visual enlargement while the default same-size invariant remains unchanged.
 
 Profile Header/Profile Menu/Manage user information reuse this component.
 
@@ -191,7 +191,7 @@ covers/<user-uuid>/<immutable-cover-uuid>/full.webp
 covers/<user-uuid>/<immutable-cover-uuid>/thumb.webp
 ```
 
-Profile Menu now combines cover + overlapping avatar and supports live prepared previews before Save.
+Profile Menu combines cover + overlapping avatar and supports live prepared previews before Save.
 
 Public Draft privacy model:
 
@@ -228,6 +228,41 @@ Detailed source:
 docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
 ```
 
+## Milestone 20 — IN PROGRESS: Profile Showcase, Draft Media & Archive Promotion
+
+Milestone 20 extends the closed Milestone 19 platform rather than reopening it.
+
+Planned phases:
+
+```text
+20A -> Profile UX polish + username profile alias
+20B -> Cloud Draft preview media
+20C -> moderation + Promote to Prompt Archive
+```
+
+Phase 20A is implemented and awaiting local verification. It adds:
+
+```text
+centered Profile Menu avatar/identity composition
+Profile Menu avatar +12px visual size with exact half-height cover overlap
+root + child Global Menu layers for nested avatar actions
+compact XP badge and relative account age
+small View profile action
+Manage + Sign out action row
+/user?un=<username> public-safe alias resolution
+EL-prop-driven normal/primary Draft card borders
+```
+
+Username remains an alias only. User UUID remains the canonical backend identity, and username resolution returns no email/private account data.
+
+20A introduces no schema change. The next schema migration remains `017_*.sql`, reserved for the first selected schema work in Phase 20B.
+
+Detailed source:
+
+```text
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+```
+
 ## Current API/product boundaries
 
 ### Auth
@@ -262,9 +297,12 @@ GET/POST/DELETE /api/profile/cover
 ### Public profiles
 
 ```text
+GET /api/users/resolve?username=<username>
 GET /api/users/:userId/profile
 GET /api/users/:userId/drafts
 ```
+
+The username resolver returns only public-safe profile identity needed to resolve the canonical UUID.
 
 ### Prompt Archive
 
@@ -300,7 +338,7 @@ Do not rewrite applied migration history. Add a new numbered migration for futur
 
 ## Current next step
 
-No new milestone is selected yet.
+Milestone 20 is selected. Phase 20A is implemented but is not complete until the user verifies the behavior locally and `pnpm generate` succeeds.
 
 The next chat should first read:
 
@@ -313,6 +351,7 @@ docs/backend/MANAGE_GUIDE.md
 docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
 docs/backend/MILESTONE_18_USER_AVATAR.md
 docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
 ```
 
-Then inspect the implementation relevant to the user's new request and extend the verified platform without reopening completed behavior unnecessarily.
+Do not begin Phase 20B schema work before Phase 20A is locally accepted unless the user explicitly asks to proceed in parallel.
