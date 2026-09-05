@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import type { GlobalMenuItem } from '~/composables/useMenu'
+import type { GlobalMenuItem, GlobalMenuScope } from '~/composables/useMenu'
 
 const props = withDefaults(
   defineProps<{
     items?: GlobalMenuItem[]
+    scope?: GlobalMenuScope
   }>(),
   {
     items: () => [],
+    scope: 'root',
   },
 )
 
-const menuApi = useMenu()
+const rootMenuApi = useMenu()
+const childMenuApi = useChildMenu()
+const menuApi = props.scope === 'child' ? childMenuApi : rootMenuApi
 
 function isDivider(item: GlobalMenuItem) {
   return item.type === 'divider' || item.divider === true
@@ -72,7 +76,7 @@ async function handleItemClick(item: GlobalMenuItem) {
       <el-grid v-else-if="item.description" :gap="2" class="w100">
         <el-button class="w100" rules="rsc" :label="item.label || ''" :icon="item.icon" :size="12"
           text-color="normal"
-          :sublabel="item.description" :mode="getItemMode(item)" :color="`${getItemColor(item)}15`" 
+          :sublabel="item.description" :mode="getItemMode(item)" :color="`${getItemColor(item)}15`"
           :effect="getItemEffect(item)" :disable="isDisabled(item)" :radius="8" :p="[8]"
           @click="handleItemClick(item)" />
       </el-grid>
