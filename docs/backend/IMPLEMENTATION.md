@@ -1,12 +1,13 @@
 # Backend Implementation Baseline
 
-Last updated: 2026-09-05
+Last updated: 2026-09-06
 
-Branch: `feature/docker-local-api`
+Current branch: `feature/create-ui-consolidation`
+Backend/platform base: `feature/docker-local-api` at implementation checkpoint `4c67b045abead7e2eb3d7cdc29865859a86ecf6b`
 
 ## Current verified state
 
-Milestones 1 through 19 are complete and locally verified.
+Milestones 1 through 20 are complete and locally verified. The post-Milestone-20 `feature/create-ui-consolidation` scope is also complete and locally verified.
 
 Current platform path:
 
@@ -30,17 +31,14 @@ docs/backend/API_GUIDE.md
 
 docs/backend/MANAGE_GUIDE.md
   -> permission-aware Manage/admin features
+
+docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md
+  -> current post-M20 UI/API-projection decisions
 ```
 
 ## Schema workflow
 
-The development schema runner discovers:
-
-```text
-backend/sql/NNN_*.sql
-```
-
-and applies them in lexical order.
+The development schema runner discovers `backend/sql/NNN_*.sql` and applies files in lexical order.
 
 Current schema history:
 
@@ -61,9 +59,12 @@ Current schema history:
 014_archive_media_storage_keys.sql
 015_user_avatar.sql
 016_public_user_profiles.sql
+017_cloud_draft_preview_media.sql
+018_soft_delete_prompt_drafts.sql
+019_archive_user_draft_promotion.sql
 ```
 
-Never rewrite applied migration history. Add a new numbered migration for future schema changes.
+Never rewrite applied migration history. The next real schema change must use `020_*.sql`.
 
 # Core product boundaries
 
@@ -81,7 +82,7 @@ username + email
 
 At least one identity must remain present.
 
-Auth responses expose the current user, permissions, progressive-profile state, score and referral read models. Media is intentionally read through dedicated profile-media endpoints rather than expanding every login/register response.
+Auth responses expose current user, permissions, progressive-profile state, score and referral read models. Media is read through dedicated profile-media endpoints rather than expanding every auth response.
 
 Security baseline:
 
@@ -102,7 +103,7 @@ admin
 super_admin
 ```
 
-Privileged behavior must keep three-layer enforcement:
+Privileged behavior keeps three-layer enforcement:
 
 ```text
 1. conditional UI
@@ -110,113 +111,81 @@ Privileged behavior must keep three-layer enforcement:
 3. backend permission guard (authoritative)
 ```
 
-Archive adds:
+Relevant verified permissions include Manage/user capabilities plus:
 
 ```text
 archive.view
 archive.manage
+drafts.delete_any
 ```
 
 Do not rely on frontend hiding as the security boundary.
 
-## Cloud Draft ownership
+## Cloud Draft ownership, visibility and deletion
 
 `prompt_drafts` is account-scoped by `user_id`.
 
-Normal Cloud Draft API behavior is owner-only. A user cannot request arbitrary another-user Draft content through the private Cloud Draft API.
+Normal Cloud Draft APIs are owner-only. Public profile behavior uses a separate public-safe read path rather than weakening ownership.
 
-Milestone 19 adds a separate public-safe profile read path rather than weakening that ownership model.
-
-Visibility model:
+Visibility:
 
 ```text
 private
 public
 ```
 
-Default:
+Default: `private`.
+
+Visitor profile queries filter `visibility = 'public'` in backend/database queries. Owner profile reads may include all own active Draft summaries.
+
+Soft deletion from Milestone 20:
 
 ```text
-private
+deleted_at IS NULL     -> active Draft
+deleted_at IS NOT NULL -> deleted Draft
 ```
 
-Public profile visitor queries filter at the backend/database layer:
-
-```sql
-visibility = 'public'
-```
-
-Owner profile reads may include all own Draft summaries.
+Normal Draft/profile reads, counters and cloud restore exclude tombstones. Stale clients cannot resurrect a tombstoned Draft.
 
 Do not expose full editor snapshots or account-private fields merely because a Draft summary is public.
 
 ## Public user profile privacy
 
-Public profile endpoint:
+Public endpoints:
 
 ```text
+GET /api/users/resolve?username=<username>
 GET /api/users/:userId/profile
-```
-
-Public draft summaries:
-
-```text
 GET /api/users/:userId/drafts
 ```
 
-Public read models must never expose:
+Public read models never expose email, auth/session secrets, password fields or private Drafts to non-owners.
 
-```text
-email
-auth/session data
-password fields
-private Drafts to non-owners
-```
+When username is absent, public UI uses a localized generic name rather than email fallback.
 
-When username is missing, public UI uses a localized generic name instead of email fallback.
-
-Owner mutation:
+Owner visibility mutation:
 
 ```text
 POST /api/drafts/:draftId/visibility
 ```
 
-The mutation condition must include both authenticated `user_id` and requested `draft_id`.
+The mutation is scoped by authenticated `user_id` plus requested `draft_id`.
 
-No XP is awarded for visibility toggles. If Share Draft receives XP later, implement a separate idempotent reward event rather than rewarding public/private toggling.
+No XP is awarded for visibility toggles. A future Share reward must be a separate idempotent event.
 
 # Media implementation baseline
 
 ## Storage adapter
 
-Managed media uses the backend-only Arvan/S3-compatible adapter established in Milestone 17.
+Managed media uses the backend-only Arvan/S3-compatible adapter established in Milestone 17. Credentials remain server-side only.
 
-Credentials must remain server-side environment variables. Never expose Access Key or Secret Key through Nuxt runtime/public config or browser requests.
+Verified adapter operations include HEAD bucket/object, PUT, signed GET, anonymous public GET and DELETE.
 
-The currently verified storage supports:
-
-```text
-HEAD bucket
-PUT object
-HEAD object
-signed GET
-anonymous public GET
-DELETE object
-```
-
-Use immutable object keys for replaceable media, then update DB state and best-effort delete old objects.
+Use immutable object keys for replaceable media, persist new DB state, then best-effort clean old objects.
 
 ## Archive images
 
-Accepted inputs:
-
-```text
-jpg/jpeg
-png
-webp
-```
-
-Browser outputs:
+Accepted input: JPEG/JPG, PNG, WebP.
 
 ```text
 full WebP
@@ -232,28 +201,20 @@ thumbnail WebP
   no upscale
 ```
 
-Archive storage keys are UUID-based and independent of visual position. Reorder therefore updates DB position without rewriting object URLs.
+Archive storage keys are UUID-based and independent of visual position.
 
 ## User avatar
 
-Migration:
-
-```text
-015_user_avatar.sql
-```
-
-Avatar fields are nullable and have no stored default.
-
-Browser contract:
+Migration: `015_user_avatar.sql`.
 
 ```text
 JPEG/PNG/WebP input
 center crop
 exact 400x400
-WebP quality = 0.60
+WebP quality 0.60
 ```
 
-Backend validates actual WebP structure/dimensions rather than trusting browser metadata.
+Backend validates actual WebP structure/dimensions.
 
 Storage:
 
@@ -261,46 +222,23 @@ Storage:
 avatars/<user-uuid>/<immutable-avatar-uuid>.webp
 ```
 
-Reusable UI:
+Reusable UI: `app/components/el/avatar.vue`.
+
+Fallback:
 
 ```text
-app/components/el/avatar.vue
+image -> initials -> person icon
 ```
-
-Fallback order:
-
-```text
-image
--> initials
--> person icon
-```
-
-`el-avatar` sizing uses the same EL dimension resolver as button height, so a same-size FAB and avatar align by height.
 
 ## User cover
 
-Migration:
+Migration: `016_public_user_profiles.sql`.
+
+Cover is optional and preserves source aspect ratio.
 
 ```text
-016_public_user_profiles.sql
-```
-
-Cover is optional.
-
-Unlike avatar, cover is not force-cropped. Aspect ratio is preserved and consuming UI uses cover-style framing.
-
-Browser outputs:
-
-```text
-full WebP
-  max edge = 2048
-  quality = 0.60
-  no upscale
-
-thumbnail WebP
-  max edge = 640
-  quality = 0.72
-  no upscale
+full WebP: max edge 2048, quality 0.60, no upscale
+thumbnail WebP: max edge 640, quality 0.72, no upscale
 ```
 
 Storage:
@@ -311,6 +249,29 @@ covers/<user-uuid>/<immutable-cover-uuid>/thumb.webp
 ```
 
 Profile Menu uses thumbnail; `/user` hero uses full cover.
+
+## Cloud Draft preview media
+
+Migration: `017_cloud_draft_preview_media.sql`.
+
+Preview media is relational in `prompt_draft_images`.
+
+```text
+up to 8 images per Draft
+JPEG/PNG/WebP input
+WebP quality 0.60
+preserve source dimensions
+no crop / no resize
+position 0 = primary preview
+```
+
+Storage:
+
+```text
+draft-media/<USER_UUID>/<IMAGE_UUID>/image.webp
+```
+
+The central `DraftPreviewManagerModal` is the reusable owner media-management surface.
 
 # Prompt Archive implementation baseline
 
@@ -328,45 +289,31 @@ prompt_archive_tags
 prompt_archive_item_tags
 ```
 
-Telegram message ID is the natural import/content identifier while DB rows keep independent UUID primary keys.
-
-Dynamic localized titles are stored with content:
+Archive route identity is stable numeric `public_id`. Telegram linkage is optional source metadata.
 
 ```text
-titles.en
-titles.fa
+public_id              -> stable public route identity
+telegram_message_id    -> nullable
+telegram_url           -> nullable
+source_kind            -> managed | legacy_json | user_draft
+source_user_id         -> nullable provenance
+source_draft_id        -> nullable provenance
 ```
 
-New managed Archive rows must not depend on source-code i18n title keys.
+Dynamic localized titles live in `titles.en` / `titles.fa`.
 
 ## Runtime reads
 
-`/prompts` is API-first.
+`/prompts` is API-first. Server-side list behavior includes search/filter/order/cursor pagination.
 
-Server-side list behavior includes search/filter/order/cursor pagination.
-
-Recoverable backend failure may switch to generated static fallback. Authentication/authorization errors are not fallback conditions.
-
-Fallback snapshot:
+Recoverable backend failure may use the generated fallback snapshot:
 
 ```text
 public/data/prompts.json
 schemaVersion = 3
 ```
 
-Generated through:
-
-```text
-pnpm archive:snapshot
-```
-
-Managed cloud media is mirrored into:
-
-```text
-public/prompts/_snapshot/...
-```
-
-Legacy media remains on its existing local static path.
+Generated through `pnpm archive:snapshot`; managed cloud media is mirrored under `public/prompts/_snapshot/...`.
 
 ## Manage Archive
 
@@ -379,45 +326,57 @@ Canonical route:
 Deep-link edit route:
 
 ```text
-/manage/archive?edit=<telegram-message-id>
+/manage/archive?edit=<publicId>
 ```
 
-Manage extends the existing shell and uses existing permission/audit conventions.
+Resolver:
 
-Mutating Archive media or content returns the item to Draft where required so public state does not change implicitly.
+```text
+GET /api/admin/archive/public/:publicId
+```
 
-Importer is a bootstrap/migration tool, not a permanent sync engine. Once source rows have been taken over as managed state, import safeguards prevent legacy import from overwriting managed content.
+Mutating Archive content/media returns an item to Draft where required; publish remains an explicit operation.
+
+Legacy import is bootstrap/migration tooling, not permanent sync.
+
+## User Draft promotion
+
+Migration: `019_archive_user_draft_promotion.sql`.
+
+```text
+archive.manage     -> promote eligible public user Draft
+drafts.delete_any -> moderation soft-delete another user's Draft
+```
+
+Promotion creates an Archive Draft, records source provenance, blocks duplicate source promotion and copies/re-prepares media into independent Archive-owned `archive/...` keys. Promotion never auto-publishes.
 
 # Public profile UI baseline
 
-Route:
+Routes:
 
 ```text
 /user?id=<USER_UUID>
+/user?un=<username>
 ```
 
-Current verified visual direction:
+Verified post-M20 direction:
 
 ```text
 full-screen cinematic cover hero
-cover in canvas slider/background layer
 large foreground el-avatar
 centered identity hierarchy
-large creator name
-member-since metadata
-XP / public Draft / total Draft stats
-Saved Drafts section
+compact member age + XP presentation
+Saved Drafts image-first showcase cards
+owner actions through shared Global Menu
 owner visibility controls
 visitor public-only content
 ```
 
-Draft cards intentionally do not display internal Draft UUIDs. They show product metadata such as modules, revision and updated time instead.
+Draft cards do not display internal UUIDs.
 
 ## Shared canvas-slider single-source rule
 
-When the renderer receives exactly one image source, do not run a fake slide-to-same-slide reveal transition and do not freeze at the end of pan animation.
-
-Current behavior:
+For exactly one image source:
 
 ```text
 pan start
@@ -426,13 +385,11 @@ pan start
 -> repeat continuously
 ```
 
-This behavior applies anywhere the shared renderer is used with one source, including user cover/profile backgrounds and single-preview prompt detail surfaces.
-
-Multi-source slider behavior remains unchanged.
+Do not fake a slide-to-same-slide transition or freeze at pan end. Multi-source behavior remains unchanged.
 
 # Manage baseline
 
-Canonical routes include:
+Canonical routes:
 
 ```text
 /manage
@@ -441,41 +398,80 @@ Canonical routes include:
 /manage/archive
 ```
 
-Future Manage work must extend the existing `MANAGE_SECTIONS`, middleware, typed API boundaries, authorization, audit logging and EN/FA patterns documented in `MANAGE_GUIDE.md`.
+Future Manage work extends existing `MANAGE_SECTIONS`, middleware, typed API boundaries, authorization, Global Menu/Modal, audit and EN/FA patterns. Do not recreate a second admin shell.
 
-Do not recreate a second admin shell.
+# Post-Milestone-20 UI/API projection baseline
+
+`feature/create-ui-consolidation` establishes these additional implementation rules.
+
+## `/create` action hierarchy
+
+Primary/high-frequency:
+
+```text
+Drafts
+Cloud Save / Sync
+Public / Private
+```
+
+Secondary actions use the shared Global Menu:
+
+```text
+Share
+Download
+Manage previews
+Delete
+```
+
+The visibility control uses the existing owner API. Preview management reuses `DraftPreviewManagerModal`; there is no create-specific duplicate media workflow.
+
+When a primary Draft preview exists, `/create` may use it as the full-screen presentation background. `position = 0` remains the source of primary-image truth.
+
+## Admin collection/detail projection rule
+
+Return the smallest server projection needed to render the surface without per-row detail requests.
+
+Verified examples:
+
+```text
+/manage/users list
+  -> avatarUrl stays in lightweight summary
+
+User Information modal
+  -> richer detail-only projection: cover, email, Draft visibility counts,
+     active sessions, XP, joined/updated/activity timestamps
+
+/manage/archive list
+  -> previewImageUrl selected directly by list query
+  -> first image ordered by position/id
+  -> thumbnail -> full -> source fallback
+```
+
+Avoid N+1 list reads. Rich fields that only one modal/editor needs belong in the detail response rather than bloating every list row.
+
+The admin User Information response is privileged and must not be confused with the public profile privacy contract.
+
+No migration was needed for this consolidation pass.
 
 # XP / referral rules
 
-Authoritative score state remains the append-only:
+Authoritative score state remains append-only `user_score_events`.
 
-```text
-user_score_events
-```
+Verified rewards include account creation, email addition, Cloud Draft creation and referral events. Routine Draft edits/saves are intentionally not rewarded.
 
-Current verified rewards include account creation, email addition, Cloud Draft creation and referral events.
-
-Routine Draft edits/saves are intentionally not rewarded.
-
-Every new reward producer must define a stable logical event and deterministic idempotency key.
+Every new reward producer needs a stable logical event and deterministic idempotency key.
 
 # Release/verification rules
 
-For frontend-affecting changes:
+Frontend-affecting milestone/release work preserves `pnpm generate`.
 
-```text
-pnpm generate
-```
+Backend/API/database behavior must be locally exercised before milestone `DONE` status. Branch-level UI consolidation may additionally be functionally accepted through explicit local user verification before later release integration.
 
-must succeed before the milestone is considered complete.
+# Closure state
 
-Backend/API/database behavior must also be locally exercised by the user before `DONE` status.
+Milestones 1–20 and the defined `feature/create-ui-consolidation` scope are closed. No in-scope task remains open.
 
-# Current next step
-
-No Milestone 20 or other next feature is selected yet.
-
-For a new chat, read:
+Current handoff order:
 
 ```text
 docs/backend/STATUS.md
@@ -483,9 +479,8 @@ docs/backend/README.md
 docs/backend/IMPLEMENTATION.md
 docs/backend/API_GUIDE.md
 docs/backend/MANAGE_GUIDE.md
-docs/backend/MILESTONE_17_PROMPT_ARCHIVE_PLATFORM.md
-docs/backend/MILESTONE_18_USER_AVATAR.md
-docs/backend/MILESTONE_19_PUBLIC_USER_PROFILES.md
+docs/backend/MILESTONE_20_PROFILE_SHOWCASE_DRAFT_MEDIA_ARCHIVE_PROMOTION.md
+docs/backend/BRANCH_CREATE_UI_CONSOLIDATION.md
 ```
 
-Then inspect the current implementation related to the user's new direction before editing code.
+No merge to `main` is implied by this closure state.
