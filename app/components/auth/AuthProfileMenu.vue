@@ -436,16 +436,6 @@ async function handleLogout() {
           :marker="roleMarker">
           {{ roleLabel }}
         </el-text>
-
-        <el-button
-          color="normal"
-          mode="flat"
-          icon="person"
-          :label="t('auth.profile.viewProfile')"
-          :size="12"
-          :p="[8, 4]"
-          @click="handleOpenProfile"
-        />
       </el-flex>
 
       <el-flex v-if="preparedAvatar" rules="rcc" :gap="6" class="w100">
@@ -547,6 +537,15 @@ async function handleLogout() {
           icon="admin_panel_settings"
           :label="t('manage.title')"
           @click="handleOpenManage"
+        />
+
+        <el-button
+          type="fab"
+          color="normal"
+          mode="flat"
+          icon="person"
+          :tooltip="t('auth.profile.viewProfile')"
+          @click="handleOpenProfile"
         />
 
         <el-button
