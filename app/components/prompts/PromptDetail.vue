@@ -16,6 +16,8 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n()
 const { mobile, tablet, mini } = useScreen()
+const analytics = useProductAnalytics()
+const promptArchive = usePromptArchive()
 
 const rootRef = ref<HTMLElement | null>(null)
 const activePromptKey = ref('main')
@@ -104,11 +106,24 @@ const formattedDate = computed(() => {
 
 const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')
 
+function trackPromptView() {
+  const source = promptArchive.detailSource.value
+
+  void analytics.track('prompt_archive_view', {
+    resource: {
+      type: 'prompt_archive_item',
+      id: String(props.item.id),
+    },
+    metadata: source ? { source } : {},
+  })
+}
+
 watch(
   () => props.item.id,
   async () => {
     activePromptKey.value = 'main'
     copied.value = false
+    trackPromptView()
 
     await nextTick()
 
@@ -117,6 +132,10 @@ watch(
     })
   },
 )
+
+onMounted(() => {
+  trackPromptView()
+})
 
 onBeforeUnmount(() => {
   if (copiedTimer) clearTimeout(copiedTimer)
@@ -210,6 +229,16 @@ async function copyPrompt() {
   if (!success) return
 
   copied.value = true
+
+  void analytics.track('prompt_archive_copy', {
+    resource: {
+      type: 'prompt_archive_item',
+      id: String(props.item.id),
+    },
+    metadata: {
+      variantKey: activePrompt.value?.key || 'main',
+    },
+  })
 
   if (copiedTimer) clearTimeout(copiedTimer)
 
