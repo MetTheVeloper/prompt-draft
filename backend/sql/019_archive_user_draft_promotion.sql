@@ -8,11 +8,14 @@ SET public_id = telegram_message_id
 WHERE public_id IS NULL
   AND telegram_message_id IS NOT NULL;
 
+-- Keep the historical Telegram ID namespace intact for Telegram-backed Archive
+-- items. Sequence-backed IDs are reserved in a high range for sources that do
+-- not have a Telegram message identity.
 SELECT setval(
   'prompt_archive_public_id_seq',
   GREATEST(
     COALESCE((SELECT MAX(public_id) FROM prompt_archive_items), 0) + 1,
-    1
+    1000000000
   ),
   false
 );
