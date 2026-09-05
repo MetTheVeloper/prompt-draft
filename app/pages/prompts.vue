@@ -38,10 +38,11 @@ const canReadArchive = computed(() => {
   return auth.isLoggedIn.value && auth.hasProfileField('email')
 })
 
+const contentPadding = computed(() => mobile.value ? 16 : tablet.value || mini.value ? 24 : 40)
 const cardColumns = computed(() => {
   if (mobile.value) return 1
-  if (tablet.value) return 2
-  return 4
+  if (tablet.value || mini.value) return 2
+  return 3
 })
 
 const modelOptions = computed(() => [
@@ -258,49 +259,62 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
     </el-flex>
   </template>
 
-  <el-flex
+  <div
     v-else
-    rules="csc"
-    class="prompts-page w100 h100 ofya"
+    class="prompts-page w100 h100 ofya por"
     :data-archive-source="archive.source.value || undefined">
+    <div class="prompts-page__ambient pen" />
+    <div class="prompts-page__grain pen" />
+
     <el-flex
       rules="csc"
-      class="prompts-page__content w100"
-      :gap="20"
-      :p="mobile ? 0 : 4">
-      <el-grid :gap="8" class="w100">
-        <el-flex rules="rbc" :gap="12" wrap>
-          <el-grid :gap="4">
-            <el-text type="h1" :size="mini ? 24 : 32" :weight="800">
-              {{ t('prompts.title') }}
-            </el-text>
-
-            <el-text type="p" :size="13" color="normal60">
-              {{ t('prompts.description') }}
-            </el-text>
-          </el-grid>
-
-          <el-text
-            v-if="archive.source.value"
-            :size="11"
-            :p="[6, 9]"
-            :radius="100"
-            marker="prim15"
-            class="wsnw">
-            {{ t('prompts.total', { count: archive.totalCount.value }) }}
+      class="prompts-page__content w100 por zi10"
+      :gap="24"
+      :p="contentPadding">
+      <el-flex rules="rbe" class="prompts-page__heading w100" :gap="18" wrap>
+        <el-grid :gap="8" class="fg100">
+          <el-text :size="10" :weight="900" color="prim" class="wsnw">
+            {{ t('prompts.title') }}
           </el-text>
-        </el-flex>
-      </el-grid>
+          <el-text
+            type="h1"
+            :size="mobile ? 38 : 58"
+            :weight="600"
+            class="prompts-page__title">
+            {{ t('prompts.title') }}
+          </el-text>
+          <el-text
+            type="p"
+            :size="mobile ? 12 : 14"
+            color="normal55"
+            class="prompts-page__description">
+            {{ t('prompts.description') }}
+          </el-text>
+        </el-grid>
+
+        <el-text
+          v-if="archive.source.value"
+          :size="11"
+          :weight="800"
+          :p="[7, 10]"
+          :radius="100"
+          marker="surface"
+          color="normal"
+          class="wsnw">
+          {{ t('prompts.total', { count: archive.totalCount.value }) }}
+        </el-text>
+      </el-flex>
 
       <el-grid
-        :cols="mobile ? 1 : tablet ? 2 : 4"
+        :cols="mobile ? 1 : tablet || mini ? 2 : 4"
         :gap="10"
-        class="w100"
+        class="prompts-page__filters w100"
         :p="12"
-        :radius="16"
+        :radius="18"
         :br="1"
-        bc="normal10"
-        bg="normal0">
+        bc="normal15"
+        bg="surface10"
+        bd="b8">
         <el-text-field
           v-model="searchQuery"
           :placeholder="t('prompts.search.placeholder')"
@@ -355,10 +369,11 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
             rules="rcc"
             :gap="4"
             :p="4"
-            :radius="12"
+            :radius="100"
             :br="1"
-            bc="normal10"
-            bg="normal5">
+            bc="normal15"
+            bg="surface10"
+            bd="b8">
             <el-button
               type="fab"
               :label="t('prompts.view.grid')"
@@ -467,17 +482,70 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
         </el-flex>
       </template>
     </el-flex>
-  </el-flex>
+  </div>
 </template>
 
 <style scoped>
 .prompts-page {
-  min-height: 0;
+  min-height: 100%;
+  isolation: isolate;
+  background:
+    linear-gradient(180deg, var(--themeSurface75) 0%, var(--themeSurface90) 28%, var(--themeSurface95) 100%);
+}
+
+.prompts-page__ambient,
+.prompts-page__grain {
+  position: fixed;
+  inset: 0;
+}
+
+.prompts-page__ambient {
+  z-index: 0;
+  background:
+    radial-gradient(circle at 14% 10%, var(--primary15), transparent 34%),
+    radial-gradient(circle at 84% 16%, var(--themePurple15), transparent 38%);
+  opacity: 0.9;
+}
+
+.prompts-page__grain {
+  z-index: 1;
+  opacity: 0.08;
+  background-image:
+    repeating-radial-gradient(circle at 0 0, var(--themeSurface15) 0, var(--themeSurface15) .6px, transparent .7px, transparent 3px);
+  background-size: 5px 5px;
+  mix-blend-mode: soft-light;
 }
 
 .prompts-page__content {
   max-width: 1440px;
+  min-height: 100%;
   margin-inline: auto;
-  padding-bottom: 32px;
+  padding-top: 64px !important;
+  padding-bottom: 72px !important;
+}
+
+.prompts-page__heading {
+  align-items: flex-end !important;
+}
+
+.prompts-page__title {
+  line-height: 0.98 !important;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+
+.prompts-page__description {
+  max-width: 760px;
+}
+
+.prompts-page__filters {
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 640px) {
+  .prompts-page__content {
+    padding-top: 36px !important;
+    padding-bottom: 48px !important;
+  }
 }
 </style>
