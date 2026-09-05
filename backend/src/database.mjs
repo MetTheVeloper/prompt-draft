@@ -202,6 +202,7 @@ export async function upsertPromptDraft(userId, draft) {
         server_updated_at = NOW(),
         revision = prompt_drafts.revision + 1,
         snapshot = EXCLUDED.snapshot
+      WHERE prompt_drafts.deleted_at IS NULL
       RETURNING
         draft_id AS id,
         title,
@@ -221,7 +222,8 @@ export async function upsertPromptDraft(userId, draft) {
     ],
   )
 
-  return mapPromptDraftRow(result.rows[0])
+  const row = result.rows[0]
+  return row ? mapPromptDraftRow(row) : null
 }
 
 export async function getPromptDraftById(userId, id) {
@@ -238,6 +240,7 @@ export async function getPromptDraftById(userId, id) {
       FROM prompt_drafts
       WHERE user_id = $1
         AND draft_id = $2
+        AND deleted_at IS NULL
       LIMIT 1
     `,
     [userId, id],
@@ -249,7 +252,7 @@ export async function getPromptDraftById(userId, id) {
 
 export async function listPromptDrafts({ userId, limit, cursor }) {
   const values = [userId]
-  const conditions = ['user_id = $1']
+  const conditions = ['user_id = $1', 'deleted_at IS NULL']
 
   if (cursor) {
     values.push(cursor.updatedAt, cursor.id)
@@ -338,6 +341,7 @@ export async function listAdminUsers({ limit, cursor, query, role }) {
           SELECT COUNT(*)::int
           FROM prompt_drafts
           WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.deleted_at IS NULL
         ) AS "cloudDraftCount",
         (
           SELECT COUNT(*)::int
@@ -377,6 +381,7 @@ export async function getAdminUserById(id) {
           SELECT COUNT(*)::int
           FROM prompt_drafts
           WHERE prompt_drafts.user_id = users.id
+            AND prompt_drafts.deleted_at IS NULL
         ) AS "cloudDraftCount",
         (
           SELECT COUNT(*)::int
