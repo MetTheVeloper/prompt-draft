@@ -234,6 +234,7 @@ async function requireDraft(query, userId, draftId, lock = false) {
       FROM prompt_drafts
       WHERE user_id = $1
         AND draft_id = $2
+        AND deleted_at IS NULL
       LIMIT 1
       ${lock ? 'FOR UPDATE' : ''}
     `,
