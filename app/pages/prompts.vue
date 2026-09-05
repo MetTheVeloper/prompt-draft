@@ -7,6 +7,7 @@ import type {
 } from '~/types/promptArchive'
 
 const route = useRoute()
+const router = useRouter()
 const { t, locale } = useI18n()
 const { mobile, tablet, mini } = useScreen()
 const auth = useAuth()
@@ -14,7 +15,7 @@ const archive = usePromptArchive()
 
 const searchQuery = ref('')
 const modelFilter = ref<'all' | PromptArchiveModel>('all')
-const tagFilter = ref(normalizeRouteTag(route.query.tag))
+const tagFilter = ref<string[]>(normalizeRouteTags(route.query.tag))
 const sortMode = ref<'newest' | 'oldest'>('newest')
 const viewMode = ref<'grid' | 'list'>('grid')
 const ambientBackground = ref('')
@@ -61,13 +62,10 @@ const sortOptions = computed(() => [
 ])
 
 const tagOptions = computed(() => {
-  return [
-    { value: 'all', label: t('prompts.filters.allTags') },
-    ...archive.availableTags.value.map((tag) => ({
-      value: tag,
-      label: formatTag(tag),
-    })),
-  ]
+  return archive.availableTags.value.map((tag) => ({
+    value: tag,
+    label: formatTag(tag),
+  }))
 })
 
 const visibleItems = computed(() => archive.items.value)
@@ -94,7 +92,7 @@ const remainingCount = computed(() => {
 const hasActiveFilters = computed(() => {
   return Boolean(searchQuery.value.trim()) ||
     modelFilter.value !== 'all' ||
-    tagFilter.value !== 'all' ||
+    tagFilter.value.length > 0 ||
     sortMode.value !== 'newest'
 })
 
@@ -124,10 +122,27 @@ watch(
 )
 
 watch(
+  tagFilter,
+  (tags) => {
+    if (hasDetailQuery.value) return
+
+    const currentTags = normalizeRouteTags(route.query.tag)
+    if (sameTags(currentTags, tags)) return
+
+    void router.replace({
+      query: {
+        ...route.query,
+        tag: tags.length ? [...tags] : undefined,
+      },
+    })
+  },
+)
+
+watch(
   () => route.query.tag,
   (value) => {
-    const nextTag = normalizeRouteTag(value)
-    if (tagFilter.value !== nextTag) tagFilter.value = nextTag
+    const nextTags = normalizeRouteTags(value)
+    if (!sameTags(tagFilter.value, nextTags)) tagFilter.value = nextTags
   },
 )
 
@@ -162,11 +177,24 @@ onBeforeUnmount(() => {
   ambientPreloadVersion += 1
 })
 
-function normalizeRouteTag(value: unknown) {
-  if (typeof value !== 'string') return 'all'
-  const normalized = value.trim().toLowerCase()
-  if (!normalized || normalized.length > 100 || /\s/.test(normalized)) return 'all'
-  return normalized
+function normalizeRouteTags(value: unknown) {
+  const rawValues = Array.isArray(value) ? value : [value]
+  const tags: string[] = []
+  const seen = new Set<string>()
+
+  for (const rawValue of rawValues) {
+    if (typeof rawValue !== 'string') continue
+    const normalized = rawValue.trim().toLowerCase()
+    if (!normalized || normalized.length > 100 || /\s/.test(normalized) || seen.has(normalized)) continue
+    seen.add(normalized)
+    tags.push(normalized)
+  }
+
+  return tags
+}
+
+function sameTags(first: readonly string[], second: readonly string[]) {
+  return first.length === second.length && first.every((tag, index) => tag === second[index])
 }
 
 function currentListQuery(cursor: string | null = null): PromptArchiveListQuery {
@@ -175,7 +203,7 @@ function currentListQuery(cursor: string | null = null): PromptArchiveListQuery 
     cursor,
     search: searchQuery.value.trim(),
     model: modelFilter.value === 'all' ? null : modelFilter.value,
-    tag: tagFilter.value === 'all' ? null : tagFilter.value,
+    tags: [...tagFilter.value],
     sort: sortMode.value,
   }
 }
@@ -197,8 +225,15 @@ async function loadCurrentRoute() {
   await loadFirstPage()
 }
 
-function loadFirstPage() {
-  return archive.loadList(currentListQuery())
+async function loadFirstPage() {
+  const response = await archive.loadList(currentListQuery())
+  if (!response || !tagFilter.value.length) return response
+
+  const available = new Set(response.availableTags)
+  const validTags = tagFilter.value.filter(tag => available.has(tag))
+  if (!sameTags(validTags, tagFilter.value)) tagFilter.value = validTags
+
+  return response
 }
 
 function formatTag(tag: string) {
@@ -248,7 +283,7 @@ function selectAmbientBackground(sources = backgroundSources.value) {
 function clearFilters() {
   searchQuery.value = ''
   modelFilter.value = 'all'
-  tagFilter.value = 'all'
+  tagFilter.value = []
   sortMode.value = 'newest'
 }
 
@@ -378,8 +413,7 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
       class="prompts-page__surface w100 por zi10"
       :gap="24"
       :p="contentPadding"
-      bg="normal15"
-      bd="b8">
+      bg="surface10">
       <el-flex rules="rbe" class="prompts-page__heading w100" :gap="18" wrap>
         <el-grid :gap="8" class="fg100">
           <el-text :size="10" :weight="900" color="prim" class="wsnw">
@@ -439,12 +473,13 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
           :placeholder="t('prompts.filters.model')"
         />
 
-        <el-dropdown
+        <el-multi-select
           v-model="tagFilter"
           :items="tagOptions"
           item-label="label"
           item-value="value"
-          :placeholder="t('prompts.filters.tag')"
+          :placeholder="t('prompts.filters.allTags')"
+          :clear-label="t('prompts.filters.allTags')"
           :menu-options="{ maxHeight: 'min(420px, calc(100vh - 24px))' }"
         />
 
