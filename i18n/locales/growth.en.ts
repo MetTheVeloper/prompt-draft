@@ -1,13 +1,30 @@
 export default {
   growth: {
+    home: {
+      eyebrow: 'CURATED PROMPTS · PERSONALIZED DISCOVERY',
+      title: 'Find a prompt worth building on.',
+      description: 'Explore visual prompts shaped around what you like, open the ones that spark something, and turn inspiration into your next draft.',
+      explore: 'Explore prompts',
+      create: 'Create from scratch',
+      editInterests: 'Tune my feed',
+      scroll: 'Scroll to explore your feed',
+      sectionEyebrow: 'CURATED FOR DISCOVERY',
+      viewPrompt: 'View prompt',
+      previous: 'Previous prompt',
+      next: 'Next prompt',
+      loadingSections: 'Building your discovery feed...',
+      loadError: 'The personalized showcase could not be loaded. You can still explore the Prompt Archive directly.',
+    },
     discovery: {
       onboarding: {
         eyebrow: 'PERSONALIZED DISCOVERY',
         title: 'What do you want to explore?',
         description: 'Choose the visual directions you care about. We will put those discovery paths first on your homepage.',
+        modalDescription: 'Pick the directions that feel closest to your taste. Prompt Draft will use them to tune the hero imagery and put the most relevant showcase sections first.',
         save: 'Save interests',
         saving: 'Saving...',
         error: 'Prompt Draft could not save your interests. Please try again.',
+        loadError: 'Prompt Draft could not load your current interests. Please try again.',
       },
       personalized: {
         eyebrow: 'FOR YOU',
