@@ -141,40 +141,39 @@ function openTelegram() {
     <el-flex
       rules="rbc"
       class="prompt-item__topbar w100"
-      :gap="8"
-      bd="b8"
-      :radius="100"
-      bg="surface10">
+      :gap="8">
       <el-flex rules="rsc" class="fg100" :gap="8">
-        <el-button
-          type="fab"
-          :to="detailUrl"
-          :label="t('prompts.actions.view')"
-          icon="visibility"
-          mode="flat"
-          color="normal"
-          :tooltip="t('prompts.actions.view')"
-        />
-        <el-button
-          v-if="hasTelegram"
-          type="fab"
-          :label="t('prompts.actions.telegram')"
-          icon="send"
-          mode="flat"
-          color="blue"
-          :tooltip="t('prompts.actions.telegram')"
-          @click="openTelegram"
-        />
-        <el-button
-          v-if="canManageArchive"
-          type="fab"
-          :to="manageEditUrl"
-          :label="t('manage.archive.actions.edit')"
-          icon="edit"
-          mode="flat"
-          color="normal"
-          :tooltip="t('manage.archive.actions.edit')"
-        />
+        <el-flex rules="rsc" :gap="0" bd="b8" :radius="100" bg="surface10">
+          <el-button
+            type="fab"
+            :to="detailUrl"
+            :label="t('prompts.actions.view')"
+            icon="visibility"
+            mode="flat"
+            color="normal"
+            :tooltip="t('prompts.actions.view')"
+          />
+          <el-button
+            v-if="hasTelegram"
+            type="fab"
+            :label="t('prompts.actions.telegram')"
+            icon="send"
+            mode="flat"
+            color="blue"
+            :tooltip="t('prompts.actions.telegram')"
+            @click="openTelegram"
+          />
+          <el-button
+            v-if="canManageArchive"
+            type="fab"
+            :to="manageEditUrl"
+            :label="t('manage.archive.actions.edit')"
+            icon="edit"
+            mode="flat"
+            color="normal"
+            :tooltip="t('manage.archive.actions.edit')"
+          />
+        </el-flex>
       </el-flex>
 
       <el-flex
