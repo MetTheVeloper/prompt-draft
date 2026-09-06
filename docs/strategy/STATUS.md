@@ -37,58 +37,109 @@ Phase 21E3 Economy UX & Manage  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21F Growth Metrics        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 
-Milestone 21.5 Rendering & Organic Acquisition -> APPROVED / PLANNED / NEXT
-Phase 2 Domain Expansion                       -> NEXT STRATEGIC PHASE AFTER 21.5
-First domain                                   -> Content Creation
-Founder Domain Expansion research              -> MAY RUN IN PARALLEL WITH 21.5
+Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
+Phase 21.5.1 Hybrid / SSR Architecture          -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+Phase 21.5.2 Docker Production Runtime          -> NEXT AFTER PHASE 1 ACCEPTANCE
+Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
+First domain                                    -> Content Creation
+Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
 ```
 
-## Canonical next milestone
+## Canonical Milestone 21.5 sources
 
-Source of truth:
+Milestone source of truth:
 
 ```text
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 ```
 
+Current Phase 1 implementation record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
+```
+
+Current rendering ADR:
+
+```text
+docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
+```
+
+ADR-001 remains historically correct for Milestone 21D; ADR-002 records the selected Milestone 21.5 hybrid direction.
+
 Milestone 21.5 execution order:
 
 ```text
-Phase 1 — Hybrid / SSR Architecture
-Phase 2 — Docker Production Runtime
-Phase 3 — Cloudflare Production Path
-Phase 4 — SEO Platform & Public Content Architecture
-Phase 5 — Organic Acquisition Launch & Measurement
+Phase 1 — Hybrid / SSR Architecture                       IMPLEMENTED / VERIFY NEXT
+Phase 2 — Docker Production Runtime                       NOT STARTED
+Phase 3 — Cloudflare Production Path                      NOT STARTED
+Phase 4 — SEO Platform & Public Content Architecture      NOT STARTED
+Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
 ```
 
-Primary decision:
+## Phase 1 rendering state
+
+Selected Nuxt baseline on the current branch:
 
 ```text
-Do not rewrite the entire application for SSR.
-Use SSR/prerender/hybrid rendering where public dynamic SEO-sensitive routes benefit.
-Keep interaction-dominant authenticated routes client-oriented where appropriate.
+ssr: true
+hybrid routeRules
+Nuxt/Nitro server runtime required for real hybrid behavior
+independent Node API retained
 ```
 
-Likely public acquisition surfaces:
+First server-rendered/default acquisition surfaces:
 
 ```text
 /
-/discover/*
-future /p/*
-future /creator/*
-/blog
-/blog/*
+/guide
+/discover/**
 ```
 
-Likely client-heavy surfaces:
+Explicit client-rendered surfaces in Phase 1:
 
 ```text
 /create
-/manage/*
-authenticated workspace/editor flows
+/collage
+/vectorizer
+/history
+/dashboard
+/login
+/manage
+/manage/**
+/wizard
+/wizard/**
+/prompts
+/user
 ```
 
-Phase 1 must audit the real route/runtime constraints before global SSR configuration changes.
+`/prompts` and `/user` remain public product surfaces, but their current query-parameter contracts are not being promoted into permanent canonical SEO contracts during Phase 1.
+
+The six `/discover/*` routes now load sanitized public collection data through SSR-aware `useAsyncData()` rather than waiting for `onMounted()`.
+
+Current server data path:
+
+```text
+/discover/<slug>
+  -> Nuxt SSR
+  -> usePublicDiscovery
+  -> NUXT_PUBLIC_API_BASE/api/discover
+  -> sanitized published presentation data
+  -> server HTML + Nuxt hydration payload
+```
+
+Public/protected data boundaries are unchanged.
+
+Phase 1 local acceptance command is now:
+
+```powershell
+pnpm build
+pnpm preview
+```
+
+`pnpm generate` remains present as a compatibility/rollback path from the prior static architecture but is not a valid acceptance test for hybrid request-time rendering.
+
+The Milestone 21D post-generate discovery SEO snapshot machinery has deliberately not been deleted yet. Phase 4 will remove/reduce/retain it only after SSR runtime, Docker and Cloudflare behavior are verified.
 
 ## Milestone 21.5 rationale
 
@@ -150,16 +201,7 @@ search/sort/multi-tag/pagination -> public
 GET /api/archive/:id -> authenticated + email gate
 ```
 
-Until Milestone 21.5 changes the rendering architecture through an accepted ADR and verified implementation, the current production-generation baseline remains:
-
-```text
-ssr: false
-pnpm generate
-static frontend
-independent Node API
-```
-
-Targeted static SEO enrichment remains the accepted bridge for six controlled `/discover/*` routes until Phase 4 audits/replaces/reduces it under the new rendering architecture.
+Rendering changes do not alter backend authorization or make protected Prompt content public.
 
 ## Accepted internal economy state
 
@@ -302,9 +344,7 @@ offline manifest generated: 258 files / 63.2 MB
 6 discovery routes enriched with sanitized SEO snapshots
 ```
 
-`NUXT_PUBLIC_SITE_URL` was empty during this local closure build, so sitemap generation was intentionally skipped while discovery-route enrichment still completed.
-
-Known build warnings are non-blocking for Milestone 21.
+This remains historical Milestone 21 evidence and is not the Milestone 21.5 hybrid-runtime verification mode.
 
 ## Migration state
 
@@ -348,7 +388,8 @@ DO NOT make /api/archive/:id public merely for SEO.
 DO NOT introduce fiat purchase/cash-out/payout before its roadmap phase.
 DO NOT start the full Marketplace before Domain Expansion is evaluated.
 DO NOT expose protected Prompt bodies merely because routes become SSR.
-DO NOT begin Milestone 21.5 by blindly changing ssr:false to true without the Phase 1 audit.
+DO NOT treat every route as SSR-worthy merely because global SSR is enabled.
+DO NOT delete the old static SEO fallback before the new runtime path is verified.
 ```
 
 ## Phase 2 — Domain Expansion after Milestone 21.5
@@ -363,7 +404,7 @@ Strategic order remains:
 
 ```text
 Phase 1 — Growth Foundation     DONE
-Interim Milestone 21.5          NEXT EXECUTION MILESTONE
+Interim Milestone 21.5          IN PROGRESS
 Phase 2 — Domain Expansion      NEXT STRATEGIC PHASE
 Phase 3 — Marketplace Activation
 Phase 4 — AI Enhancement
@@ -404,12 +445,14 @@ docs/strategy/EXECUTION_ROADMAP_V1.md
 docs/strategy/MILESTONE_21_CLOSURE.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
+docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
-Milestone 21.5 planning commit:
+Latest Phase 1 documentation checkpoint before founder-local verification:
 
 ```text
-b8c08a0ee17c5dad755191b0cc5f60f21e1756b8
+eff42ea26bf62cac6947b0a030aa5910e6e9ec0c
 ```
