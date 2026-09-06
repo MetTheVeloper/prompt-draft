@@ -13,6 +13,7 @@ export default defineNuxtConfig({
   runtimeConfig: {
     public: {
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:4000",
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "",
     },
   },
   nitro: {
@@ -61,6 +62,7 @@ export default defineNuxtConfig({
 
   app: {
     head: {
+      title: "Prompt Draft",
       htmlAttrs: {
         lang: "en",
         dir: "ltr",
@@ -81,6 +83,22 @@ export default defineNuxtConfig({
         },
       ],
       meta: [
+        {
+          name: "description",
+          content: "Discover curated visual prompts, build structured drafts, and turn inspiration into reusable prompt workflows with Prompt Draft.",
+        },
+        {
+          property: "og:site_name",
+          content: "Prompt Draft",
+        },
+        {
+          property: "og:type",
+          content: "website",
+        },
+        {
+          name: "twitter:card",
+          content: "summary_large_image",
+        },
         {
           name: "theme-color",
           content: "#000000",
