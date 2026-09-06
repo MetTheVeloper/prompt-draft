@@ -1,6 +1,6 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASE 1 IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **IN PROGRESS / PHASE 1 DONE / PHASE 2 IMPLEMENTED / AWAITING FOUNDER VERIFICATION**
 
 Date: 2026-09-06
 
@@ -25,6 +25,7 @@ Current implementation sources:
 ```text
 docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/STATUS.md
 ```
 
@@ -75,9 +76,9 @@ interaction-heavy authenticated/product-workspace surfaces
   -> client-rendered where SSR adds no meaningful value
 ```
 
-ADR-002 now records the selected hybrid strategy.
+ADR-002 records the selected hybrid strategy.
 
-Phase 1 baseline:
+Current baseline:
 
 ```text
 ssr: true
@@ -109,7 +110,9 @@ Current explicit client-only surfaces:
 /user
 ```
 
-`/prompts` and `/user` are public today, but their query-parameter contracts are not selected as final canonical acquisition URLs. Public Prompt and Creator canonical routing belongs to Phase 4.
+`/user` remains the signed-in personal/account surface. It is not the canonical public SEO profile URL.
+
+Public Prompt and Creator canonical routing belongs to Phase 4.
 
 ---
 
@@ -118,16 +121,16 @@ Current explicit client-only surfaces:
 Status:
 
 ```text
-IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 ```
 
-Canonical implementation record:
+Canonical record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 ```
 
-Implemented work:
+Accepted work:
 
 ```text
 audited current Nuxt rendering assumptions
@@ -140,77 +143,64 @@ moved /discover/[slug] data loading from onMounted to SSR-aware useAsyncData
 preserved sanitized /api/discover as the only discovery SSR data source
 retained old static SEO snapshot path temporarily for rollback/history
 created ADR-002
+founder-local pnpm build + pnpm preview passed
+SSR/public/client/auth smoke passed
 ```
 
-Important runtime consequence:
-
-```text
-hybrid request-time behavior requires Nuxt/Nitro server runtime
-```
-
-Therefore Phase 1 acceptance uses:
-
-```powershell
-pnpm build
-pnpm preview
-```
-
-and not `pnpm generate`.
-
-Phase 1 acceptance gate:
-
-```text
-production-style Nuxt build -> PASS
-SSR server starts -> PASS
-raw /discover HTML contains meaningful route-specific content before JS -> PASS
-sanitized discovery rows are present when API has data -> PASS
-all six discovery routes hydrate correctly -> PASS
-/, /guide smoke correctly -> PASS
-client-only application routes still work -> PASS
-no protected Prompt data appears in public SSR HTML -> PASS
-```
-
-Do not begin Phase 2 until founder-local verification is accepted.
+Phase 1 is closed.
 
 ---
 
 ## 4. Phase 2 — Docker Production Runtime
 
-Status: **NOT STARTED**
-
-Goal:
+Status:
 
 ```text
-run the selected Nuxt/Nitro server and the existing independent Node API as production-like Docker services
+IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
 ```
 
-Required work:
+Canonical record:
 
 ```text
-frontend production Docker target
-long-lived Nuxt/Nitro service
-independent API service retained
-internal Docker networking
-server-internal API origin vs browser-public API origin contract
-health checks / restart behavior
-environment variable contract
-static asset and public media verification
+docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 ```
 
-Expected shape:
+Implemented runtime shape:
 
 ```text
 browser
   -> frontend public origin
 
-Nuxt SSR container
-  -> internal API service over Docker network for server-side data
+Nuxt/Nitro frontend container
+  -> server-internal API origin http://api:4000
 
 browser client requests
-  -> public API origin
+  -> browser-public API origin http://localhost:4000 in local verification
+
+API
+  -> db + translator over Compose network
 ```
 
-Acceptance gate includes healthy frontend/API containers, internal SSR-to-API connectivity and smoke tests for login, create, manage and discovery.
+Implemented work:
+
+```text
+production multi-stage frontend Dockerfile
+long-lived Nitro Node runtime
+frontend service added to compose.yaml
+private NUXT_API_BASE_INTERNAL runtime config
+public NUXT_PUBLIC_API_BASE retained for browser requests
+usePublicDiscovery selects internal origin during SSR
+frontend/API/db/translator health checks
+restart policy
+service dependency health gates
+stack lifecycle pnpm commands
+Docker build-context secret/output exclusions
+local environment contract documentation
+```
+
+Phase 2 acceptance requires healthy containers, internal SSR-to-API connectivity, browser-side API correctness, auth/application smoke and restart/recovery smoke.
+
+Do not begin Phase 3 until founder-local verification is accepted.
 
 ---
 
@@ -267,10 +257,65 @@ internal linking
 locale/indexing policy
 ```
 
+### Creator public profile requirement
+
+Accepted product direction:
+
+```text
+/user
+  -> signed-in personal/account surface
+  -> client-oriented/private product UX
+  -> not the canonical indexable Creator page
+
+/creator/:username
+  -> future public Creator profile surface
+  -> SSR/SEO-capable
+  -> contains intentionally public creator/profile information and public publications only
+```
+
+A user becomes a candidate for search indexing when the account has meaningful public output such as public Drafts, future products or other intentionally published content.
+
+However, having an account or a single trivial public item must **not** automatically guarantee indexability.
+
+Phase 4 must define a deterministic Creator indexability/quality policy to prevent thin-content profile proliferation.
+
+Candidate policy inputs may include:
+
+```text
+amount of meaningful public content
+content completeness/substance
+profile/public identity completeness
+publication quality/visibility state
+spam/abuse/moderation state
+duplicate/low-value content signals
+other evidence of a substantive public Creator surface
+```
+
+Exact thresholds and weighting are deliberately **TBD** until Phase 4 design discussion; do not hard-code arbitrary thresholds earlier.
+
+Important architecture rule:
+
+```text
+Creator eligibility must be a shared server-authoritative policy,
+not a one-off conditional implemented only in the Vue page.
+```
+
+The same eligibility result should drive, where appropriate:
+
+```text
+SSR robots/index metadata
+sitemap inclusion/exclusion
+canonical public Creator behavior
+future search/discovery eligibility
+```
+
+If a public Creator page does not satisfy the accepted indexability policy, the default SEO behavior should be `noindex` and exclusion from indexable sitemap surfaces, while final accessibility/404 behavior is decided in Phase 4.
+
 Security boundary remains absolute:
 
 ```text
 SSR must not make protected Prompt bodies public
+SSR must not expose email, balance, sessions, permissions or private Drafts
 SSR must not bypass account/email authorization
 public SEO projections expose only intentionally public information
 ```
@@ -405,5 +450,5 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Founder-local verification of Phase 1 hybrid SSR implementation.
+Founder-local verification of Phase 2 Docker production runtime.
 ```
