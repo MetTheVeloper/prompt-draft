@@ -64,7 +64,7 @@ async function save() {
       <el-text :size="10" :weight="900" color="prim">
         {{ t('growth.discovery.onboarding.eyebrow') }}
       </el-text>
-      <el-text type="h2" :size="28" :weight="900" style="line-height: 1.05">
+      <el-text type="h2" :size="28" :weight="900" color="normal" style="line-height: 1.05">
         {{ t('growth.discovery.onboarding.title') }}
       </el-text>
       <el-text :size="12" color="normal55" style="max-width: 560px; line-height: 1.55">
@@ -149,10 +149,10 @@ async function save() {
   gap: 10px;
   min-width: 0;
   padding: 13px;
-  border: 1px solid rgba(127, 127, 127, .2);
+  border: 1px solid var(--normalText20);
   border-radius: 14px;
-  background: rgba(127, 127, 127, .06);
-  color: inherit;
+  background: var(--normalText5);
+  color: var(--normalText);
   font: inherit;
   text-align: start;
   cursor: pointer;
@@ -161,12 +161,12 @@ async function save() {
 
 .discovery-preferences-modal__interest:hover {
   transform: translateY(-1px);
-  background: rgba(127, 127, 127, .11);
+  background: var(--normalText10);
 }
 
 .discovery-preferences-modal__interest[data-selected='true'] {
-  border-color: var(--themePrimary);
-  background: color-mix(in srgb, var(--themePrimary) 12%, transparent);
+  border-color: var(--primary);
+  background: var(--primary10);
 }
 
 .discovery-preferences-modal__copy {
@@ -177,12 +177,13 @@ async function save() {
 }
 
 .discovery-preferences-modal__copy strong {
+  color: var(--normalText);
   font-size: 12px;
   line-height: 1.35;
 }
 
 .discovery-preferences-modal__copy small {
-  color: rgba(127, 127, 127, .92);
+  color: var(--normalText55);
   font-size: 10px;
   line-height: 1.45;
 }
