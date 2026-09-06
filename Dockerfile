@@ -2,13 +2,20 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-RUN corepack enable
+COPY package.json pnpm-lock.yaml ./
+RUN corepack enable && pnpm --version
 
 COPY . .
 
-RUN pnpm install --frozen-lockfile
+RUN --mount=type=cache,id=prompt-draft-pnpm-store,target=/pnpm/store \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm install --frozen-lockfile
 
 ENV NODE_ENV=production
+# Nuxt's SSR bundle for this project exceeds Node's ~2 GB default heap while
+# rendering server chunks in the Alpine build container. Keep the larger heap
+# scoped to the builder only; the runtime image does not inherit NODE_OPTIONS.
+ENV NODE_OPTIONS=--max-old-space-size=4096
 RUN pnpm build
 
 FROM node:24-alpine AS runner
