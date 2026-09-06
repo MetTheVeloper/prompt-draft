@@ -1,6 +1,6 @@
-# Milestone 21E1 — Economy Ledger Verification
+# Milestone 21E1 — Economy Ledger & Goin Issuance Verification
 
-Status: **LEDGER CORE LOCALLY VERIFIED / USER ACCEPTED · GOIN ISSUANCE V1 LOCALLY VERIFIED · API BOUNDARY CHECKS REMAIN**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Date: 2026-09-06
 
@@ -10,39 +10,48 @@ Branch:
 feature/growth-foundation
 ```
 
-## Verified locally
+## Scope closed by this document
 
-Migration 022 applied successfully:
+21E1 established and locally verified the spendable Goin foundation without changing lifetime XP/reputation semantics.
+
+Canonical split:
+
+```text
+user_score_events
+  -> achievement/reward provenance + lifetime XP
+
+user_economy_events
+  -> spendable Goin issuance/debit/refund/correction
+```
+
+Spending Goin does not reduce XP.
+
+## Migration 022 — economy ledger foundation
+
+Verified locally:
 
 ```text
 Database schema applied: 022_user_economy_foundation.sql
 ```
 
-Verified schema:
+Created:
 
 ```text
 user_economy_events
-  UUID primary key
-  user_id foreign key
-  non-zero bigint unit_delta
-  optional score-event provenance
-  per-user idempotency unique constraint
-  append-only event metadata/timestamp
+economy_settings
 ```
 
-Verified economy setting seed:
+Verified setting:
 
 ```text
 goin_reference_value_toman = 250
 ```
 
-The value is a simulation/reference value only.
+This remains simulation/reference metadata only.
 
-## Sequential ledger invariant verification
+## Ledger invariant verification
 
-Test account began with zero goin.
-
-Observed sequence:
+Sequential test:
 
 ```text
 credit +500 -> accepted once
@@ -61,55 +70,25 @@ code         -> INSUFFICIENT_GOIN_BALANCE
 balance      -> still 300
 ```
 
-Final read model:
+Direct DB verification showed exactly two rows after the sequential test: the credit and the debit. Retry and rejected overspend created no row.
+
+Parallel-spend test:
 
 ```text
-balance          = 300
-lifetimeIssued   = 500
-lifetimeSpent    = 200
-transactionCount = 2
+starting balance = 300
+parallel debit A = -200
+parallel debit B = -200
+
+one request -> fulfilled
+one request -> INSUFFICIENT_GOIN_BALANCE
+final balance -> 100
 ```
 
-Direct database verification showed exactly two rows: the +500 credit and the -200 debit. The duplicate retry and rejected overspend created no additional rows.
+Direct DB verification showed exactly one parallel debit row.
 
-## Parallel spend verification
+This proves the per-user `SELECT ... FOR UPDATE` serialization prevents concurrent overspend.
 
-Starting balance:
-
-```text
-300 goin
-```
-
-Two independent `-200` debits were launched concurrently with different idempotency keys.
-
-Observed result:
-
-```text
-request A -> fulfilled, balanceAfter=100
-request B -> rejected, INSUFFICIENT_GOIN_BALANCE
-```
-
-The rejected request observed:
-
-```text
-balance  = 100
-required = 200
-```
-
-Final read model:
-
-```text
-balance          = 100
-lifetimeIssued   = 500
-lifetimeSpent    = 400
-transactionCount = 3
-```
-
-Direct database verification showed exactly one parallel debit row.
-
-This proves that the per-user `SELECT ... FOR UPDATE` serialization prevents two concurrent debits from spending the same goin balance.
-
-## Ledger invariants proven
+Verified ledger invariants:
 
 ```text
 append-only authoritative ledger
@@ -121,26 +100,9 @@ parallel spends cannot overspend
 read model remains consistent with ledger
 ```
 
-The ledger/concurrency core is locally verified and founder-accepted.
+## Migration 023 — Goin Issuance V1
 
-## Synthetic test-data cleanup
-
-The local verification events use idempotency keys under:
-
-```text
-verification:21e1:%
-```
-
-They are synthetic and should be removed before deterministic Goin issuance/backfill is evaluated:
-
-```sql
-DELETE FROM user_economy_events
-WHERE idempotency_key LIKE 'verification:21e1:%';
-```
-
-## Founder-approved Goin Issuance V1
-
-Approved supply schedule:
+Founder-approved V1 schedule:
 
 ```text
 account_created       -> 10 goin
@@ -150,116 +112,138 @@ referral_reward       -> 20 goin
 draft_created         -> 0 goin
 ```
 
-Implementation source:
-
-```text
-backend/sql/023_goin_issuance_policy.sql
-docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
-```
-
-## Goin Issuance V1 local verification
-
-Migration 023 applied successfully:
-
-```text
-Database schema applied: 023_goin_issuance_policy.sql
-```
-
-Verified settings:
+Verified seeded settings:
 
 ```text
 goin_issuance_rule_version     = 1
 goin_issue_account_created     = 10
-goin_issue_draft_created       = 0
 goin_issue_profile_email_added = 10
 goin_issue_referral_joined     = 10
 goin_issue_referral_reward     = 20
+goin_issue_draft_created       = 0
 goin_reference_value_toman     = 250
 ```
 
-Historical backfill verification:
+Verified historical backfill:
 
 ```text
-account_created       score_events=10 economy_events=10 goin_issued=100
-draft_created         score_events=6  economy_events=0  goin_issued=0
-profile_email_added   score_events=7  economy_events=7  goin_issued=70
-referral_joined       score_events=5  economy_events=5  goin_issued=50
-referral_reward       score_events=5  economy_events=5  goin_issued=100
+account_created       score=10  economy=10  issued=100
+profile_email_added   score=7   economy=7   issued=70
+referral_joined       score=5   economy=5   issued=50
+referral_reward       score=5   economy=5   issued=100
+draft_created         score=6   economy=0   issued=0
 ```
 
-Total historical issuance from eligible V1 score events:
+Total historical issuance at verification time:
 
 ```text
 320 goin
 ```
 
-Schema was then reapplied. The same summary remained unchanged, proving deterministic rerun safety and no double issuance.
+Schema rerun produced identical counts and totals, proving no double issuance.
 
-### Future eligible score-event bridge
-
-A transaction-scoped verification inserted a new synthetic `account_created` score event.
-
-Observed economy row:
+Future issuance trigger verification:
 
 ```text
-event_type            = score_reward_issued
-unit_delta            = 10
-source_score_event_id = verification:21e:goin:future:account
+new account_created score event
+  -> one score_reward_issued economy event
+  -> +10 goin
+  -> ruleVersion=1
+  -> policyKey=goin_issue_account_created
+  -> backfill=false
 ```
 
-Observed metadata:
-
-```json
-{
-  "origin": "score_event_trigger",
-  "backfill": false,
-  "policyKey": "goin_issue_account_created",
-  "ruleVersion": 1,
-  "scorePoints": 1000,
-  "scoreEventType": "account_created"
-}
-```
-
-The transaction was rolled back after inspection, leaving no test data.
-
-### Draft-created remains XP-only
-
-A transaction-scoped synthetic `draft_created` score event was inserted.
-
-Observed economy result:
+Draft verification:
 
 ```text
-economy_events = 0
+new draft_created score event
+  -> XP row created
+  -> zero economy rows
 ```
 
-The transaction was rolled back.
+The future-event tests were wrapped in transactions and rolled back.
 
-This verifies the V1 anti-farming policy: Draft creation still grants XP through the existing score system but emits zero Goin.
+## API boundary verification
 
-## Issuance invariants proven
+Temporary sessions were created directly for verification and deleted afterward.
+
+Verified:
 
 ```text
-existing eligible score rewards receive deterministic Goin backfill
-migration rerun cannot double issue
-new eligible score events automatically issue Goin
-issuance records exact score provenance
-issuance records policy key + rule version
-future issuance uses server-side policy
-Draft creation remains XP-only at V1 amount 0
-XP and Goin remain semantically separate
+GET /api/economy without auth                     -> 401
+GET /api/economy as active user                   -> 200
+API balance/read model matched authenticated user -> PASS
+GET /api/economy/events?limit=100                 -> 200
+all returned events belonged to caller            -> PASS
+GET /api/economy/events?limit=101                 -> 400
+foreign userId query parameter could not switch ownership -> PASS
+ordinary user GET /api/admin/economy/settings     -> 403
+super_admin GET /api/admin/economy/settings       -> 200
+super_admin no-op PUT current settings             -> 200 / changed=false
 ```
 
-## Remaining verification before 21E2
+No active ordinary `admin` account existed in the local dataset, so that one role-specific runtime check was skipped. The permission contract remains `system.settings.manage`; ordinary admins do not receive that permission in the current role map.
 
-Only API/access-control verification remains for 21E1:
+Observed authenticated ordinary-user state during verification:
 
 ```text
-verify unauthenticated GET /api/economy -> 401
-verify authenticated GET /api/economy returns only caller state
-verify authenticated GET /api/economy/events returns only caller history
-verify economy history pagination query validation
-verify Super-Admin GET/PUT /api/admin/economy/settings
-verify ordinary user/admin cannot mutate economy settings
+balance          = 10
+lifetimeIssued   = 10
+lifetimeSpent    = 0
+transactionCount = 1
 ```
 
-After those checks pass, 21E1 can be closed and 21E can move to the durable Prompt Archive unlock/access primitive without reopening the ledger or issuance architecture.
+Observed Super-Admin settings response:
+
+```text
+goinReferenceValueToman = 250
+issuance.ruleVersion     = 1
+accountCreated           = 10
+profileEmailAdded        = 10
+referralJoined           = 10
+referralReward           = 20
+draftCreated             = 0
+```
+
+Final test output:
+
+```text
+ALL 21E1 API BOUNDARY CHECKS PASSED
+```
+
+Temporary auth sessions were cleaned after the test.
+
+## 21E1 conclusion
+
+21E1 is closed.
+
+The platform now has:
+
+```text
+independent spendable Goin ledger
+safe concurrent debit behavior
+idempotent economic mutation primitive
+Goin state/history APIs
+Super-Admin economy settings contract
+versioned Goin issuance policy
+deterministic historical backfill
+future score-event -> Goin issuance bridge
+XP/Goin semantic separation
+```
+
+## Handoff to 21E2
+
+Next slice:
+
+```text
+024_prompt_archive_unlocks.sql
+user_content_unlocks
+server-authoritative Prompt Archive unlock cost
+GET  /api/economy/unlocks/prompt-archive/:publicId
+POST /api/economy/unlocks/prompt-archive/:publicId
+atomic debit + durable unlock
+single-charge semantics
+insufficient-balance rejection
+```
+
+The frontend must not charge on every Copy click. A successful first unlock creates durable access; later Copy actions reuse that access at zero additional Goin cost.
