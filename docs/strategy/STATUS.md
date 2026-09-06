@@ -30,7 +30,7 @@ Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E Internal Economy      -> LEDGER CORE VERIFIED / GOIN ISSUANCE V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21E Internal Economy      -> LEDGER + GOIN ISSUANCE LOCALLY VERIFIED / API BOUNDARY CHECKS REMAIN
 ```
 
 ## 21A closure
@@ -205,7 +205,7 @@ Implementation handoff:
 docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
 ```
 
-Ledger verification:
+Ledger/issuance verification:
 
 ```text
 docs/strategy/MILESTONE_21E1_VERIFICATION.md
@@ -253,13 +253,6 @@ Migration:
 022_user_economy_foundation.sql
 ```
 
-Creates:
-
-```text
-user_economy_events
-economy_settings
-```
-
 Verified locally:
 
 ```text
@@ -272,21 +265,7 @@ parallel -200/-200 against 300 balance -> one success / one rejection
 read model consistent with ledger
 ```
 
-Backend:
-
-```text
-backend/src/economy.mjs
-backend/src/adminEconomyRoute.mjs
-```
-
-User APIs:
-
-```text
-GET /api/economy
-GET /api/economy/events?limit=<1..100>&cursor=<cursor>
-```
-
-### Goin Issuance V1 — implemented / awaiting local verification
+### Goin Issuance V1 — locally verified
 
 Founder-approved schedule:
 
@@ -304,20 +283,39 @@ Migration:
 023_goin_issuance_policy.sql
 ```
 
-The migration:
+Verified settings:
 
 ```text
-seeds mutable future issuance settings
-seeds goin_issuance_rule_version = 1
-backfills existing eligible score events with frozen V1 amounts
-uses deterministic per-score-event economy idempotency
-installs AFTER INSERT user_score_events -> Goin issuance trigger
-keeps draft_created XP-only in V1
+goin_issuance_rule_version     = 1
+goin_issue_account_created     = 10
+goin_issue_draft_created       = 0
+goin_issue_profile_email_added = 10
+goin_issue_referral_joined     = 10
+goin_issue_referral_reward     = 20
+goin_reference_value_toman     = 250
 ```
 
-Historical backfill deliberately uses frozen V1 literals. Re-running schema after a future settings change cannot retroactively reprice old rewards.
+Verified historical bridge:
 
-Future issuance reads current server-side settings and records the current rule version in economy event metadata.
+```text
+account_created       10 score events -> 10 economy rows -> 100 goin
+profile_email_added    7 score events ->  7 economy rows ->  70 goin
+referral_joined        5 score events ->  5 economy rows ->  50 goin
+referral_reward        5 score events ->  5 economy rows -> 100 goin
+draft_created          6 score events ->  0 economy rows ->   0 goin
+```
+
+Total deterministic historical issuance:
+
+```text
+320 goin
+```
+
+Schema rerun produced the same counts/totals, proving no double issuance.
+
+A synthetic future `account_created` score event produced exactly `10 goin` with trigger metadata containing `policyKey`, `ruleVersion`, score provenance and `backfill=false`; the transaction was rolled back after inspection.
+
+A synthetic future `draft_created` event produced zero economy rows and was rolled back, proving Draft creation remains XP-only in V1.
 
 ### Super-Admin economy settings contract
 
@@ -353,14 +351,18 @@ economy.goin_issuance_policy_updated
 
 No `/manage` UI is added yet. A later Super-Admin economy-management surface must reuse this backend contract.
 
-### Still unresolved before first sink activation
+### Remaining before 21E2
+
+21E1 architecture is now proven at the database/issuance layer. Remaining checks are access-control/API verification:
 
 ```text
-Prompt Archive first-unlock price in goin
-whether first sinks use one price or a small server-side tier set
+unauthenticated /api/economy -> 401
+authenticated /api/economy -> caller-only state
+authenticated /api/economy/events -> caller-only history
+history query validation
+Super-Admin settings GET/PUT
+ordinary user/admin settings denial
 ```
-
-The 250-toman reference value, issuance supply schedule and future unlock price are independent controls.
 
 ### Planned first sink — 21E2
 
@@ -378,7 +380,7 @@ successful debit + durable access -> one transaction
 insufficient balance -> no debit and no unlock
 ```
 
-Do not start 21E2 until migration 023/backfill/future issuance and ownership APIs are locally verified.
+Do not start 21E2 until the remaining 21E1 API boundary checks pass.
 
 ## Migration state
 
