@@ -83,7 +83,7 @@ const listRootAttrs = computed(() => ({
   p: mobile.value ? 7 : 9,
   radius: 14,
   br: 1,
-  bc: 'normal10',
+  bc: hovered.value ? 'normal50' : 'normal15',
   bg: 'surface',
   class: 'prompt-item prompt-item--list w100 ofh',
 }))
@@ -219,8 +219,8 @@ function openTelegram() {
           v-for="tag in visibleTags"
           :key="tag"
           :size="10"
-          marker="surface75"
-          color="white"
+          marker="normal"
+          color="invert"
           :p="[3, 6]"
           :radius="100"
           class="wsnw">
@@ -229,8 +229,8 @@ function openTelegram() {
         <el-text
           v-if="hiddenTagCount"
           :size="10"
-          marker="surface75"
-          color="white"
+          marker="normal"
+          color="invert"
           :p="[3, 6]"
           :radius="100"
           class="wsnw">
@@ -242,7 +242,6 @@ function openTelegram() {
         type="h3"
         :size="mobile ? 38 : 46"
         :weight="650"
-        color="white"
         class="prompt-item__title">
         {{ localizedTitle }}
       </el-text>
@@ -250,24 +249,26 @@ function openTelegram() {
       <el-flex rules="rsc" :gap="12" wrap class="prompt-item__meta w100 fw">
         <el-text
           :size="mobile ? 11 : 12"
-          color="white"
           icon="calendar_month"
-          icon-color="white">
+          icon-color="normal50">
           {{ formattedDate }}
         </el-text>
         <el-text
           v-if="item.imageCount"
           :size="mobile ? 11 : 12"
-          color="white"
           icon="photo_library"
-          icon-color="white">
+          icon-color="normal50">
           {{ t('prompts.card.imageCount', { count: item.imageCount }) }}
         </el-text>
       </el-flex>
     </el-flex>
   </el-flex>
 
-  <el-flex v-else v-bind="listRootAttrs">
+  <el-flex
+    v-else
+    v-bind="listRootAttrs"
+    @mouseenter="hovered = true"
+    @mouseleave="hovered = false">
     <div class="prompt-item__media prompt-item__media--list ofh" :style="listMediaStyle">
       <img
         v-if="primaryImage"
@@ -294,7 +295,8 @@ function openTelegram() {
           :size="9"
           :p="4"
           :radius="100"
-          marker="normal5"
+          marker="normal"
+          color="invert"
           class="wsnw">
           {{ formatTag(tag) }}
         </el-text>
@@ -303,7 +305,8 @@ function openTelegram() {
           :size="9"
           :p="4"
           :radius="100"
-          marker="normal5"
+          marker="normal"
+          color="invert"
           class="wsnw">
           +{{ hiddenTagCount }}
         </el-text>
@@ -357,13 +360,13 @@ function openTelegram() {
   aspect-ratio: 1 / 1;
   isolation: isolate;
   background: var(--themeBackground);
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 18px 55px var(--themeSurface45);
   transition: transform 260ms ease, border-color 220ms ease, box-shadow 260ms ease;
 }
 
 .prompt-item--grid:hover {
   transform: translateY(-4px);
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.28);
+  box-shadow: 0 24px 70px var(--themeSurface55);
 }
 
 .prompt-item--grid :deep(.effect) {
@@ -399,16 +402,16 @@ function openTelegram() {
 .prompt-item__bg-fallback {
   z-index: 1;
   background:
-    radial-gradient(circle at 18% 18%, var(--primary35), transparent 42%),
-    radial-gradient(circle at 82% 22%, var(--themePurple25), transparent 46%),
-    linear-gradient(145deg, var(--themeSurface20), var(--themeBackground));
+    radial-gradient(circle at 20% 15%, var(--primary35), transparent 44%),
+    radial-gradient(circle at 80% 80%, var(--themePurple25), transparent 48%),
+    var(--themeBackground);
 }
 
 .prompt-item__shade {
   z-index: 2;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, transparent 30%, rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.86) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, transparent 54%);
+    linear-gradient(180deg, var(--themeSurface20), var(--themeSurface20) 32%, var(--themeSurface85) 100%),
+    linear-gradient(90deg, var(--themeSurface45), var(--themeSurface0) 72%);
 }
 
 .prompt-item__topbar {
@@ -421,7 +424,7 @@ function openTelegram() {
 
 .prompt-item__media-count {
   flex: 0 0 auto;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+  box-shadow: 0 8px 24px var(--themeSurface45);
 }
 
 .prompt-item__content {
@@ -437,7 +440,7 @@ function openTelegram() {
   line-height: 1.02 !important;
   letter-spacing: -0.035em;
   text-wrap: balance;
-  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.42);
+  text-shadow: 0 6px 24px var(--themeSurface75);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -447,7 +450,7 @@ function openTelegram() {
 .prompt-item__tags,
 .prompt-item__meta {
   opacity: 0.88;
-  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
+  text-shadow: 0 3px 14px var(--themeSurface75);
 }
 
 .prompt-item__media {
