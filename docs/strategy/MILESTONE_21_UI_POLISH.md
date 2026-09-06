@@ -1,6 +1,6 @@
 # Milestone 21 — UI Polish Closure Pass
 
-Status: **IMPLEMENTATION COMPLETE / AWAITING FINAL LOCAL VERIFICATION**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Date: 2026-09-06
 
@@ -12,7 +12,7 @@ feature/growth-foundation
 
 ## Purpose
 
-Milestone 21A–21F are functionally complete and locally verified. This final pass tightens the Growth Foundation presentation without reopening Marketplace scope or changing the accepted XP/Goin, Prompt unlock, analytics, or permission semantics.
+Milestone 21A–21F were already functionally complete and locally verified. This final pass tightened the Growth Foundation presentation without reopening Marketplace scope or changing the accepted XP/Goin, Prompt unlock, analytics, or permission semantics.
 
 ## Implemented polish
 
@@ -39,11 +39,11 @@ weight
 color
 ```
 
-The component uses the shared UI system and renders the Goin symbol together with theme-aware text. It is now the preferred presentation primitive anywhere a user-facing Goin amount is shown.
+The component uses the shared UI system and renders the Goin symbol together with theme-aware text. It is the preferred presentation primitive anywhere a user-facing Goin amount is shown.
 
 ### 2. Private Profile Menu hierarchy
 
-The private Profile Menu now treats spendable Goin as the higher-priority balance signal:
+The private Profile Menu treats spendable Goin as the higher-priority balance signal:
 
 ```text
 username + Goin amount
@@ -51,7 +51,7 @@ XP moved to a separate information row
 redundant Goin Balance row removed
 ```
 
-A full-width orange Goin explainer action was added. It opens through the project-wide modal system rather than introducing a second modal implementation.
+A full-width orange Goin explainer action opens through the project-wide modal system rather than introducing a second modal implementation.
 
 Reusable modal entry point:
 
@@ -79,7 +79,7 @@ The values are read from the authoritative Economy policy rather than duplicated
 
 ### 3. Economy policy metadata for user UX
 
-`GET /api/economy` now returns the authenticated user's private economy state plus the current read-only policy metadata required by the Goin explainer:
+`GET /api/economy` returns the authenticated user's private economy state plus the current read-only policy metadata required by the Goin explainer:
 
 ```text
 reference value
@@ -104,9 +104,13 @@ No migration was added.
 
 ### 4. Growth Manage information density and visualization
 
-`/manage/growth` now uses `useScreen()` instead of a page-local window-width system.
+`/manage/growth` uses `useScreen()` rather than a page-local window-width system.
 
-The root Growth flex alignment was corrected to the intended `rules="ccs"`.
+The root Growth flex alignment was corrected to the intended:
+
+```text
+rules="ccs"
+```
 
 The two tabular data groups now have chart-first visualization while preserving table views:
 
@@ -117,7 +121,7 @@ Popular Prompt tags -> chart by default / table optional
 
 Both visualization panels are placed above numeric summary cards.
 
-Desktop/wide layout now behaves like an effective 8-column summary layout:
+Desktop/wide layout behaves like an effective 8-column summary layout:
 
 ```text
 2 metric groups per row
@@ -142,7 +146,7 @@ successful unlocked feedback text remains theme-normal instead of green
 Copy button state remains independent from the explanatory text color
 ```
 
-No repeated charge behavior changed.
+No repeated-charge behavior changed.
 
 ### 7. Prompt Archive list theme alignment
 
@@ -158,7 +162,7 @@ to:
 surface80
 ```
 
-Prompt card tags now use the theme-aware neutral marker contract:
+Prompt card tags use the theme-aware neutral marker contract:
 
 ```text
 marker="normal"
@@ -172,11 +176,11 @@ default -> normal15
 hover   -> normal50
 ```
 
-Prompt cards were also refactored to follow the Home discovery visual logic for neutral overlays, fallback gradients, and text contrast rather than relying on fixed black/white neutral styling.
+Prompt cards were refactored to follow the Home discovery visual logic for neutral overlays, fallback gradients, and text contrast rather than relying on fixed black/white neutral styling.
 
 ### 8. `/user` Draft-card theme alignment
 
-User Draft cards now use the same theme-aware visual direction as Home discovery and Prompt Archive cards:
+User Draft cards use the same theme-aware visual direction as Home discovery and Prompt Archive cards:
 
 ```text
 theme-aware neutral shade gradients
@@ -192,7 +196,7 @@ The card-level presentation no longer depends on fixed white text over fixed bla
 
 ## Shared presentation decisions
 
-The following are deliberate reusable decisions, not one-off screenshot patches:
+The following are reusable decisions, not one-off screenshot patches:
 
 ```text
 Goin amount -> EconomyGoinAmount
@@ -228,52 +232,74 @@ semantic colors only where they communicate state
 avoid deriving fixed white/black neutral presentation from screenshots
 ```
 
-## Final local verification gate
+## Final local verification — PASS
 
-Pull the completed polish implementation:
+Founder-local final commands included:
 
 ```powershell
-git pull
 docker compose up -d --build api
 pnpm generate
 ```
 
-Then visually smoke-test:
+Final visual smoke was explicitly accepted across:
 
 ```text
 /manage/growth
-  - chart is default for both visualization panels
-  - table toggles still work
-  - desktop/wide shows two 4-card groups per row
-  - laptop/smaller retains the lower-density structure
+  - chart default for both visualization panels
+  - table toggles working
+  - desktop/wide dense two-group layout
+  - responsive lower-density behavior
   - EN/FA
   - Light/Dark
 
 /manage/economy
-  - Prompt unlock summary shows Goin asset + amount
+  - Prompt unlock summary uses Goin asset + amount
 
 Profile Menu
-  - Goin is next to username
-  - XP is a separate row
+  - Goin beside username
+  - XP separate
   - no duplicate Goin balance row
-  - orange Goin explainer button opens the central modal
-  - modal values match current Super-Admin Economy settings
+  - Goin explainer opens through central modal
+  - modal values match current Economy policy
 
 /prompts?id=<published-id>
-  - locked Copy state remains correct
-  - first Copy still charges only once
-  - unlocked feedback text is normal-colored and has a state icon
+  - locked/unlocked Copy state correct
+  - first Copy charges once
+  - repeat access stays free
+  - explanatory feedback remains theme-normal with state icons
 
 /prompts
   - surface80 content layer
   - neutral/invert tags
-  - border hover works
-  - cards remain readable in Light/Dark
+  - theme-aware cards and border hover
+  - Light/Dark readability accepted
 
 /user
-  - Draft cards remain readable in Light/Dark
-  - neutral overlays/markers follow the same theme-aware direction as Home and /prompts
-  - hover and secondary-preview transitions remain intact
+  - Draft cards readable in Light/Dark
+  - theme-aware neutral overlays/markers
+  - hover and secondary-preview transitions intact
 ```
 
-Milestone 21 should be marked fully closed only after this final local build and visual smoke pass is accepted.
+Final `pnpm generate` result:
+
+```text
+PASS
+26 routes prerendered
+.output/public generated
+offline manifest generated: 258 files / 63.2 MB
+6 discovery routes enriched with sanitized SEO snapshots
+```
+
+`NUXT_PUBLIC_SITE_URL` was empty for the final local run, so sitemap generation was skipped by design while static discovery-route enrichment still completed.
+
+Known build warnings were non-blocking and did not prevent successful generation.
+
+## Closure
+
+The final UI polish is accepted. Milestone 21 is fully closed.
+
+Canonical overall closure document:
+
+```text
+docs/strategy/MILESTONE_21_CLOSURE.md
+```
