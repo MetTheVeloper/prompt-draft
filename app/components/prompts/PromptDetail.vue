@@ -165,10 +165,15 @@ const copyFeedback = computed(() => {
   return ''
 })
 
-const copyFeedbackColor = computed(() => {
-  if (copyError.value) return 'red'
-  if (promptUnlock.unlocked.value) return 'green'
-  return 'normal60'
+const copyFeedbackColor = computed(() => copyError.value ? 'red' : 'normal')
+
+const copyFeedbackIcon = computed(() => {
+  if (copyError.value === 'insufficient') return 'account_balance_wallet'
+  if (copyError.value) return 'warning'
+  if (promptUnlock.loading.value && !promptUnlock.state.value) return 'refresh'
+  if (promptUnlock.unlocked.value) return 'lock_open'
+  if (promptUnlock.state.value) return 'lock'
+  return 'info'
 })
 
 function trackPromptView() {
@@ -413,7 +418,6 @@ async function copyPrompt() {
         </el-flex>
       </el-flex>
 
-
       <el-flex
         rules="cbs"
         class="prompt-detail__hero-content w100"
@@ -493,6 +497,8 @@ async function copyPrompt() {
             :size="10"
             :weight="700"
             :color="copyFeedbackColor"
+            :icon="copyFeedbackIcon"
+            :icon-color="copyFeedbackColor"
             class="w100">
             {{ copyFeedback }}
           </el-text>
@@ -599,7 +605,9 @@ async function copyPrompt() {
             <el-text
               :size="10"
               :weight="700"
-              :color="copyFeedbackColor">
+              :color="copyFeedbackColor"
+              :icon="copyFeedbackIcon"
+              :icon-color="copyFeedbackColor">
               {{ copyFeedback }}
             </el-text>
           </el-flex>
@@ -841,7 +849,6 @@ async function copyPrompt() {
   opacity: .72;
   line-height: 1.8;
 }
-
 
 .prompt-detail__prompt-panel {
   overflow: hidden;
