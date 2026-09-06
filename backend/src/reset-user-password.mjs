@@ -1,6 +1,6 @@
 import { randomBytes, scrypt } from 'node:crypto'
 import { promisify } from 'node:util'
-import { closeDatabase, queryDatabase } from './database.mjs'
+import { closeDatabase, queryDatabase, withDatabaseTransaction } from './database.mjs'
 
 const scryptAsync = promisify(scrypt)
 const MAX_PASSWORD_LENGTH = 200
@@ -148,9 +148,8 @@ async function main() {
 
   const passwordHash = await hashPassword(password)
 
-  await queryDatabase('BEGIN')
-  try {
-    await queryDatabase(
+  await withDatabaseTransaction(async (client) => {
+    await client.query(
       `
         UPDATE users
         SET password_hash = $2,
@@ -160,16 +159,11 @@ async function main() {
       [user.id, passwordHash],
     )
 
-    await queryDatabase(
+    await client.query(
       'DELETE FROM auth_sessions WHERE user_id = $1',
       [user.id],
     )
-
-    await queryDatabase('COMMIT')
-  } catch (error) {
-    await queryDatabase('ROLLBACK')
-    throw error
-  }
+  })
 
   const displayIdentifier = user.username ?? user.email ?? identifier.value
   console.log(`Password updated for ${displayIdentifier} (${user.role}, ${user.status}). Existing sessions revoked.`)
