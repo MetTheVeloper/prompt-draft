@@ -42,7 +42,15 @@ export default defineNuxtConfig({
     spaLoadingTemplateLocation: 'body',
   },
   runtimeConfig: {
+    // Private server-only API origin. In Docker this resolves through the
+    // Compose service network (http://api:4000) and is never exposed to clients.
+    apiBaseInternal:
+      process.env.NUXT_API_BASE_INTERNAL ||
+      process.env.NUXT_PUBLIC_API_BASE ||
+      "http://127.0.0.1:4000",
     public: {
+      // Browser-visible API origin. Phase 3 will replace the local default with
+      // the real public API domain while retaining apiBaseInternal for SSR.
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:4000",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "",
     },
