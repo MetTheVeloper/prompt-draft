@@ -30,7 +30,7 @@ Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E Internal Economy      -> 21E1 FOUNDATION IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21E Internal Economy      -> LEDGER CORE VERIFIED / GOIN ISSUANCE V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
 ## 21A closure
@@ -199,10 +199,22 @@ Canonical design:
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 ```
 
-Current implementation handoff:
+Implementation handoff:
 
 ```text
 docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
+```
+
+Ledger verification:
+
+```text
+docs/strategy/MILESTONE_21E1_VERIFICATION.md
+```
+
+Goin issuance V1:
+
+```text
+docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 ```
 
 ### Founder-frozen semantics
@@ -219,40 +231,21 @@ Initial simulation reference value:
 1 goin = 250 toman
 ```
 
-This is explicitly a **simulation/reference value**, not a fiat buy/cash-out/redemption promise.
+This remains a simulation/reference value, not a fiat buy/cash-out/redemption promise.
 
-The persisted setting key is:
-
-```text
-goin_reference_value_toman
-```
-
-It is seeded to `250` by migration and can be changed through a `system.settings.manage`-guarded API. Under the current permission map that is effectively Super-Admin-only.
-
-### XP / goin semantic split
-
-Do **not** make spending reduce current profile XP/reputation.
+### XP / Goin split
 
 ```text
 user_score_events
   -> achievement/reward provenance + lifetime XP
 
 user_economy_events
-  -> spendable goin issuance/debit/refund/correction
+  -> spendable Goin issuance/debit/refund/correction
 ```
 
-This is not a parallel gamification system. The economy ledger has different invariants:
+Spending Goin must not reduce lifetime XP/reputation.
 
-```text
-atomic no-overspend
-spend/debit semantics
-refund/correction semantics
-durable access purchase
-transaction history
-spendable balance
-```
-
-### Implemented 21E1 foundation
+### 21E1 ledger core — locally verified / accepted
 
 Migration:
 
@@ -265,6 +258,18 @@ Creates:
 ```text
 user_economy_events
 economy_settings
+```
+
+Verified locally:
+
+```text
+append-only ledger
+SUM(unit_delta) authoritative balance
+idempotent retry
+negative balance rejected
+failed overspend creates no row
+parallel -200/-200 against 300 balance -> one success / one rejection
+read model consistent with ledger
 ```
 
 Backend:
@@ -281,57 +286,83 @@ GET /api/economy
 GET /api/economy/events?limit=<1..100>&cursor=<cursor>
 ```
 
-Super-Admin settings API:
+### Goin Issuance V1 — implemented / awaiting local verification
+
+Founder-approved schedule:
+
+```text
+account_created       -> 10 goin
+profile_email_added   -> 10 goin
+referral_joined       -> 10 goin
+referral_reward       -> 20 goin
+draft_created         -> 0 goin
+```
+
+Migration:
+
+```text
+023_goin_issuance_policy.sql
+```
+
+The migration:
+
+```text
+seeds mutable future issuance settings
+seeds goin_issuance_rule_version = 1
+backfills existing eligible score events with frozen V1 amounts
+uses deterministic per-score-event economy idempotency
+installs AFTER INSERT user_score_events -> Goin issuance trigger
+keeps draft_created XP-only in V1
+```
+
+Historical backfill deliberately uses frozen V1 literals. Re-running schema after a future settings change cannot retroactively reprice old rewards.
+
+Future issuance reads current server-side settings and records the current rule version in economy event metadata.
+
+### Super-Admin economy settings contract
+
+Protected by:
+
+```text
+system.settings.manage
+```
+
+Routes:
 
 ```text
 GET /api/admin/economy/settings
 PUT /api/admin/economy/settings
 ```
 
-PUT body:
-
-```json
-{
-  "goinReferenceValueToman": 250
-}
-```
-
-Permission:
+Manageable backend controls now include:
 
 ```text
-system.settings.manage
+goin reference value
+account-created issuance
+profile-email issuance
+referred-user issuance
+referrer issuance
+Draft-created issuance
 ```
 
-Changes are recorded in `admin_audit_log` under:
+Changing any issuance amount atomically increments the issuance rule version and creates:
 
 ```text
-economy.goin_reference_value_updated
+economy.goin_issuance_policy_updated
 ```
 
-Authoritative goin balance:
+No `/manage` UI is added yet. A later Super-Admin economy-management surface must reuse this backend contract.
+
+### Still unresolved before first sink activation
 
 ```text
-SUM(user_economy_events.unit_delta)
-```
-
-The internal economy mutation service serializes per-user changes by locking the canonical user row and rejects any debit that would make the goin balance negative.
-
-No user-controlled credit/debit HTTP endpoint exists.
-
-### Still intentionally unresolved before issuance/sink activation
-
-```text
-XP -> goin issuance mapping
-initial goin grant policy
 Prompt Archive first-unlock price in goin
-whether all first sinks use one price or a small server-side tier set
+whether first sinks use one price or a small server-side tier set
 ```
 
-The 250-toman reference value is separate from the first-unlock goin price.
+The 250-toman reference value, issuance supply schedule and future unlock price are independent controls.
 
-### Planned first sink
-
-Best current simulation surface:
+### Planned first sink — 21E2
 
 ```text
 Prompt Archive first full Prompt unlock / meaningful copy access
@@ -347,6 +378,8 @@ successful debit + durable access -> one transaction
 insufficient balance -> no debit and no unlock
 ```
 
+Do not start 21E2 until migration 023/backfill/future issuance and ownership APIs are locally verified.
+
 ## Migration state
 
 Current schema migrations extend through:
@@ -355,12 +388,13 @@ Current schema migrations extend through:
 020_product_analytics_events.sql
 021_user_preferences.sql
 022_user_economy_foundation.sql
+023_goin_issuance_policy.sql
 ```
 
 Next future schema migration:
 
 ```text
-023_*.sql
+024_*.sql
 ```
 
 ## Hard rules
@@ -373,6 +407,9 @@ DO NOT make economy spending reduce lifetime XP/reputation.
 DO NOT add a mutable users.balance as economy source of truth.
 DO NOT trust frontend balance checks.
 DO NOT trust analytics events as economic authority.
+DO NOT convert XP 1:1 into Goin.
+DO NOT issue Goin for draft_created in V1.
+DO NOT retroactively reprice historical Goin after a settings change.
 DO NOT charge on every Copy click.
 DO NOT create paid access without atomic debit + durable unlock state.
 DO NOT expose another user's economy history.
@@ -405,6 +442,8 @@ docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21D_VERIFICATION.md
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
+docs/strategy/MILESTONE_21E1_VERIFICATION.md
+docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
