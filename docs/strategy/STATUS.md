@@ -31,7 +31,8 @@ Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E2 Prompt Unlock        -> BACKEND LOCALLY VERIFIED / FRONTEND IMPLEMENTED / AWAITING UI + BUILD VERIFICATION
+Phase 21E2 Prompt Unlock        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Phase 21E3 Economy UX & Manage  -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
 ## Closed Milestones 21A–21D
@@ -137,45 +138,14 @@ historical backfill correct
 schema rerun does not double issue
 new account_created score event issues +10 Goin
 new draft_created remains XP-only
+GET /api/economy owner-only
+GET /api/economy/events owner-only
+Super-Admin economy settings authorization
 ```
 
-Verified user APIs:
+## 21E2 — DONE
 
-```text
-GET /api/economy
-GET /api/economy/events?limit=<1..100>&cursor=<cursor>
-```
-
-Final API boundary verification:
-
-```text
-unauthenticated economy read -> 401
-authenticated economy read -> own ledger only
-history -> own events only
-foreign userId query cannot switch ownership
-ordinary user economy settings -> 403
-super_admin economy settings -> 200
-super_admin no-op PUT -> changed=false
-```
-
-No active ordinary `admin` account existed in the local verification dataset, so that one runtime role check was skipped; the current permission map still does not grant `system.settings.manage` to ordinary admins.
-
-Super-Admin economy settings backend already manages:
-
-```text
-goin reference value
-account-created issuance
-profile-email issuance
-referred-user issuance
-referrer issuance
-Draft-created issuance
-```
-
-A future `/manage` economy surface must reuse this backend contract rather than create another settings system.
-
-## 21E2 — current phase
-
-Canonical implementation/verification doc:
+Canonical closure:
 
 ```text
 docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
@@ -187,7 +157,7 @@ Migration:
 024_prompt_archive_unlocks.sql
 ```
 
-Introduces:
+Introduced:
 
 ```text
 user_content_unlocks
@@ -195,9 +165,7 @@ goin_prompt_archive_unlock_cost = 5
 goin_sink_rule_version = 1
 ```
 
-The initial 5-Goin cost is a simulation default. At the current reference value it is approximately 1,250 toman of reference value, not a permanent Marketplace fiat price.
-
-Current first sink semantics:
+Accepted first sink semantics:
 
 ```text
 view Prompt detail -> no Goin charge
@@ -212,28 +180,7 @@ GET  /api/economy/unlocks/prompt-archive/:publicId
 POST /api/economy/unlocks/prompt-archive/:publicId
 ```
 
-Requirements:
-
-```text
-authenticated active user
-email completed
-published Prompt Archive item
-```
-
-Atomic unlock contract:
-
-```text
-BEGIN
-lock canonical user row
-check existing durable unlock
-read current sink policy
-check current Goin balance
-insert negative economy event when cost > 0
-insert durable unlock row
-COMMIT
-```
-
-Backend verification is complete and locally accepted:
+Verified backend/runtime properties:
 
 ```text
 anonymous unlock read -> 401
@@ -248,29 +195,112 @@ email-incomplete user -> 403
 missing Prompt public ID -> 404
 ```
 
-The explicit unpublished-row test was skipped because the local Archive dataset had no unpublished item. The backend published-item lookup itself remains `status = 'published'`.
-
-Frontend integration is now implemented in:
+Frontend Copy integration was then locally verified through the real account flow:
 
 ```text
-app/composables/usePromptArchiveUnlock.ts
-app/components/prompts/PromptDetail.vue
-i18n/locales/growth.en.ts
-i18n/locales/growth.fa.ts
+Prompt 501 first Copy -> one prompt_archive_unlock debit of -5
+Prompt 501 first Copy -> one user_content_unlocks row, price_goin=5, ruleVersion=1
+Prompt 501 repeat Copy -> no additional debit and no additional unlock row
+pnpm generate -> PASS
 ```
 
-Frontend Copy contract:
+21E2 is closed as:
 
 ```text
-load Prompt detail -> read unlock state only
-locked Copy -> show current Goin cost -> POST unlock -> clipboard
-already unlocked Copy -> clipboard directly
-insufficient Goin -> no clipboard copy + server balance/required feedback
-successful first unlock -> all later variants/copies of same Prompt are free
-clipboard analytics remains prompt_archive_copy and fires only after copy succeeds
+DONE / LOCALLY VERIFIED / USER ACCEPTED
 ```
 
-The new UI uses normal theme tokens/components and EN/FA strings. It still needs local Dark/Light + EN/FA smoke testing and `pnpm generate` before 21E2 can close.
+## 21E3 — current phase
+
+Canonical implementation/verification doc:
+
+```text
+docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
+```
+
+### Private account Goin UX
+
+New shared state:
+
+```text
+app/types/economy.ts
+app/composables/useEconomy.ts
+```
+
+Updated private account menu:
+
+```text
+app/components/auth/AuthProfileMenu.vue
+```
+
+The account menu now displays XP and spendable Goin as distinct concepts and reads the authoritative balance from `GET /api/economy`.
+
+`usePromptArchiveUnlock` feeds returned economy state into the shared account state so a paid Prompt unlock can update the visible account balance immediately.
+
+The public `/user` profile deliberately does not expose spendable Goin balance.
+
+### Super-Admin Economy Manage
+
+New route:
+
+```text
+/manage/economy
+```
+
+Permission:
+
+```text
+system.settings.manage
+```
+
+Registered through the existing `/manage` section system, so only callers with that permission see/access the section. Current ordinary `admin` permissions do not include it; `super_admin` has `*`.
+
+New client/UI:
+
+```text
+app/composables/useAdminEconomy.ts
+app/pages/manage/economy.vue
+i18n/locales/manage-economy.en.ts
+i18n/locales/manage-economy.fa.ts
+```
+
+The page manages:
+
+```text
+Goin reference value
+account-created issuance
+profile-email issuance
+referred-user issuance
+referrer issuance
+Draft-created issuance
+Prompt Archive first-unlock cost
+```
+
+Updated existing backend route:
+
+```text
+backend/src/adminEconomyRoute.mjs
+```
+
+The same GET/PUT `/api/admin/economy/settings` contract now includes sink policy:
+
+```text
+settings.sinks.ruleVersion
+settings.sinks.promptArchiveUnlock.costGoin
+```
+
+Sink changes:
+
+```text
+increment goin_sink_rule_version
+write economy.goin_sink_policy_updated to admin_audit_log
+apply only to future first unlocks
+preserve historical price_goin + pricing_rule_version
+```
+
+Reference-value changes do not increment issuance/sink policy versions. Issuance changes keep their existing versioned behavior.
+
+21E3 needs local verification of backend rebuild, `pnpm generate`, account-menu balance UX, EN/FA + Dark/Light, Super-Admin Manage access, settings load/save, and authorization boundaries.
 
 ## Migration state
 
@@ -283,6 +313,8 @@ Current migrations extend through:
 023_goin_issuance_policy.sql
 024_prompt_archive_unlocks.sql
 ```
+
+21E3 adds no migration.
 
 Next future schema migration:
 
@@ -306,12 +338,14 @@ DO NOT retroactively reprice historical Goin issuance.
 DO NOT charge Prompt page views.
 DO NOT charge on every Copy click.
 DO NOT create paid access without atomic debit + durable unlock state.
-DO NOT expose another user's economy history or unlock state.
+DO NOT expose another user's economy history, unlock state, or spendable balance.
 DO NOT treat the 250 toman reference value as a buy/cash-out guarantee.
 DO NOT treat the current 5-Goin Prompt unlock as a permanent Marketplace price.
 DO NOT put Prompt text/sellable knowledge into analytics metadata.
 DO NOT make /api/archive/:id public merely for SEO.
 DO NOT introduce fiat purchase/cash-out/payout in 21E.
+DO NOT grant ordinary admin system.settings.manage implicitly.
+DO NOT create a second Economy settings API for /manage.
 DO NOT start the full Marketplace inside Milestone 21.
 ```
 
@@ -331,6 +365,7 @@ docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21E1_VERIFICATION.md
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
+docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
