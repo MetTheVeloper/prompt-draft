@@ -4,7 +4,7 @@ import {
 } from "~/config/authorization";
 
 export type ManageSection = {
-  key: "dashboard" | "users" | "archive" | "economy";
+  key: "dashboard" | "growth" | "users" | "archive" | "economy";
   icon: string;
   route: string;
   requiredPermission: AuthPermission;
@@ -16,6 +16,12 @@ export const MANAGE_SECTIONS: readonly ManageSection[] = [
     icon: "dashboard",
     route: "/manage/dashboard",
     requiredPermission: AUTH_PERMISSIONS.DASHBOARD_VIEW,
+  },
+  {
+    key: "growth",
+    icon: "monitoring",
+    route: "/manage/growth",
+    requiredPermission: AUTH_PERMISSIONS.SYSTEM_METRICS_VIEW,
   },
   {
     key: "users",
