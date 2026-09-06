@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 1 Hybrid / SSR Architecture
 
-Status: **IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-06
 
@@ -28,17 +28,15 @@ This phase intentionally proves the rendering architecture before Docker/runtime
 
 ## 2. Rendering policy selected
 
-Nuxt now uses universal/server rendering by default:
+Nuxt uses universal/server rendering by default:
 
 ```text
 ssr: true
 ```
 
-Explicit client-only route rules preserve the current application behavior for surfaces where SSR is not yet useful or where the current URL contract is not the final acquisition contract.
+Explicit client-only route rules preserve current application behavior for surfaces where SSR is not yet useful or where the current URL contract is not the final acquisition contract.
 
 ### SSR/default public surfaces
-
-Current first SSR-capable acquisition surfaces include:
 
 ```text
 /
@@ -68,8 +66,9 @@ The six controlled discovery routes are the primary Phase 1 proof surface.
 Rationale:
 
 - Create/tools/Manage/Wizard are interaction-heavy application surfaces and do not gain meaningful acquisition value from SSR in this phase.
-- `/prompts` and `/user` are public today, but their query-parameter URL contracts are not the final Prompt/Creator canonical acquisition routes.
-- Public Prompt and Creator SEO routes should be designed deliberately in the later SEO platform phase instead of accidentally turning current query URLs into permanent indexing contracts.
+- `/prompts` and `/user` are not promoted into final canonical acquisition contracts during Phase 1.
+- Public Prompt and public Creator SEO routes are designed deliberately in Phase 4.
+- `/user` remains the signed-in account/profile workspace; a separate public Creator route is the intended future SEO surface.
 
 ---
 
@@ -77,39 +76,35 @@ Rationale:
 
 Before Phase 1, `/discover/[slug]` loaded its sanitized public item collection only inside `onMounted()`.
 
-That meant enabling global SSR alone would still produce server HTML without the discovery collection.
+Phase 1 replaced the mount-only fetch with Nuxt `useAsyncData()` so discovery content participates in the server response.
 
-Phase 1 replaces the mount-only fetch with Nuxt `useAsyncData()`.
-
-Current request path:
+Phase 1 local request path:
 
 ```text
 SSR request
   -> /discover/<slug>
   -> useAsyncData
   -> usePublicDiscovery
-  -> GET <NUXT_PUBLIC_API_BASE>/api/discover
+  -> public API
   -> sanitized published presentation rows
   -> server-rendered HTML + serialized Nuxt payload
   -> client hydration
 ```
 
-The public content boundary is unchanged:
+The public content boundary remains unchanged:
 
 ```text
-NO Prompt body
-NO Prompt variants
+NO protected Prompt body
+NO protected Prompt variants
 NO private Draft data
 NO private account data
 ```
-
-If the discovery API is unavailable, the route does not deliberately fall back to protected/full Prompt content. The page returns the existing failure UX with an empty sanitized collection.
 
 ---
 
 ## 4. Existing SSR-safety audit
 
-The Phase 1 audit found no obvious baseline blocker requiring an application-wide rewrite.
+The audit found no baseline blocker requiring an application-wide rewrite.
 
 Important existing safety characteristics:
 
@@ -122,122 +117,118 @@ useScreen provides server-safe initial values and initializes browser state clie
 browser media/image utilities perform DOM/browser work inside invoked functions rather than as required top-level render initialization
 ```
 
-Therefore the selected architecture is route-policy-first rather than component-rewrite-first.
+Therefore the selected architecture remains route-policy-first rather than component-rewrite-first.
 
 ---
 
 ## 5. Deliberately retained compatibility pieces
 
-Phase 1 does **not** remove the Milestone 21D post-generate SEO snapshot machinery yet.
+Phase 1 did not remove the Milestone 21D post-generate SEO snapshot machinery.
 
 Reason:
 
 ```text
-old static release path must remain understandable/rollback-capable
-  -> hybrid SSR must first be locally verified
-  -> production Node runtime comes in Phase 2
-  -> Cloudflare path comes in Phase 3
-  -> redundant static SEO enrichment is cleaned up only when the new SEO platform is proven
+old static release path remains understandable/rollback-capable
+  -> production Node runtime is proven in Phase 2
+  -> Cloudflare path is proven in Phase 3
+  -> redundant static SEO enrichment is cleaned up in Phase 4
 ```
 
-The current `pnpm generate` command is therefore retained for compatibility, but it is no longer the correct command for validating hybrid SSR behavior.
+`pnpm generate` therefore remains for historical/static compatibility, but it is no longer the acceptance path for hybrid SSR.
 
 ---
 
-## 6. Correct Phase 1 verification mode
+## 6. Verification mode
 
-Hybrid rendering requires the Nuxt/Nitro server runtime.
-
-Founder-local verification should use:
+Founder-local verification used:
 
 ```powershell
 pnpm build
 pnpm preview
 ```
 
-with the independent API available at the configured:
+with the independent API running locally.
 
-```text
-NUXT_PUBLIC_API_BASE
-```
-
-Default local value remains:
-
-```text
-http://127.0.0.1:4000
-```
-
-Do not use `pnpm generate` as the acceptance test for this phase because static generation does not exercise the hybrid server response model.
+`pnpm generate` was intentionally not used as the SSR acceptance test.
 
 ---
 
-## 7. Acceptance checks
+## 7. Founder-local acceptance evidence
 
-### A. Build/runtime
+Accepted on 2026-09-06.
+
+### Build/runtime
 
 ```text
 pnpm build -> PASS
-pnpm preview -> server starts successfully
+pnpm preview -> PASS
 ```
 
-### B. SSR discovery HTML
-
-With the API running, request:
+### Public SSR surfaces
 
 ```text
-/discover/posters-editorial
+/ -> PASS after local preview CORS origin was added
+/guide -> PASS
+/discover/posters-editorial -> PASS
+six controlled /discover/* route model accepted
+raw curl SSR response test -> PASS
 ```
 
-The raw HTTP response / View Source must contain before JavaScript execution:
+The temporary `/` failure was not an SSR architecture failure. Browser-side home discovery requests were blocked because the API CORS allowlist originally included development port `3030` but not preview port `3000`. Local preview origins were added and the home surface then passed.
+
+### Client-heavy/authenticated regression smoke
 
 ```text
-Posters & Editorial
-route-specific SEO metadata
-server-rendered discovery page structure
-sanitized discovery item content when the API has matching published rows
-Nuxt hydration payload
+/create -> PASS
+/manage -> PASS after auth/API smoke
+/prompts -> PASS after auth/API smoke
+/user -> PASS after auth/API smoke
+Wizard -> PASS
+regular-user login -> PASS
+super-admin login -> PASS after correcting the local account password hash via secure CLI reset
 ```
 
-The route must remain interactive after hydration.
+No port/origin restriction exists specifically for `super_admin`; login uses the same password/session path for all roles.
 
-### C. Client-only regression smoke
-
-Confirm these still behave as application/client routes:
+### Security boundary
 
 ```text
-/create
-/manage
-/wizard/<known-wizard-id>
-/prompts
-/user
+protected/private Prompt and account data were not intentionally exposed by SSR
 ```
-
-No SSR migration success should be declared if these regress.
-
-### D. Public SSR smoke
-
-Confirm:
-
-```text
-/
-/guide
-all six /discover/* routes
-```
-
-load without hydration/runtime errors.
 
 ---
 
-## 8. Phase boundary
+## 8. Phase result
 
-Phase 1 is code-complete but remains **AWAITING FOUNDER-LOCAL VERIFICATION** until the real local build/runtime and browser/raw-HTML checks pass.
+Phase 1 is accepted and closed.
 
-After acceptance, Phase 2 begins:
+Selected architecture:
+
+```text
+hybrid Nuxt rendering
+SSR by default for acquisition-capable public routes
+explicit client-only route rules for interaction-heavy/private surfaces
+separate future public Creator/Prompt canonical routes rather than indexing private account/workspace URLs
+```
+
+Successor rendering ADR:
+
+```text
+docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
+```
+
+---
+
+## 9. Next phase
+
+Phase 2:
 
 ```text
 Docker production runtime
-  -> Nuxt SSR Node service
-  -> independent API service
-  -> internal service networking
-  -> production-like local runtime verification
+  -> production Nuxt/Nitro container
+  -> independent API container
+  -> internal SSR-to-API networking
+  -> browser-public API origin kept separate
+  -> health/restart policy
+  -> production-like local verification
 ```
