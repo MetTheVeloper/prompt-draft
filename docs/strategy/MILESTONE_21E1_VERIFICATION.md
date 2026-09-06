@@ -1,6 +1,6 @@
 # Milestone 21E1 — Economy Ledger Verification
 
-Status: **LEDGER CORE LOCALLY VERIFIED / USER ACCEPTED · GOIN ISSUANCE V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION**
+Status: **LEDGER CORE LOCALLY VERIFIED / USER ACCEPTED · GOIN ISSUANCE V1 LOCALLY VERIFIED · API BOUNDARY CHECKS REMAIN**
 
 Date: 2026-09-06
 
@@ -138,9 +138,9 @@ DELETE FROM user_economy_events
 WHERE idempotency_key LIKE 'verification:21e1:%';
 ```
 
-## Founder-approved Goin Issuance V1 handoff
+## Founder-approved Goin Issuance V1
 
-The next supply schedule was explicitly approved:
+Approved supply schedule:
 
 ```text
 account_created       -> 10 goin
@@ -157,19 +157,109 @@ backend/sql/023_goin_issuance_policy.sql
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 ```
 
-The issuance bridge and deterministic historical backfill are implemented but still require local verification before being marked accepted.
+## Goin Issuance V1 local verification
+
+Migration 023 applied successfully:
+
+```text
+Database schema applied: 023_goin_issuance_policy.sql
+```
+
+Verified settings:
+
+```text
+goin_issuance_rule_version     = 1
+goin_issue_account_created     = 10
+goin_issue_draft_created       = 0
+goin_issue_profile_email_added = 10
+goin_issue_referral_joined     = 10
+goin_issue_referral_reward     = 20
+goin_reference_value_toman     = 250
+```
+
+Historical backfill verification:
+
+```text
+account_created       score_events=10 economy_events=10 goin_issued=100
+draft_created         score_events=6  economy_events=0  goin_issued=0
+profile_email_added   score_events=7  economy_events=7  goin_issued=70
+referral_joined       score_events=5  economy_events=5  goin_issued=50
+referral_reward       score_events=5  economy_events=5  goin_issued=100
+```
+
+Total historical issuance from eligible V1 score events:
+
+```text
+320 goin
+```
+
+Schema was then reapplied. The same summary remained unchanged, proving deterministic rerun safety and no double issuance.
+
+### Future eligible score-event bridge
+
+A transaction-scoped verification inserted a new synthetic `account_created` score event.
+
+Observed economy row:
+
+```text
+event_type            = score_reward_issued
+unit_delta            = 10
+source_score_event_id = verification:21e:goin:future:account
+```
+
+Observed metadata:
+
+```json
+{
+  "origin": "score_event_trigger",
+  "backfill": false,
+  "policyKey": "goin_issue_account_created",
+  "ruleVersion": 1,
+  "scorePoints": 1000,
+  "scoreEventType": "account_created"
+}
+```
+
+The transaction was rolled back after inspection, leaving no test data.
+
+### Draft-created remains XP-only
+
+A transaction-scoped synthetic `draft_created` score event was inserted.
+
+Observed economy result:
+
+```text
+economy_events = 0
+```
+
+The transaction was rolled back.
+
+This verifies the V1 anti-farming policy: Draft creation still grants XP through the existing score system but emits zero Goin.
+
+## Issuance invariants proven
+
+```text
+existing eligible score rewards receive deterministic Goin backfill
+migration rerun cannot double issue
+new eligible score events automatically issue Goin
+issuance records exact score provenance
+issuance records policy key + rule version
+future issuance uses server-side policy
+Draft creation remains XP-only at V1 amount 0
+XP and Goin remain semantically separate
+```
 
 ## Remaining verification before 21E2
 
+Only API/access-control verification remains for 21E1:
+
 ```text
-apply migration 023
-verify seeded V1 issuance settings
-verify deterministic historical backfill
-rerun schema and prove no double issuance
-verify draft_created remains XP-only
-verify a newly inserted eligible score event automatically issues Goin
-verify authenticated GET /api/economy and GET /api/economy/events ownership boundary
-verify Super-Admin issuance settings API / authorization
+verify unauthenticated GET /api/economy -> 401
+verify authenticated GET /api/economy returns only caller state
+verify authenticated GET /api/economy/events returns only caller history
+verify economy history pagination query validation
+verify Super-Admin GET/PUT /api/admin/economy/settings
+verify ordinary user/admin cannot mutate economy settings
 ```
 
-After those checks pass, 21E can move to the durable Prompt Archive unlock/access primitive without reopening the ledger architecture.
+After those checks pass, 21E1 can be closed and 21E can move to the durable Prompt Archive unlock/access primitive without reopening the ledger or issuance architecture.
