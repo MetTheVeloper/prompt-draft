@@ -18,6 +18,15 @@ export const ECONOMY_SETTING_KEYS = Object.freeze({
 const DEFAULT_GOIN_REFERENCE_VALUE_TOMAN = 250
 const DEFAULT_PROMPT_ARCHIVE_UNLOCK_COST = 5
 const DEFAULT_SINK_RULE_VERSION = 1
+const DEFAULT_ISSUANCE_RULE_VERSION = 1
+const GOIN_ISSUANCE_RULE_VERSION_KEY = 'goin_issuance_rule_version'
+const GOIN_ISSUANCE_SETTINGS = Object.freeze({
+  accountCreated: Object.freeze({ settingKey: 'goin_issue_account_created', defaultValue: 10 }),
+  profileEmailAdded: Object.freeze({ settingKey: 'goin_issue_profile_email_added', defaultValue: 10 }),
+  referralJoined: Object.freeze({ settingKey: 'goin_issue_referral_joined', defaultValue: 10 }),
+  referralReward: Object.freeze({ settingKey: 'goin_issue_referral_reward', defaultValue: 20 }),
+  draftCreated: Object.freeze({ settingKey: 'goin_issue_draft_created', defaultValue: 0 }),
+})
 const PROMPT_ARCHIVE_RESOURCE_TYPE = 'prompt_archive_item'
 const MAX_EVENT_TYPE_LENGTH = 100
 const MAX_IDEMPOTENCY_KEY_LENGTH = 240
@@ -96,6 +105,38 @@ async function getReferenceValueToman(executor = queryDatabase) {
   )
 
   return value > 0 ? value : DEFAULT_GOIN_REFERENCE_VALUE_TOMAN
+}
+
+async function getGoinIssuancePolicy(executor = queryDatabase) {
+  const values = await Promise.all([
+    getIntegerSetting(
+      GOIN_ISSUANCE_RULE_VERSION_KEY,
+      DEFAULT_ISSUANCE_RULE_VERSION,
+      executor,
+    ),
+    ...Object.values(GOIN_ISSUANCE_SETTINGS).map(definition => getIntegerSetting(
+      definition.settingKey,
+      definition.defaultValue,
+      executor,
+    )),
+  ])
+
+  const [rawRuleVersion, ...rawAmounts] = values
+  const policy = {
+    ruleVersion: Number.isSafeInteger(rawRuleVersion) && rawRuleVersion > 0
+      ? rawRuleVersion
+      : DEFAULT_ISSUANCE_RULE_VERSION,
+  }
+
+  Object.keys(GOIN_ISSUANCE_SETTINGS).forEach((key, index) => {
+    const definition = GOIN_ISSUANCE_SETTINGS[key]
+    const value = rawAmounts[index]
+    policy[key] = Number.isSafeInteger(value) && value >= 0
+      ? value
+      : definition.defaultValue
+  })
+
+  return policy
 }
 
 async function getPromptArchiveUnlockPolicy(executor = queryDatabase) {
@@ -672,9 +713,20 @@ export async function handleEconomyRequest({
 
   try {
     if (isStatePath) {
+      const [economy, configuration] = await Promise.all([
+        getUserEconomyState(user.id),
+        getEconomyConfiguration(),
+      ])
+
       sendJson(response, 200, {
         ok: true,
-        economy: await getUserEconomyState(user.id),
+        economy,
+        policy: {
+          referenceValueToman: configuration.unit.referenceValueToman,
+          referenceValueKind: configuration.unit.referenceValueKind,
+          issuance: configuration.issuance,
+          sinks: configuration.sinks,
+        },
       }, corsHeaders)
       return true
     }
@@ -738,8 +790,9 @@ export async function handleEconomyRequest({
 }
 
 export async function getEconomyConfiguration() {
-  const [referenceValueToman, promptArchiveUnlock] = await Promise.all([
+  const [referenceValueToman, issuance, promptArchiveUnlock] = await Promise.all([
     getReferenceValueToman(),
+    getGoinIssuancePolicy(),
     getPromptArchiveUnlockPolicy(),
   ])
 
@@ -749,10 +802,11 @@ export async function getEconomyConfiguration() {
       referenceValueToman,
       referenceValueKind: 'simulation_reference',
     },
+    issuance,
     sinks: {
+      ruleVersion: promptArchiveUnlock.ruleVersion,
       promptArchiveUnlock: {
         costGoin: promptArchiveUnlock.costGoin,
-        ruleVersion: promptArchiveUnlock.ruleVersion,
       },
     },
   }
