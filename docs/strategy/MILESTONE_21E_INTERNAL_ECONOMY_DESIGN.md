@@ -1,6 +1,6 @@
 # Milestone 21E — Internal Economy Simulation Design
 
-Status: **CAPABILITY AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY**
+Status: **21E1 FOUNDATION IMPLEMENTED / AWAITING LOCAL VERIFICATION**
 
 Date: 2026-09-06
 
@@ -38,9 +38,9 @@ The experiment is:
 
 ```text
 meaningful platform activity
-  -> internal units are earned
-  -> user sees a spendable balance
-  -> user spends units on a real value-extraction action
+  -> goin is earned
+  -> user sees a spendable goin balance
+  -> user spends goin on a real value-extraction action
   -> durable access prevents repeated charging
   -> circulation is measurable
 ```
@@ -62,6 +62,8 @@ Auth/session identity
 Prompt Archive stable public_id
 protected full Prompt detail
 Behavioral Analytics from 21A
+system.settings.manage permission
+admin_audit_log
 ```
 
 ### Existing but semantically insufficient
@@ -70,6 +72,7 @@ Behavioral Analytics from 21A
 XP can explain achievement/reward history
 XP total is SUM(user_score_events.points)
 negative score rows are technically possible
+system.settings.manage existed without a persisted settings service
 ```
 
 But current XP is **not** a safe spendable wallet because:
@@ -87,11 +90,12 @@ spending directly from user_score_events would make displayed XP/reputation fall
 ### Genuinely new
 
 ```text
-spendable internal-unit ledger
+spendable goin ledger
 atomic debit transaction primitive
 spendable balance read model
 durable per-user access/unlock state
-unit transaction history API
+goin transaction history API
+economy-scoped persisted settings
 economy analytics events
 controlled first sink
 ```
@@ -117,7 +121,7 @@ This follows the founder-approved pricing/economy direction:
 
 ### Introduce a dedicated economy ledger, but reuse existing reward provenance
 
-Recommended new authoritative table:
+Authoritative table:
 
 ```text
 user_economy_events
@@ -132,27 +136,77 @@ user_score_events
   -> achievement / reward provenance / lifetime XP
 
 user_economy_events
-  -> spendable unit issuance / debit / refund / correction
+  -> spendable goin issuance / debit / refund / correction
 ```
 
 Economy issuance originating from an XP/reward event should reference that score event rather than invent unrelated reward causes.
 
-## 4. Proposed economy ledger
+## 4. Branded unit and simulation reference value
 
-Next migration:
+Founder-approved internal unit name:
+
+```text
+goin
+```
+
+V1 uses whole-number goin:
+
+```text
+code = goin
+name = goin
+decimals = 0
+```
+
+Initial simulation reference valuation:
+
+```text
+1 goin = 250 toman
+```
+
+This is intentionally classified as:
+
+```text
+simulation_reference
+```
+
+It is **not**:
+
+```text
+a purchase price
+a cash-out rate
+a redemption promise
+a guaranteed real-world value
+a market exchange rate
+```
+
+The value exists so product/economy experiments can communicate approximate scale while actual commercial pricing remains unfrozen.
+
+The reference value is persisted under:
+
+```text
+goin_reference_value_toman
+```
+
+and is configurable by `system.settings.manage`. Under the current role map that means Super-Admin in practice.
+
+A settings update must be audited.
+
+## 5. Economy ledger and settings schema
+
+Migration:
 
 ```text
 022_user_economy_foundation.sql
 ```
 
-Proposed schema:
+Implemented ledger:
 
 ```text
 user_economy_events
   id UUID PK
   user_id UUID FK users(id)
   event_type TEXT
-  unit_delta INTEGER CHECK unit_delta <> 0
+  unit_delta BIGINT CHECK unit_delta <> 0
   source_type TEXT nullable
   source_id TEXT nullable
   source_score_event_id TEXT nullable FK user_score_events(id)
@@ -174,13 +228,26 @@ Do not add:
 ```text
 users.credit_balance
 users.coin_balance
+users.goin_balance
 ```
 
 as a second mutable source of truth.
 
 A cached projection may be introduced later only if scale requires it.
 
-## 5. Issuance policy
+Implemented economy-scoped settings table:
+
+```text
+economy_settings
+  setting_key TEXT PK
+  integer_value BIGINT
+  updated_by UUID nullable FK users(id)
+  updated_at TIMESTAMPTZ
+```
+
+Migration seeds `goin_reference_value_toman = 250` with `ON CONFLICT DO NOTHING`, so re-running schema does not overwrite a Super-Admin change.
+
+## 6. Issuance policy
 
 21E should reuse meaningful reward provenance already implemented rather than create farming loops.
 
@@ -199,34 +266,37 @@ The economy layer should use an explicit server-side issuance registry.
 For each source event define:
 
 ```text
-eligible for units? yes/no
-unit amount
+eligible for goin? yes/no
+goin amount
 rule version
 stable economy idempotency key
 ```
 
 Important:
 
-- existing XP amounts do not automatically become a permanent exchange-rate promise;
+- existing XP amounts do not automatically become a permanent goin conversion promise;
 - V1 may mirror current amounts for the simulation bootstrap, but the mapping must be explicit and versioned;
-- future XP achievements may be reputation-only and issue zero units;
-- meaningless repetitive actions must not become unit sources.
+- future XP achievements may be reputation-only and issue zero goin;
+- meaningless repetitive actions must not become goin sources.
 
 Historical eligible score events can be backfilled deterministically into the economy ledger once the V1 issuance mapping is frozen.
 
-## 6. Atomic no-overspend contract
+The `250 toman` reference value is independent from the issuance mapping.
+
+## 7. Atomic no-overspend contract
 
 A spend must be one database transaction.
 
-Proposed sequence:
+Implemented mutation primitive uses:
 
 ```text
 BEGIN
-  SELECT user row FOR UPDATE
-  calculate current economy SUM(unit_delta)
-  if balance < cost -> reject INSUFFICIENT_UNITS
-  insert deterministic debit event
-  create/update durable access row if action grants access
+  SELECT canonical user row FOR UPDATE
+  check existing economy idempotency key
+  validate score-event provenance when supplied
+  calculate current SUM(unit_delta)
+  if balance + delta < 0 -> reject INSUFFICIENT_GOIN_BALANCE
+  insert append-only economy event
 COMMIT
 ```
 
@@ -242,7 +312,9 @@ same logical purchase/unlock
 
 A duplicate request must return the existing outcome rather than charge twice.
 
-## 7. Durable unlock/access primitive
+No user-controlled HTTP credit/debit endpoint exists in 21E1.
+
+## 8. Durable unlock/access primitive
 
 Founder direction already defines:
 
@@ -276,7 +348,7 @@ prompt_archive_item
 
 This keeps the access primitive extensible to future Template/Workflow products without introducing the full Marketplace schema now.
 
-## 8. First simulation sink
+## 9. First simulation sink
 
 Best existing surface:
 
@@ -293,41 +365,88 @@ Why:
 - durable access semantics are easy to explain;
 - no Product/Order/Payment/Payout schema is required.
 
-However, the exact unit price is intentionally **not frozen in this design document**.
+The exact **goin price of the unlock is still not frozen**.
 
-The first implementation should keep price policy server-authoritative and versioned rather than scatter a literal value across UI/backend.
+Important distinction:
 
-## 9. Suggested backend API shape
+```text
+1 goin = 250 toman reference value
+```
+
+does not mean:
+
+```text
+one Prompt unlock = 1 goin
+```
+
+The first sink price must be a separate server-authoritative and versioned policy.
+
+## 10. Backend APIs
 
 ### Read current economy state
+
+Implemented:
 
 ```text
 GET /api/economy
 ```
 
-Response direction:
+Response includes:
 
-```json
-{
-  "ok": true,
-  "economy": {
-    "balance": 3500,
-    "lifetimeIssued": 4000,
-    "lifetimeSpent": 500,
-    "transactionCount": 6
-  }
-}
+```text
+unit.code = goin
+unit.name = goin
+unit.decimals = 0
+unit.referenceValueToman
+unit.referenceValueKind = simulation_reference
+balance
+lifetimeIssued
+lifetimeSpent
+transactionCount
 ```
 
-Technical naming should remain `units`/`economy` until a branded currency name is approved.
+Requires backend-resolved authenticated identity.
 
 ### Transaction history
 
+Implemented:
+
 ```text
-GET /api/economy/events?limit=<n>&cursor=<cursor>
+GET /api/economy/events?limit=<1..100>&cursor=<cursor>
 ```
 
 User sees only their own ledger.
+
+### Super-Admin reference-value settings
+
+Implemented:
+
+```text
+GET /api/admin/economy/settings
+PUT /api/admin/economy/settings
+```
+
+PUT body:
+
+```json
+{
+  "goinReferenceValueToman": 250
+}
+```
+
+Authorization:
+
+```text
+system.settings.manage
+```
+
+Current role mapping makes this Super-Admin-only in practice.
+
+Actual changes produce admin audit action:
+
+```text
+economy.goin_reference_value_updated
+```
 
 ### Future unlock action
 
@@ -342,13 +461,13 @@ Response must distinguish:
 ```text
 newlyUnlocked
 alreadyUnlocked
-insufficientUnits
+insufficientGoin
 balanceAfter
 ```
 
 Do not make client-side balance checks authoritative.
 
-## 10. Frontend state
+## 11. Frontend state
 
 Do not rename `auth.totalXp` to a currency balance.
 
@@ -361,8 +480,9 @@ useEconomy()
 Responsibilities:
 
 ```text
-balance
+goin balance
 lifetime issued/spent
+reference value display
 refresh
 transaction history
 unlock result application
@@ -372,12 +492,12 @@ Profile UI can eventually show both:
 
 ```text
 XP / reputation
-Units / spendable balance
+goin / spendable balance
 ```
 
 as separate concepts.
 
-## 11. Economy analytics
+## 12. Economy analytics
 
 21A analytics should measure economy behavior but must not be transaction authority.
 
@@ -395,7 +515,7 @@ Authoritative financial-like facts remain database economy/access rows.
 
 Analytics failure must never change debit/access success.
 
-## 12. Privacy / security
+## 13. Privacy / security
 
 Never place in analytics metadata:
 
@@ -411,7 +531,9 @@ Economy APIs require authenticated user identity resolved by backend.
 
 No user-supplied `userId` should determine ledger ownership.
 
-## 13. Inflation / farming controls
+Only `system.settings.manage` may mutate the goin simulation reference value.
+
+## 14. Inflation / farming controls
 
 Carry forward Milestone 15 principles:
 
@@ -433,26 +555,39 @@ reward schedule changes
 
 but should be added only when evidence requires them.
 
-## 14. Implementation slices
+## 15. Implementation slices
 
 ### 21E1 — Economy ledger/read model
+
+Implemented foundation:
 
 ```text
 migration 022
 user_economy_events
+economy_settings
+goin naming
+250-toman simulation reference setting
 backend economy service
 atomic balance calculation
 idempotent credit/debit primitive
 GET /api/economy
 GET /api/economy/events
+Super-Admin economy settings API
+admin audit on setting changes
+```
+
+Still required before 21E1 issuance closure:
+
+```text
 initial deterministic issuance/backfill policy
+local verification of migration/read/settings/no-overspend behavior
 ```
 
 ### 21E2 — Durable access primitive
 
 ```text
 user_content_unlocks
-Prompt Archive unlock policy
+Prompt Archive unlock price policy
 single-charge semantics
 insufficient-balance response
 repeat-access response
@@ -461,7 +596,7 @@ repeat-access response
 ### 21E3 — UI simulation
 
 ```text
-distinct spendable balance UI
+distinct goin balance UI
 unlock CTA/state
 transaction-history surface if useful
 EN/FA copy
@@ -477,28 +612,39 @@ same debit retry cannot double-charge
 parallel spends cannot overspend
 insufficient balance cannot create unlock
 successful debit + unlock atomic
-repeat unlock costs zero additional units
-XP total does not decrease when units are spent
+repeat unlock costs zero additional goin
+XP total does not decrease when goin is spent
 transaction history belongs only to authenticated owner
+Super-Admin can update reference value
+admin/user cannot update reference value under current role map
+setting update is audited
 analytics failure cannot affect transaction outcome
 pnpm generate PASS
 ```
 
-## 15. Open founder-controlled values
+## 16. Founder-controlled values
 
-Infrastructure can proceed without hardcoding these decisions globally, but the controlled sink experiment must freeze them before activation:
+Frozen now:
 
 ```text
-branded internal unit name
-V1 issuance mapping / whether current XP amounts mirror 1:1
-first Prompt unlock price
-whether all Archive items share one experiment price or a small server-side tier set
-UI wording for XP vs units
+internal unit name = goin
+initial simulation reference value = 250 toman per goin
+reference value is Super-Admin configurable
 ```
 
-No fiat conversion rate, payout or investment value should be introduced in Milestone 21.
+Still open:
 
-## 16. Hard rules
+```text
+V1 issuance mapping / whether current XP reward amounts mirror goin 1:1
+initial goin account grant
+first Prompt unlock price in goin
+whether all Archive items share one experiment price or a small server-side tier set
+UI wording for XP vs goin beyond the unit name
+```
+
+No fiat conversion, purchase, payout or investment value is introduced in Milestone 21.
+
+## 17. Hard rules
 
 ```text
 DO NOT make spending reduce lifetime XP/reputation.
@@ -509,16 +655,17 @@ DO NOT create an unlock without its matching debit atomically.
 DO NOT create a debit without durable access atomically when a debit purchases access.
 DO NOT expose one user's economy history to another user.
 DO NOT treat analytics as economy authority.
+DO NOT treat the 250-toman reference value as a buy/cash-out/redemption guarantee.
 DO NOT introduce fiat purchase/cash-out/payout in 21E.
 DO NOT build the full Marketplace Product/Order system inside this simulation.
 ```
 
-## 17. Result of design audit
+## 18. Current result
 
-The existing XP ledger is valuable and should be preserved, but it should remain the achievement/reputation ledger.
+The existing XP ledger remains the achievement/reputation ledger.
 
-A dedicated internal economy ledger is justified because spendable currency has different invariants: debit, atomic balance protection, refunds/corrections and durable access.
+The dedicated goin ledger now exists because spendable currency has different invariants: debit, atomic balance protection, refunds/corrections and durable access.
 
 The two systems remain connected through explicit reward provenance rather than through duplicated ad-hoc gamification rules.
 
-21E is ready for implementation slice 21E1 once the initial issuance mapping is selected/frozen in code.
+21E1 infrastructure is implemented and awaits local verification plus a frozen initial goin issuance mapping before the first paid/unlock simulation is activated.
