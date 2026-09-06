@@ -14,9 +14,33 @@ export interface EconomyState {
   transactionCount: number;
 }
 
+export interface EconomyPolicyIssuance {
+  ruleVersion: number;
+  accountCreated: number;
+  profileEmailAdded: number;
+  referralJoined: number;
+  referralReward: number;
+  draftCreated: number;
+}
+
+export interface EconomyPolicySinks {
+  ruleVersion: number;
+  promptArchiveUnlock: {
+    costGoin: number;
+  };
+}
+
+export interface EconomyPolicy {
+  referenceValueToman: number;
+  referenceValueKind: string;
+  issuance: EconomyPolicyIssuance;
+  sinks: EconomyPolicySinks;
+}
+
 export interface EconomyStateResponse {
   ok: true;
   economy: EconomyState;
+  policy: EconomyPolicy;
 }
 
 export interface EconomyEvent {
