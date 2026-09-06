@@ -334,7 +334,6 @@ export async function handleArchiveRequest({ request, response, url, corsHeaders
     sendJson(response, 405, { ok: false, message: 'Method not allowed' }, { ...corsHeaders, Allow: 'GET' })
     return true
   }
-  if (!(await requireArchiveAccess({ request, response, corsHeaders, sendJson }))) return true
 
   if (url.pathname === '/api/archive') {
     const query = parseListQuery(url)
@@ -349,6 +348,8 @@ export async function handleArchiveRequest({ request, response, url, corsHeaders
     }
     return true
   }
+
+  if (!(await requireArchiveAccess({ request, response, corsHeaders, sendJson }))) return true
 
   const detailMatch = url.pathname.match(/^\/api\/archive\/(\d+)$/)
   if (!detailMatch) {
