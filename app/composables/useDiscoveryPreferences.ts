@@ -8,6 +8,7 @@ export type DiscoveryInterestKey =
 
 export type DiscoveryInterestDefinition = {
   key: DiscoveryInterestKey
+  slug: string
   tags: readonly string[]
   icon: string
   messageKey: string
@@ -17,6 +18,7 @@ export type DiscoveryInterestDefinition = {
 export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   {
     key: 'portrait_photography',
+    slug: 'portrait-photography',
     tags: ['portrait', 'photography', 'avatar'],
     icon: 'portrait',
     messageKey: 'growth.discovery.interests.portraitPhotography.title',
@@ -24,6 +26,7 @@ export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   },
   {
     key: 'three_d_sculpture',
+    slug: '3d-sculpture',
     tags: ['3d', 'sculpture'],
     icon: 'deployed_code',
     messageKey: 'growth.discovery.interests.threeDSculpture.title',
@@ -31,6 +34,7 @@ export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   },
   {
     key: 'illustration_animation',
+    slug: 'illustration-animation',
     tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
     icon: 'brush',
     messageKey: 'growth.discovery.interests.illustrationAnimation.title',
@@ -38,6 +42,7 @@ export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   },
   {
     key: 'poster_editorial',
+    slug: 'posters-editorial',
     tags: ['poster', 'editorial'],
     icon: 'view_quilt',
     messageKey: 'growth.discovery.interests.posterEditorial.title',
@@ -45,6 +50,7 @@ export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   },
   {
     key: 'product_fashion',
+    slug: 'product-fashion',
     tags: ['product', 'fashion'],
     icon: 'styler',
     messageKey: 'growth.discovery.interests.productFashion.title',
@@ -52,6 +58,7 @@ export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
   },
   {
     key: 'cinematic_game_art',
+    slug: 'cinematic-game-art',
     tags: ['cinematic', 'game-style', 'pixel-art'],
     icon: 'movie',
     messageKey: 'growth.discovery.interests.cinematicGameArt.title',
