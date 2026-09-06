@@ -35,10 +35,13 @@ docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 
 ```text
 Phase 1 — Growth Foundation
+Interim Milestone 21.5 — Rendering & Organic Acquisition Foundation
 Phase 2 — Domain Expansion
 Phase 3 — Marketplace Activation
 Phase 4 — AI Enhancement
 ```
+
+The strategic phase order remains unchanged: Domain Expansion is still the next major product phase after Growth Foundation. Milestone 21.5 is an approved execution milestone inserted before Domain Expansion implementation so founder-led domain research can proceed without rushing semantic product decisions, while the already-evidenced rendering/SEO/acquisition gap is addressed.
 
 This order intentionally postpones full marketplace complexity until user behavior/growth evidence improves the design.
 
@@ -56,6 +59,12 @@ First selected program milestone:
 
 ```text
 Milestone 21 — Growth Foundation
+```
+
+Status:
+
+```text
+DONE / LOCALLY VERIFIED / USER ACCEPTED
 ```
 
 ## Goal
@@ -146,7 +155,7 @@ The first personalized homepage should prioritize proving usefulness rather than
 
 ### 21D — Public Discovery & SEO Foundation
 
-Improve public content discoverability while preserving the current static-release invariant.
+Improve public content discoverability while preserving the then-current static-release invariant.
 
 Work may include:
 
@@ -158,18 +167,24 @@ Work may include:
 - public-page content quality;
 - indexing strategy for Prompt Archive and future Creator/Product pages.
 
-Also produce a formal rendering ADR for future scale:
+21D produced the formal rendering ADR:
+
+```text
+docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
+```
+
+Historical 21D decision:
 
 ```text
 current: ssr:false + pnpm generate + independent Node API
 future candidates: prerender / incremental / SSR / hybrid
 ```
 
-Do **not** migrate to SSR merely as speculative infrastructure.
+21D correctly did **not** migrate to SSR speculatively. It used targeted post-generate SEO enrichment for controlled `/discover/*` routes.
 
 ### 21E — Internal Economy Simulation Foundation
 
-Reuse the existing idempotent XP ledger rather than building a parallel reward ledger.
+Reuse the existing idempotent reward provenance where appropriate while keeping spendable economy semantics distinct from lifetime XP.
 
 Required design/extension areas:
 
@@ -179,7 +194,6 @@ Required design/extension areas:
 - non-negative balance/transaction atomicity policy;
 - durable access/unlock state where needed;
 - reward/sink analytics;
-- UI language transition away from XP when approved;
 - separation of spendable economy from Creator reputation/level.
 
 The initial economy is a simulation. No fiat purchase, payout or real-money conversion is required in Milestone 21 unless separately approved.
@@ -190,7 +204,7 @@ Extend the existing Manage workspace rather than creating another analytics admi
 
 Once real product analytics exists, surface a compact decision dashboard for metrics such as:
 
-- active users;
+- active measured audience;
 - referral conversion;
 - public-content usage;
 - copy/share activity;
@@ -199,6 +213,118 @@ Once real product analytics exists, surface a compact decision dashboard for met
 - Creator/Product metrics once those primitives exist.
 
 Only show metrics backed by persisted data.
+
+---
+
+# Interim Milestone 21.5 — Rendering & Organic Acquisition Foundation
+
+Status:
+
+```text
+APPROVED / PLANNED / NEXT EXECUTION MILESTONE
+```
+
+Source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+```
+
+## Why now
+
+Milestone 21 established real Growth measurement and public discovery foundations. The project now has a non-speculative reason to revisit rendering:
+
+```text
+existing public discovery content
+planned Blog acquisition surface
+growing public dynamic routes
+internal Growth analytics
+Google Search Console as external indexing/search evidence
+```
+
+At the same time, Domain Expansion should not be rushed because its required first step is founder-led domain research and semantic modeling.
+
+Therefore:
+
+```text
+founder Domain Expansion research
+  -> may proceed in parallel
+
+engineering execution
+  -> Milestone 21.5 first
+  -> Domain Expansion implementation after
+```
+
+## Rendering principle
+
+Do not define success as converting the whole application to SSR.
+
+Target:
+
+```text
+public + dynamic + SEO-sensitive acquisition surfaces
+  -> SSR / prerender / hybrid according to route semantics
+
+interaction-dominant private/authenticated application surfaces
+  -> client-heavy where appropriate
+```
+
+Likely public acquisition surfaces:
+
+```text
+/
+/discover/*
+future /p/*
+future /creator/*
+/blog
+/blog/*
+```
+
+Likely client-heavy surfaces:
+
+```text
+/create
+/manage/*
+authenticated editor/workspace flows
+```
+
+Exact route policy is determined by audit, not assumption.
+
+## Five execution phases
+
+```text
+Phase 1 — Hybrid / SSR Architecture
+Phase 2 — Docker Production Runtime
+Phase 3 — Cloudflare Production Path
+Phase 4 — SEO Platform & Public Content Architecture
+Phase 5 — Organic Acquisition Launch & Measurement
+```
+
+### Phase 1 — Hybrid / SSR Architecture
+
+Audit current Nuxt/runtime/client-only assumptions, define route-level rendering policy, prove production-style local SSR/hybrid behavior and update/supersede ADR-001 explicitly.
+
+Do not start by blindly changing `ssr:false` to `true`.
+
+### Phase 2 — Docker Production Runtime
+
+Run the selected Nuxt/Nitro production runtime and the independent Node API as production-like Docker services, with correct internal API networking, environment contracts and health checks.
+
+### Phase 3 — Cloudflare Production Path
+
+Use the currently available international-internet/Cloudflare path as the primary production route. Verify real HTTPS domains, origin/proxy headers, cookies/session behavior and safe caching.
+
+Iran/international-disconnection failover is a later resilience layer and is not a prerequisite for the first Cloudflare SSR rollout.
+
+### Phase 4 — SEO Platform & Public Content Architecture
+
+Move from the tactical SPA snapshot bridge to the correct native rendering/SEO architecture where appropriate. Establish reusable dynamic metadata, canonical, sitemap, structured-data and Blog/public content routes while preserving the protected Prompt-body boundary.
+
+### Phase 5 — Organic Acquisition Launch & Measurement
+
+Deploy, configure Google Search Console, submit sitemap, publish the first Blog content batch, instrument acquisition surfaces and measure search evidence alongside internal product analytics.
+
+Milestone 21.5 is complete only when the organic acquisition loop is measurable, not merely when infrastructure builds.
 
 ---
 
@@ -231,6 +357,8 @@ research domain
 Do not build all four domains simultaneously.
 
 Start with Content Creation, validate architecture, then Programming.
+
+Founder research for Content Creation may run during Milestone 21.5, but implementation should still follow the sequence above rather than beginning from premature UI/code assumptions.
 
 ---
 
@@ -335,23 +463,30 @@ AI product-quality judging is not a current priority.
 
 # Cross-phase constraints
 
-## Static build
+## Rendering / release invariant
 
-Until a rendering ADR selects otherwise:
+Until Milestone 21.5 Phase 1 selects and verifies a successor rendering architecture, the existing release invariant remains:
 
 ```text
+ssr: false
 pnpm generate
+static frontend
+independent Node API
 ```
 
-remains a release invariant.
+After an accepted 21.5 rendering ADR, the verified successor build/runtime contract becomes authoritative.
+
+Do not preserve static-generation assumptions merely for historical convenience if the new route policy proves a better hybrid/SSR model, and do not convert private client-heavy surfaces to SSR without a semantic reason.
 
 ## Backend authorization
 
 Backend permission checks remain authoritative.
 
+SSR must never be treated as authorization and must never make protected Prompt bodies public.
+
 ## Data migrations
 
-Applied migrations `001`–`019` are immutable. Next schema migration is `020_*.sql`.
+Applied migrations remain immutable. Current Milestone 21 migrations extend through `024_prompt_archive_unlocks.sql`; next future schema migration is `025_*.sql`.
 
 ## Local verification
 
@@ -367,7 +502,7 @@ Examples:
 - subscriptions;
 - generic pay-per-use Creator products;
 - graph database migration;
-- full SSR migration;
+- whole-application SSR rewrite;
 - final AI model training;
 - final marketplace legal system.
 
@@ -380,6 +515,7 @@ The roadmap is designed to build an increasingly strong company narrative:
 ```text
 Strong technical engine
   -> measurable user growth
+  -> measurable organic acquisition infrastructure
   -> cross-domain proof
   -> Creator/marketplace supply
   -> internal economic circulation
