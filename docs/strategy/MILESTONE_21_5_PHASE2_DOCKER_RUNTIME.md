@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 2 Docker Production Runtime
 
-Status: **IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
-Date: 2026-09-06
+Date: 2026-09-07
 
 Branch:
 
@@ -26,7 +26,7 @@ Phase 2 does not deploy Cloudflare yet. It proves the runtime shape locally befo
 
 ---
 
-## 2. Runtime shape
+## 2. Accepted runtime shape
 
 ```text
 browser
@@ -48,6 +48,12 @@ API
 
 The browser never receives `http://api:4000` as its API origin.
 
+Founder-local DevTools verification confirmed authenticated browser traffic such as:
+
+```text
+GET http://localhost:4000/api/auth/me -> 200
+```
+
 ---
 
 ## 3. Frontend production image
@@ -59,8 +65,8 @@ Builder:
 ```text
 node:24-alpine
 corepack/pnpm
-source copied before install so project postinstall `nuxt prepare` has full Nuxt context
 frozen lockfile install
+Nuxt preparation
 pnpm build
 ```
 
@@ -77,6 +83,23 @@ PORT=3000
 The runtime image is therefore a long-lived Nitro Node server rather than a static generated frontend.
 
 A root `.dockerignore` excludes local build outputs, node_modules, git metadata, backend/docs irrelevant to the frontend image, and local `.env` files/secrets from the frontend Docker build context.
+
+### Build hardening discovered during founder-local verification
+
+The first real Docker builds exposed three environment/build issues that were fixed before acceptance:
+
+```text
+1. packageManager integrity metadata for pnpm@11.6.0 was corrected so Corepack verification succeeds.
+2. Nuxt SSR server bundling exceeded Node's default ~2 GB heap in the Alpine builder.
+   Builder-only NODE_OPTIONS=--max-old-space-size=4096 was added.
+3. Slow/unstable registry access caused pnpm install timeouts.
+   BuildKit pnpm-store caching, longer fetch timeouts, additional retries,
+   lower network concurrency and bounded install retries were added.
+```
+
+The larger Node heap is scoped to the **builder only** and is not inherited by the production runtime image.
+
+The pnpm cache proved effective during restart/rebuild verification: once populated, the later install reused the full dependency set from the BuildKit cache instead of downloading it again.
 
 ---
 
@@ -132,7 +155,7 @@ Host-side `pnpm build` / `pnpm preview` continues to fall back to the public/loc
 
 ## 6. Compose services
 
-`compose.yaml` now includes:
+`compose.yaml` includes:
 
 ```text
 frontend
@@ -178,6 +201,8 @@ existing model volume retained
 ```
 
 No database or translation persistence volume is removed by normal stack startup/restart.
+
+Founder-local acceptance confirmed all four services reach `healthy` state together.
 
 ---
 
@@ -253,105 +278,95 @@ Do not normally put `NUXT_API_BASE_INTERNAL=http://api:4000` into the host `.env
 
 ---
 
-## 10. Founder-local verification gate
+## 10. Founder-local verification evidence
 
-Phase 2 remains unaccepted until all checks pass on the founder machine.
+Phase 2 acceptance is complete.
 
-### A. Build/start
+### A. Build/start — PASS
 
-Stop any host-side `pnpm preview` process using port 3000, then:
-
-```powershell
-git pull
-pnpm stack
-pnpm stack:status
-```
-
-Expected:
+Founder-local production-like build completed successfully:
 
 ```text
-frontend -> running / healthy
-api -> running / healthy
-db -> running / healthy
-translator -> running / healthy
+Nuxt client build -> PASS
+Nuxt SSR server build -> PASS
+Nitro node-server output -> PASS
+frontend image -> BUILT
+api image -> BUILT
 ```
 
-### B. Public SSR path
-
-Open:
+Final healthy stack:
 
 ```text
-http://localhost:3000/
-http://localhost:3000/guide
-http://localhost:3000/discover/posters-editorial
+frontend   -> healthy
+api        -> healthy
+db         -> healthy
+translator -> healthy
 ```
 
-Then:
+### B. Public SSR path — PASS
+
+Verified public routes include:
+
+```text
+/
+/guide
+/discover/posters-editorial
+```
+
+Raw discovery HTML was fetched from the running Nitro frontend with:
 
 ```powershell
 curl.exe -s http://localhost:3000/discover/posters-editorial > phase2-ssr.html
 ```
 
-Expected raw HTML:
+The discovery route remained functional in the Docker runtime, proving the frontend container can resolve and use the internal API service path during SSR.
 
-```text
-route-specific title/content
-server-rendered discovery collection when matching published data exists
-no dependency on browser JavaScript for initial discovery content
-```
+### C. Browser-public API path — PASS
 
-This check is also evidence that the frontend container can reach `http://api:4000` internally during SSR.
-
-### C. Browser-public API path
-
-Verify the homepage showcase/slider and authenticated client requests work from the browser without CORS errors.
-
-Browser network requests should target:
+DevTools verified browser-side authenticated API traffic targets:
 
 ```text
 http://localhost:4000
 ```
 
-and never:
+Example observed request:
 
 ```text
-http://api:4000
+GET http://localhost:4000/api/auth/me -> 200 OK
 ```
 
-### D. Auth/application smoke
+No Docker-internal `http://api:4000` origin was exposed to browser networking.
 
-Verify:
+### D. Auth/application smoke — PASS
 
-```text
-regular login
-super-admin login
-/create
-/prompts
-/user
-/manage
-known Wizard route
-```
+Founder-local smoke covered the previously accepted application routes and authentication behavior, including regular and super-admin access, client-heavy product routes and Wizard behavior.
 
-### E. Restart/recovery smoke
+### E. Restart/recovery smoke — PASS
+
+Founder-local command:
 
 ```powershell
 pnpm stack:restart
-pnpm stack:status
 ```
 
-After containers become healthy again, repeat at least:
+completed a full rebuild/recreate successfully.
+
+After startup, all services returned to healthy state:
 
 ```text
-/
-/discover/posters-editorial
-login/authenticated route
+frontend healthy
+api healthy
+db healthy
+translator healthy
 ```
+
+Application/discovery/login behavior remained correct after restart.
 
 ---
 
 ## 11. Non-goals
 
-Phase 2 does not yet include:
+Phase 2 does not include:
 
 ```text
 Cloudflare Tunnel/domain cutover
@@ -368,10 +383,21 @@ Those remain later milestone phases.
 
 ---
 
-## 12. Next phase after acceptance
+## 12. Acceptance result
+
+```text
+Phase 21.5.2 Docker Production Runtime
+-> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+The verified local production runtime is now the baseline for Phase 3.
+
+---
+
+## 13. Next phase
 
 ```text
 Phase 3 — Cloudflare Production Path
 ```
 
-Phase 3 will map the verified Docker runtime to the real frontend/API origins and validate TLS, forwarded headers, sessions/cookies and cache behavior.
+Phase 3 will map the verified Docker runtime to real frontend/API origins and validate TLS, forwarded host/proto behavior, sessions/cookies, CORS and cache behavior through Cloudflare.
