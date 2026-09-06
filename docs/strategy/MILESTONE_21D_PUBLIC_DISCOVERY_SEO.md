@@ -1,6 +1,6 @@
 # Milestone 21D — Public Discovery & SEO Foundation
 
-Status: **AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY**
+Status: **FIRST SLICES LOCALLY VERIFIED / TARGETED BUILD-TIME SEO SNAPSHOT IMPLEMENTED / AWAITING GENERATED HTML VERIFICATION**
 
 Branch:
 
@@ -22,7 +22,7 @@ docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 
 ## 1. Goal
 
-21D turns the new personalized/public-facing discovery experience into an organic-acquisition foundation without exposing protected prompt knowledge and without speculatively replacing the static frontend architecture.
+21D turns the personalized/public-facing discovery experience into an organic-acquisition foundation without exposing protected prompt knowledge and without speculatively replacing the static frontend architecture.
 
 Primary loop:
 
@@ -34,11 +34,11 @@ search / shared public discovery URL
   -> product use
 ```
 
-21D is not Marketplace activation and is not an SSR migration.
+21D is not Marketplace activation and is not a full SSR migration.
 
 ## 2. Capability classification
 
-### Existing — reuse
+### Existing — reused
 
 ```text
 published Prompt Archive catalog
@@ -54,19 +54,19 @@ multi-tag OR/union semantics
 public homepage preview APIs
 personalized homepage category sections
 static pnpm generate release workflow
-robots.txt
 Global EN/FA i18n
 ```
 
-### Extension
+### Extended
 
 ```text
+public Archive list access
 public URL conventions
 public discovery category routes
 SEO metadata architecture
 robots/sitemap contract
 sanitized public discovery projection
-crawler-oriented public category content
+crawler-oriented build output
 structured data where authoritative fields exist
 ```
 
@@ -77,7 +77,9 @@ formal rendering ADR
 sitemap generation primitive
 canonical SEO helper/contract
 path-based public discovery landing page family
-crawler verification checklist
+sanitized /api/discover feed
+post-generate discovery HTML enrichment
+crawler/generated-output verification contract
 ```
 
 ### Explicitly not part of 21D
@@ -88,77 +90,49 @@ Creator storefront
 payments/payout
 public full prompt body
 public prompt variants
-SSR migration
+full SSR migration
 new referral/economy systems
 ratings/reviews
 multi-owner content
 ```
 
-## 3. Current SEO audit findings
+## 3. Current access/content boundary
 
-Current Nuxt configuration:
+The obsolete test gate that prevented anonymous users from seeing `/prompts` list content has been removed.
 
-```text
-ssr: false
-i18n strategy: no_prefix
-pnpm generate static release
-```
-
-Current `app.head` contains:
+Current intended boundary:
 
 ```text
-favicon/PWA links
-theme-color
-mobile/PWA metadata
-Telegram WebApp script
+Anonymous user
+  -> /prompts list/catalog is visible
+  -> GET /api/archive list is public
+  -> search/filter/multi-tag/pagination are public
+  -> opening full Prompt detail requires existing account + email rule
+  -> GET /api/archive/:id remains protected
 ```
 
-Current gap:
+21D public discovery also uses:
 
 ```text
-no established route-level SEO metadata architecture
-no canonical URL helper
-no documented sitemap pipeline
-robots.txt allows crawling but has no sitemap relationship
+GET /api/discover
 ```
 
-Current application/public URLs:
+This endpoint intentionally returns presentation metadata only.
 
-```text
-/prompts?tag=<tag>&tag=<tag>
-/prompts?id=<publicId>
-/user?un=<username>
-/user?id=<uuid>
-```
-
-These remain backward-compatible application routes but are not ideal future acquisition canonicals.
-
-## 4. Critical content-boundary finding
-
-The Prompt Archive application/API intentionally protects prompt content behind authentication + email completion.
-
-At the same time, the historical static fallback snapshot has contained full prompt content.
-
-21D must not widen this mismatch.
-
-Rule:
-
-> SEO/public discovery must use an intentionally sanitized public presentation projection rather than reusing full protected Prompt detail content.
-
-Public acquisition surfaces may expose:
+Safe public fields include:
 
 ```text
 public id
 localized title
-category/tag relationships
-preview image(s)
+tags
+preview media
 published date
 image count
 Telegram link when intentionally public
 creator attribution only when authoritative
 ```
 
-Do not expose in 21D:
+Still protected:
 
 ```text
 prompt body
@@ -168,11 +142,11 @@ internal moderation fields
 non-public account fields
 ```
 
-## 5. Canonical discovery route family
+The historical `public/data/prompts.json` fallback is not used as the 21D SEO feed.
 
-21C already established six stable product-level discovery concepts.
+## 4. Public discovery route family
 
-21D will give them stable path-based landing URLs:
+Implemented routes:
 
 ```text
 /discover/portrait-photography
@@ -183,9 +157,7 @@ non-public account fields
 /discover/cinematic-game-art
 ```
 
-These route slugs are public acquisition concepts, not database tag replacements.
-
-They map to the existing Archive tag bundles:
+These map to the existing discovery bundles:
 
 ```text
 portrait-photography
@@ -207,123 +179,88 @@ cinematic-game-art
   -> cinematic, game-style, pixel-art
 ```
 
-Each landing route should provide:
+The slugs are public acquisition concepts, not replacements for Archive tags.
 
-```text
-strong category title
-short useful category description
-preview media/published Prompt cards
-CTA into the protected Prompt Archive/product flow
-canonical URL metadata
-Open Graph/Twitter metadata
-```
+## 5. SEO metadata contract
 
-The route must remain useful even if some mapped tags are absent from the current live Archive.
-
-## 6. Public Prompt URL direction
-
-Do not rewrite existing Prompt detail routing inside this first 21D slice.
-
-Current stable identifier already exists:
-
-```text
-prompt_archive_items.public_id
-```
-
-Future canonical Prompt path direction:
-
-```text
-/p/<public-id>
-```
-
-A future slug can be layered only if a real slug field/canonicalization policy is introduced.
-
-Do not derive fragile canonical slugs from mutable localized titles in 21D.
-
-Existing:
-
-```text
-/prompts?id=<publicId>
-```
-
-remains operational until a dedicated public Prompt presentation route is implemented.
-
-## 7. Creator URL direction
-
-Existing public profile resolution is already available by username.
-
-Current route:
-
-```text
-/user?un=<username>
-```
-
-Future public canonical direction may become:
-
-```text
-/creator/<username>
-```
-
-Do not activate that route in the first 21D slice unless the profile body can be rendered as a deliberately public acquisition page without breaking current profile behavior.
-
-21D should preserve compatibility with existing `/user` links.
-
-## 8. SEO metadata contract
-
-Create one reusable public SEO primitive rather than route-specific ad hoc head blocks.
-
-Proposed frontend primitive:
+Reusable frontend primitive:
 
 ```text
 app/composables/usePublicSeo.ts
 ```
 
-Inputs:
+Current responsibilities:
 
 ```text
 title
 description
-canonicalPath
-imageUrl optional
-contentType optional
-noindex optional
-```
-
-Responsibilities:
-
-```text
-title / title template
-description
-canonical link
+canonical link when NUXT_PUBLIC_SITE_URL exists
 og:title
 og:description
 og:url
 og:image when available
 og:type
-twitter:card
-twitter:title
-twitter:description
-twitter:image when available
-robots meta when explicitly noindex
+twitter card/title/description/image
+robots meta
 ```
 
-Canonical absolute URLs require an explicit public site origin.
-
-Proposed runtime/build config:
+Runtime/build origin:
 
 ```text
 NUXT_PUBLIC_SITE_URL
 ```
 
-Do not hardcode a production domain that is not yet canonical.
+No production domain is hardcoded.
 
-If `NUXT_PUBLIC_SITE_URL` is absent in development, the helper may omit absolute canonical/OG URL fields rather than emit localhost as production truth.
+## 6. Sanitized public discovery API
 
-## 9. Sitemap contract
+Implemented endpoint:
 
-21D should introduce a generated sitemap rather than a permanently hand-written list.
+```text
+GET /api/discover?tag=<tag>&tag=<tag>&limit=<1..20>
+```
 
-Initial sitemap content:
+Properties:
+
+```text
+public
+published items only
+repeated tags use OR/union semantics
+max limit 20
+returns presentation metadata only
+never returns Prompt body or variants
+```
+
+Locally verified example:
+
+```text
+GET /api/discover?tag=poster&tag=editorial&limit=10 -> 200
+```
+
+The returned rows included titles, published dates, Telegram URLs, tags, image counts, preview media and nullable owner attribution only.
+
+Guard locally verified:
+
+```text
+GET /api/discover?tag=poster&limit=25 -> 400 Invalid public discovery limit
+```
+
+## 7. Sitemap / robots contract
+
+`pnpm generate` invokes:
+
+```text
+scripts/generate-public-seo.ts
+```
+
+When `NUXT_PUBLIC_SITE_URL` is absent:
+
+```text
+production sitemap is intentionally skipped
+localhost is never emitted as production truth
+```
+
+When configured, sitemap currently contains:
 
 ```text
 /
@@ -335,150 +272,206 @@ Initial sitemap content:
 /discover/cinematic-game-art
 ```
 
-Do not include authenticated/manage/editor routes.
+Locally verified with:
 
-Do not include query-string variants as separate sitemap URLs.
+```text
+NUXT_PUBLIC_SITE_URL=https://example.test
+```
 
-Later, when stable public Prompt and Creator path routes exist, add them from a sanitized public index feed.
+Output correctly contained seven absolute URLs.
 
-Sitemap generation must use `NUXT_PUBLIC_SITE_URL` for absolute URLs.
-
-If no production site URL is configured during local generation, sitemap generation should fail clearly or intentionally skip the production file according to the final implementation decision; it must not silently publish localhost URLs.
-
-## 10. robots.txt contract
-
-Current file:
+Generated robots contract:
 
 ```text
 User-Agent: *
-Disallow:
-```
-
-21D should keep public crawling allowed but explicitly protect obviously non-public application surfaces where crawler traffic is useless.
-
-Candidate rules:
-
-```text
+Allow: /
 Disallow: /manage
 Disallow: /create
 Disallow: /login
-```
-
-Whether `/user` or `/prompts` should be disallowed depends on the public-route migration slice; do not block them blindly while current shared links may depend on them.
-
-When production site URL exists, robots should include:
-
-```text
 Sitemap: <site-origin>/sitemap.xml
 ```
 
-## 11. Structured data
+## 8. Generated-output finding
 
-Only add structured data where the current model has authoritative fields.
-
-Safe first candidates:
+Nuxt successfully emitted all six discovery route files, but the build output explicitly reported:
 
 ```text
-WebSite on the home page
-CollectionPage / ItemList on discovery category pages
+HTML content not prerendered because ssr: false was set.
 ```
 
-Do not claim:
+This proves that route existence + sitemap alone are not enough for crawler-visible discovery content.
+
+ADR-001 therefore selects a targeted intermediate solution rather than switching the whole application to SSR.
+
+## 9. Build-time discovery SEO snapshots
+
+The existing `scripts/generate-public-seo.ts` now enriches each generated `/discover/<slug>/index.html` after Nuxt generation.
+
+For each route it now:
 
 ```text
-Product pricing
-Review/rating
-Offer availability
-Creator commercial identity
+writes route-specific <title>
+writes route-specific meta description
+writes route-specific Open Graph/Twitter fields
+writes canonical + og:url when NUXT_PUBLIC_SITE_URL exists
+uses first sanitized preview image as social image when available
+writes CollectionPage + ItemList JSON-LD
+injects a semantic static discovery snapshot into #__nuxt
 ```
 
-because those primitives do not exist yet.
-
-Prompt Archive entries are not yet commercial `Product` entities.
-
-## 12. Locale policy
-
-Current i18n routing:
+The static snapshot contains only:
 
 ```text
-strategy = no_prefix
+category title/description
+link into the existing filtered Prompt Archive
+up to 12 sanitized /api/discover rows
+title + Persian title
+tags
+preview image
+owner username only when authoritative
+link to /prompts?id=<publicId>
 ```
 
-Therefore the same public URL can render EN or FA client-side.
+It never serializes Prompt body or variants.
 
-21D V1 will not invent separate language URLs and will not emit fake hreflang pairs.
+At runtime the normal Nuxt/Vue SPA mounts into the same root and renders the full interactive page.
 
-A separate locale-routing decision is required before language-specific canonical URLs exist.
+### Build-time data source
 
-SEO copy for static discovery concepts should still exist in both locale files for in-app consistency.
-
-## 13. Implementation slices
-
-### 21D1 — SEO foundation
+The post-generate step reads:
 
 ```text
-NUXT_PUBLIC_SITE_URL runtime/build config
-usePublicSeo composable
-global default title/description/OG site metadata
-safe canonical URL construction
+NUXT_PUBLIC_API_BASE
 ```
 
-### 21D2 — Public discovery routes
+or local development fallback:
 
 ```text
-six /discover/<slug> routes
-reuse existing discovery definitions/tag bundles
-sanitized public showcase data
-strong EN/FA landing copy
-CTA into current product flow
+http://127.0.0.1:4000
 ```
 
-### 21D3 — Sitemap / robots
+It requests only `/api/discover`.
+
+If that feed is temporarily unavailable, route title/description/structured category shell can still be written, while item snapshot fetches log warnings and remain empty rather than falling back to full Prompt content.
+
+## 10. Structured data
+
+21D currently emits only claims supported by the model:
 
 ```text
-generated sitemap.xml
-robots review
-exclude non-public app routes from sitemap
+CollectionPage
+ItemList
+ListItem
 ```
 
-### 21D4 — Structured data
+It does not emit unsupported commercial schema such as:
 
 ```text
-WebSite schema
-CollectionPage/ItemList where valid
+Product price
+Offer
+Review
+Rating
+availability
+creator payout/commercial identity
 ```
 
-### 21D5 — Verification
+## 11. Locale policy
+
+Current routing remains:
 
 ```text
-pnpm generate
-inspect generated HTML/head behavior
-inspect sitemap/robots
-verify public APIs contain no prompt body/variants
-verify canonical URLs with production-like NUXT_PUBLIC_SITE_URL
-verify Dark/Light and EN/FA landing UI
+i18n strategy = no_prefix
 ```
 
-## 14. Rendering limitation / gate
-
-Because `ssr:false` is currently intentional, 21D must distinguish two different wins:
+Therefore:
 
 ```text
-A. correct public URL/metadata/indexing architecture
-B. crawler-visible route-specific rendered HTML body
+one canonical URL per public page
+no fake /en or /fa canonical namespaces
+no fake hreflang pairs
+runtime UI remains EN/FA
+static SEO snapshot uses default English category copy while preserving localized item titles in sanitized content
 ```
 
-A can be implemented now.
+A separate locale-routing decision is required before language-specific SEO URLs exist.
 
-If B is not reliably achieved under the current build mode, do not fake success. Record the generated-output evidence and use it as the trigger to select build-time prerender or hybrid rendering under ADR-001.
+## 12. Public Prompt / Creator URL direction
 
-## 15. First coding gate
+Current operational links remain:
 
-Before changing rendering architecture:
+```text
+/prompts?id=<publicId>
+/user?un=<username>
+```
 
-1. implement the route/metadata/sitemap primitives that are valid under the current invariant;
-2. generate locally;
-3. inspect actual `.output/public` HTML/head output;
-4. decide from evidence whether route-specific discovery pages are sufficiently crawler-visible.
+Future acquisition direction remains compatible with:
 
-No SSR switch is permitted merely to make the implementation easier.
+```text
+/p/<stable-public-id-or-future-slug>
+/creator/<username>
+```
+
+Those routes are not activated merely to complete 21D.
+
+## 13. Local verification already passed
+
+```text
+/api/discover sanitized response -> PASS
+/api/discover max-limit guard -> PASS
+pnpm generate without NUXT_PUBLIC_SITE_URL -> PASS
+sitemap intentional skip without site origin -> PASS
+pnpm generate with example site origin -> PASS
+six discovery routes included in generation -> PASS
+sitemap seven public routes -> PASS
+robots rules + absolute sitemap URL -> PASS
+raw generated HTML body limitation under ssr:false -> CONFIRMED
+```
+
+## 14. Next verification gate
+
+Pull the build-time snapshot implementation and regenerate with the local API running.
+
+Expected post-generate log examples:
+
+```text
+[public-seo] enriched /discover/posters-editorial with <n> sanitized items
+[public-seo] enriched 6 discovery routes ...
+```
+
+Then inspect:
+
+```text
+.output/public/discover/posters-editorial/index.html
+```
+
+It must contain, before JavaScript execution:
+
+```text
+Posters & Editorial · Prompt Draft
+route-specific description
+canonical URL when site origin configured
+data-public-seo-snapshot
+application/ld+json
+sanitized Prompt titles/cards
+no Prompt body
+no variants
+```
+
+The interactive route must still work normally in the browser after client mount.
+
+21D can move toward closure only after this generated-HTML check passes.
+
+## 15. Rendering decision after current evidence
+
+Do not switch global `ssr:false` yet.
+
+The sequence is now:
+
+```text
+static SPA release
+  -> targeted build-time public discovery snapshots
+  -> crawler/Search Console evidence
+  -> only then revisit hybrid/incremental/SSR if needed
+```
+
+This preserves the working deployment model while solving the specific acquisition-surface gap proven by generated output.
