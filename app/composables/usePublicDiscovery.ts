@@ -20,7 +20,9 @@ function uniqueTags(tags: readonly string[]) {
 
 export function usePublicDiscovery() {
   const config = useRuntimeConfig()
-  const apiBase = normalizeApiBase(config.public.apiBase)
+  const apiBase = normalizeApiBase(
+    import.meta.server ? config.apiBaseInternal : config.public.apiBase,
+  )
 
   function endpoint(path: string) {
     const normalizedPath = path.startsWith('/') ? path : `/${path}`
