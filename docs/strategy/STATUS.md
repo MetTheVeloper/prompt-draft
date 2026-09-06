@@ -8,7 +8,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Exact Growth branch baseline:
+Exact inherited Growth baseline:
 
 ```text
 3ef4b0c65777d6f2814744ed0a1fa8a78750a389
@@ -30,78 +30,22 @@ Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E Internal Economy      -> LEDGER + GOIN ISSUANCE LOCALLY VERIFIED / API BOUNDARY CHECKS REMAIN
+Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Phase 21E2 Prompt Unlock        -> BACKEND IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
-## 21A closure
+## Closed Milestones 21A–21D
 
-Behavioral Analytics foundation is complete through:
-
-```text
-backend/sql/020_product_analytics_events.sql
-backend/src/productAnalytics.mjs
-app/composables/useProductAnalytics.ts
-POST /api/analytics/events
-```
-
-Canonical closure:
+Canonical verification docs:
 
 ```text
 docs/strategy/MILESTONE_21A_VERIFICATION.md
-```
-
-## 21B closure
-
-Referral Growth Activation is complete.
-
-Verified loop:
-
-```text
-shareable /login?ref=<username>
-registration prefill
-referral_link_open analytics
-canonical referrals row
-+500 referred-user reward
-+1000 referrer reward
-invited-user count refresh
-pnpm generate PASS
-```
-
-Canonical closure:
-
-```text
 docs/strategy/MILESTONE_21B_VERIFICATION.md
-```
-
-## 21C closure
-
-Preferences/Personalized Discovery is complete.
-
-Verified foundation:
-
-```text
-021_user_preferences.sql
-six current visual interest clusters
-multi-tag interest bundles
-public multi-tag Prompt Archive list filtering
-personalized Home hero media
-reusable global preferences modal
-six immersive personalized Home discovery sections
-Dark/Light + EN/FA polish
-pnpm generate PASS
-```
-
-Canonical closure:
-
-```text
 docs/strategy/MILESTONE_21C_VERIFICATION.md
+docs/strategy/MILESTONE_21D_VERIFICATION.md
 ```
 
-## 21D closure — Public Discovery / SEO
-
-21D is fully closed.
-
-Final public/protected boundary:
+21D final public/protected boundary remains:
 
 ```text
 /prompts list/catalog -> public
@@ -112,86 +56,9 @@ search/sort/multi-tag/pagination -> public
 GET /api/archive/:id -> authenticated + email gate
 ```
 
-Public discovery routes:
+Public discovery routes and static SEO snapshot strategy remain accepted without migrating the whole application away from `ssr:false`.
 
-```text
-/discover/portrait-photography
-/discover/3d-sculpture
-/discover/illustration-animation
-/discover/posters-editorial
-/discover/product-fashion
-/discover/cinematic-game-art
-```
-
-Verified public discovery API:
-
-```text
-GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..24>
-published items only
-OR/union tag semantics
-presentation metadata only
-no prompt body
-no variants
-```
-
-Verified release/SEO behavior:
-
-```text
-pnpm generate PASS
-24 Nuxt routes generated including all six /discover/* routes
-NUXT_PUBLIC_SITE_URL absent -> production sitemap intentionally skipped
-NUXT_PUBLIC_SITE_URL=https://example.test -> sitemap generated for 7 public URLs
-robots gets absolute Sitemap line
-```
-
-Nuxt's `ssr:false` output proved route bodies were SPA shells, so ADR-001's evidence gate was triggered.
-
-Accepted correction:
-
-```text
-keep ssr:false
-keep static deployment
-post-process generated /discover/* HTML only
-use sanitized /api/discover data
-inject route-specific head + semantic body + JSON-LD
-```
-
-Final generated HTML verification:
-
-```text
-Snapshot         True
-JsonLd           True
-Canonical        True
-Title            True
-HasArticles      True
-ProtectedFields  False
-```
-
-Confirmed generated title:
-
-```html
-<title>Posters &amp; Editorial · Prompt Draft</title>
-```
-
-Canonical closure:
-
-```text
-docs/strategy/MILESTONE_21D_VERIFICATION.md
-```
-
-Implementation source:
-
-```text
-docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
-```
-
-Rendering ADR:
-
-```text
-docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
-```
-
-## Current phase — 21E Internal Economy Simulation
+## 21E semantic foundation
 
 Canonical design:
 
@@ -199,41 +66,21 @@ Canonical design:
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 ```
 
-Implementation handoff:
-
-```text
-docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
-```
-
-Ledger/issuance verification:
-
-```text
-docs/strategy/MILESTONE_21E1_VERIFICATION.md
-```
-
-Goin issuance V1:
-
-```text
-docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
-```
-
-### Founder-frozen semantics
-
-Internal spendable unit name:
+Internal spendable unit:
 
 ```text
 goin
 ```
 
-Initial simulation reference value:
+Simulation reference value:
 
 ```text
 1 goin = 250 toman
 ```
 
-This remains a simulation/reference value, not a fiat buy/cash-out/redemption promise.
+This is reference metadata only, not a fiat buy/cash-out/redemption guarantee.
 
-### XP / Goin split
+XP and Goin remain separate:
 
 ```text
 user_score_events
@@ -243,31 +90,36 @@ user_economy_events
   -> spendable Goin issuance/debit/refund/correction
 ```
 
-Spending Goin must not reduce lifetime XP/reputation.
+Spending Goin must never reduce lifetime XP/reputation.
 
-### 21E1 ledger core — locally verified / accepted
+## 21E1 — DONE
 
-Migration:
+Canonical verification:
+
+```text
+docs/strategy/MILESTONE_21E1_VERIFICATION.md
+```
+
+Foundation migrations:
 
 ```text
 022_user_economy_foundation.sql
+023_goin_issuance_policy.sql
 ```
 
-Verified locally:
+Verified ledger properties:
 
 ```text
-append-only ledger
+append-only authoritative ledger
 SUM(unit_delta) authoritative balance
 idempotent retry
 negative balance rejected
 failed overspend creates no row
-parallel -200/-200 against 300 balance -> one success / one rejection
+parallel spends cannot overspend
 read model consistent with ledger
 ```
 
-### Goin Issuance V1 — locally verified
-
-Founder-approved schedule:
+Founder-approved Goin Issuance V1:
 
 ```text
 account_created       -> 10 goin
@@ -277,62 +129,38 @@ referral_reward       -> 20 goin
 draft_created         -> 0 goin
 ```
 
-Migration:
+Verified locally:
 
 ```text
-023_goin_issuance_policy.sql
+policy settings seeded correctly
+historical backfill correct
+schema rerun does not double issue
+new account_created score event issues +10 Goin
+new draft_created remains XP-only
 ```
 
-Verified settings:
+Verified user APIs:
 
 ```text
-goin_issuance_rule_version     = 1
-goin_issue_account_created     = 10
-goin_issue_draft_created       = 0
-goin_issue_profile_email_added = 10
-goin_issue_referral_joined     = 10
-goin_issue_referral_reward     = 20
-goin_reference_value_toman     = 250
+GET /api/economy
+GET /api/economy/events?limit=<1..100>&cursor=<cursor>
 ```
 
-Verified historical bridge:
+Final API boundary verification:
 
 ```text
-account_created       10 score events -> 10 economy rows -> 100 goin
-profile_email_added    7 score events ->  7 economy rows ->  70 goin
-referral_joined        5 score events ->  5 economy rows ->  50 goin
-referral_reward        5 score events ->  5 economy rows -> 100 goin
-draft_created          6 score events ->  0 economy rows ->   0 goin
+unauthenticated economy read -> 401
+authenticated economy read -> own ledger only
+history -> own events only
+foreign userId query cannot switch ownership
+ordinary user economy settings -> 403
+super_admin economy settings -> 200
+super_admin no-op PUT -> changed=false
 ```
 
-Total deterministic historical issuance:
+No active ordinary `admin` account existed in the local verification dataset, so that one runtime role check was skipped; the current permission map still does not grant `system.settings.manage` to ordinary admins.
 
-```text
-320 goin
-```
-
-Schema rerun produced the same counts/totals, proving no double issuance.
-
-A synthetic future `account_created` score event produced exactly `10 goin` with trigger metadata containing `policyKey`, `ruleVersion`, score provenance and `backfill=false`; the transaction was rolled back after inspection.
-
-A synthetic future `draft_created` event produced zero economy rows and was rolled back, proving Draft creation remains XP-only in V1.
-
-### Super-Admin economy settings contract
-
-Protected by:
-
-```text
-system.settings.manage
-```
-
-Routes:
-
-```text
-GET /api/admin/economy/settings
-PUT /api/admin/economy/settings
-```
-
-Manageable backend controls now include:
+Super-Admin economy settings backend already manages:
 
 ```text
 goin reference value
@@ -343,60 +171,98 @@ referrer issuance
 Draft-created issuance
 ```
 
-Changing any issuance amount atomically increments the issuance rule version and creates:
+A future `/manage` economy surface must reuse this backend contract rather than create another settings system.
+
+## 21E2 — current phase
+
+Canonical implementation doc:
 
 ```text
-economy.goin_issuance_policy_updated
+docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
 ```
 
-No `/manage` UI is added yet. A later Super-Admin economy-management surface must reuse this backend contract.
-
-### Remaining before 21E2
-
-21E1 architecture is now proven at the database/issuance layer. Remaining checks are access-control/API verification:
+Migration:
 
 ```text
-unauthenticated /api/economy -> 401
-authenticated /api/economy -> caller-only state
-authenticated /api/economy/events -> caller-only history
-history query validation
-Super-Admin settings GET/PUT
-ordinary user/admin settings denial
+024_prompt_archive_unlocks.sql
 ```
 
-### Planned first sink — 21E2
+Introduces:
 
 ```text
-Prompt Archive first full Prompt unlock / meaningful copy access
+user_content_unlocks
+goin_prompt_archive_unlock_cost = 5
+goin_sink_rule_version = 1
 ```
 
-Required semantics:
+The initial 5-Goin cost is a simulation default. At the current reference value it is approximately 1,250 toman of reference value, not a permanent Marketplace fiat price.
+
+Current first sink semantics:
 
 ```text
-view/catalog -> free
-first unlock -> may cost goin
-repeat access -> must not charge again
-successful debit + durable access -> one transaction
-insufficient balance -> no debit and no unlock
+view Prompt detail -> no Goin charge
+first meaningful copy/unlock -> 5 Goin default
+repeat access to same Prompt -> no additional charge
 ```
 
-Do not start 21E2 until the remaining 21E1 API boundary checks pass.
+Backend routes:
+
+```text
+GET  /api/economy/unlocks/prompt-archive/:publicId
+POST /api/economy/unlocks/prompt-archive/:publicId
+```
+
+Requirements:
+
+```text
+authenticated active user
+email completed
+published Prompt Archive item
+```
+
+Atomic unlock contract:
+
+```text
+BEGIN
+lock canonical user row
+check existing durable unlock
+read current sink policy
+check current Goin balance
+insert negative economy event when cost > 0
+insert durable unlock row
+COMMIT
+```
+
+Consequences:
+
+```text
+same Prompt cannot double-charge under concurrent requests
+different concurrent purchases cannot overspend one balance
+insufficient balance creates neither debit nor unlock
+successful debit and durable access commit together
+historical unlock stores actual charged price + pricing rule version
+```
+
+21E2 deliberately does not make full Prompt detail public and does not charge page views.
+
+Frontend Copy integration must happen only after backend unlock verification.
 
 ## Migration state
 
-Current schema migrations extend through:
+Current migrations extend through:
 
 ```text
 020_product_analytics_events.sql
 021_user_preferences.sql
 022_user_economy_foundation.sql
 023_goin_issuance_policy.sql
+024_prompt_archive_unlocks.sql
 ```
 
 Next future schema migration:
 
 ```text
-024_*.sql
+025_*.sql
 ```
 
 ## Hard rules
@@ -405,26 +271,21 @@ Next future schema migration:
 DO NOT use admin_audit_log as behavioral analytics.
 DO NOT use user_score_events as a generic analytics warehouse.
 DO NOT create a second XP/referral/auth/admin/profile system.
-DO NOT make economy spending reduce lifetime XP/reputation.
+DO NOT make Goin spending reduce lifetime XP/reputation.
 DO NOT add a mutable users.balance as economy source of truth.
 DO NOT trust frontend balance checks.
 DO NOT trust analytics events as economic authority.
 DO NOT convert XP 1:1 into Goin.
 DO NOT issue Goin for draft_created in V1.
-DO NOT retroactively reprice historical Goin after a settings change.
+DO NOT retroactively reprice historical Goin issuance.
+DO NOT charge Prompt page views.
 DO NOT charge on every Copy click.
 DO NOT create paid access without atomic debit + durable unlock state.
-DO NOT expose another user's economy history.
-DO NOT treat 250 toman as a buy/cash-out/redemption guarantee.
-DO NOT put prompt text/sellable knowledge into analytics metadata.
-DO NOT fabricate ownership for legacy/managed Archive items.
-DO NOT introduce multi-ownership in Milestone 21.
-DO NOT return prompt bodies from /api/home/* or /api/discover.
+DO NOT expose another user's economy history or unlock state.
+DO NOT treat the 250 toman reference value as a buy/cash-out guarantee.
+DO NOT treat the current 5-Goin Prompt unlock as a permanent Marketplace price.
+DO NOT put Prompt text/sellable knowledge into analytics metadata.
 DO NOT make /api/archive/:id public merely for SEO.
-DO NOT use the full Prompt snapshot as the canonical public SEO projection.
-DO NOT invent hreflang URLs while i18n remains no_prefix.
-DO NOT publish localhost canonical/sitemap URLs as production truth.
-DO NOT migrate the full application to SSR without a new evidence gate.
 DO NOT introduce fiat purchase/cash-out/payout in 21E.
 DO NOT start the full Marketplace inside Milestone 21.
 ```
@@ -439,13 +300,12 @@ docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
 docs/strategy/MILESTONE_21A_VERIFICATION.md
 docs/strategy/MILESTONE_21B_VERIFICATION.md
 docs/strategy/MILESTONE_21C_VERIFICATION.md
-docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
-docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21D_VERIFICATION.md
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21E1_VERIFICATION.md
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
+docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
