@@ -1,6 +1,6 @@
 # Milestone 21E2 — Prompt Archive Durable Unlock
 
-Status: **BACKEND IMPLEMENTED / AWAITING LOCAL VERIFICATION**
+Status: **SCHEMA LOCALLY VERIFIED / BEHAVIORAL VERIFICATION NEXT**
 
 Date: 2026-09-06
 
@@ -84,6 +84,35 @@ prompt_archive_item
 
 The generic table can later support Template/Workflow access without introducing full Marketplace Orders now.
 
+## Local schema verification — PASSED
+
+Migration 024 was applied locally after rebuilding the API container:
+
+```text
+Database schema applied: 024_prompt_archive_unlocks.sql
+```
+
+Verified settings:
+
+```text
+goin_prompt_archive_unlock_cost = 5
+goin_sink_rule_version          = 1
+```
+
+Verified `user_content_unlocks` constraints/indexes include:
+
+```text
+PRIMARY KEY (id)
+UNIQUE(user_id, resource_type, resource_id)
+UNIQUE(economy_event_id) WHERE economy_event_id IS NOT NULL
+price_goin >= 0
+pricing_rule_version > 0
+FK user_id -> users ON DELETE CASCADE
+FK economy_event_id -> user_economy_events ON DELETE SET NULL
+```
+
+This confirms the durable-access storage primitive and server-side sink-policy seed are present. Runtime charge/idempotency/atomicity behavior still requires local verification before frontend Copy integration.
+
 ## Unlock endpoints
 
 The existing economy route now supports:
@@ -120,9 +149,9 @@ canAfford
 If already unlocked:
 
 ```text
-newlyUnlocked  = false
+newlyUnlocked   = false
 alreadyUnlocked = true
-chargedGoin    = 0
+chargedGoin     = 0
 ```
 
 If not yet unlocked and balance is sufficient:
@@ -227,13 +256,11 @@ charging page views
 charging every Copy click
 ```
 
-## Local verification checklist
+## Remaining local verification checklist
 
-After pulling and applying migration 024, verify:
+Verify runtime behavior:
 
 ```text
-setting seeds = 5 / ruleVersion 1
-user_content_unlocks schema exists
 GET unlock state returns locked + policy
 first POST deducts exactly 5 and creates one unlock
 second POST returns alreadyUnlocked + chargedGoin=0
