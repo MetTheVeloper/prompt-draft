@@ -15,6 +15,20 @@ export default {
       loadingSections: 'Building your discovery feed...',
       loadError: 'The personalized showcase could not be loaded. You can still explore the Prompt Archive directly.',
     },
+    publicDiscovery: {
+      eyebrow: 'PUBLIC DISCOVERY',
+      collectionEyebrow: 'CURATED FROM THE PROMPT ARCHIVE',
+      collectionTitle: '{category} prompts to explore',
+      openArchive: 'Explore the full collection',
+      viewPrompt: 'View prompt',
+      backHome: 'Back to home',
+      loading: 'Loading published prompts...',
+      error: 'This public collection could not be loaded right now. You can still continue into the Prompt Archive.',
+      empty: 'No published prompts match this discovery path yet.',
+      related: 'Explore another direction',
+      notFoundTitle: 'Discovery path not found',
+      notFoundDescription: 'This discovery URL does not match one of Prompt Draft’s current public categories.',
+    },
     discovery: {
       onboarding: {
         eyebrow: 'PERSONALIZED DISCOVERY',
