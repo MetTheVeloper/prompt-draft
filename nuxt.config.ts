@@ -14,7 +14,29 @@ const publicDiscoveryRoutes = [
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
   devtools: { enabled: false },
-  ssr: false,
+
+  // Milestone 21.5 hybrid rendering baseline:
+  // SSR is the default for public acquisition surfaces. Client-heavy/private
+  // application routes explicitly opt out below until SSR provides real value.
+  ssr: true,
+  routeRules: {
+    "/create": { ssr: false },
+    "/collage": { ssr: false },
+    "/vectorizer": { ssr: false },
+    "/history": { ssr: false },
+    "/dashboard": { ssr: false },
+    "/login": { ssr: false },
+    "/manage": { ssr: false },
+    "/manage/**": { ssr: false },
+    "/wizard": { ssr: false },
+    "/wizard/**": { ssr: false },
+
+    // These are public today, but their current query-parameter contracts are
+    // not the final canonical acquisition routes. Keep them client-oriented
+    // until the public Prompt/Creator route work in the SEO phase.
+    "/prompts": { ssr: false },
+    "/user": { ssr: false },
+  },
   spaLoadingTemplate: true,
   experimental: {
     spaLoadingTemplateLocation: 'body',
