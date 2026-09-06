@@ -194,9 +194,7 @@ function sectionGridSpan(index: number, total: number) {
 
         <el-flex rules="rcc" :gap="8" wrap class="home-hero__actions">
           <el-button
-            color="white"
-            text-color="black"
-            icon-color="black"
+            color="normal"
             icon="explore"
             :label="t('growth.home.explore')"
             @click="scrollToFeed"
@@ -292,8 +290,8 @@ function sectionGridSpan(index: number, total: number) {
 .home-hero__veil {
   z-index: 3;
   background:
-    radial-gradient(circle at 50% 42%, var(--themeSurface10), var(--themeSurface35) 56%, var(--themeSurface65) 100%),
-    linear-gradient(180deg, var(--themeSurface10), var(--themeSurface45));
+    radial-gradient(circle at 50% 42%, var(--themeSurface65), var(--themeSurface35) 56%, var(--themeSurface10) 100%),
+    linear-gradient(180deg, var(--themeSurface15), var(--themeSurface5) 50%, var(--themeSurface15));
 }
 
 .home-hero__grain {
