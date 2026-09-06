@@ -1,6 +1,6 @@
 # Milestone 21E3 — Goin Account UX & Super-Admin Economy Management
 
-Status: **IMPLEMENTED / AWAITING LOCAL VERIFICATION**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Date: 2026-09-06
 
@@ -21,21 +21,21 @@ Predecessors:
 
 Make the existing Goin economy visible and manageable without creating a second balance, policy, or settings system.
 
-21E3 has two product surfaces:
+21E3 introduced two product surfaces:
 
 ```text
 private account UX
-  -> show the authenticated user's current Goin balance
+  -> authenticated user sees current spendable Goin balance
 
 Super-Admin /manage economy surface
   -> manage reference value
   -> manage issuance policy
-  -> manage current Prompt Archive unlock cost
+  -> manage current Prompt Archive first-unlock cost
 ```
 
-## Capability audit result
+## Capability reuse
 
-Existing reusable backend primitives already existed before this slice:
+21E3 reused the existing economy/admin primitives:
 
 ```text
 GET /api/economy
@@ -46,15 +46,13 @@ PUT /api/admin/economy/settings
 economy_settings
 user_economy_events
 user_content_unlocks
-system.settings.manage permission
+system.settings.manage
 admin_audit_log
 ```
 
-Therefore 21E3 does not add a parallel wallet or generic settings subsystem.
+No parallel wallet, settings subsystem, or new schema migration was introduced.
 
-No new migration is required.
-
-Current migration ceiling remains:
+Migration ceiling remains:
 
 ```text
 024_prompt_archive_unlocks.sql
@@ -66,21 +64,16 @@ Next future schema migration remains:
 025_*.sql
 ```
 
-## Private user-account Goin visibility
+## Private Goin account state
 
-New shared account-state composable:
-
-```text
-app/composables/useEconomy.ts
-```
-
-Frontend economy types:
+Added:
 
 ```text
 app/types/economy.ts
+app/composables/useEconomy.ts
 ```
 
-The composable reads:
+The shared client state reads the authoritative caller-owned state from:
 
 ```text
 GET /api/economy
@@ -94,14 +87,13 @@ lifetimeIssued
 lifetimeSpent
 transactionCount
 unit metadata
-loading/error
 ```
 
-State is scoped to the currently authenticated `user.id`. Changing account or logging out resets the cached economy state.
+State is scoped by authenticated `user.id` and resets on account change/logout.
 
-The Prompt Archive unlock composable now applies the economy object returned by unlock GET/POST responses into this shared state, so the private account balance can update immediately after a paid Copy without waiting for a separate page reload.
+`usePromptArchiveUnlock` applies the backend economy object returned by unlock reads/mutations into the same shared state, so paid Prompt unlocks update the visible private balance immediately without inventing a client-side wallet.
 
-### Account-menu placement
+## Profile Menu UX
 
 Updated:
 
@@ -109,68 +101,58 @@ Updated:
 app/components/auth/AuthProfileMenu.vue
 ```
 
-The account menu now shows Goin separately from XP:
+XP and Goin are intentionally distinct:
 
 ```text
-XP badge     -> lifetime reputation/achievement
-Goin badge   -> spendable balance
-Goin row     -> private wallet balance summary
+XP   -> lifetime reputation / achievement
+Goin -> spendable internal unit
 ```
 
-The public `/user` profile is deliberately unchanged. Spendable Goin balance is account-private in this slice.
+The private Profile Menu now includes:
 
-EN/FA account strings were added to the existing auth locale files.
+```text
+Goin badge beside XP
+Goin balance row
+```
 
-## Super-Admin Economy management
+The public `/user` profile remains unchanged and does not expose spendable Goin balance.
 
-New management route:
+EN/FA account labels use existing i18n infrastructure and normal theme-aware components/tokens.
+
+## Super-Admin Economy Manage
+
+Added route:
 
 ```text
 /manage/economy
 ```
 
-New page:
+Permission:
 
 ```text
-app/pages/manage/economy.vue
+system.settings.manage
 ```
 
-New client composable:
+Current authorization behavior:
 
 ```text
-app/composables/useAdminEconomy.ts
-```
-
-New locale fragments:
-
-```text
-i18n/locales/manage-economy.en.ts
-i18n/locales/manage-economy.fa.ts
-```
-
-They are merged through the existing i18n configuration rather than replacing the primary manage locale files.
-
-### Authorization
-
-`app/config/manage.ts` now registers the Economy section with:
-
-```text
-requiredPermission = system.settings.manage
-```
-
-Current role mapping means:
-
-```text
-super_admin -> visible/allowed through *
+super_admin -> allowed via *
 admin       -> not granted system.settings.manage
 user        -> not granted
 ```
 
-The page itself also uses authorization middleware with the same permission, so hiding the navigation tab is not the security boundary.
+The navigation tab and route middleware use the same permission; navigation hiding is not the security boundary.
 
-### Manageable values
+Added:
 
-The page exposes the current server-side values for:
+```text
+app/composables/useAdminEconomy.ts
+app/pages/manage/economy.vue
+i18n/locales/manage-economy.en.ts
+i18n/locales/manage-economy.fa.ts
+```
+
+The page manages:
 
 ```text
 Goin reference value in toman
@@ -186,7 +168,7 @@ Sink:
   Prompt Archive first unlock cost
 ```
 
-Current baseline values remain:
+Accepted baseline values:
 
 ```text
 1 goin reference        = 250 toman
@@ -198,195 +180,133 @@ draft_created           = 0 goin
 Prompt Archive unlock   = 5 goin
 ```
 
-### Rule-version behavior
+## Backend settings extension
 
-Reference-value changes:
+Updated the existing endpoint instead of creating a second settings API:
 
 ```text
-do not increment issuance or sink rule versions
+GET /api/admin/economy/settings
+PUT /api/admin/economy/settings
 ```
 
-Issuance changes:
+The contract now includes:
 
 ```text
-increment goin_issuance_rule_version
-apply only to future eligible score events
-historical Goin issuance is not rewritten
-```
-
-Sink changes:
-
-```text
-increment goin_sink_rule_version
-apply only to future first unlocks
-existing user_content_unlocks preserve their original price_goin + pricing_rule_version
-```
-
-## Backend admin-settings extension
-
-Updated:
-
-```text
-backend/src/adminEconomyRoute.mjs
-```
-
-The existing settings API now includes sink policy rather than introducing another endpoint.
-
-GET response now includes conceptually:
-
-```text
-settings.unit
-settings.goinReferenceValueToman
-settings.issuance
 settings.sinks.ruleVersion
 settings.sinks.promptArchiveUnlock.costGoin
-settings.updatedBy
-settings.updatedAt
 ```
 
-PUT now accepts any supported combination of:
+Rule-version semantics:
 
-```json
-{
-  "goinReferenceValueToman": 250,
-  "issuance": {
-    "accountCreated": 10,
-    "profileEmailAdded": 10,
-    "referralJoined": 10,
-    "referralReward": 20,
-    "draftCreated": 0
-  },
-  "sinks": {
-    "promptArchiveUnlock": {
-      "costGoin": 5
-    }
-  }
-}
+```text
+reference-value change
+  -> no issuance-version change
+  -> no sink-version change
+
+issuance change
+  -> goin_issuance_rule_version +1
+  -> future issuance only
+
+sink change
+  -> goin_sink_rule_version +1
+  -> future first unlocks only
 ```
 
-All values remain server-validated.
+Historical issuance and historical `user_content_unlocks.price_goin / pricing_rule_version` are never rewritten.
 
-### Audit behavior
-
-Existing reference audit action:
+Audit actions:
 
 ```text
 economy.goin_reference_value_updated
-```
-
-Existing issuance audit action:
-
-```text
 economy.goin_issuance_policy_updated
-```
-
-New sink audit action:
-
-```text
 economy.goin_sink_policy_updated
 ```
 
-No-op PUT remains `changed=false` and does not increment rule versions.
+No-op PUT remains `changed=false`.
 
-## UI safeguards
+## Local verification — PASSED
 
-The management UI states clearly that:
+The user rebuilt the backend and completed `pnpm generate` successfully.
 
-```text
-Goin is an internal simulation unit
-Toman value is reference metadata only
-policy changes apply prospectively
-historical ledger rows are never repriced
-historical unlocks are never repriced
-```
-
-Input policy:
+The live `/manage/economy` UI was visually verified in the local application and showed:
 
 ```text
-reference value -> positive whole integer
-issuance values -> whole integer >= 0
-sink cost       -> whole integer >= 0
+Economy Manage section visible to Super Admin
+Reference value = 250 toman
+Issuance Rule = v1
+Sink Rule = v1
+Prompt unlock = 5 goin
 ```
 
-Zero remains valid for reward/sink policies, including the existing `draft_created = 0` anti-farming decision and a possible future free-unlock experiment.
+The private account menu visibly showed XP and Goin as separate badges plus a dedicated Goin balance row.
 
-## Local verification checklist
+### Reversible reference-value test
 
-### Build / backend
+The user changed:
 
 ```text
-git pull
-docker compose up -d --build api
-pnpm generate
+250 -> 251
 ```
 
-No `db:schema` run is required for this slice because there is no migration 025.
+and saved successfully.
 
-### Private account UX
-
-Verify with an authenticated account:
+Observed after save:
 
 ```text
-open profile/account menu
-Goin balance is visible separately from XP
-balance matches GET /api/economy / ledger SUM(unit_delta)
-paid Prompt unlock updates the account Goin balance
-repeat Copy of an already-unlocked Prompt does not change the balance
-logout/login or account switch does not leak prior account balance
-EN + FA render correctly
-Dark + Light render correctly
-public /user profile does not expose spendable balance
+Reference card = 251 toman
+Issuance Rule remained v1
+Sink Rule remained v1
+Goin balance unchanged by reference metadata change
 ```
 
-### Super-Admin Manage UX
-
-Verify:
+The value was then restored:
 
 ```text
-Super Admin sees Economy tab under /manage
-/manage/economy loads without manual API calls
-reference = 250
-issuance = 10 / 10 / 10 / 20 / 0
-Prompt Archive unlock = 5
-issuance rule version visible
-sink rule version visible
+251 -> 250
 ```
 
-Authorization:
+Final database read-back confirmed:
 
 ```text
-user cannot access /manage/economy
-ordinary admin without system.settings.manage cannot access /manage/economy
-Super Admin can read/update it
+goin_issuance_rule_version      = 1
+goin_issue_account_created      = 10
+goin_issue_draft_created        = 0
+goin_issue_profile_email_added  = 10
+goin_issue_referral_joined      = 10
+goin_issue_referral_reward      = 20
+goin_prompt_archive_unlock_cost = 5
+goin_reference_value_toman      = 250
+goin_sink_rule_version          = 1
 ```
 
-### Safe reversible settings test
+### Shared balance update after paid unlock
 
-Prefer testing only the reference value first because it does not increment the reward/spend rule versions:
+The user opened Prompt Archive item `502` while its first-copy contract displayed:
 
 ```text
-250 -> 251 -> save
-verify GET/API/UI = 251
-verify user's Goin balance unchanged
-251 -> 250 -> save
-verify restored to 250
+Unlock & copy · 5 goin
+current visible balance = 90 goin
 ```
 
-This produces audit entries but does not mutate historical Goin ledger rows or unlock rows.
-
-Optionally test a sink change separately only when willing to advance the sink rule version:
+After the first paid Copy:
 
 ```text
-5 -> 6 -> sink rule version +1
-6 -> 5 -> sink rule version +1 again
+Prompt became durably unlocked
+Copy button changed to ordinary Copy state
+future copies were shown as free
+private Profile Menu balance updated immediately to 85 goin
 ```
 
-The historical Prompt `501` unlock previously purchased for 5 Goin must remain stored as:
+This verifies the intended shared economy state path:
 
 ```text
-price_goin = 5
-pricing_rule_version = 1
+server-authoritative unlock
+-> returned economy state
+-> shared useEconomy state
+-> Profile Menu updates without a second wallet calculation
 ```
+
+The user accepted the resulting UI and behavior as correct.
 
 ## Hard rules preserved
 
@@ -399,5 +319,19 @@ DO NOT retroactively rewrite historical issuance after reward-policy changes.
 DO NOT retroactively rewrite historical unlock prices after sink-policy changes.
 DO NOT treat reference Toman value as fiat convertibility.
 DO NOT grant ordinary admin system.settings.manage implicitly.
-DO NOT create a second economy settings API for the Manage UI.
+DO NOT create a second Economy settings API for /manage.
+```
+
+## Closure
+
+Milestone 21E3 is closed as:
+
+```text
+DONE / LOCALLY VERIFIED / USER ACCEPTED
+```
+
+The Growth Foundation can now proceed to:
+
+```text
+21F — Growth Metrics in Manage
 ```
