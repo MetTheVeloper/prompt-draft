@@ -7,7 +7,7 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 4000
-      CORS_ORIGINS: "http://localhost:3030,http://127.0.0.1:3030"
+      CORS_ORIGINS: "http://localhost:3030,http://127.0.0.1:3030,http://localhost:3000,http://127.0.0.1:3000"
       DB_HOST: db
       DB_PORT: 5432
       DB_NAME: prompt_draft
@@ -30,6 +30,9 @@ services:
       - ./public:/archive-source/public:ro
       - ./public:/archive-output/public
       - ./i18n/locales:/archive-source/i18n/locales:ro
+    depends_on:
+      - db
+      - translator
 
   translator:
     image: libretranslate/libretranslate:v1.9.6
