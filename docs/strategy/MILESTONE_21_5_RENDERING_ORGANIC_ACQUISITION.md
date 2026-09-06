@@ -1,8 +1,8 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASE 1 DONE / PHASE 2 IMPLEMENTED / AWAITING FOUNDER VERIFICATION**
+Status: **IN PROGRESS / PHASES 1–2 DONE / PHASE 3 NEXT**
 
-Date: 2026-09-06
+Date: 2026-09-07
 
 Branch:
 
@@ -156,7 +156,7 @@ Phase 1 is closed.
 Status:
 
 ```text
-IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 ```
 
 Canonical record:
@@ -165,23 +165,26 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 ```
 
-Implemented runtime shape:
+Accepted runtime shape:
 
 ```text
 browser
-  -> frontend public origin
+  -> http://localhost:3000
+  -> production Nuxt/Nitro frontend container
 
-Nuxt/Nitro frontend container
-  -> server-internal API origin http://api:4000
+Nuxt/Nitro SSR
+  -> http://api:4000
+  -> API over Compose network
 
 browser client requests
-  -> browser-public API origin http://localhost:4000 in local verification
+  -> http://localhost:4000
 
 API
-  -> db + translator over Compose network
+  -> db:5432
+  -> translator:5000
 ```
 
-Implemented work:
+Accepted work:
 
 ```text
 production multi-stage frontend Dockerfile
@@ -196,17 +199,33 @@ service dependency health gates
 stack lifecycle pnpm commands
 Docker build-context secret/output exclusions
 local environment contract documentation
+builder-only 4 GB Node heap for Nuxt SSR bundle
+pnpm BuildKit store cache + network retry/timeout hardening
+Corepack package-manager integrity correction
 ```
 
-Phase 2 acceptance requires healthy containers, internal SSR-to-API connectivity, browser-side API correctness, auth/application smoke and restart/recovery smoke.
+Founder-local verification passed:
 
-Do not begin Phase 3 until founder-local verification is accepted.
+```text
+production Docker build
+Nuxt client + SSR server build
+all four services healthy
+public SSR route smoke
+raw discovery HTML fetch
+browser API origin verified as http://localhost:4000
+GET /api/auth/me -> 200 in browser network
+regular + super-admin auth/application smoke
+full stack rebuild/recreate via pnpm stack:restart
+post-restart recovery to healthy state
+```
+
+Phase 2 is closed. The accepted Docker runtime is the baseline for Phase 3.
 
 ---
 
 ## 5. Phase 3 — Cloudflare Production Path
 
-Status: **NOT STARTED**
+Status: **NEXT / NOT STARTED**
 
 Goal:
 
@@ -222,7 +241,16 @@ Cloudflare connectivity available
 Cloudflare is the primary production path
 ```
 
-Required work includes frontend SSR origin connectivity, `api.prompt-draft.ir`, TLS, forwarded host/proto behavior, cookie/session correctness, cache policy and production smoke tests.
+Required work includes frontend SSR origin connectivity, `api.prompt-draft.ir`, TLS, forwarded host/proto behavior, cookie/session correctness, production CORS, cache policy and production smoke tests.
+
+The verified Phase 2 network split must be preserved:
+
+```text
+Nuxt SSR -> private/internal API origin
+browser   -> public HTTPS API origin
+```
+
+Phase 3 must not serialize or expose Docker-internal service names to browser runtime configuration.
 
 Iran/international-disconnection failover is not a prerequisite for this phase. The separately discussed Arvan/fallback architecture remains a later resilience layer and must not complicate the first verified Cloudflare SSR rollout.
 
@@ -450,5 +478,5 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Founder-local verification of Phase 2 Docker production runtime.
+Begin Phase 3 — Cloudflare Production Path.
 ```
