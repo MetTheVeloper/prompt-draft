@@ -26,7 +26,7 @@ Execution Layer                 -> documented
 Pricing/Internal Economy V1     -> documented
 Execution Roadmap V1            -> documented
 
-Milestone 21 Growth Foundation  -> FUNCTIONALLY COMPLETE / UI POLISH IN PROGRESS
+Milestone 21 Growth Foundation  -> FUNCTIONALLY COMPLETE / FINAL UI VERIFICATION PENDING
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
@@ -35,7 +35,7 @@ Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E2 Prompt Unlock        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E3 Economy UX & Manage  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21F Growth Metrics        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-UI polish closure pass          -> IN PROGRESS
+UI polish closure pass          -> IMPLEMENTATION COMPLETE / FINAL LOCAL VERIFICATION PENDING
 ```
 
 ## Canonical closure / verification docs
@@ -282,29 +282,69 @@ ALL 21F GROWTH METRICS CHECKS PASSED
 Cleaned 2 temporary auth session(s)
 ```
 
-Visual/runtime smoke also passed in EN/FA and Light/Dark, and `pnpm generate` passed with `/manage/growth` generated successfully.
+Visual/runtime smoke also passed in EN/FA and Light/Dark, and `pnpm generate` passed with `/manage/growth` generated successfully before the final UI polish pass.
 
-## Current closure work — UI polish
+## Milestone 21 final UI polish — IMPLEMENTATION COMPLETE
 
-Canonical scope:
+Canonical scope and verification checklist:
 
 ```text
 docs/strategy/MILESTONE_21_UI_POLISH.md
 ```
 
-This pass is presentation-only. It must not reopen Growth product scope.
-
-Current polish work includes:
+Implemented closure work:
 
 ```text
-shared Manage metric-card typography and spacing tightened
-Growth and Economy summary-card hierarchy improved together
-numeric values use tabular figures
-EN/FA card wrapping improved
-referral ratio helper explicitly explains why values may exceed 100%
+shared Goin SVG + EconomyGoinAmount presentation primitive
+Profile Menu hierarchy: Goin beside username, XP separate
+reusable central Goin information modal
+Goin modal reads authoritative current Economy policy
+GET /api/economy exposes authenticated read-only policy metadata
+/manage/growth root alignment corrected to rules="ccs"
+Growth chart-first Daily Signals + Popular Tags views
+Growth table views preserved
+Growth desktop/wide summary density increased to two 4-card groups per row
+Growth responsive logic moved to useScreen()
+Goin amounts unified in Growth/Economy summary presentation
+Prompt Copy explanatory feedback uses normal theme color + state icon
+/prompts content surface strengthened to surface80
+/prompts card neutral tags use normal/invert
+/prompts card border hover aligned with /user Draft cards
+/prompts cards refactored to Home-style theme-aware neutral overlays
+/user Draft cards refactored to the same theme-aware visual direction
 ```
 
-No backend behavior, policy, analytics contract, permission, or schema changes are part of the polish pass.
+Important implementation note:
+
+```text
+The polish pass adds a read-only Economy policy projection to GET /api/economy so the reusable Goin explainer cannot drift from Super-Admin settings.
+It does not change ledger authority, economic writes, Prompt unlock semantics, or permissions.
+```
+
+Implementation checkpoint before this STATUS update:
+
+```text
+8259fbc495ffbad85a6d815abe9e0dc285868f62
+```
+
+Final local gate still required before Milestone 21 is marked fully closed:
+
+```powershell
+git pull
+docker compose up -d --build api
+pnpm generate
+```
+
+Visual smoke targets:
+
+```text
+/manage/growth EN/FA + Light/Dark + desktop/laptop density
+/manage/economy Prompt unlock Goin display
+Profile Menu + reusable Goin modal and live policy values
+/prompts locked/unlocked Copy feedback
+/prompts Light/Dark card/readability/hover
+/user Light/Dark Draft card/readability/hover
+```
 
 ## Migration state
 
@@ -318,7 +358,7 @@ Current migrations extend through:
 024_prompt_archive_unlocks.sql
 ```
 
-21E3, 21F, and the UI polish pass add no migration.
+21E3, 21F, and the final UI polish pass add no migration.
 
 Next future schema migration:
 
