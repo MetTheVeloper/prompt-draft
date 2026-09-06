@@ -2,12 +2,15 @@ import { queryDatabase } from './database.mjs'
 
 const HERO_MEDIA_PATH = '/api/home/hero-media'
 const SHOWCASE_PATH = '/api/home/showcase'
+const PUBLIC_DISCOVERY_PATH = '/api/discover'
 const MAX_TAGS = 24
 const MAX_TAG_LENGTH = 100
 const HERO_DEFAULT_LIMIT = 50
 const HERO_MAX_LIMIT = 50
 const SHOWCASE_DEFAULT_LIMIT = 5
 const SHOWCASE_MAX_LIMIT = 5
+const DISCOVERY_DEFAULT_LIMIT = 18
+const DISCOVERY_MAX_LIMIT = 24
 
 function normalizeTag(value) {
   if (typeof value !== 'string') return null
@@ -174,7 +177,11 @@ export async function handleHomeDiscoveryRequest({
   corsHeaders,
   sendJson,
 }) {
-  if (url.pathname !== HERO_MEDIA_PATH && url.pathname !== SHOWCASE_PATH) {
+  if (
+    url.pathname !== HERO_MEDIA_PATH &&
+    url.pathname !== SHOWCASE_PATH &&
+    url.pathname !== PUBLIC_DISCOVERY_PATH
+  ) {
     return false
   }
 
@@ -190,7 +197,7 @@ export async function handleHomeDiscoveryRequest({
 
   const tags = parseTags(url)
   if (!tags) {
-    sendJson(response, 400, { ok: false, message: 'Invalid home discovery tags' }, corsHeaders)
+    sendJson(response, 400, { ok: false, message: 'Invalid discovery tags' }, corsHeaders)
     return true
   }
 
@@ -212,9 +219,23 @@ export async function handleHomeDiscoveryRequest({
     return true
   }
 
-  const limit = parseLimit(url, SHOWCASE_DEFAULT_LIMIT, SHOWCASE_MAX_LIMIT)
+  const isPublicDiscovery = url.pathname === PUBLIC_DISCOVERY_PATH
+  const limit = parseLimit(
+    url,
+    isPublicDiscovery ? DISCOVERY_DEFAULT_LIMIT : SHOWCASE_DEFAULT_LIMIT,
+    isPublicDiscovery ? DISCOVERY_MAX_LIMIT : SHOWCASE_MAX_LIMIT,
+  )
+
   if (!limit) {
-    sendJson(response, 400, { ok: false, message: 'Invalid home showcase limit' }, corsHeaders)
+    sendJson(
+      response,
+      400,
+      {
+        ok: false,
+        message: isPublicDiscovery ? 'Invalid public discovery limit' : 'Invalid home showcase limit',
+      },
+      corsHeaders,
+    )
     return true
   }
 
@@ -222,8 +243,23 @@ export async function handleHomeDiscoveryRequest({
     const items = await listShowcaseItems(tags, limit)
     sendJson(response, 200, { ok: true, items }, corsHeaders)
   } catch (error) {
-    console.error('[Prompt Draft API] home showcase failed', error)
-    sendJson(response, 500, { ok: false, message: 'Failed to read home showcase' }, corsHeaders)
+    console.error(
+      isPublicDiscovery
+        ? '[Prompt Draft API] public discovery failed'
+        : '[Prompt Draft API] home showcase failed',
+      error,
+    )
+    sendJson(
+      response,
+      500,
+      {
+        ok: false,
+        message: isPublicDiscovery
+          ? 'Failed to read public discovery'
+          : 'Failed to read home showcase',
+      },
+      corsHeaders,
+    )
   }
 
   return true
