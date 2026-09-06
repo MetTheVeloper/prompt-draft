@@ -416,7 +416,7 @@ function openTelegram(item: PromptArchiveListItem | PromptArchiveDetailItem) {
       class="prompts-page__surface w100 por zi10"
       :gap="24"
       :p="contentPadding"
-      bg="surface10">
+      bg="surface80">
       <el-flex rules="rbe" class="prompts-page__heading w100" :gap="18" wrap>
         <el-grid :gap="8" class="fg100">
           <el-text :size="10" :weight="900" color="prim" class="wsnw">
