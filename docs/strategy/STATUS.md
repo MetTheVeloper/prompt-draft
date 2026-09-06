@@ -29,26 +29,19 @@ Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21D Public Discovery/SEO  -> CORE PUBLIC/API/SITEMAP VERIFIED / BUILD-TIME SEO SNAPSHOT IMPLEMENTED / AWAITING GENERATED HTML VERIFICATION
+Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Phase 21E Internal Economy      -> CAPABILITY AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY
 ```
 
 ## 21A closure
 
-Dedicated Behavioral Analytics exists through:
+Behavioral Analytics foundation is complete through:
 
 ```text
 backend/sql/020_product_analytics_events.sql
 backend/src/productAnalytics.mjs
 app/composables/useProductAnalytics.ts
 POST /api/analytics/events
-```
-
-Verified events include:
-
-```text
-prompt_archive_view
-prompt_archive_copy
-referral_link_open
 ```
 
 Canonical closure:
@@ -59,19 +52,18 @@ docs/strategy/MILESTONE_21A_VERIFICATION.md
 
 ## 21B closure
 
-Referral Growth Activation is closed and locally accepted.
+Referral Growth Activation is complete.
 
-Verified full loop:
+Verified loop:
 
 ```text
-Profile Menu copies /login?ref=<username>
-valid referral URL prefills existing registration field
-malformed URL referral is ignored
-referral_link_open records landing observation
-successful signup creates canonical referrals row
-referred user receives existing +500 referral_joined reward
-referrer receives existing +1000 referral_reward reward
-invited-user count refreshes from referrals
+shareable /login?ref=<username>
+registration prefill
+referral_link_open analytics
+canonical referrals row
++500 referred-user reward
++1000 referrer reward
+invited-user count refresh
 pnpm generate PASS
 ```
 
@@ -81,66 +73,22 @@ Canonical closure:
 docs/strategy/MILESTONE_21B_VERIFICATION.md
 ```
 
-## 21C closure — User Preferences & Personalized Discovery
+## 21C closure
 
-21C is fully closed and user accepted.
+Preferences/Personalized Discovery is complete.
 
-Verified persistence/discovery foundation:
+Verified foundation:
 
 ```text
 021_user_preferences.sql
-user_preferences one-row-per-user persistence
-GET /api/preferences/discovery
-PUT /api/preferences/discovery
 six current visual interest clusters
-multi-tag bundles per interest
-/prompts uses el-multi-select for tags
-/api/archive supports repeated tag query parameters with OR/union semantics
-/prompts query parameters restore real existing tags on load
-invalid/nonexistent URL tags are reconciled away
-multi-tag personalized deep links work
-```
-
-Current V1 interest keys:
-
-```text
-portrait_photography
-three_d_sculpture
-illustration_animation
-poster_editorial
-product_fashion
-cinematic_game_art
-```
-
-Current bundles:
-
-```text
-portrait_photography    -> portrait, photography, avatar
-three_d_sculpture       -> 3d, sculpture
-illustration_animation  -> illustration, animation-style, anime, cartoon
-poster_editorial        -> poster, editorial
-product_fashion         -> product, fashion
-cinematic_game_art      -> cinematic, game-style, pixel-art
-```
-
-Verified personalized-home extension:
-
-```text
-reusable global discovery-preferences modal
-signed-in/no interests -> modal auto-opens on home
-Tune my feed reopens the same modal
-full-screen tiled hero reused with dynamic Archive media sources
-up to 50 hero media rows from selected-interest tag bundles
-public presentation-only /api/home/hero-media
-public presentation-only /api/home/showcase
-six immersive category showcase sections
-selected categories ordered first
-up to five Archive items per category
-responsive 1/2/3-column layout using useScreen
-section height = real viewport below Header
-Dark/Light theme-aware overlays/text/buttons
-final Hero/Modal theme bugs fixed
-pnpm generate PASS after final polish
+multi-tag interest bundles
+public multi-tag Prompt Archive list filtering
+personalized Home hero media
+reusable global preferences modal
+six immersive personalized Home discovery sections
+Dark/Light + EN/FA polish
+pnpm generate PASS
 ```
 
 Canonical closure:
@@ -149,64 +97,19 @@ Canonical closure:
 docs/strategy/MILESTONE_21C_VERIFICATION.md
 ```
 
-## Current phase — 21D Public Discovery & SEO Foundation
+## 21D closure — Public Discovery / SEO
 
-21D capability audit and ADR are complete. Core public discovery/API/sitemap behavior has now been locally verified.
+21D is fully closed.
 
-Current rendering invariant remains:
-
-```text
-ssr: false
-pnpm generate
-static frontend
-independent Node API
-```
-
-Rendering decision:
-
-```text
-docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
-```
-
-Current decision:
-
-```text
-DO NOT migrate the full application to SSR.
-Use targeted build-time SEO snapshots for the six public /discover/* routes.
-Revisit hybrid/incremental/SSR only from crawler/freshness/page-volume evidence.
-```
-
-### Public Archive access correction
-
-The obsolete test-only Archive list gate has been removed.
-
-Current intended boundary:
+Final public/protected boundary:
 
 ```text
 /prompts list/catalog -> public
 GET /api/archive -> public
 search/sort/multi-tag/pagination -> public
-/prompts?id=<id> full detail -> existing account + email gate
-GET /api/archive/:id -> existing account + email gate
-```
 
-This lets anonymous visitors browse the catalog without exposing Prompt body/variants.
-
-### Implemented 21D foundation
-
-```text
-NUXT_PUBLIC_SITE_URL runtime config
-usePublicSeo reusable SEO/canonical primitive
-global product title/description/OG defaults
-stable slug on each of the six existing discovery definitions
-GET /api/discover sanitized public presentation endpoint
-/discover/[slug] public landing route
-PublicDiscoveryCard public presentation component
-six discovery routes included in generated route list
-EN/FA public-discovery copy
-robots crawler boundaries
-post-generate sitemap/robots enrichment
-post-generate discovery HTML enrichment
+/prompts?id=<id> full Prompt detail -> authenticated + email gate
+GET /api/archive/:id -> authenticated + email gate
 ```
 
 Public discovery routes:
@@ -220,10 +123,10 @@ Public discovery routes:
 /discover/cinematic-game-art
 ```
 
-Sanitized endpoint contract:
+Verified public discovery API:
 
 ```text
-GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..20>
+GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..24>
 published items only
 OR/union tag semantics
 presentation metadata only
@@ -231,79 +134,141 @@ no prompt body
 no variants
 ```
 
-### Locally verified 21D behavior
-
-Verified on 2026-09-06:
+Verified release/SEO behavior:
 
 ```text
-GET /api/discover?tag=poster&tag=editorial&limit=10 -> 200
-sanitized rows returned correctly
-GET /api/discover?tag=poster&limit=25 -> 400
-pnpm generate without NUXT_PUBLIC_SITE_URL -> PASS
-production sitemap skipped when site origin absent
-pnpm generate with NUXT_PUBLIC_SITE_URL=https://example.test -> PASS
+pnpm generate PASS
 24 Nuxt routes generated including all six /discover/* routes
-sitemap.xml generated for 7 public URLs
-robots.txt contains /manage, /create, /login exclusions + absolute Sitemap line
+NUXT_PUBLIC_SITE_URL absent -> production sitemap intentionally skipped
+NUXT_PUBLIC_SITE_URL=https://example.test -> sitemap generated for 7 public URLs
+robots gets absolute Sitemap line
 ```
 
-Generated-output evidence also confirmed:
+Nuxt's `ssr:false` output proved route bodies were SPA shells, so ADR-001's evidence gate was triggered.
+
+Accepted correction:
 
 ```text
-HTML content not prerendered because ssr: false was set.
+keep ssr:false
+keep static deployment
+post-process generated /discover/* HTML only
+use sanitized /api/discover data
+inject route-specific head + semantic body + JSON-LD
 ```
 
-That evidence proved that the raw Nuxt SPA route files do not contain sufficient route-specific body content for the SEO goal.
-
-### Current build-time SEO snapshot implementation
-
-`scripts/generate-public-seo.ts` now enriches each generated discovery route after `nuxt generate`.
-
-It writes:
+Final generated HTML verification:
 
 ```text
-route-specific title
-route-specific description
-canonical + og:url when site origin exists
-Open Graph/Twitter metadata
-first sanitized preview image when available
-CollectionPage + ItemList JSON-LD
-semantic data-public-seo-snapshot body inside #__nuxt
-up to 12 sanitized /api/discover items
+Snapshot         True
+JsonLd           True
+Canonical        True
+Title            True
+HasArticles      True
+ProtectedFields  False
 ```
 
-The snapshot source is only:
+Confirmed generated title:
+
+```html
+<title>Posters &amp; Editorial · Prompt Draft</title>
+```
+
+Canonical closure:
 
 ```text
-/api/discover
+docs/strategy/MILESTONE_21D_VERIFICATION.md
 ```
 
-It never uses the historical full Prompt snapshot as its SEO data source and never serializes Prompt body/variants.
-
-If the public discovery API is temporarily unavailable during generation, category-level SEO content still emits and item-level snapshot rows are skipped with warnings.
-
-### Current verification gate
-
-Regenerate with the local API running, then inspect:
+Implementation source:
 
 ```text
-.output/public/discover/posters-editorial/index.html
+docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 ```
 
-Must contain before JavaScript execution:
+Rendering ADR:
 
 ```text
-Posters & Editorial · Prompt Draft
-route-specific description
-data-public-seo-snapshot
-application/ld+json
-canonical when NUXT_PUBLIC_SITE_URL exists
-sanitized Prompt titles/previews
-no Prompt body
-no variants
+docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 ```
 
-The interactive `/discover/posters-editorial` page must still mount and behave normally in browser after the static snapshot is replaced by Vue.
+## Current phase — 21E Internal Economy Simulation
+
+Capability audit and design baseline are complete.
+
+Canonical design:
+
+```text
+docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
+```
+
+### Key semantic decision
+
+Do **not** make spending reduce current profile XP/reputation.
+
+Current split:
+
+```text
+user_score_events
+  -> achievement/reward provenance + lifetime XP
+
+future user_economy_events
+  -> spendable internal-unit issuance/debit/refund/correction
+```
+
+This is not a parallel gamification system. The economy ledger has different invariants that current XP does not provide:
+
+```text
+atomic no-overspend
+spend/debit semantics
+refund/correction semantics
+durable access purchase
+transaction history
+spendable balance
+```
+
+Economy issuance should reference existing score/reward provenance when applicable rather than create unrelated reward causes.
+
+### Planned 21E1
+
+Next migration:
+
+```text
+022_user_economy_foundation.sql
+```
+
+Planned first slice:
+
+```text
+user_economy_events
+idempotent economy service
+SUM(unit_delta) authoritative balance
+atomic debit primitive
+GET /api/economy
+GET /api/economy/events
+explicit/versioned issuance policy
+```
+
+No mutable `users.balance` column should become source of truth.
+
+### Planned first sink
+
+Best current simulation surface:
+
+```text
+Prompt Archive first full Prompt unlock / meaningful copy access
+```
+
+Required semantics:
+
+```text
+view/catalog -> free
+first unlock -> may cost units
+repeat access -> must not charge again
+successful debit + durable access -> one transaction
+insufficient balance -> no debit and no unlock
+```
+
+Exact branded unit name and exact first-unlock price remain intentionally unresolved until the controlled experiment policy is frozen.
 
 ## Migration state
 
@@ -314,12 +279,10 @@ Current schema migrations extend through:
 021_user_preferences.sql
 ```
 
-21D requires no schema migration.
-
-Next future schema migration:
+Next schema migration:
 
 ```text
-022_*.sql
+022_user_economy_foundation.sql
 ```
 
 ## Hard rules
@@ -328,41 +291,41 @@ Next future schema migration:
 DO NOT use admin_audit_log as behavioral analytics.
 DO NOT use user_score_events as a generic analytics warehouse.
 DO NOT create a second XP/referral/auth/admin/profile system.
-DO NOT trust analytics events as economic/payout authority.
-DO NOT put prompt text or sellable knowledge into analytics metadata.
-DO NOT store user preferences in analytics or the score ledger.
-DO NOT replace canonical Archive tags with user-interest keys.
-DO NOT fabricate ownership for legacy/managed Archive items without source_user_id.
+DO NOT make economy spending reduce lifetime XP/reputation.
+DO NOT add a mutable users.balance as economy source of truth.
+DO NOT trust frontend balance checks.
+DO NOT trust analytics events as economic authority.
+DO NOT charge on every Copy click.
+DO NOT create paid access without atomic debit + durable unlock state.
+DO NOT expose another user's economy history.
+DO NOT put prompt text/sellable knowledge into analytics metadata.
+DO NOT fabricate ownership for legacy/managed Archive items.
 DO NOT introduce multi-ownership in Milestone 21.
 DO NOT return prompt bodies from /api/home/* or /api/discover.
 DO NOT make /api/archive/:id public merely for SEO.
-DO NOT use the full prompt snapshot as the future sanitized public SEO projection.
-DO NOT invent hreflang language URLs while i18n strategy remains no_prefix.
+DO NOT use the full Prompt snapshot as the canonical public SEO projection.
+DO NOT invent hreflang URLs while i18n remains no_prefix.
 DO NOT publish localhost canonical/sitemap URLs as production truth.
 DO NOT migrate the full application to SSR without a new evidence gate.
-DO NOT start full Marketplace commerce inside Milestone 21.
+DO NOT introduce fiat purchase/cash-out/payout in 21E.
+DO NOT start the full Marketplace inside Milestone 21.
 ```
 
 ## Primary sources
 
 ```text
-docs/strategy/README.md
 docs/strategy/PRODUCT_STRATEGY_V1.md
-docs/strategy/FOUNDER_DISCOVERY_QA_V1.md
+docs/strategy/PRICING_AND_INTERNAL_ECONOMY_V1.md
 docs/strategy/EXECUTION_ROADMAP_V1.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
-docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
-docs/strategy/MILESTONE_21A_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21A_VERIFICATION.md
-docs/strategy/MILESTONE_21B_REFERRAL_GROWTH.md
-docs/strategy/MILESTONE_21B_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21B_VERIFICATION.md
-docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
-docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
-docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
 docs/strategy/MILESTONE_21C_VERIFICATION.md
 docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
 docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
+docs/strategy/MILESTONE_21D_VERIFICATION.md
+docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
+docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
