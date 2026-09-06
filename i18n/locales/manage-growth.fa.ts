@@ -34,7 +34,7 @@ export default {
         referralOpens: { label: "بازشدن لینک دعوت", helper: "ورودهای ردیابی‌شده از لینک دعوت" },
         referralSignups: { label: "ثبت‌نام با دعوت", helper: "حساب‌هایی که referrer پایدار دارند" },
         referralShare: { label: "سهم دعوت", helper: "سهم ثبت‌نام‌های دعوتی از حساب‌های جدید" },
-        referralRatio: { label: "نسبت بازشدن → ثبت‌نام", helper: "نسبت تجمیعی جهت‌نما، نه attribution قطعی" },
+        referralRatio: { label: "نسبت بازشدن → ثبت‌نام", helper: "نسبت تجمیعی جهت‌نما؛ اگر ثبت‌نام‌ها open ردیابی‌شده نداشته باشند می‌تواند از ۱۰۰٪ بالاتر برود" },
         goinIssued: { label: "Goin صادرشده", helper: "جریان مثبت ledger در این بازه" },
         goinSpent: { label: "Goin خرج‌شده", helper: "جریان منفی ledger در این بازه" },
         goinOutstanding: { label: "Goin در گردش", helper: "موجودی فعلی کل ledger پلتفرم" },
