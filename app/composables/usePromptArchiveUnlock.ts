@@ -1,18 +1,4 @@
-interface EconomyUnitState {
-  code: string
-  name: string
-  decimals: number
-  referenceValueToman: number
-  referenceValueKind: string
-}
-
-interface EconomyState {
-  unit: EconomyUnitState
-  balance: number
-  lifetimeIssued: number
-  lifetimeSpent: number
-  transactionCount: number
-}
+import type { EconomyState } from "~/types/economy";
 
 interface PromptArchiveUnlockRecord {
   id: string
@@ -87,6 +73,7 @@ function normalizeFailure(error: any): PromptArchiveUnlockFailure {
 export function usePromptArchiveUnlock() {
   const config = useRuntimeConfig()
   const auth = useAuth()
+  const accountEconomy = useEconomy()
   const apiBase = normalizeApiBase(config.public.apiBase)
 
   const state = ref<PromptArchiveUnlockStateResponse | null>(null)
@@ -122,6 +109,7 @@ export function usePromptArchiveUnlock() {
         headers: auth.authHeaders(),
       })
 
+      accountEconomy.applyEconomy(response.economy)
       if (version === loadVersion) state.value = response
       return response
     } catch (error) {
@@ -151,6 +139,8 @@ export function usePromptArchiveUnlock() {
         method: 'POST',
         headers: auth.authHeaders(),
       })
+
+      accountEconomy.applyEconomy(response.economy)
 
       const previous = state.value
       state.value = {
