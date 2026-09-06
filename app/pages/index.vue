@@ -20,6 +20,10 @@ const feedLoading = ref(true)
 const feedError = ref(false)
 const preferencesReady = ref(false)
 
+const homeViewportStyle = computed(() => ({
+  '--home-viewport-height': `calc(100vh - ${dimension().header.height}px)`,
+}))
+
 const selectedInterestDefinitions = computed(() => {
   const selected = new Set(discovery.interests.value)
   return DISCOVERY_INTERESTS.filter(definition => selected.has(definition.key))
@@ -137,7 +141,7 @@ function sectionGridSpan(index: number, total: number) {
 </script>
 
 <template>
-  <div class="home-page w100">
+  <div class="home-page w100" :style="homeViewportStyle">
     <section class="home-hero por ofh">
       <visual-tile
         :key="heroRenderKey"
@@ -168,7 +172,7 @@ function sectionGridSpan(index: number, total: number) {
           {{ t('pwa.offline.status.offlineMode') }}
         </el-text>
 
-        <el-text :size="10" :weight="900" color="white" class="tc" style="opacity: .72">
+        <el-text :size="10" :weight="900" class="tc" style="opacity: .72">
           {{ t('growth.home.eyebrow') }}
         </el-text>
 
@@ -176,7 +180,6 @@ function sectionGridSpan(index: number, total: number) {
           type="h1"
           :size="screen.mobile.value ? 46 : screen.tablet.value ? 68 : 88"
           :weight="850"
-          color="white"
           class="home-hero__title tc">
           {{ t('growth.home.title') }}
         </el-text>
@@ -185,7 +188,6 @@ function sectionGridSpan(index: number, total: number) {
           type="p"
           :size="screen.mobile.value ? 14 : 18"
           :weight="450"
-          color="white"
           class="home-hero__description tc">
           {{ t('growth.home.description') }}
         </el-text>
@@ -193,16 +195,15 @@ function sectionGridSpan(index: number, total: number) {
         <el-flex rules="rcc" :gap="8" wrap class="home-hero__actions">
           <el-button
             color="white"
-            text-color="normal"
+            text-color="black"
+            icon-color="black"
             icon="explore"
             :label="t('growth.home.explore')"
             @click="scrollToFeed"
           />
           <el-button
             mode="flat"
-            color="white"
-            text-color="white"
-            icon-color="white"
+            color="normal"
             icon="auto_fix_high"
             :label="t('growth.home.create')"
             to="/create"
@@ -210,9 +211,7 @@ function sectionGridSpan(index: number, total: number) {
           <el-button
             v-if="auth.isLoggedIn.value && preferencesReady"
             mode="flat"
-            color="white"
-            text-color="white"
-            icon-color="white"
+            color="normal"
             icon="tune"
             :label="t('growth.home.editInterests')"
             @click="openPreferencesModal"
@@ -222,7 +221,7 @@ function sectionGridSpan(index: number, total: number) {
 
       <button type="button" class="home-hero__scroll" @click="scrollToFeed">
         <span>{{ t('growth.home.scroll') }}</span>
-        <el-icon icon="keyboard_arrow_down" :size="18" color="white" />
+        <el-icon icon="keyboard_arrow_down" :size="18" color="normal" />
       </button>
     </section>
 
@@ -272,15 +271,16 @@ function sectionGridSpan(index: number, total: number) {
 }
 
 .home-hero {
-  height: 100vh;
-  min-height: 640px;
+  height: var(--home-viewport-height);
   isolation: isolate;
-  background: #09090d;
+  background: var(--themeBackground);
 }
 
 .home-hero :deep(.canvas-tiled-slider-bg) {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
 .home-hero__veil,
@@ -292,14 +292,14 @@ function sectionGridSpan(index: number, total: number) {
 .home-hero__veil {
   z-index: 3;
   background:
-    radial-gradient(circle at 50% 42%, rgba(0, 0, 0, .08), rgba(0, 0, 0, .35) 56%, rgba(0, 0, 0, .62) 100%),
-    linear-gradient(180deg, rgba(0, 0, 0, .08), rgba(0, 0, 0, .42));
+    radial-gradient(circle at 50% 42%, var(--themeSurface10), var(--themeSurface35) 56%, var(--themeSurface65) 100%),
+    linear-gradient(180deg, var(--themeSurface10), var(--themeSurface45));
 }
 
 .home-hero__grain {
   z-index: 4;
   opacity: .08;
-  background-image: repeating-radial-gradient(circle at 0 0, rgba(255,255,255,.3) 0, rgba(255,255,255,.3) .5px, transparent .6px, transparent 3px);
+  background-image: repeating-radial-gradient(circle at 0 0, var(--normalText30) 0, var(--normalText30) .5px, transparent .6px, transparent 3px);
   background-size: 5px 5px;
   mix-blend-mode: soft-light;
 }
@@ -313,14 +313,14 @@ function sectionGridSpan(index: number, total: number) {
   line-height: .92 !important;
   letter-spacing: -.055em;
   text-wrap: balance;
-  text-shadow: 0 10px 42px rgba(0, 0, 0, .5);
+  text-shadow: 0 10px 42px var(--invertText50);
 }
 
 .home-hero__description {
   max-width: 680px;
   line-height: 1.5 !important;
   opacity: .86;
-  text-shadow: 0 4px 22px rgba(0, 0, 0, .55);
+  text-shadow: 0 4px 22px var(--invertText55);
 }
 
 .home-hero__actions {
@@ -339,9 +339,9 @@ function sectionGridSpan(index: number, total: number) {
   padding: 8px 11px;
   border: 0;
   border-radius: 100px;
-  background: rgba(0, 0, 0, .24);
+  background: var(--themeSurface35);
   backdrop-filter: blur(12px);
-  color: white;
+  color: var(--normalText);
   font: inherit;
   font-size: 10px;
   font-weight: 750;
@@ -357,29 +357,18 @@ function sectionGridSpan(index: number, total: number) {
 
 .home-feed {
   z-index: 20;
-  min-height: 100vh;
+  min-height: var(--home-viewport-height);
   background: var(--themeBackground);
 }
 
 .home-feed__state {
-  min-height: 100vh;
+  min-height: var(--home-viewport-height);
 }
 
 .home-feed__grid {
   display: grid;
   grid-template-columns: repeat(6, minmax(0, 1fr));
-  grid-auto-rows: 100vh;
+  grid-auto-rows: var(--home-viewport-height);
   width: 100%;
-}
-
-@media (max-width: 819px) {
-  .home-hero {
-    min-height: 100svh;
-    height: 100svh;
-  }
-
-  .home-feed__grid {
-    grid-auto-rows: 100svh;
-  }
 }
 </style>
