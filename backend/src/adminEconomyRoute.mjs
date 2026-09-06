@@ -10,7 +10,10 @@ const MIN_REFERENCE_VALUE_TOMAN = 1
 const MAX_REFERENCE_VALUE_TOMAN = 1_000_000_000
 const MIN_ISSUANCE_AMOUNT = 0
 const MAX_ISSUANCE_AMOUNT = 1_000_000_000
+const MIN_SINK_COST = 0
+const MAX_SINK_COST = 1_000_000_000
 const GOIN_ISSUANCE_RULE_VERSION_KEY = 'goin_issuance_rule_version'
+const GOIN_SINK_RULE_VERSION_KEY = ECONOMY_SETTING_KEYS.GOIN_SINK_RULE_VERSION
 
 const ISSUANCE_SETTINGS = Object.freeze({
   accountCreated: Object.freeze({
@@ -35,10 +38,19 @@ const ISSUANCE_SETTINGS = Object.freeze({
   }),
 })
 
+const SINK_SETTINGS = Object.freeze({
+  promptArchiveUnlock: Object.freeze({
+    settingKey: ECONOMY_SETTING_KEYS.GOIN_PROMPT_ARCHIVE_UNLOCK_COST,
+    defaultValue: 5,
+  }),
+})
+
 const ALL_SETTING_KEYS = Object.freeze([
   ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN,
   GOIN_ISSUANCE_RULE_VERSION_KEY,
+  GOIN_SINK_RULE_VERSION_KEY,
   ...Object.values(ISSUANCE_SETTINGS).map(definition => definition.settingKey),
+  ...Object.values(SINK_SETTINGS).map(definition => definition.settingKey),
 ])
 
 function isJsonRequest(request) {
@@ -99,19 +111,44 @@ async function readIntegerSettings(executor = queryDatabase) {
   return new Map(result.rows.map(row => [row.settingKey, row]))
 }
 
+function resolveLatestSettingUpdate(rows) {
+  const candidates = [...rows.values()]
+    .filter(row => row?.updatedAt instanceof Date && !Number.isNaN(row.updatedAt.getTime()))
+    .sort((first, second) => second.updatedAt.getTime() - first.updatedAt.getTime())
+
+  const latest = candidates[0] ?? null
+  return {
+    updatedBy: latest?.updatedBy ?? null,
+    updatedAt: latest?.updatedAt?.toISOString?.() ?? null,
+  }
+}
+
 async function getSettings(executor = queryDatabase) {
   const rows = await readIntegerSettings(executor)
   const referenceRow = rows.get(ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN)
-  const ruleVersionRow = rows.get(GOIN_ISSUANCE_RULE_VERSION_KEY)
+  const issuanceRuleVersionRow = rows.get(GOIN_ISSUANCE_RULE_VERSION_KEY)
+  const sinkRuleVersionRow = rows.get(GOIN_SINK_RULE_VERSION_KEY)
 
   const issuance = {
-    ruleVersion: Number(ruleVersionRow?.integerValue ?? 1),
+    ruleVersion: Number(issuanceRuleVersionRow?.integerValue ?? 1),
   }
 
   for (const [apiKey, definition] of Object.entries(ISSUANCE_SETTINGS)) {
     issuance[apiKey] = Number(
       rows.get(definition.settingKey)?.integerValue ?? definition.defaultValue,
     )
+  }
+
+  const sinks = {
+    ruleVersion: Number(sinkRuleVersionRow?.integerValue ?? 1),
+  }
+
+  for (const [apiKey, definition] of Object.entries(SINK_SETTINGS)) {
+    sinks[apiKey] = {
+      costGoin: Number(
+        rows.get(definition.settingKey)?.integerValue ?? definition.defaultValue,
+      ),
+    }
   }
 
   return {
@@ -121,8 +158,8 @@ async function getSettings(executor = queryDatabase) {
     },
     goinReferenceValueToman: Number(referenceRow?.integerValue ?? 250),
     issuance,
-    updatedBy: referenceRow?.updatedBy ?? null,
-    updatedAt: referenceRow?.updatedAt?.toISOString?.() ?? null,
+    sinks,
+    ...resolveLatestSettingUpdate(rows),
   }
 }
 
@@ -131,7 +168,7 @@ function validateSettingsBody(body) {
     return { error: 'JSON body must be an object', patch: null }
   }
 
-  const allowedTopLevelKeys = new Set(['goinReferenceValueToman', 'issuance'])
+  const allowedTopLevelKeys = new Set(['goinReferenceValueToman', 'issuance', 'sinks'])
   const unknownTopLevelKey = Object.keys(body).find(key => !allowedTopLevelKeys.has(key))
   if (unknownTopLevelKey) {
     return { error: `Unsupported economy setting: ${unknownTopLevelKey}`, patch: null }
@@ -144,6 +181,7 @@ function validateSettingsBody(body) {
   const patch = {
     referenceValueToman: null,
     issuance: {},
+    sinks: {},
   }
 
   if (Object.prototype.hasOwnProperty.call(body, 'goinReferenceValueToman')) {
@@ -184,6 +222,47 @@ function validateSettingsBody(body) {
         }
       }
       patch.issuance[apiKey] = value
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'sinks')) {
+    if (!isPlainObject(body.sinks) || Object.keys(body.sinks).length === 0) {
+      return { error: 'sinks must be a non-empty object', patch: null }
+    }
+
+    const unknownSinkKey = Object.keys(body.sinks)
+      .find(key => !Object.prototype.hasOwnProperty.call(SINK_SETTINGS, key))
+    if (unknownSinkKey) {
+      return { error: `Unsupported sink setting: ${unknownSinkKey}`, patch: null }
+    }
+
+    for (const [apiKey, value] of Object.entries(body.sinks)) {
+      if (!isPlainObject(value)) {
+        return { error: `${apiKey} must be an object`, patch: null }
+      }
+
+      const unknownSinkField = Object.keys(value).find(key => key !== 'costGoin')
+      if (unknownSinkField) {
+        return { error: `Unsupported ${apiKey} setting: ${unknownSinkField}`, patch: null }
+      }
+
+      if (!Object.prototype.hasOwnProperty.call(value, 'costGoin')) {
+        return { error: `${apiKey}.costGoin is required`, patch: null }
+      }
+
+      const costGoin = value.costGoin
+      if (
+        !Number.isSafeInteger(costGoin) ||
+        costGoin < MIN_SINK_COST ||
+        costGoin > MAX_SINK_COST
+      ) {
+        return {
+          error: `${apiKey}.costGoin must be an integer between ${MIN_SINK_COST} and ${MAX_SINK_COST}`,
+          patch: null,
+        }
+      }
+
+      patch.sinks[apiKey] = costGoin
     }
   }
 
@@ -259,7 +338,21 @@ async function updateEconomySettings(actor, patch) {
       }
     }
 
-    if (!referenceChanged && Object.keys(changedIssuance).length === 0) {
+    const changedSinks = {}
+    for (const [apiKey, nextValue] of Object.entries(patch.sinks)) {
+      if (nextValue !== current.sinks[apiKey]?.costGoin) {
+        changedSinks[apiKey] = {
+          from: current.sinks[apiKey]?.costGoin ?? null,
+          to: nextValue,
+        }
+      }
+    }
+
+    if (
+      !referenceChanged &&
+      Object.keys(changedIssuance).length === 0 &&
+      Object.keys(changedSinks).length === 0
+    ) {
       return { changed: false, settings: current }
     }
 
@@ -310,6 +403,37 @@ async function updateEconomySettings(actor, patch) {
           fromRuleVersion: current.issuance.ruleVersion,
           toRuleVersion: nextRuleVersion,
           changes: changedIssuance,
+          unit: ECONOMY_UNIT.code,
+        },
+      )
+    }
+
+    if (Object.keys(changedSinks).length > 0) {
+      for (const [apiKey, change] of Object.entries(changedSinks)) {
+        await upsertIntegerSetting(
+          execute,
+          SINK_SETTINGS[apiKey].settingKey,
+          change.to,
+          actor.id,
+        )
+      }
+
+      const nextRuleVersion = current.sinks.ruleVersion + 1
+      await upsertIntegerSetting(
+        execute,
+        GOIN_SINK_RULE_VERSION_KEY,
+        nextRuleVersion,
+        actor.id,
+      )
+
+      await insertAuditEvent(
+        execute,
+        actor.id,
+        'economy.goin_sink_policy_updated',
+        {
+          fromRuleVersion: current.sinks.ruleVersion,
+          toRuleVersion: nextRuleVersion,
+          changes: changedSinks,
           unit: ECONOMY_UNIT.code,
         },
       )
