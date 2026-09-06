@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase, withDatabaseTransaction } from './database.mjs'
+import { createProfileRequirementPayload } from './profileRequirements.mjs'
 
 export const ECONOMY_UNIT = Object.freeze({
   code: 'goin',
@@ -10,9 +11,14 @@ export const ECONOMY_UNIT = Object.freeze({
 
 export const ECONOMY_SETTING_KEYS = Object.freeze({
   GOIN_REFERENCE_VALUE_TOMAN: 'goin_reference_value_toman',
+  GOIN_PROMPT_ARCHIVE_UNLOCK_COST: 'goin_prompt_archive_unlock_cost',
+  GOIN_SINK_RULE_VERSION: 'goin_sink_rule_version',
 })
 
 const DEFAULT_GOIN_REFERENCE_VALUE_TOMAN = 250
+const DEFAULT_PROMPT_ARCHIVE_UNLOCK_COST = 5
+const DEFAULT_SINK_RULE_VERSION = 1
+const PROMPT_ARCHIVE_RESOURCE_TYPE = 'prompt_archive_item'
 const MAX_EVENT_TYPE_LENGTH = 100
 const MAX_IDEMPOTENCY_KEY_LENGTH = 240
 const MAX_SOURCE_TYPE_LENGTH = 100
@@ -53,7 +59,21 @@ function mapEconomyEvent(row) {
   }
 }
 
-async function getReferenceValueToman(executor = queryDatabase) {
+function mapUnlockRow(row) {
+  if (!row) return null
+  return {
+    id: row.id,
+    resourceType: row.resourceType,
+    resourceId: row.resourceId,
+    economyEventId: row.economyEventId ?? null,
+    priceGoin: Number(row.priceGoin),
+    pricingRuleVersion: Number(row.pricingRuleVersion),
+    metadata: row.metadata ?? {},
+    unlockedAt: row.unlockedAt.toISOString(),
+  }
+}
+
+async function getIntegerSetting(settingKey, fallback, executor = queryDatabase) {
   const result = await executor(
     `
       SELECT integer_value AS "integerValue"
@@ -61,13 +81,45 @@ async function getReferenceValueToman(executor = queryDatabase) {
       WHERE setting_key = $1
       LIMIT 1
     `,
-    [ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN],
+    [settingKey],
   )
 
-  const value = Number(result.rows[0]?.integerValue ?? DEFAULT_GOIN_REFERENCE_VALUE_TOMAN)
-  return Number.isSafeInteger(value) && value > 0
-    ? value
-    : DEFAULT_GOIN_REFERENCE_VALUE_TOMAN
+  const value = Number(result.rows[0]?.integerValue ?? fallback)
+  return Number.isSafeInteger(value) ? value : fallback
+}
+
+async function getReferenceValueToman(executor = queryDatabase) {
+  const value = await getIntegerSetting(
+    ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN,
+    DEFAULT_GOIN_REFERENCE_VALUE_TOMAN,
+    executor,
+  )
+
+  return value > 0 ? value : DEFAULT_GOIN_REFERENCE_VALUE_TOMAN
+}
+
+async function getPromptArchiveUnlockPolicy(executor = queryDatabase) {
+  const [costGoin, ruleVersion] = await Promise.all([
+    getIntegerSetting(
+      ECONOMY_SETTING_KEYS.GOIN_PROMPT_ARCHIVE_UNLOCK_COST,
+      DEFAULT_PROMPT_ARCHIVE_UNLOCK_COST,
+      executor,
+    ),
+    getIntegerSetting(
+      ECONOMY_SETTING_KEYS.GOIN_SINK_RULE_VERSION,
+      DEFAULT_SINK_RULE_VERSION,
+      executor,
+    ),
+  ])
+
+  return {
+    costGoin: Number.isSafeInteger(costGoin) && costGoin >= 0
+      ? costGoin
+      : DEFAULT_PROMPT_ARCHIVE_UNLOCK_COST,
+    ruleVersion: Number.isSafeInteger(ruleVersion) && ruleVersion > 0
+      ? ruleVersion
+      : DEFAULT_SINK_RULE_VERSION,
+  }
 }
 
 export async function getUserEconomyState(userId, executor = queryDatabase) {
@@ -366,6 +418,209 @@ async function listUserEconomyEvents(userId, { limit, cursor }) {
   }
 }
 
+async function ensurePublishedArchiveItem(publicId, executor = queryDatabase) {
+  const result = await executor(
+    `
+      SELECT public_id AS "publicId"
+      FROM prompt_archive_items
+      WHERE public_id = $1
+        AND status = 'published'
+      LIMIT 1
+    `,
+    [publicId],
+  )
+
+  return result.rows[0] ?? null
+}
+
+async function getExistingPromptArchiveUnlock(userId, publicId, executor = queryDatabase) {
+  const result = await executor(
+    `
+      SELECT
+        id,
+        resource_type AS "resourceType",
+        resource_id AS "resourceId",
+        economy_event_id AS "economyEventId",
+        price_goin AS "priceGoin",
+        pricing_rule_version AS "pricingRuleVersion",
+        metadata,
+        unlocked_at AS "unlockedAt"
+      FROM user_content_unlocks
+      WHERE user_id = $1
+        AND resource_type = $2
+        AND resource_id = $3
+      LIMIT 1
+    `,
+    [userId, PROMPT_ARCHIVE_RESOURCE_TYPE, String(publicId)],
+  )
+
+  return mapUnlockRow(result.rows[0])
+}
+
+async function getPromptArchiveUnlockState(userId, publicId) {
+  const item = await ensurePublishedArchiveItem(publicId)
+  if (!item) return null
+
+  const [unlock, policy, economy] = await Promise.all([
+    getExistingPromptArchiveUnlock(userId, publicId),
+    getPromptArchiveUnlockPolicy(),
+    getUserEconomyState(userId),
+  ])
+
+  return {
+    resource: {
+      type: PROMPT_ARCHIVE_RESOURCE_TYPE,
+      id: String(publicId),
+      publicId,
+    },
+    unlocked: Boolean(unlock),
+    unlock,
+    policy: {
+      costGoin: policy.costGoin,
+      ruleVersion: policy.ruleVersion,
+    },
+    economy,
+    canAfford: Boolean(unlock) || economy.balance >= policy.costGoin,
+  }
+}
+
+async function unlockPromptArchiveItem(userId, publicId) {
+  return withDatabaseTransaction(async (client) => {
+    const execute = client.query.bind(client)
+
+    const userResult = await execute(
+      `SELECT id FROM users WHERE id = $1 FOR UPDATE`,
+      [userId],
+    )
+    if (!userResult.rows[0]) throw new Error('Economy user not found')
+
+    const item = await ensurePublishedArchiveItem(publicId, execute)
+    if (!item) return { notFound: true }
+
+    const existingUnlock = await getExistingPromptArchiveUnlock(userId, publicId, execute)
+    if (existingUnlock) {
+      return {
+        notFound: false,
+        newlyUnlocked: false,
+        alreadyUnlocked: true,
+        chargedGoin: 0,
+        unlock: existingUnlock,
+        economy: await getUserEconomyState(userId, execute),
+      }
+    }
+
+    const policy = await getPromptArchiveUnlockPolicy(execute)
+
+    const balanceResult = await execute(
+      `
+        SELECT COALESCE(SUM(unit_delta), 0)::bigint AS balance
+        FROM user_economy_events
+        WHERE user_id = $1
+      `,
+      [userId],
+    )
+    const balance = Number(balanceResult.rows[0]?.balance ?? 0)
+
+    if (balance < policy.costGoin) {
+      throw new InsufficientGoinBalanceError({
+        balance,
+        required: policy.costGoin,
+      })
+    }
+
+    let economyEventId = null
+
+    if (policy.costGoin > 0) {
+      economyEventId = randomUUID()
+      await execute(
+        `
+          INSERT INTO user_economy_events (
+            id,
+            user_id,
+            event_type,
+            unit_delta,
+            source_type,
+            source_id,
+            source_score_event_id,
+            idempotency_key,
+            metadata
+          )
+          VALUES ($1, $2, 'prompt_archive_unlock', $3, $4, $5, NULL, $6, $7::jsonb)
+        `,
+        [
+          economyEventId,
+          userId,
+          -policy.costGoin,
+          PROMPT_ARCHIVE_RESOURCE_TYPE,
+          String(publicId),
+          `prompt_archive_unlock:v1:${publicId}`,
+          JSON.stringify({
+            ruleVersion: policy.ruleVersion,
+            policyKey: ECONOMY_SETTING_KEYS.GOIN_PROMPT_ARCHIVE_UNLOCK_COST,
+            publicId,
+            accessKind: 'copy_unlock',
+          }),
+        ],
+      )
+    }
+
+    const unlockResult = await execute(
+      `
+        INSERT INTO user_content_unlocks (
+          id,
+          user_id,
+          resource_type,
+          resource_id,
+          economy_event_id,
+          price_goin,
+          pricing_rule_version,
+          metadata
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb)
+        RETURNING
+          id,
+          resource_type AS "resourceType",
+          resource_id AS "resourceId",
+          economy_event_id AS "economyEventId",
+          price_goin AS "priceGoin",
+          pricing_rule_version AS "pricingRuleVersion",
+          metadata,
+          unlocked_at AS "unlockedAt"
+      `,
+      [
+        randomUUID(),
+        userId,
+        PROMPT_ARCHIVE_RESOURCE_TYPE,
+        String(publicId),
+        economyEventId,
+        policy.costGoin,
+        policy.ruleVersion,
+        JSON.stringify({
+          publicId,
+          accessKind: 'copy_unlock',
+        }),
+      ],
+    )
+
+    return {
+      notFound: false,
+      newlyUnlocked: true,
+      alreadyUnlocked: false,
+      chargedGoin: policy.costGoin,
+      unlock: mapUnlockRow(unlockResult.rows[0]),
+      economy: await getUserEconomyState(userId, execute),
+    }
+  })
+}
+
+function parsePromptArchiveUnlockPath(pathname) {
+  const match = pathname.match(/^\/api\/economy\/unlocks\/prompt-archive\/(\d+)$/)
+  if (!match) return null
+  const publicId = Number(match[1])
+  if (!Number.isSafeInteger(publicId) || publicId <= 0) return undefined
+  return publicId
+}
+
 export async function handleEconomyRequest({
   request,
   response,
@@ -375,10 +630,24 @@ export async function handleEconomyRequest({
 }) {
   const isStatePath = url.pathname === '/api/economy'
   const isEventsPath = url.pathname === '/api/economy/events'
-  if (!isStatePath && !isEventsPath) return false
+  const promptArchivePublicId = parsePromptArchiveUnlockPath(url.pathname)
+  const isUnlockPath = promptArchivePublicId !== null
 
-  if (request.method !== 'GET') {
-    sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, corsHeaders)
+  if (!isStatePath && !isEventsPath && !isUnlockPath) return false
+
+  if (isUnlockPath && promptArchivePublicId === undefined) {
+    sendJson(response, 400, { ok: false, message: 'Invalid Prompt Archive id' }, corsHeaders)
+    return true
+  }
+
+  const allowedMethods = isUnlockPath ? new Set(['GET', 'POST']) : new Set(['GET'])
+  if (!allowedMethods.has(request.method ?? '')) {
+    sendJson(
+      response,
+      405,
+      { ok: false, message: 'Method Not Allowed' },
+      { ...corsHeaders, Allow: isUnlockPath ? 'GET, POST' : 'GET' },
+    )
     return true
   }
 
@@ -396,6 +665,11 @@ export async function handleEconomyRequest({
     return true
   }
 
+  if (isUnlockPath && !user.email) {
+    sendJson(response, 403, createProfileRequirementPayload(user, ['email']), corsHeaders)
+    return true
+  }
+
   try {
     if (isStatePath) {
       sendJson(response, 200, {
@@ -405,30 +679,81 @@ export async function handleEconomyRequest({
       return true
     }
 
-    const query = parseHistoryQuery(url)
-    if (!query) {
-      sendJson(response, 400, { ok: false, message: 'Invalid economy history query' }, corsHeaders)
+    if (isEventsPath) {
+      const query = parseHistoryQuery(url)
+      if (!query) {
+        sendJson(response, 400, { ok: false, message: 'Invalid economy history query' }, corsHeaders)
+        return true
+      }
+
+      sendJson(response, 200, {
+        ok: true,
+        ...(await listUserEconomyEvents(user.id, query)),
+      }, corsHeaders)
+      return true
+    }
+
+    if (request.method === 'GET') {
+      const state = await getPromptArchiveUnlockState(user.id, promptArchivePublicId)
+      if (!state) {
+        sendJson(response, 404, { ok: false, message: 'Archive item not found' }, corsHeaders)
+        return true
+      }
+
+      sendJson(response, 200, { ok: true, ...state }, corsHeaders)
+      return true
+    }
+
+    const result = await unlockPromptArchiveItem(user.id, promptArchivePublicId)
+    if (result.notFound) {
+      sendJson(response, 404, { ok: false, message: 'Archive item not found' }, corsHeaders)
       return true
     }
 
     sendJson(response, 200, {
       ok: true,
-      ...(await listUserEconomyEvents(user.id, query)),
+      newlyUnlocked: result.newlyUnlocked,
+      alreadyUnlocked: result.alreadyUnlocked,
+      chargedGoin: result.chargedGoin,
+      unlock: result.unlock,
+      economy: result.economy,
     }, corsHeaders)
   } catch (error) {
+    if (error instanceof InsufficientGoinBalanceError) {
+      sendJson(response, 409, {
+        ok: false,
+        code: error.code,
+        message: error.message,
+        balance: error.balance,
+        required: error.required,
+      }, corsHeaders)
+      return true
+    }
+
     console.error('[Prompt Draft API] economy request failed', error)
-    sendJson(response, 500, { ok: false, message: 'Failed to load economy state' }, corsHeaders)
+    sendJson(response, 500, { ok: false, message: 'Failed to process economy request' }, corsHeaders)
   }
 
   return true
 }
 
 export async function getEconomyConfiguration() {
+  const [referenceValueToman, promptArchiveUnlock] = await Promise.all([
+    getReferenceValueToman(),
+    getPromptArchiveUnlockPolicy(),
+  ])
+
   return {
     unit: {
       ...ECONOMY_UNIT,
-      referenceValueToman: await getReferenceValueToman(),
+      referenceValueToman,
       referenceValueKind: 'simulation_reference',
+    },
+    sinks: {
+      promptArchiveUnlock: {
+        costGoin: promptArchiveUnlock.costGoin,
+        ruleVersion: promptArchiveUnlock.ruleVersion,
+      },
     },
   }
 }
