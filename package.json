@@ -5,7 +5,7 @@
   "scripts": {
     "build": "nuxt build",
     "dev": "nuxt dev",
-    "generate": "nuxt generate && tsx scripts/generate-offline-manifest.ts && tsx scripts/generate-public-seo.ts",
+    "generate": "node scripts/run-static-generate.mjs && tsx scripts/generate-offline-manifest.ts && tsx scripts/generate-public-seo.ts",
     "preview": "nuxt preview",
     "stack": "docker compose up -d --build",
     "stack:restart": "docker compose up -d --build --force-recreate",
