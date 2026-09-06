@@ -23,6 +23,14 @@ const iconSize = computed(() => (props.large ? 27 : 25));
 const valueSize = computed(() => (props.large ? 30 : 28));
 const labelSize = computed(() => (props.large ? 17 : 16));
 const helperSize = computed(() => (props.large ? 13 : 12));
+const implicitGoinValue = computed(() => {
+  if (props.unit === "goin") return props.value;
+  if (typeof props.value !== "string") return null;
+  const match = props.value.trim().match(/^(.+?)\s+goin$/i);
+  return match?.[1] ?? null;
+});
+const isGoinValue = computed(() => props.unit === "goin" || implicitGoinValue.value !== null);
+const goinValue = computed(() => props.unit === "goin" ? props.value : implicitGoinValue.value ?? props.value);
 const formattedValue = computed(() => {
   return typeof props.value === "number"
     ? new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(props.value)
@@ -45,9 +53,9 @@ const formattedValue = computed(() => {
         <el-icon :icon="icon" :color="color" :size="iconSize" />
       </el-flex>
       <EconomyGoinAmount
-        v-if="unit === 'goin'"
+        v-if="isGoinValue"
         class="manage-metric-card__value"
-        :value="value"
+        :value="goinValue"
         :size="valueSize"
         :weight="800"
       />
