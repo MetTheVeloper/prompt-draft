@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-06
+Last updated: 2026-09-07
 
 Branch:
 
@@ -39,8 +39,8 @@ Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 
 Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-Phase 21.5.2 Docker Production Runtime          -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-Phase 21.5.3 Cloudflare Production Path         -> NEXT AFTER PHASE 2 ACCEPTANCE
+Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+Phase 21.5.3 Cloudflare Production Path         -> NEXT / NOT STARTED
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
 First domain                                    -> Content Creation
 Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
@@ -73,8 +73,8 @@ Milestone 21.5 execution order:
 
 ```text
 Phase 1 — Hybrid / SSR Architecture                       DONE / ACCEPTED
-Phase 2 — Docker Production Runtime                       IMPLEMENTED / VERIFY NEXT
-Phase 3 — Cloudflare Production Path                      NOT STARTED
+Phase 2 — Docker Production Runtime                       DONE / ACCEPTED
+Phase 3 — Cloudflare Production Path                      NEXT / NOT STARTED
 Phase 4 — SEO Platform & Public Content Architecture      NOT STARTED
 Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
 ```
@@ -128,9 +128,9 @@ regular-user and super-admin auth smoke
 
 The preview-port CORS issue was fixed by allowing port 3000 in local API CORS configuration. The super-admin login issue was confirmed to be a local password-hash mismatch rather than an SSR/origin/role restriction and was corrected through a secure local password-reset CLI.
 
-## Phase 2 Docker runtime state
+## Phase 2 Docker runtime state — accepted
 
-Implemented production-like local shape:
+Accepted production-like local shape:
 
 ```text
 browser
@@ -156,7 +156,7 @@ NUXT_API_BASE_INTERNAL=http://api:4000      server-only
 NUXT_PUBLIC_API_BASE=http://localhost:4000  browser-visible local default
 ```
 
-Implemented Phase 2 infrastructure:
+Accepted Phase 2 infrastructure:
 
 ```text
 root multi-stage frontend Dockerfile
@@ -167,25 +167,44 @@ health-gated service dependencies
 restart: unless-stopped
 server-internal vs browser-public API origin split
 stack lifecycle pnpm commands
+builder-only 4 GB Node heap for Nuxt SSR bundling
+BuildKit pnpm-store cache
+pnpm registry timeout/retry/concurrency hardening
+correct Corepack package-manager integrity metadata
 ```
 
-Primary local verification commands:
-
-```powershell
-pnpm stack
-pnpm stack:status
-```
-
-Expected services:
+Founder-local verification passed with:
 
 ```text
+pnpm stack
+pnpm stack:status
+pnpm stack:restart
+```
+
+Verified outcomes:
+
+```text
+Nuxt client build PASS
+Nuxt SSR server build PASS
+Nitro node-server output PASS
+frontend image built
+api image built
 frontend healthy
 api healthy
 db healthy
 translator healthy
+/discover/posters-editorial functional through Docker frontend
+raw SSR HTML fetched successfully
+browser API traffic uses http://localhost:4000
+GET /api/auth/me -> 200 OK observed in DevTools
+regular and super-admin auth/application smoke PASS
+full stack rebuild/recreate PASS
+post-restart recovery to all-healthy PASS
 ```
 
-Phase 2 remains unaccepted until founder-local Docker build/start, SSR-to-API, browser API, auth/application and restart/recovery smoke tests pass.
+Docker-internal `http://api:4000` remains server-only and was not exposed to browser networking.
+
+Phase 2 is closed. Its accepted runtime is the baseline for Phase 3.
 
 ## Accepted Creator SEO direction for Phase 4
 
@@ -527,8 +546,14 @@ docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
-Current Phase 2 implementation checkpoint:
+Accepted Phase 2 implementation checkpoint:
 
 ```text
-a0769b5e7626caf5142febe9b81ec54e245f35a0
+72acb6beb5e6e21232c945a05534bc41c0dabdc3
+```
+
+Current next implementation phase:
+
+```text
+Phase 21.5.3 — Cloudflare Production Path
 ```
