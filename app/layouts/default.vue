@@ -20,9 +20,8 @@ const promptDetailMode = computed(() => {
   );
 });
 
-const promptArchiveRoute = computed(() => route.name === "prompts");
-const canRenderPromptArchive = computed(() => {
-  if (!promptArchiveRoute.value) return true;
+const canRenderPromptDetail = computed(() => {
+  if (!promptDetailMode.value) return true;
 
   return auth.isLoggedIn.value && auth.hasProfileField("email");
 });
@@ -177,7 +176,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
       :p="padding"
       @contextmenu="handleLayoutContextMenu">
       <PromptsPromptArchiveAccessGate
-        v-if="promptArchiveRoute && !canRenderPromptArchive"
+        v-if="promptDetailMode && !canRenderPromptDetail"
       />
       <slot v-else />
     </el-flex>
