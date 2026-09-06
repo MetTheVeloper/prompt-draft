@@ -4,10 +4,9 @@ WORKDIR /app
 
 RUN corepack enable
 
-COPY package.json pnpm-lock.yaml ./
-RUN pnpm install --frozen-lockfile
-
 COPY . .
+
+RUN pnpm install --frozen-lockfile
 
 ENV NODE_ENV=production
 RUN pnpm build
