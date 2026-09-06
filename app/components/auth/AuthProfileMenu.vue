@@ -13,6 +13,7 @@ const emit = defineEmits<{
 
 const { t, locale } = useI18n();
 const auth = useAuth();
+const economy = useEconomy();
 const avatar = useUserAvatar();
 const cover = useUserCover();
 const childMenu = useChildMenu();
@@ -91,6 +92,14 @@ const formattedXp = computed(() => {
   const score = auth.score.value;
   if (!score) return "—";
   return compactXp(score.totalXp);
+});
+
+const formattedGoin = computed(() => {
+  if (!economy.economy.value) return "—";
+
+  return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(
+    economy.balance.value,
+  );
 });
 
 const formattedReferralCount = computed(() => {
@@ -360,6 +369,7 @@ onMounted(async () => {
   try {
     await Promise.all([
       auth.refreshAuthorizationState(),
+      economy.refresh(),
       avatar.refresh(),
       cover.refresh(),
     ]);
@@ -402,6 +412,7 @@ async function handleOpenManage() {
 
 async function handleLogout() {
   await auth.logout();
+  economy.reset();
   avatar.reset();
   cover.reset();
   emit("close");
@@ -484,7 +495,7 @@ async function handleLogout() {
 
     <el-flex rules="csc" :gap="12" :p="[50, 16, 16, 16]" class="w100">
       <el-flex rules="ccc" :gap="6" class="w100">
-        <el-flex rules="rcc" :gap="6" class="w100">
+        <el-flex rules="rcc" :gap="6" class="w100" wrap>
           <el-text :size="15" :weight="800">{{ displayIdentityLabel }}</el-text>
           <el-text
             :size="12"
@@ -493,7 +504,16 @@ async function handleLogout() {
             color="orange"
             :p="[2, 5]"
             :radius="100">
-            {{ formattedXp }}
+            {{ formattedXp }} XP
+          </el-text>
+          <el-text
+            :size="12"
+            :weight="800"
+            marker="green10"
+            color="green"
+            :p="[2, 5]"
+            :radius="100">
+            {{ formattedGoin }} goin
           </el-text>
         </el-flex>
 
@@ -562,6 +582,33 @@ async function handleLogout() {
       </el-text>
 
       <el-divider />
+
+      <el-flex
+        rules="rbc"
+        class="w100"
+        :gap="16"
+        :p="[10, 12]"
+        :radius="12"
+        bg="surface">
+        <el-text
+          :size="12"
+          color="normal55"
+          icon="account_balance_wallet"
+          icon-color="green">
+          {{ t("auth.profile.goinBalance") }}
+        </el-text>
+        <el-flex rules="rcc" :gap="5">
+          <el-text :size="13" :weight="800" color="green">{{ formattedGoin }}</el-text>
+          <el-text :size="10" color="normal55">goin</el-text>
+        </el-flex>
+      </el-flex>
+
+      <el-text v-if="economy.loading.value && !economy.economy.value" :size="10" color="normal55">
+        {{ t("auth.profile.goinLoading") }}
+      </el-text>
+      <el-text v-else-if="economy.error.value" :size="10" color="red">
+        {{ t("auth.profile.goinLoadError") }}
+      </el-text>
 
       <el-flex rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55" icon="person_add" icon-color="blue">
