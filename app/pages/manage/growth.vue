@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { useWindowSize } from "@vueuse/core";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
+import ManageGrowthVisuals from "~/components/manage/ManageGrowthVisuals.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type {
   AdminGrowthDailyPoint,
@@ -17,7 +17,7 @@ definePageMeta({
 const auth = useAuth();
 const api = usePromptDraftApi();
 const { locale, t } = useI18n();
-const { width } = useWindowSize({ initialWidth: 1024 });
+const { mobile, tablet, laptop, desktop, wide } = useScreen();
 
 const days = ref<AdminGrowthWindowDays>(7);
 const summary = ref<AdminGrowthSummary | null>(null);
@@ -28,31 +28,18 @@ const loading = ref(false);
 const errorMessage = ref("");
 
 const cardColumns = computed(() => {
-  if (width.value < 640) return 1;
-  if (width.value < 1024) return 2;
+  if (mobile.value) return 1;
+  if (tablet.value) return 2;
   return 4;
 });
 
-const isLaptopUp = computed(() => width.value >= 1024);
+const metricGroupColumns = computed(() => desktop.value || wide.value ? 2 : 1);
+const useLargeCards = computed(() => laptop.value);
 
 function percent(value: number) {
   return `${new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US", {
     maximumFractionDigits: 1,
   }).format(value)}%`;
-}
-
-function number(value: number) {
-  return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(value);
-}
-
-function formatDay(value: string) {
-  const date = new Date(`${value}T00:00:00Z`);
-  if (Number.isNaN(date.getTime())) return value;
-
-  return date.toLocaleDateString(locale.value === "fa" ? "fa-IR" : "en-US", {
-    month: "short",
-    day: "numeric",
-  });
 }
 
 const generatedAtLabel = computed(() => {
@@ -201,6 +188,7 @@ const economyCards = computed(() => {
       value: value.economy.issued,
       icon: "add_circle",
       color: "green",
+      unit: "goin" as const,
     },
     {
       key: "goin-spent",
@@ -209,6 +197,7 @@ const economyCards = computed(() => {
       value: value.economy.spent,
       icon: "remove_circle",
       color: "orange",
+      unit: "goin" as const,
     },
     {
       key: "goin-outstanding",
@@ -217,6 +206,7 @@ const economyCards = computed(() => {
       value: value.economy.outstanding,
       icon: "account_balance_wallet",
       color: "prim",
+      unit: "goin" as const,
     },
     {
       key: "active-spenders",
@@ -225,9 +215,33 @@ const economyCards = computed(() => {
       value: value.economy.activeSpenders,
       icon: "shopping_cart",
       color: "blue",
+      unit: null,
     },
   ];
 });
+
+const metricGroups = computed(() => [
+  {
+    key: "audience",
+    title: t("manage.growth.groups.audience"),
+    cards: audienceCards.value,
+  },
+  {
+    key: "prompts",
+    title: t("manage.growth.groups.prompts"),
+    cards: promptCards.value,
+  },
+  {
+    key: "referrals",
+    title: t("manage.growth.groups.referrals"),
+    cards: referralCards.value,
+  },
+  {
+    key: "economy",
+    title: t("manage.growth.groups.economy"),
+    cards: economyCards.value,
+  },
+]);
 
 function getApiErrorMessage(error: unknown) {
   const value = error as { data?: { message?: unknown } };
@@ -307,7 +321,7 @@ onMounted(async () => {
       :p="12"
       :radius="10">
       <el-icon icon="info" color="blue" :size="18" />
-      <el-flex rules="csc" :gap="3">
+      <el-flex rules="ccs" :gap="3" class="fg100">
         <el-text :size="12" :weight="700">{{ t("manage.growth.measurementTitle") }}</el-text>
         <el-text :size="11" color="normal55">{{ t("manage.growth.measurementNote") }}</el-text>
       </el-flex>
@@ -330,147 +344,35 @@ onMounted(async () => {
     </el-flex>
 
     <template v-else-if="summary">
-      <el-flex rules="ccs" :gap="10" class="w100">
-        <el-text type="h3" :size="18" :weight="800">{{ t("manage.growth.groups.audience") }}</el-text>
-        <el-grid :cols="cardColumns" :gap="12" align-items="stretch" class="w100">
-          <ManageMetricCard
-            v-for="card in audienceCards"
-            :key="card.key"
-            :label="card.label"
-            :value="card.value"
-            :icon="card.icon"
-            :color="card.color"
-            :helper="card.helper"
-            :large="isLaptopUp"
-          />
-        </el-grid>
-      </el-flex>
+      <ManageGrowthVisuals :series="series" :top-tags="topTags" />
 
-      <el-flex rules="ccs" :gap="10" class="w100">
-        <el-text type="h3" :size="18" :weight="800">{{ t("manage.growth.groups.prompts") }}</el-text>
-        <el-grid :cols="cardColumns" :gap="12" align-items="stretch" class="w100">
-          <ManageMetricCard
-            v-for="card in promptCards"
-            :key="card.key"
-            :label="card.label"
-            :value="card.value"
-            :icon="card.icon"
-            :color="card.color"
-            :helper="card.helper"
-            :large="isLaptopUp"
-          />
-        </el-grid>
-      </el-flex>
-
-      <el-flex rules="ccs" :gap="10" class="w100">
-        <el-text type="h3" :size="18" :weight="800">{{ t("manage.growth.groups.referrals") }}</el-text>
-        <el-grid :cols="cardColumns" :gap="12" align-items="stretch" class="w100">
-          <ManageMetricCard
-            v-for="card in referralCards"
-            :key="card.key"
-            :label="card.label"
-            :value="card.value"
-            :icon="card.icon"
-            :color="card.color"
-            :helper="card.helper"
-            :large="isLaptopUp"
-          />
-        </el-grid>
-      </el-flex>
-
-      <el-flex rules="ccs" :gap="10" class="w100">
-        <el-text type="h3" :size="18" :weight="800">{{ t("manage.growth.groups.economy") }}</el-text>
-        <el-grid :cols="cardColumns" :gap="12" align-items="stretch" class="w100">
-          <ManageMetricCard
-            v-for="card in economyCards"
-            :key="card.key"
-            :label="card.label"
-            :value="card.value"
-            :icon="card.icon"
-            :color="card.color"
-            :helper="card.helper"
-            :large="isLaptopUp"
-          />
-        </el-grid>
-      </el-flex>
-
-      <el-grid :cols="width < 900 ? 1 : 2" :gap="16" align-items="start" class="w100">
-        <el-flex rules="ccs" :gap="12" bg="surface" :p="16" :radius="14" :br="1" bc="normal15" class="w100">
-          <el-flex rules="ccs" :gap="3" class="w100">
-            <el-text :size="17" :weight="800">{{ t("manage.growth.daily.title") }}</el-text>
-            <el-text :size="11" color="normal55">{{ t("manage.growth.daily.description") }}</el-text>
-          </el-flex>
-
-          <div class="growth-table-wrap w100">
-            <div class="growth-table">
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.day") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.views") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.copies") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.referralSignups") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.issued") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.spent") }}</el-text>
-              <el-text :size="11" :weight="700">{{ t("manage.growth.daily.unlocks") }}</el-text>
-
-              <template v-for="point in series" :key="point.day">
-                <el-text :size="11">{{ formatDay(point.day) }}</el-text>
-                <el-text :size="11">{{ number(point.promptViews) }}</el-text>
-                <el-text :size="11">{{ number(point.promptCopies) }}</el-text>
-                <el-text :size="11">{{ number(point.referralSignups) }}</el-text>
-                <el-text :size="11">{{ number(point.goinIssued) }}</el-text>
-                <el-text :size="11">{{ number(point.goinSpent) }}</el-text>
-                <el-text :size="11">{{ number(point.promptUnlocks) }}</el-text>
-              </template>
-            </div>
-          </div>
-        </el-flex>
-
-        <el-flex rules="ccs" :gap="12" bg="surface" :p="16" :radius="14" :br="1" bc="normal15" class="w100">
-          <el-flex rules="ccs" :gap="3" class="w100">
-            <el-text :size="17" :weight="800">{{ t("manage.growth.tags.title") }}</el-text>
-            <el-text :size="11" color="normal55">{{ t("manage.growth.tags.description") }}</el-text>
-          </el-flex>
-
-          <el-text v-if="!topTags.length" :size="12" color="normal55">
-            {{ t("manage.growth.tags.empty") }}
-          </el-text>
-
-          <el-flex v-else rules="ccs" :gap="8" class="w100">
-            <el-flex
-              v-for="tag in topTags"
-              :key="tag.slug"
-              rules="rbc"
-              :gap="12"
-              class="w100"
-              bg="normal5"
-              :p="10"
-              :radius="9">
-              <el-text :size="12" :weight="700">#{{ tag.slug }}</el-text>
-              <el-flex rules="rcc" :gap="8">
-                <el-text :size="10" color="normal55">
-                  {{ t("manage.growth.tags.views", { count: number(tag.views) }) }}
-                </el-text>
-                <el-text :size="10" color="prim">
-                  {{ t("manage.growth.tags.copies", { count: number(tag.copies) }) }}
-                </el-text>
-              </el-flex>
-            </el-flex>
-          </el-flex>
+      <el-grid
+        :cols="metricGroupColumns"
+        :gap="16"
+        align-items="start"
+        class="w100">
+        <el-flex
+          v-for="group in metricGroups"
+          :key="group.key"
+          rules="ccs"
+          :gap="10"
+          class="w100">
+          <el-text type="h3" :size="18" :weight="800">{{ group.title }}</el-text>
+          <el-grid :cols="cardColumns" :gap="12" align-items="stretch" class="w100">
+            <ManageMetricCard
+              v-for="card in group.cards"
+              :key="card.key"
+              :label="card.label"
+              :value="card.value"
+              :icon="card.icon"
+              :color="card.color"
+              :helper="card.helper"
+              :large="useLargeCards"
+              :unit="'unit' in card ? card.unit : null"
+            />
+          </el-grid>
         </el-flex>
       </el-grid>
     </template>
   </el-flex>
 </template>
-
-<style scoped>
-.growth-table-wrap {
-  overflow-x: auto;
-}
-
-.growth-table {
-  display: grid;
-  grid-template-columns: minmax(84px, 1.2fr) repeat(6, minmax(72px, 1fr));
-  gap: 8px 12px;
-  min-width: 680px;
-  align-items: center;
-}
-</style>
