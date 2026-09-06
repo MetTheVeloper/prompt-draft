@@ -84,4 +84,17 @@ export default {
       },
     },
   },
+  prompts: {
+    detail: {
+      unlockAndCopy: 'Unlock & copy · {cost} goin',
+      checkingUnlock: 'Checking access...',
+      unlocking: 'Unlocking...',
+      copying: 'Copying...',
+      unlockInfo: 'First copy unlocks this prompt for {cost} goin. Your balance: {balance}.',
+      unlockedInfo: 'Unlocked · future copies of this prompt are free.',
+      insufficientGoin: 'You need {required} goin to unlock this prompt. Your balance: {balance}.',
+      unlockError: 'This prompt could not be unlocked. Please try again.',
+      copyError: 'Clipboard access failed. Your prompt access remains unlocked; try copying again.',
+    },
+  },
 }
