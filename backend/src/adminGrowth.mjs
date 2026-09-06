@@ -289,7 +289,7 @@ async function getTopTags(days) {
       ),
       prompt_activity AS (
         SELECT
-          resource_id::integer AS public_id,
+          resource_id,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_archive_view'))::int AS views,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_archive_copy'))::int AS copies
         FROM product_analytics_events
@@ -297,7 +297,7 @@ async function getTopTags(days) {
           AND resource_type = 'prompt_archive_item'
           AND event_name IN ('prompt_archive_view', 'prompt_archive_copy')
           AND resource_id ~ '^[1-9][0-9]*$'
-        GROUP BY resource_id::integer
+        GROUP BY resource_id
       )
       SELECT
         tag.slug,
@@ -305,7 +305,7 @@ async function getTopTags(days) {
         COALESCE(SUM(prompt_activity.copies), 0)::bigint AS copies
       FROM prompt_activity
       INNER JOIN prompt_archive_items AS item
-        ON item.public_id = prompt_activity.public_id
+        ON item.public_id::text = prompt_activity.resource_id
       INNER JOIN prompt_archive_item_tags AS item_tag
         ON item_tag.archive_item_id = item.id
       INNER JOIN prompt_archive_tags AS tag
