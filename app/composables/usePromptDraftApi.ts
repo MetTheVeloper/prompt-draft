@@ -11,6 +11,10 @@ import type {
 } from "~/types/adminArchiveApi";
 import type { AdminDashboardSummaryResponse } from "~/types/adminDashboardApi";
 import type {
+  AdminGrowthSummaryResponse,
+  AdminGrowthWindowDays,
+} from "~/types/adminGrowthApi";
+import type {
   AdminUserMutationResponse,
   GetAdminUserResponse,
   ListAdminUsersParams,
@@ -176,6 +180,15 @@ export function usePromptDraftApi() {
   function getAdminDashboardSummary() {
     return $fetch<AdminDashboardSummaryResponse>(
       endpoint("/api/admin/dashboard/summary"),
+      {
+        headers: auth.authHeaders(),
+      },
+    );
+  }
+
+  function getAdminGrowthSummary(days: AdminGrowthWindowDays = 7) {
+    return $fetch<AdminGrowthSummaryResponse>(
+      endpoint(`/api/admin/growth/summary?days=${days}`),
       {
         headers: auth.authHeaders(),
       },
@@ -390,6 +403,7 @@ export function usePromptDraftApi() {
     translatePrompt,
     getAdminAccessCheck,
     getAdminDashboardSummary,
+    getAdminGrowthSummary,
     listAdminUsers,
     getAdminUser,
     updateAdminUserRole,
