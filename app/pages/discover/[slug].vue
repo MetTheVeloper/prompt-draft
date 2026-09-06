@@ -1,16 +1,11 @@
 <script setup lang="ts">
 import PublicDiscoveryCard from '~/components/discover/PublicDiscoveryCard.vue'
 import { DISCOVERY_INTERESTS } from '~/composables/useDiscoveryPreferences'
-import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
 
 const route = useRoute()
 const { t } = useI18n()
 const { mobile, tablet } = useScreen()
 const publicDiscovery = usePublicDiscovery()
-
-const items = ref<HomeShowcaseItem[]>([])
-const loading = ref(true)
-const failed = ref(false)
 
 const slug = computed(() => {
   return typeof route.params.slug === 'string' ? route.params.slug.trim().toLowerCase() : ''
@@ -54,21 +49,40 @@ usePublicSeo({
   canonicalPath: `/discover/${slug.value}`,
 })
 
-onMounted(async () => {
-  if (!definition.value) {
-    loading.value = false
-    return
-  }
+const { data: discoveryData, status } = await useAsyncData(
+  `public-discovery:${slug.value}`,
+  async () => {
+    if (!definition.value) {
+      return {
+        items: [],
+        failed: false,
+      }
+    }
 
-  try {
-    items.value = await publicDiscovery.load(definition.value.tags, 18)
-  } catch (error) {
-    console.warn('[Prompt Draft] public discovery page failed', error)
-    failed.value = true
-  } finally {
-    loading.value = false
-  }
-})
+    try {
+      return {
+        items: await publicDiscovery.load(definition.value.tags, 18),
+        failed: false,
+      }
+    } catch (error) {
+      console.warn('[Prompt Draft] public discovery SSR fetch failed', error)
+      return {
+        items: [],
+        failed: true,
+      }
+    }
+  },
+  {
+    default: () => ({
+      items: [],
+      failed: false,
+    }),
+  },
+)
+
+const items = computed(() => discoveryData.value?.items ?? [])
+const loading = computed(() => status.value === 'pending')
+const failed = computed(() => discoveryData.value?.failed ?? false)
 </script>
 
 <template>
