@@ -11,6 +11,10 @@ export default {
         sevenDays: "7 days",
         thirtyDays: "30 days",
       },
+      view: {
+        chart: "Chart",
+        table: "Table",
+      },
       lastUpdated: "Last updated {date}",
       loading: "Loading growth metrics…",
       loadError: "Growth metrics could not be loaded.",
@@ -41,8 +45,10 @@ export default {
         activeSpenders: { label: "Active spenders", helper: "Users with a debit in this window" },
       },
       daily: {
-        title: "Daily signal table",
+        title: "Daily signals",
         description: "UTC calendar-day rollup for the selected window.",
+        activityChart: "Measured activity",
+        goinFlowChart: "Goin flow",
         day: "Day",
         views: "Views",
         copies: "Copies",
