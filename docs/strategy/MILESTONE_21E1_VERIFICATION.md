@@ -1,6 +1,6 @@
 # Milestone 21E1 — Economy Ledger Verification
 
-Status: **LEDGER CORE LOCALLY VERIFIED / ISSUANCE MAPPING NEXT**
+Status: **LEDGER CORE LOCALLY VERIFIED / USER ACCEPTED · GOIN ISSUANCE V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION**
 
 Date: 2026-09-06
 
@@ -109,7 +109,7 @@ Direct database verification showed exactly one parallel debit row.
 
 This proves that the per-user `SELECT ... FOR UPDATE` serialization prevents two concurrent debits from spending the same goin balance.
 
-## Invariants now proven
+## Ledger invariants proven
 
 ```text
 append-only authoritative ledger
@@ -121,7 +121,9 @@ parallel spends cannot overspend
 read model remains consistent with ledger
 ```
 
-## Test-data cleanup
+The ledger/concurrency core is locally verified and founder-accepted.
+
+## Synthetic test-data cleanup
 
 The local verification events use idempotency keys under:
 
@@ -129,15 +131,45 @@ The local verification events use idempotency keys under:
 verification:21e1:%
 ```
 
-They are synthetic and must be removed before deterministic goin issuance/backfill is evaluated.
+They are synthetic and should be removed before deterministic Goin issuance/backfill is evaluated:
 
-## Remaining work before 21E1 closure
-
-```text
-freeze V1 XP/reward -> goin issuance mapping
-implement deterministic issuance/backfill from selected score-event provenance
-verify rerunnable backfill/idempotency
-verify authenticated GET /api/economy and GET /api/economy/events ownership boundary
+```sql
+DELETE FROM user_economy_events
+WHERE idempotency_key LIKE 'verification:21e1:%';
 ```
 
-The ledger/concurrency core itself is locally verified.
+## Founder-approved Goin Issuance V1 handoff
+
+The next supply schedule was explicitly approved:
+
+```text
+account_created       -> 10 goin
+profile_email_added   -> 10 goin
+referral_joined       -> 10 goin
+referral_reward       -> 20 goin
+draft_created         -> 0 goin
+```
+
+Implementation source:
+
+```text
+backend/sql/023_goin_issuance_policy.sql
+docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
+```
+
+The issuance bridge and deterministic historical backfill are implemented but still require local verification before being marked accepted.
+
+## Remaining verification before 21E2
+
+```text
+apply migration 023
+verify seeded V1 issuance settings
+verify deterministic historical backfill
+rerun schema and prove no double issuance
+verify draft_created remains XP-only
+verify a newly inserted eligible score event automatically issues Goin
+verify authenticated GET /api/economy and GET /api/economy/events ownership boundary
+verify Super-Admin issuance settings API / authorization
+```
+
+After those checks pass, 21E can move to the durable Prompt Archive unlock/access primitive without reopening the ledger architecture.
