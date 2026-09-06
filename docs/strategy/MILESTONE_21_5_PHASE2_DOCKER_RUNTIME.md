@@ -52,13 +52,14 @@ The browser never receives `http://api:4000` as its API origin.
 
 ## 3. Frontend production image
 
-Root `Dockerfile` now uses a multi-stage build.
+Root `Dockerfile` uses a multi-stage build.
 
 Builder:
 
 ```text
 node:24-alpine
 corepack/pnpm
+source copied before install so project postinstall `nuxt prepare` has full Nuxt context
 frozen lockfile install
 pnpm build
 ```
@@ -75,13 +76,36 @@ PORT=3000
 
 The runtime image is therefore a long-lived Nitro Node server rather than a static generated frontend.
 
-A root `.dockerignore` excludes local build outputs, node_modules, git metadata, backend/docs that are irrelevant to the frontend image, and local `.env` files/secrets from the frontend Docker build context.
+A root `.dockerignore` excludes local build outputs, node_modules, git metadata, backend/docs irrelevant to the frontend image, and local `.env` files/secrets from the frontend Docker build context.
 
 ---
 
-## 4. Server-internal vs browser-public API origins
+## 4. Request-time SSR vs legacy static generation
 
-Nuxt runtime config now has two distinct API concepts:
+The old Milestone 21 static configuration explicitly listed the six `/discover/*` routes in `nitro.prerender.routes`.
+
+Keeping those routes unconditionally prerendered during `pnpm build` would be incorrect for Phase 2 because it could bake discovery data into the frontend image or build an empty/stale discovery page when no API is available inside the builder.
+
+Phase 2 therefore separates the modes:
+
+```text
+pnpm build
+  -> normal hybrid production build
+  -> /discover/* remains request-time SSR
+
+pnpm generate
+  -> scripts/run-static-generate.mjs
+  -> sets NUXT_LEGACY_STATIC_GENERATE=true only for the legacy compatibility run
+  -> six controlled discovery routes are explicitly prerendered for the old static path
+```
+
+This preserves the rollback/history path without contaminating the production SSR runtime.
+
+---
+
+## 5. Server-internal vs browser-public API origins
+
+Nuxt runtime config has two distinct API concepts:
 
 ```text
 NUXT_API_BASE_INTERNAL
@@ -106,7 +130,7 @@ Host-side `pnpm build` / `pnpm preview` continues to fall back to the public/loc
 
 ---
 
-## 5. Compose services
+## 6. Compose services
 
 `compose.yaml` now includes:
 
@@ -157,7 +181,7 @@ No database or translation persistence volume is removed by normal stack startup
 
 ---
 
-## 6. Local CORS contract
+## 7. Local CORS contract
 
 The API local default allowlist includes both Nuxt modes used during development/testing:
 
@@ -168,15 +192,15 @@ http://localhost:3000
 http://127.0.0.1:3000
 ```
 
-`CORS_ORIGINS` can now be overridden from environment for later production/domain configuration.
+`CORS_ORIGINS` can be overridden from environment for later production/domain configuration.
 
 Phase 3 must replace/extend this contract for the real HTTPS frontend origin rather than leaving production dependent on localhost defaults.
 
 ---
 
-## 7. Lifecycle commands
+## 8. Lifecycle commands
 
-Root `package.json` now provides:
+Root `package.json` provides:
 
 ```powershell
 pnpm stack
@@ -211,7 +235,7 @@ docker compose up -d --build
 
 ---
 
-## 8. Environment contract
+## 9. Environment contract
 
 `.env.example` documents the browser-visible API base:
 
@@ -229,11 +253,13 @@ Do not normally put `NUXT_API_BASE_INTERNAL=http://api:4000` into the host `.env
 
 ---
 
-## 9. Founder-local verification gate
+## 10. Founder-local verification gate
 
 Phase 2 remains unaccepted until all checks pass on the founder machine.
 
 ### A. Build/start
+
+Stop any host-side `pnpm preview` process using port 3000, then:
 
 ```powershell
 git pull
@@ -271,7 +297,7 @@ Expected raw HTML:
 ```text
 route-specific title/content
 server-rendered discovery collection when matching published data exists
-no dependency on browser JavaScript for the initial discovery content
+no dependency on browser JavaScript for initial discovery content
 ```
 
 This check is also evidence that the frontend container can reach `http://api:4000` internally during SSR.
@@ -280,7 +306,7 @@ This check is also evidence that the frontend container can reach `http://api:40
 
 Verify the homepage showcase/slider and authenticated client requests work from the browser without CORS errors.
 
-Browser network requests should target the local public API origin:
+Browser network requests should target:
 
 ```text
 http://localhost:4000
@@ -323,7 +349,7 @@ login/authenticated route
 
 ---
 
-## 10. Non-goals
+## 11. Non-goals
 
 Phase 2 does not yet include:
 
@@ -342,7 +368,7 @@ Those remain later milestone phases.
 
 ---
 
-## 11. Next phase after acceptance
+## 12. Next phase after acceptance
 
 ```text
 Phase 3 — Cloudflare Production Path
