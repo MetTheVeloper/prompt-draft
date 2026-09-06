@@ -84,4 +84,17 @@ export default {
       },
     },
   },
+  prompts: {
+    detail: {
+      unlockAndCopy: 'باز کردن و کپی · {cost} goin',
+      checkingUnlock: 'در حال بررسی دسترسی...',
+      unlocking: 'در حال باز کردن...',
+      copying: 'در حال کپی...',
+      unlockInfo: 'اولین کپی این پرامپت را با {cost} goin باز می‌کند. موجودی تو: {balance}.',
+      unlockedInfo: 'باز شده · کپی‌های بعدی این پرامپت رایگان هستند.',
+      insufficientGoin: 'برای باز کردن این پرامپت به {required} goin نیاز داری. موجودی تو: {balance}.',
+      unlockError: 'باز کردن این پرامپت انجام نشد. دوباره تلاش کن.',
+      copyError: 'دسترسی به کلیپ‌بورد ناموفق بود. دسترسی پرامپت برایت باز مانده؛ دوباره کپی کن.',
+    },
+  },
 }
