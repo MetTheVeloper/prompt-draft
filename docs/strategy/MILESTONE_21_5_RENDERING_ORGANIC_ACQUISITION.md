@@ -1,10 +1,10 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **APPROVED / PLANNED / NOT STARTED**
+Status: **IN PROGRESS / PHASE 1 IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
 
 Date: 2026-09-06
 
-Documentation branch:
+Branch:
 
 ```text
 feature/growth-foundation
@@ -14,28 +14,27 @@ Position in roadmap:
 
 ```text
 Milestone 21 — Growth Foundation                 DONE
-Milestone 21.5 — Rendering & Organic Acquisition NEXT
+Milestone 21.5 — Rendering & Organic Acquisition IN PROGRESS
 Phase 2 — Domain Expansion                       AFTER 21.5 IMPLEMENTATION
 ```
 
 Domain Expansion research may proceed in parallel with Milestone 21.5. Its implementation must still begin only after the required domain research and semantic modeling are sufficiently mature.
 
+Current implementation sources:
+
+```text
+docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
+docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
+docs/strategy/STATUS.md
+```
+
 ---
 
 ## 1. Why this milestone exists
 
-Milestone 21 established the Growth Foundation and proved that Prompt Draft now has:
+Milestone 21 established the Growth Foundation and proved that Prompt Draft now has behavioral analytics, referral activation, preference-driven discovery, public discovery/SEO primitives, an internal economy and Growth metrics.
 
-```text
-behavioral analytics
-referral activation
-preference-driven discovery
-public discovery/SEO primitives
-internal economy
-Growth metrics
-```
-
-Milestone 21D intentionally did not migrate the application to SSR. At that time the accepted release invariant remained:
+Milestone 21D intentionally retained:
 
 ```text
 ssr: false
@@ -44,402 +43,263 @@ static frontend
 independent Node API
 ```
 
-The targeted post-generate SEO snapshot solved the immediate crawler-visible-content gap for six controlled `/discover/*` routes without introducing speculative rendering infrastructure.
+and used targeted post-generate SEO snapshots for six controlled `/discover/*` routes. That was the correct decision while SSR demand was still speculative.
 
-The product context has now changed enough to justify revisiting rendering deliberately rather than speculatively:
+Milestone 21.5 revisits rendering because the product now has concrete acquisition needs:
 
 ```text
-public discovery content already exists
-public dynamic acquisition routes are becoming more important
-Blog content is planned as a real organic acquisition surface
-Growth analytics now exists to measure acquisition behavior
-Google Search Console can provide external indexing/search evidence
-Domain Expansion requires founder research and should not be rushed
+existing public discovery content
+planned Blog acquisition surface
+growing public dynamic route needs
+internal Growth analytics for measuring acquisition
+planned Google Search Console evidence
+real Cloudflare deployment path
+Domain Expansion research that should not be rushed
 ```
 
-Therefore Milestone 21.5 creates a measurable organic-acquisition platform while founder research for Content Creation proceeds in parallel.
-
-This is not a rewrite milestone.
+This milestone is not a rewrite. It creates a measurable organic-acquisition platform while founder research for Content Creation proceeds in parallel.
 
 ---
 
-## 2. Core strategic decision
+## 2. Core rendering decision
 
 Do **not** define success as "make the entire application SSR".
 
-Define success as:
-
-> Give public, dynamic and SEO-sensitive acquisition surfaces the correct server-rendering behavior, while keeping client-heavy authenticated/product-workspace surfaces client-oriented where SSR provides no meaningful benefit.
-
-Target rendering direction:
+Selected direction:
 
 ```text
-public acquisition surfaces
+public / dynamic / SEO-sensitive acquisition surfaces
   -> SSR / prerender / hybrid according to route semantics
 
-authenticated interactive application surfaces
-  -> client-heavy where appropriate
+interaction-heavy authenticated/product-workspace surfaces
+  -> client-rendered where SSR adds no meaningful value
 ```
 
-Likely SSR/SEO-sensitive surfaces include:
+ADR-002 now records the selected hybrid strategy.
+
+Phase 1 baseline:
+
+```text
+ssr: true
+routeRules with explicit ssr:false for client-heavy routes
+```
+
+First SSR/default surfaces:
 
 ```text
 /
-/discover/*
-future /p/* public Prompt routes
-future /creator/* public Creator routes
-/blog
-/blog/*
-other future public landing/content pages
+/guide
+/discover/**
 ```
 
-Likely client-heavy surfaces include:
+Current explicit client-only surfaces:
 
 ```text
 /create
-/manage/*
-authenticated editor/workspace flows
-other interaction-dominant private routes
+/collage
+/vectorizer
+/history
+/dashboard
+/login
+/manage
+/manage/**
+/wizard
+/wizard/**
+/prompts
+/user
 ```
 
-The exact route policy must be audited and documented during Phase 1 before global rendering configuration is changed.
+`/prompts` and `/user` are public today, but their query-parameter contracts are not selected as final canonical acquisition URLs. Public Prompt and Creator canonical routing belongs to Phase 4.
 
 ---
 
-## 3. Relationship to ADR-001
+## 3. Phase 1 — Hybrid / SSR Architecture
 
-Historical rendering decision:
-
-```text
-docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
-```
-
-ADR-001 remains correct for Milestone 21D: full SSR was intentionally rejected because the need had not yet been proven and the static deployment invariant was working.
-
-Milestone 21.5 is the explicit revisit point anticipated by that ADR.
-
-New triggers now present:
+Status:
 
 ```text
-Blog is becoming a planned acquisition surface
-public dynamic pages are expected to grow
-SEO measurement can now be tied to internal Growth analytics
-real production Cloudflare deployment can be tested
-organic acquisition is an active product goal rather than hypothetical infrastructure
+IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
 ```
 
-Phase 1 of 21.5 must either:
+Canonical implementation record:
 
 ```text
-update ADR-001
+docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 ```
 
-or create a successor rendering ADR that records the final hybrid/SSR decision.
+Implemented work:
 
-Do not silently invalidate the previous ADR.
+```text
+audited current Nuxt rendering assumptions
+audited obvious browser/client-only boundaries
+classified route families
+selected hybrid route policy
+enabled SSR as the default rendering mode
+preserved interaction-heavy routes with ssr:false route rules
+moved /discover/[slug] data loading from onMounted to SSR-aware useAsyncData
+preserved sanitized /api/discover as the only discovery SSR data source
+retained old static SEO snapshot path temporarily for rollback/history
+created ADR-002
+```
+
+Important runtime consequence:
+
+```text
+hybrid request-time behavior requires Nuxt/Nitro server runtime
+```
+
+Therefore Phase 1 acceptance uses:
+
+```powershell
+pnpm build
+pnpm preview
+```
+
+and not `pnpm generate`.
+
+Phase 1 acceptance gate:
+
+```text
+production-style Nuxt build -> PASS
+SSR server starts -> PASS
+raw /discover HTML contains meaningful route-specific content before JS -> PASS
+sanitized discovery rows are present when API has data -> PASS
+all six discovery routes hydrate correctly -> PASS
+/, /guide smoke correctly -> PASS
+client-only application routes still work -> PASS
+no protected Prompt data appears in public SSR HTML -> PASS
+```
+
+Do not begin Phase 2 until founder-local verification is accepted.
 
 ---
 
-# 4. Five-phase execution plan
+## 4. Phase 2 — Docker Production Runtime
 
-## Phase 1 — Hybrid / SSR Architecture
+Status: **NOT STARTED**
 
 Goal:
 
 ```text
-select the correct rendering mode per route class
-prove Nuxt SSR compatibility locally
-preserve application behavior
+run the selected Nuxt/Nitro server and the existing independent Node API as production-like Docker services
 ```
 
 Required work:
 
 ```text
-audit current nuxt.config.ts and generation assumptions
-audit browser-only/client-only dependencies
-classify public vs private route families
-classify SEO-sensitive vs interaction-dominant routes
-define SSR/prerender/client-only route policy
-select Nuxt/Nitro production rendering mode
-identify code relying on window/document/localStorage during server render
-make required client guards or component boundaries
-reconcile runtime config/API base behavior between server and browser
-review i18n behavior under SSR
-review authentication/session behavior under SSR
-review PWA/offline assumptions that depended on static generation
-create/update rendering ADR
+frontend production Docker target
+long-lived Nuxt/Nitro service
+independent API service retained
+internal Docker networking
+server-internal API origin vs browser-public API origin contract
+health checks / restart behavior
+environment variable contract
+static asset and public media verification
 ```
 
-Phase 1 verification gate:
-
-```text
-production-style local Nuxt build -> PASS
-SSR server starts locally -> PASS
-public route HTML contains meaningful route-specific content before JS -> PASS
-critical private/client-heavy routes still function -> PASS
-no hydration-breaking errors on accepted route set -> PASS
-```
-
-Do not proceed to deployment work until the local rendering model is stable.
-
----
-
-## Phase 2 — Docker Production Runtime
-
-Goal:
-
-```text
-run the selected Nuxt server/runtime and the existing Node API as production-like Docker services
-```
-
-Required work:
-
-```text
-add/adjust frontend production Docker target
-run Nuxt/Nitro server as a long-lived service
-preserve independent Node API service
-configure internal Docker networking
-separate server-internal API origin from browser-public API origin where necessary
-add health checks
-review restart policy
-review environment variable contract
-verify database/API dependencies
-verify static assets and public media behavior
-```
-
-Expected internal shape, subject to Phase 1 audit:
+Expected shape:
 
 ```text
 browser
   -> frontend public origin
 
 Nuxt SSR container
-  -> internal API service over Docker network when server rendering
+  -> internal API service over Docker network for server-side data
 
 browser client requests
   -> public API origin
 ```
 
-Phase 2 verification gate:
-
-```text
-frontend container healthy -> PASS
-API container healthy -> PASS
-SSR request can reach API internally -> PASS
-browser-side API calls reach public/dev-equivalent API path -> PASS
-login/session smoke -> PASS
-/create smoke -> PASS
-/manage smoke -> PASS
-/discover smoke -> PASS
-```
+Acceptance gate includes healthy frontend/API containers, internal SSR-to-API connectivity and smoke tests for login, create, manage and discovery.
 
 ---
 
-## Phase 3 — Cloudflare Production Path
+## 5. Phase 3 — Cloudflare Production Path
+
+Status: **NOT STARTED**
 
 Goal:
 
 ```text
-prove the real international-internet production path through Cloudflare before SEO launch
+prove the real international-internet production path through Cloudflare
 ```
 
-Current assumption for this milestone:
+Current milestone assumption:
 
 ```text
-international internet is available
-Cloudflare connectivity is available
+international internet available
+Cloudflare connectivity available
 Cloudflare is the primary production path
 ```
 
-Required work:
+Required work includes frontend SSR origin connectivity, `api.prompt-draft.ir`, TLS, forwarded host/proto behavior, cookie/session correctness, cache policy and production smoke tests.
 
-```text
-connect frontend SSR origin to Cloudflare/Tunnel or selected Cloudflare origin path
-connect api.prompt-draft.ir to the production API path
-verify TLS and origin behavior
-verify forwarded host/proto headers
-verify canonical origin handling
-verify cookies/session attributes across real HTTPS origins
-review cache policy so personalized/private responses are not cached incorrectly
-review public static asset caching
-review API caching rules
-verify WebSocket/stream behavior only if currently required
-add production health/smoke procedure
-```
-
-Iran/international-disconnection failover is **not** the primary implementation target of this phase.
-
-The separately discussed Arvan/fallback architecture remains a later resilience layer and must not complicate the first verified Cloudflare SSR rollout.
-
-Phase 3 verification gate:
-
-```text
-real domain frontend request -> PASS
-real domain SSR HTML -> PASS
-api.prompt-draft.ir -> PASS
-HTTPS/session/login -> PASS
-critical authenticated route smoke -> PASS
-critical public route smoke -> PASS
-Cloudflare cache behavior -> PASS
-origin restart/recovery smoke -> PASS
-```
+Iran/international-disconnection failover is not a prerequisite for this phase. The separately discussed Arvan/fallback architecture remains a later resilience layer and must not complicate the first verified Cloudflare SSR rollout.
 
 ---
 
-## Phase 4 — SEO Platform & Public Content Architecture
+## 6. Phase 4 — SEO Platform & Public Content Architecture
+
+Status: **NOT STARTED**
 
 Goal:
 
 ```text
-replace tactical SPA SEO workarounds with native rendering where the new architecture makes them unnecessary, and establish reusable public-content SEO primitives
+replace tactical SPA SEO workarounds with native rendering where appropriate and establish reusable public-content SEO primitives
 ```
 
 Required work:
 
 ```text
-route-specific server-rendered title/description
+server-rendered route metadata
 canonical URL contract
 Open Graph/Twitter metadata
 structured data only when authoritative
-sitemap architecture for static + dynamic public routes
+static + dynamic sitemap architecture
 robots policy
-public Prompt route direction
-public Creator route direction
-/discover/* migration from post-generate snapshot workaround where appropriate
-Blog route architecture
-Blog post metadata/content model
-Blog sitemap integration
-internal linking between Blog, Discovery, Prompt Archive and relevant product surfaces
+public Prompt canonical route direction
+public Creator canonical route direction
+/discover/* cleanup from post-generate workaround
+Blog route/content architecture
+Blog metadata + sitemap
+internal linking
 404/redirect/canonical behavior
-locale/indexing policy review
+locale/indexing policy
 ```
 
-Important security/content boundary:
+Security boundary remains absolute:
 
 ```text
 SSR must not make protected Prompt bodies public
-SSR must not bypass existing account/email authorization
-SEO projection/public route models must expose only intentionally public information
+SSR must not bypass account/email authorization
+public SEO projections expose only intentionally public information
 ```
 
-The existing `scripts/generate-public-seo.ts` and targeted discovery snapshots must be audited after SSR/hybrid behavior is working.
-
-Possible outcomes:
-
-```text
-remove obsolete snapshot logic
-reduce it to static-only routes
-retain only the portions still useful under hybrid rendering
-```
-
-Do not keep duplicate SEO systems merely because the old workaround already exists.
-
-Phase 4 verification gate:
-
-```text
-view-source/curl receives meaningful public HTML without JS -> PASS
-canonical/meta/OG fields correct on sampled routes -> PASS
-structured data validation -> PASS
-sitemap contains intended indexable surfaces only -> PASS
-robots excludes intended private/workspace routes -> PASS
-no protected Prompt body leakage -> PASS
-Blog index/post route SEO smoke -> PASS
-```
+The existing `scripts/generate-public-seo.ts` must be audited after the new runtime path is proven. Remove, reduce or retain only the parts still justified; do not keep duplicate SEO systems by inertia.
 
 ---
 
-## Phase 5 — Organic Acquisition Launch & Measurement
+## 7. Phase 5 — Organic Acquisition Launch & Measurement
+
+Status: **NOT STARTED**
 
 Goal:
 
 ```text
-turn the rendering/SEO work into a measurable acquisition experiment rather than stopping at infrastructure completion
+turn rendering/SEO work into a measurable acquisition experiment
 ```
 
 Required work:
 
 ```text
-production cutover
-rollback procedure
-Google Search Console property/setup
-sitemap submission
-indexing inspection
+production cutover + rollback procedure
+Google Search Console setup
+sitemap submission/indexing inspection
 first Blog content batch
-analytics instrumentation for Blog/public acquisition surfaces
-source/referrer/landing analysis where privacy-appropriate
-links from organic content into useful Prompt Draft product surfaces
-Growth dashboard extension only for metrics backed by persisted data
-baseline snapshot before/at launch
-post-launch measurement cadence
-```
-
-Founder activity that can proceed in parallel with engineering:
-
-```text
-research Content Creation domain
-build semantic notes for Domain Expansion
-research organic-search topics
-prepare Blog article briefs/drafts
-identify queries where Prompt Draft can provide actual user value
-```
-
-Milestone 21.5 should create the distribution/measurement system; it should not force low-quality content production merely to populate a Blog.
-
-Phase 5 verification gate:
-
-```text
-production smoke -> PASS
-rollback tested or operationally proven -> PASS
-Search Console sees property/sitemap -> PASS
-sample public URLs inspectable/indexable -> PASS
-organic landing events measurable internally -> PASS
-first content batch published -> PASS
-measurement baseline documented -> PASS
-```
-
----
-
-# 5. Blog scope for this milestone
-
-Blog is part of the acquisition platform, but the milestone should avoid building a CMS/marketplace-sized authoring system prematurely.
-
-Minimum useful Blog V1:
-
-```text
-/blog index
-/blog/<slug> detail
-stable slug
-server-rendered article HTML
-per-post title/description/canonical/OG
-published/updated date
-author attribution when authoritative
-Article/BlogPosting structured data where fields are real
-sitemap inclusion
-internal links/tags/categories only if they improve navigation
-responsive EN/FA-compatible presentation architecture
-analytics for article view and meaningful product CTA/action
-```
-
-Content storage should be selected for low operational complexity and easy migration later.
-
-Do not block the first acquisition experiment on building a full rich-text Creator publishing platform.
-
----
-
-# 6. Measurement model
-
-Milestone 21 introduced analytics, so 21.5 must use it.
-
-Questions this milestone should make answerable:
-
-```text
-Which public landing pages receive real visits?
-Which Blog posts attract users?
-Which discovery categories attract users?
-Do organic visitors continue into Prompt Archive/product use?
-Which pages generate registration/referral/product actions?
-What content is indexed but receives no engagement?
-What content receives impressions but weak click-through?
+analytics for Blog/public acquisition surfaces
+organic landing/referrer analysis where privacy-appropriate
+links from organic content into useful Prompt Draft surfaces
+baseline + post-launch measurement cadence
 ```
 
 External acquisition evidence:
@@ -454,13 +314,62 @@ Internal behavioral evidence:
 Prompt Draft product analytics / Growth metrics
 ```
 
-Do not confuse Search Console impressions/clicks with product engagement, and do not call measured acquisition-surface users whole-product DAU/MAU unless instrumentation later supports that claim.
+Do not confuse search impressions/clicks with product engagement, and do not label measured acquisition-surface users as whole-product DAU/MAU without sufficient instrumentation.
 
 ---
 
-# 7. Non-goals
+## 8. Blog V1 scope
 
-Milestone 21.5 does **not** include:
+Blog is part of the acquisition platform but must not become a premature CMS project.
+
+Minimum useful V1:
+
+```text
+/blog index
+/blog/<slug> detail
+stable slug
+server-rendered article HTML
+per-post title/description/canonical/OG
+published/updated date
+author attribution when authoritative
+Article/BlogPosting structured data where real
+sitemap inclusion
+responsive EN/FA-compatible presentation
+analytics for article view and meaningful product action
+```
+
+Content storage should optimize for low operational complexity and later migration. Do not block the acquisition experiment on building a Creator-grade rich-text publishing system.
+
+---
+
+## 9. Domain Expansion relationship
+
+Phase 2 — Domain Expansion remains the next major strategic roadmap phase.
+
+First domain:
+
+```text
+Content Creation
+```
+
+Required sequence remains:
+
+```text
+research domain
+  -> identify semantic components
+  -> define independent modules
+  -> define wiring / compile semantics
+  -> build domain generator
+  -> test real user value
+```
+
+Founder research may run in parallel with 21.5 engineering. Do not use Milestone 21.5 to skip or abbreviate the research requirement.
+
+---
+
+## 10. Non-goals
+
+Milestone 21.5 does not include:
 
 ```text
 full Domain Expansion implementation
@@ -472,97 +381,29 @@ AI enhancement
 full CMS
 multi-Creator ownership
 public exposure of protected Prompt bodies
-rewriting the entire application for SSR
-Iran-disconnection failover implementation as a prerequisite for Cloudflare rollout
+forcing the whole application into SSR
+Iran-disconnection failover as a prerequisite for Cloudflare rollout
 ```
-
-The Arvan/domain failover design remains a separate deployment-resilience concern and can be implemented after the primary Cloudflare production path is stable.
 
 ---
 
-# 8. Domain Expansion relationship
+## 11. Implementation discipline
 
-Phase 2 — Domain Expansion remains the next major strategic roadmap phase.
-
-Its first domain remains:
-
-```text
-Content Creation
-```
-
-Required Domain Expansion sequence remains:
-
-```text
-research domain
-  -> identify semantic components
-  -> define independent modules
-  -> define wiring / compile semantics
-  -> build domain generator
-  -> test real user value
-```
-
-Milestone 21.5 intentionally gives the founder time to perform the research portion correctly while engineering work continues on a separate, already-evidenced acquisition need.
-
-Do not use 21.5 as an excuse to skip or abbreviate Domain Expansion research.
-
----
-
-# 9. Implementation discipline
-
-Each phase must be independently documented, implemented and verified.
-
-Preferred sequence:
+Each phase follows:
 
 ```text
 plan/audit
   -> implementation
   -> local verification
   -> founder acceptance
-  -> checkpoint commit
+  -> checkpoint
   -> next phase
 ```
 
-No phase should be marked DONE because code merely builds.
+No phase is DONE because code merely exists.
 
-Verification documents should record:
-
-```text
-commands used
-expected behavior
-actual behavior
-failures/fixes
-known limitations
-accepted deployment/runtime assumptions
-```
-
-Recommended phase docs as work begins:
+Current next action:
 
 ```text
-MILESTONE_21_5_PHASE_1_RENDERING.md
-MILESTONE_21_5_PHASE_2_DOCKER_RUNTIME.md
-MILESTONE_21_5_PHASE_3_CLOUDFLARE.md
-MILESTONE_21_5_PHASE_4_SEO_BLOG.md
-MILESTONE_21_5_PHASE_5_ACQUISITION_MEASUREMENT.md
+Founder-local verification of Phase 1 hybrid SSR implementation.
 ```
-
-Exact filenames may vary, but this file remains the milestone-level source of truth.
-
----
-
-# 10. Start gate
-
-Milestone 21.5 is approved to start.
-
-First implementation action:
-
-```text
-Phase 1 — audit the current Nuxt/runtime/client-only assumptions and produce the route-level rendering policy before changing global SSR behavior.
-```
-
-Do not begin by simply changing:
-
-```text
-ssr: false -> true
-```
-
-The first step is architecture/capability audit, then the smallest correct rendering transition.
