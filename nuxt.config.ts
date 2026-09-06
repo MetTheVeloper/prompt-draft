@@ -1,5 +1,14 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
 
+const publicDiscoveryRoutes = [
+  "/discover/portrait-photography",
+  "/discover/3d-sculpture",
+  "/discover/illustration-animation",
+  "/discover/posters-editorial",
+  "/discover/product-fashion",
+  "/discover/cinematic-game-art",
+];
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // nuxt.config.ts
 export default defineNuxtConfig({
@@ -20,6 +29,7 @@ export default defineNuxtConfig({
     prerender: {
       routes: [
         ...publicWizardRoutes,
+        ...publicDiscoveryRoutes,
         "/login",
         "/manage",
         "/manage/dashboard",
