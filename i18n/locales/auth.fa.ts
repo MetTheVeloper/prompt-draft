@@ -37,6 +37,9 @@ export default {
       username: "نام کاربری",
       email: "ایمیل",
       xp: "XP",
+      goinBalance: "موجودی Goin",
+      goinLoading: "در حال بارگذاری موجودی Goin...",
+      goinLoadError: "بارگذاری موجودی Goin انجام نشد.",
       invitedUsers: "کاربران دعوت‌شده",
       referral: {
         copyLink: "کپی لینک دعوت",
