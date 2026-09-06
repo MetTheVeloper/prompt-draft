@@ -8,7 +8,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Exact inherited Growth baseline:
+Inherited Growth baseline:
 
 ```text
 3ef4b0c65777d6f2814744ed0a1fa8a78750a389
@@ -26,7 +26,7 @@ Execution Layer                 -> documented
 Pricing/Internal Economy V1     -> documented
 Execution Roadmap V1            -> documented
 
-Milestone 21 Growth Foundation  -> FUNCTIONALLY COMPLETE / FINAL UI VERIFICATION PENDING
+Milestone 21 Growth Foundation  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
@@ -35,10 +35,21 @@ Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E2 Prompt Unlock        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E3 Economy UX & Manage  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21F Growth Metrics        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-UI polish closure pass          -> IMPLEMENTATION COMPLETE / FINAL LOCAL VERIFICATION PENDING
+Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+
+Next roadmap phase              -> Phase 2 — Domain Expansion
+First domain                    -> Content Creation
 ```
 
-## Canonical closure / verification docs
+## Canonical Milestone 21 closure
+
+```text
+docs/strategy/MILESTONE_21_CLOSURE.md
+docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
+docs/strategy/MILESTONE_21_UI_POLISH.md
+```
+
+Phase-level verification sources:
 
 ```text
 docs/strategy/MILESTONE_21A_VERIFICATION.md
@@ -48,14 +59,10 @@ docs/strategy/MILESTONE_21D_VERIFICATION.md
 docs/strategy/MILESTONE_21E1_VERIFICATION.md
 docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
 docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
-docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
 docs/strategy/MILESTONE_21F_VERIFICATION.md
-docs/strategy/MILESTONE_21_UI_POLISH.md
 ```
 
-## 21D public/protected boundary
-
-Accepted boundary remains:
+## Accepted public/protected boundary
 
 ```text
 /prompts list/catalog -> public
@@ -66,9 +73,16 @@ search/sort/multi-tag/pagination -> public
 GET /api/archive/:id -> authenticated + email gate
 ```
 
-Public discovery routes and targeted static SEO enrichment remain accepted without migrating the whole app away from `ssr:false`.
+Targeted static SEO enrichment remains the accepted bridge for six controlled `/discover/*` routes while the app stays on:
 
-## 21E economy foundation — DONE
+```text
+ssr: false
+pnpm generate
+static frontend
+independent Node API
+```
+
+## Accepted internal economy state
 
 Internal spendable unit:
 
@@ -76,15 +90,13 @@ Internal spendable unit:
 goin
 ```
 
-Simulation reference value:
+Simulation reference metadata:
 
 ```text
 1 goin = 250 toman
 ```
 
-Reference value is metadata only, not fiat buy/cash-out/redemption convertibility.
-
-XP and Goin remain separate:
+XP and Goin remain semantically separate:
 
 ```text
 user_score_events
@@ -94,7 +106,7 @@ user_economy_events
   -> spendable Goin issuance/debit/refund/correction
 ```
 
-Verified Goin issuance V1:
+Current issuance V1:
 
 ```text
 account_created       -> 10 goin
@@ -104,49 +116,38 @@ referral_reward       -> 20 goin
 draft_created         -> 0 goin
 ```
 
+Current Prompt Archive sink:
+
+```text
+first meaningful Prompt Copy unlock = 5 goin
+repeat Copy/access after unlock     = free
+```
+
 Verified economy invariants:
 
 ```text
 append-only authoritative ledger
 SUM(unit_delta) authoritative balance
-idempotent retry
+idempotent retries
 negative balance rejected
 failed overspend creates no row
 parallel spends cannot overspend
 historical issuance backfill rerunnable without double issue
-new eligible score events issue Goin through versioned policy
-Draft-created remains XP-only
-```
-
-Current Prompt Archive sink:
-
-```text
-first meaningful Prompt Copy unlock = 5 goin
-```
-
-Accepted semantics:
-
-```text
-view Prompt detail -> free
-first meaningful Copy -> may debit 5 goin
-repeat Copy / another variant of same Prompt -> free
-```
-
-Verified runtime behavior:
-
-```text
 atomic debit + durable unlock
 same-Prompt concurrent requests charge exactly once
 insufficient balance creates neither debit nor unlock
-foreign user cannot observe another user's unlock
 historical unlock price/rule version preserved
-Prompt 501 first Copy -> one -5 debit + one durable unlock
-Prompt 501 repeat Copy -> no second debit/unlock
-Prompt 502 locked state displayed 5-Goin first-copy contract
-Prompt 502 first Copy -> shared private balance changed 90 -> 85 immediately
+XP unchanged by Goin spending
 ```
 
-Private Profile Menu displays XP and Goin separately and keeps spendable balance off public `/user`.
+Private Profile Menu:
+
+```text
+Goin beside username via shared GoinAmount component
+XP on separate row
+reusable What is Goin? modal
+live earn/spend/reference values from authoritative policy
+```
 
 Super-Admin economy management:
 
@@ -155,44 +156,9 @@ Super-Admin economy management:
 permission: system.settings.manage
 ```
 
-Manageable policy:
+## Accepted Growth metrics state
 
-```text
-Goin reference value
-account-created issuance
-profile-email issuance
-referred-user issuance
-referrer issuance
-Draft-created issuance
-Prompt Archive first-unlock cost
-```
-
-Safe reversible settings verification passed:
-
-```text
-reference 250 -> 251 -> save
-issuance rule remained v1
-sink rule remained v1
-reference restored 251 -> 250
-```
-
-Final DB policy read-back:
-
-```text
-goin_issuance_rule_version      = 1
-goin_issue_account_created      = 10
-goin_issue_draft_created        = 0
-goin_issue_profile_email_added  = 10
-goin_issue_referral_joined      = 10
-goin_issue_referral_reward      = 20
-goin_prompt_archive_unlock_cost = 5
-goin_reference_value_toman      = 250
-goin_sink_rule_version          = 1
-```
-
-## 21F Growth Metrics — DONE
-
-Manage section:
+Manage route:
 
 ```text
 /manage/growth
@@ -206,13 +172,7 @@ GET /api/admin/growth/summary?days=7
 GET /api/admin/growth/summary?days=30
 ```
 
-Invalid windows:
-
-```text
-400 GROWTH_WINDOW_INVALID
-```
-
-Current behavioral event coverage remains intentionally narrow:
+Current behavioral event coverage:
 
 ```text
 prompt_archive_view
@@ -220,131 +180,50 @@ prompt_archive_copy
 referral_link_open
 ```
 
-Therefore measured audience is explicitly scoped to instrumented Growth surfaces and is not labelled whole-product DAU/MAU.
+Measured audience is explicitly scoped to instrumented Growth surfaces and is not whole-product DAU/MAU.
 
-Verified metric groups:
+Final independent SQL-vs-API verification passed for both 7-day and 30-day windows, including auth, invalid-window handling, summaries, daily series, Top Tags, measurement scope and event allowlist.
 
-```text
-Measured audience
-Prompt Archive engagement
-Referral growth
-Goin circulation
-UTC daily series
-Top 8 Prompt Archive tags
-```
+## Final UI polish — accepted
 
-Final local SQL-vs-API verification passed for both 7-day and 30-day windows:
+Accepted final presentation state:
 
 ```text
-anonymous request -> 401
-ordinary user -> 403
-invalid days=8 -> 400
-admin/super_admin -> 200
-
-audience summary exactly matches DB
-Prompt summary exactly matches DB
-referral summary exactly matches DB
-economy summary exactly matches DB
-tracked event count exactly matches DB
-daily series exactly matches DB
-Top Tags exactly match DB
-measurement scope and event allowlist correct
+founder-provided Goin SVG + reusable GoinAmount
+Profile Menu Goin-first hierarchy
+central reusable Goin information modal
+chart-first Daily Signals and Popular Tags with table toggles
+useScreen-based responsive Growth layout
+2 x 4-card desktop/wide Growth density
+shared Goin rendering in Growth/Economy
+normal-colored Prompt Copy feedback + state icons
+/prompts content surface80
+normal/invert Prompt tags
+theme-aware card overlays/fallbacks/borders for /prompts and /user
+Light/Dark + EN/FA/RTL smoke accepted
 ```
 
-Representative verified 7-day values at closure:
+## Final local release-generation evidence
 
-```text
-tracked visitors                  3
-tracked authenticated users       1
-returning authenticated users     1
-new accounts                     10
-Prompt views                     11
-Prompt copies                     9
-copy-session rate               50%
-Prompt unlocks                    3
-referral opens                    2
-referral signups                  5
-referral share                   50%
-open-to-signup directional ratio 250%
-Goin issued                     320
-Goin spent                       15
-Goin outstanding                305
-active spenders                   1
-tracked analytics events         22
-```
-
-The `250%` open-to-signup figure is directional aggregate evidence, not strict attribution; it can exceed 100% when persisted referral signups do not have a tracked referral-link-open event.
-
-Final script result:
-
-```text
-ALL 21F GROWTH METRICS CHECKS PASSED
-Cleaned 2 temporary auth session(s)
-```
-
-Visual/runtime smoke also passed in EN/FA and Light/Dark, and `pnpm generate` passed with `/manage/growth` generated successfully before the final UI polish pass.
-
-## Milestone 21 final UI polish — IMPLEMENTATION COMPLETE
-
-Canonical scope and verification checklist:
-
-```text
-docs/strategy/MILESTONE_21_UI_POLISH.md
-```
-
-Implemented closure work:
-
-```text
-shared Goin SVG + EconomyGoinAmount presentation primitive
-Profile Menu hierarchy: Goin beside username, XP separate
-reusable central Goin information modal
-Goin modal reads authoritative current Economy policy
-GET /api/economy exposes authenticated read-only policy metadata
-/manage/growth root alignment corrected to rules="ccs"
-Growth chart-first Daily Signals + Popular Tags views
-Growth table views preserved
-Growth desktop/wide summary density increased to two 4-card groups per row
-Growth responsive logic moved to useScreen()
-Goin amounts unified in Growth/Economy summary presentation
-Prompt Copy explanatory feedback uses normal theme color + state icon
-/prompts content surface strengthened to surface80
-/prompts card neutral tags use normal/invert
-/prompts card border hover aligned with /user Draft cards
-/prompts cards refactored to Home-style theme-aware neutral overlays
-/user Draft cards refactored to the same theme-aware visual direction
-```
-
-Important implementation note:
-
-```text
-The polish pass adds a read-only Economy policy projection to GET /api/economy so the reusable Goin explainer cannot drift from Super-Admin settings.
-It does not change ledger authority, economic writes, Prompt unlock semantics, or permissions.
-```
-
-Implementation checkpoint before this STATUS update:
-
-```text
-8259fbc495ffbad85a6d815abe9e0dc285868f62
-```
-
-Final local gate still required before Milestone 21 is marked fully closed:
+Founder-local command:
 
 ```powershell
-git pull
-docker compose up -d --build api
 pnpm generate
 ```
 
-Visual smoke targets:
+Final result:
 
 ```text
-/manage/growth EN/FA + Light/Dark + desktop/laptop density
-/manage/economy Prompt unlock Goin display
-Profile Menu + reusable Goin modal and live policy values
-/prompts locked/unlocked Copy feedback
-/prompts Light/Dark card/readability/hover
-/user Light/Dark Draft card/readability/hover
+PASS
+26 routes prerendered
+.output/public generated
+offline manifest generated: 258 files / 63.2 MB
+6 discovery routes enriched with sanitized SEO snapshots
 ```
+
+`NUXT_PUBLIC_SITE_URL` was empty during this local closure build, so sitemap generation was intentionally skipped while discovery-route enrichment still completed.
+
+Known build warnings are non-blocking for this milestone.
 
 ## Migration state
 
@@ -358,15 +237,13 @@ Current migrations extend through:
 024_prompt_archive_unlocks.sql
 ```
 
-21E3, 21F, and the final UI polish pass add no migration.
-
 Next future schema migration:
 
 ```text
 025_*.sql
 ```
 
-## Hard rules
+## Hard rules inherited forward
 
 ```text
 DO NOT use admin_audit_log as behavioral analytics.
@@ -377,45 +254,77 @@ DO NOT add a mutable users.balance as economy source of truth.
 DO NOT trust frontend balance checks.
 DO NOT trust analytics events as economic authority.
 DO NOT convert XP 1:1 into Goin.
-DO NOT issue Goin for draft_created in V1.
-DO NOT retroactively reprice historical Goin issuance.
+DO NOT issue Goin for draft_created in V1 unless policy is explicitly changed.
+DO NOT retroactively reprice historical Goin issuance/unlocks.
 DO NOT charge Prompt page views.
 DO NOT charge on every Copy click.
-DO NOT create paid access without atomic debit + durable unlock state.
 DO NOT expose another user's economy history, unlock state, or spendable balance.
-DO NOT treat the 250 toman reference value as a buy/cash-out guarantee.
+DO NOT treat the 250 toman reference as a buy/cash-out guarantee.
 DO NOT treat the current 5-Goin Prompt unlock as a permanent Marketplace price.
 DO NOT put Prompt text/sellable knowledge into analytics or Growth metrics.
 DO NOT call measured-surface audience whole-product DAU/MAU.
-DO NOT infer Wizard completion before Wizard analytics exists.
-DO NOT claim strict referral attribution from aggregate opens/signups.
-DO NOT build another dashboard shell for 21F.
-DO NOT add aggregate schema until query volume/performance proves it necessary.
 DO NOT make /api/archive/:id public merely for SEO.
-DO NOT introduce fiat purchase/cash-out/payout in Milestone 21.
-DO NOT start the full Marketplace inside Milestone 21.
+DO NOT introduce fiat purchase/cash-out/payout before its roadmap phase.
+DO NOT start the full Marketplace before Domain Expansion is evaluated.
 ```
 
-## Primary sources
+## Next phase — Domain Expansion
+
+Source of truth:
+
+```text
+docs/strategy/EXECUTION_ROADMAP_V1.md
+```
+
+Approved order:
+
+```text
+Phase 1 — Growth Foundation     DONE
+Phase 2 — Domain Expansion     NEXT
+Phase 3 — Marketplace Activation
+Phase 4 — AI Enhancement
+```
+
+Domain priority hypothesis:
+
+```text
+1. Content Creation
+2. Programming
+3. Education
+4. Marketing / Advertising
+```
+
+The next work should start only with Content Creation and must begin with domain research and semantic modeling rather than UI cloning.
+
+Required sequence:
+
+```text
+research domain
+  -> audit existing Semantic Prompt Engine capabilities
+  -> identify domain semantic components
+  -> define independent modules
+  -> define wiring / compile semantics
+  -> design the first Content Creation generator
+  -> implement incrementally
+  -> verify real user value
+```
+
+Do not build Programming in parallel. Use Content Creation as the first proof that Prompt Draft's semantic architecture generalizes beyond image prompting.
+
+## Primary strategy sources
 
 ```text
 docs/strategy/PRODUCT_STRATEGY_V1.md
 docs/strategy/PRICING_AND_INTERNAL_ECONOMY_V1.md
 docs/strategy/EXECUTION_ROADMAP_V1.md
+docs/strategy/MILESTONE_21_CLOSURE.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
-docs/strategy/MILESTONE_21A_VERIFICATION.md
-docs/strategy/MILESTONE_21B_VERIFICATION.md
-docs/strategy/MILESTONE_21C_VERIFICATION.md
-docs/strategy/MILESTONE_21D_VERIFICATION.md
-docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
-docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
-docs/strategy/MILESTONE_21E1_VERIFICATION.md
-docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
-docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
-docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
-docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
-docs/strategy/MILESTONE_21F_VERIFICATION.md
-docs/strategy/MILESTONE_21_UI_POLISH.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
+```
+
+Closure implementation checkpoint before this STATUS commit:
+
+```text
+429f9f7ec100c5e505a7be882da56cbe64e7c834
 ```
