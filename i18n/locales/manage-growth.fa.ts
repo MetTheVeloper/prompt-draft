@@ -11,6 +11,10 @@ export default {
         sevenDays: "۷ روز",
         thirtyDays: "۳۰ روز",
       },
+      view: {
+        chart: "نمودار",
+        table: "جدول",
+      },
       lastUpdated: "آخرین به‌روزرسانی: {date}",
       loading: "در حال بارگذاری شاخص‌های رشد…",
       loadError: "شاخص‌های رشد قابل بارگذاری نیستند.",
@@ -41,8 +45,10 @@ export default {
         activeSpenders: { label: "خرج‌کنندگان فعال", helper: "کاربرانی که در این بازه debit داشته‌اند" },
       },
       daily: {
-        title: "جدول سیگنال روزانه",
+        title: "سیگنال‌های روزانه",
         description: "تجمیع بر اساس روز تقویمی UTC برای بازه انتخاب‌شده.",
+        activityChart: "فعالیت اندازه‌گیری‌شده",
+        goinFlowChart: "جریان Goin",
         day: "روز",
         views: "مشاهده",
         copies: "کپی",
