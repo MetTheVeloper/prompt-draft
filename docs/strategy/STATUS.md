@@ -30,7 +30,7 @@ Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E Internal Economy      -> CAPABILITY AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY
+Phase 21E Internal Economy      -> 21E1 FOUNDATION IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
 ## 21A closure
@@ -193,29 +193,55 @@ docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 
 ## Current phase — 21E Internal Economy Simulation
 
-Capability audit and design baseline are complete.
-
 Canonical design:
 
 ```text
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 ```
 
-### Key semantic decision
+Current implementation handoff:
+
+```text
+docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
+```
+
+### Founder-frozen semantics
+
+Internal spendable unit name:
+
+```text
+goin
+```
+
+Initial simulation reference value:
+
+```text
+1 goin = 250 toman
+```
+
+This is explicitly a **simulation/reference value**, not a fiat buy/cash-out/redemption promise.
+
+The persisted setting key is:
+
+```text
+goin_reference_value_toman
+```
+
+It is seeded to `250` by migration and can be changed through a `system.settings.manage`-guarded API. Under the current permission map that is effectively Super-Admin-only.
+
+### XP / goin semantic split
 
 Do **not** make spending reduce current profile XP/reputation.
-
-Current split:
 
 ```text
 user_score_events
   -> achievement/reward provenance + lifetime XP
 
-future user_economy_events
-  -> spendable internal-unit issuance/debit/refund/correction
+user_economy_events
+  -> spendable goin issuance/debit/refund/correction
 ```
 
-This is not a parallel gamification system. The economy ledger has different invariants that current XP does not provide:
+This is not a parallel gamification system. The economy ledger has different invariants:
 
 ```text
 atomic no-overspend
@@ -226,29 +252,82 @@ transaction history
 spendable balance
 ```
 
-Economy issuance should reference existing score/reward provenance when applicable rather than create unrelated reward causes.
+### Implemented 21E1 foundation
 
-### Planned 21E1
-
-Next migration:
+Migration:
 
 ```text
 022_user_economy_foundation.sql
 ```
 
-Planned first slice:
+Creates:
 
 ```text
 user_economy_events
-idempotent economy service
-SUM(unit_delta) authoritative balance
-atomic debit primitive
-GET /api/economy
-GET /api/economy/events
-explicit/versioned issuance policy
+economy_settings
 ```
 
-No mutable `users.balance` column should become source of truth.
+Backend:
+
+```text
+backend/src/economy.mjs
+backend/src/adminEconomyRoute.mjs
+```
+
+User APIs:
+
+```text
+GET /api/economy
+GET /api/economy/events?limit=<1..100>&cursor=<cursor>
+```
+
+Super-Admin settings API:
+
+```text
+GET /api/admin/economy/settings
+PUT /api/admin/economy/settings
+```
+
+PUT body:
+
+```json
+{
+  "goinReferenceValueToman": 250
+}
+```
+
+Permission:
+
+```text
+system.settings.manage
+```
+
+Changes are recorded in `admin_audit_log` under:
+
+```text
+economy.goin_reference_value_updated
+```
+
+Authoritative goin balance:
+
+```text
+SUM(user_economy_events.unit_delta)
+```
+
+The internal economy mutation service serializes per-user changes by locking the canonical user row and rejects any debit that would make the goin balance negative.
+
+No user-controlled credit/debit HTTP endpoint exists.
+
+### Still intentionally unresolved before issuance/sink activation
+
+```text
+XP -> goin issuance mapping
+initial goin grant policy
+Prompt Archive first-unlock price in goin
+whether all first sinks use one price or a small server-side tier set
+```
+
+The 250-toman reference value is separate from the first-unlock goin price.
 
 ### Planned first sink
 
@@ -262,13 +341,11 @@ Required semantics:
 
 ```text
 view/catalog -> free
-first unlock -> may cost units
+first unlock -> may cost goin
 repeat access -> must not charge again
 successful debit + durable access -> one transaction
 insufficient balance -> no debit and no unlock
 ```
-
-Exact branded unit name and exact first-unlock price remain intentionally unresolved until the controlled experiment policy is frozen.
 
 ## Migration state
 
@@ -277,12 +354,13 @@ Current schema migrations extend through:
 ```text
 020_product_analytics_events.sql
 021_user_preferences.sql
+022_user_economy_foundation.sql
 ```
 
-Next schema migration:
+Next future schema migration:
 
 ```text
-022_user_economy_foundation.sql
+023_*.sql
 ```
 
 ## Hard rules
@@ -298,6 +376,7 @@ DO NOT trust analytics events as economic authority.
 DO NOT charge on every Copy click.
 DO NOT create paid access without atomic debit + durable unlock state.
 DO NOT expose another user's economy history.
+DO NOT treat 250 toman as a buy/cash-out/redemption guarantee.
 DO NOT put prompt text/sellable knowledge into analytics metadata.
 DO NOT fabricate ownership for legacy/managed Archive items.
 DO NOT introduce multi-ownership in Milestone 21.
@@ -325,6 +404,7 @@ docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
 docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21D_VERIFICATION.md
 docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
+docs/strategy/MILESTONE_21E_IMPLEMENTATION.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
