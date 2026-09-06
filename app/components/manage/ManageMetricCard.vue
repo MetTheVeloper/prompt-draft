@@ -7,11 +7,13 @@ const props = withDefaults(
     color?: string;
     helper?: string;
     large?: boolean;
+    unit?: "goin" | null;
   }>(),
   {
     color: "prim",
     helper: "",
     large: false,
+    unit: null,
   },
 );
 
@@ -42,7 +44,15 @@ const formattedValue = computed(() => {
       <el-flex rules="rcc" :bg="markerColor" :radius="100" :p="7">
         <el-icon :icon="icon" :color="color" :size="iconSize" />
       </el-flex>
+      <EconomyGoinAmount
+        v-if="unit === 'goin'"
+        class="manage-metric-card__value"
+        :value="value"
+        :size="valueSize"
+        :weight="800"
+      />
       <el-text
+        v-else
         class="manage-metric-card__value"
         :size="valueSize"
         :weight="800">
