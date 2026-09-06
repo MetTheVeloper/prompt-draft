@@ -32,21 +32,27 @@ Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E2 Prompt Unlock        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E3 Economy UX & Manage  -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21E3 Economy UX & Manage  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Phase 21F Growth Metrics        -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
 ```
 
-## Closed Milestones 21A–21D
+## Closed Growth phases
 
-Canonical verification docs:
+Canonical verification/closure docs:
 
 ```text
 docs/strategy/MILESTONE_21A_VERIFICATION.md
 docs/strategy/MILESTONE_21B_VERIFICATION.md
 docs/strategy/MILESTONE_21C_VERIFICATION.md
 docs/strategy/MILESTONE_21D_VERIFICATION.md
+docs/strategy/MILESTONE_21E1_VERIFICATION.md
+docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
+docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
 ```
 
-21D final public/protected boundary remains:
+## 21D public/protected boundary
+
+Current accepted boundary remains:
 
 ```text
 /prompts list/catalog -> public
@@ -57,15 +63,9 @@ search/sort/multi-tag/pagination -> public
 GET /api/archive/:id -> authenticated + email gate
 ```
 
-Public discovery routes and static SEO snapshot strategy remain accepted without migrating the whole application away from `ssr:false`.
+Public discovery routes and targeted static SEO enrichment remain accepted without migrating the whole app away from `ssr:false`.
 
-## 21E semantic foundation
-
-Canonical design:
-
-```text
-docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
-```
+## 21E economy foundation — DONE
 
 Internal spendable unit:
 
@@ -79,7 +79,7 @@ Simulation reference value:
 1 goin = 250 toman
 ```
 
-This is reference metadata only, not a fiat buy/cash-out/redemption guarantee.
+Reference value is metadata only, not fiat buy/cash-out/redemption convertibility.
 
 XP and Goin remain separate:
 
@@ -91,36 +91,7 @@ user_economy_events
   -> spendable Goin issuance/debit/refund/correction
 ```
 
-Spending Goin must never reduce lifetime XP/reputation.
-
-## 21E1 — DONE
-
-Canonical verification:
-
-```text
-docs/strategy/MILESTONE_21E1_VERIFICATION.md
-```
-
-Foundation migrations:
-
-```text
-022_user_economy_foundation.sql
-023_goin_issuance_policy.sql
-```
-
-Verified ledger properties:
-
-```text
-append-only authoritative ledger
-SUM(unit_delta) authoritative balance
-idempotent retry
-negative balance rejected
-failed overspend creates no row
-parallel spends cannot overspend
-read model consistent with ledger
-```
-
-Founder-approved Goin Issuance V1:
+### Verified Goin issuance V1
 
 ```text
 account_created       -> 10 goin
@@ -130,118 +101,60 @@ referral_reward       -> 20 goin
 draft_created         -> 0 goin
 ```
 
-Verified locally:
+Verified properties:
 
 ```text
-policy settings seeded correctly
-historical backfill correct
-schema rerun does not double issue
-new account_created score event issues +10 Goin
-new draft_created remains XP-only
-GET /api/economy owner-only
-GET /api/economy/events owner-only
-Super-Admin economy settings authorization
+append-only authoritative ledger
+SUM(unit_delta) authoritative balance
+idempotent retry
+negative balance rejected
+failed overspend creates no row
+parallel spends cannot overspend
+historical issuance backfill rerunnable without double issue
+new eligible score events issue Goin through versioned policy
+Draft-created remains XP-only
 ```
 
-## 21E2 — DONE
+### Verified Prompt unlock sink
 
-Canonical closure:
+Current simulation default:
 
 ```text
-docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
+Prompt Archive first unlock = 5 goin
 ```
 
-Migration:
+Accepted semantics:
 
 ```text
-024_prompt_archive_unlocks.sql
+view Prompt detail -> free
+first meaningful Copy -> may debit 5 goin
+repeat Copy / another variant of same Prompt -> free
 ```
 
-Introduced:
+Verified backend/runtime behavior:
 
 ```text
-user_content_unlocks
-goin_prompt_archive_unlock_cost = 5
-goin_sink_rule_version = 1
+atomic debit + durable unlock
+same-Prompt concurrent requests charge exactly once
+insufficient balance creates neither debit nor unlock
+foreign user cannot observe another user's unlock
+historical unlock price/rule version preserved
 ```
 
-Accepted first sink semantics:
+Verified real UI flow:
 
 ```text
-view Prompt detail -> no Goin charge
-first meaningful copy/unlock -> 5 Goin default
-repeat access to same Prompt -> no additional charge
+Prompt 501 first Copy -> one -5 debit + one durable unlock
+Prompt 501 repeat Copy -> no second debit/unlock
+Prompt 502 locked state displayed 5-Goin first-copy contract
+Prompt 502 first Copy -> shared private balance changed 90 -> 85 immediately
 ```
 
-Backend routes:
+### Verified Goin private UX / Super-Admin Manage
 
-```text
-GET  /api/economy/unlocks/prompt-archive/:publicId
-POST /api/economy/unlocks/prompt-archive/:publicId
-```
+Private Profile Menu now displays XP and Goin separately and keeps spendable balance off the public `/user` profile.
 
-Verified backend/runtime properties:
-
-```text
-anonymous unlock read -> 401
-Prompt detail view -> no balance change / no unlock / no debit
-locked state -> cost=5, ruleVersion=1
-first unlock -> exactly -5 Goin + one durable access row
-repeat same Prompt -> chargedGoin=0
-parallel same-Prompt POSTs -> exactly one charge
-foreign user -> cannot observe another user's unlock
-zero-balance POST -> 409 INSUFFICIENT_GOIN_BALANCE, no rows
-email-incomplete user -> 403
-missing Prompt public ID -> 404
-```
-
-Frontend Copy integration was then locally verified through the real account flow:
-
-```text
-Prompt 501 first Copy -> one prompt_archive_unlock debit of -5
-Prompt 501 first Copy -> one user_content_unlocks row, price_goin=5, ruleVersion=1
-Prompt 501 repeat Copy -> no additional debit and no additional unlock row
-pnpm generate -> PASS
-```
-
-21E2 is closed as:
-
-```text
-DONE / LOCALLY VERIFIED / USER ACCEPTED
-```
-
-## 21E3 — current phase
-
-Canonical implementation/verification doc:
-
-```text
-docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
-```
-
-### Private account Goin UX
-
-New shared state:
-
-```text
-app/types/economy.ts
-app/composables/useEconomy.ts
-```
-
-Updated private account menu:
-
-```text
-app/components/auth/AuthProfileMenu.vue
-```
-
-The account menu now displays XP and spendable Goin as distinct concepts and reads the authoritative balance from `GET /api/economy`.
-
-`usePromptArchiveUnlock` feeds returned economy state into the shared account state so a paid Prompt unlock can update the visible account balance immediately.
-
-The public `/user` profile deliberately does not expose spendable Goin balance.
-
-### Super-Admin Economy Manage
-
-New route:
+Super-Admin route:
 
 ```text
 /manage/economy
@@ -253,18 +166,7 @@ Permission:
 system.settings.manage
 ```
 
-Registered through the existing `/manage` section system, so only callers with that permission see/access the section. Current ordinary `admin` permissions do not include it; `super_admin` has `*`.
-
-New client/UI:
-
-```text
-app/composables/useAdminEconomy.ts
-app/pages/manage/economy.vue
-i18n/locales/manage-economy.en.ts
-i18n/locales/manage-economy.fa.ts
-```
-
-The page manages:
+Manageable policy:
 
 ```text
 Goin reference value
@@ -276,31 +178,202 @@ Draft-created issuance
 Prompt Archive first-unlock cost
 ```
 
-Updated existing backend route:
+Safe reversible local test passed:
 
 ```text
-backend/src/adminEconomyRoute.mjs
+reference 250 -> 251 -> save
+issuance rule remained v1
+sink rule remained v1
+reference restored 251 -> 250
 ```
 
-The same GET/PUT `/api/admin/economy/settings` contract now includes sink policy:
+Final DB read-back:
 
 ```text
-settings.sinks.ruleVersion
-settings.sinks.promptArchiveUnlock.costGoin
+goin_issuance_rule_version      = 1
+goin_issue_account_created      = 10
+goin_issue_draft_created        = 0
+goin_issue_profile_email_added  = 10
+goin_issue_referral_joined      = 10
+goin_issue_referral_reward      = 20
+goin_prompt_archive_unlock_cost = 5
+goin_reference_value_toman      = 250
+goin_sink_rule_version          = 1
 ```
 
-Sink changes:
+21E3 is closed:
 
 ```text
-increment goin_sink_rule_version
-write economy.goin_sink_policy_updated to admin_audit_log
-apply only to future first unlocks
-preserve historical price_goin + pricing_rule_version
+DONE / LOCALLY VERIFIED / USER ACCEPTED
 ```
 
-Reference-value changes do not increment issuance/sink policy versions. Issuance changes keep their existing versioned behavior.
+## 21F — current phase
 
-21E3 needs local verification of backend rebuild, `pnpm generate`, account-menu balance UX, EN/FA + Dark/Light, Super-Admin Manage access, settings load/save, and authorization boundaries.
+Canonical implementation/verification doc:
+
+```text
+docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
+```
+
+Goal:
+
+```text
+Turn already-persisted Growth Foundation signals into decision-quality Manage read models without creating another analytics warehouse or dashboard shell.
+```
+
+### Capability audit
+
+Currently usable authoritative sources:
+
+```text
+product_analytics_events
+referrals
+users
+user_economy_events
+user_content_unlocks
+prompt_archive_items/tags
+```
+
+Current behavioral event coverage:
+
+```text
+prompt_archive_view
+prompt_archive_copy
+referral_link_open
+```
+
+Therefore 21F deliberately does **not** claim:
+
+```text
+whole-product DAU/MAU
+whole-product retention
+Wizard completion analytics
+strict click-level referral attribution
+```
+
+Measured audience metrics are explicitly scoped to instrumented growth surfaces.
+
+### New backend read API
+
+Implemented:
+
+```text
+GET /api/admin/growth/summary?days=7
+GET /api/admin/growth/summary?days=30
+```
+
+Authorization:
+
+```text
+authenticated caller
+system.metrics.view
+```
+
+Invalid windows return:
+
+```text
+400 GROWTH_WINDOW_INVALID
+```
+
+Backend:
+
+```text
+backend/src/adminGrowth.mjs
+```
+
+No migration is required.
+
+### Metrics currently exposed
+
+Measured audience:
+
+```text
+tracked visitors
+tracked sessions
+tracked authenticated users
+returning authenticated users on 2+ measured UTC days
+new accounts
+```
+
+Prompt Archive:
+
+```text
+views
+successful copies
+view sessions
+copy sessions
+copy-session rate
+durable Prompt unlocks
+```
+
+Referral growth:
+
+```text
+referral-link opens
+persisted referral signups
+referral share of new accounts
+directional open-to-signup ratio
+```
+
+Goin circulation:
+
+```text
+period issued
+period spent
+period net flow
+current outstanding Goin
+current holders
+active spenders
+```
+
+Additional response data:
+
+```text
+UTC daily series with zero-day filling
+top 8 Prompt Archive tags by copies then views
+```
+
+No Prompt text/variants are exposed in the metrics response.
+
+### Manage UI
+
+New section:
+
+```text
+/manage/growth
+```
+
+Permission:
+
+```text
+system.metrics.view
+```
+
+Frontend:
+
+```text
+app/types/adminGrowthApi.ts
+app/pages/manage/growth.vue
+app/composables/usePromptDraftApi.ts
+app/config/manage.ts
+i18n/locales/manage-growth.en.ts
+i18n/locales/manage-growth.fa.ts
+```
+
+UI includes:
+
+```text
+7 / 30 day switch
+measurement-scope warning
+audience metric cards
+Prompt metric cards
+referral metric cards
+Goin circulation cards
+daily UTC table
+popular Prompt tags
+```
+
+21F still needs local backend/API verification, EN/FA + Dark/Light smoke testing, and `pnpm generate` before closure.
 
 ## Migration state
 
@@ -314,7 +387,7 @@ Current migrations extend through:
 024_prompt_archive_unlocks.sql
 ```
 
-21E3 adds no migration.
+21E3 and 21F add no migration.
 
 Next future schema migration:
 
@@ -341,11 +414,14 @@ DO NOT create paid access without atomic debit + durable unlock state.
 DO NOT expose another user's economy history, unlock state, or spendable balance.
 DO NOT treat the 250 toman reference value as a buy/cash-out guarantee.
 DO NOT treat the current 5-Goin Prompt unlock as a permanent Marketplace price.
-DO NOT put Prompt text/sellable knowledge into analytics metadata.
+DO NOT put Prompt text/sellable knowledge into analytics or Growth metrics.
+DO NOT call measured-surface audience whole-product DAU/MAU.
+DO NOT infer Wizard completion before Wizard analytics exists.
+DO NOT claim strict referral attribution from aggregate opens/signups.
+DO NOT build another dashboard shell for 21F.
+DO NOT add aggregate schema until query volume/performance proves it necessary.
 DO NOT make /api/archive/:id public merely for SEO.
-DO NOT introduce fiat purchase/cash-out/payout in 21E.
-DO NOT grant ordinary admin system.settings.manage implicitly.
-DO NOT create a second Economy settings API for /manage.
+DO NOT introduce fiat purchase/cash-out/payout in Milestone 21.
 DO NOT start the full Marketplace inside Milestone 21.
 ```
 
@@ -366,7 +442,7 @@ docs/strategy/MILESTONE_21E1_VERIFICATION.md
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
 docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
+docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
-docs/backend/MILESTONE_15_SCORE_LEDGER.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
