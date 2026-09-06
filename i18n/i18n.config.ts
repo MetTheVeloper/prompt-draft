@@ -26,6 +26,8 @@ import growthEn from './locales/growth.en'
 import growthFa from './locales/growth.fa'
 import manageEn from './locales/manage.en'
 import manageFa from './locales/manage.fa'
+import manageEconomyEn from './locales/manage-economy.en'
+import manageEconomyFa from './locales/manage-economy.fa'
 import errorsEn from './locales/errors.en'
 import errorsFa from './locales/errors.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
@@ -126,7 +128,7 @@ const enMessagesBase = deepMerge(
       ),
       authEn,
     ),
-    manageEn,
+    deepMerge(manageEn, manageEconomyEn),
   ),
   flatToNested(enConsolidated),
 )
@@ -172,7 +174,7 @@ const faMessagesBase = deepMerge(
       ),
       authFa,
     ),
-    manageFa,
+    deepMerge(manageFa, manageEconomyFa),
   ),
   flatToNested(faConsolidated),
 )
