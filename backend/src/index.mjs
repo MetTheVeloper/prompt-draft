@@ -1,8 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
+import { handleAdminEconomyRoute } from './adminEconomyRoute.mjs'
 import { handleArchiveRequest } from './archive.mjs'
 import { handleAuthRequest } from './auth.mjs'
+import { handleEconomyRequest } from './economy.mjs'
 import { handleHomeDiscoveryRequest } from './homeDiscovery.mjs'
 import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
@@ -553,6 +555,18 @@ const server = createServer(async (request, response) => {
   }
 
   if (
+    await handleAdminEconomyRoute({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
     await handleAdminArchiveRoute({
       request,
       response,
@@ -566,6 +580,18 @@ const server = createServer(async (request, response) => {
 
   if (
     await handleArchiveRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handleEconomyRequest({
       request,
       response,
       url,
