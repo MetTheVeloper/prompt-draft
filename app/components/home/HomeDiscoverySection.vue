@@ -113,13 +113,13 @@ function openTelegram() {
       :p="mobile ? 22 : 30">
       <el-flex rules="rbc" class="w100" :gap="12">
         <el-flex rules="csc" :gap="5" class="fg100">
-          <el-text :size="10" :weight="900" color="white" style="opacity: .66">
+          <el-text :size="10" :weight="900" class="w100" style="opacity: .66">
             {{ t('growth.home.sectionEyebrow') }}
           </el-text>
-          <el-text type="h2" :size="mobile ? 24 : 30" :weight="850" color="white">
+          <el-text type="h2" :size="mobile ? 24 : 30" :weight="850" class="w100">
             {{ t(definition.messageKey) }}
           </el-text>
-          <el-text :size="11" color="white" style="max-width: 520px; opacity: .72; line-height: 1.5">
+          <el-text :size="11" class="w100" style="max-width: 520px; opacity: .72; line-height: 1.5">
             {{ t(definition.descriptionKey) }}
           </el-text>
         </el-flex>
@@ -128,9 +128,7 @@ function openTelegram() {
           <el-button
             type="fab"
             mode="flat"
-            color="white"
-            text-color="white"
-            icon-color="white"
+            color="normal"
             icon="arrow_back"
             :size="11"
             :p="8"
@@ -140,9 +138,7 @@ function openTelegram() {
           <el-button
             type="fab"
             mode="flat"
-            color="white"
-            text-color="white"
-            icon-color="white"
+            color="normal"
             icon="arrow_forward"
             :size="11"
             :p="8"
@@ -157,8 +153,7 @@ function openTelegram() {
           type="h3"
           :size="mobile ? 36 : 52"
           :weight="700"
-          color="white"
-          class="home-discovery-section__item-title">
+          class="home-discovery-section__item-title w100">
           {{ localizedItemTitle }}
         </el-text>
 
@@ -167,8 +162,8 @@ function openTelegram() {
             v-for="tag in activeItem.tags"
             :key="tag"
             :size="10"
-            color="white"
-            marker="surface75"
+            color="normal"
+            marker="invert"
             :p="[4, 7]"
             :radius="100">
             {{ formatTag(tag) }}
@@ -185,7 +180,7 @@ function openTelegram() {
               :br="2"
               bc="surface"
             />
-            <el-text :size="11" color="white" :weight="700">
+            <el-text :size="11" :weight="700">
               @{{ activeItem.owner.username }}
             </el-text>
           </el-flex>
@@ -193,25 +188,20 @@ function openTelegram() {
           <el-text
             v-if="formattedDate"
             :size="11"
-            color="white"
-            icon="calendar_month"
-            icon-color="white">
+            icon="calendar_month">
             {{ formattedDate }}
           </el-text>
 
           <el-text
             :size="11"
-            color="white"
-            icon="photo_library"
-            icon-color="white">
+            icon="photo_library">
             {{ t('prompts.card.imageCount', { count: activeItem.imageCount }) }}
           </el-text>
         </el-flex>
 
         <el-flex rules="rsc" :gap="8" class="w100 fw" wrap>
           <el-button
-            color="white"
-            text-color="normal"
+            color="normal"
             icon="visibility"
             :label="t('growth.home.viewPrompt')"
             :to="`/prompts?id=${activeItem.id}`"
@@ -219,9 +209,7 @@ function openTelegram() {
           <el-button
             v-if="activeItem.telegramUrl"
             mode="flat"
-            color="white"
-            text-color="white"
-            icon-color="white"
+            color="normal"
             icon="send"
             :label="t('prompts.actions.telegram')"
             @click="openTelegram"
@@ -247,8 +235,8 @@ function openTelegram() {
 <style scoped>
 .home-discovery-section {
   min-width: 0;
-  height: 100vh;
-  min-height: 620px;
+  height: var(--home-viewport-height);
+  min-height: var(--home-viewport-height);
   isolation: isolate;
   background: var(--themeBackground);
 }
@@ -282,20 +270,20 @@ function openTelegram() {
 .home-discovery-section__shade {
   z-index: 2;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, .2), rgba(0, 0, 0, .18) 32%, rgba(0, 0, 0, .82) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, .42), transparent 72%);
+    linear-gradient(180deg, var(--themeSurface20), var(--themeSurface20) 32%, var(--themeSurface85) 100%),
+    linear-gradient(90deg, var(--themeSurface45), var(--themeSurface0) 72%);
 }
 
 .home-discovery-section__grain {
   z-index: 3;
   opacity: .08;
-  background-image: repeating-radial-gradient(circle at 0 0, rgba(255,255,255,.28) 0, rgba(255,255,255,.28) .5px, transparent .6px, transparent 3px);
+  background-image: repeating-radial-gradient(circle at 0 0, var(--normalText30) 0, var(--normalText30) .5px, transparent .6px, transparent 3px);
   background-size: 5px 5px;
   mix-blend-mode: soft-light;
 }
 
 .home-discovery-section__content {
-  text-shadow: 0 4px 20px rgba(0, 0, 0, .42);
+  text-shadow: 0 4px 20px var(--invertText45);
 }
 
 .home-discovery-section__item-title {
@@ -303,6 +291,7 @@ function openTelegram() {
   line-height: .98 !important;
   letter-spacing: -.035em;
   text-wrap: balance;
+  text-shadow: 0 4px 20px var(--invertText70);
 }
 
 .home-discovery-section__meta {
@@ -315,14 +304,14 @@ function openTelegram() {
   padding: 0;
   border: 0;
   border-radius: 100px;
-  background: rgba(255, 255, 255, .35);
+  background: var(--normalText35);
   cursor: pointer;
   transition: width 180ms ease, background 180ms ease;
 }
 
 .home-discovery-section__dot.is-active {
   width: 34px;
-  background: rgba(255, 255, 255, .95);
+  background: var(--normalText95);
 }
 
 .home-section-image-enter-active,
@@ -334,12 +323,5 @@ function openTelegram() {
 .home-section-image-leave-to {
   opacity: 0;
   transform: scale(1.045);
-}
-
-@media (max-width: 819px) {
-  .home-discovery-section {
-    min-height: 100svh;
-    height: 100svh;
-  }
 }
 </style>
