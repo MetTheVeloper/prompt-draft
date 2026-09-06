@@ -1,6 +1,6 @@
 # Milestone 21E2 — Prompt Archive Durable Unlock
 
-Status: **SCHEMA LOCALLY VERIFIED / BEHAVIORAL VERIFICATION NEXT**
+Status: **BACKEND LOCALLY VERIFIED / USER ACCEPTED · FRONTEND COPY WIRING IMPLEMENTED / AWAITING UI + BUILD VERIFICATION**
 
 Date: 2026-09-06
 
@@ -20,7 +20,7 @@ Predecessor:
 
 Introduce the first real demand/sink primitive for the Goin simulation without turning ordinary page views into billable actions.
 
-Founder-approved semantic direction remains:
+Founder-approved semantic direction:
 
 ```text
 view -> free
@@ -28,17 +28,17 @@ first meaningful copy/unlock -> may cost
 repeat copy after access -> no repeated charge
 ```
 
-21E2 implements the durable access backend. The existing Prompt detail read boundary remains unchanged in this slice; frontend Copy wiring follows after backend verification.
+21E2 now has a locally verified backend durable-access primitive and a frontend Copy integration awaiting final visual/runtime verification.
 
 ## Migration 024
 
-New migration:
+Migration:
 
 ```text
 backend/sql/024_prompt_archive_unlocks.sql
 ```
 
-Seeds two server-side settings:
+Server-side simulation defaults:
 
 ```text
 goin_prompt_archive_unlock_cost = 5
@@ -53,15 +53,15 @@ At the current simulation reference value:
 5 goin × 250 toman ~= 1,250 toman reference value
 ```
 
-This is still not a fiat purchase/redemption promise.
+This remains simulation/reference metadata only and is not a fiat purchase/redemption promise.
 
-The migration also creates:
+Migration 024 creates:
 
 ```text
 user_content_unlocks
 ```
 
-Schema direction:
+Schema:
 
 ```text
 id UUID PK
@@ -82,11 +82,11 @@ Current resource type:
 prompt_archive_item
 ```
 
-The generic table can later support Template/Workflow access without introducing full Marketplace Orders now.
+The generic table can later support Template/Workflow access without introducing full Marketplace Orders in Milestone 21.
 
 ## Local schema verification — PASSED
 
-Migration 024 was applied locally after rebuilding the API container:
+Migration 024 applied successfully:
 
 ```text
 Database schema applied: 024_prompt_archive_unlocks.sql
@@ -99,7 +99,7 @@ goin_prompt_archive_unlock_cost = 5
 goin_sink_rule_version          = 1
 ```
 
-Verified `user_content_unlocks` constraints/indexes include:
+Verified constraints/indexes:
 
 ```text
 PRIMARY KEY (id)
@@ -111,11 +111,9 @@ FK user_id -> users ON DELETE CASCADE
 FK economy_event_id -> user_economy_events ON DELETE SET NULL
 ```
 
-This confirms the durable-access storage primitive and server-side sink-policy seed are present. Runtime charge/idempotency/atomicity behavior still requires local verification before frontend Copy integration.
-
 ## Unlock endpoints
 
-The existing economy route now supports:
+Backend routes:
 
 ```text
 GET  /api/economy/unlocks/prompt-archive/:publicId
@@ -132,7 +130,7 @@ published Prompt Archive item
 
 ### GET semantics
 
-Returns current access state and current policy without mutation:
+Returns current caller-owned access state without mutation:
 
 ```text
 resource
@@ -146,7 +144,7 @@ canAfford
 
 ### POST semantics
 
-If already unlocked:
+Already unlocked:
 
 ```text
 newlyUnlocked   = false
@@ -154,7 +152,7 @@ alreadyUnlocked = true
 chargedGoin     = 0
 ```
 
-If not yet unlocked and balance is sufficient:
+First paid unlock:
 
 ```text
 lock canonical user row
@@ -167,7 +165,7 @@ insert one durable unlock row
 commit both together
 ```
 
-Economy event:
+Economy debit:
 
 ```text
 event_type      = prompt_archive_unlock
@@ -177,7 +175,7 @@ source_id       = publicId
 idempotency_key = prompt_archive_unlock:v1:<publicId>
 ```
 
-The debit metadata records:
+Debit metadata:
 
 ```text
 ruleVersion
@@ -186,17 +184,15 @@ publicId
 accessKind = copy_unlock
 ```
 
-The unlock row stores the actual historical charged price and pricing rule version, so later policy changes do not rewrite past purchases.
+The durable unlock stores the actual historical charged price and pricing-rule version so future policy changes do not rewrite past access.
 
 ## Atomicity / concurrency
 
-All unlock attempts for one user serialize on:
+All unlock attempts for one user serialize on the canonical user row:
 
 ```sql
 SELECT id FROM users WHERE id = $1 FOR UPDATE
 ```
-
-This is the same canonical lock used by existing economy mutations and by score-event Goin issuance.
 
 Consequences:
 
@@ -204,42 +200,180 @@ Consequences:
 two simultaneous unlocks cannot overspend the same balance
 two simultaneous requests for the same Prompt cannot double-charge
 failed insufficient-balance attempts create neither debit nor unlock
-successful debit cannot commit without its matching durable unlock
+successful debit and durable access commit together
 ```
 
-## Insufficient balance
+## Backend behavioral verification — PASSED
 
-POST returns:
+A self-contained local verification created temporary users and sessions, exercised real Goin issuance and real published Prompt Archive rows, then deleted the temporary users so their sessions/ledger/unlocks were removed by existing foreign-key behavior.
+
+Verified buyer baseline through real issuance rules:
 
 ```text
-HTTP 409
-code = INSUFFICIENT_GOIN_BALANCE
-balance
-required
+account_created       -> +10 goin
+profile_email_added   -> +10 goin
+starting balance      -> 20 goin
 ```
 
-No economy row and no unlock row should be created.
-
-## Free-policy edge case
-
-The setting is allowed conceptually to reach zero later.
-
-When cost is zero:
+Verified auth/access boundary:
 
 ```text
-create durable unlock
-chargedGoin = 0
-economy_event_id = null
-no fake zero-value ledger event
+anonymous GET unlock state -> 401
+email-incomplete user      -> 403
+foreign user sees only own unlock state
+missing Archive public ID  -> 404
 ```
 
-The ledger still forbids zero-value economy events.
+No unpublished Archive row existed in the local fixture, so the explicit unpublished-row runtime check was skipped. The backend query still restricts the resource lookup to `status = 'published'`.
+
+Verified view-is-free invariant:
+
+```text
+GET /api/archive/:id -> 200
+balance before == balance after
+no user_content_unlocks row
+no prompt_archive_unlock debit
+```
+
+Verified first unlock:
+
+```text
+first POST        -> 200
+newlyUnlocked     -> true
+alreadyUnlocked   -> false
+chargedGoin       -> 5
+balance           -> 20 -> 15
+unlock rows       -> exactly 1
+debit rows        -> exactly 1
+```
+
+Verified historical provenance:
+
+```text
+price_goin             = 5
+pricing_rule_version   = 1
+economy unit_delta     = -5
+economy_event_id       = linked
+idempotency_key        = prompt_archive_unlock:v1:<publicId>
+metadata.publicId      = correct
+metadata.accessKind    = copy_unlock
+```
+
+Verified repeat access:
+
+```text
+second POST       -> 200
+newlyUnlocked     -> false
+alreadyUnlocked   -> true
+chargedGoin       -> 0
+balance unchanged
+still one unlock row
+still one debit row
+```
+
+Verified same-Prompt concurrency with two simultaneous POST requests:
+
+```text
+both HTTP 200
+one request newlyUnlocked=true / chargedGoin=5
+one request alreadyUnlocked=true / chargedGoin=0
+total charged = 5
+one durable unlock row
+one debit row
+```
+
+Verified insufficient-balance atomicity:
+
+```text
+temporary user balance -> 0
+POST                    -> 409
+code                    -> INSUFFICIENT_GOIN_BALANCE
+balance                 -> 0
+required                -> 5
+new debit rows          -> 0
+new unlock rows         -> 0
+```
+
+Final buyer state after unlocking two unique Prompts:
+
+```text
+lifetimeIssued = 20
+lifetimeSpent  = 10
+balance        = 10
+```
+
+The verification concluded:
+
+```text
+ALL 21E2 BACKEND UNLOCK CHECKS PASSED
+```
+
+## Frontend Copy integration — IMPLEMENTED / AWAITING LOCAL VERIFICATION
+
+New client composable:
+
+```text
+app/composables/usePromptArchiveUnlock.ts
+```
+
+Responsibilities:
+
+```text
+GET current Prompt unlock state
+POST first unlock
+caller auth headers only
+client-side policy/economy/access state
+normalized insufficient-balance failure state
+no client-side authority over pricing or balance
+```
+
+Updated detail UI:
+
+```text
+app/components/prompts/PromptDetail.vue
+```
+
+Copy behavior now follows:
+
+```text
+Prompt detail loads
+  -> GET unlock state (read-only)
+
+Copy click
+  -> if already unlocked: clipboard directly
+  -> if locked: POST durable unlock
+  -> insufficient balance: stop, show Goin feedback, do not copy
+  -> success/already unlocked: copy selected prompt variant
+  -> track existing prompt_archive_copy only after clipboard success
+```
+
+The backend remains authoritative. The frontend does not calculate whether a debit should be accepted and does not create a local unlock independently.
+
+UX copy communicates before the first action:
+
+```text
+Unlock & copy · 5 goin
+First copy unlocks this prompt for 5 goin. Your balance: N.
+```
+
+After durable access:
+
+```text
+Copy prompt
+Unlocked · future copies of this prompt are free.
+```
+
+Insufficient balance feedback includes server-reported `required` and `balance` values.
+
+Clipboard failure after a successful unlock does not refund or recreate access: the durable access remains valid and the user can retry Copy without a second charge.
+
+EN/FA strings were added through the Growth locale overlay so existing Prompt Archive locale ownership remains intact.
 
 ## Existing Archive detail boundary
 
-21E2 deliberately does **not** make Prompt detail public and does not charge merely for viewing it.
+21E2 does **not** make Prompt detail public and does not charge page views.
 
-Current boundary stays:
+Current boundary remains:
 
 ```text
 /prompts list -> public
@@ -247,29 +381,22 @@ Current boundary stays:
 full /api/archive/:id detail -> login + email
 ```
 
-The upcoming frontend slice should intercept the meaningful Copy action, request/reuse durable unlock, then proceed to Clipboard only when access succeeds.
+## Final local verification still required
 
-This avoids both extremes:
-
-```text
-charging page views
-charging every Copy click
-```
-
-## Remaining local verification checklist
-
-Verify runtime behavior:
+Before closing 21E2:
 
 ```text
-GET unlock state returns locked + policy
-first POST deducts exactly 5 and creates one unlock
-second POST returns alreadyUnlocked + chargedGoin=0
-ledger contains exactly one debit for that Prompt/user
-parallel same-Prompt POST cannot double-charge
-insufficient-balance POST creates no rows
-foreign user cannot observe/reuse another user's unlock
-invalid/unpublished Prompt returns 404
-email-incomplete user remains blocked
+pnpm generate PASS
+open a locked Prompt detail in EN + FA
+confirm first Copy shows 5-Goin contract before action
+confirm first Copy deducts exactly 5 and copies text
+confirm second Copy does not deduct again
+switch variant and confirm no second unlock charge
+refresh/reopen same Prompt and confirm durable unlocked state reloads
+open another Prompt and confirm it is independently locked
+verify insufficient-Goin UX prevents clipboard copy
+verify Dark/Light rendering of new status text/buttons
+verify existing prompt_archive_copy analytics still fires only after successful clipboard copy
 ```
 
-Only after these pass should frontend Copy behavior be switched to the unlock flow.
+Only after those checks pass should 21E2 be marked DONE / USER ACCEPTED.
