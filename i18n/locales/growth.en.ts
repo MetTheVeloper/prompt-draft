@@ -15,6 +15,48 @@ export default {
       loadingSections: 'Building your discovery feed...',
       loadError: 'The personalized showcase could not be loaded. You can still explore the Prompt Archive directly.',
     },
+    goin: {
+      open: 'What is Goin?',
+      title: 'Goin',
+      subtitle: 'Earn Goin through useful actions and spend it on access inside Prompt Draft.',
+      balanceTitle: 'Your Goin',
+      balanceHelper: 'Current spendable balance',
+      simulationReference: 'Simulation reference: 1 Goin ≈ {value} toman. This is test metadata, not a purchase, cash-out, or redemption promise.',
+      loading: 'Loading the current Goin policy...',
+      loadError: 'The current Goin policy could not be loaded.',
+      earn: {
+        title: 'How you earn Goin',
+        description: 'These rewards always reflect the current Economy policy configured by Prompt Draft.',
+        accountCreated: {
+          title: 'Create an account',
+          helper: 'Issued once when your account is created.',
+        },
+        profileEmailAdded: {
+          title: 'Add your email',
+          helper: 'Issued once when you complete your profile email.',
+        },
+        referralJoined: {
+          title: 'Join through a referral',
+          helper: 'Issued to the new account when a valid referrer is persisted.',
+        },
+        referralReward: {
+          title: 'Invite a new user',
+          helper: 'Issued to you when a valid referred account joins.',
+        },
+        draftCreated: {
+          title: 'Create a cloud Draft',
+          helper: 'Issued according to the current Draft reward policy.',
+        },
+      },
+      spend: {
+        title: 'Where Goin is spent',
+        description: 'Spending is server-authoritative and only happens when the paid action completes.',
+        promptUnlock: {
+          title: 'Unlock a Prompt',
+          helper: 'The first meaningful copy unlocks that Prompt permanently for your account; future copies are free.',
+        },
+      },
+    },
     publicDiscovery: {
       eyebrow: 'PUBLIC DISCOVERY',
       collectionEyebrow: 'CURATED FROM THE PROMPT ARCHIVE',
