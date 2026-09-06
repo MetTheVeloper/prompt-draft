@@ -38,8 +38,9 @@ Phase 21F Growth Metrics        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 
 Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
-Phase 21.5.1 Hybrid / SSR Architecture          -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-Phase 21.5.2 Docker Production Runtime          -> NEXT AFTER PHASE 1 ACCEPTANCE
+Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+Phase 21.5.2 Docker Production Runtime          -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+Phase 21.5.3 Cloudflare Production Path         -> NEXT AFTER PHASE 2 ACCEPTANCE
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
 First domain                                    -> Content Creation
 Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
@@ -53,10 +54,11 @@ Milestone source of truth:
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 ```
 
-Current Phase 1 implementation record:
+Phase records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 ```
 
 Current rendering ADR:
@@ -70,16 +72,16 @@ ADR-001 remains historically correct for Milestone 21D; ADR-002 records the sele
 Milestone 21.5 execution order:
 
 ```text
-Phase 1 — Hybrid / SSR Architecture                       IMPLEMENTED / VERIFY NEXT
-Phase 2 — Docker Production Runtime                       NOT STARTED
+Phase 1 — Hybrid / SSR Architecture                       DONE / ACCEPTED
+Phase 2 — Docker Production Runtime                       IMPLEMENTED / VERIFY NEXT
 Phase 3 — Cloudflare Production Path                      NOT STARTED
 Phase 4 — SEO Platform & Public Content Architecture      NOT STARTED
 Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
 ```
 
-## Phase 1 rendering state
+## Phase 1 accepted rendering state
 
-Selected Nuxt baseline on the current branch:
+Selected Nuxt baseline:
 
 ```text
 ssr: true
@@ -96,7 +98,7 @@ First server-rendered/default acquisition surfaces:
 /discover/**
 ```
 
-Explicit client-rendered surfaces in Phase 1:
+Explicit client-rendered surfaces:
 
 ```text
 /create
@@ -113,33 +115,104 @@ Explicit client-rendered surfaces in Phase 1:
 /user
 ```
 
-`/prompts` and `/user` remain public product surfaces, but their current query-parameter contracts are not being promoted into permanent canonical SEO contracts during Phase 1.
-
-The six `/discover/*` routes now load sanitized public collection data through SSR-aware `useAsyncData()` rather than waiting for `onMounted()`.
-
-Current server data path:
+Founder-local acceptance passed with:
 
 ```text
-/discover/<slug>
-  -> Nuxt SSR
-  -> usePublicDiscovery
-  -> NUXT_PUBLIC_API_BASE/api/discover
-  -> sanitized published presentation data
-  -> server HTML + Nuxt hydration payload
-```
-
-Public/protected data boundaries are unchanged.
-
-Phase 1 local acceptance command is now:
-
-```powershell
 pnpm build
 pnpm preview
+SSR/raw-HTML discovery smoke
+/, /guide, discovery smoke
+/create, /manage, /prompts, /user, Wizard smoke
+regular-user and super-admin auth smoke
 ```
 
-`pnpm generate` remains present as a compatibility/rollback path from the prior static architecture but is not a valid acceptance test for hybrid request-time rendering.
+The preview-port CORS issue was fixed by allowing port 3000 in local API CORS configuration. The super-admin login issue was confirmed to be a local password-hash mismatch rather than an SSR/origin/role restriction and was corrected through a secure local password-reset CLI.
 
-The Milestone 21D post-generate discovery SEO snapshot machinery has deliberately not been deleted yet. Phase 4 will remove/reduce/retain it only after SSR runtime, Docker and Cloudflare behavior are verified.
+## Phase 2 Docker runtime state
+
+Implemented production-like local shape:
+
+```text
+browser
+  -> http://localhost:3000
+  -> frontend Nuxt/Nitro container
+
+SSR frontend
+  -> http://api:4000
+  -> API over Compose network
+
+browser client API
+  -> http://localhost:4000
+
+API
+  -> db:5432
+  -> translator:5000
+```
+
+Key runtime contract:
+
+```text
+NUXT_API_BASE_INTERNAL=http://api:4000      server-only
+NUXT_PUBLIC_API_BASE=http://localhost:4000  browser-visible local default
+```
+
+Implemented Phase 2 infrastructure:
+
+```text
+root multi-stage frontend Dockerfile
+root .dockerignore excluding local secrets/build outputs
+frontend Compose service
+frontend/API/db/translator health checks
+health-gated service dependencies
+restart: unless-stopped
+server-internal vs browser-public API origin split
+stack lifecycle pnpm commands
+```
+
+Primary local verification commands:
+
+```powershell
+pnpm stack
+pnpm stack:status
+```
+
+Expected services:
+
+```text
+frontend healthy
+api healthy
+db healthy
+translator healthy
+```
+
+Phase 2 remains unaccepted until founder-local Docker build/start, SSR-to-API, browser API, auth/application and restart/recovery smoke tests pass.
+
+## Accepted Creator SEO direction for Phase 4
+
+```text
+/user
+  -> private/signed-in account profile surface
+  -> not canonical SEO Creator URL
+
+/creator/:username
+  -> future public SSR/SEO Creator route
+  -> public data/publications only
+```
+
+A Creator page must not become indexable merely because an account exists or one trivial public item was published.
+
+Phase 4 must define a shared server-authoritative Creator indexability/quality policy. The same eligibility result should drive SSR robots/index metadata, sitemap inclusion and future public Creator discovery behavior.
+
+Exact thin-content thresholds remain deliberately TBD for Phase 4 discussion. Candidate inputs include meaningful public content volume/substance, public profile completeness, publication quality/visibility, spam/moderation state and duplicate/low-value content signals.
+
+Default direction for ineligible public Creator pages:
+
+```text
+noindex
+exclude from indexable sitemap
+```
+
+Final accessibility/404 behavior remains a Phase 4 decision.
 
 ## Milestone 21.5 rationale
 
@@ -156,7 +229,7 @@ and used targeted post-generate SEO snapshots for six controlled `/discover/*` r
 
 That decision remains historically correct for 21D.
 
-Milestone 21.5 explicitly revisits rendering because the product now has a non-speculative acquisition use case:
+Milestone 21.5 revisits rendering because the product now has a non-speculative acquisition use case:
 
 ```text
 existing public discovery content
@@ -390,6 +463,8 @@ DO NOT start the full Marketplace before Domain Expansion is evaluated.
 DO NOT expose protected Prompt bodies merely because routes become SSR.
 DO NOT treat every route as SSR-worthy merely because global SSR is enabled.
 DO NOT delete the old static SEO fallback before the new runtime path is verified.
+DO NOT expose Docker-internal service origins to browser runtime configuration.
+DO NOT make every Creator account indexable without a thin-content/quality eligibility policy.
 ```
 
 ## Phase 2 — Domain Expansion after Milestone 21.5
@@ -448,11 +523,12 @@ docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
-Latest Phase 1 documentation checkpoint before founder-local verification:
+Current Phase 2 implementation checkpoint:
 
 ```text
-eff42ea26bf62cac6947b0a030aa5910e6e9ec0c
+a0769b5e7626caf5142febe9b81ec54e245f35a0
 ```
