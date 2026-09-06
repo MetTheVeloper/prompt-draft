@@ -39,7 +39,7 @@ const activeItem = computed(() => archive.detail.value)
 const previousItem = computed(() => archive.previousItem.value)
 const nextItem = computed(() => archive.nextItem.value)
 
-const canReadArchive = computed(() => {
+const canReadDetail = computed(() => {
   return auth.isLoggedIn.value && auth.hasProfileField('email')
 })
 
@@ -112,7 +112,7 @@ useHead(() => ({
 watch(
   [searchQuery, modelFilter, tagFilter, sortMode],
   () => {
-    if (hasDetailQuery.value || !canReadArchive.value) return
+    if (hasDetailQuery.value) return
 
     if (filterTimer) clearTimeout(filterTimer)
     filterTimer = setTimeout(() => {
@@ -156,18 +156,21 @@ watch(
 watch(
   () => route.query.id,
   () => {
-    if (!canReadArchive.value) return
+    if (hasDetailQuery.value && !canReadDetail.value) {
+      archive.clearDetail()
+      return
+    }
     void loadCurrentRoute()
   },
 )
 
-watch(canReadArchive, (allowed) => {
-  if (allowed) void loadCurrentRoute()
+watch(canReadDetail, (allowed) => {
+  if (allowed && hasDetailQuery.value) void loadCurrentRoute()
 })
 
 onMounted(async () => {
   await auth.initialize()
-  if (canReadArchive.value) await loadCurrentRoute()
+  if (!hasDetailQuery.value || canReadDetail.value) await loadCurrentRoute()
   if (!ambientBackground.value) selectAmbientBackground(backgroundSources.value)
 })
 
@@ -209,9 +212,9 @@ function currentListQuery(cursor: string | null = null): PromptArchiveListQuery 
 }
 
 async function loadCurrentRoute() {
-  if (!canReadArchive.value) return
-
   if (hasDetailQuery.value) {
+    if (!canReadDetail.value) return
+
     if (detailId.value == null) {
       archive.clearDetail()
       return
