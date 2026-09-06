@@ -37,6 +37,9 @@ export default {
       username: "Username",
       email: "Email",
       xp: "XP",
+      goinBalance: "Goin balance",
+      goinLoading: "Loading Goin balance...",
+      goinLoadError: "Goin balance could not be loaded.",
       invitedUsers: "Invited users",
       referral: {
         copyLink: "Copy referral link",
