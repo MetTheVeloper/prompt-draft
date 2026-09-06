@@ -34,7 +34,7 @@ export default {
         referralOpens: { label: "Referral opens", helper: "Tracked referral-link landing events" },
         referralSignups: { label: "Referral signups", helper: "Accounts created with a persisted referrer" },
         referralShare: { label: "Referral share", helper: "Referral signups as a share of new accounts" },
-        referralRatio: { label: "Open → signup ratio", helper: "Directional aggregate, not strict attribution" },
+        referralRatio: { label: "Open → signup ratio", helper: "Directional aggregate; it can exceed 100% when signups lack a tracked open" },
         goinIssued: { label: "Goin issued", helper: "Positive ledger flow in this window" },
         goinSpent: { label: "Goin spent", helper: "Negative ledger flow in this window" },
         goinOutstanding: { label: "Goin outstanding", helper: "Current platform-wide ledger balance" },
