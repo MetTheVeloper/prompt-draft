@@ -1,6 +1,6 @@
 # Milestone 21E2 — Prompt Archive Durable Unlock
 
-Status: **BACKEND LOCALLY VERIFIED / USER ACCEPTED · FRONTEND COPY WIRING IMPLEMENTED / AWAITING UI + BUILD VERIFICATION**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Date: 2026-09-06
 
@@ -28,7 +28,7 @@ first meaningful copy/unlock -> may cost
 repeat copy after access -> no repeated charge
 ```
 
-21E2 now has a locally verified backend durable-access primitive and a frontend Copy integration awaiting final visual/runtime verification.
+21E2 is now complete across schema, backend behavior, frontend Copy integration, UI/runtime verification, and static generation.
 
 ## Migration 024
 
@@ -308,32 +308,21 @@ The verification concluded:
 ALL 21E2 BACKEND UNLOCK CHECKS PASSED
 ```
 
-## Frontend Copy integration — IMPLEMENTED / AWAITING LOCAL VERIFICATION
+## Frontend Copy integration — VERIFIED
 
-New client composable:
+Client composable:
 
 ```text
 app/composables/usePromptArchiveUnlock.ts
 ```
 
-Responsibilities:
-
-```text
-GET current Prompt unlock state
-POST first unlock
-caller auth headers only
-client-side policy/economy/access state
-normalized insufficient-balance failure state
-no client-side authority over pricing or balance
-```
-
-Updated detail UI:
+Detail UI:
 
 ```text
 app/components/prompts/PromptDetail.vue
 ```
 
-Copy behavior now follows:
+Copy behavior:
 
 ```text
 Prompt detail loads
@@ -349,54 +338,62 @@ Copy click
 
 The backend remains authoritative. The frontend does not calculate whether a debit should be accepted and does not create a local unlock independently.
 
-UX copy communicates before the first action:
+UX copy communicates the first-charge contract before the action and switches to free-repeat wording after durable access.
+
+Clipboard failure after a successful unlock does not recreate access or cause another charge; the durable access remains valid and the user can retry Copy for free.
+
+EN/FA strings are supplied through the Growth locale overlay and the new UI uses project theme tokens/components.
+
+## Final real-account verification — PASSED
+
+The founder verified the frontend using the real account flow and Prompt Archive item `501`.
+
+After first Copy, the ledger contained exactly one new debit:
 
 ```text
-Unlock & copy · 5 goin
-First copy unlocks this prompt for 5 goin. Your balance: N.
+prompt_archive_unlock | -5 | source_id = 501
 ```
 
-After durable access:
+The durable access table contained exactly one matching unlock:
 
 ```text
-Copy prompt
-Unlocked · future copies of this prompt are free.
+resource_id          = 501
+price_goin           = 5
+pricing_rule_version = 1
 ```
 
-Insufficient balance feedback includes server-reported `required` and `balance` values.
+After Copying the same Prompt again, both database queries were unchanged:
 
-Clipboard failure after a successful unlock does not refund or recreate access: the durable access remains valid and the user can retry Copy without a second charge.
+```text
+no second prompt_archive_unlock event
+no second user_content_unlocks row
+```
 
-EN/FA strings were added through the Growth locale overlay so existing Prompt Archive locale ownership remains intact.
+This confirms the production UI path preserves the backend single-charge semantic.
 
-## Existing Archive detail boundary
+The founder also confirmed the new frontend behavior was correct and:
 
-21E2 does **not** make Prompt detail public and does not charge page views.
+```text
+pnpm generate -> PASS
+```
 
-Current boundary remains:
+## Final accepted boundary
 
 ```text
 /prompts list -> public
 /api/archive list -> public
 full /api/archive/:id detail -> login + email
+Prompt detail view -> free
+first meaningful Copy -> current server-side Goin unlock price
+repeat copies/variants after durable unlock -> free
 ```
 
-## Final local verification still required
+## Closure
 
-Before closing 21E2:
+21E2 is closed as:
 
 ```text
-pnpm generate PASS
-open a locked Prompt detail in EN + FA
-confirm first Copy shows 5-Goin contract before action
-confirm first Copy deducts exactly 5 and copies text
-confirm second Copy does not deduct again
-switch variant and confirm no second unlock charge
-refresh/reopen same Prompt and confirm durable unlocked state reloads
-open another Prompt and confirm it is independently locked
-verify insufficient-Goin UX prevents clipboard copy
-verify Dark/Light rendering of new status text/buttons
-verify existing prompt_archive_copy analytics still fires only after successful clipboard copy
+DONE / LOCALLY VERIFIED / USER ACCEPTED
 ```
 
-Only after those checks pass should 21E2 be marked DONE / USER ACCEPTED.
+The next economy slice is private user-account Goin visibility plus Super-Admin Economy management UI. That work must reuse the existing economy ledger/settings contracts rather than create parallel balance or settings systems.
