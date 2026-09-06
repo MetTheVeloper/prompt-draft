@@ -15,6 +15,48 @@ export default {
       loadingSections: 'در حال ساخت فید کشف تو...',
       loadError: 'ویترین شخصی‌سازی‌شده بارگذاری نشد. همچنان می‌توانی مستقیماً وارد آرشیو پرامپت‌ها شوی.',
     },
+    goin: {
+      open: 'گوین چیست؟',
+      title: 'Goin',
+      subtitle: 'با اکشن‌های مفید Goin جمع کن و برای دسترسی‌های داخل Prompt Draft خرجش کن.',
+      balanceTitle: 'Goin تو',
+      balanceHelper: 'موجودی قابل خرج فعلی',
+      simulationReference: 'ارزش مرجع آزمایشی: هر ۱ Goin حدود {value} تومان. این عدد فقط متادیتای شبیه‌سازی است و تعهد خرید، برداشت یا بازخرید ایجاد نمی‌کند.',
+      loading: 'در حال بارگذاری سیاست فعلی Goin...',
+      loadError: 'سیاست فعلی Goin قابل بارگذاری نیست.',
+      earn: {
+        title: 'چطور Goin جمع می‌کنی',
+        description: 'مقدار این پاداش‌ها همیشه از سیاست فعلی Economy که در Prompt Draft تنظیم شده خوانده می‌شود.',
+        accountCreated: {
+          title: 'ساخت حساب کاربری',
+          helper: 'یک‌بار هنگام ساخته شدن حساب صادر می‌شود.',
+        },
+        profileEmailAdded: {
+          title: 'اضافه کردن ایمیل',
+          helper: 'یک‌بار هنگام تکمیل ایمیل پروفایل صادر می‌شود.',
+        },
+        referralJoined: {
+          title: 'عضویت از طریق دعوت',
+          helper: 'وقتی حساب جدید با referrer معتبر ثبت شود به کاربر جدید تعلق می‌گیرد.',
+        },
+        referralReward: {
+          title: 'دعوت یک کاربر جدید',
+          helper: 'وقتی کاربر دعوت‌شده با موفقیت عضو شود به دعوت‌کننده تعلق می‌گیرد.',
+        },
+        draftCreated: {
+          title: 'ساخت Draft ابری',
+          helper: 'بر اساس سیاست فعلی پاداش Draft صادر می‌شود.',
+        },
+      },
+      spend: {
+        title: 'Goin کجا خرج می‌شود',
+        description: 'کسر Goin فقط به‌صورت سرورمحور و بعد از موفق شدن اکشن پولی انجام می‌شود.',
+        promptUnlock: {
+          title: 'باز کردن یک Prompt',
+          helper: 'اولین کپی معنادار آن Prompt را برای حساب تو دائماً باز می‌کند و کپی‌های بعدی رایگان هستند.',
+        },
+      },
+    },
     publicDiscovery: {
       eyebrow: 'کشف عمومی',
       collectionEyebrow: 'منتخب از آرشیو پرامپت',
