@@ -29,7 +29,7 @@ Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21D Public Discovery/SEO  -> FIRST IMPLEMENTATION SLICE COMPLETE / AWAITING LOCAL VERIFICATION
+Phase 21D Public Discovery/SEO  -> CORE PUBLIC/API/SITEMAP VERIFIED / BUILD-TIME SEO SNAPSHOT IMPLEMENTED / AWAITING GENERATED HTML VERIFICATION
 ```
 
 ## 21A closure
@@ -149,17 +149,9 @@ Canonical closure:
 docs/strategy/MILESTONE_21C_VERIFICATION.md
 ```
 
-Implementation/design sources remain:
-
-```text
-docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
-docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
-docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
-```
-
 ## Current phase — 21D Public Discovery & SEO Foundation
 
-21D capability audit and rendering ADR are complete. The first implementation slice is now in code and awaiting local verification.
+21D capability audit and ADR are complete. Core public discovery/API/sitemap behavior has now been locally verified.
 
 Current rendering invariant remains:
 
@@ -176,25 +168,29 @@ Rendering decision:
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 ```
 
-Decision:
+Current decision:
 
 ```text
-DO NOT migrate to SSR in 21D by default.
-First improve URL/metadata/sitemap/public-discovery architecture under the current static invariant.
-Use generated-output/crawler evidence as the trigger for future prerender/hybrid rendering.
+DO NOT migrate the full application to SSR.
+Use targeted build-time SEO snapshots for the six public /discover/* routes.
+Revisit hybrid/incremental/SSR only from crawler/freshness/page-volume evidence.
 ```
 
-21D design source:
+### Public Archive access correction
+
+The obsolete test-only Archive list gate has been removed.
+
+Current intended boundary:
 
 ```text
-docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
+/prompts list/catalog -> public
+GET /api/archive -> public
+search/sort/multi-tag/pagination -> public
+/prompts?id=<id> full detail -> existing account + email gate
+GET /api/archive/:id -> existing account + email gate
 ```
 
-First implementation handoff:
-
-```text
-docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
-```
+This lets anonymous visitors browse the catalog without exposing Prompt body/variants.
 
 ### Implemented 21D foundation
 
@@ -209,7 +205,8 @@ PublicDiscoveryCard public presentation component
 six discovery routes included in generated route list
 EN/FA public-discovery copy
 robots crawler boundaries
-post-generate sitemap/robots enrichment script
+post-generate sitemap/robots enrichment
+post-generate discovery HTML enrichment
 ```
 
 Public discovery routes:
@@ -226,7 +223,7 @@ Public discovery routes:
 Sanitized endpoint contract:
 
 ```text
-GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..24>
+GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..20>
 published items only
 OR/union tag semantics
 presentation metadata only
@@ -234,49 +231,79 @@ no prompt body
 no variants
 ```
 
-Critical public-content boundary carried forward:
+### Locally verified 21D behavior
+
+Verified on 2026-09-06:
 
 ```text
-/prompts frontend remains authenticated + email-gated
-/api/archive remains protected by the same product-content boundary
-/api/home/* and /api/discover expose presentation metadata only
-/data/prompts.json historical fallback snapshot contains full prompt content
+GET /api/discover?tag=poster&tag=editorial&limit=10 -> 200
+sanitized rows returned correctly
+GET /api/discover?tag=poster&limit=25 -> 400
+pnpm generate without NUXT_PUBLIC_SITE_URL -> PASS
+production sitemap skipped when site origin absent
+pnpm generate with NUXT_PUBLIC_SITE_URL=https://example.test -> PASS
+24 Nuxt routes generated including all six /discover/* routes
+sitemap.xml generated for 7 public URLs
+robots.txt contains /manage, /create, /login exclusions + absolute Sitemap line
 ```
 
-21D rule:
-
-> Public SEO/discovery surfaces must use a sanitized public projection. Do not make protected Prompt bodies public merely for indexing.
-
-### Build/SEO evidence gate
-
-`pnpm generate` now also runs:
+Generated-output evidence also confirmed:
 
 ```text
-scripts/generate-public-seo.ts
+HTML content not prerendered because ssr: false was set.
 ```
 
-Behavior:
+That evidence proved that the raw Nuxt SPA route files do not contain sufficient route-specific body content for the SEO goal.
+
+### Current build-time SEO snapshot implementation
+
+`scripts/generate-public-seo.ts` now enriches each generated discovery route after `nuxt generate`.
+
+It writes:
 
 ```text
-NUXT_PUBLIC_SITE_URL empty -> build continues; sitemap intentionally skipped
-valid NUXT_PUBLIC_SITE_URL -> sitemap.xml generated and generated robots receives Sitemap line
+route-specific title
+route-specific description
+canonical + og:url when site origin exists
+Open Graph/Twitter metadata
+first sanitized preview image when available
+CollectionPage + ItemList JSON-LD
+semantic data-public-seo-snapshot body inside #__nuxt
+up to 12 sanitized /api/discover items
 ```
 
-Initial sitemap contains only:
+The snapshot source is only:
 
 ```text
-/
-six /discover/<slug> routes
+/api/discover
 ```
 
-The next verification step must inspect actual generated discovery HTML under `.output/public` and answer:
+It never uses the historical full Prompt snapshot as its SEO data source and never serializes Prompt body/variants.
+
+If the public discovery API is temporarily unavailable during generation, category-level SEO content still emits and item-level snapshot rows are skipped with warnings.
+
+### Current verification gate
+
+Regenerate with the local API running, then inspect:
 
 ```text
-Does route-specific title/description/canonical exist in generated HTML?
-Does meaningful route-specific body content exist before JavaScript executes?
+.output/public/discover/posters-editorial/index.html
 ```
 
-If `ssr:false` produces only the generic SPA shell, record that as evidence and use ADR-001 to decide whether build-time prerender/hybrid rendering is now justified.
+Must contain before JavaScript execution:
+
+```text
+Posters & Editorial · Prompt Draft
+route-specific description
+data-public-seo-snapshot
+application/ld+json
+canonical when NUXT_PUBLIC_SITE_URL exists
+sanitized Prompt titles/previews
+no Prompt body
+no variants
+```
+
+The interactive `/discover/posters-editorial` page must still mount and behave normally in browser after the static snapshot is replaced by Vue.
 
 ## Migration state
 
@@ -287,7 +314,7 @@ Current schema migrations extend through:
 021_user_preferences.sql
 ```
 
-21D first slice requires no migration.
+21D requires no schema migration.
 
 Next future schema migration:
 
@@ -308,11 +335,11 @@ DO NOT replace canonical Archive tags with user-interest keys.
 DO NOT fabricate ownership for legacy/managed Archive items without source_user_id.
 DO NOT introduce multi-ownership in Milestone 21.
 DO NOT return prompt bodies from /api/home/* or /api/discover.
-DO NOT remove the current /api/archive prompt-content access boundary merely for SEO.
+DO NOT make /api/archive/:id public merely for SEO.
 DO NOT use the full prompt snapshot as the future sanitized public SEO projection.
 DO NOT invent hreflang language URLs while i18n strategy remains no_prefix.
 DO NOT publish localhost canonical/sitemap URLs as production truth.
-DO NOT migrate to SSR without the ADR trigger/evidence gate.
+DO NOT migrate the full application to SSR without a new evidence gate.
 DO NOT start full Marketplace commerce inside Milestone 21.
 ```
 
