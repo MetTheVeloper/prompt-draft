@@ -18,10 +18,13 @@ const { t, locale } = useI18n()
 const { mobile, tablet, mini } = useScreen()
 const analytics = useProductAnalytics()
 const promptArchive = usePromptArchive()
+const promptUnlock = usePromptArchiveUnlock()
 
 const rootRef = ref<HTMLElement | null>(null)
 const activePromptKey = ref('main')
 const copied = ref(false)
+const copyBusy = ref(false)
+const copyError = ref<'insufficient' | 'unlock' | 'clipboard' | null>(null)
 let copiedTimer: ReturnType<typeof setTimeout> | undefined
 
 const localizedTitle = computed(() => {
@@ -106,6 +109,68 @@ const formattedDate = computed(() => {
 
 const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')
 
+const copyActionLabel = computed(() => {
+  if (copied.value) return t('prompts.detail.copied')
+  if (promptUnlock.pending.value) return t('prompts.detail.unlocking')
+  if (copyBusy.value) return t('prompts.detail.copying')
+
+  if (!promptUnlock.unlocked.value && promptUnlock.policy.value) {
+    return t('prompts.detail.unlockAndCopy', {
+      cost: promptUnlock.policy.value.costGoin,
+    })
+  }
+
+  if (promptUnlock.loading.value && !promptUnlock.state.value) {
+    return t('prompts.detail.checkingUnlock')
+  }
+
+  return t('prompts.detail.copyPrompt')
+})
+
+const copyActionIcon = computed(() => {
+  if (copied.value) return 'check_circle'
+  if (promptUnlock.pending.value || copyBusy.value || promptUnlock.loading.value) return 'refresh'
+  if (!promptUnlock.unlocked.value && promptUnlock.policy.value) return 'lock_open'
+  return 'content_copy'
+})
+
+const copyActionColor = computed(() => copied.value ? 'green' : 'normal')
+
+const copyFeedback = computed(() => {
+  const failure = promptUnlock.failure.value
+
+  if (copyError.value === 'insufficient') {
+    return t('prompts.detail.insufficientGoin', {
+      required: failure?.required ?? promptUnlock.policy.value?.costGoin ?? 0,
+      balance: failure?.balance ?? promptUnlock.economy.value?.balance ?? 0,
+    })
+  }
+
+  if (copyError.value === 'unlock') return t('prompts.detail.unlockError')
+  if (copyError.value === 'clipboard') return t('prompts.detail.copyError')
+
+  if (promptUnlock.loading.value && !promptUnlock.state.value) {
+    return t('prompts.detail.checkingUnlock')
+  }
+
+  if (promptUnlock.state.value && !promptUnlock.unlocked.value) {
+    return t('prompts.detail.unlockInfo', {
+      cost: promptUnlock.policy.value?.costGoin ?? 0,
+      balance: promptUnlock.economy.value?.balance ?? 0,
+    })
+  }
+
+  if (promptUnlock.unlocked.value) return t('prompts.detail.unlockedInfo')
+
+  return ''
+})
+
+const copyFeedbackColor = computed(() => {
+  if (copyError.value) return 'red'
+  if (promptUnlock.unlocked.value) return 'green'
+  return 'normal60'
+})
+
 function trackPromptView() {
   const source = promptArchive.detailSource.value
 
@@ -123,7 +188,11 @@ watch(
   async () => {
     activePromptKey.value = 'main'
     copied.value = false
+    copyBusy.value = false
+    copyError.value = null
+    promptUnlock.reset()
     trackPromptView()
+    void promptUnlock.load(props.item.id)
 
     await nextTick()
 
@@ -135,6 +204,7 @@ watch(
 
 onMounted(() => {
   trackPromptView()
+  void promptUnlock.load(props.item.id)
 })
 
 onBeforeUnmount(() => {
@@ -223,28 +293,50 @@ async function copyText(value: string) {
 
 async function copyPrompt() {
   const value = activePrompt.value?.prompt || ''
-  if (!value) return
+  if (!value || copyBusy.value || promptUnlock.pending.value) return
 
-  const success = await copyText(value)
-  if (!success) return
+  copyError.value = null
 
-  copied.value = true
+  if (!promptUnlock.unlocked.value) {
+    const unlockResult = await promptUnlock.unlock(props.item.id)
 
-  void analytics.track('prompt_archive_copy', {
-    resource: {
-      type: 'prompt_archive_item',
-      id: String(props.item.id),
-    },
-    metadata: {
-      variantKey: activePrompt.value?.key || 'main',
-    },
-  })
+    if (!unlockResult) {
+      copyError.value = promptUnlock.failure.value?.code === 'INSUFFICIENT_GOIN_BALANCE'
+        ? 'insufficient'
+        : 'unlock'
+      return
+    }
+  }
 
-  if (copiedTimer) clearTimeout(copiedTimer)
+  copyBusy.value = true
 
-  copiedTimer = setTimeout(() => {
-    copied.value = false
-  }, 1800)
+  try {
+    const success = await copyText(value)
+    if (!success) {
+      copyError.value = 'clipboard'
+      return
+    }
+
+    copied.value = true
+
+    void analytics.track('prompt_archive_copy', {
+      resource: {
+        type: 'prompt_archive_item',
+        id: String(props.item.id),
+      },
+      metadata: {
+        variantKey: activePrompt.value?.key || 'main',
+      },
+    })
+
+    if (copiedTimer) clearTimeout(copiedTimer)
+
+    copiedTimer = setTimeout(() => {
+      copied.value = false
+    }, 1800)
+  } finally {
+    copyBusy.value = false
+  }
 }
 </script>
 
@@ -377,9 +469,9 @@ async function copyPrompt() {
 
         <el-flex rules="rsc" :gap="8" wrap class="w100">
           <el-button
-            :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-            :icon="copied ? 'check_circle' : 'content_copy'"
-            :color="copied ? 'green' : 'normal'"
+            :label="copyActionLabel"
+            :icon="copyActionIcon"
+            :color="copyActionColor"
             mode="outline"
             :size="12"
             :p="[8, 14]"
@@ -395,6 +487,15 @@ async function copyPrompt() {
             :p="[10, 14]"
             @click="openTelegram"
           />
+
+          <el-text
+            v-if="copyFeedback"
+            :size="10"
+            :weight="700"
+            :color="copyFeedbackColor"
+            class="w100">
+            {{ copyFeedback }}
+          </el-text>
         </el-flex>
       </el-flex>
 
@@ -480,13 +581,27 @@ async function copyPrompt() {
 
             <el-button
               type="fab"
-              :label="copied ? t('prompts.detail.copied') : t('prompts.detail.copyPrompt')"
-              :icon="copied ? 'check_circle' : 'content_copy'"
-              :color="copied ? 'green' : 'normal'"
+              :label="copyActionLabel"
+              :icon="copyActionIcon"
+              :color="copyActionColor"
               :size="12"
               :p="8"
               @click="copyPrompt"
             />
+          </el-flex>
+
+          <el-flex
+            v-if="copyFeedback"
+            rules="rsc"
+            class="w100"
+            :gap="6"
+            :p="[0, mobile ? 12 : 16, 12, mobile ? 12 : 16]">
+            <el-text
+              :size="10"
+              :weight="700"
+              :color="copyFeedbackColor">
+              {{ copyFeedback }}
+            </el-text>
           </el-flex>
 
           <el-flex
