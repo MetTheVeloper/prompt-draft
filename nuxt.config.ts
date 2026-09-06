@@ -9,6 +9,8 @@ const publicDiscoveryRoutes = [
   "/discover/cinematic-game-art",
 ];
 
+const legacyStaticGenerate = process.env.NUXT_LEGACY_STATIC_GENERATE === "true";
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // nuxt.config.ts
 export default defineNuxtConfig({
@@ -59,7 +61,7 @@ export default defineNuxtConfig({
     prerender: {
       routes: [
         ...publicWizardRoutes,
-        ...publicDiscoveryRoutes,
+        ...(legacyStaticGenerate ? publicDiscoveryRoutes : []),
         "/login",
         "/manage",
         "/manage/dashboard",
