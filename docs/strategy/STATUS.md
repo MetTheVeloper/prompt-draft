@@ -28,7 +28,8 @@ Execution Roadmap V1            -> documented
 Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21C Preferences/Discovery -> BASE SLICE LOCALLY VERIFIED / HOME EXPERIENCE EXTENSION IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Phase 21D Public Discovery/SEO  -> AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY
 ```
 
 ## 21A closure
@@ -50,7 +51,7 @@ prompt_archive_copy
 referral_link_open
 ```
 
-21A verification source:
+Canonical closure:
 
 ```text
 docs/strategy/MILESTONE_21A_VERIFICATION.md
@@ -67,9 +68,9 @@ Profile Menu copies /login?ref=<username>
 valid referral URL prefills existing registration field
 malformed URL referral is ignored
 referral_link_open records landing observation
-successful signup still creates canonical referrals row
-referred user gets existing +500 referral_joined reward
-referrer gets existing +1000 referral_reward reward
+successful signup creates canonical referrals row
+referred user receives existing +500 referral_joined reward
+referrer receives existing +1000 referral_reward reward
 invited-user count refreshes from referrals
 pnpm generate PASS
 ```
@@ -80,11 +81,11 @@ Canonical closure:
 docs/strategy/MILESTONE_21B_VERIFICATION.md
 ```
 
-## Current phase — 21C User Preferences & Personalized Discovery
+## 21C closure — User Preferences & Personalized Discovery
 
-The base preference/discovery slice is locally verified by the user.
+21C is fully closed and user accepted.
 
-Verified base capabilities:
+Verified persistence/discovery foundation:
 
 ```text
 021_user_preferences.sql
@@ -96,8 +97,8 @@ multi-tag bundles per interest
 /prompts uses el-multi-select for tags
 /api/archive supports repeated tag query parameters with OR/union semantics
 /prompts query parameters restore real existing tags on load
+invalid/nonexistent URL tags are reconciled away
 multi-tag personalized deep links work
-pnpm generate PASS
 ```
 
 Current V1 interest keys:
@@ -122,98 +123,117 @@ product_fashion         -> product, fashion
 cinematic_game_art      -> cinematic, game-style, pixel-art
 ```
 
-## 21C personalized home experience extension
-
-The initial homepage selector proved preference persistence but did not yet make the homepage itself meaningfully personalized.
-
-The current extension is implemented and awaiting local verification.
-
-New reusable preference UI:
+Verified personalized-home extension:
 
 ```text
-app/components/growth/DiscoveryPreferencesModal.vue
-app/composables/useDiscoveryPreferencesModal.ts
+reusable global discovery-preferences modal
+signed-in/no interests -> modal auto-opens on home
+Tune my feed reopens the same modal
+full-screen tiled hero reused with dynamic Archive media sources
+up to 50 hero media rows from selected-interest tag bundles
+public presentation-only /api/home/hero-media
+public presentation-only /api/home/showcase
+six immersive category showcase sections
+selected categories ordered first
+up to five Archive items per category
+responsive 1/2/3-column layout using useScreen
+section height = real viewport below Header
+Dark/Light theme-aware overlays/text/buttons
+final Hero/Modal theme bugs fixed
+pnpm generate PASS after final polish
 ```
 
-Behavior:
+Canonical closure:
 
 ```text
-signed-in user with no interests -> modal opens on homepage
-existing interests -> no automatic modal
-same modal can be reopened through Tune my feed
-preference persistence remains user_preferences
+docs/strategy/MILESTONE_21C_VERIFICATION.md
 ```
 
-New homepage preview APIs:
+Implementation/design sources remain:
 
 ```text
-GET /api/home/hero-media?tag=...&limit=50
-GET /api/home/showcase?tag=...&limit=5
-```
-
-Both endpoints:
-
-```text
-use repeated tags with OR/union semantics
-read published Archive presentation data only
-do not return prompt bodies or variants
-leave /api/archive prompt-content access rules unchanged
-```
-
-Hero behavior:
-
-```text
-visual/tile existing explicit sources support is reused
-selected-interest tags -> random Archive media sample up to 50
-no preferences/anonymous -> broad Archive media sample
-API failure -> existing static slider remains fallback
-hero copy rewritten for current product/discovery model
-bottom-centered scroll affordance leads to discovery feed
-```
-
-Showcase feed behavior:
-
-```text
-one immersive section per current interest category
-all six categories remain discoverable
-selected categories are ordered first
-up to five newest matching Archive items per section
-active item's preview covers section background
-autoplay + previous/next + position controls
-category title/description + active item title + tags
-published date + preview count
-owner avatar/username only when source_user_id provides authoritative active-user provenance
-View Prompt + conditional Telegram actions
-```
-
-Responsive composition uses existing `useScreen()`:
-
-```text
-mobile            -> full-width section
- tablet / laptop  -> up to two half-width sections
- desktop / wide   -> up to three one-third-width sections
-```
-
-A six-track grid balances odd remainders without empty cells while keeping every row one viewport high.
-
-Canonical extension design/verification handoff:
-
-```text
+docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
+docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
 ```
 
-## Important access boundary carried forward
+## Current phase — 21D Public Discovery & SEO Foundation
+
+21D capability audit is complete and its design baseline has been created.
+
+Current rendering invariant:
 
 ```text
-/api/home/* exposes homepage media/presentation metadata only
-/api/archive still owns protected Archive prompt reads
-Archive detail still exposes prompt + variants only through its current access rules
-/data/prompts.json fallback snapshot still contains full prompt content
+ssr: false
+pnpm generate
+static frontend
+independent Node API
 ```
 
-Strategic consequence:
+Verified SEO gaps:
 
-> The home experience can showcase public-facing media and metadata without prematurely solving the broader 21D public discovery/SEO contract.
+```text
+no established route-level SEO metadata primitive
+no canonical URL helper
+robots.txt allows crawling but has no sitemap contract
+no documented/generated sitemap pipeline
+current acquisition-relevant routes rely heavily on query parameters
+no public path-based discovery landing route family exists yet
+```
+
+Critical public-content boundary:
+
+```text
+/prompts frontend remains authenticated + email-gated
+/api/archive remains protected by the same product-content boundary
+/api/home/* exposes presentation metadata only
+/data/prompts.json historical fallback snapshot contains full prompt content
+```
+
+21D rule:
+
+> Public SEO/discovery surfaces must use a sanitized public projection. Do not make protected Prompt bodies public merely for indexing.
+
+Rendering decision:
+
+```text
+docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
+```
+
+Decision:
+
+```text
+DO NOT migrate to SSR in 21D by default.
+First improve URL/metadata/sitemap/public-discovery architecture under the current static invariant.
+Use generated-output/crawler evidence as the trigger for future prerender/hybrid rendering.
+```
+
+21D design source:
+
+```text
+docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
+```
+
+Planned first slices:
+
+```text
+21D1 SEO/canonical primitive + NUXT_PUBLIC_SITE_URL contract
+21D2 six /discover/<slug> public landing routes
+21D3 generated sitemap + robots contract
+21D4 structured data where authoritative
+21D5 generated-output/crawler verification
+```
+
+Planned discovery paths:
+
+```text
+/discover/portrait-photography
+/discover/3d-sculpture
+/discover/illustration-animation
+/discover/posters-editorial
+/discover/product-fashion
+/discover/cinematic-game-art
+```
 
 ## Migration state
 
@@ -224,7 +244,7 @@ Current schema migrations extend through:
 021_user_preferences.sql
 ```
 
-The current home extension requires no migration.
+21C Home and initial 21D design require no migration.
 
 Next future schema migration:
 
@@ -242,12 +262,13 @@ DO NOT trust analytics events as economic/payout authority.
 DO NOT put prompt text or sellable knowledge into analytics metadata.
 DO NOT store user preferences in analytics or the score ledger.
 DO NOT replace canonical Archive tags with user-interest keys.
-DO NOT silently merge anonymous preferences into an account in 21C V1.
 DO NOT fabricate ownership for legacy/managed Archive items without source_user_id.
-DO NOT introduce multi-ownership in this milestone.
+DO NOT introduce multi-ownership in Milestone 21.
 DO NOT return prompt bodies from /api/home/*.
-DO NOT remove the current /api/archive prompt-content access boundary here.
-DO NOT break pnpm generate without an explicit rendering architecture decision.
+DO NOT remove the current /api/archive prompt-content access boundary merely for SEO.
+DO NOT use the full prompt snapshot as the future sanitized public SEO projection.
+DO NOT invent hreflang language URLs while i18n strategy remains no_prefix.
+DO NOT migrate to SSR without the ADR trigger/evidence gate.
 DO NOT start full Marketplace commerce inside Milestone 21.
 ```
 
@@ -268,5 +289,8 @@ docs/strategy/MILESTONE_21B_VERIFICATION.md
 docs/strategy/MILESTONE_21C_PERSONALIZED_DISCOVERY.md
 docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
+docs/strategy/MILESTONE_21C_VERIFICATION.md
+docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
+docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
