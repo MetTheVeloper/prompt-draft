@@ -29,7 +29,7 @@ Milestone 21 Growth Foundation  -> IN PROGRESS
 Phase 21A Analytics             -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21D Public Discovery/SEO  -> AUDIT COMPLETE / DESIGN BASELINE CREATED / IMPLEMENTATION READY
+Phase 21D Public Discovery/SEO  -> FIRST IMPLEMENTATION SLICE COMPLETE / AWAITING LOCAL VERIFICATION
 ```
 
 ## 21A closure
@@ -159,9 +159,9 @@ docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
 
 ## Current phase — 21D Public Discovery & SEO Foundation
 
-21D capability audit is complete and its design baseline has been created.
+21D capability audit and rendering ADR are complete. The first implementation slice is now in code and awaiting local verification.
 
-Current rendering invariant:
+Current rendering invariant remains:
 
 ```text
 ssr: false
@@ -169,30 +169,6 @@ pnpm generate
 static frontend
 independent Node API
 ```
-
-Verified SEO gaps:
-
-```text
-no established route-level SEO metadata primitive
-no canonical URL helper
-robots.txt allows crawling but has no sitemap contract
-no documented/generated sitemap pipeline
-current acquisition-relevant routes rely heavily on query parameters
-no public path-based discovery landing route family exists yet
-```
-
-Critical public-content boundary:
-
-```text
-/prompts frontend remains authenticated + email-gated
-/api/archive remains protected by the same product-content boundary
-/api/home/* exposes presentation metadata only
-/data/prompts.json historical fallback snapshot contains full prompt content
-```
-
-21D rule:
-
-> Public SEO/discovery surfaces must use a sanitized public projection. Do not make protected Prompt bodies public merely for indexing.
 
 Rendering decision:
 
@@ -214,17 +190,29 @@ Use generated-output/crawler evidence as the trigger for future prerender/hybrid
 docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
 ```
 
-Planned first slices:
+First implementation handoff:
 
 ```text
-21D1 SEO/canonical primitive + NUXT_PUBLIC_SITE_URL contract
-21D2 six /discover/<slug> public landing routes
-21D3 generated sitemap + robots contract
-21D4 structured data where authoritative
-21D5 generated-output/crawler verification
+docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 ```
 
-Planned discovery paths:
+### Implemented 21D foundation
+
+```text
+NUXT_PUBLIC_SITE_URL runtime config
+usePublicSeo reusable SEO/canonical primitive
+global product title/description/OG defaults
+stable slug on each of the six existing discovery definitions
+GET /api/discover sanitized public presentation endpoint
+/discover/[slug] public landing route
+PublicDiscoveryCard public presentation component
+six discovery routes included in generated route list
+EN/FA public-discovery copy
+robots crawler boundaries
+post-generate sitemap/robots enrichment script
+```
+
+Public discovery routes:
 
 ```text
 /discover/portrait-photography
@@ -235,6 +223,61 @@ Planned discovery paths:
 /discover/cinematic-game-art
 ```
 
+Sanitized endpoint contract:
+
+```text
+GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..24>
+published items only
+OR/union tag semantics
+presentation metadata only
+no prompt body
+no variants
+```
+
+Critical public-content boundary carried forward:
+
+```text
+/prompts frontend remains authenticated + email-gated
+/api/archive remains protected by the same product-content boundary
+/api/home/* and /api/discover expose presentation metadata only
+/data/prompts.json historical fallback snapshot contains full prompt content
+```
+
+21D rule:
+
+> Public SEO/discovery surfaces must use a sanitized public projection. Do not make protected Prompt bodies public merely for indexing.
+
+### Build/SEO evidence gate
+
+`pnpm generate` now also runs:
+
+```text
+scripts/generate-public-seo.ts
+```
+
+Behavior:
+
+```text
+NUXT_PUBLIC_SITE_URL empty -> build continues; sitemap intentionally skipped
+valid NUXT_PUBLIC_SITE_URL -> sitemap.xml generated and generated robots receives Sitemap line
+```
+
+Initial sitemap contains only:
+
+```text
+/
+six /discover/<slug> routes
+```
+
+The next verification step must inspect actual generated discovery HTML under `.output/public` and answer:
+
+```text
+Does route-specific title/description/canonical exist in generated HTML?
+Does meaningful route-specific body content exist before JavaScript executes?
+```
+
+If `ssr:false` produces only the generic SPA shell, record that as evidence and use ADR-001 to decide whether build-time prerender/hybrid rendering is now justified.
+
 ## Migration state
 
 Current schema migrations extend through:
@@ -244,7 +287,7 @@ Current schema migrations extend through:
 021_user_preferences.sql
 ```
 
-21C Home and initial 21D design require no migration.
+21D first slice requires no migration.
 
 Next future schema migration:
 
@@ -264,10 +307,11 @@ DO NOT store user preferences in analytics or the score ledger.
 DO NOT replace canonical Archive tags with user-interest keys.
 DO NOT fabricate ownership for legacy/managed Archive items without source_user_id.
 DO NOT introduce multi-ownership in Milestone 21.
-DO NOT return prompt bodies from /api/home/*.
+DO NOT return prompt bodies from /api/home/* or /api/discover.
 DO NOT remove the current /api/archive prompt-content access boundary merely for SEO.
 DO NOT use the full prompt snapshot as the future sanitized public SEO projection.
 DO NOT invent hreflang language URLs while i18n strategy remains no_prefix.
+DO NOT publish localhost canonical/sitemap URLs as production truth.
 DO NOT migrate to SSR without the ADR trigger/evidence gate.
 DO NOT start full Marketplace commerce inside Milestone 21.
 ```
@@ -291,6 +335,7 @@ docs/strategy/MILESTONE_21C_IMPLEMENTATION.md
 docs/strategy/MILESTONE_21C_HOME_EXPERIENCE.md
 docs/strategy/MILESTONE_21C_VERIFICATION.md
 docs/strategy/MILESTONE_21D_PUBLIC_DISCOVERY_SEO.md
+docs/strategy/MILESTONE_21D_IMPLEMENTATION.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
