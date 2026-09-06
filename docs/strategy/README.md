@@ -53,6 +53,10 @@ PRICING_AND_INTERNAL_ECONOMY_V1.md
 MILESTONE_21_GROWTH_FOUNDATION.md
   -> first executable strategy milestone on this branch
 
+MILESTONE_21D_ZERO_COST_MVP_DEPLOYMENT.md
+  -> deferred continuation of 21D for near-zero-cost Cloudflare SSR/hybrid deployment,
+     local Docker API, and independent Arvan emergency fallback
+
 STATUS.md
   -> current strategy-branch checkpoint
 ```
@@ -94,3 +98,11 @@ pnpm generate
 ```
 
 The current frontend remains static-generated and talks directly to the independent Node API over CORS.
+
+A future rendering/deployment migration has been documented but is explicitly deferred:
+
+```text
+docs/strategy/MILESTONE_21D_ZERO_COST_MVP_DEPLOYMENT.md
+```
+
+That plan does not change the current release invariant until its implementation trigger is explicitly approved.
