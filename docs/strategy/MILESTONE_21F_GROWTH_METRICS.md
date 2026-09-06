@@ -1,6 +1,6 @@
 # Milestone 21F — Growth Metrics in Manage
 
-Status: **IMPLEMENTED / AWAITING LOCAL VERIFICATION**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Date: 2026-09-06
 
@@ -14,6 +14,12 @@ Predecessor:
 
 ```text
 21E3 Economy UX & Manage -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+```
+
+Canonical local verification:
+
+```text
+docs/strategy/MILESTONE_21F_VERIFICATION.md
 ```
 
 ## Goal
@@ -208,7 +214,7 @@ openToSignupRatio
   referral signups / tracked referral-link opens
 ```
 
-`openToSignupRatio` is explicitly directional aggregate evidence, not strict attribution. A referral can be entered manually and multiple opens can precede one signup.
+`openToSignupRatio` is explicitly directional aggregate evidence, not strict attribution. A referral can be entered manually and multiple opens can precede one signup. The UI helper explicitly states that this aggregate can exceed 100% when signups do not have a tracked open.
 
 ### Goin circulation
 
@@ -325,9 +331,9 @@ popular Prompt tag list
 
 The UI uses the existing Manage metric-card component and normal theme-aware design tokens/components.
 
-## Local verification checklist
+## Local verification — PASS
 
-### Backend/build
+Build/runtime:
 
 ```text
 git pull
@@ -335,21 +341,21 @@ docker compose up -d --build api
 pnpm generate
 ```
 
-No `db:schema` run is required because 21F adds no migration.
-
-### API authorization
-
-Verify:
+Result:
 
 ```text
-GET /api/admin/growth/summary?days=7 without auth -> 401
+PASS
+```
+
+Authorization:
+
+```text
+anonymous -> 401
 ordinary user -> 403
 admin / super_admin with system.metrics.view -> 200
 ```
 
-### Query validation
-
-Verify:
+Query validation:
 
 ```text
 days=7  -> 200
@@ -357,35 +363,35 @@ days=30 -> 200
 days=8  -> 400 GROWTH_WINDOW_INVALID
 ```
 
-### Response integrity
-
-Verify:
+Final independent SQL-vs-API verification passed for both 7-day and 30-day windows:
 
 ```text
-series length = selected window size
-topTags contains only slug/views/copies
-no Prompt body/variants in response
-current Goin outstanding equals platform SUM(unit_delta)
-period Goin issued/spent equals ledger SQL for same UTC window
-Prompt unlock count equals user_content_unlocks window count
-referral signups equals referrals window count
+audience summary exactly matches DB
+Prompt summary exactly matches DB
+referral summary exactly matches DB
+economy summary exactly matches DB
+tracked event count exactly matches DB
+daily series exactly matches DB
+Top Tags exactly match DB
+measurement scope and event allowlist correct
 ```
 
-### UI
+Visual smoke testing also passed in EN/FA and Light/Dark.
 
-Verify:
+Representative 7-day closure values included:
 
 ```text
-Growth tab visible to roles with system.metrics.view
-7/30 day switching works
-Refresh works
-zero metrics render as 0 rather than error
-measurement warning is visible
-EN/FA rendering
-Dark/Light rendering
-daily table remains usable on narrow widths
-popular tags handle empty state
+Prompt views 11
+Prompt copies 9
+Prompt unlocks 3
+Referral opens 2
+Referral signups 5
+Goin issued 320
+Goin spent 15
+Goin outstanding 305
 ```
+
+See the canonical verification document for the full evidence.
 
 ## Hard rules
 
@@ -400,15 +406,16 @@ DO NOT add an aggregate schema until query volume/performance proves it is neede
 DO NOT use admin_audit_log as behavioral analytics.
 ```
 
-## Closure gate
+## Closure
 
-21F becomes `DONE / LOCALLY VERIFIED / USER ACCEPTED` only after:
+21F is closed as:
 
 ```text
-backend endpoint local verification
-permission and invalid-window checks
-SQL read-back against representative metrics
-/manage/growth visual/runtime smoke test
-EN/FA + Dark/Light check
-pnpm generate PASS
+DONE / LOCALLY VERIFIED / USER ACCEPTED
+```
+
+The only remaining Milestone 21 work is the presentation-only UI polish pass documented in:
+
+```text
+docs/strategy/MILESTONE_21_UI_POLISH.md
 ```
