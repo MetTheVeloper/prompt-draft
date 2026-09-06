@@ -1,8 +1,13 @@
-import type { EconomyState, EconomyStateResponse } from "~/types/economy";
+import type {
+  EconomyPolicy,
+  EconomyState,
+  EconomyStateResponse,
+} from "~/types/economy";
 
 const economyState = reactive({
   userId: null as string | null,
   economy: null as EconomyState | null,
+  policy: null as EconomyPolicy | null,
   loading: false,
   error: "",
 });
@@ -22,6 +27,7 @@ export function useEconomy() {
   function reset() {
     economyState.userId = null;
     economyState.economy = null;
+    economyState.policy = null;
     economyState.loading = false;
     economyState.error = "";
     refreshPromise = null;
@@ -38,6 +44,7 @@ export function useEconomy() {
     if (economyState.userId !== userId) {
       economyState.userId = userId;
       economyState.economy = null;
+      economyState.policy = null;
       economyState.error = "";
       refreshPromise = null;
     }
@@ -50,6 +57,14 @@ export function useEconomy() {
     if (!userId || !value) return;
 
     economyState.economy = value;
+    economyState.error = "";
+  }
+
+  function applyPolicy(value: EconomyPolicy | null) {
+    const userId = ensureAccountBoundary();
+    if (!userId || !value) return;
+
+    economyState.policy = value;
     economyState.error = "";
   }
 
@@ -76,6 +91,7 @@ export function useEconomy() {
 
         if (auth.user.value?.id === userId) {
           economyState.economy = response.economy;
+          economyState.policy = response.policy;
         }
 
         return response.economy;
@@ -103,6 +119,7 @@ export function useEconomy() {
   return {
     state: readonly(economyState),
     economy: computed(() => economyState.economy),
+    policy: computed(() => economyState.policy),
     balance: computed(() => economyState.economy?.balance ?? 0),
     lifetimeIssued: computed(() => economyState.economy?.lifetimeIssued ?? 0),
     lifetimeSpent: computed(() => economyState.economy?.lifetimeSpent ?? 0),
@@ -112,6 +129,7 @@ export function useEconomy() {
     error: computed(() => economyState.error),
     refresh,
     applyEconomy,
+    applyPolicy,
     reset,
   };
 }
