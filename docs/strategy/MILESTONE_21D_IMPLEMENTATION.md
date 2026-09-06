@@ -1,6 +1,6 @@
 # Milestone 21D — Public Discovery & SEO Foundation Implementation Handoff
 
-Status: **FIRST IMPLEMENTATION SLICE COMPLETE / AWAITING LOCAL VERIFICATION**
+Status: **DONE / LOCALLY VERIFIED / USER ACCEPTED**
 
 Branch:
 
@@ -20,24 +20,33 @@ Rendering ADR:
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
 ```
 
-## Implemented scope
+Canonical verification record:
 
-The first 21D slice establishes the public acquisition primitives without opening protected Prompt content and without changing `ssr:false`.
+```text
+docs/strategy/MILESTONE_21D_VERIFICATION.md
+```
+
+## Final implemented scope
+
+21D establishes a public acquisition/SEO layer without exposing protected Prompt bodies and without migrating the full application away from `ssr:false`.
 
 Implemented:
 
 ```text
-NUXT_PUBLIC_SITE_URL runtime config
-reusable usePublicSeo composable
-global default product SEO metadata
-six stable discovery slugs on existing discovery definitions
-public sanitized GET /api/discover endpoint
-public /discover/[slug] landing page
-public discovery card component
-six discovery routes added to the current generated route set
+NUXT_PUBLIC_SITE_URL runtime/build contract
+usePublicSeo reusable SEO/canonical primitive
+global product SEO defaults
+six stable path-based discovery routes
+GET /api/discover sanitized public presentation endpoint
+PublicDiscoveryCard public presentation component
+public Prompt Archive list/catalog access
+protected full Prompt detail boundary retained
 robots crawler boundaries
-post-generate sitemap/robots enrichment script
-EN/FA landing copy
+sitemap generation
+post-generate route-specific SEO enrichment
+CollectionPage + ItemList JSON-LD
+crawler-visible sanitized HTML snapshots
+EN/FA discovery UI copy
 ```
 
 No schema migration is required.
@@ -53,11 +62,9 @@ No schema migration is required.
 /discover/cinematic-game-art
 ```
 
-Each route reuses the exact tag bundle already defined by 21C.
+Each route reuses the 21C interest/tag bundles.
 
-## Sanitized discovery API
-
-Endpoint:
+## Sanitized public API
 
 ```text
 GET /api/discover?tag=<slug>&tag=<slug>&limit=<1..24>
@@ -68,12 +75,12 @@ Semantics:
 ```text
 published Archive items only
 repeated tags = OR/union
-maximum 24 tag parameters
-maximum 24 items
-newest published first
+presentation metadata only
+no prompt body
+no variants
 ```
 
-Response projection is the same deliberately public presentation shape used by the Home showcase:
+Returned public projection includes:
 
 ```text
 public id
@@ -83,310 +90,137 @@ telegramUrl nullable
 tags
 imageCount
 coverImage
-owner username/avatar only when authoritative active source_user_id exists
+owner username/avatar only when authoritative source_user_id exists
 ```
 
-Not returned:
+## Prompt Archive public/protected boundary
+
+The obsolete test-era list gate was removed.
+
+Current behavior:
 
 ```text
-prompt body
-variants
-private Draft data
-moderation/internal fields
-email/session/auth state
+/prompts list + filters + cards + preview media -> public
+GET /api/archive -> public
+
+/prompts?id=<id> full Prompt detail -> authenticated + email gate
+GET /api/archive/:id -> authenticated + email gate
 ```
 
-## Public SEO helper
+This gives anonymous users a usable catalog while keeping full Prompt knowledge protected.
 
-New:
-
-```text
-app/composables/usePublicSeo.ts
-```
-
-It manages:
-
-```text
-title
-description
-Open Graph title/description/type/url/image
-Twitter card/title/description/image
-canonical link
-robots index/noindex meta
-```
-
-Absolute canonical/OG URLs are emitted only when a valid `NUXT_PUBLIC_SITE_URL` exists.
-
-Local development with an empty site URL does not invent a localhost production canonical.
-
-## Global metadata foundation
-
-`nuxt.config.ts` now includes baseline metadata for:
-
-```text
-Prompt Draft title
-global product description
-og:site_name
-og:type
-twitter:card
-```
-
-Existing PWA/mobile metadata remains.
-
-## Public landing UI
-
-New route component:
-
-```text
-app/pages/discover/[slug].vue
-```
-
-New card:
-
-```text
-app/components/discover/PublicDiscoveryCard.vue
-```
-
-Landing behavior:
-
-```text
-public / no auth requirement
-category title + category description
-sanitized published Prompt cards
-up to 18 cards requested by default
-View Prompt sends the user into the existing protected Prompt detail flow
-Telegram action appears when public Telegram URL exists
-related discovery-category navigation
-Dark/Light theme-aware presentation
-EN/FA UI copy
-```
-
-This is a discovery/acquisition surface, not a replacement for the protected Prompt Archive detail contract.
-
-## Release generation
-
-The six discovery routes are added to Nitro's current route generation list.
+## SEO generation architecture
 
 The project remains:
 
 ```text
 ssr: false
 pnpm generate
+static frontend artifact
+independent Node API
 ```
 
-No claim is made yet that route-specific client body content is crawler-visible in generated HTML. That is a verification item and an explicit ADR gate.
+Nuxt correctly reports that SPA route HTML itself is not prerendered.
 
-## robots.txt
-
-Current source crawler rules:
-
-```text
-User-Agent: *
-Allow: /
-Disallow: /manage
-Disallow: /create
-Disallow: /login
-```
-
-Public discovery paths remain crawlable.
-
-## Sitemap generation
-
-New script:
+21D therefore uses a controlled post-generate enrichment step in:
 
 ```text
 scripts/generate-public-seo.ts
 ```
 
-`pnpm generate` now runs:
+For each `/discover/*` route it injects into the generated artifact:
 
 ```text
-nuxt generate
--> generate-offline-manifest.ts
--> generate-public-seo.ts
+route-specific title
+route-specific description
+canonical URL when NUXT_PUBLIC_SITE_URL exists
+Open Graph/Twitter metadata
+first sanitized preview image when available
+CollectionPage + ItemList JSON-LD
+semantic data-public-seo-snapshot body
+up to 12 sanitized discovery items
 ```
 
-When `NUXT_PUBLIC_SITE_URL` is missing:
+The data source is only:
 
 ```text
-build remains successful
-sitemap generation is intentionally skipped
-no localhost production sitemap is emitted
+/api/discover
 ```
 
-When it is a valid absolute URL:
+The historical full Prompt fallback snapshot is not used as the SEO feed.
+
+## Sitemap / robots
+
+When `NUXT_PUBLIC_SITE_URL` is absent:
+
+```text
+build continues
+production sitemap is intentionally skipped
+localhost is not published as canonical truth
+```
+
+When it is present:
 
 ```text
 .output/public/sitemap.xml is generated
-.output/public/robots.txt gets Sitemap: <site>/sitemap.xml
+.output/public/robots.txt receives the absolute Sitemap line
 ```
 
-Initial sitemap contains only:
+Initial sitemap contains:
 
 ```text
 /
 six /discover/<slug> routes
 ```
 
-Authenticated/query-string application routes are not added.
+## Verification summary
 
-## Local verification
-
-### 1. Pull + rebuild backend
-
-Backend source changed:
-
-```powershell
-git pull
-docker compose up -d --build api
-```
-
-No migration command is required for this 21D slice.
-
-### 2. Verify sanitized public API
-
-```powershell
-curl.exe "http://127.0.0.1:4000/api/discover?tag=poster&tag=editorial&limit=10"
-```
-
-Expected:
+Locally verified on 2026-09-06:
 
 ```text
-HTTP 200
-ok=true
-items <= 10
-items match poster OR editorial
-no prompt field
-no variants field
-```
-
-Also verify max-limit validation:
-
-```powershell
-curl.exe -i "http://127.0.0.1:4000/api/discover?tag=poster&limit=25"
-```
-
-Expected:
-
-```text
-HTTP 400
-```
-
-### 3. Verify public route without authentication
-
-In Incognito/signed-out:
-
-```text
-http://localhost:3030/discover/posters-editorial
-```
-
-Expected:
-
-```text
-page loads without auth/email gate
-category hero renders
-published cards render
-View Prompt enters the existing /prompts?id=<id> protected flow
-related categories navigate to other /discover/* routes
-```
-
-### 4. Verify invalid discovery slug
-
-```text
-/discover/not-a-real-category
-```
-
-Expected:
-
-```text
-no API disclosure
-friendly not-found state
-Back to home action
-```
-
-### 5. Verify Dark/Light + EN/FA
-
-Check at least one discovery route in both themes and both locales.
-
-No fixed-white/fixed-black presentation should be required for readability.
-
-### 6. Verify normal build with no production site URL
-
-```powershell
-Remove-Item Env:NUXT_PUBLIC_SITE_URL -ErrorAction SilentlyContinue
-pnpm generate
-```
-
-Expected final log includes:
-
-```text
-[public-seo] NUXT_PUBLIC_SITE_URL is empty; sitemap generation skipped
-```
-
-Build must still pass.
-
-### 7. Verify production-like sitemap generation
-
-PowerShell:
-
-```powershell
-$env:NUXT_PUBLIC_SITE_URL="https://example.test"
-pnpm generate
-Get-Content .output/public/sitemap.xml
-Get-Content .output/public/robots.txt
-Remove-Item Env:NUXT_PUBLIC_SITE_URL
-```
-
-Expected sitemap contains:
-
-```text
-https://example.test/
-https://example.test/discover/portrait-photography
-https://example.test/discover/3d-sculpture
-https://example.test/discover/illustration-animation
-https://example.test/discover/posters-editorial
-https://example.test/discover/product-fashion
-https://example.test/discover/cinematic-game-art
-```
-
-Expected generated robots includes:
-
-```text
-Sitemap: https://example.test/sitemap.xml
-```
-
-### 8. Generated HTML evidence gate
-
-After the production-like generate, inspect one generated discovery HTML file.
-
-For example locate the generated file under `.output/public/discover/posters-editorial/` and inspect its `<head>`.
-
-Questions to answer from evidence:
-
-```text
-Is route-specific title/description present in generated HTML?
-Is canonical present?
-Is meaningful route-specific body content present before JavaScript executes?
-```
-
-If route-specific body/head content is absent because `ssr:false` emits only the SPA shell, record that result rather than calling SEO rendering complete.
-
-That evidence determines whether 21D should proceed with a build-time prerender/hybrid adjustment under ADR-001.
-
-## Acceptance gate for this slice
-
-Do not mark 21D DONE yet.
-
-This first slice can be marked locally verified when:
-
-```text
-public discovery API is sanitized and works anonymously
-six discovery routes work anonymously
-Dark/Light + EN/FA presentation works
-limit validation works
+/api/discover multi-tag public response works
+limit=25 is rejected with HTTP 400
+public discovery output contains no prompt/variants
+anonymous /prompts catalog access works
+full Prompt detail remains protected
 pnpm generate passes
-sitemap/robots generation behaves correctly with/without site URL
-generated HTML/head evidence is recorded
+24 Nuxt routes include all six discovery routes
+sitemap contains 7 public URLs
+robots contains expected exclusions + Sitemap
+all six generated discovery routes are enriched with sanitized items
 ```
 
-Then continue to structured data and any rendering correction justified by the generated-output evidence.
+Generated UTF-8 HTML verification for:
+
+```text
+.output/public/discover/posters-editorial/index.html
+```
+
+resulted in:
+
+```text
+Snapshot         True
+JsonLd           True
+Canonical        True
+Title            True
+HasArticles      True
+ProtectedFields  False
+```
+
+Confirmed generated title:
+
+```html
+<title>Posters &amp; Editorial · Prompt Draft</title>
+```
+
+## Final rendering decision
+
+Do not migrate the entire application to SSR for current 21D scale.
+
+The accepted architecture is targeted static SEO enrichment for the controlled public discovery route family.
+
+ADR-001 remains the authority for future migration triggers such as public page volume, freshness requirements, Creator/Product publishing scale or better hosting support for hybrid/incremental rendering.
+
+## Result
+
+Milestone 21D is **DONE / LOCALLY VERIFIED / USER ACCEPTED**.
