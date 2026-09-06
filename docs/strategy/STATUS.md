@@ -31,7 +31,7 @@ Phase 21B Referral Activation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21C Preferences/Discovery -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21D Public Discovery/SEO  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21E1 Economy Foundation   -> DONE / LOCALLY VERIFIED / USER ACCEPTED
-Phase 21E2 Prompt Unlock        -> BACKEND IMPLEMENTED / AWAITING LOCAL VERIFICATION
+Phase 21E2 Prompt Unlock        -> BACKEND LOCALLY VERIFIED / FRONTEND IMPLEMENTED / AWAITING UI + BUILD VERIFICATION
 ```
 
 ## Closed Milestones 21A–21D
@@ -175,7 +175,7 @@ A future `/manage` economy surface must reuse this backend contract rather than 
 
 ## 21E2 — current phase
 
-Canonical implementation doc:
+Canonical implementation/verification doc:
 
 ```text
 docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
@@ -233,19 +233,44 @@ insert durable unlock row
 COMMIT
 ```
 
-Consequences:
+Backend verification is complete and locally accepted:
 
 ```text
-same Prompt cannot double-charge under concurrent requests
-different concurrent purchases cannot overspend one balance
-insufficient balance creates neither debit nor unlock
-successful debit and durable access commit together
-historical unlock stores actual charged price + pricing rule version
+anonymous unlock read -> 401
+Prompt detail view -> no balance change / no unlock / no debit
+locked state -> cost=5, ruleVersion=1
+first unlock -> exactly -5 Goin + one durable access row
+repeat same Prompt -> chargedGoin=0
+parallel same-Prompt POSTs -> exactly one charge
+foreign user -> cannot observe another user's unlock
+zero-balance POST -> 409 INSUFFICIENT_GOIN_BALANCE, no rows
+email-incomplete user -> 403
+missing Prompt public ID -> 404
 ```
 
-21E2 deliberately does not make full Prompt detail public and does not charge page views.
+The explicit unpublished-row test was skipped because the local Archive dataset had no unpublished item. The backend published-item lookup itself remains `status = 'published'`.
 
-Frontend Copy integration must happen only after backend unlock verification.
+Frontend integration is now implemented in:
+
+```text
+app/composables/usePromptArchiveUnlock.ts
+app/components/prompts/PromptDetail.vue
+i18n/locales/growth.en.ts
+i18n/locales/growth.fa.ts
+```
+
+Frontend Copy contract:
+
+```text
+load Prompt detail -> read unlock state only
+locked Copy -> show current Goin cost -> POST unlock -> clipboard
+already unlocked Copy -> clipboard directly
+insufficient Goin -> no clipboard copy + server balance/required feedback
+successful first unlock -> all later variants/copies of same Prompt are free
+clipboard analytics remains prompt_archive_copy and fires only after copy succeeds
+```
+
+The new UI uses normal theme tokens/components and EN/FA strings. It still needs local Dark/Light + EN/FA smoke testing and `pnpm generate` before 21E2 can close.
 
 ## Migration state
 
