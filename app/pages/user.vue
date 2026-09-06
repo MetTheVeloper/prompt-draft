@@ -656,7 +656,7 @@ onMounted(() => { void loadProfile(); });
               class="user-profile__draft-topbar w100"
               :gap="8">
               <el-flex v-if="hasTopbarActions(draft)" rules="rsc" class="fg100" :gap="8">
-                <el-flex rules="rsc" :gap="0" bd="b8" :radius="100" bg="surface10">
+                <el-flex rules="rsc" :gap="0" bd="b8" :radius="100" bg="surface75">
                   <template v-if="isOwner">
                     <el-button
                       type="fab"
@@ -717,25 +717,25 @@ onMounted(() => { void loadProfile(); });
 
             <el-flex rules="ccs" class="user-profile__draft-content w100" :gap="12">
               <el-flex rules="rsc" :gap="8" wrap class="w100 fw">
-                <el-text :size="11" :weight="800" marker="surface" color="normal" :p="[4, 7]" :radius="100">{{ formatOutputFormat(draft.outputFormat) }}</el-text>
+                <el-text :size="11" :weight="800" marker="normal" color="invert" :p="[4, 7]" :radius="100">{{ formatOutputFormat(draft.outputFormat) }}</el-text>
                 <el-text
                   v-if="isOwner && draft.visibility"
                   :size="11"
                   :weight="800"
                   :marker="draft.visibility === 'public' ? 'green35' : 'orange35'"
-                  color="white"
+                  color="normal"
                   :p="[4, 7]"
                   :radius="100">
                   {{ t(`userProfile.drafts.visibility.${draft.visibility}`) }}
                 </el-text>
               </el-flex>
 
-              <el-text type="h3" :size="mobile ? 40 : 48" :weight="650" color="white" class="user-profile__draft-title">{{ draft.title }}</el-text>
+              <el-text type="h3" :size="mobile ? 40 : 48" :weight="650" class="user-profile__draft-title">{{ draft.title }}</el-text>
 
               <el-flex rules="rsc" :gap="12" wrap class="user-profile__draft-meta w100 fw">
-                <el-text :size="mobile ? 11 : 12" color="white" icon="account_tree" icon-color="white">{{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}</el-text>
-                <el-text :size="mobile ? 11 : 12" color="white" icon="history" icon-color="white">{{ t("userProfile.drafts.revision", { revision: draft.revision }) }}</el-text>
-                <el-text :size="mobile ? 11 : 12" color="white" icon="schedule" icon-color="white">{{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}</el-text>
+                <el-text :size="mobile ? 11 : 12" icon="account_tree">{{ t("userProfile.drafts.modules", { count: draft.moduleCount }) }}</el-text>
+                <el-text :size="mobile ? 11 : 12" icon="history">{{ t("userProfile.drafts.revision", { revision: draft.revision }) }}</el-text>
+                <el-text :size="mobile ? 11 : 12" icon="schedule">{{ t("userProfile.drafts.updated", { date: formatUpdatedDate(draft.updatedAt) }) }}</el-text>
               </el-flex>
             </el-flex>
           </el-flex>
@@ -751,7 +751,7 @@ onMounted(() => { void loadProfile(); });
 .user-profile {
   min-height: 100%;
   isolation: isolate;
-  background: #09090d;
+  background: var(--themeBackground);
 }
 
 .user-profile__fallback-bg,
@@ -765,10 +765,9 @@ onMounted(() => { void loadProfile(); });
 .user-profile__fallback-bg {
   z-index: 0;
   background:
-    radial-gradient(circle at 14% 22%, rgba(69, 98, 255, 0.34), transparent 40%),
-    radial-gradient(circle at 84% 18%, rgba(133, 64, 255, 0.24), transparent 42%),
-    radial-gradient(circle at 54% 88%, rgba(20, 180, 165, 0.14), transparent 45%),
-    #09090d;
+    radial-gradient(circle at 18% 18%, var(--primary35), transparent 42%),
+    radial-gradient(circle at 82% 22%, var(--themePurple25), transparent 46%),
+    linear-gradient(145deg, var(--themeSurface20), var(--themeBackground));
 }
 
 .user-profile__cinema-overlay {
@@ -780,9 +779,9 @@ onMounted(() => { void loadProfile(); });
 
 .user-profile__grain {
   z-index: 5;
-  opacity: 0.12;
+  opacity: 0.08;
   background-image:
-    repeating-radial-gradient(circle at 0 0, var(--themeSurface15) 0, var(--themeSurface15) .6px, transparent .7px, transparent 3px);
+    repeating-radial-gradient(circle at 0 0, var(--normalText30) 0, var(--normalText30) .5px, transparent .6px, transparent 3px);
   background-size: 5px 5px;
   mix-blend-mode: soft-light;
 }
@@ -900,8 +899,8 @@ onMounted(() => { void loadProfile(); });
 .user-profile__draft-shade {
   z-index: 2;
   background:
-    linear-gradient(180deg, rgba(0, 0, 0, 0.18) 0%, transparent 30%, rgba(0, 0, 0, 0.08) 48%, rgba(0, 0, 0, 0.86) 100%),
-    linear-gradient(90deg, rgba(0, 0, 0, 0.18) 0%, transparent 54%);
+    linear-gradient(180deg, var(--themeSurface20) 0%, var(--themeSurface20) 32%, var(--themeSurface85) 100%),
+    linear-gradient(90deg, var(--themeSurface45), var(--themeSurface0) 72%);
 }
 
 .user-profile__draft-topbar {
@@ -930,7 +929,7 @@ onMounted(() => { void loadProfile(); });
   line-height: 1.02 !important;
   letter-spacing: -0.035em;
   text-wrap: balance;
-  text-shadow: 0 6px 24px rgba(0, 0, 0, 0.42);
+  text-shadow: 0 4px 20px var(--invertText70);
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 3;
@@ -938,7 +937,7 @@ onMounted(() => { void loadProfile(); });
 }
 
 .user-profile__draft-meta {
-  opacity: 0.82;
-  text-shadow: 0 3px 14px rgba(0, 0, 0, 0.55);
+  opacity: 0.86;
+  text-shadow: 0 4px 20px var(--invertText45);
 }
 </style>
