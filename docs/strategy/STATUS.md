@@ -37,9 +37,86 @@ Phase 21E3 Economy UX & Manage  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Phase 21F Growth Metrics        -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 
-Next roadmap phase              -> Phase 2 — Domain Expansion
-First domain                    -> Content Creation
+Milestone 21.5 Rendering & Organic Acquisition -> APPROVED / PLANNED / NEXT
+Phase 2 Domain Expansion                       -> NEXT STRATEGIC PHASE AFTER 21.5
+First domain                                   -> Content Creation
+Founder Domain Expansion research              -> MAY RUN IN PARALLEL WITH 21.5
 ```
+
+## Canonical next milestone
+
+Source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+```
+
+Milestone 21.5 execution order:
+
+```text
+Phase 1 — Hybrid / SSR Architecture
+Phase 2 — Docker Production Runtime
+Phase 3 — Cloudflare Production Path
+Phase 4 — SEO Platform & Public Content Architecture
+Phase 5 — Organic Acquisition Launch & Measurement
+```
+
+Primary decision:
+
+```text
+Do not rewrite the entire application for SSR.
+Use SSR/prerender/hybrid rendering where public dynamic SEO-sensitive routes benefit.
+Keep interaction-dominant authenticated routes client-oriented where appropriate.
+```
+
+Likely public acquisition surfaces:
+
+```text
+/
+/discover/*
+future /p/*
+future /creator/*
+/blog
+/blog/*
+```
+
+Likely client-heavy surfaces:
+
+```text
+/create
+/manage/*
+authenticated workspace/editor flows
+```
+
+Phase 1 must audit the real route/runtime constraints before global SSR configuration changes.
+
+## Milestone 21.5 rationale
+
+Milestone 21D intentionally retained:
+
+```text
+ssr: false
+pnpm generate
+static frontend
+independent Node API
+```
+
+and used targeted post-generate SEO snapshots for six controlled `/discover/*` routes.
+
+That decision remains historically correct for 21D.
+
+Milestone 21.5 explicitly revisits rendering because the product now has a non-speculative acquisition use case:
+
+```text
+existing public discovery content
+planned Blog acquisition surface
+growing public dynamic route needs
+internal Growth analytics already available
+Google Search Console can provide external search/indexing evidence
+Domain Expansion requires founder research and should not be rushed
+```
+
+Domain Expansion research may proceed in parallel while engineering executes Milestone 21.5.
 
 ## Canonical Milestone 21 closure
 
@@ -73,7 +150,7 @@ search/sort/multi-tag/pagination -> public
 GET /api/archive/:id -> authenticated + email gate
 ```
 
-Targeted static SEO enrichment remains the accepted bridge for six controlled `/discover/*` routes while the app stays on:
+Until Milestone 21.5 changes the rendering architecture through an accepted ADR and verified implementation, the current production-generation baseline remains:
 
 ```text
 ssr: false
@@ -81,6 +158,8 @@ pnpm generate
 static frontend
 independent Node API
 ```
+
+Targeted static SEO enrichment remains the accepted bridge for six controlled `/discover/*` routes until Phase 4 audits/replaces/reduces it under the new rendering architecture.
 
 ## Accepted internal economy state
 
@@ -184,6 +263,8 @@ Measured audience is explicitly scoped to instrumented Growth surfaces and is no
 
 Final independent SQL-vs-API verification passed for both 7-day and 30-day windows, including auth, invalid-window handling, summaries, daily series, Top Tags, measurement scope and event allowlist.
 
+Milestone 21.5 may extend acquisition analytics only where persisted data supports the metrics shown.
+
 ## Final UI polish — accepted
 
 Accepted final presentation state:
@@ -203,7 +284,7 @@ theme-aware card overlays/fallbacks/borders for /prompts and /user
 Light/Dark + EN/FA/RTL smoke accepted
 ```
 
-## Final local release-generation evidence
+## Final local release-generation evidence for Milestone 21
 
 Founder-local command:
 
@@ -211,7 +292,7 @@ Founder-local command:
 pnpm generate
 ```
 
-Final result:
+Final Milestone 21 result:
 
 ```text
 PASS
@@ -223,7 +304,7 @@ offline manifest generated: 258 files / 63.2 MB
 
 `NUXT_PUBLIC_SITE_URL` was empty during this local closure build, so sitemap generation was intentionally skipped while discovery-route enrichment still completed.
 
-Known build warnings are non-blocking for this milestone.
+Known build warnings are non-blocking for Milestone 21.
 
 ## Migration state
 
@@ -266,9 +347,11 @@ DO NOT call measured-surface audience whole-product DAU/MAU.
 DO NOT make /api/archive/:id public merely for SEO.
 DO NOT introduce fiat purchase/cash-out/payout before its roadmap phase.
 DO NOT start the full Marketplace before Domain Expansion is evaluated.
+DO NOT expose protected Prompt bodies merely because routes become SSR.
+DO NOT begin Milestone 21.5 by blindly changing ssr:false to true without the Phase 1 audit.
 ```
 
-## Next phase — Domain Expansion
+## Phase 2 — Domain Expansion after Milestone 21.5
 
 Source of truth:
 
@@ -276,11 +359,12 @@ Source of truth:
 docs/strategy/EXECUTION_ROADMAP_V1.md
 ```
 
-Approved order:
+Strategic order remains:
 
 ```text
 Phase 1 — Growth Foundation     DONE
-Phase 2 — Domain Expansion     NEXT
+Interim Milestone 21.5          NEXT EXECUTION MILESTONE
+Phase 2 — Domain Expansion      NEXT STRATEGIC PHASE
 Phase 3 — Marketplace Activation
 Phase 4 — AI Enhancement
 ```
@@ -294,7 +378,7 @@ Domain priority hypothesis:
 4. Marketing / Advertising
 ```
 
-The next work should start only with Content Creation and must begin with domain research and semantic modeling rather than UI cloning.
+The first Domain Expansion implementation must still begin with Content Creation and must be based on domain research and semantic modeling rather than UI cloning.
 
 Required sequence:
 
@@ -309,7 +393,7 @@ research domain
   -> verify real user value
 ```
 
-Do not build Programming in parallel. Use Content Creation as the first proof that Prompt Draft's semantic architecture generalizes beyond image prompting.
+Founder research for Content Creation may run in parallel with Milestone 21.5 engineering. Do not build Programming in parallel. Use Content Creation as the first proof that Prompt Draft's semantic architecture generalizes beyond image prompting.
 
 ## Primary strategy sources
 
@@ -320,11 +404,12 @@ docs/strategy/EXECUTION_ROADMAP_V1.md
 docs/strategy/MILESTONE_21_CLOSURE.md
 docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
 docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
+docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
-Closure implementation checkpoint before this STATUS commit:
+Milestone 21.5 planning commit:
 
 ```text
-429f9f7ec100c5e505a7be882da56cbe64e7c834
+b8c08a0ee17c5dad755191b0cc5f60f21e1756b8
 ```
