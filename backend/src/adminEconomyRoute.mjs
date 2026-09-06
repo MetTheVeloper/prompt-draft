@@ -8,6 +8,38 @@ const SETTINGS_PATH = '/api/admin/economy/settings'
 const MAX_BODY_BYTES = 4 * 1024
 const MIN_REFERENCE_VALUE_TOMAN = 1
 const MAX_REFERENCE_VALUE_TOMAN = 1_000_000_000
+const MIN_ISSUANCE_AMOUNT = 0
+const MAX_ISSUANCE_AMOUNT = 1_000_000_000
+const GOIN_ISSUANCE_RULE_VERSION_KEY = 'goin_issuance_rule_version'
+
+const ISSUANCE_SETTINGS = Object.freeze({
+  accountCreated: Object.freeze({
+    settingKey: 'goin_issue_account_created',
+    defaultValue: 10,
+  }),
+  profileEmailAdded: Object.freeze({
+    settingKey: 'goin_issue_profile_email_added',
+    defaultValue: 10,
+  }),
+  referralJoined: Object.freeze({
+    settingKey: 'goin_issue_referral_joined',
+    defaultValue: 10,
+  }),
+  referralReward: Object.freeze({
+    settingKey: 'goin_issue_referral_reward',
+    defaultValue: 20,
+  }),
+  draftCreated: Object.freeze({
+    settingKey: 'goin_issue_draft_created',
+    defaultValue: 0,
+  }),
+})
+
+const ALL_SETTING_KEYS = Object.freeze([
+  ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN,
+  GOIN_ISSUANCE_RULE_VERSION_KEY,
+  ...Object.values(ISSUANCE_SETTINGS).map(definition => definition.settingKey),
+])
 
 function isJsonRequest(request) {
   const contentType = String(request.headers['content-type'] ?? '')
@@ -15,6 +47,10 @@ function isJsonRequest(request) {
     .trim()
     .toLowerCase()
   return contentType === 'application/json'
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
 async function readJsonBody(request) {
@@ -46,112 +82,238 @@ async function readJsonBody(request) {
   }
 }
 
-async function getSettings(executor = queryDatabase) {
+async function readIntegerSettings(executor = queryDatabase) {
   const result = await executor(
     `
       SELECT
-        integer_value AS "goinReferenceValueToman",
+        setting_key AS "settingKey",
+        integer_value AS "integerValue",
         updated_by AS "updatedBy",
         updated_at AS "updatedAt"
       FROM economy_settings
-      WHERE setting_key = $1
-      LIMIT 1
+      WHERE setting_key = ANY($1::text[])
     `,
-    [ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN],
+    [ALL_SETTING_KEYS],
   )
 
-  const row = result.rows[0]
+  return new Map(result.rows.map(row => [row.settingKey, row]))
+}
+
+async function getSettings(executor = queryDatabase) {
+  const rows = await readIntegerSettings(executor)
+  const referenceRow = rows.get(ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN)
+  const ruleVersionRow = rows.get(GOIN_ISSUANCE_RULE_VERSION_KEY)
+
+  const issuance = {
+    ruleVersion: Number(ruleVersionRow?.integerValue ?? 1),
+  }
+
+  for (const [apiKey, definition] of Object.entries(ISSUANCE_SETTINGS)) {
+    issuance[apiKey] = Number(
+      rows.get(definition.settingKey)?.integerValue ?? definition.defaultValue,
+    )
+  }
+
   return {
     unit: {
       ...ECONOMY_UNIT,
       referenceValueKind: 'simulation_reference',
     },
-    goinReferenceValueToman: Number(row?.goinReferenceValueToman ?? 250),
-    updatedBy: row?.updatedBy ?? null,
-    updatedAt: row?.updatedAt?.toISOString?.() ?? null,
+    goinReferenceValueToman: Number(referenceRow?.integerValue ?? 250),
+    issuance,
+    updatedBy: referenceRow?.updatedBy ?? null,
+    updatedAt: referenceRow?.updatedAt?.toISOString?.() ?? null,
   }
 }
 
 function validateSettingsBody(body) {
-  if (!body || typeof body !== 'object' || Array.isArray(body)) {
-    return { error: 'JSON body must be an object', value: null }
+  if (!isPlainObject(body)) {
+    return { error: 'JSON body must be an object', patch: null }
   }
 
-  const keys = Object.keys(body)
-  if (keys.length !== 1 || keys[0] !== 'goinReferenceValueToman') {
-    return { error: 'Only goinReferenceValueToman can be updated', value: null }
+  const allowedTopLevelKeys = new Set(['goinReferenceValueToman', 'issuance'])
+  const unknownTopLevelKey = Object.keys(body).find(key => !allowedTopLevelKeys.has(key))
+  if (unknownTopLevelKey) {
+    return { error: `Unsupported economy setting: ${unknownTopLevelKey}`, patch: null }
   }
 
-  const value = body.goinReferenceValueToman
-  if (
-    !Number.isSafeInteger(value) ||
-    value < MIN_REFERENCE_VALUE_TOMAN ||
-    value > MAX_REFERENCE_VALUE_TOMAN
-  ) {
-    return {
-      error: `goinReferenceValueToman must be an integer between ${MIN_REFERENCE_VALUE_TOMAN} and ${MAX_REFERENCE_VALUE_TOMAN}`,
-      value: null,
+  if (Object.keys(body).length === 0) {
+    return { error: 'At least one economy setting is required', patch: null }
+  }
+
+  const patch = {
+    referenceValueToman: null,
+    issuance: {},
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'goinReferenceValueToman')) {
+    const value = body.goinReferenceValueToman
+    if (
+      !Number.isSafeInteger(value) ||
+      value < MIN_REFERENCE_VALUE_TOMAN ||
+      value > MAX_REFERENCE_VALUE_TOMAN
+    ) {
+      return {
+        error: `goinReferenceValueToman must be an integer between ${MIN_REFERENCE_VALUE_TOMAN} and ${MAX_REFERENCE_VALUE_TOMAN}`,
+        patch: null,
+      }
+    }
+    patch.referenceValueToman = value
+  }
+
+  if (Object.prototype.hasOwnProperty.call(body, 'issuance')) {
+    if (!isPlainObject(body.issuance) || Object.keys(body.issuance).length === 0) {
+      return { error: 'issuance must be a non-empty object', patch: null }
+    }
+
+    const unknownIssuanceKey = Object.keys(body.issuance)
+      .find(key => !Object.prototype.hasOwnProperty.call(ISSUANCE_SETTINGS, key))
+    if (unknownIssuanceKey) {
+      return { error: `Unsupported issuance setting: ${unknownIssuanceKey}`, patch: null }
+    }
+
+    for (const [apiKey, value] of Object.entries(body.issuance)) {
+      if (
+        !Number.isSafeInteger(value) ||
+        value < MIN_ISSUANCE_AMOUNT ||
+        value > MAX_ISSUANCE_AMOUNT
+      ) {
+        return {
+          error: `${apiKey} must be an integer between ${MIN_ISSUANCE_AMOUNT} and ${MAX_ISSUANCE_AMOUNT}`,
+          patch: null,
+        }
+      }
+      patch.issuance[apiKey] = value
     }
   }
 
-  return { error: null, value }
+  return { error: null, patch }
 }
 
-async function updateReferenceValue(actor, nextValue) {
+async function lockEconomySettings(execute) {
+  await execute(
+    `
+      SELECT setting_key
+      FROM economy_settings
+      WHERE setting_key = ANY($1::text[])
+      ORDER BY setting_key
+      FOR UPDATE
+    `,
+    [ALL_SETTING_KEYS],
+  )
+}
+
+async function upsertIntegerSetting(execute, settingKey, value, actorId) {
+  await execute(
+    `
+      INSERT INTO economy_settings (
+        setting_key,
+        integer_value,
+        updated_by,
+        updated_at
+      )
+      VALUES ($1, $2, $3, NOW())
+      ON CONFLICT (setting_key)
+      DO UPDATE SET
+        integer_value = EXCLUDED.integer_value,
+        updated_by = EXCLUDED.updated_by,
+        updated_at = NOW()
+    `,
+    [settingKey, value, actorId],
+  )
+}
+
+async function insertAuditEvent(execute, actorId, action, metadata) {
+  await execute(
+    `
+      INSERT INTO admin_audit_log (
+        id,
+        actor_user_id,
+        target_user_id,
+        action,
+        metadata
+      )
+      VALUES ($1, $2, NULL, $3, $4::jsonb)
+    `,
+    [randomUUID(), actorId, action, JSON.stringify(metadata)],
+  )
+}
+
+async function updateEconomySettings(actor, patch) {
   return withDatabaseTransaction(async (client) => {
     const execute = client.query.bind(client)
-    const current = await getSettings(execute)
+    await lockEconomySettings(execute)
 
-    if (current.goinReferenceValueToman === nextValue) {
+    const current = await getSettings(execute)
+    const referenceChanged =
+      patch.referenceValueToman !== null &&
+      patch.referenceValueToman !== current.goinReferenceValueToman
+
+    const changedIssuance = {}
+    for (const [apiKey, nextValue] of Object.entries(patch.issuance)) {
+      if (nextValue !== current.issuance[apiKey]) {
+        changedIssuance[apiKey] = {
+          from: current.issuance[apiKey],
+          to: nextValue,
+        }
+      }
+    }
+
+    if (!referenceChanged && Object.keys(changedIssuance).length === 0) {
       return { changed: false, settings: current }
     }
 
-    await execute(
-      `
-        INSERT INTO economy_settings (
-          setting_key,
-          integer_value,
-          updated_by,
-          updated_at
-        )
-        VALUES ($1, $2, $3, NOW())
-        ON CONFLICT (setting_key)
-        DO UPDATE SET
-          integer_value = EXCLUDED.integer_value,
-          updated_by = EXCLUDED.updated_by,
-          updated_at = NOW()
-      `,
-      [ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN, nextValue, actor.id],
-    )
-
-    await execute(
-      `
-        INSERT INTO admin_audit_log (
-          id,
-          actor_user_id,
-          target_user_id,
-          action,
-          metadata
-        )
-        VALUES (
-          $1,
-          $2,
-          NULL,
-          'economy.goin_reference_value_updated',
-          $3::jsonb
-        )
-      `,
-      [
-        randomUUID(),
+    if (referenceChanged) {
+      await upsertIntegerSetting(
+        execute,
+        ECONOMY_SETTING_KEYS.GOIN_REFERENCE_VALUE_TOMAN,
+        patch.referenceValueToman,
         actor.id,
-        JSON.stringify({
+      )
+
+      await insertAuditEvent(
+        execute,
+        actor.id,
+        'economy.goin_reference_value_updated',
+        {
           fromToman: current.goinReferenceValueToman,
-          toToman: nextValue,
+          toToman: patch.referenceValueToman,
           unit: ECONOMY_UNIT.code,
           valueKind: 'simulation_reference',
-        }),
-      ],
-    )
+        },
+      )
+    }
+
+    if (Object.keys(changedIssuance).length > 0) {
+      for (const [apiKey, change] of Object.entries(changedIssuance)) {
+        await upsertIntegerSetting(
+          execute,
+          ISSUANCE_SETTINGS[apiKey].settingKey,
+          change.to,
+          actor.id,
+        )
+      }
+
+      const nextRuleVersion = current.issuance.ruleVersion + 1
+      await upsertIntegerSetting(
+        execute,
+        GOIN_ISSUANCE_RULE_VERSION_KEY,
+        nextRuleVersion,
+        actor.id,
+      )
+
+      await insertAuditEvent(
+        execute,
+        actor.id,
+        'economy.goin_issuance_policy_updated',
+        {
+          fromRuleVersion: current.issuance.ruleVersion,
+          toRuleVersion: nextRuleVersion,
+          changes: changedIssuance,
+          unit: ECONOMY_UNIT.code,
+        },
+      )
+    }
 
     return {
       changed: true,
@@ -199,7 +361,12 @@ export async function handleAdminEconomyRoute({
   }
 
   if (request.method !== 'PUT') {
-    sendJson(response, 405, { ok: false, message: 'Method Not Allowed' }, { ...corsHeaders, Allow: 'GET, PUT' })
+    sendJson(
+      response,
+      405,
+      { ok: false, message: 'Method Not Allowed' },
+      { ...corsHeaders, Allow: 'GET, PUT' },
+    )
     return true
   }
 
@@ -218,7 +385,7 @@ export async function handleAdminEconomyRoute({
   }
 
   const validation = validateSettingsBody(body)
-  if (validation.error) {
+  if (validation.error || !validation.patch) {
     sendJson(response, 400, {
       ok: false,
       code: 'ECONOMY_SETTINGS_VALIDATION',
@@ -228,10 +395,10 @@ export async function handleAdminEconomyRoute({
   }
 
   try {
-    const result = await updateReferenceValue(user, validation.value)
+    const result = await updateEconomySettings(user, validation.patch)
     sendJson(response, 200, { ok: true, ...result }, corsHeaders)
   } catch (error) {
-    console.error('[Prompt Draft API] admin economy settings update failed', error)
+    console.error('[Prompt Draft API] economy settings update failed', error)
     sendJson(response, 500, { ok: false, message: 'Failed to update economy settings' }, corsHeaders)
   }
 
