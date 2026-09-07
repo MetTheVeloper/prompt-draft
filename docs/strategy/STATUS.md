@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A ACCEPTED / 4B NEXT
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A ACCEPTED / 4B IN PROGRESS
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -69,6 +69,8 @@ docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
+docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 ```
 
 Rendering ADR:
@@ -95,7 +97,7 @@ Phase 4 slices:
 
 ```text
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-21.5.4B Public Prompt Architecture                         NEXT
+21.5.4B Public Prompt Architecture                         IN PROGRESS / DESIGN LOCKED / 4B.1 IMPLEMENTED / LOCAL VERIFY NEXT
 21.5.4C Public Creator + Indexability Policy               NOT STARTED
 21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
 21.5.4E Blog V1                                            NOT STARTED
@@ -322,6 +324,26 @@ Missing translation must not create fake indexable fallback content pretending t
 
 ## Current action — 21.5.4B Public Prompt Architecture
 
+Canonical 4B records:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+```
+
+Current state:
+
+```text
+architecture audit/design       -> DONE / FOUNDER AGREED
+architecture contract           -> LOCKED
+4B.1 backend public projection  -> IMPLEMENTED / LOCAL VERIFY NEXT
+4B.2 Nuxt SSR Prompt route      -> NOT STARTED
+4B.3 SEO metadata               -> NOT STARTED
+4B.4 public-link migration      -> NOT STARTED
+4B.5 founder verification       -> NOT STARTED
+Phase 4B acceptance             -> NOT ACCEPTED
+```
+
 Canonical public Prompt route:
 
 ```text
@@ -342,43 +364,81 @@ GET /api/archive            -> public list/catalog
 GET /api/archive/:id        -> authenticated + email gate
 ```
 
-4B must create/use a sanitized public Prompt presentation projection rather than exposing the protected detail payload.
+New 4B public read model:
 
-Public fields may include authoritative presentation data such as:
+```text
+GET /api/public/prompts/:id
+  -> public/read-only
+  -> Archive public_id identity
+  -> Archive status='published' only
+  -> explicit sanitized allowlist
+```
+
+Current public projection includes only:
 
 ```text
 public id
 localized title
+availableLocales
 publication date
 public tags
-public preview media
 public model/presentation metadata
-public creator attribution when intentionally public
+public preview image URLs/position
 ```
 
-Never expose through public Prompt SEO:
+Explicitly excluded:
 
 ```text
 protected Prompt body
 protected variants
-unlock-gated content
-private Drafts
-email/balance/session/permission/account state
+sourceTitle
+source Draft/user identity
+storage keys
+unlock state
+balance/Goin
+permissions
+viewer/account state
+creator attribution until 4C
 ```
 
-Immediate 4B tasks:
+Important implementation invariant:
 
 ```text
-1. audit existing archive/discovery/public projection code paths
-2. define sanitized public Prompt API/domain contract
-3. define /prompt/:id SSR route loading and 404/availability semantics
-4. define authoritative EN/FA localization behavior
-5. wire usePublicSeo metadata from sanitized fields only
-6. define truthful structured data inputs
-7. preserve /prompts?id=<id> protected behavior
-8. preserve GET /api/archive/:id protection
-9. define Discovery/public-link migration compatibility
-10. add contract tests + founder-local runtime acceptance gate
+The public database query itself does not SELECT prompt or variants.
+```
+
+4B.1 implementation commits:
+
+```text
+2a9a58eacc371ee96dc1b073c582d00093f69293
+  Phase 4B architecture source of truth
+
+8902ab959e6b95513a3e7d3d4e60a55dbc76180f
+  Phase 4B verification ledger
+
+97a0f7a2251f9e43d6a98fe07f0b43bb9c3ead16
+  sanitized Public Prompt read model
+
+76664e61af26cbcf112fb6c609667d202d3afee2
+  Public Prompt boundary/contract tests
+
+89c146eb54ac5874194e7fa1980bd1663a83859a
+  API server routing for /api/public/prompts/:id
+
+f6a60f17e69f046d9bf3392dbd688b09edc7967a
+  backend test:public-prompt command
+```
+
+Next 4B action:
+
+```text
+1. founder pulls current branch
+2. rebuild/restart API container
+3. run backend test:public-prompt
+4. smoke real published/missing/non-public ids
+5. confirm GET /api/archive/:id remains protected
+6. record evidence in MILESTONE_21_5_PHASE4B_VERIFICATION.md
+7. only after 4B.1 PASS proceed to 4B.2 Nuxt Public Prompt SSR route
 ```
 
 ---
@@ -627,8 +687,9 @@ When continuing in a new chat:
 1. read this STATUS.md
 2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md for accepted 4A evidence
-4. inspect the latest feature/growth-foundation branch state
-5. continue with 21.5.4B Public Prompt Architecture
-6. discuss/lock architecture before broad implementation changes
-7. update Phase 4 source/status after each accepted slice
+4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+6. inspect the latest feature/growth-foundation branch state
+7. continue with 4B.1 local verification; do not start 4B.2 until 4B.1 passes
+8. never mark 4B accepted until founder local/staging smoke passes and founder explicitly accepts
 ```
