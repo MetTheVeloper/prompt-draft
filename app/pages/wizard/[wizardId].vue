@@ -98,6 +98,7 @@ import { usePromptTemplateUi } from "~/composables/usePromptTemplateUi";
 
 const route = useRoute();
 const router = useRouter();
+const localePath = useLocalePath();
 const { t, te, locale } = useI18n();
 const wizardId = computed(() => String(route.params.wizardId || ""));
 const runtime = computed(() => resolveWizardRuntime(wizardId.value));
@@ -947,11 +948,11 @@ async function continueInCreate() {
   }
 
   clearWizardSession(runtime.value.id);
-  await router.push("/create");
+  await router.push(localePath("/create"));
 }
 
 async function exitWizard() {
-  await router.push("/create");
+  await router.push(localePath("/create"));
 }
 
 function scheduleSave() {
