@@ -55,6 +55,9 @@ export default defineNuxtConfig({
       // the real public API domain while retaining apiBaseInternal for SSR.
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:4000",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "",
+      // Staging safety switch. When true, app.vue emits a robots noindex meta
+      // tag and Nitro middleware emits X-Robots-Tag at request time.
+      noindex: process.env.NUXT_PUBLIC_NOINDEX || "false",
     },
   },
   nitro: {
