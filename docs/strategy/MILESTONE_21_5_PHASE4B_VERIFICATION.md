@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / DESIGN LOCKED / 4B.1 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
 
 Date: 2026-09-07
 
@@ -39,52 +39,38 @@ Automated PASS alone is not acceptance.
 4B architecture audit                     DONE
 4B architecture/design proposal           DONE / FOUNDER AGREED
 4B source-of-truth contract               DONE
-4B.1 backend public read model            IMPLEMENTED / LOCAL VERIFY NEXT
-4B.2 Nuxt Public Prompt SSR route         NOT STARTED
+4B.1 backend public read model            DONE / FOUNDER-LOCAL VERIFIED
+4B.2 Nuxt Public Prompt SSR route         IMPLEMENTED / LOCAL VERIFY NEXT
 4B.3 SEO metadata                         NOT STARTED
 4B.4 public-link migration                NOT STARTED
-4B.5 founder verification                 NOT STARTED
+4B.5 final founder/staging verification   NOT STARTED
 ```
 
-Current canonical public route:
+Canonical public routes:
 
 ```text
 /prompt/:id
 /fa/prompt/:id
 ```
 
-Protected product route remains:
+Protected product/API routes remain:
 
 ```text
 /prompts?id=<id>
-```
-
-Protected API remains:
-
-```text
 GET /api/archive/:id
 ```
 
 ---
 
-## 3. 4B.1 Backend contract gates
+## 3. 4B.1 Backend public read model — VERIFIED
 
-Implemented endpoint:
+Endpoint:
 
 ```text
 GET /api/public/prompts/:id
 ```
 
-Implemented behavior contract:
-
-```text
-published numeric public id -> 200
-missing/non-public id       -> 404
-invalid id                  -> 404 without DB read
-non-GET                     -> 405 + Allow: GET
-```
-
-Implemented DTO allowlist:
+Public DTO allowlist:
 
 ```text
 id
@@ -99,16 +85,15 @@ images.fullUrl
 images.thumbnailUrl
 ```
 
-Forbidden serialized fields/content:
+Forbidden public content:
 
 ```text
-protected Prompt body
+Prompt body
 variants
 sourceTitle
 sourceUserId
 sourceDraftId
-storageKey
-thumbnailStorageKey
+storage keys
 unlock state
 balance/Goin
 permissions
@@ -116,218 +101,246 @@ viewer/account state
 private Draft payloads
 ```
 
-Critical implementation invariant:
+Database invariant:
 
 ```text
-The public database query itself does not SELECT prompt or variants.
-The public database query requires items.status='published'.
+items.public_id = requested id
+AND items.status = 'published'
 ```
 
-Implementation files:
+The public query does not SELECT `prompt`, `variants`, source Draft payloads, storage keys, economy state or account state.
+
+### Automated contract verification
+
+Assistant-side isolated contract run:
 
 ```text
-backend/src/publicPrompt.mjs
-backend/src/publicPrompt.test.mjs
-backend/src/index.mjs
-backend/package.json
-```
-
-Target test command:
-
-```text
-cd backend
-npm run test:public-prompt
-```
-
-or in the rebuilt API container:
-
-```text
-docker compose exec api npm run test:public-prompt
-```
-
-### Assistant-side isolated contract verification
-
-The exact committed `publicPrompt.mjs` and `publicPrompt.test.mjs` blobs were re-read from GitHub, syntax-checked and executed in an isolated Node test harness with `queryDatabase` replaced by a stub so no production/private database was accessed.
-
-Result:
-
-```text
-node --test publicPrompt.test.mjs
+publicPrompt.test.mjs
 8 tests
 8 pass
 0 fail
 ```
 
-Covered in this isolated PASS:
+### Founder Docker/API verification — 2026-09-07
+
+Founder rebuilt the real API container and ran:
 
 ```text
-explicit DTO allowlist
-locale availability without fallback
-published-only SQL condition
-SQL protected-column exclusions
-protected-body sentinel stripping
-variant sentinel stripping
-storage-key sentinel stripping
-published handler 200 contract
-missing/non-public 404 contract
-invalid-id 404 without DB read
-non-GET 405 + Allow: GET
-unrelated-route non-claim behavior
+docker compose exec api npm run test:public-prompt
 ```
 
-This PASS validates the isolated read-model/handler contract only. It does **not** replace the founder Docker/API smoke or real database-state verification.
-
-The protected Archive implementation was re-read after 4B.1 changes and remains on blob:
+Result:
 
 ```text
-backend/src/archive.mjs
-fbe652401ab33bbb8e3f8cc2788f4537972eee90
+8 tests
+8 pass
+0 fail
 ```
 
-Its existing unauthenticated `401` and missing-email `403` gate still precedes `GET /api/archive/:id` detail handling.
-
-### Founder/container automated verification
-
-Still pending on the real checkout/container:
+Real published fixture:
 
 ```text
-[ ] backend npm run test:public-prompt PASS in rebuilt API environment
-[ ] published real item contract PASS
-[ ] missing/non-public real item 404 PASS
-[ ] invalid id PASS
-[ ] non-GET 405 PASS
-[ ] exact/allowlisted response shape PASS
-[ ] GET /api/archive/:id protection regression PASS
+public id: 9003
+EN title: From Grassias
+FA title: از گراسیاس
+availableLocales: en, fa
+model: gpt-image-1
+public image projection present
 ```
 
-Draft/archived public behavior is enforced by the single `items.status='published'` query condition; real-state smoke should still verify both states where test fixtures are available.
+Observed public response property names:
+
+```text
+id
+title
+availableLocales
+publishedAt
+tags
+model
+images
+```
+
+No protected fields were present in the returned projection.
+
+Founder runtime HTTP results:
+
+```text
+GET /api/public/prompts/9003      -> 200
+GET /api/public/prompts/0         -> 404
+GET /api/public/prompts/999999999 -> 404
+GET /api/archive/9003 unauthenticated -> 401
+```
+
+Protected regression result:
+
+```text
+{"ok":false,"message":"Authentication required"}
+```
+
+Conclusion:
+
+```text
+4B.1 BACKEND PUBLIC READ MODEL -> FOUNDER-LOCAL VERIFIED
+```
+
+Draft/archived behavior remains structurally enforced by the published-only query and should still be exercised with explicit fixtures when available during final staging verification.
 
 ---
 
-## 4. 4B.2 SSR route gates
+## 4. 4B.2 Nuxt Public Prompt SSR route — IMPLEMENTED
+
+Implementation files:
 
 ```text
-[ ] /prompt/:id is SSR-enabled
-[ ] /fa/prompt/:id is SSR-enabled
-[ ] server reads use NUXT_API_BASE_INTERNAL
-[ ] browser/public origin remains NUXT_PUBLIC_API_BASE
-[ ] published EN route -> 200
-[ ] published FA route -> 200 when authoritative FA exists
-[ ] invalid/missing/non-public route -> real 404
-[ ] unavailable locale -> real 404
-[ ] no protected Prompt body in initial HTML
-[ ] no variants in initial HTML
-[ ] no private/account/economy data in initial HTML
+app/composables/usePublicPrompt.ts
+app/pages/prompt/[id].vue
+i18n/locales/growth.en.ts
+i18n/locales/growth.fa.ts
+scripts/public-prompt-client-contract.test.ts
+package.json
 ```
 
----
-
-## 5. 4B.3 SEO gates
+Implemented behavior:
 
 ```text
-[ ] usePublicSeo reused
-[ ] EN self-canonical
-[ ] FA self-canonical
-[ ] reciprocal hreflang only for authoritative available locales
-[ ] x-default -> English when authoritative English exists
-[ ] no fake localized fallback page
-[ ] OG title locale-aware
-[ ] OG image uses first valid public preview image
-[ ] CreativeWork structured data uses sanitized public fields only
-[ ] protected Prompt body never enters description/JSON-LD/meta
-[ ] staging NUXT_PUBLIC_NOINDEX=true wins
-[ ] server X-Robots-Tag policy remains intact
+/prompt/:id                 -> dynamic SSR Public Prompt page
+/fa/prompt/:id              -> Nuxt i18n localized SSR route
+server data origin          -> NUXT_API_BASE_INTERNAL
+browser data origin         -> NUXT_PUBLIC_API_BASE
+invalid/noncanonical id     -> real 404
+public API 404              -> real Nuxt 404
+unavailable localization    -> real Nuxt 404
+upstream failure            -> 502 instead of fake empty 200
+route identity change       -> page remount by fullPath
 ```
 
----
+Client/SSR response validation requires the exact sanitized public contract again before rendering.
 
-## 6. 4B.4 Internal-link gates
+The page renders only:
 
 ```text
-[ ] public Discovery card links to publicPromptPath(id)
-[ ] other modified acquisition surfaces use canonical public Prompt route helper
-[ ] Public Prompt product CTA may link to /prompts?id=<id>
-[ ] /prompts?id=<id> behavior unchanged
-[ ] locale-safe navigation preserved
+localized public title
+publication date
+public numeric id
+public model metadata
+public tags
+public preview media
+localized public UI copy
 ```
 
----
-
-## 7. Build / regression gates
-
-Minimum expected gate set:
+The page intentionally does not render or request:
 
 ```text
-[ ] backend npm run test:public-prompt PASS in founder/container environment
-[ ] pnpm test:seo-contracts PASS
-[ ] pnpm seo:audit-routes:strict PASS
+Prompt body
+variants
+unlock state
+balance
+permissions
+private Drafts
+account/session state
+```
+
+Protected CTA remains separate:
+
+```text
+Public Prompt page
+  -> /prompts?id=<id>
+  -> existing protected product flow
+```
+
+Target web-contract command:
+
+```text
+pnpm test:public-prompt-web
+```
+
+### 4B.2 local verification gates
+
+```text
+[ ] pnpm test:public-prompt-web PASS
+[ ] pnpm locale:check PASS
 [ ] pnpm build PASS
+[ ] rebuilt frontend/runtime healthy
+[ ] /prompt/9003 -> 200
+[ ] /fa/prompt/9003 -> 200
+[ ] EN raw HTML contains "From Grassias"
+[ ] FA raw HTML contains "از گراسیاس"
+[ ] /prompt/0 -> 404
+[ ] /prompt/999999999 -> 404
+[ ] /fa/prompt/999999999 -> 404
+[ ] no protected Prompt body/variants in raw HTML
+[ ] protected CTA still enters /prompts?id=9003 gated flow
 ```
 
-No founder/runtime automated result may be inferred from isolated implementation testing alone.
+No 4B.2 founder PASS is recorded until these gates are run on the founder checkout/runtime.
 
 ---
 
-## 8. Founder local/staging smoke
+## 5. 4B.3 SEO gates — NOT STARTED
 
-To be executed progressively as each slice becomes runnable.
-
-### 4B.1 Public API smoke
+Target behavior:
 
 ```text
-[ ] rebuilt API container is healthy
-[ ] published id 200
-[ ] missing id 404
-[ ] draft id 404 when fixture available
-[ ] archived id 404 when fixture available
-[ ] invalid id 404
-[ ] response contains no protected fields/content
-[ ] api.grassic.ir endpoint works as expected after staging rebuild
-```
-
-### EN public Prompt — after 4B.2/4B.3
-
-```text
-[ ] grassic.ir/prompt/<published-id> 200
-[ ] localized EN title visible in raw SSR HTML
-[ ] canonical correct
-[ ] hreflang correct
-[ ] OG/Twitter metadata correct
-[ ] JSON-LD truthful
-[ ] staging robots noindex protection present
-```
-
-### FA public Prompt — after 4B.2/4B.3
-
-```text
-[ ] grassic.ir/fa/prompt/<published-id> 200
-[ ] localized FA title visible in raw SSR HTML
-[ ] html lang/dir correct
-[ ] self-canonical correct
-[ ] reciprocal hreflang correct
-[ ] staging robots noindex protection present
-```
-
-### Protected regression
-
-```text
-[ ] unauthenticated GET /api/archive/:id remains denied
-[ ] /prompts?id=<id> remains auth/email gated
-[ ] protected Prompt body remains available only through protected product flow
-[ ] unlock/Goin behavior unchanged
-```
-
-### Production safety
-
-```text
-[ ] prompt-draft.ir remains untouched during 4B staging work
+usePublicSeo reused
+EN self-canonical
+FA self-canonical
+reciprocal hreflang only for authoritative locales
+x-default -> English when English exists
+no fake locale fallback
+locale-aware OG title
+first public preview image used for OG image
+CreativeWork JSON-LD from sanitized fields only
+protected Prompt body never enters meta/JSON-LD
+staging global noindex remains authoritative
 ```
 
 ---
 
-## 9. Implementation evidence log
+## 6. 4B.4 Public-link migration — NOT STARTED
 
-Architecture/documentation:
+Target behavior:
+
+```text
+Discovery public cards -> publicPromptPath(id)
+other public acquisition surfaces -> canonical public Prompt route
+Public Prompt product CTA -> /prompts?id=<id>
+/prompts?id=<id> protected behavior unchanged
+locale-safe navigation preserved
+```
+
+---
+
+## 7. Final regression / staging gates
+
+Minimum automated set before final 4B acceptance:
+
+```text
+backend npm run test:public-prompt PASS
+pnpm test:public-prompt-web PASS
+pnpm test:seo-contracts PASS
+pnpm seo:audit-routes:strict PASS
+pnpm locale:check PASS
+pnpm build PASS
+```
+
+Founder staging smoke must confirm:
+
+```text
+public API 200/404 semantics
+EN/FA SSR route semantics
+canonical/hreflang/OG/JSON-LD after 4B.3
+staging robots/noindex protection
+public-link migration after 4B.4
+GET /api/archive/:id remains protected
+/prompts?id=<id> remains auth/email/unlock gated
+prompt-draft.ir remains untouched
+```
+
+---
+
+## 8. Evidence log
+
+Architecture / documentation:
 
 ```text
 2a9a58eacc371ee96dc1b073c582d00093f69293
@@ -351,28 +364,39 @@ Architecture/documentation:
 
 f6a60f17e69f046d9bf3392dbd688b09edc7967a
   test: add public prompt contract command
-
-1c1cc903c4e3e8b0e2f824f38c17ef3e0ea7e1a9
-  docs: record Phase 4B backend slice progress
 ```
 
-Assistant-side isolated verification:
+4B.2 implementation:
 
 ```text
-publicPrompt contract test -> PASS 8/8
-protected archive blob     -> unchanged fbe652401ab33bbb8e3f8cc2788f4537972eee90
+76d9d109419407bb5d9c444d7422dcc89353ba23
+  feat: add public prompt SSR reader
+
+cb0c13224e595ba9fc0c8ed3303bf045342b580b
+  feat: add public prompt SSR route
+
+2009b1c84b9e992d45b076a25eed0a83c3bfe301
+  feat: localize public prompt page
+
+abd2432b04802dd88246e3eb342c0bb035d30490
+  feat: localize Persian public prompt page
+
+a913bbe6ae7a3ad05953b0bfc04a72f5fd5e8300
+  test: cover public prompt client contract
+
+c67a3e24d89c5d1bf70e29b53286e7a2ae18c050
+  test: add public prompt web contract command
+
+be104d7b24701c64332dd8ae41b91340e5c821f8
+  fix: remount public prompt on route identity change
 ```
 
-Current verification state:
+Current state:
 
 ```text
-DESIGN LOCKED
-4B.1 IMPLEMENTED
-ISOLATED CONTRACT TEST PASS 8/8
-FOUNDER/CONTAINER TEST PENDING
-FOUNDER API SMOKE PENDING
-4B.2 NOT STARTED
-NOT ACCEPTED
+4B.1 FOUNDER-LOCAL VERIFIED
+4B.2 IMPLEMENTED / LOCAL VERIFY NEXT
+4B.3 NOT STARTED
+4B.4 NOT STARTED
+PHASE 4B NOT ACCEPTED
 ```
-
-Do not advance to accepted status until the documented founder verification gates are satisfied.
