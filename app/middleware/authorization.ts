@@ -9,12 +9,17 @@ export default defineNuxtRouteMiddleware(async (to) => {
 
   if (!requiredPermission) return;
 
+  const localePath = useLocalePath();
   const auth = useAuth();
   await auth.initialize();
 
   if (!auth.isLoggedIn.value) {
-    const next = encodeURIComponent(to.fullPath || "/");
-    return navigateTo(`/login?next=${next}`);
+    return navigateTo({
+      path: localePath("/login"),
+      query: {
+        next: to.fullPath || localePath("/"),
+      },
+    });
   }
 
   if (!auth.can(requiredPermission)) {
