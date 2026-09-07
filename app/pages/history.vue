@@ -11,6 +11,7 @@ import type {
 
 const route = useRoute();
 const { t, locale } = useI18n();
+const localePath = useLocalePath();
 const { mini } = useScreen();
 const { listWizardRuns, getWizardRun } = usePromptDraftApi();
 
@@ -151,13 +152,13 @@ async function loadDetail(id: string) {
 
 async function openRun(id: string) {
   await navigateTo({
-    path: "/history",
+    path: localePath("/history"),
     query: { run: id },
   });
 }
 
 async function closeDetail() {
-  await navigateTo("/history");
+  await navigateTo(localePath("/history"));
 }
 
 function copyTextFallback(value: string) {
@@ -292,7 +293,7 @@ async function editInCreate(id: string) {
         : (await getWizardRun(id)).run;
 
     createDraftFromRun(run);
-    await navigateTo("/create");
+    await navigateTo(localePath("/create"));
   } catch (error) {
     console.error("[Prompt Draft History] failed to restore run as draft", error);
     restoreError.value = true;
