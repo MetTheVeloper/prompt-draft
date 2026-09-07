@@ -38,6 +38,7 @@ import {
 } from "~/utils/draftCloudSync";
 
 const { t, locale } = useI18n();
+const localePath = useLocalePath();
 const app = useAppStore();
 const auth = useAuth();
 const { $menu, $modal } = useNuxtApp();
@@ -908,7 +909,7 @@ function getDraftMenuItems(): GlobalMenuItem[] {
       label: t("history.title"),
       icon: "history",
       color: "blue",
-      handler: () => navigateTo("/history"),
+      handler: () => navigateTo(localePath("/history")),
     },
   ];
 
