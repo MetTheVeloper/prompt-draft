@@ -1,7 +1,11 @@
 services:
   cloudflared:
     image: cloudflare/cloudflared:2026.8.3
-    command: tunnel --no-autoupdate run --token ${CLOUDFLARE_TUNNEL_TOKEN}
+    # The current host network blocks outbound QUIC/UDP 7844. Force HTTP/2 so
+    # connector startup is immediate instead of waiting through QUIC retries
+    # before falling back, which otherwise creates a short 1033/530 window
+    # after every restart.
+    command: tunnel --no-autoupdate --protocol http2 run --token ${CLOUDFLARE_TUNNEL_TOKEN}
     depends_on:
       frontend:
         condition: service_healthy
