@@ -8,6 +8,7 @@ import { handleAuthRequest } from './auth.mjs'
 import { handleEconomyRequest } from './economy.mjs'
 import { handleHomeDiscoveryRequest } from './homeDiscovery.mjs'
 import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
+import { handlePublicPromptRequest } from './publicPrompt.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
 import { handleUserPreferencesRequest } from './userPreferences.mjs'
 import {
@@ -528,6 +529,18 @@ const server = createServer(async (request, response) => {
       )
     }
 
+    return
+  }
+
+  if (
+    await handlePublicPromptRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
     return
   }
 
