@@ -6,6 +6,7 @@ const props = defineProps<{
 
 const { t, te } = useI18n();
 const route = useRoute();
+const localePath = useLocalePath();
 const auth = useAuth();
 const modal = useModal();
 
@@ -87,9 +88,9 @@ async function openLogin() {
   modal.close();
 
   await navigateTo({
-    path: "/login",
+    path: localePath("/login"),
     query: {
-      next: route.fullPath || "/create",
+      next: route.fullPath || localePath("/create"),
     },
   });
 }
