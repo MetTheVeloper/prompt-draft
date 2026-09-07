@@ -41,6 +41,26 @@ const CHECKS = [
     description: 'Direct route.name comparison may break after localized route names are enabled.',
     pattern: /\broute\.name\s*(?:===|!==|==|!=)\s*([`'"])/g,
   },
+  {
+    id: 'direct-route-path',
+    description: 'Direct route/to/from.path comparison against a raw internal path can skip the localized /fa route; use useRouteBaseName() or locale-aware path logic.',
+    pattern: /\b(?:route|to|from|\$route)\.path\s*(?:===|!==|==|!=)\s*([`'"])\/(?!\/)/g,
+  },
+  {
+    id: 'reverse-direct-route-path',
+    description: 'A raw internal path compared directly with route/to/from.path can skip the localized /fa route; use useRouteBaseName() or locale-aware path logic.',
+    pattern: /([`'"])\/(?!\/)[^`'"\n]*\1\s*(?:===|!==|==|!=)\s*\b(?:route|to|from|\$route)\.path/g,
+  },
+  {
+    id: 'raw-route-path-prefix',
+    description: 'route/to/from.path prefix matching uses a raw internal path and may not match the localized /fa route.',
+    pattern: /\b(?:route|to|from|\$route)\.path\.(?:startsWith|endsWith)\s*\(\s*([`'"])\/(?!\/)/g,
+  },
+  {
+    id: 'direct-current-route-path',
+    description: 'router.currentRoute.value.path is compared with a raw internal path and may not match the localized /fa route.',
+    pattern: /\b(?:router|\$router)\.currentRoute\.value\.path\s*(?:===|!==|==|!=)\s*([`'"])\/(?!\/)/g,
+  },
 ]
 
 async function walk(directory) {
