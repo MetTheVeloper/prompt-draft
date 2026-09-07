@@ -14,6 +14,8 @@ Inherited Growth baseline:
 3ef4b0c65777d6f2814744ed0a1fa8a78750a389
 ```
 
+---
+
 ## Current state
 
 ```text
@@ -41,12 +43,15 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A STARTED
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A ACCEPTED / 4B NEXT
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
+
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
 First domain                                    -> Content Creation
 Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
 ```
+
+---
 
 ## Canonical Milestone 21.5 sources
 
@@ -63,29 +68,51 @@ docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 ```
 
-Current rendering ADR:
+Rendering ADR:
 
 ```text
 docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 ```
 
-ADR-001 remains historically correct for Milestone 21D; ADR-002 records the selected Milestone 21.5 hybrid direction.
+ADR-001 remains historically correct for Milestone 21D. ADR-002 records the accepted Milestone 21.5 hybrid direction.
 
-Milestone 21.5 execution order:
+---
+
+## Milestone 21.5 execution order
 
 ```text
-Phase 1 — Hybrid / SSR Architecture                       DONE / ACCEPTED
-Phase 2 — Docker Production Runtime                       DONE / ACCEPTED
-Phase 3 — Cloudflare Production Path                      DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture      IN PROGRESS / 4A STARTED
-Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
+Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
+Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
+Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS
+Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
-## Phase 1 accepted rendering state
+Phase 4 slices:
 
-Selected Nuxt baseline:
+```text
+21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+21.5.4B Public Prompt Architecture                         NEXT
+21.5.4C Public Creator + Indexability Policy               NOT STARTED
+21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
+21.5.4E Blog V1                                            NOT STARTED
+21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
+```
+
+Required order:
+
+```text
+4A -> 4B -> 4C -> 4D -> 4E -> 4F
+```
+
+---
+
+## Accepted Phase 1 rendering state
+
+Selected baseline:
 
 ```text
 ssr: true
@@ -94,7 +121,7 @@ Nuxt/Nitro server runtime required for real hybrid behavior
 independent Node API retained
 ```
 
-First server-rendered/default acquisition surfaces:
+Acquisition-capable SSR surfaces include:
 
 ```text
 /
@@ -102,7 +129,7 @@ First server-rendered/default acquisition surfaces:
 /discover/**
 ```
 
-Explicit client-rendered surfaces:
+Explicit client-rendered/application surfaces include:
 
 ```text
 /create
@@ -119,111 +146,46 @@ Explicit client-rendered surfaces:
 /user
 ```
 
-Founder-local acceptance passed with:
+---
 
-```text
-pnpm build
-pnpm preview
-SSR/raw-HTML discovery smoke
-/, /guide, discovery smoke
-/create, /manage, /prompts, /user, Wizard smoke
-regular-user and super-admin auth smoke
-```
+## Accepted Phase 2 Docker runtime
 
-The preview-port CORS issue was fixed by allowing port 3000 in local API CORS configuration. The super-admin login issue was confirmed to be a local password-hash mismatch rather than an SSR/origin/role restriction and was corrected through a secure local password-reset CLI.
-
-## Phase 2 Docker runtime state — accepted
-
-Accepted production-like local shape:
+Production-like local topology:
 
 ```text
 browser
-  -> http://localhost:3000
-  -> frontend Nuxt/Nitro container
+  -> frontend Nuxt/Nitro container :3000
 
 SSR frontend
-  -> http://api:4000
-  -> API over Compose network
+  -> http://api:4000 over Compose network
 
 browser client API
-  -> http://localhost:4000
+  -> public/browser API origin
 
 API
   -> db:5432
   -> translator:5000
 ```
 
-Key runtime contract:
+Core contract:
 
 ```text
-NUXT_API_BASE_INTERNAL=http://api:4000      server-only
-NUXT_PUBLIC_API_BASE=http://localhost:4000  browser-visible local default
+NUXT_API_BASE_INTERNAL -> server-only API origin
+NUXT_PUBLIC_API_BASE   -> browser-visible API origin
 ```
 
-Accepted Phase 2 infrastructure:
+Accepted infrastructure includes multi-stage frontend Docker build, Compose health checks, restart behavior, service-network API access, builder memory/cache hardening and reproducible stack lifecycle commands.
 
-```text
-root multi-stage frontend Dockerfile
-root .dockerignore excluding local secrets/build outputs
-frontend Compose service
-frontend/API/db/translator health checks
-health-gated service dependencies
-restart: unless-stopped
-server-internal vs browser-public API origin split
-stack lifecycle pnpm commands
-builder-only 4 GB Node heap for Nuxt SSR bundling
-BuildKit pnpm-store cache
-pnpm registry timeout/retry/concurrency hardening
-correct Corepack package-manager integrity metadata
-```
+---
 
-Founder-local verification passed with:
+## Accepted Phase 3 Cloudflare production-like path
 
-```text
-pnpm stack
-pnpm stack:status
-pnpm stack:restart
-```
-
-Verified outcomes:
-
-```text
-Nuxt client build PASS
-Nuxt SSR server build PASS
-Nitro node-server output PASS
-frontend image built
-api image built
-frontend healthy
-api healthy
-db healthy
-translator healthy
-/discover/posters-editorial functional through Docker frontend
-raw SSR HTML fetched successfully
-browser API traffic uses http://localhost:4000
-GET /api/auth/me -> 200 OK observed in DevTools
-regular and super-admin auth/application smoke PASS
-full stack rebuild/recreate PASS
-post-restart recovery to all-healthy PASS
-```
-
-Docker-internal `http://api:4000` remains server-only and was not exposed to browser networking.
-
-Phase 2 is closed. Its accepted runtime became the baseline for Phase 3.
-
-## Phase 3 Cloudflare production path — accepted
-
-Canonical record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
-```
-
-Accepted production-like staging topology:
+Staging topology:
 
 ```text
 https://grassic.ir
   -> Cloudflare edge
-  -> prompt-draft-staging-fallback Worker
+  -> fallback Worker
   -> Cloudflare Tunnel
   -> frontend:3000
 
@@ -233,219 +195,351 @@ https://api.grassic.ir
   -> api:4000
 ```
 
-Accepted runtime split:
+Runtime split:
 
 ```text
 Nuxt SSR server -> http://api:4000
 browser          -> https://api.grassic.ir
 ```
 
-Verified outcomes:
+Verified Phase 3 outcomes include:
 
 ```text
-grassic.ir authoritative on Cloudflare
-frontend/API Tunnel routes active
-frontend/API direct host binds remain loopback-only
-public HTTPS frontend PASS
-public HTTPS API PASS
-CORS from https://grassic.ir PASS
-browser API origin https://api.grassic.ir PASS
-regular/super-admin/application parity PASS
-public request-time SSR PASS
-no tested api:4000 / localhost:4000 / api.prompt-draft.ir leakage in SSR HTML
-NUXT_PUBLIC_NOINDEX=true PASS
-X-Robots-Tag: noindex, nofollow, noarchive PASS
-cloudflared forced to HTTP/2 for current network PASS
-stack restart/recovery PASS
-Cloudflare Worker route grassic.ir/* PASS
-Worker failure mode Fail open PASS
-intentional cloudflared outage -> branded HTTP 503 fallback PASS
-fallback links to stable https://prompt-draft.ir/ PASS
-Tunnel restore -> normal HTTP 200 recovery PASS
-Cloudflare Cache Rule api.grassic.ir -> Bypass cache ACTIVE
+public HTTPS frontend/API
+CORS from grassic.ir
+browser API origin api.grassic.ir
+regular/super-admin application parity
+request-time SSR
+no localhost/api:4000 leakage into browser-facing SSR HTML
+NUXT_PUBLIC_NOINDEX=true
+X-Robots-Tag staging protection
+Cloudflare Tunnel HTTP/2 compatibility
+stack restart/recovery
+Worker fail-open behavior
+branded 503 fallback during intentional tunnel outage
+recovery after tunnel restore
+API cache bypass rule
 ```
 
-The stable `prompt-draft.ir` deployment was deliberately left untouched during Phase 3. The new runtime architecture has therefore been proven without making the production hostname cutover itself a prerequisite.
+Stable `prompt-draft.ir` remains deliberately untouched while Phase 4 is developed/verified on `grassic.ir`.
 
-Phase 3 closure checkpoint:
+---
 
-```text
-adbff89e4c65ac8fa26cca58dee1040f62c808a1
-```
-
-## Phase 4 SEO / public content architecture — in progress
+## Phase 4A — accepted SEO/routing foundation
 
 Canonical record:
 
 ```text
-docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 ```
 
-Execution slices:
+Accepted behavior:
 
 ```text
-21.5.4A SEO Contracts & Route Semantics                    IN PROGRESS
-21.5.4B Public Prompt Architecture                         NOT STARTED
-21.5.4C Public Creator + Indexability Policy               NOT STARTED
-21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
-21.5.4E Blog V1                                            NOT STARTED
-21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
+usePublicSeo is the shared public SEO primitive
+EN default URLs are unprefixed
+FA URLs use /fa
+Nuxt i18n strategy = prefix_except_default
+root html lang/dir is locale-aware
+canonical URLs are self-referencing per locale
+EN/FA reciprocal hreflang supported
+x-default points to English/default
+Discovery invalid slugs return real 404
+Discovery noncanonical uppercase/trailing-slash variants 301 to canonical
+application/private routes receive X-Robots-Tag noindex
+staging NUXT_PUBLIC_NOINDEX wins globally
+internal navigation is locale-safe
+query/auth-next behavior preserves locale
+legacy app prerenders are isolated behind legacy static-generate mode
 ```
 
-Accepted route/content direction:
+Founder-local 4A gates:
 
 ```text
-Prompt canonical -> /prompt/:id
-Creator canonical -> /creator/:username
-/user -> private/account product surface, not Creator SEO canonical
-English/default -> unprefixed URL
-Persian -> /fa prefix
+pnpm seo:audit-routes:strict -> PASS, 441 files, zero hazards
+pnpm test:seo-contracts     -> PASS, 5/5
+pnpm build                  -> PASS
+EN/FA runtime route smoke   -> PASS
+canonical redirect smoke    -> PASS
+raw SSR metadata smoke      -> PASS
+browser locale navigation   -> PASS
+application noindex headers -> PASS
+staging public noindex      -> PASS
+founder acceptance          -> PASS
+```
+
+Verification found and fixed two meaningful regressions:
+
+```text
+1. Vue I18n SyntaxError: 26 on refresh after locale switching
+   root cause: useI18n/usePublicSeo from global Nuxt plugin
+   fix: Home/Guide SEO policy moved into component setup
+
+   Persian font selector also expected lang=fa while SSR emits fa-IR
+   fix: html[lang|='fa']
+
+2. /manage EN missed X-Robots-Tag
+   root cause: legacy Nitro prerender bypassed request-time SEO middleware
+   fix: app/client-only prerenders gated behind NUXT_LEGACY_STATIC_GENERATE=true
+```
+
+Relevant remediation/acceptance commits:
+
+```text
+8d05c3fd95c174ac6dc7b4f5eea1be2fcab50375
+  i18n initialization + Persian font remediation
+
+aeaa6353f89e0ca48a9668a3382100579593e617
+  legacy application prerender isolation
+
+6fcc37f3d8629ee750877585aac7910e54d9dd64
+  Phase 4A founder-local acceptance record
+
+b4fda517eab0dbeb9862174ac878486f9b890d19
+  Phase 4 parent advanced to 4B
+```
+
+---
+
+## Accepted locale/indexing direction
+
+```text
+English/default -> unprefixed
+Persian         -> /fa
 EN + FA both indexable when authoritative localized content exists
-Blog V1 -> repository-backed editorial content
-/manage/blog -> Markdown-producing admin authoring surface
-Git -> canonical Blog editorial source
-Arvan -> Blog mirror/emergency publication store
-Docker/Nitro deployed content -> normal Blog request-time source
-Blog images -> existing/shared Arvan media upload pipeline
+self-canonical per locale
+reciprocal hreflang when both authoritative localizations exist
+x-default -> English/default
 ```
 
-Phase 4A implementation has started by maturing the existing `usePublicSeo` primitive, making root HTML `lang/dir` locale-aware, and beginning locale-aware navigation migration in Header/default layout.
+One URL must deterministically render one language.
 
-Important activation gate:
+Do not use cookie-dependent canonical language.
+
+Missing translation must not create fake indexable fallback content pretending to be an authoritative translation.
+
+---
+
+## Current action — 21.5.4B Public Prompt Architecture
+
+Canonical public Prompt route:
 
 ```text
-Do not enable prefix_except_default until raw internal navigation has been audited/migrated.
+/prompt/:id
+/fa/prompt/:id
 ```
 
-This avoids Persian users being sent unintentionally to unprefixed English routes by legacy raw paths.
+Current protected/product route remains:
 
-Current Phase 4 implementation commits are not founder-local accepted yet. Phase 4 remains IN PROGRESS until build/runtime/browser/raw-HTML verification passes.
+```text
+/prompts?id=<id>
+```
 
-## Accepted Creator SEO direction for Phase 4
+Backend security boundary remains:
+
+```text
+GET /api/archive            -> public list/catalog
+GET /api/archive/:id        -> authenticated + email gate
+```
+
+4B must create/use a sanitized public Prompt presentation projection rather than exposing the protected detail payload.
+
+Public fields may include authoritative presentation data such as:
+
+```text
+public id
+localized title
+publication date
+public tags
+public preview media
+public model/presentation metadata
+public creator attribution when intentionally public
+```
+
+Never expose through public Prompt SEO:
+
+```text
+protected Prompt body
+protected variants
+unlock-gated content
+private Drafts
+email/balance/session/permission/account state
+```
+
+Immediate 4B tasks:
+
+```text
+1. audit existing archive/discovery/public projection code paths
+2. define sanitized public Prompt API/domain contract
+3. define /prompt/:id SSR route loading and 404/availability semantics
+4. define authoritative EN/FA localization behavior
+5. wire usePublicSeo metadata from sanitized fields only
+6. define truthful structured data inputs
+7. preserve /prompts?id=<id> protected behavior
+8. preserve GET /api/archive/:id protection
+9. define Discovery/public-link migration compatibility
+10. add contract tests + founder-local runtime acceptance gate
+```
+
+---
+
+## Accepted public Creator direction for 4C
 
 ```text
 /user
-  -> private/signed-in account profile surface
+  -> account/product surface
   -> not canonical SEO Creator URL
 
 /creator/:username
   -> future public SSR/SEO Creator route
-  -> public data/publications only
+  -> intentionally public identity/publications only
 ```
 
-A Creator page must not become indexable merely because an account exists or one trivial public item was published.
-
-Phase 4 must define a shared server-authoritative Creator indexability/quality policy. The same eligibility result should drive SSR robots/index metadata, sitemap inclusion and future public Creator discovery behavior.
-
-Exact thin-content thresholds remain deliberately TBD. Candidate inputs include meaningful public content volume/substance, public profile completeness, publication quality/visibility, spam/moderation state and duplicate/low-value content signals.
-
-Accepted accessibility/indexability distinction:
+Public Creator V1 must exclude:
 
 ```text
-valid thin/new/incomplete public Creator
+email
+balance/Goin
+sessions
+permissions
+private Drafts
+owner-only stats/counts
+XP initially
+```
+
+Accessibility and indexability are separate:
+
+```text
+valid but quality-failing Creator
   -> accessible
   -> noindex
-  -> excluded from indexable sitemap
+  -> excluded from sitemap
 
-nonexistent / removed / public-access-prohibited Creator
-  -> unavailable / 404 semantics
+nonexistent/deleted/public-access-prohibited Creator
+  -> unavailable / 404 according to policy
 ```
 
-## Milestone 21.5 rationale
-
-Milestone 21D intentionally retained:
+Target policy output concept:
 
 ```text
-ssr: false
-pnpm generate
-static frontend
-independent Node API
+accessible
+indexable
+discoverable
+reasons[]
+signals{}
 ```
 
-and used targeted post-generate SEO snapshots for six controlled `/discover/*` routes.
+Exact quality thresholds remain deliberately TBD until 4C.
 
-That decision remains historically correct for 21D.
+---
 
-Milestone 21.5 revisits rendering because the product now has a non-speculative acquisition use case:
+## Accepted Blog V1 direction for 4E
+
+Public routes:
 
 ```text
-existing public discovery content
-planned Blog acquisition surface
-growing public dynamic route needs
-internal Growth analytics already available
-Google Search Console can provide external search/indexing evidence
-Domain Expansion requires founder research and should not be rushed
+/blog
+/blog/:slug
+/fa/blog
+/fa/blog/:slug
 ```
 
-Domain Expansion research may proceed in parallel while engineering executes Milestone 21.5.
-
-## Canonical Milestone 21 closure
+Editorial architecture:
 
 ```text
-docs/strategy/MILESTONE_21_CLOSURE.md
-docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
-docs/strategy/MILESTONE_21_UI_POLISH.md
+Git repository          -> canonical editorial source
+Docker/Nitro deployment -> normal request-time article source
+Arvan Object Storage    -> mirror/emergency publication store
 ```
 
-Phase-level verification sources:
+GitHub is never queried per request.
+
+Emergency Arvan publication may temporarily serve content while Git reconciliation is pending, with identity/version metadata such as:
 
 ```text
-docs/strategy/MILESTONE_21A_VERIFICATION.md
-docs/strategy/MILESTONE_21B_VERIFICATION.md
-docs/strategy/MILESTONE_21C_VERIFICATION.md
-docs/strategy/MILESTONE_21D_VERIFICATION.md
-docs/strategy/MILESTONE_21E1_VERIFICATION.md
-docs/strategy/MILESTONE_21E2_PROMPT_UNLOCK.md
-docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
-docs/strategy/MILESTONE_21F_VERIFICATION.md
+articleId
+revision/contentHash
+publishedAt
+source=emergency
+syncState=pending_git
 ```
 
-## Accepted public/protected boundary
+`/manage/blog` target:
 
 ```text
-/prompts list/catalog -> public
-GET /api/archive -> public
-search/sort/multi-tag/pagination -> public
+metadata form
+EN/FA localization editing
+Markdown-producing editor
+headings/lists/quotes/links/images/etc.
+live preview
+validation
+```
+
+Preferred editor candidate:
+
+```text
+md-editor-v3
+```
+
+Validate implementation-time version/license before install.
+
+Blog images:
+
+```text
+reuse existing/shared Arvan upload pipeline
+never embed base64 in Markdown
+preserve stable media URL/reference
+preserve id/fullUrl/thumbnailUrl/width/height/alt/caption where practical
+```
+
+---
+
+## Operational Arvan/S3 note
+
+The existing storage upload path uses AWS SigV4 and depends on correct system time.
+
+During Phase 4A verification, all media uploads returned storage `403 Forbidden` after a power outage because the founder laptop clock was incorrect. Correcting system time restored uploads without code changes.
+
+Diagnostic rule:
+
+```text
+unexpected SigV4 403 across multiple Arvan upload surfaces
+  -> verify host/system clock before treating as CORS/storage/code regression
+```
+
+---
+
+## Accepted public/protected boundary inherited forward
+
+```text
+/prompts list/catalog -> public product/catalog surface
+GET /api/archive      -> public sanitized list/catalog
 
 /prompts?id=<id> full Prompt detail -> authenticated + email gate
-GET /api/archive/:id -> authenticated + email gate
+GET /api/archive/:id               -> authenticated + email gate
 ```
 
-Rendering changes do not alter backend authorization or make protected Prompt content public.
+Rendering/SEO work must not weaken backend authorization.
 
-## Accepted internal economy state
+Private Drafts are never public or SSR-published.
 
-Internal spendable unit:
+---
+
+## Accepted internal economy state inherited from Milestone 21
+
+Spendable unit:
 
 ```text
 goin
 ```
 
-Simulation reference metadata:
+Simulation reference:
 
 ```text
 1 goin = 250 toman
 ```
 
-XP and Goin remain semantically separate:
-
-```text
-user_score_events
-  -> achievement/reward provenance + lifetime XP
-
-user_economy_events
-  -> spendable Goin issuance/debit/refund/correction
-```
-
-Current issuance V1:
-
-```text
-account_created       -> 10 goin
-profile_email_added   -> 10 goin
-referral_joined       -> 10 goin
-referral_reward       -> 20 goin
-draft_created         -> 0 goin
-```
+XP and Goin remain semantically separate.
 
 Current Prompt Archive sink:
 
@@ -454,40 +548,13 @@ first meaningful Prompt Copy unlock = 5 goin
 repeat Copy/access after unlock     = free
 ```
 
-Verified economy invariants:
+Authoritative economy behavior remains ledger/idempotency/atomicity driven as established in Milestone 21.
 
-```text
-append-only authoritative ledger
-SUM(unit_delta) authoritative balance
-idempotent retries
-negative balance rejected
-failed overspend creates no row
-parallel spends cannot overspend
-historical issuance backfill rerunnable without double issue
-atomic debit + durable unlock
-same-Prompt concurrent requests charge exactly once
-insufficient balance creates neither debit nor unlock
-historical unlock price/rule version preserved
-XP unchanged by Goin spending
-```
+Canonical detailed economy records remain in the Milestone 21 strategy/verification documents.
 
-Private Profile Menu:
+---
 
-```text
-Goin beside username via shared GoinAmount component
-XP on separate row
-reusable What is Goin? modal
-live earn/spend/reference values from authoritative policy
-```
-
-Super-Admin economy management:
-
-```text
-/manage/economy
-permission: system.settings.manage
-```
-
-## Accepted Growth metrics state
+## Accepted Growth metrics state inherited from Milestone 21
 
 Manage route:
 
@@ -496,14 +563,14 @@ Manage route:
 permission: system.metrics.view
 ```
 
-Backend read API:
+Backend summary API:
 
 ```text
 GET /api/admin/growth/summary?days=7
 GET /api/admin/growth/summary?days=30
 ```
 
-Current behavioral event coverage:
+Current behavioral events include:
 
 ```text
 prompt_archive_view
@@ -511,60 +578,15 @@ prompt_archive_copy
 referral_link_open
 ```
 
-Measured audience is explicitly scoped to instrumented Growth surfaces and is not whole-product DAU/MAU.
+Do not use `admin_audit_log` as behavioral analytics.
 
-Final independent SQL-vs-API verification passed for both 7-day and 30-day windows, including auth, invalid-window handling, summaries, daily series, Top Tags, measurement scope and event allowlist.
-
-Milestone 21.5 may extend acquisition analytics only where persisted data supports the metrics shown.
-
-## Final UI polish — accepted
-
-Accepted final presentation state:
-
-```text
-founder-provided Goin SVG + reusable GoinAmount
-Profile Menu Goin-first hierarchy
-central reusable Goin information modal
-chart-first Daily Signals and Popular Tags with table toggles
-useScreen-based responsive Growth layout
-2 x 4-card desktop/wide Growth density
-shared Goin rendering in Growth/Economy
-normal-colored Prompt Copy feedback + state icons
-/prompts content surface80
-normal/invert Prompt tags
-theme-aware card overlays/fallbacks/borders for /prompts and /user
-Light/Dark + EN/FA/RTL smoke accepted
-```
-
-## Final local release-generation evidence for Milestone 21
-
-Founder-local command:
-
-```powershell
-pnpm generate
-```
-
-Final Milestone 21 result:
-
-```text
-PASS
-26 routes prerendered
-.output/public generated
-offline manifest generated: 258 files / 63.2 MB
-6 discovery routes enriched with sanitized SEO snapshots
-```
-
-This remains historical Milestone 21 evidence and is not the Milestone 21.5 hybrid-runtime verification mode.
+---
 
 ## Migration state
 
-Current migrations extend through:
+Current schema migrations extend through:
 
 ```text
-020_product_analytics_events.sql
-021_user_preferences.sql
-022_user_economy_foundation.sql
-023_goin_issuance_policy.sql
 024_prompt_archive_unlocks.sql
 ```
 
@@ -574,115 +596,39 @@ Next future schema migration:
 025_*.sql
 ```
 
+Do not allocate a new migration number without first checking the branch.
+
+---
+
 ## Hard rules inherited forward
 
 ```text
-DO NOT use admin_audit_log as behavioral analytics.
-DO NOT use user_score_events as a generic analytics warehouse.
-DO NOT create a second XP/referral/auth/admin/profile system.
-DO NOT make Goin spending reduce lifetime XP/reputation.
-DO NOT add a mutable users.balance as economy source of truth.
-DO NOT trust frontend balance checks.
-DO NOT trust analytics events as economic authority.
-DO NOT convert XP 1:1 into Goin.
-DO NOT issue Goin for draft_created in V1 unless policy is explicitly changed.
-DO NOT retroactively reprice historical Goin issuance/unlocks.
-DO NOT charge Prompt page views.
-DO NOT charge on every Copy click.
-DO NOT expose another user's economy history, unlock state, or spendable balance.
-DO NOT treat the 250 toman reference as a buy/cash-out guarantee.
-DO NOT treat the current 5-Goin Prompt unlock as a permanent Marketplace price.
-DO NOT put Prompt text/sellable knowledge into analytics or Growth metrics.
-DO NOT call measured-surface audience whole-product DAU/MAU.
-DO NOT make /api/archive/:id public merely for SEO.
-DO NOT introduce fiat purchase/cash-out/payout before its roadmap phase.
-DO NOT start the full Marketplace before Domain Expansion is evaluated.
-DO NOT expose protected Prompt bodies merely because routes become SSR.
-DO NOT treat every route as SSR-worthy merely because global SSR is enabled.
-DO NOT delete the old static SEO fallback before the new runtime path is verified.
-DO NOT expose Docker-internal service origins to browser runtime configuration.
-DO NOT make every Creator account indexable without a thin-content/quality eligibility policy.
-DO NOT activate FA route prefixes before locale-aware internal navigation is safe.
-DO NOT make Git and Arvan uncontrolled equal Blog sources of truth.
+DO NOT weaken authorization for SEO.
+DO NOT make GET /api/archive/:id public.
+DO NOT expose protected Prompt bodies/variants/unlock-gated content.
+DO NOT expose private Drafts.
+DO NOT expose email, balance, sessions or permissions in public SEO projections.
+DO NOT use cookie-dependent canonical language.
+DO NOT create indexable fake localization fallback pages.
+DO NOT let route-level SEO override staging NUXT_PUBLIC_NOINDEX=true.
+DO NOT query GitHub per Blog request.
 DO NOT embed Blog images as base64 Markdown payloads.
+DO NOT create a second uncontrolled Blog source of truth beside Git.
+DO NOT use admin_audit_log as behavioral analytics.
 ```
 
-## Phase 2 — Domain Expansion after Milestone 21.5
+---
 
-Source of truth:
+## Resume instruction
 
-```text
-docs/strategy/EXECUTION_ROADMAP_V1.md
-```
-
-Strategic order remains:
+When continuing in a new chat:
 
 ```text
-Phase 1 — Growth Foundation     DONE
-Interim Milestone 21.5          IN PROGRESS
-Phase 2 — Domain Expansion      NEXT STRATEGIC PHASE
-Phase 3 — Marketplace Activation
-Phase 4 — AI Enhancement
-```
-
-Domain priority hypothesis:
-
-```text
-1. Content Creation
-2. Programming
-3. Education
-4. Marketing / Advertising
-```
-
-The first Domain Expansion implementation must still begin with Content Creation and must be based on domain research and semantic modeling rather than UI cloning.
-
-Required sequence:
-
-```text
-research domain
-  -> audit existing Semantic Prompt Engine capabilities
-  -> identify domain semantic components
-  -> define independent modules
-  -> define wiring / compile semantics
-  -> design the first Content Creation generator
-  -> implement incrementally
-  -> verify real user value
-```
-
-Founder research for Content Creation may run in parallel with Milestone 21.5 engineering. Do not build Programming in parallel. Use Content Creation as the first proof that Prompt Draft's semantic architecture generalizes beyond image prompting.
-
-## Primary strategy sources
-
-```text
-docs/strategy/PRODUCT_STRATEGY_V1.md
-docs/strategy/PRICING_AND_INTERNAL_ECONOMY_V1.md
-docs/strategy/EXECUTION_ROADMAP_V1.md
-docs/strategy/MILESTONE_21_CLOSURE.md
-docs/strategy/MILESTONE_21_GROWTH_FOUNDATION.md
-docs/strategy/ADR_001_PUBLIC_RENDERING_STRATEGY.md
-docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
-docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
-docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
-docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
-docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
-docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
-```
-
-Accepted Phase 2 implementation checkpoint:
-
-```text
-72acb6beb5e6e21232c945a05534bc41c0dabdc3
-```
-
-Accepted Phase 3 closure checkpoint:
-
-```text
-adbff89e4c65ac8fa26cca58dee1040f62c808a1
-```
-
-Current next implementation phase:
-
-```text
-Phase 21.5.4A — SEO Contracts & Route Semantics
+1. read this STATUS.md
+2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md for accepted 4A evidence
+4. inspect the latest feature/growth-foundation branch state
+5. continue with 21.5.4B Public Prompt Architecture
+6. discuss/lock architecture before broad implementation changes
+7. update Phase 4 source/status after each accepted slice
 ```
