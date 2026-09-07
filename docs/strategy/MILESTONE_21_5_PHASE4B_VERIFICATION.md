@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / DESIGN LOCKED / IMPLEMENTATION STARTED / NOT ACCEPTED**
+Status: **IN PROGRESS / DESIGN LOCKED / 4B.1 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
 
 Date: 2026-09-07
 
@@ -39,7 +39,7 @@ Automated PASS alone is not acceptance.
 4B architecture audit                     DONE
 4B architecture/design proposal           DONE / FOUNDER AGREED
 4B source-of-truth contract               DONE
-4B.1 backend public read model            IN PROGRESS
+4B.1 backend public read model            IMPLEMENTED / LOCAL VERIFY NEXT
 4B.2 Nuxt Public Prompt SSR route         NOT STARTED
 4B.3 SEO metadata                         NOT STARTED
 4B.4 public-link migration                NOT STARTED
@@ -69,24 +69,22 @@ GET /api/archive/:id
 
 ## 3. 4B.1 Backend contract gates
 
-Required endpoint:
+Implemented endpoint:
 
 ```text
 GET /api/public/prompts/:id
 ```
 
-Required behavior:
+Implemented behavior contract:
 
 ```text
 published numeric public id -> 200
-missing id                  -> 404
-Archive draft               -> 404
-Archive archived            -> 404
-invalid id                  -> unavailable / safe client error semantics
-non-GET                     -> 405
+missing/non-public id       -> 404
+invalid id                  -> 404 without DB read
+non-GET                     -> 405 + Allow: GET
 ```
 
-Required DTO allowlist:
+Implemented DTO allowlist:
 
 ```text
 id
@@ -104,7 +102,7 @@ images.thumbnailUrl
 Forbidden serialized fields/content:
 
 ```text
-prompt
+protected Prompt body
 variants
 sourceTitle
 sourceUserId
@@ -121,24 +119,51 @@ private Draft payloads
 Critical implementation invariant:
 
 ```text
-The public database query itself must not SELECT prompt or variants.
+The public database query itself does not SELECT prompt or variants.
+The public database query requires items.status='published'.
+```
+
+Implementation files:
+
+```text
+backend/src/publicPrompt.mjs
+backend/src/publicPrompt.test.mjs
+backend/src/index.mjs
+backend/package.json
+```
+
+Target test command:
+
+```text
+cd backend
+npm run test:public-prompt
+```
+
+or in the rebuilt API container:
+
+```text
+docker compose exec api npm run test:public-prompt
 ```
 
 ### Automated verification
 
+Coverage is implemented but has not yet been executed on the founder checkout/container.
+
 ```text
-[ ] published item contract test
-[ ] missing item test
-[ ] draft item test
-[ ] archived item test
-[ ] invalid id test
-[ ] non-GET 405 test
-[ ] exact/allowlisted response shape test
-[ ] protected-body sentinel leakage regression test
-[ ] protected variants sentinel leakage regression test
-[ ] storage key leakage regression test
-[ ] GET /api/archive/:id protection regression
+[ ] published item contract test PASS
+[ ] missing/non-public item 404 test PASS
+[ ] invalid id test PASS
+[ ] non-GET 405 test PASS
+[ ] exact/allowlisted response shape test PASS
+[ ] protected-body sentinel leakage regression test PASS
+[ ] protected variants sentinel leakage regression test PASS
+[ ] storage key leakage regression test PASS
+[ ] SQL published-only invariant test PASS
+[ ] SQL protected-column exclusion test PASS
+[ ] GET /api/archive/:id protection regression PASS
 ```
+
+Draft/archived public behavior is enforced by the single `items.status='published'` query condition; real-state smoke should still verify both states where test fixtures are available.
 
 ---
 
@@ -193,37 +218,37 @@ The public database query itself must not SELECT prompt or variants.
 
 ## 7. Build / regression gates
 
-Target automated commands will be recorded once implementation is wired.
-
 Minimum expected gate set:
 
 ```text
-[ ] Phase 4B public Prompt contract tests PASS
+[ ] backend npm run test:public-prompt PASS
 [ ] pnpm test:seo-contracts PASS
 [ ] pnpm seo:audit-routes:strict PASS
 [ ] pnpm build PASS
 ```
 
-Any new targeted test command added by 4B must be documented here and in `package.json`.
+No automated result may be inferred from implementation alone.
 
 ---
 
 ## 8. Founder local/staging smoke
 
-To be executed only after implementation/automated verification is complete.
+To be executed progressively as each slice becomes runnable.
 
-### Public API
+### 4B.1 Public API smoke
 
 ```text
+[ ] rebuilt API container is healthy
 [ ] published id 200
 [ ] missing id 404
-[ ] draft id 404
-[ ] archived id 404
-[ ] response contains no protected fields
-[ ] api.grassic.ir path works as expected
+[ ] draft id 404 when fixture available
+[ ] archived id 404 when fixture available
+[ ] invalid id 404
+[ ] response contains no protected fields/content
+[ ] api.grassic.ir endpoint works as expected after staging rebuild
 ```
 
-### EN public Prompt
+### EN public Prompt — after 4B.2/4B.3
 
 ```text
 [ ] grassic.ir/prompt/<published-id> 200
@@ -235,7 +260,7 @@ To be executed only after implementation/automated verification is complete.
 [ ] staging robots noindex protection present
 ```
 
-### FA public Prompt
+### FA public Prompt — after 4B.2/4B.3
 
 ```text
 [ ] grassic.ir/fa/prompt/<published-id> 200
@@ -263,17 +288,46 @@ To be executed only after implementation/automated verification is complete.
 
 ---
 
-## 9. Verification evidence log
+## 9. Implementation evidence log
 
-No acceptance evidence recorded yet.
+Architecture/documentation:
 
-Current state:
+```text
+2a9a58eacc371ee96dc1b073c582d00093f69293
+  docs: lock Phase 4B public prompt architecture
+
+8902ab959e6b95513a3e7d3d4e60a55dbc76180f
+  docs: add Phase 4B verification ledger
+```
+
+4B.1 backend implementation:
+
+```text
+97a0f7a2251f9e43d6a98fe07f0b43bb9c3ead16
+  feat: add sanitized public prompt read model
+
+76664e61af26cbcf112fb6c609667d202d3afee2
+  test: cover public prompt projection boundary
+
+89c146eb54ac5874194e7fa1980bd1663a83859a
+  feat: route public prompt endpoint
+
+f6a60f17e69f046d9bf3392dbd688b09edc7967a
+  test: add public prompt contract command
+
+1c1cc903c4e3e8b0e2f824f38c17ef3e0ea7e1a9
+  docs: record Phase 4B backend slice progress
+```
+
+Current verification state:
 
 ```text
 DESIGN LOCKED
-IMPLEMENTATION STARTED
-FOUNDER SMOKE NOT RUN
+4B.1 IMPLEMENTED
+AUTOMATED TEST EXECUTION PENDING
+FOUNDER API SMOKE PENDING
+4B.2 NOT STARTED
 NOT ACCEPTED
 ```
 
-Implementation commits and PASS evidence must be appended here as work proceeds.
+Do not advance to accepted status until the documented founder verification gates are satisfied.
