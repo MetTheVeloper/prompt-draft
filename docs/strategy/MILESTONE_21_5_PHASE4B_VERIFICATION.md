@@ -145,21 +145,58 @@ or in the rebuilt API container:
 docker compose exec api npm run test:public-prompt
 ```
 
-### Automated verification
+### Assistant-side isolated contract verification
 
-Coverage is implemented but has not yet been executed on the founder checkout/container.
+The exact committed `publicPrompt.mjs` and `publicPrompt.test.mjs` blobs were re-read from GitHub, syntax-checked and executed in an isolated Node test harness with `queryDatabase` replaced by a stub so no production/private database was accessed.
+
+Result:
 
 ```text
-[ ] published item contract test PASS
-[ ] missing/non-public item 404 test PASS
-[ ] invalid id test PASS
-[ ] non-GET 405 test PASS
-[ ] exact/allowlisted response shape test PASS
-[ ] protected-body sentinel leakage regression test PASS
-[ ] protected variants sentinel leakage regression test PASS
-[ ] storage key leakage regression test PASS
-[ ] SQL published-only invariant test PASS
-[ ] SQL protected-column exclusion test PASS
+node --test publicPrompt.test.mjs
+8 tests
+8 pass
+0 fail
+```
+
+Covered in this isolated PASS:
+
+```text
+explicit DTO allowlist
+locale availability without fallback
+published-only SQL condition
+SQL protected-column exclusions
+protected-body sentinel stripping
+variant sentinel stripping
+storage-key sentinel stripping
+published handler 200 contract
+missing/non-public 404 contract
+invalid-id 404 without DB read
+non-GET 405 + Allow: GET
+unrelated-route non-claim behavior
+```
+
+This PASS validates the isolated read-model/handler contract only. It does **not** replace the founder Docker/API smoke or real database-state verification.
+
+The protected Archive implementation was re-read after 4B.1 changes and remains on blob:
+
+```text
+backend/src/archive.mjs
+fbe652401ab33bbb8e3f8cc2788f4537972eee90
+```
+
+Its existing unauthenticated `401` and missing-email `403` gate still precedes `GET /api/archive/:id` detail handling.
+
+### Founder/container automated verification
+
+Still pending on the real checkout/container:
+
+```text
+[ ] backend npm run test:public-prompt PASS in rebuilt API environment
+[ ] published real item contract PASS
+[ ] missing/non-public real item 404 PASS
+[ ] invalid id PASS
+[ ] non-GET 405 PASS
+[ ] exact/allowlisted response shape PASS
 [ ] GET /api/archive/:id protection regression PASS
 ```
 
@@ -221,13 +258,13 @@ Draft/archived public behavior is enforced by the single `items.status='publishe
 Minimum expected gate set:
 
 ```text
-[ ] backend npm run test:public-prompt PASS
+[ ] backend npm run test:public-prompt PASS in founder/container environment
 [ ] pnpm test:seo-contracts PASS
 [ ] pnpm seo:audit-routes:strict PASS
 [ ] pnpm build PASS
 ```
 
-No automated result may be inferred from implementation alone.
+No founder/runtime automated result may be inferred from isolated implementation testing alone.
 
 ---
 
@@ -319,12 +356,20 @@ f6a60f17e69f046d9bf3392dbd688b09edc7967a
   docs: record Phase 4B backend slice progress
 ```
 
+Assistant-side isolated verification:
+
+```text
+publicPrompt contract test -> PASS 8/8
+protected archive blob     -> unchanged fbe652401ab33bbb8e3f8cc2788f4537972eee90
+```
+
 Current verification state:
 
 ```text
 DESIGN LOCKED
 4B.1 IMPLEMENTED
-AUTOMATED TEST EXECUTION PENDING
+ISOLATED CONTRACT TEST PASS 8/8
+FOUNDER/CONTAINER TEST PENDING
 FOUNDER API SMOKE PENDING
 4B.2 NOT STARTED
 NOT ACCEPTED
