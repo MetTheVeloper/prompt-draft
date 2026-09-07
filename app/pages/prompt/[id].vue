@@ -1,6 +1,10 @@
 <script setup lang="ts">
 import type { PublicPromptLocale } from '~/composables/usePublicPrompt'
 
+definePageMeta({
+  key: route => route.fullPath,
+})
+
 const route = useRoute()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
