@@ -4,7 +4,7 @@ services:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "3000:3000"
+      - "${FRONTEND_BIND_ADDRESS:-127.0.0.1}:3000:3000"
     environment:
       HOST: 0.0.0.0
       PORT: 3000
@@ -26,7 +26,7 @@ services:
     build:
       context: ./backend
     ports:
-      - "4000:4000"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:4000:4000"
     environment:
       HOST: 0.0.0.0
       PORT: 4000
