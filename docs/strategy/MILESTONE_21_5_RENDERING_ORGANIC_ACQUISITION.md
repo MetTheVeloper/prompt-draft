@@ -1,6 +1,6 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–3 DONE / PHASE 4 NEXT**
+Status: **IN PROGRESS / PHASES 1–3 DONE / PHASE 4 IN PROGRESS**
 
 Date: 2026-09-07
 
@@ -27,6 +27,7 @@ docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/STATUS.md
 ```
 
@@ -296,7 +297,13 @@ Phase 3 is closed.
 
 ## 6. Phase 4 — SEO Platform & Public Content Architecture
 
-Status: **NEXT / NOT STARTED**
+Status: **IN PROGRESS / 4A STARTED**
+
+Canonical Phase 4 record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+```
 
 Goal:
 
@@ -304,78 +311,40 @@ Goal:
 replace tactical SPA SEO workarounds with native rendering where appropriate and establish reusable public-content SEO primitives
 ```
 
-Required work:
+Execution slices:
 
 ```text
-server-rendered route metadata
-canonical URL contract
-Open Graph/Twitter metadata
-structured data only when authoritative
-static + dynamic sitemap architecture
-robots policy
-public Prompt canonical route direction
-public Creator canonical route direction
-/discover/* cleanup from post-generate workaround
-Blog route/content architecture
-Blog metadata + sitemap
-internal linking
-404/redirect/canonical behavior
-locale/indexing policy
+21.5.4A — SEO Contracts & Route Semantics                         IN PROGRESS
+21.5.4B — Public Prompt Architecture                              NOT STARTED
+21.5.4C — Public Creator Architecture + Indexability Policy       NOT STARTED
+21.5.4D — Sitemap / Robots / Discovery Migration                  NOT STARTED
+21.5.4E — Blog V1                                                 NOT STARTED
+21.5.4F — SEO Integration / Verification / Legacy Retirement      NOT STARTED
 ```
 
-### Creator public profile requirement
-
-Accepted product direction:
+Accepted Phase 4 architecture now includes:
 
 ```text
-/user
-  -> signed-in personal/account surface
-  -> client-oriented/private product UX
-  -> not the canonical indexable Creator page
-
-/creator/:username
-  -> future public Creator profile surface
-  -> SSR/SEO-capable
-  -> contains intentionally public creator/profile information and public publications only
+public Prompt canonical route -> /prompt/:id
+public Creator canonical route -> /creator/:username
+/user remains private/account-oriented and non-canonical for Creator SEO
+Creator thin/new/incomplete pages may remain accessible but noindex
+nonexistent/removed/moderation-prohibited Creator state -> unavailable/404 semantics
+Creator eligibility must be shared and server-authoritative
+English/default locale -> unprefixed URL
+Persian -> /fa prefix
+both EN/FA may be indexable when authoritative localized content exists
+self-canonical localized URLs + reciprocal language alternates
+Blog V1 -> repository-backed editorial content, not a database CMS
+/manage/blog -> Markdown-producing admin authoring UI
+current preferred editor candidate -> md-editor-v3, implementation-time validated
+Git repository -> canonical editorial source
+Arvan Object Storage -> Blog mirror/emergency publication store
+Docker/Nitro deployed content -> normal request-time Blog source
+Blog images -> existing/shared Arvan media upload pipeline; no base64 in Markdown
 ```
 
-A user becomes a candidate for search indexing when the account has meaningful public output such as public Drafts, future products or other intentionally published content.
-
-However, having an account or a single trivial public item must **not** automatically guarantee indexability.
-
-Phase 4 must define a deterministic Creator indexability/quality policy to prevent thin-content profile proliferation.
-
-Candidate policy inputs may include:
-
-```text
-amount of meaningful public content
-content completeness/substance
-profile/public identity completeness
-publication quality/visibility state
-spam/abuse/moderation state
-duplicate/low-value content signals
-other evidence of a substantive public Creator surface
-```
-
-Exact thresholds and weighting are deliberately **TBD** until Phase 4 design discussion; do not hard-code arbitrary thresholds earlier.
-
-Important architecture rule:
-
-```text
-Creator eligibility must be a shared server-authoritative policy,
-not a one-off conditional implemented only in the Vue page.
-```
-
-The same eligibility result should drive, where appropriate:
-
-```text
-SSR robots/index metadata
-sitemap inclusion/exclusion
-canonical public Creator behavior
-future search/discovery eligibility
-```
-
-If a public Creator page does not satisfy the accepted indexability policy, the default SEO behavior should be `noindex` and exclusion from indexable sitemap surfaces, while final accessibility/404 behavior is decided in Phase 4.
+Locale-prefix activation is intentionally gated behind an internal-navigation audit because the current application still contains raw internal paths that could otherwise drop a Persian user back onto an unprefixed English route. This is an implementation-order constraint, not a reversal of the accepted `prefix_except_default` direction.
 
 Security boundary remains absolute:
 
@@ -386,7 +355,7 @@ SSR must not bypass account/email authorization
 public SEO projections expose only intentionally public information
 ```
 
-The existing `scripts/generate-public-seo.ts` must be audited now that the new runtime path is proven. Remove, reduce or retain only the parts still justified; do not keep duplicate SEO systems by inertia.
+The existing `scripts/generate-public-seo.ts` remains a temporary historical/rollback compatibility path. It must be removed or reduced only after native Phase 4 SEO/sitemap behavior is verified; duplicate SEO systems must not survive by inertia.
 
 ---
 
@@ -449,7 +418,18 @@ responsive EN/FA-compatible presentation
 analytics for article view and meaningful product action
 ```
 
-Content storage should optimize for low operational complexity and later migration. Do not block the acquisition experiment on building a Creator-grade rich-text publishing system.
+Accepted V1 storage/authoring direction:
+
+```text
+repository-backed Article + Localization contract
+admin-friendly /manage/blog Markdown authoring
+Git canonical source
+Arvan mirror + emergency pending-publication path
+normal request-time serving from deployed/local Nuxt/Nitro content
+existing Arvan media pipeline for article images
+```
+
+The repository contract must be structured so a later database/CMS migration changes storage, not public article semantics.
 
 ---
 
@@ -516,7 +496,10 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Begin Phase 4 with an audit of current SEO metadata, canonical/robots/sitemap behavior,
-public Prompt/Creator route constraints, Blog needs, and the legacy generate-public-seo workaround.
-Define the reusable SEO/public-content contracts before implementing route-specific features.
+Continue Phase 4A:
+  -> mature the existing usePublicSeo primitive
+  -> apply route-level metadata to existing SSR acquisition surfaces
+  -> audit/migrate localized internal navigation
+  -> activate EN unprefixed + FA /fa routing after the navigation regression gate is safe
+  -> then begin Public Prompt 4B
 ```
