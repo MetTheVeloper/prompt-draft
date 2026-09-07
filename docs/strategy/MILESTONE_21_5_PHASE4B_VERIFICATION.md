@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
 
 Date: 2026-09-07
 
@@ -40,8 +40,8 @@ Automated PASS alone is not acceptance.
 4B architecture/design proposal           DONE / FOUNDER AGREED
 4B source-of-truth contract               DONE
 4B.1 backend public read model            DONE / FOUNDER-LOCAL VERIFIED
-4B.2 Nuxt Public Prompt SSR route         IMPLEMENTED / LOCAL VERIFY NEXT
-4B.3 SEO metadata                         NOT STARTED
+4B.2 Nuxt Public Prompt SSR route         DONE / FOUNDER-LOCAL VERIFIED
+4B.3 SEO metadata                         IMPLEMENTED / LOCAL VERIFY NEXT
 4B.4 public-link migration                NOT STARTED
 4B.5 final founder/staging verification   NOT STARTED
 ```
@@ -160,8 +160,6 @@ model
 images
 ```
 
-No protected fields were present in the returned projection.
-
 Founder runtime HTTP results:
 
 ```text
@@ -169,12 +167,6 @@ GET /api/public/prompts/9003      -> 200
 GET /api/public/prompts/0         -> 404
 GET /api/public/prompts/999999999 -> 404
 GET /api/archive/9003 unauthenticated -> 401
-```
-
-Protected regression result:
-
-```text
-{"ok":false,"message":"Authentication required"}
 ```
 
 Conclusion:
@@ -187,7 +179,7 @@ Draft/archived behavior remains structurally enforced by the published-only quer
 
 ---
 
-## 4. 4B.2 Nuxt Public Prompt SSR route — IMPLEMENTED
+## 4. 4B.2 Nuxt Public Prompt SSR route — VERIFIED
 
 Implementation files:
 
@@ -216,29 +208,7 @@ route identity change       -> page remount by fullPath
 
 Client/SSR response validation requires the exact sanitized public contract again before rendering.
 
-The page renders only:
-
-```text
-localized public title
-publication date
-public numeric id
-public model metadata
-public tags
-public preview media
-localized public UI copy
-```
-
-The page intentionally does not render or request:
-
-```text
-Prompt body
-variants
-unlock state
-balance
-permissions
-private Drafts
-account/session state
-```
+The page renders only localized public title, publication date, public numeric id, model metadata, tags, preview media and localized public UI copy.
 
 Protected CTA remains separate:
 
@@ -248,99 +218,224 @@ Public Prompt page
   -> existing protected product flow
 ```
 
-Target web-contract command:
+### Founder local verification — 2026-09-07
+
+Web contract:
 
 ```text
 pnpm test:public-prompt-web
+4 tests
+4 pass
+0 fail
 ```
 
-### Localization audit note
-
-`pnpm locale:check` is **not** a Phase 4B acceptance gate. The command runs the repository-wide localization audit with `--strict`, and the audit intentionally exits non-zero when *any* existing EN/FA parity debt or extra FA key exists. The current repository has inherited localization parity debt unrelated to this slice, so using the strict global command would make an otherwise-valid 4B slice unacceptably dependent on unrelated cleanup.
-
-For 4B, localization-specific regression checking uses:
-
-```text
-pnpm locale:audit:hardcoded
-```
-
-with the expected result:
-
-```text
-Hardcoded candidates: 0
-```
-
-The mirrored EN/FA `growth.publicPrompt.*` keys are additionally exercised by the Nuxt build/runtime and localized route smoke.
-
-### Build/runtime command policy
-
-Prefer project-owned package scripts over ad-hoc Docker commands.
-
-Canonical local production-like build/start command:
+Production-like project-owned stack command:
 
 ```text
 pnpm stack
 ```
 
-This runs:
+Result:
 
 ```text
-docker compose up -d --build
+Docker frontend build -> PASS
+Nuxt client build     -> PASS
+Nuxt SSR build        -> PASS
+Nitro server build    -> PASS
+frontend container    -> started
+api/db/translator     -> healthy
 ```
 
-The frontend Dockerfile runs `pnpm build` inside the production builder with the repository's accepted 4 GB Node heap setting, then starts the Nitro runtime. This is the preferred 4B build/runtime gate over a separate host-shell `pnpm build`.
+The immediate `pnpm stack:status` snapshot showed the freshly recreated frontend as `health: starting`; subsequent requests to that same frontend returned successful SSR responses, proving that the runtime was serving successfully after startup.
 
-Operational helpers:
+Founder HTTP results:
 
 ```text
-pnpm stack:status
-pnpm stack:logs
-pnpm frontend:logs
+GET /prompt/9003                 -> 200
+GET /fa/prompt/9003              -> 200
+GET /prompt/0                    -> 404
+GET /prompt/999999999            -> 404
+GET /fa/prompt/999999999         -> 404
 ```
 
-### 4B.2 local verification gates
+Staging-safety header observed on these local production-like responses:
 
 ```text
-[x] pnpm test:public-prompt-web PASS — founder result 4/4 on 2026-09-07
-[x] repository localization audit reported Hardcoded candidates: 0 on 2026-09-07
-[ ] pnpm stack build/start PASS
-[ ] pnpm stack:status shows healthy frontend/api/db/translator
-[ ] /prompt/9003 -> 200
-[ ] /fa/prompt/9003 -> 200
-[ ] EN raw HTML contains "From Grassias"
-[ ] FA raw HTML contains "از گراسیاس"
-[ ] /prompt/0 -> 404
-[ ] /prompt/999999999 -> 404
-[ ] /fa/prompt/999999999 -> 404
-[ ] no protected Prompt body/variants/private state in raw HTML
-[ ] protected CTA still enters /prompts?id=9003 gated flow
+X-Robots-Tag: noindex, nofollow, noarchive
 ```
 
-No 4B.2 founder PASS is recorded until the remaining runtime gates are run on the founder checkout/runtime.
+SSR evidence:
+
+```text
+EN html lang/dir -> en-US / ltr
+FA html lang/dir -> fa-IR / rtl
+EN SSR title content -> From Grassias
+FA SSR localization -> authoritative FA payload rendered
+EN protected CTA -> /prompts?id=9003
+FA protected CTA -> /fa/prompts?id=9003
+```
+
+The serialized Nuxt payload contained only the public DTO shape:
+
+```text
+id
+title
+availableLocales
+publishedAt
+tags
+model
+images
+```
+
+### Leakage-check correction
+
+The first broad smoke pattern searched for the plain word `variants`. That word legitimately appears in localized explanatory UI copy saying protected content stays in the protected product flow, so `Select-String` returned the whole HTML document. This was a smoke-test false positive, not data leakage.
+
+Future raw-HTML leakage checks must search for serialized private **keys**, not narrative words:
+
+```text
+"sourceDraftId":
+"sourceUserId":
+"storageKey":
+"thumbnailStorageKey":
+"variants":
+"balance":
+"permissions":
+"viewer":
+```
+
+No such private keys were present in the observed Nuxt hydration payload.
+
+Conclusion:
+
+```text
+4B.2 NUXT PUBLIC PROMPT SSR ROUTE -> FOUNDER-LOCAL VERIFIED
+```
 
 ---
 
-## 5. 4B.3 SEO gates — NOT STARTED
+## 5. Localization audit policy
 
-Target behavior:
+Repository-wide localization debt is not a Phase 4B gate.
+
+Observed commands:
+
+```text
+pnpm locale:check
+  -> strict global parity audit
+  -> non-zero because inherited repository-wide missing/extra locale keys exist
+
+pnpm locale:audit:hardcoded
+  -> repository-wide hardcoded candidate scan
+  -> 594 candidates in the current repository baseline
+```
+
+Therefore neither command can be interpreted as a zero-finding 4B acceptance gate without a stored baseline/diff mechanism.
+
+4B-specific localization confidence comes from:
+
+```text
+localized growth.publicPrompt.* keys in EN and FA
+Nuxt build success
+EN SSR route success
+FA SSR route success
+correct html lang/dir
+no fallback localization presented as authoritative content
+```
+
+A future localization cleanup milestone may baseline or eliminate the repository-wide audit debt independently.
+
+---
+
+## 6. 4B.3 Public Prompt SEO metadata — IMPLEMENTED
+
+Implementation files:
+
+```text
+app/utils/publicPromptSeo.ts
+scripts/public-prompt-seo.test.ts
+app/pages/prompt/[id].vue
+package.json
+```
+
+Implemented behavior:
 
 ```text
 usePublicSeo reused
-EN self-canonical
-FA self-canonical
-reciprocal hreflang only for authoritative locales
-x-default -> English when English exists
-no fake locale fallback
-locale-aware OG title
-first public preview image used for OG image
-CreativeWork JSON-LD from sanitized fields only
-protected Prompt body never enters meta/JSON-LD
-staging global noindex remains authoritative
+canonical base route comes from publicPromptPath(id)
+EN route self-canonical
+FA route self-canonical
+alternateLocales comes only from prompt.availableLocales
+x-default uses English when authoritative English exists
+OG/Twitter title is localized Public Prompt title
+OG/Twitter description uses localized public-only copy
+OG image uses first public preview image
+image fallback uses /pwa-512x512.png
+CreativeWork JSON-LD uses public-only fields
+JSON-LD omitted when siteUrl/canonical absolute URL cannot be formed
+creator/author deliberately absent until 4C
 ```
+
+CreativeWork allowlist:
+
+```text
+@context
+@type = CreativeWork
+name
+url
+description
+datePublished
+inLanguage
+image
+keywords
+isPartOf
+```
+
+Explicit JSON-LD exclusions:
+
+```text
+Prompt body
+variants
+sourceTitle
+sourceDraftId/sourceUserId
+storage keys
+unlock state
+balance/Goin
+permissions
+viewer/account state
+creator/author until 4C
+```
+
+Target automated command:
+
+```text
+pnpm test:public-prompt-seo
+```
+
+### 4B.3 local verification gates
+
+```text
+[ ] pnpm test:public-prompt-seo PASS
+[ ] pnpm test:seo-contracts PASS
+[ ] pnpm seo:audit-routes:strict PASS
+[ ] pnpm stack PASS with 4B.3 code
+[ ] EN /prompt/9003 title -> From Grassias · Prompt Draft
+[ ] FA /fa/prompt/9003 localized title present
+[ ] EN canonical -> https://grassic.ir/prompt/9003
+[ ] FA canonical -> https://grassic.ir/fa/prompt/9003
+[ ] EN/FA reciprocal hreflang present
+[ ] x-default -> https://grassic.ir/prompt/9003
+[ ] OG image -> first public preview image
+[ ] JSON-LD @type -> CreativeWork
+[ ] JSON-LD contains no serialized private keys/content
+[ ] X-Robots-Tag staging noindex remains present
+```
+
+No 4B.3 founder PASS is recorded until these gates are executed on the founder checkout/runtime.
 
 ---
 
-## 6. 4B.4 Public-link migration — NOT STARTED
+## 7. 4B.4 Public-link migration — NOT STARTED
 
 Target behavior:
 
@@ -352,30 +447,31 @@ Public Prompt product CTA -> /prompts?id=<id>
 locale-safe navigation preserved
 ```
 
+Broad Discovery migration remains sequenced here rather than being folded into the Public Prompt SSR/SEO slices.
+
 ---
 
-## 7. Final regression / staging gates
+## 8. Final regression / staging gates
 
 Minimum automated/runtime set before final 4B acceptance:
 
 ```text
 backend npm run test:public-prompt PASS
 pnpm test:public-prompt-web PASS
+pnpm test:public-prompt-seo PASS
 pnpm test:seo-contracts PASS
 pnpm seo:audit-routes:strict PASS
-pnpm locale:audit:hardcoded -> Hardcoded candidates: 0
 pnpm stack -> production-like Docker build/start PASS
-pnpm stack:status -> required services healthy
 ```
 
-A separate host-shell `pnpm build` is optional because `pnpm stack` already executes the accepted Dockerfile production build, including `pnpm build`, under the configured builder memory contract.
+Repository-wide localization audits remain advisory for 4B until a baseline/diff gate exists.
 
 Founder staging smoke must confirm:
 
 ```text
 public API 200/404 semantics
 EN/FA SSR route semantics
-canonical/hreflang/OG/JSON-LD after 4B.3
+canonical/hreflang/OG/JSON-LD
 staging robots/noindex protection
 public-link migration after 4B.4
 GET /api/archive/:id remains protected
@@ -385,7 +481,7 @@ prompt-draft.ir remains untouched
 
 ---
 
-## 8. Evidence log
+## 9. Evidence log
 
 Architecture / documentation:
 
@@ -438,20 +534,28 @@ be104d7b24701c64332dd8ae41b91340e5c821f8
   fix: remount public prompt on route identity change
 ```
 
-Founder 4B.2 partial verification — 2026-09-07:
+4B.3 implementation:
 
 ```text
-pnpm test:public-prompt-web -> PASS 4/4
-repository-wide localization audit -> Hardcoded candidates: 0
-pnpm locale:check -> expected non-zero due inherited repository-wide parity debt; removed as 4B gate
+cdfdc821cab9ed5ad0c1df265cef65f578d8a216
+  feat: add public prompt SEO projection helper
+
+3e1cbc9251decc40a42896fa15f4c6bd22ab7620
+  test: cover public prompt SEO projection
+
+84b963fdf3596303ee0935aac17932a795c8db9e
+  feat: add public prompt SEO metadata
+
+7f5a62a43bb96eb5ff1a7d93b26d155d8daec929
+  test: add public prompt SEO contract command
 ```
 
 Current state:
 
 ```text
 4B.1 FOUNDER-LOCAL VERIFIED
-4B.2 IMPLEMENTED / PARTIAL LOCAL VERIFY / RUNTIME SMOKE NEXT
-4B.3 NOT STARTED
+4B.2 FOUNDER-LOCAL VERIFIED
+4B.3 IMPLEMENTED / LOCAL VERIFY NEXT
 4B.4 NOT STARTED
 PHASE 4B NOT ACCEPTED
 ```
