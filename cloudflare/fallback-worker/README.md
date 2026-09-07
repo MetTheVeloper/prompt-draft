@@ -1,5 +1,7 @@
 # Prompt Draft Cloudflare fallback Worker
 
+Status: **DEPLOYED / FOUNDER VERIFIED**
+
 This Worker sits in front of the staging frontend hostname and serves a self-contained fallback page when the Cloudflare Tunnel or its origin is unavailable.
 
 ## Intended staging route
@@ -7,6 +9,7 @@ This Worker sits in front of the staging frontend hostname and serves a self-con
 - Worker route: `grassic.ir/*`
 - Existing DNS/tunnel origin remains unchanged: `grassic.ir -> Cloudflare Tunnel -> frontend:3000`
 - `api.grassic.ir` is intentionally **not** routed through this Worker.
+- Worker Route failure mode: **Fail open (proceed)**.
 
 Cloudflare Worker Routes run in front of the existing origin. Inside the Worker, `fetch(request)` continues to the hostname's configured origin, which in this environment is the Tunnel.
 
@@ -35,20 +38,27 @@ It links users to the stable deployment at `https://prompt-draft.ir/` and offers
 1. Cloudflare Dashboard -> Workers & Pages -> Create application -> Worker.
 2. Name it `prompt-draft-staging-fallback`.
 3. Replace the generated Worker code with `worker.js` from this directory and deploy.
-4. Open the Worker -> Settings / Domains & Routes -> Add route.
+4. Open the Worker -> Domains -> Add Route.
 5. Select zone `grassic.ir`.
 6. Add route pattern `grassic.ir/*`.
-7. Do **not** create a Worker Custom Domain for `grassic.ir`; this must be a Worker Route so the existing Tunnel remains the origin.
+7. Select **Fail open (proceed)**.
+8. Do **not** create a Worker Custom Domain for `grassic.ir`; this must be a Worker Route so the existing Tunnel remains the origin.
 
 ## Verification
+
+Founder verification completed 2026-09-07.
 
 Healthy origin:
 
 ```cmd
-curl.exe -I https://grassic.ir
+curl.exe -s -D - -o NUL https://grassic.ir -H "Accept: text/html"
 ```
 
-Expected: normal Nuxt response, not the fallback header.
+Observed:
+
+- HTTP `200 OK`
+- normal Nuxt response
+- no `X-Prompt-Draft-Fallback` header
 
 Outage test:
 
@@ -56,17 +66,19 @@ Outage test:
 docker compose -f compose.yaml -f compose.cloudflare.yaml stop cloudflared
 ```
 
-Wait briefly, then:
+Then:
 
 ```cmd
 curl.exe -i https://grassic.ir -H "Accept: text/html"
 ```
 
-Expected:
+Observed:
 
 - HTTP `503 Service Unavailable`
 - `X-Prompt-Draft-Fallback: cloudflare-worker`
-- fallback HTML body
+- `X-Robots-Tag: noindex, nofollow, noarchive`
+- branded fallback HTML body
+- browser displayed the Prompt Draft fallback page instead of Cloudflare Error 1033
 
 Restore:
 
@@ -74,4 +86,4 @@ Restore:
 docker compose -f compose.yaml -f compose.cloudflare.yaml start cloudflared
 ```
 
-Then verify the normal application returns again.
+Post-restore verification returned HTTP `200 OK` again through the normal Nuxt/Tunnel path.
