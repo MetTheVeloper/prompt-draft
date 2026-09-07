@@ -68,15 +68,20 @@ export default defineNuxtConfig({
   },
   nitro: {
     prerender: {
-      routes: [
-        ...publicWizardRoutes,
-        ...(legacyStaticGenerate ? publicDiscoveryRoutes : []),
-        "/login",
-        "/manage",
-        "/manage/dashboard",
-        "/manage/users",
-        "/dashboard",
-      ],
+      // These routes are retained only for the deprecated static-export path.
+      // In the current Docker/Nitro runtime, app/client-only routes must stay
+      // request-time so server middleware can enforce X-Robots-Tag consistently.
+      routes: legacyStaticGenerate
+        ? [
+            ...publicWizardRoutes,
+            ...publicDiscoveryRoutes,
+            "/login",
+            "/manage",
+            "/manage/dashboard",
+            "/manage/users",
+            "/dashboard",
+          ]
+        : [],
     },
   },
   vite: {
