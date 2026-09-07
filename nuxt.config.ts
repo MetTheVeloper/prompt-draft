@@ -9,6 +9,28 @@ const publicDiscoveryRoutes = [
   "/discover/cinematic-game-art",
 ];
 
+const clientOnlyRoutes = [
+  "/create",
+  "/collage",
+  "/vectorizer",
+  "/history",
+  "/dashboard",
+  "/login",
+  "/manage",
+  "/manage/**",
+  "/wizard",
+  "/wizard/**",
+  "/prompts",
+  "/user",
+] as const;
+
+const clientOnlyRouteRules = Object.fromEntries(
+  clientOnlyRoutes.flatMap((route) => [
+    [route, { ssr: false }],
+    [`/fa${route}`, { ssr: false }],
+  ]),
+);
+
 const legacyStaticGenerate = process.env.NUXT_LEGACY_STATIC_GENERATE === "true";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
@@ -19,26 +41,10 @@ export default defineNuxtConfig({
 
   // Milestone 21.5 hybrid rendering baseline:
   // SSR is the default for public acquisition surfaces. Client-heavy/private
-  // application routes explicitly opt out below until SSR provides real value.
+  // application routes explicitly opt out in both EN and the accepted /fa
+  // namespace before localized routing is activated.
   ssr: true,
-  routeRules: {
-    "/create": { ssr: false },
-    "/collage": { ssr: false },
-    "/vectorizer": { ssr: false },
-    "/history": { ssr: false },
-    "/dashboard": { ssr: false },
-    "/login": { ssr: false },
-    "/manage": { ssr: false },
-    "/manage/**": { ssr: false },
-    "/wizard": { ssr: false },
-    "/wizard/**": { ssr: false },
-
-    // These are public today, but their current query-parameter contracts are
-    // not the final canonical acquisition routes. Keep them client-oriented
-    // until the public Prompt/Creator route work in the SEO phase.
-    "/prompts": { ssr: false },
-    "/user": { ssr: false },
-  },
+  routeRules: clientOnlyRouteRules,
   spaLoadingTemplate: true,
   experimental: {
     spaLoadingTemplateLocation: 'body',
@@ -51,8 +57,8 @@ export default defineNuxtConfig({
       process.env.NUXT_PUBLIC_API_BASE ||
       "http://127.0.0.1:4000",
     public: {
-      // Browser-visible API origin. Phase 3 will replace the local default with
-      // the real public API domain while retaining apiBaseInternal for SSR.
+      // Browser-visible API origin. Phase 3 replaces the local default with the
+      // real public API domain while retaining apiBaseInternal for SSR.
       apiBase: process.env.NUXT_PUBLIC_API_BASE || "http://127.0.0.1:4000",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL || "",
       // Staging safety switch. When true, app.vue emits a robots noindex meta
@@ -174,6 +180,8 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/i18n", "@pinia/nuxt"],
 
   i18n: {
+    // Phase 4A activation target is prefix_except_default. Keep no_prefix until
+    // route-name and programmatic-navigation compatibility auditing is closed.
     strategy: "no_prefix",
     defaultLocale: "en",
 
