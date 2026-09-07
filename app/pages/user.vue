@@ -22,6 +22,7 @@ const CREATE_DRAFT_COLLECTION_REFRESH_EVENT =
   "prompt-draft:create-editor:collection-refresh";
 
 const route = useRoute();
+const localePath = useLocalePath();
 const auth = useAuth();
 const avatarState = useUserAvatar();
 const coverState = useUserCover();
@@ -299,7 +300,7 @@ function confirmModerationDelete(draft: UserProfileDraftSummary) {
 }
 
 async function editDraft(draft: UserProfileDraftSummary) {
-  await navigateTo({ path: "/create", query: { draft: draft.id } });
+  await navigateTo({ path: localePath("/create"), query: { draft: draft.id } });
 }
 async function copyDraftOutput(draft: UserProfileDraftSummary) {
   if (isDraftActionBusy(draft.id)) return;
