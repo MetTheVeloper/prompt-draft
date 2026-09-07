@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4A SEO Contracts & Route Semantics
 
-Status: **IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-07
 
@@ -24,13 +24,15 @@ Phase 4A establishes the shared SEO and public-route contract before Public Prom
 
 This slice deliberately extends the existing `usePublicSeo` and Nuxt i18n architecture rather than creating parallel metadata/routing systems.
 
+Founder-local runtime verification is complete and 4A is accepted.
+
 ---
 
-## 2. Implemented SEO primitive
+## 2. Accepted SEO primitive
 
-`app/composables/usePublicSeo.ts` is now the shared public SEO primitive.
+`app/composables/usePublicSeo.ts` is the shared public SEO primitive.
 
-Implemented behavior:
+Accepted behavior:
 
 ```text
 reactive title + description
@@ -53,9 +55,9 @@ Staging noindex remains authoritative over any route-level intent.
 
 ---
 
-## 3. Locale routing contract activated
+## 3. Accepted locale routing contract
 
-Nuxt i18n now uses:
+Nuxt i18n uses:
 
 ```text
 defaultLocale: en
@@ -83,9 +85,9 @@ Client-heavy/private route rules explicitly cover both EN and `/fa` variants so 
 
 ---
 
-## 4. Locale-safe navigation work
+## 4. Locale-safe navigation
 
-Implemented compatibility work includes:
+Accepted compatibility work includes:
 
 ```text
 Header route comparisons use useRouteBaseName
@@ -99,18 +101,14 @@ login fallback and next-path behavior preserve locale
 localized login-loop prevention
 ```
 
-A reproducible route-audit script is included because GitHub branch code search is not sufficient evidence for an exhaustive migration.
-
-Commands:
+Reproducible source audit commands:
 
 ```powershell
 pnpm seo:audit-routes
 pnpm seo:audit-routes:strict
 ```
 
-The strict command must pass before Phase 4A is accepted.
-
-The audit currently checks for:
+The strict audit checks for locale-routing hazards including:
 
 ```text
 raw navigateTo('/...')
@@ -122,7 +120,11 @@ new URL('/...', window.location.origin) locale hazards
 direct route.name equality comparisons
 ```
 
-Any finding must be reviewed rather than suppressed blindly.
+Founder-local strict audit result:
+
+```text
+PASS: 441 source files scanned; no locale-routing hazards found.
+```
 
 ---
 
@@ -130,7 +132,7 @@ Any finding must be reviewed rather than suppressed blindly.
 
 `app/utils/publicRoutes.ts` defines reusable public route identity helpers.
 
-Current canonical contracts:
+Accepted canonical contracts:
 
 ```text
 home      -> /
@@ -144,17 +146,28 @@ Blog post -> /blog/:slug
 
 The helpers normalize/validate entity identifiers instead of scattering route construction throughout components.
 
-Contract tests:
+Contract command:
 
 ```powershell
 pnpm test:seo-contracts
+```
+
+Founder-local result:
+
+```text
+5 tests / 5 PASS
+static route contract
+Prompt positive numeric ID
+Creator normalized username
+Discovery normalized slug
+Blog normalized slug
 ```
 
 ---
 
 ## 6. Native metadata consumers
 
-Native SSR metadata is now attached to existing acquisition surfaces through the shared primitive.
+Native SSR metadata is attached to existing acquisition surfaces through the shared primitive.
 
 Current consumers:
 
@@ -164,7 +177,7 @@ Current consumers:
 /discover/* + /fa/discover/*
 ```
 
-Home and Guide use a shared route policy plugin.
+Home and Guide SEO policy is consumed from component setup in `default.vue`; it is not executed from a global Nuxt plugin.
 
 Discovery retains its existing page-level `usePublicSeo` integration and SSR-aware sanitized data path.
 
@@ -197,15 +210,17 @@ for application/private/legacy product surfaces including their `/fa` equivalent
 
 This server-level policy is independent of whether the route is SSR or client-rendered.
 
-The staging-wide middleware remains stronger and continues to noindex all staging responses when `NUXT_PUBLIC_NOINDEX=true`.
+Legacy application-route prerenders are now limited to the explicit legacy static-generate path so current Docker/Nitro request-time middleware remains authoritative for these headers.
+
+The staging-wide middleware remains stronger and noindexes all staging responses when `NUXT_PUBLIC_NOINDEX=true`.
 
 ---
 
 ## 8. Discovery status/redirect semantics
 
-Invalid `/discover/:slug` routes now produce a real 404 instead of rendering a not-found UI with HTTP 200 semantics.
+Invalid `/discover/:slug` routes produce a real HTTP 404 instead of a not-found UI with HTTP 200 semantics.
 
-Discovery route middleware also:
+Discovery route handling also:
 
 ```text
 handles malformed URL encoding as 404 rather than accidental 500
@@ -215,26 +230,27 @@ preserves query/hash during canonical redirect
 supports EN and /fa route spaces
 ```
 
+Founder-local canonical redirect smoke verified uppercase and trailing-slash variants in both locale spaces return permanent `301` redirects to the canonical lowercase/no-trailing-slash route.
+
 ---
 
 ## 9. Legacy compatibility state
 
-The Milestone 21 static compatibility path remains present for now:
+The Milestone 21 static compatibility path remains present:
 
 ```text
 scripts/generate-public-seo.ts
 pnpm generate
+NUXT_LEGACY_STATIC_GENERATE=true
 ```
 
 It is not the authoritative hybrid-runtime SEO path.
 
-Removal/reduction remains 4D/4F work after native runtime behavior is verified.
+Removal/reduction remains 4D/4F work after native runtime migration is complete.
 
 ---
 
-## 10. Founder-local verification gate
-
-Run from the latest `feature/growth-foundation` checkout.
+## 10. Founder-local acceptance evidence
 
 ### Gate A — route compatibility audit
 
@@ -242,13 +258,13 @@ Run from the latest `feature/growth-foundation` checkout.
 pnpm seo:audit-routes:strict
 ```
 
-Expected:
+Result:
 
 ```text
-PASS with zero unresolved locale-routing hazards
+PASS
+441 source files scanned
+zero unresolved locale-routing hazards
 ```
-
-If findings are reported, do not ignore them. Return the output for remediation before acceptance.
 
 ### Gate B — pure route contract tests
 
@@ -256,10 +272,11 @@ If findings are reported, do not ignore them. Return the output for remediation 
 pnpm test:seo-contracts
 ```
 
-Expected:
+Result:
 
 ```text
-all tests PASS
+PASS
+5 / 5 tests
 ```
 
 ### Gate C — production build
@@ -268,42 +285,43 @@ all tests PASS
 pnpm build
 ```
 
-Expected:
+Result:
 
 ```text
-Nuxt client build PASS
-Nuxt SSR server build PASS
-Nitro node-server output PASS
+PASS
+Nuxt client build
+Nuxt SSR server build
+Nitro node-server output
 ```
 
-### Gate D — preview/runtime smoke
+Non-blocking existing build warnings did not prevent acceptance.
 
-With the independent API available as required by the existing local preview contract:
+### Gate D — real staging/runtime route smoke
 
-```powershell
-pnpm preview
-```
-
-Verify:
+Verified through the Docker/Nitro + Cloudflare staging path on `https://grassic.ir`:
 
 ```text
-/                                    -> English home
-/fa                                  -> Persian home
-/guide                               -> English guide
-/fa/guide                            -> Persian guide
-/discover/posters-editorial          -> English discovery
-/fa/discover/posters-editorial       -> Persian discovery
+/                                    -> 200 English home
+/fa                                  -> 200 Persian home
+/guide                               -> 200 English guide
+/fa/guide                            -> 200 Persian guide
+/discover/posters-editorial          -> 200 English discovery
+/fa/discover/posters-editorial       -> 200 Persian discovery
 /discover/does-not-exist             -> 404
 /fa/discover/does-not-exist          -> 404
 ```
 
+Canonical uppercase/trailing-slash Discovery variants returned `301` to their canonical route in both EN and FA.
+
 ### Gate E — locale navigation regression
 
-Verify in both EN and FA:
+Founder browser smoke PASS across EN and FA including:
 
 ```text
 header navigation
 language switching
+route preservation during language switching
+query preservation, including /user?un=grass
 /create
 /login
 login redirect/next behavior
@@ -311,14 +329,15 @@ login redirect/next behavior
 /user
 /manage when authorized
 Wizard entry
-profile menu actions
+profile/menu navigation
+refresh on localized client-only routes
 ```
 
-FA navigation must remain inside `/fa/...` unless the user explicitly switches to English.
+FA navigation remained inside `/fa/...` unless language was explicitly switched to English.
 
-### Gate F — raw metadata inspection
+### Gate F — raw SSR metadata inspection
 
-Use a configured `NUXT_PUBLIC_SITE_URL` and inspect raw HTML for:
+Raw HTML inspection PASS for:
 
 ```text
 /
@@ -329,60 +348,175 @@ Use a configured `NUXT_PUBLIC_SITE_URL` and inspect raw HTML for:
 /fa/discover/posters-editorial
 ```
 
-Verify:
+Verified:
 
 ```text
-localized html lang/dir
-route-specific title/description
+EN html lang=en-US + dir=ltr
+FA html lang=fa-IR + dir=rtl
+route-specific localized title/description
 self-referencing canonical
-EN <-> FA hreflang alternates
+reciprocal en-US/fa-IR hreflang
 x-default -> English/default URL
-OG/Twitter metadata
-no protected data leakage
+correct og:locale + alternate locale
+OG title/description/url
+Twitter metadata
+staging robots meta
+no protected Prompt/account/private Draft leakage observed
 ```
 
 ### Gate G — noindex policy
 
-Verify application routes return the server noindex header in both locale spaces.
-
-Examples:
+Application/private route header smoke PASS in both locale spaces, including:
 
 ```text
+/create
 /prompts
-/fa/prompts
 /user
-/fa/user
 /manage
-/fa/manage
+/login
+/dashboard
+/manage/dashboard
+/wizard/portrait
+and /fa equivalents
 ```
 
-Expected header:
+Expected and observed:
 
 ```text
 X-Robots-Tag: noindex, nofollow, noarchive
 ```
 
-When staging `NUXT_PUBLIC_NOINDEX=true`, public acquisition routes must also remain globally noindex.
+Staging-wide noindex precedence also PASS on public acquisition routes:
+
+```text
+/
+/fa
+/guide
+/fa/guide
+/discover/posters-editorial
+/fa/discover/posters-editorial
+```
+
+with:
+
+```text
+NUXT_PUBLIC_NOINDEX=true
+X-Robots-Tag: noindex, nofollow, noarchive
+```
 
 ---
 
-## 11. Acceptance rule
+## 11. Verification-found regressions and remediation
 
-Do not mark 4A accepted merely because the implementation is committed.
+The acceptance smoke found real regressions; both were fixed before acceptance.
 
-Acceptance requires:
+### 11.1 Vue I18n initialization error / Persian font regression
+
+Observed after locale switching and refresh:
+
+```text
+Nuxt client error page
+SyntaxError: 26
+```
+
+Vue I18n error code 26 maps to `useI18n()` being called outside the top-level of a component setup function.
+
+Root cause:
+
+```text
+app/plugins/public-static-seo.ts
+  -> global Nuxt plugin called useI18n()
+  -> also called usePublicSeo(), which itself calls useI18n()
+```
+
+Remediation:
+
+```text
+removed the invalid global SEO plugin
+moved Home/Guide shared SEO policy to component setup in default.vue
+kept usePublicSeo as a component-level composable
+```
+
+A second locale-related regression was found in the Persian font selector:
+
+```text
+old selector: html[lang='fa']
+actual accepted SSR lang: fa-IR
+```
+
+Remediation:
+
+```text
+html[lang|='fa']
+```
+
+which correctly covers both `fa` and `fa-IR`.
+
+Founder re-smoke confirmed refresh, locale switching and Persian font behavior were fixed.
+
+### 11.2 Legacy prerender bypassed request-time noindex middleware
+
+Observed during header smoke:
+
+```text
+/manage       -> 200 but missing X-Robots-Tag
+/fa/manage    -> 200 with expected X-Robots-Tag
+```
+
+Root cause:
+
+```text
+/manage and other application routes remained in Nitro prerender.routes
+EN prerendered output bypassed request-time seo-route-policy middleware
+FA variant was not prerendered and therefore behaved correctly
+```
+
+Remediation:
+
+```text
+application/client-only prerenders are now gated behind NUXT_LEGACY_STATIC_GENERATE=true
+current hybrid Docker/Nitro runtime serves them request-time
+seo-route-policy remains authoritative for application-route X-Robots-Tag
+```
+
+Expanded post-fix smoke PASS for EN/FA Create, Prompts, User, Manage, Login, Dashboard, nested Manage and Wizard routes.
+
+Relevant remediation commits at acceptance time include:
+
+```text
+8d05c3fd95c174ac6dc7b4f5eea1be2fcab50375
+  -> i18n initialization + Persian font remediation completed
+
+aeaa6353f89e0ca48a9668a3382100579593e617
+  -> legacy app prerender isolation for request-time SEO policy
+```
+
+---
+
+## 12. Acceptance decision
+
+All Phase 4A acceptance requirements are satisfied:
 
 ```text
 strict route audit PASS
 SEO contract tests PASS
 production build PASS
-EN/FA runtime smoke PASS
+EN/FA real-runtime smoke PASS
+canonical redirect smoke PASS
+browser locale/navigation regression smoke PASS
 raw metadata/canonical/hreflang inspection PASS
-noindex behavior PASS
-founder acceptance
+application-route noindex PASS
+staging global noindex precedence PASS
+founder acceptance PASS
 ```
 
-After 4A acceptance, proceed to:
+Phase 4A is therefore:
+
+```text
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+Proceed to:
 
 ```text
 21.5.4B — Public Prompt Architecture
