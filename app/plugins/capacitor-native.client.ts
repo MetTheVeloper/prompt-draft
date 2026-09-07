@@ -12,6 +12,7 @@ export default defineNuxtPlugin(async () => {
   if (!Capacitor.isNativePlatform()) return
 
   const router = useRouter()
+  const localePath = useLocalePath()
 
   document.documentElement.classList.add('is-native-app')
 
@@ -55,8 +56,9 @@ export default defineNuxtPlugin(async () => {
 
   void CapacitorApp.addListener('backButton', async () => {
     const currentPath = router.currentRoute.value.path
+    const localizedHomePath = localePath('/')
 
-    if (HOME_PATHS.has(currentPath)) {
+    if (HOME_PATHS.has(currentPath) || currentPath === localizedHomePath) {
       await CapacitorApp.exitApp()
       return
     }
@@ -66,12 +68,12 @@ export default defineNuxtPlugin(async () => {
     if (stack.length > 1) {
       stack.pop()
 
-      const previousPath = stack[stack.length - 1] || '/'
+      const previousPath = stack[stack.length - 1] || localizedHomePath
 
       await router.push(previousPath)
       return
     }
 
-    await router.push('/')
+    await router.push(localizedHomePath)
   })
 })
