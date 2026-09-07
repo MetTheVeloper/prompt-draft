@@ -5,8 +5,12 @@ const { t, locale, setLocale } = useI18n();
 const { t: theme, switchTheme } = useTheme();
 const { mobile, tablet } = useScreen();
 const route = useRoute();
+const localePath = useLocalePath();
+const getRouteBaseName = useRouteBaseName();
 const auth = useAuth();
 const { openPageContextMenu } = usePageContextMenu();
+
+const baseRouteName = computed(() => getRouteBaseName(route) || String(route.name || ''));
 
 const currentThemeMode = computed(() => {
   return unref(theme)?.theme?.mode || "dark";
@@ -14,7 +18,7 @@ const currentThemeMode = computed(() => {
 
 const promptDetailMode = computed(() => {
   return (
-    route.name === "prompts" &&
+    baseRouteName.value === "prompts" &&
     typeof route.query.id === "string" &&
     route.query.id.trim().length > 0
   );
@@ -27,14 +31,14 @@ const canRenderPromptDetail = computed(() => {
 });
 
 const wizardMode = computed(() => {
-  return route.path === "/wizard" || route.path.startsWith("/wizard/");
+  return baseRouteName.value === "wizard" || baseRouteName.value.startsWith("wizard-");
 });
 
 const padding = computed(() => {
   return (
-    route.name === "index" ||
-    route.name === "collage" ||
-    route.name === "vectorizer" ||
+    baseRouteName.value === "index" ||
+    baseRouteName.value === "collage" ||
+    baseRouteName.value === "vectorizer" ||
     wizardMode.value ||
     promptDetailMode.value
   )
@@ -59,7 +63,7 @@ async function switchLanguage() {
 }
 
 function openVectorizer() {
-  navigateTo('/vectorizer')
+  navigateTo(localePath('/vectorizer'))
 }
 
 import ImageBatchConverter from '~/components/tools/ImageBatchConverter.vue'
@@ -181,7 +185,7 @@ function handleLayoutContextMenu(event: MouseEvent) {
       <slot v-else />
     </el-flex>
 
-    <CreateDraftCloudSyncButton v-if="route.name === 'create'" />
+    <CreateDraftCloudSyncButton v-if="baseRouteName === 'create'" />
     <el-pwa />
   </el-flex>
 </template>
