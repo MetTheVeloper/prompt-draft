@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 3 Cloudflare Production Path
 
-Status: **FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED — FINAL API CACHE BYPASS CONFIGURATION PENDING**
+Status: **DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED**
 
 Date: 2026-09-07
 
@@ -166,7 +166,7 @@ Existing Arvan S3 archive-media configuration remains unchanged and independent 
 
 ## 6. Staging noindex hardening
 
-`grassic.ir` is a temporary production-like staging hostname and must not become an independent search-indexed duplicate of Prompt Draft.
+`grassic.ir` is a temporary production-like staging hostname and must not become an independently indexed duplicate of Prompt Draft.
 
 Repository middleware:
 
@@ -192,7 +192,7 @@ Founder verification confirmed the header over the real public Cloudflare path.
 
 ## 7. Edge fallback Worker
 
-A Cloudflare Worker now protects the staging frontend UX when the local host/Tunnel is unavailable.
+A Cloudflare Worker protects the staging frontend UX when the local host/Tunnel is unavailable.
 
 Repository source:
 
@@ -439,24 +439,42 @@ X-Robots-Tag: noindex, nofollow, noarchive
 custom Prompt Draft fallback HTML
 ```
 
-Browser screenshot confirmed the branded fallback UI replaces Cloudflare Error 1033 for frontend navigation.
+Browser verification confirmed the branded fallback UI replaces Cloudflare Error 1033 for frontend navigation.
 
 After restarting cloudflared, the same public route returned `HTTP 200` again without manual infrastructure intervention.
+
+### Gate I — API cache safety
+
+Status:
+
+```text
+PASS / FOUNDER VERIFIED
+```
+
+Cloudflare Cache Rule:
+
+```text
+Name: Bypass Prompt Draft API
+Match: Hostname equals api.grassic.ir
+Action: Bypass cache
+Status: Active
+```
+
+This keeps authenticated and dynamic API responses out of Cloudflare edge cache by default. Any future caching of explicitly public read-only data must be a separate, narrow Phase 4 decision.
 
 ---
 
 ## 10. Cache safety
 
-Required final Cloudflare rule before administrative closure:
+Accepted Phase 3 policy:
 
 ```text
-hostname == api.grassic.ir
--> Cache eligibility: Bypass cache
+api.grassic.ir/** -> BYPASS CACHE
+application HTML  -> no blanket Cache Everything rule
+static assets     -> normal Cloudflare static-asset behavior may apply
 ```
 
-Do not enable blanket `Cache Everything` behavior for the API or application HTML during Phase 3.
-
-Static Nuxt assets may use normal Cloudflare static-asset caching behavior.
+Do not enable blanket `Cache Everything` behavior for the API or application HTML.
 
 Fine-grained public HTML/data caching belongs to Phase 4 after route/indexing semantics are finalized.
 
@@ -517,21 +535,37 @@ The stable Prompt Draft/Arvan path and later resilience architecture remain sepa
 
 ---
 
-## 14. Final closure condition
+## 14. Closure
 
-All functional/runtime/public/fallback gates have passed.
+Phase 3 is closed.
 
-The only remaining administrative hardening item is:
+Accepted evidence now covers:
 
 ```text
-Cloudflare Cache Rule:
-api.grassic.ir -> Bypass cache
+real Cloudflare-authoritative staging zone
+real HTTPS frontend and API hostnames
+Cloudflare Tunnel through Docker service networking
+request-time Nuxt/Nitro SSR
+server-internal vs browser-public API origin separation
+Bearer auth + production-like CORS
+loopback-only direct host exposure
+staging noindex protection
+restart/recovery behavior
+HTTP/2 Tunnel transport for the current network
+branded edge fallback during Tunnel/host outage
+fail-open Worker routing
+active API cache bypass rule
+no tested Docker-internal hostname leakage in public SSR HTML
 ```
 
-After that rule is confirmed, Phase 3 should be recorded as:
+Final status:
 
 ```text
 DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
 ```
 
-and Milestone 21.5 Phase 4 — SEO Platform & Public Content Architecture — becomes the next implementation phase.
+Next implementation phase:
+
+```text
+Milestone 21.5 Phase 4 — SEO Platform & Public Content Architecture
+```
