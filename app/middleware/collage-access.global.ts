@@ -1,14 +1,22 @@
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (!import.meta.client || to.path !== "/collage") return;
+  if (!import.meta.client) return;
 
+  const getRouteBaseName = useRouteBaseName();
+  if (getRouteBaseName(to) !== "collage") return;
+
+  const localePath = useLocalePath();
   const auth = useAuth();
   await auth.initialize();
 
   if (!auth.isLoggedIn.value) {
-    const next = encodeURIComponent(to.fullPath || "/collage");
-    return navigateTo(`/login?next=${next}`);
+    return navigateTo({
+      path: localePath("/login"),
+      query: {
+        next: to.fullPath || localePath("/collage"),
+      },
+    });
   }
 
   if (!auth.can(AUTH_PERMISSIONS.COLLAGE_VIEW)) {
