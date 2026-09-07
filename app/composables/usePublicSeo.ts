@@ -3,6 +3,7 @@ import { computed, toValue, type MaybeRefOrGetter } from 'vue'
 type PublicSeoStructuredData = Record<string, unknown> | Record<string, unknown>[]
 
 type PublicSeoOptions = {
+  enabled?: MaybeRefOrGetter<boolean>
   title: MaybeRefOrGetter<string>
   description: MaybeRefOrGetter<string>
   canonicalPath: MaybeRefOrGetter<string>
@@ -61,6 +62,7 @@ export function usePublicSeo(options: PublicSeoOptions) {
   const localePath = useLocalePath()
   const { locale, locales } = useI18n()
 
+  const enabled = computed(() => Boolean(toValue(options.enabled ?? true)))
   const localeDefinitions = computed(() => locales.value.map((item) => {
     if (typeof item === 'string') {
       return { code: item, language: item }
@@ -93,7 +95,7 @@ export function usePublicSeo(options: PublicSeoOptions) {
     const configuredCodes = new Set(localeDefinitions.value.map(item => item.code))
     const requested = options.alternateLocales
       ? [...toValue(options.alternateLocales)]
-      : [locale.value]
+      : localeDefinitions.value.map(item => item.code)
 
     const codes = Array.from(new Set(
       requested
@@ -152,61 +154,68 @@ export function usePublicSeo(options: PublicSeoOptions) {
     .filter(Boolean))
 
   useSeoMeta({
-    title: () => fullTitle.value,
-    description: () => description.value,
-    ogTitle: () => fullTitle.value,
-    ogDescription: () => description.value,
-    ogType: () => contentType.value,
-    ogUrl: () => canonicalUrl.value || undefined,
-    ogImage: () => imageUrl.value || undefined,
-    twitterCard: () => imageUrl.value ? 'summary_large_image' : 'summary',
-    twitterTitle: () => fullTitle.value,
-    twitterDescription: () => description.value,
-    twitterImage: () => imageUrl.value || undefined,
-    robots: () => noindex.value ? 'noindex, nofollow, noarchive' : 'index, follow',
+    title: () => enabled.value ? fullTitle.value : undefined,
+    description: () => enabled.value ? description.value : undefined,
+    ogTitle: () => enabled.value ? fullTitle.value : undefined,
+    ogDescription: () => enabled.value ? description.value : undefined,
+    ogType: () => enabled.value ? contentType.value : undefined,
+    ogUrl: () => enabled.value ? (canonicalUrl.value || undefined) : undefined,
+    ogImage: () => enabled.value ? (imageUrl.value || undefined) : undefined,
+    twitterCard: () => enabled.value ? (imageUrl.value ? 'summary_large_image' : 'summary') : undefined,
+    twitterTitle: () => enabled.value ? fullTitle.value : undefined,
+    twitterDescription: () => enabled.value ? description.value : undefined,
+    twitterImage: () => enabled.value ? (imageUrl.value || undefined) : undefined,
+    robots: () => enabled.value
+      ? (noindex.value ? 'noindex, nofollow, noarchive' : 'index, follow')
+      : undefined,
   })
 
-  useHead(() => ({
-    link: [
-      ...(canonicalUrl.value
+  useHead(() => {
+    if (!enabled.value) return {}
+
+    return {
+      link: [
+        ...(canonicalUrl.value
+          ? [
+              {
+                rel: 'canonical',
+                href: canonicalUrl.value,
+                key: 'canonical',
+              },
+            ]
+          : []),
+        ...alternateLinks.value,
+      ],
+      meta: [
+        ...(currentLocaleDefinition.value
+          ? [
+              {
+                property: 'og:locale',
+                content: currentLocaleDefinition.value.language.replace('-', '_'),
+                key: 'og-locale',
+              },
+            ]
+          : []),
+        ...alternateOgLocales.value.map((value) => ({
+          property: 'og:locale:alternate',
+          content: value,
+          key: `og-locale-alternate-${value}`,
+        })),
+      ],
+      script: structuredData.value
         ? [
             {
-              rel: 'canonical',
-              href: canonicalUrl.value,
-              key: 'canonical',
+              type: 'application/ld+json',
+              key: 'public-seo-structured',
+              innerHTML: structuredData.value,
             },
           ]
-        : []),
-      ...alternateLinks.value,
-    ],
-    meta: [
-      ...(currentLocaleDefinition.value
-        ? [
-            {
-              property: 'og:locale',
-              content: currentLocaleDefinition.value.language.replace('-', '_'),
-              key: 'og-locale',
-            },
-          ]
-        : []),
-      ...alternateOgLocales.value.map((value) => ({
-        property: 'og:locale:alternate',
-        content: value,
-        key: `og-locale-alternate-${value}`,
-      })),
-    ],
-    script: structuredData.value
-      ? [
-          {
-            type: 'application/ld+json',
-            key: 'public-seo-structured',
-            innerHTML: structuredData.value,
-          },
-        ]
-      : [],
-  }))
+        : [],
+    }
+  })
 
   return {
+    enabled,
     siteUrl,
     canonicalPath,
     localizedCanonicalPath,
