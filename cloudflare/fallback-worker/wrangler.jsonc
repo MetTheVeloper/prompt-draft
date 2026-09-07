@@ -1,0 +1,12 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prompt-draft-staging-fallback",
+  "main": "worker.js",
+  "compatibility_date": "2026-09-07",
+  "routes": [
+    {
+      "pattern": "grassic.ir/*",
+      "zone_name": "grassic.ir"
+    }
+  ]
+}
