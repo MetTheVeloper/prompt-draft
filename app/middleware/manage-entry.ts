@@ -1,14 +1,23 @@
 import { getPermittedManageSections } from "~/config/manage";
 
 export default defineNuxtRouteMiddleware(async (to) => {
-  if (!import.meta.client || to.path !== "/manage") return;
+  if (!import.meta.client) return;
 
+  const getRouteBaseName = useRouteBaseName();
+  if (getRouteBaseName(to) !== "manage") return;
+
+  const localePath = useLocalePath();
   const auth = useAuth();
   const { $i18n } = useNuxtApp();
   await auth.initialize();
 
   if (!auth.isLoggedIn.value) {
-    return navigateTo(`/login?next=${encodeURIComponent(to.fullPath || "/manage")}`);
+    return navigateTo({
+      path: localePath("/login"),
+      query: {
+        next: to.fullPath || localePath("/manage"),
+      },
+    });
   }
 
   const permittedSections = getPermittedManageSections(auth.can);
@@ -24,5 +33,5 @@ export default defineNuxtRouteMiddleware(async (to) => {
     );
   }
 
-  return navigateTo(firstSection.route, { replace: true });
+  return navigateTo(localePath(firstSection.route), { replace: true });
 });
