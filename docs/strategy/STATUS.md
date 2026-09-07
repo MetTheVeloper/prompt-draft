@@ -40,7 +40,9 @@ Final UI polish                 -> DONE / LOCALLY VERIFIED / USER ACCEPTED
 Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-Phase 21.5.3 Cloudflare Production Path         -> NEXT / NOT STARTED
+Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
+Phase 21.5.4 SEO/Public Content Architecture    -> NEXT / NOT STARTED
+Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
 First domain                                    -> Content Creation
 Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
@@ -59,6 +61,7 @@ Phase records:
 ```text
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 ```
 
 Current rendering ADR:
@@ -74,8 +77,8 @@ Milestone 21.5 execution order:
 ```text
 Phase 1 — Hybrid / SSR Architecture                       DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                       DONE / ACCEPTED
-Phase 3 — Cloudflare Production Path                      NEXT / NOT STARTED
-Phase 4 — SEO Platform & Public Content Architecture      NOT STARTED
+Phase 3 — Cloudflare Production Path                      DONE / ACCEPTED
+Phase 4 — SEO Platform & Public Content Architecture      NEXT / NOT STARTED
 Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
 ```
 
@@ -204,7 +207,70 @@ post-restart recovery to all-healthy PASS
 
 Docker-internal `http://api:4000` remains server-only and was not exposed to browser networking.
 
-Phase 2 is closed. Its accepted runtime is the baseline for Phase 3.
+Phase 2 is closed. Its accepted runtime became the baseline for Phase 3.
+
+## Phase 3 Cloudflare production path — accepted
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
+```
+
+Accepted production-like staging topology:
+
+```text
+https://grassic.ir
+  -> Cloudflare edge
+  -> prompt-draft-staging-fallback Worker
+  -> Cloudflare Tunnel
+  -> frontend:3000
+
+https://api.grassic.ir
+  -> Cloudflare edge
+  -> Cloudflare Tunnel
+  -> api:4000
+```
+
+Accepted runtime split:
+
+```text
+Nuxt SSR server -> http://api:4000
+browser          -> https://api.grassic.ir
+```
+
+Verified outcomes:
+
+```text
+grassic.ir authoritative on Cloudflare
+frontend/API Tunnel routes active
+frontend/API direct host binds remain loopback-only
+public HTTPS frontend PASS
+public HTTPS API PASS
+CORS from https://grassic.ir PASS
+browser API origin https://api.grassic.ir PASS
+regular/super-admin/application parity PASS
+public request-time SSR PASS
+no tested api:4000 / localhost:4000 / api.prompt-draft.ir leakage in SSR HTML
+NUXT_PUBLIC_NOINDEX=true PASS
+X-Robots-Tag: noindex, nofollow, noarchive PASS
+cloudflared forced to HTTP/2 for current network PASS
+stack restart/recovery PASS
+Cloudflare Worker route grassic.ir/* PASS
+Worker failure mode Fail open PASS
+intentional cloudflared outage -> branded HTTP 503 fallback PASS
+fallback links to stable https://prompt-draft.ir/ PASS
+Tunnel restore -> normal HTTP 200 recovery PASS
+Cloudflare Cache Rule api.grassic.ir -> Bypass cache ACTIVE
+```
+
+The stable `prompt-draft.ir` deployment was deliberately left untouched during Phase 3. The new runtime architecture has therefore been proven without making the production hostname cutover itself a prerequisite.
+
+Phase 3 closure checkpoint:
+
+```text
+adbff89e4c65ac8fa26cca58dee1040f62c808a1
+```
 
 ## Accepted Creator SEO direction for Phase 4
 
@@ -543,6 +609,7 @@ docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
@@ -552,8 +619,14 @@ Accepted Phase 2 implementation checkpoint:
 72acb6beb5e6e21232c945a05534bc41c0dabdc3
 ```
 
+Accepted Phase 3 closure checkpoint:
+
+```text
+adbff89e4c65ac8fa26cca58dee1040f62c808a1
+```
+
 Current next implementation phase:
 
 ```text
-Phase 21.5.3 — Cloudflare Production Path
+Phase 21.5.4 — SEO Platform & Public Content Architecture
 ```
