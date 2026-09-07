@@ -71,6 +71,15 @@ export default {
       notFoundTitle: 'مسیر کشف پیدا نشد',
       notFoundDescription: 'این آدرس با هیچ‌کدام از دسته‌بندی‌های عمومی فعلی پرامپت درفت مطابقت ندارد.',
     },
+    publicPrompt: {
+      eyebrow: 'پرامپت عمومی',
+      description: 'پیش‌نمایش منتشرشده‌ی Prompt Draft که فقط متادیتا و رسانه‌های عمومی را نمایش می‌دهد.',
+      openProtected: 'باز کردن پرامپت کامل',
+      backHome: 'بازگشت به خانه',
+      publicMetadataEyebrow: 'نمایش عمومی',
+      publicMetadataTitle: 'پیش‌نمایش منتشرشده',
+      previewNotice: 'متن کامل پرامپت، وریانت‌ها، وضعیت دسترسی حساب و آنلاک عمداً فقط در مسیر محصول محافظت‌شده در دسترس می‌مانند.',
+    },
     discovery: {
       onboarding: {
         eyebrow: 'کشف شخصی‌سازی‌شده',
