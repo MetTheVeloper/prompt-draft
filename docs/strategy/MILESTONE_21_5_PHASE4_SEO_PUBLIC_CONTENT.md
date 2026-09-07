@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A STARTED**
+Status: **IN PROGRESS / 4A IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
 
 Date: 2026-09-07
 
@@ -22,6 +22,12 @@ Accepted rendering/runtime baseline:
 Phase 21.5.1 Hybrid / SSR Architecture          DONE / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          DONE / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         DONE / ACCEPTED
+```
+
+Phase 4A verification record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 ```
 
 ---
@@ -94,23 +100,33 @@ Implementation order is intentional. Shared platform contracts come before Promp
 
 ## 4. 21.5.4A — SEO Contracts & Route Semantics
 
-Status: **IN PROGRESS**
+Status: **IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
 
-Required work:
+Implemented work:
 
 ```text
-mature existing usePublicSeo instead of creating duplicate composables
-server-rendered title/description policy
-canonical URL helper/contract
+matured existing usePublicSeo instead of creating duplicate composables
+reactive server-rendered title/description metadata
+absolute canonical URL contract from NUXT_PUBLIC_SITE_URL
 Open Graph + Twitter policy
-structured-data injection only from authoritative data
+locale-aware canonical URLs
+hreflang + x-default alternates
+structured-data injection only from authoritative callers
 staging noindex precedence over route-level indexability
 locale-aware html lang/dir behavior
-EN/FA canonical route strategy
-localized internal-navigation audit
-404 / redirect semantics
-route-family indexability classification
+EN/FA deterministic URL routing
+localized central internal-link handling
+route-base-name handling for localized route names
+login locale-preserving redirects
+server X-Robots-Tag policy for app/private routes
+canonical public route helpers
+real Discovery 404 behavior
+Discovery canonical redirect behavior
+reproducible route-audit script
+public route contract tests
 ```
+
+Verification is deliberately separate from implementation and remains required before 4A is accepted.
 
 ### Title policy
 
@@ -140,7 +156,7 @@ Canonical URLs must describe the authoritative route identity and must not retai
 
 Both English and Persian are intended to be indexable when authoritative localized content actually exists.
 
-Accepted URL model:
+Active URL model:
 
 ```text
 English/default locale
@@ -150,7 +166,7 @@ Persian
   -> /fa prefix
 ```
 
-Target Nuxt i18n routing strategy:
+Active Nuxt i18n routing strategy:
 
 ```text
 defaultLocale: en
@@ -177,27 +193,28 @@ EN canonical -> EN URL
 FA canonical -> FA URL
 ```
 
-When both authoritative localizations exist they must expose reciprocal language alternates (`hreflang`) and an English/default x-default direction where appropriate.
+When both authoritative localizations exist they expose reciprocal language alternates (`hreflang`) and an English/default `x-default` direction where appropriate.
 
-A missing translation must not silently create an indexable localized route containing fallback content and pretending to be a translation.
+A missing translation must not silently create an indexable localized route containing fallback content and pretending to be a translation. Dynamic Blog/localized-entity availability is enforced by the relevant later content phase.
 
 ### Application routes
 
-The locale strategy may also create localized application URLs such as `/fa/create`, but that does not make those routes SEO surfaces. Existing client-only/private/indexability policy remains authoritative.
+The locale strategy also creates localized application URLs such as `/fa/create`, but that does not make those routes SEO surfaces. Existing client-only/private/indexability policy remains authoritative.
 
-### Activation gate discovered during implementation audit
+Both EN and `/fa` variants of client-heavy routes remain `ssr:false` where previously intended, and server middleware adds explicit noindex response headers to application/private route families.
 
-The project currently contains many raw internal paths such as:
+### Localized-navigation acceptance gate
 
-```text
-to="/create"
-to="/prompts"
-navigateTo('/...')
+The locale URL contract is now implemented, but it is not accepted until a reproducible source audit confirms no unresolved programmatic-navigation hazards remain.
+
+Commands:
+
+```powershell
+pnpm seo:audit-routes
+pnpm seo:audit-routes:strict
 ```
 
-Activating `prefix_except_default` before those navigation paths are audited/migrated could cause a user on a Persian URL to navigate unintentionally back to the unprefixed English route.
-
-Therefore the locale decision is accepted, but route-prefix activation is gated behind the 4A localized-navigation audit. This is sequencing, not a reversal of the accepted architecture.
+The strict audit checks raw programmatic internal navigation and direct locale-sensitive route-name comparisons. Findings must be fixed or deliberately justified; they must not be suppressed merely to make the gate green.
 
 ---
 
@@ -328,17 +345,24 @@ future public discovery eligibility
 
 ## 9. Discovery migration direction
 
-`/discover/[slug]` already uses request-time SSR-aware loading through the sanitized public discovery API and already consumes the initial `usePublicSeo` primitive.
+`/discover/[slug]` already uses request-time SSR-aware loading through the sanitized public discovery API and consumes the shared `usePublicSeo` primitive.
 
 Phase 4 does not replace that architecture.
 
-4D will:
+Completed in 4A:
 
 ```text
-finish route metadata/canonical behavior
+locale-aware metadata/canonical behavior
+semantic HTTP 404 for invalid slugs
+malformed encoded slug -> 404 rather than accidental 500
+canonical lowercase/trailing-slash redirect behavior
+```
+
+4D will still:
+
+```text
 use authoritative public preview images for OG where valid
 add structured data only when truthful
-return semantic 404 behavior for invalid discovery slugs
 migrate Prompt links to /prompt/:id after 4B exists
 migrate Creator links to /creator/:username after 4C exists
 integrate discovery routes with the shared sitemap architecture
@@ -361,6 +385,8 @@ static public acquisition routes
 ```
 
 Sitemap inclusion must use the same authoritative eligibility rules used by route metadata. It must not create an independent second definition of "indexable".
+
+4A now provides server-level noindex response policy for current application/private route families in both locale spaces.
 
 Staging protection remains stronger than route-level SEO:
 
@@ -643,11 +669,14 @@ Founder verification remains required before Phase 4 is marked DONE.
 ## 17. Current next action
 
 ```text
-Continue 21.5.4A.
+Verify 21.5.4A on the latest branch.
 
-1. Mature the existing SEO primitive and metadata semantics.
-2. Add route-level metadata to existing SSR acquisition surfaces.
-3. Audit/migrate localized internal navigation before enabling prefix_except_default.
-4. Activate deterministic EN/no-prefix + FA-/fa routing only after that regression gate is safe.
-5. Then proceed to 4B Public Prompt.
+1. pnpm seo:audit-routes:strict
+2. pnpm test:seo-contracts
+3. pnpm build
+4. pnpm preview + EN/FA route smoke
+5. inspect raw canonical/hreflang/robots metadata
+6. resolve any audit/runtime regression findings
+7. founder accepts 4A
+8. proceed to 4B Public Prompt
 ```
