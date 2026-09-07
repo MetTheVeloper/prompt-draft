@@ -12,14 +12,29 @@ const CHECKS = [
     pattern: /\bnavigateTo\s*\(\s*([`'"])\/(?!\/)/g,
   },
   {
+    id: 'raw-navigate-object-path',
+    description: 'navigateTo({ path }) uses a raw internal path instead of localePath().',
+    pattern: /\bnavigateTo\s*\(\s*\{[\s\S]{0,240}?\bpath\s*:\s*([`'"])\/(?!\/)/g,
+  },
+  {
     id: 'raw-router-push',
-    description: 'router.push() uses a raw internal path instead of a locale-aware route.',
-    pattern: /\brouter\.(?:push|replace)\s*\(\s*([`'"])\/(?!\/)/g,
+    description: 'router.push()/replace() uses a raw internal path instead of a locale-aware route.',
+    pattern: /\b(?:router|\$router)\.(?:push|replace)\s*\(\s*([`'"])\/(?!\/)/g,
+  },
+  {
+    id: 'raw-router-object-path',
+    description: 'router.push()/replace({ path }) uses a raw internal path instead of localePath().',
+    pattern: /\b(?:router|\$router)\.(?:push|replace)\s*\(\s*\{[\s\S]{0,240}?\bpath\s*:\s*([`'"])\/(?!\/)/g,
   },
   {
     id: 'raw-window-location',
     description: 'window.location navigation uses a raw internal path.',
     pattern: /\bwindow\.location(?:\.href|\.assign|\.replace)?\s*(?:=|\()\s*([`'"])\/(?!\/)/g,
+  },
+  {
+    id: 'raw-origin-url',
+    description: 'A URL built against window.location.origin uses a raw internal path and may lose the active locale.',
+    pattern: /\bnew\s+URL\s*\(\s*([`'"])\/(?!\/)[\s\S]{0,160}?window\.location\.origin/g,
   },
   {
     id: 'direct-route-name',
@@ -114,10 +129,10 @@ async function main() {
   }
 
   if (strict) {
-    console.error('\n[phase4a-route-audit] FAIL: resolve findings before enabling prefix_except_default.')
+    console.error('\n[phase4a-route-audit] FAIL: resolve findings before accepting prefix_except_default.')
     process.exitCode = 1
   } else {
-    console.log('\n[phase4a-route-audit] Advisory mode only. Re-run with --strict for the Phase 4A activation gate.')
+    console.log('\n[phase4a-route-audit] Advisory mode only. Re-run with --strict for the Phase 4A acceptance gate.')
   }
 }
 
