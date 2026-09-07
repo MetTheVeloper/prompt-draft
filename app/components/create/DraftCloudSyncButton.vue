@@ -35,6 +35,7 @@ type DraftCloudStatus = "idle" | "dirty" | "syncing" | "synced" | "error";
 
 const route = useRoute();
 const { t, locale } = useI18n();
+const localePath = useLocalePath();
 const auth = useAuth();
 const promptApi = usePromptDraftApi();
 const profileApi = useUserProfileApi();
@@ -473,7 +474,10 @@ async function handleManualSync() {
   await auth.initialize();
 
   if (!auth.isLoggedIn.value) {
-    await navigateTo("/login?next=%2Fcreate");
+    await navigateTo({
+      path: localePath("/login"),
+      query: { next: localePath("/create") },
+    });
     return;
   }
 
