@@ -41,7 +41,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> NEXT / NOT STARTED
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A STARTED
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
 First domain                                    -> Content Creation
@@ -62,6 +62,7 @@ Phase records:
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 ```
 
 Current rendering ADR:
@@ -78,7 +79,7 @@ Milestone 21.5 execution order:
 Phase 1 — Hybrid / SSR Architecture                       DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                       DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                      DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture      NEXT / NOT STARTED
+Phase 4 — SEO Platform & Public Content Architecture      IN PROGRESS / 4A STARTED
 Phase 5 — Organic Acquisition Launch & Measurement        NOT STARTED
 ```
 
@@ -272,6 +273,54 @@ Phase 3 closure checkpoint:
 adbff89e4c65ac8fa26cca58dee1040f62c808a1
 ```
 
+## Phase 4 SEO / public content architecture — in progress
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+```
+
+Execution slices:
+
+```text
+21.5.4A SEO Contracts & Route Semantics                    IN PROGRESS
+21.5.4B Public Prompt Architecture                         NOT STARTED
+21.5.4C Public Creator + Indexability Policy               NOT STARTED
+21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
+21.5.4E Blog V1                                            NOT STARTED
+21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
+```
+
+Accepted route/content direction:
+
+```text
+Prompt canonical -> /prompt/:id
+Creator canonical -> /creator/:username
+/user -> private/account product surface, not Creator SEO canonical
+English/default -> unprefixed URL
+Persian -> /fa prefix
+EN + FA both indexable when authoritative localized content exists
+Blog V1 -> repository-backed editorial content
+/manage/blog -> Markdown-producing admin authoring surface
+Git -> canonical Blog editorial source
+Arvan -> Blog mirror/emergency publication store
+Docker/Nitro deployed content -> normal Blog request-time source
+Blog images -> existing/shared Arvan media upload pipeline
+```
+
+Phase 4A implementation has started by maturing the existing `usePublicSeo` primitive, making root HTML `lang/dir` locale-aware, and beginning locale-aware navigation migration in Header/default layout.
+
+Important activation gate:
+
+```text
+Do not enable prefix_except_default until raw internal navigation has been audited/migrated.
+```
+
+This avoids Persian users being sent unintentionally to unprefixed English routes by legacy raw paths.
+
+Current Phase 4 implementation commits are not founder-local accepted yet. Phase 4 remains IN PROGRESS until build/runtime/browser/raw-HTML verification passes.
+
 ## Accepted Creator SEO direction for Phase 4
 
 ```text
@@ -288,16 +337,19 @@ A Creator page must not become indexable merely because an account exists or one
 
 Phase 4 must define a shared server-authoritative Creator indexability/quality policy. The same eligibility result should drive SSR robots/index metadata, sitemap inclusion and future public Creator discovery behavior.
 
-Exact thin-content thresholds remain deliberately TBD for Phase 4 discussion. Candidate inputs include meaningful public content volume/substance, public profile completeness, publication quality/visibility, spam/moderation state and duplicate/low-value content signals.
+Exact thin-content thresholds remain deliberately TBD. Candidate inputs include meaningful public content volume/substance, public profile completeness, publication quality/visibility, spam/moderation state and duplicate/low-value content signals.
 
-Default direction for ineligible public Creator pages:
+Accepted accessibility/indexability distinction:
 
 ```text
-noindex
-exclude from indexable sitemap
-```
+valid thin/new/incomplete public Creator
+  -> accessible
+  -> noindex
+  -> excluded from indexable sitemap
 
-Final accessibility/404 behavior remains a Phase 4 decision.
+nonexistent / removed / public-access-prohibited Creator
+  -> unavailable / 404 semantics
+```
 
 ## Milestone 21.5 rationale
 
@@ -550,6 +602,9 @@ DO NOT treat every route as SSR-worthy merely because global SSR is enabled.
 DO NOT delete the old static SEO fallback before the new runtime path is verified.
 DO NOT expose Docker-internal service origins to browser runtime configuration.
 DO NOT make every Creator account indexable without a thin-content/quality eligibility policy.
+DO NOT activate FA route prefixes before locale-aware internal navigation is safe.
+DO NOT make Git and Arvan uncontrolled equal Blog sources of truth.
+DO NOT embed Blog images as base64 Markdown payloads.
 ```
 
 ## Phase 2 — Domain Expansion after Milestone 21.5
@@ -610,6 +665,7 @@ docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/backend/PRODUCT_STRATEGY_GROWTH_FOUNDATION_HANDOFF.md
 ```
 
@@ -628,5 +684,5 @@ adbff89e4c65ac8fa26cca58dee1040f62c808a1
 Current next implementation phase:
 
 ```text
-Phase 21.5.4 — SEO Platform & Public Content Architecture
+Phase 21.5.4A — SEO Contracts & Route Semantics
 ```
