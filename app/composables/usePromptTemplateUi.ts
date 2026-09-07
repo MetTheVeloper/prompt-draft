@@ -44,6 +44,7 @@ function flushCreateDraftPersistence() {
 export function usePromptTemplateUi() {
   const modal = useModal();
   const route = useRoute();
+  const getRouteBaseName = useRouteBaseName();
 
   function openStartFromTemplate(options: StartFromTemplateOptions = {}) {
     const templates = listAvailablePromptTemplates();
@@ -98,7 +99,7 @@ export function usePromptTemplateUi() {
             // collection once more. Reassert the new record on pagehide, which
             // runs after that unload save, so the reload hydrates the Template
             // Draft instead of silently losing it.
-            if (import.meta.client && route.name === "create") {
+            if (import.meta.client && getRouteBaseName(route) === "create") {
               window.addEventListener(
                 "pagehide",
                 () => {
