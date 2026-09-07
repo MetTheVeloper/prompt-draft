@@ -71,6 +71,15 @@ export default {
       notFoundTitle: 'Discovery path not found',
       notFoundDescription: 'This discovery URL does not match one of Prompt Draft’s current public categories.',
     },
+    publicPrompt: {
+      eyebrow: 'PUBLIC PROMPT',
+      description: 'A published Prompt Draft preview with public presentation metadata and media only.',
+      openProtected: 'Open full prompt',
+      backHome: 'Back to home',
+      publicMetadataEyebrow: 'PUBLIC PRESENTATION',
+      publicMetadataTitle: 'Published preview',
+      previewNotice: 'The full prompt text, variants, account access, and unlock state are intentionally kept behind the protected product flow.',
+    },
     discovery: {
       onboarding: {
         eyebrow: 'PERSONALIZED DISCOVERY',
