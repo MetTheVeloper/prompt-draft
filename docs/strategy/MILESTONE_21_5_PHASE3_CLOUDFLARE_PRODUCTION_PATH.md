@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 3 Cloudflare Production Path
 
-Status: **REPO PREPARATION + LOCAL REGRESSION VERIFIED / AWAITING CLOUDFLARE CUTOVER**
+Status: **FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED — FINAL API CACHE BYPASS CONFIGURATION PENDING**
 
 Date: 2026-09-07
 
@@ -20,39 +20,46 @@ docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 
 ## 1. Objective
 
-Expose the already-verified Phase 2 Docker runtime through Cloudflare without changing the application security model or leaking Docker-internal services.
+Prove the real Cloudflare ingress path for the already-accepted Docker/Nitro runtime without exposing Docker-internal services or changing the application authorization model.
 
-Primary production target:
+The founder deliberately chose a production-like staging domain for verification so the currently stable `prompt-draft.ir` deployment could remain untouched during Phase 3.
+
+Verified staging path:
 
 ```text
-https://prompt-draft.ir
+https://grassic.ir
   -> Cloudflare edge
+  -> Worker fallback layer
   -> Cloudflare Tunnel
   -> frontend:3000
 
-https://api.prompt-draft.ir
+https://api.grassic.ir
   -> Cloudflare edge
   -> Cloudflare Tunnel
   -> api:4000
 ```
 
-The API remains an independent service. Nuxt SSR continues to use the Docker-internal API origin:
+Production cutover remains mechanically equivalent later:
 
 ```text
-http://api:4000
-```
-
-Browser requests use the public API origin:
-
-```text
+https://prompt-draft.ir
 https://api.prompt-draft.ir
 ```
 
+The application architecture remains split:
+
+```text
+Nuxt SSR server -> http://api:4000       Docker-internal only
+browser          -> https://api.grassic.ir during staging verification
+```
+
+No Docker-internal hostname is intended to reach browser runtime configuration or public SSR output.
+
 ---
 
-## 2. Accepted auth implication
+## 2. Auth and CORS contract
 
-Current Prompt Draft auth is Bearer-token based:
+Prompt Draft auth remains Bearer-token based:
 
 ```text
 browser localStorage
@@ -60,25 +67,27 @@ browser localStorage
   -> API
 ```
 
-It is not currently cookie-session based.
+Therefore Phase 3 did not require a SameSite/Domain cookie migration.
 
-Consequences for Phase 3:
+Verified staging CORS contract:
 
 ```text
-no SameSite cookie migration required
-no production cookie Domain policy required
-no Access-Control-Allow-Credentials requirement for auth
-Authorization must remain allowed by CORS
-CORS must allow the production frontend origin exactly
+Origin: https://grassic.ir
+Access-Control-Allow-Origin: https://grassic.ir
+Access-Control-Allow-Headers: Content-Type, Authorization
 ```
 
-A future switch to HttpOnly cookie auth would require a separate cookie/proxy review.
+The browser successfully uses:
+
+```text
+https://api.grassic.ir
+```
+
+for client API traffic.
 
 ---
 
-## 3. Production ingress decision
-
-Phase 3 uses a remotely managed Cloudflare Tunnel.
+## 3. Cloudflare Tunnel runtime
 
 Repository overlay:
 
@@ -90,170 +99,157 @@ Service:
 
 ```text
 cloudflared
-  image: cloudflare/cloudflared:2026.8.3
-  token: CLOUDFLARE_TUNNEL_TOKEN from environment
-  no public container port
-  waits for healthy frontend + API
-  restart: unless-stopped
+image: cloudflare/cloudflared:2026.8.3
+remote-managed Tunnel token from CLOUDFLARE_TUNNEL_TOKEN
+no public container port
+waits for healthy frontend + API
+restart: unless-stopped
 ```
 
-The real Tunnel token must never be committed.
-
-Cloudflare dashboard owns public-hostname routing. Expected routes:
+Tunnel routes verified in the Cloudflare dashboard:
 
 ```text
-prompt-draft.ir
-  -> HTTP
-  -> http://frontend:3000
-
-api.prompt-draft.ir
-  -> HTTP
-  -> http://api:4000
+grassic.ir     -> http://frontend:3000
+api.grassic.ir -> http://api:4000
 ```
 
-The HTTP origin is private inside the Docker network; public browser traffic remains HTTPS at the Cloudflare edge.
+Cloudflare created the corresponding Tunnel CNAME records.
+
+The local network blocks outbound QUIC/UDP 7844. Initial cloudflared runs therefore spent time retrying QUIC before falling back to HTTP/2. The Compose overlay was hardened to force HTTP/2 directly, eliminating the unnecessary restart delay.
+
+Accepted transport for this environment:
+
+```text
+cloudflared -> Cloudflare edge over HTTP/2
+```
 
 ---
 
 ## 4. Host exposure hardening
 
-Base `compose.yaml` now binds host ports to loopback by default:
+Base `compose.yaml` binds the host-facing frontend/API ports to loopback by default:
 
 ```text
 127.0.0.1:3000 -> frontend:3000
 127.0.0.1:4000 -> api:4000
 ```
 
-Configurable variables:
-
-```text
-FRONTEND_BIND_ADDRESS
-API_BIND_ADDRESS
-```
-
-This preserves localhost smoke tests while avoiding accidental direct LAN/public exposure as the normal production ingress path.
-
-Cloudflared does not need these host bindings because it talks to Docker service names on the Compose network.
+Cloudflared talks to Docker service names on the Compose network and does not require LAN/public host-port exposure.
 
 ---
 
-## 5. Production environment contract
+## 5. Staging environment contract
 
-Expected production `.env` values:
+Verified local `.env` direction:
 
 ```text
-NUXT_PUBLIC_API_BASE=https://api.prompt-draft.ir
-NUXT_PUBLIC_SITE_URL=https://prompt-draft.ir
-CORS_ORIGINS=https://prompt-draft.ir,https://www.prompt-draft.ir
+NUXT_PUBLIC_API_BASE=https://api.grassic.ir
+NUXT_PUBLIC_SITE_URL=https://grassic.ir
+NUXT_PUBLIC_NOINDEX=true
+CORS_ORIGINS includes https://grassic.ir plus accepted localhost development origins
 FRONTEND_BIND_ADDRESS=127.0.0.1
 API_BIND_ADDRESS=127.0.0.1
 CLOUDFLARE_TUNNEL_TOKEN=<secret>
 ```
 
-`NUXT_API_BASE_INTERNAL` remains supplied by Compose:
+Compose supplies the private SSR API origin:
 
 ```text
-http://api:4000
+NUXT_API_BASE_INTERNAL=http://api:4000
 ```
 
-Do not replace the internal SSR origin with the Cloudflare public API hostname. SSR should not make a public round trip when the API is available on the same Docker network.
+The Tunnel token remains local/secret and must never be committed.
+
+Existing Arvan S3 archive-media configuration remains unchanged and independent of the frontend ingress decision.
 
 ---
 
-## 6. Cloudflare dashboard configuration
+## 6. Staging noindex hardening
 
-One-time external configuration is required.
+`grassic.ir` is a temporary production-like staging hostname and must not become an independent search-indexed duplicate of Prompt Draft.
 
-### A. Tunnel
-
-Create a remotely managed Cloudflare Tunnel for Prompt Draft and obtain its Docker/token credential.
-
-Store only the token in the production `.env` or secret store:
+Repository middleware:
 
 ```text
-CLOUDFLARE_TUNNEL_TOKEN=...
+server/middleware/staging-noindex.ts
 ```
 
-### B. Public hostnames
-
-Configure:
+When:
 
 ```text
-prompt-draft.ir      -> http://frontend:3000
-api.prompt-draft.ir  -> http://api:4000
+NUXT_PUBLIC_NOINDEX=true
 ```
 
-Optional `www.prompt-draft.ir` policy should be a redirect to the canonical apex hostname rather than a second independently indexable site.
-
-Recommended canonical host:
+responses include:
 
 ```text
-https://prompt-draft.ir
+X-Robots-Tag: noindex, nofollow, noarchive
 ```
 
-### C. HTTPS
-
-Public traffic must use HTTPS.
-
-Enable/retain Cloudflare edge HTTPS and redirect HTTP to HTTPS.
-
-Because the Tunnel connection is outbound and private, no public origin port or origin TLS certificate is required for the Docker HTTP services themselves.
-
-### D. Cache safety
-
-For the first production rollout:
-
-```text
-api.prompt-draft.ir/** -> BYPASS CACHE
-```
-
-Do not enable a blanket `Cache Everything` rule for the API or application HTML during Phase 3.
-
-Static Nuxt assets may use Cloudflare's normal static-asset caching behavior.
-
-Fine-grained HTML/public-data caching belongs to Phase 4 after SEO/public route semantics are finalized.
-
-### E. Security / proxy headers
-
-Do not strip Cloudflare proxy headers.
-
-Cloudflare/Tunnel may provide headers such as forwarded protocol/host and Cloudflare client-IP metadata. Current application authorization does not trust these headers for permissions, so Phase 3 does not introduce an IP-auth security dependency.
+Founder verification confirmed the header over the real public Cloudflare path.
 
 ---
 
-## 7. CORS contract
+## 7. Edge fallback Worker
 
-The backend uses an exact-origin allowlist from:
+A Cloudflare Worker now protects the staging frontend UX when the local host/Tunnel is unavailable.
 
-```text
-CORS_ORIGINS
-```
-
-Production must include the frontend browser origins that are actually allowed to call the API.
-
-Recommended initial value:
+Repository source:
 
 ```text
-https://prompt-draft.ir,https://www.prompt-draft.ir
+cloudflare/fallback-worker/worker.js
+cloudflare/fallback-worker/README.md
+cloudflare/fallback-worker/wrangler.jsonc
 ```
 
-If `www` is immediately redirected and never runs the application, the allowlist can later be reduced to only the apex origin.
-
-Current API CORS response supports:
+Cloudflare Worker:
 
 ```text
-Content-Type
-Authorization
-GET, POST, PUT, DELETE, OPTIONS
+prompt-draft-staging-fallback
 ```
 
-Bearer-token auth therefore remains compatible with the cross-origin frontend/API split.
+Worker Route:
+
+```text
+grassic.ir/*
+```
+
+Failure mode:
+
+```text
+Fail open (proceed)
+```
+
+`api.grassic.ir` is intentionally not routed through the Worker.
+
+Behavior:
+
+```text
+healthy Tunnel
+  -> Worker transparently forwards normal application response
+
+Tunnel/origin unavailable for HTML navigation
+  -> Worker returns branded HTTP 503 fallback page
+  -> links to https://prompt-draft.ir/
+  -> provides retry action
+```
+
+Fallback response headers include:
+
+```text
+Cache-Control: no-store, max-age=0
+Retry-After: 60
+X-Robots-Tag: noindex, nofollow, noarchive
+X-Prompt-Draft-Fallback: cloudflare-worker
+```
+
+This page is served from the Cloudflare edge, so it remains available when the Prompt Draft host machine or cloudflared process is offline.
 
 ---
 
 ## 8. Lifecycle commands
 
-Local Phase 2 stack remains:
+Local base stack:
 
 ```powershell
 pnpm stack
@@ -271,17 +267,11 @@ pnpm stack:cloudflare:logs
 pnpm stack:cloudflare:stop
 ```
 
-Equivalent base command:
-
-```powershell
-docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build
-```
-
 ---
 
-## 9. Phase 3 verification gates
+## 9. Verification evidence
 
-### Gate A — local regression after host-bind hardening
+### Gate A — local regression
 
 Status:
 
@@ -289,15 +279,7 @@ Status:
 PASS / FOUNDER-LOCAL VERIFIED
 ```
 
-Founder verification on 2026-09-07:
-
-```powershell
-git pull
-pnpm stack:restart
-pnpm stack:status
-```
-
-Verified outcomes:
+Verified before public ingress:
 
 ```text
 Nuxt client build PASS
@@ -307,35 +289,22 @@ frontend healthy
 api healthy
 db healthy
 translator healthy
-frontend host exposure -> 127.0.0.1:3000 only
-api host exposure      -> 127.0.0.1:4000 only
-homepage smoke PASS
-/discover/posters-editorial smoke PASS
+loopback host exposure PASS
+homepage/discovery smoke PASS
 regular login PASS
 super-admin login PASS
 application smoke PASS
 ```
 
-This proves host-bind hardening did not regress the already accepted Phase 2 runtime.
-
-### Gate B — production environment build
+### Gate B — public Docker/Tunnel runtime
 
 Status:
 
 ```text
-PENDING CLOUDFLARE TUNNEL SETUP
+PASS / FOUNDER-PRODUCTION-LIKE VERIFIED
 ```
 
-On the production host, set the production `.env` values before building the frontend image because `NUXT_PUBLIC_*` values affect the browser/public runtime contract.
-
-Start:
-
-```powershell
-pnpm stack:cloudflare
-pnpm stack:cloudflare:status
-```
-
-Expected services:
+Verified services:
 
 ```text
 frontend healthy
@@ -345,121 +314,224 @@ translator healthy
 cloudflared running
 ```
 
-### Gate C — public frontend
-
-Verify:
+Tunnel became healthy and received the dashboard-managed configuration:
 
 ```text
-https://prompt-draft.ir/
-https://prompt-draft.ir/guide
-https://prompt-draft.ir/discover/posters-editorial
+grassic.ir     -> http://frontend:3000
+api.grassic.ir -> http://api:4000
 ```
 
-Raw HTML check:
+### Gate C — public frontend + SSR safety
 
-```powershell
-curl.exe -s https://prompt-draft.ir/discover/posters-editorial > phase3-public-ssr.html
-```
-
-Expected:
+Status:
 
 ```text
-SSR route-specific HTML present
-published discovery content present when data exists
-no Docker-internal hostname exposed
+PASS
 ```
 
-### Gate D — public API and CORS
-
-Verify:
+Verified:
 
 ```text
-https://api.prompt-draft.ir/api/db-check
+https://grassic.ir returns current Docker/Nitro application
+public discovery route renders through the public Cloudflare path
+browser behavior matches accepted local runtime
 ```
 
-From the real frontend browser session verify client requests target:
+SSR output audit searched for:
 
 ```text
-https://api.prompt-draft.ir
+api:4000
+localhost:4000
+api.prompt-draft.ir
 ```
 
-and login/authenticated requests succeed without CORS errors.
+and found no matches in the tested public SSR HTML.
 
-### Gate E — auth/application smoke
+### Gate D — public API + CORS
 
-Verify through the real HTTPS frontend:
+Status:
 
 ```text
-regular login
-super-admin login
-/create
-/prompts
-/user
-/manage
-Wizard
+PASS
 ```
+
+Verified request:
+
+```text
+GET https://api.grassic.ir/api/db-check
+Origin: https://grassic.ir
+```
+
+Observed:
+
+```text
+HTTP 200
+Access-Control-Allow-Origin: https://grassic.ir
+```
+
+Browser DevTools confirmed client traffic targets `https://api.grassic.ir`.
+
+### Gate E — application parity
+
+Status:
+
+```text
+PASS / FOUNDER ACCEPTED
+```
+
+Founder reported no behavioral difference from the previously accepted application runtime after the public Cloudflare path became active. Homepage data/API behavior and authenticated application behavior were verified through the real HTTPS staging hostname.
 
 ### Gate F — restart/recovery
 
-```powershell
+Status:
+
+```text
+PASS
+```
+
+Verified:
+
+```text
 pnpm stack:cloudflare:restart
 pnpm stack:cloudflare:status
 ```
 
-After recovery, repeat:
+All application services recovered healthy. Direct HTTP/2 cloudflared transport substantially reduced the post-restart Tunnel recovery delay compared with QUIC retry/fallback behavior.
+
+### Gate G — noindex
+
+Status:
 
 ```text
-/
-/discover/posters-editorial
-login/authenticated request
+PASS
 ```
+
+Verified public response includes:
+
+```text
+X-Robots-Tag: noindex, nofollow, noarchive
+```
+
+### Gate H — Worker outage fallback
+
+Status:
+
+```text
+PASS / FOUNDER VERIFIED
+```
+
+Healthy path:
+
+```text
+HTTP 200
+normal Nuxt response
+Worker remains transparent
+```
+
+Founder then intentionally stopped only `cloudflared`.
+
+Observed outage response:
+
+```text
+HTTP/1.1 503 Service Unavailable
+X-Prompt-Draft-Fallback: cloudflare-worker
+X-Robots-Tag: noindex, nofollow, noarchive
+custom Prompt Draft fallback HTML
+```
+
+Browser screenshot confirmed the branded fallback UI replaces Cloudflare Error 1033 for frontend navigation.
+
+After restarting cloudflared, the same public route returned `HTTP 200` again without manual infrastructure intervention.
 
 ---
 
-## 10. Rollback
+## 10. Cache safety
 
-If the public Cloudflare path is unhealthy:
+Required final Cloudflare rule before administrative closure:
 
 ```text
-do not expose DB or translator publicly
-stop/disable Tunnel hostname routing
-keep the already-verified local Docker runtime intact
+hostname == api.grassic.ir
+-> Cache eligibility: Bypass cache
 ```
 
-The Phase 2 runtime remains the rollback baseline.
+Do not enable blanket `Cache Everything` behavior for the API or application HTML during Phase 3.
+
+Static Nuxt assets may use normal Cloudflare static-asset caching behavior.
+
+Fine-grained public HTML/data caching belongs to Phase 4 after route/indexing semantics are finalized.
+
+---
+
+## 11. Rollback and resilience
+
+If the staging Tunnel is unavailable:
+
+```text
+frontend HTML navigation -> Cloudflare Worker fallback page
+stable product link       -> https://prompt-draft.ir/
+```
+
+If the Worker itself fails, its Cloudflare Route is configured `Fail open`, allowing requests to proceed to the underlying Tunnel/origin when possible.
+
+The stable `prompt-draft.ir` deployment was intentionally not cut over during this phase, which preserved a separate known-good user path throughout staging verification.
 
 No database migration is part of Phase 3.
 
 ---
 
-## 11. Non-goals
+## 12. Production cutover implication
+
+Phase 3 proves the architecture required for a later production hostname switch.
+
+The intended future cutover is primarily a hostname/configuration operation:
+
+```text
+grassic.ir            -> prompt-draft.ir
+api.grassic.ir        -> api.prompt-draft.ir
+NUXT_PUBLIC_*         -> production hostnames
+CORS allowlist        -> production frontend origin
+Cloudflare Tunnel DNS -> production zone
+Worker policy         -> production decision
+```
+
+The accepted Docker/Nitro/Tunnel architecture does not require a new application rendering design for that switch.
+
+---
+
+## 13. Non-goals
 
 Phase 3 does not include:
 
 ```text
-Arvan/Iran-disconnection failover
-Cloudflare-specific business logic
+full Iran/international-disconnection failover
 public Creator implementation
 Blog implementation
-advanced edge caching
+advanced HTML caching
 full SEO metadata/sitemap redesign
 changing Bearer auth to cookie auth
 public database exposure
 public translator exposure
 ```
 
-The Arvan/fallback architecture discussed separately remains a later resilience layer.
+The stable Prompt Draft/Arvan path and later resilience architecture remain separate concerns.
 
 ---
 
-## 12. Current next action
+## 14. Final closure condition
+
+All functional/runtime/public/fallback gates have passed.
+
+The only remaining administrative hardening item is:
 
 ```text
-Create the remotely managed Cloudflare Tunnel,
-map prompt-draft.ir to http://frontend:3000,
-map api.prompt-draft.ir to http://api:4000,
-store the Tunnel token only in production .env,
-then run the Cloudflare overlay stack and complete Gates B–F.
+Cloudflare Cache Rule:
+api.grassic.ir -> Bypass cache
 ```
 
-Phase 4 can begin only after the real Cloudflare production path is verified or the founder explicitly chooses to defer public cutover while retaining the prepared Phase 3 infrastructure.
+After that rule is confirmed, Phase 3 should be recorded as:
+
+```text
+DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
+```
+
+and Milestone 21.5 Phase 4 — SEO Platform & Public Content Architecture — becomes the next implementation phase.
