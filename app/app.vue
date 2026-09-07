@@ -1,6 +1,19 @@
 <script setup lang="ts">
 const { t } = useI18n()
+const config = useRuntimeConfig()
 const isAppMounted = ref(false)
+const noindex = String(config.public.noindex).toLowerCase() === 'true'
+
+if (noindex) {
+  useHead({
+    meta: [
+      {
+        name: 'robots',
+        content: 'noindex, nofollow, noarchive',
+      },
+    ],
+  })
+}
 
 onMounted(() => {
   requestAnimationFrame(() => {
