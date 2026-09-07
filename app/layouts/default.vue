@@ -12,6 +12,43 @@ const { openPageContextMenu } = usePageContextMenu();
 
 const baseRouteName = computed(() => getRouteBaseName(route) || String(route.name || ''));
 
+const staticSeoPolicy = computed(() => {
+  if (baseRouteName.value === 'index') {
+    return {
+      enabled: true,
+      title: 'Prompt Draft',
+      description: t('growth.home.description'),
+      canonicalPath: '/',
+    };
+  }
+
+  if (baseRouteName.value === 'guide') {
+    return {
+      enabled: true,
+      title: t('guide.title'),
+      description: t('guide.description'),
+      canonicalPath: '/guide',
+    };
+  }
+
+  return {
+    enabled: false,
+    title: 'Prompt Draft',
+    description: '',
+    canonicalPath: '',
+  };
+});
+
+// Home/Guide SEO policy belongs to a component setup context because
+// usePublicSeo uses Vue I18n composables. Keeping this here avoids executing
+// useI18n from a global Nuxt plugin, which Vue I18n rejects on app bootstrap.
+usePublicSeo({
+  enabled: () => staticSeoPolicy.value.enabled,
+  title: () => staticSeoPolicy.value.title,
+  description: () => staticSeoPolicy.value.description,
+  canonicalPath: () => staticSeoPolicy.value.canonicalPath,
+});
+
 const currentThemeMode = computed(() => {
   return unref(theme)?.theme?.mode || "dark";
 });
