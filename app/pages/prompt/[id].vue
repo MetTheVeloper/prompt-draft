@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import type { PublicPromptLocale } from '~/composables/usePublicPrompt'
+import { publicPromptPath } from '~/utils/publicRoutes'
+import {
+  buildPublicPromptStructuredData,
+  normalizePublicSiteUrl,
+  publicPromptSeoImage,
+  toAbsolutePublicUrl,
+} from '~/utils/publicPromptSeo'
 
 definePageMeta({
   key: route => route.fullPath,
 })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { mobile, tablet } = useScreen()
@@ -75,6 +83,38 @@ watch(activeLocale, () => {
 const localizedTitle = computed(() => prompt.value?.title[activeLocale.value] || '')
 const primaryImage = computed(() => prompt.value?.images[0] ?? null)
 const galleryImages = computed(() => prompt.value?.images.slice(1) ?? [])
+const canonicalPath = publicPromptPath(publicId)
+const siteUrl = computed(() => normalizePublicSiteUrl(config.public.siteUrl))
+const seoDescription = computed(() => t('growth.publicPrompt.description'))
+const seoImage = computed(() => publicPromptSeoImage(prompt.value!))
+const canonicalUrl = computed(() => toAbsolutePublicUrl(
+  siteUrl.value,
+  localePath(canonicalPath, activeLocale.value),
+))
+const absoluteSeoImage = computed(() => toAbsolutePublicUrl(siteUrl.value, seoImage.value))
+const alternateLocales = computed(() => prompt.value?.availableLocales ?? [])
+const structuredData = computed(() => {
+  if (!prompt.value || !canonicalUrl.value) return null
+
+  return buildPublicPromptStructuredData({
+    prompt: prompt.value,
+    locale: activeLocale.value,
+    localizedTitle: localizedTitle.value,
+    description: seoDescription.value,
+    canonicalUrl: canonicalUrl.value,
+    imageUrl: absoluteSeoImage.value,
+    siteUrl: siteUrl.value,
+  })
+})
+
+usePublicSeo({
+  title: localizedTitle,
+  description: seoDescription,
+  canonicalPath,
+  imageUrl: seoImage,
+  alternateLocales,
+  structuredData,
+})
 
 const publishedLabel = computed(() => {
   if (!prompt.value) return ''
