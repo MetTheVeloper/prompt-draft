@@ -67,6 +67,8 @@ const props = withDefaults(
 );
 
 const attrs = useAttrs();
+const localePath = useLocalePath();
+const { locales } = useI18n();
 
 const { gap, rules, radius, p, br, bt } = toRefs(props);
 
@@ -80,13 +82,25 @@ const componentTag = computed(() => {
   return props.type || "div";
 });
 
+function resolveInternalLink(target: string) {
+  const raw = target.trim();
+  if (!raw.startsWith("/") || raw.startsWith("//")) return target;
+
+  const pathname = raw.split(/[?#]/, 1)[0] || "/";
+  const firstSegment = pathname.split("/").filter(Boolean)[0] || "";
+  const localeCodes = locales.value.map((item) => typeof item === "string" ? item : item.code);
+
+  if (localeCodes.includes(firstSegment)) return target;
+  return localePath(raw);
+}
+
 const componentAttrs = computed(() => {
   const base: Record<string, unknown> = {
     ...attrs,
   };
 
   if (props.type === "link") {
-    base.to = props.to;
+    base.to = resolveInternalLink(props.to);
   }
 
   return base;
