@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 3 Cloudflare Production Path
 
-Status: **IMPLEMENTED REPO PREPARATION / AWAITING LOCAL REGRESSION + CLOUDFLARE CUTOVER**
+Status: **REPO PREPARATION + LOCAL REGRESSION VERIFIED / AWAITING CLOUDFLARE CUTOVER**
 
 Date: 2026-09-07
 
@@ -283,7 +283,13 @@ docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build
 
 ### Gate A — local regression after host-bind hardening
 
-Before configuring a real Tunnel, verify the normal local stack still passes:
+Status:
+
+```text
+PASS / FOUNDER-LOCAL VERIFIED
+```
+
+Founder verification on 2026-09-07:
 
 ```powershell
 git pull
@@ -291,36 +297,34 @@ pnpm stack:restart
 pnpm stack:status
 ```
 
-Expected:
+Verified outcomes:
 
 ```text
+Nuxt client build PASS
+Nuxt SSR server build PASS
+Nitro node-server build PASS
 frontend healthy
 api healthy
 db healthy
 translator healthy
+frontend host exposure -> 127.0.0.1:3000 only
+api host exposure      -> 127.0.0.1:4000 only
+homepage smoke PASS
+/discover/posters-editorial smoke PASS
+regular login PASS
+super-admin login PASS
+application smoke PASS
 ```
 
-Then smoke:
-
-```text
-http://localhost:3000/
-http://localhost:3000/discover/posters-editorial
-regular login
-super-admin login
-/create
-/prompts
-/user
-/manage
-Wizard
-```
-
-Browser API requests must still use:
-
-```text
-http://localhost:4000
-```
+This proves host-bind hardening did not regress the already accepted Phase 2 runtime.
 
 ### Gate B — production environment build
+
+Status:
+
+```text
+PENDING CLOUDFLARE TUNNEL SETUP
+```
 
 On the production host, set the production `.env` values before building the frontend image because `NUXT_PUBLIC_*` values affect the browser/public runtime contract.
 
@@ -448,10 +452,14 @@ The Arvan/fallback architecture discussed separately remains a later resilience 
 
 ---
 
-## 12. Next phase after acceptance
+## 12. Current next action
 
 ```text
-Phase 4 — SEO Platform & Public Content Architecture
+Create the remotely managed Cloudflare Tunnel,
+map prompt-draft.ir to http://frontend:3000,
+map api.prompt-draft.ir to http://api:4000,
+store the Tunnel token only in production .env,
+then run the Cloudflare overlay stack and complete Gates B–F.
 ```
 
 Phase 4 can begin only after the real Cloudflare production path is verified or the founder explicitly chooses to defer public cutover while retaining the prepared Phase 3 infrastructure.
