@@ -1,6 +1,6 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–2 DONE / PHASE 3 NEXT**
+Status: **IN PROGRESS / PHASES 1–2 DONE / PHASE 3 IN PROGRESS**
 
 Date: 2026-09-07
 
@@ -26,6 +26,7 @@ Current implementation sources:
 docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
 docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/STATUS.md
 ```
 
@@ -225,7 +226,13 @@ Phase 2 is closed. The accepted Docker runtime is the baseline for Phase 3.
 
 ## 5. Phase 3 — Cloudflare Production Path
 
-Status: **NEXT / NOT STARTED**
+Status: **IN PROGRESS / REPO PREPARATION + LOCAL REGRESSION VERIFIED / CLOUDFLARE CUTOVER NEXT**
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
+```
 
 Goal:
 
@@ -241,14 +248,35 @@ Cloudflare connectivity available
 Cloudflare is the primary production path
 ```
 
-Required work includes frontend SSR origin connectivity, `api.prompt-draft.ir`, TLS, forwarded host/proto behavior, cookie/session correctness, production CORS, cache policy and production smoke tests.
-
-The verified Phase 2 network split must be preserved:
+Implemented and locally verified:
 
 ```text
-Nuxt SSR -> private/internal API origin
-browser   -> public HTTPS API origin
+Cloudflare Tunnel Compose overlay
+production public API/site environment contract
+loopback-only host binds for frontend/API
+Cloudflare stack lifecycle commands
+Bearer-auth/CORS compatibility audit
+local rebuild after host-bind hardening
+frontend/api/db/translator all healthy
+homepage + public discovery smoke
+regular + super-admin login smoke
 ```
+
+The verified network split remains:
+
+```text
+Nuxt SSR -> private/internal http://api:4000
+browser   -> public HTTPS https://api.prompt-draft.ir in production
+```
+
+Current next step is the real remotely managed Cloudflare Tunnel cutover:
+
+```text
+prompt-draft.ir     -> http://frontend:3000
+api.prompt-draft.ir -> http://api:4000
+```
+
+Then Phase 3 must verify public HTTPS, CORS/auth, request-time SSR, cache safety and restart/recovery through the real domain path.
 
 Phase 3 must not serialize or expose Docker-internal service names to browser runtime configuration.
 
@@ -478,5 +506,5 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Begin Phase 3 — Cloudflare Production Path.
+Complete the real Cloudflare Tunnel cutover and Phase 3 public verification gates.
 ```
