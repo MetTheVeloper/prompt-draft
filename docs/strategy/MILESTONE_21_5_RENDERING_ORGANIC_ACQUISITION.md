@@ -1,6 +1,6 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–2 DONE / PHASE 3 IN PROGRESS**
+Status: **IN PROGRESS / PHASES 1–3 DONE / PHASE 4 NEXT**
 
 Date: 2026-09-07
 
@@ -226,7 +226,7 @@ Phase 2 is closed. The accepted Docker runtime is the baseline for Phase 3.
 
 ## 5. Phase 3 — Cloudflare Production Path
 
-Status: **IN PROGRESS / REPO PREPARATION + LOCAL REGRESSION VERIFIED / CLOUDFLARE CUTOVER NEXT**
+Status: **DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED**
 
 Canonical record:
 
@@ -234,59 +234,69 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 ```
 
-Goal:
+Goal achieved:
 
 ```text
 prove the real international-internet production path through Cloudflare
+without disturbing the stable prompt-draft.ir deployment
 ```
 
-Current milestone assumption:
+Accepted production-like staging path:
 
 ```text
-international internet available
-Cloudflare connectivity available
-Cloudflare is the primary production path
+https://grassic.ir
+  -> Cloudflare edge
+  -> fallback Worker
+  -> Cloudflare Tunnel
+  -> frontend:3000
+
+https://api.grassic.ir
+  -> Cloudflare edge
+  -> Cloudflare Tunnel
+  -> api:4000
 ```
 
-Implemented and locally verified:
+Verified and accepted:
 
 ```text
+real Cloudflare-authoritative staging zone
 Cloudflare Tunnel Compose overlay
-production public API/site environment contract
 loopback-only host binds for frontend/API
-Cloudflare stack lifecycle commands
-Bearer-auth/CORS compatibility audit
-local rebuild after host-bind hardening
-frontend/api/db/translator all healthy
-homepage + public discovery smoke
-regular + super-admin login smoke
+browser API origin -> https://api.grassic.ir
+Nuxt SSR internal API origin -> http://api:4000
+Bearer auth/CORS compatibility
+public HTTPS frontend and API
+request-time SSR over the public path
+no tested Docker-internal hostname leakage in SSR HTML
+staging X-Robots-Tag noindex hardening
+HTTP/2 cloudflared transport for the current network
+full stack restart/recovery
+branded Cloudflare Worker fallback when cloudflared is stopped
+Worker route grassic.ir/* with Fail open
+stable-version link to https://prompt-draft.ir/
+active Cloudflare API cache bypass for api.grassic.ir
 ```
+
+Founder outage testing intentionally stopped `cloudflared`; the Worker returned the branded HTTP 503 fallback and the site automatically returned to HTTP 200 after the Tunnel was restarted.
 
 The verified network split remains:
 
 ```text
 Nuxt SSR -> private/internal http://api:4000
-browser   -> public HTTPS https://api.prompt-draft.ir in production
+browser   -> public HTTPS https://api.grassic.ir during staging
 ```
 
-Current next step is the real remotely managed Cloudflare Tunnel cutover:
+A later production cutover to `prompt-draft.ir` is now primarily a controlled hostname/configuration migration rather than an unproven runtime architecture change.
 
-```text
-prompt-draft.ir     -> http://frontend:3000
-api.prompt-draft.ir -> http://api:4000
-```
+Iran/international-disconnection failover remains a separate resilience concern and is not part of the accepted Phase 3 scope.
 
-Then Phase 3 must verify public HTTPS, CORS/auth, request-time SSR, cache safety and restart/recovery through the real domain path.
-
-Phase 3 must not serialize or expose Docker-internal service names to browser runtime configuration.
-
-Iran/international-disconnection failover is not a prerequisite for this phase. The separately discussed Arvan/fallback architecture remains a later resilience layer and must not complicate the first verified Cloudflare SSR rollout.
+Phase 3 is closed.
 
 ---
 
 ## 6. Phase 4 — SEO Platform & Public Content Architecture
 
-Status: **NOT STARTED**
+Status: **NEXT / NOT STARTED**
 
 Goal:
 
@@ -376,7 +386,7 @@ SSR must not bypass account/email authorization
 public SEO projections expose only intentionally public information
 ```
 
-The existing `scripts/generate-public-seo.ts` must be audited after the new runtime path is proven. Remove, reduce or retain only the parts still justified; do not keep duplicate SEO systems by inertia.
+The existing `scripts/generate-public-seo.ts` must be audited now that the new runtime path is proven. Remove, reduce or retain only the parts still justified; do not keep duplicate SEO systems by inertia.
 
 ---
 
@@ -506,5 +516,7 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Complete the real Cloudflare Tunnel cutover and Phase 3 public verification gates.
+Begin Phase 4 with an audit of current SEO metadata, canonical/robots/sitemap behavior,
+public Prompt/Creator route constraints, Blog needs, and the legacy generate-public-seo workaround.
+Define the reusable SEO/public-content contracts before implementing route-specific features.
 ```
