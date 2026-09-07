@@ -1,19 +1,26 @@
 <script setup lang="ts">
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const config = useRuntimeConfig()
 const isAppMounted = ref(false)
 const noindex = String(config.public.noindex).toLowerCase() === 'true'
 
-if (noindex) {
-  useHead({
-    meta: [
-      {
-        name: 'robots',
-        content: 'noindex, nofollow, noarchive',
-      },
-    ],
-  })
-}
+const htmlLanguage = computed(() => locale.value === 'fa' ? 'fa-IR' : 'en-US')
+const htmlDirection = computed(() => locale.value === 'fa' ? 'rtl' : 'ltr')
+
+useHead(() => ({
+  htmlAttrs: {
+    lang: htmlLanguage.value,
+    dir: htmlDirection.value,
+  },
+  meta: noindex
+    ? [
+        {
+          name: 'robots',
+          content: 'noindex, nofollow, noarchive',
+        },
+      ]
+    : [],
+}))
 
 onMounted(() => {
   requestAnimationFrame(() => {

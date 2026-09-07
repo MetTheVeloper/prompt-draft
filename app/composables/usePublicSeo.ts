@@ -1,10 +1,15 @@
+import { computed, toValue, type MaybeRefOrGetter } from 'vue'
+
+type PublicSeoStructuredData = Record<string, unknown> | Record<string, unknown>[]
+
 type PublicSeoOptions = {
-  title: string
-  description: string
-  canonicalPath: string
-  imageUrl?: string | null
-  contentType?: 'website' | 'article'
-  noindex?: boolean
+  title: MaybeRefOrGetter<string>
+  description: MaybeRefOrGetter<string>
+  canonicalPath: MaybeRefOrGetter<string>
+  imageUrl?: MaybeRefOrGetter<string | null | undefined>
+  contentType?: MaybeRefOrGetter<'website' | 'article'>
+  noindex?: MaybeRefOrGetter<boolean>
+  structuredData?: MaybeRefOrGetter<PublicSeoStructuredData | null | undefined>
 }
 
 function normalizeSiteUrl(value: unknown) {
@@ -36,44 +41,72 @@ function toAbsoluteUrl(siteUrl: string, value: string | null | undefined) {
   }
 }
 
+function serializeStructuredData(value: PublicSeoStructuredData | null | undefined) {
+  if (!value) return ''
+
+  return JSON.stringify(value)
+    .replaceAll('<', '\\u003c')
+    .replaceAll('>', '\\u003e')
+    .replaceAll('&', '\\u0026')
+}
+
 export function usePublicSeo(options: PublicSeoOptions) {
   const config = useRuntimeConfig()
-  const siteUrl = normalizeSiteUrl(config.public.siteUrl)
-  const canonicalUrl = toAbsoluteUrl(siteUrl, options.canonicalPath)
-  const imageUrl = toAbsoluteUrl(siteUrl, options.imageUrl)
-  const fullTitle = options.title === 'Prompt Draft'
-    ? options.title
-    : `${options.title} · Prompt Draft`
+
+  const siteUrl = computed(() => normalizeSiteUrl(config.public.siteUrl))
+  const title = computed(() => toValue(options.title).trim() || 'Prompt Draft')
+  const description = computed(() => toValue(options.description).trim())
+  const canonicalPath = computed(() => toValue(options.canonicalPath).trim())
+  const canonicalUrl = computed(() => toAbsoluteUrl(siteUrl.value, canonicalPath.value))
+  const imageUrl = computed(() => toAbsoluteUrl(siteUrl.value, toValue(options.imageUrl ?? null)))
+  const contentType = computed(() => toValue(options.contentType ?? 'website'))
+  const globalNoindex = computed(() => String(config.public.noindex).toLowerCase() === 'true')
+  const noindex = computed(() => globalNoindex.value || Boolean(toValue(options.noindex ?? false)))
+  const fullTitle = computed(() => title.value === 'Prompt Draft'
+    ? title.value
+    : `${title.value} · Prompt Draft`)
+  const structuredData = computed(() => serializeStructuredData(toValue(options.structuredData ?? null)))
 
   useSeoMeta({
-    title: fullTitle,
-    description: options.description,
-    ogTitle: fullTitle,
-    ogDescription: options.description,
-    ogType: options.contentType || 'website',
-    ...(canonicalUrl ? { ogUrl: canonicalUrl } : {}),
-    ...(imageUrl ? { ogImage: imageUrl } : {}),
-    twitterCard: imageUrl ? 'summary_large_image' : 'summary',
-    twitterTitle: fullTitle,
-    twitterDescription: options.description,
-    ...(imageUrl ? { twitterImage: imageUrl } : {}),
-    robots: options.noindex ? 'noindex, nofollow' : 'index, follow',
+    title: () => fullTitle.value,
+    description: () => description.value,
+    ogTitle: () => fullTitle.value,
+    ogDescription: () => description.value,
+    ogType: () => contentType.value,
+    ogUrl: () => canonicalUrl.value || undefined,
+    ogImage: () => imageUrl.value || undefined,
+    twitterCard: () => imageUrl.value ? 'summary_large_image' : 'summary',
+    twitterTitle: () => fullTitle.value,
+    twitterDescription: () => description.value,
+    twitterImage: () => imageUrl.value || undefined,
+    robots: () => noindex.value ? 'noindex, nofollow, noarchive' : 'index, follow',
   })
 
-  if (canonicalUrl) {
-    useHead({
-      link: [
-        {
-          rel: 'canonical',
-          href: canonicalUrl,
-        },
-      ],
-    })
-  }
+  useHead(() => ({
+    link: canonicalUrl.value
+      ? [
+          {
+            rel: 'canonical',
+            href: canonicalUrl.value,
+            key: 'canonical',
+          },
+        ]
+      : [],
+    script: structuredData.value
+      ? [
+          {
+            type: 'application/ld+json',
+            key: 'public-seo-structured',
+            innerHTML: structuredData.value,
+          },
+        ]
+      : [],
+  }))
 
   return {
     siteUrl,
     canonicalUrl,
     imageUrl,
+    noindex,
   }
 }
