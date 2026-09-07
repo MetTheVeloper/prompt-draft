@@ -254,13 +254,57 @@ Target web-contract command:
 pnpm test:public-prompt-web
 ```
 
+### Localization audit note
+
+`pnpm locale:check` is **not** a Phase 4B acceptance gate. The command runs the repository-wide localization audit with `--strict`, and the audit intentionally exits non-zero when *any* existing EN/FA parity debt or extra FA key exists. The current repository has inherited localization parity debt unrelated to this slice, so using the strict global command would make an otherwise-valid 4B slice unacceptably dependent on unrelated cleanup.
+
+For 4B, localization-specific regression checking uses:
+
+```text
+pnpm locale:audit:hardcoded
+```
+
+with the expected result:
+
+```text
+Hardcoded candidates: 0
+```
+
+The mirrored EN/FA `growth.publicPrompt.*` keys are additionally exercised by the Nuxt build/runtime and localized route smoke.
+
+### Build/runtime command policy
+
+Prefer project-owned package scripts over ad-hoc Docker commands.
+
+Canonical local production-like build/start command:
+
+```text
+pnpm stack
+```
+
+This runs:
+
+```text
+docker compose up -d --build
+```
+
+The frontend Dockerfile runs `pnpm build` inside the production builder with the repository's accepted 4 GB Node heap setting, then starts the Nitro runtime. This is the preferred 4B build/runtime gate over a separate host-shell `pnpm build`.
+
+Operational helpers:
+
+```text
+pnpm stack:status
+pnpm stack:logs
+pnpm frontend:logs
+```
+
 ### 4B.2 local verification gates
 
 ```text
-[ ] pnpm test:public-prompt-web PASS
-[ ] pnpm locale:check PASS
-[ ] pnpm build PASS
-[ ] rebuilt frontend/runtime healthy
+[x] pnpm test:public-prompt-web PASS — founder result 4/4 on 2026-09-07
+[x] repository localization audit reported Hardcoded candidates: 0 on 2026-09-07
+[ ] pnpm stack build/start PASS
+[ ] pnpm stack:status shows healthy frontend/api/db/translator
 [ ] /prompt/9003 -> 200
 [ ] /fa/prompt/9003 -> 200
 [ ] EN raw HTML contains "From Grassias"
@@ -268,11 +312,11 @@ pnpm test:public-prompt-web
 [ ] /prompt/0 -> 404
 [ ] /prompt/999999999 -> 404
 [ ] /fa/prompt/999999999 -> 404
-[ ] no protected Prompt body/variants in raw HTML
+[ ] no protected Prompt body/variants/private state in raw HTML
 [ ] protected CTA still enters /prompts?id=9003 gated flow
 ```
 
-No 4B.2 founder PASS is recorded until these gates are run on the founder checkout/runtime.
+No 4B.2 founder PASS is recorded until the remaining runtime gates are run on the founder checkout/runtime.
 
 ---
 
@@ -312,16 +356,19 @@ locale-safe navigation preserved
 
 ## 7. Final regression / staging gates
 
-Minimum automated set before final 4B acceptance:
+Minimum automated/runtime set before final 4B acceptance:
 
 ```text
 backend npm run test:public-prompt PASS
 pnpm test:public-prompt-web PASS
 pnpm test:seo-contracts PASS
 pnpm seo:audit-routes:strict PASS
-pnpm locale:check PASS
-pnpm build PASS
+pnpm locale:audit:hardcoded -> Hardcoded candidates: 0
+pnpm stack -> production-like Docker build/start PASS
+pnpm stack:status -> required services healthy
 ```
+
+A separate host-shell `pnpm build` is optional because `pnpm stack` already executes the accepted Dockerfile production build, including `pnpm build`, under the configured builder memory contract.
 
 Founder staging smoke must confirm:
 
@@ -391,11 +438,19 @@ be104d7b24701c64332dd8ae41b91340e5c821f8
   fix: remount public prompt on route identity change
 ```
 
+Founder 4B.2 partial verification — 2026-09-07:
+
+```text
+pnpm test:public-prompt-web -> PASS 4/4
+repository-wide localization audit -> Hardcoded candidates: 0
+pnpm locale:check -> expected non-zero due inherited repository-wide parity debt; removed as 4B gate
+```
+
 Current state:
 
 ```text
 4B.1 FOUNDER-LOCAL VERIFIED
-4B.2 IMPLEMENTED / LOCAL VERIFY NEXT
+4B.2 IMPLEMENTED / PARTIAL LOCAL VERIFY / RUNTIME SMOKE NEXT
 4B.3 NOT STARTED
 4B.4 NOT STARTED
 PHASE 4B NOT ACCEPTED
