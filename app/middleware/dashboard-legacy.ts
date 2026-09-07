@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(() => {
   if (!import.meta.client) return;
 
-  return navigateTo("/manage/dashboard", { replace: true });
+  const localePath = useLocalePath();
+  return navigateTo(localePath("/manage/dashboard"), { replace: true });
 });
