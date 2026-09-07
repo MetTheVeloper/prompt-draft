@@ -42,7 +42,7 @@ export default defineNuxtConfig({
   // Milestone 21.5 hybrid rendering baseline:
   // SSR is the default for public acquisition surfaces. Client-heavy/private
   // application routes explicitly opt out in both EN and the accepted /fa
-  // namespace before localized routing is activated.
+  // namespace.
   ssr: true,
   routeRules: clientOnlyRouteRules,
   spaLoadingTemplate: true,
@@ -180,9 +180,9 @@ export default defineNuxtConfig({
   modules: ["@nuxtjs/i18n", "@pinia/nuxt"],
 
   i18n: {
-    // Phase 4A activation target is prefix_except_default. Keep no_prefix until
-    // route-name and programmatic-navigation compatibility auditing is closed.
-    strategy: "no_prefix",
+    // Phase 4A public locale contract:
+    // EN is the default unprefixed URL space; Persian uses /fa.
+    strategy: "prefix_except_default",
     defaultLocale: "en",
 
     locales: [
