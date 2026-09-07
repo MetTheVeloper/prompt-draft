@@ -12,6 +12,7 @@ const emit = defineEmits<{
 }>();
 
 const { t, locale } = useI18n();
+const localePath = useLocalePath();
 const auth = useAuth();
 const economy = useEconomy();
 const goinInfoModal = useGoinInfoModal();
@@ -348,7 +349,7 @@ async function copyReferralLink() {
   const username = user.value?.username?.trim().toLowerCase() || "";
   if (!/^[a-z0-9._-]{3,64}$/.test(username) || !import.meta.client) return;
 
-  const url = new URL("/login", window.location.origin);
+  const url = new URL(localePath("/login"), window.location.origin);
   url.searchParams.set("ref", username);
 
   const copied = await writeReferralLinkToClipboard(url.toString());
@@ -391,16 +392,22 @@ async function handleOpenProfile() {
   emit("close");
 
   if (username) {
-    await navigateTo(`/user?un=${encodeURIComponent(username)}`);
+    await navigateTo({
+      path: localePath("/user"),
+      query: { un: username },
+    });
     return;
   }
 
-  await navigateTo(`/user?id=${encodeURIComponent(userId || "")}`);
+  await navigateTo({
+    path: localePath("/user"),
+    query: { id: userId || "" },
+  });
 }
 
 async function handleOpenManage() {
   emit("close");
-  await navigateTo("/manage");
+  await navigateTo(localePath("/manage"));
 }
 
 async function handleLogout() {
