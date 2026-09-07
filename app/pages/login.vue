@@ -1,7 +1,8 @@
 <script setup lang="ts">
 type LoginStep = "identifier" | "login" | "register";
 
-const { t } = useI18n();
+const { t, locales } = useI18n();
+const localePath = useLocalePath();
 const route = useRoute();
 const auth = useAuth();
 const analytics = useProductAnalytics();
@@ -37,14 +38,32 @@ const pageSubtitle = computed(() => {
   return t("auth.login.subtitle");
 });
 
+function stripKnownLocalePrefix(pathname: string) {
+  const segments = pathname.split("/");
+  const firstSegment = segments[1] || "";
+  const localeCodes = locales.value.map((item) => typeof item === "string" ? item : item.code);
+
+  if (!localeCodes.includes(firstSegment)) return pathname;
+
+  const stripped = `/${segments.slice(2).join("/")}`;
+  return stripped === "/" ? "/" : stripped.replace(/\/+$/, "");
+}
+
 function safeNextPath() {
   const next = typeof route.query.next === "string" ? route.query.next.trim() : "";
 
-  if (next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/login")) {
-    return next;
+  if (next.startsWith("/") && !next.startsWith("//")) {
+    const pathname = next.split(/[?#]/, 1)[0] || "/";
+    const basePath = stripKnownLocalePrefix(pathname);
+
+    if (basePath !== "/login") {
+      const firstSegment = pathname.split("/").filter(Boolean)[0] || "";
+      const localeCodes = locales.value.map((item) => typeof item === "string" ? item : item.code);
+      return localeCodes.includes(firstSegment) ? next : localePath(next);
+    }
   }
 
-  return "/create";
+  return localePath("/create");
 }
 
 function normalizeReferralQuery(value: unknown) {
