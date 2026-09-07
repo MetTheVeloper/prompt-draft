@@ -9,6 +9,8 @@ import AuthProfileMenu from '~/components/auth/AuthProfileMenu.vue'
 import { usePromptTemplateUi } from '~/composables/usePromptTemplateUi'
 
 const route = useRoute();
+const localePath = useLocalePath();
+const getRouteBaseName = useRouteBaseName();
 
 const { t, switchTheme } = useTheme();
 const { locale, locales, localeProperties, setLocale, t: translate } = useI18n();
@@ -29,6 +31,8 @@ const {
 } = usePromptTemplateUi();
 
 const CREATE_DRAFT_COLLECTION_REFRESH_EVENT = 'prompt-draft:create-editor:collection-refresh'
+
+const baseRouteName = computed(() => getRouteBaseName(route) || String(route.name || ''))
 
 const avatarName = computed(() => {
   return auth.user.value?.username || auth.user.value?.email || '';
@@ -152,20 +156,20 @@ function openAboutModal() {
 }
 
 function openVectorizer() {
-  navigateTo('/vectorizer')
+  navigateTo(localePath('/vectorizer'))
 }
 
 function openPortraitWizard() {
-  navigateTo('/wizard/portrait')
+  navigateTo(localePath('/wizard/portrait'))
 }
 
 async function handleTemplateDraftCreated() {
-  if (import.meta.client && route.name === 'create') {
+  if (import.meta.client && baseRouteName.value === 'create') {
     window.dispatchEvent(new Event(CREATE_DRAFT_COLLECTION_REFRESH_EVENT))
     return
   }
 
-  await navigateTo('/create')
+  await navigateTo(localePath('/create'))
 }
 
 function startFromTemplate() {
@@ -241,8 +245,11 @@ function openToolsMenu() {
 
 async function openAuthControl() {
   if (!auth.isLoggedIn.value) {
-    const next = encodeURIComponent(route.fullPath || '/create')
-    await navigateTo(`/login?next=${next}`)
+    const next = route.fullPath || localePath('/create')
+    await navigateTo({
+      path: localePath('/login'),
+      query: { next },
+    })
     return
   }
 
@@ -268,11 +275,11 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
     .map(item => ({
       label: translate(`app.navigation.${item.name}`),
       icon: item.icon,
-      active: route.name === item.name,
+      active: baseRouteName.value === item.name,
       color: 'normal15',
-      value: item.to,
+      value: localePath(item.to),
       handler: async () => {
-        await navigateTo(item.to)
+        await navigateTo(localePath(item.to))
       },
     }))
 
@@ -288,7 +295,7 @@ const mobileMenuItems = computed<GlobalMenuItem[]>(() => {
       ]
     : []
 
-  const createItems: GlobalMenuItem[] = route.name === 'create'
+  const createItems: GlobalMenuItem[] = baseRouteName.value === 'create'
     ? [
         {
           type: 'divider',
@@ -400,7 +407,7 @@ onMounted(async () => {
     :class="['post t0 l0 r0 w100 zi200 app-header', `mnhp${dimension().header.height}`]"
     @contextmenu="handleHeaderContextMenu">
 
-    <el-flex rules="rsc" type="link" to="/">
+    <el-flex rules="rsc" type="link" :to="localePath('/')">
       <img
         :src="`/img/g_${t.theme.mode === 'light' ? 'black' : 'white'}.svg`"
         class="hp32"
@@ -426,13 +433,13 @@ onMounted(async () => {
       <el-button
         v-for="item in NAVIGATION.filter(canShowNavigationItem)"
         :key="item.to"
-        :to="item.to"
-        :color="route.name === item.name ? 'prim' : 'normal'"
+        :to="localePath(item.to)"
+        :color="baseRouteName === item.name ? 'prim' : 'normal'"
         :effect="true"
-        :mode="route.name === item.name ? 'normal' : 'flat'"
+        :mode="baseRouteName === item.name ? 'normal' : 'flat'"
         :label="$t(`app.navigation.${item.name}`)"
         :icon="item.icon"
-        :type="mini && route.name !== item.name ? 'fab' : 'default'"
+        :type="mini && baseRouteName !== item.name ? 'fab' : 'default'"
         :gap="8"
         :size="12"
         :p="[8, 12]"
@@ -442,7 +449,7 @@ onMounted(async () => {
     <div v-else class="fg100" />
 
     <el-button
-      v-if="!mobile && route.name === 'create'"
+      v-if="!mobile && baseRouteName === 'create'"
       ref="templatesButtonRef"
       label="Templates"
       icon="dashboard_customize"
@@ -455,7 +462,7 @@ onMounted(async () => {
     />
 
     <el-button
-      v-if="!mobile && route.name === 'create'"
+      v-if="!mobile && baseRouteName === 'create'"
       label="Portrait Wizard"
       icon="auto_awesome"
       color="prim"
