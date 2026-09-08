@@ -73,6 +73,7 @@ tags
 preview media
 active locale
 optional eyebrow / preview-count copy
+optional Telegram message metadata used only for the public channel badge
 ```
 
 Route-specific behavior is composed through slots:
@@ -138,6 +139,20 @@ CreativeWork.description
 Open full prompt -> localized protected /prompts?id=<id>
 ```
 
+Founder visual review added one optional public-safe presentation field:
+
+```text
+telegramMessageId: number | null
+```
+
+It comes directly from `prompt_archive_items.telegram_message_id`; it is not inferred from the public numeric Prompt ID. When present, the shared shell links the visible post badge to:
+
+```text
+https://t.me/prompt-draft/{telegramMessageId}
+```
+
+in a new tab. No raw Prompt body, variants, source Draft metadata, storage keys, unlock state, economy state, permissions or viewer data were added to the public projection.
+
 The previous duplicate engineering-style Public Prompt hero/body presentation has been replaced by the shared cinema shell.
 
 ---
@@ -173,11 +188,13 @@ This does not weaken authorization because the detail route remains authenticate
 
 `usePromptArchive.ts` normalizes the localized description from the protected response. Legacy/static fallback snapshots do not synthesize a description; they explicitly use `description: null`.
 
+The protected route already owns `telegramUrl`; 4B.5B passes that existing presentation metadata into the shared shell, which extracts the message ID only for rendering the same Telegram badge. It does not expose or move protected product state.
+
 ---
 
 ## 7. Boundary regression contract
 
-New test:
+Test:
 
 ```text
 pnpm test:prompt-presentation
@@ -197,12 +214,18 @@ It verifies that:
 - protected Prompt keeps protected product state outside the shell.
 - protected Archive detail supplies authored description through its own protected contract.
 - fallback does not invent description localization.
+- presentation overlay and badges use theme-aware surface/normal tokens.
+- Telegram badge URL is canonical and opens in a new tab.
+- Public Prompt layout is full-bleed with zero default content padding.
+- protected back control uses valid Material Symbols names for LTR/RTL.
+
+Public Prompt backend/client tests additionally verify that optional `telegramMessageId` remains inside the explicit public allowlist while protected columns remain excluded.
 
 ---
 
 ## 8. Diff boundary
 
-Implementation diff from the accepted 4B.5A checkpoint is intentionally limited to:
+Initial implementation diff from the accepted 4B.5A checkpoint was intentionally limited to:
 
 ```text
 app/components/prompts/PromptPresentation.vue
@@ -215,9 +238,24 @@ scripts/prompt-presentation-contract.test.ts
 package.json
 ```
 
-No unlock/economy/auth implementation file was changed.
+Founder visual polish additionally touches only presentation/public-contract surfaces needed for the accepted review notes:
 
-No public Prompt backend projection was widened in 4B.5B.
+```text
+app/components/prompts/PromptPresentation.vue
+app/components/prompts/PromptDetail.vue
+app/layouts/default.vue
+app/pages/prompt/[id].vue
+app/composables/usePublicPrompt.ts
+backend/src/publicPrompt.mjs
+backend/src/publicPrompt.test.mjs
+scripts/prompt-presentation-contract.test.ts
+scripts/public-prompt-client-contract.test.ts
+scripts/public-prompt-description-contract.test.ts
+```
+
+The only new Public Prompt projection field in this polish is optional `telegramMessageId`.
+
+No unlock/economy/auth implementation file was changed.
 
 No 4B.5C Discovery implementation has started.
 
@@ -239,7 +277,7 @@ pnpm seo:audit-routes:strict
 docker compose exec api npm run test:public-prompt
 ```
 
-Production-like gate:
+Production-like gate after code changes:
 
 ```text
 pnpm stack:cloudflare:restart
@@ -262,6 +300,11 @@ Public + protected hero/cinema share the same presentation language.
 First public preview is present in SSR-visible presentation.
 EN remains LTR; FA remains RTL.
 Localized authored description appears correctly.
+Dark and light themes keep overlay/text/tag contrast through theme tokens.
+Model badge uses surface background + normal text.
+Telegram post badge uses blue background + white text and canonical new-tab link when Telegram metadata exists.
+Protected back icon renders a real directional Material Symbol in both locales.
+Public Prompt is full-bleed and does not receive default 32px layout padding.
 Public CTA still enters protected localized /prompts?id=:id.
 Protected route still requires auth/email.
 Unlock/copy/Goin behavior remains protected and functional.
@@ -273,11 +316,37 @@ Staging NUXT_PUBLIC_NOINDEX remains authoritative.
 
 ---
 
-## 10. Current state
+## 10. Founder visual polish — 2026-09-08
+
+Founder review after the first successful shared-shell render identified four presentation issues. They are implemented but require re-verification:
+
+1. Theme synchronization
+   - cover overlay now fades through `var(--themeSurface)` instead of hardcoded near-black colors.
+   - description and date/preview metadata inherit normal theme text color instead of fixed white-alpha color.
+   - Prompt tag badges use theme surface background and normal text.
+
+2. Model + Telegram badges
+   - model badge uses `bg="surface"` with normal text.
+   - Telegram post badge uses `bg="blue"` with white text.
+   - Telegram badge exists only when Telegram metadata exists.
+   - badge target is `https://t.me/prompt-draft/{telegramMessageId}` with `target="_blank"` and `rel="noopener noreferrer"`.
+
+3. Protected back icon
+   - LTR uses Material Symbol `arrow_back`.
+   - RTL uses Material Symbol `arrow_forward`.
+   - no global icon alias/change was retained.
+
+4. Public full-bleed layout
+   - `default.vue` now recognizes base route `prompt-id` as zero-padding presentation mode.
+   - `/prompt/:id` and `/fa/prompt/:id` no longer receive the default desktop 32px content padding.
+
+---
+
+## 11. Current state
 
 ```text
 4B.5A localized descriptions          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
-4B.5B shared Prompt presentation      -> IMPLEMENTED / FOUNDER VERIFICATION NEXT
+4B.5B shared Prompt presentation      -> IMPLEMENTED / FOUNDER RE-VERIFICATION NEXT
 4B.5C Discovery visual layer          -> NOT STARTED
 4B.5D final regression / acceptance   -> NOT STARTED
 Phase 21.5.4B                         -> NOT ACCEPTED
