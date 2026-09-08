@@ -61,6 +61,10 @@ const promptDetailMode = computed(() => {
   );
 });
 
+const publicPromptDetailMode = computed(() => {
+  return baseRouteName.value === "prompt-id";
+});
+
 const canRenderPromptDetail = computed(() => {
   if (!promptDetailMode.value) return true;
 
@@ -77,7 +81,8 @@ const padding = computed(() => {
     baseRouteName.value === "collage" ||
     baseRouteName.value === "vectorizer" ||
     wizardMode.value ||
-    promptDetailMode.value
+    promptDetailMode.value ||
+    publicPromptDetailMode.value
   )
     ? 0
     : tablet.value
