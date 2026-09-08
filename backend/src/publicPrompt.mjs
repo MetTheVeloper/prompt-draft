@@ -4,18 +4,29 @@ const PUBLIC_PROMPT_PREFIX = '/api/public/prompts'
 const PUBLIC_PROMPT_MATCH = /^\/api\/public\/prompts\/(\d+)$/
 const PUBLIC_PROMPT_MODELS = new Set(['dall-e', 'gpt-image-1'])
 
-function normalizeLocalizedTitle(value) {
+function normalizeLocalizedPresentation(titleValue, descriptionValue) {
   const title = {}
+  const description = {}
   const availableLocales = []
 
   for (const locale of ['en', 'fa']) {
-    const localized = typeof value?.[locale] === 'string' ? value[locale].trim() : ''
-    if (!localized) continue
-    title[locale] = localized
+    const localizedTitle = typeof titleValue?.[locale] === 'string'
+      ? titleValue[locale].trim()
+      : ''
+    const localizedDescription = typeof descriptionValue?.[locale] === 'string'
+      ? descriptionValue[locale].trim()
+      : ''
+
+    if (!localizedTitle || !localizedDescription) continue
+
+    title[locale] = localizedTitle
+    description[locale] = localizedDescription
     availableLocales.push(locale)
   }
 
-  return availableLocales.length ? { title, availableLocales } : null
+  return availableLocales.length
+    ? { title, description, availableLocales }
+    : null
 }
 
 function normalizeModel(value, itemId) {
@@ -69,9 +80,9 @@ export function mapPublicPromptRow(row) {
     throw new Error('Public Prompt row has invalid public id')
   }
 
-  const localized = normalizeLocalizedTitle(row.title)
+  const localized = normalizeLocalizedPresentation(row.title, row.description)
   if (!localized) {
-    throw new Error(`Public Prompt ${id} has no authoritative localized title`)
+    throw new Error(`Public Prompt ${id} has no complete authoritative localization`)
   }
 
   const publishedAt = row.publishedAt instanceof Date
@@ -88,6 +99,7 @@ export function mapPublicPromptRow(row) {
   return {
     id,
     title: localized.title,
+    description: localized.description,
     availableLocales: localized.availableLocales,
     publishedAt: publishedAt.toISOString(),
     tags: normalizeTags(row.tags),
@@ -104,6 +116,7 @@ export async function readPublicPrompt(id, query = queryDatabase) {
     SELECT
       items.public_id AS id,
       items.titles AS title,
+      items.descriptions AS description,
       items.published_at AS "publishedAt",
       items.preview_model AS "previewGeneratedWith",
       items.optimized_for AS "optimizedFor",
