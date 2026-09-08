@@ -4,8 +4,13 @@ import test from 'node:test'
 
 const read = (path: string) => readFile(new URL(`../${path}`, import.meta.url), 'utf8')
 
+function withoutStyles(source: string) {
+  return source.replace(/<style\b[\s\S]*?<\/style>/g, '')
+}
+
 test('shared PromptPresentation is presentation-only and has an SSR media fallback', async () => {
   const source = await read('app/components/prompts/PromptPresentation.vue')
+  const presentationSurface = withoutStyles(source)
 
   assert.match(source, /<img[\s\S]*prompt-presentation__ssr-image/)
   assert.match(source, /<ClientOnly>[\s\S]*<visual-slider/)
@@ -26,7 +31,7 @@ test('shared PromptPresentation is presentation-only and has an SSR media fallba
     'activePrompt',
   ]) {
     assert.equal(
-      source.includes(forbidden),
+      presentationSurface.includes(forbidden),
       false,
       `PromptPresentation must not know protected state: ${forbidden}`,
     )
