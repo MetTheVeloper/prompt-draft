@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5D Final Regression / Founder Acceptance
 
-Status: **IN PROGRESS / FINAL FOUNDER VERIFICATION NEXT / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED**
 
 Date: 2026-09-08
 
@@ -19,12 +19,12 @@ docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 Predecessor slices:
 
 ```text
-4B.5A localized descriptions       -> FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
-4B.5B shared Prompt presentation   -> FOUNDER-LOCAL VISUAL VERIFIED
-4B.5C Discovery visual layer       -> FOUNDER-LOCAL VISUAL VERIFIED
+4B.5A localized descriptions       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
+4B.5B shared Prompt presentation   -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
+4B.5C Discovery visual layer       -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
 ```
 
-Phase 21.5.4B itself remains **NOT ACCEPTED** until every gate below passes and the founder explicitly accepts the phase.
+Phase 21.5.4B received explicit founder acceptance after every gate in this record passed.
 
 ---
 
@@ -32,7 +32,7 @@ Phase 21.5.4B itself remains **NOT ACCEPTED** until every gate below passes and 
 
 4B.5D is the final regression and staging verification gate for Phase 21.5.4B Public Prompt Architecture.
 
-No new product behavior is introduced here. The purpose is to prove that the completed public acquisition surfaces preserve all previously accepted routing, localization, SEO, data-boundary and protected-product behavior.
+No new product behavior was introduced by this acceptance slice. Its purpose was to prove that the completed public acquisition surfaces preserve all previously accepted routing, localization, SEO, data-boundary and protected-product behavior.
 
 Canonical public Prompt routes remain:
 
@@ -48,18 +48,18 @@ Protected product routes remain:
 /fa/prompts?id=<id>
 ```
 
-Environment:
+Verification environment:
 
 ```text
 https://grassic.ir       -> staging verification target
 https://api.grassic.ir   -> staging browser API target
-prompt-draft.ir          -> MUST remain untouched
-NUXT_PUBLIC_NOINDEX=true -> MUST remain authoritative
+prompt-draft.ir          -> untouched
+NUXT_PUBLIC_NOINDEX=true -> preserved and authoritative
 ```
 
 ---
 
-## 2. Aggregate automated regression gate
+## 2. Aggregate automated regression gate — PASS
 
 Canonical command:
 
@@ -73,21 +73,25 @@ Runner:
 scripts/phase4b-final-regression.mjs
 ```
 
-It runs sequentially and fails fast on any non-zero gate:
+Final founder run on 2026-09-08:
 
 ```text
-pnpm test:seo-contracts
-pnpm test:public-prompt-web
-pnpm test:public-prompt-seo
-pnpm test:public-prompt-description
-pnpm test:prompt-presentation
-pnpm test:public-discovery-visual
-pnpm test:public-prompt-links
-pnpm test:interaction-polish
-pnpm seo:audit-routes:strict
+SEO contracts                         -> 5/5 PASS
+Public Prompt browser/SSR DTO         -> 6/6 PASS
+Public Prompt SEO                     -> 4/4 PASS
+Localized Public Prompt description   -> 3/3 PASS
+Shared Prompt presentation            -> 4/4 PASS
+Public Discovery visual layer         -> 3/3 PASS
+Public Prompt link migration          -> 3/3 PASS
+Interaction polish                    -> 4/4 PASS
+Strict locale-routing audit           -> PASS / 447 source files / zero hazards
+
+[phase4b-final] PASS: all frontend/SEO/routing/presentation/discovery regression gates passed.
 ```
 
-This bundle covers:
+The first aggregate-run attempt exposed only a Windows harness issue (`spawnSync pnpm.cmd EINVAL`). The runner was made shell-compatible without changing the gate list or product behavior, then the complete bundle passed.
+
+This bundle verifies:
 
 ```text
 canonical/localized route semantics
@@ -107,9 +111,9 @@ Repository-wide localization debt remains outside the 4B acceptance gate unless 
 
 ---
 
-## 3. Backend protected/public regression gate
+## 3. Backend protected/public regression gate — PASS
 
-Run against the rebuilt API container:
+Founder ran against the rebuilt API container:
 
 ```text
 docker compose exec api npm run test:public-prompt
@@ -117,7 +121,15 @@ docker compose exec api npm run test:archive-description-input
 docker compose exec api npm run test:archive-published-localization
 ```
 
-Required outcomes:
+Final results:
+
+```text
+public Prompt backend regression       -> PASS
+Archive description input              -> PASS
+published localization enforcement     -> PASS
+```
+
+Verified backend invariants include:
 
 ```text
 public Prompt projection allowlist PASS
@@ -126,22 +138,23 @@ localized title+description availability PASS
 public query still excludes Prompt body/variants PASS
 Admin localized description validation PASS
 publish localization enforcement PASS
+GET /api/archive/:id remains protected
 ```
 
-The existing backfill/prune tooling does not need to execute against data during final acceptance; its unit contracts were already verified during 4B.5A.
+The existing 4B.5A backfill/prune tooling did not need to execute against data during final acceptance; its unit and founder-data verification had already passed during 4B.5A.
 
 ---
 
-## 4. Production-like build/runtime gate
+## 4. Production-like build/runtime gate — PASS
 
-Canonical staging-connected rebuild:
+Canonical staging-connected lifecycle:
 
 ```text
 pnpm stack:cloudflare:restart
 pnpm stack:cloudflare:status
 ```
 
-Required status:
+Final founder-observed state:
 
 ```text
 frontend    healthy
@@ -151,16 +164,16 @@ translator  healthy
 cloudflared up
 ```
 
-A transient `health: starting` immediately after recreation is not final success; status must be re-run after health checks settle.
+Nuxt client/SSR/Nitro production builds completed successfully during the accepted 4B.5 rollout and the final staging-connected stack remained healthy.
 
 ---
 
-## 5. Automated staging smoke
+## 5. Automated staging smoke — PASS
 
 Canonical command:
 
 ```text
-pnpm smoke:phase4b-final -- 511 portraits-photography
+pnpm smoke:phase4b-final
 ```
 
 Runner:
@@ -169,21 +182,30 @@ Runner:
 scripts/phase4b-final-staging-smoke.mjs
 ```
 
-Arguments:
-
-```text
-1. known published bilingual Prompt public id
-2. known populated Discovery slug
-```
-
-Defaults are currently:
+Canonical default fixtures:
 
 ```text
 Prompt id      -> 511
-Discovery slug -> portraits-photography
+Discovery slug -> portrait-photography
 ```
 
-The smoke gate checks real staging responses for:
+The initial explicit invocation used the noncanonical typo `portraits-photography`, correctly returning Discovery 404. The script default contained the same typo and was corrected. No route alias or product workaround was introduced; the final smoke uses the actual canonical Discovery slug.
+
+Final staging output:
+
+```text
+public Prompt API: 200
+invalid public Prompt API: 404
+protected Archive detail API: 401
+EN Public Prompt SSR: 200
+FA Public Prompt SSR: 200
+EN Discovery SSR: 200
+FA Discovery SSR: 200
+
+[phase4b-smoke] PASS: staging public API, EN/FA SSR, SEO, noindex and protected-boundary smoke passed.
+```
+
+The staging smoke verified:
 
 ```text
 GET /api/public/prompts/:id -> 200
@@ -217,34 +239,66 @@ The script explicitly refuses to run if its configured site/API base contains `p
 
 ---
 
-## 6. Manual founder browser smoke
+## 6. Manual founder browser smoke — PASS
 
-Automated HTTP checks cannot replace the protected authenticated product smoke.
+Founder explicitly confirmed the manual smoke was green.
 
-Required final browser checks:
+Accepted browser/runtime observations include:
 
 ```text
-1. Open a Public Prompt from an acquisition surface.
-2. Public Prompt renders localized title/description/media with no protected controls.
-3. Open full prompt enters the localized protected /prompts?id=<id> flow.
-4. Protected page still shows the expected auth/email/unlock/copy/economy behavior.
-5. Unlock/copy remains functional for the founder test account and does not affect Public Prompt projection.
-6. Public and protected back buttons use browser history with correct LTR/RTL arrow direction.
-7. Telegram post badge/link opens the canonical post in a new tab when metadata exists.
-8. Discovery EN/FA hero is content-sized, slider remains clipped to the hero, no duplicate static+animated media layer remains, and outer default-layout padding is zero.
-9. Light and dark themes remain readable on shared Prompt and Discovery surfaces.
-10. prompt-draft.ir is not modified or used as the verification target.
+Public Prompt EN/FA renders localized title, authored description and media
+Public surface exposes no protected controls/content
+Open full prompt enters localized protected /prompts?id=<id>
+protected auth/email/unlock/copy/economy behavior remains functional
+public and protected back buttons use browser history
+LTR/RTL back arrow semantics are correct
+Telegram badge/link opens canonical Telegram post in a new tab when metadata exists
+shared Prompt presentation is readable in light and dark themes
+Discovery EN/FA hero is content-sized
+Discovery slider is clipped to the hero
+Discovery has no duplicate static+animated media layer after hydration
+Discovery outer default-layout padding is zero
+prompt-draft.ir remained untouched
 ```
 
 ---
 
-## 7. Acceptance equation
+## 7. Security and public-data boundary — PASS
 
-Phase 21.5.4B may be marked accepted only when:
+Final accepted public/protected split:
 
 ```text
-4B.1–4B.4 inherited founder verification remains green
-+ 4B.5A accepted slice remains green
+GET /api/public/prompts/:id -> public sanitized published-only projection
+GET /api/archive/:id        -> authenticated protected detail
+/prompt/:id                 -> public SSR acquisition surface
+/prompts?id=<id>             -> protected product/unlock surface
+```
+
+Public presentation may include only intentionally public metadata such as localized title/description, publication metadata, tags, preview/model presentation data and approved public-safe Telegram post metadata.
+
+Still forbidden from public projection/presentation:
+
+```text
+protected Prompt body
+variants
+source Draft/private payload
+source user identity unless explicitly introduced by later Creator policy
+storage keys
+unlock state
+balance/Goin
+permissions
+authenticated viewer/account state
+```
+
+The public database query itself remains forbidden from selecting protected Prompt body or variants.
+
+---
+
+## 8. Acceptance equation — SATISFIED
+
+```text
+4B.1–4B.4 inherited founder verification green
++ 4B.5A accepted slice green
 + 4B.5B founder visual/runtime verification PASS
 + 4B.5C founder visual/runtime verification PASS
 + pnpm test:phase4b-final PASS
@@ -252,22 +306,26 @@ Phase 21.5.4B may be marked accepted only when:
 + production-like Cloudflare stack build/health PASS
 + pnpm smoke:phase4b-final PASS
 + protected authenticated browser smoke PASS
-+ founder explicit acceptance
++ founder explicit acceptance: "Phase 4B accepted"
 = Phase 21.5.4B ACCEPTED
 ```
 
-Automated PASS alone is not founder acceptance.
-
 ---
 
-## 8. Current checkpoint
+## 9. Final state
 
 ```text
-4B.5A localized descriptions          -> ACCEPTED AS SLICE
-4B.5B shared Prompt presentation      -> FOUNDER-LOCAL VISUAL VERIFIED
-4B.5C Discovery visual layer          -> FOUNDER-LOCAL VISUAL VERIFIED
-4B.5D final regression / acceptance   -> IN PROGRESS / FINAL GATES NEXT
-Phase 21.5.4B                         -> NOT ACCEPTED
+4B.5A localized descriptions          -> DONE / ACCEPTED
+4B.5B shared Prompt presentation      -> DONE / ACCEPTED
+4B.5C Discovery visual layer          -> DONE / ACCEPTED
+4B.5D final regression / acceptance   -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+Phase 21.5.4B                         -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 ```
 
-Next action is to run the final commands above, capture the outputs, perform the short protected browser smoke, and obtain explicit founder acceptance.
+Next execution slice:
+
+```text
+Phase 21.5.4C — Public Creator + Indexability Policy
+```
+
+Phase 4 overall remains in progress; 4C must begin from the already accepted public/protected, localization and SEO boundaries established by 4A and 4B.
