@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import test from 'node:test'
 
 const pageSource = readFileSync('app/pages/prompt/[id].vue', 'utf8')
+const presentationSource = readFileSync('app/components/prompts/PromptPresentation.vue', 'utf8')
 const publicPromptSource = readFileSync('backend/src/publicPrompt.mjs', 'utf8')
 const adminRouteSource = readFileSync('backend/src/adminArchiveRoute.mjs', 'utf8')
 const migrationSource = readFileSync(
@@ -13,7 +14,8 @@ const migrationSource = readFileSync(
 test('Public Prompt page uses authored description for visible copy and SEO projection', () => {
   assert.match(pageSource, /const localizedDescription = computed\(/)
   assert.match(pageSource, /prompt\.value\?\.description\[activeLocale\.value\]/)
-  assert.match(pageSource, /\{\{ localizedDescription \}\}/)
+  assert.match(pageSource, /:description="localizedDescription"/)
+  assert.match(presentationSource, /\{\{ description \}\}/)
   assert.match(pageSource, /description:\s*localizedDescription\.value/)
   assert.match(pageSource, /const seoDescription = computed\(\(\) => localizedDescription\.value\)/)
   assert.doesNotMatch(pageSource, /t\(['"]growth\.publicPrompt\.description['"]\)/)
