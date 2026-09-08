@@ -7,8 +7,10 @@
     "start": "node src/index.mjs",
     "db:schema": "node src/create-schema.mjs",
     "archive:import": "node src/import-prompt-archive.mjs",
+    "archive:export-description-inventory": "node src/export-prompt-archive-description-inventory.mjs",
     "archive:backfill-descriptions": "node src/backfill-prompt-archive-descriptions.mjs",
     "test:public-prompt": "node --test src/publicPrompt.test.mjs",
+    "test:archive-description-inventory": "node --test src/promptArchiveDescriptionInventory.test.mjs",
     "test:archive-description-backfill": "node --test src/promptArchiveDescriptionBackfill.test.mjs",
     "test:archive-description-input": "node --test src/archiveDescriptionInput.test.mjs"
   },
