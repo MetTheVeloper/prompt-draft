@@ -78,6 +78,12 @@ test('public Prompt uses the shared shell without crossing into protected data',
   assert.match(source, /localizedDescription/)
   assert.match(source, /:telegram-message-id="prompt\?\.telegramMessageId \?\? null"/)
 
+  assert.match(source, /const router = useRouter\(\)/)
+  assert.match(source, /activeLocale\.value === 'fa' \? 'arrow_forward' : 'arrow_back'/)
+  assert.match(source, /<template #topbar-leading>[\s\S]*color="normal"[\s\S]*:icon="backIcon"[\s\S]*@click="router\.back\(\)"/)
+  assert.doesNotMatch(source, /const homePath = computed/)
+  assert.doesNotMatch(source, /growth\.publicPrompt\.backHome/)
+
   assert.match(layout, /const publicPromptDetailMode = computed\(\(\) => \{/)
   assert.match(layout, /baseRouteName\.value === "prompt-id"/)
   assert.match(layout, /publicPromptDetailMode\.value/)
@@ -107,7 +113,9 @@ test('protected Prompt keeps product state outside the shared shell', async () =
   assert.match(detail, /props\.item\.variants/)
   assert.match(detail, /localizedDescription/)
   assert.match(detail, /:telegram-url="item\.telegramUrl"/)
+  assert.match(detail, /const router = useRouter\(\)/)
   assert.match(detail, /locale\.value === 'fa' \? 'arrow_forward' : 'arrow_back'/)
+  assert.match(detail, /<template #topbar-leading>[\s\S]*color="normal"[\s\S]*:icon="backIcon"[\s\S]*@click="router\.back\(\)"/)
   assert.doesNotMatch(detail, /'arrow-right'|'arrow-left'/)
 
   assert.match(archive, /items\.descriptions AS description/)
