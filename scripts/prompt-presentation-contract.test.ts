@@ -8,6 +8,17 @@ function withoutStyles(source: string) {
   return source.replace(/<style\b[\s\S]*?<\/style>/g, '')
 }
 
+test('root PromptPresentation alias resolves the shared prompts component', async () => {
+  const alias = await read('app/components/PromptPresentation.vue')
+
+  assert.match(alias, /import PromptsPromptPresentation from '\.\/prompts\/PromptPresentation\.vue'/)
+  assert.match(alias, /<PromptsPromptPresentation v-bind="\$attrs">/)
+
+  for (const slot of ['topbar-leading', 'meta', 'actions', 'status', 'scroll-cue']) {
+    assert.match(alias, new RegExp(`slot name="${slot}"`))
+  }
+})
+
 test('shared PromptPresentation is presentation-only and has an SSR media fallback', async () => {
   const source = await read('app/components/prompts/PromptPresentation.vue')
   const presentationSurface = withoutStyles(source)
