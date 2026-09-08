@@ -1,6 +1,10 @@
 import { randomUUID } from 'node:crypto'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
 import { queryDatabase, withDatabaseTransaction } from './database.mjs'
+import {
+  normalizeArchiveDescriptionInput,
+  validateArchiveDescriptionInput,
+} from './archiveDescriptionInput.mjs'
 
 const ARCHIVE_MODELS = Object.freeze(['dall-e', 'gpt-image-1'])
 const ARCHIVE_STATUSES = Object.freeze(['draft', 'published', 'archived'])
@@ -137,6 +141,8 @@ function validateArchiveInput(body) {
     }
   }
 
+  errors.push(...validateArchiveDescriptionInput(body.description))
+
   if (
     body.sourceTitle !== undefined && body.sourceTitle !== null &&
     (typeof body.sourceTitle !== 'string' || body.sourceTitle.length > MAX_SOURCE_TITLE_LENGTH)
@@ -179,6 +185,7 @@ function normalizeArchiveInput(body) {
   return {
     telegramMessageId: normalizeOptionalTelegramMessageId(body.telegramMessageId),
     title: { en: body.title.en.trim(), fa: body.title.fa.trim() },
+    description: normalizeArchiveDescriptionInput(body.description),
     sourceTitle: typeof body.sourceTitle === 'string' && body.sourceTitle.trim() ? body.sourceTitle.trim() : null,
     publishedAt: new Date(body.publishedAt).toISOString(),
     prompt: body.prompt,
@@ -235,6 +242,7 @@ function mapDetailRow(row) {
   return {
     ...mapSummaryRow({ ...row, imageCount: Array.isArray(row.images) ? row.images.length : 0 }),
     channel: row.channel,
+    description: isPlainObject(row.description) ? row.description : {},
     sourceTitle: row.sourceTitle ?? '',
     prompt: row.prompt,
     variants: Array.isArray(row.variants) ? row.variants : [],
@@ -333,6 +341,7 @@ async function getArchiveItemById(id) {
       items.telegram_message_id AS "telegramMessageId",
       items.channel,
       items.titles AS title,
+      items.descriptions AS description,
       items.source_title AS "sourceTitle",
       items.telegram_url AS "telegramUrl",
       items.published_at AS "publishedAt",
@@ -438,20 +447,21 @@ async function createArchiveItem(actor, input) {
     const channel = await getArchiveChannel(client)
     await client.query(`
       INSERT INTO prompt_archive_items (
-        id, public_id, telegram_message_id, channel, titles, legacy_title_key,
+        id, public_id, telegram_message_id, channel, titles, descriptions, legacy_title_key,
         source_title, telegram_url, published_at, prompt, preview_model,
         optimized_for, variants, status, source_kind, created_by, updated_by,
         created_at, updated_at
       ) VALUES (
-        $1, COALESCE($2, nextval('prompt_archive_public_id_seq')), $2, $3, $4::jsonb, NULL,
-        $5, $6, $7, $8, $9, $10::text[], '[]'::jsonb, 'draft', 'managed',
-        $11, $11, NOW(), NOW()
+        $1, COALESCE($2, nextval('prompt_archive_public_id_seq')), $2, $3, $4::jsonb, $5::jsonb, NULL,
+        $6, $7, $8, $9, $10, $11::text[], '[]'::jsonb, 'draft', 'managed',
+        $12, $12, NOW(), NOW()
       )
     `, [
       id,
       input.telegramMessageId,
       channel,
       JSON.stringify(input.title),
+      JSON.stringify(input.description),
       input.sourceTitle,
       telegramUrl(channel, input.telegramMessageId),
       input.publishedAt,
@@ -492,15 +502,16 @@ async function updateArchiveItem(actor, id, input) {
       SET telegram_message_id = $2,
           channel = $3,
           titles = $4::jsonb,
-          source_title = $5,
-          telegram_url = $6,
-          published_at = $7,
-          prompt = $8,
-          preview_model = $9,
-          optimized_for = $10::text[],
+          descriptions = $5::jsonb,
+          source_title = $6,
+          telegram_url = $7,
+          published_at = $8,
+          prompt = $9,
+          preview_model = $10,
+          optimized_for = $11::text[],
           status = 'draft',
-          source_kind = $11,
-          updated_by = $12,
+          source_kind = $12,
+          updated_by = $13,
           updated_at = NOW()
       WHERE id = $1
     `, [
@@ -508,6 +519,7 @@ async function updateArchiveItem(actor, id, input) {
       input.telegramMessageId,
       channel,
       JSON.stringify(input.title),
+      JSON.stringify(input.description),
       input.sourceTitle,
       telegramUrl(channel, input.telegramMessageId),
       input.publishedAt,

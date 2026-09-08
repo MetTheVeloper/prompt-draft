@@ -9,7 +9,8 @@
     "archive:import": "node src/import-prompt-archive.mjs",
     "archive:backfill-descriptions": "node src/backfill-prompt-archive-descriptions.mjs",
     "test:public-prompt": "node --test src/publicPrompt.test.mjs",
-    "test:archive-description-backfill": "node --test src/promptArchiveDescriptionBackfill.test.mjs"
+    "test:archive-description-backfill": "node --test src/promptArchiveDescriptionBackfill.test.mjs",
+    "test:archive-description-input": "node --test src/archiveDescriptionInput.test.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"
