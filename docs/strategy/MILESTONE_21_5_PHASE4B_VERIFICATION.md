@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 FOUNDER-LOCAL VERIFIED / 4B.4 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 FOUNDER-LOCAL VERIFIED / 4B.4 FOUNDER-LOCAL VERIFIED / 4B.5 FINAL VERIFICATION NEXT / NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -42,8 +42,8 @@ Automated PASS alone is not acceptance.
 4B.1 backend public read model            DONE / FOUNDER-LOCAL VERIFIED
 4B.2 Nuxt Public Prompt SSR route         DONE / FOUNDER-LOCAL VERIFIED
 4B.3 SEO metadata                         DONE / FOUNDER-LOCAL VERIFIED
-4B.4 public-link migration                IMPLEMENTED / LOCAL VERIFY NEXT
-4B.5 final founder/staging verification   NOT STARTED
+4B.4 public-link migration                DONE / FOUNDER-LOCAL VERIFIED
+4B.5 final founder/staging verification   NEXT
 ```
 
 Canonical public routes:
@@ -464,7 +464,7 @@ Conclusion:
 
 ---
 
-## 7. 4B.4 Public-link migration — IMPLEMENTED
+## 7. 4B.4 Public-link migration — VERIFIED
 
 Audit scope distinguishes Prompt-detail acquisition links from valid generic product/catalog links.
 
@@ -498,22 +498,66 @@ pnpm test:public-prompt-links
 
 The contract locks both acquisition components to `publicPromptPath` + `useLocalePath`, rejects direct `/prompts?id=` links in those components, and asserts that the Public Prompt page itself retains the protected `/prompts` + id query CTA.
 
-### 4B.4 local verification gates
+### Founder local/staging verification — 2026-09-08
+
+Automated gates:
 
 ```text
-[ ] pnpm test:public-prompt-links PASS
-[ ] pnpm test:seo-contracts PASS
-[ ] pnpm seo:audit-routes:strict PASS
-[ ] pnpm stack PASS with 4B.4 code
-[ ] EN Discovery detail CTA resolves to /prompt/<id>
-[ ] FA Discovery detail CTA resolves to /fa/prompt/<id>
-[ ] EN Home detail CTA resolves to /prompt/<id>
-[ ] FA Home detail CTA resolves to /fa/prompt/<id>
-[ ] Public Prompt full-detail CTA still resolves to /prompts?id=<id> (localized FA equivalent allowed)
-[ ] protected product/API behavior remains unchanged
+pnpm test:public-prompt-links -> 3/3 PASS
+pnpm test:seo-contracts      -> 5/5 PASS
+pnpm seo:audit-routes:strict -> PASS, 443 files, zero locale-routing hazards
 ```
 
-No 4B.4 founder PASS is recorded until these gates are executed on the founder checkout/runtime.
+Production-like stack:
+
+```text
+pnpm stack -> PASS
+frontend -> healthy
+api -> healthy
+db -> healthy
+translator -> healthy
+cloudflared -> running
+```
+
+Discovery raw-HTML acquisition-link smoke across all six public categories:
+
+```text
+portrait-photography      EN public links 18 / EN protected links 0 / FA public links 18
+3d-sculpture              EN public links 18 / EN protected links 0 / FA public links 18
+illustration-animation    EN public links 18 / EN protected links 0 / FA public links 18
+posters-editorial         EN public links 17 / EN protected links 0 / FA public links 17
+product-fashion           EN public links 13 / EN protected links 0 / FA public links 13
+cinematic-game-art        EN public links 18 / EN protected links 0 / FA public links 18
+FA protected Discovery detail total -> 0
+```
+
+Protected boundary re-check:
+
+```text
+EN Public Prompt protected CTA count -> 1
+FA Public Prompt protected CTA count -> 1
+GET /api/archive/9003 unauthenticated -> 401
+```
+
+Home raw SSR initially showed zero Prompt links. This is expected because `app/pages/index.vue` loads Home discovery sections inside `onMounted()` after hydration. Therefore Home detail-link verification must be browser/runtime based rather than inferred from initial SSR HTML.
+
+Founder browser smoke confirmed:
+
+```text
+Home EN View Prompt -> /prompt/<id>
+Home FA View Prompt -> /fa/prompt/<id>
+Public Prompt Open full prompt -> protected /prompts?id=<id>
+FA Public Prompt Open full prompt -> protected /fa/prompts?id=<id>
+protected product flow remains functional
+```
+
+The same rebuilt local Docker runtime was also observed through the staging hostname `https://grassic.ir` because the running Cloudflare Tunnel forwards staging traffic to the local frontend container. `pnpm stack` itself rebuilds/restarts local containers; it does not perform a separate remote deployment.
+
+Conclusion:
+
+```text
+4B.4 PUBLIC-LINK MIGRATION -> FOUNDER-LOCAL VERIFIED
+```
 
 ---
 
@@ -639,7 +683,7 @@ Current state:
 4B.1 FOUNDER-LOCAL VERIFIED
 4B.2 FOUNDER-LOCAL VERIFIED
 4B.3 FOUNDER-LOCAL VERIFIED
-4B.4 IMPLEMENTED / LOCAL VERIFY NEXT
-4B.5 NOT STARTED
+4B.4 FOUNDER-LOCAL VERIFIED
+4B.5 FINAL VERIFICATION NEXT
 PHASE 4B NOT ACCEPTED
 ```
