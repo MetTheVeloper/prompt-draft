@@ -45,7 +45,7 @@ export async function handleAdminArchiveRoute({
   }
 
   const publishMatch = url.pathname.match(
-    /^\/api\/admin\/archive\/([0-9a-f-]{36})\/publish$/i,
+    /^\/api\/admin\/archive\/([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})\/publish$/i,
   )
 
   if (
