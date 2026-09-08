@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 FOUNDER-LOCAL VERIFIED / 4B.4 IMPLEMENTED / LOCAL VERIFY NEXT / NOT ACCEPTED**
 
-Date: 2026-09-07
+Date: 2026-09-08
 
 Branch:
 
@@ -41,8 +41,8 @@ Automated PASS alone is not acceptance.
 4B source-of-truth contract               DONE
 4B.1 backend public read model            DONE / FOUNDER-LOCAL VERIFIED
 4B.2 Nuxt Public Prompt SSR route         DONE / FOUNDER-LOCAL VERIFIED
-4B.3 SEO metadata                         IMPLEMENTED / LOCAL VERIFY NEXT
-4B.4 public-link migration                NOT STARTED
+4B.3 SEO metadata                         DONE / FOUNDER-LOCAL VERIFIED
+4B.4 public-link migration                IMPLEMENTED / LOCAL VERIFY NEXT
 4B.5 final founder/staging verification   NOT STARTED
 ```
 
@@ -121,15 +121,15 @@ publicPrompt.test.mjs
 0 fail
 ```
 
-### Founder Docker/API verification — 2026-09-07
+### Founder Docker/API verification
 
-Founder rebuilt the real API container and ran:
+Founder rebuilt/ran the real API container and executed:
 
 ```text
 docker compose exec api npm run test:public-prompt
 ```
 
-Result:
+Verified again on 2026-09-08:
 
 ```text
 8 tests
@@ -160,7 +160,7 @@ model
 images
 ```
 
-Founder runtime HTTP results:
+Founder runtime HTTP results verified again on 2026-09-08:
 
 ```text
 GET /api/public/prompts/9003      -> 200
@@ -218,9 +218,9 @@ Public Prompt page
   -> existing protected product flow
 ```
 
-### Founder local verification — 2026-09-07
+### Founder local verification
 
-Web contract:
+Web contract verified again on 2026-09-08:
 
 ```text
 pnpm test:public-prompt-web
@@ -235,18 +235,18 @@ Production-like project-owned stack command:
 pnpm stack
 ```
 
-Result:
+Verified 2026-09-08 result:
 
 ```text
 Docker frontend build -> PASS
 Nuxt client build     -> PASS
 Nuxt SSR build        -> PASS
 Nitro server build    -> PASS
-frontend container    -> started
-api/db/translator     -> healthy
+frontend              -> healthy
+api                    -> healthy
+db                     -> healthy
+translator             -> healthy
 ```
-
-The immediate `pnpm stack:status` snapshot showed the freshly recreated frontend as `health: starting`; subsequent requests to that same frontend returned successful SSR responses, proving that the runtime was serving successfully after startup.
 
 Founder HTTP results:
 
@@ -258,7 +258,7 @@ GET /prompt/999999999            -> 404
 GET /fa/prompt/999999999         -> 404
 ```
 
-Staging-safety header observed on these local production-like responses:
+Staging-safety header observed on local production-like responses:
 
 ```text
 X-Robots-Tag: noindex, nofollow, noarchive
@@ -291,7 +291,7 @@ images
 
 The first broad smoke pattern searched for the plain word `variants`. That word legitimately appears in localized explanatory UI copy saying protected content stays in the protected product flow, so `Select-String` returned the whole HTML document. This was a smoke-test false positive, not data leakage.
 
-Future raw-HTML leakage checks must search for serialized private **keys**, not narrative words:
+Future raw-HTML leakage checks search for serialized private **keys**, not narrative words:
 
 ```text
 "sourceDraftId":
@@ -302,9 +302,15 @@ Future raw-HTML leakage checks must search for serialized private **keys**, not 
 "balance":
 "permissions":
 "viewer":
+"prompt":
 ```
 
-No such private keys were present in the observed Nuxt hydration payload.
+Founder key-based verification on 2026-09-08:
+
+```text
+EN private-key matches -> 0
+FA private-key matches -> 0
+```
 
 Conclusion:
 
@@ -332,22 +338,11 @@ pnpm locale:audit:hardcoded
 
 Therefore neither command can be interpreted as a zero-finding 4B acceptance gate without a stored baseline/diff mechanism.
 
-4B-specific localization confidence comes from:
-
-```text
-localized growth.publicPrompt.* keys in EN and FA
-Nuxt build success
-EN SSR route success
-FA SSR route success
-correct html lang/dir
-no fallback localization presented as authoritative content
-```
-
-A future localization cleanup milestone may baseline or eliminate the repository-wide audit debt independently.
+4B-specific localization confidence comes from localized `growth.publicPrompt.*` keys, Nuxt build success, EN/FA SSR route success, correct html lang/dir and no fallback localization presented as authoritative content.
 
 ---
 
-## 6. 4B.3 Public Prompt SEO metadata — IMPLEMENTED
+## 6. 4B.3 Public Prompt SEO metadata — VERIFIED
 
 Implementation files:
 
@@ -406,48 +401,119 @@ viewer/account state
 creator/author until 4C
 ```
 
-Target automated command:
+### Founder local verification — 2026-09-08
+
+Automated gates:
 
 ```text
-pnpm test:public-prompt-seo
+pnpm test:public-prompt-seo -> 4/4 PASS
+pnpm test:seo-contracts     -> 5/5 PASS
+pnpm seo:audit-routes:strict -> PASS, 443 files, zero locale-routing hazards
 ```
 
-### 4B.3 local verification gates
+Production-like build/runtime:
 
 ```text
-[ ] pnpm test:public-prompt-seo PASS
-[ ] pnpm test:seo-contracts PASS
-[ ] pnpm seo:audit-routes:strict PASS
-[ ] pnpm stack PASS with 4B.3 code
-[ ] EN /prompt/9003 title -> From Grassias · Prompt Draft
-[ ] FA /fa/prompt/9003 localized title present
-[ ] EN canonical -> https://grassic.ir/prompt/9003
-[ ] FA canonical -> https://grassic.ir/fa/prompt/9003
-[ ] EN/FA reciprocal hreflang present
-[ ] x-default -> https://grassic.ir/prompt/9003
-[ ] OG image -> first public preview image
-[ ] JSON-LD @type -> CreativeWork
-[ ] JSON-LD contains no serialized private keys/content
-[ ] X-Robots-Tag staging noindex remains present
+pnpm stack -> PASS
+Nuxt client build -> PASS
+Nuxt SSR build -> PASS
+Nitro build -> PASS
+final pnpm stack:status -> frontend/api/db/translator healthy
 ```
 
-No 4B.3 founder PASS is recorded until these gates are executed on the founder checkout/runtime.
+Observed SEO/runtime gates:
+
+```text
+EN canonical -> https://grassic.ir/prompt/9003
+FA canonical -> https://grassic.ir/fa/prompt/9003
+hreflang en-US -> present
+hreflang fa-IR -> present
+x-default -> present / English canonical
+OG image -> present
+Twitter image -> present
+CreativeWork JSON-LD EN -> present
+CreativeWork JSON-LD FA -> present
+serialized private-key leakage -> 0 EN / 0 FA
+X-Robots-Tag staging noindex -> present
+```
+
+### PowerShell encoding note
+
+The first title smoke consumed `curl.exe` stdout directly in Windows PowerShell and produced mojibake (`·` became `┬╖`, Persian UTF-8 bytes were mis-decoded). This was a test-harness encoding issue, not an application SEO regression.
+
+The final check saved curl response bytes to files and read them explicitly as UTF-8. Result:
+
+```text
+EN actual title   -> From Grassias · Prompt Draft
+EN expected title -> From Grassias · Prompt Draft
+EN exact match    -> true
+
+FA actual title   -> از گراسیاس · Prompt Draft
+FA expected title -> از گراسیاس · Prompt Draft
+FA exact match    -> true
+
+EN body contains authoritative API title -> true
+FA body contains authoritative API title -> true
+```
+
+Conclusion:
+
+```text
+4B.3 PUBLIC PROMPT SEO METADATA -> FOUNDER-LOCAL VERIFIED
+```
 
 ---
 
-## 7. 4B.4 Public-link migration — NOT STARTED
+## 7. 4B.4 Public-link migration — IMPLEMENTED
 
-Target behavior:
+Audit scope distinguishes Prompt-detail acquisition links from valid generic product/catalog links.
+
+Generic `/prompts` navigation remains valid and is intentionally unchanged. Only public acquisition links that point at a specific Prompt are migrated to the canonical Public Prompt route.
+
+Audited detail entry points requiring migration:
 
 ```text
-Discovery public cards -> publicPromptPath(id)
-other public acquisition surfaces -> canonical public Prompt route
-Public Prompt product CTA -> /prompts?id=<id>
-/prompts?id=<id> protected behavior unchanged
-locale-safe navigation preserved
+app/components/discover/PublicDiscoveryCard.vue
+app/components/home/HomeDiscoverySection.vue
 ```
 
-Broad Discovery migration remains sequenced here rather than being folded into the Public Prompt SSR/SEO slices.
+Implemented behavior:
+
+```text
+Discovery View Prompt -> localePath(publicPromptPath(id))
+Home showcase View Prompt -> localePath(publicPromptPath(id))
+EN acquisition detail -> /prompt/:id
+FA acquisition detail -> /fa/prompt/:id
+Public Prompt Open full prompt CTA -> remains /prompts?id=<id>
+Protected product flow -> unchanged
+Generic /prompts catalog links -> unchanged
+```
+
+Regression contract:
+
+```text
+scripts/public-prompt-link-migration.test.ts
+pnpm test:public-prompt-links
+```
+
+The contract locks both acquisition components to `publicPromptPath` + `useLocalePath`, rejects direct `/prompts?id=` links in those components, and asserts that the Public Prompt page itself retains the protected `/prompts` + id query CTA.
+
+### 4B.4 local verification gates
+
+```text
+[ ] pnpm test:public-prompt-links PASS
+[ ] pnpm test:seo-contracts PASS
+[ ] pnpm seo:audit-routes:strict PASS
+[ ] pnpm stack PASS with 4B.4 code
+[ ] EN Discovery detail CTA resolves to /prompt/<id>
+[ ] FA Discovery detail CTA resolves to /fa/prompt/<id>
+[ ] EN Home detail CTA resolves to /prompt/<id>
+[ ] FA Home detail CTA resolves to /fa/prompt/<id>
+[ ] Public Prompt full-detail CTA still resolves to /prompts?id=<id> (localized FA equivalent allowed)
+[ ] protected product/API behavior remains unchanged
+```
+
+No 4B.4 founder PASS is recorded until these gates are executed on the founder checkout/runtime.
 
 ---
 
@@ -459,6 +525,7 @@ Minimum automated/runtime set before final 4B acceptance:
 backend npm run test:public-prompt PASS
 pnpm test:public-prompt-web PASS
 pnpm test:public-prompt-seo PASS
+pnpm test:public-prompt-links PASS
 pnpm test:seo-contracts PASS
 pnpm seo:audit-routes:strict PASS
 pnpm stack -> production-like Docker build/start PASS
@@ -473,7 +540,7 @@ public API 200/404 semantics
 EN/FA SSR route semantics
 canonical/hreflang/OG/JSON-LD
 staging robots/noindex protection
-public-link migration after 4B.4
+public-link migration
 GET /api/archive/:id remains protected
 /prompts?id=<id> remains auth/email/unlock gated
 prompt-draft.ir remains untouched
@@ -550,12 +617,29 @@ cdfdc821cab9ed5ad0c1df265cef65f578d8a216
   test: add public prompt SEO contract command
 ```
 
+4B.4 implementation:
+
+```text
+5e11ce712d960b590cc9285b6888b1e4c2172aa9
+  feat: route discovery cards to public prompts
+
+fae0fca593bfff808407e13a6d28527051a540bd
+  feat: route home showcase to public prompts
+
+cacdfb777d4a64bd7810d565b50f84c91e842a80
+  test: lock public prompt acquisition links
+
+ca4b8a2608dd8d2b2eb033ae7dc189c9802d6b83
+  test: add public prompt link migration command
+```
+
 Current state:
 
 ```text
 4B.1 FOUNDER-LOCAL VERIFIED
 4B.2 FOUNDER-LOCAL VERIFIED
-4B.3 IMPLEMENTED / LOCAL VERIFY NEXT
-4B.4 NOT STARTED
+4B.3 FOUNDER-LOCAL VERIFIED
+4B.4 IMPLEMENTED / LOCAL VERIFY NEXT
+4B.5 NOT STARTED
 PHASE 4B NOT ACCEPTED
 ```
