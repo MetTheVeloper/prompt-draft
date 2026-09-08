@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5B Shared Prompt Presentation
 
-Status: **IMPLEMENTED / FOUNDER VERIFICATION NEXT / NOT ACCEPTED**
+Status: **IMPLEMENTED / FINAL BACK-FIX RE-VERIFICATION NEXT / NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -155,6 +155,17 @@ in a new tab. No raw Prompt body, variants, source Draft metadata, storage keys,
 
 The previous duplicate engineering-style Public Prompt hero/body presentation has been replaced by the shared cinema shell.
 
+The Public Prompt back control is now navigation-history driven rather than route-hardcoded:
+
+```text
+EN -> arrow_back
+FA -> arrow_forward
+color="normal"
+@click="router.back()"
+```
+
+It does not hardcode Home or any other destination.
+
 ---
 
 ## 6. Protected Prompt integration
@@ -190,6 +201,17 @@ This does not weaken authorization because the detail route remains authenticate
 
 The protected route already owns `telegramUrl`; 4B.5B passes that existing presentation metadata into the shared shell, which extracts the message ID only for rendering the same Telegram badge. It does not expose or move protected product state.
 
+The protected hero back control uses the same history semantics as the Public Prompt page:
+
+```text
+EN -> arrow_back
+FA -> arrow_forward
+color="normal"
+@click="router.back()"
+```
+
+It no longer hardcodes `/prompts` as the destination.
+
 ---
 
 ## 7. Boundary regression contract
@@ -217,7 +239,9 @@ It verifies that:
 - presentation overlay and badges use theme-aware surface/normal tokens.
 - Telegram badge URL is canonical and opens in a new tab.
 - Public Prompt layout is full-bleed with zero default content padding.
-- protected back control uses valid Material Symbols names for LTR/RTL.
+- both Public Prompt and protected Prompt back controls use `router.back()` with `color="normal"`.
+- both back controls use `arrow_back` for LTR and `arrow_forward` for RTL.
+- neither back control contains a hardcoded route target.
 
 Public Prompt backend/client tests additionally verify that optional `telegramMessageId` remains inside the explicit public allowlist while protected columns remain excluded.
 
@@ -257,7 +281,11 @@ The only new Public Prompt projection field in this polish is optional `telegram
 
 No unlock/economy/auth implementation file was changed.
 
-No 4B.5C Discovery implementation has started.
+4B.5C Discovery visual work is now tracked independently in:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
+```
 
 ---
 
@@ -303,7 +331,8 @@ Localized authored description appears correctly.
 Dark and light themes keep overlay/text/tag contrast through theme tokens.
 Model badge uses surface background + normal text.
 Telegram post badge uses blue background + white text and canonical new-tab link when Telegram metadata exists.
-Protected back icon renders a real directional Material Symbol in both locales.
+Both Prompt back controls use the correct directional Material Symbol and normal theme color.
+Both Prompt back controls return to browser history rather than a hardcoded Home/catalog route.
 Public Prompt is full-bleed and does not receive default 32px layout padding.
 Public CTA still enters protected localized /prompts?id=:id.
 Protected route still requires auth/email.
@@ -318,7 +347,7 @@ Staging NUXT_PUBLIC_NOINDEX remains authoritative.
 
 ## 10. Founder visual polish — 2026-09-08
 
-Founder review after the first successful shared-shell render identified four presentation issues. They are implemented but require re-verification:
+Founder review after the first successful shared-shell render identified five presentation issues. They are implemented; the final back-behavior change requires re-verification:
 
 1. Theme synchronization
    - cover overlay now fades through `var(--themeSurface)` instead of hardcoded near-black colors.
@@ -331,14 +360,19 @@ Founder review after the first successful shared-shell render identified four pr
    - Telegram badge exists only when Telegram metadata exists.
    - badge target is `https://t.me/prompt-draft/{telegramMessageId}` with `target="_blank"` and `rel="noopener noreferrer"`.
 
-3. Protected back icon
+3. Directional back icon
    - LTR uses Material Symbol `arrow_back`.
    - RTL uses Material Symbol `arrow_forward`.
    - no global icon alias/change was retained.
 
 4. Public full-bleed layout
-   - `default.vue` now recognizes base route `prompt-id` as zero-padding presentation mode.
+   - `default.vue` recognizes base route `prompt-id` as zero-padding presentation mode.
    - `/prompt/:id` and `/fa/prompt/:id` no longer receive the default desktop 32px content padding.
+
+5. Real browser-history back behavior
+   - `/prompt/:id` no longer hardcodes Home as the back destination.
+   - `/prompts?id=<id>` no longer hardcodes `/prompts` as the back destination.
+   - both use `router.back()` and `color="normal"`.
 
 ---
 
@@ -346,10 +380,10 @@ Founder review after the first successful shared-shell render identified four pr
 
 ```text
 4B.5A localized descriptions          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
-4B.5B shared Prompt presentation      -> IMPLEMENTED / FOUNDER RE-VERIFICATION NEXT
-4B.5C Discovery visual layer          -> NOT STARTED
+4B.5B shared Prompt presentation      -> IMPLEMENTED / FINAL BACK-FIX RE-VERIFICATION NEXT
+4B.5C Discovery visual layer          -> IMPLEMENTED / FOUNDER VERIFICATION NEXT
 4B.5D final regression / acceptance   -> NOT STARTED
 Phase 21.5.4B                         -> NOT ACCEPTED
 ```
 
-Do not start 4B.5C until this slice passes founder-local verification.
+Do not start 4B.5D until the current 4B.5B back-behavior fix and 4B.5C Discovery visual layer have both passed founder-local verification.
