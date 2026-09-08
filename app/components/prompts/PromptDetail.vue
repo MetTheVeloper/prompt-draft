@@ -15,7 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const { mobile } = useScreen()
+const { mobile, tablet, mini } = useScreen()
 const analytics = useProductAnalytics()
 const promptArchive = usePromptArchive()
 const promptUnlock = usePromptArchiveUnlock()
@@ -58,7 +58,11 @@ const previewCountLabel = computed(() => {
   return t('prompts.detail.previewCount', { count: props.item.images.length })
 })
 
-const contentPadding = computed(() => mobile.value ? 16 : 40)
+const contentPadding = computed(() => {
+  if (mobile.value) return 16
+  if (tablet.value || mini.value) return 24
+  return 40
+})
 
 const promptSectionCols = computed(() => {
   if (mobile.value) return 1
