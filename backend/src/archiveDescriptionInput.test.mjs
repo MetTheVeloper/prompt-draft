@@ -5,12 +5,13 @@ import {
   validateArchiveDescriptionInput,
 } from './archiveDescriptionInput.mjs'
 
-test('legacy Admin Archive payloads may omit description during backward-safe rollout', () => {
-  assert.deepEqual(validateArchiveDescriptionInput(undefined), [])
-  assert.deepEqual(normalizeArchiveDescriptionInput(undefined), {})
+test('Admin Archive payloads require localized descriptions after approved backfill', () => {
+  assert.deepEqual(validateArchiveDescriptionInput(undefined), [
+    { field: 'description', message: 'description must contain en and fa values' },
+  ])
 })
 
-test('supplied Archive descriptions require complete EN and FA localization', () => {
+test('Archive descriptions require complete EN and FA localization', () => {
   assert.deepEqual(
     validateArchiveDescriptionInput({
       en: 'English description',
