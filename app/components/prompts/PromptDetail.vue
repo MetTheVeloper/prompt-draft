@@ -15,6 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
+const router = useRouter()
 const { mobile, tablet, mini } = useScreen()
 const analytics = useProductAnalytics()
 const promptArchive = usePromptArchive()
@@ -344,15 +345,13 @@ async function copyPrompt() {
       <template #topbar-leading>
         <el-button
           type="fab"
-          to="/prompts"
           :label="t('prompts.detail.back')"
           :icon="backIcon"
           mode="flat"
-          color="white"
-          text-color="white"
-          icon-color="white"
+          color="normal"
           :size="13"
           :p="10"
+          @click="router.back()"
         />
       </template>
 
