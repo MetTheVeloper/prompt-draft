@@ -43,6 +43,10 @@ const relatedDefinitions = computed(() => {
   return DISCOVERY_INTERESTS.filter(item => item.key !== definition.value?.key)
 })
 
+const heroStyle = computed(() => ({
+  '--public-discovery-hero-height': `calc(100vh - ${dimension().header.height}px)`,
+}))
+
 usePublicSeo({
   title: categoryTitle.value,
   description: categoryDescription.value,
@@ -83,18 +87,52 @@ const { data: discoveryData, status } = await useAsyncData(
 const items = computed(() => discoveryData.value?.items ?? [])
 const loading = computed(() => status.value === 'pending')
 const failed = computed(() => discoveryData.value?.failed ?? false)
+
+const heroSources = computed(() => {
+  const seen = new Set<string>()
+  const sources: string[] = []
+
+  for (const item of items.value) {
+    const source = item.coverImage?.fullUrl || item.coverImage?.thumbnailUrl || ''
+    if (!source || seen.has(source)) continue
+    seen.add(source)
+    sources.push(source)
+  }
+
+  return sources
+})
 </script>
 
 <template>
   <main class="public-discovery-page w100">
-    <section class="public-discovery-page__hero por ofh">
+    <el-flex
+      type="section"
+      rules="csc"
+      class="public-discovery-page__hero w100 por ofh"
+      :gap="0"
+      :style="heroStyle">
       <img
-        v-if="items[0]?.coverImage?.fullUrl || items[0]?.coverImage?.thumbnailUrl"
-        :src="items[0]?.coverImage?.fullUrl || items[0]?.coverImage?.thumbnailUrl || ''"
+        v-if="heroSources[0]"
+        :src="heroSources[0]"
         alt=""
         class="public-discovery-page__hero-image pen"
       >
-      <div class="public-discovery-page__hero-fallback pen" />
+      <div v-else class="public-discovery-page__hero-fallback pen" />
+
+      <ClientOnly>
+        <visual-slider
+          v-if="heroSources.length > 1"
+          :sources="heroSources"
+          :interval="4200"
+          :transition-duration="2400"
+          :edge-blur="320"
+          :random="false"
+          :z-index="1"
+          :opacity=".36"
+          :start-index="1"
+        />
+      </ClientOnly>
+
       <div class="public-discovery-page__hero-shade pen" />
 
       <el-flex
@@ -102,7 +140,7 @@ const failed = computed(() => discoveryData.value?.failed ?? false)
         class="public-discovery-page__hero-content w100 h100 por zi10"
         :gap="18"
         :p="mobile ? 22 : 40">
-        <el-flex rules="csc" class="w100" :gap="8">
+        <el-flex rules="ccs" class="w100" :gap="8">
           <el-text :size="10" :weight="900" color="prim" class="w100">
             {{ t('growth.publicDiscovery.eyebrow') }}
           </el-text>
@@ -138,7 +176,7 @@ const failed = computed(() => discoveryData.value?.failed ?? false)
           />
         </el-flex>
       </el-flex>
-    </section>
+    </el-flex>
 
     <section class="public-discovery-page__body">
       <el-flex
@@ -184,7 +222,7 @@ const failed = computed(() => discoveryData.value?.failed ?? false)
       <template v-else>
         <el-flex rules="csc" class="public-discovery-page__collection w100" :gap="18">
           <el-flex rules="rbc" class="w100" :gap="12" wrap>
-            <el-flex rules="csc" :gap="4" class="fg100">
+            <el-flex rules="ccs" :gap="4" class="fg100">
               <el-text :size="10" :weight="900" color="prim">
                 {{ t('growth.publicDiscovery.collectionEyebrow') }}
               </el-text>
@@ -248,9 +286,17 @@ const failed = computed(() => discoveryData.value?.failed ?? false)
 }
 
 .public-discovery-page__hero {
-  min-height: min(72vh, 720px);
+  min-height: var(--public-discovery-hero-height);
   isolation: isolate;
   background: var(--themeSurface);
+}
+
+.public-discovery-page__hero :deep(.canvas-slider-bg) {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  filter: saturate(.85);
 }
 
 .public-discovery-page__hero-image,
@@ -285,6 +331,7 @@ const failed = computed(() => discoveryData.value?.failed ?? false)
 }
 
 .public-discovery-page__hero-content {
+  min-height: var(--public-discovery-hero-height);
   max-width: 1280px;
   margin: 0 auto;
 }
