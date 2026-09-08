@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B Verification Ledger
 
-Status: **IN PROGRESS / 4B.1 FOUNDER-LOCAL VERIFIED / 4B.2 FOUNDER-LOCAL VERIFIED / 4B.3 FOUNDER-LOCAL VERIFIED / 4B.4 FOUNDER-LOCAL VERIFIED / 4B.5 FINAL VERIFICATION NEXT / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED**
 
 Date: 2026-09-08
 
@@ -16,34 +16,58 @@ Architecture source of truth:
 docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 ```
 
+Hardening source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+```
+
+Final acceptance record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
+```
+
 ---
 
-## 1. Acceptance rule
+## 1. Acceptance rule — SATISFIED
 
-Phase 21.5.4B must not be marked accepted until:
+Phase 21.5.4B acceptance required:
 
 ```text
 implementation complete
 + automated verification PASS
 + founder local/staging smoke PASS
++ protected authenticated browser smoke PASS
 + founder explicit acceptance
 ```
 
-Automated PASS alone is not acceptance.
+All conditions were satisfied on 2026-09-08.
+
+Founder explicit acceptance:
+
+```text
+Phase 4B accepted
+```
 
 ---
 
-## 2. Current implementation state
+## 2. Final implementation state
 
 ```text
-4B architecture audit                     DONE
-4B architecture/design proposal           DONE / FOUNDER AGREED
-4B source-of-truth contract               DONE
-4B.1 backend public read model            DONE / FOUNDER-LOCAL VERIFIED
-4B.2 Nuxt Public Prompt SSR route         DONE / FOUNDER-LOCAL VERIFIED
-4B.3 SEO metadata                         DONE / FOUNDER-LOCAL VERIFIED
-4B.4 public-link migration                DONE / FOUNDER-LOCAL VERIFIED
-4B.5 final founder/staging verification   NEXT
+4B architecture audit                     -> DONE
+4B architecture/design proposal           -> DONE / FOUNDER AGREED
+4B source-of-truth contract               -> DONE / LOCKED
+4B.1 backend public read model            -> DONE / FOUNDER-LOCAL VERIFIED
+4B.2 Nuxt Public Prompt SSR route         -> DONE / FOUNDER-LOCAL VERIFIED
+4B.3 Public Prompt SEO metadata            -> DONE / FOUNDER-LOCAL VERIFIED
+4B.4 public-link migration                -> DONE / FOUNDER-LOCAL VERIFIED
+post-4B.4 interaction polish              -> DONE / FOUNDER-LOCAL VERIFIED
+4B.5A localized description contract      -> DONE / ACCEPTED AS SLICE
+4B.5B shared Prompt presentation          -> DONE / ACCEPTED AS HARDENING SLICE
+4B.5C Discovery visual layer              -> DONE / ACCEPTED AS HARDENING SLICE
+4B.5D final regression / acceptance       -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+Phase 21.5.4B                             -> DONE / ACCEPTED
 ```
 
 Canonical public routes:
@@ -57,6 +81,7 @@ Protected product/API routes remain:
 
 ```text
 /prompts?id=<id>
+/fa/prompts?id=<id>
 GET /api/archive/:id
 ```
 
@@ -70,11 +95,12 @@ Endpoint:
 GET /api/public/prompts/:id
 ```
 
-Public DTO allowlist:
+Final public DTO presentation allowlist:
 
 ```text
 id
 localized title
+localized authored description
 availableLocales
 publishedAt
 tags
@@ -83,6 +109,7 @@ model.optimizedFor
 images.position
 images.fullUrl
 images.thumbnailUrl
+optional public-safe telegramMessageId
 ```
 
 Forbidden public content:
@@ -93,12 +120,13 @@ variants
 sourceTitle
 sourceUserId
 sourceDraftId
+private Draft payloads
 storage keys
 unlock state
 balance/Goin
 permissions
 viewer/account state
-private Draft payloads
+creator/private attribution before 4C policy
 ```
 
 Database invariant:
@@ -108,266 +136,128 @@ items.public_id = requested id
 AND items.status = 'published'
 ```
 
-The public query does not SELECT `prompt`, `variants`, source Draft payloads, storage keys, economy state or account state.
-
-### Automated contract verification
-
-Assistant-side isolated contract run:
+Critical query invariant:
 
 ```text
-publicPrompt.test.mjs
-8 tests
-8 pass
-0 fail
+The public database query does not SELECT prompt or variants.
 ```
 
-### Founder Docker/API verification
-
-Founder rebuilt/ran the real API container and executed:
+Final backend regression command:
 
 ```text
 docker compose exec api npm run test:public-prompt
 ```
 
-Verified again on 2026-09-08:
+Final suite remained green after the localized-description and Telegram presentation extensions.
+
+Final staging semantics:
 
 ```text
-8 tests
-8 pass
-0 fail
-```
-
-Real published fixture:
-
-```text
-public id: 9003
-EN title: From Grassias
-FA title: از گراسیاس
-availableLocales: en, fa
-model: gpt-image-1
-public image projection present
-```
-
-Observed public response property names:
-
-```text
-id
-title
-availableLocales
-publishedAt
-tags
-model
-images
-```
-
-Founder runtime HTTP results verified again on 2026-09-08:
-
-```text
-GET /api/public/prompts/9003      -> 200
-GET /api/public/prompts/0         -> 404
-GET /api/public/prompts/999999999 -> 404
-GET /api/archive/9003 unauthenticated -> 401
+GET /api/public/prompts/511 -> 200
+GET /api/public/prompts/0   -> 404
+GET /api/archive/511 unauthenticated -> 401
 ```
 
 Conclusion:
 
 ```text
-4B.1 BACKEND PUBLIC READ MODEL -> FOUNDER-LOCAL VERIFIED
+4B.1 BACKEND PUBLIC READ MODEL -> FOUNDER-LOCAL + STAGING VERIFIED
 ```
-
-Draft/archived behavior remains structurally enforced by the published-only query and should still be exercised with explicit fixtures when available during final staging verification.
 
 ---
 
 ## 4. 4B.2 Nuxt Public Prompt SSR route — VERIFIED
 
-Implementation files:
+Core implementation:
 
 ```text
 app/composables/usePublicPrompt.ts
 app/pages/prompt/[id].vue
-i18n/locales/growth.en.ts
-i18n/locales/growth.fa.ts
-scripts/public-prompt-client-contract.test.ts
-package.json
+app/components/prompts/PromptPresentation.vue
+app/components/PromptPresentation.vue
 ```
 
-Implemented behavior:
+Accepted behavior:
 
 ```text
 /prompt/:id                 -> dynamic SSR Public Prompt page
-/fa/prompt/:id              -> Nuxt i18n localized SSR route
+/fa/prompt/:id              -> localized SSR Public Prompt page
 server data origin          -> NUXT_API_BASE_INTERNAL
 browser data origin         -> NUXT_PUBLIC_API_BASE
 invalid/noncanonical id     -> real 404
 public API 404              -> real Nuxt 404
 unavailable localization    -> real Nuxt 404
-upstream failure            -> 502 instead of fake empty 200
+upstream failure            -> 502 rather than fake empty 200
 route identity change       -> page remount by fullPath
 ```
 
-Client/SSR response validation requires the exact sanitized public contract again before rendering.
-
-The page renders only localized public title, publication date, public numeric id, model metadata, tags, preview media and localized public UI copy.
+Public Prompt uses only the sanitized public API contract.
 
 Protected CTA remains separate:
 
 ```text
-Public Prompt page
-  -> /prompts?id=<id>
-  -> existing protected product flow
+Public Prompt
+  -> Open full prompt
+  -> /prompts?id=<id> or localized /fa/prompts?id=<id>
+  -> protected auth/email/unlock/economy flow
 ```
 
-### Founder local verification
-
-Web contract verified again on 2026-09-08:
+SSR media contract:
 
 ```text
-pnpm test:public-prompt-web
-4 tests
-4 pass
-0 fail
+first public preview -> real server-rendered <img>
+client cinema        -> progressive enhancement only
 ```
 
-Production-like project-owned stack command:
+A component-resolution regression during 4B.5B briefly caused the shared shell to render as an empty comment. It was diagnosed from raw SSR HTML and fixed by exposing the shared Prompt presentation under the root component name. Final local and staging SSR both contain:
 
 ```text
-pnpm stack
+prompt-presentation__ssr-image
 ```
 
-Verified 2026-09-08 result:
+Final staging smoke:
 
 ```text
-Docker frontend build -> PASS
-Nuxt client build     -> PASS
-Nuxt SSR build        -> PASS
-Nitro server build    -> PASS
-frontend              -> healthy
-api                    -> healthy
-db                     -> healthy
-translator             -> healthy
+EN /prompt/511 -> 200
+FA /fa/prompt/511 -> 200
 ```
 
-Founder HTTP results:
-
-```text
-GET /prompt/9003                 -> 200
-GET /fa/prompt/9003              -> 200
-GET /prompt/0                    -> 404
-GET /prompt/999999999            -> 404
-GET /fa/prompt/999999999         -> 404
-```
-
-Staging-safety header observed on local production-like responses:
+Staging safety remained:
 
 ```text
 X-Robots-Tag: noindex, nofollow, noarchive
 ```
 
-SSR evidence:
-
-```text
-EN html lang/dir -> en-US / ltr
-FA html lang/dir -> fa-IR / rtl
-EN SSR title content -> From Grassias
-FA SSR localization -> authoritative FA payload rendered
-EN protected CTA -> /prompts?id=9003
-FA protected CTA -> /fa/prompts?id=9003
-```
-
-The serialized Nuxt payload contained only the public DTO shape:
-
-```text
-id
-title
-availableLocales
-publishedAt
-tags
-model
-images
-```
-
-### Leakage-check correction
-
-The first broad smoke pattern searched for the plain word `variants`. That word legitimately appears in localized explanatory UI copy saying protected content stays in the protected product flow, so `Select-String` returned the whole HTML document. This was a smoke-test false positive, not data leakage.
-
-Future raw-HTML leakage checks search for serialized private **keys**, not narrative words:
-
-```text
-"sourceDraftId":
-"sourceUserId":
-"storageKey":
-"thumbnailStorageKey":
-"variants":
-"balance":
-"permissions":
-"viewer":
-"prompt":
-```
-
-Founder key-based verification on 2026-09-08:
-
-```text
-EN private-key matches -> 0
-FA private-key matches -> 0
-```
-
 Conclusion:
 
 ```text
-4B.2 NUXT PUBLIC PROMPT SSR ROUTE -> FOUNDER-LOCAL VERIFIED
+4B.2 NUXT PUBLIC PROMPT SSR ROUTE -> FOUNDER-LOCAL + STAGING VERIFIED
 ```
 
 ---
 
-## 5. Localization audit policy
+## 5. 4B.3 Public Prompt SEO metadata — VERIFIED
 
-Repository-wide localization debt is not a Phase 4B gate.
-
-Observed commands:
-
-```text
-pnpm locale:check
-  -> strict global parity audit
-  -> non-zero because inherited repository-wide missing/extra locale keys exist
-
-pnpm locale:audit:hardcoded
-  -> repository-wide hardcoded candidate scan
-  -> 594 candidates in the current repository baseline
-```
-
-Therefore neither command can be interpreted as a zero-finding 4B acceptance gate without a stored baseline/diff mechanism.
-
-4B-specific localization confidence comes from localized `growth.publicPrompt.*` keys, Nuxt build success, EN/FA SSR route success, correct html lang/dir and no fallback localization presented as authoritative content.
-
----
-
-## 6. 4B.3 Public Prompt SEO metadata — VERIFIED
-
-Implementation files:
+Core implementation:
 
 ```text
 app/utils/publicPromptSeo.ts
-scripts/public-prompt-seo.test.ts
 app/pages/prompt/[id].vue
-package.json
+scripts/public-prompt-seo.test.ts
 ```
 
-Implemented behavior:
+Accepted behavior:
 
 ```text
 usePublicSeo reused
-canonical base route comes from publicPromptPath(id)
 EN route self-canonical
 FA route self-canonical
-alternateLocales comes only from prompt.availableLocales
-x-default uses English when authoritative English exists
-OG/Twitter title is localized Public Prompt title
-OG/Twitter description uses localized public-only copy
-OG image uses first public preview image
-image fallback uses /pwa-512x512.png
-CreativeWork JSON-LD uses public-only fields
-JSON-LD omitted when siteUrl/canonical absolute URL cannot be formed
+availableLocales derived only from complete authoritative localization
+x-default -> English/default
+OG/Twitter title -> localized Public Prompt title
+meta/OG/Twitter description -> founder-authored localized description
+OG/Twitter image -> first public preview image
+CreativeWork JSON-LD -> public-only sanitized fields
 creator/author deliberately absent until 4C
 ```
 
@@ -391,8 +281,7 @@ Explicit JSON-LD exclusions:
 ```text
 Prompt body
 variants
-sourceTitle
-sourceDraftId/sourceUserId
+source Draft/private identity
 storage keys
 unlock state
 balance/Goin
@@ -401,157 +290,65 @@ viewer/account state
 creator/author until 4C
 ```
 
-### Founder local verification — 2026-09-08
-
-Automated gates:
+Final aggregate regression result:
 
 ```text
-pnpm test:public-prompt-seo -> 4/4 PASS
-pnpm test:seo-contracts     -> 5/5 PASS
-pnpm seo:audit-routes:strict -> PASS, 443 files, zero locale-routing hazards
+Public Prompt SEO -> 4/4 PASS
+SEO contracts     -> 5/5 PASS
+Strict locale-routing audit -> PASS / 447 source files / zero hazards
 ```
 
-Production-like build/runtime:
+Final staging smoke verified:
 
 ```text
-pnpm stack -> PASS
-Nuxt client build -> PASS
-Nuxt SSR build -> PASS
-Nitro build -> PASS
-final pnpm stack:status -> frontend/api/db/translator healthy
+self canonical EN/FA
+reciprocal hreflang en-US/fa-IR
+x-default
+OG description
+Twitter description
+CreativeWork JSON-LD
+staging noindex
+zero serialized protected private-key leakage
 ```
 
-Observed SEO/runtime gates:
+### Windows PowerShell encoding note
 
-```text
-EN canonical -> https://grassic.ir/prompt/9003
-FA canonical -> https://grassic.ir/fa/prompt/9003
-hreflang en-US -> present
-hreflang fa-IR -> present
-x-default -> present / English canonical
-OG image -> present
-Twitter image -> present
-CreativeWork JSON-LD EN -> present
-CreativeWork JSON-LD FA -> present
-serialized private-key leakage -> 0 EN / 0 FA
-X-Robots-Tag staging noindex -> present
-```
-
-### PowerShell encoding note
-
-The first title smoke consumed `curl.exe` stdout directly in Windows PowerShell and produced mojibake (`·` became `┬╖`, Persian UTF-8 bytes were mis-decoded). This was a test-harness encoding issue, not an application SEO regression.
-
-The final check saved curl response bytes to files and read them explicitly as UTF-8. Result:
-
-```text
-EN actual title   -> From Grassias · Prompt Draft
-EN expected title -> From Grassias · Prompt Draft
-EN exact match    -> true
-
-FA actual title   -> از گراسیاس · Prompt Draft
-FA expected title -> از گراسیاس · Prompt Draft
-FA exact match    -> true
-
-EN body contains authoritative API title -> true
-FA body contains authoritative API title -> true
-```
+Direct `curl.exe` stdout displayed UTF-8 punctuation/Persian as mojibake in Windows PowerShell during some manual inspections. Browser rendering and UTF-8-aware checks were correct; this was a console decoding artifact, not an application regression.
 
 Conclusion:
 
 ```text
-4B.3 PUBLIC PROMPT SEO METADATA -> FOUNDER-LOCAL VERIFIED
+4B.3 PUBLIC PROMPT SEO METADATA -> FOUNDER-LOCAL + STAGING VERIFIED
 ```
 
 ---
 
-## 7. 4B.4 Public-link migration — VERIFIED
+## 6. 4B.4 Public-link migration — VERIFIED
 
-Audit scope distinguishes Prompt-detail acquisition links from valid generic product/catalog links.
+Prompt-detail acquisition links use the canonical public Prompt path; generic catalog/product links remain valid.
 
-Generic `/prompts` navigation remains valid and is intentionally unchanged. Only public acquisition links that point at a specific Prompt are migrated to the canonical Public Prompt route.
-
-Audited detail entry points requiring migration:
+Accepted behavior:
 
 ```text
-app/components/discover/PublicDiscoveryCard.vue
-app/components/home/HomeDiscoverySection.vue
+Discovery Prompt card -> localized /prompt/:id
+Home Prompt body      -> localized /prompt/:id
+Public Prompt CTA     -> localized protected /prompts?id=<id>
+generic /prompts      -> unchanged catalog/product route
 ```
 
-Implemented behavior:
+Regression command:
 
 ```text
-Discovery View Prompt -> localePath(publicPromptPath(id))
-Home showcase View Prompt -> localePath(publicPromptPath(id))
-EN acquisition detail -> /prompt/:id
-FA acquisition detail -> /fa/prompt/:id
-Public Prompt Open full prompt CTA -> remains /prompts?id=<id>
-Protected product flow -> unchanged
-Generic /prompts catalog links -> unchanged
-```
-
-Regression contract:
-
-```text
-scripts/public-prompt-link-migration.test.ts
 pnpm test:public-prompt-links
 ```
 
-The contract locks both acquisition components to `publicPromptPath` + `useLocalePath`, rejects direct `/prompts?id=` links in those components, and asserts that the Public Prompt page itself retains the protected `/prompts` + id query CTA.
-
-### Founder local/staging verification — 2026-09-08
-
-Automated gates:
+Final aggregate result:
 
 ```text
-pnpm test:public-prompt-links -> 3/3 PASS
-pnpm test:seo-contracts      -> 5/5 PASS
-pnpm seo:audit-routes:strict -> PASS, 443 files, zero locale-routing hazards
+Public Prompt link migration -> 3/3 PASS
 ```
 
-Production-like stack:
-
-```text
-pnpm stack -> PASS
-frontend -> healthy
-api -> healthy
-db -> healthy
-translator -> healthy
-cloudflared -> running
-```
-
-Discovery raw-HTML acquisition-link smoke across all six public categories:
-
-```text
-portrait-photography      EN public links 18 / EN protected links 0 / FA public links 18
-3d-sculpture              EN public links 18 / EN protected links 0 / FA public links 18
-illustration-animation    EN public links 18 / EN protected links 0 / FA public links 18
-posters-editorial         EN public links 17 / EN protected links 0 / FA public links 17
-product-fashion           EN public links 13 / EN protected links 0 / FA public links 13
-cinematic-game-art        EN public links 18 / EN protected links 0 / FA public links 18
-FA protected Discovery detail total -> 0
-```
-
-Protected boundary re-check:
-
-```text
-EN Public Prompt protected CTA count -> 1
-FA Public Prompt protected CTA count -> 1
-GET /api/archive/9003 unauthenticated -> 401
-```
-
-Home raw SSR initially showed zero Prompt links. This is expected because `app/pages/index.vue` loads Home discovery sections inside `onMounted()` after hydration. Therefore Home detail-link verification must be browser/runtime based rather than inferred from initial SSR HTML.
-
-Founder browser smoke confirmed:
-
-```text
-Home EN View Prompt -> /prompt/<id>
-Home FA View Prompt -> /fa/prompt/<id>
-Public Prompt Open full prompt -> protected /prompts?id=<id>
-FA Public Prompt Open full prompt -> protected /fa/prompts?id=<id>
-protected product flow remains functional
-```
-
-The same rebuilt local Docker runtime was also observed through the staging hostname `https://grassic.ir` because the running Cloudflare Tunnel forwards staging traffic to the local frontend container. `pnpm stack` itself rebuilds/restarts local containers; it does not perform a separate remote deployment.
+Founder browser smoke confirmed public acquisition links and the protected transition in both EN and FA.
 
 Conclusion:
 
@@ -561,40 +358,343 @@ Conclusion:
 
 ---
 
-## 8. Final regression / staging gates
+## 7. Post-4B.4 interaction polish — VERIFIED
 
-Minimum automated/runtime set before final 4B acceptance:
+Founder-accepted behavior:
 
 ```text
-backend npm run test:public-prompt PASS
-pnpm test:public-prompt-web PASS
-pnpm test:public-prompt-seo PASS
-pnpm test:public-prompt-links PASS
-pnpm test:seo-contracts PASS
-pnpm seo:audit-routes:strict PASS
-pnpm stack -> production-like Docker build/start PASS
+Prompt Archive card body -> localized protected detail
+/user owner Draft card body -> existing three-dot menu at click point
+Home category header -> localized Discovery route
+Home Prompt body -> localized Public Prompt route
+Home action controls remain independent
+Home previous/next arrow semantics follow LTR/RTL
 ```
 
-Repository-wide localization audits remain advisory for 4B until a baseline/diff gate exists.
-
-Founder staging smoke must confirm:
+Final regression:
 
 ```text
-public API 200/404 semantics
-EN/FA SSR route semantics
-canonical/hreflang/OG/JSON-LD
-staging robots/noindex protection
-public-link migration
-GET /api/archive/:id remains protected
-/prompts?id=<id> remains auth/email/unlock gated
-prompt-draft.ir remains untouched
+pnpm test:interaction-polish -> 4/4 PASS
 ```
 
 ---
 
-## 9. Evidence log
+## 8. 4B.5A Localized Public Prompt Description Contract — VERIFIED / ACCEPTED
 
-Architecture / documentation:
+Canonical records:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_BACKFILL_APPROVAL.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
+```
+
+Accepted description contract:
+
+```ts
+description: {
+  en?: string
+  fa?: string
+}
+```
+
+Description is the sole source for:
+
+```text
+visible Public Prompt description
+meta description
+og:description
+twitter:description
+CreativeWork.description
+```
+
+Hard invariant:
+
+```text
+Description is never generated from protected Prompt body or variants.
+```
+
+Rollout verification:
+
+```text
+migration 025 descriptions storage -> APPLIED
+founder-reviewed description manifest -> APPROVED
+published staging/test Archive ids 9002/9003 -> safely pruned
+backfill -> 100 published Archive rows
+post-backfill inventory -> 100/100 EN + 100/100 FA descriptions non-empty
+migration 026 published localization constraint -> APPLIED
+Admin description input tests -> PASS
+backfill guardrail tests -> PASS
+published localization enforcement tests -> PASS
+```
+
+Locale availability now requires:
+
+```text
+valid localized title + valid localized description
+```
+
+No fake locale fallback is permitted.
+
+Conclusion:
+
+```text
+4B.5A -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
+```
+
+---
+
+## 9. 4B.5B Shared Prompt Presentation Shell — VERIFIED / ACCEPTED
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5B_SHARED_PRESENTATION.md
+```
+
+Accepted architecture:
+
+```text
+shared presentation only
+public and protected data sources remain separate
+SSR first-preview fallback
+client cinema progressive enhancement
+route-specific actions/content via composition
+```
+
+Shared presentation may know:
+
+```text
+localized title
+authored description
+public-safe tags/id/date/model
+public preview media
+optional public-safe Telegram post metadata
+```
+
+Shared presentation may not know:
+
+```text
+Prompt body
+variants
+unlock state
+balance/Goin
+permissions
+viewer/auth state
+```
+
+Founder-approved visual/interaction polish:
+
+```text
+overlay uses themeSurface rather than hardcoded black
+description/meta text uses normal theme color
+tags use surface/normal theme colors
+model badge uses surface/normal
+Telegram badge uses blue/white and opens canonical t.me post in new tab
+Public Prompt outer layout padding zero
+back buttons use arrow_back LTR / arrow_forward RTL
+back buttons color normal
+back action uses router.back() rather than hardcoded destination
+```
+
+Final regression:
+
+```text
+Shared Prompt presentation -> 4/4 PASS
+```
+
+Founder light/dark and EN/FA browser smoke passed on public and protected surfaces.
+
+Conclusion:
+
+```text
+4B.5B -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
+```
+
+---
+
+## 10. 4B.5C Public Discovery Visual Layer — VERIFIED / ACCEPTED
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
+```
+
+Founder-approved final contract:
+
+```text
+hero -> el-flex type="section"
+hero -> content-sized, not viewport-sized
+outer default-layout padding -> zero
+hero media -> already-public category preview media only
+SSR first image -> deterministic <img>
+multiple images -> ClientOnly visual-slider enhancement
+SSR image removed after cinema mount when multi-image slider is active
+slider -> absolute and clipped to hero
+hero + collection heading flex -> rules="ccs"
+```
+
+Preserved:
+
+```text
+canonical /discover/:slug and /fa/discover/:slug
+existing Discovery SEO
+curated cards
+localized Public Prompt links
+404/canonical route behavior
+public/protected data boundary
+```
+
+Final regression:
+
+```text
+Public Discovery visual layer -> 3/3 PASS
+```
+
+The regression guard originally had a false positive on the word `balance` from CSS `text-wrap: balance`; it was narrowed to runtime/template leakage rather than style text.
+
+Founder EN/FA, light/dark and cinema browser smoke passed.
+
+Conclusion:
+
+```text
+4B.5C -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
+```
+
+---
+
+## 11. 4B.5D Final regression / staging acceptance — PASS
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
+```
+
+### Aggregate frontend/SEO/routing/presentation/discovery gate
+
+```text
+pnpm test:phase4b-final
+```
+
+Final founder run:
+
+```text
+SEO contracts                         -> 5/5 PASS
+Public Prompt browser/SSR DTO         -> 6/6 PASS
+Public Prompt SEO                     -> 4/4 PASS
+Localized Public Prompt description   -> 3/3 PASS
+Shared Prompt presentation            -> 4/4 PASS
+Public Discovery visual layer         -> 3/3 PASS
+Public Prompt link migration          -> 3/3 PASS
+Interaction polish                    -> 4/4 PASS
+Strict locale-routing audit           -> PASS / 447 source files / zero hazards
+```
+
+A Windows-only runner issue (`spawnSync pnpm.cmd EINVAL`) prevented the first aggregate attempt from starting child tests. The execution layer was made shell-compatible without changing the gate list; the complete bundle then passed.
+
+### Backend final regression
+
+```text
+docker compose exec api npm run test:public-prompt                -> PASS
+docker compose exec api npm run test:archive-description-input    -> PASS
+docker compose exec api npm run test:archive-published-localization -> PASS
+```
+
+### Production-like staging-connected runtime
+
+```text
+frontend    -> healthy
+api         -> healthy
+db          -> healthy
+translator  -> healthy
+cloudflared -> up
+```
+
+### Automated staging smoke
+
+```text
+pnpm smoke:phase4b-final
+```
+
+Canonical fixtures:
+
+```text
+Prompt id      -> 511
+Discovery slug -> portrait-photography
+```
+
+The initial manual argument `portraits-photography` was noncanonical and correctly returned 404. The runner default contained the same typo and was corrected to the canonical slug without creating an alias.
+
+Final result:
+
+```text
+public Prompt API: 200
+invalid public Prompt API: 404
+protected Archive detail API: 401
+EN Public Prompt SSR: 200
+FA Public Prompt SSR: 200
+EN Discovery SSR: 200
+FA Discovery SSR: 200
+PASS: staging public API, EN/FA SSR, SEO, noindex and protected-boundary smoke passed
+```
+
+### Manual founder browser smoke
+
+Founder confirmed all manual smoke checks passed, including:
+
+```text
+Public Prompt EN/FA runtime
+Public -> protected transition
+protected auth/email/unlock/copy/economy continuity
+browser-history back behavior
+Telegram badge/link behavior
+Discovery single-layer content-sized cinema
+Light/Dark readability
+prompt-draft.ir untouched
+```
+
+---
+
+## 12. Environment safety — VERIFIED
+
+Staging verification targets:
+
+```text
+https://grassic.ir
+https://api.grassic.ir
+```
+
+Production safety:
+
+```text
+prompt-draft.ir -> untouched
+NUXT_PUBLIC_NOINDEX=true -> preserved on staging
+X-Robots-Tag noindex -> verified
+```
+
+A transient Cloudflare Tunnel connectivity incident during 4B.5A was diagnosed as network/path instability rather than product code; local API remained healthy and the tunnel recovered. No product-code workaround was introduced.
+
+---
+
+## 13. Historical harness lessons retained
+
+Useful verification lessons from Phase 4B:
+
+```text
+Do not treat Docker process Up as proof a Cloudflare tunnel is connected.
+Do not treat DevTools Disable cache as equivalent to unregistering a service worker.
+Windows PowerShell can mojibake direct curl UTF-8 stdout; use UTF-8-aware validation when text exactness matters.
+Source-code leakage guards must search serialized/runtime keys, not narrative/CSS words.
+A healthy generic frontend healthcheck does not prove a dynamic SSR route renders its child component.
+Canonical smoke fixtures must come from the route source of truth, not guessed pluralization.
+```
+
+---
+
+## 14. Key evidence / acceptance commits
+
+Early architecture and verification records:
 
 ```text
 2a9a58eacc371ee96dc1b073c582d00093f69293
@@ -604,86 +704,57 @@ Architecture / documentation:
   docs: add Phase 4B verification ledger
 ```
 
-4B.1 backend implementation:
+4B.5A implementation/acceptance examples:
 
 ```text
-97a0f7a2251f9e43d6a98fe07f0b43bb9c3ead16
-  feat: add sanitized public prompt read model
+b896709d3fba52346c7a418d0f585c628431b83c
+  feat: add archive description storage and backfill guardrails
 
-76664e61af26cbcf112fb6c609667d202d3afee2
-  test: cover public prompt projection boundary
+4daf9cd8d6273947ab54557d40143a8731a80a51
+  feat: persist localized descriptions in archive admin API
 
-89c146eb54ac5874194e7fa1980bd1663a83859a
-  feat: route public prompt endpoint
+21dd00c5cc79ece7f82182f4db027560a449d52b
+  feat: add localized descriptions to archive editor
 
-f6a60f17e69f046d9bf3392dbd688b09edc7967a
-  test: add public prompt contract command
+15cc83d6a7d1a26f1ecc73540a76244fc251ffb7
+  docs: accept 4B.5A localized description cutover
 ```
 
-4B.2 implementation:
+Hardening/final verification examples:
 
 ```text
-76d9d109419407bb5d9c444d7422dcc89353ba23
-  feat: add public prompt SSR reader
+9736619ae8c9558640b8fab4e3b8701029f9f0b7
+  docs: advance 4B.5 hardening to shared presentation
 
-cb0c13224e595ba9fc0c8ed3303bf045342b580b
-  feat: add public prompt SSR route
+aafa585e125392fae100f84d7ca3d36fedb743c2
+  fix: use canonical Discovery slug in final staging smoke
 
-2009b1c84b9e992d45b076a25eed0a83c3bfe301
-  feat: localize public prompt page
-
-abd2432b04802dd88246e3eb342c0bb035d30490
-  feat: localize Persian public prompt page
-
-a913bbe6ae7a3ad05953b0bfc04a72f5fd5e8300
-  test: cover public prompt client contract
-
-c67a3e24d89c5d1bf70e29b53286e7a2ae18c050
-  test: add public prompt web contract command
-
-be104d7b24701c64332dd8ae41b91340e5c821f8
-  fix: remount public prompt on route identity change
+cf44f0bd3221429fde09ab9e4649f8874d248857
+  docs: accept Phase 4B final regression
 ```
 
-4B.3 implementation:
+---
+
+## 15. Final conclusion
 
 ```text
-cdfdc821cab9ed5ad0c1df265cef65f578d8a216
-  feat: add public prompt SEO projection helper
+4B.1 VERIFIED
+4B.2 VERIFIED
+4B.3 VERIFIED
+4B.4 VERIFIED
+post-4B.4 interaction polish VERIFIED
+4B.5A ACCEPTED
+4B.5B ACCEPTED
+4B.5C ACCEPTED
+4B.5D ACCEPTED
 
-3e1cbc9251decc40a42896fa15f4c6bd22ab7620
-  test: cover public prompt SEO projection
-
-84b963fdf3596303ee0935aac17932a795c8db9e
-  feat: add public prompt SEO metadata
-
-7f5a62a43bb96eb5ff1a7d93b26d155d8daec929
-  test: add public prompt SEO contract command
+PHASE 21.5.4B -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 ```
 
-4B.4 implementation:
+Next Phase 4 slice:
 
 ```text
-5e11ce712d960b590cc9285b6888b1e4c2172aa9
-  feat: route discovery cards to public prompts
-
-fae0fca593bfff808407e13a6d28527051a540bd
-  feat: route home showcase to public prompts
-
-cacdfb777d4a64bd7810d565b50f84c91e842a80
-  test: lock public prompt acquisition links
-
-ca4b8a2608dd8d2b2eb033ae7dc189c9802d6b83
-  test: add public prompt link migration command
+21.5.4C — Public Creator + Indexability Policy
 ```
 
-Current state:
-
-```text
-4B.1 FOUNDER-LOCAL VERIFIED
-4B.2 FOUNDER-LOCAL VERIFIED
-4B.3 FOUNDER-LOCAL VERIFIED
-4B.4 FOUNDER-LOCAL VERIFIED
-4B.5 FINAL VERIFICATION NEXT
-PHASE 4B NOT ACCEPTED
-```
+All future Phase 4 work must preserve the accepted 4A/4B localization, SEO, public/protected and staging-safety contracts.
