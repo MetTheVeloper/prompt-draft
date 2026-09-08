@@ -6,6 +6,7 @@ const route = useRoute()
 const { t } = useI18n()
 const { mobile, tablet } = useScreen()
 const publicDiscovery = usePublicDiscovery()
+const cinemaMounted = ref(false)
 
 const slug = computed(() => {
   return typeof route.params.slug === 'string' ? route.params.slug.trim().toLowerCase() : ''
@@ -42,10 +43,6 @@ const relatedDefinitions = computed(() => {
   if (!definition.value) return DISCOVERY_INTERESTS
   return DISCOVERY_INTERESTS.filter(item => item.key !== definition.value?.key)
 })
-
-const heroStyle = computed(() => ({
-  '--public-discovery-hero-height': `calc(100vh - ${dimension().header.height}px)`,
-}))
 
 usePublicSeo({
   title: categoryTitle.value,
@@ -101,6 +98,12 @@ const heroSources = computed(() => {
 
   return sources
 })
+
+onMounted(() => {
+  requestAnimationFrame(() => {
+    cinemaMounted.value = true
+  })
+})
 </script>
 
 <template>
@@ -109,15 +112,17 @@ const heroSources = computed(() => {
       type="section"
       rules="csc"
       class="public-discovery-page__hero w100 por ofh"
-      :gap="0"
-      :style="heroStyle">
+      :gap="0">
       <img
-        v-if="heroSources[0]"
+        v-if="heroSources[0] && (!cinemaMounted || heroSources.length === 1)"
         :src="heroSources[0]"
         alt=""
-        class="public-discovery-page__hero-image pen"
+        class="public-discovery-page__hero-image pen poa t0 r0 b0 l0"
       >
-      <div v-else class="public-discovery-page__hero-fallback pen" />
+      <div
+        v-else-if="!heroSources.length"
+        class="public-discovery-page__hero-fallback pen poa t0 r0 b0 l0"
+      />
 
       <ClientOnly>
         <visual-slider
@@ -130,14 +135,15 @@ const heroSources = computed(() => {
           :z-index="1"
           :opacity=".36"
           :start-index="1"
+          class="public-discovery-page__hero-slider poa t0 r0 b0 l0"
         />
       </ClientOnly>
 
-      <div class="public-discovery-page__hero-shade pen" />
+      <div class="public-discovery-page__hero-shade pen poa t0 r0 b0 l0" />
 
       <el-flex
         rules="cbs"
-        class="public-discovery-page__hero-content w100 h100 por zi10"
+        class="public-discovery-page__hero-content w100 por zi10"
         :gap="18"
         :p="mobile ? 22 : 40">
         <el-flex rules="ccs" class="w100" :gap="8">
@@ -286,7 +292,6 @@ const heroSources = computed(() => {
 }
 
 .public-discovery-page__hero {
-  min-height: var(--public-discovery-hero-height);
   isolation: isolate;
   background: var(--themeSurface);
 }
@@ -331,7 +336,6 @@ const heroSources = computed(() => {
 }
 
 .public-discovery-page__hero-content {
-  min-height: var(--public-discovery-hero-height);
   max-width: 1280px;
   margin: 0 auto;
 }
