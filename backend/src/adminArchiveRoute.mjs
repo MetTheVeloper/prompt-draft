@@ -1,6 +1,7 @@
 import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { handleArchivePromotionRequest } from './archivePromotion.mjs'
+import { validatePublishedArchiveLocalization } from './archivePublishedLocalization.mjs'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
@@ -41,6 +42,57 @@ export async function handleAdminArchiveRoute({
       corsHeaders,
     )
     return true
+  }
+
+  const publishMatch = url.pathname.match(
+    /^\/api\/admin\/archive\/([0-9a-f-]{36})\/publish$/i,
+  )
+
+  if (
+    publishMatch &&
+    request.method === 'POST' &&
+    hasPermission(user, PERMISSIONS.ARCHIVE_MANAGE)
+  ) {
+    try {
+      const result = await queryDatabase(
+        `
+          SELECT
+            titles AS title,
+            descriptions AS description
+          FROM prompt_archive_items
+          WHERE id = $1
+          LIMIT 1
+        `,
+        [publishMatch[1]],
+      )
+      const row = result.rows[0]
+
+      if (row) {
+        const errors = validatePublishedArchiveLocalization(row)
+        if (errors.length) {
+          sendJson(
+            response,
+            400,
+            {
+              ok: false,
+              message: 'Archive localization is incomplete',
+              errors,
+            },
+            corsHeaders,
+          )
+          return true
+        }
+      }
+    } catch (error) {
+      console.error('[Prompt Draft API] archive publish localization check failed', error)
+      sendJson(
+        response,
+        500,
+        { ok: false, message: 'Failed to validate Archive localization' },
+        corsHeaders,
+      )
+      return true
+    }
   }
 
   const promotionHandled = await handleArchivePromotionRequest({
