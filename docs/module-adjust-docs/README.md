@@ -46,6 +46,16 @@ The implementation may expose field-level custom in different ways, including:
 
 Always inspect the referenced source before assuming support.
 
+### Custom text style
+
+All assistant-written values for custom/freeform inputs must be **as short, direct, and information-dense as possible**.
+
+- Prefer compact prompt phrases and high-signal keywords over explanatory prose.
+- Remove repetition, rationale, filler, and concepts already expressed by other fields/modules.
+- Preserve only details that materially constrain the generated result.
+- Nested structure is fine when it improves clarity, but each nested item must remain brief and direct.
+- Do not turn a custom field value into a paragraph when a concise phrase or short clause can express the same intent.
+
 ## Required response format
 
 For a request to configure a module, answer field-by-field:
