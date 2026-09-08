@@ -15,7 +15,8 @@
     "test:archive-description-inventory": "node --test src/promptArchiveDescriptionInventory.test.mjs",
     "test:archive-description-test-prune": "node --test src/promptArchiveDescriptionTestPrune.test.mjs",
     "test:archive-description-backfill": "node --test src/promptArchiveDescriptionBackfill.test.mjs",
-    "test:archive-description-input": "node --test src/archiveDescriptionInput.test.mjs"
+    "test:archive-description-input": "node --test src/archiveDescriptionInput.test.mjs",
+    "test:archive-published-localization": "node --test src/archivePublishedLocalization.test.mjs"
   },
   "dependencies": {
     "pg": "8.16.3"
