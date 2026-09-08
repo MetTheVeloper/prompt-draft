@@ -8,6 +8,10 @@ function withoutStyles(source: string) {
   return source.replace(/<style\b[\s\S]*?<\/style>/g, '')
 }
 
+function topbarLeadingTemplate(source: string) {
+  return source.match(/<template #topbar-leading>([\s\S]*?)<\/template>/)?.[1] ?? ''
+}
+
 test('root PromptPresentation alias resolves the shared prompts component', async () => {
   const alias = await read('app/components/PromptPresentation.vue')
 
@@ -71,6 +75,7 @@ test('public Prompt uses the shared shell without crossing into protected data',
     read('app/pages/prompt/[id].vue'),
     read('app/layouts/default.vue'),
   ])
+  const backButton = topbarLeadingTemplate(source)
 
   assert.match(source, /<PromptPresentation/)
   assert.match(source, /usePublicPrompt\(\)/)
@@ -80,7 +85,11 @@ test('public Prompt uses the shared shell without crossing into protected data',
 
   assert.match(source, /const router = useRouter\(\)/)
   assert.match(source, /activeLocale\.value === 'fa' \? 'arrow_forward' : 'arrow_back'/)
-  assert.match(source, /<template #topbar-leading>[\s\S]*color="normal"[\s\S]*:icon="backIcon"[\s\S]*@click="router\.back\(\)"/)
+  assert.ok(backButton)
+  assert.match(backButton, /color="normal"/)
+  assert.match(backButton, /:icon="backIcon"/)
+  assert.match(backButton, /@click="router\.back\(\)"/)
+  assert.doesNotMatch(backButton, /\bto=/)
   assert.doesNotMatch(source, /const homePath = computed/)
   assert.doesNotMatch(source, /growth\.publicPrompt\.backHome/)
 
@@ -106,6 +115,7 @@ test('protected Prompt keeps product state outside the shared shell', async () =
     read('backend/src/archive.mjs'),
     read('app/composables/usePromptArchive.ts'),
   ])
+  const backButton = topbarLeadingTemplate(detail)
 
   assert.match(detail, /<PromptPresentation/)
   assert.match(detail, /usePromptArchiveUnlock\(\)/)
@@ -115,7 +125,11 @@ test('protected Prompt keeps product state outside the shared shell', async () =
   assert.match(detail, /:telegram-url="item\.telegramUrl"/)
   assert.match(detail, /const router = useRouter\(\)/)
   assert.match(detail, /locale\.value === 'fa' \? 'arrow_forward' : 'arrow_back'/)
-  assert.match(detail, /<template #topbar-leading>[\s\S]*color="normal"[\s\S]*:icon="backIcon"[\s\S]*@click="router\.back\(\)"/)
+  assert.ok(backButton)
+  assert.match(backButton, /color="normal"/)
+  assert.match(backButton, /:icon="backIcon"/)
+  assert.match(backButton, /@click="router\.back\(\)"/)
+  assert.doesNotMatch(backButton, /\bto=/)
   assert.doesNotMatch(detail, /'arrow-right'|'arrow-left'/)
 
   assert.match(archive, /items\.descriptions AS description/)
