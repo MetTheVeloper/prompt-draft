@@ -21,8 +21,9 @@ test('Public Prompt page uses authored description for visible copy and SEO proj
   assert.doesNotMatch(pageSource, /t\(['"]growth\.publicPrompt\.description['"]\)/)
 })
 
-test('Public Prompt SQL adds only localized description while protected fields remain excluded', () => {
+test('Public Prompt SQL exposes only approved presentation metadata while protected fields remain excluded', () => {
   assert.match(publicPromptSource, /items\.descriptions AS description/)
+  assert.match(publicPromptSource, /items\.telegram_message_id AS "telegramMessageId"/)
   assert.match(publicPromptSource, /items\.status = 'published'/)
 
   for (const forbidden of [
