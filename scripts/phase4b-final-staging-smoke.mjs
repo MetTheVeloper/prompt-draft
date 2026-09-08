@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 
 const promptId = Number(process.argv[2] || process.env.PHASE4B_SMOKE_PROMPT_ID || 511)
-const discoverySlug = String(process.argv[3] || process.env.PHASE4B_SMOKE_DISCOVERY_SLUG || 'portraits-photography').trim()
+const discoverySlug = String(process.argv[3] || process.env.PHASE4B_SMOKE_DISCOVERY_SLUG || 'portrait-photography').trim()
 const siteBase = String(process.env.PHASE4B_SITE_BASE || 'https://grassic.ir').replace(/\/+$/, '')
 const apiBase = String(process.env.PHASE4B_API_BASE || 'https://api.grassic.ir').replace(/\/+$/, '')
 
