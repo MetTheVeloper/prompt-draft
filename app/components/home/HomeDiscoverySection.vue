@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveryInterestDefinition } from '~/composables/useDiscoveryPreferences'
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
-import { publicPromptPath } from '~/utils/publicRoutes'
+import { publicDiscoveryPath, publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
   definition: DiscoveryInterestDefinition
@@ -35,6 +35,12 @@ const formattedDate = computed(() => {
     day: 'numeric',
   }).format(date)
 })
+
+// Keep carousel semantics aligned with the active app locale direction:
+// previous points toward the inline-start side, next toward inline-end.
+const isRtl = computed(() => locale.value === 'fa')
+const previousIcon = computed(() => isRtl.value ? 'arrow_forward' : 'arrow_back')
+const nextIcon = computed(() => isRtl.value ? 'arrow_back' : 'arrow_forward')
 
 watch(
   () => props.items,
@@ -84,6 +90,20 @@ function promptPath(id: HomeShowcaseItem['id']) {
   return localePath(publicPromptPath(id))
 }
 
+function discoveryPath() {
+  return localePath(publicDiscoveryPath(props.definition.slug))
+}
+
+async function openDiscovery() {
+  await navigateTo(discoveryPath())
+}
+
+async function openActivePrompt() {
+  const item = activeItem.value
+  if (!item) return
+  await navigateTo(promptPath(item.id))
+}
+
 function openTelegram() {
   if (!activeItem.value?.telegramUrl || !import.meta.client) return
   window.open(activeItem.value.telegramUrl, '_blank', 'noopener,noreferrer')
@@ -94,7 +114,8 @@ function openTelegram() {
   <section
     class="home-discovery-section por ofh"
     @mouseenter="stopAutoplay"
-    @mouseleave="restartAutoplay">
+    @mouseleave="restartAutoplay"
+    @click="openActivePrompt">
     <Transition name="home-section-image" mode="out-in">
       <img
         v-if="activeImage"
@@ -118,7 +139,15 @@ function openTelegram() {
       :gap="18"
       :p="mobile ? 22 : 30">
       <el-flex rules="rbc" class="w100" :gap="12">
-        <el-flex rules="csc" :gap="5" class="fg100">
+        <el-flex
+          rules="csc"
+          :gap="5"
+          class="fg100 home-discovery-section__category-link"
+          role="link"
+          tabindex="0"
+          @click.stop="openDiscovery"
+          @keydown.enter.stop.prevent="openDiscovery"
+          @keydown.space.stop.prevent="openDiscovery">
           <el-text :size="10" :weight="900" class="w100" style="opacity: .66">
             {{ t('growth.home.sectionEyebrow') }}
           </el-text>
@@ -130,12 +159,12 @@ function openTelegram() {
           </el-text>
         </el-flex>
 
-        <el-flex v-if="items.length > 1" rules="rcc" :gap="4">
+        <el-flex v-if="items.length > 1" rules="rcc" :gap="4" @click.stop>
           <el-button
             type="fab"
             mode="flat"
             color="normal"
-            icon="arrow_back"
+            :icon="previousIcon"
             :size="11"
             :p="8"
             :tooltip="t('growth.home.previous')"
@@ -145,7 +174,7 @@ function openTelegram() {
             type="fab"
             mode="flat"
             color="normal"
-            icon="arrow_forward"
+            :icon="nextIcon"
             :size="11"
             :p="8"
             :tooltip="t('growth.home.next')"
@@ -205,7 +234,7 @@ function openTelegram() {
           </el-text>
         </el-flex>
 
-        <el-flex rules="rsc" :gap="8" class="w100 fw" wrap>
+        <el-flex rules="rsc" :gap="8" class="w100 fw" wrap @click.stop>
           <el-button
             color="normal"
             icon="visibility"
@@ -222,7 +251,7 @@ function openTelegram() {
           />
         </el-flex>
 
-        <el-flex v-if="items.length > 1" rules="rsc" :gap="5" class="w100">
+        <el-flex v-if="items.length > 1" rules="rsc" :gap="5" class="w100" @click.stop>
           <button
             v-for="(_, index) in items"
             :key="index"
@@ -245,6 +274,7 @@ function openTelegram() {
   min-height: var(--home-viewport-height);
   isolation: isolate;
   background: var(--themeBackground);
+  cursor: pointer;
 }
 
 .home-discovery-section__background,
@@ -290,6 +320,10 @@ function openTelegram() {
 
 .home-discovery-section__content {
   text-shadow: 0 4px 20px var(--invertText45);
+}
+
+.home-discovery-section__category-link {
+  cursor: pointer;
 }
 
 .home-discovery-section__item-title {
