@@ -4,13 +4,17 @@ import test from 'node:test'
 import { normalizePublicPrompt } from '../app/composables/usePublicPrompt'
 
 const PUBLIC_PROMPT = {
-  id: 9003,
+  id: 511,
   title: {
-    en: 'From Grassias',
-    fa: 'از گراسیاس',
+    en: 'Natural LinkedIn Portrait',
+    fa: 'پرتره طبیعی LinkedIn',
+  },
+  description: {
+    en: 'Turn a reference portrait into a natural professional LinkedIn photo with restrained studio polish.',
+    fa: 'پرتره مرجع را به یک عکس حرفه‌ای و طبیعی برای LinkedIn با پرداخت استودیویی کنترل‌شده تبدیل کنید.',
   },
   availableLocales: ['en', 'fa'],
-  publishedAt: '2026-09-05T14:43:00.000Z',
+  publishedAt: '2026-08-12T08:03:35.000Z',
   tags: ['portrait'],
   model: {
     previewGeneratedWith: 'gpt-image-1',
@@ -34,13 +38,17 @@ test('normalizes the exact public prompt browser/SSR contract', () => {
   const prompt = normalizePublicPrompt(PUBLIC_PROMPT)
   assert.ok(prompt)
   assert.deepEqual(prompt, {
-    id: 9003,
+    id: 511,
     title: {
-      en: 'From Grassias',
-      fa: 'از گراسیاس',
+      en: 'Natural LinkedIn Portrait',
+      fa: 'پرتره طبیعی LinkedIn',
+    },
+    description: {
+      en: 'Turn a reference portrait into a natural professional LinkedIn photo with restrained studio polish.',
+      fa: 'پرتره مرجع را به یک عکس حرفه‌ای و طبیعی برای LinkedIn با پرداخت استودیویی کنترل‌شده تبدیل کنید.',
     },
     availableLocales: ['en', 'fa'],
-    publishedAt: '2026-09-05T14:43:00.000Z',
+    publishedAt: '2026-08-12T08:03:35.000Z',
     tags: ['portrait'],
     model: {
       previewGeneratedWith: 'gpt-image-1',
@@ -63,30 +71,40 @@ test('normalizes the exact public prompt browser/SSR contract', () => {
   assert.equal(serialized.includes('balance'), false)
 })
 
-test('rejects locale availability that does not match authoritative titles', () => {
+test('rejects locale availability without a matching authoritative description', () => {
   assert.equal(normalizePublicPrompt({
     ...PUBLIC_PROMPT,
-    title: { en: 'English only' },
+    description: { en: PUBLIC_PROMPT.description.en },
     availableLocales: ['en', 'fa'],
   }), null)
 })
 
-test('accepts a single authoritative localization without adding fallback content', () => {
+test('rejects unadvertised title or description localization', () => {
+  assert.equal(normalizePublicPrompt({
+    ...PUBLIC_PROMPT,
+    availableLocales: ['en'],
+  }), null)
+})
+
+test('accepts a single complete authoritative localization without fallback content', () => {
   const prompt = normalizePublicPrompt({
     ...PUBLIC_PROMPT,
     title: { fa: 'فقط فارسی' },
+    description: { fa: 'توضیح عمومی فقط به فارسی' },
     availableLocales: ['fa'],
   })
 
   assert.ok(prompt)
   assert.deepEqual(prompt.title, { fa: 'فقط فارسی' })
+  assert.deepEqual(prompt.description, { fa: 'توضیح عمومی فقط به فارسی' })
   assert.deepEqual(prompt.availableLocales, ['fa'])
   assert.equal(prompt.title.en, undefined)
+  assert.equal(prompt.description.en, undefined)
 })
 
 test('rejects protected-detail shaped payloads that do not satisfy public contract', () => {
   assert.equal(normalizePublicPrompt({
-    id: 9003,
+    id: 511,
     title: { en: 'Title', fa: 'عنوان' },
     prompt: 'protected body',
     variants: [],
