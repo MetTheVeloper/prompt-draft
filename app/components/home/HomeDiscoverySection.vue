@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveryInterestDefinition } from '~/composables/useDiscoveryPreferences'
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
+import { publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
   definition: DiscoveryInterestDefinition
@@ -8,6 +9,7 @@ const props = defineProps<{
 }>()
 
 const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const { mobile } = useScreen()
 const activeIndex = ref(0)
 let autoplayTimer: ReturnType<typeof setInterval> | null = null
@@ -76,6 +78,10 @@ function next() {
 
 function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
+}
+
+function promptPath(id: HomeShowcaseItem['id']) {
+  return localePath(publicPromptPath(id))
 }
 
 function openTelegram() {
@@ -204,7 +210,7 @@ function openTelegram() {
             color="normal"
             icon="visibility"
             :label="t('growth.home.viewPrompt')"
-            :to="`/prompts?id=${activeItem.id}`"
+            :to="promptPath(activeItem.id)"
           />
           <el-button
             v-if="activeItem.telegramUrl"
