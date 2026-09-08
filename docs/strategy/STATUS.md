@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A ACCEPTED / 4B HARDENING
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B ACCEPTED / 4C NEXT
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -72,6 +72,7 @@ docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
 Rendering ADR:
@@ -90,7 +91,7 @@ ADR-001 remains historically correct for Milestone 21D. ADR-002 records the acce
 Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4C NEXT
 Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
@@ -98,8 +99,8 @@ Phase 4 slices:
 
 ```text
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-21.5.4B Public Prompt Architecture                         IN PROGRESS / 4B.1-4B.4 VERIFIED / 4B.5 HARDENING NEXT
-21.5.4C Public Creator + Indexability Policy               NOT STARTED
+21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+21.5.4C Public Creator + Indexability Policy               NEXT
 21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
@@ -130,6 +131,7 @@ Acquisition-capable SSR surfaces include:
 /
 /guide
 /discover/**
+/prompt/**
 ```
 
 Explicit client-rendered/application surfaces include:
@@ -228,7 +230,7 @@ Stable `prompt-draft.ir` remains deliberately untouched while Phase 4 is develop
 
 ---
 
-## Phase 4A — accepted SEO/routing foundation
+## Accepted Phase 4A — SEO/routing foundation
 
 Canonical record:
 
@@ -256,60 +258,181 @@ query/auth-next behavior preserves locale
 legacy app prerenders are isolated behind legacy static-generate mode
 ```
 
-Founder-local 4A gates:
-
-```text
-pnpm seo:audit-routes:strict -> PASS, 441 files, zero hazards
-pnpm test:seo-contracts     -> PASS, 5/5
-pnpm build                  -> PASS
-EN/FA runtime route smoke   -> PASS
-canonical redirect smoke    -> PASS
-raw SSR metadata smoke      -> PASS
-browser locale navigation   -> PASS
-application noindex headers -> PASS
-staging public noindex      -> PASS
-founder acceptance          -> PASS
-```
-
-Verification found and fixed two meaningful regressions:
-
-```text
-1. Vue I18n SyntaxError: 26 on refresh after locale switching
-   root cause: useI18n/usePublicSeo from global Nuxt plugin
-   fix: Home/Guide SEO policy moved into component setup
-
-   Persian font selector also expected lang=fa while SSR emits fa-IR
-   fix: html[lang|='fa']
-
-2. /manage EN missed X-Robots-Tag
-   root cause: legacy Nitro prerender bypassed request-time SEO middleware
-   fix: app/client-only prerenders gated behind NUXT_LEGACY_STATIC_GENERATE=true
-```
-
-Relevant remediation/acceptance commits:
-
-```text
-8d05c3fd95c174ac6dc7b4f5eea1be2fcab50375
-  i18n initialization + Persian font remediation
-
-aeaa6353f89e0ca48a9668a3382100579593e617
-  legacy application prerender isolation
-
-6fcc37f3d8629ee750877585aac7910e54d9dd64
-  Phase 4A founder-local acceptance record
-
-b4fda517eab0dbeb9862174ac878486f9b890d19
-  Phase 4 parent advanced to 4B
-```
+Founder-local 4A gates passed including strict route audit, SEO contracts, production build, EN/FA runtime smoke, canonical redirects, raw SSR metadata, locale navigation and staging noindex behavior.
 
 ---
 
-## Accepted locale/indexing direction
+## Accepted Phase 4B — Public Prompt Architecture
+
+Canonical records:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
+```
+
+Final state:
+
+```text
+architecture audit/design        -> DONE / FOUNDER AGREED
+architecture contract            -> LOCKED
+4B.1 backend public projection   -> DONE / VERIFIED
+4B.2 Nuxt SSR Prompt route       -> DONE / VERIFIED
+4B.3 SEO metadata                -> DONE / VERIFIED
+4B.4 public-link migration       -> DONE / VERIFIED
+post-4B.4 interaction polish     -> DONE / VERIFIED
+4B.5A localized descriptions     -> DONE / ACCEPTED
+4B.5B shared Prompt presentation -> DONE / ACCEPTED
+4B.5C Discovery visual layer     -> DONE / ACCEPTED
+4B.5D final verification         -> DONE / ACCEPTED
+Phase 4B                         -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+```
+
+Founder explicit acceptance on 2026-09-08:
+
+```text
+Phase 4B accepted
+```
+
+Canonical public Prompt routes:
+
+```text
+/prompt/:id
+/fa/prompt/:id
+```
+
+Protected product routes remain:
+
+```text
+/prompts?id=<id>
+/fa/prompts?id=<id>
+```
+
+Backend security boundary:
+
+```text
+GET /api/public/prompts/:id -> public/read-only/published-only sanitized projection
+GET /api/archive/:id        -> authenticated + email gate
+```
+
+Final public presentation projection includes only intentionally public fields:
+
+```text
+public numeric id
+localized title
+localized founder-authored description
+availableLocales
+publication date
+public tags
+public model/presentation metadata
+public preview image URLs/position
+optional public-safe Telegram message id
+```
+
+Explicitly excluded:
+
+```text
+protected Prompt body
+protected variants
+sourceTitle/private Draft payload
+source Draft/user identity unless later accepted by Creator policy
+storage keys
+unlock state
+balance/Goin
+permissions
+viewer/account state
+```
+
+Important invariant:
+
+```text
+The public database query itself does not SELECT prompt or variants.
+```
+
+Localized description is the one source for:
+
+```text
+visible Public Prompt description
+meta description
+og:description
+twitter:description
+CreativeWork.description
+```
+
+Locale availability requires:
+
+```text
+valid localized title + valid localized description
+```
+
+No fake localization fallback is allowed.
+
+Published description rollout:
+
+```text
+migration 025 -> description storage
+founder-reviewed backfill -> 100 published Archive rows
+migration 026 -> published localization database constraint
+```
+
+The two staging/test Archive items 9002/9003 were safely pruned before canonical backfill.
+
+Shared Prompt presentation remains presentation-only and does not know protected Prompt body, variants, unlock/economy or viewer state.
+
+Public Discovery hero final behavior:
+
+```text
+semantic el-flex section
+content-sized hero
+zero outer default-layout padding
+public preview media only
+SSR first-image fallback
+client visual-slider enhancement when multiple previews exist
+single media layer after hydration
+slider clipped to hero
+```
+
+Final aggregate regression:
+
+```text
+pnpm test:phase4b-final -> PASS
+Strict route audit -> PASS / 447 source files / zero hazards
+```
+
+Final staging smoke:
+
+```text
+pnpm smoke:phase4b-final -> PASS
+public Prompt API 200
+invalid public Prompt API 404
+protected Archive API 401
+EN/FA Public Prompt SSR 200
+EN/FA Discovery SSR 200
+SEO/noindex/private-boundary checks PASS
+```
+
+Final production-like stack health:
+
+```text
+frontend    healthy
+api         healthy
+db          healthy
+translator  healthy
+cloudflared up
+```
+
+Manual founder browser smoke also passed for EN/FA, light/dark presentation, protected unlock/copy/economy continuity, browser-history back behavior, Telegram linking and Discovery cinema.
+
+---
+
+## Accepted locale/indexing direction inherited into 4C
 
 ```text
 English/default -> unprefixed
 Persian         -> /fa
-EN + FA both indexable when authoritative localized content exists
+EN + FA both indexable only when authoritative localized content exists
 self-canonical per locale
 reciprocal hreflang when both authoritative localizations exist
 x-default -> English/default
@@ -319,199 +442,15 @@ One URL must deterministically render one language.
 
 Do not use cookie-dependent canonical language.
 
-Missing translation must not create fake indexable fallback content pretending to be an authoritative translation.
+Missing translation must not create fake indexable fallback content pretending to be authoritative.
 
 ---
 
-## Current action — 21.5.4B Public Prompt Architecture
+## Current action — 21.5.4C Public Creator + Indexability Policy
 
-Canonical 4B records:
+4C is now the active Phase 4 slice.
 
-```text
-docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
-```
-
-The 4B.5 hardening document is the **current continuation source of truth** for work before acceptance.
-
-Current state:
-
-```text
-architecture audit/design       -> DONE / FOUNDER AGREED
-architecture contract           -> LOCKED, with 4B.5 hardening amendment
-4B.1 backend public projection  -> DONE / FOUNDER-LOCAL VERIFIED
-4B.2 Nuxt SSR Prompt route      -> DONE / FOUNDER-LOCAL VERIFIED
-4B.3 SEO metadata               -> DONE / FOUNDER-LOCAL VERIFIED
-4B.4 public-link migration      -> DONE / FOUNDER-LOCAL VERIFIED
-post-4B.4 interaction polish    -> DONE / FOUNDER-LOCAL VERIFIED
-4B.5A localized descriptions    -> NEXT
-4B.5B shared Prompt presentation-> NOT STARTED
-4B.5C Discovery visual layer    -> NOT STARTED
-4B.5D final verification        -> NOT STARTED
-Phase 4B acceptance             -> NOT ACCEPTED
-```
-
-Canonical public Prompt route:
-
-```text
-/prompt/:id
-/fa/prompt/:id
-```
-
-Current protected/product route remains:
-
-```text
-/prompts?id=<id>
-```
-
-Backend security boundary remains:
-
-```text
-GET /api/archive            -> public list/catalog
-GET /api/archive/:id        -> authenticated + email gate
-```
-
-4B public read model:
-
-```text
-GET /api/public/prompts/:id
-  -> public/read-only
-  -> Archive public_id identity
-  -> Archive status='published' only
-  -> explicit sanitized allowlist
-```
-
-Current verified public projection includes:
-
-```text
-public id
-localized title
-availableLocales
-publication date
-public tags
-public model/presentation metadata
-public preview image URLs/position
-```
-
-4B.5A will intentionally extend this allowlist with:
-
-```text
-localized public description
-```
-
-The description must be founder-authored/curated public presentation content. It must never be synthesized from the protected Prompt body.
-
-Explicitly excluded throughout 4B.5:
-
-```text
-protected Prompt body
-protected variants
-sourceTitle
-source Draft/user identity
-storage keys
-unlock state
-balance/Goin
-permissions
-viewer/account state
-creator attribution until 4C
-```
-
-Important implementation invariant:
-
-```text
-The public database query itself does not SELECT prompt or variants.
-```
-
-Verified 4B.1–4B.4 include:
-
-```text
-public API published/missing/protected semantics
-exact browser/SSR DTO validation
-EN/FA Public Prompt SSR routes
-real 404 semantics
-protected CTA separation
-canonical EN/FA
-reciprocal authoritative hreflang
-x-default English
-localized OG/Twitter metadata
-first public preview image as social image
-sanitized CreativeWork JSON-LD
-zero serialized private-key leakage in founder smoke
-staging X-Robots-Tag noindex preserved
-Discovery/Home acquisition links -> localized /prompt/:id
-Public Prompt CTA -> localized protected /prompts?id=<id>
-production-like pnpm stack build/runtime PASS
-```
-
-Founder-verified post-4B.4 interaction polish:
-
-```text
-Prompt Archive card body -> localized protected detail
-/user owner Draft card body -> existing three-dot point menu
-Home category header -> localized Discovery route
-Home Prompt body -> localized Public Prompt route
-Home controls remain independent
-Home previous/next arrow semantics follow LTR/RTL
-pnpm test:interaction-polish -> 4/4 PASS
-pnpm test:public-prompt-links -> 3/3 PASS
-pnpm seo:audit-routes:strict -> PASS, 445 source files / zero hazards
-pnpm stack production-like build -> PASS
-```
-
-### 4B.5 required order
-
-```text
-4B.5A Localized Public Prompt Description Contract
-  -> audit schema/admin/API first
-  -> add required EN/FA description authoring
-  -> safe migration + backfill existing published Archive rows
-  -> extend public DTO/normalizer
-  -> visible description + meta/OG/Twitter/CreativeWork.description from one source
-  -> locale availability requires complete localized presentation
-
-4B.5B Shared Prompt Presentation Shell
-  -> share visual presentation only
-  -> keep /prompt/:id and /prompts?id=<id> separate
-  -> keep public and protected data sources separate
-  -> reuse cinema/preview background
-  -> slots/composition for protected-only and public-only actions/content
-
-4B.5C Public Discovery Visual Layer
-  -> preserve current Discovery structure/SEO/routes
-  -> add public preview-media cinema/background to hero
-  -> deterministic SSR first-image fallback if slider is client-heavy
-  -> preserve EN/FA and LTR/RTL behavior
-
-4B.5D Final Regression / Founder Acceptance
-  -> full automated contracts
-  -> production-like build
-  -> grassic.ir/api.grassic.ir staging smoke
-  -> public/protected leakage and authorization regression
-  -> explicit founder acceptance
-```
-
-Immediate next action:
-
-```text
-Start 4B.5A only.
-
-Audit before writing:
-- Archive schema + latest migration number
-- Archive create/update backend validation
-- /manage Archive localized title create/edit UI
-- current Archive mappers
-- backend/src/publicPrompt.mjs
-- app/composables/usePublicPrompt.ts
-- app/utils/publicPromptSeo.ts
-- current published Archive rows that require description backfill
-
-Do not start shared-presentation refactor until the description storage/validation/backfill path is stable.
-```
-
----
-
-## Accepted public Creator direction for 4C
+Accepted direction inherited from prior planning:
 
 ```text
 /user
@@ -519,7 +458,7 @@ Do not start shared-presentation refactor until the description storage/validati
   -> not canonical SEO Creator URL
 
 /creator/:username
-  -> future public SSR/SEO Creator route
+  -> target public SSR/SEO Creator route
   -> intentionally public identity/publications only
 ```
 
@@ -557,7 +496,24 @@ reasons[]
 signals{}
 ```
 
-Exact quality thresholds remain deliberately TBD until 4C.
+Exact quality thresholds remain deliberately TBD until the 4C audit/design locks them.
+
+### 4C start rule
+
+Before implementation:
+
+```text
+1. read this STATUS.md
+2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
+4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+6. inspect the latest feature/growth-foundation branch
+7. audit current user/profile/publication/privacy/indexability data before designing 4C
+8. do not expose private account fields merely because a public Creator route is being added
+```
+
+Do not implement quality thresholds, Creator public DTO or route behavior before the 4C audit establishes their source-of-truth fields and privacy semantics.
 
 ---
 
@@ -603,22 +559,9 @@ live preview
 validation
 ```
 
-Preferred editor candidate:
+Preferred editor candidate remains `md-editor-v3`, subject to implementation-time version/license validation.
 
-```text
-md-editor-v3
-```
-
-Validate implementation-time version/license before install.
-
-Blog images:
-
-```text
-reuse existing/shared Arvan upload pipeline
-never embed base64 in Markdown
-preserve stable media URL/reference
-preserve id/fullUrl/thumbnailUrl/width/height/alt/caption where practical
-```
+Blog images must reuse the existing/shared Arvan upload pipeline and must not embed base64 payloads into Markdown.
 
 ---
 
@@ -626,7 +569,7 @@ preserve id/fullUrl/thumbnailUrl/width/height/alt/caption where practical
 
 The existing storage upload path uses AWS SigV4 and depends on correct system time.
 
-During Phase 4A verification, all media uploads returned storage `403 Forbidden` after a power outage because the founder laptop clock was incorrect. Correcting system time restored uploads without code changes.
+During Phase 4A verification, media uploads returned storage `403 Forbidden` after a power outage because the founder laptop clock was incorrect. Correcting system time restored uploads without code changes.
 
 Diagnostic rule:
 
@@ -645,6 +588,9 @@ GET /api/archive      -> public sanitized list/catalog
 
 /prompts?id=<id> full Prompt detail -> authenticated + email gate
 GET /api/archive/:id               -> authenticated + email gate
+
+/prompt/:id Public Prompt -> public sanitized acquisition presentation
+GET /api/public/prompts/:id -> public published-only sanitized read model
 ```
 
 Rendering/SEO work must not weaken backend authorization.
@@ -678,8 +624,6 @@ repeat Copy/access after unlock     = free
 
 Authoritative economy behavior remains ledger/idempotency/atomicity driven as established in Milestone 21.
 
-Canonical detailed economy records remain in the Milestone 21 strategy/verification documents.
-
 ---
 
 ## Accepted Growth metrics state inherited from Milestone 21
@@ -712,13 +656,20 @@ Do not use `admin_audit_log` as behavioral analytics.
 
 ## Migration state
 
-Current documented schema migrations extend through:
+Current Phase 4B migration head:
 
 ```text
-024_prompt_archive_unlocks.sql
+026_prompt_archive_published_localization_constraint.sql
 ```
 
-Before 4B.5A allocates any migration number, inspect the current branch migration directory again. Do not assume `025` is still free merely from this status snapshot.
+Relevant 4B.5 migrations:
+
+```text
+025_prompt_archive_descriptions.sql
+026_prompt_archive_published_localization_constraint.sql
+```
+
+Before allocating any later migration number, inspect the current branch migration directory again rather than assuming a number is free from this snapshot.
 
 ---
 
@@ -735,6 +686,7 @@ DO NOT merge public/protected data sources when sharing Prompt presentation UI.
 DO NOT use cookie-dependent canonical language.
 DO NOT create indexable fake localization fallback pages.
 DO NOT let route-level SEO override staging NUXT_PUBLIC_NOINDEX=true.
+DO NOT expose private account/profile data through 4C Creator surfaces.
 DO NOT query GitHub per Blog request.
 DO NOT embed Blog images as base64 Markdown payloads.
 DO NOT create a second uncontrolled Blog source of truth beside Git.
@@ -749,13 +701,13 @@ When continuing in a new chat:
 
 ```text
 1. read this STATUS.md
-2. read docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md first for the active plan
-3. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md for the frozen public/protected boundary
-4. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md for 4B.1-4B.4 evidence/history
-5. inspect the latest feature/growth-foundation branch state
-6. start 4B.5A by auditing schema/migration head/Admin Archive validation/public DTO/SEO/backfill needs before writing
-7. implement 4B.5A in narrow tested commits; do not jump to the shared presentation refactor first
-8. continue 4B.5B then 4B.5C only after 4B.5A is stable and founder-verified
-9. run 4B.5D final regression/staging verification after A-C
-10. do not mark Phase 4B accepted until founder explicitly accepts after final smoke
+2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
+4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+6. confirm Phase 21.5.4B remains DONE / ACCEPTED
+7. inspect the latest feature/growth-foundation branch state
+8. begin 21.5.4C with a privacy/data/indexability audit before implementation
+9. preserve all accepted 4A/4B route, localization, SEO, noindex and public/protected boundaries
+10. do not begin 4D until 4C is implemented, founder-verified and explicitly accepted
 ```
