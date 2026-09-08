@@ -15,7 +15,7 @@ const emit = defineEmits<{
 }>()
 
 const { t, locale } = useI18n()
-const { mobile, tablet, mini } = useScreen()
+const { mobile } = useScreen()
 const analytics = useProductAnalytics()
 const promptArchive = usePromptArchive()
 const promptUnlock = usePromptArchiveUnlock()
@@ -30,9 +30,22 @@ let copiedTimer: ReturnType<typeof setTimeout> | undefined
 const localizedTitle = computed(() => {
   return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
 })
-const imageSources = computed(() => props.item.images.map(image => image.fullUrl))
-const coverImage = computed(() => imageSources.value[0] || '')
-const hasCanvasSlider = computed(() => imageSources.value.length > 1)
+
+const localizedDescription = computed(() => {
+  if (!props.item.description) return ''
+  return locale.value === 'fa'
+    ? props.item.description.fa
+    : props.item.description.en
+})
+
+const presentationMedia = computed(() => {
+  return props.item.images.map(image => ({
+    position: image.position,
+    fullUrl: image.fullUrl,
+    thumbnailUrl: image.thumbnailUrl,
+  }))
+})
+
 const hasTelegram = computed(() => Boolean(props.item.telegramUrl))
 
 const modelLabel = computed(() => {
@@ -41,27 +54,11 @@ const modelLabel = computed(() => {
     : t('prompts.models.dallE')
 })
 
-const modelMarker = computed(() => {
-  return props.item.model.previewGeneratedWith === 'gpt-image-1'
-    ? 'green'
-    : 'blue'
+const previewCountLabel = computed(() => {
+  return t('prompts.detail.previewCount', { count: props.item.images.length })
 })
 
-const heroTitleSize = computed(() => {
-  if (mobile.value) return 42
-  if (tablet.value || mini.value) return 58
-  return 82
-})
-
-const contentPadding = computed(() => {
-  if (mobile.value) return 16
-  if (tablet.value || mini.value) return 24
-  return 40
-})
-
-const heroStyle = computed(() => ({
-  minHeight: `calc(100vh - ${dimension().header.height}px)`,
-}))
+const contentPadding = computed(() => mobile.value ? 16 : 40)
 
 const promptSectionCols = computed(() => {
   if (mobile.value) return 1
@@ -91,20 +88,6 @@ const promptOptions = computed(() => {
 const activePrompt = computed(() => {
   return promptOptions.value.find(option => option.key === activePromptKey.value)
     || promptOptions.value[0]
-})
-
-const formattedDate = computed(() => {
-  const date = new Date(props.item.publishedAt)
-  if (Number.isNaN(date.getTime())) return props.item.publishedAt
-
-  return new Intl.DateTimeFormat(
-    locale.value === 'fa' ? 'fa-IR' : 'en-US',
-    {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-    },
-  ).format(date)
 })
 
 const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')
@@ -215,10 +198,6 @@ onMounted(() => {
 onBeforeUnmount(() => {
   if (copiedTimer) clearTimeout(copiedTimer)
 })
-
-function formatTag(tag: string) {
-  return tag.replaceAll('-', ' ')
-}
 
 function scrollDetailToTop() {
   if (!import.meta.client) return
@@ -347,39 +326,17 @@ async function copyPrompt() {
 
 <template>
   <div ref="rootRef" class="prompt-detail w100 por">
-    <visual-slider
-      v-if="hasCanvasSlider"
-      :sources="imageSources"
-      :interval="4200"
-      :transition-duration="2400"
-      :edge-blur="320"
-      :random="false"
-      :z-index="0"
-      :opacity="1"
-      :start-index="1"
-    />
-
-    <div v-else-if="coverImage" class="prompt-detail__static-bg">
-      <img
-        :src="coverImage"
-        :alt="localizedTitle"
-        class="prompt-detail__static-image"
-      />
-    </div>
-
-    <div v-else class="prompt-detail__fallback-bg" />
-
-    <div class="prompt-detail__cinema-overlay" />
-    <div class="prompt-detail__grain" />
-
-    <section
-      class="prompt-detail__hero w100 por zi20"
-      :style="heroStyle">
-      <el-flex
-        rules="rbc"
-        class="prompt-detail__topbar w100"
-        :gap="12"
-        :p="contentPadding">
+    <PromptPresentation
+      :title="localizedTitle"
+      :description="localizedDescription"
+      :tags="item.tags"
+      :public-id="item.id"
+      :published-at="item.publishedAt"
+      :model-label="modelLabel"
+      :media="presentationMedia"
+      :locale="locale === 'fa' ? 'fa' : 'en'"
+      :preview-count-label="previewCountLabel">
+      <template #topbar-leading>
         <el-button
           type="fab"
           to="/prompts"
@@ -392,123 +349,50 @@ async function copyPrompt() {
           :size="13"
           :p="10"
         />
+      </template>
 
-        <el-flex rules="rcc" :gap="16" wrap>
-          <el-text
-            :size="18"
-            :weight="800"
-            :p="[2, 5]"
-            :radius="100"
-            marker="white"
-            color="blue"
-            class="wsnw">
-            #{{ item.id }}
-          </el-text>
+      <template #meta>
+        <span class="prompt-detail__ready-meta">
+          <el-icon name="auto_fix_high" :size="14" />
+          {{ t('prompts.detail.readyToUse') }}
+        </span>
+      </template>
 
-          <el-text
-            :size="16"
-            :weight="800"
-            :p="[2, 5]"
-            :radius="100"
-            :marker="modelMarker"
-            color="white"
-            class="wsnw">
-            {{ modelLabel }}
-          </el-text>
-        </el-flex>
-      </el-flex>
+      <template #actions>
+        <el-button
+          :label="copyActionLabel"
+          :icon="copyActionIcon"
+          :color="copyActionColor"
+          mode="outline"
+          :size="12"
+          :p="[8, 14]"
+          @click="copyPrompt"
+        />
 
-      <el-flex
-        rules="cbs"
-        class="prompt-detail__hero-content w100"
-        :gap="18"
-        :p="contentPadding">
-        <el-flex rules="rsc" :gap="16" wrap class="w100">
-          <el-text
-            v-for="tag in item.tags"
-            :key="tag"
-            :size="10"
-            :p="[2, 5]"
-            :radius="100"
-            marker="surface50"
-            class="wsnw">
-            {{ formatTag(tag) }}
-          </el-text>
-        </el-flex>
+        <el-button
+          v-if="hasTelegram"
+          :label="t('prompts.detail.openTelegram')"
+          icon="send"
+          color="blue"
+          :size="14"
+          :p="[10, 14]"
+          @click="openTelegram"
+        />
+      </template>
 
+      <template #status>
         <el-text
-          type="h1"
-          :size="heroTitleSize"
-          :weight="600"
-          effect="glitch">
-          {{ localizedTitle }}
+          v-if="copyFeedback"
+          :size="10"
+          :weight="700"
+          :color="copyFeedbackColor"
+          :icon="copyFeedbackIcon"
+          :icon-color="copyFeedbackColor">
+          {{ copyFeedback }}
         </el-text>
+      </template>
 
-        <el-flex
-          rules="rsc"
-          class="prompt-detail__meta w100"
-          :gap="mobile ? 10 : 18"
-          wrap>
-          <el-text
-            :size="mobile ? 10 : 12"
-            icon="calendar_month"
-            icon-color="normal50">
-            {{ formattedDate }}
-          </el-text>
-
-          <el-text
-            :size="mobile ? 10 : 12"
-            icon="photo_library"
-            icon-color="normal50">
-            {{ t('prompts.detail.previewCount', { count: item.images.length }) }}
-          </el-text>
-
-          <el-text
-            :size="mobile ? 10 : 12"
-            icon="auto_fix_high"
-            icon-color="normal50">
-            {{ t('prompts.detail.readyToUse') }}
-          </el-text>
-        </el-flex>
-
-        <el-flex rules="rsc" :gap="8" wrap class="w100">
-          <el-button
-            :label="copyActionLabel"
-            :icon="copyActionIcon"
-            :color="copyActionColor"
-            mode="outline"
-            :size="12"
-            :p="[8, 14]"
-            @click="copyPrompt"
-          />
-
-          <el-button
-            v-if="hasTelegram"
-            :label="t('prompts.detail.openTelegram')"
-            icon="send"
-            color="blue"
-            :size="14"
-            :p="[10, 14]"
-            @click="openTelegram"
-          />
-
-          <el-text
-            v-if="copyFeedback"
-            :size="10"
-            :weight="700"
-            :color="copyFeedbackColor"
-            :icon="copyFeedbackIcon"
-            :icon-color="copyFeedbackColor"
-            class="w100">
-            {{ copyFeedback }}
-          </el-text>
-        </el-flex>
-      </el-flex>
-
-      <el-flex
-        rules="rcc"
-        class="prompt-detail__scroll-cue"
-        :gap="6">
+      <template #scroll-cue>
         <el-button
           :label="t('prompts.detail.explorePrompt')"
           icon="arrow_downward"
@@ -518,8 +402,8 @@ async function copyPrompt() {
           :p="8"
           @click="scrollToPrompt"
         />
-      </el-flex>
-    </section>
+      </template>
+    </PromptPresentation>
 
     <section
       id="prompt-detail-content"
@@ -721,101 +605,11 @@ async function copyPrompt() {
   background: #09090d;
 }
 
-.prompt-detail__static-bg,
-.prompt-detail__fallback-bg,
-.prompt-detail__cinema-overlay,
-.prompt-detail__grain {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-}
-
-.prompt-detail__static-bg,
-.prompt-detail__fallback-bg {
-  z-index: 0;
-}
-
-.prompt-detail__static-image {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-  animation: prompt-detail-static-breathe 16s ease-in-out infinite alternate;
-}
-
-.prompt-detail__fallback-bg {
-  background:
-    radial-gradient(circle at 18% 18%, rgba(89, 70, 255, 0.38), transparent 34%),
-    radial-gradient(circle at 82% 30%, rgba(0, 180, 255, 0.22), transparent 28%),
-    radial-gradient(circle at 48% 88%, rgba(255, 80, 140, 0.18), transparent 34%),
-    #0b0b10;
-}
-
-.prompt-detail__cinema-overlay {
-  z-index: 4;
-  background:
-    radial-gradient(circle at 50% 32%, transparent 0%, var(--themeSurface15) 42%, var(--themeSurface75) 100%),
-    linear-gradient(180deg, var(--themeSurface5) 0%, var(--themeSurface15) 38%, var(--themeSurface85) 100%);
-}
-
-.prompt-detail__grain {
-  z-index: 5;
-  opacity: 0.12;
-  background-image:
-    repeating-radial-gradient(circle at 0 0, var(--themeSurface15) 0, var(--themeSurface15) .6px, transparent .7px, transparent 3px);
-  background-size: 5px 5px;
-  mix-blend-mode: soft-light;
-}
-
-.prompt-detail__hero {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-}
-
-.prompt-detail__topbar {
-  position: relative;
-}
-
-.prompt-detail__ghost-id {
-  position: absolute;
-  top: 7%;
-  inset-inline-end: 2%;
-  z-index: 0;
-  font-size: clamp(130px, 24vw, 420px);
-  line-height: 0.78;
-  font-weight: 900;
-  letter-spacing: -0.08em;
-  color: rgba(255,255,255,.055);
-  user-select: none;
-  pointer-events: none;
-}
-
-.prompt-detail__hero-content {
-  position: relative;
-  max-width: 1240px;
-  margin-inline: auto;
-  padding-top: 120px !important;
-  padding-bottom: 72px !important;
-}
-
-.prompt-detail__title {
-  max-width: 1080px;
-  line-height: 0.92;
-  letter-spacing: -0.045em;
-  text-wrap: balance;
-  text-shadow: 0 10px 50px rgba(0,0,0,.32);
-}
-
-.prompt-detail__meta {
-  opacity: .88;
-}
-
-.prompt-detail__scroll-cue {
-  position: absolute;
-  inset-inline-end: 32px;
-  bottom: 24px;
-  opacity: .82;
+.prompt-detail__ready-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
 }
 
 .prompt-detail__content {
@@ -886,11 +680,7 @@ async function copyPrompt() {
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
   font-size: 13px;
   line-height: 1.9;
-  color: var(--normalText)
-}
-
-.prompt-detail__navigation {
-  border-top: 1px solid rgba(255,255,255,.08);
+  color: var(--normalText);
 }
 
 .prompt-detail__nav-item {
@@ -904,37 +694,7 @@ async function copyPrompt() {
   background: var(--normalText15);
 }
 
-@keyframes prompt-detail-static-breathe {
-  from {
-    transform: scale(1);
-  }
-
-  to {
-    transform: scale(1.045);
-  }
-}
-
 @media (max-width: 760px) {
-  .prompt-detail__ghost-id {
-    top: 13%;
-    inset-inline-end: -2%;
-    font-size: clamp(110px, 42vw, 190px);
-  }
-
-  .prompt-detail__hero-content {
-    padding-top: 86px !important;
-    padding-bottom: 76px !important;
-  }
-
-  .prompt-detail__title {
-    line-height: .98;
-  }
-
-  .prompt-detail__scroll-cue {
-    inset-inline-end: 12px;
-    bottom: 12px;
-  }
-
   .prompt-detail__content-grid {
     padding-top: 48px !important;
     padding-bottom: 48px !important;
@@ -961,10 +721,6 @@ async function copyPrompt() {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .prompt-detail__static-image {
-    animation: none;
-  }
-
   .prompt-detail__nav-item {
     transition: none;
   }
