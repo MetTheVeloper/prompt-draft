@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 FOUNDATION STARTING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -25,7 +25,7 @@ No implementation slice is DONE merely because code exists. Every slice requires
 ```text
 4C repository audit                         -> COMPLETE
 4C revised Creator/profile architecture     -> FOUNDER ACCEPTED 2026-09-09
-4C.1 Creator Profile Foundation             -> NEXT / IMPLEMENTATION STARTING
+4C.1 Creator Profile Foundation             -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 4C.2 Authenticated Profile Management       -> NOT STARTED
 4C.3 Creator Application + Admin Review     -> NOT STARTED
 4C.4 Public Creator policy/API              -> NOT STARTED
@@ -34,6 +34,13 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.7 Prompt/Discovery attribution           -> NOT STARTED
 4C.8 aggregate/staging acceptance           -> NOT STARTED
 Phase 21.5.4C                               -> IN PROGRESS / NOT ACCEPTED
+```
+
+Implementation commits:
+
+```text
+9efc3c61ead97729ac8a2d25765be16cef38311e  docs: lock revised Phase 4C Creator identity architecture
+e9dca683cfb409af448fbaf22d556640dfca1805  feat: add Phase 4C Creator profile foundation
 ```
 
 ---
@@ -121,43 +128,109 @@ Required invariants:
 [ ] publishing Prompt does not auto-request
 [ ] request endpoint validates requirements server-side
 [ ] rejection can be followed by reapplication
-[ ] approval/rejection/suspension history is retained
+[x] lifecycle state/history storage exists independently from users.role
+[x] Creator status does not change users.role schema
 [ ] account suspension overrides Creator availability
-[ ] Creator status does not change users.role
 [ ] self-approval is rejected
 ```
+
+The unchecked behavioral items belong to 4C.2–4C.4 and are not claimed by the foundation slice.
 
 ---
 
 ## 5. 4C.1 Creator Profile Foundation gate
 
-Required implementation evidence:
+Implementation evidence:
 
 ```text
-[ ] numbered migration follows current 026 migration head
-[ ] user_profiles one-to-one extended profile storage
-[ ] localized screen-name fields
-[ ] localized bio fields
-[ ] localized Markdown article fields
-[ ] canonical birthday DATE
-[ ] location storage separates display text from provider metadata
-[ ] profile_skills controlled localized taxonomy schema
-[ ] user_profile_skills relationship
-[ ] user_profile_links max-5 ordered schema
-[ ] creator_accounts current-state schema
-[ ] creator_account_events immutable lifecycle history
-[ ] no creator column added to users.role
-[ ] pure Creator profile normalization/completeness module
-[ ] unit tests cover ordinary incomplete profile vs Creator-ready profile
-[ ] unit tests cover EN/FA requirement independently
-[ ] unit tests cover active-skill requirement
-[ ] technical field limits are not treated as SEO quality scoring
-[ ] backend test command documented
+[x] numbered migration follows current 026 migration head -> 027_creator_profile_foundation.sql
+[x] user_profiles one-to-one extended profile storage
+[x] localized screen-name fields
+[x] localized bio fields
+[x] localized Markdown article fields
+[x] canonical birthday DATE
+[x] location storage separates display text from provider metadata
+[x] controlled localized skill-category taxonomy schema
+[x] profile_skills controlled localized taxonomy schema
+[x] user_profile_skills relationship
+[x] user_profile_links max-5 ordered schema via position 0..4 + UNIQUE(user_id, position)
+[x] creator_accounts current-state schema
+[x] creator_account_events lifecycle history schema
+[x] creator_account_events UPDATE protection enforces append-only history during account lifetime
+[x] no creator value/column added to users.role
+[x] pure Creator profile normalization/completeness module
+[x] unit tests cover ordinary incomplete profile vs Creator-ready profile
+[x] unit tests cover EN/FA requirement independently
+[x] unit tests cover active-skill requirement
+[x] unit tests cover canonical account/username gate
+[x] technical field limits are not treated as SEO quality scoring
+[x] backend test command documented
+[x] taxonomy intentionally not seeded before founder content checkpoint
+```
+
+Foundation files:
+
+```text
+backend/sql/027_creator_profile_foundation.sql
+backend/src/creatorProfileRequirements.mjs
+backend/src/creatorProfileRequirements.test.mjs
+backend/package.json
+```
+
+Technical storage ceilings are deliberately generous and are abuse/data-safety limits, not SEO thresholds:
+
+```text
+screenName: 160 chars per locale
+bio: 2000 chars per locale
+article: 100000 chars per locale
+location display: 255 chars
+profile link URL: 2048 chars
+profile link label: 160 chars
+```
+
+The readiness tests deliberately prove that very short but non-empty required content is technically eligible; content-quality scoring remains out of scope.
+
+### Founder-local verification commands
+
+From repository root after pulling `feature/growth-foundation`:
+
+```powershell
+git pull
+docker compose up -d --build api
+docker compose exec api npm run db:schema
+docker compose exec api npm run test:creator-profile-foundation
+docker compose exec api npm run test:public-prompt
+```
+
+Manual schema inspection:
+
+```powershell
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profiles"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ profile_skill_categories"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ profile_skills"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profile_skills"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profile_links"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ creator_accounts"
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ creator_account_events"
+```
+
+Optional table-presence summary:
+
+```powershell
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('user_profiles','profile_skill_categories','profile_skills','user_profile_skills','user_profile_links','creator_accounts','creator_account_events') ORDER BY tablename;"
+```
+
+Expected:
+
+```text
+7 rows
 ```
 
 Founder-local verification: **PENDING**
 
 Acceptance: **PENDING**
+
+Do not start 4C.2 as accepted work until the founder reports these gates and explicitly accepts 4C.1.
 
 ---
 
