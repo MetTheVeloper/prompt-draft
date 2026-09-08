@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { DiscoveryInterestDefinition } from '~/composables/useDiscoveryPreferences'
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
+import { localeTextDirection } from '~/utils/localeDirection'
 import { publicDiscoveryPath, publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
@@ -36,9 +37,7 @@ const formattedDate = computed(() => {
   }).format(date)
 })
 
-// Keep carousel semantics aligned with the active app locale direction:
-// previous points toward the inline-start side, next toward inline-end.
-const isRtl = computed(() => locale.value === 'fa')
+const isRtl = computed(() => localeTextDirection(locale.value) === 'rtl')
 const previousIcon = computed(() => isRtl.value ? 'arrow_forward' : 'arrow_back')
 const nextIcon = computed(() => isRtl.value ? 'arrow_back' : 'arrow_forward')
 
