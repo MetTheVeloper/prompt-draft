@@ -11,6 +11,7 @@
     "archive:prune-description-test-items": "node src/prune-prompt-archive-description-test-items.mjs",
     "archive:backfill-approved-descriptions": "node src/backfill-prompt-archive-descriptions.mjs data/prompt-archive-descriptions.v1.json",
     "archive:backfill-descriptions": "node src/backfill-prompt-archive-descriptions.mjs",
+    "test:creator-profile-foundation": "node --test src/creatorProfileRequirements.test.mjs",
     "test:public-prompt": "node --test src/publicPrompt.test.mjs",
     "test:archive-description-inventory": "node --test src/promptArchiveDescriptionInventory.test.mjs",
     "test:archive-description-test-prune": "node --test src/promptArchiveDescriptionTestPrune.test.mjs",
