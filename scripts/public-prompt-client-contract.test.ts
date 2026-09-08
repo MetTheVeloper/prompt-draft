@@ -15,6 +15,7 @@ const PUBLIC_PROMPT = {
   },
   availableLocales: ['en', 'fa'],
   publishedAt: '2026-08-12T08:03:35.000Z',
+  telegramMessageId: 511,
   tags: ['portrait'],
   model: {
     previewGeneratedWith: 'gpt-image-1',
@@ -49,6 +50,7 @@ test('normalizes the exact public prompt browser/SSR contract', () => {
     },
     availableLocales: ['en', 'fa'],
     publishedAt: '2026-08-12T08:03:35.000Z',
+    telegramMessageId: 511,
     tags: ['portrait'],
     model: {
       previewGeneratedWith: 'gpt-image-1',
@@ -69,6 +71,15 @@ test('normalizes the exact public prompt browser/SSR contract', () => {
   assert.equal(serialized.includes('PRIVATE_STORAGE_KEY'), false)
   assert.equal(serialized.includes('permissions'), false)
   assert.equal(serialized.includes('balance'), false)
+})
+
+test('accepts null Telegram metadata and rejects invalid Telegram message ids', () => {
+  const withoutTelegram = normalizePublicPrompt({ ...PUBLIC_PROMPT, telegramMessageId: null })
+  assert.ok(withoutTelegram)
+  assert.equal(withoutTelegram.telegramMessageId, null)
+
+  assert.equal(normalizePublicPrompt({ ...PUBLIC_PROMPT, telegramMessageId: 0 }), null)
+  assert.equal(normalizePublicPrompt({ ...PUBLIC_PROMPT, telegramMessageId: 'invalid' }), null)
 })
 
 test('rejects locale availability without a matching authoritative description', () => {
