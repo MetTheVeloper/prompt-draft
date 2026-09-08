@@ -13,6 +13,10 @@ const PUBLIC_ROW = {
     en: 'Macro Toy Portrait',
     fa: 'پرتره ماکرو اسباب‌بازی',
   },
+  description: {
+    en: 'Turn a reference portrait into a macro toy-style image.',
+    fa: 'پرتره مرجع را به تصویری ماکرو با حال‌وهوای اسباب‌بازی تبدیل کنید.',
+  },
   publishedAt: new Date('2026-08-20T10:00:00.000Z'),
   previewGeneratedWith: 'gpt-image-1',
   optimizedFor: ['gpt-image-1'],
@@ -65,6 +69,10 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
       en: 'Macro Toy Portrait',
       fa: 'پرتره ماکرو اسباب‌بازی',
     },
+    description: {
+      en: 'Turn a reference portrait into a macro toy-style image.',
+      fa: 'پرتره مرجع را به تصویری ماکرو با حال‌وهوای اسباب‌بازی تبدیل کنید.',
+    },
     availableLocales: ['en', 'fa'],
     publishedAt: '2026-08-20T10:00:00.000Z',
     tags: ['portrait', 'macro'],
@@ -96,18 +104,32 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
   }
 })
 
-test('mapPublicPromptRow derives explicit locale availability without fallback', () => {
+test('locale availability requires complete localized title and description without fallback', () => {
   const prompt = mapPublicPromptRow({
     ...PUBLIC_ROW,
-    title: { en: 'English only', fa: '   ' },
+    title: { en: 'English only', fa: 'عنوان فارسی' },
+    description: { en: 'English description', fa: '   ' },
   })
 
   assert.deepEqual(prompt.title, { en: 'English only' })
+  assert.deepEqual(prompt.description, { en: 'English description' })
   assert.deepEqual(prompt.availableLocales, ['en'])
   assert.equal('fa' in prompt.title, false)
+  assert.equal('fa' in prompt.description, false)
 })
 
-test('readPublicPrompt uses a published-only query and does not select protected columns', async () => {
+test('public row with no complete localization is rejected', () => {
+  assert.throws(
+    () => mapPublicPromptRow({
+      ...PUBLIC_ROW,
+      title: { en: 'English title' },
+      description: { fa: 'توضیح فارسی' },
+    }),
+    /no complete authoritative localization/,
+  )
+})
+
+test('readPublicPrompt uses a published-only query and selects description without protected columns', async () => {
   let capturedSql = ''
   let capturedValues = null
 
@@ -121,6 +143,7 @@ test('readPublicPrompt uses a published-only query and does not select protected
   assert.deepEqual(capturedValues, [123])
   assert.match(capturedSql, /items\.public_id\s*=\s*\$1/i)
   assert.match(capturedSql, /items\.status\s*=\s*'published'/i)
+  assert.match(capturedSql, /items\.descriptions\s+AS\s+description/i)
 
   for (const forbiddenSql of [
     /items\.prompt/i,
@@ -145,6 +168,7 @@ test('GET published public Prompt returns 200 with sanitized projection', async 
   assert.equal(calls[0].status, 200)
   assert.equal(calls[0].body.ok, true)
   assert.equal(calls[0].body.prompt.id, 123)
+  assert.equal(calls[0].body.prompt.description.en, PUBLIC_ROW.description.en)
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_PROMPT_SENTINEL'), false)
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_VARIANT_SENTINEL'), false)
 })
