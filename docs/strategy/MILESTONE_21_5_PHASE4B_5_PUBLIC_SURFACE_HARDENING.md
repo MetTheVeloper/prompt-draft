@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5 Public Surface Hardening
 
-Status: **IN PROGRESS / 4B.5A ACCEPTED / 4B.5B NEXT / PHASE 4B NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.5A ACCEPTED / 4B.5B+4B.5C IMPLEMENTED / FOUNDER VERIFICATION NEXT / PHASE 4B NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -21,6 +21,8 @@ Verification history:
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5B_SHARED_PRESENTATION.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
 ```
 
 This document is the current continuation source of truth for the final hardening work before Phase 4B acceptance.
@@ -65,6 +67,8 @@ Canonical 4B.5A acceptance record:
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
 ```
+
+4B.5B and 4B.5C are implemented but remain pending final founder-local visual/runtime verification before 4B.5D begins.
 
 ---
 
@@ -148,7 +152,7 @@ valid localized title + valid localized description
 
 No fake fallback localization is allowed.
 
-Do not reopen this contract during 4B.5B unless a verified regression requires it.
+Do not reopen this contract during later hardening unless a verified regression requires it.
 
 ---
 
@@ -157,7 +161,13 @@ Do not reopen this contract during 4B.5B unless a verified regression requires i
 Status:
 
 ```text
-NEXT
+IMPLEMENTED / FINAL BACK-FIX RE-VERIFICATION NEXT
+```
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5B_SHARED_PRESENTATION.md
 ```
 
 ### Objective
@@ -185,9 +195,9 @@ without merging their routes, data sources, authorization or product behavior.
 
 The public page must never consume protected detail data just because the visual shell is shared.
 
-### Target presentation responsibility
+### Implemented presentation responsibility
 
-The exact component name may be chosen during implementation, but the shared layer should own only presentation concepts equivalent to:
+The shared layer owns only presentation concepts equivalent to:
 
 ```text
 PromptPresentation
@@ -196,6 +206,7 @@ PromptPresentation
 ├── localized description
 ├── tags
 ├── public-safe id / publication date / model metadata
+├── optional public-safe Telegram post metadata
 ├── shared responsive LTR/RTL layout
 ├── slot/composition: primary actions
 ├── slot/composition: secondary actions
@@ -203,7 +214,7 @@ PromptPresentation
 └── slot/composition: route-specific extended content
 ```
 
-The shared component must remain unaware of:
+The shared component remains unaware of:
 
 ```text
 balance
@@ -214,60 +225,32 @@ protected Prompt body
 variants
 ```
 
-Those belong only to protected-page state/children/slots.
+Those remain only in protected-page state/children/slots.
 
-### Visual direction
-
-Reuse the existing protected Prompt cinema/background language rather than maintaining two separate hero systems.
-
-Preferred media behavior:
+### Implemented visual behavior
 
 ```text
-public preview images
-  -> shared/reusable cinema presentation where SSR-safe
-  -> deterministic first public image remains SSR-visible fallback
-  -> client enhancement may animate/slide additional previews
+public/protected preview images
+  -> shared cinema presentation
+  -> deterministic first image SSR-visible
+  -> ClientOnly visual-slider enhancement for additional previews
 ```
 
-The accepted authored description from 4B.5A must remain visible and remain the SEO source of truth.
-
-### Route-specific behavior to preserve
-
-Protected-only examples:
+Founder visual polish additionally established:
 
 ```text
-unlock/copy controls
-protected catalog navigation
-protected Prompt exploration/content
-viewer/economy state
-Telegram/product actions where already applicable
+theme-aware overlay -> var(--themeSurface)
+description/meta -> normal theme text
+Prompt tags -> surface + normal
+model badge -> surface + normal
+Telegram badge -> blue + white + canonical new-tab URL
+Public Prompt default layout padding -> zero
+back icons -> arrow_back LTR / arrow_forward RTL
+back action -> router.back() on both public and protected Prompt heroes
+back button color -> normal
 ```
 
-Public-only examples:
-
-```text
-Open full prompt CTA -> localized protected /prompts?id=<id>
-public acquisition semantics
-public SEO semantics
-```
-
-### 4B.5B audit-before-write requirement
-
-Before changing presentation code, inspect:
-
-```text
-app/pages/prompt/[id].vue
-protected /prompts detail composition
-existing PromptDetail / cinema / slider components
-public preview image data shape
-protected preview image data shape
-SSR safety of existing media primitives
-LTR/RTL behavior
-mobile/tablet/desktop layouts
-route-specific action/control ownership
-```
-
-The first implementation pass should identify the smallest presentation-only extraction that preserves both data boundaries.
+The authored description from 4B.5A remains visible and remains the SEO source of truth.
 
 ---
 
@@ -276,12 +259,31 @@ The first implementation pass should identify the smallest presentation-only ext
 Status:
 
 ```text
-NOT STARTED
+IMPLEMENTED / FOUNDER VERIFICATION NEXT
 ```
 
-Keep the existing `/discover/:slug` information architecture, routing, SEO and curated Prompt grid while adding the media-rich acquisition quality expected from Home/Public Prompt.
+Canonical record:
 
-Preserve:
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
+```
+
+The existing `/discover/:slug` information architecture, routing, SEO and curated Prompt grid are preserved while adding the media-rich acquisition quality expected from Home/Public Prompt.
+
+Implemented behavior:
+
+```text
+hero -> el-flex type="section"
+hero height -> application viewport below header
+hero media -> only already-public category cover previews
+first category preview -> deterministic SSR <img>
+multiple previews -> ClientOnly visual-slider enhancement
+slider canvas -> scoped absolute to hero, not fixed over page scroll
+hero heading flex -> rules="ccs"
+collection heading flex -> rules="ccs"
+```
+
+Preserved:
 
 ```text
 canonical /discover/:slug and /fa/discover/:slug
@@ -292,11 +294,7 @@ current canonical/hreflang behavior
 real 404/canonical redirect behavior
 ```
 
-Use only already-public preview media.
-
-If the existing cinema/slider primitive is client-heavy, SSR must still emit a deterministic first-image fallback before progressive enhancement.
-
-Preserve EN LTR, FA RTL, readable contrast, responsive layout and accessibility semantics.
+No protected Prompt body, variants, economy, permission, storage or viewer data enters the Discovery page.
 
 ---
 
@@ -322,7 +320,7 @@ interaction-polish tests
 SEO route contracts
 strict locale-routing audit
 shared-presentation boundary/regression tests
-Discovery visual-layer contract tests where practical
+Discovery visual-layer contract tests
 production-like pnpm stack build/start
 ```
 
@@ -348,13 +346,17 @@ meta/OG/Twitter description from authored description
 CreativeWork.description from authored description
 no serialized private-key leakage
 Open full prompt -> protected localized /prompts?id=<id>
+back control -> browser history, not hardcoded route
 ```
 
 Required Discovery staging smoke:
 
 ```text
 EN/FA Discovery hero uses public category media
+SSR first image remains visible
+client slider stays scoped to hero
 hero text remains readable
+hero/collection alignment uses founder-approved ccs rules
 category/card routes remain correct
 Public Prompt links remain localized
 SEO/canonical behavior unchanged
@@ -385,12 +387,16 @@ Final transition:
 ## 7. Immediate next action
 
 ```text
-Start 4B.5B — Shared Prompt Presentation Shell.
+Founder-local re-verification of:
+1. final 4B.5B browser-history back behavior
+2. 4B.5C Discovery visual layer
 ```
 
-Audit first, then implement the smallest presentation-only shared shell. Preserve 4B.5A data/SEO contracts and all protected authorization/economy behavior.
+Run the focused automated gates, production-like frontend build/start and EN/FA staging visual smoke.
 
-Do not start 4B.5C until 4B.5B is implemented and founder-verified.
+If both slices pass founder verification, begin 4B.5D final regression / acceptance.
+
+Do not start 4C before 4B.5D is complete and explicitly accepted.
 
 ---
 
