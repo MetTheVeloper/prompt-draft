@@ -33,25 +33,10 @@ const yearItems = computed(() => Array.from(
   },
 ));
 
-const monthNames = [
-  "فروردین",
-  "اردیبهشت",
-  "خرداد",
-  "تیر",
-  "مرداد",
-  "شهریور",
-  "مهر",
-  "آبان",
-  "آذر",
-  "دی",
-  "بهمن",
-  "اسفند",
-];
-
-const monthItems = monthNames.map((label, index) => ({
+const monthItems = computed(() => Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
-  label,
-}));
+  label: t(`manage.profile.birthday.months.${index + 1}`),
+})));
 
 const daysInSelectedMonth = computed(() => {
   const year = Number(jYear.value);
