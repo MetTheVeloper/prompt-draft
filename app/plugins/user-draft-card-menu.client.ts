@@ -5,17 +5,18 @@ const INTERACTIVE_SELECTOR = [
   'select',
   'textarea',
   'summary',
+  '.crp',
   '[role="button"]',
   '[role="link"]',
   '[contenteditable="true"]',
 ].join(', ')
 
 function findDraftMenuTrigger(card: Element) {
-  const buttons = Array.from(card.querySelectorAll('button'))
+  const icon = Array.from(card.querySelectorAll('.el-icon__symbol')).find((element) => {
+    return element.textContent?.trim() === 'more_vert'
+  })
 
-  return buttons.find((button) => {
-    return button.textContent?.includes('more_vert')
-  }) ?? null
+  return icon?.closest('.crp') ?? null
 }
 
 function cloneClickAtOriginalPoint(event: MouseEvent) {
