@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 FOUNDER-LOCAL VERIFIED / ACCEPTANCE PENDING**
 
 Date: 2026-09-09
 
@@ -25,7 +25,7 @@ No implementation slice is DONE merely because code exists. Every slice requires
 ```text
 4C repository audit                         -> COMPLETE
 4C revised Creator/profile architecture     -> FOUNDER ACCEPTED 2026-09-09
-4C.1 Creator Profile Foundation             -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.1 Creator Profile Foundation             -> FOUNDER-LOCAL VERIFIED / ACCEPTANCE PENDING
 4C.2 Authenticated Profile Management       -> NOT STARTED
 4C.3 Creator Application + Admin Review     -> NOT STARTED
 4C.4 Public Creator policy/API              -> NOT STARTED
@@ -41,6 +41,7 @@ Implementation commits:
 ```text
 9efc3c61ead97729ac8a2d25765be16cef38311e  docs: lock revised Phase 4C Creator identity architecture
 e9dca683cfb409af448fbaf22d556640dfca1805  feat: add Phase 4C Creator profile foundation
+86f95801b9489426b91f6f7ab349ebc64ef6d26b  docs: record Phase 4C.1 implementation checkpoint
 ```
 
 ---
@@ -202,35 +203,44 @@ docker compose exec api npm run test:creator-profile-foundation
 docker compose exec api npm run test:public-prompt
 ```
 
-Manual schema inspection:
-
-```powershell
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profiles"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ profile_skill_categories"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ profile_skills"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profile_skills"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ user_profile_links"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ creator_accounts"
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\d+ creator_account_events"
-```
-
-Optional table-presence summary:
+Manual table-presence summary:
 
 ```powershell
 docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT tablename FROM pg_tables WHERE schemaname='public' AND tablename IN ('user_profiles','profile_skill_categories','profile_skills','user_profile_skills','user_profile_links','creator_accounts','creator_account_events') ORDER BY tablename;"
 ```
 
-Expected:
+### Founder-local evidence — 2026-09-09
+
+Founder reported the following from the local Docker stack:
 
 ```text
-7 rows
+API image build/start                         -> PASS
+DB schema replay 001..027                    -> PASS
+027_creator_profile_foundation.sql           -> APPLIED
+creator profile foundation tests             -> 7 PASS / 0 FAIL
+Public Prompt regression tests               -> 10 PASS / 0 FAIL
+Creator foundation table-presence query      -> 7 rows / PASS
 ```
 
-Founder-local verification: **PENDING**
+Observed tables:
 
-Acceptance: **PENDING**
+```text
+creator_account_events
+creator_accounts
+profile_skill_categories
+profile_skills
+user_profile_links
+user_profile_skills
+user_profiles
+```
 
-Do not start 4C.2 as accepted work until the founder reports these gates and explicitly accepts 4C.1.
+The Docker warning about an existing orphan `prompt-draft-cloudflared-1` container did not affect the requested API/schema/test verification and is not a 4C.1 failure.
+
+Founder-local verification: **VERIFIED 2026-09-09**
+
+Acceptance: **PENDING EXPLICIT FOUNDER ACCEPTANCE**
+
+Do not start 4C.2 as accepted work until the founder explicitly accepts 4C.1.
 
 ---
 
