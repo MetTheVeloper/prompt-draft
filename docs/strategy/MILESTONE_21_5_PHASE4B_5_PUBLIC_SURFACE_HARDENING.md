@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5 Public Surface Hardening
 
-Status: **IN PROGRESS / 4B.5A-4B.5C FOUNDER VERIFIED / 4B.5D FINAL VERIFICATION IN PROGRESS / PHASE 4B NOT ACCEPTED**
+Status: **DONE / 4B.5A-4B.5D FOUNDER VERIFIED / PHASE 4B ACCEPTED**
 
 Date: 2026-09-08
 
@@ -26,30 +26,30 @@ docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
-This document remains the parent continuation source of truth for final Phase 4B acceptance.
+This document is now the closed parent source of truth for the accepted Phase 4B.5 hardening work.
 
 ---
 
-## 1. Current checkpoint
+## 1. Final checkpoint
 
 ```text
-4B.1 backend public projection       -> FOUNDER-LOCAL VERIFIED
-4B.2 Nuxt Public Prompt SSR route    -> FOUNDER-LOCAL VERIFIED
-4B.3 Public Prompt SEO metadata      -> FOUNDER-LOCAL VERIFIED
-4B.4 public-link migration           -> FOUNDER-LOCAL VERIFIED
-post-4B.4 interaction polish         -> FOUNDER-LOCAL VERIFIED
+4B.1 backend public projection       -> DONE / FOUNDER-LOCAL VERIFIED
+4B.2 Nuxt Public Prompt SSR route    -> DONE / FOUNDER-LOCAL VERIFIED
+4B.3 Public Prompt SEO metadata      -> DONE / FOUNDER-LOCAL VERIFIED
+4B.4 public-link migration           -> DONE / FOUNDER-LOCAL VERIFIED
+post-4B.4 interaction polish         -> DONE / FOUNDER-LOCAL VERIFIED
 4B.5A localized descriptions         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
 4B.5B shared Prompt presentation     -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
 4B.5C Discovery visual layer         -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
-4B.5D final regression / acceptance  -> IN PROGRESS
-Phase 4B acceptance                  -> NOT ACCEPTED
+4B.5D final regression / acceptance  -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+Phase 21.5.4B                        -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 ```
 
-4B.5D is now the only remaining gate before explicit founder acceptance.
+Founder explicit acceptance was received on 2026-09-08 after all final gates passed.
 
 ---
 
-## 2. Hard security and routing boundaries inherited forward
+## 2. Accepted security and routing boundaries
 
 Canonical public Prompt routes:
 
@@ -81,13 +81,12 @@ Explicitly forbidden from the public read model/shared public props:
 protected Prompt body
 variants
 sourceTitle/source Draft payload
-source Draft/user identity
+source Draft/user identity unless a later accepted Creator policy introduces public attribution
 storage keys
 unlock state
 balance/Goin
 authenticated viewer state
 permissions
-creator attribution until 4C
 ```
 
 The public database query itself must not SELECT `prompt` or `variants`.
@@ -132,6 +131,8 @@ valid localized title + valid localized description
 100/100 published Archive rows were backfilled with founder-reviewed EN/FA descriptions before strict publish enforcement/public cutover.
 
 No fake fallback localization is allowed.
+
+Published Archive state is protected by application validation plus the database localization constraint introduced in the accepted 4B.5A rollout.
 
 ---
 
@@ -188,6 +189,8 @@ back action -> router.back() on both public and protected Prompt heroes
 back button color -> normal
 ```
 
+Public and protected surfaces share the same presentation language while continuing to use separate data sources and permissions.
+
 ---
 
 ## 5. 4B.5C — Public Discovery Visual Layer
@@ -239,7 +242,7 @@ No protected Prompt body, variants, economy, permission, storage or viewer data 
 Status:
 
 ```text
-IN PROGRESS / FINAL FOUNDER VERIFICATION NEXT
+DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 ```
 
 Canonical record:
@@ -248,98 +251,111 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
-Aggregate frontend/SEO/routing/presentation/discovery gate:
+Final aggregate gate:
 
 ```text
 pnpm test:phase4b-final
 ```
 
+Founder final run:
+
+```text
+SEO contracts                         -> 5/5 PASS
+Public Prompt browser/SSR DTO         -> 6/6 PASS
+Public Prompt SEO                     -> 4/4 PASS
+Localized Public Prompt description   -> 3/3 PASS
+Shared Prompt presentation            -> 4/4 PASS
+Public Discovery visual layer         -> 3/3 PASS
+Public Prompt link migration          -> 3/3 PASS
+Interaction polish                    -> 4/4 PASS
+Strict locale-routing audit           -> PASS / 447 source files / zero hazards
+```
+
 Backend regression:
 
 ```text
-docker compose exec api npm run test:public-prompt
-docker compose exec api npm run test:archive-description-input
-docker compose exec api npm run test:archive-published-localization
+docker compose exec api npm run test:public-prompt                -> PASS
+docker compose exec api npm run test:archive-description-input    -> PASS
+docker compose exec api npm run test:archive-published-localization -> PASS
 ```
 
-Production-like staging-connected rebuild/health:
+Production-like staging-connected health:
 
 ```text
-pnpm stack:cloudflare:restart
-pnpm stack:cloudflare:status
+frontend    healthy
+api         healthy
+db          healthy
+translator  healthy
+cloudflared up
 ```
 
 Automated real-staging smoke:
 
 ```text
-pnpm smoke:phase4b-final -- 511 portraits-photography
+pnpm smoke:phase4b-final
+
+public Prompt API: 200
+invalid public Prompt API: 404
+protected Archive detail API: 401
+EN Public Prompt SSR: 200
+FA Public Prompt SSR: 200
+EN Discovery SSR: 200
+FA Discovery SSR: 200
+PASS
 ```
 
-Required manual founder browser smoke:
+Canonical Discovery smoke fixture:
 
 ```text
-Public Prompt EN/FA visual/runtime
-Public -> protected Open full prompt transition
-protected auth/email/unlock/copy/economy behavior unchanged
-browser-history back behavior EN/FA
-Telegram badge/link behavior when metadata exists
-Discovery EN/FA content-sized single-layer cinema
-light/dark theme readability
+portrait-photography
 ```
 
-Environment safety:
+The smoke runner explicitly refuses to target `prompt-draft.ir`.
 
-```text
-https://grassic.ir       -> staging verification target
-https://api.grassic.ir   -> staging browser API target
-prompt-draft.ir          -> MUST remain untouched
-NUXT_PUBLIC_NOINDEX=true -> must remain authoritative during staging
-```
+Founder manual browser smoke also passed for public/protected behavior, history back navigation, Telegram linking, Discovery cinema, light/dark readability and protected unlock/copy/economy continuity.
 
-Final transition:
+---
+
+## 7. Acceptance result
+
+Acceptance equation satisfied:
 
 ```text
 4B.5A PASS
 + 4B.5B PASS
 + 4B.5C PASS
 + 4B.5D automated/backend/build/staging/manual PASS
-+ founder explicit acceptance
++ founder explicit acceptance: "Phase 4B accepted"
 = Phase 21.5.4B ACCEPTED
 ```
 
+No Phase 4B acceptance condition remains open.
+
 ---
 
-## 7. Immediate next action
+## 8. Next action
 
-Run 4B.5D only.
-
-Do not start 4C until:
+Phase 21.5.4C may now begin.
 
 ```text
-pnpm test:phase4b-final PASS
-backend final regression PASS
-Cloudflare production-like build/health PASS
-pnpm smoke:phase4b-final PASS
-protected authenticated browser smoke PASS
-founder explicit acceptance
+NEXT -> 21.5.4C Public Creator + Indexability Policy
 ```
 
-After founder acceptance, update:
+Before implementation, re-read:
 
 ```text
-docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
-docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 docs/strategy/STATUS.md
+docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
+docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 ```
 
-Then Phase 21.5.4C may begin.
+4C must inherit the accepted 4A/4B rules rather than weakening or duplicating them.
 
 ---
 
-## 8. Non-goals / deferred work
-
-Still deferred beyond 4B:
+## 9. Deferred work beyond 4B
 
 ```text
 Public Creator identity/attribution -> 4C
@@ -348,4 +364,4 @@ Blog -> 4E
 production prompt-draft.ir cutover -> later accepted deployment phase
 ```
 
-4B.5D must not pre-decide 4C Creator policy or weaken existing public/protected boundaries.
+Phase 4B does not pre-decide 4C Creator quality thresholds and does not change the stable production domain.
