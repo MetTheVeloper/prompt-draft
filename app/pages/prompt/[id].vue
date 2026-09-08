@@ -13,6 +13,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const router = useRouter()
 const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
@@ -135,12 +136,12 @@ const previewCountLabel = computed(() => {
   return t('prompts.detail.previewCount', { count: presentationMedia.value.length })
 })
 
+const backIcon = computed(() => activeLocale.value === 'fa' ? 'arrow_forward' : 'arrow_back')
+
 const protectedPromptPath = computed(() => localePath({
   path: '/prompts',
   query: { id: String(publicId) },
 }))
-
-const homePath = computed(() => localePath('/'))
 </script>
 
 <template>
@@ -160,12 +161,10 @@ const homePath = computed(() => localePath('/'))
       <template #topbar-leading>
         <el-button
           mode="flat"
-          color="white"
-          text-color="white"
-          icon-color="white"
-          icon="home"
-          :label="t('growth.publicPrompt.backHome')"
-          :to="homePath"
+          color="normal"
+          :icon="backIcon"
+          :label="t('prompts.detail.back')"
+          @click="router.back()"
         />
       </template>
 
