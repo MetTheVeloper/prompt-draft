@@ -11,27 +11,38 @@ definePageMeta({
 const route = useRoute();
 const auth = useAuth();
 const { t } = useI18n();
+const localePath = useLocalePath();
 
-const permittedSections = computed<ManageSection[]>(() => {
-  return getPermittedManageSections(auth.can);
+type VisibleManageSection = ManageSection | {
+  key: "profile";
+  icon: string;
+  route: string;
+};
+
+const profileSection: VisibleManageSection = {
+  key: "profile",
+  icon: "manage_accounts",
+  route: "/manage/profile",
+};
+
+const permittedSections = computed<VisibleManageSection[]>(() => {
+  return [profileSection, ...getPermittedManageSections(auth.can)];
 });
 
-const isActiveSection = (section: ManageSection) => {
-  return (
-    route.path === section.route ||
-    route.path.startsWith(`${section.route}/`)
-  );
+const isActiveSection = (section: VisibleManageSection) => {
+  const path = localePath(section.route);
+  return route.path === path || route.path.startsWith(`${path}/`);
 };
 
 const activeSection = computed(() => {
   return permittedSections.value.find(isActiveSection) ?? null;
 });
 
-function sectionLabel(section: ManageSection) {
+function sectionLabel(section: VisibleManageSection) {
   return t(`manage.sections.${section.key}.label`);
 }
 
-function sectionDescription(section: ManageSection) {
+function sectionDescription(section: VisibleManageSection) {
   return t(`manage.sections.${section.key}.description`);
 }
 
@@ -60,7 +71,7 @@ onMounted(() => {
       <el-button
         v-for="section in permittedSections"
         :key="section.key"
-        :to="section.route"
+        :to="localePath(section.route)"
         :icon="section.icon"
         :label="sectionLabel(section)"
         :color="isActiveSection(section) ? 'prim' : 'normal'"

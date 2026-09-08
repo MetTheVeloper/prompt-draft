@@ -30,6 +30,8 @@ import manageEconomyEn from './locales/manage-economy.en'
 import manageEconomyFa from './locales/manage-economy.fa'
 import manageGrowthEn from './locales/manage-growth.en'
 import manageGrowthFa from './locales/manage-growth.fa'
+import profileManagementEn from './locales/profile-management.en'
+import profileManagementFa from './locales/profile-management.fa'
 import errorsEn from './locales/errors.en'
 import errorsFa from './locales/errors.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
@@ -100,6 +102,11 @@ const enConsolidated = {
   ...consolidatedUiCleanupEn,
 }
 
+const enManage = deepMerge(
+  deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
+  profileManagementEn,
+)
+
 const enMessagesBase = deepMerge(
   deepMerge(
     deepMerge(
@@ -130,7 +137,7 @@ const enMessagesBase = deepMerge(
       ),
       authEn,
     ),
-    deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
+    enManage,
   ),
   flatToNested(enConsolidated),
 )
@@ -150,6 +157,11 @@ const faConsolidated = {
   ...consolidatedStylePoseExpression2Fa,
   ...consolidatedStylePoseExpression3Fa,
 }
+
+const faManage = deepMerge(
+  deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
+  profileManagementFa,
+)
 
 const faMessagesBase = deepMerge(
   deepMerge(
@@ -176,7 +188,7 @@ const faMessagesBase = deepMerge(
       ),
       authFa,
     ),
-    deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
+    faManage,
   ),
   flatToNested(faConsolidated),
 )
