@@ -48,6 +48,8 @@ const form = reactive({
   telegramMessageId: "",
   titleEn: "",
   titleFa: "",
+  descriptionEn: "",
+  descriptionFa: "",
   sourceTitle: "",
   publishedAt: "",
   prompt: "",
@@ -116,6 +118,8 @@ const canSave = computed(() => {
     hasValidOptionalTelegramId.value &&
     Boolean(form.titleEn.trim()) &&
     Boolean(form.titleFa.trim()) &&
+    Boolean(form.descriptionEn.trim()) &&
+    Boolean(form.descriptionFa.trim()) &&
     Boolean(form.publishedAt) &&
     Boolean(form.prompt.trim()) &&
     form.optimizedFor.length > 0
@@ -296,6 +300,8 @@ function resetForm() {
   form.telegramMessageId = "";
   form.titleEn = "";
   form.titleFa = "";
+  form.descriptionEn = "";
+  form.descriptionFa = "";
   form.sourceTitle = "";
   form.publishedAt = toLocalDateTimeInput(new Date());
   form.prompt = "";
@@ -310,6 +316,8 @@ function populateForm(item: AdminArchiveItem) {
     : String(item.telegramMessageId);
   form.titleEn = item.title.en;
   form.titleFa = item.title.fa;
+  form.descriptionEn = item.description.en ?? "";
+  form.descriptionFa = item.description.fa ?? "";
   form.sourceTitle = item.sourceTitle || "";
   form.publishedAt = toLocalDateTimeInput(item.publishedAt);
   form.prompt = item.prompt;
@@ -412,6 +420,10 @@ function buildInput(): AdminArchiveUpsertInput {
     title: {
       en: form.titleEn.trim(),
       fa: form.titleFa.trim(),
+    },
+    description: {
+      en: form.descriptionEn.trim(),
+      fa: form.descriptionFa.trim(),
     },
     sourceTitle: form.sourceTitle.trim() || null,
     publishedAt: new Date(form.publishedAt).toISOString(),
@@ -723,6 +735,32 @@ onBeforeUnmount(() => {
               :actions="false"
               :disabled="!canManage || editorBusy"
               :placeholder="t('manage.archive.placeholders.titleFa')"
+            />
+          </el-flex>
+        </el-grid>
+
+        <el-grid cols="minmax(260px, 1fr) minmax(260px, 1fr)" :gap="12" class="w100">
+          <el-flex rules="ccs" :gap="6">
+            <el-text :size="11" :weight="700">{{ t("manage.archive.fields.descriptionEn") }}</el-text>
+            <el-text-field
+              v-model="form.descriptionEn"
+              type="textarea"
+              :rows="4"
+              :actions="false"
+              :disabled="!canManage || editorBusy"
+              :placeholder="t('manage.archive.placeholders.descriptionEn')"
+            />
+          </el-flex>
+
+          <el-flex rules="ccs" :gap="6">
+            <el-text :size="11" :weight="700">{{ t("manage.archive.fields.descriptionFa") }}</el-text>
+            <el-text-field
+              v-model="form.descriptionFa"
+              type="textarea"
+              :rows="4"
+              :actions="false"
+              :disabled="!canManage || editorBusy"
+              :placeholder="t('manage.archive.placeholders.descriptionFa')"
             />
           </el-flex>
         </el-grid>

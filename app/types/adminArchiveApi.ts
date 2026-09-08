@@ -7,6 +7,11 @@ import type {
 export type AdminArchiveStatus = "draft" | "published" | "archived";
 export type AdminArchiveSourceKind = "managed" | "legacy_json" | "user_draft";
 
+export type AdminArchiveLocalizedDescription = {
+  en?: string;
+  fa?: string;
+};
+
 export type AdminArchiveSummary = {
   id: string;
   publicId: number;
@@ -44,6 +49,7 @@ export type AdminArchiveImage = {
 
 export type AdminArchiveItem = AdminArchiveSummary & {
   channel: string;
+  description: AdminArchiveLocalizedDescription;
   sourceTitle: string;
   prompt: string;
   variants: PromptArchiveVariant[];
@@ -54,6 +60,7 @@ export type AdminArchiveItem = AdminArchiveSummary & {
 export type AdminArchiveUpsertInput = {
   telegramMessageId: number | null;
   title: PromptArchiveLocalizedTitle;
+  description: Required<AdminArchiveLocalizedDescription>;
   sourceTitle?: string | null;
   publishedAt: string;
   prompt: string;

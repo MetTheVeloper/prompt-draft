@@ -27,5 +27,9 @@ export default {
   "modules.texture.presetCategories.ceramic": "Clay / Ceramic",
   "modules.texture.presetCategories.fabric": "Fabric / Textile",
   "modules.texture.presetCategories.wood": "Wood",
-  "modules.texture.presetCategories.stone": "Stone / Mineral"
+  "modules.texture.presetCategories.stone": "Stone / Mineral",
+  "manage.archive.fields.descriptionEn": "Description EN",
+  "manage.archive.fields.descriptionFa": "Description FA",
+  "manage.archive.placeholders.descriptionEn": "Public English description",
+  "manage.archive.placeholders.descriptionFa": "Public Persian description"
 }

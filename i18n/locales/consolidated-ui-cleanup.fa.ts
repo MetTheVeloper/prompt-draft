@@ -27,5 +27,9 @@ export default {
   "modules.texture.presetCategories.ceramic": "رس / سرامیک",
   "modules.texture.presetCategories.fabric": "پارچه / منسوجات",
   "modules.texture.presetCategories.wood": "چوب",
-  "modules.texture.presetCategories.stone": "سنگ / کانی"
+  "modules.texture.presetCategories.stone": "سنگ / کانی",
+  "manage.archive.fields.descriptionEn": "توضیح انگلیسی",
+  "manage.archive.fields.descriptionFa": "توضیح فارسی",
+  "manage.archive.placeholders.descriptionEn": "توضیح عمومی انگلیسی",
+  "manage.archive.placeholders.descriptionFa": "توضیح عمومی فارسی"
 }
