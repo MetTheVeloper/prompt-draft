@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
+import { handleProfileManagementRequest } from './profileManagement.mjs'
 import { handleUserCoverRequest } from './userCover.mjs'
 import { handleUserProfileRequest } from './userProfile.mjs'
 import {
@@ -250,6 +251,18 @@ export async function handleUserAvatarRequest({
   sendJson,
 }) {
   if (url.pathname !== AVATAR_PATH) {
+    if (
+      await handleProfileManagementRequest({
+        request,
+        response,
+        url,
+        corsHeaders,
+        sendJson,
+      })
+    ) {
+      return true
+    }
+
     if (
       await handleUserCoverRequest({
         request,
