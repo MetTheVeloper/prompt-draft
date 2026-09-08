@@ -405,6 +405,11 @@ async function handleOpenProfile() {
   });
 }
 
+async function handleEditProfile() {
+  emit("close");
+  await navigateTo(localePath("/manage/profile"));
+}
+
 async function handleOpenManage() {
   emit("close");
   await navigateTo(localePath("/manage"));
@@ -630,6 +635,15 @@ async function handleLogout() {
         icon="person_add"
         :label="t('auth.profile.complete')"
         @click="handleCompleteProfile"
+      />
+
+      <el-button
+        class="w100"
+        color="prim"
+        mode="flat"
+        icon="manage_accounts"
+        :label="t('manage.profile.actions.editProfile')"
+        @click="handleEditProfile"
       />
 
       <el-divider />
