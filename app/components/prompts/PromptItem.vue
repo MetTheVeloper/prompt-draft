@@ -20,6 +20,7 @@ const emit = defineEmits<{
 
 const auth = useAuth()
 const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const { mobile } = useScreen()
 const hovered = ref(false)
 
@@ -34,7 +35,7 @@ const secondaryImage = computed(() => {
   return props.item.secondaryImage?.thumbnailUrl || props.item.secondaryImage?.fullUrl || ''
 })
 const hasSecondaryImage = computed(() => Boolean(secondaryImage.value))
-const detailUrl = computed(() => `/prompts?id=${props.item.id}`)
+const detailUrl = computed(() => `${localePath('/prompts')}?id=${props.item.id}`)
 const manageEditUrl = computed(() => `/manage/archive?edit=${props.item.id}`)
 const localizedTitle = computed(() => {
   return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
@@ -97,6 +98,17 @@ function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
 }
 
+function isInteractiveCardTarget(event: MouseEvent) {
+  const target = event.target
+  if (!(target instanceof Element)) return false
+  return Boolean(target.closest('a, button, input, select, textarea, summary, [role="button"], [role="link"], [contenteditable="true"]'))
+}
+
+async function openDetailFromCard(event: MouseEvent) {
+  if (isInteractiveCardTarget(event)) return
+  await navigateTo(detailUrl.value)
+}
+
 function openTelegram() {
   if (!props.item.telegramUrl) return
   emit('telegram', props.item)
@@ -115,7 +127,8 @@ function openTelegram() {
     :bc="hovered ? 'normal50' : 'normal15'"
     :effect="{ color: 'normal15' }"
     @mouseenter="hovered = true"
-    @mouseleave="hovered = false">
+    @mouseleave="hovered = false"
+    @click="openDetailFromCard">
     <template v-if="primaryImage">
       <img
         :src="primaryImage"
@@ -268,7 +281,8 @@ function openTelegram() {
     v-else
     v-bind="listRootAttrs"
     @mouseenter="hovered = true"
-    @mouseleave="hovered = false">
+    @mouseleave="hovered = false"
+    @click="openDetailFromCard">
     <div class="prompt-item__media prompt-item__media--list ofh" :style="listMediaStyle">
       <img
         v-if="primaryImage"
@@ -353,6 +367,7 @@ function openTelegram() {
 .prompt-item {
   min-width: 0;
   overflow: hidden;
+  cursor: pointer;
 }
 
 .prompt-item--grid {
