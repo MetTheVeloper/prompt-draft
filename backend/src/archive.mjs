@@ -16,6 +16,12 @@ function normalizeLocalizedTitle(value) {
   return en && fa ? { en, fa } : null
 }
 
+function normalizeLocalizedDescription(value) {
+  const en = typeof value?.en === 'string' ? value.en.trim() : ''
+  const fa = typeof value?.fa === 'string' ? value.fa.trim() : ''
+  return en && fa ? { en, fa } : null
+}
+
 function normalizeModelList(value) {
   return Array.isArray(value) ? value.filter(model => ARCHIVE_MODELS.has(model)) : []
 }
@@ -54,8 +60,12 @@ function mapArchiveDetailRow(row) {
     secondaryImage: Array.isArray(row.images) ? row.images[1] : null,
     imageCount: Array.isArray(row.images) ? row.images.length : 0,
   })
+  const description = normalizeLocalizedDescription(row.description)
+  if (!description) throw new Error(`Archive item ${row.id} has invalid localized description data`)
+
   return {
     ...base,
+    description,
     sourceTitle: row.sourceTitle ?? '',
     prompt: row.prompt,
     images: (Array.isArray(row.images) ? row.images : []).map(mapArchiveImage).filter(Boolean),
@@ -259,6 +269,7 @@ async function getArchiveDetail(id) {
     SELECT
       items.public_id AS id,
       items.titles AS title,
+      items.descriptions AS description,
       items.source_title AS "sourceTitle",
       items.published_at AS "publishedAt",
       items.telegram_url AS "telegramUrl",
