@@ -10,38 +10,42 @@ import {
 } from '../app/utils/publicPromptSeo'
 
 const PROMPT: PublicPrompt = {
-  id: 9003,
+  id: 511,
   title: {
-    en: 'From Grassias',
-    fa: 'از گراسیاس',
+    en: 'Natural LinkedIn Portrait',
+    fa: 'پرتره طبیعی LinkedIn',
+  },
+  description: {
+    en: 'Turn a reference portrait into a natural professional LinkedIn photo with restrained studio polish.',
+    fa: 'پرتره مرجع را به یک عکس حرفه‌ای و طبیعی برای LinkedIn با پرداخت استودیویی کنترل‌شده تبدیل کنید.',
   },
   availableLocales: ['en', 'fa'],
-  publishedAt: '2026-09-05T14:43:00.000Z',
-  tags: ['portrait', 'macro'],
+  publishedAt: '2026-08-12T08:03:35.000Z',
+  tags: ['portrait', 'photography'],
   model: {
     previewGeneratedWith: 'gpt-image-1',
     optimizedFor: ['gpt-image-1'],
   },
   images: [{
     position: 0,
-    fullUrl: 'https://cdn.example.com/9003/full.webp',
-    thumbnailUrl: 'https://cdn.example.com/9003/thumb.webp',
+    fullUrl: 'https://cdn.example.com/511/full.webp',
+    thumbnailUrl: 'https://cdn.example.com/511/thumb.webp',
   }],
 }
 
 test('normalizes public site URLs and resolves relative public URLs', () => {
   assert.equal(normalizePublicSiteUrl('https://grassic.ir///'), 'https://grassic.ir')
   assert.equal(normalizePublicSiteUrl('not a url'), '')
-  assert.equal(toAbsolutePublicUrl('https://grassic.ir', '/prompt/9003'), 'https://grassic.ir/prompt/9003')
+  assert.equal(toAbsolutePublicUrl('https://grassic.ir', '/prompt/511'), 'https://grassic.ir/prompt/511')
   assert.equal(toAbsolutePublicUrl('https://grassic.ir', 'https://cdn.example.com/image.webp'), 'https://cdn.example.com/image.webp')
 })
 
 test('uses first public preview image and a site fallback when media is absent', () => {
-  assert.equal(publicPromptSeoImage(PROMPT), 'https://cdn.example.com/9003/full.webp')
+  assert.equal(publicPromptSeoImage(PROMPT), 'https://cdn.example.com/511/full.webp')
   assert.equal(publicPromptSeoImage({ ...PROMPT, images: [] }), '/pwa-512x512.png')
 })
 
-test('builds EN CreativeWork from sanitized public fields only', () => {
+test('builds EN CreativeWork from sanitized public fields and authored description', () => {
   const promptWithPrivateSentinels = {
     ...PROMPT,
     prompt: 'PROTECTED_PROMPT_SENTINEL',
@@ -54,23 +58,23 @@ test('builds EN CreativeWork from sanitized public fields only', () => {
   const value = buildPublicPromptStructuredData({
     prompt: promptWithPrivateSentinels,
     locale: 'en',
-    localizedTitle: 'From Grassias',
-    description: 'Explore the published preview for From Grassias on Prompt Draft.',
-    canonicalUrl: 'https://grassic.ir/prompt/9003',
-    imageUrl: 'https://cdn.example.com/9003/full.webp',
+    localizedTitle: PROMPT.title.en!,
+    description: PROMPT.description.en!,
+    canonicalUrl: 'https://grassic.ir/prompt/511',
+    imageUrl: 'https://cdn.example.com/511/full.webp',
     siteUrl: 'https://grassic.ir',
   })
 
   assert.deepEqual(value, {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
-    name: 'From Grassias',
-    url: 'https://grassic.ir/prompt/9003',
-    description: 'Explore the published preview for From Grassias on Prompt Draft.',
-    datePublished: '2026-09-05T14:43:00.000Z',
+    name: 'Natural LinkedIn Portrait',
+    url: 'https://grassic.ir/prompt/511',
+    description: PROMPT.description.en,
+    datePublished: '2026-08-12T08:03:35.000Z',
     inLanguage: 'en-US',
-    image: 'https://cdn.example.com/9003/full.webp',
-    keywords: ['portrait', 'macro'],
+    image: 'https://cdn.example.com/511/full.webp',
+    keywords: ['portrait', 'photography'],
     isPartOf: {
       '@type': 'WebSite',
       name: 'Prompt Draft',
@@ -93,18 +97,19 @@ test('builds EN CreativeWork from sanitized public fields only', () => {
   }
 })
 
-test('builds FA CreativeWork with fa-IR language', () => {
+test('builds FA CreativeWork with the authored Persian description and fa-IR language', () => {
   const value = buildPublicPromptStructuredData({
     prompt: { ...PROMPT, tags: [] },
     locale: 'fa',
-    localizedTitle: 'از گراسیاس',
-    description: 'پیش‌نمایش منتشرشده «از گراسیاس» را در Prompt Draft ببینید.',
-    canonicalUrl: 'https://grassic.ir/fa/prompt/9003',
-    imageUrl: 'https://cdn.example.com/9003/full.webp',
+    localizedTitle: PROMPT.title.fa!,
+    description: PROMPT.description.fa!,
+    canonicalUrl: 'https://grassic.ir/fa/prompt/511',
+    imageUrl: 'https://cdn.example.com/511/full.webp',
     siteUrl: 'https://grassic.ir',
   })
 
   assert.equal(value.inLanguage, 'fa-IR')
-  assert.equal(value.url, 'https://grassic.ir/fa/prompt/9003')
+  assert.equal(value.url, 'https://grassic.ir/fa/prompt/511')
+  assert.equal(value.description, PROMPT.description.fa)
   assert.equal('keywords' in value, false)
 })
