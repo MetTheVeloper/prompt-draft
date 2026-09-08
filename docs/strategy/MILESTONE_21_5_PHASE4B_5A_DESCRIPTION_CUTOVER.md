@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5A Description Cutover Checkpoint
 
-Status: **IMPLEMENTED / BACKFILL FOUNDER-LOCAL VERIFIED / CUTOVER VERIFICATION NEXT / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS 4B.5A SLICE**
 
 Date: 2026-09-08
 
@@ -25,9 +25,9 @@ backend/data/prompt-archive-descriptions.v1.json
 
 ---
 
-## 1. Founder-verified data checkpoint
+## 1. Accepted data checkpoint
 
-Founder-local execution completed the approved staging/test cleanup and description backfill.
+Founder-local execution completed the approved staging/test cleanup and localized-description backfill.
 
 Verified outcomes:
 
@@ -45,13 +45,11 @@ post-backfill inventory publishedCount = 100
 9003 absent
 ```
 
-The post-backfill inventory was supplied by the founder and reviewed on 2026-09-08.
-
-The PowerShell `stdout -> Set-Content` export path visibly mojibakes non-ASCII characters in the exported artifact. The corruption pattern round-trips deterministically back to the expected UTF-8 strings, including Persian copy and characters such as `×` and `–`. This is treated as an export-shell encoding artifact, not evidence of corrupted canonical description content in the database.
+The PowerShell `stdout -> Set-Content` export path visibly mojibakes non-ASCII characters in the exported artifact. The corruption pattern round-trips deterministically back to the expected UTF-8 strings, including Persian copy and characters such as `×` and `–`. Browser verification confirmed the canonical Persian content renders correctly, so this remains classified as an export-shell encoding artifact rather than corrupted database content.
 
 ---
 
-## 2. Enforcement cutover
+## 2. Accepted enforcement cutover
 
 Migration:
 
@@ -59,7 +57,7 @@ Migration:
 backend/sql/026_prompt_archive_published_localization_constraint.sql
 ```
 
-Published rows now require complete authoritative presentation content:
+Published rows require complete authoritative presentation content:
 
 ```text
 title.en
@@ -68,27 +66,25 @@ description.en
 description.fa
 ```
 
-The constraint is conditional on:
+The database constraint is conditional on:
 
 ```text
 status = 'published'
 ```
 
-so draft/archived lifecycle remains compatible with incomplete historical working data.
+so draft/archived lifecycle remains compatible with incomplete working data.
 
-Application enforcement also exists at the Admin API boundary:
+Application-level enforcement also exists at the Admin API publish boundary. Admin create/update description validation is no longer backward-optional after the founder-approved backfill.
+
+Founder-local migration verification:
 
 ```text
-POST /api/admin/archive/:id/publish
+Database schema applied: 026_prompt_archive_published_localization_constraint.sql
 ```
-
-Before the publish mutation, the API checks persisted localized title + description and returns a validation response when localization is incomplete.
-
-Admin create/update description validation is no longer backward-optional after the approved backfill.
 
 ---
 
-## 3. Public read-model cutover
+## 3. Accepted public read-model cutover
 
 Public endpoint remains:
 
@@ -96,7 +92,7 @@ Public endpoint remains:
 GET /api/public/prompts/:id
 ```
 
-The only new intended public field is:
+The explicit public projection now includes:
 
 ```ts
 description: {
@@ -105,142 +101,152 @@ description: {
 }
 ```
 
-The public SQL now selects:
+The public SQL selects localized descriptions while preserving the hard security invariant:
 
 ```text
-items.descriptions AS description
+no SELECT of protected Prompt body
+no SELECT of variants
+no source Draft payload
+no storage keys
+no unlock/economy/account state
 ```
 
-and still does not select protected Prompt content.
-
-Locale availability is now based on complete presentation content:
+Locale availability now means complete authoritative presentation content:
 
 ```text
-available locale = non-empty localized title + non-empty localized description
+available locale
+  = non-empty localized title
+  + non-empty localized description
 ```
 
-Incomplete locales are not advertised and no fallback localization is synthesized.
-
-Protected exclusions remain unchanged:
-
-```text
-prompt
-variants
-sourceTitle/source Draft identity
-storage keys
-unlock state
-balance/economy
-permissions/viewer state
-```
+No fallback localization is synthesized.
 
 ---
 
-## 4. Frontend / SEO cutover
+## 4. Accepted frontend / SEO cutover
 
-`PublicPrompt` browser/SSR normalization now requires localized descriptions and exact agreement between:
-
-```text
-title locales
-description locales
-availableLocales
-```
-
-Public Prompt route:
+Public Prompt routes:
 
 ```text
 /prompt/:id
 /fa/prompt/:id
 ```
 
-uses the authored localized description as the single source for:
+now use the founder-authored localized description as the single source of truth for:
 
 ```text
-visible hero description
+visible Public Prompt description
 meta description
 og:description
 twitter:description
 CreativeWork.description
 ```
 
-The previous generic implementation-facing `growth.publicPrompt.description` copy is no longer used by the Public Prompt page.
+The previous generic implementation-facing Public Prompt description copy is no longer the rendered description source.
 
----
+Founder browser verification confirmed both EN and FA authored descriptions render correctly on the Public Prompt route.
 
-## 5. Tests added/updated
-
-Backend:
+The protected CTA remains route-separated and continues to target the localized protected product route:
 
 ```text
-test:archive-description-input
-test:archive-published-localization
-test:public-prompt
-```
-
-Frontend/contracts:
-
-```text
-test:public-prompt-web
-test:public-prompt-seo
-test:public-prompt-description
-```
-
-Regression gates remain required:
-
-```text
-test:public-prompt-links
-test:interaction-polish
-seo:audit-routes:strict
-production-like build/runtime
+/prompts?id=:id
+/fa/prompts?id=:id
 ```
 
 ---
 
-## 6. Required founder-local verification next
+## 5. Founder-local verification evidence
 
-Apply the new migration and rebuild staging code, then run:
+Production-like Cloudflare stack rebuild/start:
 
 ```text
-docker compose exec api node src/create-schema.mjs
+frontend build -> PASS
+API build -> PASS
+db -> healthy
+translator -> healthy
+api -> healthy
+frontend -> healthy
+cloudflared -> started
+```
 
+Expected build warnings remained non-blocking and unrelated to 4B.5A:
+
+```text
+duplicated compilePromptOutput import warning
+large minified chunk warnings
+sourcemap warning from module-preload-polyfill
+```
+
+Backend verification:
+
+```text
 docker compose exec api npm run test:archive-description-input
-docker compose exec api npm run test:archive-published-localization
-docker compose exec api npm run test:public-prompt
+  -> PASS
 
-pnpm test:public-prompt-web
-pnpm test:public-prompt-seo
-pnpm test:public-prompt-description
-pnpm test:public-prompt-links
-pnpm test:interaction-polish
-pnpm seo:audit-routes:strict
+docker compose exec api npm run test:archive-published-localization
+  -> 3/3 PASS
+
+docker compose exec api npm run test:public-prompt
+  -> 9/9 PASS
 ```
 
-Staging smoke must confirm on at least one EN/FA Prompt pair:
+Frontend / contract verification:
 
 ```text
-/api/public/prompts/:id returns description.en + description.fa
-/prompt/:id shows authored English description
-/fa/prompt/:id shows authored Persian description
-meta/OG/Twitter description uses the same authored localized copy
-CreativeWork.description uses the same authored localized copy
-canonical/hreflang/x-default unchanged
-Open full prompt still routes to protected localized /prompts?id=:id
-no protected Prompt/variant/storage/economy/viewer data leaks
-NUXT_PUBLIC_NOINDEX remains authoritative on grassic.ir
+pnpm test:public-prompt-web
+  -> 5/5 PASS
+
+pnpm test:public-prompt-seo
+  -> 4/4 PASS
+
+pnpm test:public-prompt-description
+  -> 3/3 PASS
+
+pnpm test:public-prompt-links
+  -> 3/3 PASS
+
+pnpm test:interaction-polish
+  -> 4/4 PASS
+
+pnpm seo:audit-routes:strict
+  -> PASS, 445 source files, zero locale-routing hazards
 ```
 
-Do not start 4B.5B until this cutover verification is complete.
+Visual founder smoke:
+
+```text
+EN Public Prompt authored title + description -> PASS
+FA Public Prompt authored title + description -> PASS
+Persian rendering / direction -> PASS
+protected Prompt product route remains visually/functionally separate -> PASS
+```
 
 ---
 
-## 7. Current state
+## 6. 4B.5A acceptance decision
 
 ```text
 4B.5A storage/admin authoring        -> DONE / FOUNDER-LOCAL VERIFIED
 4B.5A founder-reviewed backfill      -> DONE / FOUNDER-LOCAL VERIFIED
-4B.5A publish enforcement            -> IMPLEMENTED / VERIFY NEXT
-4B.5A public DTO + locale contract   -> IMPLEMENTED / VERIFY NEXT
-4B.5A visible copy + SEO cutover     -> IMPLEMENTED / VERIFY NEXT
-4B.5A overall                        -> IN PROGRESS / FINAL VERIFICATION NEXT
-4B.5B                                -> NOT STARTED
-Phase 4B                             -> NOT ACCEPTED
+4B.5A publish enforcement            -> DONE / FOUNDER-LOCAL VERIFIED
+4B.5A public DTO + locale contract   -> DONE / FOUNDER-LOCAL VERIFIED
+4B.5A visible copy + SEO cutover     -> DONE / FOUNDER-LOCAL VERIFIED
+4B.5A overall                        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
 ```
+
+This acceptance closes only **4B.5A**.
+
+It does **not** accept Phase 21.5.4B as a whole.
+
+---
+
+## 7. Next slice
+
+```text
+4B.5B Shared Prompt Presentation Shell -> NEXT
+4B.5C Public Discovery Visual Layer     -> NOT STARTED
+4B.5D Final Regression / Acceptance     -> NOT STARTED
+Phase 21.5.4B                           -> NOT ACCEPTED
+```
+
+4B.5B must preserve all accepted 4B.5A contracts and the existing public/protected data-source boundary.
