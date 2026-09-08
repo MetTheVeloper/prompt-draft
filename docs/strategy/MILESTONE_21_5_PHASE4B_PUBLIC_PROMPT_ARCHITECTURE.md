@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 4B Public Prompt Architecture
 
-Status: **IN PROGRESS / DESIGN LOCKED / IMPLEMENTATION STARTED / NOT ACCEPTED**
+Status: **DONE / DESIGN LOCKED / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED**
 
-Date: 2026-09-07
+Date: 2026-09-08
 
 Branch:
 
@@ -22,17 +22,21 @@ Accepted SEO/routing foundation:
 docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 ```
 
-Verification ledger:
+Verification / hardening records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
+
+Founder explicit acceptance was received on 2026-09-08 after final automated, backend, production-like, staging and browser smoke verification passed.
 
 ---
 
-## 1. Objective
+## 1. Objective — ACCEPTED
 
-Phase 21.5.4B introduces a dedicated server-rendered public Prompt acquisition surface without weakening the existing protected Prompt product detail.
+Phase 21.5.4B provides a dedicated server-rendered public Prompt acquisition surface without weakening the existing protected Prompt product detail.
 
 Canonical public Prompt routes:
 
@@ -41,32 +45,42 @@ Canonical public Prompt routes:
 /fa/prompt/:id
 ```
 
-The route identity is the existing numeric Archive `public_id`. Slug-based Prompt routes are deliberately out of scope.
+Route identity is the existing numeric Archive `public_id`. Slug-based Prompt routes are deliberately out of scope.
 
-The public Prompt route is an acquisition/presentation surface. It is not a replacement for the protected product route:
+The public route is an acquisition/presentation surface, not a replacement for the protected product route:
 
 ```text
-Public SEO Prompt             -> /prompt/:id
-Protected Product Prompt      -> /prompts?id=<id>
+Public SEO Prompt        -> /prompt/:id
+Protected Product Prompt -> /prompts?id=<id>
 ```
-
-The public surface may expose only an explicit sanitized presentation projection.
 
 ---
 
 ## 2. Accepted security boundary
 
-The existing protected contract remains authoritative:
+Protected Archive behavior remains authoritative:
 
 ```text
 GET /api/archive            -> public sanitized list/catalog
 GET /api/archive/:id        -> authenticated + email/profile gate
-/prompts?id=<id>            -> protected product detail flow
+/prompts?id=<id>            -> protected product detail/unlock flow
 ```
 
-Phase 4B must never make `GET /api/archive/:id` public and must never obtain protected detail and strip fields afterward.
+Dedicated public detail endpoint:
 
-The public query itself must avoid selecting protected columns.
+```text
+GET /api/public/prompts/:id
+```
+
+Rules:
+
+```text
+public/read-only
+published Archive only
+explicit allowlist projection
+independent from protected Archive detail
+must not fetch protected detail then strip fields afterward
+```
 
 Public Prompt must never expose:
 
@@ -77,72 +91,59 @@ unlock-gated content
 private Drafts or Draft snapshots
 source/internal Draft identity
 email
-balance / Goin state
+balance/Goin state
 sessions
 permissions
 viewer/account state
 storage keys or storage credentials
 ```
 
+The public database query itself must not SELECT protected Prompt body or variants.
+
 ---
 
-## 3. Audit findings frozen into the design
+## 3. Publication authority and identity
 
-The current Archive model already provides the correct publication authority and public identity:
+Archive remains the publication authority:
 
 ```text
 prompt_archive_items.public_id -> canonical public numeric id
 prompt_archive_items.status    -> draft | published | archived
 ```
 
-Current public Archive/Discovery code already demonstrates safe presentation primitives:
+Public availability requires:
 
 ```text
-localized EN/FA titles
-publishedAt
-public tags
-public preview image URLs
-preview/model metadata
-optional intentionally public owner username/avatar in Discovery
+requested public_id exists
+status = published
+requested locale has complete authoritative presentation localization
 ```
 
-Current protected Archive detail additionally carries:
-
-```text
-sourceTitle
-prompt
-full images
-variants
-```
-
-and is guarded by Archive access authorization.
-
-A public source Draft is not sufficient to make a Prompt SEO-public. Promoted user Drafts enter Archive as `status='draft'`; therefore Archive publication state remains the final public availability authority.
+A public source Draft alone is not sufficient to make a Prompt SEO-public.
 
 ---
 
-## 4. Public Prompt API contract
+## 4. Final Public Prompt API contract
 
-Phase 4B uses an endpoint independent from protected Archive detail:
+Endpoint:
 
 ```http
 GET /api/public/prompts/:id
 ```
 
-The endpoint is intentionally public and read-only.
-
-### 4.1 Public DTO
-
-Target contract:
+Final conceptual DTO:
 
 ```ts
 type PublicPromptModel = 'dall-e' | 'gpt-image-1'
-
 type PublicPromptLocale = 'en' | 'fa'
 
 type PublicPrompt = {
   id: number
   title: {
+    en?: string
+    fa?: string
+  }
+  description: {
     en?: string
     fa?: string
   }
@@ -158,6 +159,7 @@ type PublicPrompt = {
     fullUrl: string
     thumbnailUrl: string
   }>
+  telegramMessageId: number | null
 }
 
 type PublicPromptResponse = {
@@ -166,15 +168,17 @@ type PublicPromptResponse = {
 }
 ```
 
-Fields are allowlisted. Adding a field later requires an explicit public-data decision.
+Fields are allowlisted. Any later addition requires an explicit public-data decision.
 
-### 4.2 Fields deliberately absent in V1
+`telegramMessageId` is an intentionally public presentation identifier only; it is not an Archive internal id and is used solely to construct the canonical public Telegram post URL when present.
+
+Still deliberately absent:
 
 ```text
 prompt
 variants
 sourceTitle
-telegramUrl
+raw protected telegramUrl
 internal Archive UUID
 sourceUserId
 sourceDraftId
@@ -188,15 +192,11 @@ viewer/account information
 creator attribution
 ```
 
-`telegramUrl` is already public elsewhere but is not required by the Phase 4B public Prompt contract, so it stays out of this narrow projection.
-
-Creator attribution is deferred to Phase 4C so Public Creator identity/indexability policy is not accidentally pre-decided in 4B.
+Creator attribution remains deferred to Phase 4C.
 
 ---
 
-## 5. Backend read-model design
-
-Public Prompt must use a dedicated read path over Archive data.
+## 5. Backend read-model contract
 
 Core database condition:
 
@@ -205,24 +205,65 @@ WHERE items.public_id = $1
   AND items.status = 'published'
 ```
 
-The public query may select only the fields needed to construct the allowlisted DTO.
+The query may select only fields needed to construct the public allowlist.
 
-In particular, these Archive columns must not be selected:
+It must not select:
 
 ```text
 items.prompt
 items.variants
 items.source_title
 source/private Draft payloads
+storage keys
+unlock/economy/account state
 ```
-
-Images may expose only browser-usable public presentation URLs and position.
 
 Storage identifiers remain private implementation details.
 
 ---
 
-## 6. Availability and HTTP semantics
+## 6. Localized description contract
+
+4B.5A added founder-authored localized public descriptions.
+
+Accepted contract:
+
+```ts
+description: {
+  en?: string
+  fa?: string
+}
+```
+
+Description is the sole source for:
+
+```text
+visible Public Prompt description
+meta description
+og:description
+twitter:description
+CreativeWork.description
+```
+
+Hard rule:
+
+```text
+Never derive or synthesize Public Prompt description from protected Prompt body or variants.
+```
+
+Rollout:
+
+```text
+025_prompt_archive_descriptions.sql
+founder-reviewed backfill -> 100 published Archive rows
+026_prompt_archive_published_localization_constraint.sql
+```
+
+The staging/test Archive rows 9002 and 9003 were safely pruned before the canonical 100-row backfill.
+
+---
+
+## 7. Availability and HTTP semantics
 
 A public Prompt returns `200` only when all of the following are true:
 
@@ -230,31 +271,29 @@ A public Prompt returns `200` only when all of the following are true:
 id is a valid positive safe integer
 Archive item exists for that public_id
 Archive status is published
-requested route locale has authoritative localized presentation content
+requested route locale has complete authoritative localized title + description
 ```
 
-From a public client's perspective all unavailable content states are treated equivalently.
-
-Expected route/API behavior:
+Public semantics:
 
 ```text
-published                    -> 200
-Archive draft                -> 404
-Archive archived             -> 404
-missing/deleted              -> 404
-invalid public id            -> unavailable / route 404 semantics
-missing requested locale     -> route 404
+published + valid locale -> 200
+Archive draft            -> 404
+Archive archived         -> 404
+missing/deleted          -> 404
+invalid public id        -> 404
+missing requested locale -> route 404
 ```
 
-The public response must not reveal that a non-public Prompt exists internally or identify its private state.
+The response must not reveal that a non-public Prompt exists internally or identify its private state.
 
 No public redirect from an unavailable Prompt to `/prompts?id=<id>` is allowed.
 
 ---
 
-## 7. Localization contract
+## 8. Localization contract
 
-Accepted global locale contract remains:
+Accepted locale contract:
 
 ```text
 English -> default / no prefix
@@ -262,15 +301,11 @@ Persian -> /fa
 Nuxt i18n strategy -> prefix_except_default
 ```
 
-Public Prompt derives locale availability from authoritative localized fields rather than UI fallback behavior.
+Locale availability is derived from authoritative presentation fields:
 
-Target domain field:
-
-```ts
-availableLocales: Array<'en' | 'fa'>
+```text
+availableLocales = valid localized title ∩ valid localized description
 ```
-
-A locale URL may render/index only when its localization is authoritative and valid.
 
 Examples:
 
@@ -288,15 +323,13 @@ FA only:
   /fa/prompt/123  -> 200 FA
 ```
 
-The application must never render fallback English content under an indexable Persian Prompt URL and pretend it is localized Persian content, or vice versa.
-
-The current Archive title validation normally requires both EN and FA; the availability contract remains explicit so later content models cannot silently violate this rule.
+The application must never present fallback language under an indexable locale URL as if it were authoritative localized content.
 
 ---
 
-## 8. Canonical / hreflang policy
+## 9. Canonical / hreflang policy
 
-For a Prompt with authoritative EN and FA localizations:
+For authoritative EN + FA localization:
 
 ```text
 /prompt/123
@@ -306,7 +339,7 @@ For a Prompt with authoritative EN and FA localizations:
   canonical -> /fa/prompt/123
 ```
 
-Both expose reciprocal alternates:
+Reciprocal alternates:
 
 ```text
 en-US -> /prompt/123
@@ -314,20 +347,21 @@ fa-IR -> /fa/prompt/123
 x-default -> /prompt/123
 ```
 
-`x-default` points to English/default only when a valid English localization exists.
+`x-default` points to English/default only when authoritative English exists.
 
-`usePublicSeo` remains the shared SEO primitive; Phase 4B must not introduce a parallel canonical/hreflang implementation.
+`usePublicSeo` remains the shared SEO primitive.
 
 ---
 
-## 9. Metadata and structured-data policy
+## 10. Metadata and structured-data policy
 
-SEO metadata must be derived only from sanitized public presentation fields.
+SEO metadata derives only from sanitized public presentation fields.
 
-Allowed inputs include:
+Allowed inputs:
 
 ```text
 localized public title
+localized founder-authored description
 publication date
 public tags
 public model metadata
@@ -337,18 +371,20 @@ canonical public URL
 
 Protected Prompt text must never be used to manufacture description, keywords, structured data or OG metadata.
 
-Initial structured-data type:
+Accepted structured-data type:
 
 ```text
 CreativeWork
 ```
 
-Safe conceptual properties:
+Accepted properties:
 
 ```text
+@context
 @type
 name
 url
+description
 datePublished
 image
 keywords
@@ -356,20 +392,11 @@ inLanguage
 isPartOf
 ```
 
-Creator/author structured data is deferred to Phase 4C.
-
-Forbidden structured-data inputs include:
-
-```text
-text = protected Prompt body
-articleBody = protected Prompt body
-variants
-unlock/account/economy state
-```
+Creator/author structured data remains deferred to Phase 4C.
 
 ---
 
-## 10. Open Graph image policy
+## 11. Open Graph image policy
 
 OG/Twitter preview image priority:
 
@@ -378,19 +405,81 @@ first valid public image by position
   -> otherwise site-level/default public OG fallback
 ```
 
-The route must not generate an OG image from protected content or private Draft media.
+No OG image may be generated from protected content or private Draft media.
 
 EN/FA pages may share the same public preview image while keeping locale-specific textual metadata.
 
 ---
 
-## 11. Creator attribution boundary
+## 12. Shared Prompt presentation contract
 
-Phase 4B deliberately does not add creator identity to the Public Prompt DTO or structured data.
+4B.5B introduced a shared presentation shell for public and protected Prompt surfaces.
+
+Shared presentation owns only visual/presentation data:
+
+```text
+localized title
+authored description
+public-safe tags/id/date/model metadata
+preview/cinema media
+optional public-safe Telegram post metadata
+responsive LTR/RTL presentation
+route-specific slots/actions
+```
+
+It must remain unaware of:
+
+```text
+Prompt body
+variants
+unlock state
+balance/Goin
+permissions
+viewer/auth state
+```
+
+Public and protected routes continue to use separate data sources.
+
+SSR media contract:
+
+```text
+first public preview -> deterministic server-rendered <img>
+client visual slider -> progressive enhancement
+```
+
+Founder-approved visual behavior includes theme-aware overlays/text/tags, semantic model and Telegram badges, zero Public Prompt outer padding, and browser-history back navigation with LTR/RTL arrow direction.
+
+---
+
+## 13. Discovery visual integration
+
+4B.5C keeps Discovery routing/SEO structure while adding public preview cinema.
+
+Accepted final behavior:
+
+```text
+hero -> el-flex type="section"
+hero height -> content-sized
+outer default-layout padding -> zero
+hero media -> already-public category cover previews only
+first preview -> SSR <img>
+multiple previews -> ClientOnly visual-slider
+SSR image removed after cinema mount for multi-image hero
+slider canvas -> absolute and clipped to hero
+heading/collection alignment -> rules="ccs"
+```
+
+No protected Prompt body, variants, economy, permissions, storage or viewer data enters Discovery.
+
+---
+
+## 14. Creator attribution boundary
+
+Phase 4B deliberately does not add Creator identity to the Public Prompt DTO or structured data.
 
 Existing Discovery owner presentation remains unchanged.
 
-Creator attribution/linking for Public Prompt becomes eligible only after Phase 21.5.4C defines:
+Creator attribution/linking becomes eligible only after Phase 21.5.4C defines:
 
 ```text
 public Creator identity
@@ -404,54 +493,50 @@ Prompt <-> Creator linking policy
 
 ---
 
-## 12. Internal linking strategy
+## 15. Internal linking strategy
 
-Once the Public Prompt page is implemented, public acquisition surfaces should link to the canonical public Prompt route rather than directly into the protected product detail.
-
-Target acquisition flow:
+Accepted acquisition flow:
 
 ```text
 Discovery / Home / future Blog / future Creator
   -> /prompt/:id
-  -> explicit product CTA
+  -> explicit Open full prompt CTA
   -> /prompts?id=:id
 ```
 
-`app/utils/publicRoutes.ts::publicPromptPath(id)` is the canonical public route helper and must be reused.
+`app/utils/publicRoutes.ts::publicPromptPath(id)` remains the canonical public route helper.
 
-The protected route remains valid and is not redirected or retired in 4B.
+The protected route remains valid and separate.
+
+Back buttons on the Public Prompt and protected Prompt presentation use browser history rather than hardcoded destinations.
 
 ---
 
-## 13. Runtime / cache policy
+## 16. Runtime / cache policy
 
-Public Prompt is an SSR acquisition surface and therefore remains under the default Nuxt SSR policy.
+Public Prompt is an SSR acquisition surface.
 
-Server-side API reads use the existing server-only internal API origin:
+Server-side API reads use:
 
 ```text
 NUXT_API_BASE_INTERNAL
-Docker staging target -> http://api:4000
+Docker staging -> http://api:4000
 ```
 
-Browser-visible reads, when needed, use:
+Browser-visible reads use:
 
 ```text
 NUXT_PUBLIC_API_BASE
 staging -> https://api.grassic.ir
 ```
 
-Phase 4B prioritizes publication correctness over aggressive caching.
+Publication correctness takes priority over aggressive caching.
 
-No long-lived cache may allow an archived/unpublished Prompt to remain publicly served for an unsafe duration.
-
-Short revalidation/caching may be introduced later only with explicit invalidation/freshness semantics.
+No long-lived cache may allow archived/unpublished content to remain publicly served for an unsafe duration.
 
 ---
 
-## 14. Security invariants
-
-The following are hard Phase 4B invariants:
+## 17. Hard security invariants
 
 ```text
 1. Public Prompt query returns only Archive status=published.
@@ -466,90 +551,90 @@ The following are hard Phase 4B invariants:
 10. Non-public Archive states are public 404/unavailable.
 11. Missing localization never becomes indexable fallback localization.
 12. GET /api/archive/:id remains protected.
-13. /prompts?id=<id> remains protected/client-product behavior.
+13. /prompts?id=<id> remains protected product behavior.
 14. Legacy Prompt snapshot fallback is never used by Public Prompt.
-15. Creator attribution is not introduced until the 4C policy exists.
+15. Public description is never derived from protected Prompt content.
+16. Shared presentation never merges public/protected data sources.
+17. Creator attribution is not introduced until 4C policy exists.
+18. Staging NUXT_PUBLIC_NOINDEX=true remains authoritative during verification.
 ```
 
 ---
 
-## 15. Implementation slices
-
-Phase 4B implementation proceeds in narrow slices:
-
-### 4B.1 — Backend public read model
+## 18. Accepted implementation slices
 
 ```text
-dedicated /api/public/prompts/:id handler
-explicit public DTO mapper
-published-only database query
-public image/tag/model projection
-invalid/non-public/missing semantics
-leakage-focused contract tests
-```
-
-### 4B.2 — Nuxt public Prompt SSR route
-
-```text
-/prompt/:id page
-SSR-safe public Prompt composable/read helper
-requested-locale availability gate
-real 404 behavior
-public presentation UI only
-```
-
-### 4B.3 — SEO metadata
-
-```text
-usePublicSeo integration
-canonical/hreflang/x-default
-OG/Twitter image/title metadata
-truthful CreativeWork structured data
-staging noindex precedence preserved
-```
-
-### 4B.4 — Public-link migration
-
-```text
-Discovery/public acquisition links -> publicPromptPath(id)
-product CTA -> /prompts?id=<id>
-no protected-route behavior change
-```
-
-### 4B.5 — Verification / founder smoke
-
-```text
-contract tests
-build
-EN/FA SSR HTML
-200/404/publication state behavior
-canonical/hreflang
-OG/structured data
-X-Robots-Tag staging protection
-protected endpoint regression
-protected product route regression
+4B.1 Backend public read model              -> DONE / VERIFIED
+4B.2 Nuxt public Prompt SSR route           -> DONE / VERIFIED
+4B.3 SEO metadata                           -> DONE / VERIFIED
+4B.4 Public-link migration                  -> DONE / VERIFIED
+post-4B.4 interaction polish                -> DONE / VERIFIED
+4B.5A Localized descriptions                -> DONE / ACCEPTED
+4B.5B Shared Prompt presentation            -> DONE / ACCEPTED
+4B.5C Public Discovery visual layer         -> DONE / ACCEPTED
+4B.5D Final regression / founder acceptance -> DONE / ACCEPTED
 ```
 
 ---
 
-## 16. Acceptance gate
+## 19. Final acceptance evidence
 
-Phase 4B remains **IN PROGRESS** until all required automated checks and founder-local/staging runtime smoke checks pass.
-
-The assistant must not mark Phase 4B `ACCEPTED` merely because implementation or automated tests pass.
-
-Required final state transition:
+Aggregate command:
 
 ```text
-implementation complete
-  -> automated verification PASS
-  -> founder local/staging smoke PASS
-  -> founder explicitly accepts
-  -> Phase 4B ACCEPTED
+pnpm test:phase4b-final
 ```
 
-Until then the canonical status is:
+Final result:
 
 ```text
-IN PROGRESS / NOT ACCEPTED
+SEO contracts                         -> 5/5 PASS
+Public Prompt browser/SSR DTO         -> 6/6 PASS
+Public Prompt SEO                     -> 4/4 PASS
+Localized Public Prompt description   -> 3/3 PASS
+Shared Prompt presentation            -> 4/4 PASS
+Public Discovery visual layer         -> 3/3 PASS
+Public Prompt link migration          -> 3/3 PASS
+Interaction polish                    -> 4/4 PASS
+Strict locale-routing audit           -> PASS / 447 source files / zero hazards
 ```
+
+Backend final regression -> PASS.
+
+Production-like Cloudflare-connected stack -> healthy.
+
+Automated staging smoke:
+
+```text
+pnpm smoke:phase4b-final
+public Prompt API 200
+invalid public Prompt API 404
+protected Archive detail 401
+EN/FA Public Prompt SSR 200
+EN/FA Discovery SSR 200
+SEO/noindex/private-boundary checks PASS
+```
+
+Manual founder browser smoke -> PASS.
+
+Founder explicit acceptance:
+
+```text
+Phase 4B accepted
+```
+
+---
+
+## 20. Final state / next phase
+
+```text
+Phase 21.5.4B -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+```
+
+Next:
+
+```text
+Phase 21.5.4C — Public Creator + Indexability Policy
+```
+
+4C must inherit and preserve every accepted 4A/4B routing, localization, SEO, privacy, authorization and staging-safety boundary above.
