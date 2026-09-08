@@ -101,7 +101,7 @@ function formatTag(tag: string) {
 function isInteractiveCardTarget(event: MouseEvent) {
   const target = event.target
   if (!(target instanceof Element)) return false
-  return Boolean(target.closest('a, button, input, select, textarea, summary, [role="button"], [role="link"], [contenteditable="true"]'))
+  return Boolean(target.closest('a, button, input, select, textarea, summary, .crp, [role="button"], [role="link"], [contenteditable="true"]'))
 }
 
 async function openDetailFromCard(event: MouseEvent) {
