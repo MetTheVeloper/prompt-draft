@@ -7,6 +7,7 @@ RUN npm install --omit=dev --no-audit --no-fund
 
 COPY src ./src
 COPY sql ./sql
+COPY data ./data
 
 ENV HOST=0.0.0.0
 ENV PORT=4000
