@@ -1,5 +1,5 @@
 <script setup lang="ts">
-export type PromptPresentationMedia = {
+type PromptPresentationMedia = {
   position?: number
   fullUrl: string
   thumbnailUrl?: string | null
