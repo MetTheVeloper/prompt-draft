@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5C Public Discovery Visual Layer
 
-Status: **IMPLEMENTED / FOUNDER VERIFICATION NEXT / NOT ACCEPTED**
+Status: **IMPLEMENTED / FOUNDER RE-VERIFICATION NEXT / NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -41,7 +41,7 @@ No protected Prompt data is introduced.
 
 ## 2. Founder-requested alignment polish
 
-The two Discovery heading flex groups identified during founder visual review now use:
+The two Discovery heading flex groups identified during founder visual review use:
 
 ```text
 rules="ccs"
@@ -58,7 +58,7 @@ The surrounding collection/related layout semantics are otherwise unchanged.
 
 ---
 
-## 3. Semantic hero container
+## 3. Semantic content-sized hero container
 
 The previous raw hero `<section>` is now:
 
@@ -72,15 +72,23 @@ with the existing semantic class:
 public-discovery-page__hero
 ```
 
-The hero remains a real section element while using the project flex primitive.
-
-Its visual height is tied to the application viewport below the header:
+Founder re-review clarified that this hero is **not** a full-viewport acquisition stage. Its height is determined by its own content and padding:
 
 ```text
-calc(100vh - dimension().header.height)
+hero title/description
+hero actions
+responsive section padding
 ```
 
-so the background cinema fills the visible acquisition surface rather than only a partial hero strip.
+No `100vh`/header-derived hero height variable or hero/content `min-height` is used.
+
+The default-layout desktop/tablet/mobile page padding is also disabled for the canonical Discovery route through:
+
+```text
+base route: discover-slug
+```
+
+so `/discover/:slug` and `/fa/discover/:slug` are full-bleed at the page-layout boundary while the hero itself remains content-sized.
 
 ---
 
@@ -106,7 +114,7 @@ No protected detail API, Prompt body, variants, storage keys, economy state, per
 
 ---
 
-## 5. SSR-safe cinema behavior
+## 5. SSR-safe single-layer cinema behavior
 
 The hero preserves a deterministic request-time image:
 
@@ -123,9 +131,13 @@ ClientOnly
   -> deterministic ordering
 ```
 
-The first SSR image is emitted before the client-only slider.
+The first SSR image is emitted before the client-only slider for request-time HTML and hydration safety.
 
-The shared slider component normally uses a fixed viewport canvas. Discovery scopes that canvas back into the hero through component-local CSS:
+After the client cinema mounts, that SSR fallback image is removed for multi-image heroes. This prevents the static fallback and animated canvas from remaining visibly stacked as two simultaneous image layers.
+
+For a single-image category, the SSR image remains the sole media layer. If no category media exists, the existing theme-safe fallback remains available.
+
+The cover/fallback/cinema are all scoped behind the content inside the semantic hero with the equivalent of:
 
 ```text
 position: absolute
@@ -134,9 +146,13 @@ width: 100%
 height: 100%
 ```
 
-so the animated background cannot remain fixed over the curated grid when the user scrolls.
+The project utility expression used on media nodes is:
 
-If no category media exists, the existing theme-safe hero fallback remains available.
+```text
+poa t0 r0 b0 l0
+```
+
+The shared slider component normally uses a fixed viewport canvas; Discovery overrides that canvas locally to absolute positioning so it is bounded by the content-sized hero and cannot remain fixed over the curated grid while scrolling.
 
 ---
 
@@ -160,7 +176,7 @@ The hero enhancement uses public preview media only.
 
 ## 7. Regression contract
 
-New automated gate:
+Automated gate:
 
 ```text
 pnpm test:public-discovery-visual
@@ -176,12 +192,16 @@ It verifies:
 
 - hero is `el-flex type="section"`.
 - deterministic SSR hero image exists before ClientOnly slider enhancement.
+- multi-image SSR fallback is removed after cinema mount instead of remaining as a second visible image layer.
 - slider consumes only public category cover URLs.
-- slider canvas is scoped absolutely to the hero.
-- hero viewport height accounts for the application header.
+- hero media/canvas is absolutely scoped to the hero.
+- hero/content do not reintroduce viewport-derived `min-height` behavior.
+- default layout padding is zero for `discover-slug`.
 - both founder-identified heading flexes use `rules="ccs"`.
 - Discovery still uses `usePublicDiscovery`, `usePublicSeo` and `PublicDiscoveryCard`.
-- protected Prompt/economy/permission state does not enter the page.
+- protected Prompt/economy/permission state does not enter the runtime/template surface.
+
+The protected-boundary source assertion intentionally strips scoped CSS before checking protected-state words, avoiding false positives such as CSS `text-wrap: balance`.
 
 The existing:
 
@@ -189,7 +209,7 @@ The existing:
 pnpm test:prompt-presentation
 ```
 
-also now guards browser-history back semantics for both public and protected Prompt heroes.
+also guards browser-history back semantics for both public and protected Prompt heroes.
 
 ---
 
@@ -208,7 +228,7 @@ pnpm seo:audit-routes:strict
 Production-like frontend gate:
 
 ```text
-pnpm stack:cloudflare:restart
+docker compose -f compose.yaml -f compose.cloudflare.yaml up -d --build --force-recreate frontend
 pnpm stack:cloudflare:status
 ```
 
@@ -222,10 +242,13 @@ https://grassic.ir/fa/discover/portraits-photography
 Required outcomes:
 
 ```text
-hero fills the acquisition viewport below the header
-SSR first category preview remains present
+Discovery has no default 32px desktop layout padding
+hero height fits its own content instead of filling the viewport
+cover/cinema stays clipped to exactly the hero bounds
+only one visible media layer remains after client cinema mount
+SSR first category preview remains present in request-time HTML
 client cinema visibly transitions between public category previews
-cinema remains clipped/scoped to the hero while scrolling
+cinema does not remain fixed over the grid while scrolling
 EN layout remains LTR
 FA layout remains RTL
 hero text remains readable in light and dark themes
@@ -241,9 +264,9 @@ staging NUXT_PUBLIC_NOINDEX remains authoritative
 ```text
 4B.5A localized descriptions          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
 4B.5B shared Prompt presentation      -> IMPLEMENTED / FINAL BACK-FIX RE-VERIFICATION NEXT
-4B.5C Discovery visual layer          -> IMPLEMENTED / FOUNDER VERIFICATION NEXT
+4B.5C Discovery visual layer          -> IMPLEMENTED / FOUNDER RE-VERIFICATION NEXT
 4B.5D final regression / acceptance   -> NOT STARTED
 Phase 21.5.4B                         -> NOT ACCEPTED
 ```
 
-Do not start 4B.5D until the current 4B.5B back-behavior fix and this 4B.5C visual layer have passed founder-local verification.
+Do not start 4B.5D until the current 4B.5B back-behavior fix and this final 4B.5C visual polish have passed founder-local verification.
