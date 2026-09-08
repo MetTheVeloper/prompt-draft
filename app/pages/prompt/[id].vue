@@ -155,7 +155,8 @@ const homePath = computed(() => localePath('/'))
       :media="presentationMedia"
       :locale="activeLocale"
       :eyebrow="t('growth.publicPrompt.eyebrow')"
-      :preview-count-label="previewCountLabel">
+      :preview-count-label="previewCountLabel"
+      :telegram-message-id="prompt?.telegramMessageId ?? null">
       <template #topbar-leading>
         <el-button
           mode="flat"
