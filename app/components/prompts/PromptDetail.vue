@@ -353,7 +353,7 @@ async function copyPrompt() {
 
       <template #meta>
         <span class="prompt-detail__ready-meta">
-          <el-icon name="auto_fix_high" :size="14" />
+          <el-icon icon="auto_fix_high" :size="14" />
           {{ t('prompts.detail.readyToUse') }}
         </span>
       </template>
