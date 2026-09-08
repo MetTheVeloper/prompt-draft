@@ -19,7 +19,7 @@ test('root PromptPresentation alias resolves the shared prompts component', asyn
   }
 })
 
-test('shared PromptPresentation is presentation-only and has an SSR media fallback', async () => {
+test('shared PromptPresentation is presentation-only, SSR-safe, and theme-synced', async () => {
   const source = await read('app/components/prompts/PromptPresentation.vue')
   const presentationSurface = withoutStyles(source)
 
@@ -29,6 +29,19 @@ test('shared PromptPresentation is presentation-only and has an SSR media fallba
     source.indexOf('prompt-presentation__ssr-image') < source.indexOf('<ClientOnly>'),
     'SSR image fallback must be emitted before client-only canvas enhancement',
   )
+
+  assert.match(source, /background:\s*var\(--themeSurface\)/)
+  assert.match(source, /color-mix\(in srgb, var\(--themeSurface\)/)
+  assert.doesNotMatch(source, /\.prompt-presentation__description\s*\{[^}]*color:/s)
+  assert.doesNotMatch(source, /\.prompt-presentation__meta\s*\{[^}]*color:/s)
+  assert.match(source, /bg="surface"[\s\S]*color="normal"/)
+  assert.match(source, /bg="blue"[\s\S]*color="white"/)
+
+  assert.match(source, /telegramMessageId\?: number \| null/)
+  assert.match(source, /telegramUrl\?: string \| null/)
+  assert.match(source, /https:\/\/t\.me\/prompt-draft\/\$\{resolvedTelegramMessageId\.value\}/)
+  assert.match(source, /target="_blank"/)
+  assert.match(source, /rel="noopener noreferrer"/)
 
   for (const forbidden of [
     'usePromptArchiveUnlock',
@@ -54,12 +67,20 @@ test('shared PromptPresentation is presentation-only and has an SSR media fallba
 })
 
 test('public Prompt uses the shared shell without crossing into protected data', async () => {
-  const source = await read('app/pages/prompt/[id].vue')
+  const [source, layout] = await Promise.all([
+    read('app/pages/prompt/[id].vue'),
+    read('app/layouts/default.vue'),
+  ])
 
   assert.match(source, /<PromptPresentation/)
   assert.match(source, /usePublicPrompt\(\)/)
   assert.match(source, /path: '\/prompts'/)
   assert.match(source, /localizedDescription/)
+  assert.match(source, /:telegram-message-id="prompt\?\.telegramMessageId \?\? null"/)
+
+  assert.match(layout, /const publicPromptDetailMode = computed\(\(\) => \{/)
+  assert.match(layout, /baseRouteName\.value === "prompt-id"/)
+  assert.match(layout, /publicPromptDetailMode\.value/)
 
   for (const forbidden of [
     'usePromptArchive()',
@@ -85,6 +106,9 @@ test('protected Prompt keeps product state outside the shared shell', async () =
   assert.match(detail, /props\.item\.prompt/)
   assert.match(detail, /props\.item\.variants/)
   assert.match(detail, /localizedDescription/)
+  assert.match(detail, /:telegram-url="item\.telegramUrl"/)
+  assert.match(detail, /locale\.value === 'fa' \? 'arrow_forward' : 'arrow_back'/)
+  assert.doesNotMatch(detail, /'arrow-right'|'arrow-left'/)
 
   assert.match(archive, /items\.descriptions AS description/)
   assert.match(reader, /normalizeDescription\(value\.description\)/)
