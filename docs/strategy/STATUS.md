@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-07
+Last updated: 2026-09-08
 
 Branch:
 
@@ -97,7 +97,7 @@ Phase 4 slices:
 
 ```text
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-21.5.4B Public Prompt Architecture                         IN PROGRESS / DESIGN LOCKED / 4B.1 IMPLEMENTED / LOCAL VERIFY NEXT
+21.5.4B Public Prompt Architecture                         IN PROGRESS / 4B.1-4B.3 FOUNDER-LOCAL VERIFIED / 4B.4 IMPLEMENTED
 21.5.4C Public Creator + Indexability Policy               NOT STARTED
 21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
 21.5.4E Blog V1                                            NOT STARTED
@@ -336,11 +336,11 @@ Current state:
 ```text
 architecture audit/design       -> DONE / FOUNDER AGREED
 architecture contract           -> LOCKED
-4B.1 backend public projection  -> IMPLEMENTED / LOCAL VERIFY NEXT
-4B.2 Nuxt SSR Prompt route      -> NOT STARTED
-4B.3 SEO metadata               -> NOT STARTED
-4B.4 public-link migration      -> NOT STARTED
-4B.5 founder verification       -> NOT STARTED
+4B.1 backend public projection  -> DONE / FOUNDER-LOCAL VERIFIED
+4B.2 Nuxt SSR Prompt route      -> DONE / FOUNDER-LOCAL VERIFIED
+4B.3 SEO metadata               -> DONE / FOUNDER-LOCAL VERIFIED
+4B.4 public-link migration      -> IMPLEMENTED / LOCAL VERIFY NEXT
+4B.5 final founder verification -> NOT STARTED
 Phase 4B acceptance             -> NOT ACCEPTED
 ```
 
@@ -364,7 +364,7 @@ GET /api/archive            -> public list/catalog
 GET /api/archive/:id        -> authenticated + email gate
 ```
 
-New 4B public read model:
+4B public read model:
 
 ```text
 GET /api/public/prompts/:id
@@ -407,38 +407,62 @@ Important implementation invariant:
 The public database query itself does not SELECT prompt or variants.
 ```
 
-4B.1 implementation commits:
+Verified 4B.1–4B.3 include:
 
 ```text
-2a9a58eacc371ee96dc1b073c582d00093f69293
-  Phase 4B architecture source of truth
+public API published/missing/protected semantics
+exact browser/SSR DTO validation
+EN/FA Public Prompt SSR routes
+real 404 semantics
+protected CTA separation
+canonical EN/FA
+reciprocal authoritative hreflang
+x-default English
+localized OG/Twitter metadata
+first public preview image as social image
+sanitized CreativeWork JSON-LD
+zero serialized private-key leakage in founder smoke
+staging X-Robots-Tag noindex preserved
+production-like pnpm stack build/runtime PASS
+```
 
-8902ab959e6b95513a3e7d3d4e60a55dbc76180f
-  Phase 4B verification ledger
+4B.4 implementation migrates specific acquisition detail links only:
 
-97a0f7a2251f9e43d6a98fe07f0b43bb9c3ead16
-  sanitized Public Prompt read model
+```text
+Discovery View Prompt -> localePath(publicPromptPath(id))
+Home showcase View Prompt -> localePath(publicPromptPath(id))
+Generic /prompts catalog links remain valid and unchanged
+Public Prompt Open full prompt -> protected /prompts?id=<id> remains unchanged
+```
 
-76664e61af26cbcf112fb6c609667d202d3afee2
-  Public Prompt boundary/contract tests
+Relevant 4B.4 commits:
 
-89c146eb54ac5874194e7fa1980bd1663a83859a
-  API server routing for /api/public/prompts/:id
+```text
+5e11ce712d960b590cc9285b6888b1e4c2172aa9
+  Discovery cards -> canonical Public Prompt
 
-f6a60f17e69f046d9bf3392dbd688b09edc7967a
-  backend test:public-prompt command
+fae0fca593bfff808407e13a6d28527051a540bd
+  Home showcase -> canonical Public Prompt
+
+cacdfb777d4a64bd7810d565b50f84c91e842a80
+  acquisition-link regression contract
+
+ca4b8a2608dd8d2b2eb033ae7dc189c9802d6b83
+  pnpm test:public-prompt-links command
 ```
 
 Next 4B action:
 
 ```text
-1. founder pulls current branch
-2. rebuild/restart API container
-3. run backend test:public-prompt
-4. smoke real published/missing/non-public ids
-5. confirm GET /api/archive/:id remains protected
-6. record evidence in MILESTONE_21_5_PHASE4B_VERIFICATION.md
-7. only after 4B.1 PASS proceed to 4B.2 Nuxt Public Prompt SSR route
+1. founder pulls current feature/growth-foundation
+2. run pnpm test:public-prompt-links
+3. run pnpm test:seo-contracts
+4. run pnpm seo:audit-routes:strict
+5. run pnpm stack and wait for healthy frontend/api/db/translator
+6. smoke EN/FA Discovery detail links -> /prompt/:id and /fa/prompt/:id
+7. smoke EN/FA Home showcase detail links -> localized Public Prompt route
+8. confirm Public Prompt Open full prompt still enters protected /prompts?id=<id> flow
+9. record 4B.4 evidence; only then proceed to final 4B verification/acceptance
 ```
 
 ---
@@ -690,6 +714,6 @@ When continuing in a new chat:
 4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 6. inspect the latest feature/growth-foundation branch state
-7. continue with 4B.1 local verification; do not start 4B.2 until 4B.1 passes
-8. never mark 4B accepted until founder local/staging smoke passes and founder explicitly accepts
+7. continue with 4B.4 founder-local link migration verification
+8. do not mark 4B accepted until final founder local/staging smoke passes and founder explicitly accepts
 ```
