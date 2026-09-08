@@ -66,7 +66,8 @@ const activeLocale = computed<PublicPromptLocale>(() => locale.value === 'fa' ? 
 const localeAvailable = computed(() => {
   return Boolean(
     prompt.value?.availableLocales.includes(activeLocale.value) &&
-    prompt.value?.title[activeLocale.value],
+    prompt.value?.title[activeLocale.value] &&
+    prompt.value?.description[activeLocale.value],
   )
 })
 
@@ -81,11 +82,12 @@ watch(activeLocale, () => {
 })
 
 const localizedTitle = computed(() => prompt.value?.title[activeLocale.value] || '')
+const localizedDescription = computed(() => prompt.value?.description[activeLocale.value] || '')
 const primaryImage = computed(() => prompt.value?.images[0] ?? null)
 const galleryImages = computed(() => prompt.value?.images.slice(1) ?? [])
 const canonicalPath = publicPromptPath(publicId)
 const siteUrl = computed(() => normalizePublicSiteUrl(config.public.siteUrl))
-const seoDescription = computed(() => t('growth.publicPrompt.description'))
+const seoDescription = computed(() => localizedDescription.value)
 const seoImage = computed(() => publicPromptSeoImage(prompt.value!))
 const canonicalUrl = computed(() => toAbsolutePublicUrl(
   siteUrl.value,
@@ -100,7 +102,7 @@ const structuredData = computed(() => {
     prompt: prompt.value,
     locale: activeLocale.value,
     localizedTitle: localizedTitle.value,
-    description: seoDescription.value,
+    description: localizedDescription.value,
     canonicalUrl: canonicalUrl.value,
     imageUrl: absoluteSeoImage.value,
     siteUrl: siteUrl.value,
@@ -183,7 +185,7 @@ function formatTag(tag: string) {
             :size="mobile ? 13 : 16"
             color="normal70"
             class="public-prompt-page__description w100">
-            {{ t('growth.publicPrompt.description') }}
+            {{ localizedDescription }}
           </el-text>
 
           <el-flex rules="rsc" class="w100 fw" :gap="8" wrap>
