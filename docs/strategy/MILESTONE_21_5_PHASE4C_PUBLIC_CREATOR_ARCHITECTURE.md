@@ -1,25 +1,13 @@
-# Milestone 21.5 — Phase 4C Public Creator Architecture + Indexability Policy
+# Milestone 21.5 — Phase 4C Creator Identity, Profile, Approval + Public Architecture
 
-Status: **AUDIT/DESIGN PROPOSED / IMPLEMENTATION NOT STARTED / FOUNDER ACCEPTANCE PENDING**
+Status: **REVISED ARCHITECTURE / FOUNDER ACCEPTED / 4C.1 FOUNDATION NEXT**
 
-Date: 2026-09-08
+Date: 2026-09-09
 
 Branch:
 
 ```text
 feature/growth-foundation
-```
-
-Parent sources of truth:
-
-```text
-docs/strategy/STATUS.md
-docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
-docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
 Verification ledger:
@@ -28,398 +16,558 @@ Verification ledger:
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 ```
 
-This document is the proposed Phase 4C source of truth. It records the repository audit, public/private boundary, Creator contract, indexability policy, SEO semantics, Prompt↔Creator attribution strategy, implementation slices, and acceptance gates.
+This document is the authoritative Phase 4C source of truth. It supersedes the earlier audit proposal that inferred Creator eligibility from account/publication signals.
 
-Nothing in this document marks Phase 4C implementation DONE. The architecture remains proposed until founder review/explicit acceptance.
+Founder acceptance on 2026-09-09 establishes a stronger product contract: **Creator is an explicit, reviewed public-identity state, not a user role and not something inferred automatically from published Prompts.**
+
+Nothing here marks implementation slices DONE. Every slice still requires founder-local verification and explicit acceptance.
 
 ---
 
-## 1. Inherited non-negotiable decisions
+## 1. Core model — role and Creator are separate axes
 
-Canonical Creator routes:
+Existing authorization roles remain unchanged:
+
+```text
+user
+admin
+super_admin
+```
+
+Role answers:
+
+> What system/admin permissions does this account have?
+
+Creator answers:
+
+> Does this account have an intentionally requested and administratively approved public Creator identity?
+
+Therefore `creator` MUST NOT be added to `users.role`.
+
+Conceptual examples:
+
+```text
+role=user        + creatorStatus=approved
+role=admin       + creatorStatus=none
+role=admin       + creatorStatus=approved
+role=super_admin + creatorStatus=approved
+```
+
+Creator state is orthogonal to RBAC.
+
+A published Prompt also does not automatically make its owner a Creator.
+
+---
+
+## 2. Creator lifecycle
+
+Current-state vocabulary:
+
+```text
+none       -> no Creator request/state exists
+pending    -> Creator request submitted and awaiting review
+approved   -> public Creator identity approved
+rejected   -> latest Creator request rejected; user may complete/edit and request again
+suspended  -> previously approved Creator identity is administratively unavailable
+```
+
+Target lifecycle:
+
+```text
+authenticated account
+  -> edits/saves profile at /manage/profile
+  -> completes Creator-required profile contract
+  -> requests Creator account
+  -> pending
+  -> admin/super_admin review
+      -> approved
+      -> rejected
+
+approved
+  -> may later be suspended/unsuspended independently of users.status
+```
+
+Rules:
+
+```text
+profile completion never auto-promotes a user to Creator
+publishing Prompts never auto-promotes a user to Creator
+Creator request requires server-authoritative profile completeness
+approval requires dedicated Creator-management authorization
+self-approval is not allowed by default
+account suspension always makes public Creator unavailable regardless of Creator state
+```
+
+Reapplication after rejection is allowed and must preserve review/audit history.
+
+---
+
+## 3. Authenticated profile-management surface
+
+All authenticated accounts use:
+
+```text
+/manage/profile
+```
+
+The avatar/profile menu will gain:
+
+```text
+Edit profile
+```
+
+The same page is used by ordinary accounts and approved Creators.
+
+It manages existing identity/media plus new extended profile fields:
+
+```text
+avatar
+cover
+username
+email
+screenName EN/FA
+bio EN/FA
+article EN/FA
+birthday
+skills
+links
+location
+```
+
+Primary actions:
+
+```text
+Save changes
+Request Creator Account
+```
+
+`Save changes` is always independent from Creator application. Users may build a complete profile and never request Creator status.
+
+`Request Creator Account` becomes available only when the server-authoritative Creator-required profile contract is satisfied.
+
+---
+
+## 4. Extended profile field contract
+
+### 4.1 Screen name
+
+Localized presentation name:
+
+```ts
+screenName: {
+  en: string | null
+  fa: string | null
+}
+```
+
+- optional for ordinary accounts
+- EN + FA required for Creator application
+- distinct from canonical `username`
+- suitable for visible page heading, metadata and Person/ProfilePage structured data
+
+### 4.2 Bio
+
+Localized short Creator biography:
+
+```ts
+bio: {
+  en: string | null
+  fa: string | null
+}
+```
+
+- optional for ordinary accounts
+- EN + FA required for Creator application
+- one source for visible intro + meta/OG/Twitter description projection
+
+### 4.3 Article
+
+Localized long-form Markdown content:
+
+```ts
+article: {
+  en: string | null
+  fa: string | null
+}
+```
+
+- optional for ordinary accounts
+- EN + FA required for Creator application
+- stored as Markdown text in the database, not as mutable filesystem `.md` files
+- later rendered through a sanitized Markdown pipeline
+- intended for personal branding, self-description, work/product narrative and unique SEO content
+
+### 4.4 Birthday
+
+```ts
+birthday: string | null // canonical database DATE
+```
+
+- optional for everyone
+- Persian UI uses a Jalali picker
+- non-Persian UI uses a Gregorian picker
+- both convert to one canonical Gregorian `DATE` for storage
+- **private by default and excluded from Public Creator V1**
+
+### 4.5 Skills
+
+Skills use a controlled taxonomy, not free-text identity strings.
+
+Conceptual taxonomy:
+
+```text
+Technology
+Design
+AI / Data
+Infrastructure / DevOps
+Product
+Marketing / SEO
+Business / Management
+Content / Creative
+... extensible
+```
+
+Each skill has a stable slug and localized labels.
+
+Example:
+
+```ts
+{
+  slug: 'frontend-development',
+  title: {
+    en: 'Frontend Development',
+    fa: 'توسعه فرانت‌اند'
+  },
+  category: 'technology'
+}
+```
+
+- optional for ordinary accounts
+- at least one active taxonomy skill required for Creator application
+- exact initial taxonomy inventory is a separate founder-content checkpoint before profile UI acceptance
+
+### 4.6 Links
+
+Up to 5 public-facing profile links.
+
+Supported initial types:
+
+```text
+website
+github
+linkedin
+instagram
+telegram
+x
+youtube
+other
+```
+
+Links are optional for Creator application.
+
+Only normalized web URLs are stored. No credentials/tokens/private handles are part of this contract.
+
+### 4.7 Location
+
+Twitter-like display location:
+
+```ts
+location: {
+  text: string
+  source: 'suggestion' | 'custom'
+  providerPlaceId?: string
+  countryCode?: string
+} | null
+```
+
+- optional for everyone
+- UI may provide searchable location suggestions
+- user may still save custom display text
+- provider metadata is internal editing metadata
+- Public Creator V1 exposes only approved display-safe location text, not coordinates or provider identifiers
+
+---
+
+## 5. Storage architecture
+
+Do not turn `users` into a wide mixed account/profile/Creator table.
+
+Recommended normalized model:
+
+```text
+users
+  -> authentication identity, role, account status, existing media ownership
+
+user_profiles
+  -> one-to-one extended editable profile content
+
+profile_skills
+  -> controlled localized skills taxonomy
+
+user_profile_skills
+  -> user <-> skill relationship
+
+user_profile_links
+  -> ordered max-5 links
+
+creator_accounts
+  -> current Creator lifecycle state
+
+creator_account_events
+  -> immutable Creator request/review/suspension history
+
+creator_username_aliases (when Creator username-change support lands)
+  -> SEO-safe old Creator username -> current user identity redirect lineage
+```
+
+### 5.1 Recommended `user_profiles`
+
+Use explicit localized columns for queryability/constraints rather than hiding all profile semantics inside one arbitrary JSON document:
+
+```text
+user_id UUID PK/FK users(id)
+screen_name_en TEXT
+screen_name_fa TEXT
+bio_en TEXT
+bio_fa TEXT
+article_en TEXT
+article_fa TEXT
+birthday DATE
+location_text TEXT
+location_source TEXT
+location_provider_place_id TEXT
+location_country_code TEXT
+created_at
+updated_at
+```
+
+### 5.2 Skills tables
+
+```text
+profile_skills
+  slug TEXT PK
+  category_slug TEXT
+  title_en TEXT
+  title_fa TEXT
+  active BOOLEAN
+  sort_order INTEGER
+
+user_profile_skills
+  user_id UUID FK
+  skill_slug TEXT FK
+  created_at
+  PK(user_id, skill_slug)
+```
+
+### 5.3 Links table
+
+```text
+user_profile_links
+  id UUID PK
+  user_id UUID FK
+  type TEXT
+  url TEXT
+  label TEXT nullable
+  position SMALLINT 0..4
+  created_at
+  updated_at
+  UNIQUE(user_id, position)
+```
+
+Restricting `position` to `0..4` plus uniqueness provides a database-level maximum of five links per profile without five hard-coded URL columns.
+
+### 5.4 Creator state tables
+
+```text
+creator_accounts
+  user_id UUID PK/FK
+  status pending|approved|rejected|suspended
+  requested_at
+  reviewed_at nullable
+  reviewed_by_user_id nullable
+  review_note nullable
+  approved_at nullable
+  suspended_at nullable
+  created_at
+  updated_at
+
+creator_account_events
+  id UUID PK
+  user_id UUID FK
+  actor_user_id UUID nullable FK
+  event_type requested|approved|rejected|suspended|unsuspended|reapplied
+  metadata JSONB
+  created_at
+```
+
+No row in `creator_accounts` means `creatorStatus=none`.
+
+The current-state row supports efficient UI/public policy queries; the event table preserves lifecycle history.
+
+Administrative approve/reject/suspend actions should additionally follow the existing admin-audit conventions where useful.
+
+---
+
+## 6. Creator application requirements
+
+Server-authoritative V1 requirements:
+
+```text
+account status == active
+valid canonical username exists
+screenName.en non-empty
+screenName.fa non-empty
+bio.en non-empty
+bio.fa non-empty
+article.en non-empty
+article.fa non-empty
+at least one active selected skill
+```
+
+Not required:
+
+```text
+avatar
+cover
+birthday
+links
+location
+published Prompt count
+XP
+Goin/balance
+```
+
+There is deliberately **no weighted profile-quality score**.
+
+Technical maximum lengths may be enforced for abuse/data-safety reasons, but they are not SEO quality thresholds.
+
+After approval, profile edits must not be allowed to silently remove Creator-required fields while `creatorStatus=approved`. The server must either reject an incomplete update or require an explicit state transition before the profile can fall below the approved Creator contract.
+
+---
+
+## 7. Authorization for Creator review
+
+Do not grant existing broad `users.manage` permission to `admin` merely to approve Creator applications.
+
+Introduce a dedicated permission:
+
+```text
+creators.manage
+```
+
+Target RBAC:
+
+```text
+user        -> no creator-review permission
+admin       -> creators.manage
+super_admin -> wildcard, therefore creators.manage
+```
+
+This lets admin + super_admin review Creator requests without widening admin access to unrelated user-account mutations.
+
+Creator itself remains a state/capability, not a permission.
+
+---
+
+## 8. Username/email editing and canonical Creator identity
+
+The new `/manage/profile` experience is intended to support editing username/email in addition to media/profile content.
+
+This differs from the existing profile-completion endpoint, which only fills missing username/email and locks already-set identity fields.
+
+Therefore identity editing needs a dedicated authenticated contract rather than weakening the old completion endpoint implicitly.
+
+### Username
+
+For approved Creators, changing username changes the canonical public URL:
+
+```text
+/creator/old-name -> /creator/new-name
+/fa/creator/old-name -> /fa/creator/new-name
+```
+
+Before Creator username edits are enabled, implement Creator username alias/history so old public URLs can permanently redirect to the current canonical username and cannot be hijacked by a different public Creator identity.
+
+### Email
+
+Email remains private account identity. Changing it must preserve uniqueness/auth semantics and must never cause it to enter public Creator DTOs/SSR/JSON-LD.
+
+---
+
+## 9. Public Creator contract
+
+Canonical routes remain:
 
 ```text
 /creator/:username
 /fa/creator/:username
 ```
 
-`/user` remains an account/product surface and is not the canonical public Creator route.
+`/user` remains account/product UI and is not the canonical Creator SEO route.
 
-Public Creator V1 may expose only intentionally-public identity/publication data.
-
-Explicitly forbidden from the public Creator contract:
-
-```text
-email
-balance/Goin
-sessions
-permissions
-private Drafts
-owner-only stats/counts
-XP initially
-```
-
-Accessibility and indexability are separate concepts.
-
-A valid Creator may be public-accessible while remaining `noindex` and absent from sitemap/discovery.
-
-A nonexistent, suspended, deleted, or otherwise public-access-prohibited Creator must not render an accessible Creator profile.
-
-Staging remains:
-
-```text
-https://grassic.ir
-https://api.grassic.ir
-NUXT_PUBLIC_NOINDEX=true
-```
-
-`prompt-draft.ir` must remain untouched during 4C development/verification.
-
----
-
-## 2. Repository audit — current identity/account model
-
-### 2.1 User schema
-
-Current `users` identity/account fields established by migrations include:
-
-```text
-id UUID
-username nullable text
-email nullable text
-password_hash
-status active|suspended
-role
-created_at / updated_at
-avatar_url + avatar_storage_key
-cover_url + cover_storage_key
-cover_thumbnail_url + cover_thumbnail_storage_key
-cover dimensions
-```
-
-The database enforces case-insensitive username uniqueness through a unique index on `LOWER(username)`.
-
-Current account identity requires at least one of username/email. A user can therefore legitimately exist without a username.
-
-Current account states found in the authoritative schema are:
-
-```text
-active
-suspended
-```
-
-No user soft-delete column or `deleted` user status exists in the audited branch. Physical deletion remains conceptually possible at the database level, and later account-state expansion must be treated as unavailable by the Creator policy unless explicitly allowed.
-
-### 2.2 Username normalization
-
-Backend auth and existing profile resolution normalize usernames as:
-
-```text
-trim
-lowercase
-regex: ^[a-z0-9._-]{3,64}$
-```
-
-`app/utils/publicRoutes.ts` already contains `publicCreatorPath(username)` with the same normalization/validation rule.
-
-Therefore the canonical username identity for Creator URLs is lowercase normalized username.
-
-Noncanonical casing should never create a second canonical identity.
-
-### 2.3 Profile fields
-
-Current progressive profile requirements know only:
-
-```text
-username
-email
-```
-
-There is currently no audited database/application field for:
-
-```text
-bio
-displayName
-localized bio
-localized display name
-```
-
-Avatar and cover media exist, but their existing account/profile use does not by itself define a new Creator privacy contract.
-
-Conclusion:
-
-```text
-4C V1 must not invent a bio-quality requirement or pretend localized Creator biography data already exists.
-```
-
-A future bio/display-name feature requires its own storage, editing, moderation, localization, and explicit-public semantics before becoming part of the Creator contract.
-
----
-
-## 3. Repository audit — current `/user` and profile APIs
-
-### 3.1 `/user` is product/account UI
-
-Current `/user` behavior accepts query identity:
-
-```text
-/user?id=<internal UUID>
-/user?un=<username>
-```
-
-It is explicitly client-only in Nuxt route rules.
-
-It uses optional auth and changes behavior for the owner. The page includes product/account operations such as:
-
-```text
-Draft publish/unpublish
-Draft edit/delete
-preview management
-copy/download
-admin promotion/moderation actions
-owner-aware counts
-XP presentation
-```
-
-This confirms `/user` cannot safely double as the canonical public SSR Creator page.
-
-### 3.2 Existing user profile APIs are not the 4C public contract
-
-Existing endpoints include:
-
-```text
-GET /api/users/resolve?username=...
-GET /api/users/:uuid/profile
-GET /api/users/:uuid/drafts
-```
-
-They were designed for the current `/user` product/profile surface.
-
-For a non-owner, the current profile projection still exposes fields including:
-
-```text
-internal user UUID
-totalXp
-publicDraftCount
-createdAt
-username
-avatar/cover
-```
-
-The owner additionally receives total Draft count and private Draft visibility/data through owner-gated paths.
-
-Therefore:
-
-```text
-DO NOT reuse /api/users/:uuid/profile as the Public Creator V1 DTO.
-DO NOT make internal UUID the public Creator route identity.
-DO NOT widen existing owner/product APIs to satisfy 4C.
-```
-
-4C requires a new server-authoritative, username-keyed public projection.
-
----
-
-## 4. Repository audit — publication ownership semantics
-
-### 4.1 Public Drafts vs canonical public Prompts
-
-`prompt_drafts.visibility` currently supports:
-
-```text
-private
-public
-```
-
-Public Drafts are user-controlled product/profile publication state.
-
-Canonical public Prompt acquisition pages, however, are served from published Archive items through the accepted 4B projection.
-
-These are distinct concepts and should stay distinct.
-
-### 4.2 Archive provenance
-
-Migration 019 established user-Draft provenance on Archive items:
-
-```text
-source_kind = user_draft
-source_user_id UUID -> users(id) ON DELETE SET NULL
-source_draft_id text
-```
-
-The pair `(source_user_id, source_draft_id)` is unique for user-Draft-sourced Archive records when both are present.
-
-Promotion accepts only a non-deleted public Draft belonging to an active user.
-
-Once promoted, the Archive item is an independent Archive record; publication remains governed by Archive status.
-
-Therefore `source_user_id` is the authoritative provenance link for Prompt↔Creator attribution where the source is a user Draft.
-
-### 4.3 Current Discovery owner metadata
-
-Current home/public Discovery directly LEFT JOINs `users` through `prompt_archive_items.source_user_id`, conditioned on `users.status='active'`, and may expose:
-
-```text
-owner.username
-owner.avatarUrl
-```
-
-This predates the 4C Creator contract.
-
-It is not sufficient as the final policy because it embeds a partial public-identity rule inside one query and does not expose `accessible/indexable/discoverable/reasons/signals` consistently.
-
-### 4.4 Current Public Prompt projection
-
-The accepted 4B `GET /api/public/prompts/:id` projection intentionally does not SELECT or expose creator/source-user identity.
-
-That boundary must remain unchanged until the 4C Creator contract is implemented and founder-accepted.
-
----
-
-## 5. Public/private boundary proposal
-
-### 5.1 Default-deny rule
-
-A field is not public merely because it exists on `users`, `/user`, an authenticated response, or an admin surface.
-
-Public Creator V1 must use an explicit allowlist.
-
-### 5.2 Proposed Public Creator V1 identity allowlist
-
-Safe initial identity projection:
-
-```ts
-identity: {
-  username: string
-  avatarUrl: string | null
-  cover: {
-    fullUrl: string
-    thumbnailUrl: string
-    width: number
-    height: number
-    thumbnailWidth: number
-    thumbnailHeight: number
-  } | null
-}
-```
-
-Deliberately excluded from V1 identity DTO:
-
-```text
-internal UUID
-email
-role
-status
-createdAt/updatedAt
-XP
-Goin/balance
-permissions
-session/auth state
-referral state
-private Drafts
-owner-only stats/counts
-storage keys
-admin/moderation metadata
-```
-
-`createdAt/member since` is excluded initially because it is account metadata, not necessary for the public Creator identity contract.
-
-Avatar/cover URLs are allowed only as presentation URLs. Storage keys remain private.
-
-### 5.3 Publications allowlist
-
-Creator publications should be projected from canonical published Archive items attributed by `source_user_id`, not by exposing raw Draft payloads.
-
-Proposed publication summary:
-
-```ts
-{
-  id: number
-  title: { en?: string; fa?: string }
-  description: { en?: string; fa?: string }
-  availableLocales: ('en' | 'fa')[]
-  publishedAt: string
-  tags: string[]
-  coverImage: {
-    fullUrl: string
-    thumbnailUrl: string
-  } | null
-}
-```
-
-This is presentation metadata only. It must not include:
-
-```text
-Prompt body
-variants
-source Draft payload/sourceTitle
-sourceDraftId
-sourceUserId/internal UUID
-storage keys
-unlock/economy/viewer state
-```
-
-The Creator publication projection should reuse the accepted public-safe Archive/Prompt presentation semantics where possible rather than creating a second protected-content path.
-
----
-
-## 6. Public Creator lookup semantics
-
-Proposed endpoint:
+Target public endpoint:
 
 ```text
 GET /api/public/creators/:username
 ```
 
-The backend performs username normalization and lookup directly. Browser/SSR code must not resolve username -> UUID and then call legacy `/api/users/:uuid/profile`.
+Public lookup is username-keyed; browser clients do not resolve username -> internal UUID first.
 
-### 6.1 Canonical lookup
+### 9.1 Public identity allowlist
 
-Input normalization:
+For an approved accessible Creator, Public Creator V1 may expose:
 
-```text
-trim
-lowercase
-^[a-z0-9._-]{3,64}$
+```ts
+identity: {
+  username: string
+  screenName: { en: string; fa: string }
+  bio: { en: string; fa: string }
+  article: { en: string; fa: string } // Markdown source for public rendering
+  avatarUrl: string | null
+  cover: PublicCover | null
+  skills: PublicSkill[]
+  links: PublicProfileLink[]
+  location: { text: string } | null
+}
 ```
 
-Semantics:
+Explicitly excluded:
 
 ```text
-invalid username syntax            -> 404 public Creator not found
-no matching user                   -> 404
-matching user without username     -> impossible for username lookup / 404
-matching suspended user            -> 404
-future deleted/prohibited state    -> 404
-active accessible creator          -> 200 sanitized Creator DTO
+internal user UUID
+email
+birthday
+role
+account status
+Creator review metadata
+review notes
+XP
+Goin/balance
+permissions
+sessions
+referral state
+private Drafts
+owner-only stats/counts
+storage keys
+provider location ids/coordinates
+admin audit metadata
 ```
 
-For public acquisition surfaces, malformed/unknown Creator identity should not reveal whether an inaccessible account exists.
+### 9.2 Publications
 
-### 6.2 Canonical URL behavior
+Creator publications are canonical published Archive Prompts attributed through `source_user_id`.
 
-The canonical identity is normalized lowercase username.
+Raw Draft payloads are never exposed as Public Creator publication bodies.
 
-Recommended route behavior:
-
-```text
-/creator/Foo -> permanent redirect -> /creator/foo
-/fa/creator/Foo -> permanent redirect -> /fa/creator/foo
-```
-
-Trailing-slash/noncanonical handling should follow the accepted 4A route semantics and strict routing audit.
-
-The API may either normalize internally or reject noncanonical spelling; the page layer owns browser canonical redirect behavior.
+A Creator may be valid with zero Archive Prompts; publication count does not define Creator status.
 
 ---
 
-## 7. Server-authoritative Creator policy
+## 10. Server-authoritative public policy
 
-### 7.1 Contract
+The earlier rule `active user + published Prompt => Creator` is superseded.
 
-The policy must be evaluated server-side from authoritative account/publication facts and returned alongside the sanitized Creator projection.
-
-Proposed shape:
+Internal policy concept:
 
 ```ts
 type CreatorPublicPolicy = {
@@ -429,331 +577,207 @@ type CreatorPublicPolicy = {
   reasons: CreatorPolicyReason[]
   signals: {
     accountActive: boolean
+    creatorApproved: boolean
     canonicalUsername: boolean
-    hasPublicAvatar: boolean
-    hasPublicCover: boolean
-    publishedPromptCount: number
+    creatorProfileComplete: boolean
     hasPublishedPrompt: boolean
   }
 }
 ```
 
-Important privacy rule:
+Do not expose sensitive internal state/reasons on 404 responses.
 
-The public 200 DTO may expose only policy information that is safe to disclose for an already-accessible Creator. 404 responses must remain generic and must not disclose hidden account state.
-
-The internal policy evaluator may have richer private reasons/signals than the public response.
-
-### 7.2 No arbitrary score
-
-No weighted score or invented numeric quality threshold is introduced in 4C design.
-
-Signals are direct factual booleans/counts derived from current authoritative data.
-
-### 7.3 Accessibility
-
-Proposed V1 accessibility rule:
+### Accessibility
 
 ```text
 accessible =
-  user exists
-  AND status == active
-  AND username exists
-  AND username is canonical/valid
-  AND no future public-access prohibition applies
+  account exists and active
+  AND creator_accounts.status == approved
+  AND valid canonical username exists
 ```
 
-Accessibility does not require avatar, cover, XP, bio, or a minimum publication count.
+Pending/rejected/suspended/non-Creator accounts are not public Creator pages and return a generic 404.
 
-That preserves the accepted rule that a valid but incomplete/low-quality Creator can remain accessible.
-
-### 7.4 Indexability
-
-Because the current product has no explicit `creator_public` opt-in field and no bio/display-name field, the safest evidence of intentional public Creator publication is an active account with at least one canonical **published Archive Prompt** attributed through `source_user_id`.
-
-Proposed V1 rule:
+### Indexability
 
 ```text
-indexable = accessible && hasPublishedPrompt
+indexable = accessible && creatorProfileComplete
 ```
 
-This is not a quality score and does not require avatar/cover.
+Because Creator approval requires the localized screen name, bio, article and skills contract, a normally valid approved Creator should already be SEO-ready.
 
-Rationale:
+The separate defensive `creatorProfileComplete` check preserves the accepted distinction between accessibility and indexability if legacy/corrupt/migrated data ever violates the approval invariant.
 
-- a published Archive Prompt is already an intentionally public, moderated/canonical publication surface;
-- raw account existence alone should not automatically create an indexable search-engine identity page;
-- raw `prompt_drafts.visibility='public'` is not the canonical 4B public Prompt publication contract;
-- no nonexistent bio field is used as a gate;
-- no arbitrary count greater than one is invented.
+No published-Prompt requirement is used.
 
-If founder product intent prefers every active username to be indexable, or requires an explicit Creator opt-in flag, this single rule is the primary review point before implementation.
+### Discoverability
 
-### 7.5 Discoverability
-
-Proposed V1 rule:
+V1:
 
 ```text
 discoverable = indexable
 ```
 
-This keeps 4D sitemap and public Discovery from inventing a second eligibility definition.
-
-If future curation/ranking needs a narrower discovery policy, it must be an explicit extension of the same server policy rather than a duplicate client-side heuristic.
-
-### 7.6 Proposed reasons
-
-Internal/safe reason vocabulary:
-
-```text
-CREATOR_NOT_FOUND
-ACCOUNT_NOT_ACTIVE
-USERNAME_MISSING
-USERNAME_INVALID
-PUBLIC_ACCESS_PROHIBITED
-NO_PUBLISHED_PROMPTS
-ELIGIBLE
-```
-
-For an accessible but non-indexable Creator with zero attributed published Prompts:
-
-```text
-accessible  = true
-indexable   = false
-discoverable = false
-reasons     = [NO_PUBLISHED_PROMPTS]
-```
-
-Unavailable 404 responses should not return private reason detail.
+4D sitemap/discovery must consume the same policy rather than inventing another Creator definition.
 
 ---
 
-## 8. Localization + SEO policy
+## 11. Public Creator SEO semantics
 
-### 8.1 Route localization
-
-Inherited locale contract:
+Locale routes:
 
 ```text
-English/default -> /creator/:username
-Persian         -> /fa/creator/:username
+EN/default -> /creator/:username
+FA         -> /fa/creator/:username
 ```
 
-Creator identity itself is currently language-neutral:
+Creator approval requires authoritative EN + FA screen name/bio/article content, allowing both localized routes to carry real localized Creator content.
+
+Per locale:
 
 ```text
-username
-avatar
-cover
+screenName[locale] -> primary visible name/title source
+bio[locale]        -> visible intro + meta/OG/Twitter description source
+article[locale]    -> long-form unique Creator content
 ```
 
-There is no localized bio/display-name data today.
-
-The page chrome and generated SEO description may be localized by application translation strings, while the authoritative Creator identity remains the same across locales.
-
-### 8.2 Canonical/hreflang
-
-For an accessible Creator:
+SEO:
 
 ```text
-EN page -> self canonical to /creator/:username
-FA page -> self canonical to /fa/creator/:username
-EN <-> FA reciprocal hreflang
-x-default -> English/default Creator URL
+self canonical
+reciprocal EN/FA hreflang
+x-default -> EN/default
+ProfilePage JSON-LD
+Person mainEntity
+policy-driven robots
+staging NUXT_PUBLIC_NOINDEX always wins
 ```
 
-Because both locales currently render the same language-neutral identity/publication graph with localized UI/SEO framing, both locale routes can exist authoritatively.
-
-Publication cards must respect each Prompt's accepted `availableLocales`; no fake localized Prompt title/description fallback may be introduced.
-
-### 8.3 Robots
-
-Page-level robots:
+The existing staging contract remains:
 
 ```text
-policy.indexable == true  -> index, follow
-policy.indexable == false -> noindex, follow preferred for accessible Creator
+https://grassic.ir
+https://api.grassic.ir
+NUXT_PUBLIC_NOINDEX=true
 ```
 
-However the existing global staging switch remains authoritative:
-
-```text
-NUXT_PUBLIC_NOINDEX=true -> staging stays noindex regardless of Creator policy
-```
-
-The current shared `usePublicSeo()` already composes page-level `noindex` with the global staging noindex switch and should be reused.
-
-### 8.4 Structured data
-
-Proposed Creator JSON-LD type:
-
-```text
-ProfilePage
-  mainEntity -> Person
-```
-
-Public-safe Person fields only:
-
-```text
-@type: Person
-name: normalized/displayed username
-url: localized canonical Creator URL
-image: avatar URL when present
-```
-
-Do not put email, internal UUID, role, XP, balance, permissions, private counts, storage keys, or hidden account state into JSON-LD.
-
-Creator publication references may be added only from canonical public Prompt URLs and only if they materially improve the graph; avoid duplicating protected Prompt content.
-
-Structured data should be emitted only for accessible Creator pages. Indexability may remain false while the accessible page still has internally consistent metadata, but noindex remains authoritative.
+`prompt-draft.ir` remains untouched during 4C implementation/verification.
 
 ---
 
-## 9. Prompt ↔ Creator linking strategy
+## 12. Prompt ↔ Creator attribution
 
-### 9.1 Attribution eligibility
+Attribution can be added only after the public Creator contract is verified safe.
 
-A public Prompt may expose Creator attribution only when all are true:
+A public Prompt may link to a Creator only when:
 
 ```text
 Archive item status == published
 source_user_id exists
-source user resolves through Creator policy
-creator.accessible == true
+source account is active
+Creator state == approved
 canonical username exists
 ```
 
-If provenance is absent or Creator is unavailable, the Prompt remains valid with no Creator attribution.
+A user may own published Archive Prompts while having no Creator account. In that case the Prompt remains public and simply has no public personal-brand attribution.
 
-Legacy/managed/Telegram-backed Archive items must not invent a Creator.
-
-### 9.2 Public Prompt DTO extension
-
-After the Creator contract is accepted and verified, the 4B public Prompt DTO may gain a strictly sanitized optional field:
-
-```ts
-creator: {
-  username: string
-  avatarUrl: string | null
-} | null
-```
-
-No internal UUID should be required by browser clients.
-
-The Prompt page link is generated with:
-
-```text
-publicCreatorPath(creator.username)
-localePath(...)
-```
-
-### 9.3 Discovery migration
-
-Current Discovery's direct `users` join for owner username/avatar should be replaced or constrained by the same Creator public policy/projection before 4C attribution is considered complete.
-
-This prevents Discovery, Public Prompt, Creator pages, and future sitemap logic from each carrying a different definition of public identity.
+Legacy/managed/Telegram/provenance-less Archive items remain valid without Creator attribution.
 
 ---
 
-## 10. Recommended backend architecture
+## 13. Revised Phase 4C implementation slices
 
-Proposed modules/responsibilities:
+The earlier 4C.1–4C.5 plan is superseded because Creator profile data and approval lifecycle now need to exist before a public Creator projection can be correct.
 
-```text
-creatorPolicy.mjs
-  -> normalize Creator username
-  -> evaluate authoritative accessible/indexable/discoverable state
-  -> stable reason/signal vocabulary
-
-publicCreator.mjs
-  -> GET /api/public/creators/:username
-  -> sanitized identity projection
-  -> sanitized canonical published-publication projection
-  -> invokes creatorPolicy
-
-publicPrompt.mjs
-  -> later optional sanitized creator attribution using shared creator policy/projection
-
-homeDiscovery.mjs
-  -> later consume shared creator eligibility instead of standalone owner rule
-```
-
-Critical query rule:
-
-Public Creator queries should SELECT only fields necessary for the approved public DTO/policy. Do not select protected columns and strip them later when a narrow query can avoid reading them altogether.
-
----
-
-## 11. Recommended frontend architecture
-
-Proposed files:
-
-```text
-app/pages/creator/[username].vue
-app/composables/usePublicCreator.ts
-app/types/publicCreator.ts
-app/utils/publicCreatorSeo.ts (only if Creator-specific pure projection is useful)
-```
-
-The route must be SSR-capable by default. It must **not** be added to `clientOnlyRoutes`.
-
-`/user` remains unchanged as account/product UI.
-
-Creator page input is username only; it does not use internal UUID query parameters.
-
-The public page consumes the new public Creator endpoint during SSR through the same server-internal/browser-public API-origin split accepted in 4B.
-
----
-
-## 12. Implementation slices — proposed, not started
-
-### 4C.1 — Creator policy + sanitized backend projection
+### 4C.1 — Creator Profile Foundation
 
 Deliverables:
 
 ```text
-server-authoritative policy evaluator
-GET /api/public/creators/:username
-sanitized identity DTO
-sanitized canonical published-publication summaries
-404 behavior
-backend allowlist/privacy tests
+migration for normalized extended profile storage
+skills taxonomy schema
+profile-skill relationship
+max-5 ordered profile-link schema
+Creator current-state + immutable lifecycle-event schema
+creator profile requirement/normalization pure module
+contract tests for Creator completeness and safe limits
+no public route yet
 ```
 
-Gate before acceptance:
+Gate:
 
 ```text
-founder-local backend tests PASS
-manual API payload inspection PASS
-private-field leakage tests PASS
+founder-local schema apply PASS
+backend unit tests PASS
+manual schema inspection PASS
 ```
 
-### 4C.2 — Nuxt Public Creator SSR route
+### 4C.2 — Authenticated Profile Management
+
+Deliverables:
+
+```text
+authenticated profile read/update API
+/manage/profile
+Edit profile avatar-menu entry
+existing avatar/cover integration
+screenName/bio/article/birthday/skills/links/location editing
+Save changes independent from Creator request
+Jalali/Gregorian birthday input -> canonical DATE
+identity-edit contract for username/email
+```
+
+Username-change alias/SEO protection must be solved before approved-Creator username edits are accepted.
+
+### 4C.3 — Creator Application + Admin Review
+
+Deliverables:
+
+```text
+Request Creator Account API/UI
+server-authoritative requirement gate
+pending/rejected/reapply flow
+creators.manage permission for admin + super_admin
+manage/users Creator badges/filter/detail
+approve/reject/suspend/unsuspend actions
+audit/event history
+no self-approval
+```
+
+### 4C.4 — Public Creator Policy + Sanitized Backend Projection
+
+Deliverables:
+
+```text
+server-authoritative Creator public policy
+GET /api/public/creators/:username
+approved-only public access
+generic 404 for none/pending/rejected/suspended/unavailable
+localized safe public profile DTO
+canonical published-publication summaries
+privacy denylist tests
+```
+
+### 4C.5 — Nuxt Public Creator SSR Route
 
 Deliverables:
 
 ```text
 /creator/:username
 /fa/creator/:username
-SSR data loading
-canonical lowercase redirect behavior
-real 404 for unavailable Creator
-accessible-but-noindex rendering
-responsive LTR/RTL public presentation
+SSR loading
+canonical lowercase/alias redirect behavior
+real 404
+responsive LTR/RTL profile/personal-brand presentation
+sanitized Markdown rendering
 ```
 
-Gate:
-
-```text
-founder-local EN/FA SSR/runtime verification PASS
-```
-
-### 4C.3 — Creator SEO + policy projection
+### 4C.6 — Creator SEO + Indexability
 
 Deliverables:
 
 ```text
-usePublicSeo integration
+screenName/bio/article localized SEO projection
 self canonical
 EN/FA hreflang
 x-default
@@ -762,105 +786,93 @@ ProfilePage + Person JSON-LD
 staging noindex preservation
 ```
 
-Gate:
+### 4C.7 — Prompt/Discovery Creator Attribution
 
-```text
-founder-local raw SSR metadata verification PASS
-```
-
-### 4C.4 — Prompt/Discovery Creator attribution migration
-
-Only begins after 4C.1–4C.3 public Creator contract is founder-accepted as safe.
+Blocked until 4C.4–4C.6 are founder-accepted as safe.
 
 Deliverables:
 
 ```text
-optional Public Prompt creator DTO
-localized Prompt -> Creator links
-Discovery owner metadata migrated to shared Creator policy
-legacy/provenance-less Prompts remain unattributed
+optional Public Prompt creator attribution
+locale-safe Creator links
+Discovery owner metadata converges on Creator policy
+non-Creator source users remain unattributed
 ```
 
-Gate:
-
-```text
-founder-local public/protected regression PASS
-no new private fields in Prompt/Discovery DTOs
-```
-
-### 4C.5 — Aggregate verification + acceptance
+### 4C.8 — Aggregate + Staging Acceptance
 
 Deliverables:
 
 ```text
 aggregate frontend/backend contract tests
-strict locale-routing audit
+strict locale-route audit
 production build
 founder-local browser smoke
-staging smoke on grassic.ir/api.grassic.ir
-NUXT_PUBLIC_NOINDEX preservation
-prompt-draft.ir refusal/untouched check
+staging API/SSR smoke on grassic.ir/api.grassic.ir
+staging global noindex proof
+prompt-draft.ir untouched proof
+explicit founder Phase 4C acceptance
 ```
-
-Only after all gates and explicit founder acceptance may Phase 4C be marked DONE/ACCEPTED.
 
 ---
 
-## 13. Verification invariants
+## 14. Privacy and security invariants
 
-Must remain true through every 4C slice:
+Must remain true throughout 4C:
 
 ```text
+Creator is not a role
+Creator approval never broadens admin/system permissions
+profile completeness never auto-approves Creator
+published Prompts never auto-approve Creator
 /user remains product/account UI
+/manage/profile remains authenticated
 private Drafts remain private
-legacy authenticated/admin endpoints retain authorization
 email never enters public Creator DTO/SSR/JSON-LD
+birthday is private in V1
 XP remains absent from Public Creator V1
-Goin/balance never enters public Creator surfaces
-sessions/permissions never enter public Creator surfaces
-internal UUID is not the public Creator route identity
-storage keys never enter public DTOs
-suspended/unavailable Creator returns generic public 404
-accessible != indexable
-indexable/discoverable are server-authoritative
-staging global noindex overrides page eligibility
+Goin/balance absent
+permissions/sessions absent
+internal UUID is not browser Creator identity
+storage keys absent
+location provider ids/coordinates absent
+pending/rejected/suspended Creator identity not publicly disclosed
+staging noindex wins globally
 prompt-draft.ir untouched
 ```
 
 ---
 
-## 14. Audit conclusions
+## 15. Founder-accepted decisions recorded 2026-09-09
 
-The current codebase already contains the necessary provenance and routing primitives for a safe 4C, but it does **not** yet contain a safe canonical Public Creator contract.
-
-Most important findings:
+Accepted:
 
 ```text
-1. Existing /user is intentionally mixed owner/product UI and must stay separate.
-2. Existing public-ish profile API exposes XP/counts/internal UUID and must not be reused as Creator V1.
-3. Username normalization and case-insensitive uniqueness are already coherent enough for canonical username routes.
-4. Avatar/cover exist; bio/display-name/localized profile text do not.
-5. Archive `source_user_id` is the correct canonical Prompt provenance link for user-Draft promotions.
-6. Current Discovery already exposes partial owner identity with its own direct join; this must converge on 4C policy.
-7. Public Prompt deliberately has no creator today and should stay that way until the new contract is accepted.
-8. No arbitrary quality score is necessary for V1.
-9. The minimal defensible indexability signal is at least one attributed published Archive Prompt; this is the main founder-review rule before implementation.
+Creator is a separate public-identity state, not a new role
+all authenticated users may edit/save extended profile fields
+profile completion alone does not create Creator status
+Creator application requires ScreenName EN/FA + Bio EN/FA + Article EN/FA + >=1 skill
+birthday optional and locale-appropriate picker; canonical DATE storage
+skills use controlled multilingual taxonomy
+links are optional and modeled as an extensible ordered collection, max 5
+location supports suggestion + custom display text
+/manage/profile is the common editing surface
+Creator application is explicitly submitted
+admin + super_admin can review through dedicated Creator-management authorization
+approved Creator becomes eligible for canonical public personal-brand page
+published Prompt count is not required to define or index a Creator
 ```
 
----
-
-## 15. Founder decision checkpoint before implementation
-
-The audit/design is ready for review, but implementation remains blocked until explicit founder acceptance.
-
-Primary policy decision to accept or revise:
+Open content/product detail that does **not** block 4C.1 schema foundation:
 
 ```text
-accessible  = active + valid canonical username + not prohibited
-indexable   = accessible + at least one attributed published Archive Prompt
-discoverable = indexable
+exact initial skills taxonomy inventory/order
+final visual placement of long-form Creator article
+final profile-page visual composition
 ```
 
-No avatar/cover/bio/XP/count threshold is proposed.
+Next implementation action:
 
-If accepted, implementation should begin with 4C.1 only and proceed slice-by-slice through the verification ledger.
+```text
+4C.1 Creator Profile Foundation only
+```

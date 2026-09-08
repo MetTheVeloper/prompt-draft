@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **OPEN / AUDIT-DESIGN RECORDED / IMPLEMENTATION GATES PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 FOUNDATION STARTING**
 
-Date: 2026-09-08
+Date: 2026-09-09
 
 Branch:
 
@@ -16,165 +16,143 @@ Architecture source of truth:
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 ```
 
-This ledger records verification evidence for Phase 21.5.4C. No implementation slice is DONE merely because code or tests exist. Each slice requires founder-local verification and explicit acceptance at the appropriate checkpoint.
+No implementation slice is DONE merely because code exists. Every slice requires founder-local verification and explicit acceptance.
 
 ---
 
 ## 1. Current checkpoint
 
 ```text
-4C audit                             -> COMPLETE AS ENGINEERING AUDIT / FOUNDER REVIEW PENDING
-4C architecture/design               -> PROPOSED / FOUNDER ACCEPTANCE PENDING
-4C.1 backend Creator policy/DTO      -> NOT STARTED
-4C.2 Public Creator SSR route        -> NOT STARTED
-4C.3 Creator SEO/indexability        -> NOT STARTED
-4C.4 Prompt/Discovery attribution    -> NOT STARTED
-4C.5 aggregate/staging acceptance    -> NOT STARTED
-Phase 21.5.4C                        -> IN PROGRESS / NOT ACCEPTED
+4C repository audit                         -> COMPLETE
+4C revised Creator/profile architecture     -> FOUNDER ACCEPTED 2026-09-09
+4C.1 Creator Profile Foundation             -> NEXT / IMPLEMENTATION STARTING
+4C.2 Authenticated Profile Management       -> NOT STARTED
+4C.3 Creator Application + Admin Review     -> NOT STARTED
+4C.4 Public Creator policy/API              -> NOT STARTED
+4C.5 Public Creator SSR route               -> NOT STARTED
+4C.6 Creator SEO/indexability               -> NOT STARTED
+4C.7 Prompt/Discovery attribution           -> NOT STARTED
+4C.8 aggregate/staging acceptance           -> NOT STARTED
+Phase 21.5.4C                               -> IN PROGRESS / NOT ACCEPTED
 ```
-
-No implementation should begin until the audit/design checkpoint is explicitly accepted.
 
 ---
 
-## 2. Audit evidence recorded
+## 2. Architecture acceptance evidence
 
-### User/account schema
+Founder explicitly accepted the revised direction on 2026-09-09 and requested implementation to begin.
 
-Verified from current branch migrations/source:
+Locked model:
 
 ```text
-username is nullable but case-insensitively unique when present
-username normalization -> trim + lowercase + ^[a-z0-9._-]{3,64}$
-email is account/private identity and not approved public Creator data
-status -> active|suspended
-avatar + cover presentation fields exist
-bio/displayName/localized profile text -> not present in audited schema
-user soft-delete status/column -> not present in audited schema
+role=user|admin|super_admin remains RBAC only
+Creator is independent explicit public-identity state
+profile completion != Creator approval
+published Prompt != Creator approval
+all authenticated users can save extended profile data
+Creator request requires localized Creator profile contract
+admin + super_admin review through dedicated Creator permission
 ```
 
-Result: **AUDITED**
-
-### Current `/user` boundary
-
-Verified:
+Earlier proposed inference:
 
 ```text
-client-only product/account route
-supports internal UUID or username query lookup
-optional auth + owner-aware behavior
-Draft edit/delete/publish/unpublish actions
-XP and Draft stats presentation
-admin promotion/moderation hooks
+active account + published Prompt => Creator
 ```
 
-Result: **AUDITED — NOT A CANONICAL PUBLIC CREATOR SURFACE**
+is **SUPERSEDED**.
 
-### Existing profile APIs
+---
 
-Verified current non-owner profile payload includes fields unsuitable for Public Creator V1:
+## 3. Locked Creator-required profile contract
+
+Creator application requires:
 
 ```text
-internal user UUID
+active account
+valid canonical username
+screenName.en
+screenName.fa
+bio.en
+bio.fa
+article.en
+article.fa
+>= 1 active taxonomy skill
+```
+
+Not required:
+
+```text
+avatar
+cover
+birthday
+links
+location
+published Prompt count
 XP
-public Draft count
-account createdAt
+Goin/balance
 ```
 
-Owner paths additionally expose owner-only Draft state/data.
+Article is database-stored Markdown, not a mutable filesystem profile file.
 
-Result: **AUDITED — MUST NOT BE REUSED AS 4C PUBLIC DTO**
+Birthday is private in Public Creator V1 and stored as canonical database DATE regardless of Jalali/Gregorian input UI.
 
-### Publication provenance
-
-Verified:
-
-```text
-prompt_archive_items.source_user_id
-prompt_archive_items.source_draft_id
-source_kind=user_draft
-promotion source requires public, non-deleted Draft + active user
-published Archive status remains canonical public Prompt publication state
-```
-
-Result: **AUDITED — source_user_id selected as proposed Creator attribution provenance**
-
-### Discovery/Public Prompt state
-
-Verified:
-
-```text
-Discovery currently joins active source user and may expose username/avatar
-Public Prompt currently exposes no creator/source-user identity
-```
-
-Result: **AUDITED — future convergence on shared Creator policy required**
-
-### Locale/SEO primitives
-
-Verified:
-
-```text
-EN default unprefixed
-FA /fa prefix
-publicCreatorPath(username) already exists
-usePublicSeo supports canonical/hreflang/x-default/page noindex
-NUXT_PUBLIC_NOINDEX globally overrides staging indexability
-/user explicitly client-only; new /creator route can remain SSR by default
-```
-
-Result: **AUDITED**
+Links are max 5.
 
 ---
 
-## 3. Architecture review gate
+## 4. Creator lifecycle gate
 
-Founder must explicitly accept or revise these proposed rules before 4C.1 implementation:
+Required current states:
 
 ```text
-canonical route:
-  /creator/:username
-  /fa/creator/:username
-
-accessible:
-  active user
-  + valid canonical username
-  + no public-access prohibition
-
-indexable:
-  accessible
-  + at least one attributed published Archive Prompt
-
-discoverable:
-  indexable
-
-no avatar/cover/bio/XP/count threshold
+none
+pending
+approved
+rejected
+suspended
 ```
 
-Status: **PENDING FOUNDER ACCEPTANCE**
+Required invariants:
+
+```text
+[ ] completing profile does not auto-request
+[ ] saving profile does not auto-request
+[ ] publishing Prompt does not auto-request
+[ ] request endpoint validates requirements server-side
+[ ] rejection can be followed by reapplication
+[ ] approval/rejection/suspension history is retained
+[ ] account suspension overrides Creator availability
+[ ] Creator status does not change users.role
+[ ] self-approval is rejected
+```
 
 ---
 
-## 4. 4C.1 backend policy + public projection gate
+## 5. 4C.1 Creator Profile Foundation gate
 
 Required implementation evidence:
 
 ```text
-[ ] dedicated server-authoritative creator policy module
-[ ] dedicated username-keyed public Creator endpoint
-[ ] no UUID lookup round-trip required by public client
-[ ] SELECT allowlist excludes private/account fields
-[ ] public identity DTO contains only approved fields
-[ ] publication DTO contains only canonical public presentation metadata
-[ ] suspended/unknown/prohibited creators return generic 404
-[ ] accessible/noindex Creator returns 200 with safe policy result
-[ ] no XP
-[ ] no email
-[ ] no Goin/balance
-[ ] no permissions/sessions
-[ ] no private Draft data
-[ ] no storage keys
-[ ] backend contract/privacy tests PASS
+[ ] numbered migration follows current 026 migration head
+[ ] user_profiles one-to-one extended profile storage
+[ ] localized screen-name fields
+[ ] localized bio fields
+[ ] localized Markdown article fields
+[ ] canonical birthday DATE
+[ ] location storage separates display text from provider metadata
+[ ] profile_skills controlled localized taxonomy schema
+[ ] user_profile_skills relationship
+[ ] user_profile_links max-5 ordered schema
+[ ] creator_accounts current-state schema
+[ ] creator_account_events immutable lifecycle history
+[ ] no creator column added to users.role
+[ ] pure Creator profile normalization/completeness module
+[ ] unit tests cover ordinary incomplete profile vs Creator-ready profile
+[ ] unit tests cover EN/FA requirement independently
+[ ] unit tests cover active-skill requirement
+[ ] technical field limits are not treated as SEO quality scoring
+[ ] backend test command documented
 ```
 
 Founder-local verification: **PENDING**
@@ -183,20 +161,29 @@ Acceptance: **PENDING**
 
 ---
 
-## 5. 4C.2 Public Creator SSR route gate
+## 6. 4C.2 Authenticated Profile Management gate
 
 Required evidence:
 
 ```text
-[ ] /creator/:username SSR 200 for accessible Creator
-[ ] /fa/creator/:username SSR 200 for accessible Creator
-[ ] unavailable Creator -> real 404
-[ ] noncanonical case redirects to lowercase canonical username
-[ ] no internal UUID in canonical route
-[ ] accessible-but-nonindexable Creator still renders normally
-[ ] /user remains unchanged/client-only/product-account
-[ ] EN/FA LTR/RTL browser presentation verified
-[ ] no protected/account controls appear on Creator page
+[ ] /manage/profile authenticated route
+[ ] avatar menu contains Edit profile
+[ ] owner profile API reads only owner-editable data
+[ ] Save changes independent from Creator request
+[ ] existing avatar/cover update path integrated
+[ ] screenName EN/FA editable
+[ ] bio EN/FA editable
+[ ] article EN/FA Markdown editable/previewable
+[ ] birthday Jalali picker in FA UI
+[ ] birthday Gregorian picker outside FA UI
+[ ] both produce canonical DATE
+[ ] skills multi-select uses taxonomy IDs/slugs
+[ ] links enforce max 5
+[ ] location supports suggestions + custom text
+[ ] email remains private
+[ ] username/email editing uses dedicated update semantics, not silent weakening of profile-complete endpoint
+[ ] approved Creator cannot silently clear Creator-required fields
+[ ] Creator username-change SEO alias strategy verified before enabling approved-Creator rename
 ```
 
 Founder-local verification: **PENDING**
@@ -205,22 +192,111 @@ Acceptance: **PENDING**
 
 ---
 
-## 6. 4C.3 SEO/indexability gate
+## 7. 4C.3 Creator Application + Admin Review gate
 
 Required evidence:
 
 ```text
+[ ] Request Creator Account button reflects server requirements
+[ ] request endpoint is authenticated
+[ ] incomplete profile request rejected with useful field-level errors
+[ ] complete profile -> pending
+[ ] repeated pending request is idempotent/conflict-safe
+[ ] rejected account may reapply
+[ ] creators.manage permission exists
+[ ] admin receives creators.manage without receiving unrelated users.manage
+[ ] super_admin retains creators.manage through wildcard
+[ ] manage/users row exposes safe Creator status badge
+[ ] pending Creator filter/review workflow
+[ ] admin detail shows fields necessary for Creator review
+[ ] approve action
+[ ] reject action + optional review note
+[ ] suspend/unsuspend Creator action
+[ ] no self-approval
+[ ] lifecycle event history written
+[ ] admin audit convention preserved for admin actions
+```
+
+Founder-local verification: **PENDING**
+
+Acceptance: **PENDING**
+
+---
+
+## 8. 4C.4 Public Creator policy/API gate
+
+Required evidence:
+
+```text
+[ ] GET /api/public/creators/:username
+[ ] username-keyed; no browser UUID resolution
+[ ] approved + active -> public candidate
+[ ] none/pending/rejected/suspended -> generic 404
+[ ] suspended account -> generic 404
+[ ] public DTO allowlist only
+[ ] screenName EN/FA public
+[ ] bio EN/FA public
+[ ] article EN/FA public
+[ ] approved skills public
+[ ] approved links public
+[ ] location display text only
+[ ] birthday absent
+[ ] email absent
+[ ] role absent
+[ ] review status/note absent
+[ ] internal UUID absent
+[ ] storage/provider metadata absent
+[ ] canonical published Archive publication summaries only
+[ ] zero-publication Creator still valid
+```
+
+Founder-local verification: **PENDING**
+
+Acceptance: **PENDING**
+
+---
+
+## 9. 4C.5 Public Creator SSR gate
+
+Required evidence:
+
+```text
+[ ] /creator/:username SSR
+[ ] /fa/creator/:username SSR
+[ ] unavailable -> real 404
+[ ] lowercase canonical redirect
+[ ] old approved-Creator username alias -> permanent current-canonical redirect when rename support exists
+[ ] no UUID canonical identity
+[ ] sanitized Markdown rendering
+[ ] EN/FA LTR/RTL presentation
+[ ] /user remains account/product route
+[ ] no owner/admin controls on public Creator page
+```
+
+Founder-local verification: **PENDING**
+
+Acceptance: **PENDING**
+
+---
+
+## 10. 4C.6 SEO/indexability gate
+
+Required evidence:
+
+```text
+[ ] localized screenName drives title/name projection
+[ ] localized bio drives visible + meta/OG/Twitter description source
+[ ] localized article produces authoritative unique long-form content
 [ ] EN self canonical
 [ ] FA self canonical
-[ ] reciprocal EN/FA hreflang
-[ ] x-default -> English/default
-[ ] page robots driven by server policy
-[ ] accessible + nonindexable -> noindex
-[ ] staging NUXT_PUBLIC_NOINDEX=true still wins globally
+[ ] reciprocal hreflang
+[ ] x-default -> EN/default
+[ ] indexability is server-authoritative
+[ ] approved Creator does not require published Prompt to index
+[ ] defensive incomplete-approved profile may noindex
 [ ] ProfilePage JSON-LD
-[ ] Person mainEntity contains public-safe fields only
-[ ] no fake localized Prompt fallback
-[ ] raw SSR metadata inspection PASS
+[ ] Person mainEntity safe fields only
+[ ] staging NUXT_PUBLIC_NOINDEX still wins
 ```
 
 Founder-local verification: **PENDING**
@@ -229,23 +305,22 @@ Acceptance: **PENDING**
 
 ---
 
-## 7. 4C.4 Prompt ↔ Creator + Discovery convergence gate
+## 11. 4C.7 Prompt/Discovery attribution gate
 
-Blocked until 4C public Creator contract is accepted safe.
+Blocked until Public Creator contract + SEO slices are founder-accepted.
 
 Required evidence:
 
 ```text
-[ ] Public Prompt optional creator attribution only from source_user_id provenance
-[ ] provenance-less/legacy Prompts remain valid without Creator
-[ ] unavailable Creator -> no attribution link
-[ ] Prompt creator DTO contains username + optional approved presentation media only
-[ ] no internal UUID in browser-facing creator attribution
-[ ] Prompt link locale-safe through publicCreatorPath + localePath
-[ ] Discovery owner identity uses same Creator eligibility contract
-[ ] no duplicate ad-hoc account-status/public-identity policy remains on public acquisition paths
-[ ] Public Prompt protected-field regression remains green
-[ ] Discovery protected-field regression remains green
+[ ] Public Prompt attribution only for approved accessible Creator
+[ ] source_user_id remains provenance source
+[ ] source user with published Prompt but no Creator remains unattributed
+[ ] provenance-less/legacy Prompt remains valid
+[ ] no UUID in browser creator attribution
+[ ] locale-safe Creator links
+[ ] Discovery uses same Creator eligibility contract
+[ ] no duplicate active-user-is-public-creator heuristic remains
+[ ] 4B protected-field regression stays green
 ```
 
 Founder-local verification: **PENDING**
@@ -254,72 +329,72 @@ Acceptance: **PENDING**
 
 ---
 
-## 8. 4C.5 aggregate/final gate
-
-Required evidence before Phase 4C acceptance:
+## 12. 4C.8 aggregate/final gate
 
 ```text
-[ ] aggregate 4C frontend/backend tests PASS
-[ ] existing Phase 4B regression remains PASS
-[ ] strict locale-routing audit PASS
+[ ] aggregate 4C backend/frontend tests PASS
+[ ] Phase 4B regression PASS
+[ ] strict locale-route audit PASS
 [ ] production build PASS
 [ ] founder-local EN/FA browser smoke PASS
 [ ] grassic.ir Creator SSR smoke PASS
 [ ] api.grassic.ir Creator API smoke PASS
-[ ] accessible/noindex fixture verified
-[ ] indexable-policy fixture verified while staging still globally noindex
-[ ] suspended/unavailable fixture verified 404
-[ ] Prompt attribution fixture verified
-[ ] Discovery attribution fixture verified
+[ ] pending/rejected/suspended public 404 fixtures PASS
+[ ] approved Creator fixture PASS
+[ ] zero-publication approved Creator fixture PASS
 [ ] serialized SSR private-key leakage -> zero
-[ ] X-Robots-Tag staging protection preserved
+[ ] X-Robots-Tag/global staging noindex preserved
 [ ] smoke tooling refuses prompt-draft.ir
 [ ] prompt-draft.ir untouched
-[ ] founder explicit acceptance received
+[ ] founder explicit Phase 4C acceptance
 ```
 
 Final status: **PENDING**
 
 ---
 
-## 9. Privacy regression denylist
+## 13. Public privacy regression denylist
 
-Every public Creator/Prompt/Discovery DTO and SSR serialization check should scan for at least:
+Every public Creator/Prompt/Discovery DTO and SSR serialization check must scan for at least:
 
 ```text
 email
+birthday
 passwordHash / password_hash
 role
-status (unless internal-only policy processing; never public account-state disclosure)
-balance
-goin
+account status
+Creator review status/review note
+balance/goin
 permissions
 sessions
 totalXp / xp
-totalDraftCount
+owner-only Draft counts
 private Draft visibility/payload
 sourceDraftId
 sourceUserId/internal UUID
 storageKey / storage_key
+location provider place id
+coordinates
 admin audit metadata
 ```
 
-This denylist supplements, but does not replace, explicit positive DTO/query allowlists.
+Positive allowlists remain the primary boundary; denylist tests are defense in depth.
 
 ---
 
-## 10. Acceptance rule
-
-Phase 4C can be marked DONE only when:
+## 14. Acceptance rule
 
 ```text
-architecture accepted
+architecture founder-accepted
 + 4C.1 founder-local verified/accepted
 + 4C.2 founder-local verified/accepted
 + 4C.3 founder-local verified/accepted
 + 4C.4 founder-local verified/accepted
-+ 4C.5 aggregate local/staging gates PASS
-+ founder explicit Phase 4C acceptance
++ 4C.5 founder-local verified/accepted
++ 4C.6 founder-local verified/accepted
++ 4C.7 founder-local verified/accepted
++ 4C.8 aggregate local/staging gates PASS
++ founder explicit final acceptance
 = Phase 21.5.4C DONE / ACCEPTED
 ```
 
