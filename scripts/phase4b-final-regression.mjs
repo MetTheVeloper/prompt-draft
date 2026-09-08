@@ -1,6 +1,6 @@
 import { spawnSync } from 'node:child_process'
 
-const pnpm = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const isWindows = process.platform === 'win32'
 
 const gates = [
   ['SEO contracts', 'test:seo-contracts'],
@@ -14,12 +14,24 @@ const gates = [
   ['Strict locale-routing audit', 'seo:audit-routes:strict'],
 ]
 
-for (const [label, script] of gates) {
-  console.log(`\n[phase4b-final] ${label}`)
-  const result = spawnSync(pnpm, [script], {
+function runPnpmScript(script) {
+  if (isWindows) {
+    const shell = process.env.ComSpec || 'cmd.exe'
+    return spawnSync(shell, ['/d', '/s', '/c', `pnpm ${script}`], {
+      stdio: 'inherit',
+      env: process.env,
+    })
+  }
+
+  return spawnSync('pnpm', [script], {
     stdio: 'inherit',
     env: process.env,
   })
+}
+
+for (const [label, script] of gates) {
+  console.log(`\n[phase4b-final] ${label}`)
+  const result = runPnpmScript(script)
 
   if (result.error) {
     console.error(`[phase4b-final] Failed to start ${script}:`, result.error)
