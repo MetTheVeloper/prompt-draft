@@ -5,6 +5,11 @@ export type PromptArchiveLocalizedTitle = {
   fa: string
 }
 
+export type PromptArchiveLocalizedDescription = {
+  en: string
+  fa: string
+}
+
 export type PromptArchiveVariant = {
   key: string
   label: {
@@ -41,6 +46,7 @@ export type PromptArchiveNavigationItem = {
 }
 
 export type PromptArchiveDetailItem = PromptArchiveListItem & {
+  description: PromptArchiveLocalizedDescription | null
   sourceTitle: string
   prompt: string
   images: PromptArchiveImage[]
