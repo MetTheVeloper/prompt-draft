@@ -1,16 +1,20 @@
 <script setup lang="ts">
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
+import { publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
   item: HomeShowcaseItem
 }>()
 
 const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const { mobile } = useScreen()
 
 const localizedTitle = computed(() => {
   return locale.value === 'fa' ? props.item.title.fa : props.item.title.en
 })
+
+const publicPromptUrl = computed(() => localePath(publicPromptPath(props.item.id)))
 
 const coverUrl = computed(() => {
   return props.item.coverImage?.thumbnailUrl || props.item.coverImage?.fullUrl || ''
@@ -116,7 +120,7 @@ function openTelegram() {
             color="normal"
             icon="visibility"
             :label="t('growth.publicDiscovery.viewPrompt')"
-            :to="`/prompts?id=${item.id}`"
+            :to="publicPromptUrl"
           />
           <el-button
             v-if="item.telegramUrl"
