@@ -10,6 +10,7 @@ export type PublicPromptImage = {
 export type PublicPrompt = {
   id: number
   title: Partial<Record<PublicPromptLocale, string>>
+  description: Partial<Record<PublicPromptLocale, string>>
   availableLocales: PublicPromptLocale[]
   publishedAt: string
   tags: string[]
@@ -37,20 +38,24 @@ function normalizeApiBase(value: unknown) {
   return base.replace(/\/+$/, '')
 }
 
-function normalizeTitle(value: unknown) {
+function normalizeLocalizedText(value: unknown) {
   if (!isPlainObject(value)) return null
 
-  const title: Partial<Record<PublicPromptLocale, string>> = {}
+  const localized: Partial<Record<PublicPromptLocale, string>> = {}
 
   for (const locale of PUBLIC_PROMPT_LOCALES) {
-    const localized = typeof value[locale] === 'string' ? value[locale].trim() : ''
-    if (localized) title[locale] = localized
+    const text = typeof value[locale] === 'string' ? value[locale].trim() : ''
+    if (text) localized[locale] = text
   }
 
-  return Object.keys(title).length ? title : null
+  return Object.keys(localized).length ? localized : null
 }
 
-function normalizeAvailableLocales(value: unknown, title: Partial<Record<PublicPromptLocale, string>>) {
+function normalizeAvailableLocales(
+  value: unknown,
+  title: Partial<Record<PublicPromptLocale, string>>,
+  description: Partial<Record<PublicPromptLocale, string>>,
+) {
   if (!Array.isArray(value)) return null
 
   const locales: PublicPromptLocale[] = []
@@ -59,14 +64,18 @@ function normalizeAvailableLocales(value: unknown, title: Partial<Record<PublicP
   for (const locale of value) {
     if (typeof locale !== 'string' || !PUBLIC_PROMPT_LOCALES.has(locale as PublicPromptLocale)) return null
     const normalized = locale as PublicPromptLocale
-    if (!title[normalized] || seen.has(normalized)) return null
+    if (!title[normalized] || !description[normalized] || seen.has(normalized)) return null
     seen.add(normalized)
     locales.push(normalized)
   }
 
   const titleLocales = Object.keys(title) as PublicPromptLocale[]
-  if (!locales.length || locales.length !== titleLocales.length) return null
+  const descriptionLocales = Object.keys(description) as PublicPromptLocale[]
+
+  if (!locales.length) return null
+  if (locales.length !== titleLocales.length || locales.length !== descriptionLocales.length) return null
   if (titleLocales.some(locale => !seen.has(locale))) return null
+  if (descriptionLocales.some(locale => !seen.has(locale))) return null
 
   return locales
 }
@@ -119,7 +128,8 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
   if (!isPlainObject(value)) return null
 
   const id = Number(value.id)
-  const title = normalizeTitle(value.title)
+  const title = normalizeLocalizedText(value.title)
+  const description = normalizeLocalizedText(value.description)
   const publishedAt = typeof value.publishedAt === 'string' ? value.publishedAt : ''
   const model = normalizeModel(value.model)
   const tags = normalizeTags(value.tags)
@@ -128,6 +138,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     !Number.isSafeInteger(id) ||
     id <= 0 ||
     !title ||
+    !description ||
     !publishedAt ||
     Number.isNaN(Date.parse(publishedAt)) ||
     !model ||
@@ -137,7 +148,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     return null
   }
 
-  const availableLocales = normalizeAvailableLocales(value.availableLocales, title)
+  const availableLocales = normalizeAvailableLocales(value.availableLocales, title, description)
   const images = value.images.map(normalizeImage)
   if (!availableLocales || images.some(image => !image)) return null
 
@@ -148,6 +159,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
   return {
     id,
     title,
+    description,
     availableLocales,
     publishedAt: new Date(publishedAt).toISOString(),
     tags,
