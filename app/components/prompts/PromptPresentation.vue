@@ -16,6 +16,8 @@ const props = withDefaults(defineProps<{
   locale?: 'en' | 'fa'
   eyebrow?: string
   previewCountLabel?: string
+  telegramMessageId?: number | null
+  telegramUrl?: string | null
 }>(), {
   description: '',
   tags: () => [],
@@ -23,6 +25,8 @@ const props = withDefaults(defineProps<{
   locale: 'en',
   eyebrow: '',
   previewCountLabel: '',
+  telegramMessageId: null,
+  telegramUrl: null,
 })
 
 const normalizedMedia = computed(() => {
@@ -56,6 +60,29 @@ const formattedDate = computed(() => {
     { year: 'numeric', month: 'long', day: 'numeric' },
   ).format(date)
 })
+
+const resolvedTelegramMessageId = computed(() => {
+  if (Number.isSafeInteger(props.telegramMessageId) && Number(props.telegramMessageId) > 0) {
+    return Number(props.telegramMessageId)
+  }
+
+  const rawUrl = typeof props.telegramUrl === 'string' ? props.telegramUrl.trim() : ''
+  if (!rawUrl) return null
+
+  try {
+    const url = new URL(rawUrl)
+    const match = url.pathname.match(/\/(\d+)\/?$/)
+    if (!match) return null
+    const messageId = Number(match[1])
+    return Number.isSafeInteger(messageId) && messageId > 0 ? messageId : null
+  } catch {
+    return null
+  }
+})
+
+const telegramPostUrl = computed(() => resolvedTelegramMessageId.value
+  ? `https://t.me/prompt-draft/${resolvedTelegramMessageId.value}`
+  : '')
 
 function formatTag(tag: string) {
   return tag.replaceAll('-', ' ')
@@ -101,12 +128,34 @@ function formatTag(tag: string) {
         </div>
 
         <div class="prompt-presentation__markers">
-          <span class="prompt-presentation__marker prompt-presentation__marker--id">
-            #{{ publicId }}
-          </span>
-          <span class="prompt-presentation__marker">
-            {{ modelLabel }}
-          </span>
+          <el-flex
+            v-if="telegramPostUrl"
+            type="a"
+            :href="telegramPostUrl"
+            target="_blank"
+            rel="noopener noreferrer"
+            rules="rcc"
+            bg="blue"
+            :br="1"
+            bc="blue"
+            :p="[5, 9]"
+            class="prompt-presentation__marker prompt-presentation__marker--telegram">
+            <el-text type="span" color="white" :size="12" :weight="800">
+              #{{ resolvedTelegramMessageId }}
+            </el-text>
+          </el-flex>
+
+          <el-flex
+            rules="rcc"
+            bg="surface"
+            :br="1"
+            bc="normal15"
+            :p="[5, 9]"
+            class="prompt-presentation__marker">
+            <el-text type="span" color="normal" :size="12" :weight="800">
+              {{ modelLabel }}
+            </el-text>
+          </el-flex>
         </div>
       </div>
 
@@ -116,12 +165,19 @@ function formatTag(tag: string) {
         </p>
 
         <div v-if="tags.length" class="prompt-presentation__tags">
-          <span
+          <el-flex
             v-for="tag in tags"
             :key="tag"
+            rules="rcc"
+            bg="surface"
+            :br="1"
+            bc="normal15"
+            :p="[4, 8]"
             class="prompt-presentation__tag">
-            {{ formatTag(tag) }}
-          </span>
+            <el-text type="span" color="normal" :size="10">
+              {{ formatTag(tag) }}
+            </el-text>
+          </el-flex>
         </div>
 
         <h1 class="prompt-presentation__title">
@@ -166,7 +222,7 @@ function formatTag(tag: string) {
   isolation: isolate;
   min-height: calc(100svh - 50px);
   overflow: hidden;
-  background: #09090d;
+  background: var(--themeSurface);
   color: var(--normalText);
 }
 
@@ -197,14 +253,24 @@ function formatTag(tag: string) {
     radial-gradient(circle at 18% 18%, rgba(89, 70, 255, .38), transparent 34%),
     radial-gradient(circle at 82% 30%, rgba(0, 180, 255, .22), transparent 28%),
     radial-gradient(circle at 48% 88%, rgba(255, 80, 140, .18), transparent 34%),
-    #0b0b10;
+    var(--themeSurface);
 }
 
 .prompt-presentation__overlay {
   z-index: 4;
   background:
-    radial-gradient(circle at 50% 32%, transparent 0%, rgba(9, 9, 13, .38) 44%, rgba(9, 9, 13, .82) 100%),
-    linear-gradient(180deg, rgba(9, 9, 13, .06) 0%, rgba(9, 9, 13, .28) 42%, rgba(9, 9, 13, .93) 100%);
+    radial-gradient(
+      circle at 50% 32%,
+      transparent 0%,
+      color-mix(in srgb, var(--themeSurface) 38%, transparent) 44%,
+      color-mix(in srgb, var(--themeSurface) 82%, transparent) 100%
+    ),
+    linear-gradient(
+      180deg,
+      transparent 0%,
+      color-mix(in srgb, var(--themeSurface) 28%, transparent) 42%,
+      color-mix(in srgb, var(--themeSurface) 93%, transparent) 100%
+    );
 }
 
 .prompt-presentation__grain {
@@ -249,22 +315,17 @@ function formatTag(tag: string) {
 
 .prompt-presentation__marker,
 .prompt-presentation__tag {
-  border-radius: 999px;
   backdrop-filter: blur(12px);
   box-shadow: 0 6px 24px rgba(0, 0, 0, .18);
 }
 
 .prompt-presentation__marker {
-  padding: 5px 9px;
-  background: rgba(12, 12, 18, .72);
-  border: 1px solid rgba(255,255,255,.12);
-  font-size: 12px;
-  font-weight: 800;
   white-space: nowrap;
 }
 
-.prompt-presentation__marker--id {
-  color: var(--themePrim, #45bced);
+.prompt-presentation__marker--telegram {
+  text-decoration: none;
+  cursor: pointer;
 }
 
 .prompt-presentation__content {
@@ -287,10 +348,6 @@ function formatTag(tag: string) {
 }
 
 .prompt-presentation__tag {
-  padding: 4px 8px;
-  background: rgba(15,15,20,.52);
-  border: 1px solid rgba(255,255,255,.1);
-  font-size: 10px;
   text-transform: lowercase;
 }
 
@@ -309,14 +366,12 @@ function formatTag(tag: string) {
   margin: 24px 0 0;
   font-size: clamp(14px, 1.35vw, 19px);
   line-height: 1.7;
-  color: rgba(255,255,255,.78);
   text-wrap: pretty;
 }
 
 .prompt-presentation__meta {
   gap: 14px 20px;
   margin-top: 24px;
-  color: rgba(255,255,255,.78);
   font-size: 12px;
 }
 
