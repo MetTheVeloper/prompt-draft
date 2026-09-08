@@ -31,6 +31,7 @@
     "test:public-prompt-web": "tsx --test scripts/public-prompt-client-contract.test.ts",
     "test:public-prompt-seo": "tsx --test scripts/public-prompt-seo.test.ts",
     "test:public-prompt-description": "tsx --test scripts/public-prompt-description-contract.test.ts",
+    "test:prompt-presentation": "tsx --test scripts/prompt-presentation-contract.test.ts",
     "test:public-prompt-links": "tsx --test scripts/public-prompt-link-migration.test.ts",
     "test:interaction-polish": "tsx --test scripts/public-interaction-polish.test.ts",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
