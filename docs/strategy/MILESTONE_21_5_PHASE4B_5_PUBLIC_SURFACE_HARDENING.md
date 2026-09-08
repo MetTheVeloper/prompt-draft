@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5 Public Surface Hardening
 
-Status: **PLANNED / FOUNDER AGREED / IMPLEMENTATION NEXT / NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.5A ACCEPTED / 4B.5B NEXT / PHASE 4B NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -20,70 +20,108 @@ Verification history:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
 ```
 
 This document is the current continuation source of truth for the final hardening work before Phase 4B acceptance.
 
 ---
 
-## 1. Why 4B.5 is expanded before acceptance
+## 1. Current verified checkpoint
 
-4B.1–4B.4 established and verified the public Prompt data boundary, SSR route, SEO metadata and acquisition-link migration.
-
-Before final acceptance, founder review identified three product-surface gaps that belong to the same Public Prompt architecture rather than a separate milestone:
-
-```text
-1. Public Prompt copy is implementation/process copy instead of Prompt-specific content.
-2. /prompt/:id and protected /prompts?id=<id> duplicate closely related visual presentation.
-3. /discover/:slug has the correct structure but lacks the media/cinema presentation expected from a primary acquisition surface.
-```
-
-The first item changes the public Prompt contract itself. Closing 4B first and immediately reopening its DTO/schema/SEO contract in a new milestone would create an artificial acceptance boundary.
-
-Therefore 4B.5 is expanded into narrow hardening slices, followed by the original final verification/acceptance gate.
-
----
-
-## 2. Verified checkpoint before hardening
-
-The following remain verified and must not regress:
+The following are accepted regression requirements:
 
 ```text
 4B.1 backend public projection       -> FOUNDER-LOCAL VERIFIED
 4B.2 Nuxt Public Prompt SSR route    -> FOUNDER-LOCAL VERIFIED
 4B.3 Public Prompt SEO metadata      -> FOUNDER-LOCAL VERIFIED
 4B.4 public-link migration           -> FOUNDER-LOCAL VERIFIED
+post-4B.4 interaction polish         -> FOUNDER-LOCAL VERIFIED
+4B.5A localized descriptions         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
 Phase 4B acceptance                  -> NOT ACCEPTED
 ```
 
-Post-4B.4 interaction polish was also founder-verified on 2026-09-08:
+4B.5A verification established:
 
 ```text
-Prompt Archive card body click -> localized protected /prompts?id=<id>
-owner /user Draft card click -> existing three-dot point menu at click position
-Home category header -> localized /discover/:slug
-Home Prompt body -> localized /prompt/:id
-Home controls retain independent behavior
-Home previous/next arrows follow active LTR/RTL direction
-pnpm test:interaction-polish -> 4/4 PASS
-pnpm test:public-prompt-links -> 3/3 PASS
-pnpm seo:audit-routes:strict -> PASS, 445 files, zero routing hazards
-production-like pnpm stack build -> PASS
+100/100 published Archive rows have founder-reviewed EN/FA descriptions
+migration 026 publish-localization constraint applied
+Admin create/update requires EN/FA descriptions
+Admin publish requires complete EN/FA title + description
+Public Prompt DTO exposes localized description only as the new public field
+availableLocales requires complete title + description
+Public Prompt SQL still does not SELECT prompt or variants
+visible Public Prompt description uses authored localized content
+meta/OG/Twitter/CreativeWork.description use the same authored source
+EN/FA browser smoke PASS
+production-like Cloudflare stack build/start PASS
+backend description/public Prompt tests PASS
+frontend Public Prompt/SEO/link/interaction tests PASS
+strict route audit PASS, 445 files, zero hazards
 ```
 
-These behaviors are regression requirements for the remaining work.
+Canonical 4B.5A acceptance record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
+```
+
+---
+
+## 2. Hard security and routing boundaries inherited forward
+
+Canonical public Prompt routes:
+
+```text
+/prompt/:id
+/fa/prompt/:id
+```
+
+Protected product routes remain:
+
+```text
+/prompts?id=<id>
+/fa/prompts?id=<id>
+```
+
+Backend boundary remains:
+
+```text
+GET /api/public/prompts/:id -> public sanitized read model
+GET /api/archive/:id        -> authenticated + email gate
+/prompts?id=<id>             -> protected product/auth/unlock/economy surface
+```
+
+Public Prompt projection may contain only intentionally public presentation data. The following remain explicitly forbidden from the public read model and shared public props:
+
+```text
+protected Prompt body
+variants
+sourceTitle/source Draft payload
+source Draft/user identity
+storage keys
+unlock state
+balance/Goin
+authenticated viewer state
+permissions
+creator attribution until 4C
+```
+
+The public database query itself must not SELECT `prompt` or `variants`.
+
+Sharing visual presentation must never merge public and protected data sources.
 
 ---
 
 ## 3. 4B.5A — Localized Public Prompt Description Contract
 
-### Objective
+Status:
 
-Replace generic implementation-facing Public Prompt copy with authoritative Prompt-specific localized descriptions that are suitable for both visible presentation and SEO metadata.
+```text
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
+```
 
-### Public domain contract
-
-Target public DTO addition:
+Accepted contract:
 
 ```ts
 description: {
@@ -92,89 +130,35 @@ description: {
 }
 ```
 
-The description is intentionally public presentation content.
-
-It is **not** derived from or copied from the protected Prompt body.
-
-### Single source of truth
-
-The localized description is the canonical content source for:
+Accepted single source of truth:
 
 ```text
 visible Public Prompt description
-<meta name="description">
+meta description
 og:description
 twitter:description
 CreativeWork.description
 ```
 
-A small deterministic SEO sanitizer/length normalizer may be applied at render time if required, but V1 must not introduce a separate uncontrolled `seoDescription` content field.
-
-### Admin authoring
-
-The Archive create/edit management surface must add localized Description inputs beside the localized Title inputs:
+Locale availability means:
 
 ```text
-Title EN *
-Title FA *
-Description EN *
-Description FA *
-```
-
-For any locale treated as authoritative/available, both title and description must be present and valid.
-
-Current Archive workflows normally require both EN and FA; the implementation should preserve that product rule unless an explicit locale-policy change is made later.
-
-### Existing data / migration sequence
-
-Do not make a destructive strict-schema change before existing published rows are handled.
-
-Required implementation sequence:
-
-```text
-1. inspect current Archive schema, create/edit validation and migration head
-2. allocate the next migration number only after branch inspection
-3. add localized description storage in a backward-safe form
-4. add Admin create/edit inputs and validation
-5. backfill current published Archive data with founder-reviewed EN/FA descriptions
-6. make publish/update validation require complete localized presentation content
-7. add description to the public read-model allowlist
-8. update frontend PublicPrompt type/normalizer
-9. update visible Public Prompt copy and SEO projection
-10. add contract/backfill/leakage tests
-```
-
-If database-level NOT NULL enforcement is desirable, it must happen only after backfill is complete and compatible with draft lifecycle semantics. Application-level publish validation remains required either way.
-
-### Locale availability
-
-Public locale availability must represent complete authoritative localized presentation content, not a title-only shell.
-
-Conceptually:
-
-```text
-locale available
-  = valid localized title
-  + valid localized description
+valid localized title + valid localized description
 ```
 
 No fake fallback localization is allowed.
 
-### Security invariant
-
-Description becomes a new explicit public field, but every existing protected exclusion remains unchanged:
-
-```text
-no Prompt body
-no variants
-no source Draft payload
-no storage keys
-no unlock/economy/account state
-```
+Do not reopen this contract during 4B.5B unless a verified regression requires it.
 
 ---
 
 ## 4. 4B.5B — Shared Prompt Presentation Shell
+
+Status:
+
+```text
+NEXT
+```
 
 ### Objective
 
@@ -185,11 +169,9 @@ Public Prompt      /prompt/:id
 Protected Product  /prompts?id=<id>
 ```
 
-without merging their routes, data sources or authorization models.
+without merging their routes, data sources, authorization or product behavior.
 
 ### Hard boundary
-
-The shared layer is **presentation only**.
 
 ```text
 /prompt/:id
@@ -203,9 +185,9 @@ The shared layer is **presentation only**.
 
 The public page must never consume protected detail data just because the visual shell is shared.
 
-### Target component shape
+### Target presentation responsibility
 
-The exact component name may be chosen during implementation, but the intended responsibility is equivalent to:
+The exact component name may be chosen during implementation, but the shared layer should own only presentation concepts equivalent to:
 
 ```text
 PromptPresentation
@@ -213,12 +195,12 @@ PromptPresentation
 ├── localized title
 ├── localized description
 ├── tags
-├── id / publication date / model metadata
+├── public-safe id / publication date / model metadata
 ├── shared responsive LTR/RTL layout
-├── slot: primary actions
-├── slot: secondary actions
-├── slot: navigation / footer
-└── slot: extended protected/public content
+├── slot/composition: primary actions
+├── slot/composition: secondary actions
+├── slot/composition: navigation/footer
+└── slot/composition: route-specific extended content
 ```
 
 The shared component must remain unaware of:
@@ -232,55 +214,72 @@ protected Prompt body
 variants
 ```
 
-Those belong in the protected page slots/children.
+Those belong only to protected-page state/children/slots.
 
 ### Visual direction
 
-Reuse the existing protected Prompt cinema/background language rather than maintaining two near-identical hero systems.
+Reuse the existing protected Prompt cinema/background language rather than maintaining two separate hero systems.
 
 Preferred media behavior:
 
 ```text
 public preview images
-  -> existing reusable cinema/slider primitive where SSR-safe
-  -> first public image provides SSR-visible visual fallback
+  -> shared/reusable cinema presentation where SSR-safe
+  -> deterministic first public image remains SSR-visible fallback
   -> client enhancement may animate/slide additional previews
 ```
 
-Public Prompt should no longer read like an engineering status report. It should present the Prompt as a real acquisition/product preview using its authored description.
+The accepted authored description from 4B.5A must remain visible and remain the SEO source of truth.
 
-### Route-specific content
+### Route-specific behavior to preserve
 
-Examples of protected-only behavior:
+Protected-only examples:
 
 ```text
 unlock/copy controls
-previous/next protected catalog navigation
+protected catalog navigation
 protected Prompt exploration/content
 viewer/economy state
+Telegram/product actions where already applicable
 ```
 
-Examples of public-only behavior:
+Public-only examples:
 
 ```text
 Open full prompt CTA -> localized protected /prompts?id=<id>
-public-safe acquisition copy/structure
+public acquisition semantics
 public SEO semantics
 ```
 
-Slots/composition should preserve these differences without duplicating the shared visual shell.
+### 4B.5B audit-before-write requirement
+
+Before changing presentation code, inspect:
+
+```text
+app/pages/prompt/[id].vue
+protected /prompts detail composition
+existing PromptDetail / cinema / slider components
+public preview image data shape
+protected preview image data shape
+SSR safety of existing media primitives
+LTR/RTL behavior
+mobile/tablet/desktop layouts
+route-specific action/control ownership
+```
+
+The first implementation pass should identify the smallest presentation-only extraction that preserves both data boundaries.
 
 ---
 
 ## 5. 4B.5C — Public Discovery Visual Layer
 
-### Objective
+Status:
 
-Keep the existing `/discover/:slug` information architecture and SEO structure, but give the public Discovery hero the same media-rich acquisition quality expected from Home and Prompt presentation.
+```text
+NOT STARTED
+```
 
-### Preserve current structure
-
-Do not redesign the route contract or card acquisition behavior in this slice.
+Keep the existing `/discover/:slug` information architecture, routing, SEO and curated Prompt grid while adding the media-rich acquisition quality expected from Home/Public Prompt.
 
 Preserve:
 
@@ -288,102 +287,70 @@ Preserve:
 canonical /discover/:slug and /fa/discover/:slug
 existing title/description/CTA hierarchy
 existing curated Prompt grid/cards
-Public Prompt acquisition links
-current SEO/canonical/hreflang behavior
+localized Public Prompt links
+current canonical/hreflang behavior
 real 404/canonical redirect behavior
 ```
 
-### Media background
+Use only already-public preview media.
 
-Use public preview media from Prompts belonging to the active Discovery category as the visual source.
+If the existing cinema/slider primitive is client-heavy, SSR must still emit a deterministic first-image fallback before progressive enhancement.
 
-Target behavior:
-
-```text
-category public preview images
-  -> cinema/background media layer
-  -> readable overlay/gradient/grain
-  -> existing hero content above it
-```
-
-The implementation should first audit whether the existing slider/cinema primitive is SSR-safe. If it is client-heavy, SSR must still emit a deterministic first-image background/fallback and then progressively enhance after hydration.
-
-Only already-public preview URLs may be used.
-
-### RTL/LTR and accessibility
-
-The visual layer must preserve:
-
-```text
-EN LTR
-FA RTL
-readable contrast
-responsive layout
-meaningful image alt/decorative semantics as appropriate
-no navigation regression
-```
+Preserve EN LTR, FA RTL, readable contrast, responsive layout and accessibility semantics.
 
 ---
 
 ## 6. 4B.5D — Final regression and founder acceptance
 
-The original final 4B verification gate moves here.
+Status:
+
+```text
+NOT STARTED
+```
 
 Do not start 4C until 4B.5A–4B.5C are implemented and verified.
 
-### Required automated coverage
-
-At minimum:
+Minimum automated regression set:
 
 ```text
 backend public Prompt contract tests
 Public Prompt browser/SSR contract tests
 Public Prompt SEO tests
+localized-description contract tests
 public-link migration tests
 interaction-polish tests
 SEO route contracts
 strict locale-routing audit
-new localized-description contract tests
-new shared-presentation boundary/regression tests
-new Discovery visual-layer contract tests where practical
+shared-presentation boundary/regression tests
+Discovery visual-layer contract tests where practical
 production-like pnpm stack build/start
 ```
 
-### Required data/content checks
-
-```text
-existing published Archive items have valid founder-reviewed EN/FA descriptions
-Admin create/edit requires localized descriptions according to locale policy
-Public API returns description and still excludes protected fields
-availableLocales cannot advertise incomplete localized presentation content
-```
-
-### Required Public Prompt staging smoke
-
-```text
-EN /prompt/:id
-FA /fa/prompt/:id
-localized title + description
-preview-media cinema/background
-canonical/hreflang/x-default
-meta/OG/Twitter description from authored description
-CreativeWork.description from authored description
-first public image/social image behavior
-no serialized private-key leakage
-Open full prompt -> protected localized /prompts?id=<id>
-```
-
-### Required protected Prompt regression
+Required protected regression:
 
 ```text
 /prompts?id=<id> still auth/email/unlock gated
 GET /api/archive/:id still protected
 unlock/copy/economy behavior unchanged
-protected-only navigation/actions unchanged
-shared presentation does not leak protected state into public props/payloads
+protected-only actions/navigation unchanged
+shared presentation does not leak protected state into public payloads/props
 ```
 
-### Required Discovery staging smoke
+Required Public Prompt staging smoke:
+
+```text
+EN /prompt/:id
+FA /fa/prompt/:id
+localized title + authored description
+preview-media cinema/background
+canonical/hreflang/x-default
+meta/OG/Twitter description from authored description
+CreativeWork.description from authored description
+no serialized private-key leakage
+Open full prompt -> protected localized /prompts?id=<id>
+```
+
+Required Discovery staging smoke:
 
 ```text
 EN/FA Discovery hero uses public category media
@@ -393,7 +360,7 @@ Public Prompt links remain localized
 SEO/canonical behavior unchanged
 ```
 
-### Environment safety
+Environment safety:
 
 ```text
 https://grassic.ir       -> staging verification target
@@ -402,7 +369,7 @@ prompt-draft.ir          -> MUST remain untouched
 NUXT_PUBLIC_NOINDEX=true -> must remain authoritative during staging
 ```
 
-### Final transition
+Final transition:
 
 ```text
 4B.5A PASS
@@ -417,24 +384,13 @@ NUXT_PUBLIC_NOINDEX=true -> must remain authoritative during staging
 
 ## 7. Immediate next action
 
-Start with **4B.5A only**.
-
-First implementation pass must audit before writing:
-
 ```text
-Archive schema and current migration head
-Archive create/update backend validation
-/manage Archive create/edit localized title fields
-Archive public list/detail mappers
-current publicPrompt.mjs projection
-usePublicPrompt.ts normalizer/type
-publicPromptSeo.ts description flow
-current published Archive rows requiring backfill
+Start 4B.5B — Shared Prompt Presentation Shell.
 ```
 
-Then write a narrow implementation plan for 4B.5A and execute it in small commits with tests.
+Audit first, then implement the smallest presentation-only shared shell. Preserve 4B.5A data/SEO contracts and all protected authorization/economy behavior.
 
-Do not begin the shared presentation refactor until the description contract and existing-data migration/backfill path are understood and stable.
+Do not start 4B.5C until 4B.5B is implemented and founder-verified.
 
 ---
 
