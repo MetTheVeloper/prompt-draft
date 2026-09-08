@@ -6,8 +6,6 @@ function isPlainObject(value) {
 }
 
 export function validateArchiveDescriptionInput(value) {
-  if (value === undefined) return []
-
   if (!isPlainObject(value)) {
     return [{ field: 'description', message: 'description must contain en and fa values' }]
   }
