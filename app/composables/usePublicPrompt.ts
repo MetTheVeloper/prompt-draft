@@ -13,6 +13,7 @@ export type PublicPrompt = {
   description: Partial<Record<PublicPromptLocale, string>>
   availableLocales: PublicPromptLocale[]
   publishedAt: string
+  telegramMessageId: number | null
   tags: string[]
   model: {
     previewGeneratedWith: PublicPromptModel
@@ -106,6 +107,14 @@ function normalizeTags(value: unknown) {
   return value.map(tag => tag.trim()).filter(Boolean)
 }
 
+function normalizeTelegramMessageId(value: unknown) {
+  if (value === null || value === undefined) return null
+  const telegramMessageId = Number(value)
+  return Number.isSafeInteger(telegramMessageId) && telegramMessageId > 0
+    ? telegramMessageId
+    : undefined
+}
+
 function normalizeImage(value: unknown): PublicPromptImage | null {
   if (!isPlainObject(value)) return null
 
@@ -131,6 +140,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
   const title = normalizeLocalizedText(value.title)
   const description = normalizeLocalizedText(value.description)
   const publishedAt = typeof value.publishedAt === 'string' ? value.publishedAt : ''
+  const telegramMessageId = normalizeTelegramMessageId(value.telegramMessageId)
   const model = normalizeModel(value.model)
   const tags = normalizeTags(value.tags)
 
@@ -141,6 +151,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     !description ||
     !publishedAt ||
     Number.isNaN(Date.parse(publishedAt)) ||
+    telegramMessageId === undefined ||
     !model ||
     !tags ||
     !Array.isArray(value.images)
@@ -162,6 +173,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     description,
     availableLocales,
     publishedAt: new Date(publishedAt).toISOString(),
+    telegramMessageId,
     tags,
     model,
     images: normalizedImages.sort((first, second) => first.position - second.position),
