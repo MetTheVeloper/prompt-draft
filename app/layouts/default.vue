@@ -65,6 +65,10 @@ const publicPromptDetailMode = computed(() => {
   return baseRouteName.value === "prompt-id";
 });
 
+const publicDiscoveryMode = computed(() => {
+  return baseRouteName.value === "discover-slug";
+});
+
 const canRenderPromptDetail = computed(() => {
   if (!promptDetailMode.value) return true;
 
@@ -82,7 +86,8 @@ const padding = computed(() => {
     baseRouteName.value === "vectorizer" ||
     wizardMode.value ||
     promptDetailMode.value ||
-    publicPromptDetailMode.value
+    publicPromptDetailMode.value ||
+    publicDiscoveryMode.value
   )
     ? 0
     : tablet.value
