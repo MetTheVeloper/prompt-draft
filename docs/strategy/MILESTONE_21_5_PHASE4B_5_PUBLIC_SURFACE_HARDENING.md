@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4B.5 Public Surface Hardening
 
-Status: **IN PROGRESS / 4B.5A ACCEPTED / 4B.5B+4B.5C IMPLEMENTED / FOUNDER VERIFICATION NEXT / PHASE 4B NOT ACCEPTED**
+Status: **IN PROGRESS / 4B.5A-4B.5C FOUNDER VERIFIED / 4B.5D FINAL VERIFICATION IN PROGRESS / PHASE 4B NOT ACCEPTED**
 
 Date: 2026-09-08
 
@@ -16,22 +16,21 @@ Parent architecture:
 docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 ```
 
-Verification history:
+Verification / hardening records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5B_SHARED_PRESENTATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
-This document is the current continuation source of truth for the final hardening work before Phase 4B acceptance.
+This document remains the parent continuation source of truth for final Phase 4B acceptance.
 
 ---
 
-## 1. Current verified checkpoint
-
-The following are accepted regression requirements:
+## 1. Current checkpoint
 
 ```text
 4B.1 backend public projection       -> FOUNDER-LOCAL VERIFIED
@@ -40,35 +39,13 @@ The following are accepted regression requirements:
 4B.4 public-link migration           -> FOUNDER-LOCAL VERIFIED
 post-4B.4 interaction polish         -> FOUNDER-LOCAL VERIFIED
 4B.5A localized descriptions         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED AS SLICE
+4B.5B shared Prompt presentation     -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
+4B.5C Discovery visual layer         -> DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
+4B.5D final regression / acceptance  -> IN PROGRESS
 Phase 4B acceptance                  -> NOT ACCEPTED
 ```
 
-4B.5A verification established:
-
-```text
-100/100 published Archive rows have founder-reviewed EN/FA descriptions
-migration 026 publish-localization constraint applied
-Admin create/update requires EN/FA descriptions
-Admin publish requires complete EN/FA title + description
-Public Prompt DTO exposes localized description only as the new public field
-availableLocales requires complete title + description
-Public Prompt SQL still does not SELECT prompt or variants
-visible Public Prompt description uses authored localized content
-meta/OG/Twitter/CreativeWork.description use the same authored source
-EN/FA browser smoke PASS
-production-like Cloudflare stack build/start PASS
-backend description/public Prompt tests PASS
-frontend Public Prompt/SEO/link/interaction tests PASS
-strict route audit PASS, 445 files, zero hazards
-```
-
-Canonical 4B.5A acceptance record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4B_5A_DESCRIPTION_CUTOVER.md
-```
-
-4B.5B and 4B.5C are implemented but remain pending final founder-local visual/runtime verification before 4B.5D begins.
+4B.5D is now the only remaining gate before explicit founder acceptance.
 
 ---
 
@@ -93,10 +70,12 @@ Backend boundary remains:
 ```text
 GET /api/public/prompts/:id -> public sanitized read model
 GET /api/archive/:id        -> authenticated + email gate
-/prompts?id=<id>             -> protected product/auth/unlock/economy surface
+/prompts?id=<id>             -> protected auth/unlock/economy product surface
 ```
 
-Public Prompt projection may contain only intentionally public presentation data. The following remain explicitly forbidden from the public read model and shared public props:
+Public Prompt projection may contain only intentionally public presentation data.
+
+Explicitly forbidden from the public read model/shared public props:
 
 ```text
 protected Prompt body
@@ -150,9 +129,9 @@ Locale availability means:
 valid localized title + valid localized description
 ```
 
-No fake fallback localization is allowed.
+100/100 published Archive rows were backfilled with founder-reviewed EN/FA descriptions before strict publish enforcement/public cutover.
 
-Do not reopen this contract during later hardening unless a verified regression requires it.
+No fake fallback localization is allowed.
 
 ---
 
@@ -161,7 +140,7 @@ Do not reopen this contract during later hardening unless a verified regression 
 Status:
 
 ```text
-IMPLEMENTED / FINAL BACK-FIX RE-VERIFICATION NEXT
+DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
 ```
 
 Canonical record:
@@ -170,48 +149,18 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4B_5B_SHARED_PRESENTATION.md
 ```
 
-### Objective
-
-Remove duplicated visual structure between:
-
-```text
-Public Prompt      /prompt/:id
-Protected Product  /prompts?id=<id>
-```
-
-without merging their routes, data sources, authorization or product behavior.
-
-### Hard boundary
-
-```text
-/prompt/:id
-  -> public sanitized DTO
-  -> SSR/indexable acquisition surface
-
-/prompts?id=<id>
-  -> protected detail API/product state
-  -> auth/email/unlock/economy behavior
-```
-
-The public page must never consume protected detail data just because the visual shell is shared.
-
-### Implemented presentation responsibility
-
-The shared layer owns only presentation concepts equivalent to:
+The shared layer owns presentation only:
 
 ```text
 PromptPresentation
-├── cinema / preview-media background
+├── SSR-safe preview/cinema background
 ├── localized title
-├── localized description
+├── localized authored description
 ├── tags
-├── public-safe id / publication date / model metadata
+├── public-safe id/date/model metadata
 ├── optional public-safe Telegram post metadata
-├── shared responsive LTR/RTL layout
-├── slot/composition: primary actions
-├── slot/composition: secondary actions
-├── slot/composition: navigation/footer
-└── slot/composition: route-specific extended content
+├── responsive LTR/RTL presentation
+└── route-specific slots/actions/content
 ```
 
 The shared component remains unaware of:
@@ -225,18 +174,7 @@ protected Prompt body
 variants
 ```
 
-Those remain only in protected-page state/children/slots.
-
-### Implemented visual behavior
-
-```text
-public/protected preview images
-  -> shared cinema presentation
-  -> deterministic first image SSR-visible
-  -> ClientOnly visual-slider enhancement for additional previews
-```
-
-Founder visual polish additionally established:
+Founder-approved final polish:
 
 ```text
 theme-aware overlay -> var(--themeSurface)
@@ -250,8 +188,6 @@ back action -> router.back() on both public and protected Prompt heroes
 back button color -> normal
 ```
 
-The authored description from 4B.5A remains visible and remains the SEO source of truth.
-
 ---
 
 ## 5. 4B.5C — Public Discovery Visual Layer
@@ -259,7 +195,7 @@ The authored description from 4B.5A remains visible and remains the SEO source o
 Status:
 
 ```text
-IMPLEMENTED / FOUNDER VERIFICATION NEXT
+DONE / FOUNDER-LOCAL VISUAL VERIFIED / ACCEPTED AS HARDENING SLICE
 ```
 
 Canonical record:
@@ -268,17 +204,18 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4B_5C_DISCOVERY_VISUAL_LAYER.md
 ```
 
-The existing `/discover/:slug` information architecture, routing, SEO and curated Prompt grid are preserved while adding the media-rich acquisition quality expected from Home/Public Prompt.
-
-Implemented behavior:
+Founder-approved behavior:
 
 ```text
 hero -> el-flex type="section"
-hero height -> application viewport below header
+hero height -> content-sized, not viewport-height
+Discovery default layout padding -> zero
 hero media -> only already-public category cover previews
 first category preview -> deterministic SSR <img>
 multiple previews -> ClientOnly visual-slider enhancement
-slider canvas -> scoped absolute to hero, not fixed over page scroll
+SSR fallback image removed after multi-image cinema mount
+slider canvas -> absolute/scoped to hero, not fixed over page scroll
+hero media -> poa t0 r0 b0 l0 equivalent
 hero heading flex -> rules="ccs"
 collection heading flex -> rules="ccs"
 ```
@@ -287,79 +224,67 @@ Preserved:
 
 ```text
 canonical /discover/:slug and /fa/discover/:slug
-existing title/description/CTA hierarchy
-existing curated Prompt grid/cards
+existing category SEO semantics
+curated PublicDiscoveryCard grid
 localized Public Prompt links
-current canonical/hreflang behavior
 real 404/canonical redirect behavior
 ```
 
-No protected Prompt body, variants, economy, permission, storage or viewer data enters the Discovery page.
+No protected Prompt body, variants, economy, permission, storage or viewer data enters Discovery.
 
 ---
 
-## 6. 4B.5D — Final regression and founder acceptance
+## 6. 4B.5D — Final Regression / Founder Acceptance
 
 Status:
 
 ```text
-NOT STARTED
+IN PROGRESS / FINAL FOUNDER VERIFICATION NEXT
 ```
 
-Do not start 4C until 4B.5A–4B.5C are implemented and verified.
-
-Minimum automated regression set:
+Canonical record:
 
 ```text
-backend public Prompt contract tests
-Public Prompt browser/SSR contract tests
-Public Prompt SEO tests
-localized-description contract tests
-public-link migration tests
-interaction-polish tests
-SEO route contracts
-strict locale-routing audit
-shared-presentation boundary/regression tests
-Discovery visual-layer contract tests
-production-like pnpm stack build/start
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
-Required protected regression:
+Aggregate frontend/SEO/routing/presentation/discovery gate:
 
 ```text
-/prompts?id=<id> still auth/email/unlock gated
-GET /api/archive/:id still protected
-unlock/copy/economy behavior unchanged
-protected-only actions/navigation unchanged
-shared presentation does not leak protected state into public payloads/props
+pnpm test:phase4b-final
 ```
 
-Required Public Prompt staging smoke:
+Backend regression:
 
 ```text
-EN /prompt/:id
-FA /fa/prompt/:id
-localized title + authored description
-preview-media cinema/background
-canonical/hreflang/x-default
-meta/OG/Twitter description from authored description
-CreativeWork.description from authored description
-no serialized private-key leakage
-Open full prompt -> protected localized /prompts?id=<id>
-back control -> browser history, not hardcoded route
+docker compose exec api npm run test:public-prompt
+docker compose exec api npm run test:archive-description-input
+docker compose exec api npm run test:archive-published-localization
 ```
 
-Required Discovery staging smoke:
+Production-like staging-connected rebuild/health:
 
 ```text
-EN/FA Discovery hero uses public category media
-SSR first image remains visible
-client slider stays scoped to hero
-hero text remains readable
-hero/collection alignment uses founder-approved ccs rules
-category/card routes remain correct
-Public Prompt links remain localized
-SEO/canonical behavior unchanged
+pnpm stack:cloudflare:restart
+pnpm stack:cloudflare:status
+```
+
+Automated real-staging smoke:
+
+```text
+pnpm smoke:phase4b-final -- 511 portraits-photography
+```
+
+Required manual founder browser smoke:
+
+```text
+Public Prompt EN/FA visual/runtime
+Public -> protected Open full prompt transition
+protected auth/email/unlock/copy/economy behavior unchanged
+browser-history back behavior EN/FA
+Telegram badge/link behavior when metadata exists
+Discovery EN/FA content-sized single-layer cinema
+light/dark theme readability
 ```
 
 Environment safety:
@@ -377,7 +302,7 @@ Final transition:
 4B.5A PASS
 + 4B.5B PASS
 + 4B.5C PASS
-+ 4B.5D automated/runtime/staging PASS
++ 4B.5D automated/backend/build/staging/manual PASS
 + founder explicit acceptance
 = Phase 21.5.4B ACCEPTED
 ```
@@ -386,17 +311,29 @@ Final transition:
 
 ## 7. Immediate next action
 
+Run 4B.5D only.
+
+Do not start 4C until:
+
 ```text
-Founder-local re-verification of:
-1. final 4B.5B browser-history back behavior
-2. 4B.5C Discovery visual layer
+pnpm test:phase4b-final PASS
+backend final regression PASS
+Cloudflare production-like build/health PASS
+pnpm smoke:phase4b-final PASS
+protected authenticated browser smoke PASS
+founder explicit acceptance
 ```
 
-Run the focused automated gates, production-like frontend build/start and EN/FA staging visual smoke.
+After founder acceptance, update:
 
-If both slices pass founder verification, begin 4B.5D final regression / acceptance.
+```text
+docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
+docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+docs/strategy/STATUS.md
+```
 
-Do not start 4C before 4B.5D is complete and explicitly accepted.
+Then Phase 21.5.4C may begin.
 
 ---
 
@@ -411,4 +348,4 @@ Blog -> 4E
 production prompt-draft.ir cutover -> later accepted deployment phase
 ```
 
-The 4B.5 hardening work must not pre-decide 4C Creator policy or weaken any existing public/protected boundary.
+4B.5D must not pre-decide 4C Creator policy or weaken existing public/protected boundaries.
