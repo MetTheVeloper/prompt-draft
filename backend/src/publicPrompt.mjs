@@ -74,6 +74,17 @@ function normalizeImage(value) {
   }
 }
 
+function normalizeTelegramMessageId(value, itemId) {
+  if (value === null || value === undefined) return null
+
+  const telegramMessageId = Number(value)
+  if (!Number.isSafeInteger(telegramMessageId) || telegramMessageId <= 0) {
+    throw new Error(`Public Prompt ${itemId} has invalid Telegram message metadata`)
+  }
+
+  return telegramMessageId
+}
+
 export function mapPublicPromptRow(row) {
   const id = Number(row?.id)
   if (!Number.isSafeInteger(id) || id <= 0) {
@@ -102,6 +113,7 @@ export function mapPublicPromptRow(row) {
     description: localized.description,
     availableLocales: localized.availableLocales,
     publishedAt: publishedAt.toISOString(),
+    telegramMessageId: normalizeTelegramMessageId(row.telegramMessageId, id),
     tags: normalizeTags(row.tags),
     model: normalizeModel({
       previewGeneratedWith: row.previewGeneratedWith,
@@ -118,6 +130,7 @@ export async function readPublicPrompt(id, query = queryDatabase) {
       items.titles AS title,
       items.descriptions AS description,
       items.published_at AS "publishedAt",
+      items.telegram_message_id AS "telegramMessageId",
       items.preview_model AS "previewGeneratedWith",
       items.optimized_for AS "optimizedFor",
       COALESCE((
