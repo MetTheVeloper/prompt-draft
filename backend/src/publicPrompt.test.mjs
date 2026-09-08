@@ -18,6 +18,7 @@ const PUBLIC_ROW = {
     fa: 'پرتره مرجع را به تصویری ماکرو با حال‌وهوای اسباب‌بازی تبدیل کنید.',
   },
   publishedAt: new Date('2026-08-20T10:00:00.000Z'),
+  telegramMessageId: 987,
   previewGeneratedWith: 'gpt-image-1',
   optimizedFor: ['gpt-image-1'],
   tags: ['portrait', 'macro'],
@@ -75,6 +76,7 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
     },
     availableLocales: ['en', 'fa'],
     publishedAt: '2026-08-20T10:00:00.000Z',
+    telegramMessageId: 987,
     tags: ['portrait', 'macro'],
     model: {
       previewGeneratedWith: 'gpt-image-1',
@@ -104,6 +106,14 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
   }
 })
 
+test('public Telegram message metadata is optional but must be a positive integer when present', () => {
+  assert.equal(mapPublicPromptRow({ ...PUBLIC_ROW, telegramMessageId: null }).telegramMessageId, null)
+  assert.throws(
+    () => mapPublicPromptRow({ ...PUBLIC_ROW, telegramMessageId: 0 }),
+    /invalid Telegram message metadata/,
+  )
+})
+
 test('locale availability requires complete localized title and description without fallback', () => {
   const prompt = mapPublicPromptRow({
     ...PUBLIC_ROW,
@@ -129,7 +139,7 @@ test('public row with no complete localization is rejected', () => {
   )
 })
 
-test('readPublicPrompt uses a published-only query and selects description without protected columns', async () => {
+test('readPublicPrompt uses a published-only query and selects public presentation metadata without protected columns', async () => {
   let capturedSql = ''
   let capturedValues = null
 
@@ -144,6 +154,7 @@ test('readPublicPrompt uses a published-only query and selects description witho
   assert.match(capturedSql, /items\.public_id\s*=\s*\$1/i)
   assert.match(capturedSql, /items\.status\s*=\s*'published'/i)
   assert.match(capturedSql, /items\.descriptions\s+AS\s+description/i)
+  assert.match(capturedSql, /items\.telegram_message_id\s+AS\s+"telegramMessageId"/i)
 
   for (const forbiddenSql of [
     /items\.prompt/i,
@@ -169,6 +180,7 @@ test('GET published public Prompt returns 200 with sanitized projection', async 
   assert.equal(calls[0].body.ok, true)
   assert.equal(calls[0].body.prompt.id, 123)
   assert.equal(calls[0].body.prompt.description.en, PUBLIC_ROW.description.en)
+  assert.equal(calls[0].body.prompt.telegramMessageId, 987)
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_PROMPT_SENTINEL'), false)
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_VARIANT_SENTINEL'), false)
 })
