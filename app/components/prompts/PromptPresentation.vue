@@ -134,11 +134,11 @@ function formatTag(tag: string) {
 
         <div class="prompt-presentation__meta">
           <span class="prompt-presentation__meta-item">
-            <el-icon name="calendar_month" :size="14" />
+            <el-icon icon="calendar_month" :size="14" />
             {{ formattedDate }}
           </span>
           <span v-if="previewCountLabel" class="prompt-presentation__meta-item">
-            <el-icon name="photo_library" :size="14" />
+            <el-icon icon="photo_library" :size="14" />
             {{ previewCountLabel }}
           </span>
           <slot name="meta" />
