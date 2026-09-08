@@ -7,6 +7,7 @@ import type {
   PromptArchiveListItem,
   PromptArchiveListQuery,
   PromptArchiveListResponse,
+  PromptArchiveLocalizedDescription,
   PromptArchiveLocalizedTitle,
   PromptArchiveModel,
   PromptArchiveNavigationItem,
@@ -53,6 +54,15 @@ function isArchiveModel(value: unknown): value is PromptArchiveModel {
 }
 
 function normalizeTitle(value: unknown): PromptArchiveLocalizedTitle | null {
+  if (!isPlainObject(value)) return null
+
+  const en = typeof value.en === 'string' ? value.en.trim() : ''
+  const fa = typeof value.fa === 'string' ? value.fa.trim() : ''
+
+  return en && fa ? { en, fa } : null
+}
+
+function normalizeDescription(value: unknown): PromptArchiveLocalizedDescription | null {
   if (!isPlainObject(value)) return null
 
   const en = typeof value.en === 'string' ? value.en.trim() : ''
@@ -178,10 +188,11 @@ function normalizeDetailItem(value: unknown): PromptArchiveDetailItem | null {
   const base = normalizeListItem(value)
   if (!base) return null
 
+  const description = normalizeDescription(value.description)
   const sourceTitle = typeof value.sourceTitle === 'string' ? value.sourceTitle : ''
   const prompt = typeof value.prompt === 'string' ? value.prompt : ''
 
-  if (!prompt || !Array.isArray(value.images) || !Array.isArray(value.variants)) return null
+  if (!description || !prompt || !Array.isArray(value.images) || !Array.isArray(value.variants)) return null
 
   const images = value.images.map(normalizeImage)
   const variants = value.variants.map(normalizeVariant)
@@ -190,6 +201,7 @@ function normalizeDetailItem(value: unknown): PromptArchiveDetailItem | null {
 
   return {
     ...base,
+    description,
     sourceTitle,
     prompt,
     images: images as PromptArchiveImage[],
@@ -509,6 +521,7 @@ export function usePromptArchive() {
 
     return {
       ...listItem,
+      description: null,
       sourceTitle: item.sourceTitle,
       prompt: item.prompt,
       images: resolveFallbackImages(item),
