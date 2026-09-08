@@ -82,6 +82,7 @@ watch(activeLocale, () => {
 
 const localizedTitle = computed(() => prompt.value?.title[activeLocale.value] || '')
 const localizedDescription = computed(() => prompt.value?.description[activeLocale.value] || '')
+const publishedAt = computed(() => prompt.value?.publishedAt || '')
 const canonicalPath = publicPromptPath(publicId)
 const siteUrl = computed(() => normalizePublicSiteUrl(config.public.siteUrl))
 const seoDescription = computed(() => localizedDescription.value)
@@ -149,7 +150,7 @@ const homePath = computed(() => localePath('/'))
       :description="localizedDescription"
       :tags="prompt?.tags ?? []"
       :public-id="publicId"
-      :published-at="prompt!.publishedAt"
+      :published-at="publishedAt"
       :model-label="modelLabel"
       :media="presentationMedia"
       :locale="activeLocale"
