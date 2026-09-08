@@ -94,7 +94,7 @@ const activePrompt = computed(() => {
     || promptOptions.value[0]
 })
 
-const backIcon = computed(() => locale.value === 'fa' ? 'arrow-right' : 'arrow-left')
+const backIcon = computed(() => locale.value === 'fa' ? 'arrow_forward' : 'arrow_back')
 
 const copyActionLabel = computed(() => {
   if (copied.value) return t('prompts.detail.copied')
@@ -339,7 +339,8 @@ async function copyPrompt() {
       :model-label="modelLabel"
       :media="presentationMedia"
       :locale="locale === 'fa' ? 'fa' : 'en'"
-      :preview-count-label="previewCountLabel">
+      :preview-count-label="previewCountLabel"
+      :telegram-url="item.telegramUrl">
       <template #topbar-leading>
         <el-button
           type="fab"
