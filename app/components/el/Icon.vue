@@ -7,7 +7,7 @@
     <span
       :class="symbolClass"
       :style="symbolStyle"
-    >{{ icon }}</span>
+    >{{ resolvedIcon }}</span>
 
     <span
       v-if="badge"
@@ -53,6 +53,12 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(max, Math.max(min, value));
 }
 
+const legacyIconAliases: Record<string, string> = {
+  "arrow-left": "arrow_back",
+  "arrow-right": "arrow_forward",
+};
+
+const resolvedIcon = computed(() => legacyIconAliases[props.icon] || props.icon);
 const sizes = computed(() => dimension(props.size || app.settings.globalSize));
 const iconSize = computed(() => props.size ?? sizes.value.icon);
 const symbolWeight = computed(() => clamp(props.weight, 100, 700));
