@@ -31,6 +31,8 @@ const PROMPT: PublicPrompt = {
     fullUrl: 'https://cdn.example.com/511/full.webp',
     thumbnailUrl: 'https://cdn.example.com/511/thumb.webp',
   }],
+  creator: null,
+  telegramMessageId: null,
 }
 
 test('normalizes public site URLs and resolves relative public URLs', () => {
