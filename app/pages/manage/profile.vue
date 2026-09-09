@@ -72,16 +72,31 @@ const categoryBySlug = computed(() => new Map(
   (response.value?.taxonomy.categories ?? []).map(category => [category.slug, category]),
 ));
 
-const skillItems = computed(() => (response.value?.taxonomy.skills ?? []).map(skill => {
-  const category = categoryBySlug.value.get(skill.categorySlug);
-  const skillLabel = skill.title[locale.value as "en" | "fa"] || skill.title.en;
-  const categoryLabel = category?.title[locale.value as "en" | "fa"] || category?.title.en;
-  return {
-    value: skill.slug,
-    label: categoryLabel ? `${categoryLabel} · ${skillLabel}` : skillLabel,
-    icon: "psychology",
-  };
-}));
+const skillItems = computed(() => {
+  const language = locale.value as "en" | "fa";
+  const categories = categoryBySlug.value;
+
+  return [...(response.value?.taxonomy.skills ?? [])]
+    .sort((first, second) => {
+      const firstCategoryOrder = categories.get(first.categorySlug)?.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      const secondCategoryOrder = categories.get(second.categorySlug)?.sortOrder ?? Number.MAX_SAFE_INTEGER;
+      return firstCategoryOrder - secondCategoryOrder
+        || first.sortOrder - second.sortOrder
+        || first.slug.localeCompare(second.slug);
+    })
+    .map(skill => {
+      const category = categories.get(skill.categorySlug);
+      const skillLabel = skill.title[language] || skill.title.en;
+      const categoryLabel = category?.title[language] || category?.title.en || skill.categorySlug;
+      return {
+        value: skill.slug,
+        label: skillLabel,
+        group: skill.categorySlug,
+        groupLabel: categoryLabel,
+        icon: "psychology",
+      };
+    });
+});
 
 const creatorStatus = computed<CreatorAccountStatus>(() => response.value?.creator.status ?? "none");
 const creatorReady = computed(() => Boolean(response.value?.creator.readiness.ready));
@@ -534,13 +549,18 @@ onBeforeUnmount(() => {
 
       <el-grid cols="minmax(280px, 1fr) minmax(280px, 1fr)" :gap="16" class="w100">
         <el-flex rules="csc" :gap="12" :p="18" bg="surface" :radius="16" :br="1" bc="normal15" class="w100">
-          <el-text :size="16" :weight="800">{{ t("manage.profile.birthday.title") }}</el-text>
-          <el-text :size="11" color="normal55">{{ t("manage.profile.birthday.description") }}</el-text>
+          <el-flex rules="ccs" :gap="4" class="w100">
+            <el-text :size="16" :weight="800">{{ t("manage.profile.birthday.title") }}</el-text>
+            <el-text :size="11" color="normal55">{{ t("manage.profile.birthday.description") }}</el-text>
+          </el-flex>
           <ProfileBirthdayField v-model="form.birthday" :disabled="saving" />
         </el-flex>
 
         <el-flex rules="csc" :gap="12" :p="18" bg="surface" :radius="16" :br="1" bc="normal15" class="w100">
-          <el-text :size="16" :weight="800">{{ t("manage.profile.location.title") }}</el-text>
+          <el-flex rules="ccs" :gap="4" class="w100">
+            <el-text :size="16" :weight="800">{{ t("manage.profile.location.title") }}</el-text>
+            <el-text :size="10" color="normal55">{{ t("manage.profile.location.providerPending") }}</el-text>
+          </el-flex>
           <el-text-field
             v-model="form.locationText"
             icon="location_on"
@@ -548,7 +568,6 @@ onBeforeUnmount(() => {
             :disabled="saving"
             :placeholder="t('manage.profile.location.placeholder')"
           />
-          <el-text :size="10" color="normal55">{{ t("manage.profile.location.providerPending") }}</el-text>
         </el-flex>
       </el-grid>
 
@@ -560,6 +579,10 @@ onBeforeUnmount(() => {
         <el-multi-select
           v-model="form.skills"
           :items="skillItems"
+          item-label="label"
+          item-value="value"
+          item-group="group"
+          item-group-label="groupLabel"
           icon="psychology"
           :disabled="saving || !skillItems.length"
           :placeholder="t('manage.profile.skills.placeholder')"
