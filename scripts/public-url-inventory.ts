@@ -1,7 +1,8 @@
+import type { BlogPublicInventoryArticle } from '../shared/blog-public-inventory'
 import { PUBLIC_DISCOVERY_INTERESTS } from '../shared/public-discovery'
 
 export type PublicLocale = 'en' | 'fa'
-export type PublicUrlResourceKind = 'static' | 'discovery' | 'prompt' | 'creator'
+export type PublicUrlResourceKind = 'static' | 'discovery' | 'blog' | 'prompt' | 'creator'
 
 export type PublicUrlResource = {
   kind: PublicUrlResourceKind
@@ -58,9 +59,11 @@ function addLocalizedResource(
 
 export function buildPublicUrlInventory({
   dynamicInventory,
+  blogArticles = [],
   indexingEnabled = true,
 }: {
   dynamicInventory?: PublicApiInventory | null
+  blogArticles?: readonly BlogPublicInventoryArticle[]
   indexingEnabled?: boolean
 } = {}): PublicUrlResource[] {
   if (!indexingEnabled) return []
@@ -73,6 +76,24 @@ export function buildPublicUrlInventory({
 
   for (const category of PUBLIC_DISCOVERY_CATALOG) {
     addLocalizedResource(resources, 'discovery', `/discover/${category.slug}`, PUBLIC_LOCALES)
+  }
+
+  // Blog index is a valid public acquisition surface even before the first
+  // Article is published. Article locale eligibility itself comes only from
+  // the validated 4E.1 repository projection supplied by callers.
+  addLocalizedResource(resources, 'blog', '/blog', PUBLIC_LOCALES)
+
+  for (const article of blogArticles) {
+    const slug = typeof article?.slug === 'string' ? article.slug.trim() : ''
+    if (!slug) continue
+
+    const locales = normalizeAvailableLocales(article.availableLocales)
+    addLocalizedResource(
+      resources,
+      'blog',
+      `/blog/${encodeURIComponent(slug)}`,
+      locales,
+    )
   }
 
   for (const prompt of dynamicInventory?.prompts ?? []) {
@@ -176,6 +197,12 @@ function llmsResourceLabel(resource: PublicUrlResource) {
     return `${category?.title || slug || 'Discovery'} — ${localeLabel}`
   }
 
+  if (resource.kind === 'blog') {
+    if (basePath === '/blog') return `Prompt Draft Blog — ${localeLabel}`
+    const slug = decodePathSegment(basePath.split('/').filter(Boolean).at(-1) || '')
+    return `Blog article ${slug} — ${localeLabel}`
+  }
+
   if (resource.kind === 'prompt') {
     const id = basePath.split('/').filter(Boolean).at(-1) || ''
     return `Public Prompt ${id} — ${localeLabel}`
@@ -191,6 +218,7 @@ const LLMS_SECTIONS: readonly Array<{
 }> = [
   { kind: 'static', title: 'Core' },
   { kind: 'discovery', title: 'Discovery' },
+  { kind: 'blog', title: 'Blog' },
   { kind: 'creator', title: 'Creators' },
   { kind: 'prompt', title: 'Public Prompts' },
 ] as const
@@ -212,9 +240,9 @@ export function renderLlmsTxt(resources: readonly PublicUrlResource[], siteUrl: 
   const lines = [
     '# Prompt Draft',
     '',
-    '> Discover curated visual prompts, public creators, and structured prompt workflows with Prompt Draft.',
+    '> Discover curated visual prompts, public creators, editorial articles, and structured prompt workflows with Prompt Draft.',
     '',
-    'The links below are canonical public resources projected from the same indexability inventory used by sitemap.xml. English URLs are unprefixed and Persian URLs use /fa. Protected Prompt bodies, private Drafts, authenticated account surfaces, and other non-public data are intentionally excluded. Crawler permissions remain governed by robots.txt.',
+    'The links below are canonical public resources projected from the same indexability inventory used by sitemap.xml. English URLs are unprefixed and Persian URLs use /fa. Draft Blog Articles, protected Prompt bodies, private Drafts, authenticated account surfaces, and other non-public data are intentionally excluded. Crawler permissions remain governed by robots.txt.',
     '',
   ]
 
