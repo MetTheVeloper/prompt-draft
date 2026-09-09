@@ -1,70 +1,13 @@
-export type DiscoveryInterestKey =
-  | 'portrait_photography'
-  | 'three_d_sculpture'
-  | 'illustration_animation'
-  | 'poster_editorial'
-  | 'product_fashion'
-  | 'cinematic_game_art'
+import {
+  PUBLIC_DISCOVERY_INTERESTS,
+  type PublicDiscoveryDefinition,
+  type PublicDiscoveryInterestKey,
+} from '../../shared/public-discovery'
 
-export type DiscoveryInterestDefinition = {
-  key: DiscoveryInterestKey
-  slug: string
-  tags: readonly string[]
-  icon: string
-  messageKey: string
-  descriptionKey: string
-}
+export type DiscoveryInterestKey = PublicDiscoveryInterestKey
+export type DiscoveryInterestDefinition = PublicDiscoveryDefinition
 
-export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = [
-  {
-    key: 'portrait_photography',
-    slug: 'portrait-photography',
-    tags: ['portrait', 'photography', 'avatar'],
-    icon: 'portrait',
-    messageKey: 'growth.discovery.interests.portraitPhotography.title',
-    descriptionKey: 'growth.discovery.interests.portraitPhotography.description',
-  },
-  {
-    key: 'three_d_sculpture',
-    slug: '3d-sculpture',
-    tags: ['3d', 'sculpture'],
-    icon: 'deployed_code',
-    messageKey: 'growth.discovery.interests.threeDSculpture.title',
-    descriptionKey: 'growth.discovery.interests.threeDSculpture.description',
-  },
-  {
-    key: 'illustration_animation',
-    slug: 'illustration-animation',
-    tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
-    icon: 'brush',
-    messageKey: 'growth.discovery.interests.illustrationAnimation.title',
-    descriptionKey: 'growth.discovery.interests.illustrationAnimation.description',
-  },
-  {
-    key: 'poster_editorial',
-    slug: 'posters-editorial',
-    tags: ['poster', 'editorial'],
-    icon: 'view_quilt',
-    messageKey: 'growth.discovery.interests.posterEditorial.title',
-    descriptionKey: 'growth.discovery.interests.posterEditorial.description',
-  },
-  {
-    key: 'product_fashion',
-    slug: 'product-fashion',
-    tags: ['product', 'fashion'],
-    icon: 'styler',
-    messageKey: 'growth.discovery.interests.productFashion.title',
-    descriptionKey: 'growth.discovery.interests.productFashion.description',
-  },
-  {
-    key: 'cinematic_game_art',
-    slug: 'cinematic-game-art',
-    tags: ['cinematic', 'game-style', 'pixel-art'],
-    icon: 'movie',
-    messageKey: 'growth.discovery.interests.cinematicGameArt.title',
-    descriptionKey: 'growth.discovery.interests.cinematicGameArt.description',
-  },
-] as const
+export const DISCOVERY_INTERESTS: readonly DiscoveryInterestDefinition[] = PUBLIC_DISCOVERY_INTERESTS
 
 const INTEREST_KEYS = new Set<DiscoveryInterestKey>(
   DISCOVERY_INTERESTS.map(interest => interest.key),
