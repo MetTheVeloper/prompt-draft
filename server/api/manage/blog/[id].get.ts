@@ -7,7 +7,7 @@ export default defineEventHandler(async (event) => {
   await requireBlogManage(event)
   setHeader(event, 'Cache-Control', 'no-store')
 
-  const id = decodeURIComponent(getRouterParam(event, 'id') || '').trim()
+  const id = (getRouterParam(event, 'id') || '').trim()
   if (!ARTICLE_ID_PATTERN.test(id)) {
     throw createError({ statusCode: 404, statusMessage: 'Blog Article not found' })
   }
