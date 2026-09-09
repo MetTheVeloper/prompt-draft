@@ -42,6 +42,7 @@ import consolidatedControlsEn from './locales/consolidated-controls.en'
 import consolidatedControlsFa from './locales/consolidated-controls.fa'
 import consolidatedUiCleanupEn from './locales/consolidated-ui-cleanup.en'
 import consolidatedUiCleanupFa from './locales/consolidated-ui-cleanup.fa'
+import consolidatedRuntimeFallbacksEn from './locales/consolidated-runtime-fallbacks.en'
 import consolidatedCoreFa from './locales/consolidated-core.fa'
 import consolidatedCameraFramingFa from './locales/consolidated-camera-framing.fa'
 import consolidatedFormFa from './locales/consolidated-form.fa'
@@ -104,6 +105,7 @@ function withModuleFragments(
 const enConsolidated = {
   ...consolidatedControlsEn,
   ...consolidatedUiCleanupEn,
+  ...consolidatedRuntimeFallbacksEn,
 }
 
 const enManage = deepMerge(
