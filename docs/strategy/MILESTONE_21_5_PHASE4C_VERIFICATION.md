@@ -46,6 +46,9 @@ e9dca683cfb409af448fbaf22d556640dfca1805  feat: add Phase 4C Creator profile fou
 fbeb1b7b5c063884551dea3cf866ea9996f191a8  feat: add authenticated profile editor
 9f6ce9a7869bd000cf166fa643994a57aa785a4c  feat: add Edit profile entry to account menu
 2ea2e8536b174c47ba8511edb78faa4c84c61668  fix: localize Jalali birthday month labels
+206530c394233d2b2ec670391727527138710af6  feat: seed Creator profile skill taxonomy
+521be66c7ff3c983276730589236f763e8fb3244  test: lock Creator skill taxonomy inventory
+5bd7d8101de7129ecbf61b8b0b30def58048d031  test: expose Creator taxonomy verification
 ```
 
 ---
@@ -230,45 +233,174 @@ Implementation evidence:
 [x] Jalali month labels are localized through i18n, not hardcoded in the component
 ```
 
-### 4.3 Deliberately open founder checkpoints
+### 4.3 Skills taxonomy V1 — founder-directed implementation
 
-These are not accidental omissions:
+Founder direction 2026-09-09:
 
 ```text
-Skills taxonomy initial inventory
-  -> schema/API/UI ready
-  -> no seed until founder-reviewed category/skill inventory is accepted
-
-Location suggestion provider
-  -> custom text works now
-  -> provider-backed search/suggestions not selected yet
-  -> no third-party service is silently introduced
-
-Article preview
-  -> Markdown source editing exists
-  -> sanitized rendered preview/public renderer remains a later rendering checkpoint
+Build the compact V1 taxonomy as proposed: roughly 6-8 categories / 30-40 skills.
 ```
 
-The above open checkpoints must be resolved before 4C.2 receives final acceptance if they are retained inside the 4C.2 product gate.
+Implemented as:
+
+```text
+backend/sql/028_seed_profile_skill_taxonomy.sql
+backend/src/profileSkillTaxonomy.test.mjs
+npm run test:profile-skill-taxonomy
+```
+
+V1 contract:
+
+```text
+8 categories
+40 skills
+5 skills per category
+localized EN + FA titles
+controlled canonical slugs
+stable sort order
+idempotent upsert
+migration reruns preserve operational active=false state
+```
+
+Categories:
+
+```text
+AI & Prompting
+Product & Design
+Software Development
+Visual Creation
+Content & Language
+Data & Automation
+Media Production
+Business & Growth
+```
+
+The taxonomy is deliberately broad rather than language/framework-specific. Future expansion should be additive and versioned; free-text skills remain out of scope for canonical Creator identity.
+
+### 4.4 Location suggestion decision
+
+Founder direction 2026-09-09 permits leaving Location as custom text if there is no immediate production-safe free suggestion service worth coupling into this slice.
+
+Research checkpoint:
+
+```text
+Public Nominatim
+  -> unsuitable: public-service policy explicitly forbids client-side autocomplete
+
+Photon public demo
+  -> supports search-as-you-type but has no availability guarantee / hard usage contract
+  -> not appropriate as a production dependency
+
+Geoapify
+  -> credible free autocomplete tier exists, but requires an external API key/account
+
+LocationIQ
+  -> credible free tier exists, but requires token + attribution/usage terms
+```
+
+Decision for 4C.2:
+
+```text
+[x] retain provider-independent DB contract
+[x] retain working custom location text UI
+[x] do not add a third-party provider/key requirement to 4C.2
+[x] provider-backed suggestion may be added later without schema redesign
+```
+
+This is now an intentional defer, not an unresolved 4C.2 blocker.
+
+### 4.5 Article preview decision
+
+```text
+[x] Markdown source editing is the 4C.2 requirement
+[x] rendered/sanitized public Markdown belongs to Public Creator SSR (4C.5)
+[x] editor preview may be added later but is not a 4C.2 acceptance blocker
+```
 
 ---
 
 ## 5. 4C.2 founder-local verification gate
 
-Run after pulling the authoritative branch:
+### 5.1 Automated evidence already reported 2026-09-09
+
+```text
+docker compose up -d --build api frontend
+-> API image built
+-> frontend Nuxt production build completed successfully inside Docker
+
+docker compose exec api npm run db:schema
+-> migrations 001 through 027 applied successfully
+
+docker compose exec api npm run test:creator-profile-foundation
+-> 7 tests / 7 pass / 0 fail
+
+docker compose exec api npm run test:profile-management
+-> 8 tests / 8 pass / 0 fail
+
+docker compose exec api npm run test:public-prompt
+-> 10 tests / 10 pass / 0 fail
+
+pnpm locale:check
+-> localization audit ran
+-> hardcoded candidates: 0
+-> strict command exited 1 because repository-wide EN/FA missing/extra-key backlog remains
+```
+
+The Docker frontend build is therefore already green. The strict locale mismatch requires differential/baseline treatment before final 4C.2 acceptance; it is not a Nuxt build failure.
+
+### 5.2 Founder browser evidence already reported 2026-09-09
+
+```text
+[x] Profile page is functionally working
+[x] multiple profile datasets save successfully
+[x] saved profile data persists after leaving/reopening the page
+[x] duplicate username is rejected
+[x] founder populated the current Grass profile with EN/FA profile content for future UI fixtures
+```
+
+Remaining detailed manual checks are kept below until explicitly covered/accepted.
+
+### 5.3 Taxonomy verification after pulling migration 028
+
+Run:
 
 ```powershell
 git pull
-docker compose up -d --build api frontend
+
 docker compose exec api npm run db:schema
-docker compose exec api npm run test:creator-profile-foundation
+
+docker compose exec api npm run test:profile-skill-taxonomy
+
 docker compose exec api npm run test:profile-management
-docker compose exec api npm run test:public-prompt
-pnpm locale:check
-pnpm build
+
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT COUNT(*) AS categories FROM profile_skill_categories WHERE active = TRUE; SELECT COUNT(*) AS skills FROM profile_skills WHERE active = TRUE;"
+
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "SELECT category_slug, COUNT(*) AS skills FROM profile_skills WHERE active = TRUE GROUP BY category_slug ORDER BY category_slug;"
 ```
 
-Expected manual browser checks:
+Expected:
+
+```text
+migration 028 applies successfully
+taxonomy tests PASS
+profile-management regression PASS
+active categories = 8
+active skills = 40
+each V1 category = 5 active skills
+```
+
+Then browser-smoke the real Grass profile:
+
+```text
+[ ] Skills selector now contains localized taxonomy items
+[ ] EN locale shows English category/skill labels
+[ ] FA locale shows Persian category/skill labels
+[ ] select one or more skills and Save
+[ ] selected skills persist after reload
+[ ] assuming all other required Creator fields are complete, Creator readiness becomes ready=true
+```
+
+### 5.4 Remaining manual browser checklist
 
 ```text
 [ ] ordinary user avatar menu shows Edit profile
@@ -277,20 +409,20 @@ Expected manual browser checks:
 [ ] ordinary user sees Profile but no unauthorized admin sections
 [ ] admin/super_admin still see their permitted admin sections
 [ ] /manage root keeps useful admin landing for admins and Profile fallback for ordinary users
-[ ] incomplete regular-user profile can save
+[x] incomplete regular-user profile can save
 [ ] saving does not create Creator request/state
-[ ] username/email changes save and auth UI refreshes
-[ ] Screen Name EN/FA save + reload
-[ ] Bio EN/FA save + reload
-[ ] Article EN/FA save + reload
-[ ] custom location save + reload
+[x] username/email/profile changes save and persist
+[x] Screen Name EN/FA save + reload (covered by populated Grass profile smoke)
+[x] Bio EN/FA save + reload (covered by populated Grass profile smoke)
+[x] Article EN/FA save + reload (covered by populated Grass profile smoke)
+[x] custom location save + reload (covered by populated Grass profile smoke)
 [ ] links save + reload and sixth link is not allowed
 [ ] EN birthday picker saves/reloads canonical date
 [ ] FA Jalali picker saves/reloads the same canonical date correctly
 [ ] avatar update/remove still works
 [ ] cover update/remove still works
-[ ] Request Creator button is absent as expected before 4C.3
-[ ] Skills UI clearly reports unseeded taxonomy until inventory checkpoint is resolved
+[x] Request Creator button is absent as expected before 4C.3
+[ ] Skills taxonomy selection save + reload after migration 028
 ```
 
 Founder-local verification: **PENDING**
