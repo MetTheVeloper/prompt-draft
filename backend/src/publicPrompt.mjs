@@ -1,6 +1,7 @@
 import { queryDatabase } from './database.mjs'
 import { handlePublicCreatorRequest } from './publicCreator.mjs'
 import { mapPublicCreatorAttribution } from './publicCreatorAttribution.mjs'
+import { handlePublicInventoryRequest } from './publicInventory.mjs'
 import { normalizePublicPromptLocalization } from './publicLocalization.mjs'
 
 const PUBLIC_PROMPT_PREFIX = '/api/public/prompts'
@@ -162,6 +163,19 @@ export async function handlePublicPromptRequest({
   sendJson,
   query = queryDatabase,
 }) {
+  if (
+    await handlePublicInventoryRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+      query,
+    })
+  ) {
+    return true
+  }
+
   if (
     await handlePublicCreatorRequest({
       request,
