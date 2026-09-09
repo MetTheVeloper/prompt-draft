@@ -1,49 +1,16 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import {
+  buildPublicUrlInventory,
+  isPublicApiInventory,
+  PUBLIC_DISCOVERY_CATALOG,
+  renderSitemapXml,
+  type PublicApiInventory,
+} from './public-url-inventory'
 
-const DISCOVERY_CATALOG = [
-  {
-    slug: 'portrait-photography',
-    title: 'Portraits & Photography',
-    description: 'Portraits, photography, avatars, headshots and identity-led visuals.',
-    tags: ['portrait', 'photography', 'avatar'],
-  },
-  {
-    slug: '3d-sculpture',
-    title: '3D & Sculpture',
-    description: '3D characters, crafted objects, figurines and sculptural transformations.',
-    tags: ['3d', 'sculpture'],
-  },
-  {
-    slug: 'illustration-animation',
-    title: 'Illustration & Animation',
-    description: 'Illustration, anime, cartoons and animation-inspired visual styles.',
-    tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
-  },
-  {
-    slug: 'posters-editorial',
-    title: 'Posters & Editorial',
-    description: 'Poster design, covers, editorial compositions and publication-style visuals.',
-    tags: ['poster', 'editorial'],
-  },
-  {
-    slug: 'product-fashion',
-    title: 'Product & Fashion',
-    description: 'Product imagery, advertising, clothing previews and fashion direction.',
-    tags: ['product', 'fashion'],
-  },
-  {
-    slug: 'cinematic-game-art',
-    title: 'Cinematic & Game Art',
-    description: 'Cinematic scenes, game-inspired visuals, characters and dramatic worlds.',
-    tags: ['cinematic', 'game-style', 'pixel-art'],
-  },
-] as const
-
-const PUBLIC_DISCOVERY_ROUTES = DISCOVERY_CATALOG.map(item => `/discover/${item.slug}`)
-const STATIC_PUBLIC_ROUTES = ['/', ...PUBLIC_DISCOVERY_ROUTES]
 const DISCOVERY_SNAPSHOT_LIMIT = 12
 const DISCOVERY_FETCH_TIMEOUT_MS = 5000
+const PUBLIC_INVENTORY_FETCH_TIMEOUT_MS = 5000
 
 type PublicDiscoveryItem = {
   id: number
@@ -72,15 +39,6 @@ function normalizeAbsoluteUrl(value: string | undefined, label: string) {
   } catch {
     throw new Error(`${label} must be a valid absolute URL`)
   }
-}
-
-function escapeXml(value: string) {
-  return value
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
-    .replaceAll("'", '&apos;')
 }
 
 function escapeHtml(value: string) {
@@ -202,7 +160,7 @@ function setRouteHead(
   return html
 }
 
-function renderStaticSnapshot(category: typeof DISCOVERY_CATALOG[number], items: PublicDiscoveryItem[]) {
+function renderStaticSnapshot(category: typeof PUBLIC_DISCOVERY_CATALOG[number], items: PublicDiscoveryItem[]) {
   const itemMarkup = items.map((item) => {
     const image = item.coverImage?.thumbnailUrl || item.coverImage?.fullUrl || ''
     const tags = item.tags.slice(0, 8).map(tag => `<li>${escapeHtml(tag.replaceAll('-', ' '))}</li>`).join('')
@@ -247,7 +205,7 @@ function injectStaticSnapshot(sourceHtml: string, snapshot: string) {
 }
 
 function createStructuredData(
-  category: typeof DISCOVERY_CATALOG[number],
+  category: typeof PUBLIC_DISCOVERY_CATALOG[number],
   items: PublicDiscoveryItem[],
   canonicalUrl: string,
   siteUrl: string,
@@ -288,7 +246,7 @@ function isPublicDiscoveryItem(value: unknown): value is PublicDiscoveryItem {
   return true
 }
 
-async function fetchDiscoveryItems(apiBase: string, category: typeof DISCOVERY_CATALOG[number]) {
+async function fetchDiscoveryItems(apiBase: string, category: typeof PUBLIC_DISCOVERY_CATALOG[number]) {
   if (!apiBase) return [] as PublicDiscoveryItem[]
 
   const url = new URL('/api/discover', `${apiBase}/`)
@@ -319,10 +277,33 @@ async function fetchDiscoveryItems(apiBase: string, category: typeof DISCOVERY_C
   }
 }
 
+async function fetchAuthoritativePublicInventory(apiBase: string): Promise<PublicApiInventory> {
+  const url = new URL('/api/public/inventory', `${apiBase}/`)
+  const controller = new AbortController()
+  const timeout = setTimeout(() => controller.abort(), PUBLIC_INVENTORY_FETCH_TIMEOUT_MS)
+
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal,
+    })
+    if (!response.ok) throw new Error(`HTTP ${response.status}`)
+
+    const payload = await response.json() as { ok?: boolean; inventory?: unknown }
+    if (payload.ok !== true || !isPublicApiInventory(payload.inventory)) {
+      throw new Error('invalid public inventory response')
+    }
+
+    return payload.inventory
+  } finally {
+    clearTimeout(timeout)
+  }
+}
+
 async function enrichDiscoveryHtml(outputDir: string, siteUrl: string, apiBase: string) {
   let enriched = 0
 
-  for (const category of DISCOVERY_CATALOG) {
+  for (const category of PUBLIC_DISCOVERY_CATALOG) {
     const route = `/discover/${category.slug}`
     const filePath = resolve(outputDir, 'discover', category.slug, 'index.html')
     let html = await readFile(filePath, 'utf8')
@@ -357,6 +338,7 @@ async function main() {
     process.env.NUXT_PUBLIC_API_BASE || 'http://127.0.0.1:4000',
     'NUXT_PUBLIC_API_BASE',
   )
+  const indexingEnabled = String(process.env.NUXT_PUBLIC_NOINDEX || 'false').toLowerCase() !== 'true'
 
   const enrichedCount = await enrichDiscoveryHtml(outputDir, siteUrl, apiBase)
 
@@ -365,16 +347,14 @@ async function main() {
     return
   }
 
-  const sitemap = [
-    '<?xml version="1.0" encoding="UTF-8"?>',
-    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
-    ...STATIC_PUBLIC_ROUTES.map((route) => {
-      const loc = new URL(route, `${siteUrl}/`).toString()
-      return `  <url><loc>${escapeXml(loc)}</loc></url>`
-    }),
-    '</urlset>',
-    '',
-  ].join('\n')
+  const dynamicInventory = indexingEnabled
+    ? await fetchAuthoritativePublicInventory(apiBase)
+    : { prompts: [], creators: [] }
+  const publicInventory = buildPublicUrlInventory({
+    dynamicInventory,
+    indexingEnabled,
+  })
+  const sitemap = renderSitemapXml(publicInventory, siteUrl)
 
   await writeFile(resolve(outputDir, 'sitemap.xml'), sitemap, 'utf8')
 
@@ -384,7 +364,8 @@ async function main() {
   robots += `\nSitemap: ${siteUrl}/sitemap.xml\n`
   await writeFile(resolve(outputDir, 'robots.txt'), robots, 'utf8')
 
-  console.log(`[public-seo] sitemap generated for ${STATIC_PUBLIC_ROUTES.length} public routes`)
+  const mode = indexingEnabled ? 'indexing enabled' : 'global noindex'
+  console.log(`[public-seo] sitemap generated for ${publicInventory.length} canonical public routes (${mode})`)
 }
 
 main().catch((error) => {
