@@ -1,0 +1,203 @@
+export type PublicLocale = 'en' | 'fa'
+export type PublicUrlResourceKind = 'static' | 'discovery' | 'prompt' | 'creator'
+
+export type PublicUrlResource = {
+  kind: PublicUrlResourceKind
+  locale: PublicLocale
+  canonicalPath: string
+}
+
+export type PublicApiInventory = {
+  prompts: Array<{
+    id: number
+    availableLocales: string[]
+  }>
+  creators: Array<{
+    username: string
+    availableLocales: string[]
+    policy: {
+      indexable: boolean
+      discoverable: boolean
+    }
+  }>
+}
+
+export const PUBLIC_LOCALES: readonly PublicLocale[] = ['en', 'fa'] as const
+
+export const PUBLIC_DISCOVERY_CATALOG = [
+  {
+    slug: 'portrait-photography',
+    title: 'Portraits & Photography',
+    description: 'Portraits, photography, avatars, headshots and identity-led visuals.',
+    tags: ['portrait', 'photography', 'avatar'],
+  },
+  {
+    slug: '3d-sculpture',
+    title: '3D & Sculpture',
+    description: '3D characters, crafted objects, figurines and sculptural transformations.',
+    tags: ['3d', 'sculpture'],
+  },
+  {
+    slug: 'illustration-animation',
+    title: 'Illustration & Animation',
+    description: 'Illustration, anime, cartoons and animation-inspired visual styles.',
+    tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
+  },
+  {
+    slug: 'posters-editorial',
+    title: 'Posters & Editorial',
+    description: 'Poster design, covers, editorial compositions and publication-style visuals.',
+    tags: ['poster', 'editorial'],
+  },
+  {
+    slug: 'product-fashion',
+    title: 'Product & Fashion',
+    description: 'Product imagery, advertising, clothing previews and fashion direction.',
+    tags: ['product', 'fashion'],
+  },
+  {
+    slug: 'cinematic-game-art',
+    title: 'Cinematic & Game Art',
+    description: 'Cinematic scenes, game-inspired visuals, characters and dramatic worlds.',
+    tags: ['cinematic', 'game-style', 'pixel-art'],
+  },
+] as const
+
+const STATIC_ACQUISITION_PATHS = ['/', '/guide'] as const
+const PUBLIC_LOCALE_SET = new Set<string>(PUBLIC_LOCALES)
+
+function normalizeAvailableLocales(value: unknown): PublicLocale[] {
+  if (!Array.isArray(value)) return []
+
+  return PUBLIC_LOCALES.filter(locale => value.includes(locale))
+}
+
+function localizedCanonicalPath(basePath: string, locale: PublicLocale) {
+  if (locale === 'en') return basePath
+  return basePath === '/' ? '/fa' : `/fa${basePath}`
+}
+
+function addLocalizedResource(
+  resources: PublicUrlResource[],
+  kind: PublicUrlResourceKind,
+  basePath: string,
+  locales: readonly PublicLocale[],
+) {
+  for (const locale of locales) {
+    resources.push({
+      kind,
+      locale,
+      canonicalPath: localizedCanonicalPath(basePath, locale),
+    })
+  }
+}
+
+export function buildPublicUrlInventory({
+  dynamicInventory,
+  indexingEnabled = true,
+}: {
+  dynamicInventory?: PublicApiInventory | null
+  indexingEnabled?: boolean
+} = {}): PublicUrlResource[] {
+  if (!indexingEnabled) return []
+
+  const resources: PublicUrlResource[] = []
+
+  for (const path of STATIC_ACQUISITION_PATHS) {
+    addLocalizedResource(resources, 'static', path, PUBLIC_LOCALES)
+  }
+
+  for (const category of PUBLIC_DISCOVERY_CATALOG) {
+    addLocalizedResource(resources, 'discovery', `/discover/${category.slug}`, PUBLIC_LOCALES)
+  }
+
+  for (const prompt of dynamicInventory?.prompts ?? []) {
+    const id = Number(prompt?.id)
+    if (!Number.isSafeInteger(id) || id <= 0) continue
+
+    const locales = normalizeAvailableLocales(prompt.availableLocales)
+    addLocalizedResource(resources, 'prompt', `/prompt/${id}`, locales)
+  }
+
+  for (const creator of dynamicInventory?.creators ?? []) {
+    // The server-authoritative 4C result is the only Creator eligibility gate
+    // here. Do not recreate account/role/profile/publication heuristics in build code.
+    if (creator?.policy?.indexable !== true) continue
+
+    const username = typeof creator.username === 'string' ? creator.username.trim() : ''
+    if (!username) continue
+
+    const locales = normalizeAvailableLocales(creator.availableLocales)
+    addLocalizedResource(
+      resources,
+      'creator',
+      `/creator/${encodeURIComponent(username)}`,
+      locales,
+    )
+  }
+
+  const unique = new Map<string, PublicUrlResource>()
+  for (const resource of resources) {
+    if (!resource.canonicalPath.startsWith('/')) continue
+    const key = `${resource.locale}:${resource.canonicalPath}`
+    if (!unique.has(key)) unique.set(key, resource)
+  }
+
+  return [...unique.values()].sort((left, right) => {
+    const pathOrder = left.canonicalPath.localeCompare(right.canonicalPath)
+    if (pathOrder !== 0) return pathOrder
+    return left.locale.localeCompare(right.locale)
+  })
+}
+
+function escapeXml(value: string) {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&apos;')
+}
+
+export function renderSitemapXml(resources: readonly PublicUrlResource[], siteUrl: string) {
+  const normalizedSiteUrl = new URL(siteUrl).toString().replace(/\/+$/, '')
+
+  return [
+    '<?xml version="1.0" encoding="UTF-8"?>',
+    '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">',
+    ...resources.map((resource) => {
+      const loc = new URL(resource.canonicalPath, `${normalizedSiteUrl}/`).toString()
+      return `  <url><loc>${escapeXml(loc)}</loc></url>`
+    }),
+    '</urlset>',
+    '',
+  ].join('\n')
+}
+
+export function isPublicApiInventory(value: unknown): value is PublicApiInventory {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false
+  const inventory = value as Record<string, unknown>
+  if (!Array.isArray(inventory.prompts) || !Array.isArray(inventory.creators)) return false
+
+  return inventory.prompts.every((prompt) => {
+    if (!prompt || typeof prompt !== 'object' || Array.isArray(prompt)) return false
+    const candidate = prompt as Record<string, unknown>
+    return Number.isSafeInteger(Number(candidate.id)) &&
+      Number(candidate.id) > 0 &&
+      Array.isArray(candidate.availableLocales) &&
+      candidate.availableLocales.every(locale => typeof locale === 'string' && PUBLIC_LOCALE_SET.has(locale))
+  }) && inventory.creators.every((creator) => {
+    if (!creator || typeof creator !== 'object' || Array.isArray(creator)) return false
+    const candidate = creator as Record<string, unknown>
+    const policy = candidate.policy
+    return typeof candidate.username === 'string' &&
+      candidate.username.trim().length > 0 &&
+      Array.isArray(candidate.availableLocales) &&
+      candidate.availableLocales.every(locale => typeof locale === 'string' && PUBLIC_LOCALE_SET.has(locale)) &&
+      Boolean(policy) &&
+      typeof policy === 'object' &&
+      !Array.isArray(policy) &&
+      typeof (policy as Record<string, unknown>).indexable === 'boolean' &&
+      typeof (policy as Record<string, unknown>).discoverable === 'boolean'
+  })
+}
