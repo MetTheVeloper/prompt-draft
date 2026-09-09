@@ -89,6 +89,7 @@ docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
 docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
 docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
+docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
 ```
 
 Rendering ADR:
@@ -117,7 +118,7 @@ Phase 4 slices:
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4D Sitemap / Robots / Discovery Migration             NEXT
+21.5.4D Sitemap / Robots / Discovery + AI Discovery        NEXT / AUDIT FIRST
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
 ```
@@ -483,14 +484,27 @@ Creator sitemap/discovery eligibility must consume the accepted server-authorita
 
 ---
 
-## Current action — 21.5.4D Sitemap / Robots / Discovery Migration
+## Current action — 21.5.4D Sitemap / Robots / Discovery + AI Discovery
 
 4D is now unblocked by founder acceptance of 4C.
+
+Authoritative 4D planning record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+```
+
+Current 4D status:
+
+```text
+PLANNING / AUDIT NEXT / NOT IMPLEMENTED
+```
 
 Immediate audit scope:
 
 ```text
 public/robots.txt
+public/llms.txt if present
 scripts/generate-public-seo.ts
 current sitemap generation/output
 runtime routeRules and X-Robots-Tag behavior
@@ -499,7 +513,10 @@ Public Prompt locale availability
 Public Creator policy.indexable/discoverable
 Discovery public projection and structured-data state
 static generate compatibility
+shared public URL inventory / static-vs-generated-vs-runtime output decision
 ```
+
+4D explicitly includes `/llms.txt` as a supplemental AI-discovery surface. For Prompt Draft it is treated as an optional/experimental machine-friendly guide to already-public canonical resources, not as crawler permission, training consent, a sitemap replacement, or a second indexability source of truth.
 
 Locked 4D constraints inherited from 4A–4C:
 
@@ -509,9 +526,12 @@ no second Creator eligibility definition
 no fake locale entries
 staging NUXT_PUBLIC_NOINDEX always wins
 application/private X-Robots-Tag rules remain intact
-protected Prompt body/variants never enter sitemap/SEO payloads
+protected Prompt body/variants never enter sitemap/SEO/AI-discovery payloads
 private Drafts never public
 Creator private fields never public
+llms.txt must consume the same canonical/indexable inventory as sitemap/public policy
+llms.txt must not override robots/indexability behavior
+future Blog URLs enter sitemap/llms inventory only after 4E establishes published Article semantics
 prompt-draft.ir remains untouched during staging verification
 legacy generate-public-seo retirement must be incremental and regression-safe
 ```
@@ -599,7 +619,7 @@ GET /api/public/prompts/:id -> public published-only sanitized read model
 GET /api/public/creators/:username -> public approved-accessible sanitized read model
 ```
 
-Rendering/SEO work must not weaken backend authorization.
+Rendering/SEO/AI-discovery work must not weaken backend authorization.
 
 Private Drafts are never public or SSR-published.
 
@@ -682,20 +702,22 @@ Before allocating any later migration number, inspect the current branch migrati
 ## Hard rules inherited forward
 
 ```text
-DO NOT weaken authorization for SEO.
+DO NOT weaken authorization for SEO or AI discovery.
 DO NOT make GET /api/archive/:id public.
 DO NOT expose protected Prompt bodies/variants/unlock-gated content.
 DO NOT derive Public Prompt description from protected Prompt text.
 DO NOT expose private Drafts.
-DO NOT expose email, balance, sessions or permissions in public SEO projections.
+DO NOT expose email, balance, sessions or permissions in public SEO/AI projections.
 DO NOT merge public/protected data sources when sharing Prompt presentation UI.
 DO NOT use cookie-dependent canonical language.
 DO NOT create indexable fake localization fallback pages.
 DO NOT let route-level SEO override staging NUXT_PUBLIC_NOINDEX=true.
 DO NOT expose private account/profile data through Creator surfaces.
 DO NOT infer Creator from users.role or published Prompt ownership.
-DO NOT recreate Creator indexability policy independently inside sitemap/discovery code.
-DO NOT query GitHub per Blog request.
+DO NOT recreate Creator indexability policy independently inside sitemap/discovery/llms code.
+DO NOT treat llms.txt as a robots/training/indexability permission source.
+DO NOT put private/protected or noncanonical routes into llms.txt.
+DO NOT query GitHub per Blog or AI-discovery request.
 DO NOT embed Blog images as base64 Markdown payloads.
 DO NOT create a second uncontrolled Blog source of truth beside Git.
 DO NOT use admin_audit_log as behavioral analytics.
@@ -710,15 +732,18 @@ When continuing in a new chat:
 
 ```text
 1. read this STATUS.md
-2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its smallest-rebuild-scope rule
+2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its time-first / smallest-rebuild-scope rule; this is mandatory because it keeps founder verification fast
 3. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md for the accepted Creator baseline
-5. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED
-6. inspect the latest feature/growth-foundation branch state before implementation
-7. begin 4D audit-first: robots, sitemap, Discovery migration, generate-public-seo compatibility
-8. preserve all accepted 4A/4B/4C route, localization, SEO, noindex, privacy and public/protected boundaries
-9. consume Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
-10. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
-11. do not mark 4D DONE until founder-local/staging verification and explicit acceptance
-12. do not begin 4E until 4D is accepted
+5. read docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md as the 4D planning source of truth
+6. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED
+7. inspect the latest feature/growth-foundation branch state before implementation; preserve any parallel documentation/work already added to the branch
+8. begin 4D audit-first: robots, sitemap, Discovery migration, generate-public-seo compatibility and current llms.txt absence/presence
+9. design /llms.txt from the same canonical/indexable public inventory used by sitemap; never create parallel Prompt/Creator eligibility logic
+10. preserve all accepted 4A/4B/4C route, localization, SEO, noindex, privacy and public/protected boundaries
+11. consume Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
+12. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
+13. keep grassic.ir/api.grassic.ir as staging and do not touch prompt-draft.ir
+14. do not mark 4D DONE until founder-local/staging verification and explicit acceptance
+15. do not begin 4E until 4D is accepted
 ```
