@@ -1,0 +1,31 @@
+export default {
+  growth: {
+    publicCreator: {
+      eyebrow: 'PUBLIC CREATOR',
+      articleEyebrow: 'CREATOR STORY',
+      articleTitle: 'About this Creator',
+      articleEmpty: 'This Creator has not published a long-form introduction yet.',
+      skillsEyebrow: 'EXPERTISE',
+      skillsTitle: 'Skills',
+      skillsEmpty: 'No public skills are listed yet.',
+      identityEyebrow: 'PUBLIC IDENTITY',
+      identityTitle: 'Creator details',
+      usernameLabel: 'Username',
+      locationLabel: 'Location',
+      publicationsEyebrow: 'PUBLISHED WORK',
+      publicationsTitle: 'Public prompts',
+      publicationsEmpty: 'This Creator has no public prompts yet.',
+      viewPrompt: 'View prompt',
+      linkTypes: {
+        website: 'Website',
+        github: 'GitHub',
+        linkedin: 'LinkedIn',
+        instagram: 'Instagram',
+        telegram: 'Telegram',
+        x: 'X',
+        youtube: 'YouTube',
+        other: 'Link',
+      },
+    },
+  },
+}
