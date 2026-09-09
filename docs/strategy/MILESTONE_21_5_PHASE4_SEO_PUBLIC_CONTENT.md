@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C DONE + ACCEPTED / NEXT 4D SITEMAP + ROBOTS + DISCOVERY MIGRATION**
+Status: **IN PROGRESS / 4A + 4B + 4C DONE + ACCEPTED / NEXT 4D SITEMAP + ROBOTS + DISCOVERY + AI DISCOVERY**
 
 Date: 2026-09-09
 
@@ -34,6 +34,7 @@ docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
+docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
 ```
 
 ---
@@ -52,6 +53,7 @@ server-rendered title + description
 Open Graph / Twitter metadata
 structured data when authoritative
 sitemap inclusion
+AI-oriented public discovery when appropriate
 404 / redirect behavior
 public data projection
 internal linking
@@ -62,10 +64,10 @@ Phase 4 extends the existing architecture. It must not create a parallel SEO sta
 Security remains absolute:
 
 ```text
-DO NOT expose protected Prompt bodies for SEO.
+DO NOT expose protected Prompt bodies for SEO or AI discovery.
 DO NOT SSR/private-publish private Drafts.
 DO NOT expose email, balance, sessions, permissions or private account data.
-DO NOT make GET /api/archive/:id public merely to serve an SEO page.
+DO NOT make GET /api/archive/:id public merely to serve an SEO/AI page.
 ```
 
 ---
@@ -99,7 +101,7 @@ existing Arvan Object Storage media pipeline
 21.5.4A — SEO Contracts & Route Semantics                     DONE / ACCEPTED
 21.5.4B — Public Prompt Architecture                          DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 21.5.4C — Public Creator Architecture + Indexability Policy   DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4D — Sitemap / Robots / Discovery Migration              NEXT
+21.5.4D — Sitemap / Robots / Discovery + AI Discovery         NEXT / AUDIT FIRST
 21.5.4E — Blog V1                                             NOT STARTED
 21.5.4F — SEO Integration / Verification / Legacy Retirement  NOT STARTED
 ```
@@ -511,13 +513,20 @@ no active-user-is-public-creator heuristic
 extend authoritative OG/structured data where truthful
 integrate Discovery routes with shared sitemap architecture
 make sitemap eligibility consume accepted Prompt/Creator policy outputs
+add a supplemental llms.txt projection from the same shared public inventory
 replace/reduce Milestone-21 static SEO snapshot dependencies
 migrate robots/sitemap runtime behavior without weakening staging noindex
 ```
 
 ---
 
-## 9. Robots + sitemap direction — 4D TARGET
+## 9. Robots + sitemap + AI-discovery direction — 4D TARGET
+
+Detailed 4D planning source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+```
 
 The current static `public/robots.txt` and `scripts/generate-public-seo.ts` sitemap behavior are Milestone 21-era compatibility pieces, not the target Phase 4 architecture.
 
@@ -543,6 +552,40 @@ NUXT_PUBLIC_NOINDEX=true
   -> global noindex response/header behavior
   -> route-level index intent must never override it
 ```
+
+Phase 4D also explicitly evaluates and, when the audit confirms a clean integration path, implements:
+
+```text
+/llms.txt
+```
+
+For Prompt Draft, `llms.txt` is a supplemental/experimental LLM-friendly guide to already-public canonical resources. It is **not** a crawler permission mechanism, training consent signal, sitemap replacement, or guarantee of AI indexing/citation.
+
+Required architecture:
+
+```text
+shared canonical/indexable public inventory
+-> sitemap projection
+-> llms.txt projection
+```
+
+It must not become a second Prompt/Creator eligibility system.
+
+Candidate current resource families are:
+
+```text
+/
+/guide
+/discover/:slug
+/prompt/:id
+/creator/:username
+```
+
+Blog URLs may join the shared sitemap/llms inventory only after 4E defines published Blog semantics.
+
+`llms.txt` must never expose or direct models toward protected Prompt bodies/variants, private Drafts, private Creator/account fields, internal UUID/source ids, storage keys, economy/permission/session state, or admin/provider metadata.
+
+The audit must choose static, build-generated, or runtime output based on shared-policy reuse, Docker/Nitro/static-generate compatibility, staging behavior and operational simplicity. Do not introduce request-time GitHub/external-service dependencies merely to build sitemap/AI-discovery output.
 
 ---
 
@@ -731,8 +774,9 @@ Target end state after 4F verification:
 ```text
 native SSR metadata/canonical/structured-data behavior authoritative
 runtime/shared sitemap architecture authoritative
+shared inventory also able to project llms.txt without parallel eligibility logic
 legacy post-generate HTML patching removed or reduced to a narrow compatibility adapter only if justified
-no duplicate SEO source of truth
+no duplicate SEO/AI-discovery source of truth
 ```
 
 ---
@@ -751,6 +795,9 @@ Final verification across the remaining slices must cover raw server responses a
 /creator/*
 /blog
 /blog/*
+/llms.txt
+/sitemap.xml
+/robots.txt
 /fa equivalents where authoritative
 ```
 
@@ -767,8 +814,11 @@ staging global noindex precedence
 OG/Twitter metadata
 structured-data validity/truthfulness
 sitemap inclusion/exclusion
+llms.txt canonical/public-only content
+llms.txt and sitemap sharing authoritative eligibility inputs
 redirect behavior
 no protected Prompt/account/private Draft leakage
+no private data leakage through llms.txt
 client-heavy/authenticated route regression smoke
 ```
 
@@ -783,23 +833,40 @@ Founder verification remains required before each slice is accepted and before P
 Proceed to:
 
 ```text
-21.5.4D — Sitemap / Robots / Discovery Migration
+21.5.4D — Sitemap / Robots / Discovery + AI Discovery
+```
+
+4D planning source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
 ```
 
 Immediate 4D audit/design questions:
 
 ```text
-1. inventory current public/robots.txt, generate-public-seo.ts and any sitemap outputs
-2. identify runtime vs generate-time sitemap consumers and deployment assumptions
-3. define one authoritative sitemap item contract for static routes, Public Prompts and approved indexable Creators
-4. consume accepted Creator policy.indexable rather than re-deriving Creator eligibility
+1. inventory current public/robots.txt, any public/llms.txt, generate-public-seo.ts and sitemap outputs
+2. identify runtime vs generate-time sitemap/robots consumers and deployment assumptions
+3. define one authoritative public URL inventory for static routes, Discovery, Public Prompts and approved indexable Creators
+4. consume accepted Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
 5. consume authoritative Prompt locale availability rather than creating fallback entries
 6. define EN/FA sitemap alternate behavior and xhtml hreflang policy
-7. define staging robots/sitemap behavior under NUXT_PUBLIC_NOINDEX=true
+7. define staging robots/sitemap/llms behavior under NUXT_PUBLIC_NOINDEX=true without weakening global staging protection
 8. preserve application/private noindex/X-Robots-Tag rules from 4A
 9. audit Discovery structured data and sitemap inclusion against sanitized public DTO only
-10. define retirement/migration path for generate-public-seo.ts without breaking static-generate compatibility prematurely
-11. add narrow contract tests before implementation acceptance
+10. decide static vs generated vs runtime /llms.txt while forcing it to consume the same shared canonical/indexable inventory as sitemap
+11. keep llms.txt supplemental: not crawler permission, not training consent, not an independent indexability policy
+12. keep protected Prompt/private Draft/private Creator/account data out of sitemap/robots/llms outputs
+13. define retirement/migration path for generate-public-seo.ts without breaking static-generate compatibility prematurely
+14. add narrow contract tests before implementation acceptance
 ```
+
+Before proposing founder verification commands, read and obey:
+
+```text
+docs/strategy/DEVELOPMENT_WORKFLOW.md
+```
+
+Use the smallest rebuild/test scope and root `package.json` scripts to keep verification fast.
 
 Do not begin 4E until 4D is implemented, founder-verified and explicitly accepted.
