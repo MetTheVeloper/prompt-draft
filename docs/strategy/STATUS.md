@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-08
+Last updated: 2026-09-09
 
 Branch:
 
@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B ACCEPTED / 4C NEXT
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B ACCEPTED / 4C IN PROGRESS
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -61,6 +61,14 @@ Milestone source of truth:
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 ```
 
+Project-wide local-development workflow:
+
+```text
+docs/strategy/DEVELOPMENT_WORKFLOW.md
+```
+
+The workflow file is mandatory operational guidance: prefer the smallest rebuild/test scope, prefer root `package.json` scripts, and never default to rebuilding the full stack merely for convenience.
+
 Phase records:
 
 ```text
@@ -73,6 +81,8 @@ docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
+docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 ```
 
 Rendering ADR:
@@ -91,7 +101,7 @@ ADR-001 remains historically correct for Milestone 21D. ADR-002 records the acce
 Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4C NEXT
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4C IN PROGRESS
 Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
@@ -100,7 +110,7 @@ Phase 4 slices:
 ```text
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4C Public Creator + Indexability Policy               NEXT
+21.5.4C Public Creator + Indexability Policy               IN PROGRESS
 21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
@@ -446,74 +456,95 @@ Missing translation must not create fake indexable fallback content pretending t
 
 ---
 
-## Current action — 21.5.4C Public Creator + Indexability Policy
+## Current action — 21.5.4C Creator Identity, Profile, Approval + Public Architecture
 
-4C is now the active Phase 4 slice.
-
-Accepted direction inherited from prior planning:
+Authoritative 4C records:
 
 ```text
-/user
-  -> account/product surface
-  -> not canonical SEO Creator URL
-
-/creator/:username
-  -> target public SSR/SEO Creator route
-  -> intentionally public identity/publications only
+docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 ```
 
-Public Creator V1 must exclude:
+Accepted architecture:
 
 ```text
-email
-balance/Goin
-sessions
-permissions
-private Drafts
-owner-only stats/counts
-XP initially
+users.role remains user|admin|super_admin
+Creator is a separate reviewed public-identity lifecycle
+profile completion never auto-promotes
+publishing a Prompt never auto-promotes
+/manage/profile is the common authenticated editing surface
+/creator/:username and /fa/creator/:username remain canonical public Creator routes
 ```
 
-Accessibility and indexability are separate:
+Creator application readiness requires:
 
 ```text
-valid but quality-failing Creator
-  -> accessible
-  -> noindex
-  -> excluded from sitemap
-
-nonexistent/deleted/public-access-prohibited Creator
-  -> unavailable / 404 according to policy
+active account
+valid canonical username
+screenName EN + FA
+bio EN + FA
+article EN + FA
+>= 1 active controlled taxonomy skill
 ```
 
-Target policy output concept:
+Not required:
 
 ```text
-accessible
-indexable
-discoverable
-reasons[]
-signals{}
+avatar
+cover
+birthday
+links
+location
+published Prompt count
+XP
+Goin/balance
 ```
 
-Exact quality thresholds remain deliberately TBD until the 4C audit/design locks them.
+Public Creator V1 safe identity allowlist is intentionally narrow and excludes email, birthday, role, internal UUID, review metadata, XP, Goin, permissions, sessions, private Drafts, storage keys and location provider metadata.
 
-### 4C start rule
-
-Before implementation:
+Current 4C checkpoint:
 
 ```text
-1. read this STATUS.md
-2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
-4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-6. inspect the latest feature/growth-foundation branch
-7. audit current user/profile/publication/privacy/indexability data before designing 4C
-8. do not expose private account fields merely because a public Creator route is being added
+4C architecture                        -> FOUNDER ACCEPTED
+4C.1 Creator Profile Foundation        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+4C.2 Authenticated Profile Management  -> IMPLEMENTED / FOUNDER-LOCAL FINAL POLISH RECHECK PENDING
+4C.3 Creator Application + Admin Review-> NEXT AFTER 4C.2 ACCEPTANCE
+4C.4 Public Creator policy/API         -> NOT STARTED
+4C.5 Public Creator SSR                -> NOT STARTED
+4C.6 Creator SEO/indexability          -> NOT STARTED
+4C.7 Prompt/Discovery attribution      -> NOT STARTED
+4C.8 aggregate/staging acceptance      -> NOT STARTED
 ```
 
-Do not implement quality thresholds, Creator public DTO or route behavior before the 4C audit establishes their source-of-truth fields and privacy semantics.
+4C.2 verified evidence reported by founder on 2026-09-09 includes:
+
+```text
+Creator profile foundation tests -> 7/7 PASS
+Profile management tests         -> 8/8 PASS
+Public Prompt regression         -> 10/10 PASS
+migration 028 taxonomy seed      -> applied
+taxonomy contract tests          -> 4/4 PASS
+active taxonomy                  -> 8 categories / 40 skills
+production pnpm build            -> PASS
+profile save/reload              -> PASS across repeated data edits
+username uniqueness enforcement  -> PASS manually
+EN/FA profile content persistence-> PASS manually
+skills selection/persistence      -> PASS manually
+```
+
+Latest 4C.2 polish adds:
+
+```text
+Outfit-style grouped el-multi-select taxonomy presentation
+shared dropdown-based birthday selector for Gregorian and Jalali calendars
+single-row year/month/day controls
+Birthday/Location card headers aligned with the rest of profile UI
+production-neutral location guidance
+```
+
+Those latest visual/UX changes require one final founder-local frontend smoke before 4C.2 is marked accepted.
+
+Location suggestion provider is deliberately deferred. Custom public display text is the V1 behavior; provider-backed suggestion can be added later without changing the stored profile contract.
 
 ---
 
@@ -656,17 +687,17 @@ Do not use `admin_audit_log` as behavioral analytics.
 
 ## Migration state
 
-Current Phase 4B migration head:
+Current branch migration head:
 
 ```text
-026_prompt_archive_published_localization_constraint.sql
+028_seed_profile_skill_taxonomy.sql
 ```
 
-Relevant 4B.5 migrations:
+Relevant 4C migrations:
 
 ```text
-025_prompt_archive_descriptions.sql
-026_prompt_archive_published_localization_constraint.sql
+027_creator_profile_foundation.sql
+028_seed_profile_skill_taxonomy.sql
 ```
 
 Before allocating any later migration number, inspect the current branch migration directory again rather than assuming a number is free from this snapshot.
@@ -687,10 +718,12 @@ DO NOT use cookie-dependent canonical language.
 DO NOT create indexable fake localization fallback pages.
 DO NOT let route-level SEO override staging NUXT_PUBLIC_NOINDEX=true.
 DO NOT expose private account/profile data through 4C Creator surfaces.
+DO NOT infer Creator from users.role or published Prompt ownership.
 DO NOT query GitHub per Blog request.
 DO NOT embed Blog images as base64 Markdown payloads.
 DO NOT create a second uncontrolled Blog source of truth beside Git.
 DO NOT use admin_audit_log as behavioral analytics.
+DO NOT default to a full Docker stack rebuild when a smaller or zero-rebuild verification scope is sufficient.
 ```
 
 ---
@@ -701,13 +734,14 @@ When continuing in a new chat:
 
 ```text
 1. read this STATUS.md
-2. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-3. read docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
-4. read docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-5. read docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-6. confirm Phase 21.5.4B remains DONE / ACCEPTED
-7. inspect the latest feature/growth-foundation branch state
-8. begin 21.5.4C with a privacy/data/indexability audit before implementation
-9. preserve all accepted 4A/4B route, localization, SEO, noindex and public/protected boundaries
-10. do not begin 4D until 4C is implemented, founder-verified and explicitly accepted
+2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its smallest-rebuild-scope rule
+3. read docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
+4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
+5. confirm Phase 21.5.4A and 4B remain DONE / ACCEPTED
+6. inspect the latest feature/growth-foundation branch state before implementation
+7. preserve all accepted 4A/4B route, localization, SEO, noindex and public/protected boundaries
+8. preserve Creator as a separate reviewed public-identity lifecycle rather than a users.role
+9. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
+10. do not mark any 4C slice DONE until founder-local verification and explicit acceptance
+11. do not begin 4D until 4C is implemented, founder-verified and explicitly accepted
 ```
