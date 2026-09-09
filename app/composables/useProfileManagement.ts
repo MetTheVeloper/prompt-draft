@@ -1,4 +1,5 @@
 import type {
+  CreatorApplicationResponse,
   ProfileManagementInput,
   ProfileManagementResponse,
 } from "~/types/profileManagement";
@@ -15,6 +16,10 @@ export function useProfileManagement() {
 
   function endpoint() {
     return `${apiBase}/api/profile`;
+  }
+
+  function creatorRequestEndpoint() {
+    return `${apiBase}/api/creator-account/request`;
   }
 
   async function load() {
@@ -41,5 +46,15 @@ export function useProfileManagement() {
     return response;
   }
 
-  return { load, save };
+  async function requestCreator() {
+    await auth.initialize();
+    if (!auth.token.value) throw new Error("Authentication required");
+
+    return $fetch<CreatorApplicationResponse>(creatorRequestEndpoint(), {
+      method: "POST",
+      headers: auth.authHeaders(),
+    });
+  }
+
+  return { load, save, requestCreator };
 }
