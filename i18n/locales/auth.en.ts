@@ -36,6 +36,8 @@ export default {
       title: "Account",
       username: "Username",
       email: "Email",
+      creatorLabel: "Creator",
+      completeRewardHint: "Complete your profile & earn Goin",
       xp: "XP",
       goinBalance: "Goin balance",
       goinLoading: "Loading Goin balance...",
