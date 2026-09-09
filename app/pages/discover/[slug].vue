@@ -1,9 +1,17 @@
 <script setup lang="ts">
 import PublicDiscoveryCard from '~/components/discover/PublicDiscoveryCard.vue'
 import { DISCOVERY_INTERESTS } from '~/composables/useDiscoveryPreferences'
+import {
+  buildPublicDiscoveryStructuredData,
+  normalizeDiscoverySiteUrl,
+  toDiscoveryAbsoluteUrl,
+} from '~/utils/publicDiscoverySeo'
+import { publicDiscoveryPath } from '~/utils/publicRoutes'
 
 const route = useRoute()
-const { t } = useI18n()
+const config = useRuntimeConfig()
+const { t, locale } = useI18n()
+const localePath = useLocalePath()
 const { mobile, tablet } = useScreen()
 const publicDiscovery = usePublicDiscovery()
 const cinemaMounted = ref(false)
@@ -26,6 +34,12 @@ const categoryDescription = computed(() => {
     : t('growth.publicDiscovery.notFoundDescription')
 })
 
+const canonicalPath = computed(() => {
+  return definition.value
+    ? publicDiscoveryPath(definition.value.slug)
+    : `/discover/${slug.value}`
+})
+
 const archiveUrl = computed(() => {
   if (!definition.value) return '/prompts'
   const params = new URLSearchParams()
@@ -42,12 +56,6 @@ const gridColumns = computed(() => {
 const relatedDefinitions = computed(() => {
   if (!definition.value) return DISCOVERY_INTERESTS
   return DISCOVERY_INTERESTS.filter(item => item.key !== definition.value?.key)
-})
-
-usePublicSeo({
-  title: categoryTitle.value,
-  description: categoryDescription.value,
-  canonicalPath: `/discover/${slug.value}`,
 })
 
 const { data: discoveryData, status } = await useAsyncData(
@@ -97,6 +105,37 @@ const heroSources = computed(() => {
   }
 
   return sources
+})
+
+const siteUrl = computed(() => normalizeDiscoverySiteUrl(config.public.siteUrl))
+
+function toLocalizedCanonicalUrl(basePath: string) {
+  const localizedPath = localePath(basePath, locale.value)
+  return toDiscoveryAbsoluteUrl(siteUrl.value, localizedPath)
+}
+
+const canonicalUrl = computed(() => toLocalizedCanonicalUrl(canonicalPath.value))
+
+const structuredData = computed(() => {
+  if (!definition.value || !canonicalUrl.value) return null
+
+  return buildPublicDiscoveryStructuredData({
+    items: items.value,
+    locale: locale.value === 'fa' ? 'fa' : 'en',
+    title: categoryTitle.value,
+    description: categoryDescription.value,
+    canonicalUrl: canonicalUrl.value,
+    toCanonicalUrl: toLocalizedCanonicalUrl,
+    toAbsoluteUrl: value => toDiscoveryAbsoluteUrl(siteUrl.value, value),
+  })
+})
+
+usePublicSeo({
+  title: categoryTitle,
+  description: categoryDescription,
+  canonicalPath,
+  imageUrl: computed(() => heroSources.value[0] || null),
+  structuredData,
 })
 
 onMounted(() => {
