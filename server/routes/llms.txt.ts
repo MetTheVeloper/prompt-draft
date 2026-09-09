@@ -5,6 +5,7 @@ import {
 import {
   fetchRuntimePublicInventory,
   isPublicIndexingEnabled,
+  loadRuntimeBlogPublicInventory,
   normalizePublicAbsoluteUrl,
 } from '../utils/public-seo-inventory'
 
@@ -39,9 +40,13 @@ export default defineEventHandler(async (event) => {
   }
 
   try {
-    const dynamicInventory = await fetchRuntimePublicInventory(apiBase)
+    const [dynamicInventory, blogArticles] = await Promise.all([
+      fetchRuntimePublicInventory(apiBase),
+      loadRuntimeBlogPublicInventory(),
+    ])
     const publicInventory = buildPublicUrlInventory({
       dynamicInventory,
+      blogArticles,
       indexingEnabled: true,
     })
 
