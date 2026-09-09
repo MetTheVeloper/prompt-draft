@@ -13,6 +13,10 @@ export function useProfileManagement() {
   const auth = useAuth();
   const config = useRuntimeConfig();
   const apiBase = normalizeApiBase(config.public.apiBase);
+  const profile = useState<ProfileManagementResponse | null>(
+    "profile-management:owner",
+    () => null,
+  );
 
   function endpoint() {
     return `${apiBase}/api/profile`;
@@ -26,10 +30,12 @@ export function useProfileManagement() {
     await auth.initialize();
     if (!auth.token.value) throw new Error("Authentication required");
 
-    return $fetch<ProfileManagementResponse>(endpoint(), {
+    const response = await $fetch<ProfileManagementResponse>(endpoint(), {
       method: "GET",
       headers: auth.authHeaders(),
     });
+    profile.value = response;
+    return response;
   }
 
   async function save(input: ProfileManagementInput) {
@@ -42,6 +48,7 @@ export function useProfileManagement() {
       body: input,
     });
 
+    profile.value = response;
     await auth.refreshAuthorizationState();
     return response;
   }
@@ -50,11 +57,24 @@ export function useProfileManagement() {
     await auth.initialize();
     if (!auth.token.value) throw new Error("Authentication required");
 
-    return $fetch<CreatorApplicationResponse>(creatorRequestEndpoint(), {
+    const response = await $fetch<CreatorApplicationResponse>(creatorRequestEndpoint(), {
       method: "POST",
       headers: auth.authHeaders(),
     });
+
+    if (profile.value) {
+      profile.value = {
+        ...profile.value,
+        creator: {
+          ...profile.value.creator,
+          status: response.creator.status,
+          readiness: response.creator.readiness,
+        },
+      };
+    }
+
+    return response;
   }
 
-  return { load, save, requestCreator };
+  return { profile, load, save, requestCreator };
 }
