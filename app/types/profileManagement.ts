@@ -98,3 +98,13 @@ export type ProfileManagementInput = {
     location: ProfileLocation | null;
   };
 };
+
+export type CreatorApplicationResponse = {
+  ok: true;
+  creator: {
+    status: "pending";
+    readiness: CreatorReadiness;
+    requestedAt: string | null;
+    idempotent: boolean;
+  };
+};
