@@ -39,7 +39,8 @@
     "test:public-discovery-visual": "tsx --test scripts/public-discovery-visual-contract.test.ts",
     "test:public-prompt-links": "tsx --test scripts/public-prompt-link-migration.test.ts",
     "test:interaction-polish": "tsx --test scripts/public-interaction-polish.test.ts",
-    "test:public-creator-web": "tsx --test scripts/public-creator-client-contract.test.ts scripts/public-creator-markdown.test.ts scripts/public-creator-ssr-contract.test.ts",
+    "test:public-creator-web": "tsx --test scripts/public-creator-client-contract.test.ts scripts/public-creator-markdown.test.ts scripts/public-creator-ssr-contract.test.ts scripts/public-creator-seo.test.ts",
+    "test:public-creator-seo": "tsx --test scripts/public-creator-seo.test.ts",
     "test:phase4b-final": "node scripts/phase4b-final-regression.mjs",
     "smoke:phase4b-final": "node scripts/phase4b-final-staging-smoke.mjs",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
@@ -82,7 +83,7 @@
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.0",
-    "@types/qrcode": "^1.5.6",
+    "@types/qrcode": "^1.5.4",
     "prettier": "^3.8.4",
     "sass-embedded": "^1.100.0",
     "tsx": "^4.22.4"
