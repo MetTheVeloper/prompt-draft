@@ -5,6 +5,7 @@ import {
   buildPublicUrlInventory,
   isPublicApiInventory,
   PUBLIC_DISCOVERY_CATALOG,
+  renderLlmsTxt,
   renderSitemapXml,
   type PublicApiInventory,
 } from './public-url-inventory'
@@ -344,7 +345,7 @@ async function main() {
   const enrichedCount = await enrichDiscoveryHtml(outputDir, siteUrl, apiBase)
 
   if (!siteUrl) {
-    console.log(`[public-seo] enriched ${enrichedCount} discovery routes; NUXT_PUBLIC_SITE_URL is empty so sitemap generation was skipped`)
+    console.log(`[public-seo] enriched ${enrichedCount} discovery routes; NUXT_PUBLIC_SITE_URL is empty so sitemap/llms generation was skipped`)
     return
   }
 
@@ -356,16 +357,18 @@ async function main() {
     indexingEnabled,
   })
   const sitemap = renderSitemapXml(publicInventory, siteUrl)
+  const llms = renderLlmsTxt(publicInventory, siteUrl)
   const robots = renderPublicRobotsTxt({
     siteUrl,
     indexingEnabled,
   })
 
   await writeFile(resolve(outputDir, 'sitemap.xml'), sitemap, 'utf8')
+  await writeFile(resolve(outputDir, 'llms.txt'), llms, 'utf8')
   await writeFile(resolve(outputDir, 'robots.txt'), robots, 'utf8')
 
   const mode = indexingEnabled ? 'indexing enabled' : 'global noindex'
-  console.log(`[public-seo] sitemap generated for ${publicInventory.length} canonical public routes (${mode})`)
+  console.log(`[public-seo] sitemap + llms generated from ${publicInventory.length} canonical public routes (${mode})`)
 }
 
 main().catch((error) => {
