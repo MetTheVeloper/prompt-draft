@@ -24,7 +24,15 @@ Core operating rule:
 
 > Audit existing capability first. Build only the real gap. Do not create parallel systems for problems Prompt Draft has already solved.
 
-The inherited backend baseline is complete through Milestone 20. The next SQL migration, if any, must be `020_*.sql`.
+The inherited backend baseline is complete through Milestone 20.
+
+The current branch SQL migration ceiling is:
+
+```text
+028_seed_profile_skill_taxonomy.sql
+```
+
+Campaign Engine design currently reserves `029_campaign_engine_v1.sql` as its first candidate migration, but that migration does **not** exist yet. Always re-audit the live branch migration ceiling before creating a new SQL migration because parallel work may consume the number first.
 
 ## Strategy document map
 
@@ -57,9 +65,47 @@ MILESTONE_21D_ZERO_COST_MVP_DEPLOYMENT.md
   -> deferred continuation of 21D for near-zero-cost Cloudflare SSR/hybrid deployment,
      local Docker API, and independent Arvan emergency fallback
 
+CAMPAIGN_ENGINE_V1.md
+  -> canonical Campaign Engine V1 domain/source-of-truth contract
+
+CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+  -> proposed Campaign Engine relational runtime schema and migration design
+
+CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+  -> public/runtime/promotion/admin API contracts, trust boundary and idempotency rules
+
+CAMPAIGN_ENGINE_STATUS.md
+  -> parallel Campaign Engine implementation checkpoint and resume instructions
+
 STATUS.md
   -> current strategy-branch checkpoint
 ```
+
+## Campaign Engine V1
+
+Campaign Engine is a parallel commercialization/marketing platform track. It does not replace or reorder the accepted Milestone 21.5 execution sequence.
+
+Before Campaign implementation, read in order:
+
+```text
+1. CAMPAIGN_ENGINE_V1.md
+2. CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+3. CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+4. CAMPAIGN_ENGINE_STATUS.md
+5. STATUS.md
+```
+
+The Campaign contract is designed to support data-defined and custom experiences through one runtime, including:
+
+```text
+server-validated custom games
+seasonal multi-goal campaigns
+site-wide promotion placements
+daily chance-wheel attempts
+Goin rewards through the existing Economy ledger
+```
+
+Campaign work must preserve existing Economy, Analytics, authorization, `/manage`, rendering and SEO boundaries rather than creating duplicate subsystems.
 
 ## Strategic sequence
 
