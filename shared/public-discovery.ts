@@ -1,3 +1,22 @@
+export type PublicDiscoveryInterestKey =
+  | 'portrait_photography'
+  | 'three_d_sculpture'
+  | 'illustration_animation'
+  | 'poster_editorial'
+  | 'product_fashion'
+  | 'cinematic_game_art'
+
+export type PublicDiscoveryDefinition = {
+  key: PublicDiscoveryInterestKey
+  slug: string
+  title: string
+  description: string
+  tags: readonly string[]
+  icon: string
+  messageKey: string
+  descriptionKey: string
+}
+
 export const PUBLIC_DISCOVERY_INTERESTS = [
   {
     key: 'portrait_photography',
@@ -59,10 +78,7 @@ export const PUBLIC_DISCOVERY_INTERESTS = [
     messageKey: 'growth.discovery.interests.cinematicGameArt.title',
     descriptionKey: 'growth.discovery.interests.cinematicGameArt.description',
   },
-] as const
-
-export type PublicDiscoveryDefinition = typeof PUBLIC_DISCOVERY_INTERESTS[number]
-export type PublicDiscoveryInterestKey = PublicDiscoveryDefinition['key']
+] as const satisfies readonly PublicDiscoveryDefinition[]
 
 export const PUBLIC_DISCOVERY_ROUTES = PUBLIC_DISCOVERY_INTERESTS.map(
   item => `/discover/${item.slug}`,
