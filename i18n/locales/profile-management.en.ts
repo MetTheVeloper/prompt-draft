@@ -117,6 +117,7 @@ export default {
       creator: {
         ready: "Profile meets the Creator application requirements",
         notReady: "Creator application profile is not complete yet",
+        requestNextSlice: "Save any current edits first, then use the Creator application card below to submit the saved profile for review.",
         readyDescription: "Your saved profile is eligible to be submitted for Creator review.",
         notReadyDescription: "Complete and save the required bilingual profile fields and at least one active skill before requesting Creator review.",
         pendingTitle: "Creator application is under review",
