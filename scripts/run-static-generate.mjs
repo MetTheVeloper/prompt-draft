@@ -1,9 +1,16 @@
 import { spawnSync } from 'node:child_process'
 
-const command = process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm'
+const isWindows = process.platform === 'win32'
+const command = isWindows
+  ? (process.env.ComSpec || process.env.COMSPEC || 'cmd.exe')
+  : 'pnpm'
+const args = isWindows
+  ? ['/d', '/s', '/c', 'pnpm exec nuxt generate']
+  : ['exec', 'nuxt', 'generate']
+
 const result = spawnSync(
   command,
-  ['exec', 'nuxt', 'generate'],
+  args,
   {
     stdio: 'inherit',
     env: {
