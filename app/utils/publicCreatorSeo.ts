@@ -1,5 +1,5 @@
-import type { PublicCreator, PublicCreatorLocale } from '~/composables/usePublicCreator'
-import { normalizePublicSiteUrl, toAbsolutePublicUrl } from '~/utils/publicPromptSeo'
+import type { PublicCreator, PublicCreatorLocale } from '../composables/usePublicCreator'
+import { normalizePublicSiteUrl, toAbsolutePublicUrl } from './publicPromptSeo'
 
 export type PublicCreatorPersonStructuredData = {
   '@type': 'Person'
