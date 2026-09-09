@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 ACCEPTED / 4C.6 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 ACCEPTED / 4C.6 ACCEPTED / 4C.7 NEXT**
 
 Date: 2026-09-09
 
@@ -45,8 +45,8 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.3 Creator Application + Admin Review     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.4 Public Creator policy/API              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.5 Public Creator SSR route               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.6 Creator SEO/indexability               -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-4C.7 Prompt/Discovery attribution           -> NOT STARTED
+4C.6 Creator SEO/indexability               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.7 Prompt/Discovery attribution           -> NEXT
 4C.8 aggregate/staging acceptance           -> NOT STARTED
 Phase 21.5.4C                               -> IN PROGRESS / NOT ACCEPTED
 ```
@@ -695,7 +695,7 @@ Detailed implementation record:
 docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
 ```
 
-Implemented projection:
+Accepted projection:
 
 ```text
 localized ScreenName -> title / OG / Twitter title
@@ -735,29 +735,45 @@ app/pages/creator/[username].vue
 scripts/public-creator-seo.test.ts
 ```
 
-Commands:
+Founder-local automated evidence 2026-09-09:
 
 ```text
-pnpm test:public-creator-seo
-pnpm test:public-creator-web
-pnpm locale:check
-pnpm frontend
-docker compose exec api npm run test:public-creator
+pnpm test:public-creator-seo -> 5/5 PASS
+pnpm test:public-creator-web -> 19/19 PASS
+pnpm locale:check -> Missing fallback EN 0 / Public Creator FA missing 0 / extra 0
 ```
 
-Current result:
+Founder staging source/head smoke verified on both EN and FA Creator routes:
 
 ```text
-4C.6 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+localized title + description
+self canonical
+reciprocal en-US/fa-IR hreflang
+x-default -> EN/default
+localized OG/Twitter title + description + image
+ProfilePage JSON-LD with Person mainEntity
+safe public sameAs + knowsAbout projection
+no observed private fields in JSON-LD
+NUXT_PUBLIC_NOINDEX=true preserved staging noindex
 ```
 
-Acceptance: **PENDING**
+Founder explicit acceptance:
+
+```text
+4C.6 تاییده.
+```
+
+Result:
+
+```text
+4C.6 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+```
 
 ---
 
 ## 9. 4C.7 — Prompt/Discovery attribution gate
 
-Blocked until Public Creator contract + SEO slices are accepted.
+4C.7 is now unblocked because 4C.4–4C.6 are founder-accepted.
 
 ```text
 [ ] Public Prompt attribution only for approved accessible Creator
