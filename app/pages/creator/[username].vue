@@ -18,7 +18,7 @@ const publicCreatorApi = usePublicCreator()
 
 function readRouteUsername(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value
-  return typeof raw === 'string' ? raw.trim() : ''
+  return typeof raw === 'string' ? raw : ''
 }
 
 function readHttpStatus(error: unknown) {
@@ -274,7 +274,7 @@ function formatPublishedAt(value: string) {
 
 .public-creator-hero {
   height: clamp(220px, 29vw, 390px);
-  background: var(--surface);
+  background: var(--themeSurface);
 }
 
 .public-creator-hero__image {
@@ -315,9 +315,9 @@ function formatPublishedAt(value: string) {
 .public-creator-identity-card {
   margin-top: -64px;
   min-height: 190px;
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 24px;
-  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  background: color-mix(in srgb, var(--themeSurface) 94%, transparent);
   box-shadow: 0 22px 60px rgba(0, 0, 0, .16);
   backdrop-filter: blur(18px);
 }
@@ -344,7 +344,7 @@ function formatPublishedAt(value: string) {
 .public-creator-eyebrow,
 .public-creator-panel__eyebrow {
   margin-bottom: 7px;
-  color: var(--primText);
+  color: var(--primary);
   font-size: 10px;
   font-weight: 900;
   letter-spacing: .11em;
@@ -360,14 +360,14 @@ function formatPublishedAt(value: string) {
 
 .public-creator-handle {
   margin-top: 6px;
-  color: var(--normal55);
+  color: var(--normalText55);
   font-size: 14px;
 }
 
 .public-creator-bio {
   max-width: 760px;
   margin: 16px 0 0;
-  color: var(--normal75);
+  color: var(--normalText75);
   font-size: 15px;
   line-height: 1.75;
 }
@@ -377,7 +377,7 @@ function formatPublishedAt(value: string) {
   align-items: center;
   gap: 5px;
   margin-top: 14px;
-  color: var(--normal55);
+  color: var(--normalText55);
   font-size: 12px;
 }
 
@@ -395,9 +395,9 @@ function formatPublishedAt(value: string) {
   gap: 7px;
   min-height: 38px;
   padding: 0 12px;
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 12px;
-  background: var(--normal05);
+  background: var(--normalText5);
   color: var(--normalText);
   text-decoration: none;
   font-size: 12px;
@@ -407,8 +407,8 @@ function formatPublishedAt(value: string) {
 
 .public-creator-link:hover {
   transform: translateY(-1px);
-  border-color: var(--normal25);
-  background: var(--normal10);
+  border-color: var(--normalText25);
+  background: var(--normalText10);
 }
 
 .public-creator-content-grid {
@@ -426,9 +426,9 @@ function formatPublishedAt(value: string) {
 
 .public-creator-panel,
 .public-creator-publications {
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 20px;
-  background: var(--surface);
+  background: var(--themeSurface);
 }
 
 .public-creator-panel {
@@ -443,7 +443,7 @@ function formatPublishedAt(value: string) {
 
 .public-creator-muted {
   margin: 0;
-  color: var(--normal55);
+  color: var(--normalText55);
   font-size: 13px;
   line-height: 1.7;
 }
@@ -456,9 +456,9 @@ function formatPublishedAt(value: string) {
 
 .public-creator-skill {
   padding: 7px 10px;
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 999px;
-  background: var(--normal05);
+  background: var(--normalText5);
   font-size: 11px;
   font-weight: 700;
 }
@@ -469,7 +469,7 @@ function formatPublishedAt(value: string) {
   justify-content: space-between;
   gap: 16px;
   padding: 11px 0;
-  border-bottom: 1px solid var(--normal10);
+  border-bottom: 1px solid var(--normalText10);
   font-size: 12px;
 }
 
@@ -478,7 +478,7 @@ function formatPublishedAt(value: string) {
 }
 
 .public-creator-fact span {
-  color: var(--normal55);
+  color: var(--normalText55);
 }
 
 .public-creator-fact strong {
@@ -490,7 +490,7 @@ function formatPublishedAt(value: string) {
 }
 
 .creator-markdown {
-  color: var(--normal75);
+  color: var(--normalText75);
   font-size: 15px;
   line-height: 1.9;
 }
@@ -511,13 +511,13 @@ function formatPublishedAt(value: string) {
 .creator-markdown :deep(h4) { font-size: 18px; }
 .creator-markdown :deep(p) { margin: 0 0 18px; }
 .creator-markdown :deep(strong) { color: var(--normalText); }
-.creator-markdown :deep(a) { color: var(--primText); text-decoration: underline; text-underline-offset: 3px; }
+.creator-markdown :deep(a) { color: var(--primary); text-decoration: underline; text-underline-offset: 3px; }
 .creator-markdown :deep(img) {
   display: block;
   width: 100%;
   max-height: 620px;
   margin: 22px 0;
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 16px;
   object-fit: cover;
 }
@@ -527,14 +527,14 @@ function formatPublishedAt(value: string) {
 .creator-markdown :deep(blockquote) {
   margin: 22px 0;
   padding: 12px 16px;
-  border-inline-start: 3px solid var(--prim);
+  border-inline-start: 3px solid var(--primary);
   border-radius: 8px;
-  background: var(--normal05);
+  background: var(--normalText5);
 }
 .creator-markdown :deep(code) {
   padding: 2px 6px;
   border-radius: 6px;
-  background: var(--normal10);
+  background: var(--normalText10);
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
   font-size: .9em;
 }
@@ -543,10 +543,10 @@ function formatPublishedAt(value: string) {
   margin: 22px 0;
   padding: 16px;
   border-radius: 14px;
-  background: var(--normal05);
+  background: var(--normalText5);
 }
 .creator-markdown :deep(pre code) { padding: 0; background: transparent; }
-.creator-markdown :deep(hr) { margin: 28px 0; border: 0; border-top: 1px solid var(--normal15); }
+.creator-markdown :deep(hr) { margin: 28px 0; border: 0; border-top: 1px solid var(--normalText15); }
 
 .public-creator-publications {
   margin-top: 18px;
@@ -568,7 +568,7 @@ function formatPublishedAt(value: string) {
   height: 28px;
   padding: 0 8px;
   border-radius: 999px;
-  background: var(--normal10);
+  background: var(--normalText10);
   font-size: 11px;
   font-weight: 800;
 }
@@ -581,7 +581,7 @@ function formatPublishedAt(value: string) {
 
 .public-creator-publication-card {
   overflow: hidden;
-  border: 1px solid var(--normal15);
+  border: 1px solid var(--normalText15);
   border-radius: 16px;
   background: var(--themeBackground);
   color: inherit;
@@ -591,13 +591,13 @@ function formatPublishedAt(value: string) {
 
 .public-creator-publication-card:hover {
   transform: translateY(-2px);
-  border-color: var(--normal25);
+  border-color: var(--normalText25);
 }
 
 .public-creator-publication-card__media {
   aspect-ratio: 16 / 10;
   overflow: hidden;
-  background: var(--normal05);
+  background: var(--normalText5);
 }
 
 .public-creator-publication-card__media img {
@@ -616,7 +616,7 @@ function formatPublishedAt(value: string) {
   height: 100%;
   background:
     radial-gradient(circle at 30% 20%, rgba(72, 104, 255, .3), transparent 36%),
-    linear-gradient(135deg, var(--normal05), var(--normal10));
+    linear-gradient(135deg, var(--normalText5), var(--normalText10));
 }
 
 .public-creator-publication-card__body {
@@ -628,7 +628,7 @@ function formatPublishedAt(value: string) {
   justify-content: space-between;
   gap: 8px;
   margin-bottom: 8px;
-  color: var(--normal45);
+  color: var(--normalText45);
   font-size: 10px;
 }
 
@@ -642,7 +642,7 @@ function formatPublishedAt(value: string) {
   display: -webkit-box;
   overflow: hidden;
   margin: 8px 0 14px;
-  color: var(--normal55);
+  color: var(--normalText55);
   font-size: 11px;
   line-height: 1.6;
   -webkit-box-orient: vertical;
@@ -653,7 +653,7 @@ function formatPublishedAt(value: string) {
   display: inline-flex;
   align-items: center;
   gap: 5px;
-  color: var(--primText);
+  color: var(--primary);
   font-size: 11px;
   font-weight: 800;
 }
@@ -665,9 +665,9 @@ function formatPublishedAt(value: string) {
   justify-content: center;
   flex-direction: column;
   gap: 10px;
-  border: 1px dashed var(--normal15);
+  border: 1px dashed var(--normalText15);
   border-radius: 15px;
-  color: var(--normal55);
+  color: var(--normalText55);
   text-align: center;
   font-size: 12px;
 }
