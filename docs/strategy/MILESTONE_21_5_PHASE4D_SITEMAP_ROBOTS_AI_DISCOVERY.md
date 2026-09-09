@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D Sitemap / Robots / Discovery + AI Discovery
 
-Status: **PLANNING / AUDIT NEXT / NOT IMPLEMENTED**
+Status: **IN PROGRESS / 4D.1 AUDITED / 4D.2 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED**
 
 Date: 2026-09-09
 
@@ -30,7 +30,7 @@ Operational verification rule:
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 ```
 
-This file is the Phase 4D planning source of truth. It does not mark any 4D implementation slice DONE. 4D must begin with a repository/runtime audit and each implementation slice still requires founder-local verification plus explicit acceptance.
+This file is the Phase 4D source of truth. It does not mark any 4D implementation slice DONE without founder-local/staging verification plus explicit acceptance.
 
 ---
 
@@ -84,18 +84,21 @@ static generate / pnpm generate compatibility
 legacy post-generate HTML/sitemap/robots patching
 ```
 
-Known starting facts at planning time:
+Audit result on 2026-09-09:
 
 ```text
-public/robots.txt currently exists as a static compatibility file
-scripts/generate-public-seo.ts still generates sitemap/robots output and contains Milestone-21-era Discovery snapshot behavior
-public/llms.txt does not currently exist
-4A native SSR SEO behavior is accepted
-4B Public Prompt public/protected boundary is accepted
-4C Public Creator server-authoritative indexability policy is accepted
+public/robots.txt remains a static compatibility file
+public/llms.txt does not exist
+scripts/generate-public-seo.ts was the sitemap/robots post-generate writer
+legacy Discovery snapshot behavior still contains /prompts?id= and /user?un= links
+Nuxt/runtime noindex and X-Robots behavior remain separate accepted protection layers
+Public Prompt availableLocales is derived from complete localized title + description
+Public Creator indexable/discoverable is server-authoritative under the accepted 4C policy
+Creator inventory cannot be inferred from Prompt ownership/publication count
+pnpm generate remains a legacy static-generation compatibility path
 ```
 
-Do not assume the exact target architecture until the audit is complete.
+4D.1 audit has been performed, but the slice is not DONE until founder verification/acceptance is explicitly recorded.
 
 ---
 
@@ -171,7 +174,7 @@ Discovery remains a sanitized public acquisition surface. 4D may improve truthfu
 
 ## 4. Sitemap target contract
 
-4D should converge on one reusable public URL inventory rather than independent arrays scattered across scripts.
+4D converges on one reusable public URL inventory rather than independent arrays scattered across scripts.
 
 Target categories:
 
@@ -191,9 +194,38 @@ Blog is not a current 4D live inventory source.
 
 The sitemap must not invent Blog URLs before 4E establishes published Article semantics.
 
-For EN/FA entries, the implementation should reuse the accepted locale/canonical rules rather than infer translations from route existence alone.
+For EN/FA entries, the implementation reuses the accepted locale/canonical rules rather than inferring translations from route existence alone.
 
-The audit must decide whether the authoritative sitemap is runtime-generated, build-generated, or produced through a shared manifest consumed by both contexts. Whichever approach is selected, public eligibility logic must live in one shared contract.
+### 4.1 Selected implementation shape after audit
+
+The selected 4D architecture is build-generated projection from a shared inventory contract:
+
+```text
+accepted server-authoritative Prompt/Creator inputs
++ static acquisition/Discovery inputs
+-> shared public URL inventory builder
+-> sitemap.xml projection
+-> later llms.txt projection
+```
+
+Dynamic public eligibility is supplied by a narrow public API projection:
+
+```text
+GET /api/public/inventory
+```
+
+Its public response intentionally contains only URL-inventory inputs:
+
+```text
+Prompt: public numeric id + authoritative availableLocales
+Creator: canonical username + availableLocales + policy.indexable/discoverable
+```
+
+It does not serialize protected Prompt data, internal ids, account/lifecycle metadata, balances, permissions, sessions, storage/provider data, or admin data.
+
+Creator enumeration consumes the accepted 4C policy evaluator. It does not use Prompt publication count, role, or ownership as an eligibility gate.
+
+`NUXT_PUBLIC_NOINDEX=true` is an outer build-time inventory gate: shared public URL projections become empty rather than advertising staging URLs.
 
 ---
 
@@ -302,24 +334,13 @@ Future after 4E only:
 
 The final file should be concise and curated rather than dumping every internal route or account/product URL without context.
 
-The audit should decide whether `/llms.txt` is:
+Audit decision:
 
 ```text
-static public file
-build-generated output
-runtime-generated response
+/llms.txt -> build-generated in 4D.4 from the same shared public URL inventory as sitemap.xml
 ```
 
-Decision criteria:
-
-```text
-same authoritative inventory as sitemap
-no duplicate policy logic
-SSR/Docker/static-generate compatibility
-staging behavior
-operational simplicity
-no request-time dependency on GitHub or another external service
-```
+This avoids a hand-maintained second policy and avoids request-time dependencies on GitHub or another external service.
 
 An optional fuller machine-readable/Markdown companion such as `llms-full.txt` may be evaluated later, but it is not required for 4D V1 and must not expand scope unless justified.
 
@@ -382,22 +403,73 @@ robots
 Discovery presentation
 ```
 
+Current 4D.2 intentionally leaves the legacy Discovery snapshot/rendering behavior in place. Canonical-link and structured-data migration remains scoped to 4D.5 so the inventory/sitemap slice can be verified narrowly.
+
 ---
 
-## 8. Proposed execution slices
+## 8. Execution slices
 
-The exact slice boundaries may be refined after audit, but the default plan is:
+Current boundaries:
 
 ```text
 4D.1 Existing robots/sitemap/legacy SEO/runtime audit
+     AUDITED / ACCEPTANCE PENDING
+
 4D.2 Shared authoritative public URL inventory + sitemap migration
+     IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
+
 4D.3 Robots normalization + staging precedence verification
+     NOT STARTED
+
 4D.4 llms.txt AI-discovery projection from shared inventory
+     NOT STARTED
+
 4D.5 Discovery structured-data/legacy-generator migration
+     NOT STARTED
+
 4D.6 Aggregate regression + staging acceptance
+     NOT STARTED
 ```
 
 No slice becomes DONE without founder verification and explicit acceptance.
+
+### 8.1 4D.2 implementation checkpoint — 2026-09-09
+
+Implemented files/contracts:
+
+```text
+backend/src/publicLocalization.mjs
+  shared Public Prompt authoritative-locale normalization
+
+backend/src/publicInventory.mjs
+  sanitized GET /api/public/inventory projection
+  Prompt published/public-id/locale inputs only
+  Creator policy reuse from accepted 4C evaluator
+
+backend/src/publicPrompt.mjs
+  reuses shared localization contract
+  routes the public inventory endpoint through the existing public API surface
+
+scripts/public-url-inventory.ts
+  shared canonical URL builder
+  static + Discovery + Prompt + Creator resource families
+  EN unprefixed / FA-prefixed canonical projection
+  global noindex outer gate
+  sitemap formatter
+
+scripts/generate-public-seo.ts
+  sitemap migrated away from STATIC_PUBLIC_ROUTES
+  fetches authoritative dynamic inventory when indexing is enabled
+  fails rather than silently publishing a partial dynamic sitemap on invalid inventory response
+  keeps legacy Discovery snapshot behavior for 4D.5
+
+focused contract tests
+  backend/src/publicInventory.test.mjs
+  scripts/public-url-inventory.test.ts
+  scripts/public-seo-generator-contract.test.ts
+```
+
+No `llms.txt` implementation is included in 4D.2. 4D.4 must consume this same shared inventory rather than introducing another eligibility list.
 
 ---
 
@@ -420,18 +492,24 @@ never default to pnpm stack
 run narrow slice tests before broad aggregate tests
 ```
 
-Expected focused 4D contracts should cover at least:
+Focused 4D contracts cover at least:
 
 ```text
 shared public inventory determinism
 Prompt EN/FA sitemap eligibility
 Creator indexable/discoverable sitemap eligibility
 no fake localized URLs
+staging/global noindex inventory precedence
+no protected/private serialization
+sitemap consumes the shared eligibility source
+```
+
+Remaining later-slice contracts:
+
+```text
 robots/app/private boundaries
-staging noindex precedence
 llms.txt contains canonical public-safe resources only
 llms.txt and sitemap consume the same eligibility source
-no protected/private serialization
 Discovery canonical/public links remain correct
 legacy generator compatibility or intentional retirement path
 ```
@@ -464,7 +542,10 @@ DO NOT touch prompt-draft.ir during 4D staging implementation/verification.
 Current state:
 
 ```text
-4D -> PLANNING / AUDIT NEXT / NOT IMPLEMENTED
+4D -> IN PROGRESS
+4D.1 -> AUDITED / ACCEPTANCE PENDING
+4D.2 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
+4D.3 -> NEXT ONLY AFTER 4D.2 ACCEPTANCE
 ```
 
 To accept 4D, all accepted 4A–4C regressions must remain intact and the founder must explicitly accept the final 4D aggregate/staging evidence.
