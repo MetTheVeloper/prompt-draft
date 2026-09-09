@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
-import { publicPromptPath } from '~/utils/publicRoutes'
+import { publicCreatorPath, publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
   item: HomeShowcaseItem
@@ -15,6 +15,9 @@ const localizedTitle = computed(() => {
 })
 
 const publicPromptUrl = computed(() => localePath(publicPromptPath(props.item.id)))
+const publicCreatorUrl = computed(() => props.item.creator
+  ? localePath(publicCreatorPath(props.item.creator.username))
+  : '')
 
 const coverUrl = computed(() => {
   return props.item.coverImage?.thumbnailUrl || props.item.coverImage?.fullUrl || ''
@@ -95,17 +98,20 @@ function openTelegram() {
         </el-text>
 
         <el-flex rules="rsc" :gap="10" class="w100 fw" wrap>
-          <el-flex v-if="item.owner" rules="rsc" :gap="6">
+          <NuxtLink
+            v-if="item.creator"
+            :to="publicCreatorUrl"
+            class="public-discovery-card__creator">
             <el-avatar
-              :src="item.owner.avatarUrl"
-              :name="item.owner.username"
+              :src="item.creator.avatarUrl"
+              :name="item.creator.username"
               :size="8"
               :size-offset="2"
               :br="2"
               bc="surface"
             />
-            <el-text :size="10" :weight="700">@{{ item.owner.username }}</el-text>
-          </el-flex>
+            <el-text :size="10" :weight="700">@{{ item.creator.username }}</el-text>
+          </NuxtLink>
 
           <el-text
             :size="10"
@@ -177,6 +183,18 @@ function openTelegram() {
   background:
     linear-gradient(180deg, var(--themeSurface10), var(--themeSurface25) 42%, var(--themeSurface90) 100%),
     linear-gradient(90deg, var(--themeSurface35), var(--themeSurface0) 76%);
+}
+
+.public-discovery-card__creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.public-discovery-card__creator:hover {
+  opacity: .82;
 }
 
 .public-discovery-card__title {
