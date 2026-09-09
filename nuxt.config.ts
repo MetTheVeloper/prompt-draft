@@ -50,6 +50,15 @@ export default defineNuxtConfig({
     },
   },
   nitro: {
+    // Blog V1 canonical editorial content lives in Git under content/blog.
+    // Nitro bundles it into .output/server so Docker runtime reads deployed
+    // content locally and never queries GitHub per public request.
+    serverAssets: [
+      {
+        baseName: "blog",
+        dir: "./content/blog",
+      },
+    ],
     prerender: {
       // These routes are retained only for the deprecated static-export path.
       // In the current Docker/Nitro runtime, app/client-only routes must stay
