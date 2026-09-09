@@ -57,7 +57,7 @@
     "locale:audit:hardcoded": "node scripts/localization-audit.mjs hardcoded",
     "locale:review": "node scripts/localization-review.mjs",
     "locale:audit:full": "pnpm locale:audit && pnpm locale:review",
-    "locale:check": "node scripts/localization-audit.mjs all --no-hardcoded --strict"
+    "locale:check": "tsx scripts/localization-runtime-check.ts"
   },
   "dependencies": {
     "@capacitor-community/media": "^9.1.0",
