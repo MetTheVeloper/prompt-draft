@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D Sitemap / Robots / Discovery + AI Discovery
 
-Status: **IN PROGRESS / 4D.1 AUDITED / 4D.2 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED / 4D.3 AUDIT NEXT**
+Status: **IN PROGRESS / 4D.2 + 4D.3 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED / 4D.4 IMPLEMENTED / VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -87,8 +87,8 @@ legacy post-generate HTML/sitemap/robots patching
 Audit result on 2026-09-09:
 
 ```text
-public/robots.txt remains a static compatibility file
-public/llms.txt does not exist
+public/robots.txt initially remained a static compatibility file
+public/llms.txt did not exist
 scripts/generate-public-seo.ts was the sitemap/robots post-generate writer
 legacy Discovery snapshot behavior still contains /prompts?id= and /user?un= links
 Nuxt/runtime noindex and X-Robots behavior remain separate accepted protection layers
@@ -96,9 +96,10 @@ Public Prompt availableLocales is derived from complete localized title + descri
 Public Creator indexable/discoverable is server-authoritative under the accepted 4C policy
 Creator inventory cannot be inferred from Prompt ownership/publication count
 pnpm generate remains a legacy static-generation compatibility path
+Docker/Nitro uses pnpm build rather than pnpm generate, so SEO artifact delivery must exist at runtime as well
 ```
 
-4D.1 audit has been performed. Its findings are the implementation basis for the accepted 4D.2 slice and the upcoming 4D.3 audit.
+4D.1 audit has been performed. Its findings are the implementation basis for the accepted 4D.2 and 4D.3 slices and the current 4D.4 implementation.
 
 ---
 
@@ -198,14 +199,14 @@ For EN/FA entries, the implementation reuses the accepted locale/canonical rules
 
 ### 4.1 Selected implementation shape after audit
 
-The selected 4D architecture is build-generated projection from a shared inventory contract:
+The selected 4D architecture is shared inventory projection:
 
 ```text
 accepted server-authoritative Prompt/Creator inputs
 + static acquisition/Discovery inputs
 -> shared public URL inventory builder
 -> sitemap.xml projection
--> later llms.txt projection
+-> llms.txt projection
 ```
 
 Dynamic public eligibility is supplied by a narrow public API projection:
@@ -225,7 +226,18 @@ It does not serialize protected Prompt data, internal ids, account/lifecycle met
 
 Creator enumeration consumes the accepted 4C policy evaluator. It does not use Prompt publication count, role, or ownership as an eligibility gate.
 
-`NUXT_PUBLIC_NOINDEX=true` is an outer build-time inventory gate: shared public URL projections become empty rather than advertising staging URLs.
+`NUXT_PUBLIC_NOINDEX=true` is an outer inventory gate: shared public URL projections become empty rather than advertising staging URLs.
+
+### 4.2 Runtime + static delivery
+
+After the 4D.3 audit, sitemap delivery is supported in both required deployment paths:
+
+```text
+Nitro/Docker runtime -> GET /sitemap.xml
+legacy static export -> .output/public/sitemap.xml
+```
+
+Both paths consume `buildPublicUrlInventory` and `renderSitemapXml`.
 
 ---
 
@@ -233,7 +245,7 @@ Creator enumeration consumes the accepted 4C policy evaluator. It does not use P
 
 `robots.txt` remains the crawler-access-control surface.
 
-4D must audit and normalize:
+4D normalizes:
 
 ```text
 public crawling intent
@@ -253,19 +265,52 @@ NUXT_PUBLIC_NOINDEX=true always wins on staging
 route-level index intent may never weaken staging noindex
 ```
 
-AI-crawler-specific directives, if considered during audit, must be explicit product decisions. They must not be silently inferred from the presence of `llms.txt`.
+AI-crawler-specific directives are not inferred from the presence of `llms.txt`.
+
+### 5.1 Accepted 4D.3 robots architecture
+
+The 4D.3 audit found real drift between the accepted application noindex policy and the old static `public/robots.txt`.
+
+Accepted normalization:
+
+```text
+shared/seo-route-policy.ts
+  -> one EN/FA application-route policy for Nuxt routeRules + X-Robots middleware + robots exclusions
+
+shared/public-robots.ts
+  -> one robots renderer
+
+server/routes/robots.txt.ts
+  -> runtime-aware robots delivery
+
+scripts/generate-public-seo.ts
+  -> static-export robots delivery from the same renderer
+
+public/robots.txt
+  -> removed to avoid shadowing / duplicate policy
+```
+
+Staging precedence:
+
+```text
+NUXT_PUBLIC_NOINDEX=true
+-> response X-Robots-Tag noindex remains authoritative
+-> robots keeps application/private exclusions
+-> robots does not advertise Sitemap
+-> runtime sitemap contains zero public URL entries
+```
+
+Production-like indexing-enabled behavior may advertise the canonical sitemap.
 
 ---
 
 ## 6. AI discovery — llms.txt
 
-Phase 4D explicitly includes an evaluation and implementation of:
+Phase 4D explicitly includes:
 
 ```text
 /llms.txt
 ```
-
-when the audit confirms a clean integration path.
 
 ### 6.1 What llms.txt means for Prompt Draft
 
@@ -282,7 +327,7 @@ a guarantee that any AI model will index or cite the site
 an independent source of truth for indexability
 ```
 
-Crawler access remains a `robots.txt` concern. Search URL discovery remains a sitemap/public-indexability concern. `llms.txt` only provides a curated machine-friendly guide to already-public canonical resources.
+Crawler access remains a `robots.txt` concern. Search URL discovery remains a sitemap/public-indexability concern. `llms.txt` only provides a machine-friendly guide to already-public canonical resources.
 
 ### 6.2 llms.txt source-of-truth rule
 
@@ -313,9 +358,24 @@ Discovery canonical slugs
 future Blog publication/localization state
 ```
 
-### 6.3 Candidate llms.txt content
+### 6.3 2026 llms.txt convention audit
 
-Initial candidate resource families:
+The current llms.txt proposal was reviewed during 4D.4 implementation. The August 2026 v2 proposal keeps the file Markdown-based and recommends:
+
+```text
+H1 site/project name
+short blockquote summary
+optional explanatory text
+H2 sections containing Markdown link lists
+```
+
+Prompt Draft adopts that basic shape without expanding 4D.4 into page-level Markdown mirrors or new `rel=alternate` / `rel=describedby` link-header work.
+
+Those optional v2 discoverability extensions may be evaluated later only if they are justified by product value; they are not required for 4D V1.
+
+### 6.4 Candidate / implemented llms.txt content
+
+Current resource families:
 
 ```text
 /
@@ -332,19 +392,43 @@ Future after 4E only:
 /blog/:slug
 ```
 
-The final file should be concise and curated rather than dumping every internal route or account/product URL without context.
-
-Audit decision:
+The output groups canonical inventory links into:
 
 ```text
-/llms.txt -> build-generated in 4D.4 from the same shared public URL inventory as sitemap.xml
+Core
+Discovery
+Creators
+Public Prompts
 ```
 
-This avoids a hand-maintained second policy and avoids request-time dependencies on GitHub or another external service.
+It does not enumerate internal application/account routes.
 
-An optional fuller machine-readable/Markdown companion such as `llms-full.txt` may be evaluated later, but it is not required for 4D V1 and must not expand scope unless justified.
+### 6.5 4D.4 implementation shape
 
-### 6.4 AI-discovery privacy boundary
+Implemented architecture:
+
+```text
+scripts/public-url-inventory.ts
+  -> buildPublicUrlInventory(...)
+  -> renderSitemapXml(publicInventory, siteUrl)
+  -> renderLlmsTxt(publicInventory, siteUrl)
+
+server/utils/public-seo-inventory.ts
+  -> shared cached runtime fetch of GET /api/public/inventory
+
+server/routes/sitemap.xml.ts
+  -> consumes shared runtime inventory fetch
+
+server/routes/llms.txt.ts
+  -> consumes the same shared runtime inventory fetch + builder + llms renderer
+
+scripts/generate-public-seo.ts
+  -> writes sitemap.xml + llms.txt + robots.txt from the same publicInventory
+```
+
+No new API endpoint, database query, Prompt/Creator eligibility rule, or external/GitHub request path was added.
+
+### 6.6 AI-discovery privacy boundary
 
 `llms.txt` must never contain or link models toward intentionally protected/private data such as:
 
@@ -364,15 +448,25 @@ location provider metadata
 admin audit data
 ```
 
-Public Prompt and Creator links must point only to canonical acquisition routes.
+Public Prompt and Creator links point only to canonical acquisition routes.
 
-### 6.5 Staging rule
+### 6.7 Staging rule
 
 `grassic.ir` remains staging and `NUXT_PUBLIC_NOINDEX=true` remains authoritative.
 
+In global noindex mode:
+
+```text
+buildPublicUrlInventory -> []
+llms.txt -> orientation text only / zero canonical resource links
+sitemap.xml -> zero public URLs
+robots.txt -> does not advertise sitemap
+X-Robots-Tag -> noindex, nofollow, noarchive
+```
+
 Adding `llms.txt` must not be interpreted as overriding staging noindex or as permission to promote staging URLs to a production AI/search inventory.
 
-`prompt-draft.ir` must remain untouched until an explicit production rollout phase.
+`prompt-draft.ir` remains untouched until an explicit production rollout phase.
 
 ---
 
@@ -403,7 +497,7 @@ robots
 Discovery presentation
 ```
 
-Current 4D.2 intentionally leaves the legacy Discovery snapshot/rendering behavior in place. Canonical-link and structured-data migration remains scoped to 4D.5 so the inventory/sitemap slice can be verified narrowly.
+Current 4D.4 intentionally leaves the legacy Discovery snapshot/rendering behavior in place. Canonical-link and structured-data migration remains scoped to 4D.5.
 
 ---
 
@@ -419,10 +513,10 @@ Current boundaries:
      DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 
 4D.3 Robots normalization + staging precedence verification
-     AUDIT NEXT
+     DONE / FOUNDER-LOCAL + STAGING-CONFIG RUNTIME VERIFIED / ACCEPTED 2026-09-09
 
 4D.4 llms.txt AI-discovery projection from shared inventory
-     NOT STARTED
+     IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
 
 4D.5 Discovery structured-data/legacy-generator migration
      NOT STARTED
@@ -474,8 +568,6 @@ focused contract tests
   scripts/public-url-inventory.test.ts
   scripts/public-seo-generator-contract.test.ts
 ```
-
-No `llms.txt` implementation is included in 4D.2. 4D.4 must consume this same shared inventory rather than introducing another eligibility list.
 
 ### 8.2 4D.2 founder-local verification evidence — ACCEPTED 2026-09-09
 
@@ -535,10 +627,86 @@ canonical /fa/creator/:username present
 Discovery EN/FA routes present
 legacy /prompts?id= entries in sitemap = 0
 legacy /user?un= entries in sitemap = 0
-generated robots includes Sitemap: https://example.test/sitemap.xml
+generated robots sitemap declaration -> PASS
 ```
 
 The founder explicitly accepted 4D.2 after this evidence on 2026-09-09.
+
+### 8.3 4D.3 founder-local/staging-config verification evidence — ACCEPTED 2026-09-09
+
+Focused gates:
+
+```text
+pnpm test:robots-policy
+-> 6 tests / 6 pass / 0 fail
+
+pnpm test:public-url-inventory
+-> 7 tests / 7 pass / 0 fail
+
+pnpm frontend
+-> Docker/Nitro production build PASS
+-> runtime bundle contains robots.txt.mjs + sitemap.xml.mjs
+```
+
+Verified running frontend environment:
+
+```text
+NUXT_PUBLIC_NOINDEX=true
+NUXT_PUBLIC_SITE_URL=https://grassic.ir
+```
+
+Runtime localhost smoke against that staging-config container:
+
+```text
+GET /robots.txt
+-> 200
+-> X-Robots-Tag: noindex, nofollow, noarchive
+-> accepted EN + FA application routes excluded
+-> no Sitemap declaration
+
+GET /sitemap.xml
+-> 200
+-> X-Robots-Tag: noindex, nofollow, noarchive
+-> <url> count = 0
+-> /prompts?id= matches = 0
+-> /user?un= matches = 0
+```
+
+External Cloudflare-edge verification for `grassic.ir/robots.txt` and `grassic.ir/sitemap.xml` remains part of 4D.6 aggregate staging acceptance rather than being duplicated as a 4D.3 blocker.
+
+The founder explicitly accepted 4D.3 after this evidence on 2026-09-09.
+
+### 8.4 4D.4 implementation checkpoint — 2026-09-09
+
+Implemented files/contracts:
+
+```text
+scripts/public-url-inventory.ts
+  renderLlmsTxt(resources, siteUrl)
+  deterministic v2-style Markdown projection grouped by resource family
+  noindex/empty inventory produces zero canonical links
+
+server/utils/public-seo-inventory.ts
+  shared cached runtime public-inventory acquisition used by sitemap + llms
+
+server/routes/llms.txt.ts
+  Nitro runtime llms delivery
+  internal API origin for runtime inventory
+  noindex precedence
+
+server/routes/sitemap.xml.ts
+  refactored to reuse shared runtime public-inventory acquisition
+
+scripts/generate-public-seo.ts
+  static export writes sitemap.xml + llms.txt + robots.txt from one publicInventory
+
+focused tests
+  scripts/public-llms.test.ts
+  scripts/public-seo-generator-contract.test.ts
+  scripts/runtime-seo-delivery-contract.test.ts
+```
+
+4D.4 is not accepted until founder-local verification passes and the founder explicitly accepts the slice.
 
 ---
 
@@ -571,14 +739,14 @@ no fake localized URLs
 staging/global noindex inventory precedence
 no protected/private serialization
 sitemap consumes the shared eligibility source
+robots/app/private boundaries
+llms.txt contains canonical public-safe resources only
+llms.txt and sitemap consume the same eligibility source
 ```
 
 Remaining later-slice contracts:
 
 ```text
-robots/app/private boundaries
-llms.txt contains canonical public-safe resources only
-llms.txt and sitemap consume the same eligibility source
 Discovery canonical/public links remain correct
 legacy generator compatibility or intentional retirement path
 ```
@@ -614,7 +782,10 @@ Current state:
 4D -> IN PROGRESS
 4D.1 -> AUDITED
 4D.2 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4D.3 -> AUDIT NEXT
+4D.3 -> DONE / FOUNDER-LOCAL + STAGING-CONFIG RUNTIME VERIFIED / ACCEPTED 2026-09-09
+4D.4 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
+4D.5 -> NOT STARTED
+4D.6 -> NOT STARTED
 ```
 
 To accept 4D, all accepted 4A–4C regressions must remain intact and the founder must explicitly accept the final 4D aggregate/staging evidence.
