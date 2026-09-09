@@ -4,7 +4,7 @@ import {
 } from "~/config/authorization";
 
 export type ManageSection = {
-  key: "dashboard" | "growth" | "users" | "archive" | "economy";
+  key: "dashboard" | "growth" | "users" | "archive" | "blog" | "economy";
   icon: string;
   route: string;
   requiredPermission: AuthPermission;
@@ -34,6 +34,12 @@ export const MANAGE_SECTIONS: readonly ManageSection[] = [
     icon: "archive",
     route: "/manage/archive",
     requiredPermission: AUTH_PERMISSIONS.ARCHIVE_VIEW,
+  },
+  {
+    key: "blog",
+    icon: "article",
+    route: "/manage/blog",
+    requiredPermission: AUTH_PERMISSIONS.BLOG_MANAGE,
   },
   {
     key: "economy",
