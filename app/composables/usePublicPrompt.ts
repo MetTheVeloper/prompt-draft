@@ -1,3 +1,8 @@
+import {
+  normalizePublicCreatorAttribution,
+  type PublicCreatorAttribution,
+} from '~/utils/publicCreatorAttribution'
+
 export type PublicPromptLocale = 'en' | 'fa'
 export type PublicPromptModel = 'dall-e' | 'gpt-image-1'
 
@@ -20,6 +25,7 @@ export type PublicPrompt = {
     optimizedFor: PublicPromptModel[]
   }
   images: PublicPromptImage[]
+  creator: PublicCreatorAttribution | null
 }
 
 type PublicPromptResponse = {
@@ -143,6 +149,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
   const telegramMessageId = normalizeTelegramMessageId(value.telegramMessageId)
   const model = normalizeModel(value.model)
   const tags = normalizeTags(value.tags)
+  const creator = normalizePublicCreatorAttribution(value.creator)
 
   if (
     !Number.isSafeInteger(id) ||
@@ -154,6 +161,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     telegramMessageId === undefined ||
     !model ||
     !tags ||
+    creator === undefined ||
     !Array.isArray(value.images)
   ) {
     return null
@@ -177,6 +185,7 @@ export function normalizePublicPrompt(value: unknown): PublicPrompt | null {
     tags,
     model,
     images: normalizedImages.sort((first, second) => first.position - second.position),
+    creator,
   }
 }
 
