@@ -2,7 +2,7 @@ function normalizeSlug(value: string) {
   return value.trim().toLowerCase().replace(/^\/+|\/+$/g, '')
 }
 
-function normalizeUsername(value: string) {
+export function normalizePublicCreatorUsername(value: string) {
   const normalized = value.trim().toLowerCase()
   if (!/^[a-z0-9._-]{3,64}$/.test(normalized)) {
     throw new Error('Invalid public Creator username')
@@ -31,7 +31,7 @@ export function publicPromptPath(id: number | string) {
 }
 
 export function publicCreatorPath(username: string) {
-  return `/creator/${encodeURIComponent(normalizeUsername(username))}`
+  return `/creator/${encodeURIComponent(normalizePublicCreatorUsername(username))}`
 }
 
 export function publicBlogPostPath(slug: string) {
