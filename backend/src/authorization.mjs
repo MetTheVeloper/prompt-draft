@@ -16,6 +16,7 @@ export const PERMISSIONS = Object.freeze({
   COLLAGE_VIEW: 'collage.view',
   ARCHIVE_VIEW: 'archive.view',
   ARCHIVE_MANAGE: 'archive.manage',
+  BLOG_MANAGE: 'blog.manage',
 })
 
 const ROLE_PERMISSIONS = Object.freeze({
@@ -28,6 +29,7 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.COLLAGE_VIEW,
     PERMISSIONS.ARCHIVE_VIEW,
     PERMISSIONS.ARCHIVE_MANAGE,
+    PERMISSIONS.BLOG_MANAGE,
   ]),
   super_admin: Object.freeze(['*']),
 })
