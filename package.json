@@ -65,7 +65,7 @@
     "test:templates": "tsx --test scripts/prompt-templates.test.ts",
     "test:module-wording": "tsx --test scripts/module-wording-output.test.ts",
     "test:phase8-ux": "node --test scripts/phase8-ux-regression.test.mjs",
-    "test:phase9-regression": "tsx --test scripts/phase9-compiler-regression.test.mjs",
+    "test:phase9-regression": "tsx --test scripts/phase9-compiler-regression.test.ts",
     "postinstall": "nuxt prepare",
     "locale:consolidate": "node scripts/localization-consolidate.mjs",
     "locale:audit": "node scripts/localization-audit.mjs all",
