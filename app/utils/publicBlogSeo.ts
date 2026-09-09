@@ -35,6 +35,8 @@ export function buildPublicBlogIndexStructuredData(input: {
   canonicalUrl: string
   articleUrl: (article: PublicBlogSummary) => string
 }) {
+  if (!input.canonicalUrl) return null
+
   return {
     '@context': 'https://schema.org',
     '@type': 'CollectionPage',
@@ -72,6 +74,8 @@ export function buildPublicBlogPostingStructuredData(input: {
   siteUrl?: string
 }) {
   const { article, locale, canonicalUrl } = input
+  if (!canonicalUrl) return null
+
   const imageUrl = input.imageUrl?.trim() || ''
   const authorUrl = toAbsoluteBlogUrl(input.siteUrl || '', article.author.url)
 
