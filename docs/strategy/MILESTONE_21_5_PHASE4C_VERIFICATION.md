@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -21,6 +21,7 @@ Implementation records:
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
 docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
+docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
 ```
 
 Operational workflow:
@@ -41,8 +42,8 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.1 Creator Profile Foundation             -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.2 Authenticated Profile Management       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.3 Creator Application + Admin Review     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.4 Public Creator policy/API              -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-4C.5 Public Creator SSR route               -> NOT STARTED
+4C.4 Public Creator policy/API              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.5 Public Creator SSR route               -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 4C.6 Creator SEO/indexability               -> NOT STARTED
 4C.7 Prompt/Discovery attribution           -> NOT STARTED
 4C.8 aggregate/staging acceptance           -> NOT STARTED
@@ -419,7 +420,7 @@ Detailed implementation record:
 docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
 ```
 
-### Implemented policy
+### Accepted policy
 
 ```text
 accessible = account exists + active + Creator approved + canonical username
@@ -430,7 +431,7 @@ hasPublishedPrompt = signal only; never a gate
 
 Internal policy reasons/signals remain server-only.
 
-### Implemented API
+### Accepted API
 
 ```text
 GET /api/public/creators/:username
@@ -446,7 +447,7 @@ non-GET -> 405 Allow GET
 username-keyed; browser never resolves UUID first
 ```
 
-### Implemented public DTO
+### Accepted public DTO
 
 ```text
 identity.username
@@ -496,14 +497,15 @@ public_id IS NOT NULL
 
 Internal UUID is used for the join only and never serialized.
 
-### Tests implemented
+### Founder-local evidence 2026-09-09
 
 ```text
-backend/src/publicCreator.test.mjs
-npm run test:public-creator
+test:public-creator -> 10/10 PASS
+test:public-prompt  -> 10/10 PASS
+frontend Docker production build -> PASS
 ```
 
-Coverage includes:
+Focused 4C.4 coverage proves:
 
 ```text
 public policy state matrix
@@ -514,67 +516,199 @@ positive DTO allowlist
 private sentinel leakage scan
 forbidden SQL-column scan
 published-only Archive source contract
-non-approved early 404 behavior
+none/pending/rejected/suspended generic 404 behavior
 noncanonical username no-query behavior
 GET/405/unrelated handler behavior
 ```
 
-### 4C.4 founder-local verification required next
+Founder staging API smoke:
+
+```text
+GET https://api.grassic.ir/api/public/creators/grassias
+-> 200 / ok=true
+-> localized ScreenName/Bio/Article
+-> active skills
+-> safe website link
+-> location.text only
+-> publications=[]
+-> policy.indexable=true
+-> policy.discoverable=true
+-> no observed private denylist fields
+```
+
+This also proves an approved zero-publication Creator remains a valid public Creator.
+
+Founder explicit acceptance:
+
+```text
+4C.4 رو ببند بریم سراغ 4C.5
+```
+
+Result:
+
+```text
+4C.4 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+---
+
+## 7. 4C.5 — Public Creator SSR
+
+Detailed implementation record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
+```
+
+### Implemented canonical routes
+
+```text
+/creator/:username
+/fa/creator/:username
+```
+
+Nuxt route:
+
+```text
+app/pages/creator/[username].vue
+```
+
+### Implemented SSR/browser contract
+
+```text
+app/composables/usePublicCreator.ts
+```
+
+Behavior:
+
+```text
+SSR fetches only GET /api/public/creators/:username
+server uses apiBaseInternal
+browser uses public apiBase
+positive DTO normalization only
+API 404 -> real Nuxt 404
+unexpected API failure -> 502
+mixed-case/noncanonical username -> locale-preserving 301 canonical redirect
+```
+
+Approved/suspended Creator username editing remains locked, so no historical alias can currently be created accidentally. `creator_username_aliases` + permanent old-name redirects remain a precondition before that lock may ever be relaxed.
+
+### Implemented public presentation
+
+```text
+localized ScreenName/Bio/Article
+avatar + cover/fallback
+@username
+location.text only
+localized active skills
+safe public links
+responsive publication summaries
+zero-publication empty state
+EN LTR / FA RTL
+no owner/admin Creator controls
+```
+
+Publication cards are shown only when the publication advertises the active locale and link only to canonical localized Public Prompt routes.
+
+### Implemented sanitized Markdown
+
+```text
+app/utils/publicCreatorMarkdown.ts
+```
+
+Contract:
+
+```text
+raw HTML escaped
+javascript: rejected
+data: rejected
+HTTP/HTTPS + safe root-relative link/image URLs only
+external links -> rel="ugc noopener noreferrer"
+supported headings/paragraphs/emphasis/code/lists/quotes/hr/links/images
+article source never bound directly to v-html
+```
+
+### Localization
+
+```text
+i18n/locales/public-creator.en.ts
+i18n/locales/public-creator.fa.ts
+```
+
+registered through:
+
+```text
+i18n/i18n.config.ts
+```
+
+### Frontend contract tests added
+
+```text
+scripts/public-creator-client-contract.test.ts
+scripts/public-creator-markdown.test.ts
+scripts/public-creator-ssr-contract.test.ts
+```
+
+Command:
+
+```text
+pnpm test:public-creator-web
+```
+
+Coverage:
+
+```text
+browser/SSR positive allowlist
+private sentinel stripping
+unsafe URL rejection
+publication locale inventory
+Markdown rendering + XSS defenses
+SSR public API dependency
+real 404/502 contract
+301 canonical redirect contract
+sanitized-only v-html binding
+LTR/RTL projection
+localized Public Prompt links
+no owner/admin management hooks
+```
+
+### Founder-local verification required next
 
 ```powershell
 git pull
-pnpm api
+pnpm test:public-creator-web
+pnpm locale:check
+pnpm frontend
 docker compose exec api npm run test:public-creator
-docker compose exec api npm run test:public-prompt
 ```
 
-No schema migration is required.
-
-Approved Creator API smoke:
+Manual staging/browser smoke with approved Creator `grassias`:
 
 ```text
-GET https://api.grassic.ir/api/public/creators/<approved-username>
+[ ] /creator/grassias renders public Creator page
+[ ] /fa/creator/grassias renders Persian Creator page
+[ ] EN is LTR with EN ScreenName/Bio/Article
+[ ] FA is RTL with FA ScreenName/Bio/Article
+[ ] article headings/bold/link/image render rather than raw Markdown syntax
+[ ] zero-publication state remains a valid Creator page
+[ ] localized skills render
+[ ] public website link works
+[ ] location shows text only
+[ ] /creator/GrassiaS -> 301 /creator/grassias
+[ ] /fa/creator/GrassiaS -> 301 /fa/creator/grassias
+[ ] unavailable Creator username -> real 404
+[ ] page has no Edit profile / Request Creator / admin review controls
 ```
 
-Expected:
-
-```text
-200
-identity safe allowlist only
-publication summaries published-only
-policy.indexable/discoverable present
-no private denylist fields
-```
-
-Unavailable-state smoke:
-
-```text
-pending/rejected/suspended/non-Creator -> same generic 404 response
-```
+4C.6 owns final title/meta/OG/Twitter, canonical/hreflang, robots and structured data. Their absence is not a 4C.5 failure.
 
 Current result:
 
 ```text
-4C.4 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.5 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 ```
 
 Acceptance: **PENDING**
-
----
-
-## 7. 4C.5 — Public Creator SSR gate
-
-```text
-[ ] /creator/:username SSR
-[ ] /fa/creator/:username SSR
-[ ] unavailable -> real 404
-[ ] lowercase canonical redirect
-[ ] approved-Creator username alias redirect strategy before rename support
-[ ] sanitized Markdown rendering
-[ ] EN/FA LTR/RTL presentation
-[ ] /user remains account/product route
-[ ] no owner/admin controls on public Creator page
-```
 
 ---
 
@@ -669,7 +803,7 @@ Positive allowlists remain the primary boundary; denylist tests are defense in d
 4C.1 accepted
 + 4C.2 accepted
 + 4C.3 accepted
-+ 4C.4 founder-local verified/accepted
++ 4C.4 accepted
 + 4C.5 founder-local verified/accepted
 + 4C.6 founder-local verified/accepted
 + 4C.7 founder-local verified/accepted
