@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 4E.2 Public Blog Index + Article SSR + Markdown/SEO
 
-Status: **IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
-Date: 2026-09-09
+Date: 2026-09-10
 
 Branch:
 
@@ -176,7 +176,7 @@ explicit editorial author
 Prompt Draft publisher
 ```
 
-Relative editorial author URLs are converted to absolute URLs using the configured public site origin.
+V1 editorial/site authors are represented as `Organization` in structured data. Relative editorial author URLs are converted to absolute URLs using the configured public site origin.
 
 ## 8. Blog index SEO
 
@@ -195,7 +195,7 @@ The index remains meaningful and valid with an empty ItemList before the first r
 
 ## 9. Localization
 
-New locale fragments:
+Locale fragments:
 
 ```text
 i18n/locales/blog.en.ts
@@ -232,20 +232,21 @@ Root command:
 pnpm test:blog-public
 ```
 
-Suite:
+Accepted result on 2026-09-10:
 
 ```text
-scripts/public-blog-projection.test.ts
-scripts/public-blog-seo.test.ts
-scripts/public-blog-ssr-contract.test.ts
-scripts/blog-contract.test.ts
+26 tests
+26 pass
+0 fail
 ```
 
-Coverage:
+Coverage includes:
 
 ```text
-public DTO privacy
-strict locale parser
+4E.1 Article contract regression
+Nitro serverAssets/runtime loader contract
+public Blog DTO privacy
+strict locale parsing
 localized positive Article projection
 BlogPosting canonical/localized JSON-LD
 CollectionPage/ItemList index JSON-LD
@@ -254,43 +255,55 @@ native SSR page ownership
 safe Markdown renderer use
 public Nitro API policy reuse
 EN/FA localization registration
-4E.1 repository contract regression
+public route regression
 ```
 
-## 12. Verification gate
+## 12. Founder-local runtime verification
 
-Because 4E.2 changes frontend app/server/Nitro content only:
+Accepted commands/results:
 
 ```powershell
 pnpm test:blog-public
 pnpm frontend
+pnpm smoke:blog-public
 ```
 
-No backend rebuild is required.
-
-After frontend build, narrow runtime checks should cover:
+Evidence:
 
 ```text
+pnpm test:blog-public -> 26/26 PASS
+pnpm frontend -> Nuxt client/server/Nitro production build PASS
+frontend Docker image -> Built
+frontend container -> Started
 GET /api/public/blog?locale=en -> 200
 GET /api/public/blog?locale=fa -> 200
 /blog -> 200
 /fa/blog -> 200
-/blog/nonexistent-article -> 404
-/fa/blog/nonexistent-article -> 404
-canonical/hreflang + staging noindex on Blog index
-CollectionPage JSON-LD in raw SSR HTML
+staging-config X-Robots-Tag -> noindex, nofollow, noarchive
+/blog/nonexistent Article -> 404
+/fa/blog/nonexistent Article -> 404
+positive Article runtime -> intentionally skipped because repository has no real published Article yet
+smoke -> PASS
 ```
 
-If repository is still empty, list responses should be `[]`; that is expected, not a failure.
+The positive runtime detail skip is accepted and non-blocking because no artificial editorial fixture is permitted; positive projection/SEO behavior is covered by focused contract tests and will receive a real runtime proof after the first actual Article exists.
 
-Do not mark 4E.2 accepted until founder verification + explicit acceptance.
+## 13. Acceptance
 
-## 13. Current state
+Founder explicitly accepted 4E.2 on 2026-09-10.
+
+```text
+4E.2 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+No backend/API service rebuild was required because Blog public API routes are Nitro/frontend-owned.
+
+## 14. Current state
 
 ```text
 4E.1 -> DONE / ACCEPTED
-4E.2 -> IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
-4E.3 -> NOT STARTED
+4E.2 -> DONE / ACCEPTED
+4E.3 -> IN PROGRESS — SHARED INVENTORY / SITEMAP / LLMS / STATIC
 4E.4 -> NOT STARTED
 4E.5 -> NOT STARTED
 4E.6 -> NOT STARTED
