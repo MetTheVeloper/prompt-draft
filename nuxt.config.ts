@@ -1,5 +1,5 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
-import { PUBLIC_DISCOVERY_ROUTES } from "./shared/public-discovery";
+import { PUBLIC_DISCOVERY_ROUTES } from "./app/shared/public-discovery";
 import { APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS } from "./shared/seo-route-policy";
 
 const publicDiscoveryRoutes = PUBLIC_DISCOVERY_ROUTES.flatMap((route) => [
