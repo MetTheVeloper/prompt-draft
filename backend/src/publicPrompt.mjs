@@ -1,4 +1,5 @@
 import { queryDatabase } from './database.mjs'
+import { handlePublicCreatorRequest } from './publicCreator.mjs'
 
 const PUBLIC_PROMPT_PREFIX = '/api/public/prompts'
 const PUBLIC_PROMPT_MATCH = /^\/api\/public\/prompts\/(\d+)$/
@@ -175,6 +176,19 @@ export async function handlePublicPromptRequest({
   sendJson,
   query = queryDatabase,
 }) {
+  if (
+    await handlePublicCreatorRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+      query,
+    })
+  ) {
+    return true
+  }
+
   if (url.pathname !== PUBLIC_PROMPT_PREFIX && !url.pathname.startsWith(`${PUBLIC_PROMPT_PREFIX}/`)) {
     return false
   }
