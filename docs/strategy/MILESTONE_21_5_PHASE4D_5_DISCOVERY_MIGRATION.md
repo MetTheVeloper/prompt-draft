@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D.5 Discovery Structured Data + Legacy Generator Migration
 
-Status: **IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL + STAGING SSR VERIFIED / ACCEPTED 2026-09-09**
 
 Date: 2026-09-09
 
@@ -129,13 +129,21 @@ This is cleanup, not a second SEO renderer.
 
 ## 4. Shared Discovery catalog
 
-New source:
+Authoritative source after Nitro-build hardening:
+
+```text
+app/shared/public-discovery.ts
+```
+
+Compatibility re-export for root scripts/tests:
 
 ```text
 shared/public-discovery.ts
 ```
 
-It owns the six accepted Discovery definitions:
+The root file is a thin re-export shim, not a second catalog.
+
+The authoritative catalog owns the six accepted Discovery definitions:
 
 ```text
 key
@@ -147,7 +155,7 @@ i18n title key
 i18n description key
 ```
 
-Consumers:
+Consumers include:
 
 ```text
 app/composables/useDiscoveryPreferences.ts
@@ -155,12 +163,14 @@ scripts/public-url-inventory.ts
 nuxt.config.ts
 ```
 
-Nuxt legacy static-generation prerenders are now derived from the same route list and explicitly include both locale spaces:
+Nuxt legacy static-generation prerenders are derived from the same route list and explicitly include both locale spaces:
 
 ```text
 /discover/:slug
 /fa/discover/:slug
 ```
+
+The catalog was moved inside the Nuxt `app/` source tree after a verification build exposed a Nitro bundling problem with a raw root-relative TypeScript import. This resolved the build without duplicating policy/data.
 
 ## 5. Native Discovery structured data
 
@@ -176,7 +186,7 @@ Native page:
 app/pages/discover/[slug].vue
 ```
 
-The page now passes reactive values to `usePublicSeo` and provides:
+The page passes reactive values to `usePublicSeo` and provides:
 
 ```text
 localized title
@@ -275,58 +285,99 @@ legacy cleanup markers remain migration-only
 accepted Discovery visual/public-data boundaries remain intact
 ```
 
-## 8. Verification gate
+## 8. Founder verification evidence — ACCEPTED 2026-09-09
 
-Follow `docs/strategy/DEVELOPMENT_WORKFLOW.md`.
+Focused no-rebuild gates:
 
-No API/backend code changed in 4D.5.
-
-First gate — no rebuild:
-
-```powershell
+```text
 pnpm test:discovery-seo
+-> 8 tests / 8 pass / 0 fail
+
 pnpm test:public-url-inventory
+-> 7 tests / 7 pass / 0 fail
 ```
 
-If focused tests pass, the only runtime image that changed is frontend:
+Frontend build verification:
 
-```powershell
+```text
 pnpm frontend
+-> Nuxt client build PASS
+-> Nuxt server build PASS
+-> Nitro server build PASS
+-> Docker image built
+-> frontend container started
 ```
 
-Runtime smoke should verify representative EN + FA Discovery routes against the staging-config container, including:
+Verification uncovered two non-policy build issues and both were fixed before acceptance:
 
 ```text
-200 response
-staging X-Robots-Tag remains noindex
-localized canonical/hreflang remain correct
-native application/ld+json exists
-CollectionPage / ItemList present
-structured Prompt URLs use /prompt/:id or /fa/prompt/:id
-structured Creator URLs use /creator/:username or /fa/creator/:username
-no /prompts?id= or /user?un= in native structured data/SSR HTML
-no protected fields
+1. Docker/Corepack bootstrap network fragility
+   -> pnpm 11.6.0 bootstrap moved before package manifest COPY
+   -> retry + IPv4-first hardening
+
+2. Nitro unresolved root-relative shared/public-discovery.ts import
+   -> authoritative catalog moved to app/shared/public-discovery.ts
+   -> root shared/public-discovery.ts became a re-export shim
 ```
 
-Static compatibility gate then runs a fresh indexing-enabled `pnpm generate` once to prove:
+Final raw staging SSR source was inspected for:
 
 ```text
-EN + FA Discovery routes prerender natively
-no injected data-public-seo-snapshot remains
-no legacy data-public-seo-structured marker remains
-no crawler-discovered /prompts?id= or /user?un= links from Discovery snapshots
-sitemap + llms remain canonical and unchanged in eligibility
-robots behavior remains intact
+https://grassic.ir/discover/portrait-photography
+https://grassic.ir/fa/discover/portrait-photography
 ```
+
+EN source proved:
+
+```text
+lang=en-US / dir=ltr
+localized title + description
+self canonical
+EN/FA hreflang + x-default
+staging noindex meta
+OG/Twitter image
+native CollectionPage -> ItemList -> CreativeWork JSON-LD
+canonical /prompt/:id structured URLs
+visible canonical /prompt/:id links
+no /prompts?id=
+no /user?un=
+no protected/private serialized-field matches
+```
+
+FA source proved:
+
+```text
+lang=fa-IR / dir=rtl
+localized Persian title + description
+self canonical /fa/discover/portrait-photography
+EN/FA hreflang + x-default
+staging noindex meta
+native CollectionPage -> ItemList -> CreativeWork JSON-LD
+canonical /fa/prompt/:id structured URLs
+visible canonical /fa/prompt/:id links
+no /prompts?id=
+no /user?un=
+no protected/private serialized-field matches
+```
+
+The live Discovery fixture used for this smoke did not contain Creator attribution, so no runtime `author` node was expected. The focused contract test separately proves the optional approved-Creator path uses canonical localized `/creator/:username` URLs and only public username identity.
+
+The founder explicitly authorized acceptance after this evidence.
+
+Production-like fresh static generation is intentionally executed once in the 4D.6 aggregate gate rather than repeated here. It remains required before final Phase 4D acceptance.
 
 ## 9. Acceptance
 
-Current state:
+Final 4D.5 state:
 
 ```text
 4D.4 -> DONE / VERIFIED / ACCEPTED
-4D.5 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
-4D.6 -> NOT STARTED
+4D.5 -> DONE / FOUNDER-LOCAL + STAGING SSR VERIFIED / ACCEPTED 2026-09-09
+4D.6 -> IMPLEMENTED / VERIFICATION PENDING / NOT ACCEPTED
 ```
 
-Do not begin 4D.6 until the 4D.5 verification gate passes and the founder explicitly accepts 4D.5.
+Next source of truth:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
+```
