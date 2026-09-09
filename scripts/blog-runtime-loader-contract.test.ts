@@ -3,10 +3,11 @@ import { readFile } from 'node:fs/promises'
 import test from 'node:test'
 
 test('Blog repository content is bundled into Nitro server assets for Docker runtime', async () => {
-  const [nuxtConfig, loader, dockerfile] = await Promise.all([
+  const [nuxtConfig, loader, dockerfile, dockerignore] = await Promise.all([
     readFile('nuxt.config.ts', 'utf8'),
     readFile('server/utils/blogRepository.ts', 'utf8'),
     readFile('Dockerfile', 'utf8'),
+    readFile('.dockerignore', 'utf8'),
   ])
 
   assert.match(nuxtConfig, /serverAssets\s*:\s*\[/)
@@ -15,7 +16,10 @@ test('Blog repository content is bundled into Nitro server assets for Docker run
   assert.match(loader, /useStorage\(["']assets:blog["']\)/)
   assert.match(loader, /assertValidBlogRepositoryAssets/)
 
+  assert.match(dockerfile, /COPY \. \./)
   assert.match(dockerfile, /COPY --from=builder \/app\/\.output \.\/\.output/)
+  assert.doesNotMatch(dockerignore, /^content(?:\/|$)/m)
+  assert.doesNotMatch(dockerignore, /^content\/blog(?:\/|$)/m)
   assert.doesNotMatch(loader, /github\.com/i)
   assert.doesNotMatch(loader, /api\.github/i)
   assert.doesNotMatch(loader, /fetch\s*\(/)
