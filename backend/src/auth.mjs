@@ -17,6 +17,7 @@ import {
   normalizeUserRole,
   resolvePermissionsForRole,
 } from './authorization.mjs'
+import { createGeneratedUsername } from './generatedUsername.mjs'
 import { createProfileState } from './profileRequirements.mjs'
 import { getReferralState } from './referrals.mjs'
 import { createUserScoreState } from './userScore.mjs'
@@ -25,6 +26,7 @@ const scryptAsync = promisify(scrypt)
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
 const MAX_PASSWORD_LENGTH = 200
 const PROFILE_FIELDS = new Set(['username', 'email'])
+const GENERATED_USERNAME_ATTEMPTS = 24
 
 function isJsonRequest(request) {
   const contentType = request.headers['content-type'] ?? ''
@@ -174,6 +176,18 @@ async function findUserByIdentifier(identifier) {
   )
 
   return result.rows[0] ?? null
+}
+
+async function createAvailableGeneratedUsername() {
+  for (let attempt = 0; attempt < GENERATED_USERNAME_ATTEMPTS; attempt += 1) {
+    const username = createGeneratedUsername()
+    const existing = await findUserByIdentifier({ type: 'username', value: username })
+    if (!existing) return username
+  }
+
+  const error = new Error('Could not allocate a generated username')
+  error.code = 'GENERATED_USERNAME_EXHAUSTED'
+  throw error
 }
 
 async function hashPassword(password) {
@@ -769,7 +783,9 @@ export async function handleAuthRequest({
 
       const userId = randomUUID()
       const passwordHash = await hashPassword(body.password)
-      const username = identifier.type === 'username' ? identifier.value : null
+      const username = identifier.type === 'username'
+        ? identifier.value
+        : await createAvailableGeneratedUsername()
       const email = identifier.type === 'email' ? identifier.value : null
 
       let result
