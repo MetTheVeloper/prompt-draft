@@ -68,6 +68,27 @@ function assertNoLegacyDetailRoutes(body, label) {
   assert.equal(body.includes('/user?un='), false, `${label} contains legacy Creator detail route`)
 }
 
+function extractJsonLd(html) {
+  return [...html.matchAll(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi)]
+    .map(match => match[1])
+    .join('\n')
+}
+
+function assertProtectedPromptCta(html, { locale, promptId, label }) {
+  const prefix = locale === 'fa' ? '/fa' : ''
+  const expectedHref = `${prefix}/prompts?id=${promptId}`
+  assert.ok(
+    html.includes(`href="${expectedHref}"`),
+    `${label} protected full-detail CTA missing (${expectedHref})`,
+  )
+  assert.equal(html.includes('/user?un='), false, `${label} contains legacy Creator detail route`)
+
+  const jsonLd = extractJsonLd(html)
+  assert.ok(jsonLd, `${label} JSON-LD payload missing`)
+  assert.match(jsonLd, /"@type":"CreativeWork"/, `${label} CreativeWork JSON-LD missing`)
+  assertNoLegacyDetailRoutes(jsonLd, `${label} JSON-LD`)
+}
+
 function assertNoindex(response, label) {
   const value = response.headers.get('x-robots-tag') || ''
   assert.match(value, /noindex/i, `${label} must preserve staging X-Robots-Tag noindex`)
@@ -202,19 +223,23 @@ for (const locale of ['en', 'fa']) {
 
   const promptCanonical = `${siteBase}${prefix}/prompt/${prompt.id}`
   const promptAlternate = `${siteBase}${locale === 'fa' ? '' : '/fa'}/prompt/${prompt.id}`
-  const promptResponse = await get(promptCanonical, `${locale.toUpperCase()} representative Public Prompt SSR`)
+  const promptLabel = `${locale.toUpperCase()} representative Public Prompt SSR`
+  const promptResponse = await get(promptCanonical, promptLabel)
   assert.equal(promptResponse.status, 200)
-  assertNoindex(promptResponse, `${locale.toUpperCase()} representative Public Prompt SSR`)
+  assertNoindex(promptResponse, promptLabel)
   const promptHtml = await promptResponse.text()
   assertPublicSeoHead(promptHtml, {
     canonical: promptCanonical,
     alternate: promptAlternate,
     locale,
-    label: `${locale.toUpperCase()} representative Public Prompt SSR`,
+    label: promptLabel,
   })
-  assert.ok(promptHtml.includes('"@type":"CreativeWork"'), `${locale.toUpperCase()} Prompt CreativeWork JSON-LD missing`)
-  assertNoLegacyDetailRoutes(promptHtml, `${locale.toUpperCase()} representative Public Prompt SSR`)
-  assertNoPrivateKeys(promptHtml, `${locale.toUpperCase()} representative Public Prompt SSR`)
+  assertProtectedPromptCta(promptHtml, {
+    locale,
+    promptId: prompt.id,
+    label: promptLabel,
+  })
+  assertNoPrivateKeys(promptHtml, promptLabel)
 
   const creatorCanonical = `${siteBase}${prefix}/creator/${creator.username}`
   const creatorAlternate = `${siteBase}${locale === 'fa' ? '' : '/fa'}/creator/${creator.username}`
