@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PublicPromptLocale } from '~/composables/usePublicPrompt'
-import { publicPromptPath } from '~/utils/publicRoutes'
+import { publicCreatorPath, publicPromptPath } from '~/utils/publicRoutes'
 import {
   buildPublicPromptStructuredData,
   normalizePublicSiteUrl,
@@ -137,6 +137,9 @@ const previewCountLabel = computed(() => {
 })
 
 const backIcon = computed(() => activeLocale.value === 'fa' ? 'arrow_forward' : 'arrow_back')
+const creatorUrl = computed(() => prompt.value?.creator
+  ? localePath(publicCreatorPath(prompt.value.creator.username), activeLocale.value)
+  : '')
 
 const protectedPromptPath = computed(() => localePath({
   path: '/prompts',
@@ -168,6 +171,23 @@ const protectedPromptPath = computed(() => localePath({
         />
       </template>
 
+      <template #meta>
+        <NuxtLink
+          v-if="prompt?.creator"
+          :to="creatorUrl"
+          class="public-prompt-creator">
+          <el-avatar
+            :src="prompt.creator.avatarUrl"
+            :name="prompt.creator.username"
+            :size="7"
+            :size-offset="2"
+            :br="2"
+            bc="surface"
+          />
+          <span>@{{ prompt.creator.username }}</span>
+        </NuxtLink>
+      </template>
+
       <template #actions>
         <el-button
           color="normal"
@@ -184,5 +204,19 @@ const protectedPromptPath = computed(() => localePath({
 .public-prompt-page {
   min-height: 100%;
   background: var(--themeBackground);
+}
+
+.public-prompt-creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: inherit;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.public-prompt-creator:hover {
+  opacity: .82;
 }
 </style>
