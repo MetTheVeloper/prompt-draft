@@ -1,0 +1,31 @@
+export default {
+  growth: {
+    publicCreator: {
+      eyebrow: 'کریتور عمومی',
+      articleEyebrow: 'داستان کریتور',
+      articleTitle: 'درباره این کریتور',
+      articleEmpty: 'این کریتور هنوز معرفی بلند عمومی منتشر نکرده است.',
+      skillsEyebrow: 'تخصص‌ها',
+      skillsTitle: 'مهارت‌ها',
+      skillsEmpty: 'هنوز مهارت عمومی‌ای ثبت نشده است.',
+      identityEyebrow: 'هویت عمومی',
+      identityTitle: 'جزئیات کریتور',
+      usernameLabel: 'نام کاربری',
+      locationLabel: 'موقعیت',
+      publicationsEyebrow: 'آثار منتشرشده',
+      publicationsTitle: 'پرامپت‌های عمومی',
+      publicationsEmpty: 'این کریتور هنوز پرامپت عمومی‌ای منتشر نکرده است.',
+      viewPrompt: 'نمایش پرامپت',
+      linkTypes: {
+        website: 'وب‌سایت',
+        github: 'GitHub',
+        linkedin: 'LinkedIn',
+        instagram: 'Instagram',
+        telegram: 'Telegram',
+        x: 'X',
+        youtube: 'YouTube',
+        other: 'لینک',
+      },
+    },
+  },
+}
