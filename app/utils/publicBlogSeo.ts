@@ -1,4 +1,8 @@
-import type { PublicBlogArticle, PublicBlogLocale } from '~/shared/public-blog'
+import type {
+  PublicBlogArticle,
+  PublicBlogLocale,
+  PublicBlogSummary,
+} from '~/shared/public-blog'
 
 export function normalizeBlogSiteUrl(value: unknown) {
   const raw = typeof value === 'string' ? value.trim() : ''
@@ -22,6 +26,41 @@ export function toAbsoluteBlogUrl(siteUrl: string, value: string | null | undefi
     } catch {
       return ''
     }
+  }
+}
+
+export function buildPublicBlogIndexStructuredData(input: {
+  articles: PublicBlogSummary[]
+  locale: PublicBlogLocale
+  canonicalUrl: string
+  articleUrl: (article: PublicBlogSummary) => string
+}) {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': input.canonicalUrl,
+    url: input.canonicalUrl,
+    name: input.locale === 'fa' ? 'بلاگ Prompt Draft' : 'Prompt Draft Blog',
+    inLanguage: input.locale === 'fa' ? 'fa-IR' : 'en-US',
+    mainEntity: {
+      '@type': 'ItemList',
+      itemListElement: input.articles.map((article, index) => ({
+        '@type': 'ListItem',
+        position: index + 1,
+        item: {
+          '@type': 'BlogPosting',
+          url: input.articleUrl(article),
+          headline: article.title,
+          description: article.description,
+          datePublished: article.publishedAt,
+          dateModified: article.updatedAt,
+          author: {
+            '@type': 'Person',
+            name: article.author.name,
+          },
+        },
+      })),
+    },
   }
 }
 
