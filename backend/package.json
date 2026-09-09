@@ -16,6 +16,7 @@
     "test:profile-management": "node --test src/profileManagement.test.mjs",
     "test:creator-account": "node --test src/creatorAccount.test.mjs src/creatorAdminIndex.test.mjs",
     "test:generated-username": "node --test src/generatedUsername.test.mjs",
+    "test:public-creator": "node --test src/publicCreator.test.mjs",
     "test:public-prompt": "node --test src/publicPrompt.test.mjs",
     "test:archive-description-inventory": "node --test src/promptArchiveDescriptionInventory.test.mjs",
     "test:archive-description-test-prune": "node --test src/promptArchiveDescriptionTestPrune.test.mjs",
