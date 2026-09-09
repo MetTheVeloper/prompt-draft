@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C ACCEPTED / 4D NEXT
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C + 4D.2 ACCEPTED / 4D.3 NEXT
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -108,7 +108,7 @@ ADR-001 remains historically correct for Milestone 21D. ADR-002 records the acce
 Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4D NEXT
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4D.2 ACCEPTED / 4D.3 NEXT
 Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
@@ -118,7 +118,7 @@ Phase 4 slices:
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4D Sitemap / Robots / Discovery + AI Discovery        NEXT / AUDIT FIRST
+21.5.4D Sitemap / Robots / Discovery + AI Discovery        IN PROGRESS / 4D.2 ACCEPTED / 4D.3 NEXT
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
 ```
@@ -486,9 +486,7 @@ Creator sitemap/discovery eligibility must consume the accepted server-authorita
 
 ## Current action — 21.5.4D Sitemap / Robots / Discovery + AI Discovery
 
-4D is now unblocked by founder acceptance of 4C.
-
-Authoritative 4D planning record:
+Authoritative 4D record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
@@ -497,26 +495,69 @@ docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
 Current 4D status:
 
 ```text
-PLANNING / AUDIT NEXT / NOT IMPLEMENTED
+4D.1 existing robots/sitemap/legacy/runtime audit -> AUDITED
+4D.2 shared public inventory + sitemap migration   -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4D.3 robots normalization + staging precedence    -> AUDIT NEXT
+4D.4 llms.txt shared-inventory projection          -> NOT STARTED
+4D.5 Discovery/legacy-generator migration          -> NOT STARTED
+4D.6 aggregate regression + staging acceptance     -> NOT STARTED
 ```
 
-Immediate audit scope:
+Accepted 4D.2 architecture:
 
 ```text
-public/robots.txt
-public/llms.txt if present
-scripts/generate-public-seo.ts
-current sitemap generation/output
-runtime routeRules and X-Robots-Tag behavior
-usePublicSeo indexability contract
-Public Prompt locale availability
-Public Creator policy.indexable/discoverable
-Discovery public projection and structured-data state
-static generate compatibility
-shared public URL inventory / static-vs-generated-vs-runtime output decision
+GET /api/public/inventory
+  -> Prompt public numeric id + authoritative availableLocales
+  -> Creator canonical username + availableLocales + policy.indexable/discoverable
+
+shared scripts/public-url-inventory.ts
+  -> static acquisition URLs
+  -> Discovery canonical URLs
+  -> Prompt canonical EN/FA URLs
+  -> indexable Creator canonical EN/FA URLs
+  -> sitemap.xml
+
+NUXT_PUBLIC_NOINDEX=true
+  -> outer build-time public-inventory gate
 ```
 
-4D explicitly includes `/llms.txt` as a supplemental AI-discovery surface. For Prompt Draft it is treated as an optional/experimental machine-friendly guide to already-public canonical resources, not as crawler permission, training consent, a sitemap replacement, or a second indexability source of truth.
+Accepted founder-local 4D.2 evidence:
+
+```text
+pnpm test:public-url-inventory -> 7/7 PASS
+pnpm test:public-inventory-api -> 16/16 PASS
+GET /api/public/inventory -> ok=true / 101 prompts / 1 creator
+protected-field privacy scan -> no matches
+pnpm generate -> PASS
+sitemap canonical URL count -> 220
+legacy /prompts?id= in sitemap -> 0
+legacy /user?un= in sitemap -> 0
+generated robots sitemap declaration -> PASS
+```
+
+Static-generation verification also repaired two pre-existing local blockers discovered by the acceptance gate:
+
+```text
+scripts/run-static-generate.mjs -> Windows-safe pnpm invocation
+package.json -> @vueuse/core direct runtime dependency restored to match pnpm-lock.yaml
+```
+
+4D.3 must now audit and normalize:
+
+```text
+public/robots.txt source behavior
+generated robots.txt behavior
+public crawling intent
+application/private route exclusions
+EN/FA locale-space consistency
+sitemap declaration ownership / duplication
+server X-Robots-Tag interaction
+NUXT_PUBLIC_NOINDEX=true staging precedence
+whether staging robots should advertise or suppress sitemap/public crawling
+AI-crawler directives only as explicit product decisions, never inferred from llms.txt
+```
+
+4D explicitly includes `/llms.txt` later in 4D.4 as a supplemental AI-discovery surface. It remains an optional/experimental machine-friendly guide to already-public canonical resources, not crawler permission, training consent, a sitemap replacement, or a second indexability source of truth.
 
 Locked 4D constraints inherited from 4A–4C:
 
@@ -735,15 +776,15 @@ When continuing in a new chat:
 2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its time-first / smallest-rebuild-scope rule; this is mandatory because it keeps founder verification fast
 3. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md for the accepted Creator baseline
-5. read docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md as the 4D planning source of truth
-6. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED
+5. read docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md as the authoritative 4D source of truth
+6. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED and 4D.2 remains DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 7. inspect the latest feature/growth-foundation branch state before implementation; preserve any parallel documentation/work already added to the branch
-8. begin 4D audit-first: robots, sitemap, Discovery migration, generate-public-seo compatibility and current llms.txt absence/presence
-9. design /llms.txt from the same canonical/indexable public inventory used by sitemap; never create parallel Prompt/Creator eligibility logic
+8. continue with 4D.3 audit-first: robots source/generation, private route exclusions, locale-space consistency, sitemap declaration, X-Robots-Tag and NUXT_PUBLIC_NOINDEX staging precedence
+9. do not implement llms.txt until 4D.3 is accepted; when 4D.4 starts, generate it from the same canonical/indexable public inventory used by sitemap
 10. preserve all accepted 4A/4B/4C route, localization, SEO, noindex, privacy and public/protected boundaries
 11. consume Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
 12. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
 13. keep grassic.ir/api.grassic.ir as staging and do not touch prompt-draft.ir
-14. do not mark 4D DONE until founder-local/staging verification and explicit acceptance
+14. do not mark any 4D slice DONE until founder verification and explicit acceptance
 15. do not begin 4E until 4D is accepted
 ```
