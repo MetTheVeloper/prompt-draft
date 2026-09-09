@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CreatorApplicationSection from "~/components/manage/CreatorApplicationSection.vue";
 import {
   getPermittedManageSections,
   type ManageSection,
@@ -37,6 +38,8 @@ const isActiveSection = (section: VisibleManageSection) => {
 const activeSection = computed(() => {
   return permittedSections.value.find(isActiveSection) ?? null;
 });
+
+const isProfileSection = computed(() => activeSection.value?.key === "profile");
 
 function sectionLabel(section: VisibleManageSection) {
   return t(`manage.sections.${section.key}.label`);
@@ -87,5 +90,6 @@ onMounted(() => {
     </el-flex>
 
     <NuxtPage />
+    <CreatorApplicationSection v-if="isProfileSection" />
   </el-flex>
 </template>
