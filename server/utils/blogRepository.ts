@@ -10,6 +10,7 @@ function decodeStorageValue(value: unknown) {
   if (typeof value === 'string') return value
   if (value instanceof Uint8Array) return new TextDecoder().decode(value)
   if (value === null || value === undefined) return ''
+  if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
 
@@ -20,7 +21,7 @@ async function readBundledBlogAssets() {
 
   for (const key of keys) {
     if (!key.endsWith('.json') && !key.endsWith('.md')) continue
-    const value = await storage.getItemRaw(key)
+    const value = await storage.getItem(key)
     assets[key] = decodeStorageValue(value)
   }
 
