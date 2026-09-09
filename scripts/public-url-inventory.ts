@@ -1,3 +1,5 @@
+import { PUBLIC_DISCOVERY_INTERESTS } from '../shared/public-discovery'
+
 export type PublicLocale = 'en' | 'fa'
 export type PublicUrlResourceKind = 'static' | 'discovery' | 'prompt' | 'creator'
 
@@ -23,45 +25,7 @@ export type PublicApiInventory = {
 }
 
 export const PUBLIC_LOCALES: readonly PublicLocale[] = ['en', 'fa'] as const
-
-export const PUBLIC_DISCOVERY_CATALOG = [
-  {
-    slug: 'portrait-photography',
-    title: 'Portraits & Photography',
-    description: 'Portraits, photography, avatars, headshots and identity-led visuals.',
-    tags: ['portrait', 'photography', 'avatar'],
-  },
-  {
-    slug: '3d-sculpture',
-    title: '3D & Sculpture',
-    description: '3D characters, crafted objects, figurines and sculptural transformations.',
-    tags: ['3d', 'sculpture'],
-  },
-  {
-    slug: 'illustration-animation',
-    title: 'Illustration & Animation',
-    description: 'Illustration, anime, cartoons and animation-inspired visual styles.',
-    tags: ['illustration', 'animation-style', 'anime', 'cartoon'],
-  },
-  {
-    slug: 'posters-editorial',
-    title: 'Posters & Editorial',
-    description: 'Poster design, covers, editorial compositions and publication-style visuals.',
-    tags: ['poster', 'editorial'],
-  },
-  {
-    slug: 'product-fashion',
-    title: 'Product & Fashion',
-    description: 'Product imagery, advertising, clothing previews and fashion direction.',
-    tags: ['product', 'fashion'],
-  },
-  {
-    slug: 'cinematic-game-art',
-    title: 'Cinematic & Game Art',
-    description: 'Cinematic scenes, game-inspired visuals, characters and dramatic worlds.',
-    tags: ['cinematic', 'game-style', 'pixel-art'],
-  },
-] as const
+export const PUBLIC_DISCOVERY_CATALOG = PUBLIC_DISCOVERY_INTERESTS
 
 const STATIC_ACQUISITION_PATHS = ['/', '/guide'] as const
 const PUBLIC_LOCALE_SET = new Set<string>(PUBLIC_LOCALES)
