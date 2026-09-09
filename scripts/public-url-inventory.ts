@@ -174,6 +174,101 @@ export function renderSitemapXml(resources: readonly PublicUrlResource[], siteUr
   ].join('\n')
 }
 
+function toBaseCanonicalPath(resource: PublicUrlResource) {
+  if (resource.locale !== 'fa') return resource.canonicalPath
+  if (resource.canonicalPath === '/fa') return '/'
+  return resource.canonicalPath.startsWith('/fa/')
+    ? resource.canonicalPath.slice(3) || '/'
+    : resource.canonicalPath
+}
+
+function escapeMarkdownLabel(value: string) {
+  return value
+    .replaceAll('\\', '\\\\')
+    .replaceAll('[', '\\[')
+    .replaceAll(']', '\\]')
+}
+
+function decodePathSegment(value: string) {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return value
+  }
+}
+
+function llmsResourceLabel(resource: PublicUrlResource) {
+  const basePath = toBaseCanonicalPath(resource)
+  const localeLabel = resource.locale === 'fa' ? 'Persian' : 'English'
+
+  if (resource.kind === 'static') {
+    const label = basePath === '/' ? 'Prompt Draft home' : 'Prompt Draft guide'
+    return `${label} — ${localeLabel}`
+  }
+
+  if (resource.kind === 'discovery') {
+    const slug = basePath.split('/').filter(Boolean).at(-1) || ''
+    const category = PUBLIC_DISCOVERY_CATALOG.find(item => item.slug === slug)
+    return `${category?.title || slug || 'Discovery'} — ${localeLabel}`
+  }
+
+  if (resource.kind === 'prompt') {
+    const id = basePath.split('/').filter(Boolean).at(-1) || ''
+    return `Public Prompt ${id} — ${localeLabel}`
+  }
+
+  const username = decodePathSegment(basePath.split('/').filter(Boolean).at(-1) || '')
+  return `Creator ${username} — ${localeLabel}`
+}
+
+const LLMS_SECTIONS: readonly Array<{
+  kind: PublicUrlResourceKind
+  title: string
+}> = [
+  { kind: 'static', title: 'Core' },
+  { kind: 'discovery', title: 'Discovery' },
+  { kind: 'creator', title: 'Creators' },
+  { kind: 'prompt', title: 'Public Prompts' },
+] as const
+
+export function renderLlmsTxt(resources: readonly PublicUrlResource[], siteUrl: string) {
+  const normalizedSiteUrl = new URL(siteUrl).toString().replace(/\/+$/, '')
+
+  if (resources.length === 0) {
+    return [
+      '# Prompt Draft',
+      '',
+      '> Prompt Draft public AI-discovery inventory is disabled for this environment.',
+      '',
+      'This environment does not publish canonical public resource links through llms.txt. Crawler access and indexing behavior remain governed by robots.txt and response-level noindex signals.',
+      '',
+    ].join('\n')
+  }
+
+  const lines = [
+    '# Prompt Draft',
+    '',
+    '> Discover curated visual prompts, public creators, and structured prompt workflows with Prompt Draft.',
+    '',
+    'The links below are canonical public resources projected from the same indexability inventory used by sitemap.xml. English URLs are unprefixed and Persian URLs use /fa. Protected Prompt bodies, private Drafts, authenticated account surfaces, and other non-public data are intentionally excluded. Crawler permissions remain governed by robots.txt.',
+    '',
+  ]
+
+  for (const section of LLMS_SECTIONS) {
+    const sectionResources = resources.filter(resource => resource.kind === section.kind)
+    if (sectionResources.length === 0) continue
+
+    lines.push(`## ${section.title}`, '')
+    for (const resource of sectionResources) {
+      const href = new URL(resource.canonicalPath, `${normalizedSiteUrl}/`).toString()
+      lines.push(`- [${escapeMarkdownLabel(llmsResourceLabel(resource))}](${href})`)
+    }
+    lines.push('')
+  }
+
+  return lines.join('\n')
+}
+
 export function isPublicApiInventory(value: unknown): value is PublicApiInventory {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false
   const inventory = value as Record<string, unknown>
