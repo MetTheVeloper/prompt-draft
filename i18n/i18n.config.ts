@@ -26,6 +26,8 @@ import growthEn from './locales/growth.en'
 import growthFa from './locales/growth.fa'
 import publicCreatorEn from './locales/public-creator.en'
 import publicCreatorFa from './locales/public-creator.fa'
+import blogEn from './locales/blog.en'
+import blogFa from './locales/blog.fa'
 import manageEn from './locales/manage.en'
 import manageFa from './locales/manage.fa'
 import manageEconomyEn from './locales/manage-economy.en'
@@ -152,7 +154,7 @@ const enMessagesBase = deepMerge(
 )
 
 const enGrowth = deepMerge(growthEn, publicCreatorEn)
-const enMessages = deepMerge(deepMerge(enMessagesBase, enGrowth), errorsEn)
+const enMessages = deepMerge(deepMerge(deepMerge(enMessagesBase, enGrowth), blogEn), errorsEn)
 
 const faConsolidated = {
   ...consolidatedControlsFa,
@@ -207,7 +209,7 @@ const faMessagesBase = deepMerge(
 )
 
 const faGrowth = deepMerge(growthFa, publicCreatorFa)
-const faMessages = deepMerge(deepMerge(faMessagesBase, faGrowth), errorsFa)
+const faMessages = deepMerge(deepMerge(deepMerge(faMessagesBase, faGrowth), blogFa), errorsFa)
 
 export default defineI18nConfig(() => ({
   legacy: false,
