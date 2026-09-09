@@ -68,6 +68,10 @@ const MAX_DESCRIPTION_LENGTH = 400
 const MAX_AUTHOR_NAME_LENGTH = 120
 const MAX_ALT_LENGTH = 240
 const MAX_BODY_BYTES = 512 * 1024
+const BLOG_ARTICLE_ALLOWED_FILES = new Set<string>([
+  BLOG_ARTICLE_METADATA_FILE,
+  ...Object.values(BLOG_ARTICLE_BODY_FILES),
+])
 
 function issue(issues: BlogValidationIssue[], path: string, message: string) {
   issues.push({ path, message })
@@ -171,11 +175,11 @@ function normalizeNullableDimension(
   issues: BlogValidationIssue[],
 ) {
   if (value === null) return null
-  if (!Number.isSafeInteger(value) || Number(value) <= 0 || Number(value) > 20_000) {
+  if (typeof value !== 'number' || !Number.isSafeInteger(value) || value <= 0 || value > 20_000) {
     issue(issues, path, 'must be null or a positive integer no greater than 20000')
     return null
   }
-  return Number(value)
+  return value
 }
 
 function normalizeAuthor(value: unknown, issues: BlogValidationIssue[]): BlogEditorialAuthor {
@@ -409,7 +413,7 @@ export function validateBlogRepositoryAssets(assets: Record<string, string>): Bl
       issue(issues, directoryId, 'article directory name must be a canonical Article id')
       continue
     }
-    if (![BLOG_ARTICLE_METADATA_FILE, ...Object.values(BLOG_ARTICLE_BODY_FILES)].includes(fileName as never)) {
+    if (!BLOG_ARTICLE_ALLOWED_FILES.has(fileName)) {
       issue(issues, key, 'unsupported file; V1 article directories may contain only article.json, en.md and fa.md')
       continue
     }
