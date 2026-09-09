@@ -36,6 +36,8 @@ export default {
       title: "حساب کاربری",
       username: "نام کاربری",
       email: "ایمیل",
+      creatorLabel: "کریتور",
+      completeRewardHint: "پروفایلت را کامل کن و Goin بگیر",
       xp: "XP",
       goinBalance: "موجودی Goin",
       goinLoading: "در حال بارگذاری موجودی Goin...",
