@@ -2,7 +2,7 @@ import {
   PUBLIC_DISCOVERY_INTERESTS,
   type PublicDiscoveryDefinition,
   type PublicDiscoveryInterestKey,
-} from '../../shared/public-discovery'
+} from '../shared/public-discovery'
 
 export type DiscoveryInterestKey = PublicDiscoveryInterestKey
 export type DiscoveryInterestDefinition = PublicDiscoveryDefinition
