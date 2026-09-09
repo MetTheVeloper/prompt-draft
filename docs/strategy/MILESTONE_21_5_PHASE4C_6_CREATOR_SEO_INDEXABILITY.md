@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C.6 Creator SEO + Indexability
 
-Status: **IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-09
 
@@ -166,7 +166,7 @@ Location display text remains visible on the page but is intentionally not proje
 
 ## 6. Page wiring
 
-`app/pages/creator/[username].vue` now projects:
+`app/pages/creator/[username].vue` projects:
 
 ```text
 localized ScreenName -> usePublicSeo.title
@@ -184,7 +184,7 @@ No new backend endpoint or database migration is introduced by 4C.6.
 
 ## 7. Focused tests
 
-New test:
+Test:
 
 ```text
 scripts/public-creator-seo.test.ts
@@ -209,35 +209,68 @@ reciprocal EN/FA locale declaration
 policy-driven noindex projection
 ```
 
-The aggregate `test:public-creator-web` command now includes the SEO suite.
+The aggregate `test:public-creator-web` command includes the SEO suite.
 
 ---
 
-## 8. Founder-local verification gate
+## 8. Founder-local verification evidence
 
-Required focused automated checks:
-
-```powershell
-pnpm test:public-creator-web
-pnpm locale:check
-pnpm frontend
-docker compose exec api npm run test:public-creator
-```
-
-Manual staging source/head checks on both locale routes should verify:
+Automated evidence on 2026-09-09:
 
 ```text
-localized title
-localized description
-self canonical
-EN/FA hreflang
-x-default -> EN
-OG/Twitter title + description + image
-ProfilePage JSON-LD with Person mainEntity
-no private fields in serialized JSON-LD
-staging robots remains noindex because NUXT_PUBLIC_NOINDEX=true
+pnpm test:public-creator-seo -> 5/5 PASS
+pnpm test:public-creator-web -> 19/19 PASS
+pnpm locale:check -> Missing fallback EN 0 / Public Creator FA missing 0 / extra 0
 ```
 
-For a future local/prod-like environment with global noindex disabled, an indexable Creator should emit `index, follow`; a defensive accessible-but-nonindexable Creator should emit `noindex, nofollow, noarchive`.
+The SEO test initially exposed a Node/tsx-only module-resolution issue caused by Nuxt `~` aliases inside the pure SEO utility. The utility imports were changed to relative paths; this was a test/runtime compatibility fix and did not change the SEO contract.
 
-Acceptance remains pending until founder-local verification and explicit founder acceptance.
+Founder then manually verified the staging source/head for both canonical locale routes:
+
+```text
+https://grassic.ir/creator/grassias
+https://grassic.ir/fa/creator/grassias
+```
+
+Verified staging behavior:
+
+```text
+localized EN/FA title
+localized EN/FA meta description
+self canonical per locale
+reciprocal en-US / fa-IR hreflang
+x-default -> EN/default Creator route
+localized OG title/description/url/image
+localized Twitter title/description/image
+ProfilePage JSON-LD with Person mainEntity
+localized ProfilePage/Person name and description
+Person.alternateName = @grassias
+public skills in knowsAbout
+public links in sameAs
+no private account fields observed in JSON-LD
+NUXT_PUBLIC_NOINDEX=true preserved staging noindex
+```
+
+The founder explicitly reported that every requested SEO smoke check was correct.
+
+Founder explicit acceptance:
+
+```text
+4C.6 تاییده.
+```
+
+Result:
+
+```text
+4C.6 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+```
+
+---
+
+## 9. Next slice
+
+4C.7 may now proceed because the Public Creator policy, API, SSR route, and SEO/indexability slices are all founder-accepted.
+
+```text
+4C.7 — Prompt/Discovery Creator Attribution
+```
