@@ -25,10 +25,14 @@ const dynamicInventory: PublicApiInventory = {
   ],
 }
 
+function llmsHrefs(llms: string) {
+  return [...llms.matchAll(/^- \[[^\]]+\]\((https?:\/\/[^)]+)\)$/gm)].map(match => match[1])
+}
+
 test('llms.txt projects the same canonical public resource inventory', () => {
   const resources = buildPublicUrlInventory({ dynamicInventory, indexingEnabled: true })
   const llms = renderLlmsTxt(resources, 'https://example.test')
-  const links = [...llms.matchAll(/^- \[[^\]]+\]\((https:\/\/example\.test[^)]+)\)$/gm)]
+  const links = llmsHrefs(llms)
 
   assert.equal(links.length, resources.length)
   assert.match(llms, /^# Prompt Draft$/m)
@@ -50,22 +54,33 @@ test('llms.txt projects the same canonical public resource inventory', () => {
 test('llms.txt excludes protected, private and legacy route forms', () => {
   const resources = buildPublicUrlInventory({ dynamicInventory, indexingEnabled: true })
   const llms = renderLlmsTxt(resources, 'https://example.test')
+  const linkedUrls = llmsHrefs(llms).join('\n').toLowerCase()
 
-  for (const forbidden of [
+  for (const forbiddenRoute of [
     '/manage',
     '/login',
     '/user?un=',
     '/prompts?id=',
+  ]) {
+    assert.equal(linkedUrls.includes(forbiddenRoute.toLowerCase()), false, forbiddenRoute)
+  }
+
+  // Canonical public inventory URLs must never carry query/hash payloads that
+  // could smuggle legacy or viewer-specific state into the AI-discovery file.
+  for (const href of llmsHrefs(llms)) {
+    const url = new URL(href)
+    assert.equal(url.search, '', href)
+    assert.equal(url.hash, '', href)
+  }
+
+  // These implementation/private identifiers are not natural explanatory prose;
+  // their presence anywhere in llms.txt would represent an actual projection leak.
+  for (const forbiddenIdentifier of [
     'source_user_id',
     'source_draft_id',
-    'email',
-    'birthday',
-    'balance',
-    'permissions',
-    'sessions',
     'storage_key',
   ]) {
-    assert.equal(llms.toLowerCase().includes(forbidden.toLowerCase()), false, forbidden)
+    assert.equal(llms.toLowerCase().includes(forbiddenIdentifier), false, forbiddenIdentifier)
   }
 })
 
