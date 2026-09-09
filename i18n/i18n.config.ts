@@ -30,6 +30,8 @@ import blogEn from './locales/blog.en'
 import blogFa from './locales/blog.fa'
 import manageEn from './locales/manage.en'
 import manageFa from './locales/manage.fa'
+import manageBlogEn from './locales/manage-blog.en'
+import manageBlogFa from './locales/manage-blog.fa'
 import manageEconomyEn from './locales/manage-economy.en'
 import manageEconomyFa from './locales/manage-economy.fa'
 import manageGrowthEn from './locales/manage-growth.en'
@@ -112,10 +114,13 @@ const enConsolidated = {
 
 const enManage = deepMerge(
   deepMerge(
-    deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
-    profileManagementEn,
+    deepMerge(
+      deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
+      profileManagementEn,
+    ),
+    creatorAdminEn,
   ),
-  creatorAdminEn,
+  manageBlogEn,
 )
 
 const enMessagesBase = deepMerge(
@@ -172,10 +177,13 @@ const faConsolidated = {
 
 const faManage = deepMerge(
   deepMerge(
-    deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
-    profileManagementFa,
+    deepMerge(
+      deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
+      profileManagementFa,
+    ),
+    creatorAdminFa,
   ),
-  creatorAdminFa,
+  manageBlogFa,
 )
 
 const faMessagesBase = deepMerge(
