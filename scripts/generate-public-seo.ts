@@ -1,7 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { projectBlogPublicInventory } from '../shared/blog-public-inventory'
 import { PUBLIC_DISCOVERY_INTERESTS } from '../shared/public-discovery'
 import { renderPublicRobotsTxt } from '../shared/public-robots'
+import { readBlogRepositoryDirectory } from './blog-repository'
 import {
   buildPublicUrlInventory,
   isPublicApiInventory,
@@ -100,11 +102,16 @@ async function main() {
     return
   }
 
-  const dynamicInventory = indexingEnabled
-    ? await fetchAuthoritativePublicInventory(apiBase)
-    : { prompts: [], creators: [] }
+  const [dynamicInventory, blogArticles] = indexingEnabled
+    ? await Promise.all([
+        fetchAuthoritativePublicInventory(apiBase),
+        readBlogRepositoryDirectory().then(projectBlogPublicInventory),
+      ])
+    : [{ prompts: [], creators: [] } as PublicApiInventory, []]
+
   const publicInventory = buildPublicUrlInventory({
     dynamicInventory,
+    blogArticles,
     indexingEnabled,
   })
   const sitemap = renderSitemapXml(publicInventory, siteUrl)
@@ -119,7 +126,7 @@ async function main() {
   await writeFile(resolve(outputDir, 'robots.txt'), robots, 'utf8')
 
   const mode = indexingEnabled ? 'indexing enabled' : 'global noindex'
-  console.log(`[public-seo] sitemap + llms generated from ${publicInventory.length} canonical public routes (${mode}); cleaned ${cleanedDiscoveryFiles} legacy Discovery artifact(s)`)
+  console.log(`[public-seo] sitemap + llms generated from ${publicInventory.length} canonical public routes (${mode}); Blog repository projection: ${blogArticles.length} published Article(s); cleaned ${cleanedDiscoveryFiles} legacy Discovery artifact(s)`)
 }
 
 main().catch((error) => {
