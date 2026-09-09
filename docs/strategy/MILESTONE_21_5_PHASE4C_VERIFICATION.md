@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 ACCEPTED / 4C.6 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -22,6 +22,7 @@ Implementation records:
 docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
 docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
 docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
 ```
 
 Operational workflow:
@@ -43,8 +44,8 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.2 Authenticated Profile Management       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.3 Creator Application + Admin Review     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.4 Public Creator policy/API              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.5 Public Creator SSR route               -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-4C.6 Creator SEO/indexability               -> NOT STARTED
+4C.5 Public Creator SSR route               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.6 Creator SEO/indexability               -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 4C.7 Prompt/Discovery attribution           -> NOT STARTED
 4C.8 aggregate/staging acceptance           -> NOT STARTED
 Phase 21.5.4C                               -> IN PROGRESS / NOT ACCEPTED
@@ -560,7 +561,7 @@ Detailed implementation record:
 docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
 ```
 
-### Implemented canonical routes
+### Accepted canonical routes
 
 ```text
 /creator/:username
@@ -573,7 +574,7 @@ Nuxt route:
 app/pages/creator/[username].vue
 ```
 
-### Implemented SSR/browser contract
+### Accepted SSR/browser contract
 
 ```text
 app/composables/usePublicCreator.ts
@@ -593,7 +594,7 @@ mixed-case/noncanonical username -> locale-preserving 301 canonical redirect
 
 Approved/suspended Creator username editing remains locked, so no historical alias can currently be created accidentally. `creator_username_aliases` + permanent old-name redirects remain a precondition before that lock may ever be relaxed.
 
-### Implemented public presentation
+### Accepted public presentation
 
 ```text
 localized ScreenName/Bio/Article
@@ -610,7 +611,7 @@ no owner/admin Creator controls
 
 Publication cards are shown only when the publication advertises the active locale and link only to canonical localized Public Prompt routes.
 
-### Implemented sanitized Markdown
+### Accepted sanitized Markdown
 
 ```text
 app/utils/publicCreatorMarkdown.ts
@@ -641,91 +642,116 @@ registered through:
 i18n/i18n.config.ts
 ```
 
-### Frontend contract tests added
+### Founder-local automated evidence 2026-09-09
 
 ```text
-scripts/public-creator-client-contract.test.ts
-scripts/public-creator-markdown.test.ts
-scripts/public-creator-ssr-contract.test.ts
+pnpm test:public-creator-web -> 14/14 PASS
+pnpm locale:check -> Missing fallback EN 0 / Public Creator FA missing 0 / extra 0
+docker compose exec api npm run test:public-creator -> 10/10 PASS
+frontend Docker production build -> PASS
 ```
 
-Command:
+The runtime localization gate was repaired during verification to validate the actual merged Nuxt i18n messages rather than the obsolete source-fragment shape. Real pre-existing EN fallback gaps reported by that runtime check were filled rather than suppressing the gate.
+
+### Founder staging/browser evidence 2026-09-09
+
+Founder manually verified:
 
 ```text
-pnpm test:public-creator-web
+/creator/grassias renders the EN Creator page
+/fa/creator/grassias renders the FA Creator page
+EN LTR and FA RTL presentation
+light + dark theme presentation
+localized ScreenName/Bio/Article/skills
+sanitized Markdown headings/bold/link/image rendering
+zero-publication Creator page remains valid
+public website + location display
+mixed-case canonical redirect behavior
+unavailable username -> real 404
+no Edit profile / Request Creator / admin-review controls on the public page
 ```
 
-Coverage:
+Founder supplied browser screenshots for EN/FA and 404 states and explicitly reported all smoke checks correct.
+
+Founder explicit acceptance:
 
 ```text
-browser/SSR positive allowlist
-private sentinel stripping
-unsafe URL rejection
-publication locale inventory
-Markdown rendering + XSS defenses
-SSR public API dependency
-real 404/502 contract
-301 canonical redirect contract
-sanitized-only v-html binding
-LTR/RTL projection
-localized Public Prompt links
-no owner/admin management hooks
+همه چی درسته 4C.5 تاییده.
 ```
 
-### Founder-local verification required next
+Result:
 
-```powershell
-git pull
+```text
+4C.5 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+---
+
+## 8. 4C.6 — Creator SEO/indexability gate
+
+Detailed implementation record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
+```
+
+Implemented projection:
+
+```text
+localized ScreenName -> title / OG / Twitter title
+localized Bio        -> meta / OG / Twitter description
+localized Article    -> existing long-form authoritative body
+self canonical through usePublicSeo
+reciprocal EN/FA hreflang
+x-default -> EN/default
+cover -> avatar -> PWA fallback social image
+server-authoritative creator.policy.indexable -> per-page noindex
+NUXT_PUBLIC_NOINDEX global staging switch still wins
+ProfilePage JSON-LD with Person mainEntity
+safe public links -> Person.sameAs
+localized controlled skills -> Person.knowsAbout
+```
+
+Privacy boundary:
+
+```text
+no email
+no birthday
+no role/account status
+no Creator lifecycle/review fields
+no UUID
+no XP/Goin
+no sessions/permissions/referrals
+no private Draft/storage/provider/admin data
+```
+
+Location display text remains visible but is not projected as verified residence/home-location structured data.
+
+Focused files:
+
+```text
+app/utils/publicCreatorSeo.ts
+app/pages/creator/[username].vue
+scripts/public-creator-seo.test.ts
+```
+
+Commands:
+
+```text
+pnpm test:public-creator-seo
 pnpm test:public-creator-web
 pnpm locale:check
 pnpm frontend
 docker compose exec api npm run test:public-creator
 ```
 
-Manual staging/browser smoke with approved Creator `grassias`:
-
-```text
-[ ] /creator/grassias renders public Creator page
-[ ] /fa/creator/grassias renders Persian Creator page
-[ ] EN is LTR with EN ScreenName/Bio/Article
-[ ] FA is RTL with FA ScreenName/Bio/Article
-[ ] article headings/bold/link/image render rather than raw Markdown syntax
-[ ] zero-publication state remains a valid Creator page
-[ ] localized skills render
-[ ] public website link works
-[ ] location shows text only
-[ ] /creator/GrassiaS -> 301 /creator/grassias
-[ ] /fa/creator/GrassiaS -> 301 /fa/creator/grassias
-[ ] unavailable Creator username -> real 404
-[ ] page has no Edit profile / Request Creator / admin review controls
-```
-
-4C.6 owns final title/meta/OG/Twitter, canonical/hreflang, robots and structured data. Their absence is not a 4C.5 failure.
-
 Current result:
 
 ```text
-4C.5 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.6 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 ```
 
 Acceptance: **PENDING**
-
----
-
-## 8. 4C.6 — Creator SEO/indexability gate
-
-```text
-[ ] localized ScreenName drives title/name
-[ ] localized Bio drives visible/meta/OG/Twitter description
-[ ] localized Article provides unique authoritative content
-[ ] EN self canonical / FA self canonical
-[ ] reciprocal hreflang / x-default -> EN
-[ ] server-authoritative indexability
-[ ] no published-Prompt requirement
-[ ] defensive incomplete-approved Creator may noindex
-[ ] ProfilePage + Person JSON-LD uses safe fields only
-[ ] staging NUXT_PUBLIC_NOINDEX always wins
-```
 
 ---
 
