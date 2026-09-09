@@ -56,7 +56,8 @@ test('Discovery preserves public routing, SEO, curated cards, and protected-data
   const runtimeSurface = withoutStyles(source)
 
   assert.match(source, /usePublicDiscovery\(\)/)
-  assert.match(source, /canonicalPath:\s*`\/discover\/\$\{slug\.value\}`/)
+  assert.match(source, /const canonicalPath = computed\(\(\) => \{[\s\S]*publicDiscoveryPath\(definition\.value\.slug\)/)
+  assert.match(source, /usePublicSeo\(\{[\s\S]*canonicalPath,/)
   assert.match(source, /<PublicDiscoveryCard/)
   assert.match(source, /:to="`\/discover\/\$\{related\.slug\}`"/)
 
