@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **PLANNING / AUDIT STARTED / IMPLEMENTATION NOT STARTED**
+Status: **IN PROGRESS / 4E.1 ACCEPTED / 4E.2 IMPLEMENTED + VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -10,10 +10,16 @@ Branch:
 feature/growth-foundation
 ```
 
-Parent source of truth:
+Parent:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+```
+
+Operational workflow:
+
+```text
+docs/strategy/DEVELOPMENT_WORKFLOW.md
 ```
 
 Accepted dependency:
@@ -23,19 +29,11 @@ Accepted dependency:
 DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED 2026-09-09
 ```
 
-Operational workflow:
+## Objective
 
-```text
-docs/strategy/DEVELOPMENT_WORKFLOW.md
-```
+4E adds a real repository-backed bilingual Blog acquisition system without creating a second SEO/indexability/content-source architecture.
 
----
-
-## 1. Objective
-
-4E adds a real repository-backed bilingual Blog acquisition system to Prompt Draft without creating a second SEO/indexability/content-source architecture.
-
-Target public routes:
+Public routes:
 
 ```text
 /blog
@@ -44,229 +42,90 @@ Target public routes:
 /fa/blog/:slug
 ```
 
-Blog must be:
+Blog must remain:
 
 ```text
 SSR-first
-repository-backed
+Git repository backed
 EN/FA authoritative-localization aware
 safe Markdown
 SEO/structured-data complete
-integrated with the accepted shared sitemap/llms inventory
+shared sitemap/llms integrated
 manageable through /manage/blog
-media-compatible with the existing Arvan pipeline
-compatible with Docker/Nitro and legacy pnpm generate
+Arvan-media compatible
+Docker/Nitro + pnpm generate compatible
 ```
 
----
+## Locked inherited rules
 
-## 2. Locked inherited contracts
-
-### Locale model
+Locale model:
 
 ```text
-English/default -> unprefixed
-Persian         -> /fa
+EN/default -> unprefixed
+FA         -> /fa
 ```
 
-Only authoritative localized Article content may create a localized public/indexable route.
+Only authoritative localized Article content may create a public localized Article route. No fake fallback translation.
 
-No fallback-only `/fa/blog/...` page may pretend to be authoritative Persian content.
-
-### Staging
+Staging:
 
 ```text
-NUXT_PUBLIC_NOINDEX=true always wins on grassic.ir
+NUXT_PUBLIC_NOINDEX=true always wins
 ```
 
-Blog route-level SEO may never weaken staging noindex.
-
-### Shared public inventory
-
-4D is authoritative for sitemap/llms projection.
-
-Blog must join that shared pipeline; it must not create:
+Security:
 
 ```text
-Blog sitemap logic A
-Blog llms logic B
-Blog page indexability logic C
+no protected Prompt bodies/variants
+no private Drafts/account/Creator data
+no permissions/sessions/economy state
+no storage secrets
+no admin editorial state in public DTOs
 ```
 
-Required direction:
+GitHub is never queried per public Blog request.
 
-```text
-one published Article/localization policy
--> Blog route availability
--> shared public inventory
--> sitemap.xml
--> llms.txt
-```
+## Editorial source architecture
 
-### Security
-
-Blog work must not expose:
-
-```text
-protected Prompt bodies/variants
-private Drafts
-private account/Creator data
-internal source ids
-permissions/sessions/economy state
-storage secrets
-admin-only editorial state
-```
-
----
-
-## 3. Accepted editorial-source architecture
-
-Canonical editorial source:
+Canonical source:
 
 ```text
 Git repository
 ```
 
-Normal public serving:
+Normal serving:
 
 ```text
-repository content
--> build/deploy
--> bundled/deployed Nuxt/Nitro Blog content
+content/blog in Git
+-> Nuxt/Nitro build
+-> bundled .output/server content
 -> request-time SSR
 ```
 
-GitHub is never queried per public Blog request.
-
-Arvan Object Storage role:
+Arvan Object Storage:
 
 ```text
 Blog media
-mirror/emergency publication store
+mirror/emergency publication store if explicitly implemented
 ```
 
-Arvan is not a second uncontrolled equal editorial source of truth.
+Arvan is not an equal uncontrolled second editorial source.
 
-If emergency publication is implemented, it must carry explicit reconciliation metadata such as:
+## 4E.1 — ACCEPTED
+
+Canonical record:
 
 ```text
-articleId
-revision/contentHash
-publishedAt
-source=emergency
-syncState=pending_git
+docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
 ```
 
----
-
-## 4. Audit findings so far
-
-### 4.1 Existing public/Manage route surface
-
-Current branch has no `app/pages/blog` route and no `/manage/blog` page yet.
-
-Current Manage pages are:
+Status:
 
 ```text
-/manage/archive
-/manage/dashboard
-/manage/economy
-/manage/growth
-/manage/profile
-/manage/users
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
 
-### 4.2 Manage permission model
-
-Manage sections are explicit permission-driven configuration.
-
-Current backend/frontend permissions include:
-
-```text
-dashboard.view
-system.metrics.view
-users.view
-users.manage
-creators.manage
-drafts.view_all
-drafts.delete_any
-system.settings.manage
-collage.view
-archive.view
-archive.manage
-```
-
-There is currently no Blog/content-specific permission.
-
-Selected direction:
-
-```text
-add an explicit Blog management permission
-```
-
-Do not reuse an unrelated Archive/System permission just to expose `/manage/blog`.
-
-Exact V1 naming is finalized during 4E.1, likely a capability in the family of:
-
-```text
-blog.manage
-```
-
-### 4.3 Existing Arvan/media capability
-
-The current Archive media backend already provides reusable storage primitives around:
-
-```text
-Arvan/AWS-SigV4 request signing
-stable public URL construction
-PUT/DELETE object operations
-public immutable cache headers
-full + thumbnail image handling
-validation
-cleanup on failure
-```
-
-The existing Archive endpoint itself is Archive-specific and currently receives base64 image JSON.
-
-Blog must not put base64 payloads in Markdown.
-
-Selected direction:
-
-```text
-reuse/extract generic storage/signing primitives
--> Blog-specific media upload contract
--> stable public URL/reference inserted into Markdown
-```
-
-### 4.4 Markdown editor candidate
-
-Current implementation candidate:
-
-```text
-md-editor-v3
-```
-
-Audit snapshot on 2026-09-09:
-
-```text
-latest npm version: 6.5.6
-license: MIT
-Vue 3 + TypeScript
-supports editor + preview-only rendering
-supports custom onUploadImg callback
-```
-
-Dependency selection is not considered accepted until bundle/SSR/client integration is tested in the project.
-
-Public Blog rendering must not rely on the editor component itself; public rendering needs a server-safe deterministic Markdown pipeline.
-
----
-
-## 5. Proposed repository Article contract
-
-4E.1 will audit/lock the exact representation before public implementation.
-
-Preferred direction:
+Accepted repository package:
 
 ```text
 content/blog/<articleId>/
@@ -275,541 +134,249 @@ content/blog/<articleId>/
   fa.md
 ```
 
-Rationale:
-
-```text
-stable article identity is independent from slug
-shared metadata is not duplicated in locale frontmatter
-Markdown body stays clean and portable
-EN/FA bodies are explicit authoritative files
-slug may change without moving the stable article directory
-validation is straightforward
-```
-
-Conceptual `article.json`:
+Accepted Article metadata:
 
 ```text
 id
 slug
-status
+status=draft|published
 publishedAt
 updatedAt
 author
 hero
-localizations
-  en
-    title
-    description
-  fa
-    title
-    description
+localizations.en/fa.title+description
 ```
 
-Body:
+Public locale eligibility is derived from:
 
 ```text
-en.md
-fa.md
+status=published
++ localized title
++ localized description
++ matching non-empty Markdown body
 ```
 
-This exact shape remains a proposal until the 4E.1 contract audit is completed.
+`availableLocales` is never stored.
 
----
-
-## 6. Publication / localization semantics to lock in 4E.1
-
-Candidate lifecycle:
+V1 author:
 
 ```text
-draft
-published
+explicit editorial/site identity only
+kind=editorial
+name
+safe optional public URL
 ```
 
-V1 may add scheduled/archive states only if current product need justifies them.
+No private user/account identity is serialized.
 
-Public Article route eligibility should require at least:
+Accepted Markdown:
 
 ```text
-status = published
-valid stable article id
-valid canonical slug
-publishedAt
-safe public author projection
-authoritative locale title
-authoritative locale description
-non-empty authoritative locale body
+shared safe publicMarkdown renderer
+Blog heading offset +1
+raw HTML escaped
+root-relative + HTTP(S) active URLs only
+unsafe data/javascript/vbscript/file destinations rejected
+no Markdown tables in V1 yet
 ```
 
-A published Article may expose only EN, only FA, or both if the product chooses to permit partial localization.
-
-Whichever rule is selected must be the one source for:
+Runtime content loader:
 
 ```text
-route 404/availability
-hreflang
-Blog index
-sitemap
-llms
-structured data
+Nitro serverAssets baseName=blog
+useStorage('assets:blog')
+shared/blog-article.ts validator
 ```
 
-No fake locale fallback.
+Static/build adapter:
 
----
+```text
+scripts/blog-repository.ts
+```
 
-## 7. Public Blog V1 target
+Founder evidence:
 
-### Blog index
+```text
+pnpm test:blog-contract -> 18/18 PASS
+pnpm frontend -> Nuxt client/server/Nitro/Docker PASS
+```
+
+Founder explicit acceptance:
+
+```text
+تایید
+```
+
+## 4E.2 — CURRENT
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
+```
+
+Status:
+
+```text
+IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
+```
+
+Implemented public Nitro projection:
+
+```text
+GET /api/public/blog?locale=en|fa
+GET /api/public/blog/:slug?locale=en|fa
+```
+
+These consume the 4E.1 publication/localization policy and expose only public Blog DTOs.
+
+Implemented public pages:
 
 ```text
 /blog
 /fa/blog
-```
-
-V1 should provide:
-
-```text
-SSR list of published Articles available in the active locale
-localized title + description
-hero/cover when available
-published date
-updated date when meaningful
-author display when authoritative
-canonical localized article links
-```
-
-Sorting default:
-
-```text
-publishedAt descending
-```
-
-Pagination/categories/tags are intentionally audited before adding scope. V1 should avoid building a taxonomy system merely because a Blog exists.
-
-### Article detail
-
-```text
 /blog/:slug
 /fa/blog/:slug
 ```
 
-Must provide:
+Index behavior:
 
 ```text
-SSR meaningful article HTML
-safe Markdown rendering
-localized title/description/body
+SSR localized Blog shell
+published locale-eligible Article list
+publishedAt-desc ordering
+localized empty state
+canonical localized links
+CollectionPage + ItemList JSON-LD
+EN/FA canonical alternates
+```
+
+Detail behavior:
+
+```text
+published + locale-authoritative only
+real 404 otherwise
+canonical slug normalization
+301 only after canonical Article existence is proven
+safe Markdown HTML
 self canonical
-reciprocal hreflang only for authoritative localizations
-x-default -> English when authoritative
-OG/Twitter metadata
-hero image when available
-publishedAt / updatedAt
-Article or BlogPosting JSON-LD
-real 404
-canonical slug behavior
-internal links/CTA opportunities
-staging global noindex precedence
+Article-specific hreflang from availableLocales
+OG/Twitter article metadata
+BlogPosting JSON-LD
+article:published_time
+article:modified_time
 ```
 
----
+V1 editorial authors are represented as `Organization` in JSON-LD rather than falsely claiming a Person identity.
 
-## 8. Public Markdown safety
+Blog is now linked from primary locale-aware navigation.
 
-Public Blog HTML must not blindly trust Markdown HTML.
+No fake public article fixture was added. Positive detail projection/SEO is tested with pure fixtures; runtime positive detail smoke waits for the first real published editorial article.
 
-4E.1/4E.2 must choose one deterministic Markdown rendering/sanitization contract covering at least:
+Focused commands:
 
-```text
-headings
-paragraphs
-bold/italic
-ordered/unordered lists
-blockquote
-links
-images
-inline/fenced code
-horizontal rules
-safe tables if enabled
+```powershell
+pnpm test:blog-public
+pnpm frontend
+pnpm smoke:blog-public
 ```
 
-Rules:
+No independent backend/API rebuild is required for 4E.2.
+
+## Remaining slices
 
 ```text
-raw HTML must be escaped or sanitized under an explicit policy
-javascript:/data: unsafe links must be rejected
-unsafe image protocols must be rejected
-script/event-handler injection must not survive
-server and client rendering must agree
-```
-
-The public renderer should be reusable independently of `/manage/blog` and `md-editor-v3`.
-
----
-
-## 9. Blog author model
-
-4E must explicitly choose whether Article authors are:
-
-```text
-editorial/site identities
-approved Public Creators
-or a controlled union of both
-```
-
-Do not serialize private user/account identity merely because an admin authored an Article.
-
-If an approved Creator is referenced, public attribution may reuse canonical Public Creator identity.
-
-If the author is editorial/site-owned, use an explicit public editorial author record rather than a private user row.
-
----
-
-## 10. Manage Blog target
-
-Route:
-
-```text
-/manage/blog
-```
-
-Expected V1 surfaces:
-
-```text
-article list
-new article
-edit article
-metadata/status controls
-slug validation
-publish/update dates
-EN/FA localization tabs or split workflow
-Markdown editor
-live preview
-validation summary
-hero/media insertion
-save/export/publish actions
-```
-
-Manage must produce the same repository Article contract consumed by public SSR.
-
-No proprietary editor document format may become the canonical article body.
-
-Canonical body remains Markdown.
-
----
-
-## 11. Manage permission target
-
-Add explicit authorization capability in both backend and frontend permission registries.
-
-Candidate:
-
-```text
-blog.manage
-```
-
-V1 role mapping should be deliberate.
-
-Initial expected direction:
-
-```text
-admin       -> blog.manage
-super_admin -> *
-user        -> none
-```
-
-This remains to be confirmed during implementation audit against desired editorial ownership.
-
----
-
-## 12. Media target
-
-Blog image flow:
-
-```text
-/manage/blog editor
--> user selects/pastes image
--> project-owned Blog media upload endpoint
--> shared Arvan storage/signing primitives
--> stored public media
--> callback returns stable URL + metadata
--> Markdown receives URL/reference
-```
-
-Do not embed image bytes/base64 in Markdown.
-
-Desired metadata where practical:
-
-```text
-id
-fullUrl
-thumbnailUrl
-width
-height
-alt
-caption
-```
-
-Storage object namespace should be Blog-specific rather than reusing Archive item paths.
-
-Candidate:
-
-```text
-blog/<articleId>/<mediaId>/...
-```
-
----
-
-## 13. Repository save/publish workflow — audit required
-
-The public source of truth is Git, but a deployed Docker container cannot be treated as a durable Git working tree.
-
-4E must deliberately choose the management publication adapter.
-
-Candidate V1 paths to evaluate:
-
-```text
-A. admin-only server-side Git provider write at publish time
-   -> writes repository Article files
-   -> deployment/rebuild publishes canonical content
-
-B. repository-package export workflow
-   -> Manage produces validated article files
-   -> operator commits them to Git
-
-C. emergency Arvan publication
-   -> temporary public content with explicit pending_git reconciliation metadata
-```
-
-Public requests never query GitHub regardless of which management adapter is selected.
-
-The final V1 adapter should optimize for deterministic source-of-truth behavior, credential safety and operational simplicity.
-
----
-
-## 14. Shared inventory integration
-
-After publication semantics are locked, 4E adds Blog into the accepted 4D inventory pipeline.
-
-Expected resource families:
-
-```text
-/blog
-/fa/blog
-/blog/:slug
-/fa/blog/:slug
-```
-
-Rules:
-
-```text
-Blog index is advertised only when Blog public surface is enabled
-Article route advertised only for authoritative published locale
-sitemap and llms consume the same Blog inventory input
-staging global noindex empties the complete inventory
-```
-
-Do not create a second Blog-only sitemap or llms generator.
-
----
-
-## 15. Analytics target
-
-V1 should instrument at least:
-
-```text
-blog_article_view
-```
-
-and one meaningful product action when present, such as:
-
-```text
-blog_prompt_open
-blog_creator_open
-blog_cta_click
-```
-
-Exact event naming must fit existing analytics conventions and must not use `admin_audit_log` as behavioral analytics.
-
----
-
-## 16. Static + Nitro compatibility
-
-Blog must work in both accepted paths:
-
-```text
-Docker/Nitro request-time SSR
-legacy pnpm generate compatibility
-```
-
-Static generation must discover only published canonical Blog URLs from the same authoritative Article contract.
-
-Blog implementation must not introduce request-time GitHub calls simply to make static generation work.
-
----
-
-## 17. Implementation slices
-
-Proposed execution order:
-
-```text
-4E.1 Article Contract + Repository Loader + Validation
-4E.2 Public Blog Index + Article SSR + Markdown/SEO
 4E.3 Shared Sitemap / llms / Static Inventory Integration
 4E.4 Manage Blog Permission + Authoring UI
 4E.5 Blog Media + Repository Publish / Emergency Adapter
 4E.6 Aggregate Regression + External Staging + Static Acceptance
 ```
 
-No slice becomes DONE without founder verification and explicit acceptance.
-
-### 4E.1
-
-Lock:
-
-```text
-repository file structure
-article/localization schema
-slug rules
-publication states
-public locale eligibility
-Markdown renderer/sanitizer contract
-runtime loader architecture
-```
-
-### 4E.2
-
-Implement:
-
-```text
-/blog
-/blog/:slug
-/fa equivalents
-SSR data loading
-safe Markdown HTML
-canonical/hreflang/OG/Twitter
-Article/BlogPosting JSON-LD
-404/canonical behavior
-```
-
 ### 4E.3
 
-Integrate:
+Extend the accepted 4D shared public inventory with Blog index + only authoritative published Article locale URLs.
+
+One policy must drive:
 
 ```text
-shared public inventory
+Blog route availability
 sitemap
 llms
-static generation
+static prerender inventory
 ```
 
 ### 4E.4
 
-Implement:
+Target:
 
 ```text
 blog.manage permission
 /manage/blog
 article list/new/edit
-md-editor-v3 integration if verification remains positive
 EN/FA workflow
-validation/live preview
+Markdown editor
+live preview
+validation
 ```
+
+Preferred editor candidate remains `md-editor-v3`, subject to project integration verification.
 
 ### 4E.5
 
-Implement/lock:
+Target:
 
 ```text
-Blog media upload
-shared Arvan primitives
-stable Markdown media URLs
-repository publish adapter
-emergency Arvan reconciliation path if in V1 scope
+Blog-specific media upload
+shared/extracted Arvan SigV4 primitives
+stable media URLs in Markdown
+repository publication adapter
+optional emergency Arvan publication with explicit pending_git reconciliation
 ```
+
+No base64 payloads in Markdown.
 
 ### 4E.6
 
-Verify:
+Final verification must cover:
 
 ```text
-accepted 4A–4D regression
-public Blog EN/FA SSR
+accepted 4A–4D regressions
+4E contract/public/manage/media tests
+EN/FA Blog SSR
+real published Article positive detail
 404/canonical/localization
 Markdown safety
 structured data
 sitemap/llms parity
 Manage authorization
-media pipeline
 static generation
 external staging noindex
 prompt-draft.ir untouched
 ```
 
----
-
-## 18. Verification discipline
-
-Before every founder verification request:
-
-```text
-inspect changed services
-run focused source/unit tests first
-no rebuild if not needed
-frontend-only -> pnpm frontend
-backend-only -> pnpm api
-full stack only when genuinely required
-```
-
-Prefer adding focused commands such as:
-
-```text
-test:blog-contract
-test:blog-public
-test:blog-inventory
-test:blog-manage
-```
-
-before a final aggregate:
-
-```text
-test:phase4e-final
-smoke:phase4e-final
-```
-
----
-
-## 19. Non-negotiable rules
+## Hard rules
 
 ```text
 DO NOT weaken authorization.
 DO NOT expose protected Prompt/private Draft/private account data.
 DO NOT query GitHub per public Blog request.
-DO NOT make Arvan an uncontrolled second editorial source.
+DO NOT make Git + Arvan uncontrolled equal content sources.
 DO NOT put base64 image payloads in Markdown.
 DO NOT make editor-specific document state canonical.
-DO NOT create fake localized Blog URLs.
+DO NOT create fake localized Blog routes.
 DO NOT expose draft/unpublished Article URLs in sitemap/llms.
-DO NOT create independent Blog indexability logic beside the Article contract.
-DO NOT let Blog SEO override NUXT_PUBLIC_NOINDEX=true.
+DO NOT recreate Blog indexability policy outside the Article contract.
+DO NOT let Blog SEO override staging NUXT_PUBLIC_NOINDEX=true.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
----
-
-## 20. Current next action
+## Current next action
 
 ```text
-4E.1 — Article Contract + Repository Loader + Validation
-AUDIT / DESIGN NEXT
+Verify 4E.2:
+pnpm test:blog-public
+-> pnpm frontend
+-> pnpm smoke:blog-public
 ```
 
-Before implementation, complete the remaining audit for:
-
-```text
-current content/bundling options in Nuxt/Nitro
-Markdown parser/sanitizer dependency choice
-repository publication adapter
-Blog author identity model
-exact Blog manage permission mapping
-```
+After founder acceptance proceed to 4E.3.
