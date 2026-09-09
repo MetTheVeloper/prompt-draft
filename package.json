@@ -39,6 +39,7 @@
     "test:public-discovery-visual": "tsx --test scripts/public-discovery-visual-contract.test.ts",
     "test:public-prompt-links": "tsx --test scripts/public-prompt-link-migration.test.ts",
     "test:interaction-polish": "tsx --test scripts/public-interaction-polish.test.ts",
+    "test:public-creator-web": "tsx --test scripts/public-creator-client-contract.test.ts scripts/public-creator-markdown.test.ts scripts/public-creator-ssr-contract.test.ts",
     "test:phase4b-final": "node scripts/phase4b-final-regression.mjs",
     "smoke:phase4b-final": "node scripts/phase4b-final-staging-smoke.mjs",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
