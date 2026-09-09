@@ -50,6 +50,8 @@ const forbiddenSerializedKeys = [
   '"adminAudit":',
 ]
 
+const CLOUDFLARE_MANAGED_ROBOTS_END = '# END Cloudflare Managed Content'
+
 function assertExactKeys(value, expected, label) {
   assert.ok(value && typeof value === 'object' && !Array.isArray(value), `${label} must be an object`)
   assert.deepEqual(Object.keys(value).sort(), [...expected].sort(), `${label} contains unexpected/missing keys`)
@@ -74,6 +76,22 @@ function assertNoindex(response, label) {
 function assertNoStore(response, label) {
   const value = response.headers.get('cache-control') || ''
   assert.match(value, /no-store/i, `${label} must preserve no-store under global staging noindex`)
+}
+
+function extractOriginRobotsPolicy(body) {
+  const markerIndex = body.indexOf(CLOUDFLARE_MANAGED_ROBOTS_END)
+  if (markerIndex < 0) {
+    return { managedPrependDetected: false, originPolicy: body }
+  }
+
+  return {
+    managedPrependDetected: true,
+    originPolicy: body.slice(markerIndex + CLOUDFLARE_MANAGED_ROBOTS_END.length).trimStart(),
+  }
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
 function assertPublicSeoHead(html, { canonical, alternate, locale, label }) {
@@ -143,13 +161,17 @@ const robotsResponse = await get(`${siteBase}/robots.txt`, 'external robots.txt'
 assert.equal(robotsResponse.status, 200)
 assertNoindex(robotsResponse, 'external robots.txt')
 const robots = await robotsResponse.text()
-assert.match(robots, /^User-agent: \*$/mi)
-assert.match(robots, /^Allow: \/$/m)
-assert.doesNotMatch(robots, /^Disallow: \/$/m)
-assert.doesNotMatch(robots, /^Sitemap:/mi)
+const { managedPrependDetected, originPolicy: originRobots } = extractOriginRobotsPolicy(robots)
+console.log(
+  `[phase4d-smoke] Cloudflare Managed robots.txt prepend: ${managedPrependDetected ? 'detected' : 'not detected'}`,
+)
+assert.match(originRobots, /^User-agent:\s*\*$/mi)
+assert.match(originRobots, /^Allow:\s*\/$/m)
+assert.doesNotMatch(originRobots, /^Disallow:\s*\/$/m)
+assert.doesNotMatch(originRobots, /^Sitemap:/mi)
 for (const path of applicationNoindexPaths) {
-  assert.ok(robots.includes(`Disallow: ${path}`), `robots.txt missing ${path}`)
-  assert.ok(robots.includes(`Disallow: /fa${path}`), `robots.txt missing /fa${path}`)
+  assert.ok(originRobots.includes(`Disallow: ${path}`), `origin robots.txt missing ${path}`)
+  assert.ok(originRobots.includes(`Disallow: /fa${path}`), `origin robots.txt missing /fa${path}`)
 }
 
 const sitemapResponse = await get(`${siteBase}/sitemap.xml`, 'external sitemap.xml')
@@ -172,6 +194,8 @@ assert.match(llms, /public AI-discovery inventory is disabled for this environme
 assert.equal((llms.match(/\]\(https?:\/\//g) || []).length, 0, 'Staging llms.txt must contain zero canonical Markdown links')
 assertNoLegacyDetailRoutes(llms, 'external llms.txt')
 assertNoPrivateKeys(llms, 'external llms.txt')
+
+const escapedSiteBase = escapeRegex(siteBase)
 
 for (const locale of ['en', 'fa']) {
   const prefix = locale === 'fa' ? '/fa' : ''
@@ -224,9 +248,7 @@ for (const locale of ['en', 'fa']) {
   assert.ok(discoveryHtml.includes('public-discovery-page__hero'), `${locale.toUpperCase()} Discovery hero missing`)
   assert.ok(discoveryHtml.includes('"@type":"CollectionPage"'), `${locale.toUpperCase()} Discovery CollectionPage JSON-LD missing`)
   assert.ok(discoveryHtml.includes('"@type":"ItemList"'), `${locale.toUpperCase()} Discovery ItemList JSON-LD missing`)
-  const promptUrlPattern = locale === 'fa'
-    ? /https:\/\/grassic\.ir\/fa\/prompt\/\d+/
-    : /https:\/\/grassic\.ir\/prompt\/\d+/
+  const promptUrlPattern = new RegExp(`${escapedSiteBase}${prefix}/prompt/\\d+`)
   assert.match(discoveryHtml, promptUrlPattern, `${locale.toUpperCase()} Discovery canonical Prompt URLs missing`)
   assert.equal(discoveryHtml.includes('data-public-seo-snapshot'), false, `${locale.toUpperCase()} legacy Discovery snapshot marker remains`)
   assert.equal(discoveryHtml.includes('data-public-seo-structured'), false, `${locale.toUpperCase()} legacy Discovery JSON-LD marker remains`)
