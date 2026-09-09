@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C + 4D.2 ACCEPTED / 4D.3 NEXT
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C + 4D.2–4D.5 ACCEPTED / 4D.6 FINAL
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -90,6 +90,8 @@ docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
 docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
 docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
 Rendering ADR:
@@ -108,7 +110,7 @@ ADR-001 remains historically correct for Milestone 21D. ADR-002 records the acce
 Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4D.2 ACCEPTED / 4D.3 NEXT
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4D.6 FINAL VERIFICATION
 Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
@@ -118,7 +120,7 @@ Phase 4 slices:
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4D Sitemap / Robots / Discovery + AI Discovery        IN PROGRESS / 4D.2 ACCEPTED / 4D.3 NEXT
+21.5.4D Sitemap / Robots / Discovery + AI Discovery        IN PROGRESS / 4D.2–4D.5 ACCEPTED / 4D.6 FINAL
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
 ```
@@ -484,100 +486,106 @@ Creator sitemap/discovery eligibility must consume the accepted server-authorita
 
 ---
 
-## Current action — 21.5.4D Sitemap / Robots / Discovery + AI Discovery
+## Current action — 21.5.4D final aggregate verification
 
-Authoritative 4D record:
+Authoritative records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
 Current 4D status:
 
 ```text
 4D.1 existing robots/sitemap/legacy/runtime audit -> AUDITED
-4D.2 shared public inventory + sitemap migration   -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4D.3 robots normalization + staging precedence    -> AUDIT NEXT
-4D.4 llms.txt shared-inventory projection          -> NOT STARTED
-4D.5 Discovery/legacy-generator migration          -> NOT STARTED
-4D.6 aggregate regression + staging acceptance     -> NOT STARTED
+4D.2 shared public inventory + sitemap migration   -> DONE / ACCEPTED 2026-09-09
+4D.3 robots normalization + staging precedence    -> DONE / ACCEPTED 2026-09-09
+4D.4 llms.txt shared-inventory projection          -> DONE / ACCEPTED 2026-09-09
+4D.5 Discovery/legacy-generator migration          -> DONE / FOUNDER-LOCAL + STAGING SSR VERIFIED / ACCEPTED 2026-09-09
+4D.6 aggregate regression + staging acceptance     -> IMPLEMENTED / FINAL VERIFICATION PENDING
 ```
 
-Accepted 4D.2 architecture:
+Accepted 4D architecture:
 
 ```text
 GET /api/public/inventory
   -> Prompt public numeric id + authoritative availableLocales
   -> Creator canonical username + availableLocales + policy.indexable/discoverable
 
-shared scripts/public-url-inventory.ts
+one shared public URL inventory
   -> static acquisition URLs
   -> Discovery canonical URLs
   -> Prompt canonical EN/FA URLs
   -> indexable Creator canonical EN/FA URLs
   -> sitemap.xml
+  -> llms.txt
 
-NUXT_PUBLIC_NOINDEX=true
-  -> outer build-time public-inventory gate
+one application SEO route policy
+  -> Nuxt client-only routeRules
+  -> X-Robots middleware
+  -> robots exclusions
+
+native Nuxt Discovery SSR
+  -> visible Discovery content
+  -> usePublicSeo
+  -> CollectionPage / ItemList structured data
+
+legacy post-generator
+  -> no independent Discovery fetch/render authority
+  -> sitemap/llms/robots static artifacts + stale-marker cleanup only
 ```
 
-Accepted founder-local 4D.2 evidence:
+Staging contract:
 
 ```text
+NUXT_PUBLIC_NOINDEX=true always wins
+robots keeps EN/FA application exclusions and omits Sitemap
+sitemap publishes zero URLs
+llms publishes zero canonical links
+public pages remain fetchable and expose noindex
+```
+
+4D.5 final evidence already passed:
+
+```text
+pnpm test:discovery-seo -> 8/8 PASS
 pnpm test:public-url-inventory -> 7/7 PASS
-pnpm test:public-inventory-api -> 16/16 PASS
-GET /api/public/inventory -> ok=true / 101 prompts / 1 creator
-protected-field privacy scan -> no matches
-pnpm generate -> PASS
-sitemap canonical URL count -> 220
-legacy /prompts?id= in sitemap -> 0
-legacy /user?un= in sitemap -> 0
-generated robots sitemap declaration -> PASS
+pnpm frontend -> PASS through Nitro/image/container start
+raw EN + FA grassic Discovery SSR source -> canonical/hreflang/native JSON-LD/public Prompt routes/privacy clean
 ```
 
-Static-generation verification also repaired two pre-existing local blockers discovered by the acceptance gate:
+The final 4D.6 verification commands are now implemented:
+
+```powershell
+pnpm test:phase4d-final
+pnpm smoke:phase4d-final
+pnpm verify:phase4d-static
+```
+
+Their roles:
 
 ```text
-scripts/run-static-generate.mjs -> Windows-safe pnpm invocation
-package.json -> @vueuse/core direct runtime dependency restored to match pnpm-lock.yaml
+test:phase4d-final
+  -> accepted 4A–4C aggregate baseline + all 4D focused contracts
+
+smoke:phase4d-final
+  -> external grassic.ir/api.grassic.ir robots/sitemap/llms + Prompt/Creator/Discovery EN/FA smoke
+  -> dynamically selects current public Prompt + Creator fixtures from /api/public/inventory
+  -> explicitly refuses prompt-draft.ir target
+
+verify:phase4d-static
+  -> one isolated production-like pnpm generate
+  -> dynamic sitemap/llms expected-count parity
+  -> robots sitemap declaration
+  -> all 12 native EN/FA Discovery prerenders
+  -> no legacy snapshot/detail links/private fields
 ```
 
-4D.3 must now audit and normalize:
+No frontend/API/full-stack rebuild is required merely to run 4D.6 because the 4D.5 frontend runtime image is already current and 4D.6 changes are verification scripts/package commands/docs only.
 
-```text
-public/robots.txt source behavior
-generated robots.txt behavior
-public crawling intent
-application/private route exclusions
-EN/FA locale-space consistency
-sitemap declaration ownership / duplication
-server X-Robots-Tag interaction
-NUXT_PUBLIC_NOINDEX=true staging precedence
-whether staging robots should advertise or suppress sitemap/public crawling
-AI-crawler directives only as explicit product decisions, never inferred from llms.txt
-```
-
-4D explicitly includes `/llms.txt` later in 4D.4 as a supplemental AI-discovery surface. It remains an optional/experimental machine-friendly guide to already-public canonical resources, not crawler permission, training consent, a sitemap replacement, or a second indexability source of truth.
-
-Locked 4D constraints inherited from 4A–4C:
-
-```text
-one authoritative sitemap/indexability contract
-no second Creator eligibility definition
-no fake locale entries
-staging NUXT_PUBLIC_NOINDEX always wins
-application/private X-Robots-Tag rules remain intact
-protected Prompt body/variants never enter sitemap/SEO/AI-discovery payloads
-private Drafts never public
-Creator private fields never public
-llms.txt must consume the same canonical/indexable inventory as sitemap/public policy
-llms.txt must not override robots/indexability behavior
-future Blog URLs enter sitemap/llms inventory only after 4E establishes published Article semantics
-prompt-draft.ir remains untouched during staging verification
-legacy generate-public-seo retirement must be incremental and regression-safe
-```
-
-Do not begin 4E until 4D is implemented, founder-verified and explicitly accepted.
+Do not begin 4E until all three 4D.6 commands pass and the founder explicitly accepts final Phase 4D.
 
 ---
 
@@ -773,18 +781,17 @@ When continuing in a new chat:
 
 ```text
 1. read this STATUS.md
-2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its time-first / smallest-rebuild-scope rule; this is mandatory because it keeps founder verification fast
+2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey the time-first / smallest-rebuild-scope rule
 3. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md for the accepted Creator baseline
-5. read docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md as the authoritative 4D source of truth
-6. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED and 4D.2 remains DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-7. inspect the latest feature/growth-foundation branch state before implementation; preserve any parallel documentation/work already added to the branch
-8. continue with 4D.3 audit-first: robots source/generation, private route exclusions, locale-space consistency, sitemap declaration, X-Robots-Tag and NUXT_PUBLIC_NOINDEX staging precedence
-9. do not implement llms.txt until 4D.3 is accepted; when 4D.4 starts, generate it from the same canonical/indexable public inventory used by sitemap
-10. preserve all accepted 4A/4B/4C route, localization, SEO, noindex, privacy and public/protected boundaries
-11. consume Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
-12. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
-13. keep grassic.ir/api.grassic.ir as staging and do not touch prompt-draft.ir
-14. do not mark any 4D slice DONE until founder verification and explicit acceptance
-15. do not begin 4E until 4D is accepted
+5. read docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+6. read docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md as the current execution record
+7. confirm 4A, 4B, 4C and 4D.2–4D.5 remain DONE / ACCEPTED
+8. inspect latest feature/growth-foundation HEAD before any change and preserve parallel work
+9. current task is 4D.6 final verification; do not add new public/indexability policy during this gate
+10. run the smallest required final sequence: pnpm test:phase4d-final -> pnpm smoke:phase4d-final -> pnpm verify:phase4d-static
+11. do not rebuild frontend/API/full stack merely for 4D.6 unless a new runtime change is introduced
+12. keep grassic.ir/api.grassic.ir as staging and never target prompt-draft.ir in 4D verification
+13. do not mark Phase 4D DONE until all final evidence passes and the founder explicitly accepts it
+14. only after final 4D acceptance proceed to 21.5.4E Blog V1
 ```
