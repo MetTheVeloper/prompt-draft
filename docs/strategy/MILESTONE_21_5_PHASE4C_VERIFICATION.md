@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1–4C.7 ACCEPTED / 4C.8 FINAL VERIFICATION IN PROGRESS**
+Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09**
 
 Date: 2026-09-09
 
@@ -49,8 +49,9 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.5 Public Creator SSR route               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.6 Creator SEO/indexability               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.7 Prompt/Discovery attribution           -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.8 aggregate/staging acceptance           -> IMPLEMENTED / FINAL VERIFICATION PENDING
-Phase 21.5.4C                               -> IN PROGRESS / NOT YET FINAL-ACCEPTED
+4C.8 aggregate/staging acceptance           -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
+Phase 21.5.4C                               -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
+Next                                         -> 21.5.4D Sitemap / Robots / Discovery Migration
 ```
 
 ---
@@ -492,7 +493,7 @@ Detailed record:
 docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
-Implemented aggregate commands:
+Accepted aggregate commands:
 
 ```powershell
 pnpm test:phase4c-final
@@ -500,44 +501,54 @@ pnpm frontend
 pnpm smoke:phase4c-final
 ```
 
-The aggregate regression intentionally does not rebuild services. It executes all accepted Creator/profile backend suites against the current API image plus Public Creator/attribution/Phase-4B/localization frontend regressions.
-
-The final production build refreshes only the frontend service. Full `pnpm stack` is not required.
-
-The staging smoke defaults to:
+Founder-local aggregate evidence 2026-09-09:
 
 ```text
-https://grassic.ir
-https://api.grassic.ir
-grassias
+Creator profile foundation       -> 7/7 PASS
+Creator skill taxonomy           -> 4/4 PASS
+Authenticated profile management -> 8/8 PASS
+Creator application/admin review -> 15/15 PASS
+Generated username contract      -> 3/3 PASS
+Public Creator policy/API        -> 10/10 PASS
+Prompt/Discovery attribution     -> 17/17 PASS
+Public Creator SSR/SEO/browser   -> 19/19 PASS
+Creator attribution browser      -> 13/13 PASS
+Phase 4B final regression        -> PASS
+strict locale route audit        -> 463 source files / no hazards
+runtime localization             -> fallback EN 0 / Creator FA missing 0 / extra 0
+pnpm frontend                    -> PASS
 ```
 
-and refuses to target `prompt-draft.ir`.
-
-Final acceptance checklist:
+Founder staging evidence:
 
 ```text
-[ ] aggregate 4C backend/frontend tests PASS
-[ ] Phase 4B regression PASS
-[ ] strict locale-route audit PASS
-[ ] production frontend Docker build PASS
-[ ] founder-local EN/FA browser sanity remains PASS
-[ ] grassic.ir Creator SSR smoke PASS
-[ ] api.grassic.ir Creator API smoke PASS
-[ ] approved Creator fixture PASS
-[ ] zero-publication approved Creator fixture PASS
-[ ] generic unavailable Creator -> 404
-[ ] negative Creator lifecycle state matrix PASS through accepted backend fixtures
-[ ] serialized public API/SSR private-key leakage -> zero observed
-[ ] global staging noindex preserved
-[ ] prompt-draft.ir untouched
-[ ] founder explicit final Phase 4C acceptance
+approved Creator API               -> 200
+unknown Creator API                -> 404
+EN Creator SSR                     -> 200
+EN mixed-case Creator redirect     -> 301
+EN missing Creator SSR             -> 404
+FA Creator SSR                     -> 200
+FA mixed-case Creator redirect     -> 301
+FA missing Creator SSR             -> 404
+privacy denylist                   -> PASS / zero observed leakage
+staging noindex                     -> PASS
+prompt-draft.ir target guard        -> PASS / production domain not targeted
+Creator EN/FA visual sanity         -> PASS
 ```
 
-Current result:
+The optional stable Prompt-attribution smoke was skipped because no stable staging Prompt id was configured. It is not a blocker because 4C.7 already has founder-accepted backend/browser attribution matrix coverage.
+
+Founder explicit final acceptance:
 
 ```text
-4C.8 -> IMPLEMENTED / FINAL FOUNDER-LOCAL + STAGING VERIFICATION PENDING
+pnpm frontend هم PASS بود — Phase 4C تایید
+```
+
+Result:
+
+```text
+4C.8 -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
+Phase 21.5.4C -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
 ```
 
 ---
@@ -571,7 +582,7 @@ Positive allowlists remain the primary boundary; denylist checks are defense in 
 
 ---
 
-## 12. Acceptance rule
+## 12. Final acceptance result
 
 ```text
 4C.1 accepted
@@ -583,11 +594,11 @@ Positive allowlists remain the primary boundary; denylist checks are defense in 
 + 4C.7 accepted
 + 4C.8 aggregate local/staging gates PASS
 + founder explicit final Phase 4C acceptance
-= Phase 21.5.4C DONE / ACCEPTED
+= Phase 21.5.4C DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
 ```
 
-Until then:
+Next:
 
 ```text
-Phase 21.5.4C -> IN PROGRESS
+21.5.4D — Sitemap / Robots / Discovery Migration
 ```
