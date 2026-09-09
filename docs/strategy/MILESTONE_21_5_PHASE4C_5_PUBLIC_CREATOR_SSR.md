@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C.5 Public Creator SSR
 
-Status: **IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-09
 
@@ -28,7 +28,7 @@ Verification ledger:
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 ```
 
-This slice turns the accepted 4C.4 public Creator DTO into the canonical Nuxt SSR Creator page. It does not introduce final Creator SEO metadata/JSON-LD; those remain 4C.6.
+This slice turns the accepted 4C.4 public Creator DTO into the canonical Nuxt SSR Creator page. Final Creator SEO metadata/JSON-LD remains independently gated in 4C.6.
 
 ---
 
@@ -295,7 +295,7 @@ scripts/public-creator-markdown.test.ts
 scripts/public-creator-ssr-contract.test.ts
 ```
 
-Command:
+Command at acceptance time:
 
 ```text
 pnpm test:public-creator-web
@@ -327,9 +327,9 @@ absence of owner/admin management hooks
 
 ## 10. 4C.6 boundary
 
-4C.5 deliberately does **not** complete final Creator SEO.
+4C.5 acceptance does not by itself accept final Creator SEO.
 
-Still reserved for 4C.6:
+Reserved for 4C.6:
 
 ```text
 localized title/meta/OG/Twitter projection
@@ -345,50 +345,45 @@ This keeps SSR/presentation and SEO acceptance independently verifiable.
 
 ---
 
-## 11. Founder-local verification gate
+## 11. Founder-local verification evidence
 
-Focused automated verification:
-
-```powershell
-git pull
-pnpm test:public-creator-web
-pnpm locale:check
-pnpm frontend
-```
-
-Backend regression is already accepted in 4C.4, but before 4C.5 acceptance a cheap focused regression is recommended:
-
-```powershell
-docker compose exec api npm run test:public-creator
-```
-
-Manual browser smoke with approved staging Creator `grassias`:
+Automated evidence 2026-09-09:
 
 ```text
-[ ] /creator/grassias returns the Creator page
-[ ] /fa/creator/grassias returns the Persian Creator page
-[ ] English uses LTR and English ScreenName/Bio/Article
-[ ] Persian uses RTL and Persian ScreenName/Bio/Article
-[ ] current zero-publication Creator shows a valid empty Publications state
-[ ] skills render localized
-[ ] public website link works
-[ ] location text renders, with no provider metadata
-[ ] article headings/bold/link/image render correctly
-[ ] raw Markdown syntax is not shown for supported constructs
-[ ] mixed-case /creator/GrassiaS permanently redirects to /creator/grassias
-[ ] mixed-case /fa/creator/GrassiaS permanently redirects to /fa/creator/grassias
-[ ] pending/rejected/suspended/non-Creator username produces a real 404
-[ ] page contains no Edit Profile / Request Creator / admin review controls
+pnpm test:public-creator-web -> 14/14 PASS
+pnpm locale:check -> Missing fallback EN 0 / Public Creator missing in FA 0 / extra in FA 0
+docker compose exec api npm run test:public-creator -> 10/10 PASS
+frontend Docker production build -> PASS
 ```
 
-Because final SEO belongs to 4C.6, do not use missing Creator-specific canonical/hreflang/JSON-LD as a 4C.5 failure.
+Browser/staging evidence with approved Creator `grassias`:
+
+```text
+/creator/grassias -> valid EN Creator SSR page
+/fa/creator/grassias -> valid FA Creator SSR page
+EN LTR / FA RTL
+light + dark theme presentation
+localized ScreenName/Bio/Article/skills
+article Markdown headings/bold/link/image render correctly
+zero-publication state remains valid
+public website link + location text render
+mixed-case canonical redirect behavior verified
+unavailable username -> real 404
+no owner/admin Creator controls in public content
+```
+
+Founder supplied EN/FA and 404 browser screenshots and reported all requested smoke states correct.
+
+Founder explicit acceptance:
+
+```text
+همه چی درسته 4C.5 تاییده.
+```
 
 ---
 
-## 12. Acceptance rule
-
-Until founder-local automated verification, browser smoke, and explicit founder acceptance:
+## 12. Acceptance result
 
 ```text
-4C.5 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.5 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
