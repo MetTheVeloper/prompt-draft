@@ -2,6 +2,12 @@
 import type { PublicCreatorLinkType, PublicCreatorLocale } from '~/composables/usePublicCreator'
 import { renderPublicCreatorMarkdown } from '~/utils/publicCreatorMarkdown'
 import {
+  buildPublicCreatorStructuredData,
+  normalizePublicSiteUrl,
+  publicCreatorSeoImage,
+  toAbsolutePublicUrl,
+} from '~/utils/publicCreatorSeo'
+import {
   normalizePublicCreatorUsername,
   publicCreatorPath,
   publicPromptPath,
@@ -12,6 +18,7 @@ definePageMeta({
 })
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const { locale, t } = useI18n()
 const localePath = useLocalePath()
 const publicCreatorApi = usePublicCreator()
@@ -75,6 +82,39 @@ const localizedBio = computed(() => identity.value.bio[activeLocale.value] || ''
 const localizedArticle = computed(() => identity.value.article[activeLocale.value] || '')
 const articleHtml = computed(() => renderPublicCreatorMarkdown(localizedArticle.value))
 const coverUrl = computed(() => identity.value.cover?.fullUrl || identity.value.cover?.thumbnailUrl || '')
+
+const canonicalPath = publicCreatorPath(canonicalUsername)
+const siteUrl = computed(() => normalizePublicSiteUrl(config.public.siteUrl))
+const seoImage = computed(() => publicCreatorSeoImage(creator.value!))
+const canonicalUrl = computed(() => toAbsolutePublicUrl(
+  siteUrl.value,
+  localePath(canonicalPath, activeLocale.value),
+))
+const absoluteSeoImage = computed(() => toAbsolutePublicUrl(siteUrl.value, seoImage.value))
+const creatorNoindex = computed(() => !creator.value!.policy.indexable)
+const structuredData = computed(() => {
+  if (!creator.value || !canonicalUrl.value) return null
+
+  return buildPublicCreatorStructuredData({
+    creator: creator.value,
+    locale: activeLocale.value,
+    localizedName: localizedName.value,
+    description: localizedBio.value,
+    canonicalUrl: canonicalUrl.value,
+    imageUrl: absoluteSeoImage.value,
+    siteUrl: siteUrl.value,
+  })
+})
+
+usePublicSeo({
+  title: localizedName,
+  description: localizedBio,
+  canonicalPath,
+  imageUrl: seoImage,
+  alternateLocales: ['en', 'fa'],
+  noindex: creatorNoindex,
+  structuredData,
+})
 
 const localizedSkills = computed(() => identity.value.skills.map(skill => ({
   ...skill,
