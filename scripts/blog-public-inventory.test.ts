@@ -25,22 +25,34 @@ function article(input: {
   slug: string
   availableLocales: Array<'en' | 'fa'>
 }): BlogArticle {
+  const published = input.availableLocales.length > 0
+  const localizations: BlogArticle['localizations'] = {}
+  const body: BlogArticle['body'] = {}
+
+  for (const locale of input.availableLocales) {
+    localizations[locale] = locale === 'fa'
+      ? { title: 'عنوان فارسی', description: 'توضیح فارسی' }
+      : { title: 'English title', description: 'English description' }
+    body[locale] = locale === 'fa' ? '# فارسی' : '# English'
+  }
+
+  // A draft may contain complete work-in-progress content while remaining
+  // non-public because its derived availableLocales is empty.
+  if (!published) {
+    localizations.en = { title: 'Draft title', description: 'Draft description' }
+    body.en = '# Draft'
+  }
+
   return {
     id: input.id,
     slug: input.slug,
-    status: input.availableLocales.length ? 'published' : 'draft',
-    publishedAt: input.availableLocales.length ? '2026-09-09T12:00:00.000Z' : null,
+    status: published ? 'published' : 'draft',
+    publishedAt: published ? '2026-09-09T12:00:00.000Z' : null,
     updatedAt: '2026-09-09T12:00:00.000Z',
     author: { kind: 'editorial', name: 'Prompt Draft', url: '/' },
     hero: null,
-    localizations: {
-      en: { title: 'English title', description: 'English description' },
-      fa: { title: 'عنوان فارسی', description: 'توضیح فارسی' },
-    },
-    body: {
-      en: '# English',
-      fa: '# فارسی',
-    },
+    localizations,
+    body,
     availableLocales: [...input.availableLocales],
   }
 }
