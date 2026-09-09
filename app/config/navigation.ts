@@ -26,4 +26,9 @@ export const NAVIGATION = [
     to: '/guide',
     icon: 'help',
   },
+  {
+    name: 'blog',
+    to: '/blog',
+    icon: 'article',
+  },
 ] as const
