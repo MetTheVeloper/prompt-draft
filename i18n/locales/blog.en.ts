@@ -1,4 +1,9 @@
 export default {
+  app: {
+    navigation: {
+      blog: 'Blog',
+    },
+  },
   blog: {
     title: 'Blog',
     description: 'Guides, ideas, and practical notes for building better visual prompt workflows.',
