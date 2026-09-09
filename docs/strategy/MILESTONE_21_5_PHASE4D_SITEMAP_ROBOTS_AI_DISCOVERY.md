@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D Sitemap / Robots / Discovery + AI Discovery
 
-Status: **IN PROGRESS / 4D.1 AUDITED / 4D.2 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED**
+Status: **IN PROGRESS / 4D.1 AUDITED / 4D.2 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED / 4D.3 AUDIT NEXT**
 
 Date: 2026-09-09
 
@@ -98,7 +98,7 @@ Creator inventory cannot be inferred from Prompt ownership/publication count
 pnpm generate remains a legacy static-generation compatibility path
 ```
 
-4D.1 audit has been performed, but the slice is not DONE until founder verification/acceptance is explicitly recorded.
+4D.1 audit has been performed. Its findings are the implementation basis for the accepted 4D.2 slice and the upcoming 4D.3 audit.
 
 ---
 
@@ -413,13 +413,13 @@ Current boundaries:
 
 ```text
 4D.1 Existing robots/sitemap/legacy SEO/runtime audit
-     AUDITED / ACCEPTANCE PENDING
+     AUDITED
 
 4D.2 Shared authoritative public URL inventory + sitemap migration
-     IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
+     DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 
 4D.3 Robots normalization + staging precedence verification
-     NOT STARTED
+     AUDIT NEXT
 
 4D.4 llms.txt AI-discovery projection from shared inventory
      NOT STARTED
@@ -463,6 +463,12 @@ scripts/generate-public-seo.ts
   fails rather than silently publishing a partial dynamic sitemap on invalid inventory response
   keeps legacy Discovery snapshot behavior for 4D.5
 
+scripts/run-static-generate.mjs
+  Windows-safe pnpm invocation for founder-local static generation
+
+package.json
+  restores @vueuse/core as the direct runtime dependency already represented in pnpm-lock.yaml
+
 focused contract tests
   backend/src/publicInventory.test.mjs
   scripts/public-url-inventory.test.ts
@@ -470,6 +476,69 @@ focused contract tests
 ```
 
 No `llms.txt` implementation is included in 4D.2. 4D.4 must consume this same shared inventory rather than introducing another eligibility list.
+
+### 8.2 4D.2 founder-local verification evidence — ACCEPTED 2026-09-09
+
+Focused contract gates:
+
+```text
+pnpm test:public-url-inventory
+-> 7 tests / 7 pass / 0 fail
+
+pnpm api
+-> API image rebuilt successfully
+
+pnpm test:public-inventory-api
+-> 16 tests / 16 pass / 0 fail
+```
+
+Runtime inventory evidence:
+
+```text
+GET http://127.0.0.1:4000/api/public/inventory
+-> ok = true
+-> prompts = 101
+-> creators = 1
+-> protected-field privacy scan = no matches
+```
+
+Static-generation compatibility:
+
+```text
+NUXT_PUBLIC_SITE_URL=https://example.test
+NUXT_PUBLIC_API_BASE=http://127.0.0.1:4000
+NUXT_PUBLIC_NOINDEX=false
+pnpm generate
+-> PASS
+-> Discovery enrichment 6/6
+-> sitemap generated for 220 canonical public routes
+```
+
+Expected route-count proof:
+
+```text
+101 Prompt x 2 locales = 202
+1 Creator x 2 locales  =   2
+2 static x 2 locales   =   4
+6 Discovery x 2 locales=  12
+TOTAL                   = 220
+```
+
+Generated-artifact inspection:
+
+```text
+sitemap <url> count = 220
+canonical /prompt/:id present
+canonical /fa/prompt/:id present
+canonical /creator/:username present
+canonical /fa/creator/:username present
+Discovery EN/FA routes present
+legacy /prompts?id= entries in sitemap = 0
+legacy /user?un= entries in sitemap = 0
+generated robots includes Sitemap: https://example.test/sitemap.xml
+```
+
+The founder explicitly accepted 4D.2 after this evidence on 2026-09-09.
 
 ---
 
@@ -543,9 +612,9 @@ Current state:
 
 ```text
 4D -> IN PROGRESS
-4D.1 -> AUDITED / ACCEPTANCE PENDING
-4D.2 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
-4D.3 -> NEXT ONLY AFTER 4D.2 ACCEPTANCE
+4D.1 -> AUDITED
+4D.2 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4D.3 -> AUDIT NEXT
 ```
 
 To accept 4D, all accepted 4A–4C regressions must remain intact and the founder must explicitly accept the final 4D aggregate/staging evidence.
