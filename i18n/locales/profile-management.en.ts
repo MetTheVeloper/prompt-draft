@@ -66,13 +66,13 @@ export default {
       location: {
         title: "Location",
         placeholder: "e.g. Tehran, Iran or a custom location",
-        providerPending: "Custom location is available now. Search suggestions will be connected after the location-provider decision is locked.",
+        providerPending: "Enter the public location text you want shown on your Creator profile. Location suggestions may be added later.",
       },
       skills: {
         title: "Skills",
         description: "Skills come from a controlled bilingual taxonomy. At least one active skill is required for a Creator application.",
         placeholder: "Select skills",
-        taxonomyPending: "The taxonomy schema is ready, but the founder-reviewed initial skill inventory has intentionally not been seeded yet.",
+        taxonomyPending: "Skills are temporarily unavailable. Please try again after refreshing the page.",
       },
       links: {
         title: "Links",
