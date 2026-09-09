@@ -1,6 +1,9 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
-import { projectBlogPublicInventory } from '../shared/blog-public-inventory'
+import {
+  projectBlogPublicInventory,
+  type BlogPublicInventoryArticle,
+} from '../shared/blog-public-inventory'
 import { PUBLIC_DISCOVERY_INTERESTS } from '../shared/public-discovery'
 import { renderPublicRobotsTxt } from '../shared/public-robots'
 import { readBlogRepositoryDirectory } from './blog-repository'
@@ -102,12 +105,17 @@ async function main() {
     return
   }
 
-  const [dynamicInventory, blogArticles] = indexingEnabled
-    ? await Promise.all([
-        fetchAuthoritativePublicInventory(apiBase),
-        readBlogRepositoryDirectory().then(projectBlogPublicInventory),
-      ])
-    : [{ prompts: [], creators: [] } as PublicApiInventory, []]
+  let dynamicInventory: PublicApiInventory = { prompts: [], creators: [] }
+  let blogArticles: BlogPublicInventoryArticle[] = []
+
+  if (indexingEnabled) {
+    const [backendInventory, repositoryArticles] = await Promise.all([
+      fetchAuthoritativePublicInventory(apiBase),
+      readBlogRepositoryDirectory(),
+    ])
+    dynamicInventory = backendInventory
+    blogArticles = projectBlogPublicInventory(repositoryArticles)
+  }
 
   const publicInventory = buildPublicUrlInventory({
     dynamicInventory,
