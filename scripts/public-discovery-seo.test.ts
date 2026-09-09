@@ -88,11 +88,12 @@ test('native Discovery structured data uses localized canonical Prompt and Creat
 })
 
 test('Discovery consumers reuse the shared catalog and native SSR owns SEO projection', async () => {
-  const [preferences, inventory, nuxtConfig, page, generator] = await Promise.all([
+  const [preferences, inventory, nuxtConfig, page, seoUtility, generator] = await Promise.all([
     read('app/composables/useDiscoveryPreferences.ts'),
     read('scripts/public-url-inventory.ts'),
     read('nuxt.config.ts'),
     read('app/pages/discover/[slug].vue'),
+    read('app/utils/publicDiscoverySeo.ts'),
     read('scripts/generate-public-seo.ts'),
   ])
 
@@ -105,8 +106,8 @@ test('Discovery consumers reuse the shared catalog and native SSR owns SEO proje
   assert.match(page, /structuredData,/)
   assert.match(page, /imageUrl:\s*computed\(\(\) => heroSources\.value\[0\]/)
   assert.match(page, /publicDiscoveryPath\(definition\.value\.slug\)/)
-  assert.match(page, /publicPromptPath/)
-  assert.match(page, /publicCreatorPath/)
+  assert.match(seoUtility, /publicPromptPath\(item\.id\)/)
+  assert.match(seoUtility, /publicCreatorPath\(item\.creator\.username\)/)
 
   assert.doesNotMatch(generator, /fetchDiscoveryItems/)
   assert.doesNotMatch(generator, /\/api\/discover/)
