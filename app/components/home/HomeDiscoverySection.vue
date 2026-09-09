@@ -2,7 +2,7 @@
 import type { DiscoveryInterestDefinition } from '~/composables/useDiscoveryPreferences'
 import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
 import { localeTextDirection } from '~/utils/localeDirection'
-import { publicDiscoveryPath, publicPromptPath } from '~/utils/publicRoutes'
+import { publicCreatorPath, publicDiscoveryPath, publicPromptPath } from '~/utils/publicRoutes'
 
 const props = defineProps<{
   definition: DiscoveryInterestDefinition
@@ -87,6 +87,10 @@ function formatTag(tag: string) {
 
 function promptPath(id: HomeShowcaseItem['id']) {
   return localePath(publicPromptPath(id))
+}
+
+function creatorPath(username: string) {
+  return localePath(publicCreatorPath(username))
 }
 
 function discoveryPath() {
@@ -205,19 +209,23 @@ function openTelegram() {
         </el-flex>
 
         <el-flex rules="rsc" :gap="12" class="w100 fw home-discovery-section__meta" wrap>
-          <el-flex v-if="activeItem.owner" rules="rsc" :gap="7">
+          <NuxtLink
+            v-if="activeItem.creator"
+            :to="creatorPath(activeItem.creator.username)"
+            class="home-discovery-section__creator"
+            @click.stop>
             <el-avatar
-              :src="activeItem.owner.avatarUrl"
-              :name="activeItem.owner.username"
+              :src="activeItem.creator.avatarUrl"
+              :name="activeItem.creator.username"
               :size="9"
               :size-offset="3"
               :br="2"
               bc="surface"
             />
             <el-text :size="11" :weight="700">
-              @{{ activeItem.owner.username }}
+              @{{ activeItem.creator.username }}
             </el-text>
-          </el-flex>
+          </NuxtLink>
 
           <el-text
             v-if="formattedDate"
@@ -335,6 +343,18 @@ function openTelegram() {
 
 .home-discovery-section__meta {
   opacity: .86;
+}
+
+.home-discovery-section__creator {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.home-discovery-section__creator:hover {
+  opacity: .82;
 }
 
 .home-discovery-section__dot {
