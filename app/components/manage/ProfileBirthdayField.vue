@@ -14,117 +14,149 @@ const emit = defineEmits<{
 
 const { locale, t } = useI18n();
 
-const jYear = ref("");
-const jMonth = ref("");
-const jDay = ref("");
+const year = ref("");
+const month = ref("");
+const day = ref("");
 
 const isPersian = computed(() => locale.value === "fa");
-const currentJYear = Number(moment().format("jYYYY"));
+const currentGregorianYear = new Date().getUTCFullYear();
+const currentJalaliYear = Number(moment().format("jYYYY"));
+const YEAR_SPAN = 125;
 
-function formatFaNumber(value: number) {
-  return new Intl.NumberFormat("fa-IR", { useGrouping: false }).format(value);
+function formatNumber(value: number) {
+  return new Intl.NumberFormat(isPersian.value ? "fa-IR" : "en-US", {
+    useGrouping: false,
+  }).format(value);
 }
 
+const currentCalendarYear = computed(() => (
+  isPersian.value ? currentJalaliYear : currentGregorianYear
+));
+
 const yearItems = computed(() => Array.from(
-  { length: Math.max(1, currentJYear - 1249) },
+  { length: YEAR_SPAN + 1 },
   (_, index) => {
-    const value = currentJYear - index;
-    return { value: String(value), label: formatFaNumber(value) };
+    const value = currentCalendarYear.value - index;
+    return { value: String(value), label: formatNumber(value) };
   },
 ));
 
 const monthItems = computed(() => Array.from({ length: 12 }, (_, index) => ({
   value: String(index + 1),
-  label: t(`manage.profile.birthday.months.${index + 1}`),
+  label: isPersian.value
+    ? t(`manage.profile.birthday.months.${index + 1}`)
+    : t(`manage.profile.birthday.gregorianMonths.${index + 1}`),
 })));
 
 const daysInSelectedMonth = computed(() => {
-  const year = Number(jYear.value);
-  const month = Number(jMonth.value);
-  if (!year || !month) return 31;
+  const selectedYear = Number(year.value);
+  const selectedMonth = Number(month.value);
+  if (!selectedYear || !selectedMonth) return 31;
 
-  try {
-    return Number(moment.jDaysInMonth(year, month - 1)) || 31;
-  } catch {
-    if (month <= 6) return 31;
-    if (month <= 11) return 30;
-    return 30;
+  if (isPersian.value) {
+    try {
+      return Number(moment.jDaysInMonth(selectedYear, selectedMonth - 1)) || 31;
+    } catch {
+      if (selectedMonth <= 6) return 31;
+      if (selectedMonth <= 11) return 30;
+      return 30;
+    }
   }
+
+  return new Date(Date.UTC(selectedYear, selectedMonth, 0)).getUTCDate();
 });
 
 const dayItems = computed(() => Array.from(
   { length: daysInSelectedMonth.value },
   (_, index) => ({
     value: String(index + 1),
-    label: formatFaNumber(index + 1),
+    label: formatNumber(index + 1),
   }),
 ));
 
+function resetParts() {
+  year.value = "";
+  month.value = "";
+  day.value = "";
+}
+
 function syncFromIso(value: string | null) {
   if (!value) {
-    jYear.value = "";
-    jMonth.value = "";
-    jDay.value = "";
+    resetParts();
     return;
   }
 
   const date = moment(value, "YYYY-MM-DD", true);
   if (!date.isValid()) return;
-  jYear.value = date.format("jYYYY");
-  jMonth.value = String(Number(date.format("jMM")));
-  jDay.value = String(Number(date.format("jDD")));
+
+  if (isPersian.value) {
+    year.value = date.format("jYYYY");
+    month.value = String(Number(date.format("jMM")));
+    day.value = String(Number(date.format("jDD")));
+    return;
+  }
+
+  year.value = date.format("YYYY");
+  month.value = String(Number(date.format("MM")));
+  day.value = String(Number(date.format("DD")));
 }
 
-function emitJalaliDate() {
-  if (!jYear.value || !jMonth.value || !jDay.value) {
+function emitSelectedDate() {
+  if (!year.value || !month.value || !day.value) {
     emit("update:modelValue", null);
     return;
   }
 
-  const day = Math.min(Number(jDay.value), daysInSelectedMonth.value);
-  jDay.value = String(day);
-  const value = `${jYear.value}/${jMonth.value}/${jDay.value}`;
-  const date = moment(value, "jYYYY/jM/jD", true);
+  const selectedDay = Math.min(Number(day.value), daysInSelectedMonth.value);
+  day.value = String(selectedDay);
+
+  const source = `${year.value}/${month.value}/${day.value}`;
+  const date = isPersian.value
+    ? moment(source, "jYYYY/jM/jD", true)
+    : moment(source, "YYYY/M/D", true);
+
   emit("update:modelValue", date.isValid() ? date.format("YYYY-MM-DD") : null);
 }
 
 function clearBirthday() {
-  jYear.value = "";
-  jMonth.value = "";
-  jDay.value = "";
+  resetParts();
   emit("update:modelValue", null);
 }
 
 watch(() => props.modelValue, syncFromIso, { immediate: true });
-watch([jYear, jMonth], () => {
-  if (Number(jDay.value) > daysInSelectedMonth.value) {
-    jDay.value = String(daysInSelectedMonth.value);
+watch(isPersian, () => syncFromIso(props.modelValue));
+watch([year, month], () => {
+  if (Number(day.value) > daysInSelectedMonth.value) {
+    day.value = String(daysInSelectedMonth.value);
   }
 });
 </script>
 
 <template>
-  <el-flex v-if="isPersian" rules="rsc" :gap="8" class="w100 fw">
+  <div
+    class="profile-birthday-field w100"
+    :dir="isPersian ? 'rtl' : 'ltr'"
+  >
     <el-dropdown
-      v-model="jDay"
-      :items="dayItems"
-      :disabled="disabled"
-      :placeholder="t('manage.profile.birthday.day')"
-      @update:model-value="emitJalaliDate"
-    />
-    <el-dropdown
-      v-model="jMonth"
-      :items="monthItems"
-      :disabled="disabled"
-      :placeholder="t('manage.profile.birthday.month')"
-      @update:model-value="emitJalaliDate"
-    />
-    <el-dropdown
-      v-model="jYear"
+      v-model="year"
       :items="yearItems"
       :disabled="disabled"
       :placeholder="t('manage.profile.birthday.year')"
-      @update:model-value="emitJalaliDate"
+      @update:model-value="emitSelectedDate"
+    />
+    <el-dropdown
+      v-model="month"
+      :items="monthItems"
+      :disabled="disabled"
+      :placeholder="t('manage.profile.birthday.month')"
+      @update:model-value="emitSelectedDate"
+    />
+    <el-dropdown
+      v-model="day"
+      :items="dayItems"
+      :disabled="disabled"
+      :placeholder="t('manage.profile.birthday.day')"
+      @update:model-value="emitSelectedDate"
     />
     <el-button
       v-if="modelValue"
@@ -135,27 +167,21 @@ watch([jYear, jMonth], () => {
       :disable="disabled"
       @click="clearBirthday"
     />
-  </el-flex>
-
-  <input
-    v-else
-    :value="modelValue || ''"
-    type="date"
-    class="profile-native-input w100"
-    :disabled="disabled"
-    @input="emit('update:modelValue', ($event.target as HTMLInputElement).value || null)"
-  >
+  </div>
 </template>
 
 <style scoped>
-.profile-native-input {
-  box-sizing: border-box;
-  min-height: 40px;
-  padding: 8px 10px;
-  border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-  border-radius: 10px;
-  background: transparent;
-  color: inherit;
-  font: inherit;
+.profile-birthday-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) auto;
+  gap: 8px;
+  align-items: center;
+}
+
+@media (max-width: 560px) {
+  .profile-birthday-field {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, .8fr) auto;
+    gap: 6px;
+  }
 }
 </style>
