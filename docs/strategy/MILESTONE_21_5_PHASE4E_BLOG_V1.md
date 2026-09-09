@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **IN PROGRESS / 4E.1 + 4E.2 ACCEPTED / 4E.3 IMPLEMENTED + VERIFICATION PENDING**
+Status: **IN PROGRESS / 4E.1 + 4E.2 + 4E.3 ACCEPTED / 4E.4 IMPLEMENTED + VERIFICATION PENDING**
 
 Date: 2026-09-10
 
@@ -26,12 +26,12 @@ Accepted dependency:
 
 ```text
 21.5.4D Sitemap / Robots / Discovery + AI Discovery
-DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED 2026-09-09
+DONE / ACCEPTED 2026-09-09
 ```
 
 ## Objective
 
-4E adds a repository-backed bilingual Blog acquisition system without creating a second SEO/indexability/content-source architecture.
+4E adds a repository-backed bilingual Blog acquisition + editorial system without creating a second SEO, indexability, authorization, localization or content-source architecture.
 
 Public routes:
 
@@ -40,6 +40,13 @@ Public routes:
 /blog/:slug
 /fa/blog
 /fa/blog/:slug
+```
+
+Management route:
+
+```text
+/manage/blog
+/fa/manage/blog
 ```
 
 Blog remains:
@@ -51,7 +58,7 @@ EN/FA authoritative-localization aware
 safe Markdown
 SEO/structured-data complete
 shared sitemap/llms integrated
-manageable through /manage/blog
+permissioned for management
 Arvan-media compatible
 Docker/Nitro + pnpm generate compatible
 ```
@@ -69,7 +76,11 @@ no request-time GitHub reads
 prompt-draft.ir untouched before explicit rollout
 ```
 
-Git remains the canonical editorial source.
+Canonical editorial source:
+
+```text
+Git repository
+```
 
 Normal serving:
 
@@ -86,19 +97,13 @@ Arvan Object Storage remains Blog media + explicit mirror/emergency infrastructu
 
 ## 4E.1 — ACCEPTED
 
-Canonical record:
+Record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
 ```
 
-Final state:
-
-```text
-DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-```
-
-Canonical repository package:
+Canonical package:
 
 ```text
 content/blog/<articleId>/
@@ -116,31 +121,13 @@ status=published
 + matching non-empty Markdown body
 ```
 
-`availableLocales` is derived, never stored.
+`availableLocales` is derived. V1 author is explicit editorial/site identity only. Shared safe Markdown escapes raw HTML and rejects unsafe active URL schemes.
 
-V1 author is explicit editorial/site identity only.
-
-Markdown uses the shared safe public renderer; raw HTML is escaped and unsafe active URL schemes are rejected.
-
-Runtime repository path:
-
-```text
-Nitro serverAssets baseName=blog
--> useStorage('assets:blog')
--> shared/blog-article.ts validation
-```
-
-Static/build adapter:
-
-```text
-scripts/blog-repository.ts
-```
-
-Founder evidence:
+Evidence:
 
 ```text
 pnpm test:blog-contract -> 18/18 PASS
-pnpm frontend -> Nuxt client/server/Nitro/Docker PASS
+pnpm frontend -> PASS
 founder -> تایید
 ```
 
@@ -148,16 +135,10 @@ founder -> تایید
 
 ## 4E.2 — ACCEPTED
 
-Canonical record:
+Record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
-```
-
-Final state:
-
-```text
-DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-10
 ```
 
 Public Nitro projection:
@@ -167,68 +148,93 @@ GET /api/public/blog?locale=en|fa
 GET /api/public/blog/:slug?locale=en|fa
 ```
 
-Public pages:
+Accepted public behavior:
 
 ```text
-/blog
-/fa/blog
-/blog/:slug
-/fa/blog/:slug
-```
-
-Index:
-
-```text
-SSR localized Blog shell
-published locale-eligible Article list
-publishedAt-desc ordering
-localized empty state
-canonical Article links
+SSR EN/FA Blog index
+published locale-eligible Article detail
+real 404
+canonical slug semantics
+safe Markdown
 CollectionPage + ItemList JSON-LD
-EN/FA canonical alternates
-```
-
-Detail:
-
-```text
-published + target locale authoritative only
-real 404 otherwise
-canonical slug normalization
-301 only after canonical Article existence is proven
-safe Markdown HTML
-self canonical
-Article.availableLocales-driven hreflang
-OG/Twitter article metadata
 BlogPosting JSON-LD
-article published/modified metadata
+OG/Twitter article metadata
+Article.availableLocales-driven hreflang
+staging noindex preserved
 ```
 
-V1 editorial authors are represented as `Organization` in structured data.
+No fake Article fixture exists.
 
-No fake public Article fixture was added.
-
-Founder evidence:
+Evidence:
 
 ```text
 pnpm test:blog-public -> 26/26 PASS
-pnpm frontend -> PASS through Nitro + Docker container start
+pnpm frontend -> PASS
 pnpm smoke:blog-public -> PASS
-EN/FA Blog API -> 200
-EN/FA Blog index -> 200
-staging-config X-Robots-Tag -> noindex, nofollow, noarchive
-EN/FA nonexistent Article -> 404
-positive runtime Article -> intentionally skipped until first real published Article
 founder -> تایید
 ```
 
 ---
 
-## 4E.3 — CURRENT
+## 4E.3 — ACCEPTED
 
-Canonical record:
+Record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_3_BLOG_INVENTORY.md
+```
+
+Accepted shared architecture:
+
+```text
+Article.availableLocales
+-> minimal Blog public inventory
+-> shared buildPublicUrlInventory
+-> sitemap.xml
+-> llms.txt
+-> legacy static generation
+```
+
+Runtime sources:
+
+```text
+backend /api/public/inventory -> Prompt/Creator
+Nitro assets:blog            -> Blog
+```
+
+Static sources:
+
+```text
+backend public inventory
++ content/blog filesystem validator
+```
+
+Accepted zero-Article snapshot:
+
+```text
+222 canonical URLs
+= historical pre-Blog 220 + /blog + /fa/blog
+```
+
+Evidence:
+
+```text
+pnpm test:blog-inventory -> 19/19 PASS
+pnpm frontend -> PASS
+pnpm verify:blog-inventory-static -> PASS
+expected canonical URL count -> 222
+published Blog Article inventory -> 0
+founder -> تایید
+```
+
+---
+
+## 4E.4 — CURRENT
+
+Record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
 ```
 
 Status:
@@ -237,92 +243,76 @@ Status:
 IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
 ```
 
-Architecture:
+Authorization:
 
 ```text
-validated Blog repository
--> Article.availableLocales
--> shared/blog-public-inventory.ts
--> buildPublicUrlInventory
-   + backend Prompt/Creator inventory
-   + Core/Discovery routes
--> sitemap.xml
--> llms.txt
--> static generation
+blog.manage
+user        -> no
+admin       -> yes
+super_admin -> wildcard
 ```
 
-Blog index becomes a first-class shared inventory resource:
+`blog.manage` is mirrored in backend + frontend permission catalogs and registered as its own `/manage` section.
+
+Nitro management reads:
 
 ```text
-/blog
-/fa/blog
+GET /api/manage/blog
+GET /api/manage/blog/:id
 ```
 
-Each Article adds only its authoritative locale URLs.
+Each request revalidates the bearer token through backend `/api/auth/me` and requires `blog.manage` or wildcard.
 
-With the same accepted 4D Prompt/Creator snapshot and zero published Blog Articles, the historical 220-URL inventory becomes 222 because the two Blog index URLs are now intentionally public.
-
-Runtime sitemap/llms sources:
+Authoring workspace:
 
 ```text
-backend /api/public/inventory -> Prompt/Creator
-Nitro assets:blog            -> Blog
+repository Article list
+new/edit state
+stable Article id
+slug/status/timestamps
+editorial author metadata
+hero metadata
+EN/FA title + description + alt + Markdown body
+small Markdown toolbar
+live preview through renderPublicBlogMarkdown
+canonical validation through validateBlogArticlePackage
 ```
 
-They merge into one `buildPublicUrlInventory` call.
-
-Staging noindex still returns an empty inventory before either source is loaded.
-
-Static generator sources:
+Editor dependency decision:
 
 ```text
-backend public inventory
-+ readBlogRepositoryDirectory()
-+ projectBlogPublicInventory()
+md-editor-v3 re-audited
+no dependency added in 4E.4
+accepted safe renderer remains the single preview/public renderer
 ```
 
-Legacy static prerender roots now include:
+Canonical write boundary:
 
 ```text
-/blog
-/fa/blog
+4E.4 = read + author + validate
+4E.5 = Git save/publish + media + reconciliation
 ```
 
-Article pages are discovered from real locale-authoritative links rendered by those indexes; no second config-time Article slug policy exists.
+No temporary container filesystem/database/editor state is allowed to become canonical.
 
-Focused gates:
+Verification:
 
 ```powershell
-pnpm test:blog-inventory
+pnpm test:blog-manage
+pnpm api
 pnpm frontend
-pnpm verify:blog-inventory-static
 ```
 
-No `pnpm api` or `pnpm stack` is required for 4E.3.
+Then founder UI smoke for EN/FA Manage Blog and unauthorized endpoint behavior.
 
 ---
 
 ## Remaining slices
 
 ```text
-4E.4 Manage Blog Permission + Authoring UI
-4E.5 Blog Media + Repository Publish / Emergency Adapter
+4E.5 Blog Media + Repository Git Publish / Emergency Adapter
 4E.6 Aggregate Regression + External Staging + Static Acceptance
 ```
-
-### 4E.4 target
-
-```text
-explicit blog.manage permission
-/manage/blog
-Article list/new/edit
-EN/FA Markdown workflow
-live preview
-validation
-md-editor-v3 integration if project verification remains positive
-```
-
-Do not reuse unrelated Archive/System permissions.
 
 ### 4E.5 target
 
@@ -330,8 +320,10 @@ Do not reuse unrelated Archive/System permissions.
 Blog-specific media upload
 shared/extracted Arvan SigV4 primitives
 stable media URLs in Markdown
-repository publication adapter
-optional emergency Arvan publication with explicit pending_git reconciliation
+Git repository publication adapter
+save/publish flow from /manage/blog
+explicit conflict/reconciliation behavior
+optional emergency Arvan publication only with pending_git reconciliation
 ```
 
 No base64 payloads in canonical Markdown.
@@ -348,6 +340,7 @@ Markdown safety
 structured data
 sitemap/llms exact parity
 Manage authorization
+Git publication proof
 static generation
 external staging noindex
 prompt-draft.ir untouched
@@ -368,16 +361,18 @@ DO NOT create fake localized Blog routes.
 DO NOT expose draft/unpublished Article URLs in sitemap/llms.
 DO NOT recreate Blog indexability policy outside the Article contract.
 DO NOT let Blog SEO override staging NUXT_PUBLIC_NOINDEX=true.
+DO NOT add canonical write semantics before the Git publication adapter.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
 ## Current next action
 
 ```text
-Verify 4E.3:
-pnpm test:blog-inventory
+Verify 4E.4:
+pnpm test:blog-manage
+-> pnpm api
 -> pnpm frontend
--> pnpm verify:blog-inventory-static
+-> founder EN/FA Blog Manage UI smoke
 ```
 
-After founder acceptance proceed to 4E.4.
+After explicit 4E.4 acceptance proceed to 4E.5.
