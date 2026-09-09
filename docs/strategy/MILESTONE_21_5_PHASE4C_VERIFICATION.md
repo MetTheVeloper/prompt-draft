@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 ACCEPTED / 4C.5 ACCEPTED / 4C.6 ACCEPTED / 4C.7 NEXT**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1–4C.7 ACCEPTED / 4C.8 FINAL VERIFICATION IN PROGRESS**
 
 Date: 2026-09-09
 
@@ -23,6 +23,8 @@ docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
 docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
 docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
+docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
 Operational workflow:
@@ -46,9 +48,9 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C.4 Public Creator policy/API              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.5 Public Creator SSR route               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.6 Creator SEO/indexability               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.7 Prompt/Discovery attribution           -> NEXT
-4C.8 aggregate/staging acceptance           -> NOT STARTED
-Phase 21.5.4C                               -> IN PROGRESS / NOT ACCEPTED
+4C.7 Prompt/Discovery attribution           -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.8 aggregate/staging acceptance           -> IMPLEMENTED / FINAL VERIFICATION PENDING
+Phase 21.5.4C                               -> IN PROGRESS / NOT YET FINAL-ACCEPTED
 ```
 
 ---
@@ -92,27 +94,14 @@ XP
 Goin/balance
 ```
 
-Public Creator accessibility:
+Public Creator policy:
 
 ```text
-account exists + active
-AND Creator status == approved
-AND canonical username
+accessible = account exists + active + Creator approved + canonical username
+indexable = accessible + complete Creator profile
+discoverable = indexable
+published Prompt count = signal only / never a Creator gate
 ```
-
-Public Creator indexability:
-
-```text
-accessible && creatorProfileComplete
-```
-
-Discoverability V1:
-
-```text
-indexable
-```
-
-Published Prompt count is never a Creator eligibility requirement.
 
 ---
 
@@ -132,7 +121,7 @@ creator_account_events
 pure Creator readiness/normalization module
 ```
 
-Founder-local evidence 2026-09-09:
+Founder-local evidence:
 
 ```text
 db:schema -> migrations through 027 PASS
@@ -157,50 +146,30 @@ Result:
 
 ## 4. 4C.2 — Authenticated Profile Management
 
-### Accepted backend contract
+Accepted backend/frontend surface:
 
 ```text
 GET /api/profile
 PUT /api/profile
-```
-
-Verified behavior:
-
-```text
-owner authentication required
-ordinary account may save incomplete extended profile
-Save changes never creates Creator state
-existing /api/auth/profile/complete fill-only semantics preserved
-username/email identity validation + uniqueness
-approved/suspended Creator username rename blocked until alias support
-approved/suspended Creator cannot silently remove required Creator profile fields
-canonical birthday DATE
-controlled taxonomy skills
-max-5 http/https links
-custom location text with provider-independent storage contract
-existing avatar/cover flows retained
-```
-
-### Accepted frontend contract
-
-```text
 /manage/profile
 /fa/manage/profile
 Edit profile in avatar menu
 ```
 
-Verified fields/UI:
+Verified contract includes:
 
 ```text
-avatar + cover
-username + private email
-ScreenName EN/FA
-Bio EN/FA
-Article EN/FA Markdown source
-Birthday
-Skills
-Links
-Location
+ordinary accounts may save incomplete profiles
+Save changes never creates Creator state
+username/email validation + uniqueness
+approved/suspended Creator username rename remains alias-gated
+approved/suspended Creator cannot silently remove required Creator profile fields
+private canonical birthday DATE
+controlled skill taxonomy
+max-5 HTTP/HTTPS links
+provider-independent custom location text
+avatar/cover media flows
+localized ScreenName/Bio/Article
 Creator readiness/status
 ```
 
@@ -220,36 +189,13 @@ profile-management -> 8/8 PASS
 Creator foundation -> 7/7 PASS
 Public Prompt regression -> 10/10 PASS
 frontend production build PASS
+browser save/reload/identity/skills/birthday/media smoke PASS
 ```
 
-Founder browser evidence:
+Accepted V1 deferral:
 
 ```text
-profile load/save persists
-incomplete regular profile may save
-duplicate username rejected
-localized ScreenName/Bio/Article persists
-custom location persists
-controlled grouped skills persist
-Gregorian/Jalali birthday UX verified
-avatar + cover flows verified
-```
-
-Accepted V1 deferrals:
-
-```text
-location suggestion provider -> later; custom location text valid V1
-sanitized Markdown rendering -> 4C.5
-```
-
-Post-acceptance profile polish on 2026-09-09:
-
-```text
-profile menu redesigned around auto-upload media
-Creator label/display-name behavior updated
-referral/Goin controls compacted
-email editor visibility reinforced beside username using project el-grid
-email remains private and uses existing PUT /api/profile identity contract
+provider-backed location suggestions -> later; custom location text accepted for V1
 ```
 
 Result:
@@ -262,21 +208,13 @@ Result:
 
 ## 5. 4C.3 — Creator Application + Admin Review
 
-Detailed implementation record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
-```
-
-### Accepted backend contract
-
-Owner request:
+Accepted owner request:
 
 ```text
 POST /api/creator-account/request
 ```
 
-Admin review:
+Accepted admin review:
 
 ```text
 GET  /api/admin/creators
@@ -300,11 +238,11 @@ super_admin -> wildcard
 Lifecycle:
 
 ```text
-none      -> pending / requested
-rejected  -> pending / reapplied
-pending   -> idempotent pending
-pending   -> approved | rejected by reviewer
-approved  -> suspended
+none -> pending/requested
+rejected -> pending/reapplied
+pending -> idempotent pending
+pending -> approved | rejected
+approved -> suspended
 suspended -> approved
 ```
 
@@ -313,96 +251,20 @@ Safety:
 ```text
 request readiness recalculated from saved DB state
 approval readiness recalculated again inside transaction
-self-review backend-blocked
-real transitions append creator_account_events
-admin transitions append admin_audit_log
-optional review note bounded to 2000 chars
+self-review blocked backend + UI
+lifecycle events + admin audit records
+bounded optional review notes
 ```
 
-### Accepted frontend contract
-
-Owner Profile surface:
-
-```text
-Request Creator Account
-incomplete/ready state
-pending state
-rejected + reapply state
-approved state
-suspended state
-saved-profile-only request semantics
-```
-
-`/manage/users`:
-
-```text
-Creator Applications panel
-Pending default filter
-All/Pending/Approved/Rejected/Suspended filters
-username/email search
-Creator status colors without status markers in the list column
-review modal
-EN/FA profile review
-skills/links/location review
-optional review note
-lifecycle event history
-approve/reject/suspend/restore actions
-self-review UI guard
-article preview uses var(--normalText)
-```
-
-### Final founder-local automated evidence 2026-09-09
+Founder-local final evidence:
 
 ```text
 test:generated-username -> 3/3 PASS
 test:creator-account -> 15/15 PASS
 test:profile-management -> 8/8 PASS
 frontend Docker production build -> PASS
-```
-
-The final Creator account suite includes:
-
-```text
-creatorAccount.test.mjs
-creatorAdminIndex.test.mjs
-```
-
-and verifies:
-
-```text
-request/reapply/pending idempotency
-state-safe admin transitions
-creators.manage separation from users.manage
-review-note normalization + limits
-complete/incomplete request behavior
-approval readiness recheck
-lifecycle + audit writes
-self-review backend block
-approval failure after profile becomes incomplete
-admin list status/search/limit contract
-review-safe account metadata + pagination
-event history ordering/admin-only projection
-```
-
-### Final founder browser evidence 2026-09-09
-
-Founder manually exercised and reported all Creator states and review flows working, including:
-
-```text
-request -> pending
-Creator Applications pending list
-review modal localized content
-self-review blocked
-second-account review
-approve Creator
-approved filter/state
-Creator profile menu label behavior
-```
-
-Founder statement after final smoke:
-
-```text
-همه چی درسته هیچ خطایی نداریم
+request/pending/reject/reapply/approve/suspend/restore browser flows PASS
+self-review block PASS
 ```
 
 Result:
@@ -413,26 +275,9 @@ Result:
 
 ---
 
-## 6. 4C.4 — Public Creator Policy + Sanitized Backend Projection
+## 6. 4C.4 — Public Creator Policy + Sanitized API
 
-Detailed implementation record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
-```
-
-### Accepted policy
-
-```text
-accessible = account exists + active + Creator approved + canonical username
-indexable = accessible + complete Creator profile
-discoverable = indexable
-hasPublishedPrompt = signal only; never a gate
-```
-
-Internal policy reasons/signals remain server-only.
-
-### Accepted API
+Accepted API:
 
 ```text
 GET /api/public/creators/:username
@@ -445,104 +290,46 @@ approved/active/canonical -> 200
 none/pending/rejected/Creator-suspended/account-inactive -> generic 404
 invalid/noncanonical username -> generic 404
 non-GET -> 405 Allow GET
-username-keyed; browser never resolves UUID first
 ```
 
-### Accepted public DTO
+Positive public DTO includes only:
 
 ```text
 identity.username
-identity.screenName EN/FA
-identity.bio EN/FA
-identity.article EN/FA Markdown source
-identity.avatarUrl
-identity.cover safe URLs/dimensions
-identity.skills active localized taxonomy only
-identity.links supported HTTP/HTTPS links only
-identity.location.text only
-canonical published Archive publication summaries
-safe policy.indexable/discoverable outcomes
+localized ScreenName/Bio/Article
+safe avatar/cover
+active localized skills
+safe public links
+location.text only
+canonical published Archive summaries
+policy.indexable/discoverable
 ```
 
-Explicitly absent:
+Explicitly excluded:
 
 ```text
 internal UUID
 email
 birthday
-role
-account status
-Creator lifecycle status/reviewer/review note
-XP
-Goin/balance
-permissions
-sessions
-referrals
+role/account status
+Creator review/lifecycle internals
+XP/Goin
+permissions/sessions/referrals
 private Drafts
-owner-only stats
 storage keys
 location provider metadata
 admin audit data
-raw Prompt bodies
-variants
-source Draft/User identifiers
+raw Prompt bodies/variants/source ids
 ```
 
-Publication source:
-
-```text
-prompt_archive_items.source_user_id = internal Creator user id
-status = published
-public_id IS NOT NULL
-```
-
-Internal UUID is used for the join only and never serialized.
-
-### Founder-local evidence 2026-09-09
+Founder-local evidence:
 
 ```text
 test:public-creator -> 10/10 PASS
-test:public-prompt  -> 10/10 PASS
+test:public-prompt -> 10/10 PASS
 frontend Docker production build -> PASS
-```
-
-Focused 4C.4 coverage proves:
-
-```text
-public policy state matrix
-zero-publication Creator policy
-approved-incomplete accessible/noindex distinction
-canonical publication summary mapping
-positive DTO allowlist
-private sentinel leakage scan
-forbidden SQL-column scan
-published-only Archive source contract
-none/pending/rejected/suspended generic 404 behavior
-noncanonical username no-query behavior
-GET/405/unrelated handler behavior
-```
-
-Founder staging API smoke:
-
-```text
-GET https://api.grassic.ir/api/public/creators/grassias
--> 200 / ok=true
--> localized ScreenName/Bio/Article
--> active skills
--> safe website link
--> location.text only
--> publications=[]
--> policy.indexable=true
--> policy.discoverable=true
--> no observed private denylist fields
-```
-
-This also proves an approved zero-publication Creator remains a valid public Creator.
-
-Founder explicit acceptance:
-
-```text
-4C.4 رو ببند بریم سراغ 4C.5
+GET https://api.grassic.ir/api/public/creators/grassias -> 200 sanitized projection
+publications=[] with indexable=true/discoverable=true -> zero-publication Creator contract proven
 ```
 
 Result:
@@ -555,128 +342,36 @@ Result:
 
 ## 7. 4C.5 — Public Creator SSR
 
-Detailed implementation record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
-```
-
-### Accepted canonical routes
+Accepted canonical routes:
 
 ```text
 /creator/:username
 /fa/creator/:username
 ```
 
-Nuxt route:
+Accepted behavior:
 
 ```text
-app/pages/creator/[username].vue
-```
-
-### Accepted SSR/browser contract
-
-```text
-app/composables/usePublicCreator.ts
-```
-
-Behavior:
-
-```text
-SSR fetches only GET /api/public/creators/:username
-server uses apiBaseInternal
-browser uses public apiBase
-positive DTO normalization only
-API 404 -> real Nuxt 404
-unexpected API failure -> 502
-mixed-case/noncanonical username -> locale-preserving 301 canonical redirect
-```
-
-Approved/suspended Creator username editing remains locked, so no historical alias can currently be created accidentally. `creator_username_aliases` + permanent old-name redirects remain a precondition before that lock may ever be relaxed.
-
-### Accepted public presentation
-
-```text
-localized ScreenName/Bio/Article
-avatar + cover/fallback
-@username
-location.text only
-localized active skills
-safe public links
-responsive publication summaries
+SSR loads only sanitized Public Creator API
+real 404 for unavailable identity
+locale-preserving permanent canonical username redirect
+localized EN/FA presentation
+LTR/RTL
+avatar/cover/fallback
+skills/links/location
+sanitized Markdown Article
 zero-publication empty state
-EN LTR / FA RTL
-no owner/admin Creator controls
+no owner/admin controls
 ```
 
-Publication cards are shown only when the publication advertises the active locale and link only to canonical localized Public Prompt routes.
-
-### Accepted sanitized Markdown
-
-```text
-app/utils/publicCreatorMarkdown.ts
-```
-
-Contract:
-
-```text
-raw HTML escaped
-javascript: rejected
-data: rejected
-HTTP/HTTPS + safe root-relative link/image URLs only
-external links -> rel="ugc noopener noreferrer"
-supported headings/paragraphs/emphasis/code/lists/quotes/hr/links/images
-article source never bound directly to v-html
-```
-
-### Localization
-
-```text
-i18n/locales/public-creator.en.ts
-i18n/locales/public-creator.fa.ts
-```
-
-registered through:
-
-```text
-i18n/i18n.config.ts
-```
-
-### Founder-local automated evidence 2026-09-09
+Founder-local evidence:
 
 ```text
 pnpm test:public-creator-web -> 14/14 PASS
-pnpm locale:check -> Missing fallback EN 0 / Public Creator FA missing 0 / extra 0
-docker compose exec api npm run test:public-creator -> 10/10 PASS
-frontend Docker production build -> PASS
-```
-
-The runtime localization gate was repaired during verification to validate the actual merged Nuxt i18n messages rather than the obsolete source-fragment shape. Real pre-existing EN fallback gaps reported by that runtime check were filled rather than suppressing the gate.
-
-### Founder staging/browser evidence 2026-09-09
-
-Founder manually verified:
-
-```text
-/creator/grassias renders the EN Creator page
-/fa/creator/grassias renders the FA Creator page
-EN LTR and FA RTL presentation
-light + dark theme presentation
-localized ScreenName/Bio/Article/skills
-sanitized Markdown headings/bold/link/image rendering
-zero-publication Creator page remains valid
-public website + location display
-mixed-case canonical redirect behavior
-unavailable username -> real 404
-no Edit profile / Request Creator / admin-review controls on the public page
-```
-
-Founder supplied browser screenshots for EN/FA and 404 states and explicitly reported all smoke checks correct.
-
-Founder explicit acceptance:
-
-```text
-همه چی درسته 4C.5 تاییده.
+pnpm locale:check -> fallback EN 0 / Public Creator FA missing 0 / extra 0
+backend public Creator -> 10/10 PASS
+frontend production build PASS
+EN/FA light/dark browser smoke + Markdown + 404 PASS
 ```
 
 Result:
@@ -687,74 +382,31 @@ Result:
 
 ---
 
-## 8. 4C.6 — Creator SEO/indexability gate
-
-Detailed implementation record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
-```
+## 8. 4C.6 — Creator SEO + Indexability
 
 Accepted projection:
 
 ```text
 localized ScreenName -> title / OG / Twitter title
-localized Bio        -> meta / OG / Twitter description
-localized Article    -> existing long-form authoritative body
-self canonical through usePublicSeo
-reciprocal EN/FA hreflang
+localized Bio -> meta / OG / Twitter description
+self canonical
+reciprocal en-US/fa-IR hreflang
 x-default -> EN/default
-cover -> avatar -> PWA fallback social image
-server-authoritative creator.policy.indexable -> per-page noindex
-NUXT_PUBLIC_NOINDEX global staging switch still wins
-ProfilePage JSON-LD with Person mainEntity
-safe public links -> Person.sameAs
-localized controlled skills -> Person.knowsAbout
+cover -> avatar -> PWA social image fallback
+creator.policy.indexable -> route noindex decision
+NUXT_PUBLIC_NOINDEX staging override wins
+ProfilePage JSON-LD + Person mainEntity
+safe links -> sameAs
+localized controlled skills -> knowsAbout
 ```
 
-Privacy boundary:
-
-```text
-no email
-no birthday
-no role/account status
-no Creator lifecycle/review fields
-no UUID
-no XP/Goin
-no sessions/permissions/referrals
-no private Draft/storage/provider/admin data
-```
-
-Location display text remains visible but is not projected as verified residence/home-location structured data.
-
-Focused files:
-
-```text
-app/utils/publicCreatorSeo.ts
-app/pages/creator/[username].vue
-scripts/public-creator-seo.test.ts
-```
-
-Founder-local automated evidence 2026-09-09:
+Founder-local evidence:
 
 ```text
 pnpm test:public-creator-seo -> 5/5 PASS
 pnpm test:public-creator-web -> 19/19 PASS
-pnpm locale:check -> Missing fallback EN 0 / Public Creator FA missing 0 / extra 0
-```
-
-Founder staging source/head smoke verified on both EN and FA Creator routes:
-
-```text
-localized title + description
-self canonical
-reciprocal en-US/fa-IR hreflang
-x-default -> EN/default
-localized OG/Twitter title + description + image
-ProfilePage JSON-LD with Person mainEntity
-safe public sameAs + knowsAbout projection
-no observed private fields in JSON-LD
-NUXT_PUBLIC_NOINDEX=true preserved staging noindex
+pnpm locale:check -> fallback EN 0 / Public Creator FA missing 0 / extra 0
+EN/FA staging source/head canonical/hreflang/OG/Twitter/JSON-LD/noindex smoke PASS
 ```
 
 Founder explicit acceptance:
@@ -766,53 +418,133 @@ Founder explicit acceptance:
 Result:
 
 ```text
-4C.6 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.6 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 ```
 
 ---
 
-## 9. 4C.7 — Prompt/Discovery attribution gate
+## 9. 4C.7 — Prompt / Discovery Creator Attribution
 
-4C.7 is now unblocked because 4C.4–4C.6 are founder-accepted.
+Detailed record:
 
 ```text
-[ ] Public Prompt attribution only for approved accessible Creator
-[ ] source_user_id remains provenance source
-[ ] published Prompt owner without Creator remains unattributed
-[ ] legacy/provenance-less Prompt remains valid
-[ ] no UUID in browser attribution
-[ ] locale-safe Creator links
-[ ] Discovery consumes same Creator policy
-[ ] no active-user-is-public-creator heuristic survives
-[ ] 4B protected-field regression stays green
+docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
+```
+
+Accepted attribution source/policy:
+
+```text
+prompt_archive_items.source_user_id remains authoritative provenance
+attribution requires active account + approved Creator + canonical username
+accessible Creator policy is reused; no active-user-is-Creator heuristic
+```
+
+Shared minimal public attribution:
+
+```ts
+creator: {
+  username: string
+  avatarUrl: string | null
+} | null
+```
+
+Accepted behavior:
+
+```text
+Public Prompt gains locale-safe Creator attribution link
+Home Discovery migrates owner -> creator vocabulary/policy
+Public Discovery migrates owner -> creator vocabulary/policy
+ordinary/pending/rejected/suspended/inactive/provenance-less Prompt remains public but unattributed
+no UUID/source_user_id/email/private account data in browser attribution
+no N+1 Public Creator API calls
+```
+
+Founder-local evidence 2026-09-09:
+
+```text
+docker compose exec api npm run test:creator-attribution -> 17/17 PASS
+docker compose exec api npm run test:public-creator -> 10/10 PASS
+pnpm test:creator-attribution-web -> 13/13 PASS
+pnpm test:phase4b-final -> PASS
+strict locale route audit -> 463 source files / no hazards
+pnpm locale:check -> fallback EN 0 / Public Creator FA missing 0 / extra 0
+```
+
+Founder explicit acceptance:
+
+```text
+4C.7 تایید. خیلی هم عالی
+```
+
+Result:
+
+```text
+4C.7 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
 
 ---
 
-## 10. 4C.8 — Aggregate/staging acceptance
+## 10. 4C.8 — Aggregate + Staging Acceptance
+
+Detailed record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
+```
+
+Implemented aggregate commands:
+
+```powershell
+pnpm test:phase4c-final
+pnpm frontend
+pnpm smoke:phase4c-final
+```
+
+The aggregate regression intentionally does not rebuild services. It executes all accepted Creator/profile backend suites against the current API image plus Public Creator/attribution/Phase-4B/localization frontend regressions.
+
+The final production build refreshes only the frontend service. Full `pnpm stack` is not required.
+
+The staging smoke defaults to:
+
+```text
+https://grassic.ir
+https://api.grassic.ir
+grassias
+```
+
+and refuses to target `prompt-draft.ir`.
+
+Final acceptance checklist:
 
 ```text
 [ ] aggregate 4C backend/frontend tests PASS
 [ ] Phase 4B regression PASS
 [ ] strict locale-route audit PASS
-[ ] production build PASS
-[ ] founder-local EN/FA browser smoke PASS
+[ ] production frontend Docker build PASS
+[ ] founder-local EN/FA browser sanity remains PASS
 [ ] grassic.ir Creator SSR smoke PASS
 [ ] api.grassic.ir Creator API smoke PASS
-[ ] pending/rejected/suspended public 404 fixtures PASS
 [ ] approved Creator fixture PASS
 [ ] zero-publication approved Creator fixture PASS
-[ ] serialized SSR private-key leakage -> zero
+[ ] generic unavailable Creator -> 404
+[ ] negative Creator lifecycle state matrix PASS through accepted backend fixtures
+[ ] serialized public API/SSR private-key leakage -> zero observed
 [ ] global staging noindex preserved
 [ ] prompt-draft.ir untouched
-[ ] founder explicit Phase 4C acceptance
+[ ] founder explicit final Phase 4C acceptance
+```
+
+Current result:
+
+```text
+4C.8 -> IMPLEMENTED / FINAL FOUNDER-LOCAL + STAGING VERIFICATION PENDING
 ```
 
 ---
 
 ## 11. Public privacy regression denylist
 
-Every public Creator/Prompt/Discovery DTO and SSR serialization check must scan for at least:
+Every public Creator/Prompt/Discovery DTO and SSR serialization check must protect against at least:
 
 ```text
 email
@@ -835,7 +567,7 @@ coordinates
 admin audit metadata
 ```
 
-Positive allowlists remain the primary boundary; denylist tests are defense in depth.
+Positive allowlists remain the primary boundary; denylist checks are defense in depth.
 
 ---
 
@@ -846,11 +578,11 @@ Positive allowlists remain the primary boundary; denylist tests are defense in d
 + 4C.2 accepted
 + 4C.3 accepted
 + 4C.4 accepted
-+ 4C.5 founder-local verified/accepted
-+ 4C.6 founder-local verified/accepted
-+ 4C.7 founder-local verified/accepted
++ 4C.5 accepted
++ 4C.6 accepted
++ 4C.7 accepted
 + 4C.8 aggregate local/staging gates PASS
-+ founder explicit final acceptance
++ founder explicit final Phase 4C acceptance
 = Phase 21.5.4C DONE / ACCEPTED
 ```
 
