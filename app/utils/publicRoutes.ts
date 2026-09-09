@@ -10,6 +10,14 @@ export function normalizePublicCreatorUsername(value: string) {
   return normalized
 }
 
+export function normalizePublicBlogSlug(value: string) {
+  const normalized = normalizeSlug(value)
+  if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(normalized) || normalized.length > 100) {
+    throw new Error('Invalid public Blog slug')
+  }
+  return normalized
+}
+
 export const PUBLIC_ROUTE_PATHS = {
   home: '/',
   guide: '/guide',
@@ -35,7 +43,5 @@ export function publicCreatorPath(username: string) {
 }
 
 export function publicBlogPostPath(slug: string) {
-  const normalized = normalizeSlug(slug)
-  if (!normalized) throw new Error('Invalid public Blog slug')
-  return `/blog/${encodeURIComponent(normalized)}`
+  return `/blog/${encodeURIComponent(normalizePublicBlogSlug(slug))}`
 }
