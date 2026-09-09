@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B DONE + ACCEPTED / NEXT 4C PUBLIC CREATOR**
+Status: **IN PROGRESS / 4A + 4B + 4C DONE + ACCEPTED / NEXT 4D SITEMAP + ROBOTS + DISCOVERY MIGRATION**
 
-Date: 2026-09-08
+Date: 2026-09-09
 
 Branch:
 
@@ -31,6 +31,9 @@ docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
+docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
 ---
@@ -82,6 +85,7 @@ sanitized GET /api/discover projection
 public GET /api/archive list/catalog projection
 protected GET /api/archive/:id detail
 accepted public GET /api/public/prompts/:id projection
+accepted public GET /api/public/creators/:username projection
 existing Arvan Object Storage media pipeline
 ```
 
@@ -94,8 +98,8 @@ existing Arvan Object Storage media pipeline
 ```text
 21.5.4A — SEO Contracts & Route Semantics                     DONE / ACCEPTED
 21.5.4B — Public Prompt Architecture                          DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4C — Public Creator Architecture + Indexability Policy   NEXT
-21.5.4D — Sitemap / Robots / Discovery Migration              NOT STARTED
+21.5.4C — Public Creator Architecture + Indexability Policy   DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+21.5.4D — Sitemap / Robots / Discovery Migration              NEXT
 21.5.4E — Blog V1                                             NOT STARTED
 21.5.4F — SEO Integration / Verification / Legacy Retirement  NOT STARTED
 ```
@@ -106,7 +110,7 @@ Implementation order remains intentional:
 4A -> 4B -> 4C -> 4D -> 4E -> 4F
 ```
 
-Shared platform contracts come before Creator, sitemap and Blog route-specific implementation.
+Shared platform contracts come before sitemap and Blog route-specific implementation.
 
 ---
 
@@ -224,6 +228,7 @@ public tags
 public model/presentation metadata
 public preview media
 optional public-safe Telegram message id
+minimal approved Creator attribution after 4C
 ```
 
 It does not expose:
@@ -236,7 +241,7 @@ private Drafts
 source/private Draft payload
 storage keys
 private account/economy/viewer/permission state
-creator attribution before 4C policy
+internal source user/draft ids
 ```
 
 Existing product route remains protected:
@@ -307,108 +312,186 @@ Final aggregate regression:
 
 ```text
 pnpm test:phase4b-final -> PASS
-strict route audit -> PASS / 447 source files / zero hazards
 ```
 
 Final staging smoke:
 
 ```text
 pnpm smoke:phase4b-final -> PASS
-public Prompt API 200
-invalid public Prompt API 404
-protected Archive API 401
-EN/FA Public Prompt SSR 200
-EN/FA Discovery SSR 200
-SEO / noindex / protected-key leakage checks PASS
 ```
 
 `prompt-draft.ir` remained untouched and staging `NUXT_PUBLIC_NOINDEX=true` remained authoritative.
 
 ---
 
-## 7. Public Creator direction — ACTIVE FOR 4C
+## 7. 21.5.4C — Public Creator Architecture + Indexability Policy
 
-Canonical target route:
+Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09**
+
+Canonical records:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
+docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
+docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
+docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
+docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
+```
+
+Accepted model:
+
+```text
+users.role remains user|admin|super_admin
+Creator is a separate explicit reviewed public-identity lifecycle
+profile completion never auto-promotes
+publishing a Prompt never auto-promotes
+Creator request requires complete localized Creator profile
+admin/super_admin review through creators.manage
+self-review blocked
+```
+
+Accepted Creator lifecycle:
+
+```text
+none
+pending
+approved
+rejected
+suspended
+```
+
+Accepted Creator application requirements:
+
+```text
+active account
+canonical username
+screenName EN + FA
+bio EN + FA
+article EN + FA
+>= 1 active controlled taxonomy skill
+```
+
+Explicitly not required:
+
+```text
+avatar
+cover
+birthday
+links
+location
+published Prompt count
+XP
+Goin/balance
+```
+
+Accepted public Creator policy:
+
+```text
+accessible = account exists + active + Creator approved + canonical username
+indexable = accessible + complete Creator profile
+discoverable = indexable
+published Prompt count = signal only / never a gate
+```
+
+Accepted canonical routes:
 
 ```text
 /creator/:username
+/fa/creator/:username
 ```
 
-`/user` remains the account/product surface and is not the canonical Creator SEO URL.
-
-Public Creator V1 exposes only intentionally public identity/publication information.
-
-Never expose through Creator SEO:
+Accepted public API:
 
 ```text
+GET /api/public/creators/:username
+```
+
+Public Creator positive allowlist is limited to:
+
+```text
+canonical username
+localized ScreenName/Bio/Article
+safe avatar/cover
+active localized taxonomy skills
+safe HTTP/HTTPS public links
+location.text only
+canonical published Archive summaries
+policy.indexable/discoverable
+```
+
+Explicitly excluded:
+
+```text
+internal UUID
 email
-balance / Goin state
-sessions
-permissions
+birthday
+role/account status
+Creator lifecycle/review metadata
+XP/Goin
+permissions/sessions/referrals
 private Drafts
-owner-only stats/counts
+storage keys
+location provider metadata
+admin audit data
+raw Prompt bodies/variants/source ids
 ```
 
-XP/reputation is excluded from initial public Creator V1 unless a later explicit product decision promotes it.
+Accepted Public Creator SSR/SEO behavior:
 
-4C must begin with an audit of current profile/user/publication/moderation fields before a Creator public DTO is locked.
+```text
+localized EN/FA rendering
+LTR/RTL
+sanitized Markdown Article
+self canonical
+reciprocal EN/FA hreflang
+x-default -> EN/default
+localized OG/Twitter metadata
+ProfilePage JSON-LD + Person mainEntity
+policy-driven noindex
+NUXT_PUBLIC_NOINDEX staging override always wins
+real 404 for unavailable Creator
+mixed-case username -> permanent localized canonical redirect
+```
+
+Accepted Prompt/Discovery attribution policy:
+
+```text
+prompt_archive_items.source_user_id remains internal provenance
+only accessible approved Creator becomes public attribution
+ordinary/pending/rejected/suspended/inactive/provenance-less owner remains public but unattributed
+minimal browser attribution = { username, avatarUrl } | null
+no UUID/source_user_id/email/private account data
+Home/Public Discovery use Creator vocabulary instead of active-user owner heuristic
+```
+
+Final aggregate evidence:
+
+```text
+pnpm test:phase4c-final -> PASS
+pnpm frontend -> PASS
+pnpm smoke:phase4c-final -> PASS
+strict route audit -> 463 source files / zero hazards
+runtime localization -> fallback EN 0 / Creator FA missing 0 / extra 0
+Creator API/SSR EN+FA / 301 / 404 / privacy / noindex staging smoke -> PASS
+prompt-draft.ir not targeted
+```
+
+Founder explicit final acceptance:
+
+```text
+Phase 4C تایید
+```
 
 ---
 
-## 8. Creator server-authoritative indexability / quality policy
-
-Creator accessibility and indexability are separate concepts.
-
-Accepted default direction:
-
-```text
-valid public Creator but quality policy not satisfied
-  -> accessible
-  -> noindex
-  -> excluded from indexable sitemap
-  -> excluded from future public discovery eligibility where appropriate
-```
-
-States that should normally map to unavailable/404 semantics instead of thin-content noindex include:
-
-```text
-nonexistent creator
-removed/deleted identity
-public access prohibited by moderation/state
-```
-
-Target conceptual policy output:
-
-```text
-accessible
-indexable
-discoverable
-reasons[]
-signals{}
-```
-
-Candidate signals:
-
-```text
-meaningful public content
-content substance/completeness
-public identity completeness
-publication visibility/quality state
-moderation/spam/abuse state
-duplicate/thin/low-value signals
-```
-
-No arbitrary count/score threshold is approved yet. Exact thresholds/weights remain TBD until 4C audit/design.
-
-The same server-authoritative result should drive route robots metadata, sitemap inclusion and future public Creator discovery behavior.
-
----
-
-## 9. Discovery migration direction
+## 8. Discovery migration direction — NEXT FOR 4D
 
 `/discover/[slug]` already uses request-time SSR-aware loading through the sanitized public discovery API and consumes `usePublicSeo`.
 
-Completed by 4A/4B:
+Completed by 4A–4C:
 
 ```text
 locale-aware metadata/canonical behavior
@@ -418,20 +501,23 @@ canonical lowercase/trailing-slash permanent redirect behavior
 Prompt acquisition links -> localized /prompt/:id
 public preview-media cinema/background
 SSR first-image fallback
+approved Creator attribution -> localized /creator/:username
+no active-user-is-public-creator heuristic
 ```
 
-4D still needs to:
+4D now needs to:
 
 ```text
 extend authoritative OG/structured data where truthful
-migrate Creator links to /creator/:username after 4C exists
 integrate Discovery routes with shared sitemap architecture
-remove/reduce old post-generate SEO snapshot dependency
+make sitemap eligibility consume accepted Prompt/Creator policy outputs
+replace/reduce Milestone-21 static SEO snapshot dependencies
+migrate robots/sitemap runtime behavior without weakening staging noindex
 ```
 
 ---
 
-## 10. Robots + sitemap direction
+## 9. Robots + sitemap direction — 4D TARGET
 
 The current static `public/robots.txt` and `scripts/generate-public-seo.ts` sitemap behavior are Milestone 21-era compatibility pieces, not the target Phase 4 architecture.
 
@@ -441,12 +527,14 @@ Target sitemap inventory:
 static public acquisition routes
 + public Prompt canonical routes
 + eligible Creator canonical routes
-+ published Blog routes
++ published Blog routes once 4E exists
 ```
 
 Sitemap inclusion must use the same authoritative eligibility rules used by route metadata. It must not create an independent second definition of `indexable`.
 
 Accepted 4A server policy already provides explicit application-route noindex response headers in both locale spaces.
+
+Accepted 4C Creator policy already supplies the authoritative Creator `indexable`/`discoverable` result.
 
 Staging protection remains stronger than route-level SEO:
 
@@ -458,7 +546,7 @@ NUXT_PUBLIC_NOINDEX=true
 
 ---
 
-## 11. Blog V1 accepted architecture
+## 10. Blog V1 accepted architecture
 
 Public routes:
 
@@ -518,7 +606,7 @@ Exact Markdown/frontmatter representation is chosen in 4E. Metadata must not be 
 
 ---
 
-## 12. Blog authoring in Manage
+## 11. Blog authoring in Manage
 
 Target management route:
 
@@ -555,7 +643,7 @@ The admin authoring UI must produce the same clean repository article contract c
 
 ---
 
-## 13. Blog repository + Arvan resilience architecture
+## 12. Blog repository + Arvan resilience architecture
 
 Repository-backed does **not** mean GitHub is queried at request time.
 
@@ -587,7 +675,7 @@ Emergency publication may use Arvan while Git reconciliation is pending, but ide
 
 ---
 
-## 14. Blog media architecture
+## 13. Blog media architecture
 
 Do not embed Blog images as base64 inside Markdown.
 
@@ -617,7 +705,7 @@ caption
 
 ---
 
-## 15. Operational storage lesson retained
+## 14. Operational storage lesson retained
 
 The existing Arvan/AWS-compatible upload path uses SigV4 and therefore depends on correct system time.
 
@@ -632,7 +720,7 @@ This is an environment/runtime diagnostic note, not a Phase 4 blocker.
 
 ---
 
-## 16. Legacy `generate-public-seo` retirement
+## 15. Legacy `generate-public-seo` retirement
 
 `scripts/generate-public-seo.ts` is a historical Milestone 21 workaround that performs static HTML head patching, snapshot injection, sitemap generation and robots augmentation.
 
@@ -649,7 +737,7 @@ no duplicate SEO source of truth
 
 ---
 
-## 17. Verification discipline
+## 16. Verification discipline
 
 Phase 4 is not accepted merely because routes render.
 
@@ -688,29 +776,30 @@ Founder verification remains required before each slice is accepted and before P
 
 ---
 
-## 18. Current next action
+## 17. Current next action
 
-4A and 4B are closed and accepted.
+4A, 4B and 4C are closed and founder-accepted.
 
 Proceed to:
 
 ```text
-21.5.4C — Public Creator Architecture + Indexability Policy
+21.5.4D — Sitemap / Robots / Discovery Migration
 ```
 
-Immediate 4C audit/design questions:
+Immediate 4D audit/design questions:
 
 ```text
-1. identify the authoritative user/profile/publication fields that may be public
-2. separate public Creator identity from private account identity
-3. define /creator/:username lookup, normalization and 404 semantics
-4. define suspension/deletion/moderation behavior
-5. define server-authoritative accessible/indexable/discoverable policy output
-6. define authoritative EN/FA Creator localization availability
-7. define canonical/hreflang/OG/structured-data inputs from public-safe fields only
-8. define Prompt <-> Creator linking without weakening accepted 4B projection boundaries
-9. define sitemap/discovery eligibility inputs for 4D without implementing a second policy source
-10. add narrow contract tests before implementation acceptance
+1. inventory current public/robots.txt, generate-public-seo.ts and any sitemap outputs
+2. identify runtime vs generate-time sitemap consumers and deployment assumptions
+3. define one authoritative sitemap item contract for static routes, Public Prompts and approved indexable Creators
+4. consume accepted Creator policy.indexable rather than re-deriving Creator eligibility
+5. consume authoritative Prompt locale availability rather than creating fallback entries
+6. define EN/FA sitemap alternate behavior and xhtml hreflang policy
+7. define staging robots/sitemap behavior under NUXT_PUBLIC_NOINDEX=true
+8. preserve application/private noindex/X-Robots-Tag rules from 4A
+9. audit Discovery structured data and sitemap inclusion against sanitized public DTO only
+10. define retirement/migration path for generate-public-seo.ts without breaking static-generate compatibility prematurely
+11. add narrow contract tests before implementation acceptance
 ```
 
-Do not begin 4D until 4C is implemented, founder-verified and explicitly accepted.
+Do not begin 4E until 4D is implemented, founder-verified and explicitly accepted.
