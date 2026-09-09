@@ -26,7 +26,7 @@ const dynamicInventory: PublicApiInventory = {
   ],
 }
 
-test('shared inventory includes static, Discovery, Prompt and indexable Creator canonical routes', () => {
+test('shared inventory includes static, Discovery, Blog, Prompt and indexable Creator canonical routes', () => {
   const inventory = buildPublicUrlInventory({ dynamicInventory })
   const paths = inventory.map(resource => resource.canonicalPath)
 
@@ -37,6 +37,8 @@ test('shared inventory includes static, Discovery, Prompt and indexable Creator 
     '/fa/guide',
     '/discover/portrait-photography',
     '/fa/discover/portrait-photography',
+    '/blog',
+    '/fa/blog',
     '/prompt/10',
     '/fa/prompt/10',
     '/fa/prompt/11',
@@ -89,6 +91,8 @@ test('sitemap projection contains only canonical URLs from the shared inventory'
   const inventory = buildPublicUrlInventory({ dynamicInventory })
   const sitemap = renderSitemapXml(inventory, 'https://example.test')
 
+  assert.match(sitemap, /<loc>https:\/\/example\.test\/blog<\/loc>/)
+  assert.match(sitemap, /<loc>https:\/\/example\.test\/fa\/blog<\/loc>/)
   assert.match(sitemap, /<loc>https:\/\/example\.test\/prompt\/10<\/loc>/)
   assert.match(sitemap, /<loc>https:\/\/example\.test\/fa\/creator\/indexable\.creator<\/loc>/)
   assert.equal(sitemap.includes('/prompts?id='), false)
