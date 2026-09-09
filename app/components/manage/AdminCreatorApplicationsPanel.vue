@@ -238,8 +238,7 @@ onBeforeUnmount(() => {
         <el-text
           :size="10"
           :weight="800"
-          :color="statusColor(creator.creatorStatus)"
-          :marker="`${statusColor(creator.creatorStatus)}10`">
+          :color="statusColor(creator.creatorStatus)">
           {{ t(`manage.creators.statuses.${creator.creatorStatus}`) }}
         </el-text>
         <el-text :size="9">{{ formatDate(creator.requestedAt) }}</el-text>
