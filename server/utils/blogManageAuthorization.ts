@@ -77,7 +77,7 @@ export async function checkBlogManageAuthorization({
   }
 }
 
-export async function requireBlogManage(event: Parameters<typeof useRuntimeConfig>[0]) {
+export async function requireBlogManage(event: any) {
   const config = useRuntimeConfig(event)
   const result = await checkBlogManageAuthorization({
     authorization: getHeader(event, 'authorization'),
