@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C Verification Ledger
 
-Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 IMPLEMENTED / FOUNDER-LOCAL UI + INTEGRATION VERIFICATION PENDING**
+Status: **ARCHITECTURE FOUNDER-ACCEPTED / 4C.1 ACCEPTED / 4C.2 ACCEPTED / 4C.3 ACCEPTED / 4C.4 IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -16,10 +16,11 @@ Architecture source of truth:
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 ```
 
-4C.3 implementation record:
+Implementation records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
+docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
 ```
 
 Operational workflow:
@@ -39,8 +40,8 @@ No implementation slice is DONE merely because code exists. Every slice requires
 4C revised Creator/profile architecture     -> FOUNDER ACCEPTED 2026-09-09
 4C.1 Creator Profile Foundation             -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4C.2 Authenticated Profile Management       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-4C.3 Creator Application + Admin Review     -> IMPLEMENTED / FOUNDER-LOCAL UI + INTEGRATION VERIFICATION PENDING
-4C.4 Public Creator policy/API              -> NOT STARTED
+4C.3 Creator Application + Admin Review     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
+4C.4 Public Creator policy/API              -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
 4C.5 Public Creator SSR route               -> NOT STARTED
 4C.6 Creator SEO/indexability               -> NOT STARTED
 4C.7 Prompt/Discovery attribution           -> NOT STARTED
@@ -89,6 +90,28 @@ XP
 Goin/balance
 ```
 
+Public Creator accessibility:
+
+```text
+account exists + active
+AND Creator status == approved
+AND canonical username
+```
+
+Public Creator indexability:
+
+```text
+accessible && creatorProfileComplete
+```
+
+Discoverability V1:
+
+```text
+indexable
+```
+
+Published Prompt count is never a Creator eligibility requirement.
+
 ---
 
 ## 3. 4C.1 — Creator Profile Foundation
@@ -132,14 +155,14 @@ Result:
 
 ## 4. 4C.2 — Authenticated Profile Management
 
-### Backend accepted contract
+### Accepted backend contract
 
 ```text
 GET /api/profile
 PUT /api/profile
 ```
 
-Verified behavior includes:
+Verified behavior:
 
 ```text
 owner authentication required
@@ -156,7 +179,7 @@ custom location text with provider-independent storage contract
 existing avatar/cover flows retained
 ```
 
-### Frontend accepted contract
+### Accepted frontend contract
 
 ```text
 /manage/profile
@@ -179,78 +202,52 @@ Location
 Creator readiness/status
 ```
 
-### Skills taxonomy V1
-
-Migration:
+Skills taxonomy V1:
 
 ```text
 028_seed_profile_skill_taxonomy.sql
+8 active categories
+40 active skills
 ```
 
 Founder-local evidence:
 
 ```text
 test:profile-skill-taxonomy -> 4/4 PASS
-active categories -> 8
-active skills -> 40
-```
-
-Founder browser evidence confirms:
-
-```text
-EN/FA grouped skill selector works using el-multi-select group headers
-selected skills display/save correctly
-```
-
-### Birthday UX final state
-
-Founder browser evidence confirms:
-
-```text
-EN -> Gregorian year/month/day dropdowns
-FA -> Jalali year/month/day dropdowns
-both use the same one-row interaction model
-both project to one canonical stored date
-Birthday + Location card headings align to flex-start like Skills/Links
-```
-
-### Other accepted product decisions
-
-```text
-Location suggestion provider remains intentionally deferred; custom text is valid V1
-Markdown source editing is the 4C.2 requirement; sanitized rendering belongs to 4C.5
-```
-
-### 4C.2 founder-local evidence
-
-Previously reported automated evidence:
-
-```text
-frontend Docker production build PASS
-profile-management tests -> 8/8 PASS
-Creator foundation tests -> 7/7 PASS
+profile-management -> 8/8 PASS
+Creator foundation -> 7/7 PASS
 Public Prompt regression -> 10/10 PASS
-hardcoded localization candidates -> 0
+frontend production build PASS
 ```
 
-Founder browser evidence accumulated through 2026-09-09:
+Founder browser evidence:
 
 ```text
-profile loads and persists saved data
+profile load/save persists
 incomplete regular profile may save
 duplicate username rejected
-EN/FA ScreenName/Bio/Article persist
+localized ScreenName/Bio/Article persists
 custom location persists
-skill taxonomy loads, groups and persists
-EN Gregorian birthday UX verified
-FA Jalali birthday UX verified
-final card/header alignment verified
+controlled grouped skills persist
+Gregorian/Jalali birthday UX verified
+avatar + cover flows verified
 ```
 
-Founder explicit acceptance on 2026-09-09:
+Accepted V1 deferrals:
 
 ```text
-عالی الان همه چی درسته بزن بریم بعدی
+location suggestion provider -> later; custom location text valid V1
+sanitized Markdown rendering -> 4C.5
+```
+
+Post-acceptance profile polish on 2026-09-09:
+
+```text
+profile menu redesigned around auto-upload media
+Creator label/display-name behavior updated
+referral/Goin controls compacted
+email editor visibility reinforced beside username using project el-grid
+email remains private and uses existing PUT /api/profile identity contract
 ```
 
 Result:
@@ -269,7 +266,7 @@ Detailed implementation record:
 docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
 ```
 
-### Backend implemented
+### Accepted backend contract
 
 Owner request:
 
@@ -320,15 +317,7 @@ admin transitions append admin_audit_log
 optional review note bounded to 2000 chars
 ```
 
-Admin index supports:
-
-```text
-status filter
-username/email search
-opaque cursor pagination
-```
-
-### Frontend implemented
+### Accepted frontend contract
 
 Owner Profile surface:
 
@@ -349,7 +338,7 @@ Creator Applications panel
 Pending default filter
 All/Pending/Approved/Rejected/Suspended filters
 username/email search
-Creator status badges
+Creator status colors without status markers in the list column
 review modal
 EN/FA profile review
 skills/links/location review
@@ -357,100 +346,217 @@ optional review note
 lifecycle event history
 approve/reject/suspend/restore actions
 self-review UI guard
+article preview uses var(--normalText)
 ```
 
-### Founder-local backend evidence already reported
-
-Founder ran the original 4C.3 lifecycle suite after the API rebuild:
+### Final founder-local automated evidence 2026-09-09
 
 ```text
-npm run test:creator-account
--> 11 tests
--> 11 pass
--> 0 fail
--> duration_ms 232.536064
+test:generated-username -> 3/3 PASS
+test:creator-account -> 15/15 PASS
+test:profile-management -> 8/8 PASS
+frontend Docker production build -> PASS
 ```
 
-Those 11 tests verify:
+The final Creator account suite includes:
+
+```text
+creatorAccount.test.mjs
+creatorAdminIndex.test.mjs
+```
+
+and verifies:
 
 ```text
 request/reapply/pending idempotency
 state-safe admin transitions
 creators.manage separation from users.manage
-review note validation
-complete request
-incomplete request rejection
+review-note normalization + limits
+complete/incomplete request behavior
 approval readiness recheck
 lifecycle + audit writes
-self-review block
+self-review backend block
 approval failure after profile becomes incomplete
+admin list status/search/limit contract
+review-safe account metadata + pagination
+event history ordering/admin-only projection
 ```
 
-After that run, `creatorAdminIndex.test.mjs` was added to the same test command. Therefore the final focused backend rerun remains pending.
+### Final founder browser evidence 2026-09-09
 
-### Focused 4C.3 verification required next
+Founder manually exercised and reported all Creator states and review flows working, including:
 
-Per `DEVELOPMENT_WORKFLOW.md`, do not rebuild the full stack.
+```text
+request -> pending
+Creator Applications pending list
+review modal localized content
+self-review blocked
+second-account review
+approve Creator
+approved filter/state
+Creator profile menu label behavior
+```
+
+Founder statement after final smoke:
+
+```text
+همه چی درسته هیچ خطایی نداریم
+```
+
+Result:
+
+```text
+4C.3 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+```
+
+---
+
+## 6. 4C.4 — Public Creator Policy + Sanitized Backend Projection
+
+Detailed implementation record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
+```
+
+### Implemented policy
+
+```text
+accessible = account exists + active + Creator approved + canonical username
+indexable = accessible + complete Creator profile
+discoverable = indexable
+hasPublishedPrompt = signal only; never a gate
+```
+
+Internal policy reasons/signals remain server-only.
+
+### Implemented API
+
+```text
+GET /api/public/creators/:username
+```
+
+Behavior:
+
+```text
+approved/active/canonical -> 200
+none/pending/rejected/Creator-suspended/account-inactive -> generic 404
+invalid/noncanonical username -> generic 404
+non-GET -> 405 Allow GET
+username-keyed; browser never resolves UUID first
+```
+
+### Implemented public DTO
+
+```text
+identity.username
+identity.screenName EN/FA
+identity.bio EN/FA
+identity.article EN/FA Markdown source
+identity.avatarUrl
+identity.cover safe URLs/dimensions
+identity.skills active localized taxonomy only
+identity.links supported HTTP/HTTPS links only
+identity.location.text only
+canonical published Archive publication summaries
+safe policy.indexable/discoverable outcomes
+```
+
+Explicitly absent:
+
+```text
+internal UUID
+email
+birthday
+role
+account status
+Creator lifecycle status/reviewer/review note
+XP
+Goin/balance
+permissions
+sessions
+referrals
+private Drafts
+owner-only stats
+storage keys
+location provider metadata
+admin audit data
+raw Prompt bodies
+variants
+source Draft/User identifiers
+```
+
+Publication source:
+
+```text
+prompt_archive_items.source_user_id = internal Creator user id
+status = published
+public_id IS NOT NULL
+```
+
+Internal UUID is used for the join only and never serialized.
+
+### Tests implemented
+
+```text
+backend/src/publicCreator.test.mjs
+npm run test:public-creator
+```
+
+Coverage includes:
+
+```text
+public policy state matrix
+zero-publication Creator policy
+approved-incomplete accessible/noindex distinction
+canonical publication summary mapping
+positive DTO allowlist
+private sentinel leakage scan
+forbidden SQL-column scan
+published-only Archive source contract
+non-approved early 404 behavior
+noncanonical username no-query behavior
+GET/405/unrelated handler behavior
+```
+
+### 4C.4 founder-local verification required next
 
 ```powershell
 git pull
 pnpm api
-docker compose exec api npm run test:creator-account
-pnpm frontend
+docker compose exec api npm run test:public-creator
+docker compose exec api npm run test:public-prompt
 ```
 
-No schema migration is required for this checkpoint.
+No schema migration is required.
 
-Manual owner smoke:
+Approved Creator API smoke:
 
 ```text
-[ ] complete saved regular profile shows Request Creator Account
-[ ] request -> pending
-[ ] pending does not expose duplicate request action
-[ ] incomplete saved profile cannot request
-[ ] rejected profile may reapply after saving corrections
+GET https://api.grassic.ir/api/public/creators/<approved-username>
 ```
 
-Manual admin smoke:
+Expected:
 
 ```text
-[ ] admin + super_admin see Creator Applications panel
-[ ] ordinary account has no Creator review tools
-[ ] panel defaults to Pending
-[ ] status filter works
-[ ] username/email search works
-[ ] review modal loads EN/FA content, skills, links/location and history
-[ ] approve works for currently-ready pending profile
-[ ] reject + optional note works
-[ ] approved Creator can be suspended
-[ ] suspended Creator can be restored
-[ ] self-review blocked
-[ ] admin can perform Creator review while still lacking users.manage
+200
+identity safe allowlist only
+publication summaries published-only
+policy.indexable/discoverable present
+no private denylist fields
 ```
 
-Founder-local verification: **PARTIAL — backend foundation 11/11 PASS; new index/UI integration pending**
-
-Acceptance: **PENDING**
-
----
-
-## 6. 4C.4 — Public Creator policy/API gate
+Unavailable-state smoke:
 
 ```text
-[ ] GET /api/public/creators/:username
-[ ] username-keyed; no browser UUID resolution
-[ ] approved + active -> public candidate
-[ ] none/pending/rejected/suspended -> generic 404
-[ ] public DTO positive allowlist only
-[ ] localized screenName/bio/article public
-[ ] approved skills/links public
-[ ] display-safe location text only
-[ ] birthday/email/role/review metadata/internal UUID absent
-[ ] canonical published Archive publication summaries only
-[ ] zero-publication approved Creator remains valid
+pending/rejected/suspended/non-Creator -> same generic 404 response
 ```
 
-Founder-local verification: **PENDING**
+Current result:
+
+```text
+4C.4 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+```
 
 Acceptance: **PENDING**
 
@@ -562,7 +668,7 @@ Positive allowlists remain the primary boundary; denylist tests are defense in d
 ```text
 4C.1 accepted
 + 4C.2 accepted
-+ 4C.3 founder-local verified/accepted
++ 4C.3 accepted
 + 4C.4 founder-local verified/accepted
 + 4C.5 founder-local verified/accepted
 + 4C.6 founder-local verified/accepted
