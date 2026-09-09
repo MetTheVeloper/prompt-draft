@@ -30,6 +30,10 @@ const PUBLIC_ROW = {
       storageKey: 'must-not-leak.webp',
     },
   ],
+  creatorUsername: 'grassias',
+  creatorAvatarUrl: 'https://cdn.example.com/avatar.webp',
+  creatorAccountStatus: 'active',
+  creatorStatus: 'approved',
   prompt: 'PROTECTED_PROMPT_SENTINEL',
   variants: [{ prompt: 'PROTECTED_VARIANT_SENTINEL' }],
   sourceTitle: 'PRIVATE_SOURCE_TITLE_SENTINEL',
@@ -61,7 +65,7 @@ function createHandlerHarness({ method = 'GET', pathname = '/api/public/prompts/
   }
 }
 
-test('mapPublicPromptRow returns only the explicit public allowlist', () => {
+test('mapPublicPromptRow returns only the explicit public allowlist including Creator attribution', () => {
   const prompt = mapPublicPromptRow(PUBLIC_ROW)
 
   assert.deepEqual(prompt, {
@@ -89,6 +93,10 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
         thumbnailUrl: 'https://cdn.example.com/prompts/123/0-thumb.webp',
       },
     ],
+    creator: {
+      username: 'grassias',
+      avatarUrl: 'https://cdn.example.com/avatar.webp',
+    },
   })
 
   const serialized = JSON.stringify(prompt)
@@ -103,6 +111,19 @@ test('mapPublicPromptRow returns only the explicit public allowlist', () => {
     'private-viewer',
   ]) {
     assert.equal(serialized.includes(sentinel), false, `${sentinel} leaked into public DTO`)
+  }
+})
+
+test('non-Creator, pending, suspended, inactive and provenance-less Prompt owners remain unattributed', () => {
+  for (const row of [
+    { creatorUsername: null, creatorAccountStatus: null, creatorStatus: null },
+    { creatorUsername: 'ordinary-user', creatorAccountStatus: 'active', creatorStatus: null },
+    { creatorUsername: 'pending-user', creatorAccountStatus: 'active', creatorStatus: 'pending' },
+    { creatorUsername: 'suspended-creator', creatorAccountStatus: 'active', creatorStatus: 'suspended' },
+    { creatorUsername: 'inactive-creator', creatorAccountStatus: 'suspended', creatorStatus: 'approved' },
+    { creatorUsername: 'Not-Canonical', creatorAccountStatus: 'active', creatorStatus: 'approved' },
+  ]) {
+    assert.equal(mapPublicPromptRow({ ...PUBLIC_ROW, ...row }).creator, null)
   }
 })
 
@@ -139,7 +160,7 @@ test('public row with no complete localization is rejected', () => {
   )
 })
 
-test('readPublicPrompt uses a published-only query and selects public presentation metadata without protected columns', async () => {
+test('readPublicPrompt uses source_user_id provenance and Creator state without exposing protected source ids', async () => {
   let capturedSql = ''
   let capturedValues = null
 
@@ -150,11 +171,14 @@ test('readPublicPrompt uses a published-only query and selects public presentati
   })
 
   assert.equal(prompt.id, 123)
+  assert.equal(prompt.creator.username, 'grassias')
   assert.deepEqual(capturedValues, [123])
   assert.match(capturedSql, /items\.public_id\s*=\s*\$1/i)
   assert.match(capturedSql, /items\.status\s*=\s*'published'/i)
   assert.match(capturedSql, /items\.descriptions\s+AS\s+description/i)
   assert.match(capturedSql, /items\.telegram_message_id\s+AS\s+"telegramMessageId"/i)
+  assert.match(capturedSql, /creator_user\.id\s*=\s*items\.source_user_id/i)
+  assert.match(capturedSql, /creator_accounts\s+creator_account/i)
 
   for (const forbiddenSql of [
     /items\.prompt/i,
@@ -167,9 +191,11 @@ test('readPublicPrompt uses a published-only query and selects public presentati
   ]) {
     assert.doesNotMatch(capturedSql, forbiddenSql)
   }
+
+  assert.doesNotMatch(capturedSql, /items\.source_user_id\s+AS/i)
 })
 
-test('GET published public Prompt returns 200 with sanitized projection', async () => {
+test('GET published public Prompt returns 200 with sanitized Creator projection', async () => {
   const { input, calls } = createHandlerHarness({
     query: async () => ({ rows: [PUBLIC_ROW] }),
   })
@@ -181,8 +207,10 @@ test('GET published public Prompt returns 200 with sanitized projection', async 
   assert.equal(calls[0].body.prompt.id, 123)
   assert.equal(calls[0].body.prompt.description.en, PUBLIC_ROW.description.en)
   assert.equal(calls[0].body.prompt.telegramMessageId, 987)
+  assert.equal(calls[0].body.prompt.creator.username, 'grassias')
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_PROMPT_SENTINEL'), false)
   assert.equal(JSON.stringify(calls[0].body).includes('PROTECTED_VARIANT_SENTINEL'), false)
+  assert.equal(JSON.stringify(calls[0].body).includes('PRIVATE_USER_SENTINEL'), false)
 })
 
 test('GET missing or non-public Prompt is indistinguishable as 404', async () => {
