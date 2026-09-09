@@ -1,11 +1,17 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
 import { PUBLIC_DISCOVERY_ROUTES } from "./app/shared/public-discovery";
+import { PUBLIC_ROUTE_PATHS } from "./app/utils/publicRoutes";
 import { APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS } from "./shared/seo-route-policy";
 
 const publicDiscoveryRoutes = PUBLIC_DISCOVERY_ROUTES.flatMap((route) => [
   route,
   `/fa${route}`,
 ]);
+
+const publicBlogRoutes = [
+  PUBLIC_ROUTE_PATHS.blog,
+  `/fa${PUBLIC_ROUTE_PATHS.blog}`,
+];
 
 const clientOnlyRouteRules = Object.fromEntries(
   APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS.flatMap((route) => [
@@ -63,10 +69,13 @@ export default defineNuxtConfig({
       // These routes are retained only for the deprecated static-export path.
       // In the current Docker/Nitro runtime, app/client-only routes must stay
       // request-time so server middleware can enforce X-Robots-Tag consistently.
+      // Blog EN/FA indexes are explicit crawl roots; Nitro's generate crawler
+      // discovers only authoritative Article links rendered by those indexes.
       routes: legacyStaticGenerate
         ? [
             ...publicWizardRoutes,
             ...publicDiscoveryRoutes,
+            ...publicBlogRoutes,
             "/login",
             "/manage",
             "/manage/dashboard",
