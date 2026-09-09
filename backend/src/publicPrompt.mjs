@@ -1,35 +1,11 @@
 import { queryDatabase } from './database.mjs'
 import { handlePublicCreatorRequest } from './publicCreator.mjs'
 import { mapPublicCreatorAttribution } from './publicCreatorAttribution.mjs'
+import { normalizePublicPromptLocalization } from './publicLocalization.mjs'
 
 const PUBLIC_PROMPT_PREFIX = '/api/public/prompts'
 const PUBLIC_PROMPT_MATCH = /^\/api\/public\/prompts\/(\d+)$/
 const PUBLIC_PROMPT_MODELS = new Set(['dall-e', 'gpt-image-1'])
-
-function normalizeLocalizedPresentation(titleValue, descriptionValue) {
-  const title = {}
-  const description = {}
-  const availableLocales = []
-
-  for (const locale of ['en', 'fa']) {
-    const localizedTitle = typeof titleValue?.[locale] === 'string'
-      ? titleValue[locale].trim()
-      : ''
-    const localizedDescription = typeof descriptionValue?.[locale] === 'string'
-      ? descriptionValue[locale].trim()
-      : ''
-
-    if (!localizedTitle || !localizedDescription) continue
-
-    title[locale] = localizedTitle
-    description[locale] = localizedDescription
-    availableLocales.push(locale)
-  }
-
-  return availableLocales.length
-    ? { title, description, availableLocales }
-    : null
-}
 
 function normalizeModel(value, itemId) {
   const previewGeneratedWith = typeof value?.previewGeneratedWith === 'string'
@@ -93,7 +69,7 @@ export function mapPublicPromptRow(row) {
     throw new Error('Public Prompt row has invalid public id')
   }
 
-  const localized = normalizeLocalizedPresentation(row.title, row.description)
+  const localized = normalizePublicPromptLocalization(row.title, row.description)
   if (!localized) {
     throw new Error(`Public Prompt ${id} has no complete authoritative localization`)
   }
