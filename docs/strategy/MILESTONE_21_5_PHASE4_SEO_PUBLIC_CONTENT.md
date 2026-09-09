@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C DONE + ACCEPTED / NEXT 4D SITEMAP + ROBOTS + DISCOVERY + AI DISCOVERY**
+Status: **IN PROGRESS / 4A + 4B + 4C + 4D DONE + ACCEPTED / 4E BLOG V1 NEXT**
 
 Date: 2026-09-09
 
@@ -16,136 +16,116 @@ Parent milestone:
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 ```
 
-Accepted rendering/runtime baseline:
+Operational workflow:
 
 ```text
-Phase 21.5.1 Hybrid / SSR Architecture          DONE / ACCEPTED
-Phase 21.5.2 Docker Production Runtime          DONE / ACCEPTED
-Phase 21.5.3 Cloudflare Production Path         DONE / ACCEPTED
-```
-
-Accepted Phase 4 records:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
-docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
-docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
-docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+docs/strategy/DEVELOPMENT_WORKFLOW.md
 ```
 
 ---
 
 ## 1. Objective
 
-Phase 4 turns the accepted hybrid Nuxt/Nitro runtime into a reusable SEO/public-content platform.
+Phase 4 turns the accepted hybrid Nuxt/Nitro runtime into one reusable SEO/public-content platform.
 
-The target is one shared contract for public acquisition surfaces so every public route has deterministic answers for:
+Every acquisition surface must have deterministic answers for:
 
 ```text
 canonical URL
 locale URL
 indexability / robots
-server-rendered title + description
-Open Graph / Twitter metadata
+SSR title + description
+OG/Twitter metadata
 structured data when authoritative
 sitemap inclusion
-AI-oriented public discovery when appropriate
+AI-oriented discovery where appropriate
 404 / redirect behavior
 public data projection
 internal linking
 ```
 
-Phase 4 extends the existing architecture. It must not create a parallel SEO stack beside `usePublicSeo`, sanitized public APIs, authorization rules, the existing media pipeline or Nuxt hybrid rendering policy.
+Phase 4 must extend shared architecture rather than create parallel SEO, authorization, content, or localization stacks.
 
 Security remains absolute:
 
 ```text
-DO NOT expose protected Prompt bodies for SEO or AI discovery.
+DO NOT expose protected Prompt bodies/variants for SEO/public content.
 DO NOT SSR/private-publish private Drafts.
-DO NOT expose email, balance, sessions, permissions or private account data.
-DO NOT make GET /api/archive/:id public merely to serve an SEO/AI page.
+DO NOT expose private account/Creator data.
+DO NOT make GET /api/archive/:id public.
 ```
 
 ---
 
-## 2. Existing architecture retained
-
-Accepted foundations:
+## 2. Accepted runtime baseline
 
 ```text
-Nuxt SSR by default for acquisition-capable public routes
-explicit ssr:false route rules for interaction-heavy/private routes
-Nitro production runtime
-server-internal API origin separated from browser-public API origin
-Cloudflare production-like staging path
-staging global noindex protection
-sanitized GET /api/discover projection
-public GET /api/archive list/catalog projection
-protected GET /api/archive/:id detail
-accepted public GET /api/public/prompts/:id projection
-accepted public GET /api/public/creators/:username projection
+21.5.1 Hybrid / SSR Architecture   DONE / ACCEPTED
+21.5.2 Docker Production Runtime   DONE / ACCEPTED
+21.5.3 Cloudflare Production Path  DONE / ACCEPTED
+```
+
+Accepted foundations include:
+
+```text
+Nuxt SSR for acquisition-capable public routes
+explicit application/client-heavy route policy
+Nitro Docker runtime
+server-internal vs browser-public API origin split
+Cloudflare staging path
+NUXT_PUBLIC_NOINDEX staging protection
+sanitized public APIs
 existing Arvan Object Storage media pipeline
 ```
 
-`prompt-draft.ir` remains on the prior production version while Phase 4 is developed and verified on the `grassic.ir` staging path.
+`prompt-draft.ir` remains untouched until an explicit rollout phase.
 
 ---
 
-## 3. Phase 4 execution slices
+## 3. Phase 4 execution order
 
 ```text
-21.5.4A — SEO Contracts & Route Semantics                     DONE / ACCEPTED
-21.5.4B — Public Prompt Architecture                          DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4C — Public Creator Architecture + Indexability Policy   DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4D — Sitemap / Robots / Discovery + AI Discovery         NEXT / AUDIT FIRST
-21.5.4E — Blog V1                                             NOT STARTED
-21.5.4F — SEO Integration / Verification / Legacy Retirement  NOT STARTED
+21.5.4A SEO Contracts & Route Semantics                    DONE / ACCEPTED
+21.5.4B Public Prompt Architecture                         DONE / ACCEPTED
+21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
+21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
+21.5.4E Blog V1                                            NEXT / AUDIT FIRST
+21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
 ```
 
-Implementation order remains intentional:
+Required order:
 
 ```text
 4A -> 4B -> 4C -> 4D -> 4E -> 4F
 ```
 
-Shared platform contracts come before sitemap and Blog route-specific implementation.
+---
+
+## 4. Accepted locale/indexing model
+
+```text
+English/default -> unprefixed
+Persian         -> /fa
+```
+
+Only authoritative localized content may be indexable.
+
+Each authoritative localization is self-canonical.
+
+When both localizations exist:
+
+```text
+reciprocal hreflang
+authoritative x-default -> English/default
+```
+
+No cookie-dependent canonical language and no fake fallback localization.
+
+Application/private `/fa` routes may exist but remain non-acquisition surfaces.
 
 ---
 
-## 4. 21.5.4A — SEO Contracts & Route Semantics
-
-Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
-
-Accepted work:
-
-```text
-matured existing usePublicSeo instead of creating duplicate composables
-reactive server-rendered title/description metadata
-absolute canonical URL contract from NUXT_PUBLIC_SITE_URL
-Open Graph + Twitter policy
-locale-aware canonical URLs
-hreflang + x-default alternates
-structured-data injection only from authoritative callers
-staging noindex precedence over route-level indexability
-locale-aware html lang/dir behavior
-EN/FA deterministic URL routing
-localized central internal-link handling
-route-base-name handling for localized route names
-login locale-preserving redirects
-server X-Robots-Tag policy for app/private routes
-canonical public route helpers
-real Discovery 404 behavior
-Discovery canonical redirect behavior
-reproducible route-audit script
-public route contract tests
-legacy application prerenders isolated behind NUXT_LEGACY_STATIC_GENERATE
-```
-
-Founder-local acceptance evidence included strict route audit, SEO contracts, production build, EN/FA real-runtime route smoke, Discovery 404/canonical redirect semantics, raw SSR canonical/hreflang/lang-dir/OG/Twitter checks, application noindex headers and browser navigation/query/auth-next regression smoke.
+## 5. Accepted 4A — shared SEO/routing platform
 
 Canonical record:
 
@@ -153,52 +133,27 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
 ```
 
----
-
-## 5. Accepted locale / indexing architecture
-
-Both English and Persian are intended to be indexable only when authoritative localized content actually exists.
-
-Active URL model:
+Accepted behavior includes:
 
 ```text
-English/default locale -> unprefixed
-Persian                -> /fa prefix
+shared usePublicSeo
+reactive SSR metadata
+absolute canonical URLs
+OG/Twitter policy
+EN/FA canonical + hreflang + x-default
+structured-data injection from authoritative callers only
+staging noindex precedence
+locale-aware html lang/dir
+real public 404/redirect semantics
+shared public route helpers
+application X-Robots-Tag policy
+strict locale route audit
+legacy static-generation compatibility isolation
 ```
-
-Nuxt i18n contract:
-
-```text
-defaultLocale: en
-strategy: prefix_except_default
-```
-
-Examples:
-
-```text
-/blog/prompt-anatomy
-/fa/blog/prompt-anatomy
-
-/prompt/123
-/fa/prompt/123
-
-/creator/example
-/fa/creator/example
-```
-
-Each authoritative localized page is self-canonical.
-
-When both authoritative localizations exist they expose reciprocal `hreflang` and an English/default `x-default` target.
-
-A missing translation must not silently create an indexable localized route containing fallback content and pretending to be a translation.
-
-Application routes may have `/fa` variants but remain application surfaces, not SEO surfaces. Their client-only/noindex policy remains authoritative.
 
 ---
 
-## 6. 21.5.4B — Public Prompt Architecture
-
-Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED**
+## 6. Accepted 4B — Public Prompt
 
 Canonical records:
 
@@ -209,387 +164,123 @@ docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 ```
 
-Accepted canonical routes:
+Canonical public routes:
 
 ```text
 /prompt/:id
 /fa/prompt/:id
 ```
 
-The public Prompt route uses a sanitized public presentation projection distinct from protected Prompt detail.
-
-Accepted public presentation fields include only intentionally public data such as:
-
-```text
-public numeric id
-localized title
-localized founder-authored description
-availableLocales
-publication date
-public tags
-public model/presentation metadata
-public preview media
-optional public-safe Telegram message id
-minimal approved Creator attribution after 4C
-```
-
-It does not expose:
-
-```text
-protected Prompt body
-protected variants
-unlock-gated content
-private Drafts
-source/private Draft payload
-storage keys
-private account/economy/viewer/permission state
-internal source user/draft ids
-```
-
-Existing product route remains protected:
-
-```text
-/prompts?id=<id>
-/fa/prompts?id=<id>
-```
-
-Existing backend boundary remains protected:
-
-```text
-GET /api/archive/:id
-```
-
-Dedicated public read model:
+Dedicated sanitized API:
 
 ```text
 GET /api/public/prompts/:id
 ```
 
-Critical database rule:
+Protected product detail remains:
 
 ```text
-public query -> status='published' only
-public query -> does not SELECT prompt or variants
+/prompts?id=<id>
+/fa/prompts?id=<id>
+GET /api/archive/:id
 ```
 
-Accepted localized description contract:
+Public query never selects protected Prompt bodies/variants.
 
-```text
-founder-authored EN/FA descriptions
-100 published Archive rows backfilled and founder-reviewed
-visible description + meta/OG/Twitter/CreativeWork.description share one source
-locale availability requires valid title + valid description
-no fake fallback localization
-```
-
-Accepted shared presentation contract:
-
-```text
-public/protected Prompt heroes share presentation only
-public and protected data sources remain separate
-SSR first-image media fallback
-client cinema enhancement
-no balance/unlock/permissions/viewer/Prompt/variants in shared component
-```
-
-Accepted Discovery visual hardening:
-
-```text
-semantic content-sized el-flex hero
-zero outer default-layout padding
-public category preview media only
-SSR first-image fallback
-client visual-slider enhancement
-single media layer after hydration
-slider clipped to hero
-```
-
-Founder explicit acceptance:
-
-```text
-Phase 4B accepted
-```
-
-Final aggregate regression:
-
-```text
-pnpm test:phase4b-final -> PASS
-```
-
-Final staging smoke:
-
-```text
-pnpm smoke:phase4b-final -> PASS
-```
-
-`prompt-draft.ir` remained untouched and staging `NUXT_PUBLIC_NOINDEX=true` remained authoritative.
+Localized founder-authored description is shared by visible copy and SEO/CreativeWork projection.
 
 ---
 
-## 7. 21.5.4C — Public Creator Architecture + Indexability Policy
-
-Status: **DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09**
+## 7. Accepted 4C — Public Creator
 
 Canonical records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
-docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
-docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
-docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
-docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
 docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
-Accepted model:
+Creator lifecycle remains separate from user role.
 
-```text
-users.role remains user|admin|super_admin
-Creator is a separate explicit reviewed public-identity lifecycle
-profile completion never auto-promotes
-publishing a Prompt never auto-promotes
-Creator request requires complete localized Creator profile
-admin/super_admin review through creators.manage
-self-review blocked
-```
-
-Accepted Creator lifecycle:
-
-```text
-none
-pending
-approved
-rejected
-suspended
-```
-
-Accepted Creator application requirements:
-
-```text
-active account
-canonical username
-screenName EN + FA
-bio EN + FA
-article EN + FA
->= 1 active controlled taxonomy skill
-```
-
-Explicitly not required:
-
-```text
-avatar
-cover
-birthday
-links
-location
-published Prompt count
-XP
-Goin/balance
-```
-
-Accepted public Creator policy:
-
-```text
-accessible = account exists + active + Creator approved + canonical username
-indexable = accessible + complete Creator profile
-discoverable = indexable
-published Prompt count = signal only / never a gate
-```
-
-Accepted canonical routes:
+Canonical public routes:
 
 ```text
 /creator/:username
 /fa/creator/:username
 ```
 
-Accepted public API:
+Public policy:
 
 ```text
-GET /api/public/creators/:username
+accessible = active account + approved Creator + canonical username
+indexable = accessible + complete Creator profile
+discoverable = indexable
 ```
 
-Public Creator positive allowlist is limited to:
+Publication count is never a Creator gate.
 
-```text
-canonical username
-localized ScreenName/Bio/Article
-safe avatar/cover
-active localized taxonomy skills
-safe HTTP/HTTPS public links
-location.text only
-canonical published Archive summaries
-policy.indexable/discoverable
-```
-
-Explicitly excluded:
-
-```text
-internal UUID
-email
-birthday
-role/account status
-Creator lifecycle/review metadata
-XP/Goin
-permissions/sessions/referrals
-private Drafts
-storage keys
-location provider metadata
-admin audit data
-raw Prompt bodies/variants/source ids
-```
-
-Accepted Public Creator SSR/SEO behavior:
-
-```text
-localized EN/FA rendering
-LTR/RTL
-sanitized Markdown Article
-self canonical
-reciprocal EN/FA hreflang
-x-default -> EN/default
-localized OG/Twitter metadata
-ProfilePage JSON-LD + Person mainEntity
-policy-driven noindex
-NUXT_PUBLIC_NOINDEX staging override always wins
-real 404 for unavailable Creator
-mixed-case username -> permanent localized canonical redirect
-```
-
-Accepted Prompt/Discovery attribution policy:
-
-```text
-prompt_archive_items.source_user_id remains internal provenance
-only accessible approved Creator becomes public attribution
-ordinary/pending/rejected/suspended/inactive/provenance-less owner remains public but unattributed
-minimal browser attribution = { username, avatarUrl } | null
-no UUID/source_user_id/email/private account data
-Home/Public Discovery use Creator vocabulary instead of active-user owner heuristic
-```
-
-Final aggregate evidence:
-
-```text
-pnpm test:phase4c-final -> PASS
-pnpm frontend -> PASS
-pnpm smoke:phase4c-final -> PASS
-strict route audit -> 463 source files / zero hazards
-runtime localization -> fallback EN 0 / Creator FA missing 0 / extra 0
-Creator API/SSR EN+FA / 301 / 404 / privacy / noindex staging smoke -> PASS
-prompt-draft.ir not targeted
-```
-
-Founder explicit final acceptance:
-
-```text
-Phase 4C تایید
-```
+Public Creator projection excludes internal/private account/lifecycle/economy/storage data.
 
 ---
 
-## 8. Discovery migration direction — NEXT FOR 4D
+## 8. Accepted 4D — Sitemap / Robots / Discovery + AI Discovery
 
-`/discover/[slug]` already uses request-time SSR-aware loading through the sanitized public discovery API and consumes `usePublicSeo`.
-
-Completed by 4A–4C:
-
-```text
-locale-aware metadata/canonical behavior
-semantic HTTP 404 for invalid slugs
-malformed encoded slug -> 404 rather than accidental 500
-canonical lowercase/trailing-slash permanent redirect behavior
-Prompt acquisition links -> localized /prompt/:id
-public preview-media cinema/background
-SSR first-image fallback
-approved Creator attribution -> localized /creator/:username
-no active-user-is-public-creator heuristic
-```
-
-4D now needs to:
-
-```text
-extend authoritative OG/structured data where truthful
-integrate Discovery routes with shared sitemap architecture
-make sitemap eligibility consume accepted Prompt/Creator policy outputs
-add a supplemental llms.txt projection from the same shared public inventory
-replace/reduce Milestone-21 static SEO snapshot dependencies
-migrate robots/sitemap runtime behavior without weakening staging noindex
-```
-
----
-
-## 9. Robots + sitemap + AI-discovery direction — 4D TARGET
-
-Detailed 4D planning source of truth:
+Canonical records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
-The current static `public/robots.txt` and `scripts/generate-public-seo.ts` sitemap behavior are Milestone 21-era compatibility pieces, not the target Phase 4 architecture.
-
-Target sitemap inventory:
+Final architecture:
 
 ```text
-static public acquisition routes
-+ public Prompt canonical routes
-+ eligible Creator canonical routes
-+ published Blog routes once 4E exists
+GET /api/public/inventory
+        |
+        v
+shared canonical public inventory
+        +--> sitemap.xml
+        +--> llms.txt
+        +--> static compatibility
+
+shared application SEO route policy
+        +--> route policy
+        +--> X-Robots-Tag
+        +--> origin robots exclusions
+
+native Discovery SSR
+        +--> visible content
+        +--> usePublicSeo
+        +--> CollectionPage / ItemList JSON-LD
 ```
 
-Sitemap inclusion must use the same authoritative eligibility rules used by route metadata. It must not create an independent second definition of `indexable`.
-
-Accepted 4A server policy already provides explicit application-route noindex response headers in both locale spaces.
-
-Accepted 4C Creator policy already supplies the authoritative Creator `indexable`/`discoverable` result.
-
-Staging protection remains stronger than route-level SEO:
+Final acceptance gates all passed:
 
 ```text
-NUXT_PUBLIC_NOINDEX=true
-  -> global noindex response/header behavior
-  -> route-level index intent must never override it
+pnpm test:phase4d-final       PASS
+pnpm smoke:phase4d-final      PASS
+pnpm verify:phase4d-static    PASS
 ```
 
-Phase 4D also explicitly evaluates and, when the audit confirms a clean integration path, implements:
+Static proof at acceptance time:
 
 ```text
-/llms.txt
+220 sitemap URLs
+220 llms URLs
+identical sitemap/llms URL sets
+331 prerendered routes
+12 native EN/FA Discovery pages checked
 ```
 
-For Prompt Draft, `llms.txt` is a supplemental/experimental LLM-friendly guide to already-public canonical resources. It is **not** a crawler permission mechanism, training consent signal, sitemap replacement, or guarantee of AI indexing/citation.
+Staging external proof preserved public/private authorization and global noindex.
 
-Required architecture:
-
-```text
-shared canonical/indexable public inventory
--> sitemap projection
--> llms.txt projection
-```
-
-It must not become a second Prompt/Creator eligibility system.
-
-Candidate current resource families are:
-
-```text
-/
-/guide
-/discover/:slug
-/prompt/:id
-/creator/:username
-```
-
-Blog URLs may join the shared sitemap/llms inventory only after 4E defines published Blog semantics.
-
-`llms.txt` must never expose or direct models toward protected Prompt bodies/variants, private Drafts, private Creator/account fields, internal UUID/source ids, storage keys, economy/permission/session state, or admin/provider metadata.
-
-The audit must choose static, build-generated, or runtime output based on shared-policy reuse, Docker/Nitro/static-generate compatibility, staging behavior and operational simplicity. Do not introduce request-time GitHub/external-service dependencies merely to build sitemap/AI-discovery output.
+`prompt-draft.ir` was not targeted.
 
 ---
 
-## 10. Blog V1 accepted architecture
+## 9. 4E — Blog V1 target architecture
 
 Public routes:
 
@@ -600,36 +291,58 @@ Public routes:
 /fa/blog/:slug
 ```
 
-Minimum article behavior:
+Minimum public Article behavior:
 
 ```text
 stable article identity
-stable slug
+stable canonical slug
 SSR article HTML
 localized title/description/body
-canonical + language alternates
+canonical + EN/FA alternates
 OG/Twitter metadata
 published/updated dates
 author attribution when authoritative
-Article/BlogPosting structured data where valid
-sitemap inclusion
-analytics for article view + meaningful product action
+Article/BlogPosting structured data
+shared sitemap inclusion
+shared llms.txt inclusion where appropriate
+article-view + meaningful product-action analytics
+real 404/canonical behavior
 ```
 
-Accepted editorial source of truth:
+### Editorial source of truth
+
+Accepted model:
 
 ```text
-repository-backed editorial content
+Git repository          -> canonical editorial source
+Docker/Nitro deployment -> normal runtime content source
+Arvan Object Storage    -> media + mirror/emergency publication store
 ```
 
-The filesystem representation must implement a structured Article + Localization contract so later storage migration does not require redefining public Blog semantics.
+Repository-backed does not mean GitHub request-time access.
 
-Conceptual contract:
+Normal serving path:
+
+```text
+repository article content
+-> build/deploy
+-> deployed Nuxt/Nitro content
+-> request-time SSR
+```
+
+GitHub must never be queried per public Blog request.
+
+### Article contract
+
+4E must define one structured Article + Localization contract before building UI.
+
+Conceptual shape:
 
 ```text
 Article
   id
   slug
+  status
   author
   publishedAt
   updatedAt
@@ -645,96 +358,48 @@ Article
       body
 ```
 
-Exact Markdown/frontmatter representation is chosen in 4E. Metadata must not be scattered/hard-coded in Vue pages.
+Exact repository representation/frontmatter is chosen during 4E audit.
 
----
+Metadata must not be hard-coded across Vue pages.
 
-## 11. Blog authoring in Manage
+### Manage authoring
 
-Target management route:
+Target route:
 
 ```text
 /manage/blog
 ```
 
-Target authoring UX:
+Target UX:
 
 ```text
-article metadata form
-EN/FA localization editing
-Markdown editor toolbar
-headings
-bold/italic
-ordered/unordered lists
-quotes
-links
-images
-code/dividers where appropriate
+article list
+new/edit article
+metadata form
+slug/status/publish dates
+EN/FA editing
+Markdown-producing editor
 live preview
-validation before export/publish
+validation
+image insertion/upload
+save/export/publish workflow
 ```
 
-Preferred implementation candidate:
+Preferred editor candidate:
 
 ```text
 md-editor-v3
 ```
 
-The library/version/license must be validated at implementation time. The architectural requirement is a Markdown-producing editor, not a proprietary document format.
+The exact version/license/runtime integration is validated at implementation time.
 
-The admin authoring UI must produce the same clean repository article contract consumed by public SSR.
+### Media
 
----
+Blog images must reuse the existing Arvan storage pipeline or a shared extraction of that pipeline.
 
-## 12. Blog repository + Arvan resilience architecture
+Do not put base64 image payloads into Markdown.
 
-Repository-backed does **not** mean GitHub is queried at request time.
-
-Normal published article serving:
-
-```text
-Git repository
-  -> build/deploy
-  -> article content bundled/available with deployed Nuxt/Nitro runtime
-  -> request-time SSR reads deployed/local content
-```
-
-Accepted conservative resilience model:
-
-```text
-Git repository
-  -> canonical editorial source
-
-Arvan Object Storage
-  -> mirror / emergency publication store
-
-Deployed Docker/Nitro content
-  -> normal request-time primary source
-```
-
-Do not make GitHub and Arvan two equal uncontrolled sources of truth.
-
-Emergency publication may use Arvan while Git reconciliation is pending, but identity/version metadata must make that state explicit and deterministic.
-
----
-
-## 13. Blog media architecture
-
-Do not embed Blog images as base64 inside Markdown.
-
-Blog media should reuse the existing Arvan Object Storage upload pipeline.
-
-Target flow:
-
-```text
-/manage/blog -> Insert Image
-  -> existing/shared media upload pipeline
-  -> Arvan Object Storage
-  -> stable public media URL/reference
-  -> Markdown article body
-```
-
-Where practical, preserve:
+Desired media metadata where practical:
 
 ```text
 id
@@ -746,127 +411,100 @@ alt
 caption
 ```
 
----
+### Emergency Arvan publication
 
-## 14. Operational storage lesson retained
+Arvan may serve as a mirror/emergency content store while Git reconciliation is pending, but it must not become an uncontrolled equal source of truth.
 
-The existing Arvan/AWS-compatible upload path uses SigV4 and therefore depends on correct system time.
-
-Operational implication:
+Emergency state must be explicit with identity/version metadata such as:
 
 ```text
-unexpected Arvan/S3 SigV4 403 across multiple upload surfaces
-  -> verify host/system clock before treating it as a storage/CORS/code regression
-```
-
-This is an environment/runtime diagnostic note, not a Phase 4 blocker.
-
----
-
-## 15. Legacy `generate-public-seo` retirement
-
-`scripts/generate-public-seo.ts` is a historical Milestone 21 workaround that performs static HTML head patching, snapshot injection, sitemap generation and robots augmentation.
-
-It remains temporarily for rollback/history while native Phase 4 behavior is built.
-
-Target end state after 4F verification:
-
-```text
-native SSR metadata/canonical/structured-data behavior authoritative
-runtime/shared sitemap architecture authoritative
-shared inventory also able to project llms.txt without parallel eligibility logic
-legacy post-generate HTML patching removed or reduced to a narrow compatibility adapter only if justified
-no duplicate SEO/AI-discovery source of truth
+articleId
+revision/contentHash
+publishedAt
+source=emergency
+syncState=pending_git
 ```
 
 ---
 
-## 16. Verification discipline
+## 10. Blog sitemap / AI-discovery integration rule
 
-Phase 4 is not accepted merely because routes render.
+Blog is added to the public inventory only after 4E defines authoritative publication/localization semantics.
 
-Final verification across the remaining slices must cover raw server responses and browser behavior across at least:
-
-```text
-/
-/guide
-/discover/*
-/prompt/*
-/creator/*
-/blog
-/blog/*
-/llms.txt
-/sitemap.xml
-/robots.txt
-/fa equivalents where authoritative
-```
-
-Required checks include:
+Required direction:
 
 ```text
-server-rendered meaningful HTML
-correct status codes
-canonical uniqueness
-EN/FA URL determinism
-hreflang/alternate correctness
-robots/indexability correctness
-staging global noindex precedence
-OG/Twitter metadata
-structured-data validity/truthfulness
-sitemap inclusion/exclusion
-llms.txt canonical/public-only content
-llms.txt and sitemap sharing authoritative eligibility inputs
-redirect behavior
-no protected Prompt/account/private Draft leakage
-no private data leakage through llms.txt
-client-heavy/authenticated route regression smoke
+published Article contract
+        |
+        v
+shared public inventory inputs
+        +--> /blog + localized blog index
+        +--> /blog/:slug only for authoritative published locales
+        +--> sitemap.xml
+        +--> llms.txt
 ```
 
-Founder verification remains required before each slice is accepted and before Phase 4 as a whole is marked DONE.
+Forbidden:
+
+```text
+separate Blog-only sitemap rules
+separate Blog-only indexability heuristics
+draft/unpublished article URLs in sitemap/llms
+fake localized Blog URLs
+```
 
 ---
 
-## 17. Current next action
+## 11. 4E audit-first questions
 
-4A, 4B and 4C are closed and founder-accepted.
-
-Proceed to:
+Before implementation, inspect and decide:
 
 ```text
-21.5.4D — Sitemap / Robots / Discovery + AI Discovery
+1. exact repository article directory/file/frontmatter shape
+2. server-safe Markdown parsing/rendering/sanitization strategy
+3. exact draft/published/localized eligibility rules
+4. slug validation + canonical redirect behavior
+5. author representation: site/editorial author vs approved Creator attribution
+6. public Blog index sorting/pagination/category/tag policy for V1
+7. manage/blog permission model and backend write/export boundary
+8. reuse/extraction of existing Arvan SigV4 media upload pipeline
+9. md-editor-v3 current version/license/SSR constraints
+10. safe image insertion contract
+11. Git write/publish mechanism from Manage without request-time GitHub dependency
+12. emergency Arvan mirror/publication reconciliation model
+13. Blog analytics events and CTA semantics
+14. static-generate compatibility and shared public inventory integration
+15. narrow verification slices before final 4E acceptance
 ```
 
-4D planning source of truth:
+---
+
+## 12. Hard rules inherited forward
 
 ```text
-docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
+DO NOT weaken authorization for Blog/SEO.
+DO NOT expose protected Prompt data through Blog integrations.
+DO NOT expose private Draft/account/Creator data.
+DO NOT use cookie-dependent canonical language.
+DO NOT create fake localized Blog pages.
+DO NOT query GitHub per public Blog request.
+DO NOT create Git and Arvan as uncontrolled equal content sources.
+DO NOT embed base64 images in Markdown.
+DO NOT add draft/unpublished Blog URLs to sitemap/llms.
+DO NOT create a second public-indexability system.
+DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
-Immediate 4D audit/design questions:
+---
+
+## 13. Current next action
+
+Phase 4D is closed and accepted.
+
+Proceed audit-first to:
 
 ```text
-1. inventory current public/robots.txt, any public/llms.txt, generate-public-seo.ts and sitemap outputs
-2. identify runtime vs generate-time sitemap/robots consumers and deployment assumptions
-3. define one authoritative public URL inventory for static routes, Discovery, Public Prompts and approved indexable Creators
-4. consume accepted Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
-5. consume authoritative Prompt locale availability rather than creating fallback entries
-6. define EN/FA sitemap alternate behavior and xhtml hreflang policy
-7. define staging robots/sitemap/llms behavior under NUXT_PUBLIC_NOINDEX=true without weakening global staging protection
-8. preserve application/private noindex/X-Robots-Tag rules from 4A
-9. audit Discovery structured data and sitemap inclusion against sanitized public DTO only
-10. decide static vs generated vs runtime /llms.txt while forcing it to consume the same shared canonical/indexable inventory as sitemap
-11. keep llms.txt supplemental: not crawler permission, not training consent, not an independent indexability policy
-12. keep protected Prompt/private Draft/private Creator/account data out of sitemap/robots/llms outputs
-13. define retirement/migration path for generate-public-seo.ts without breaking static-generate compatibility prematurely
-14. add narrow contract tests before implementation acceptance
+21.5.4E — Blog V1
 ```
 
-Before proposing founder verification commands, read and obey:
-
-```text
-docs/strategy/DEVELOPMENT_WORKFLOW.md
-```
-
-Use the smallest rebuild/test scope and root `package.json` scripts to keep verification fast.
-
-Do not begin 4E until 4D is implemented, founder-verified and explicitly accepted.
+Create/maintain a dedicated 4E source-of-truth before implementation and use the smallest verification scope defined by `DEVELOPMENT_WORKFLOW.md`.
