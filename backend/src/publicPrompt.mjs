@@ -1,5 +1,6 @@
 import { queryDatabase } from './database.mjs'
 import { handlePublicCreatorRequest } from './publicCreator.mjs'
+import { mapPublicCreatorAttribution } from './publicCreatorAttribution.mjs'
 
 const PUBLIC_PROMPT_PREFIX = '/api/public/prompts'
 const PUBLIC_PROMPT_MATCH = /^\/api\/public\/prompts\/(\d+)$/
@@ -121,6 +122,7 @@ export function mapPublicPromptRow(row) {
       optimizedFor: row.optimizedFor,
     }, id),
     images,
+    creator: mapPublicCreatorAttribution(row),
   }
 }
 
@@ -134,6 +136,10 @@ export async function readPublicPrompt(id, query = queryDatabase) {
       items.telegram_message_id AS "telegramMessageId",
       items.preview_model AS "previewGeneratedWith",
       items.optimized_for AS "optimizedFor",
+      creator_user.username AS "creatorUsername",
+      creator_user.avatar_url AS "creatorAvatarUrl",
+      creator_user.status AS "creatorAccountStatus",
+      creator_account.status AS "creatorStatus",
       COALESCE((
         SELECT json_agg(tags.slug ORDER BY tags.slug)
         FROM prompt_archive_item_tags it
@@ -151,6 +157,10 @@ export async function readPublicPrompt(id, query = queryDatabase) {
           AND COALESCE(images.full_url, images.source_path) IS NOT NULL
       ), '[]'::json) AS images
     FROM prompt_archive_items items
+    LEFT JOIN users creator_user
+      ON creator_user.id = items.source_user_id
+    LEFT JOIN creator_accounts creator_account
+      ON creator_account.user_id = creator_user.id
     WHERE items.public_id = $1
       AND items.status = 'published'
     LIMIT 1
