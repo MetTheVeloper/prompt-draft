@@ -1,5 +1,5 @@
-import type { HomeShowcaseItem } from '~/composables/useHomeDiscovery'
-import { publicCreatorPath, publicPromptPath } from '~/utils/publicRoutes'
+import type { HomeShowcaseItem } from '../composables/useHomeDiscovery'
+import { publicCreatorPath, publicPromptPath } from './publicRoutes'
 
 export type PublicDiscoveryLocale = 'en' | 'fa'
 
