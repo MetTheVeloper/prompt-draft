@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import CreatorApplicationCard from "~/components/manage/CreatorApplicationCard.vue";
-import type { ProfileManagementResponse } from "~/types/profileManagement";
 
 const { t } = useI18n();
 const profileApi = useProfileManagement();
+const profile = profileApi.profile;
 
-const profile = ref<ProfileManagementResponse | null>(null);
-const loading = ref(true);
+const loading = ref(!profile.value);
 const errorMessage = ref("");
 
 function getApiErrorMessage(error: unknown) {
@@ -21,7 +20,7 @@ async function load() {
   loading.value = true;
   errorMessage.value = "";
   try {
-    profile.value = await profileApi.load();
+    await profileApi.load();
   } catch (error) {
     errorMessage.value = getApiErrorMessage(error);
   } finally {
@@ -29,7 +28,9 @@ async function load() {
   }
 }
 
-onMounted(() => void load());
+onMounted(() => {
+  if (!profile.value) void load();
+});
 </script>
 
 <template>
