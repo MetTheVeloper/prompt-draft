@@ -43,7 +43,7 @@ Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
 Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B ACCEPTED / 4C IN PROGRESS
+Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C ACCEPTED / 4D NEXT
 Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
 
 Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
@@ -83,6 +83,12 @@ docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
 docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_3_CREATOR_APPLICATION_ADMIN_REVIEW.md
+docs/strategy/MILESTONE_21_5_PHASE4C_4_PUBLIC_CREATOR_POLICY_API.md
+docs/strategy/MILESTONE_21_5_PHASE4C_5_PUBLIC_CREATOR_SSR.md
+docs/strategy/MILESTONE_21_5_PHASE4C_6_CREATOR_SEO_INDEXABILITY.md
+docs/strategy/MILESTONE_21_5_PHASE4C_7_PROMPT_DISCOVERY_CREATOR_ATTRIBUTION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
 Rendering ADR:
@@ -101,7 +107,7 @@ ADR-001 remains historically correct for Milestone 21D. ADR-002 records the acce
 Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
 Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
 Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4C IN PROGRESS
+Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4D NEXT
 Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
 ```
 
@@ -110,8 +116,8 @@ Phase 4 slices:
 ```text
 21.5.4A SEO Contracts & Route Semantics                    DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 21.5.4B Public Prompt Architecture                         DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
-21.5.4C Public Creator + Indexability Policy               IN PROGRESS
-21.5.4D Sitemap / Robots / Discovery Migration             NOT STARTED
+21.5.4C Public Creator + Indexability Policy               DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+21.5.4D Sitemap / Robots / Discovery Migration             NEXT
 21.5.4E Blog V1                                            NOT STARTED
 21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
 ```
@@ -142,6 +148,7 @@ Acquisition-capable SSR surfaces include:
 /guide
 /discover/**
 /prompt/**
+/creator/**
 ```
 
 Explicit client-rendered/application surfaces include:
@@ -327,145 +334,49 @@ GET /api/public/prompts/:id -> public/read-only/published-only sanitized project
 GET /api/archive/:id        -> authenticated + email gate
 ```
 
-Final public presentation projection includes only intentionally public fields:
+Public database query still does not SELECT protected Prompt bodies or variants.
 
-```text
-public numeric id
-localized title
-localized founder-authored description
-availableLocales
-publication date
-public tags
-public model/presentation metadata
-public preview image URLs/position
-optional public-safe Telegram message id
-```
-
-Explicitly excluded:
-
-```text
-protected Prompt body
-protected variants
-sourceTitle/private Draft payload
-source Draft/user identity unless later accepted by Creator policy
-storage keys
-unlock state
-balance/Goin
-permissions
-viewer/account state
-```
-
-Important invariant:
-
-```text
-The public database query itself does not SELECT prompt or variants.
-```
-
-Localized description is the one source for:
-
-```text
-visible Public Prompt description
-meta description
-og:description
-twitter:description
-CreativeWork.description
-```
-
-Locale availability requires:
-
-```text
-valid localized title + valid localized description
-```
-
-No fake localization fallback is allowed.
-
-Published description rollout:
-
-```text
-migration 025 -> description storage
-founder-reviewed backfill -> 100 published Archive rows
-migration 026 -> published localization database constraint
-```
-
-The two staging/test Archive items 9002/9003 were safely pruned before canonical backfill.
+Localized description remains the one source for visible public description, meta/OG/Twitter description and CreativeWork.description.
 
 Shared Prompt presentation remains presentation-only and does not know protected Prompt body, variants, unlock/economy or viewer state.
 
-Public Discovery hero final behavior:
+Public Discovery hero remains semantic, content-sized, SSR-first-image capable and client-cinema enhanced.
 
-```text
-semantic el-flex section
-content-sized hero
-zero outer default-layout padding
-public preview media only
-SSR first-image fallback
-client visual-slider enhancement when multiple previews exist
-single media layer after hydration
-slider clipped to hero
-```
-
-Final aggregate regression:
+Final aggregate and staging gates remain accepted:
 
 ```text
 pnpm test:phase4b-final -> PASS
-Strict route audit -> PASS / 447 source files / zero hazards
-```
-
-Final staging smoke:
-
-```text
 pnpm smoke:phase4b-final -> PASS
-public Prompt API 200
-invalid public Prompt API 404
-protected Archive API 401
-EN/FA Public Prompt SSR 200
-EN/FA Discovery SSR 200
-SEO/noindex/private-boundary checks PASS
 ```
-
-Final production-like stack health:
-
-```text
-frontend    healthy
-api         healthy
-db          healthy
-translator  healthy
-cloudflared up
-```
-
-Manual founder browser smoke also passed for EN/FA, light/dark presentation, protected unlock/copy/economy continuity, browser-history back behavior, Telegram linking and Discovery cinema.
 
 ---
 
-## Accepted locale/indexing direction inherited into 4C
+## Accepted Phase 4C — Creator Identity, Profile, Approval + Public Architecture
 
-```text
-English/default -> unprefixed
-Persian         -> /fa
-EN + FA both indexable only when authoritative localized content exists
-self-canonical per locale
-reciprocal hreflang when both authoritative localizations exist
-x-default -> English/default
-```
-
-One URL must deterministically render one language.
-
-Do not use cookie-dependent canonical language.
-
-Missing translation must not create fake indexable fallback content pretending to be authoritative.
-
----
-
-## Current action — 21.5.4C Creator Identity, Profile, Approval + Public Architecture
-
-Authoritative 4C records:
+Authoritative records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
+docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
 ```
 
-Accepted architecture:
+Final state:
+
+```text
+4C architecture                         -> FOUNDER ACCEPTED
+4C.1 Creator Profile Foundation         -> DONE / ACCEPTED
+4C.2 Authenticated Profile Management   -> DONE / ACCEPTED
+4C.3 Creator Application + Admin Review -> DONE / ACCEPTED
+4C.4 Public Creator policy/API          -> DONE / ACCEPTED
+4C.5 Public Creator SSR                 -> DONE / ACCEPTED
+4C.6 Creator SEO/indexability           -> DONE / ACCEPTED
+4C.7 Prompt/Discovery attribution       -> DONE / ACCEPTED
+4C.8 aggregate/staging acceptance       -> DONE / ACCEPTED
+Phase 4C                                -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
+```
+
+Accepted Creator model:
 
 ```text
 users.role remains user|admin|super_admin
@@ -473,7 +384,17 @@ Creator is a separate reviewed public-identity lifecycle
 profile completion never auto-promotes
 publishing a Prompt never auto-promotes
 /manage/profile is the common authenticated editing surface
-/creator/:username and /fa/creator/:username remain canonical public Creator routes
+/creator/:username and /fa/creator/:username are canonical public Creator routes
+```
+
+Creator lifecycle:
+
+```text
+none
+pending
+approved
+rejected
+suspended
 ```
 
 Creator application readiness requires:
@@ -500,51 +421,102 @@ XP
 Goin/balance
 ```
 
-Public Creator V1 safe identity allowlist is intentionally narrow and excludes email, birthday, role, internal UUID, review metadata, XP, Goin, permissions, sessions, private Drafts, storage keys and location provider metadata.
-
-Current 4C checkpoint:
+Public Creator policy:
 
 ```text
-4C architecture                        -> FOUNDER ACCEPTED
-4C.1 Creator Profile Foundation        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-4C.2 Authenticated Profile Management  -> IMPLEMENTED / FOUNDER-LOCAL FINAL POLISH RECHECK PENDING
-4C.3 Creator Application + Admin Review-> NEXT AFTER 4C.2 ACCEPTANCE
-4C.4 Public Creator policy/API         -> NOT STARTED
-4C.5 Public Creator SSR                -> NOT STARTED
-4C.6 Creator SEO/indexability          -> NOT STARTED
-4C.7 Prompt/Discovery attribution      -> NOT STARTED
-4C.8 aggregate/staging acceptance      -> NOT STARTED
+accessible = active account + approved Creator + canonical username
+indexable = accessible + complete Creator profile
+discoverable = indexable
+published Prompt count is never a Creator gate
 ```
 
-4C.2 verified evidence reported by founder on 2026-09-09 includes:
+Public Creator API/SSR privacy boundary excludes email, birthday, role/account status, internal UUID, review metadata, XP, Goin, permissions, sessions, private Drafts, storage keys and provider/admin metadata.
+
+Accepted Prompt/Discovery attribution:
 
 ```text
-Creator profile foundation tests -> 7/7 PASS
-Profile management tests         -> 8/8 PASS
-Public Prompt regression         -> 10/10 PASS
-migration 028 taxonomy seed      -> applied
-taxonomy contract tests          -> 4/4 PASS
-active taxonomy                  -> 8 categories / 40 skills
-production pnpm build            -> PASS
-profile save/reload              -> PASS across repeated data edits
-username uniqueness enforcement  -> PASS manually
-EN/FA profile content persistence-> PASS manually
-skills selection/persistence      -> PASS manually
+source_user_id remains internal provenance
+public attribution only for accessible approved Creator
+minimal public attribution = username + optional safe avatar
+ordinary/non-approved/unavailable owners remain public but unattributed
+Home/Public Discovery use Creator policy, not active-user ownership heuristic
 ```
 
-Latest 4C.2 polish adds:
+Final 4C aggregate evidence:
 
 ```text
-Outfit-style grouped el-multi-select taxonomy presentation
-shared dropdown-based birthday selector for Gregorian and Jalali calendars
-single-row year/month/day controls
-Birthday/Location card headers aligned with the rest of profile UI
-production-neutral location guidance
+pnpm test:phase4c-final -> PASS
+pnpm frontend -> PASS
+pnpm smoke:phase4c-final -> PASS
+strict locale route audit -> 463 files / zero hazards
+runtime localization -> fallback EN 0 / Public Creator FA missing 0 / extra 0
+Creator API/SSR EN+FA / redirect / 404 / privacy / staging noindex smoke -> PASS
+prompt-draft.ir not targeted
 ```
 
-Those latest visual/UX changes require one final founder-local frontend smoke before 4C.2 is marked accepted.
+Founder explicit final acceptance:
 
-Location suggestion provider is deliberately deferred. Custom public display text is the V1 behavior; provider-backed suggestion can be added later without changing the stored profile contract.
+```text
+Phase 4C تایید
+```
+
+---
+
+## Accepted locale/indexing direction inherited into 4D
+
+```text
+English/default -> unprefixed
+Persian         -> /fa
+EN + FA indexable only when authoritative localized content exists
+self-canonical per locale
+reciprocal hreflang when both authoritative localizations exist
+x-default -> English/default
+```
+
+One URL must deterministically render one language.
+
+Do not use cookie-dependent canonical language.
+
+Missing translation must not create fake indexable fallback content pretending to be authoritative.
+
+Creator sitemap/discovery eligibility must consume the accepted server-authoritative Creator `indexable` / `discoverable` result rather than recreate policy in 4D.
+
+---
+
+## Current action — 21.5.4D Sitemap / Robots / Discovery Migration
+
+4D is now unblocked by founder acceptance of 4C.
+
+Immediate audit scope:
+
+```text
+public/robots.txt
+scripts/generate-public-seo.ts
+current sitemap generation/output
+runtime routeRules and X-Robots-Tag behavior
+usePublicSeo indexability contract
+Public Prompt locale availability
+Public Creator policy.indexable/discoverable
+Discovery public projection and structured-data state
+static generate compatibility
+```
+
+Locked 4D constraints inherited from 4A–4C:
+
+```text
+one authoritative sitemap/indexability contract
+no second Creator eligibility definition
+no fake locale entries
+staging NUXT_PUBLIC_NOINDEX always wins
+application/private X-Robots-Tag rules remain intact
+protected Prompt body/variants never enter sitemap/SEO payloads
+private Drafts never public
+Creator private fields never public
+prompt-draft.ir remains untouched during staging verification
+legacy generate-public-seo retirement must be incremental and regression-safe
+```
+
+Do not begin 4E until 4D is implemented, founder-verified and explicitly accepted.
 
 ---
 
@@ -622,6 +594,9 @@ GET /api/archive/:id               -> authenticated + email gate
 
 /prompt/:id Public Prompt -> public sanitized acquisition presentation
 GET /api/public/prompts/:id -> public published-only sanitized read model
+
+/creator/:username Public Creator -> public sanitized Creator presentation
+GET /api/public/creators/:username -> public approved-accessible sanitized read model
 ```
 
 Rendering/SEO work must not weaken backend authorization.
@@ -687,7 +662,7 @@ Do not use `admin_audit_log` as behavioral analytics.
 
 ## Migration state
 
-Current branch migration head:
+Current known 4C migration head:
 
 ```text
 028_seed_profile_skill_taxonomy.sql
@@ -717,8 +692,9 @@ DO NOT merge public/protected data sources when sharing Prompt presentation UI.
 DO NOT use cookie-dependent canonical language.
 DO NOT create indexable fake localization fallback pages.
 DO NOT let route-level SEO override staging NUXT_PUBLIC_NOINDEX=true.
-DO NOT expose private account/profile data through 4C Creator surfaces.
+DO NOT expose private account/profile data through Creator surfaces.
 DO NOT infer Creator from users.role or published Prompt ownership.
+DO NOT recreate Creator indexability policy independently inside sitemap/discovery code.
 DO NOT query GitHub per Blog request.
 DO NOT embed Blog images as base64 Markdown payloads.
 DO NOT create a second uncontrolled Blog source of truth beside Git.
@@ -735,13 +711,14 @@ When continuing in a new chat:
 ```text
 1. read this STATUS.md
 2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey its smallest-rebuild-scope rule
-3. read docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
-4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
-5. confirm Phase 21.5.4A and 4B remain DONE / ACCEPTED
+3. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+4. read docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md for the accepted Creator baseline
+5. confirm Phase 21.5.4A, 4B and 4C remain DONE / ACCEPTED
 6. inspect the latest feature/growth-foundation branch state before implementation
-7. preserve all accepted 4A/4B route, localization, SEO, noindex and public/protected boundaries
-8. preserve Creator as a separate reviewed public-identity lifecycle rather than a users.role
-9. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
-10. do not mark any 4C slice DONE until founder-local verification and explicit acceptance
-11. do not begin 4D until 4C is implemented, founder-verified and explicitly accepted
+7. begin 4D audit-first: robots, sitemap, Discovery migration, generate-public-seo compatibility
+8. preserve all accepted 4A/4B/4C route, localization, SEO, noindex, privacy and public/protected boundaries
+9. consume Creator policy.indexable/discoverable rather than re-deriving Creator eligibility
+10. use package.json workflow scripts and the smallest rebuild/test scope needed for founder-local verification
+11. do not mark 4D DONE until founder-local/staging verification and explicit acceptance
+12. do not begin 4E until 4D is accepted
 ```
