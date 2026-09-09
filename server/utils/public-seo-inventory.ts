@@ -1,7 +1,9 @@
+import { projectBlogPublicInventory } from '../../shared/blog-public-inventory'
 import {
   isPublicApiInventory,
   type PublicApiInventory,
 } from '../../scripts/public-url-inventory'
+import { loadBlogRepository } from './blogRepository'
 
 const PUBLIC_INVENTORY_FETCH_TIMEOUT_MS = 5000
 const PUBLIC_INVENTORY_CACHE_TTL_MS = 5 * 60 * 1000
@@ -64,4 +66,9 @@ export async function fetchRuntimePublicInventory(apiBase: string) {
   } finally {
     clearTimeout(timeout)
   }
+}
+
+export async function loadRuntimeBlogPublicInventory() {
+  const articles = await loadBlogRepository()
+  return projectBlogPublicInventory(articles)
 }
