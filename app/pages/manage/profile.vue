@@ -478,11 +478,12 @@ onBeforeUnmount(() => {
           </el-text>
         </el-flex>
 
-        <el-grid cols="minmax(240px, 1fr) minmax(240px, 1fr)" :gap="12" class="w100">
-          <el-flex rules="ccs" :gap="6">
+        <div class="profile-account-grid w100">
+          <el-flex rules="ccs" :gap="6" dir="ltr">
             <el-text :size="11" :weight="700">{{ t("manage.profile.account.username") }}</el-text>
             <el-text-field
               v-model="form.username"
+              type="text"
               :actions="false"
               :disabled="saving || usernameLocked"
               :placeholder="t('manage.profile.account.usernamePlaceholder')"
@@ -491,17 +492,18 @@ onBeforeUnmount(() => {
               {{ t("manage.profile.account.usernameLocked") }}
             </el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="ccs" :gap="6" dir="ltr">
             <el-text :size="11" :weight="700">{{ t("manage.profile.account.email") }}</el-text>
             <el-text-field
               v-model="form.email"
+              type="email"
               :actions="false"
               :disabled="saving"
               :placeholder="t('manage.profile.account.emailPlaceholder')"
             />
             <el-text :size="10" color="normal55">{{ t("manage.profile.account.emailPrivate") }}</el-text>
           </el-flex>
-        </el-grid>
+        </div>
       </el-flex>
 
       <el-flex rules="csc" :gap="14" :p="18" bg="surface" :radius="16" :br="1" bc="normal15" class="w100">
@@ -656,6 +658,12 @@ onBeforeUnmount(() => {
   max-width: 1120px;
 }
 
+.profile-account-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(240px, 1fr));
+  gap: 12px;
+}
+
 .profile-hidden-input {
   position: absolute;
   width: 1px;
@@ -710,5 +718,11 @@ onBeforeUnmount(() => {
   z-index: 4;
   transform: translateY(50%);
   filter: drop-shadow(0 10px 24px rgba(0, 0, 0, 0.3));
+}
+
+@media (max-width: 720px) {
+  .profile-account-grid {
+    grid-template-columns: 1fr;
+  }
 }
 </style>
