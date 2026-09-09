@@ -1,7 +1,7 @@
 import {
   normalizePublicCreatorAttribution,
   type PublicCreatorAttribution,
-} from '~/utils/publicCreatorAttribution'
+} from '../utils/publicCreatorAttribution'
 
 export type PublicPromptLocale = 'en' | 'fa'
 export type PublicPromptModel = 'dall-e' | 'gpt-image-1'
