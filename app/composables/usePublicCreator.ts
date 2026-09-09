@@ -1,4 +1,4 @@
-import { normalizePublicCreatorUsername } from '~/utils/publicRoutes'
+import { normalizePublicCreatorUsername } from '../utils/publicRoutes'
 
 export type PublicCreatorLocale = 'en' | 'fa'
 export type PublicCreatorLinkType =
