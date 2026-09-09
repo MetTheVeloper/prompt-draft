@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C.7 Prompt / Discovery Creator Attribution
 
-Status: **IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-09
 
@@ -29,7 +29,7 @@ This slice does not redefine ownership, Creator eligibility, or public Prompt vi
 
 ---
 
-## 1. Audit finding that triggered 4C.7
+## 1. Audit finding
 
 Before this slice, Public Prompt intentionally had no Creator attribution.
 
@@ -42,13 +42,13 @@ prompt_archive_items.source_user_id
 -> expose username/avatar
 ```
 
-That heuristic was no longer valid after the explicit Creator architecture was accepted. An active account is not necessarily a public Creator.
+That heuristic became invalid after the explicit Creator architecture was accepted. An active account is not necessarily a public Creator.
 
-4C.7 therefore removes the `active user == public owner` assumption and converges Public Prompt, Home Showcase and Public Discovery on the same accepted Creator accessibility policy.
+4C.7 removes the `active user == public owner` assumption and converges Public Prompt, Home Showcase and Public Discovery on the same accepted Creator accessibility policy.
 
 ---
 
-## 2. Attribution eligibility
+## 2. Accepted attribution eligibility
 
 The provenance source remains authoritative:
 
@@ -56,7 +56,7 @@ The provenance source remains authoritative:
 prompt_archive_items.source_user_id
 ```
 
-A published Archive item receives public Creator attribution only when that source identity satisfies the already accepted Creator accessibility policy:
+A published Archive item receives public Creator attribution only when that source identity satisfies the accepted Creator accessibility policy:
 
 ```text
 source user exists
@@ -65,11 +65,11 @@ AND creator_accounts.status == approved
 AND username is canonical
 ```
 
-This is intentionally the **accessible** Creator gate, not the `indexable` gate.
+This intentionally uses the **accessible** Creator gate rather than the `indexable` gate.
 
-Therefore a defensive approved Creator whose profile has become incomplete may still be linked as the same accessible public identity while the Creator page itself is noindex. Profile completeness and publication count do not redefine attribution identity.
+Therefore an approved accessible Creator whose profile is defensively incomplete may still be linked as the same public identity while the Creator page itself becomes noindex.
 
-The following remain valid and simply have `creator: null`:
+The following remain valid and simply return `creator: null`:
 
 ```text
 published Prompt from ordinary active user
@@ -81,13 +81,13 @@ invalid/noncanonical username
 legacy/provenance-less Archive item
 ```
 
-Public Prompt visibility is never revoked merely because public Creator attribution is unavailable.
+Public Prompt visibility is never revoked merely because Creator attribution is unavailable.
 
 ---
 
-## 3. Shared minimal public attribution DTO
+## 3. Accepted minimal public attribution DTO
 
-Both Public Prompt and Discovery use the same positive allowlist:
+Public Prompt and Discovery use the same positive allowlist:
 
 ```ts
 creator: {
@@ -115,7 +115,7 @@ storage keys
 provider/admin metadata
 ```
 
-The browser also runs a strict attribution normalizer and rejects noncanonical usernames or unsafe avatar URL protocols.
+The browser also applies strict attribution normalization and rejects noncanonical usernames or unsafe avatar URL protocols.
 
 ---
 
@@ -127,13 +127,7 @@ Implemented:
 backend/src/publicCreatorAttribution.mjs
 ```
 
-The mapper calls the exact accepted:
-
-```text
-evaluateCreatorPublicPolicy(...)
-```
-
-exported by `publicCreator.mjs` and emits attribution only when `policy.accessible == true`.
+The mapper calls the accepted Creator public policy and emits attribution only when `policy.accessible == true`.
 
 This prevents a second independent Creator definition from appearing in Public Prompt or Discovery.
 
@@ -143,7 +137,7 @@ Avatar metadata is presentation-only. An unsafe/missing avatar is reduced to `nu
 
 ## 5. Public Prompt attribution
 
-`GET /api/public/prompts/:id` now joins provenance through:
+`GET /api/public/prompts/:id` joins provenance through:
 
 ```text
 items.source_user_id
@@ -151,7 +145,7 @@ items.source_user_id
 -> creator_accounts
 ```
 
-The selected internal account/Creator-state fields are used only to evaluate accessibility and are never serialized.
+Selected internal account/Creator-state fields are used only to evaluate accessibility and are never serialized.
 
 Public Prompt DTO gains only:
 
@@ -168,7 +162,7 @@ The canonical Public Prompt route renders attribution in the existing Prompt pre
 /fa/creator/:username
 ```
 
-The route still exposes no raw Prompt body, variants, source Draft id, source user UUID or protected product/account state.
+The route continues to expose no raw Prompt body, variants, source Draft id, source user UUID or protected account/product state.
 
 ---
 
@@ -181,7 +175,7 @@ The route still exposes no raw Prompt body, variants, source Draft id, source us
 /api/discover
 ```
 
-The former direct active-user `owner` join/projection is removed.
+The former direct active-user `owner` projection is removed.
 
 Discovery now evaluates the same source user + Creator state through the shared attribution mapper and returns:
 
@@ -189,23 +183,17 @@ Discovery now evaluates the same source user + Creator state through the shared 
 creator: PublicCreatorAttribution | null
 ```
 
-The old public vocabulary:
+The old public vocabulary `owner` is removed from the migrated frontend showcase type/UI. Archive ownership/provenance remains internal; the public concept is approved Creator attribution.
 
-```text
-owner
-```
+Both Home Discovery and public `/discover/:slug` cards link avatar/handle to the localized canonical Creator route. Cards without Creator attribution remain otherwise unchanged and fully usable.
 
-is removed from the frontend showcase type and UI. This is deliberate: Archive ownership/provenance exists internally, while the public concept is approved Creator attribution.
-
-Both Home Discovery and public `/discover/:slug` cards link the avatar/handle to the localized canonical Creator route. A card without Creator attribution remains otherwise unchanged and fully usable.
-
-The query is one joined projection; it does not perform an N+1 call to the full Public Creator API for each card.
+The query is one joined projection; it does not perform an N+1 call to the full Public Creator API for every card.
 
 ---
 
 ## 7. Browser contract
 
-New pure browser utility:
+Pure browser utility:
 
 ```text
 app/utils/publicCreatorAttribution.ts
@@ -235,110 +223,62 @@ No browser route needs an internal UUID to resolve a Creator link.
 
 ---
 
-## 8. Focused tests
+## 8. Accepted automated verification
 
-Backend:
-
-```text
-backend/src/publicCreatorAttribution.test.mjs
-backend/src/homeDiscoveryAttribution.test.mjs
-backend/src/publicPrompt.test.mjs
-```
-
-Command:
+Founder-local evidence on 2026-09-09:
 
 ```text
-npm run test:creator-attribution
+docker compose exec api npm run test:creator-attribution -> 17/17 PASS
+docker compose exec api npm run test:public-creator      -> 10/10 PASS
+pnpm test:creator-attribution-web                         -> 13/13 PASS
+pnpm test:phase4b-final                                   -> PASS
+pnpm locale:check                                         -> PASS
 ```
 
-Coverage:
+The Phase 4B final regression included:
 
 ```text
-approved/active/canonical attribution
-pending/rejected/suspended/inactive/null/noncanonical -> null
-minimal positive allowlist
-private sentinel leakage prevention
-unsafe avatar -> null avatar only
-source_user_id remains SQL provenance join
-Discovery removes active-user owner heuristic
-non-Creator Prompt remains public/unattributed
-Public Prompt protected-field regression remains enforced
+SEO route contracts PASS
+Public Prompt browser/SSR DTO PASS
+Public Prompt SEO PASS
+localized Public Prompt description PASS
+shared Prompt presentation PASS
+Public Discovery visual layer PASS
+Public Prompt link migration PASS
+interaction polish PASS
+strict locale-routing audit -> 463 source files / no hazards
 ```
 
-Frontend:
+The runtime localization gate reported:
 
 ```text
-scripts/public-creator-attribution.test.ts
-scripts/public-prompt-client-contract.test.ts
-scripts/public-discovery-visual-contract.test.ts
+Missing fallback EN keys      -> 0
+Public Creator missing in FA  -> 0
+Public Creator extra in FA    -> 0
 ```
 
-Command:
-
-```text
-pnpm test:creator-attribution-web
-```
-
-Coverage:
-
-```text
-browser attribution positive allowlist
-canonical username / safe avatar validation
-Public Prompt locale-safe Creator link
-Home/Public Discovery Creator vocabulary
-no `.owner` public heuristic in migrated surfaces
-no source user id / UUID / email in attribution UI
-```
-
-Existing 4B-focused regression should remain green after the attribution extension.
+Global FA parity debt remains informational and is not a 4C.7 regression.
 
 ---
 
-## 9. Founder-local verification gate
+## 9. Accepted founder smoke / acceptance
 
-Because both API and frontend changed but there is no migration, use the smallest service scopes:
-
-```powershell
-git pull
-
-pnpm api
-docker compose exec api npm run test:creator-attribution
-docker compose exec api npm run test:public-creator
-
-pnpm test:creator-attribution-web
-pnpm test:phase4b-final
-pnpm locale:check
-
-pnpm frontend
-```
-
-No `db:schema` and no full `pnpm stack` are required.
-
-Manual staging smoke should verify an approved Creator-owned Prompt plus an unattributed/non-Creator fixture when available:
+Founder completed the requested verification sequence and explicitly accepted the slice:
 
 ```text
-[ ] approved Creator attribution appears on Public Prompt
-[ ] Creator attribution links to locale-safe Creator route
-[ ] Home Discovery approved Creator attribution links correctly
-[ ] Public Discovery approved Creator attribution links correctly
-[ ] ordinary/non-Creator published item remains public but has no Creator attribution
-[ ] no UUID/email/private owner data appears in browser/API payloads
+4C.7 تایید. خیلی هم عالی
 ```
 
-If a convenient non-Creator published fixture does not exist on staging, the automated policy matrix is acceptable for that negative case; do not mutate production-like data solely to manufacture a UI fixture.
+The automated state matrix is accepted for negative non-Creator/unavailable attribution cases when no convenient staging UI fixture exists; production-like data does not need to be mutated solely to manufacture a negative browser fixture.
 
----
-
-## 10. Acceptance rule
-
-Until focused backend/frontend regression, browser smoke and explicit founder acceptance:
+Result:
 
 ```text
-4C.7 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.7 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
 
-After acceptance:
+Next:
 
 ```text
-4C.8 — aggregate/staging acceptance
+4C.8 — Aggregate + Staging Acceptance
 ```
