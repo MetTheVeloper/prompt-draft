@@ -496,7 +496,8 @@ onBeforeUnmount(() => {
             <el-text :size="11" :weight="700">{{ t("manage.profile.account.email") }}</el-text>
             <el-text-field
               v-model="form.email"
-              type="email"
+              type="text"
+              inputmode="email"
               :actions="false"
               :disabled="saving"
               :placeholder="t('manage.profile.account.emailPlaceholder')"
