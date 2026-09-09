@@ -1,14 +1,11 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
+import { PUBLIC_DISCOVERY_ROUTES } from "./shared/public-discovery";
 import { APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS } from "./shared/seo-route-policy";
 
-const publicDiscoveryRoutes = [
-  "/discover/portrait-photography",
-  "/discover/3d-sculpture",
-  "/discover/illustration-animation",
-  "/discover/posters-editorial",
-  "/discover/product-fashion",
-  "/discover/cinematic-game-art",
-];
+const publicDiscoveryRoutes = PUBLIC_DISCOVERY_ROUTES.flatMap((route) => [
+  route,
+  `/fa${route}`,
+]);
 
 const clientOnlyRouteRules = Object.fromEntries(
   APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS.flatMap((route) => [
