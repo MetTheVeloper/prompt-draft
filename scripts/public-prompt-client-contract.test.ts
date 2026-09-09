@@ -29,13 +29,19 @@ const PUBLIC_PROMPT = {
       storageKey: 'PRIVATE_STORAGE_KEY',
     },
   ],
+  creator: {
+    username: 'grassias',
+    avatarUrl: 'https://cdn.example.com/avatar.webp',
+    email: 'PRIVATE_CREATOR_EMAIL',
+    id: 'PRIVATE_CREATOR_UUID',
+  },
   prompt: 'PROTECTED_PROMPT_SENTINEL',
   variants: [{ prompt: 'PROTECTED_VARIANT_SENTINEL' }],
   balance: 500,
   permissions: ['all'],
 }
 
-test('normalizes the exact public prompt browser/SSR contract', () => {
+test('normalizes the exact public prompt browser/SSR contract including minimal Creator attribution', () => {
   const prompt = normalizePublicPrompt(PUBLIC_PROMPT)
   assert.ok(prompt)
   assert.deepEqual(prompt, {
@@ -63,14 +69,36 @@ test('normalizes the exact public prompt browser/SSR contract', () => {
         thumbnailUrl: 'https://cdn.example.com/thumb.webp',
       },
     ],
+    creator: {
+      username: 'grassias',
+      avatarUrl: 'https://cdn.example.com/avatar.webp',
+    },
   })
 
   const serialized = JSON.stringify(prompt)
   assert.equal(serialized.includes('PROTECTED_PROMPT_SENTINEL'), false)
   assert.equal(serialized.includes('PROTECTED_VARIANT_SENTINEL'), false)
   assert.equal(serialized.includes('PRIVATE_STORAGE_KEY'), false)
+  assert.equal(serialized.includes('PRIVATE_CREATOR_EMAIL'), false)
+  assert.equal(serialized.includes('PRIVATE_CREATOR_UUID'), false)
   assert.equal(serialized.includes('permissions'), false)
   assert.equal(serialized.includes('balance'), false)
+})
+
+test('accepts null Creator attribution and rejects malformed or unsafe Creator attribution', () => {
+  const unattributed = normalizePublicPrompt({ ...PUBLIC_PROMPT, creator: null })
+  assert.ok(unattributed)
+  assert.equal(unattributed.creator, null)
+
+  assert.equal(normalizePublicPrompt({
+    ...PUBLIC_PROMPT,
+    creator: { username: 'GrassiaS', avatarUrl: null },
+  }), null)
+
+  assert.equal(normalizePublicPrompt({
+    ...PUBLIC_PROMPT,
+    creator: { username: 'grassias', avatarUrl: 'javascript:alert(1)' },
+  }), null)
 })
 
 test('accepts null Telegram metadata and rejects invalid Telegram message ids', () => {
