@@ -1,4 +1,5 @@
 import { queryDatabase } from './database.mjs'
+import { mapPublicCreatorAttribution } from './publicCreatorAttribution.mjs'
 
 const HERO_MEDIA_PATH = '/api/home/hero-media'
 const SHOWCASE_PATH = '/api/home/showcase'
@@ -91,15 +92,12 @@ function normalizeLocalizedTitle(value) {
   return en && fa ? { en, fa } : null
 }
 
-function mapShowcaseItem(row) {
+export function mapShowcaseItem(row) {
   const title = normalizeLocalizedTitle(row.title)
   if (!title) throw new Error(`Home showcase item ${row.id} has invalid localized title data`)
 
   const coverFullUrl = row.coverImage?.fullUrl || null
   const coverThumbnailUrl = row.coverImage?.thumbnailUrl || coverFullUrl
-  const ownerUsername = typeof row.ownerUsername === 'string' && row.ownerUsername.trim()
-    ? row.ownerUsername.trim()
-    : null
 
   return {
     id: Number(row.id),
@@ -114,28 +112,25 @@ function mapShowcaseItem(row) {
           thumbnailUrl: coverThumbnailUrl || coverFullUrl,
         }
       : null,
-    owner: ownerUsername
-      ? {
-          username: ownerUsername,
-          avatarUrl: row.ownerAvatarUrl ?? null,
-        }
-      : null,
+    creator: mapPublicCreatorAttribution(row),
   }
 }
 
-async function listShowcaseItems(tags, limit) {
+export async function listShowcaseItems(tags, limit, query = queryDatabase) {
   const values = []
   const tagFilter = createTagFilter(tags, values)
   values.push(limit)
 
-  const result = await queryDatabase(`
+  const result = await query(`
     SELECT
       items.public_id AS id,
       items.titles AS title,
       items.published_at AS "publishedAt",
       items.telegram_url AS "telegramUrl",
-      owner.username AS "ownerUsername",
-      owner.avatar_url AS "ownerAvatarUrl",
+      creator_user.username AS "creatorUsername",
+      creator_user.avatar_url AS "creatorAvatarUrl",
+      creator_user.status AS "creatorAccountStatus",
+      creator_account.status AS "creatorStatus",
       COALESCE((
         SELECT json_agg(tags.slug ORDER BY tags.slug)
         FROM prompt_archive_item_tags it
@@ -158,9 +153,10 @@ async function listShowcaseItems(tags, limit) {
         WHERE images.archive_item_id = items.id
       ) AS "imageCount"
     FROM prompt_archive_items items
-    LEFT JOIN users owner
-      ON owner.id = items.source_user_id
-      AND owner.status = 'active'
+    LEFT JOIN users creator_user
+      ON creator_user.id = items.source_user_id
+    LEFT JOIN creator_accounts creator_account
+      ON creator_account.user_id = creator_user.id
     WHERE items.status = 'published'
       ${tagFilter}
     ORDER BY items.published_at DESC, items.public_id DESC
