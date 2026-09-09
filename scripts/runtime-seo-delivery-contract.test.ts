@@ -31,14 +31,31 @@ test('robots delivery is runtime-aware and static export uses the same renderer'
   assert.doesNotMatch(generator, /sourceRobotsPath/)
 })
 
-test('Nitro sitemap route consumes the accepted shared inventory and internal API origin', () => {
+test('Nitro sitemap route consumes the accepted shared inventory and shared runtime fetch', () => {
   const sitemapRoute = source('server/routes/sitemap.xml.ts')
+  const runtimeInventory = source('server/utils/public-seo-inventory.ts')
 
   assert.match(sitemapRoute, /buildPublicUrlInventory/)
-  assert.match(sitemapRoute, /isPublicApiInventory/)
   assert.match(sitemapRoute, /renderSitemapXml/)
+  assert.match(sitemapRoute, /fetchRuntimePublicInventory/)
   assert.match(sitemapRoute, /apiBaseInternal/)
-  assert.match(sitemapRoute, /\/api\/public\/inventory/)
   assert.match(sitemapRoute, /if \(!indexingEnabled\)/)
   assert.match(sitemapRoute, /renderSitemapXml\(\[\], siteUrl\)/)
+
+  assert.match(runtimeInventory, /isPublicApiInventory/)
+  assert.match(runtimeInventory, /\/api\/public\/inventory/)
+  assert.match(runtimeInventory, /PUBLIC_INVENTORY_CACHE_TTL_MS/)
+})
+
+test('Nitro llms route projects the same accepted shared inventory with staging precedence', () => {
+  const llmsRoute = source('server/routes/llms.txt.ts')
+
+  assert.match(llmsRoute, /buildPublicUrlInventory/)
+  assert.match(llmsRoute, /renderLlmsTxt/)
+  assert.match(llmsRoute, /fetchRuntimePublicInventory/)
+  assert.match(llmsRoute, /apiBaseInternal/)
+  assert.match(llmsRoute, /if \(!indexingEnabled\)/)
+  assert.match(llmsRoute, /renderLlmsTxt\(\[\], siteUrl\)/)
+  assert.doesNotMatch(llmsRoute, /prompts\?id=/)
+  assert.doesNotMatch(llmsRoute, /user\?un=/)
 })
