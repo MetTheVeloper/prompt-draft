@@ -2,9 +2,21 @@ FROM node:24-alpine AS builder
 
 WORKDIR /app
 
-COPY package.json pnpm-lock.yaml ./
-RUN corepack enable && pnpm --version
+# Bootstrap the pinned package manager before copying project manifests so
+# ordinary package.json/lockfile changes do not invalidate the Corepack layer.
+# Docker Desktop connections can intermittently expose unreachable IPv6 routes,
+# so prefer IPv4 DNS ordering and retry the one-time Corepack download.
+ARG PNPM_VERSION=11.6.0
+RUN corepack enable && \
+    for attempt in 1 2 3; do \
+      NODE_OPTIONS=--dns-result-order=ipv4first corepack install --global pnpm@${PNPM_VERSION} && \
+      pnpm --version && break; \
+      if [ "$attempt" = "3" ]; then exit 1; fi; \
+      echo "Corepack pnpm bootstrap failed on attempt $attempt; retrying..."; \
+      sleep 5; \
+    done
 
+COPY package.json pnpm-lock.yaml ./
 COPY . .
 
 # Keep the pnpm content-addressable store across Docker builds. The registry can
