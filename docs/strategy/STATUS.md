@@ -8,175 +8,87 @@ Branch:
 feature/growth-foundation
 ```
 
-Inherited Growth baseline:
-
-```text
-3ef4b0c65777d6f2814744ed0a1fa8a78750a389
-```
-
----
-
 ## Current state
 
 ```text
-Docker/backend Milestones 1–20 -> inherited COMPLETE baseline
-Milestone 21 Growth Foundation  -> DONE / LOCALLY VERIFIED / USER ACCEPTED
+Milestones 1–20                               -> inherited COMPLETE baseline
+Milestone 21 Growth Foundation               -> DONE / USER ACCEPTED
 
 Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
-Phase 21.5.1 Hybrid / SSR Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-Phase 21.5.2 Docker Production Runtime          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-Phase 21.5.3 Cloudflare Production Path         -> DONE / FOUNDER-PRODUCTION-LIKE VERIFIED / ACCEPTED
-Phase 21.5.4 SEO/Public Content Architecture    -> IN PROGRESS / 4A + 4B + 4C + 4D ACCEPTED / 4E BLOG V1 NEXT
-Phase 21.5.5 Organic Acquisition Launch         -> NOT STARTED
-
-Phase 2 Domain Expansion                        -> NEXT STRATEGIC PHASE AFTER 21.5
-First domain                                    -> Content Creation
-Founder Domain Expansion research               -> MAY RUN IN PARALLEL WITH 21.5
+21.5.1 Hybrid / SSR Architecture               -> DONE / ACCEPTED
+21.5.2 Docker Production Runtime               -> DONE / ACCEPTED
+21.5.3 Cloudflare Production Path              -> DONE / ACCEPTED
+21.5.4 SEO/Public Content Architecture         -> IN PROGRESS
+  4A SEO Contracts & Route Semantics           -> DONE / ACCEPTED
+  4B Public Prompt Architecture                -> DONE / ACCEPTED
+  4C Public Creator + Indexability             -> DONE / ACCEPTED
+  4D Sitemap / Robots / Discovery / llms       -> DONE / ACCEPTED 2026-09-09
+  4E Blog V1                                   -> IN PROGRESS / 4E.1 ACCEPTED / 4E.2 VERIFICATION
+  4F Integration / Legacy Retirement           -> NOT STARTED
+21.5.5 Organic Acquisition Launch              -> NOT STARTED
 ```
 
----
-
-## Canonical sources
-
-Milestone:
-
-```text
-docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
-```
-
-Mandatory operational workflow:
+## Mandatory sources
 
 ```text
 docs/strategy/DEVELOPMENT_WORKFLOW.md
-```
-
-Current Phase 4 parent:
-
-```text
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
+docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
+docs/strategy/MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
 ```
 
-Accepted Phase records:
+## Verification workflow
+
+Time-first rule remains mandatory:
 
 ```text
-docs/strategy/MILESTONE_21_5_PHASE4A_SEO_CONTRACTS.md
-docs/strategy/MILESTONE_21_5_PHASE4B_PUBLIC_PROMPT_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4B_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5_PUBLIC_SURFACE_HARDENING.md
-docs/strategy/MILESTONE_21_5_PHASE4B_5D_FINAL_REGRESSION_ACCEPTANCE.md
-docs/strategy/MILESTONE_21_5_PHASE4C_PUBLIC_CREATOR_ARCHITECTURE.md
-docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
-docs/strategy/MILESTONE_21_5_PHASE4C_8_AGGREGATE_STAGING_ACCEPTANCE.md
-docs/strategy/MILESTONE_21_5_PHASE4D_SITEMAP_ROBOTS_AI_DISCOVERY.md
-docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
-docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
+inspect changed services
+-> focused tests
+-> no rebuild if possible
+-> frontend-only: pnpm frontend
+-> backend-only: pnpm api
+-> full stack only when genuinely required
 ```
 
-Rendering ADR:
+Do not tell founder to rebuild unrelated services.
+
+## Accepted runtime/staging baseline
 
 ```text
-docs/strategy/ADR_002_HYBRID_RENDERING_STRATEGY.md
+Nuxt SSR by default for acquisition surfaces
+explicit client-only application route policy
+Nuxt/Nitro node-server Docker runtime
+independent backend API retained
+server-internal API origin separated from browser API origin
+Cloudflare staging: grassic.ir + api.grassic.ir
+NUXT_PUBLIC_NOINDEX=true on staging
+prompt-draft.ir remains untouched
 ```
 
----
-
-## Milestone 21.5 execution order
+## Accepted locale/indexing contract
 
 ```text
-Phase 1 — Hybrid / SSR Architecture                  DONE / ACCEPTED
-Phase 2 — Docker Production Runtime                  DONE / ACCEPTED
-Phase 3 — Cloudflare Production Path                 DONE / ACCEPTED
-Phase 4 — SEO Platform & Public Content Architecture IN PROGRESS / 4E NEXT
-Phase 5 — Organic Acquisition Launch & Measurement   NOT STARTED
-```
-
-Phase 4 slices:
-
-```text
-21.5.4A SEO Contracts & Route Semantics                    DONE / ACCEPTED
-21.5.4B Public Prompt Architecture                         DONE / ACCEPTED
-21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
-21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
-21.5.4E Blog V1                                            NEXT / AUDIT FIRST
-21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
-```
-
-Required order:
-
-```text
-4A -> 4B -> 4C -> 4D -> 4E -> 4F
-```
-
----
-
-## Accepted runtime/rendering baseline
-
-```text
-ssr: true
-Nuxt/Nitro production runtime
-hybrid route policy
-server-only internal API origin
-browser-visible public API origin
-Cloudflare staging path
-NUXT_PUBLIC_NOINDEX staging protection
-```
-
-Staging topology:
-
-```text
-https://grassic.ir
-  -> Cloudflare edge / tunnel
-  -> frontend:3000
-
-https://api.grassic.ir
-  -> Cloudflare edge / tunnel
-  -> api:4000
-```
-
-Stable production remains:
-
-```text
-prompt-draft.ir -> untouched until explicit rollout
-```
-
----
-
-## Accepted public locale/indexability direction
-
-```text
-English/default -> unprefixed
-Persian         -> /fa
-```
-
-Rules:
-
-```text
-one URL deterministically renders one language
-self-canonical per authoritative localization
-reciprocal EN/FA hreflang when both authoritative
-x-default -> English/default
+EN/default -> unprefixed
+FA         -> /fa
+self canonical per authoritative locale
+reciprocal hreflang only for authoritative locales
+x-default -> EN/default when EN exists
 no fake localized fallback pages
-NUXT_PUBLIC_NOINDEX=true always overrides route-level index intent on staging
+staging global noindex always wins
 ```
 
----
+## Accepted public/protected boundaries
 
-## Accepted Public Prompt boundary
-
-Canonical acquisition routes:
+Public Prompt:
 
 ```text
 /prompt/:id
 /fa/prompt/:id
-```
-
-Public API:
-
-```text
 GET /api/public/prompts/:id
 ```
 
-Protected product detail:
+Protected Prompt detail remains:
 
 ```text
 /prompts?id=<id>
@@ -184,28 +96,15 @@ Protected product detail:
 GET /api/archive/:id
 ```
 
-Public Prompt projection never exposes protected Prompt body, variants, private Drafts, source ids, storage keys, economy/viewer/permission state.
-
-The Public Prompt page may intentionally link users to the protected `/prompts?id=` route as its product CTA; that route is not a canonical acquisition URL.
-
----
-
-## Accepted Public Creator boundary
-
-Canonical routes:
+Public Creator:
 
 ```text
 /creator/:username
 /fa/creator/:username
-```
-
-Public API:
-
-```text
 GET /api/public/creators/:username
 ```
 
-Policy:
+Creator policy:
 
 ```text
 accessible = active account + approved Creator + canonical username
@@ -213,52 +112,34 @@ indexable = accessible + complete Creator profile
 discoverable = indexable
 ```
 
-Published Prompt count is never a Creator eligibility gate.
+Public surfaces never expose protected Prompt bodies/variants, private Drafts, email, internal UUID/source ids, balance, permissions, sessions, storage/provider/admin data.
 
-Public Creator projection excludes internal UUID, email, birthday, role/account state, Creator review metadata, XP/Goin, permissions/sessions, private Drafts, storage/provider/admin data.
+## Accepted Phase 4D
 
----
-
-## Accepted Phase 4D — final state
+Final evidence:
 
 ```text
-4D.1 audit                                  DONE
-4D.2 shared public inventory + sitemap      DONE / ACCEPTED
-4D.3 robots + staging precedence            DONE / ACCEPTED
-4D.4 llms.txt shared projection             DONE / ACCEPTED
-4D.5 native Discovery SEO migration         DONE / ACCEPTED
-4D.6 aggregate/staging/static verification  DONE / ACCEPTED
-Phase 4D                                    DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
+pnpm test:phase4d-final    PASS
+pnpm smoke:phase4d-final   PASS
+pnpm verify:phase4d-static PASS
 ```
 
-Final 4D architecture:
+Accepted shared architecture:
 
 ```text
-GET /api/public/inventory
-        |
-        v
-one shared canonical public inventory
-        +--> sitemap.xml
-        +--> llms.txt
-        +--> static compatibility
+one public inventory
+-> sitemap.xml
+-> llms.txt
+-> static compatibility
 
-shared SEO application route policy
-        +--> route policy
-        +--> X-Robots-Tag
-        +--> origin robots exclusions
+one application SEO route policy
+-> client-only rules
+-> X-Robots-Tag
+-> robots exclusions
 
 native Discovery SSR
-        +--> visible content
-        +--> usePublicSeo
-        +--> CollectionPage / ItemList JSON-LD
-```
-
-Final verification evidence:
-
-```text
-pnpm test:phase4d-final      PASS
-pnpm smoke:phase4d-final     PASS
-pnpm verify:phase4d-static   PASS
+-> visible content
+-> native SEO/structured data
 ```
 
 Static acceptance snapshot:
@@ -266,249 +147,231 @@ Static acceptance snapshot:
 ```text
 220 sitemap URLs
 220 llms URLs
-identical sitemap/llms URL sets
+identical URL sets
 331 prerendered routes
-12 EN/FA Discovery HTML pages checked
+12 EN/FA Discovery pages checked
 ```
 
-External staging smoke proved:
+## Phase 4E Blog V1
+
+Canonical source:
 
 ```text
-public inventory privacy
-protected /api/archive/:id still 401 anonymously
-robots/sitemap/llms staging noindex precedence
-EN/FA Prompt SSR
-EN/FA Creator SSR
-EN/FA Discovery SSR
-canonical/hreflang/structured data
-no private data leakage
-prompt-draft.ir not targeted
+docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
 ```
 
-Cloudflare Managed robots content is currently prepended at the edge. Its crawler-specific content signals are separate from Prompt Draft's origin robots/indexability source of truth.
-
----
-
-## Current action — 21.5.4E Blog V1
-
-Phase 4D is closed.
-
-Current task:
-
-```text
-21.5.4E — Blog V1
-```
-
-Start audit-first before implementation.
-
-Public route target:
-
-```text
-/blog
-/blog/:slug
-/fa/blog
-/fa/blog/:slug
-```
-
-Accepted editorial architecture:
+Editorial architecture:
 
 ```text
 Git repository          -> canonical editorial source
-Docker/Nitro deployment -> normal public runtime content source
-Arvan Object Storage    -> Blog media + mirror/emergency publication store
+Nuxt/Nitro deployed app -> normal public runtime source
+Arvan Object Storage    -> Blog media + explicit mirror/emergency role
 ```
 
 Never query GitHub per public Blog request.
 
-Target Article contract:
+### 4E.1 — ACCEPTED
+
+Record:
 
 ```text
-Article
-  id
-  slug
-  status
-  author
-  publishedAt
-  updatedAt
-  hero media
-  localizations
-    en
-      title
-      description
-      body
-    fa
-      title
-      description
-      body
+docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
 ```
 
-Minimum public Blog behavior:
+Final state:
 
 ```text
-SSR article HTML
-localized title/description/body
-real canonical + EN/FA alternates
-OG/Twitter metadata
-Article/BlogPosting JSON-LD
-published/updated dates
-author attribution when authoritative
-real 404/canonical behavior
-shared sitemap inclusion
-shared llms inclusion
-article-view + meaningful CTA analytics
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
 
-Manage target:
+Repository package:
+
+```text
+content/blog/<articleId>/
+  article.json
+  en.md
+  fa.md
+```
+
+Article public locale eligibility:
+
+```text
+status=published
++ localized title
++ localized description
++ matching non-empty Markdown body
+```
+
+`availableLocales` is derived only.
+
+V1 author is explicit editorial/site identity, not private user identity.
+
+Shared safe Markdown renderer escapes raw HTML and rejects unsafe active URL schemes.
+
+Runtime content path:
+
+```text
+content/blog
+-> Nitro serverAssets baseName=blog
+-> useStorage('assets:blog')
+-> shared/blog-article.ts validation
+```
+
+Founder evidence:
+
+```text
+pnpm test:blog-contract -> 18/18 PASS
+pnpm frontend -> PASS through Nitro + Docker container start
+founder -> تایید
+```
+
+### 4E.2 — CURRENT
+
+Record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
+```
+
+Status:
+
+```text
+IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
+```
+
+Implemented routes:
+
+```text
+/blog
+/fa/blog
+/blog/:slug
+/fa/blog/:slug
+```
+
+Implemented frontend Nitro public projection:
+
+```text
+GET /api/public/blog?locale=en|fa
+GET /api/public/blog/:slug?locale=en|fa
+```
+
+Public DTOs are locale-specific and publication-policy-driven.
+
+Index:
+
+```text
+SSR localized content
+locale-safe primary navigation link
+empty-state safe before first article
+CollectionPage + ItemList JSON-LD
+EN/FA canonical alternates
+```
+
+Detail:
+
+```text
+published + authoritative target locale only
+real 404
+canonical slug path
+301 noncanonical variant only after canonical Article exists
+safe Markdown HTML
+article OG/Twitter
+BlogPosting JSON-LD
+published/modified metadata
+Article.availableLocales drives hreflang
+```
+
+No fake published article was inserted for testing.
+
+Current verification sequence:
+
+```powershell
+pnpm test:blog-public
+pnpm frontend
+pnpm smoke:blog-public
+```
+
+No `pnpm api` or `pnpm stack` required for 4E.2.
+
+## Remaining Blog slices
+
+```text
+4E.3 Shared sitemap/llms/static Blog inventory
+4E.4 blog.manage + /manage/blog authoring UI
+4E.5 Blog media + repository publish/emergency adapter
+4E.6 aggregate regression + external staging + static acceptance
+```
+
+## Blog management direction
+
+Target:
 
 ```text
 /manage/blog
-```
-
-Expected management UX:
-
-```text
-article list
-new/edit flow
-metadata form
-slug/status/publish dates
-EN/FA content editor
-Markdown toolbar
+explicit blog.manage permission
+article list/new/edit
+EN/FA Markdown workflow
 live preview
 validation
-image upload/insertion
-save/export/publish workflow
+image insertion
+save/publish/export
 ```
 
-Preferred editor candidate:
+Do not reuse unrelated Archive/System permissions.
+
+Preferred editor candidate remains `md-editor-v3`, subject to project integration verification.
+
+## Blog media direction
+
+Reuse/extract the existing Arvan/AWS-SigV4 storage primitives rather than coupling Blog to Archive item APIs.
+
+Markdown stores stable public media URLs/references only; never base64 payloads.
+
+Candidate namespace:
 
 ```text
-md-editor-v3
+blog/<articleId>/<mediaId>/...
 ```
 
-As of the 4E planning audit on 2026-09-09, current npm latest is `6.5.6`, MIT licensed. Exact dependency pin and SSR/client integration must be verified before implementation.
-
-Blog media must reuse or safely extract the existing Arvan SigV4 storage pipeline. Do not embed base64 images inside Markdown.
-
-Emergency Arvan publication must remain an explicit temporary state, not a second uncontrolled source of truth.
-
----
-
-## 4E audit-first checklist
-
-Before code changes:
+Operational note:
 
 ```text
-1. inspect current repo for any existing Blog/content code — do not assume none
-2. choose exact article directory/file/frontmatter contract
-3. define publication + localization eligibility
-4. define slug validation/canonical redirects/404s
-5. choose Markdown parser/render/sanitization path safe for SSR
-6. define Blog index sorting/pagination/tag/category scope for V1
-7. define author model: editorial identity vs approved Creator reference
-8. add explicit Blog manage permission rather than piggybacking unrelated admin permissions
-9. inspect/extract existing Arvan storage upload code for Blog media reuse
-10. validate md-editor-v3 integration and bundle/runtime impact
-11. define Git-backed Manage save/publish workflow without request-time GitHub dependence
-12. define emergency Arvan mirror/reconciliation metadata
-13. integrate published Blog inventory into the accepted shared sitemap/llms pipeline
-14. add analytics events for article view and meaningful product action
-15. preserve pnpm generate + Docker/Nitro staging compatibility
-16. build focused tests before broad rebuilds
-```
-
----
-
-## Existing management/permission observations relevant to 4E
-
-Current `/manage` sections are driven by explicit permission mapping.
-
-Existing permissions include:
-
-```text
-dashboard.view
-system.metrics.view
-users.view
-users.manage
-creators.manage
-drafts.view_all
-drafts.delete_any
-system.settings.manage
-collage.view
-archive.view
-archive.manage
-```
-
-There is not yet a Blog-specific permission in the current accepted authorization list.
-
-4E should add an explicit permission such as a Blog/content management capability rather than reusing an unrelated Archive/System permission merely for convenience.
-
-Current `/manage` sections do not yet include Blog.
-
----
-
-## Existing Arvan/media observation relevant to 4E
-
-The current Archive media path already provides reusable building blocks around:
-
-```text
-AWS-SigV4-compatible Arvan storage
-stable public URL construction
-PUT/DELETE object operations
-public immutable cache headers
-full + thumbnail WebP handling
-validation and cleanup
-```
-
-The current Archive upload endpoint is Archive-specific and accepts base64 JSON payloads.
-
-4E should reuse/extract the storage/signing primitives, but Blog Markdown itself must receive stable public URLs/references, not base64 payloads.
-
-Operational diagnostic remains:
-
-```text
-unexpected SigV4 403 across multiple Arvan surfaces
+unexpected SigV4 403 across Arvan surfaces
 -> verify host/system clock first
 ```
 
----
-
-## Hard rules inherited forward
+## Hard rules
 
 ```text
 DO NOT weaken authorization for SEO/Blog.
-DO NOT make GET /api/archive/:id public.
+DO NOT make protected Archive detail public.
 DO NOT expose protected Prompt bodies/variants.
-DO NOT expose private Drafts/account/Creator data.
-DO NOT create fake localized Blog pages.
+DO NOT expose private Draft/account/Creator data.
 DO NOT query GitHub per public Blog request.
-DO NOT create Git + Arvan as uncontrolled equal content sources.
-DO NOT embed base64 image payloads in Markdown.
-DO NOT put draft/unpublished Blog URLs into sitemap or llms.txt.
-DO NOT create a second Blog indexability/sitemap policy.
-DO NOT let Blog route SEO override staging NUXT_PUBLIC_NOINDEX=true.
+DO NOT make Git + Arvan uncontrolled equal content sources.
+DO NOT embed base64 images in Markdown.
+DO NOT make editor-specific document state canonical.
+DO NOT create fake localized Blog routes.
+DO NOT put draft/unpublished Blog URLs into sitemap/llms.
+DO NOT recreate Blog indexability policy outside Article contract.
+DO NOT let Blog SEO override staging noindex.
 DO NOT touch prompt-draft.ir before explicit rollout.
-DO NOT default to full-stack rebuilds when narrower verification is sufficient.
+DO NOT default to full-stack rebuilds when a narrower gate is sufficient.
 ```
-
----
 
 ## Resume instruction
 
-When continuing in a new chat:
-
 ```text
-1. read this STATUS.md
-2. read docs/strategy/DEVELOPMENT_WORKFLOW.md and obey time-first/smallest-rebuild rules
-3. read docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-4. confirm 4A, 4B, 4C and 4D are DONE / ACCEPTED
-5. read docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md for the final accepted 4D baseline
-6. inspect latest feature/growth-foundation HEAD before any Blog decision/write
-7. continue 4E audit-first and create/use its dedicated source-of-truth
-8. preserve accepted EN/FA canonical/noindex/public-private contracts
-9. preserve Git as canonical Blog editorial source and no request-time GitHub reads
-10. reuse/extract Arvan storage primitives for Blog media; no base64 Markdown
-11. add explicit Blog management permission rather than unrelated permission reuse
-12. add Blog to shared sitemap/llms inventory only after published Article/localization semantics are authoritative
-13. keep grassic.ir/api.grassic.ir as staging; do not touch prompt-draft.ir
-14. use the smallest focused verification gates before any rebuild
+1. read STATUS.md
+2. read DEVELOPMENT_WORKFLOW.md
+3. read MILESTONE_21_5_PHASE4E_BLOG_V1.md
+4. read MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
+5. read MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
+6. inspect latest feature/growth-foundation HEAD
+7. confirm 4E.1 is DONE / ACCEPTED
+8. current task is 4E.2 founder verification
+9. run pnpm test:blog-public -> pnpm frontend -> pnpm smoke:blog-public
+10. do not rebuild backend/full stack for 4E.2
+11. keep grassic.ir staging/noindex and prompt-draft.ir untouched
+12. after explicit 4E.2 acceptance proceed to 4E.3
 ```
