@@ -57,7 +57,7 @@ export function buildPublicBlogIndexStructuredData(input: {
           datePublished: article.publishedAt,
           dateModified: article.updatedAt,
           author: {
-            '@type': 'Person',
+            '@type': 'Organization',
             name: article.author.name,
           },
         },
@@ -91,7 +91,7 @@ export function buildPublicBlogPostingStructuredData(input: {
     dateModified: article.updatedAt,
     ...(imageUrl ? { image: [imageUrl] } : {}),
     author: {
-      '@type': 'Person',
+      '@type': 'Organization',
       name: article.author.name,
       ...(authorUrl ? { url: authorUrl } : {}),
     },
