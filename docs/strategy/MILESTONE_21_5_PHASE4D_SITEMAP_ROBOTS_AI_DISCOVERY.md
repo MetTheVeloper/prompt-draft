@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D Sitemap / Robots / Discovery + AI Discovery
 
-Status: **IN PROGRESS / 4D.2 + 4D.3 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED / 4D.4 IMPLEMENTED / VERIFICATION PENDING**
+Status: **IN PROGRESS / 4D.2–4D.5 DONE + ACCEPTED / 4D.6 IMPLEMENTED / FINAL VERIFICATION PENDING**
 
 Date: 2026-09-09
 
@@ -30,7 +30,14 @@ Operational verification rule:
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 ```
 
-This file is the Phase 4D source of truth. It does not mark any 4D implementation slice DONE without founder-local/staging verification plus explicit acceptance.
+Detailed later-slice records:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
+```
+
+This file is the Phase 4D source of truth. Phase 4D itself remains unaccepted until the 4D.6 aggregate/static/external-staging verification passes and the founder explicitly accepts the phase.
 
 ---
 
@@ -62,44 +69,42 @@ The accepted 4A–4C policies remain authoritative.
 
 ---
 
-## 2. Mandatory audit scope before implementation
+## 2. Mandatory audit scope + resulting architecture
 
-Read and inspect the current authoritative branch before deciding implementation shape.
+The current authoritative branch was audited before 4D implementation.
 
-Audit at least:
+The audit covered:
 
 ```text
-public/robots.txt
-public/llms.txt if one exists
-scripts/generate-public-seo.ts
-current sitemap.xml generation/output
+robots delivery
+sitemap generation
+legacy public SEO post-generation
 Nuxt routeRules
 server X-Robots-Tag behavior
 NUXT_PUBLIC_NOINDEX handling
-app/composables/usePublicSeo.ts
-Public Prompt public DTO + availableLocales contract
-Public Creator policy.indexable/discoverable
-Discovery API/projection/SEO/structured-data behavior
-static generate / pnpm generate compatibility
-legacy post-generate HTML/sitemap/robots patching
+usePublicSeo
+Public Prompt locale availability
+Public Creator indexable/discoverable policy
+Discovery API/SSR/structured-data behavior
+pnpm generate compatibility
+Docker/Nitro runtime delivery
 ```
 
-Audit result on 2026-09-09:
+Key findings:
 
 ```text
-public/robots.txt initially remained a static compatibility file
+public/robots.txt originally duplicated only part of the accepted application noindex policy
 public/llms.txt did not exist
-scripts/generate-public-seo.ts was the sitemap/robots post-generate writer
-legacy Discovery snapshot behavior still contains /prompts?id= and /user?un= links
-Nuxt/runtime noindex and X-Robots behavior remain separate accepted protection layers
-Public Prompt availableLocales is derived from complete localized title + description
-Public Creator indexable/discoverable is server-authoritative under the accepted 4C policy
-Creator inventory cannot be inferred from Prompt ownership/publication count
-pnpm generate remains a legacy static-generation compatibility path
-Docker/Nitro uses pnpm build rather than pnpm generate, so SEO artifact delivery must exist at runtime as well
+scripts/generate-public-seo.ts originally owned sitemap/robots and legacy Discovery enrichment
+legacy Discovery HTML still used /prompts?id= and /user?un= detail links
+Public Prompt availableLocales already had one authoritative localization contract
+Public Creator indexability/discoverability was already server-authoritative under accepted 4C
+Creator inventory could not be inferred from Prompt ownership/publication count
+Docker/Nitro uses pnpm build rather than pnpm generate
+therefore crawler artifacts needed both runtime and legacy static delivery
 ```
 
-4D.1 audit has been performed. Its findings are the implementation basis for the accepted 4D.2 and 4D.3 slices and the current 4D.4 implementation.
+4D.1 audit is complete. Its findings drove accepted 4D.2–4D.5 and the current 4D.6 final verification harness.
 
 ---
 
@@ -125,7 +130,7 @@ Canonical routes:
 /fa/prompt/:id
 ```
 
-Eligibility must continue to come from the accepted public Prompt contract:
+Eligibility continues to come from the accepted public Prompt contract:
 
 ```text
 published-only public item
@@ -165,117 +170,102 @@ indexable = accessible + complete Creator profile
 discoverable = indexable
 ```
 
-4D must consume this result. It must not reproduce Creator eligibility with SQL heuristics, publication counts, roles, or profile scoring.
+4D consumes this result. It does not reproduce Creator eligibility with SQL heuristics, publication counts, roles, or profile scoring.
 
 ### Discovery
 
-Discovery remains a sanitized public acquisition surface. 4D may improve truthful structured-data/SEO integration and sitemap participation, but must preserve real 404/canonical behavior and the accepted Creator attribution policy.
+Discovery remains a sanitized public acquisition surface.
+
+4D preserves:
+
+```text
+real canonical/404 behavior
+approved Creator attribution policy
+public-only Prompt projection
+locale-aware canonical links
+```
 
 ---
 
-## 4. Sitemap target contract
+## 4. Shared public inventory + sitemap — ACCEPTED 4D.2
 
-4D converges on one reusable public URL inventory rather than independent arrays scattered across scripts.
-
-Target categories:
-
-```text
-static acquisition routes
-Discovery canonical routes
-Public Prompt canonical routes for authoritative locales
-eligible Public Creator canonical routes for authoritative locales
-future published Blog routes only after 4E exists
-```
-
-Important:
-
-```text
-Blog is not a current 4D live inventory source.
-```
-
-The sitemap must not invent Blog URLs before 4E establishes published Article semantics.
-
-For EN/FA entries, the implementation reuses the accepted locale/canonical rules rather than inferring translations from route existence alone.
-
-### 4.1 Selected implementation shape after audit
-
-The selected 4D architecture is shared inventory projection:
-
-```text
-accepted server-authoritative Prompt/Creator inputs
-+ static acquisition/Discovery inputs
--> shared public URL inventory builder
--> sitemap.xml projection
--> llms.txt projection
-```
-
-Dynamic public eligibility is supplied by a narrow public API projection:
+Dynamic public eligibility is supplied by:
 
 ```text
 GET /api/public/inventory
 ```
 
-Its public response intentionally contains only URL-inventory inputs:
+Public response intentionally contains only URL-inventory inputs:
 
 ```text
-Prompt: public numeric id + authoritative availableLocales
-Creator: canonical username + availableLocales + policy.indexable/discoverable
+Prompt
+  public numeric id
+  authoritative availableLocales
+
+Creator
+  canonical username
+  availableLocales
+  policy.indexable
+  policy.discoverable
 ```
 
 It does not serialize protected Prompt data, internal ids, account/lifecycle metadata, balances, permissions, sessions, storage/provider data, or admin data.
 
-Creator enumeration consumes the accepted 4C policy evaluator. It does not use Prompt publication count, role, or ownership as an eligibility gate.
+Shared URL projection:
 
-`NUXT_PUBLIC_NOINDEX=true` is an outer inventory gate: shared public URL projections become empty rather than advertising staging URLs.
+```text
+scripts/public-url-inventory.ts
+```
 
-### 4.2 Runtime + static delivery
+Resource families:
 
-After the 4D.3 audit, sitemap delivery is supported in both required deployment paths:
+```text
+/
+/guide
+/discover/:slug
+/prompt/:id
+/creator/:username
+```
+
+Blog is deliberately absent until 4E establishes published Article semantics.
+
+`NUXT_PUBLIC_NOINDEX=true` is an outer inventory gate:
+
+```text
+buildPublicUrlInventory -> []
+```
+
+Sitemap delivery exists in both paths:
 
 ```text
 Nitro/Docker runtime -> GET /sitemap.xml
 legacy static export -> .output/public/sitemap.xml
 ```
 
-Both paths consume `buildPublicUrlInventory` and `renderSitemapXml`.
+Both consume the same `buildPublicUrlInventory` + `renderSitemapXml` contract.
+
+4D.2 founder evidence included:
+
+```text
+pnpm test:public-url-inventory -> 7/7 PASS
+pnpm test:public-inventory-api -> 16/16 PASS
+GET /api/public/inventory -> 101 Prompts + 1 Creator at verification time
+privacy scan -> clean
+production-like pnpm generate -> PASS
+sitemap canonical route count -> 220 at verification time
+```
+
+Accepted 2026-09-09.
 
 ---
 
-## 5. Robots target contract
+## 5. Robots normalization + staging precedence — ACCEPTED 4D.3
 
-`robots.txt` remains the crawler-access-control surface.
-
-4D normalizes:
-
-```text
-public crawling intent
-application/private route exclusions
-sitemap declaration
-locale-space consistency
-interaction with server X-Robots-Tag
-interaction with NUXT_PUBLIC_NOINDEX staging protection
-```
-
-Rules:
-
-```text
-robots.txt must never be used as a replacement for backend authorization
-application/private X-Robots-Tag behavior remains intact
-NUXT_PUBLIC_NOINDEX=true always wins on staging
-route-level index intent may never weaken staging noindex
-```
-
-AI-crawler-specific directives are not inferred from the presence of `llms.txt`.
-
-### 5.1 Accepted 4D.3 robots architecture
-
-The 4D.3 audit found real drift between the accepted application noindex policy and the old static `public/robots.txt`.
-
-Accepted normalization:
+Accepted architecture:
 
 ```text
 shared/seo-route-policy.ts
-  -> one EN/FA application-route policy for Nuxt routeRules + X-Robots middleware + robots exclusions
+  -> one EN/FA application-route policy
 
 shared/public-robots.ts
   -> one robots renderer
@@ -287,8 +277,25 @@ scripts/generate-public-seo.ts
   -> static-export robots delivery from the same renderer
 
 public/robots.txt
-  -> removed to avoid shadowing / duplicate policy
+  -> removed
 ```
+
+Application noindex route families include:
+
+```text
+/create
+/collage
+/vectorizer
+/history
+/dashboard
+/login
+/manage
+/wizard
+/prompts
+/user
+```
+
+with the same accepted `/fa` space and nested manage/wizard behavior.
 
 Staging precedence:
 
@@ -297,461 +304,340 @@ NUXT_PUBLIC_NOINDEX=true
 -> response X-Robots-Tag noindex remains authoritative
 -> robots keeps application/private exclusions
 -> robots does not advertise Sitemap
--> runtime sitemap contains zero public URL entries
+-> runtime sitemap contains zero public URLs
 ```
 
-Production-like indexing-enabled behavior may advertise the canonical sitemap.
+The staging robots model intentionally does not use global `Disallow: /`, because crawlers must be able to fetch public pages and observe noindex signals.
+
+4D.3 founder evidence included:
+
+```text
+pnpm test:robots-policy -> 6/6 PASS
+pnpm test:public-url-inventory -> 7/7 PASS
+pnpm frontend -> PASS
+runtime /robots.txt -> 200 + noindex + all EN/FA disallows + no Sitemap
+runtime /sitemap.xml -> 200 + noindex + 0 URLs + no legacy detail routes
+```
+
+Accepted 2026-09-09.
+
+External Cloudflare-edge proof is intentionally part of 4D.6.
 
 ---
 
-## 6. AI discovery — llms.txt
+## 6. AI discovery — llms.txt — ACCEPTED 4D.4
 
-Phase 4D explicitly includes:
+`/llms.txt` is treated as an optional/experimental supplemental AI-discovery convention.
 
-```text
-/llms.txt
-```
-
-### 6.1 What llms.txt means for Prompt Draft
-
-For this project, `llms.txt` is treated as an **optional / experimental supplemental AI-discovery convention**: a concise, LLM-friendly orientation to the site's canonical public resources.
-
-It is not treated as:
+It is not:
 
 ```text
 a crawler permission system
 a robots.txt replacement
 a sitemap replacement
 a training opt-in or opt-out mechanism
-a guarantee that any AI model will index or cite the site
-an independent source of truth for indexability
+a guarantee that an AI system will index or cite the site
+an independent indexability source of truth
 ```
 
-Crawler access remains a `robots.txt` concern. Search URL discovery remains a sitemap/public-indexability concern. `llms.txt` only provides a machine-friendly guide to already-public canonical resources.
-
-### 6.2 llms.txt source-of-truth rule
-
-`llms.txt` must consume the same public canonical/indexable inventory used by sitemap/public route policy.
-
-Forbidden architecture:
+Architecture:
 
 ```text
-sitemap eligibility logic A
-+ llms.txt eligibility logic B
+shared public URL inventory
+-> sitemap.xml
+-> llms.txt
 ```
 
-Required architecture:
-
-```text
-shared public inventory/policy
--> sitemap projection
--> llms.txt projection
-```
-
-This is especially important for:
-
-```text
-Prompt locale availability
-Creator policy.indexable/discoverable
-Creator canonical username
-Discovery canonical slugs
-future Blog publication/localization state
-```
-
-### 6.3 2026 llms.txt convention audit
-
-The current llms.txt proposal was reviewed during 4D.4 implementation. The August 2026 v2 proposal keeps the file Markdown-based and recommends:
-
-```text
-H1 site/project name
-short blockquote summary
-optional explanatory text
-H2 sections containing Markdown link lists
-```
-
-Prompt Draft adopts that basic shape without expanding 4D.4 into page-level Markdown mirrors or new `rel=alternate` / `rel=describedby` link-header work.
-
-Those optional v2 discoverability extensions may be evaluated later only if they are justified by product value; they are not required for 4D V1.
-
-### 6.4 Candidate / implemented llms.txt content
-
-Current resource families:
-
-```text
-/
-/guide
-/discover/:slug
-/prompt/:id
-/creator/:username
-```
-
-Future after 4E only:
-
-```text
-/blog
-/blog/:slug
-```
-
-The output groups canonical inventory links into:
-
-```text
-Core
-Discovery
-Creators
-Public Prompts
-```
-
-It does not enumerate internal application/account routes.
-
-### 6.5 4D.4 implementation shape
-
-Implemented architecture:
-
-```text
-scripts/public-url-inventory.ts
-  -> buildPublicUrlInventory(...)
-  -> renderSitemapXml(publicInventory, siteUrl)
-  -> renderLlmsTxt(publicInventory, siteUrl)
-
-server/utils/public-seo-inventory.ts
-  -> shared cached runtime fetch of GET /api/public/inventory
-
-server/routes/sitemap.xml.ts
-  -> consumes shared runtime inventory fetch
-
-server/routes/llms.txt.ts
-  -> consumes the same shared runtime inventory fetch + builder + llms renderer
-
-scripts/generate-public-seo.ts
-  -> writes sitemap.xml + llms.txt + robots.txt from the same publicInventory
-```
-
-No new API endpoint, database query, Prompt/Creator eligibility rule, or external/GitHub request path was added.
-
-### 6.6 AI-discovery privacy boundary
-
-`llms.txt` must never contain or link models toward intentionally protected/private data such as:
-
-```text
-protected Prompt bodies or variants
-private Drafts
-/manage or authenticated account surfaces
-email
-birthday
-role/account status
-Creator lifecycle/review metadata
-internal UUIDs/source_user_id/source_draft_id
-XP/Goin/balance
-permissions/sessions/referrals
-storage keys
-location provider metadata
-admin audit data
-```
-
-Public Prompt and Creator links point only to canonical acquisition routes.
-
-### 6.7 Staging rule
-
-`grassic.ir` remains staging and `NUXT_PUBLIC_NOINDEX=true` remains authoritative.
-
-In global noindex mode:
-
-```text
-buildPublicUrlInventory -> []
-llms.txt -> orientation text only / zero canonical resource links
-sitemap.xml -> zero public URLs
-robots.txt -> does not advertise sitemap
-X-Robots-Tag -> noindex, nofollow, noarchive
-```
-
-Adding `llms.txt` must not be interpreted as overriding staging noindex or as permission to promote staging URLs to a production AI/search inventory.
-
-`prompt-draft.ir` remains untouched until an explicit production rollout phase.
-
----
-
-## 7. Discovery migration target
-
-4D should audit the Milestone-21 legacy `generate-public-seo.ts` Discovery snapshot behavior against the accepted native Nuxt SSR path.
-
-Target direction:
-
-```text
-native SSR metadata remains authoritative
-truthful Discovery structured data uses sanitized public data
-canonical Public Prompt links remain /prompt/:id
-canonical Creator links remain /creator/:username
-shared public URL inventory feeds sitemap/AI discovery
-legacy static SEO patching is reduced incrementally, not deleted blindly
-```
-
-Any legacy retirement must be regression-safe for:
-
-```text
-pnpm generate
-production Nuxt/Nitro build
-Docker staging runtime
-SEO metadata
-sitemap
-robots
-Discovery presentation
-```
-
-Current 4D.4 intentionally leaves the legacy Discovery snapshot/rendering behavior in place. Canonical-link and structured-data migration remains scoped to 4D.5.
-
----
-
-## 8. Execution slices
-
-Current boundaries:
-
-```text
-4D.1 Existing robots/sitemap/legacy SEO/runtime audit
-     AUDITED
-
-4D.2 Shared authoritative public URL inventory + sitemap migration
-     DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
-
-4D.3 Robots normalization + staging precedence verification
-     DONE / FOUNDER-LOCAL + STAGING-CONFIG RUNTIME VERIFIED / ACCEPTED 2026-09-09
-
-4D.4 llms.txt AI-discovery projection from shared inventory
-     IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
-
-4D.5 Discovery structured-data/legacy-generator migration
-     NOT STARTED
-
-4D.6 Aggregate regression + staging acceptance
-     NOT STARTED
-```
-
-No slice becomes DONE without founder verification and explicit acceptance.
-
-### 8.1 4D.2 implementation checkpoint — 2026-09-09
-
-Implemented files/contracts:
-
-```text
-backend/src/publicLocalization.mjs
-  shared Public Prompt authoritative-locale normalization
-
-backend/src/publicInventory.mjs
-  sanitized GET /api/public/inventory projection
-  Prompt published/public-id/locale inputs only
-  Creator policy reuse from accepted 4C evaluator
-
-backend/src/publicPrompt.mjs
-  reuses shared localization contract
-  routes the public inventory endpoint through the existing public API surface
-
-scripts/public-url-inventory.ts
-  shared canonical URL builder
-  static + Discovery + Prompt + Creator resource families
-  EN unprefixed / FA-prefixed canonical projection
-  global noindex outer gate
-  sitemap formatter
-
-scripts/generate-public-seo.ts
-  sitemap migrated away from STATIC_PUBLIC_ROUTES
-  fetches authoritative dynamic inventory when indexing is enabled
-  fails rather than silently publishing a partial dynamic sitemap on invalid inventory response
-  keeps legacy Discovery snapshot behavior for 4D.5
-
-scripts/run-static-generate.mjs
-  Windows-safe pnpm invocation for founder-local static generation
-
-package.json
-  restores @vueuse/core as the direct runtime dependency already represented in pnpm-lock.yaml
-
-focused contract tests
-  backend/src/publicInventory.test.mjs
-  scripts/public-url-inventory.test.ts
-  scripts/public-seo-generator-contract.test.ts
-```
-
-### 8.2 4D.2 founder-local verification evidence — ACCEPTED 2026-09-09
-
-Focused contract gates:
-
-```text
-pnpm test:public-url-inventory
--> 7 tests / 7 pass / 0 fail
-
-pnpm api
--> API image rebuilt successfully
-
-pnpm test:public-inventory-api
--> 16 tests / 16 pass / 0 fail
-```
-
-Runtime inventory evidence:
-
-```text
-GET http://127.0.0.1:4000/api/public/inventory
--> ok = true
--> prompts = 101
--> creators = 1
--> protected-field privacy scan = no matches
-```
-
-Static-generation compatibility:
-
-```text
-NUXT_PUBLIC_SITE_URL=https://example.test
-NUXT_PUBLIC_API_BASE=http://127.0.0.1:4000
-NUXT_PUBLIC_NOINDEX=false
-pnpm generate
--> PASS
--> Discovery enrichment 6/6
--> sitemap generated for 220 canonical public routes
-```
-
-Expected route-count proof:
-
-```text
-101 Prompt x 2 locales = 202
-1 Creator x 2 locales  =   2
-2 static x 2 locales   =   4
-6 Discovery x 2 locales=  12
-TOTAL                   = 220
-```
-
-Generated-artifact inspection:
-
-```text
-sitemap <url> count = 220
-canonical /prompt/:id present
-canonical /fa/prompt/:id present
-canonical /creator/:username present
-canonical /fa/creator/:username present
-Discovery EN/FA routes present
-legacy /prompts?id= entries in sitemap = 0
-legacy /user?un= entries in sitemap = 0
-generated robots sitemap declaration -> PASS
-```
-
-The founder explicitly accepted 4D.2 after this evidence on 2026-09-09.
-
-### 8.3 4D.3 founder-local/staging-config verification evidence — ACCEPTED 2026-09-09
-
-Focused gates:
-
-```text
-pnpm test:robots-policy
--> 6 tests / 6 pass / 0 fail
-
-pnpm test:public-url-inventory
--> 7 tests / 7 pass / 0 fail
-
-pnpm frontend
--> Docker/Nitro production build PASS
--> runtime bundle contains robots.txt.mjs + sitemap.xml.mjs
-```
-
-Verified running frontend environment:
-
-```text
-NUXT_PUBLIC_NOINDEX=true
-NUXT_PUBLIC_SITE_URL=https://grassic.ir
-```
-
-Runtime localhost smoke against that staging-config container:
-
-```text
-GET /robots.txt
--> 200
--> X-Robots-Tag: noindex, nofollow, noarchive
--> accepted EN + FA application routes excluded
--> no Sitemap declaration
-
-GET /sitemap.xml
--> 200
--> X-Robots-Tag: noindex, nofollow, noarchive
--> <url> count = 0
--> /prompts?id= matches = 0
--> /user?un= matches = 0
-```
-
-External Cloudflare-edge verification for `grassic.ir/robots.txt` and `grassic.ir/sitemap.xml` remains part of 4D.6 aggregate staging acceptance rather than being duplicated as a 4D.3 blocker.
-
-The founder explicitly accepted 4D.3 after this evidence on 2026-09-09.
-
-### 8.4 4D.4 implementation checkpoint — 2026-09-09
-
-Implemented files/contracts:
+Runtime/static implementation:
 
 ```text
 scripts/public-url-inventory.ts
   renderLlmsTxt(resources, siteUrl)
-  deterministic v2-style Markdown projection grouped by resource family
-  noindex/empty inventory produces zero canonical links
 
 server/utils/public-seo-inventory.ts
-  shared cached runtime public-inventory acquisition used by sitemap + llms
+  shared cached runtime inventory acquisition
 
 server/routes/llms.txt.ts
   Nitro runtime llms delivery
-  internal API origin for runtime inventory
-  noindex precedence
-
-server/routes/sitemap.xml.ts
-  refactored to reuse shared runtime public-inventory acquisition
 
 scripts/generate-public-seo.ts
-  static export writes sitemap.xml + llms.txt + robots.txt from one publicInventory
-
-focused tests
-  scripts/public-llms.test.ts
-  scripts/public-seo-generator-contract.test.ts
-  scripts/runtime-seo-delivery-contract.test.ts
+  static sitemap + llms + robots from one publicInventory
 ```
 
-4D.4 is not accepted until founder-local verification passes and the founder explicitly accepts the slice.
+The output uses a Markdown shape compatible with the audited August-2026 llms.txt proposal:
+
+```text
+# Prompt Draft
+> short summary
+## Core
+## Discovery
+## Creators
+## Public Prompts
+```
+
+No page-level Markdown mirrors or extra llms discoverability headers were added in V1.
+
+Staging behavior:
+
+```text
+NUXT_PUBLIC_NOINDEX=true
+-> inventory=[]
+-> llms orientation only
+-> zero canonical links
+```
+
+4D.4 founder evidence:
+
+```text
+pnpm test:llms-discovery -> 9/9 PASS
+pnpm test:public-url-inventory -> 7/7 PASS
+pnpm frontend -> PASS
+runtime staging-config /llms.txt -> 200 / no-store / noindex / zero canonical links
+production-like static projection -> sitemap 220 / llms 220 / identical URL sets
+private + legacy scans -> clean
+```
+
+Explicitly accepted 2026-09-09.
+
+---
+
+## 7. Native Discovery SEO + legacy generator retirement — ACCEPTED 4D.5
+
+Detailed record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_5_DISCOVERY_MIGRATION.md
+```
+
+Audit found the legacy post-generator was still:
+
+```text
+fetching /api/discover a second time
+injecting a second visible Discovery snapshot
+injecting independent CollectionPage JSON-LD
+using /prompts?id= Prompt detail links
+using /user?un= Creator detail links
+expecting legacy owner instead of current creator attribution
+```
+
+Accepted architecture:
+
+```text
+one shared Discovery catalog
+-> native Nuxt /discover/:slug SSR
+-> native visible cards
+-> native usePublicSeo metadata
+-> native CollectionPage / ItemList JSON-LD
+```
+
+Authoritative Discovery catalog:
+
+```text
+app/shared/public-discovery.ts
+```
+
+Root compatibility shim:
+
+```text
+shared/public-discovery.ts
+```
+
+Consumers include:
+
+```text
+useDiscoveryPreferences
+nuxt.config legacy prerender routes
+public URL inventory
+```
+
+Native Discovery JSON-LD uses only sanitized public data:
+
+```text
+localized title
+canonical localized /prompt/:id
+publishedAt
+language
+tags
+public image
+optional approved Creator username + canonical /creator/:username
+```
+
+`scripts/generate-public-seo.ts` no longer fetches or renders Discovery content independently. It retains only cleanup for stale legacy markers plus the crawler artifacts that truly require post-generation projection.
+
+4D.5 focused verification:
+
+```text
+pnpm test:discovery-seo -> 8/8 PASS
+pnpm test:public-url-inventory -> 7/7 PASS
+```
+
+Final frontend verification:
+
+```text
+Nuxt client build PASS
+Nuxt server build PASS
+Nitro node-server build PASS
+Docker image built
+frontend container started
+```
+
+Final raw staging SSR source was inspected for both:
+
+```text
+/discover/portrait-photography
+/fa/discover/portrait-photography
+```
+
+and proved:
+
+```text
+correct locale title/description/lang/dir
+self canonical + reciprocal hreflang + x-default
+staging noindex meta
+native CollectionPage -> ItemList -> CreativeWork
+canonical /prompt/:id and /fa/prompt/:id
+no /prompts?id=
+no /user?un=
+no protected/private field matches
+```
+
+The live sample did not contain Creator attribution, so runtime `author` was naturally absent. The focused contract test proves the optional approved-Creator path uses canonical localized `/creator/:username` URLs.
+
+The founder explicitly authorized acceptance on 2026-09-09.
+
+Production-like fresh static generation is intentionally executed once in 4D.6 rather than repeated during 4D.5 debugging.
+
+---
+
+## 8. Final aggregate + staging acceptance — 4D.6 CURRENT
+
+Detailed record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4D_6_AGGREGATE_STAGING_ACCEPTANCE.md
+```
+
+4D.6 introduces no new indexability/public policy.
+
+It adds three verification commands:
+
+```powershell
+pnpm test:phase4d-final
+pnpm smoke:phase4d-final
+pnpm verify:phase4d-static
+```
+
+### 8.1 Aggregate regression
+
+```text
+scripts/phase4d-final-regression.mjs
+```
+
+Runs without rebuild:
+
+```text
+accepted 4A–4C aggregate baseline
+public URL inventory/sitemap contracts
+robots/runtime contracts
+llms/runtime contracts
+native Discovery/legacy retirement contracts
+```
+
+### 8.2 External staging smoke
+
+```text
+scripts/phase4d-final-staging-smoke.mjs
+```
+
+Defaults to:
+
+```text
+https://grassic.ir
+https://api.grassic.ir
+```
+
+and explicitly refuses `prompt-draft.ir` targets.
+
+It dynamically selects an authoritative EN+FA Prompt and an indexable/discoverable EN+FA Creator from `/api/public/inventory` and checks:
+
+```text
+public inventory privacy
+protected /api/archive/:id still 401/403 unauthenticated
+external robots.txt staging precedence
+external sitemap.xml zero-URL staging behavior
+external llms.txt zero-link staging behavior
+EN + FA Prompt SSR
+EN + FA Creator SSR
+EN + FA Discovery SSR
+canonical/hreflang/structured data
+legacy/private exclusion
+```
+
+### 8.3 Production-like static compatibility
+
+```text
+scripts/phase4d-static-generate-verification.mjs
+```
+
+The wrapper runs one isolated production-like `pnpm generate` against the current local public inventory without mutating the founder's parent shell environment.
+
+It dynamically calculates expected canonical URL count from:
+
+```text
+static routes
+6 Discovery categories
+all authoritative Prompt locales
+all indexable Creator locales
+```
+
+Then verifies:
+
+```text
+sitemap count == expected
+llms count == expected
+sitemap URL set == llms URL set
+robots advertises example.test/sitemap.xml
+all 12 EN/FA Discovery routes prerender natively
+no staging noindex in production-like static HTML
+no legacy snapshot markers
+no /prompts?id=
+no /user?un=
+no private/protected serialized fields
+```
+
+4D.6 is implemented but not accepted until all three commands pass and the founder explicitly accepts the final Phase 4D evidence.
 
 ---
 
 ## 9. Verification discipline
 
-Before proposing test/rebuild commands, read:
+Project-wide rule:
 
 ```text
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 ```
 
-That file exists specifically to keep local verification fast. Follow its rules:
+4D.6 current changes are verification scripts/package commands/docs only.
+
+The 4D.5 frontend runtime image was already rebuilt successfully.
+
+Therefore the next gate does not require another runtime rebuild:
 
 ```text
-inspect changed files first
-use no rebuild when possible
-otherwise rebuild only the affected service
-prefer root package.json pnpm scripts
-never default to pnpm stack
-run narrow slice tests before broad aggregate tests
+DO NOT run pnpm frontend merely for 4D.6
+DO NOT run pnpm api
+DO NOT run pnpm stack
 ```
 
-Focused 4D contracts cover at least:
+Final order:
 
 ```text
-shared public inventory determinism
-Prompt EN/FA sitemap eligibility
-Creator indexable/discoverable sitemap eligibility
-no fake localized URLs
-staging/global noindex inventory precedence
-no protected/private serialization
-sitemap consumes the shared eligibility source
-robots/app/private boundaries
-llms.txt contains canonical public-safe resources only
-llms.txt and sitemap consume the same eligibility source
+1. pnpm test:phase4d-final
+2. pnpm smoke:phase4d-final
+3. pnpm verify:phase4d-static
 ```
 
-Remaining later-slice contracts:
-
-```text
-Discovery canonical/public links remain correct
-legacy generator compatibility or intentional retirement path
-```
-
-Final staging acceptance must prove `/sitemap.xml`, `/robots.txt`, `/llms.txt`, representative Prompt/Creator/Discovery routes and staging noindex behavior without targeting `prompt-draft.ir`.
+The static verifier is intentionally last because it is the expensive gate.
 
 ---
 
@@ -774,23 +660,37 @@ DO NOT touch prompt-draft.ir during 4D staging implementation/verification.
 
 ---
 
-## 11. Acceptance rule
+## 11. Execution status / acceptance rule
 
 Current state:
 
 ```text
-4D -> IN PROGRESS
+4D -> IN PROGRESS / FINAL VERIFICATION PENDING
 4D.1 -> AUDITED
 4D.2 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 4D.3 -> DONE / FOUNDER-LOCAL + STAGING-CONFIG RUNTIME VERIFIED / ACCEPTED 2026-09-09
-4D.4 -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING / NOT ACCEPTED
-4D.5 -> NOT STARTED
-4D.6 -> NOT STARTED
+4D.4 -> DONE / FOUNDER-LOCAL + STAGING-CONFIG VERIFIED / ACCEPTED 2026-09-09
+4D.5 -> DONE / FOUNDER-LOCAL + STAGING SSR VERIFIED / ACCEPTED 2026-09-09
+4D.6 -> IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
 ```
 
-To accept 4D, all accepted 4A–4C regressions must remain intact and the founder must explicitly accept the final 4D aggregate/staging evidence.
+Required final evidence:
 
-Only after 4D acceptance may the project proceed to:
+```text
+[ ] pnpm test:phase4d-final -> PASS
+[ ] pnpm smoke:phase4d-final -> PASS
+[ ] pnpm verify:phase4d-static -> PASS
+[ ] prompt-draft.ir not targeted
+[ ] founder explicitly accepts Phase 4D
+```
+
+Only after those pass may 4D become:
+
+```text
+DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED
+```
+
+Then the roadmap proceeds to:
 
 ```text
 21.5.4E — Blog V1
