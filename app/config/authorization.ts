@@ -10,6 +10,7 @@ export const AUTH_PERMISSIONS = {
   COLLAGE_VIEW: "collage.view",
   ARCHIVE_VIEW: "archive.view",
   ARCHIVE_MANAGE: "archive.manage",
+  BLOG_MANAGE: "blog.manage",
 } as const;
 
 export type AuthPermission =
