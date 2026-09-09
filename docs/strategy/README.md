@@ -62,8 +62,13 @@ MILESTONE_21_GROWTH_FOUNDATION.md
   -> first executable strategy milestone on this branch
 
 MILESTONE_21D_ZERO_COST_MVP_DEPLOYMENT.md
-  -> deferred continuation of 21D for near-zero-cost Cloudflare SSR/hybrid deployment,
-     local Docker API, and independent Arvan emergency fallback
+  -> historical/deferred zero-cost deployment planning that predates the accepted Milestone 21.5 hybrid path
+
+MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+  -> current accepted hybrid/SSR rendering and organic-acquisition milestone
+
+DEVELOPMENT_WORKFLOW.md
+  -> current project-wide local development and smallest-scope verification workflow
 
 CAMPAIGN_ENGINE_V1.md
   -> canonical Campaign Engine V1 domain/source-of-truth contract
@@ -135,20 +140,16 @@ Prompt Draft is not intended to become the final AI execution destination, a gen
 
 Prompt Draft is the intelligent, structured layer between human intent and external AI tools, plus a marketplace/community for reusable AI knowledge engineering.
 
-## Release invariant
+## Release / rendering invariant
 
-Until a rendering/deployment architecture change is explicitly approved, frontend-affecting work must preserve:
+The current accepted frontend direction is the Milestone 21.5 hybrid Nuxt/Nitro architecture, not the old static-only baseline.
 
-```text
-pnpm generate
-```
-
-The current frontend remains static-generated and talks directly to the independent Node API over CORS.
-
-A future rendering/deployment migration has been documented but is explicitly deferred:
+Before frontend-affecting work, follow:
 
 ```text
-docs/strategy/MILESTONE_21D_ZERO_COST_MVP_DEPLOYMENT.md
+docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+docs/strategy/DEVELOPMENT_WORKFLOW.md
+docs/strategy/STATUS.md
 ```
 
-That plan does not change the current release invariant until its implementation trigger is explicitly approved.
+Preserve the accepted split between acquisition-capable SSR surfaces and explicit client-rendered application surfaces. Use the smallest required rebuild/verification scope and run the exact verification required by the active phase; do not revive the pre-21.5 static-only deployment assumptions as current architecture.
