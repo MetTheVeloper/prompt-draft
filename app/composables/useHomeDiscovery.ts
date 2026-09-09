@@ -1,4 +1,5 @@
 import type { DiscoveryInterestDefinition } from '~/composables/useDiscoveryPreferences'
+import type { PublicCreatorAttribution } from '~/utils/publicCreatorAttribution'
 
 export type HomeShowcaseItem = {
   id: number
@@ -14,10 +15,7 @@ export type HomeShowcaseItem = {
     fullUrl: string
     thumbnailUrl: string
   } | null
-  owner: {
-    username: string
-    avatarUrl: string | null
-  } | null
+  creator: PublicCreatorAttribution | null
 }
 
 export type HomeDiscoverySection = {
