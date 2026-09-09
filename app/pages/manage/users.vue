@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import AdminCreatorApplicationsPanel from "~/components/manage/AdminCreatorApplicationsPanel.vue";
 import AdminUserInformationModal from "~/components/manage/AdminUserInformationModal.vue";
 import AdminUserRoleChangeModal from "~/components/manage/AdminUserRoleChangeModal.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
@@ -34,6 +35,10 @@ const roleFilterItems = computed(() => [
 
 const canManageUsers = computed(() => {
   return auth.can(AUTH_PERMISSIONS.USERS_MANAGE);
+});
+
+const canManageCreators = computed(() => {
+  return auth.can(AUTH_PERMISSIONS.CREATORS_MANAGE);
 });
 
 let filterTimer: ReturnType<typeof setTimeout> | null = null;
@@ -445,6 +450,8 @@ onBeforeUnmount(() => {
 
 <template>
   <el-flex rules="csc" :gap="16" class="w100">
+    <AdminCreatorApplicationsPanel v-if="canManageCreators" />
+
     <el-grid
       cols="minmax(240px, 1fr) minmax(180px, 240px) auto"
       :gap="10"
