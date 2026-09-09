@@ -2,7 +2,7 @@ import type {
   PublicBlogArticle,
   PublicBlogLocale,
   PublicBlogSummary,
-} from '~/shared/public-blog'
+} from '../shared/public-blog'
 
 export function normalizeBlogSiteUrl(value: unknown) {
   const raw = typeof value === 'string' ? value.trim() : ''
