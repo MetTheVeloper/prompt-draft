@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4C.4 Public Creator Policy + Sanitized Backend Projection
 
-Status: **IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-09
 
@@ -22,11 +22,11 @@ Verification ledger:
 docs/strategy/MILESTONE_21_5_PHASE4C_VERIFICATION.md
 ```
 
-This slice establishes the single backend definition of a public Creator and exposes the first privacy-safe public Creator DTO. It does not create the Nuxt `/creator/:username` route; that remains 4C.5.
+This slice establishes the single backend definition of a public Creator and exposes the privacy-safe public Creator DTO consumed by later SSR/SEO work.
 
 ---
 
-## 1. Public Creator policy
+## 1. Accepted Public Creator policy
 
 Implemented pure evaluator:
 
@@ -66,11 +66,9 @@ Discoverability V1:
 discoverable = indexable
 ```
 
-Published Prompt count is deliberately not a gate.
+Published Prompt count is deliberately not a gate. An approved Creator with zero published Archive Prompts remains a valid public Creator.
 
-An approved Creator with zero published Archive Prompts remains a valid public Creator.
-
-The policy keeps internal `reasons` + detailed `signals` for server/tests. Public API responses expose only the safe outcomes needed by later SEO work:
+Internal `reasons` and detailed policy `signals` remain server-only. The public response exposes only:
 
 ```ts
 policy: {
@@ -79,13 +77,9 @@ policy: {
 }
 ```
 
-Internal reasons/signals never appear in generic 404s.
-
 ---
 
-## 2. Public endpoint
-
-Implemented:
+## 2. Accepted public endpoint
 
 ```text
 GET /api/public/creators/:username
@@ -93,7 +87,7 @@ GET /api/public/creators/:username
 
 Lookup is directly username-keyed. Browser consumers never resolve username to an internal UUID first.
 
-Accepted route behavior:
+Behavior:
 
 ```text
 approved + active + canonical username -> 200
@@ -106,13 +100,20 @@ invalid/non-canonical username     -> generic 404
 non-GET                            -> 405 / Allow: GET
 ```
 
-The backend does not reveal which unavailable state caused the 404.
+Unavailable state is intentionally indistinguishable:
 
-Lowercase/canonical browser redirect UX remains 4C.5. The API itself accepts only canonical username form.
+```json
+{
+  "ok": false,
+  "message": "Public Creator not found"
+}
+```
+
+Lowercase browser redirect UX belongs to 4C.5. The API itself accepts canonical username form only.
 
 ---
 
-## 3. Positive public DTO allowlist
+## 3. Accepted positive public DTO allowlist
 
 Successful response:
 
@@ -126,24 +127,9 @@ Successful response:
       bio: { en: string, fa: string },
       article: { en: string, fa: string },
       avatarUrl: string | null,
-      cover: {
-        fullUrl: string,
-        thumbnailUrl: string,
-        width: number | null,
-        height: number | null,
-        thumbnailWidth: number | null,
-        thumbnailHeight: number | null
-      } | null,
-      skills: Array<{
-        slug: string,
-        categorySlug: string,
-        title: { en: string, fa: string }
-      }>,
-      links: Array<{
-        type: string,
-        url: string,
-        label: string | null
-      }>,
+      cover: PublicCover | null,
+      skills: PublicSkill[],
+      links: PublicProfileLink[],
       location: { text: string } | null
     },
     publications: PublicCreatorPublicationSummary[],
@@ -157,9 +143,7 @@ Successful response:
 
 Public link projection defensively re-validates HTTP/HTTPS URLs and supported link types even though authenticated profile editing already validates them.
 
-Public location includes display text only.
-
-Article remains Markdown **source** at this boundary. Sanitized HTML rendering is intentionally 4C.5.
+Public location includes display text only. Article remains Markdown source at this boundary; sanitized HTML rendering is a 4C.5 responsibility.
 
 ---
 
@@ -167,9 +151,7 @@ Article remains Markdown **source** at this boundary. Sanitized HTML rendering i
 
 Normal approval invariants require complete localized Creator content and at least one active skill.
 
-However legacy/corrupt/migrated data may violate that invariant.
-
-Therefore an otherwise accessible approved Creator remains accessible while:
+Legacy/corrupt/migrated data may violate that invariant. Therefore an otherwise accessible approved Creator remains accessible while:
 
 ```text
 policy.indexable = false
@@ -183,11 +165,11 @@ missing screen name -> canonical username fallback
 missing bio/article -> empty localized string
 ```
 
-This preserves the accepted distinction between public accessibility and SEO eligibility without leaking internal corruption reasons.
+This preserves the accepted accessibility/indexability distinction without exposing internal corruption reasons.
 
 ---
 
-## 5. Canonical publication summaries
+## 5. Accepted canonical publication summaries
 
 Creator publications are read only from:
 
@@ -228,13 +210,13 @@ storage keys
 unlock/economy/viewer data
 ```
 
-Malformed publication rows without any complete authoritative title+description locale are omitted from the Creator summary rather than breaking the whole Creator page projection.
+Malformed publication rows without any complete authoritative title+description locale are omitted rather than breaking the whole Creator projection.
 
 ---
 
-## 6. Privacy boundary
+## 6. Accepted privacy boundary
 
-Public Creator SQL intentionally does not select:
+Public Creator SQL intentionally does not select or serialize:
 
 ```text
 email
@@ -254,9 +236,7 @@ private Draft data
 admin audit data
 ```
 
-The test fixture additionally injects private sentinel fields into raw rows and asserts that none survive serialization.
-
-The following are internal-only even though they are needed to calculate policy or joins:
+The following remain internal-only even though needed for policy or joins:
 
 ```text
 users.id UUID
@@ -266,9 +246,11 @@ hasPublishedPrompt signal
 policy reasons/signals
 ```
 
+Positive allowlists are the primary privacy boundary; denylist/sentinel tests are defense in depth.
+
 ---
 
-## 7. Implementation files
+## 7. Accepted implementation files
 
 ```text
 backend/src/publicCreator.mjs
@@ -277,7 +259,7 @@ backend/src/publicPrompt.mjs
 backend/package.json
 ```
 
-The existing public-surface router in `publicPrompt.mjs` now delegates `/api/public/creators/...` to the dedicated Creator handler before applying Prompt-specific routing. Existing Public Prompt behavior remains unchanged.
+The existing public-surface router in `publicPrompt.mjs` delegates `/api/public/creators/...` to the dedicated Creator handler before applying Prompt-specific routing. Existing Public Prompt behavior remains unchanged.
 
 Focused command:
 
@@ -287,92 +269,75 @@ npm run test:public-creator
 
 ---
 
-## 8. Verification gate
+## 8. Founder-local verification evidence — 2026-09-09
 
-Founder-local required:
+Founder ran:
 
 ```powershell
 git pull
 pnpm api
 docker compose exec api npm run test:public-creator
 docker compose exec api npm run test:public-prompt
+pnpm frontend
 ```
 
-No schema migration is required for 4C.4.
-
-Suggested API smoke with an approved staging/local Creator:
+Results:
 
 ```text
-GET /api/public/creators/<approved-username> -> 200
+test:public-creator -> 10/10 PASS
+test:public-prompt  -> 10/10 PASS
+frontend Docker production build -> PASS
 ```
 
-Confirm response contains:
+The focused Creator suite verifies:
 
 ```text
-identity.username
-localized screenName/bio/article
-avatar/cover safe URLs
-active public skills
-public links
+public policy matrix
+zero-publication approved Creator remains valid
+approved-incomplete accessible/noindex distinction
+sanitized positive allowlist
+private sentinel leakage scan
+published-only canonical publication summaries
+generic none/pending/rejected/suspended 404 behavior
+invalid/noncanonical username no-query behavior
+GET/405 routing behavior
+```
+
+Founder also exercised the approved staging Creator endpoint:
+
+```text
+GET https://api.grassic.ir/api/public/creators/grassias
+```
+
+Observed result:
+
+```text
+200 / ok=true
+username=grassias
+localized ScreenName/Bio/Article present
+active localized skills present
+public website link present
 location.text only
-canonical published publication summaries
-policy.indexable/discoverable
+publications=[]
+policy.indexable=true
+policy.discoverable=true
+no private denylist fields observed
 ```
 
-Confirm response does NOT contain:
+This specifically proves the accepted zero-publication rule on a real approved Creator projection.
+
+Founder explicit acceptance:
 
 ```text
-email
-birthday
-role
-account/Creator status
-review note/reviewer
-UUID
-XP/Goin
-permissions/sessions/referrals
-storage keys
-provider place id
-raw Prompt/Draft payload
-```
-
-Unavailable-state smoke should confirm the same response shape/message for:
-
-```text
-pending
-rejected
-Creator suspended
-non-Creator
-missing username
-```
-
-Expected generic response:
-
-```json
-{
-  "ok": false,
-  "message": "Public Creator not found"
-}
+4C.4 رو ببند بریم سراغ 4C.5
 ```
 
 ---
 
-## 9. Acceptance rule
-
-4C.4 remains:
+## 9. Result
 
 ```text
-IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
+4C.4 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-09
 ```
 
-until:
-
-```text
-public Creator focused suite PASS
-Public Prompt regression PASS
-approved Creator API smoke PASS
-generic unavailable-state 404 smoke PASS
-privacy inspection PASS
-explicit founder acceptance
-```
-
-After acceptance, 4C.5 may build the Nuxt SSR Creator route on this DTO without re-inventing Creator eligibility or reading authenticated/admin profile contracts.
+4C.5 may now consume only this DTO to build `/creator/:username` and `/fa/creator/:username`. It must not reintroduce authenticated/admin profile projections or independently redefine Creator eligibility.
