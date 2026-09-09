@@ -1,4 +1,5 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
+import { APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS } from "./shared/seo-route-policy";
 
 const publicDiscoveryRoutes = [
   "/discover/portrait-photography",
@@ -9,23 +10,8 @@ const publicDiscoveryRoutes = [
   "/discover/cinematic-game-art",
 ];
 
-const clientOnlyRoutes = [
-  "/create",
-  "/collage",
-  "/vectorizer",
-  "/history",
-  "/dashboard",
-  "/login",
-  "/manage",
-  "/manage/**",
-  "/wizard",
-  "/wizard/**",
-  "/prompts",
-  "/user",
-] as const;
-
 const clientOnlyRouteRules = Object.fromEntries(
-  clientOnlyRoutes.flatMap((route) => [
+  APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS.flatMap((route) => [
     [route, { ssr: false }],
     [`/fa${route}`, { ssr: false }],
   ]),
