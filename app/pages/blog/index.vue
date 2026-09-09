@@ -18,7 +18,7 @@ const publicBlog = usePublicBlog()
 
 const activeLocale = computed<PublicBlogLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
 const { data: response } = await useAsyncData(
-  () => `public-blog-index:${activeLocale.value}`,
+  `public-blog-index:${activeLocale.value}`,
   async () => {
     try {
       return await publicBlog.list(activeLocale.value)
@@ -27,7 +27,6 @@ const { data: response } = await useAsyncData(
       throw createError({ statusCode: 502, statusMessage: 'Blog is temporarily unavailable' })
     }
   },
-  { watch: [activeLocale] },
 )
 
 const articles = computed(() => response.value?.articles ?? [])
