@@ -69,10 +69,11 @@ export function buildPublicBlogPostingStructuredData(input: {
   locale: PublicBlogLocale
   canonicalUrl: string
   imageUrl?: string | null
+  siteUrl?: string
 }) {
   const { article, locale, canonicalUrl } = input
   const imageUrl = input.imageUrl?.trim() || ''
-  const authorUrl = article.author.url?.trim() || ''
+  const authorUrl = toAbsoluteBlogUrl(input.siteUrl || '', article.author.url)
 
   return {
     '@context': 'https://schema.org',
