@@ -32,6 +32,8 @@ import manageGrowthEn from './locales/manage-growth.en'
 import manageGrowthFa from './locales/manage-growth.fa'
 import profileManagementEn from './locales/profile-management.en'
 import profileManagementFa from './locales/profile-management.fa'
+import creatorAdminEn from './locales/creator-admin.en'
+import creatorAdminFa from './locales/creator-admin.fa'
 import errorsEn from './locales/errors.en'
 import errorsFa from './locales/errors.fa'
 import consolidatedControlsEn from './locales/consolidated-controls.en'
@@ -103,8 +105,11 @@ const enConsolidated = {
 }
 
 const enManage = deepMerge(
-  deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
-  profileManagementEn,
+  deepMerge(
+    deepMerge(deepMerge(manageEn, manageEconomyEn), manageGrowthEn),
+    profileManagementEn,
+  ),
+  creatorAdminEn,
 )
 
 const enMessagesBase = deepMerge(
@@ -159,8 +164,11 @@ const faConsolidated = {
 }
 
 const faManage = deepMerge(
-  deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
-  profileManagementFa,
+  deepMerge(
+    deepMerge(deepMerge(manageFa, manageEconomyFa), manageGrowthFa),
+    profileManagementFa,
+  ),
+  creatorAdminFa,
 )
 
 const faMessagesBase = deepMerge(
