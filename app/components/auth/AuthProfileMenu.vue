@@ -1,15 +1,15 @@
 <script setup lang="ts">
 import type { GlobalMenuItem } from "~/composables/useMenu";
 import { canAccessManage } from "~/config/manage";
+import type { ProfileManagementResponse } from "~/types/profileManagement";
 import { prepareUserAvatarImage } from "~/utils/userAvatarImage";
-import {
-  prepareUserCoverImage,
-  type PreparedUserCover,
-} from "~/utils/userCoverImage";
+import { prepareUserCoverImage } from "~/utils/userCoverImage";
 
 const emit = defineEmits<{
   (event: "close"): void;
 }>();
+
+const GENERATED_USERNAME_PATTERN = /^([a-z][a-z0-9]{2,15})-[a-z0-9]{3}-[a-z0-9]{3}$/;
 
 const { t, locale } = useI18n();
 const localePath = useLocalePath();
@@ -19,15 +19,14 @@ const goinInfoModal = useGoinInfoModal();
 const avatar = useUserAvatar();
 const cover = useUserCover();
 const childMenu = useChildMenu();
-const { completeMissingIdentity } = useProfileRequirements();
+const profileApi = useProfileManagement();
 
 const user = computed(() => auth.user.value);
+const profileSnapshot = ref<ProfileManagementResponse | null>(null);
 const avatarInput = ref<HTMLInputElement | null>(null);
 const coverInput = ref<HTMLInputElement | null>(null);
 const avatarPreviewUrl = ref("");
 const coverPreviewUrl = ref("");
-const preparedAvatar = ref<Blob | null>(null);
-const preparedCover = ref<PreparedUserCover | null>(null);
 const avatarPreparing = ref(false);
 const coverPreparing = ref(false);
 const avatarActionError = ref("");
@@ -35,15 +34,27 @@ const coverActionError = ref("");
 const referralCopyState = ref<"idle" | "copied" | "error">("idle");
 let referralCopyResetTimer: ReturnType<typeof setTimeout> | null = null;
 
-const identityLabel = computed(() => {
-  return user.value?.username || user.value?.email || "";
-});
+function compactUsername(value: string) {
+  const normalized = value.trim().toLowerCase();
+  const generated = normalized.match(GENERATED_USERNAME_PATTERN);
+  return generated?.[1] ?? normalized;
+}
 
 const displayIdentityLabel = computed(() => {
-  const value = identityLabel.value.trim();
-  if (!value || value.includes("@")) return value;
+  const screenName = profileSnapshot.value?.profile.screenName;
+  const preferred = locale.value === "fa" ? screenName?.fa : screenName?.en;
+  const fallback = locale.value === "fa" ? screenName?.en : screenName?.fa;
 
-  return `${value.charAt(0).toUpperCase()}${value.slice(1)}`;
+  if (preferred?.trim()) return preferred.trim();
+  if (fallback?.trim()) return fallback.trim();
+
+  const username = user.value?.username?.trim();
+  if (username) return compactUsername(username);
+
+  const email = user.value?.email?.trim().toLowerCase();
+  if (email) return email.split("@", 1)[0] || email;
+
+  return "";
 });
 
 const displayedAvatarUrl = computed(() => avatarPreviewUrl.value || avatar.url.value || null);
@@ -51,11 +62,16 @@ const displayedCoverUrl = computed(() => {
   return coverPreviewUrl.value || cover.thumbnailUrl.value || null;
 });
 
-const roleLabel = computed(() => {
+const isApprovedCreator = computed(() => profileSnapshot.value?.creator.status === "approved");
+
+const accountTypeLabel = computed(() => {
+  if (isApprovedCreator.value) return t("auth.profile.creatorLabel");
   return user.value?.role?.replaceAll("_", " ") || "";
 });
 
-const roleMarker = computed(() => {
+const accountTypeMarker = computed(() => {
+  if (isApprovedCreator.value) return "green15";
+
   switch (user.value?.role) {
     case "super_admin":
       return "prim15";
@@ -162,20 +178,6 @@ function revokeCoverPreview() {
   coverPreviewUrl.value = "";
 }
 
-function clearPreparedAvatar() {
-  revokeAvatarPreview();
-  preparedAvatar.value = null;
-  avatarActionError.value = "";
-  if (avatarInput.value) avatarInput.value.value = "";
-}
-
-function clearPreparedCover() {
-  revokeCoverPreview();
-  preparedCover.value = null;
-  coverActionError.value = "";
-  if (coverInput.value) coverInput.value.value = "";
-}
-
 function openAvatarPicker() {
   avatarInput.value?.click();
 }
@@ -211,13 +213,14 @@ async function handleAvatarSelected(event: Event) {
   try {
     const output = await prepareUserAvatarImage(file);
     revokeAvatarPreview();
-    preparedAvatar.value = output.blob;
     avatarPreviewUrl.value = URL.createObjectURL(output.blob);
+    await avatar.upload(output.blob);
+    revokeAvatarPreview();
   } catch (error) {
-    clearPreparedAvatar();
+    revokeAvatarPreview();
     avatarActionError.value = error instanceof Error
       ? error.message
-      : t("auth.profile.avatar.errors.prepare");
+      : t("auth.profile.avatar.errors.save");
   } finally {
     avatarPreparing.value = false;
     input.value = "";
@@ -235,44 +238,17 @@ async function handleCoverSelected(event: Event) {
   try {
     const output = await prepareUserCoverImage(file);
     revokeCoverPreview();
-    preparedCover.value = output;
     coverPreviewUrl.value = URL.createObjectURL(output.thumbnailBlob);
+    await cover.upload(output);
+    revokeCoverPreview();
   } catch (error) {
-    clearPreparedCover();
-    coverActionError.value = error instanceof Error
-      ? error.message
-      : t("auth.profile.cover.errors.prepare");
-  } finally {
-    coverPreparing.value = false;
-    input.value = "";
-  }
-}
-
-async function saveAvatar() {
-  if (!preparedAvatar.value || avatar.saving.value) return;
-  avatarActionError.value = "";
-
-  try {
-    await avatar.upload(preparedAvatar.value);
-    clearPreparedAvatar();
-  } catch (error) {
-    avatarActionError.value = error instanceof Error
-      ? error.message
-      : t("auth.profile.avatar.errors.save");
-  }
-}
-
-async function saveCover() {
-  if (!preparedCover.value || cover.saving.value) return;
-  coverActionError.value = "";
-
-  try {
-    await cover.upload(preparedCover.value);
-    clearPreparedCover();
-  } catch (error) {
+    revokeCoverPreview();
     coverActionError.value = error instanceof Error
       ? error.message
       : t("auth.profile.cover.errors.save");
+  } finally {
+    coverPreparing.value = false;
+    input.value = "";
   }
 }
 
@@ -282,7 +258,7 @@ async function removeAvatar() {
 
   try {
     await avatar.remove();
-    clearPreparedAvatar();
+    revokeAvatarPreview();
   } catch (error) {
     avatarActionError.value = error instanceof Error
       ? error.message
@@ -296,7 +272,7 @@ async function removeCover() {
 
   try {
     await cover.remove();
-    clearPreparedCover();
+    revokeCoverPreview();
   } catch (error) {
     coverActionError.value = error instanceof Error
       ? error.message
@@ -361,12 +337,14 @@ onMounted(async () => {
   if (!auth.isLoggedIn.value) return;
 
   try {
-    await Promise.all([
+    const [, , , , profile] = await Promise.all([
       auth.refreshAuthorizationState(),
       economy.refresh(),
       avatar.refresh(),
       cover.refresh(),
+      profileApi.load(),
     ]);
+    profileSnapshot.value = profile;
   } catch (error) {
     console.warn("[Prompt Draft] profile refresh failed", error);
   }
@@ -378,11 +356,6 @@ onBeforeUnmount(() => {
   revokeCoverPreview();
   if (referralCopyResetTimer) clearTimeout(referralCopyResetTimer);
 });
-
-function handleCompleteProfile() {
-  emit("close");
-  completeMissingIdentity();
-}
 
 async function handleOpenProfile() {
   const username = user.value?.username?.trim();
@@ -466,7 +439,7 @@ async function handleLogout() {
           @click="openCoverPicker"
         />
         <el-button
-          v-if="cover.cover.value && !preparedCover"
+          v-if="cover.cover.value"
           type="fab"
           mode="flat"
           color="red"
@@ -476,7 +449,7 @@ async function handleLogout() {
           :tooltip="t('auth.profile.cover.remove')"
           :size="10"
           :p="7"
-          :disable="cover.saving.value"
+          :disable="coverPreparing || cover.saving.value"
           @click="removeCover"
         />
       </el-flex>
@@ -500,59 +473,38 @@ async function handleLogout() {
 
     <el-flex rules="csc" :gap="12" :p="[50, 16, 16, 16]" class="w100">
       <el-flex rules="ccc" :gap="6" class="w100">
-        <el-flex rules="rcc" :gap="7" class="w100" wrap>
+        <el-flex rules="rcc" :gap="6" class="w100" wrap>
           <el-text :size="15" :weight="800">{{ displayIdentityLabel }}</el-text>
           <EconomyGoinAmount :value="economy.balance.value" :size="15" :weight="800" />
+          <el-button
+            type="fab"
+            mode="flat"
+            color="orange"
+            icon="help"
+            :tooltip="t('growth.goin.open')"
+            :size="10"
+            :p="4"
+            @click="goinInfoModal.open"
+          />
         </el-flex>
 
         <el-text
-          v-if="roleLabel"
+          v-if="accountTypeLabel"
           :size="11"
           color="normal55"
-          :marker="roleMarker">
-          {{ roleLabel }}
+          :marker="accountTypeMarker">
+          {{ accountTypeLabel }}
         </el-text>
-      </el-flex>
 
-      <el-flex v-if="preparedAvatar" rules="rcc" :gap="6" class="w100">
         <el-button
-          color="prim"
-          icon="save"
-          :label="t('auth.profile.avatar.save')"
-          :size="12"
-          :disable="avatar.saving.value"
-          @click="saveAvatar"
-        />
-        <el-button
-          type="fab"
           color="normal"
           mode="flat"
-          icon="close"
-          :tooltip="t('auth.profile.avatar.cancel')"
+          icon="manage_accounts"
+          :label="t('manage.profile.actions.editProfile')"
+          :badge="hasMissingProfileFields ? '!' : undefined"
           :size="12"
-          :disable="avatar.saving.value"
-          @click="clearPreparedAvatar"
-        />
-      </el-flex>
-
-      <el-flex v-if="preparedCover" rules="rcc" :gap="6" class="w100">
-        <el-button
-          color="blue"
-          icon="save"
-          :label="t('auth.profile.cover.save')"
-          :size="12"
-          :disable="cover.saving.value"
-          @click="saveCover"
-        />
-        <el-button
-          type="fab"
-          color="normal"
-          mode="flat"
-          icon="close"
-          :tooltip="t('auth.profile.cover.cancel')"
-          :size="12"
-          :disable="cover.saving.value"
-          @click="clearPreparedCover"
+          :p="[4, 4]"
+          @click="handleEditProfile"
         />
       </el-flex>
 
@@ -571,21 +523,16 @@ async function handleLogout() {
 
       <el-divider />
 
+      <el-text :size="10" color="normal70" class="w100 tc">
+        {{ t("auth.profile.completeRewardHint") }}
+      </el-text>
+
       <el-flex rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55" icon="workspace_premium" icon-color="orange">
           XP
         </el-text>
         <el-text :size="12" :weight="700">{{ formattedXp }} XP</el-text>
       </el-flex>
-
-      <el-button
-        class="w100"
-        color="orange"
-        icon="paid"
-        :p="[8, 12]"
-        :label="t('growth.goin.open')"
-        @click="goinInfoModal.open"
-      />
 
       <el-text v-if="economy.loading.value && !economy.economy.value" :size="10" color="normal55">
         {{ t("auth.profile.goinLoading") }}
@@ -594,23 +541,32 @@ async function handleLogout() {
         {{ t("auth.profile.goinLoadError") }}
       </el-text>
 
-      <el-flex rules="rbc" class="w100" :gap="16">
-        <el-text :size="12" color="normal55" icon="person_add" icon-color="blue">
-          {{ t("auth.profile.invitedUsers") }}
-        </el-text>
-        <el-text :size="12" :weight="700">{{ formattedReferralCount }}</el-text>
-      </el-flex>
+      <el-flex
+        rules="ccc"
+        :gap="8"
+        :p="[10, 12]"
+        bg="orange"
+        :radius="12"
+        :br="[4, 1]"
+        bc="normal15"
+        class="w100">
+        <el-flex rules="rbc" class="w100" :gap="16">
+          <el-text :size="12" color="white" icon="person_add" icon-color="white">
+            {{ t("auth.profile.invitedUsers") }}
+          </el-text>
+          <el-text :size="12" :weight="700" color="white">{{ formattedReferralCount }}</el-text>
+        </el-flex>
 
-      <el-button
-        v-if="user?.username"
-        class="w100"
-        color="blue"
-        mode="flat"
-        icon="link"
-        :size="12"
-        :label="referralCopyLabel"
-        @click="copyReferralLink"
-      />
+        <el-button
+          v-if="user?.username"
+          class="w100"
+          color="white"
+          icon="link"
+          :size="12"
+          :label="referralCopyLabel"
+          @click="copyReferralLink"
+        />
+      </el-flex>
 
       <el-flex v-if="user?.username" rules="rbc" class="w100" :gap="16">
         <el-text :size="12" color="normal55">{{ t("auth.profile.username") }}</el-text>
@@ -626,25 +582,6 @@ async function handleLogout() {
         <el-text :size="12" color="normal55">{{ t("auth.profile.memberSince") }}</el-text>
         <el-text :size="12">{{ memberAge }}</el-text>
       </el-flex>
-
-      <el-button
-        v-if="hasMissingProfileFields"
-        class="w100"
-        color="orange"
-        mode="flat"
-        icon="person_add"
-        :label="t('auth.profile.complete')"
-        @click="handleCompleteProfile"
-      />
-
-      <el-button
-        class="w100"
-        color="prim"
-        mode="flat"
-        icon="manage_accounts"
-        :label="t('manage.profile.actions.editProfile')"
-        @click="handleEditProfile"
-      />
 
       <el-divider />
 
