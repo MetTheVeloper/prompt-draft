@@ -1,5 +1,6 @@
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { resolve } from 'node:path'
+import { renderPublicRobotsTxt } from '../shared/public-robots'
 import {
   buildPublicUrlInventory,
   isPublicApiInventory,
@@ -355,13 +356,12 @@ async function main() {
     indexingEnabled,
   })
   const sitemap = renderSitemapXml(publicInventory, siteUrl)
+  const robots = renderPublicRobotsTxt({
+    siteUrl,
+    indexingEnabled,
+  })
 
   await writeFile(resolve(outputDir, 'sitemap.xml'), sitemap, 'utf8')
-
-  const sourceRobotsPath = resolve('public/robots.txt')
-  let robots = await readFile(sourceRobotsPath, 'utf8')
-  robots = robots.trimEnd()
-  robots += `\nSitemap: ${siteUrl}/sitemap.xml\n`
   await writeFile(resolve(outputDir, 'robots.txt'), robots, 'utf8')
 
   const mode = indexingEnabled ? 'indexing enabled' : 'global noindex'
