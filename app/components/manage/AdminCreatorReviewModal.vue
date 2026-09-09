@@ -356,6 +356,7 @@ onMounted(async () => {
   padding: 8px;
   border-radius: 8px;
   background: color-mix(in srgb, currentColor 5%, transparent);
+  color: var(--normalText);
   font-size: 10px;
   line-height: 1.65;
 }
