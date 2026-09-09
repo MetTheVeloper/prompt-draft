@@ -32,7 +32,7 @@
     "seo:audit-routes": "node scripts/phase4a-route-audit.mjs",
     "seo:audit-routes:strict": "node scripts/phase4a-route-audit.mjs --strict",
     "test:seo-contracts": "tsx --test scripts/public-routes.test.ts",
-    "test:public-url-inventory": "tsx --test scripts/public-url-inventory.test.ts",
+    "test:public-url-inventory": "tsx --test scripts/public-url-inventory.test.ts scripts/public-seo-generator-contract.test.ts",
     "test:public-inventory-api": "docker compose exec api node --test src/publicInventory.test.mjs src/publicPrompt.test.mjs",
     "test:public-prompt-web": "tsx --test scripts/public-prompt-client-contract.test.ts",
     "test:public-prompt-seo": "tsx --test scripts/public-prompt-seo.test.ts",
