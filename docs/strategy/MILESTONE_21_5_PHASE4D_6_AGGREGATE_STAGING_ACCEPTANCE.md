@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4D.6 Aggregate Regression + Staging Acceptance
 
-Status: **IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED 2026-09-09**
 
 Date: 2026-09-09
 
@@ -28,121 +28,41 @@ Accepted dependencies:
 4D.2 shared public inventory + sitemap                     ACCEPTED
 4D.3 robots normalization + staging precedence             ACCEPTED
 4D.4 llms.txt shared public-inventory projection            ACCEPTED
-4D.5 native Discovery structured data + legacy retirement  ACCEPTED 2026-09-09
+4D.5 native Discovery structured data + legacy retirement  ACCEPTED
 ```
 
 ---
 
-## 1. Purpose
+## 1. Final decision
 
-4D.6 is the final Phase 4D acceptance gate.
+Phase 4D.6 is accepted.
 
-It does not introduce a new public/indexability policy. Its job is to prove that all accepted 4D slices work together without regressing the accepted 4A–4C public architecture.
-
-Final proof has three layers:
+The founder supplied and accepted all three required final gates:
 
 ```text
-A. aggregate source/backend/frontend regression
-B. real external grassic.ir / api.grassic.ir staging smoke
-C. one fresh production-like legacy static generation
+A. pnpm test:phase4d-final
+B. pnpm smoke:phase4d-final
+C. pnpm verify:phase4d-static
 ```
 
-No full-stack rebuild is part of this verification by default.
-
-The current frontend image was already rebuilt successfully during 4D.5 verification, and 4D.6 adds only verification scripts/documentation/package commands.
-
----
-
-## 2. 4D.5 acceptance evidence inherited by 4D.6
-
-The founder explicitly authorized 4D.5 acceptance on 2026-09-09 after reviewing the focused tests, successful frontend build, and raw EN/FA staging SSR source.
-
-Focused gates:
-
-```text
-pnpm test:discovery-seo
--> 8 tests / 8 pass / 0 fail
-
-pnpm test:public-url-inventory
--> 7 tests / 7 pass / 0 fail
-```
-
-Frontend production build:
-
-```text
-pnpm frontend
--> Nuxt client build PASS
--> Nuxt server build PASS
--> Nitro node-server build PASS
--> Docker image built
--> frontend container started
-```
-
-A build-only Nitro path issue discovered during verification was fixed without changing the 4D.5 policy:
-
-```text
-app/shared/public-discovery.ts
-  -> actual shared Discovery catalog inside Nuxt srcDir
-
-shared/public-discovery.ts
-  -> thin re-export shim for root scripts/tests
-```
-
-This preserves one Discovery catalog while preventing a raw root-relative TypeScript import from surviving into generated `.nuxt/dist/server/server.mjs`.
-
-The Docker Corepack bootstrap was also hardened independently after a transient Docker-network failure:
-
-```text
-pnpm bootstrap occurs before package.json COPY
-pnpm version pinned to 11.6.0
-retry + IPv4-first bootstrap behavior
-```
-
-Final EN staging source (`/discover/portrait-photography`) proved:
-
-```text
-localized EN title + description
-self canonical https://grassic.ir/discover/portrait-photography
-EN/FA reciprocal hreflang + x-default
-staging noindex meta
-OG/Twitter image
-native CollectionPage -> ItemList -> CreativeWork JSON-LD
-canonical /prompt/:id structured URLs
-visible canonical /prompt/:id links
-no /prompts?id= legacy detail links
-no /user?un= legacy Creator detail links
-no protected/private serialized fields detected
-```
-
-Final FA staging source (`/fa/discover/portrait-photography`) proved:
-
-```text
-html lang=fa-IR / dir=rtl
-localized Persian title + description
-self canonical https://grassic.ir/fa/discover/portrait-photography
-EN/FA reciprocal hreflang + x-default
-staging noindex meta
-native CollectionPage -> ItemList -> CreativeWork JSON-LD
-canonical /fa/prompt/:id structured URLs
-visible canonical /fa/prompt/:id links
-no /prompts?id= legacy detail links
-no /user?un= legacy Creator detail links
-no protected/private serialized fields detected
-```
-
-The current Discovery fixture did not expose Creator attribution in those 18 items, so runtime `author` was naturally absent. The focused 4D.5 contract test separately proved that when approved Creator attribution is present, structured data uses canonical localized `/creator/:username` URLs and only public username identity.
-
-The production-like fresh static-generation proof intentionally moves into 4D.6 so it is run once at the aggregate final gate rather than repeatedly during 4D.5 debugging.
+All passed on 2026-09-09.
 
 Therefore:
 
 ```text
-4D.5 -> DONE / FOUNDER-LOCAL + STAGING SSR VERIFIED / ACCEPTED 2026-09-09
+4D.6   -> DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED
+Phase 4D -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+```
+
+The next roadmap slice is:
+
+```text
+21.5.4E — Blog V1
 ```
 
 ---
 
-## 3. Gate A — aggregate Phase 4D regression
+## 2. Gate A — aggregate Phase 4D regression
 
 Command:
 
@@ -150,50 +70,54 @@ Command:
 pnpm test:phase4d-final
 ```
 
-Implementation:
+Result:
 
 ```text
-scripts/phase4d-final-regression.mjs
+PASS
 ```
 
-This command intentionally performs no rebuild.
+The aggregate gate first reran the accepted 4A–4C baseline and then the 4D contracts.
 
-It runs:
+Accepted baseline evidence remained green across:
 
 ```text
-1. pnpm test:phase4c-final
-   -> accepted 4A–4C backend/frontend/privacy/routing/localization baseline
-
-2. pnpm test:public-url-inventory
-   -> one canonical public inventory + sitemap projection
-
-3. pnpm test:robots-policy
-   -> shared application noindex policy + robots/static/runtime contract
-
-4. pnpm test:llms-discovery
-   -> llms.txt shared inventory + privacy + noindex/runtime contract
-
-5. pnpm test:discovery-seo
-   -> shared Discovery catalog + native JSON-LD + legacy-generator retirement
+Creator profile foundation
+Creator skill taxonomy
+Authenticated profile management
+Creator application/admin review
+Generated username contract
+Public Creator policy/API
+Prompt/Discovery Creator attribution
+Public Creator SSR/SEO/browser contract
+Creator attribution browser contract
+Phase 4B public/protected regression
+strict locale-routing audit
+runtime localization contract
 ```
 
-Why 4C aggregate is included:
+Phase 4D focused gates then passed:
 
 ```text
-4D changes crawler/public acquisition projection around Prompt + Creator + Discovery.
-The final gate must prove that accepted Creator policy, Prompt protection, locale routing,
-and the final 4B public/protected boundary were not weakened while 4D was implemented.
+public URL inventory + sitemap      7/7 PASS
+robots/runtime delivery             7/7 PASS
+llms/runtime delivery               9/9 PASS
+native Discovery SEO migration      8/8 PASS
 ```
 
-Expected result:
+Aggregate conclusion:
 
 ```text
-[phase4d-final] PASS
+accepted 4A–4C routing/privacy/public-projection behavior remained intact
+one shared canonical public inventory remained authoritative
+robots/runtime behavior remained shared and staging-safe
+llms.txt remained a projection of the same public inventory
+native Discovery SSR remained authoritative
+legacy Discovery SEO renderer remained retired
 ```
 
 ---
 
-## 4. Gate B — external staging/Cloudflare smoke
+## 3. Gate B — real external Cloudflare staging smoke
 
 Command:
 
@@ -201,163 +125,116 @@ Command:
 pnpm smoke:phase4d-final
 ```
 
-Implementation:
-
-```text
-scripts/phase4d-final-staging-smoke.mjs
-```
-
-Default targets:
+Targets:
 
 ```text
 https://grassic.ir
 https://api.grassic.ir
 ```
 
-Safety guard:
+Safety rule:
 
 ```text
-prompt-draft.ir is explicitly rejected as a smoke target
+prompt-draft.ir was not targeted
 ```
 
-The smoke dynamically reads:
+Final result:
 
 ```text
-GET /api/public/inventory
+PASS
 ```
 
-and chooses:
+Observed representative inventory:
 
 ```text
-one authoritative EN+FA public Prompt
-one indexable + discoverable EN+FA public Creator
+Public Prompt: 6
+Public Creator: grassias
 ```
 
-No hard-coded Prompt id or Creator fixture is required for the final 4D smoke.
-
-### 4.1 Public inventory / privacy
-
-Must prove:
+Verified external responses:
 
 ```text
-GET https://api.grassic.ir/api/public/inventory -> 200
-ok=true
-only prompts + creators inventory families
-Prompt inventory entry -> id + availableLocales only
-Creator inventory entry -> username + availableLocales + policy only
-policy -> indexable + discoverable only
-no private/protected serialized keys
+GET /api/public/inventory                    -> 200
+GET /api/archive/6 unauthenticated           -> 401
+GET https://grassic.ir/robots.txt            -> 200
+GET https://grassic.ir/sitemap.xml           -> 200
+GET https://grassic.ir/llms.txt               -> 200
+GET /prompt/6                                 -> 200
+GET /creator/grassias                         -> 200
+GET /discover/portrait-photography            -> 200
+GET /fa/prompt/6                              -> 200
+GET /fa/creator/grassias                      -> 200
+GET /fa/discover/portrait-photography         -> 200
 ```
 
-### 4.2 Protected boundary
-
-For the selected public Prompt id:
+Verified public/security behavior:
 
 ```text
-GET https://api.grassic.ir/api/archive/:id unauthenticated
--> 401 or 403
+public inventory exposes only URL-inventory-safe fields
+protected Archive detail remains unauthorized to anonymous users
+staging X-Robots-Tag noindex remains active
+sitemap publishes zero URLs under global staging noindex
+llms.txt publishes zero canonical links under global staging noindex
+EN/FA public Prompt/Creator/Discovery SSR remains reachable and correctly localized
+canonical/hreflang/x-default remain correct
+Prompt/Creator/Discovery structured data remains public-safe
+private/protected serialized fields remain absent
+legacy Discovery detail links remain absent from acquisition/SEO projections
 ```
 
-A sitemap/AI-discovery change may never make the protected Archive detail public.
+### 3.1 Cloudflare Managed robots.txt nuance
 
-### 4.3 External robots.txt
+The external edge currently prepends Cloudflare Managed robots content before the origin robots policy.
 
-Must prove at the Cloudflare staging edge:
+Observed managed block includes crawler-specific policy such as:
 
 ```text
-GET https://grassic.ir/robots.txt -> 200
-X-Robots-Tag contains noindex
+Content-Signal: search=yes,ai-train=no,use=reference
+```
+
+and crawler-specific `Disallow: /` rules for selected bots.
+
+This is an edge-managed policy separate from Prompt Draft's origin robots renderer.
+
+The final smoke was corrected to validate Prompt Draft's origin `User-agent: *` stanza independently rather than incorrectly treating crawler-specific Cloudflare stanzas as a global site block.
+
+Origin staging robots policy still proves:
+
+```text
 User-agent: *
 Allow: /
 no global Disallow: /
-all accepted application/private disallows in EN + FA
-no Sitemap declaration while staging global noindex is active
+all accepted EN + FA application/private exclusions
+no Sitemap declaration while NUXT_PUBLIC_NOINDEX=true
 ```
 
-### 4.4 External sitemap.xml
+### 3.2 Protected Prompt CTA nuance
 
-Must prove:
+The accepted 4B contract deliberately keeps the Public Prompt page's product CTA pointed at the protected product route:
 
 ```text
-GET https://grassic.ir/sitemap.xml -> 200
-X-Robots-Tag contains noindex
-Cache-Control contains no-store
-valid urlset document
-<url> count = 0 under staging global noindex
-no /prompts?id=
-no /user?un=
-no private/protected serialized fields
+/prompts?id=<id>
+/fa/prompts?id=<id>
 ```
 
-### 4.5 External llms.txt
+That route is allowed as an intentional user action from the Public Prompt page.
 
-Must prove:
+It remains forbidden as a canonical acquisition/detail URL in:
 
 ```text
-GET https://grassic.ir/llms.txt -> 200
-X-Robots-Tag contains noindex
-Cache-Control contains no-store
-orientation-only staging message
-canonical Markdown link count = 0
-no /prompts?id=
-no /user?un=
-no private/protected serialized fields
+Discovery acquisition links
+Home acquisition links
+sitemap.xml
+llms.txt
+Discovery structured data
+Public Prompt structured data
 ```
 
-### 4.6 Representative EN + FA public routes
-
-The dynamic representative Prompt and Creator plus fixed Discovery category are checked in both locale spaces:
-
-```text
-/prompt/:id
-/fa/prompt/:id
-
-/creator/:username
-/fa/creator/:username
-
-/discover/portrait-photography
-/fa/discover/portrait-photography
-```
-
-Each route must preserve:
-
-```text
-200 response
-staging X-Robots-Tag noindex
-staging robots meta noindex
-correct html lang + dir
-self canonical
-reciprocal EN/FA hreflang
-x-default
-public-safe structured data
-no legacy detail links
-no protected/private serialized fields
-```
-
-Structured-data expectations:
-
-```text
-Prompt    -> CreativeWork
-Creator   -> ProfilePage + Person
-Discovery -> CollectionPage + ItemList + canonical localized Prompt URLs
-```
-
-Discovery must also have no legacy post-generator markers:
-
-```text
-data-public-seo-snapshot
-data-public-seo-structured
-```
-
-Expected result:
-
-```text
-[phase4d-smoke] PASS
-```
+The final smoke was corrected accordingly and then passed.
 
 ---
 
-## 5. Gate C — production-like static compatibility
+## 4. Gate C — production-like static compatibility
 
 Command:
 
@@ -365,121 +242,177 @@ Command:
 pnpm verify:phase4d-static
 ```
 
-Implementation:
+Result:
 
 ```text
-scripts/phase4d-static-generate-verification.mjs
+PASS
 ```
 
-This is the only intentionally expensive gate in 4D.6.
-
-It first requires the already-running local API at:
-
-```text
-http://127.0.0.1:4000
-```
-
-Then it starts one fresh `pnpm generate` child process with isolated environment overrides:
+The verifier ran one isolated production-like static generation with:
 
 ```text
 NUXT_PUBLIC_SITE_URL=https://example.test
 NUXT_PUBLIC_API_BASE=http://127.0.0.1:4000
 NUXT_API_BASE_INTERNAL=http://127.0.0.1:4000
 NUXT_PUBLIC_NOINDEX=false
-```
-
-`scripts/run-static-generate.mjs` continues to set:
-
-```text
 NUXT_LEGACY_STATIC_GENERATE=true
 ```
 
-The founder's parent PowerShell environment is not modified and therefore requires no manual restore step.
+The parent PowerShell environment was not modified.
 
-The verifier calculates the expected canonical URL count dynamically from the current local public inventory:
+Current public inventory produced an expected canonical URL count of:
 
 ```text
-2 static acquisition routes x 2 locales
-+ 6 Discovery routes x 2 locales
-+ every authoritative Prompt locale
-+ every indexable Creator locale
+220
 ```
 
-It then asserts:
+Generation evidence:
 
 ```text
-sitemap canonical URL count == expected inventory count
-llms canonical URL count == expected inventory count
+Nuxt static build PASS
+331 routes prerendered
+.output/public generated
+public-seo generator completed
+legacy Discovery artifacts cleaned: 0
+```
+
+Crawler-artifact parity:
+
+```text
+sitemap URLs: 220
+llms URLs:    220
 sitemap URL set == llms URL set
-robots advertises exactly https://example.test/sitemap.xml
-robots does not globally Disallow: /
+robots advertises https://example.test/sitemap.xml
 ```
 
-All 12 native Discovery static pages are then read from `.output/public`:
+Native Discovery static verification:
 
 ```text
-6 English
-6 Persian
+6 English Discovery routes
+6 Persian Discovery routes
+12 native Discovery HTML pages checked
 ```
 
-Each must prove:
+Each checked route proved:
 
 ```text
 correct lang + dir
 self canonical
 EN/FA hreflang
-CollectionPage + ItemList JSON-LD
-no staging noindex meta under production-like env
-no data-public-seo-snapshot
-no data-public-seo-structured
-no /prompts?id=
-no /user?un=
-no private/protected serialized fields
+native CollectionPage + ItemList JSON-LD
+no staging noindex under indexing-enabled environment
+no data-public-seo-snapshot marker
+no data-public-seo-structured marker
+no legacy /prompts?id= Discovery detail links
+no legacy /user?un= Creator detail links
+no protected/private serialized fields
 ```
 
-Expected result:
+Known Nuxt/Vite warnings seen during generation were non-blocking and pre-existing, including duplicate auto-import names and large client chunks. They did not fail build or verification.
+
+---
+
+## 5. Final accepted Phase 4D architecture
 
 ```text
-[phase4d-static] PASS
+server-authoritative Prompt/Creator public eligibility
+        |
+        v
+GET /api/public/inventory
+        |
+        v
+one shared canonical public URL inventory
+        |
+        +--> sitemap.xml
+        +--> llms.txt
+        +--> legacy-static compatibility projection
+
+shared application SEO route policy
+        +--> Nuxt application/client-only route policy
+        +--> X-Robots-Tag middleware
+        +--> origin robots exclusions
+
+native Nuxt Discovery SSR
+        +--> visible public content
+        +--> usePublicSeo metadata
+        +--> CollectionPage / ItemList JSON-LD
+```
+
+Accepted resource families before Blog V1:
+
+```text
+/
+/guide
+/discover/:slug
+/prompt/:id
+/creator/:username
+```
+
+Locale model:
+
+```text
+English/default -> unprefixed
+Persian         -> /fa
+```
+
+Only authoritative localized content is advertised.
+
+---
+
+## 6. Final staging contract
+
+`grassic.ir` remains staging.
+
+```text
+NUXT_PUBLIC_NOINDEX=true always wins
+```
+
+Therefore on staging:
+
+```text
+public pages remain fetchable for verification
+response/meta noindex remains authoritative
+origin robots keeps application/private exclusions
+origin robots omits Sitemap
+runtime sitemap exposes zero public URLs
+runtime llms.txt exposes zero canonical resource links
+```
+
+Cloudflare may additionally prepend its own managed crawler/content-signal policy at the edge.
+
+That edge policy is separate from the application indexability source of truth.
+
+---
+
+## 7. Non-negotiable boundaries inherited into 4E
+
+```text
+DO NOT weaken backend authorization for SEO/public content.
+DO NOT expose GET /api/archive/:id publicly.
+DO NOT expose protected Prompt bodies or variants.
+DO NOT expose private Drafts.
+DO NOT expose private Creator/account fields.
+DO NOT recreate Creator eligibility independently.
+DO NOT advertise fake localized URLs.
+DO NOT let route-level SEO override NUXT_PUBLIC_NOINDEX=true.
+DO NOT treat llms.txt as crawler permission or training consent.
+DO NOT query GitHub per public request.
+DO NOT touch prompt-draft.ir until an explicit rollout phase.
 ```
 
 ---
 
-## 6. Rebuild rule for 4D.6
-
-At the time 4D.6 was prepared:
+## 8. Acceptance checklist — FINAL
 
 ```text
-frontend runtime changes from 4D.5 -> already rebuilt and verified
-backend runtime changes after accepted 4D.2 -> none
-4D.6 changes -> scripts + package commands + docs only
+[x] pnpm test:phase4d-final -> PASS
+[x] pnpm smoke:phase4d-final -> PASS
+[x] pnpm verify:phase4d-static -> PASS
+[x] prompt-draft.ir not targeted
+[x] founder authorized closure and progression to Blog V1
 ```
 
-Therefore:
-
-```text
-DO NOT run pnpm frontend again merely for 4D.6.
-DO NOT run pnpm api.
-DO NOT run pnpm stack.
-```
-
-The final static verifier intentionally performs its own host-side `pnpm generate`; that does not replace or mutate the running Docker frontend image.
-
----
-
-## 7. Acceptance checklist
-
-Required evidence before Phase 4D final acceptance:
-
-```text
-[ ] pnpm test:phase4d-final -> PASS
-[ ] pnpm smoke:phase4d-final -> PASS
-[ ] pnpm verify:phase4d-static -> PASS
-[ ] prompt-draft.ir not targeted
-[ ] founder explicitly accepts Phase 4D
-```
-
-If all pass, final state becomes:
+Final state:
 
 ```text
 4D.1 -> AUDITED
@@ -488,10 +421,10 @@ If all pass, final state becomes:
 4D.4 -> DONE / ACCEPTED
 4D.5 -> DONE / ACCEPTED
 4D.6 -> DONE / FOUNDER-LOCAL + EXTERNAL STAGING + STATIC VERIFIED / ACCEPTED
-Phase 4D -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED
+Phase 4D -> DONE / FOUNDER-LOCAL + STAGING VERIFIED / ACCEPTED 2026-09-09
 ```
 
-Only then proceed to:
+Next:
 
 ```text
 21.5.4E — Blog V1
