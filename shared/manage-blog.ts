@@ -6,6 +6,12 @@ import type {
   BlogLocale,
 } from './blog-article'
 
+export const BLOG_SYSTEM_AUTHOR = Object.freeze({
+  kind: 'editorial' as const,
+  name: 'Prompt Draft',
+  url: '/',
+})
+
 export type ManageBlogRepositorySource = 'git' | 'deployed'
 
 export type ManageBlogArticleSummary = {
