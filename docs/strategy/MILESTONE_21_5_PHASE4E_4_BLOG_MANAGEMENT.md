@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.4 Blog Management Permission + Authoring UI
 
-Status: **IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED**
+Status: **IMPLEMENTED / FOUNDER VERIFICATION IN PROGRESS / NOT ACCEPTED**
 
 Date: 2026-09-10
 
@@ -165,6 +165,36 @@ timestamp rules
 
 `Article.availableLocales` shown in the editor is derived only from a successful canonical validation.
 
+### Nitro app-graph hardening
+
+Founder verification exposed a Nitro bundle failure after Vite SSR compilation:
+
+```text
+RollupError: Could not resolve "../shared/blog-article.ts"
+from generated server Blog chunk
+```
+
+Cause:
+
+```text
+app/utils/manageBlogDraft.ts
+-> runtime import ../../shared/blog-article
+-> Vite SSR chunk retained a relative path outside the Nuxt app graph
+-> Nitro later resolved that relative path from .nuxt/dist/server/_nuxt and failed
+```
+
+The accepted 4D Discovery pattern is reused:
+
+```text
+app/shared/blog-article.ts -> authoritative Blog Article contract for Nuxt app/runtime graph
+shared/blog-article.ts     -> thin re-export shim for root scripts/server consumers
+app runtime imports        -> ~/shared/blog-article
+```
+
+No Blog validation policy changed. This is build-graph hardening only.
+
+A focused source contract now guards against reintroducing the root-relative runtime import.
+
 ## 7. Deliberate write boundary
 
 4E.4 is read + author + validate only.
@@ -202,7 +232,7 @@ i18n/locales/manage-blog.fa.ts
 
 Registered in `i18n/i18n.config.ts`.
 
-Manage section and authoring workflow are bilingual.
+Manage section and authoring workflow are bilingual, including repository/editorial/hero section headings.
 
 ## 9. Focused tests
 
@@ -227,6 +257,7 @@ unsafe Markdown rejection
 existing Article edit projection
 safe public Markdown preview reuse
 EN/FA management localization registration
+Nuxt app-graph Blog contract import guard
 absence of write endpoints in 4E.4
 4E.1 Blog contract + public Markdown regression
 ```
@@ -240,7 +271,7 @@ backend -> permission resolution
 frontend -> Manage UI + Nitro admin endpoints + localization
 ```
 
-Verification order:
+Original verification order:
 
 ```powershell
 pnpm test:blog-manage
@@ -250,7 +281,26 @@ pnpm frontend
 
 Do not use `pnpm stack` unless a genuine cross-service problem requires it.
 
-After both services are rebuilt, founder UI smoke:
+### Founder evidence so far — 2026-09-10
+
+```text
+pnpm test:blog-manage -> 36/36 PASS before Nitro import hardening
+pnpm api              -> PASS / API image rebuilt / db+translator healthy / API started
+pnpm frontend         -> FAIL only at Nitro bundle phase on unresolved root-relative Blog contract import
+```
+
+The frontend failure was diagnosed and fixed as the app-graph hardening described above.
+
+Because no backend service source changed after the successful API rebuild, the remaining verification after pulling the fix is:
+
+```powershell
+pnpm test:blog-manage
+pnpm frontend
+```
+
+The focused suite now contains one additional app-graph regression test, so the expected test count is 37 if no other parallel test changes occur.
+
+After frontend succeeds, founder UI/security smoke:
 
 ```text
 admin account sees Blog Manage section
@@ -263,9 +313,8 @@ Markdown preview renders
 invalid package shows validator issues
 complete draft validates successfully
 no canonical save/publish action is presented yet
+unauthorized direct Nitro endpoint returns 401/403
 ```
-
-A non-authorized account must not receive Blog repository data; direct Nitro endpoint access must return 401/403.
 
 ## 11. Current state
 
@@ -273,9 +322,9 @@ A non-authorized account must not receive Blog repository data; direct Nitro end
 4E.1 -> DONE / ACCEPTED
 4E.2 -> DONE / ACCEPTED
 4E.3 -> DONE / ACCEPTED
-4E.4 -> IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
+4E.4 -> IMPLEMENTED / FOUNDER VERIFICATION IN PROGRESS / NOT ACCEPTED
 4E.5 -> NOT STARTED
 4E.6 -> NOT STARTED
 ```
 
-Do not mark 4E.4 accepted until focused tests, both service builds, founder UI smoke and explicit founder acceptance are complete.
+Do not mark 4E.4 accepted until focused tests, frontend build, founder UI/security smoke and explicit founder acceptance are complete.
