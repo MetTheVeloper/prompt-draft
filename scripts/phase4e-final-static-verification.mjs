@@ -64,8 +64,8 @@ async function writeFixture() {
   await mkdir(fixtureDir, { recursive: false })
   await Promise.all([
     writeFile(join(fixtureDir, 'article.json'), `${JSON.stringify(fixtureMetadata(), null, 2)}\n`, 'utf8'),
-    writeFile(join(fixtureDir, 'en.md'), '# Phase 4E final published fixture\n\nThis Article exists only during the deterministic static verification.\n', 'utf8'),
-    writeFile(join(fixtureDir, 'fa.md'), '# فیکسچر نهایی انتشار بلاگ\n\nاین مقاله فقط هنگام راستی‌آزمایی قطعی استاتیک ساخته می‌شود.\n', 'utf8'),
+    writeFile(join(fixtureDir, 'en.md'), '## Phase 4E final published fixture\n\nThis Article exists only during the deterministic static verification.\n', 'utf8'),
+    writeFile(join(fixtureDir, 'fa.md'), '## فیکسچر نهایی انتشار بلاگ\n\nاین مقاله فقط هنگام راستی‌آزمایی قطعی استاتیک ساخته می‌شود.\n', 'utf8'),
   ])
 }
 
