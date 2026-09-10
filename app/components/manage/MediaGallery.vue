@@ -29,6 +29,10 @@ const loadingMore = ref(false)
 const uploading = ref(false)
 const error = ref('')
 const selected = ref<BlogMediaAsset | null>(props.initialAsset)
+const pendingFile = ref<File | null>(null)
+const pendingAlt = ref('')
+const pendingPreviewUrl = ref('')
+const pendingError = ref('')
 
 const currentFolder = computed(() => prefix.value || t('manage.blog.media.root'))
 
@@ -68,15 +72,40 @@ function openFilePicker() {
   if (!uploading.value) fileInput.value?.click()
 }
 
-async function uploadFile(file: File) {
+function clearPendingUpload() {
+  if (pendingPreviewUrl.value) URL.revokeObjectURL(pendingPreviewUrl.value)
+  pendingFile.value = null
+  pendingAlt.value = ''
+  pendingPreviewUrl.value = ''
+  pendingError.value = ''
+}
+
+function stageUpload(file: File) {
   const validation = validateArchiveImageFile(file)
   if (!validation.valid) {
     error.value = t('manage.blog.media.unsupported')
     return
   }
 
+  clearPendingUpload()
+  error.value = ''
+  pendingFile.value = file
+  pendingPreviewUrl.value = URL.createObjectURL(file)
+}
+
+async function uploadPendingFile() {
+  const file = pendingFile.value
+  if (!file || uploading.value) return
+
+  const alt = pendingAlt.value.trim()
+  if (!alt) {
+    pendingError.value = t('manage.blog.media.uploadAltRequired')
+    return
+  }
+
   uploading.value = true
   error.value = ''
+  pendingError.value = ''
   try {
     const prepared = await prepareArchiveImage(file)
     const [fullBase64, thumbnailBase64] = await Promise.all([
@@ -85,6 +114,7 @@ async function uploadFile(file: File) {
     ])
     const response = await api.upload({
       sourceName: file.name,
+      alt,
       full: {
         base64: fullBase64,
         width: prepared.fullWidth,
@@ -99,11 +129,12 @@ async function uploadFile(file: File) {
       },
     })
 
+    clearPendingUpload()
     await loadFolder(response.asset.folder)
     selected.value = response.asset
   } catch (uploadError) {
     console.error('[Prompt Draft] Blog media upload failed', uploadError)
-    error.value = t('manage.blog.media.uploadError')
+    pendingError.value = t('manage.blog.media.uploadError')
   } finally {
     uploading.value = false
   }
@@ -113,7 +144,11 @@ function handleFileChange(event: Event) {
   const input = event.target as HTMLInputElement
   const file = input.files?.[0] || null
   input.value = ''
-  if (file) void uploadFile(file)
+  if (file) stageUpload(file)
+}
+
+function toggleAsset(asset: BlogMediaAsset) {
+  selected.value = selected.value?.id === asset.id ? null : asset
 }
 
 async function confirmSelection() {
@@ -132,6 +167,10 @@ async function confirmSelection() {
 
 onMounted(() => {
   void loadFolder('')
+})
+
+onBeforeUnmount(() => {
+  if (pendingPreviewUrl.value) URL.revokeObjectURL(pendingPreviewUrl.value)
 })
 </script>
 
@@ -174,29 +213,80 @@ onMounted(() => {
       </el-flex>
     </el-flex>
 
+    <el-divider />
+
     <el-flex v-if="error" rules="rsc" :gap="8" :p="10" bg="red10" :radius="10" class="w100">
       <el-icon icon="warning" color="red" :size="17" />
       <el-text color="red" :size="11">{{ error }}</el-text>
     </el-flex>
 
-    <el-flex v-if="folders.length" rules="csc" :gap="8" class="w100">
-      <el-text color="normal55" :size="10" :weight="800">
-        {{ t('manage.blog.media.folders') }}
-      </el-text>
-      <el-grid cols="repeat(auto-fill, minmax(150px, 1fr))" :gap="8" class="w100">
-        <el-button
-          v-for="folder in folders"
-          :key="folder.prefix"
-          icon="folder"
-          :label="folder.name"
-          mode="flat"
-          :disable="loading || uploading"
-          @click="loadFolder(folder.prefix)"
+    <el-grid
+      v-if="pendingFile"
+      cols="180px minmax(0, 1fr)"
+      :gap="12"
+      align-items="start"
+      class="w100 blog-media-upload-stage"
+    >
+      <img
+        :src="pendingPreviewUrl"
+        :alt="pendingAlt || pendingFile.name"
+        class="blog-media-upload-preview"
+      >
+      <el-flex rules="css" :gap="8" class="w100">
+        <el-text :size="11" :weight="800">{{ pendingFile.name }}</el-text>
+        <el-text color="normal55" :size="10">
+          {{ t('manage.blog.media.uploadAltHint') }}
+        </el-text>
+        <el-text-field
+          v-model="pendingAlt"
+          :actions="false"
+          :placeholder="t('manage.blog.media.uploadAltPlaceholder')"
+          @input="pendingError = ''"
         />
-      </el-grid>
-    </el-flex>
+        <el-text v-if="pendingError" color="red" :size="10">
+          {{ pendingError }}
+        </el-text>
+        <el-flex rules="rsc" :gap="8" class="w100 fw">
+          <el-button
+            :label="t('manage.blog.actions.cancel')"
+            mode="flat"
+            :disable="uploading"
+            @click="clearPendingUpload"
+          />
+          <el-button
+            icon="upload"
+            :label="uploading ? t('manage.blog.media.uploading') : t('manage.blog.media.confirmUpload')"
+            color="prim"
+            :disable="uploading || !pendingAlt.trim()"
+            @click="uploadPendingFile"
+          />
+        </el-flex>
+      </el-flex>
+    </el-grid>
 
-    <el-flex rules="csc" :gap="8" class="w100">
+    <el-grid
+      v-if="folders.length"
+      cols="repeat(auto-fill, minmax(150px, 1fr))"
+      :gap="8"
+      class="w100"
+    >
+      <el-button
+        v-for="folder in folders"
+        :key="folder.prefix"
+        icon="folder"
+        :label="folder.name"
+        :mode="undefined"
+        color="background"
+        text-color="normal"
+        icon-color="normal50"
+        rules="rsc"
+        class="w100"
+        :disable="loading || uploading"
+        @click="loadFolder(folder.prefix)"
+      />
+    </el-grid>
+
+    <el-flex rules="css" :gap="8" class="w100">
       <el-text color="normal55" :size="10" :weight="800">
         {{ t('manage.blog.media.assets') }}
       </el-text>
@@ -222,13 +312,13 @@ onMounted(() => {
           class="w100 ofh crp"
           role="button"
           tabindex="0"
-          @click="selected = asset"
-          @keydown.enter.prevent="selected = asset"
-          @keydown.space.prevent="selected = asset"
+          @click="toggleAsset(asset)"
+          @keydown.enter.prevent="toggleAsset(asset)"
+          @keydown.space.prevent="toggleAsset(asset)"
         >
           <img
             :src="asset.thumbnailUrl"
-            :alt="asset.sourceName"
+            :alt="asset.alt || asset.sourceName"
             class="blog-media-gallery-thumb"
             loading="lazy"
           >
@@ -238,6 +328,9 @@ onMounted(() => {
             </el-text>
             <el-text color="normal50" :size="9">
               {{ asset.width }} × {{ asset.height }}
+            </el-text>
+            <el-text v-if="asset.alt" color="normal50" :size="9" class="w100">
+              {{ asset.alt }}
             </el-text>
             <el-text v-if="selected?.id === asset.id" color="prim" :size="9" :weight="800" icon="check_circle">
               {{ t('manage.blog.media.selected') }}
@@ -281,11 +374,26 @@ onMounted(() => {
 </template>
 
 <style scoped>
-.blog-media-gallery-thumb {
+.blog-media-gallery-thumb,
+.blog-media-upload-preview {
   display: block;
   width: 100%;
-  aspect-ratio: 4 / 3;
   object-fit: cover;
   background: var(--normalText5);
+}
+
+.blog-media-gallery-thumb {
+  aspect-ratio: 4 / 3;
+}
+
+.blog-media-upload-preview {
+  max-height: 180px;
+  border-radius: 12px;
+}
+
+@media (max-width: 720px) {
+  .blog-media-upload-stage {
+    grid-template-columns: 1fr !important;
+  }
 }
 </style>
