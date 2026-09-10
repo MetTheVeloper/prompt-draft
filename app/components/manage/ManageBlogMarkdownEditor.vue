@@ -8,10 +8,17 @@ const props = withDefaults(defineProps<{
 
 const { t } = useI18n()
 const model = defineModel<string>({ default: '' })
+const linkModal = useBlogLinkModal()
 
 type TextFieldHandle = {
   el?: HTMLInputElement | HTMLTextAreaElement | null
   focus?: () => void
+}
+
+type EditorRange = {
+  start: number
+  end: number
+  selected: string
 }
 
 const editorField = ref<TextFieldHandle | null>(null)
@@ -24,23 +31,33 @@ function getTextarea() {
   return element as HTMLTextAreaElement
 }
 
-async function replaceSelection(transform: (selected: string) => string) {
+function currentRange(): EditorRange {
   const element = getTextarea()
-
   if (!element) {
-    model.value = `${model.value}${transform('')}`
-    return
+    return { start: model.value.length, end: model.value.length, selected: '' }
   }
 
   const start = element.selectionStart ?? 0
   const end = element.selectionEnd ?? start
-  const selected = model.value.slice(start, end)
-  const replacement = transform(selected)
-  model.value = `${model.value.slice(0, start)}${replacement}${model.value.slice(end)}`
+  return {
+    start,
+    end,
+    selected: model.value.slice(start, end),
+  }
+}
+
+async function replaceRange(range: Pick<EditorRange, 'start' | 'end'>, replacement: string) {
+  model.value = `${model.value.slice(0, range.start)}${replacement}${model.value.slice(range.end)}`
 
   await nextTick()
+  const element = getTextarea()
   editorField.value?.focus?.()
-  element.setSelectionRange(start, start + replacement.length)
+  element?.setSelectionRange(range.start, range.start + replacement.length)
+}
+
+async function replaceSelection(transform: (selected: string) => string) {
+  const range = currentRange()
+  await replaceRange(range, transform(range.selected))
 }
 
 function wrap(prefix: string, suffix = prefix, fallback = 'text') {
@@ -54,8 +71,19 @@ function prefixLines(prefix: string, fallback = 'text') {
   })
 }
 
+function escapeMarkdownLabel(value: string) {
+  return value.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]')
+}
+
 function insertLink() {
-  return replaceSelection(selected => `[${selected || 'label'}](https://example.com)`)
+  const range = currentRange()
+  linkModal.open({
+    initialLabel: range.selected,
+    onInsert: ({ label, url }) => replaceRange(
+      range,
+      `[${escapeMarkdownLabel(label)}](${url})`,
+    ),
+  })
 }
 
 function insertImage() {
@@ -110,7 +138,7 @@ function insertImage() {
         </el-text>
 
         <el-flex
-          rules="ccs"
+          rules="css"
           :gap="8"
           :p="14"
           bg="normal5"
@@ -140,7 +168,12 @@ function insertImage() {
 }
 
 .blog-markdown-preview {
+  color: var(--normalText);
   line-height: 1.8;
+}
+
+.blog-markdown-preview :deep(a) {
+  color: var(--primary);
 }
 
 .blog-markdown-preview :deep(img) {

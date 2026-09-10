@@ -36,6 +36,7 @@ test('Blog management page is permission-gated and reuses canonical validator + 
 test('Blog management UI is built from Prompt Draft el primitives instead of page-local native controls', () => {
   const page = source('app/pages/manage/blog.vue')
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const linkModal = source('app/components/manage/ManageBlogLinkModal.vue')
 
   assert.match(page, /<el-flex\b/)
   assert.match(page, /<el-grid\b/)
@@ -54,10 +55,51 @@ test('Blog management UI is built from Prompt Draft el primitives instead of pag
   assert.match(editor, /<el-flex\b/)
   assert.match(editor, /<el-text\b/)
   assert.doesNotMatch(editor, /<(?:textarea|button|label|section|span|strong|em)\b/i)
-
   const nativeDivs = editor.match(/<div\b/gi) ?? []
   assert.equal(nativeDivs.length, 1)
   assert.match(editor, /<div[\s\S]*?v-html="previewHtml"/)
+
+  assert.match(linkModal, /<el-text-field\b/)
+  assert.match(linkModal, /<el-button\b/)
+  assert.doesNotMatch(linkModal, /<(?:input|textarea|button|label|section|div)\b/i)
+})
+
+test('repository identity, timestamps, and editorial author are system-owned instead of raw editor inputs', () => {
+  const page = source('app/pages/manage/blog.vue')
+  const draft = source('app/utils/manageBlogDraft.ts')
+
+  assert.doesNotMatch(page, /v-model="draft\.id"/)
+  assert.doesNotMatch(page, /v-model="draft\.publishedAt"/)
+  assert.doesNotMatch(page, /v-model="draft\.updatedAt"/)
+  assert.doesNotMatch(page, /draft\.authorName|draft\.authorUrl/)
+  assert.doesNotMatch(page, /publicLocalesLabel|fields\.publicLocales/)
+  assert.match(page, /localeStates/)
+  assert.match(page, /systemMetadataHint/)
+
+  assert.match(draft, /BLOG_SYSTEM_AUTHOR/)
+  assert.match(draft, /deriveManageBlogDraftId/)
+  assert.doesNotMatch(draft, /authorName:\s*string/)
+  assert.doesNotMatch(draft, /authorUrl:\s*string/)
+})
+
+test('Markdown link workflow uses the global modal and canonical Blog public URL validator', () => {
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const modalComponent = source('app/components/manage/ManageBlogLinkModal.vue')
+  const modalComposable = source('app/composables/useBlogLinkModal.ts')
+
+  assert.match(editor, /useBlogLinkModal\(\)/)
+  assert.match(editor, /initialLabel:\s*range\.selected/)
+  assert.doesNotMatch(editor, /\[\$\{selected \|\| 'label'\}\]\(https:\/\/example\.com\)/)
+  assert.match(modalComponent, /normalizeBlogPublicUrl/)
+  assert.match(modalComponent, /modal\.close\(\)/)
+  assert.match(modalComposable, /modal\.open\(/)
+  assert.match(modalComposable, /ManageBlogLinkModal/)
+})
+
+test('Markdown preview is theme-colored and top-aligned', () => {
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  assert.match(editor, /rules="css"[\s\S]*blog-markdown-preview-shell/)
+  assert.match(editor, /color:\s*var\(--normalText\)/)
 })
 
 test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
@@ -118,22 +160,28 @@ test('Blog management localization is registered for EN and FA', () => {
 })
 
 test('Blog management neutral styling uses project theme semantics instead of hardcoded white or black', () => {
-  const page = source('app/pages/manage/blog.vue')
-  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const files = [
+    source('app/pages/manage/blog.vue'),
+    source('app/components/manage/ManageBlogMarkdownEditor.vue'),
+    source('app/components/manage/ManageBlogLinkModal.vue'),
+  ]
 
-  for (const ui of [page, editor]) {
+  for (const ui of files) {
     assert.doesNotMatch(ui, /rgb\(\s*255[ ,]/i)
     assert.doesNotMatch(ui, /rgb\(\s*0[ ,]+0[ ,]+0/i)
     assert.doesNotMatch(ui, /#(?:fff|ffffff|000|000000)\b/i)
     assert.doesNotMatch(ui, /(?:color|background(?:-color)?):\s*(?:white|black)\b/i)
   }
 
+  const page = files[0]
+  const editor = files[1]
   assert.match(page, /bg="surface"/)
   assert.match(page, /bc="normal15"/)
   assert.match(page, /color="normal55"/)
   assert.match(editor, /bg="normal5"/)
   assert.match(editor, /bc="normal15"/)
   assert.match(editor, /var\(--normalText5\)/)
+  assert.match(editor, /var\(--normalText\)/)
 })
 
 test('4E.4 adds no editor dependency or second Markdown engine', () => {

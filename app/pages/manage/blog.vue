@@ -62,15 +62,9 @@ const statusItems = computed(() => [
   },
 ])
 
-const publicLocales = computed(() => validation.value?.article?.availableLocales ?? [])
-const publicLocalesLabel = computed(() => (
-  publicLocales.value.length
-    ? publicLocales.value.join(', ').toUpperCase()
-    : '—'
-))
 const validationIssues = computed(() => validation.value?.issues ?? [])
-
 const activeDirection = computed(() => activeLocale.value === 'fa' ? 'rtl' : 'ltr')
+
 const activeTitle = computed({
   get: () => activeLocale.value === 'en' ? draft.enTitle : draft.faTitle,
   set: value => {
@@ -162,6 +156,37 @@ function titleFor(article: ManageBlogArticleSummary) {
     || article.slug
 }
 
+function localeComplete(code: BlogLocale) {
+  const title = code === 'en' ? draft.enTitle : draft.faTitle
+  const description = code === 'en' ? draft.enDescription : draft.faDescription
+  const body = code === 'en' ? draft.enBody : draft.faBody
+  const alt = code === 'en' ? draft.enAlt : draft.faAlt
+  const needsAlt = Boolean(draft.heroFullUrl.trim())
+  return Boolean(
+    title.trim()
+    && description.trim()
+    && body.trim()
+    && (!needsAlt || alt.trim()),
+  )
+}
+
+function localeState(code: BlogLocale): 'public' | 'complete' | 'incomplete' {
+  if (
+    validation.value?.ok
+    && validation.value.article?.availableLocales.includes(code)
+  ) {
+    return 'public'
+  }
+  return localeComplete(code) ? 'complete' : 'incomplete'
+}
+
+function localeStateColor(code: BlogLocale) {
+  const state = localeState(code)
+  if (state === 'public') return 'green'
+  if (state === 'complete') return 'blue'
+  return 'normal45'
+}
+
 async function refresh() {
   loading.value = true
   loadError.value = ''
@@ -224,10 +249,7 @@ function runValidation() {
 
 watch(
   () => draft.status,
-  (nextStatus) => {
-    if (nextStatus === 'published' && !draft.publishedAt.trim()) {
-      draft.publishedAt = new Date().toISOString()
-    }
+  () => {
     validation.value = null
   },
 )
@@ -407,23 +429,15 @@ onMounted(async () => {
           class="w100"
         >
           <el-text :size="13" :weight="800">{{ t('manage.blog.groups.repositoryMetadata') }}</el-text>
-          <el-grid cols="repeat(3, minmax(0, 1fr))" :gap="12" class="w100">
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.id') }}</el-text>
-              <el-text-field
-                v-model="draft.id"
-                :actions="false"
-                :disabled="Boolean(editingId)"
-                :placeholder="t('manage.blog.placeholders.id')"
-              />
-            </el-flex>
 
+          <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
             <el-flex rules="ccs" :gap="6">
               <el-text :size="11" :weight="700">{{ t('manage.blog.fields.slug') }}</el-text>
               <el-text-field
                 v-model="draft.slug"
                 :actions="false"
                 :placeholder="t('manage.blog.placeholders.slug')"
+                @update:model-value="validation = null"
               />
             </el-flex>
 
@@ -435,66 +449,34 @@ onMounted(async () => {
                 icon="flag"
               />
             </el-flex>
+          </el-grid>
 
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.publishedAt') }}</el-text>
-              <el-text-field
-                v-model="draft.publishedAt"
-                :actions="false"
-                placeholder="2026-09-10T00:00:00.000Z"
-              />
+          <el-grid cols="repeat(3, minmax(0, 1fr))" :gap="10" class="w100">
+            <el-flex rules="ccs" :gap="4" :p="12" bg="normal5" :radius="10">
+              <el-text color="normal55" :size="10" :weight="700">{{ t('manage.blog.fields.id') }}</el-text>
+              <el-text :size="11" font="monospace">
+                {{ editingId ? draft.id : t('manage.blog.editor.assignedOnSave') }}
+              </el-text>
             </el-flex>
 
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.updatedAt') }}</el-text>
-              <el-text-field
-                v-model="draft.updatedAt"
-                :actions="false"
-                placeholder="2026-09-10T00:00:00.000Z"
-              />
+            <el-flex rules="ccs" :gap="4" :p="12" bg="normal5" :radius="10">
+              <el-text color="normal55" :size="10" :weight="700">{{ t('manage.blog.fields.publishedAt') }}</el-text>
+              <el-text :size="11">
+                {{ draft.publishedAt ? formatDate(draft.publishedAt) : t('manage.blog.editor.assignedOnPublish') }}
+              </el-text>
             </el-flex>
 
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.publicLocales') }}</el-text>
-              <el-text-field
-                :model-value="publicLocalesLabel"
-                :actions="false"
-                disabled
-              />
+            <el-flex rules="ccs" :gap="4" :p="12" bg="normal5" :radius="10">
+              <el-text color="normal55" :size="10" :weight="700">{{ t('manage.blog.fields.updatedAt') }}</el-text>
+              <el-text :size="11">
+                {{ editingId ? formatDate(draft.updatedAt) : t('manage.blog.editor.assignedOnSave') }}
+              </el-text>
             </el-flex>
           </el-grid>
-        </el-flex>
 
-        <el-flex
-          rules="csc"
-          :gap="16"
-          :p="18"
-          bg="surface"
-          :radius="16"
-          :br="1"
-          bc="normal15"
-          class="w100"
-        >
-          <el-text :size="13" :weight="800">{{ t('manage.blog.groups.editorialIdentity') }}</el-text>
-          <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.authorName') }}</el-text>
-              <el-text-field
-                v-model="draft.authorName"
-                :actions="false"
-                :placeholder="t('manage.blog.placeholders.authorName')"
-              />
-            </el-flex>
-
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.authorUrl') }}</el-text>
-              <el-text-field
-                v-model="draft.authorUrl"
-                :actions="false"
-                :placeholder="t('manage.blog.placeholders.authorUrl')"
-              />
-            </el-flex>
-          </el-grid>
+          <el-text color="normal50" :size="10">
+            {{ t('manage.blog.editor.systemMetadataHint') }}
+          </el-text>
         </el-flex>
 
         <el-flex
@@ -559,14 +541,22 @@ onMounted(async () => {
           class="w100 ofh"
         >
           <el-flex rules="rsc" :gap="6" :p="10" class="w100 fw">
-            <el-button
+            <el-flex
               v-for="code in blogLocales"
               :key="code"
-              :label="t(`manage.blog.locales.${code}`)"
-              :mode="activeLocale === code ? 'normal' : 'flat'"
-              :color="activeLocale === code ? 'prim' : undefined"
-              @click="activeLocale = code"
-            />
+              rules="rcc"
+              :gap="5"
+            >
+              <el-button
+                :label="t(`manage.blog.locales.${code}`)"
+                :mode="activeLocale === code ? 'normal' : 'flat'"
+                :color="activeLocale === code ? 'prim' : undefined"
+                @click="activeLocale = code"
+              />
+              <el-text :color="localeStateColor(code)" :size="9" :weight="700">
+                {{ t(`manage.blog.localeStates.${localeState(code)}`) }}
+              </el-text>
+            </el-flex>
           </el-flex>
 
           <el-divider />

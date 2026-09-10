@@ -6,14 +6,18 @@ import {
   type BlogValidationIssue,
 } from '../shared/blog-article'
 
+export const BLOG_SYSTEM_AUTHOR = Object.freeze({
+  kind: 'editorial' as const,
+  name: 'Prompt Draft',
+  url: '/',
+})
+
 export type ManageBlogDraft = {
   id: string
   slug: string
   status: BlogArticleStatus
   publishedAt: string
   updatedAt: string
-  authorName: string
-  authorUrl: string
   heroFullUrl: string
   heroThumbnailUrl: string
   heroWidth: string
@@ -39,8 +43,6 @@ export function createEmptyManageBlogDraft(): ManageBlogDraft {
     status: 'draft',
     publishedAt: '',
     updatedAt: nowIso(),
-    authorName: 'Prompt Draft',
-    authorUrl: '/',
     heroFullUrl: '',
     heroThumbnailUrl: '',
     heroWidth: '',
@@ -63,8 +65,6 @@ export function blogArticleToManageDraft(article: BlogArticle): ManageBlogDraft 
     status: article.status,
     publishedAt: article.publishedAt ?? '',
     updatedAt: article.updatedAt,
-    authorName: article.author.name,
-    authorUrl: article.author.url ?? '',
     heroFullUrl: article.hero?.fullUrl ?? '',
     heroThumbnailUrl: article.hero?.thumbnailUrl ?? '',
     heroWidth: article.hero?.width ? String(article.hero.width) : '',
@@ -78,6 +78,16 @@ export function blogArticleToManageDraft(article: BlogArticle): ManageBlogDraft 
     faAlt: article.hero?.alt.fa ?? '',
     faBody: article.body.fa ?? '',
   }
+}
+
+export function deriveManageBlogDraftId(draft: Pick<ManageBlogDraft, 'id' | 'slug'>) {
+  const canonicalId = draft.id.trim()
+  if (canonicalId) return canonicalId
+
+  // New Article identity is system-owned. Until the canonical Git writer exists,
+  // validation uses the initial slug as the deterministic candidate. 4E.5 owns
+  // collision resolution and the first immutable repository directory id.
+  return draft.slug.trim()
 }
 
 function dimension(value: string) {
@@ -103,6 +113,16 @@ function localeHasInput(draft: ManageBlogDraft, locale: BlogLocale) {
     draft.faBody.trim() ||
     draft.faAlt.trim(),
   )
+}
+
+function effectiveUpdatedAt(draft: ManageBlogDraft) {
+  return draft.updatedAt.trim() || nowIso()
+}
+
+function effectivePublishedAt(draft: ManageBlogDraft, updatedAt: string) {
+  const existing = draft.publishedAt.trim()
+  if (existing) return existing
+  return draft.status === 'published' ? updatedAt : null
 }
 
 export function manageBlogDraftToPackage(draft: ManageBlogDraft) {
@@ -137,18 +157,16 @@ export function manageBlogDraftToPackage(draft: ManageBlogDraft) {
     draft.faAlt.trim(),
   )
 
+  const updatedAt = effectiveUpdatedAt(draft)
+
   return {
     metadata: {
-      id: draft.id,
+      id: deriveManageBlogDraftId(draft),
       slug: draft.slug,
       status: draft.status,
-      publishedAt: draft.publishedAt.trim() || null,
-      updatedAt: draft.updatedAt.trim(),
-      author: {
-        kind: 'editorial',
-        name: draft.authorName,
-        url: draft.authorUrl.trim() || null,
-      },
+      publishedAt: effectivePublishedAt(draft, updatedAt),
+      updatedAt,
+      author: { ...BLOG_SYSTEM_AUTHOR },
       hero: hasHero
         ? {
             fullUrl: draft.heroFullUrl,
@@ -170,8 +188,9 @@ export function validateManageBlogDraft(draft: ManageBlogDraft): {
   article: BlogArticle | null
 } {
   const pkg = manageBlogDraftToPackage(draft)
+  const directoryId = draft.id.trim() || undefined
   const result = validateBlogArticlePackage({
-    directoryId: draft.id.trim() || undefined,
+    directoryId,
     metadata: pkg.metadata,
     body: pkg.body,
   })
