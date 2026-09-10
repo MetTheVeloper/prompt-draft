@@ -277,7 +277,7 @@ onMounted(async () => {
             icon="refresh"
             :label="t('manage.blog.actions.refresh')"
             mode="flat"
-            :loading="loading"
+            :disable="loading"
             @click="refresh"
           />
           <el-button
