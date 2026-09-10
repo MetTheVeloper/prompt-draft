@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.5 Blog Media + Git Publication
 
-Status: **IN PROGRESS / MEDIA LANE DONE + ACCEPTED / GIT PUBLICATION IMPLEMENTED + VERIFICATION PENDING / NOT ACCEPTED**
+Status: **IN PROGRESS / MEDIA LANE DONE + ACCEPTED / GIT PUBLICATION FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT / NOT ACCEPTED**
 
 Date: 2026-09-10
 
@@ -28,7 +28,7 @@ Lane A -> managed Blog media on existing Arvan/S3 authority
 Lane B -> canonical Git save/publish + optimistic reconciliation
 ```
 
-Lane A is founder-verified and accepted. Lane B is implemented but must still pass focused/build/runtime verification before 4E.5 can be accepted.
+Lane A is founder-verified and accepted. Lane B is implemented, focused-test verified and Docker build verified. Real canonical Git runtime proof remains before 4E.5 can be accepted.
 
 ## 2. Lane A — Managed Blog Media — ACCEPTED
 
@@ -48,7 +48,7 @@ blog/YYYY/MM/<uuid>.json
 
 Accepted behavior includes ListObjectsV2 browsing, required persisted default alt for new uploads, legacy no-alt manifest compatibility, `blog.manage` authorization, `blog.media.upload` admin audit, reusable MediaGallery, Hero selection, Markdown Gallery insertion, selection toggle, theme-safe component-system UI, top-aligned authoring panes and 400px preview image limits.
 
-Founder explicitly confirmed the finalized behavior was fully tested and correct on 2026-09-10. Media changes remain protected by `pnpm test:blog-media` and the accepted 4E.4 regression surface.
+Founder explicitly confirmed the finalized behavior was fully tested and correct on 2026-09-10.
 
 ## 3. Lane B — Canonical Git Publication — IMPLEMENTED
 
@@ -79,7 +79,7 @@ BLOG_GITHUB_REPOSITORY
 BLOG_GITHUB_BRANCH
 ```
 
-Defaults for this development branch are represented in Compose/example config, while the real token belongs only in local/deployment secret environment and must never be committed or exposed via `NUXT_PUBLIC_*`.
+The real token belongs only in local/deployment secret environment and must never be committed or exposed via `NUXT_PUBLIC_*`.
 
 ### 3.2 Management repository source
 
@@ -92,9 +92,9 @@ When Git publication is configured:
 -> Article list/detail + Article version
 ```
 
-Configured Git failures fail closed. Management must **not** silently fall back to a potentially stale deployed snapshot.
+Configured Git failures fail closed. Management must not silently fall back to a stale deployed snapshot.
 
-When Git publication is intentionally not configured, deployed bundled content may still be read for the authoring/validation UI, but writes remain disabled.
+When Git publication is intentionally not configured, deployed bundled content may still be read for authoring/validation, but writes remain disabled.
 
 ### 3.3 Write API
 
@@ -105,7 +105,7 @@ PUT  /api/manage/blog/:id
 
 Both require `blog.manage` through the accepted Nitro authorization boundary.
 
-The browser may submit only editor-owned state plus optimistic version:
+Browser-owned input is limited to:
 
 ```text
 expectedVersion
@@ -116,7 +116,7 @@ localizations
 body
 ```
 
-It cannot author:
+Server-owned fields remain:
 
 ```text
 id
@@ -124,8 +124,6 @@ author
 publishedAt
 updatedAt
 ```
-
-Those remain server-owned.
 
 ### 3.4 Identity + timestamps
 
@@ -139,7 +137,7 @@ publishedAt -> assigned on first publish only, then preserved
 public author -> Prompt Draft editorial identity
 ```
 
-The full resulting Article package is validated through the accepted Article/repository validators before Git mutation.
+The resulting Article package is validated through the accepted Article/repository validators before Git mutation.
 
 ### 3.5 Atomic Git mutation
 
@@ -159,11 +157,9 @@ read branch HEAD + tree
 
 Article version is a deterministic SHA-256 projection of that Article's canonical repository files.
 
-Existing-Article writes require the version returned when the Article was loaded. If the Article changed meanwhile, save returns conflict and does not overwrite the newer content.
+Existing-Article writes require the version returned when the Article was loaded. If the Article changed meanwhile, save returns conflict and does not overwrite newer content.
 
-If only the branch moved between read and ref update, the writer re-reads once and retries. The Article version guard runs again after that re-read, so unrelated branch motion can recover while target-Article motion still conflicts.
-
-Current implementation intentionally supports a single retry; repeated branch movement fails closed.
+If only the branch moved between read and ref update, the writer re-reads once and retries. The Article version guard runs again after that re-read. Repeated branch movement fails closed.
 
 ### 3.7 Audit receipt
 
@@ -184,9 +180,9 @@ commitSha
 branch
 ```
 
-Backend resolves the real authenticated admin actor, requires `blog.manage`, and records `blog.article.create|update|publish|unpublish` in `admin_audit_log`.
+Backend resolves the authenticated admin actor, requires `blog.manage`, and records `blog.article.create|update|publish|unpublish` in `admin_audit_log`.
 
-Git commit and DB audit are not one distributed transaction. Therefore a successful Git commit is never falsely reported as a failed save merely because the secondary audit insertion failed; the response exposes `auditRecorded=false` so the condition remains visible without encouraging duplicate Git retries.
+Git commit and DB audit are not one distributed transaction. A successful Git commit is never falsely reported as failed merely because the secondary audit insert failed; the response exposes `auditRecorded=false` instead.
 
 ## 4. Management UX
 
@@ -202,85 +198,56 @@ Local canonical validation runs before write. Successful saves replace editor st
 
 Conflict errors instruct the editor to reload rather than overwrite remote changes.
 
-## 5. Focused verification
+## 5. Verification evidence — 2026-09-10
 
-New root command:
-
-```powershell
-pnpm test:blog-publish
-```
-
-It covers:
+Founder-local focused verification:
 
 ```text
-strict audit receipt contract
-server-only Git credentials
-public runtime GitHub isolation
-configured-management fail-closed behavior
-atomic tree/commit/ref writer
-server-owned metadata
-identity collision handling
-Article versioning
-branch-race retry
-management write/API/UI source contracts
+pnpm test:blog-publish -> 13/13 PASS
+pnpm test:blog-manage  -> 46/46 PASS
 ```
 
-Because the Git lane also changed accepted Blog management UI/composable contracts, rerun:
-
-```powershell
-pnpm test:blog-manage
-```
-
-The already accepted Media implementation itself did not change in this lane, so `pnpm test:blog-media` can return at the 4E.6 aggregate gate unless a media-specific regression appears.
-
-## 6. Smallest rebuild after focused tests
-
-This lane changed both runtime services:
+Required service rebuilds:
 
 ```text
-backend/src/adminBlogPublicationAudit* + adminArchiveRoute -> API image
-server/** + app/** + i18n/** + Compose Git env wiring        -> frontend/Nitro image
+pnpm api      -> PASS / container started
+pnpm frontend -> PASS / Nuxt + Nitro production build complete / container started
 ```
 
-After focused tests pass:
+The existing duplicate-auto-import and chunk-size notices remain warnings and did not fail the build.
 
-```powershell
-pnpm api
-pnpm frontend
-```
+This closes the focused-test + build preflight. No additional rebuild is required before configuring runtime Git credentials unless runtime source changes.
 
-Do **not** run `pnpm stack` by default.
+## 6. Founder runtime verification — NEXT
 
-## 7. Founder runtime verification target
-
-With the real Git token stored only in local `.env`, verify:
+With a real GitHub token stored only in local `.env`, verify in order:
 
 ```text
-/manage/blog reads canonical Git and reports Git/write-ready state
-Save Draft creates one canonical Git commit and stable Article id
-second save preserves id and advances updatedAt/version
+/manage/blog reports canonical Git/write-ready state
+Save Draft creates exactly one canonical Git commit and stable Article id
+second Draft save preserves id and advances updatedAt/version
 first Publish assigns publishedAt
-later published updates preserve publishedAt
-two-tab stale save conflicts instead of overwriting
-Git Article directory contains valid article.json + locale bodies
-audit log records authenticated actor + small receipt metadata
-public Blog does not change until deployment includes the Git commit
+later published update preserves publishedAt
+two-tab stale save returns conflict instead of overwriting
+Git Article directory contains valid article.json + locale body files
+audit receipt is recorded for authenticated actor
+public Blog remains unchanged until a deployment/build includes the Git commit
 ```
 
-For a local positive public proof after an Article publish, first pull the Git commit created by the application, then rebuild frontend; otherwise the host working tree/image is intentionally still on the older deployment snapshot.
+For a temporary smoke Article, do not rebuild frontend after publishing it until the temporary Article is removed/reverted from the canonical branch. This prevents the test Article from entering deployed public Blog assets.
 
-## 8. Deferred/non-blocking V1 option
+## 7. Deferred/non-blocking V1 option
 
-Explicit emergency Arvan editorial publication metadata remains optional and is **not implemented** in this slice. Arvan remains media infrastructure and must not become an uncontrolled equal content source.
+Explicit emergency Arvan editorial publication metadata remains optional and is not implemented in this slice. Arvan remains media infrastructure and must not become an uncontrolled equal content source.
 
-## 9. Current state
+## 8. Current state
 
 ```text
 4E.4 -> DONE / ACCEPTED
 4E.5 media lane -> DONE / FOUNDER VERIFIED / ACCEPTED
-4E.5 Git publication lane -> IMPLEMENTED / VERIFICATION PENDING
+4E.5 Git publication lane -> IMPLEMENTED / FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT
 4E.5 overall -> IN PROGRESS / NOT ACCEPTED
 4E.6 -> NOT STARTED
 ```
 
-Do not mark 4E.5 overall accepted until focused tests, required service builds, real canonical Git runtime proof, and explicit founder acceptance are complete.
+Do not mark 4E.5 overall accepted until real canonical Git Save/Update/Publish/conflict/audit behavior is founder-verified and explicitly accepted.
