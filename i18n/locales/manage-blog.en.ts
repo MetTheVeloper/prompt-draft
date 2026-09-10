@@ -63,6 +63,7 @@ export default {
           git: 'Git canonical',
           deployed: 'Deployed snapshot',
         },
+        validationModalTitle: 'Article validation',
         validTitle: 'Article package is valid',
         validDetail: 'The current fields satisfy the canonical repository contract.',
         invalidTitle: 'Article package needs changes',
