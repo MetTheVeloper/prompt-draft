@@ -43,8 +43,97 @@ const editorTitle = computed(() => (
     : t('manage.blog.editor.newTitle')
 ))
 
+const articleCountLabel = computed(() => t('manage.blog.list.count', {
+  count: articles.value.length,
+}))
+
+const statusItems = computed(() => [
+  {
+    value: 'draft',
+    label: t('manage.blog.statuses.draft'),
+    icon: 'edit_note',
+    color: 'orange',
+  },
+  {
+    value: 'published',
+    label: t('manage.blog.statuses.published'),
+    icon: 'public',
+    color: 'green',
+  },
+])
+
 const publicLocales = computed(() => validation.value?.article?.availableLocales ?? [])
+const publicLocalesLabel = computed(() => (
+  publicLocales.value.length
+    ? publicLocales.value.join(', ').toUpperCase()
+    : '—'
+))
 const validationIssues = computed(() => validation.value?.issues ?? [])
+
+const activeDirection = computed(() => activeLocale.value === 'fa' ? 'rtl' : 'ltr')
+const activeTitle = computed({
+  get: () => activeLocale.value === 'en' ? draft.enTitle : draft.faTitle,
+  set: value => {
+    if (activeLocale.value === 'en') draft.enTitle = value
+    else draft.faTitle = value
+    validation.value = null
+  },
+})
+const activeDescription = computed({
+  get: () => activeLocale.value === 'en' ? draft.enDescription : draft.faDescription,
+  set: value => {
+    if (activeLocale.value === 'en') draft.enDescription = value
+    else draft.faDescription = value
+    validation.value = null
+  },
+})
+const activeHeroAlt = computed({
+  get: () => activeLocale.value === 'en' ? draft.enAlt : draft.faAlt,
+  set: value => {
+    if (activeLocale.value === 'en') draft.enAlt = value
+    else draft.faAlt = value
+    validation.value = null
+  },
+})
+const activeBody = computed({
+  get: () => activeLocale.value === 'en' ? draft.enBody : draft.faBody,
+  set: value => {
+    if (activeLocale.value === 'en') draft.enBody = value
+    else draft.faBody = value
+    validation.value = null
+  },
+})
+
+const validationTone = computed(() => {
+  if (!validation.value) {
+    return {
+      bg: 'surface',
+      border: 'normal15',
+      color: 'normal55',
+      icon: 'fact_check',
+    }
+  }
+
+  if (validation.value.ok) {
+    return {
+      bg: 'green10',
+      border: 'green25',
+      color: 'green',
+      icon: 'check_circle',
+    }
+  }
+
+  return {
+    bg: 'red10',
+    border: 'red25',
+    color: 'red',
+    icon: 'error',
+  }
+})
+
+function statusColor(status: ManageBlogArticleSummary['status']) {
+  return status === 'published' ? 'green' : 'orange'
+}
 
 function resetDraft() {
   Object.assign(draft, createEmptyManageBlogDraft())
@@ -133,16 +222,15 @@ function runValidation() {
   validation.value = validateManageBlogDraft(draft)
 }
 
-function updateStatus(value: Event) {
-  const nextStatus = (value.target as HTMLSelectElement).value === 'published'
-    ? 'published'
-    : 'draft'
-  draft.status = nextStatus
-  if (nextStatus === 'published' && !draft.publishedAt.trim()) {
-    draft.publishedAt = new Date().toISOString()
-  }
-  validation.value = null
-}
+watch(
+  () => draft.status,
+  (nextStatus) => {
+    if (nextStatus === 'published' && !draft.publishedAt.trim()) {
+      draft.publishedAt = new Date().toISOString()
+    }
+    validation.value = null
+  },
+)
 
 watch(
   () => [route.query.article, route.query.new],
@@ -158,20 +246,32 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-flex rules="ccs" :gap="16" class="w100">
-    <div class="manage-blog-notice">
-      <div>
-        <strong>{{ t('manage.blog.editor.repositoryNotice') }}</strong>
-        <p>{{ t('manage.blog.editor.repositoryNoticeDetail') }}</p>
-      </div>
-      <span class="manage-blog-notice__badge">4E.4</span>
-    </div>
+  <el-flex rules="csc" :gap="16" class="w100">
+    <el-flex
+      rules="rsc"
+      :gap="10"
+      :p="14"
+      bg="surface"
+      :radius="14"
+      :br="1"
+      bc="normal15"
+      class="w100"
+    >
+      <el-icon icon="info" color="blue" :size="18" />
+      <el-flex rules="ccs" :gap="3" class="fg100">
+        <el-text :size="12" :weight="800">
+          {{ t('manage.blog.editor.repositoryNotice') }}
+        </el-text>
+        <el-text color="normal55" :size="11">
+          {{ t('manage.blog.editor.repositoryNoticeDetail') }}
+        </el-text>
+      </el-flex>
+      <el-text color="normal45" :size="10" :weight="700" font="monospace">4E.4</el-text>
+    </el-flex>
 
     <template v-if="!editorOpen">
       <el-flex rules="rbc" :gap="10" class="w100 fw">
-        <el-text :size="13" color="normal55">
-          {{ articles.length }} article{{ articles.length === 1 ? '' : 's' }}
-        </el-text>
+        <el-text :size="13" color="normal55">{{ articleCountLabel }}</el-text>
         <el-flex rules="rcc" :gap="8">
           <el-button
             icon="refresh"
@@ -189,39 +289,78 @@ onMounted(async () => {
         </el-flex>
       </el-flex>
 
-      <div v-if="loading" class="manage-blog-state">{{ t('manage.blog.loading') }}</div>
-      <div v-else-if="loadError" class="manage-blog-state manage-blog-state--error">{{ loadError }}</div>
-      <div v-else-if="!articles.length" class="manage-blog-state">{{ t('manage.blog.empty') }}</div>
-
-      <div v-else class="manage-blog-table">
-        <div class="manage-blog-table__row manage-blog-table__head">
-          <span>{{ t('manage.blog.list.id') }}</span>
-          <span>{{ t('manage.blog.list.slug') }}</span>
-          <span>{{ t('manage.blog.list.status') }}</span>
-          <span>{{ t('manage.blog.list.locales') }}</span>
-          <span>{{ t('manage.blog.list.updated') }}</span>
-          <span />
-        </div>
-        <button
-          v-for="article in articles"
-          :key="article.id"
-          type="button"
-          class="manage-blog-table__row manage-blog-table__article"
-          @click="openArticle(article.id)"
+      <el-flex
+        rules="csc"
+        class="w100"
+        bg="surface"
+        :radius="14"
+        :br="1"
+        bc="normal15"
+      >
+        <el-grid
+          cols="minmax(200px, 1.5fr) minmax(150px, 1fr) 110px 90px 160px 44px"
+          :gap="12"
+          align-items="center"
+          class="w100"
+          :p="[12, 16]"
         >
-          <span>
-            <strong>{{ titleFor(article) }}</strong>
-            <small>{{ article.id }}</small>
-          </span>
-          <code>{{ article.slug }}</code>
-          <span class="manage-blog-status" :data-status="article.status">
-            {{ t(`manage.blog.statuses.${article.status}`) }}
-          </span>
-          <span>{{ article.availableLocales.length ? article.availableLocales.join(' / ').toUpperCase() : '—' }}</span>
-          <span>{{ formatDate(article.updatedAt) }}</span>
-          <span class="manage-blog-edit">{{ t('manage.blog.actions.edit') }} →</span>
-        </button>
-      </div>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.list.id') }}</el-text>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.list.slug') }}</el-text>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.list.status') }}</el-text>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.list.locales') }}</el-text>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.list.updated') }}</el-text>
+          <el-text color="normal55" :size="10" :weight="800">{{ t('manage.blog.actions.edit') }}</el-text>
+        </el-grid>
+
+        <el-divider />
+
+        <el-flex v-if="loading" rules="ccc" class="w100" :p="28">
+          <el-text color="normal55">{{ t('manage.blog.loading') }}</el-text>
+        </el-flex>
+
+        <el-flex v-else-if="loadError" rules="rsc" :gap="8" class="w100" bg="red10" :p="12">
+          <el-icon icon="warning" color="red" :size="18" />
+          <el-text color="red" :size="12">{{ loadError }}</el-text>
+        </el-flex>
+
+        <template v-else-if="articles.length">
+          <template v-for="(article, index) in articles" :key="article.id">
+            <el-grid
+              cols="minmax(200px, 1.5fr) minmax(150px, 1fr) 110px 90px 160px 44px"
+              :gap="12"
+              align-items="center"
+              class="w100 crp"
+              :p="[12, 16]"
+              @click="openArticle(article.id)"
+            >
+              <el-flex rules="ccs" :gap="3" class="w100">
+                <el-text :size="12" :weight="700">{{ titleFor(article) }}</el-text>
+                <el-text color="normal45" :size="10" font="monospace">{{ article.id }}</el-text>
+              </el-flex>
+              <el-text color="normal55" :size="11" font="monospace">{{ article.slug }}</el-text>
+              <el-text :size="11" :weight="700" :color="statusColor(article.status)">
+                {{ t(`manage.blog.statuses.${article.status}`) }}
+              </el-text>
+              <el-text :size="11">
+                {{ article.availableLocales.length ? article.availableLocales.join(' / ').toUpperCase() : '—' }}
+              </el-text>
+              <el-text color="normal55" :size="10">{{ formatDate(article.updatedAt) }}</el-text>
+              <el-button
+                type="fab"
+                mode="flat"
+                icon="edit"
+                :tooltip="t('manage.blog.actions.edit')"
+                @click.stop="openArticle(article.id)"
+              />
+            </el-grid>
+            <el-divider v-if="index < articles.length - 1" />
+          </template>
+        </template>
+
+        <el-flex v-else rules="ccc" class="w100" :p="28">
+          <el-text color="normal55">{{ t('manage.blog.empty') }}</el-text>
+        </el-flex>
+      </el-flex>
     </template>
 
     <template v-else>
@@ -241,419 +380,295 @@ onMounted(async () => {
             icon="fact_check"
             :label="t('manage.blog.actions.validate')"
             color="prim"
-            :disabled="editorLoading"
+            :disable="editorLoading"
             @click="runValidation"
           />
         </el-flex>
       </el-flex>
 
-      <div v-if="editorLoading" class="manage-blog-state">{{ t('manage.blog.editor.loading') }}</div>
-      <div v-else-if="editorError" class="manage-blog-state manage-blog-state--error">{{ editorError }}</div>
+      <el-flex v-if="editorLoading" rules="ccc" class="w100" :p="30">
+        <el-text color="normal55">{{ t('manage.blog.editor.loading') }}</el-text>
+      </el-flex>
+
+      <el-flex v-else-if="editorError" rules="rsc" :gap="8" class="w100" bg="red10" :p="12" :radius="10">
+        <el-icon icon="warning" color="red" :size="18" />
+        <el-text color="red" :size="12">{{ editorError }}</el-text>
+      </el-flex>
 
       <template v-else>
-        <section class="manage-blog-panel">
-          <h3>{{ t('manage.blog.groups.repositoryMetadata') }}</h3>
-          <div class="manage-blog-grid manage-blog-grid--3">
-            <label>
-              <span>{{ t('manage.blog.fields.id') }}</span>
-              <input v-model="draft.id" :disabled="Boolean(editingId)" :placeholder="t('manage.blog.placeholders.id')" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.slug') }}</span>
-              <input v-model="draft.slug" :placeholder="t('manage.blog.placeholders.slug')" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.status') }}</span>
-              <select :value="draft.status" @change="updateStatus">
-                <option value="draft">{{ t('manage.blog.statuses.draft') }}</option>
-                <option value="published">{{ t('manage.blog.statuses.published') }}</option>
-              </select>
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.publishedAt') }}</span>
-              <input v-model="draft.publishedAt" placeholder="2026-09-10T00:00:00.000Z" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.updatedAt') }}</span>
-              <input v-model="draft.updatedAt" placeholder="2026-09-10T00:00:00.000Z" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.publicLocales') }}</span>
-              <input :value="publicLocales.length ? publicLocales.join(', ').toUpperCase() : '—'" disabled />
-            </label>
-          </div>
-        </section>
+        <el-flex
+          rules="csc"
+          :gap="16"
+          :p="18"
+          bg="surface"
+          :radius="16"
+          :br="1"
+          bc="normal15"
+          class="w100"
+        >
+          <el-text :size="13" :weight="800">{{ t('manage.blog.groups.repositoryMetadata') }}</el-text>
+          <el-grid cols="repeat(3, minmax(0, 1fr))" :gap="12" class="w100">
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.id') }}</el-text>
+              <el-text-field
+                v-model="draft.id"
+                :actions="false"
+                :disabled="Boolean(editingId)"
+                :placeholder="t('manage.blog.placeholders.id')"
+              />
+            </el-flex>
 
-        <section class="manage-blog-panel">
-          <h3>{{ t('manage.blog.groups.editorialIdentity') }}</h3>
-          <div class="manage-blog-grid manage-blog-grid--2">
-            <label>
-              <span>{{ t('manage.blog.fields.authorName') }}</span>
-              <input v-model="draft.authorName" :placeholder="t('manage.blog.placeholders.authorName')" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.authorUrl') }}</span>
-              <input v-model="draft.authorUrl" :placeholder="t('manage.blog.placeholders.authorUrl')" />
-            </label>
-          </div>
-        </section>
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.slug') }}</el-text>
+              <el-text-field
+                v-model="draft.slug"
+                :actions="false"
+                :placeholder="t('manage.blog.placeholders.slug')"
+              />
+            </el-flex>
 
-        <section class="manage-blog-panel">
-          <h3>{{ t('manage.blog.groups.heroMedia') }}</h3>
-          <div class="manage-blog-grid manage-blog-grid--2">
-            <label>
-              <span>{{ t('manage.blog.fields.heroFullUrl') }}</span>
-              <input v-model="draft.heroFullUrl" placeholder="/media/blog/hero.webp" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.heroThumbnailUrl') }}</span>
-              <input v-model="draft.heroThumbnailUrl" placeholder="/media/blog/hero-thumb.webp" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.heroWidth') }}</span>
-              <input v-model="draft.heroWidth" inputmode="numeric" placeholder="1600" />
-            </label>
-            <label>
-              <span>{{ t('manage.blog.fields.heroHeight') }}</span>
-              <input v-model="draft.heroHeight" inputmode="numeric" placeholder="900" />
-            </label>
-          </div>
-        </section>
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.status') }}</el-text>
+              <el-dropdown
+                v-model="draft.status"
+                :items="statusItems"
+                icon="flag"
+              />
+            </el-flex>
 
-        <section class="manage-blog-panel manage-blog-localization">
-          <div class="manage-blog-localization__tabs">
-            <button
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.publishedAt') }}</el-text>
+              <el-text-field
+                v-model="draft.publishedAt"
+                :actions="false"
+                placeholder="2026-09-10T00:00:00.000Z"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.updatedAt') }}</el-text>
+              <el-text-field
+                v-model="draft.updatedAt"
+                :actions="false"
+                placeholder="2026-09-10T00:00:00.000Z"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.publicLocales') }}</el-text>
+              <el-text-field
+                :model-value="publicLocalesLabel"
+                :actions="false"
+                disabled
+              />
+            </el-flex>
+          </el-grid>
+        </el-flex>
+
+        <el-flex
+          rules="csc"
+          :gap="16"
+          :p="18"
+          bg="surface"
+          :radius="16"
+          :br="1"
+          bc="normal15"
+          class="w100"
+        >
+          <el-text :size="13" :weight="800">{{ t('manage.blog.groups.editorialIdentity') }}</el-text>
+          <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.authorName') }}</el-text>
+              <el-text-field
+                v-model="draft.authorName"
+                :actions="false"
+                :placeholder="t('manage.blog.placeholders.authorName')"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.authorUrl') }}</el-text>
+              <el-text-field
+                v-model="draft.authorUrl"
+                :actions="false"
+                :placeholder="t('manage.blog.placeholders.authorUrl')"
+              />
+            </el-flex>
+          </el-grid>
+        </el-flex>
+
+        <el-flex
+          rules="csc"
+          :gap="16"
+          :p="18"
+          bg="surface"
+          :radius="16"
+          :br="1"
+          bc="normal15"
+          class="w100"
+        >
+          <el-text :size="13" :weight="800">{{ t('manage.blog.groups.heroMedia') }}</el-text>
+          <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroFullUrl') }}</el-text>
+              <el-text-field
+                v-model="draft.heroFullUrl"
+                :actions="false"
+                placeholder="/media/blog/hero.webp"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroThumbnailUrl') }}</el-text>
+              <el-text-field
+                v-model="draft.heroThumbnailUrl"
+                :actions="false"
+                placeholder="/media/blog/hero-thumb.webp"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroWidth') }}</el-text>
+              <el-text-field
+                v-model="draft.heroWidth"
+                :actions="false"
+                inputmode="numeric"
+                placeholder="1600"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="6">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroHeight') }}</el-text>
+              <el-text-field
+                v-model="draft.heroHeight"
+                :actions="false"
+                inputmode="numeric"
+                placeholder="900"
+              />
+            </el-flex>
+          </el-grid>
+        </el-flex>
+
+        <el-flex
+          rules="csc"
+          :gap="0"
+          bg="surface"
+          :radius="16"
+          :br="1"
+          bc="normal15"
+          class="w100 ofh"
+        >
+          <el-flex rules="rsc" :gap="6" :p="10" class="w100 fw">
+            <el-button
               v-for="code in blogLocales"
               :key="code"
-              type="button"
-              :class="{ active: activeLocale === code }"
+              :label="t(`manage.blog.locales.${code}`)"
+              :mode="activeLocale === code ? 'normal' : 'flat'"
+              :color="activeLocale === code ? 'prim' : undefined"
               @click="activeLocale = code"
-            >
-              {{ t(`manage.blog.locales.${code}`) }}
-            </button>
-          </div>
+            />
+          </el-flex>
 
-          <div v-if="activeLocale === 'en'" class="manage-blog-localization__body" dir="ltr">
-            <div class="manage-blog-grid manage-blog-grid--2">
-              <label>
-                <span>{{ t('manage.blog.fields.title') }}</span>
-                <input v-model="draft.enTitle" :placeholder="t('manage.blog.placeholders.title')" />
-              </label>
-              <label>
-                <span>{{ t('manage.blog.fields.heroAlt') }}</span>
-                <input v-model="draft.enAlt" :placeholder="t('manage.blog.placeholders.heroAlt')" />
-              </label>
-            </div>
-            <label>
-              <span>{{ t('manage.blog.fields.description') }}</span>
-              <textarea v-model="draft.enDescription" rows="3" :placeholder="t('manage.blog.placeholders.description')" />
-            </label>
+          <el-divider />
+
+          <el-flex
+            rules="csc"
+            :gap="12"
+            :p="16"
+            class="w100"
+            :dir="activeDirection"
+          >
+            <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
+              <el-flex rules="ccs" :gap="6">
+                <el-text :size="11" :weight="700">{{ t('manage.blog.fields.title') }}</el-text>
+                <el-text-field
+                  v-model="activeTitle"
+                  :actions="false"
+                  :placeholder="t('manage.blog.placeholders.title')"
+                />
+              </el-flex>
+
+              <el-flex rules="ccs" :gap="6">
+                <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroAlt') }}</el-text>
+                <el-text-field
+                  v-model="activeHeroAlt"
+                  :actions="false"
+                  :placeholder="t('manage.blog.placeholders.heroAlt')"
+                />
+              </el-flex>
+            </el-grid>
+
+            <el-flex rules="ccs" :gap="6" class="w100">
+              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.description') }}</el-text>
+              <el-text-field
+                v-model="activeDescription"
+                type="textarea"
+                :rows="3"
+                :actions="false"
+                :placeholder="t('manage.blog.placeholders.description')"
+              />
+            </el-flex>
+
             <ManageBlogMarkdownEditor
-              v-model="draft.enBody"
-              locale="en"
+              v-model="activeBody"
+              :locale="activeLocale"
               :placeholder="t('manage.blog.placeholders.markdown')"
             />
-          </div>
+          </el-flex>
+        </el-flex>
 
-          <div v-else class="manage-blog-localization__body" dir="rtl">
-            <div class="manage-blog-grid manage-blog-grid--2">
-              <label>
-                <span>{{ t('manage.blog.fields.title') }}</span>
-                <input v-model="draft.faTitle" :placeholder="t('manage.blog.placeholders.title')" />
-              </label>
-              <label>
-                <span>{{ t('manage.blog.fields.heroAlt') }}</span>
-                <input v-model="draft.faAlt" :placeholder="t('manage.blog.placeholders.heroAlt')" />
-              </label>
-            </div>
-            <label>
-              <span>{{ t('manage.blog.fields.description') }}</span>
-              <textarea v-model="draft.faDescription" rows="3" :placeholder="t('manage.blog.placeholders.description')" />
-            </label>
-            <ManageBlogMarkdownEditor
-              v-model="draft.faBody"
-              locale="fa"
-              :placeholder="t('manage.blog.placeholders.markdown')"
-            />
-          </div>
-        </section>
-
-        <section
-          class="manage-blog-validation"
-          :data-state="validation ? (validation.ok ? 'valid' : 'invalid') : 'idle'"
+        <el-flex
+          rules="rsc"
+          :gap="10"
+          :p="14"
+          class="w100"
+          :bg="validationTone.bg"
+          :radius="14"
+          :br="1"
+          :bc="validationTone.border"
         >
-          <template v-if="!validation">
-            <strong>{{ t('manage.blog.editor.untouched') }}</strong>
-          </template>
-          <template v-else-if="validation.ok">
-            <strong>{{ t('manage.blog.editor.validTitle') }}</strong>
-            <p>{{ t('manage.blog.editor.validDetail') }}</p>
-          </template>
-          <template v-else>
-            <strong>{{ t('manage.blog.editor.invalidTitle') }}</strong>
-            <p>{{ t('manage.blog.editor.invalidDetail', { count: validationIssues.length }) }}</p>
-            <ul>
-              <li v-for="(issue, index) in validationIssues" :key="`${issue.path}-${index}`">
-                <code>{{ issue.path }}</code> — {{ issue.message }}
-              </li>
-            </ul>
-          </template>
-        </section>
+          <el-icon :icon="validationTone.icon" :color="validationTone.color" :size="18" />
+
+          <el-flex rules="ccs" :gap="4" class="fg100">
+            <template v-if="!validation">
+              <el-text :color="validationTone.color" :size="12" :weight="700">
+                {{ t('manage.blog.editor.untouched') }}
+              </el-text>
+            </template>
+
+            <template v-else-if="validation.ok">
+              <el-text :color="validationTone.color" :size="12" :weight="800">
+                {{ t('manage.blog.editor.validTitle') }}
+              </el-text>
+              <el-text :color="validationTone.color" :size="11">
+                {{ t('manage.blog.editor.validDetail') }}
+              </el-text>
+            </template>
+
+            <template v-else>
+              <el-text :color="validationTone.color" :size="12" :weight="800">
+                {{ t('manage.blog.editor.invalidTitle') }}
+              </el-text>
+              <el-text :color="validationTone.color" :size="11">
+                {{ t('manage.blog.editor.invalidDetail', { count: validationIssues.length }) }}
+              </el-text>
+
+              <el-flex rules="ccs" :gap="5" class="w100">
+                <el-flex
+                  v-for="(issue, index) in validationIssues"
+                  :key="`${issue.path}-${index}`"
+                  rules="rsc"
+                  :gap="6"
+                  class="w100"
+                >
+                  <el-text color="red" :size="10" :weight="800" font="monospace">{{ issue.path }}</el-text>
+                  <el-text color="red" :size="11">{{ issue.message }}</el-text>
+                </el-flex>
+              </el-flex>
+            </template>
+          </el-flex>
+        </el-flex>
       </template>
     </template>
   </el-flex>
 </template>
-
-<style scoped>
-.manage-blog-notice,
-.manage-blog-panel,
-.manage-blog-validation,
-.manage-blog-state,
-.manage-blog-table {
-  width: 100%;
-  border: 1px solid var(--normalText15);
-  border-radius: 14px;
-  background: var(--themeSurface);
-  color: var(--normalText);
-}
-
-.manage-blog-notice {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: 18px;
-  padding: 14px 16px;
-}
-
-.manage-blog-notice strong {
-  display: block;
-  margin-bottom: 4px;
-}
-
-.manage-blog-notice p,
-.manage-blog-validation p {
-  margin: 0;
-  color: var(--normalText55);
-  font-size: 12px;
-  line-height: 1.7;
-}
-
-.manage-blog-notice__badge {
-  flex: 0 0 auto;
-  padding: 4px 8px;
-  border-radius: 999px;
-  background: var(--normalText10);
-  color: var(--normalText60);
-  font: 700 11px/1 monospace;
-}
-
-.manage-blog-state {
-  padding: 24px;
-  text-align: center;
-  color: var(--normalText55);
-}
-
-.manage-blog-state--error {
-  color: var(--themeRed);
-}
-
-.manage-blog-table {
-  overflow: hidden;
-}
-
-.manage-blog-table__row {
-  display: grid;
-  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) 110px 90px 150px 70px;
-  gap: 12px;
-  align-items: center;
-  width: 100%;
-  padding: 12px 14px;
-}
-
-.manage-blog-table__head {
-  color: var(--normalText50);
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: .04em;
-}
-
-.manage-blog-table__article {
-  border: 0;
-  border-top: 1px solid var(--normalText10);
-  background: transparent;
-  color: inherit;
-  text-align: inherit;
-  cursor: pointer;
-}
-
-.manage-blog-table__article:hover {
-  background: var(--normalText5);
-}
-
-.manage-blog-table__article strong,
-.manage-blog-table__article small {
-  display: block;
-}
-
-.manage-blog-table__article small,
-.manage-blog-table__article code {
-  margin-top: 2px;
-  color: var(--normalText45);
-  font-size: 11px;
-}
-
-.manage-blog-status {
-  text-transform: capitalize;
-}
-
-.manage-blog-status[data-status='published'] {
-  color: var(--themeGreen);
-}
-
-.manage-blog-status[data-status='draft'] {
-  color: var(--themeOrange);
-}
-
-.manage-blog-edit {
-  color: var(--normalText55);
-  font-size: 12px;
-}
-
-.manage-blog-panel {
-  padding: 16px;
-}
-
-.manage-blog-panel h3 {
-  margin: 0 0 14px;
-  color: var(--normalText);
-  font-size: 14px;
-}
-
-.manage-blog-grid {
-  display: grid;
-  gap: 12px;
-}
-
-.manage-blog-grid--2 {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.manage-blog-grid--3 {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-}
-
-.manage-blog-panel label,
-.manage-blog-localization__body > label {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  color: var(--normalText55);
-  font-size: 12px;
-}
-
-.manage-blog-panel input,
-.manage-blog-panel textarea,
-.manage-blog-panel select {
-  width: 100%;
-  box-sizing: border-box;
-  border: 1px solid var(--normalText15);
-  border-radius: 10px;
-  outline: none;
-  background: var(--normalText5);
-  color: var(--normalText);
-  padding: 10px 11px;
-  font: inherit;
-}
-
-.manage-blog-panel input:focus,
-.manage-blog-panel textarea:focus,
-.manage-blog-panel select:focus {
-  border-color: var(--primary);
-  background: var(--normalText10);
-  box-shadow: 0 0 0 3px var(--primary15);
-}
-
-.manage-blog-panel textarea {
-  resize: vertical;
-}
-
-.manage-blog-localization {
-  padding: 0;
-  overflow: hidden;
-}
-
-.manage-blog-localization__tabs {
-  display: flex;
-  gap: 6px;
-  padding: 8px;
-  border-bottom: 1px solid var(--normalText10);
-}
-
-.manage-blog-localization__tabs button {
-  border: 0;
-  border-radius: 9px;
-  padding: 8px 12px;
-  background: transparent;
-  color: var(--normalText55);
-  cursor: pointer;
-}
-
-.manage-blog-localization__tabs button:hover {
-  background: var(--normalText5);
-  color: var(--normalText);
-}
-
-.manage-blog-localization__tabs button.active {
-  background: var(--normalText10);
-  color: var(--normalText);
-}
-
-.manage-blog-localization__body {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px;
-}
-
-.manage-blog-validation {
-  padding: 14px 16px;
-}
-
-.manage-blog-validation[data-state='valid'] {
-  border-color: var(--themeGreen30);
-}
-
-.manage-blog-validation[data-state='invalid'] {
-  border-color: var(--themeRed35);
-}
-
-.manage-blog-validation ul {
-  margin: 10px 0 0;
-  padding-inline-start: 22px;
-  color: var(--themeRed);
-  font-size: 12px;
-  line-height: 1.65;
-}
-
-@media (max-width: 980px) {
-  .manage-blog-table {
-    overflow-x: auto;
-  }
-
-  .manage-blog-table__row {
-    min-width: 820px;
-  }
-
-  .manage-blog-grid--3 {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (max-width: 640px) {
-  .manage-blog-grid--2,
-  .manage-blog-grid--3 {
-    grid-template-columns: 1fr;
-  }
-}
-</style>
