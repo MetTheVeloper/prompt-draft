@@ -82,3 +82,21 @@ test('Blog management UI exposes state-driven save/publish actions and explicit 
   assert.match(page, /writeConfigured/)
   assert.match(en, /Public runtime will reflect it after the next deployment/)
 })
+
+test('Validate article reports through the global modal and keeps a neutral persistent success state', () => {
+  const page = source('app/pages/manage/blog.vue')
+  const modal = source('app/composables/useBlogValidationModal.ts')
+  const component = source('app/components/manage/ManageBlogValidationModal.vue')
+  const en = source('i18n/locales/manage-blog.en.ts')
+  const fa = source('i18n/locales/manage-blog.fa.ts')
+
+  assert.match(page, /const validationModal = useBlogValidationModal\(\)/)
+  assert.match(page, /validationModal\.open\(result\)/)
+  assert.match(page, /bg:\s*['"]normal5['"][\s\S]*border:\s*['"]normal15['"][\s\S]*color:\s*['"]normal70['"]/)
+  assert.match(modal, /modal\.open\(/)
+  assert.match(modal, /ManageBlogValidationModal/)
+  assert.match(component, /props\.ok \? ['"]normal70['"] : ['"]red['"]/)
+  assert.match(component, /<el-divider\b/)
+  assert.match(en, /validationModalTitle:\s*['"]Article validation['"]/)
+  assert.match(fa, /validationModalTitle:\s*['"]اعتبارسنجی مقاله['"]/)
+})
