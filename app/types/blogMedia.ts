@@ -2,6 +2,7 @@ export type BlogMediaAsset = {
   id: string
   folder: string
   sourceName: string
+  alt: string
   createdAt: string
   storageKey: string
   thumbnailStorageKey: string
@@ -32,6 +33,7 @@ export type BlogMediaBrowseResponse = {
 
 export type BlogMediaUploadInput = {
   sourceName?: string
+  alt: string
   full: {
     base64: string
     width: number
