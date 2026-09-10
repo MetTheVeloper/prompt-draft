@@ -90,6 +90,7 @@ function insertImage() {
   display: grid;
   gap: 10px;
   width: 100%;
+  color: var(--normalText);
 }
 
 .blog-markdown-editor__toolbar {
@@ -99,10 +100,10 @@ function insertImage() {
 }
 
 .blog-markdown-editor__toolbar button {
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--normalText15);
   border-radius: 8px;
-  background: rgb(255 255 255 / 5%);
-  color: inherit;
+  background: var(--normalText5);
+  color: var(--normalText);
   padding: 6px 9px;
   cursor: pointer;
   font: inherit;
@@ -110,7 +111,7 @@ function insertImage() {
 }
 
 .blog-markdown-editor__toolbar button:hover {
-  background: rgb(255 255 255 / 9%);
+  background: var(--normalText10);
 }
 
 .blog-markdown-editor__panes {
@@ -127,7 +128,7 @@ function insertImage() {
 }
 
 .blog-markdown-editor__label {
-  color: rgb(255 255 255 / 55%);
+  color: var(--normalText55);
   font-size: 12px;
   font-weight: 700;
 }
@@ -136,10 +137,10 @@ function insertImage() {
 .blog-markdown-editor__preview,
 .blog-markdown-editor__empty {
   min-height: 360px;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--normalText15);
   border-radius: 12px;
-  background: rgb(255 255 255 / 3%);
-  color: inherit;
+  background: var(--normalText5);
+  color: var(--normalText);
   padding: 14px;
 }
 
@@ -151,7 +152,9 @@ function insertImage() {
 }
 
 .blog-markdown-editor textarea:focus {
-  border-color: rgb(255 255 255 / 24%);
+  border-color: var(--primary);
+  background: var(--normalText10);
+  box-shadow: 0 0 0 3px var(--primary15);
 }
 
 .blog-markdown-editor__preview {
@@ -169,11 +172,11 @@ function insertImage() {
   overflow: auto;
   padding: 12px;
   border-radius: 10px;
-  background: rgb(0 0 0 / 24%);
+  background: var(--normalText5);
 }
 
 .blog-markdown-editor__empty {
-  color: rgb(255 255 255 / 40%);
+  color: var(--normalText40);
 }
 
 @media (max-width: 980px) {
