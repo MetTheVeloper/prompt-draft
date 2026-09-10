@@ -36,6 +36,18 @@ type TextFieldAction =
 
 type TextFieldActionsProp = TextFieldAction[] | false;
 
+type TextFieldContextMenuContext = {
+  event: MouseEvent;
+  field: PromptEditableElement | null;
+  value: string;
+  selectionStart: number;
+  selectionEnd: number;
+};
+
+type TextFieldContextMenuItemsProp =
+  | GlobalMenuItem[]
+  | ((context: TextFieldContextMenuContext) => GlobalMenuItem[]);
+
 const DEFAULT_TEXT_FIELD_ACTIONS: TextFieldAction[] = [
   "insertVariable",
   "translate",
@@ -59,6 +71,7 @@ const props = withDefaults(
     editorId?: string;
     supportVariables?: boolean;
     actions?: TextFieldActionsProp;
+    contextMenuItems?: TextFieldContextMenuItemsProp;
     actionLabel?: string;
     size?: number | string;
 
@@ -76,6 +89,7 @@ const props = withDefaults(
     historyLimit: 20,
     editorId: "",
     supportVariables: false,
+    contextMenuItems: undefined,
     actionLabel: undefined,
     size: 16,
 
@@ -134,11 +148,21 @@ const isLocked = computed(() => {
 });
 
 const enabledActions = computed<TextFieldAction[]>(() => {
+  if (props.actions === false) {
+    return [];
+  }
+
   if (Array.isArray(props.actions)) {
     return Array.from(new Set(props.actions));
-  } else {
-    return DEFAULT_TEXT_FIELD_ACTIONS;
   }
+
+  return DEFAULT_TEXT_FIELD_ACTIONS;
+});
+
+const hasCustomContextMenu = computed(() => {
+  if (typeof props.contextMenuItems === "function") return true;
+
+  return Array.isArray(props.contextMenuItems) && props.contextMenuItems.length > 0;
 });
 
 const resolvedActionLabel = computed(() => {
@@ -151,6 +175,10 @@ const shouldTrackEditor = computed(() => {
 
 const showActionButton = computed(() => {
   return enabledActions.value.length > 0 && !props.disabled;
+});
+
+const canOpenContextMenu = computed(() => {
+  return hasCustomContextMenu.value || showActionButton.value;
 });
 
 const canUseClipboard = computed(() => {
@@ -669,6 +697,29 @@ function getActionMenuItems(): GlobalMenuItem[] {
   return items;
 }
 
+function getCustomContextMenuItems(event: MouseEvent): GlobalMenuItem[] {
+  const configuredItems = props.contextMenuItems;
+
+  if (Array.isArray(configuredItems)) {
+    return configuredItems;
+  }
+
+  if (typeof configuredItems !== "function") {
+    return [];
+  }
+
+  const field = fieldRef.value;
+  const fallbackPosition = textValue.value.length;
+
+  return configuredItems({
+    event,
+    field,
+    value: textValue.value,
+    selectionStart: field?.selectionStart ?? fallbackPosition,
+    selectionEnd: field?.selectionEnd ?? fallbackPosition,
+  });
+}
+
 async function openActionMenu(event: MouseEvent) {
   if (!showActionButton.value) return;
 
@@ -696,12 +747,12 @@ async function openActionMenu(event: MouseEvent) {
   });
 }
 
-function focus() {
-  fieldRef.value?.focus();
+function focus(options?: FocusOptions) {
+  fieldRef.value?.focus(options);
 }
 
 async function openContextActionMenu(event: MouseEvent) {
-  if (!showActionButton.value) return;
+  if (!canOpenContextMenu.value) return;
 
   event.preventDefault();
   event.stopPropagation();
@@ -714,9 +765,17 @@ async function openContextActionMenu(event: MouseEvent) {
 
   updateEditorCursorFromField();
 
-  if (hasAction("translate")) {
+  const usingCustomMenu = hasCustomContextMenu.value;
+
+  if (!usingCustomMenu && hasAction("translate")) {
     await checkTranslationAvailability({ force: true });
   }
+
+  const items = usingCustomMenu
+    ? getCustomContextMenuItems(event)
+    : getActionMenuItems();
+
+  if (!items.length) return;
 
   $menu.open({
     mode: "point",
@@ -726,7 +785,7 @@ async function openContextActionMenu(event: MouseEvent) {
       zIndex: 30000,
       minWidth: 180,
     },
-    items: getActionMenuItems(),
+    items,
   });
 }
 
