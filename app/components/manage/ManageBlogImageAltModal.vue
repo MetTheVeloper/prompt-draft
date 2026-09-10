@@ -1,5 +1,8 @@
 <script setup lang="ts">
+import type { BlogMediaAsset } from '~/types/blogMedia'
+
 const props = withDefaults(defineProps<{
+  asset: BlogMediaAsset
   initialAlt?: string
   onInsert?: (alt: string) => void | Promise<void>
 }>(), {
@@ -9,7 +12,7 @@ const props = withDefaults(defineProps<{
 
 const modal = useModal()
 const { t } = useI18n()
-const alt = ref(props.initialAlt)
+const alt = ref(props.initialAlt || props.asset.alt || '')
 const error = ref('')
 
 async function submit() {
@@ -26,6 +29,12 @@ async function submit() {
 
 <template>
   <el-flex rules="csc" :gap="14" class="w100">
+    <img
+      :src="asset.thumbnailUrl || asset.fullUrl"
+      :alt="alt || asset.alt || asset.sourceName"
+      class="blog-image-alt-preview"
+    >
+
     <el-flex rules="ccs" :gap="6" class="w100">
       <el-text :size="11" :weight="700">
         {{ t('manage.blog.markdown.imageAlt') }}
@@ -34,6 +43,7 @@ async function submit() {
         v-model="alt"
         :actions="false"
         :placeholder="t('manage.blog.markdown.imageAltPlaceholder')"
+        @input="error = ''"
       />
       <el-text v-if="error" color="red" :size="10">
         {{ error }}
@@ -55,3 +65,15 @@ async function submit() {
     </el-flex>
   </el-flex>
 </template>
+
+<style scoped>
+.blog-image-alt-preview {
+  display: block;
+  max-width: 100%;
+  max-height: 280px;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+}
+</style>
