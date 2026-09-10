@@ -33,15 +33,16 @@ test('Blog management page is permission-gated and reuses canonical validator + 
   assert.doesNotMatch(editor, /v-html="model"/)
 })
 
-test('Blog management runtime contract stays inside the Nuxt app module graph', () => {
+test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
   const draft = source('app/utils/manageBlogDraft.ts')
   const page = source('app/pages/manage/blog.vue')
   const rootContract = source('shared/blog-article.ts')
   const appContract = source('app/shared/blog-article.ts')
 
-  assert.match(draft, /from ['"]~\/shared\/blog-article['"]/)
-  assert.match(page, /from ['"]~\/shared\/blog-article['"]/)
+  assert.match(draft, /from ['"]\.\.\/shared\/blog-article['"]/)
+  assert.doesNotMatch(draft, /from ['"]~\/shared\/blog-article['"]/)
   assert.doesNotMatch(draft, /\.\.\/\.\.\/shared\/blog-article/)
+  assert.match(page, /from ['"]~\/shared\/blog-article['"]/)
   assert.match(rootContract, /export \* from ['"]\.\.\/app\/shared\/blog-article['"]/)
   assert.match(appContract, /validateBlogArticlePackage/)
   assert.match(appContract, /validateBlogRepositoryAssets/)
