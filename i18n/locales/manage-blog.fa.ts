@@ -25,6 +25,11 @@ export default {
         en: 'انگلیسی',
         fa: 'فارسی',
       },
+      groups: {
+        repositoryMetadata: 'فراداده مخزن',
+        editorialIdentity: 'هویت تحریریه',
+        heroMedia: 'رسانه شاخص',
+      },
       fields: {
         id: 'شناسه مقاله',
         slug: 'اسلاگ عمومی',
