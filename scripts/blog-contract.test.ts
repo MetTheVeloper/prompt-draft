@@ -200,6 +200,29 @@ test('Blog Markdown renderer escapes raw HTML and rejects unsafe link/image prot
   assert.match(html, /src="https:\/\/cdn\.example\.com\/hero\.webp"/)
 })
 
+test('Blog Markdown presentation groups heading hierarchy into open collapsible sections and marks images zoomable', () => {
+  const html = renderPublicBlogMarkdown(`Intro paragraph.
+
+# Parent heading
+
+Parent body.
+
+## Child heading
+
+Child body.
+
+# Sibling heading
+
+![zoom](https://cdn.example.com/zoom.webp)`)
+
+  assert.match(html, /<div class="blog-article-intro"><p>Intro paragraph\.<\/p><\/div>/)
+  assert.equal((html.match(/<details class="blog-article-section"/g) ?? []).length, 3)
+  assert.match(html, /data-heading-level="2" open><summary><h2>Parent heading<\/h2><\/summary>/)
+  assert.match(html, /data-heading-level="3" open><summary><h3>Child heading<\/h3><\/summary>/)
+  assert.match(html, /<h2>Parent heading<\/h2>[\s\S]*<h3>Child heading<\/h3>[\s\S]*<h2>Sibling heading<\/h2>/)
+  assert.match(html, /data-blog-zoom="true" role="button" tabindex="0"/)
+})
+
 test('Blog Markdown V1 intentionally does not interpret Markdown tables', () => {
   const html = renderPublicBlogMarkdown('| A | B |\n| --- | --- |\n| 1 | 2 |')
   assert.equal(html.includes('<table'), false)
