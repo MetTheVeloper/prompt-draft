@@ -25,6 +25,11 @@ export default {
         en: 'English',
         fa: 'Persian',
       },
+      groups: {
+        repositoryMetadata: 'Repository metadata',
+        editorialIdentity: 'Editorial identity',
+        heroMedia: 'Hero media',
+      },
       fields: {
         id: 'Article ID',
         slug: 'Public slug',
