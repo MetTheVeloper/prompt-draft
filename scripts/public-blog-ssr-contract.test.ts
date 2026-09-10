@@ -14,14 +14,20 @@ test('public Blog index owns native SSR SEO and localized canonical links', asyn
   assert.doesNotMatch(source, /github\.com|api\.github/i)
 })
 
-test('public Blog detail enforces locale-aware 404, canonical redirect, safe Markdown and BlogPosting SEO', async () => {
+test('public Blog detail enforces locale-aware 404, canonical redirect, shared article presentation and BlogPosting SEO', async () => {
   const source = await readFile('app/pages/blog/[slug].vue', 'utf8')
+  const presentation = await readFile('app/components/blog/BlogArticlePresentation.vue', 'utf8')
+
   assert.match(source, /normalizePublicBlogSlug\(rawSlugValue\)/)
   assert.match(source, /publicBlog\.load\(canonicalSlug, activeLocale\.value\)/)
   assert.match(source, /statusCode:\s*404/)
   assert.match(source, /redirectCode:\s*301/)
-  assert.match(source, /renderPublicBlogMarkdown/)
-  assert.match(source, /v-html="renderedBody"/)
+  assert.match(source, /BlogArticlePresentation/)
+  assert.match(source, /:markdown="article\.body"/)
+  assert.match(source, /BlogZoomableImage/)
+  assert.doesNotMatch(source, /v-html=/)
+  assert.match(presentation, /renderPublicBlogMarkdown/)
+  assert.match(presentation, /v-html="renderedBody"/)
   assert.match(source, /contentType:\s*'article'/)
   assert.match(source, /buildPublicBlogPostingStructuredData/)
   assert.match(source, /article:published_time/)
@@ -55,4 +61,6 @@ test('Blog localization is registered for both accepted locales', async () => {
   assert.match(config, /blogFa/)
   assert.match(en, /title:\s*'Blog'/)
   assert.match(fa, /title:\s*'بلاگ'/)
+  assert.match(en, /imagePreview/)
+  assert.match(fa, /imagePreview/)
 })
