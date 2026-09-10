@@ -5,9 +5,16 @@ import {
   type BlogGitConfig,
 } from './blogGitRepository'
 
-export async function getBlogManageRepository(event: any) {
-  const runtime = useRuntimeConfig(event)
-  const gitConfig = resolveBlogGitConfig(runtime)
+export function getConfiguredBlogGitRepository() {
+  return resolveBlogGitConfig({
+    blogGithubToken: process.env.BLOG_GITHUB_TOKEN,
+    blogGithubRepository: process.env.BLOG_GITHUB_REPOSITORY,
+    blogGithubBranch: process.env.BLOG_GITHUB_BRANCH,
+  })
+}
+
+export async function getBlogManageRepository(_event: any) {
+  const gitConfig = getConfiguredBlogGitRepository()
 
   if (gitConfig) {
     const snapshot = await readBlogGitRepository(gitConfig)
