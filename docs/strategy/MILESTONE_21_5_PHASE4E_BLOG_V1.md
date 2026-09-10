@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **IN PROGRESS / 4E.1 + 4E.2 + 4E.3 ACCEPTED / 4E.4 IMPLEMENTED + VERIFICATION PENDING**
+Status: **IN PROGRESS / 4E.1 + 4E.2 + 4E.3 ACCEPTED / 4E.4 VERIFICATION / 4E.5 MEDIA IMPLEMENTED + VERIFICATION PENDING**
 
 Date: 2026-09-10
 
@@ -20,6 +20,12 @@ Operational workflow:
 
 ```text
 docs/strategy/DEVELOPMENT_WORKFLOW.md
+```
+
+UI workflow:
+
+```text
+docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 ```
 
 Accepted dependency:
@@ -229,7 +235,7 @@ founder -> تایید
 
 ---
 
-## 4E.4 — CURRENT
+## 4E.4 — VERIFICATION IN PROGRESS
 
 Record:
 
@@ -240,7 +246,7 @@ docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
 Status:
 
 ```text
-IMPLEMENTED / FOUNDER VERIFICATION PENDING / NOT ACCEPTED
+IMPLEMENTED / FOUNDER VERIFICATION IN PROGRESS / NOT ACCEPTED
 ```
 
 Authorization:
@@ -263,17 +269,19 @@ GET /api/manage/blog/:id
 
 Each request revalidates the bearer token through backend `/api/auth/me` and requires `blog.manage` or wildcard.
 
-Authoring workspace:
+Authoring workspace now follows the project UI system and contains:
 
 ```text
 repository Article list
 new/edit state
-stable Article id
-slug/status/timestamps
-editorial author metadata
-hero metadata
-EN/FA title + description + alt + Markdown body
-small Markdown toolbar
+system-owned Article id and timestamps
+editable slug/status
+no manual Editorial Identity fields
+managed Hero media selection
+EN/FA title + description + localized Hero alt + Markdown body
+locale Complete/Incomplete/Public state near locale tabs
+global Link modal
+managed Gallery image insertion
 live preview through renderPublicBlogMarkdown
 canonical validation through validateBlogArticlePackage
 ```
@@ -281,54 +289,98 @@ canonical validation through validateBlogArticlePackage
 Editor dependency decision:
 
 ```text
-md-editor-v3 re-audited
-no dependency added in 4E.4
+no additional editor dependency
+Prompt Draft el-* primitives remain authoritative
 accepted safe renderer remains the single preview/public renderer
 ```
 
-Canonical write boundary:
+Canonical write boundary remains:
 
 ```text
 4E.4 = read + author + validate
-4E.5 = Git save/publish + media + reconciliation
+4E.5 = managed media + Git save/publish + reconciliation
 ```
 
 No temporary container filesystem/database/editor state is allowed to become canonical.
 
-Verification:
+Founder verification already proved:
 
-```powershell
-pnpm test:blog-manage
-pnpm api
-pnpm frontend
+```text
+blog.manage focused suite reached 43/43 PASS before latest media finalization
+backend build previously PASS
+frontend Docker/Nitro build previously PASS
+unauthenticated /api/manage/blog -> 401
+functional Gallery browse/upload/select smoke -> good
+Link modal -> good
 ```
 
-Then founder UI smoke for EN/FA Manage Blog and unauthorized endpoint behavior.
+Latest media/UI refinements require the combined focused rerun below before acceptance.
 
 ---
 
-## Remaining slices
+## 4E.5 — CURRENT / MEDIA LANE IMPLEMENTED
+
+Record:
 
 ```text
-4E.5 Blog Media + Repository Git Publish / Emergency Adapter
-4E.6 Aggregate Regression + External Staging + Static Acceptance
+docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 ```
 
-### 4E.5 target
+Status:
 
 ```text
-Blog-specific media upload
-shared/extracted Arvan SigV4 primitives
-stable media URLs in Markdown
-Git repository publication adapter
-save/publish flow from /manage/blog
-explicit conflict/reconciliation behavior
-optional emergency Arvan publication only with pending_git reconciliation
+MEDIA LANE IMPLEMENTED / FOUNDER VERIFICATION PENDING
+GIT PUBLICATION LANE NOT STARTED
+4E.5 OVERALL NOT ACCEPTED
 ```
 
-No base64 payloads in canonical Markdown.
+Implemented media direction:
 
-### 4E.6 target
+```text
+existing archiveStorage SigV4 authority reused
+Blog namespace confined to blog/
+ListObjectsV2 folder browsing
+managed full WebP + thumbnail WebP + JSON manifest
+required persisted default alt for new uploads
+legacy no-alt manifests remain readable
+admin audit trail
+reusable MediaGallery modal
+Hero selection
+Markdown image insertion with selected-image preview + editable default alt
+```
+
+Finalized Gallery/UI contract includes:
+
+```text
+current-folder divider
+no redundant Folders label
+folder navigation with project el-button semantics
+Images section start-aligned
+second click deselects selected image
+file selection stages preview + required alt before upload
+editor/preview top-aligned
+Markdown preview image max 400px on each axis
+Repository Metadata start-aligned
+```
+
+Still pending in 4E.5:
+
+```text
+canonical Git repository write adapter
+Save draft action
+Publish transition
+optimistic conflict/version handling
+repository reconciliation
+optional explicit emergency Arvan publication metadata
+```
+
+No base64 payloads are allowed in canonical Markdown.
+
+---
+
+## 4E.6 — NOT STARTED
+
+Target:
 
 ```text
 accepted 4A–4D regressions
@@ -368,11 +420,12 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 ## Current next action
 
 ```text
-Verify 4E.4:
+Verify the finalized 4E.4 + 4E.5 media lane:
 pnpm test:blog-manage
+-> pnpm test:blog-media
 -> pnpm api
 -> pnpm frontend
--> founder EN/FA Blog Manage UI smoke
+-> founder Gallery/Markdown/Light+Dark UI smoke
 ```
 
-After explicit 4E.4 acceptance proceed to 4E.5.
+Do not accept 4E.4 or 4E.5 until focused/runtime verification and explicit founder acceptance are complete.
