@@ -15,5 +15,6 @@ export default {
     published: 'منتشرشده',
     updated: 'به‌روزرسانی',
     by: 'نویسنده',
+    imagePreview: 'پیش‌نمایش تصویر',
   },
 }
