@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
-import { getAuthenticatedUser } from './auth.mjs'
-import { queryDatabase } from './database.mjs'
 
 const AUDIT_PATH = '/api/admin/blog/publication-audit'
 const MAX_BODY_BYTES = 64 * 1024
@@ -32,7 +30,7 @@ async function readJsonBody(request) {
   return JSON.parse(Buffer.concat(chunks).toString('utf8'))
 }
 
-function validateBody(body) {
+export function validateBlogPublicationAuditPayload(body) {
   const keys = ['action', 'articleId', 'slug', 'status', 'commitSha', 'branch']
   if (!isPlainObject(body) || !hasExactKeys(body, keys)) return false
   if (!ACTIONS.has(body.action)) return false
@@ -48,6 +46,35 @@ function validateBody(body) {
     /[\s~^:?*\\[\]]/.test(body.branch)
   ) return false
   return true
+}
+
+async function getAuthenticatedBlogAdmin(request) {
+  const { getAuthenticatedUser } = await import('./auth.mjs')
+  return getAuthenticatedUser(request)
+}
+
+async function insertPublicationAudit(user, body) {
+  const { queryDatabase } = await import('./database.mjs')
+  await queryDatabase(
+    `
+      INSERT INTO admin_audit_log
+        (id, actor_user_id, target_user_id, action, metadata)
+      VALUES
+        ($1, $2, NULL, $3, $4::jsonb)
+    `,
+    [
+      randomUUID(),
+      user.id,
+      `blog.article.${body.action}`,
+      JSON.stringify({
+        articleId: body.articleId,
+        slug: body.slug,
+        status: body.status,
+        commitSha: body.commitSha,
+        branch: body.branch,
+      }),
+    ],
+  )
 }
 
 export async function handleAdminBlogPublicationAuditRequest({
@@ -66,7 +93,7 @@ export async function handleAdminBlogPublicationAuditRequest({
 
   let user
   try {
-    user = await getAuthenticatedUser(request)
+    user = await getAuthenticatedBlogAdmin(request)
   } catch (error) {
     console.error('[Prompt Draft API] Blog publication audit auth failed', error)
     sendJson(response, 500, { ok: false, message: 'Failed to authenticate request' }, corsHeaders)
@@ -91,33 +118,13 @@ export async function handleAdminBlogPublicationAuditRequest({
     return true
   }
 
-  if (!validateBody(body)) {
+  if (!validateBlogPublicationAuditPayload(body)) {
     sendJson(response, 400, { ok: false, message: 'Invalid Blog publication audit payload' }, corsHeaders)
     return true
   }
 
   try {
-    await queryDatabase(
-      `
-        INSERT INTO admin_audit_log
-          (id, actor_user_id, target_user_id, action, metadata)
-        VALUES
-          ($1, $2, NULL, $3, $4::jsonb)
-      `,
-      [
-        randomUUID(),
-        user.id,
-        `blog.article.${body.action}`,
-        JSON.stringify({
-          articleId: body.articleId,
-          slug: body.slug,
-          status: body.status,
-          commitSha: body.commitSha,
-          branch: body.branch,
-        }),
-      ],
-    )
-
+    await insertPublicationAudit(user, body)
     sendJson(response, 200, { ok: true }, corsHeaders)
   } catch (error) {
     console.error('[Prompt Draft API] Blog publication audit insert failed', error)
