@@ -3,6 +3,7 @@ import {
   assertValidBlogRepositoryAssets,
   isBlogLocalePublic,
 } from '../../shared/blog-article'
+import { readBlogRepositoryDirectory } from './blogRepositoryFilesystem'
 
 let repositoryPromise: Promise<BlogArticle[]> | null = null
 
@@ -28,8 +29,20 @@ async function readBundledBlogAssets() {
   return assets
 }
 
+async function readBlogRepositorySource() {
+  // The deprecated static-export path prerenders inside the build workspace.
+  // Read that exact validated snapshot directly so temporary/just-written
+  // canonical Article files are visible during prerender. Normal Docker/Nitro
+  // runtime keeps using only bundled server assets and never reads GitHub or
+  // mutable host files per public request.
+  if (process.env.NUXT_LEGACY_STATIC_GENERATE === 'true') {
+    return readBlogRepositoryDirectory()
+  }
+  return readBundledBlogAssets().then(assertValidBlogRepositoryAssets)
+}
+
 export async function loadBlogRepository() {
-  repositoryPromise ??= readBundledBlogAssets().then(assertValidBlogRepositoryAssets)
+  repositoryPromise ??= readBlogRepositorySource()
   return repositoryPromise
 }
 

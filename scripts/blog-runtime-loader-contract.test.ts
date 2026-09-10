@@ -14,7 +14,7 @@ test('Blog repository content is bundled into Nitro server assets for Docker run
   assert.match(nuxtConfig, /baseName:\s*["']blog["']/)
   assert.match(nuxtConfig, /dir:\s*["']\.\/content\/blog["']/)
   assert.match(loader, /useStorage\(["']assets:blog["']\)/)
-  assert.match(loader, /assertValidBlogRepositoryAssets/)
+  assert.match(loader, /readBundledBlogAssets\(\)\.then\(assertValidBlogRepositoryAssets\)/)
 
   assert.match(dockerfile, /COPY \. \./)
   assert.match(dockerfile, /COPY --from=builder \/app\/\.output \.\/\.output/)
@@ -32,14 +32,27 @@ test('Blog runtime public helpers consume derived locale eligibility rather than
   assert.doesNotMatch(loader, /fallback/i)
 })
 
-test('legacy static generation explicitly prerenders authoritative Blog Article routes', async () => {
-  const [nuxtConfig, repositoryAdapter] = await Promise.all([
-    readFile('nuxt.config.ts', 'utf8'),
+test('legacy static generation reads the same validated build-workspace Blog snapshot', async () => {
+  const [loader, filesystemAdapter, scriptAdapter] = await Promise.all([
+    readFile('server/utils/blogRepository.ts', 'utf8'),
+    readFile('server/utils/blogRepositoryFilesystem.ts', 'utf8'),
     readFile('scripts/blog-repository.ts', 'utf8'),
   ])
 
-  assert.match(repositoryAdapter, /readBlogRepositoryDirectorySync/)
-  assert.match(repositoryAdapter, /assertValidBlogRepositoryAssets\(assets\)/)
+  assert.match(loader, /NUXT_LEGACY_STATIC_GENERATE\s*===\s*["']true["']/)
+  assert.match(loader, /return readBlogRepositoryDirectory\(\)/)
+  assert.match(filesystemAdapter, /assertValidBlogRepositoryAssets\(assets\)/)
+  assert.match(scriptAdapter, /blogRepositoryFilesystem/)
+})
+
+test('legacy static generation explicitly prerenders authoritative Blog Article routes', async () => {
+  const [nuxtConfig, filesystemAdapter] = await Promise.all([
+    readFile('nuxt.config.ts', 'utf8'),
+    readFile('server/utils/blogRepositoryFilesystem.ts', 'utf8'),
+  ])
+
+  assert.match(filesystemAdapter, /readBlogRepositoryDirectorySync/)
+  assert.match(filesystemAdapter, /assertValidBlogRepositoryAssets\(assets\)/)
   assert.match(nuxtConfig, /projectBlogPublicInventory\(readBlogRepositoryDirectorySync\(\)\)/)
   assert.match(nuxtConfig, /publicBlogPostPath\(article\.slug\)/)
   assert.match(nuxtConfig, /article\.availableLocales\.includes\(["']en["']\)/)
