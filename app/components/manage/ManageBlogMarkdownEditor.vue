@@ -93,7 +93,8 @@ function insertImage() {
   mediaGallery.open({
     onSelect: (asset) => {
       imageAltModal.open({
-        initialAlt: range.selected.trim(),
+        asset,
+        initialAlt: range.selected.trim() || asset.alt,
         onInsert: alt => replaceRange(
           range,
           `![${escapeMarkdownText(alt)}](${asset.fullUrl})`,
@@ -127,9 +128,10 @@ function insertImage() {
     <el-grid
       cols="minmax(0, 1fr) minmax(0, 1fr)"
       :gap="12"
+      align-items="start"
       class="w100 blog-markdown-panes"
     >
-      <el-flex rules="ccs" :gap="6" class="w100">
+      <el-flex rules="css" :gap="6" class="w100">
         <el-text color="normal55" :size="11" :weight="700">
           {{ t('manage.blog.markdown.source') }}
         </el-text>
@@ -145,7 +147,7 @@ function insertImage() {
         />
       </el-flex>
 
-      <el-flex rules="ccs" :gap="6" class="w100" :dir="direction">
+      <el-flex rules="css" :gap="6" class="w100" :dir="direction">
         <el-text color="normal55" :size="11" :weight="700">
           {{ t('manage.blog.markdown.preview') }}
         </el-text>
@@ -190,8 +192,12 @@ function insertImage() {
 }
 
 .blog-markdown-preview :deep(img) {
-  max-width: 100%;
+  display: block;
+  max-width: min(100%, 400px);
+  max-height: 400px;
+  width: auto;
   height: auto;
+  object-fit: contain;
   border-radius: 10px;
 }
 
