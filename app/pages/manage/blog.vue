@@ -454,7 +454,7 @@ onMounted(async () => {
 
       <template v-else>
         <el-flex
-          rules="csc"
+          rules="css"
           :gap="16"
           :p="18"
           bg="surface"
