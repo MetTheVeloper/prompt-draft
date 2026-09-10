@@ -24,6 +24,7 @@ const router = useRouter()
 const auth = useAuth()
 const blogApi = useManageBlog()
 const mediaGallery = useMediaGalleryModal()
+const validationModal = useBlogValidationModal()
 const { locale, t } = useI18n()
 
 const articles = ref<ManageBlogArticleSummary[]>([])
@@ -147,9 +148,9 @@ const validationTone = computed(() => {
 
   if (validation.value.ok) {
     return {
-      bg: 'green10',
-      border: 'green25',
-      color: 'green',
+      bg: 'normal5',
+      border: 'normal15',
+      color: 'normal70',
       icon: 'check_circle',
     }
   }
@@ -329,7 +330,9 @@ function closeEditor() {
 }
 
 function runValidation() {
-  validation.value = validateManageBlogDraft(draft)
+  const result = validateManageBlogDraft(draft)
+  validation.value = result
+  validationModal.open(result)
 }
 
 function getBlogWriteErrorCode(error: any) {
