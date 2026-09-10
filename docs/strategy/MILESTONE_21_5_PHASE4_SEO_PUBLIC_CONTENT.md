@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C + 4D DONE + ACCEPTED / 4E BLOG V1 IN PROGRESS**
+Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F NEXT**
 
 Date: 2026-09-10
 
@@ -54,8 +54,8 @@ Accepted foundations include Nuxt SSR for acquisition surfaces, explicit client-
 21.5.4B Public Prompt Architecture                         DONE / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
 21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
-21.5.4E Blog V1                                            IN PROGRESS
-21.5.4F Integration / Verification / Legacy Retirement     NOT STARTED
+21.5.4E Blog V1                                            DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
+21.5.4F Integration / Verification / Legacy Retirement     NEXT
 ```
 
 Required order remains:
@@ -144,12 +144,18 @@ pnpm verify:phase4d-static    PASS
 
 Historical acceptance snapshot was 220 sitemap URLs / 220 llms URLs / 331 prerendered routes. Counts are evidence, not permanent constants.
 
-## 9. 4E — Blog V1 — IN PROGRESS
+## 9. Accepted 4E — Blog V1
 
 Canonical source of truth:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
+```
+
+Final acceptance record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
 ```
 
 Public routes:
@@ -176,20 +182,28 @@ Docker/Nitro deployment -> normal public runtime content source
 Arvan Object Storage    -> managed media + explicit optional emergency role
 ```
 
-Repository-backed does **not** mean request-time GitHub. Public Blog always reads deployed bundled content.
+Repository-backed does **not** mean request-time GitHub. Public Blog reads deployed bundled content; legacy static generation reads the same validated build-workspace Blog repository snapshot.
 
-### Current accepted/implemented slices
+Accepted 4E slices:
 
 ```text
 4E.1 Article Contract + Repository Loader -> DONE / ACCEPTED
 4E.2 Public Blog SSR + SEO                 -> DONE / ACCEPTED
 4E.3 Blog Inventory / Sitemap / llms       -> DONE / ACCEPTED
-4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-4E.5 Media Lane                            -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-4E.5 Git Publication Lane                  -> IMPLEMENTED / VERIFICATION PENDING
-4E.5 overall                               -> NOT ACCEPTED
-4E.6 Aggregate acceptance                  -> NOT STARTED
+4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED
+4E.5 Media + Git Publication               -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
+4E.6 Aggregate acceptance                  -> DONE / FOUNDER VERIFIED / ACCEPTED
 ```
+
+Final gates:
+
+```text
+pnpm test:phase4e-final    PASS
+pnpm smoke:phase4e-final   PASS
+pnpm verify:phase4e-static PASS
+```
+
+The final aggregate preserved the accepted 4A–4D baseline and passed all Blog contract/public/inventory/manage/media/publication regressions. Deterministic published EN/FA static detail routes prerendered successfully, joined sitemap + llms and were removed after verification.
 
 ### Locked Article/content model
 
@@ -214,31 +228,13 @@ slug/status/content -> editor-owned
 public locales -> derived
 ```
 
-### Managed media
+### Managed media + publication
 
 Blog images reuse the existing Arvan/S3 authority below `blog/`, with full/thumbnail/manifest assets, required persisted alt on new uploads, Gallery browsing and no base64 Markdown payloads.
 
-### Implemented Git publication
-
-The current 4E.5 implementation adds server-only `BLOG_GITHUB_*` configuration, canonical management Git reads, strict editor-owned write payloads, POST/PUT management endpoints, server-owned identity/timestamps, full repository validation, atomic Git tree+commit+fast-forward ref update, optimistic Article versions, guarded branch-race retry and backend actor audit receipts.
+Canonical authoring uses server-only `BLOG_GITHUB_*` configuration, fail-closed Git management reads, strict editor-owned write payloads, server-owned identity/timestamps, full repository validation, atomic Git tree+commit+non-force ref update, optimistic Article versions, guarded branch-race retry and backend actor audit receipts.
 
 Public Blog still never queries GitHub; a canonical Git save appears publicly only after a deployment/build contains that commit.
-
-Current focused verification:
-
-```powershell
-pnpm test:blog-publish
-pnpm test:blog-manage
-```
-
-If green, smallest runtime rebuild:
-
-```powershell
-pnpm api
-pnpm frontend
-```
-
-No `pnpm stack` by default.
 
 ### Emergency Arvan publication
 
@@ -276,12 +272,6 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 
 ## 12. Current next action
 
-Phase 4D is closed and accepted. Phase 4E is active.
+Phase 4A–4E are closed and accepted. Phase 4F is next.
 
-Current gate:
-
-```text
-4E.5 Git Publication verification
-```
-
-Proceed with focused tests, smallest service rebuilds, real canonical Git Save/Update/Publish/conflict proof and explicit founder acceptance. Only then start 4E.6.
+Phase 4F must begin with an integration/retirement audit before deletion. Inventory and classify surviving legacy generators, duplicate SEO/content paths, static-only compatibility code, deprecated route/artifact generation and transitional adapters. Remove only paths proven redundant while preserving accepted SSR/runtime/static/staging and public/protected contracts.
