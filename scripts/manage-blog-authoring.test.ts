@@ -102,7 +102,7 @@ test('Markdown preview is theme-colored and top-aligned', () => {
   assert.match(editor, /color:\s*var\(--normalText\)/)
 })
 
-test('Markdown editor grows with long-form content and exposes toolbar actions through the global point menu', () => {
+test('Markdown editor grows with content without introducing contenteditable', () => {
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
 
   assert.match(editor, /syncEditorHeight/)
@@ -112,17 +112,40 @@ test('Markdown editor grows with long-form content and exposes toolbar actions t
   assert.match(editor, /element\.scrollHeight/)
   assert.match(editor, /watch\(model/)
   assert.doesNotMatch(editor, /contenteditable/i)
+})
 
-  assert.match(editor, /useMenu\(\)/)
-  assert.match(editor, /openMarkdownContextMenu/)
-  assert.match(editor, /@contextmenu="openMarkdownContextMenu"/)
-  assert.match(editor, /mode:\s*['"]point['"]/)
-  assert.match(editor, /const range = currentRange\(\)/)
-  assert.match(editor, /items:\s*markdownMenuItems\(range\)/)
+test('Blog Markdown context actions are delegated to the el-text-field global menu pipeline', () => {
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const textField = source('app/components/el/text-field.vue')
+
+  assert.match(textField, /contextMenuItems\?:\s*TextFieldContextMenuItemsProp/)
+  assert.match(textField, /if \(props\.actions === false\)\s*\{\s*return \[\]/)
+  assert.match(textField, /getCustomContextMenuItems\(event\)/)
+  assert.match(textField, /selectionStart:\s*field\?\.selectionStart/)
+  assert.match(textField, /selectionEnd:\s*field\?\.selectionEnd/)
+  assert.match(textField, /mode:\s*["']point["']/)
+  assert.match(textField, /@contextmenu="openContextActionMenu"/)
+
+  assert.match(editor, /:context-menu-items="markdownContextMenuItems"/)
+  assert.match(editor, /function markdownContextMenuItems\(/)
+  assert.match(editor, /return markdownMenuItems\(/)
   assert.match(editor, /handler:\s*\(\) => insertLink\(range\)/)
   assert.match(editor, /handler:\s*\(\) => insertImage\(range\)/)
   assert.match(editor, /handler:\s*\(\) => wrap\(['"]\*\*['"]/)
   assert.match(editor, /handler:\s*\(\) => prefixLines\(['"]## /)
+  assert.doesNotMatch(editor, /useMenu\(\)/)
+  assert.doesNotMatch(editor, /openMarkdownContextMenu/)
+  assert.doesNotMatch(editor, /@contextmenu=/)
+})
+
+test('Markdown toolbar restores selection focus without scrolling the page', () => {
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const textField = source('app/components/el/text-field.vue')
+
+  assert.match(editor, /focus\?\.\(\{\s*preventScroll:\s*true\s*\}\)/)
+  assert.match(editor, /setSelectionRange\(range\.start, range\.start \+ replacement\.length\)/)
+  assert.match(textField, /function focus\(options\?: FocusOptions\)/)
+  assert.match(textField, /fieldRef\.value\?\.focus\(options\)/)
 })
 
 test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
