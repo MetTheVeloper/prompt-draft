@@ -3,7 +3,7 @@
   "slug": "blog-publication-smoke-20260910",
   "status": "published",
   "publishedAt": "2026-09-10T13:26:15.913Z",
-  "updatedAt": "2026-09-10T13:26:15.913Z",
+  "updatedAt": "2026-09-10T13:31:54.184Z",
   "author": {
     "kind": "editorial",
     "name": "Prompt Draft",
@@ -21,7 +21,7 @@
   },
   "localizations": {
     "en": {
-      "title": "Blog publication smoke test - update b",
+      "title": "Blog publication smoke test - final update",
       "description": "Temporary article for validating the canonical Git publication workflow."
     },
     "fa": {
