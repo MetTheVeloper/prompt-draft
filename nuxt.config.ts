@@ -1,17 +1,33 @@
 import { publicWizardRoutes } from "./app/wizard/publicRoutes";
 import { PUBLIC_DISCOVERY_ROUTES } from "./app/shared/public-discovery";
-import { PUBLIC_ROUTE_PATHS } from "./app/utils/publicRoutes";
+import { PUBLIC_ROUTE_PATHS, publicBlogPostPath } from "./app/utils/publicRoutes";
+import { projectBlogPublicInventory } from "./shared/blog-public-inventory";
 import { APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS } from "./shared/seo-route-policy";
+import { readBlogRepositoryDirectorySync } from "./scripts/blog-repository";
 
 const publicDiscoveryRoutes = PUBLIC_DISCOVERY_ROUTES.flatMap((route) => [
   route,
   `/fa${route}`,
 ]);
 
-const publicBlogRoutes = [
-  PUBLIC_ROUTE_PATHS.blog,
-  `/fa${PUBLIC_ROUTE_PATHS.blog}`,
-];
+const legacyStaticGenerate = process.env.NUXT_LEGACY_STATIC_GENERATE === "true";
+
+const publicBlogRoutes = (() => {
+  const routes = [
+    PUBLIC_ROUTE_PATHS.blog,
+    `/fa${PUBLIC_ROUTE_PATHS.blog}`,
+  ];
+
+  if (!legacyStaticGenerate) return routes;
+
+  for (const article of projectBlogPublicInventory(readBlogRepositoryDirectorySync())) {
+    const articlePath = publicBlogPostPath(article.slug);
+    if (article.availableLocales.includes("en")) routes.push(articlePath);
+    if (article.availableLocales.includes("fa")) routes.push(`/fa${articlePath}`);
+  }
+
+  return routes;
+})();
 
 const clientOnlyRouteRules = Object.fromEntries(
   APPLICATION_CLIENT_ONLY_ROUTE_PATTERNS.flatMap((route) => [
@@ -19,8 +35,6 @@ const clientOnlyRouteRules = Object.fromEntries(
     [`/fa${route}`, { ssr: false }],
   ]),
 );
-
-const legacyStaticGenerate = process.env.NUXT_LEGACY_STATIC_GENERATE === "true";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 // nuxt.config.ts
@@ -69,8 +83,9 @@ export default defineNuxtConfig({
       // These routes are retained only for the deprecated static-export path.
       // In the current Docker/Nitro runtime, app/client-only routes must stay
       // request-time so server middleware can enforce X-Robots-Tag consistently.
-      // Blog EN/FA indexes are explicit crawl roots; Nitro's generate crawler
-      // discovers only authoritative Article links rendered by those indexes.
+      // Blog detail routes are projected explicitly from the same validated
+      // Article.availableLocales inventory used by sitemap/llms; static export
+      // must not depend on crawler discovery for canonical Article pages.
       routes: legacyStaticGenerate
         ? [
             ...publicWizardRoutes,
