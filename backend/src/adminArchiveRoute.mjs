@@ -1,6 +1,7 @@
 import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { handleAdminBlogMediaRequest } from './adminBlogMedia.mjs'
+import { handleAdminBlogPublicationAuditRequest } from './adminBlogPublicationAudit.mjs'
 import { handleArchivePromotionRequest } from './archivePromotion.mjs'
 import { validatePublishedArchiveLocalization } from './archivePublishedLocalization.mjs'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
@@ -14,10 +15,18 @@ export async function handleAdminArchiveRoute({
   corsHeaders,
   sendJson,
 }) {
-  // This route module is already wired into the API server's authenticated
-  // admin-content slot. Blog media reuses that slot so the Arvan foundation can
-  // ship without a second storage/router stack; the Blog handler owns its own
-  // blog.manage authorization and returns false for every other pathname.
+  // Blog admin capabilities currently reuse this already-wired admin-content
+  // routing slot. Each Blog handler owns its blog.manage authorization and
+  // returns false for every unrelated pathname.
+  const blogPublicationAuditHandled = await handleAdminBlogPublicationAuditRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (blogPublicationAuditHandled) return true
+
   const blogMediaHandled = await handleAdminBlogMediaRequest({
     request,
     response,
