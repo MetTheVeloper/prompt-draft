@@ -280,6 +280,20 @@ function normalizeLocalizations(
   return localizations
 }
 
+function containsArticleBodyH1(markdown: string) {
+  let inFence = false
+
+  for (const line of markdown.split('\n')) {
+    if (/^\s*```/.test(line)) {
+      inFence = !inFence
+      continue
+    }
+    if (!inFence && /^\s*#(?!#)\s+\S/.test(line)) return true
+  }
+
+  return false
+}
+
 function normalizeBody(
   value: Partial<Record<BlogLocale, unknown>> | undefined,
   localizations: Partial<Record<BlogLocale, BlogLocalizationMetadata>>,
@@ -299,6 +313,9 @@ function normalizeBody(
     if (normalized.includes('\u0000')) issue(issues, `body.${locale}`, 'must not contain null bytes')
     if (UNSAFE_MARKDOWN_DESTINATION.test(normalized)) {
       issue(issues, `body.${locale}`, 'contains an unsafe Markdown link/image protocol; use root-relative or HTTP(S) URLs')
+    }
+    if (containsArticleBodyH1(normalized)) {
+      issue(issues, `body.${locale}`, 'must not contain an H1 heading; the Article title owns the page H1 and body headings must start at H2 (`##`)')
     }
     if (!localizations[locale] && normalized) {
       issue(issues, `body.${locale}`, 'has body content but no matching localization metadata')
