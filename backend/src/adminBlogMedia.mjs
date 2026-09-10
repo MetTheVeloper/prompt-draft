@@ -1,7 +1,5 @@
 import { randomUUID } from 'node:crypto'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
-import { getAuthenticatedUser } from './auth.mjs'
-import { queryDatabase } from './database.mjs'
 import {
   getArchiveStorageConfig,
   getArchiveStoragePublicUrl,
@@ -300,6 +298,7 @@ async function cleanupObjects(keys, config) {
 }
 
 async function auditBlogMediaUpload(actor, asset) {
+  const { queryDatabase } = await import('./database.mjs')
   await queryDatabase(`
     INSERT INTO admin_audit_log (id, actor_user_id, target_user_id, action, metadata)
     VALUES ($1, $2, NULL, 'blog.media.upload', $3::jsonb)
@@ -445,6 +444,7 @@ async function browseBlogMedia(prefix, cursor) {
 async function authenticateBlogManager(request, response, corsHeaders, sendJson) {
   let user
   try {
+    const { getAuthenticatedUser } = await import('./auth.mjs')
     user = await getAuthenticatedUser(request)
   } catch (error) {
     console.error('[Prompt Draft API] Blog media auth lookup failed', error)
