@@ -88,6 +88,23 @@ test('Blog management localization is registered for EN and FA', () => {
   assert.match(fa, /repositoryMetadata/)
 })
 
+test('Blog management neutral styling uses project theme tokens instead of hardcoded white or black', () => {
+  const page = source('app/pages/manage/blog.vue')
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+
+  for (const css of [page, editor]) {
+    assert.doesNotMatch(css, /rgb\(\s*255[ ,]/i)
+    assert.doesNotMatch(css, /rgb\(\s*0[ ,]+0[ ,]+0/i)
+    assert.doesNotMatch(css, /#(?:fff|ffffff|000|000000)\b/i)
+    assert.doesNotMatch(css, /(?:color|background(?:-color)?):\s*(?:white|black)\b/i)
+  }
+
+  assert.match(page, /var\(--normalText\)/)
+  assert.match(page, /var\(--themeSurface\)/)
+  assert.match(editor, /var\(--normalText\)/)
+  assert.match(editor, /var\(--normalText5\)/)
+})
+
 test('4E.4 adds no editor dependency or second Markdown engine', () => {
   const packageJson = source('package.json')
   assert.doesNotMatch(packageJson, /md-editor-v3/)
