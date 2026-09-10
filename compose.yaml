@@ -12,6 +12,9 @@ services:
       NUXT_PUBLIC_API_BASE: ${NUXT_PUBLIC_API_BASE:-http://localhost:4000}
       NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:-http://localhost:3000}
       NUXT_PUBLIC_NOINDEX: ${NUXT_PUBLIC_NOINDEX:-false}
+      BLOG_GITHUB_TOKEN: ${BLOG_GITHUB_TOKEN:-}
+      BLOG_GITHUB_REPOSITORY: ${BLOG_GITHUB_REPOSITORY:-MetTheVeloper/prompt-draft}
+      BLOG_GITHUB_BRANCH: ${BLOG_GITHUB_BRANCH:-feature/growth-foundation}
     depends_on:
       api:
         condition: service_healthy
