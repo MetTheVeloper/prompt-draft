@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import BlogArticlePresentation from '~/components/blog/BlogArticlePresentation.vue'
+import BlogZoomableImage from '~/components/blog/BlogZoomableImage.vue'
 import type { PublicBlogLocale } from '~/shared/public-blog'
 import { normalizePublicBlogSlug, publicBlogPostPath } from '~/utils/publicRoutes'
-import { renderPublicBlogMarkdown } from '~/utils/publicBlogMarkdown'
 import {
   buildPublicBlogPostingStructuredData,
   normalizeBlogSiteUrl,
@@ -42,6 +43,7 @@ try {
 }
 
 const activeLocale = computed<PublicBlogLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
+const articleDirection = computed(() => activeLocale.value === 'fa' ? 'rtl' : 'ltr')
 const { data: response } = await useAsyncData(
   () => `public-blog-article:${activeLocale.value}:${canonicalSlug}`,
   async () => {
@@ -87,7 +89,6 @@ const structuredData = computed(() => article.value
       siteUrl: siteUrl.value,
     })
   : null)
-const renderedBody = computed(() => renderPublicBlogMarkdown(article.value?.body ?? ''))
 const authorIsInternal = computed(() => article.value?.author.url?.startsWith('/') ?? false)
 const authorInternalUrl = computed(() => article.value?.author.url
   ? localePath(article.value.author.url, activeLocale.value)
@@ -162,16 +163,21 @@ function formatDate(value: string) {
       </header>
 
       <figure v-if="article.hero" class="public-blog-hero">
-        <img
+        <BlogZoomableImage
           :src="article.hero.fullUrl"
           :alt="article.hero.alt"
-          :width="article.hero.width || undefined"
-          :height="article.hero.height || undefined"
-          decoding="async"
-        >
+          :width="article.hero.width || null"
+          :height="article.hero.height || null"
+          loading="eager"
+          class="public-blog-hero-image"
+        />
       </figure>
 
-      <div class="public-blog-markdown" v-html="renderedBody" />
+      <BlogArticlePresentation
+        :markdown="article.body"
+        :dir="articleDirection"
+        class="public-blog-body"
+      />
     </article>
   </main>
 </template>
@@ -239,62 +245,14 @@ function formatDate(value: string) {
   background: var(--themeNormal10);
 }
 
-.public-blog-hero img {
+.public-blog-hero-image {
   display: block;
   width: 100%;
   height: auto;
 }
 
-.public-blog-markdown {
+.public-blog-body {
   margin-top: 44px;
-  font-size: 17px;
-  line-height: 1.9;
-}
-
-.public-blog-markdown :deep(h2),
-.public-blog-markdown :deep(h3),
-.public-blog-markdown :deep(h4),
-.public-blog-markdown :deep(h5),
-.public-blog-markdown :deep(h6) {
-  margin: 2em 0 .7em;
-  line-height: 1.25;
-}
-
-.public-blog-markdown :deep(p),
-.public-blog-markdown :deep(ul),
-.public-blog-markdown :deep(ol),
-.public-blog-markdown :deep(blockquote),
-.public-blog-markdown :deep(pre) {
-  margin: 1.1em 0;
-}
-
-.public-blog-markdown :deep(a) {
-  color: inherit;
-  text-decoration: underline;
-  text-underline-offset: 3px;
-}
-
-.public-blog-markdown :deep(img) {
-  max-width: 100%;
-  height: auto;
-  border-radius: 14px;
-}
-
-.public-blog-markdown :deep(blockquote) {
-  padding-inline-start: 18px;
-  border-inline-start: 3px solid var(--themeNormal25);
-  color: var(--themeNormal65);
-}
-
-.public-blog-markdown :deep(pre) {
-  overflow: auto;
-  padding: 18px;
-  border-radius: 14px;
-  background: var(--themeNormal10);
-}
-
-.public-blog-markdown :deep(code) {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
 @media (max-width: 640px) {
