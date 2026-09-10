@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.5 Blog Media + Git Publication
 
-Status: **IN PROGRESS / MEDIA LANE IMPLEMENTED / FOUNDER VERIFICATION PENDING / GIT PUBLICATION NOT STARTED / NOT ACCEPTED**
+Status: **IN PROGRESS / MEDIA LANE DONE + ACCEPTED / GIT PUBLICATION IMPLEMENTED + VERIFICATION PENDING / NOT ACCEPTED**
 
 Date: 2026-09-10
 
@@ -14,41 +14,31 @@ Accepted dependencies:
 
 ```text
 4E.1 Article Contract + Repository Loader -> ACCEPTED
-4E.2 Public Blog SSR + SEO               -> ACCEPTED
-4E.3 Blog Inventory / Sitemap / llms     -> ACCEPTED
-4E.4 Blog Manage authoring               -> verification still in progress
+4E.2 Public Blog SSR + SEO                 -> ACCEPTED
+4E.3 Blog Inventory / Sitemap / llms       -> ACCEPTED
+4E.4 Blog Management Authoring             -> ACCEPTED 2026-09-10
 ```
 
-## Purpose
+## 1. Purpose
 
-4E.5 connects the Blog authoring surface to durable managed media and then to the canonical Git publication workflow without introducing a second content authority.
-
-This record is intentionally split into two lanes:
+4E.5 connects the accepted Blog authoring surface to durable managed media and canonical Git save/publish without introducing a second editorial authority.
 
 ```text
-A. managed Blog media on existing Arvan/S3 authority
-B. canonical Git save/publish + reconciliation
+Lane A -> managed Blog media on existing Arvan/S3 authority
+Lane B -> canonical Git save/publish + optimistic reconciliation
 ```
 
-Lane A is implemented and awaiting founder verification. Lane B is not started yet.
+Lane A is founder-verified and accepted. Lane B is implemented but must still pass focused/build/runtime verification before 4E.5 can be accepted.
 
-## Media authority
+## 2. Lane A — Managed Blog Media — ACCEPTED
 
-Blog media reuses the existing Archive Object Storage implementation:
-
-```text
-backend/src/archiveStorage.mjs
-```
-
-There is no second S3 client, credential store, signing implementation, or browser-side storage credential.
-
-Blog objects are confined to:
+Blog media reuses the existing Archive Object Storage/SigV4 implementation and remains confined below:
 
 ```text
 blog/
 ```
 
-Managed upload layout:
+Managed layout:
 
 ```text
 blog/YYYY/MM/<uuid>.full.webp
@@ -56,261 +46,241 @@ blog/YYYY/MM/<uuid>.thumb.webp
 blog/YYYY/MM/<uuid>.json
 ```
 
-The JSON manifest is the managed-asset metadata authority for Gallery browsing.
+Accepted behavior includes ListObjectsV2 browsing, required persisted default alt for new uploads, legacy no-alt manifest compatibility, `blog.manage` authorization, `blog.media.upload` admin audit, reusable MediaGallery, Hero selection, Markdown Gallery insertion, selection toggle, theme-safe component-system UI, top-aligned authoring panes and 400px preview image limits.
 
-## Authorization
+Founder explicitly confirmed the finalized behavior was fully tested and correct on 2026-09-10. Media changes remain protected by `pnpm test:blog-media` and the accepted 4E.4 regression surface.
 
-Backend endpoint:
+## 3. Lane B — Canonical Git Publication — IMPLEMENTED
 
-```text
-GET  /api/admin/blog/media
-POST /api/admin/blog/media
-```
-
-Every request requires an authenticated user with:
+Canonical editorial authority remains:
 
 ```text
-blog.manage
+Git repository
 ```
 
-The browser never receives Arvan access credentials.
-
-## Storage browsing
-
-`archiveStorage.mjs` now supports signed query requests required for S3-compatible `ListObjectsV2`.
-
-Gallery browsing uses:
+Normal public serving remains:
 
 ```text
-prefix
-+ delimiter=/
-+ continuation token
-+ deterministic SigV4 query canonicalization
+content/blog in Git
+-> build/deploy
+-> Nitro bundled assets:blog
+-> request-time public SSR
 ```
 
-User-provided prefixes are normalized and remain confined below `blog/`.
+**Public Blog never queries GitHub per request.** A successful management Git save does not become public until the next deployment/build containing that Git commit.
 
-## Managed upload
+### 3.1 Server-only Git configuration
 
-Frontend image processing reuses the accepted Archive image pipeline:
+Frontend/Nitro management runtime receives:
 
 ```text
-prepareArchiveImage()
--> full WebP
--> thumbnail WebP
--> dimensions / byte sizes
+BLOG_GITHUB_TOKEN
+BLOG_GITHUB_REPOSITORY
+BLOG_GITHUB_BRANCH
 ```
 
-Selecting a local file does not immediately upload it.
+Defaults for this development branch are represented in Compose/example config, while the real token belongs only in local/deployment secret environment and must never be committed or exposed via `NUXT_PUBLIC_*`.
 
-The Gallery stages:
+### 3.2 Management repository source
+
+When Git publication is configured:
 
 ```text
-selected local image
-+ local preview
-+ required default alt text
+/manage Blog read
+-> canonical Git branch
+-> validate whole content/blog repository
+-> Article list/detail + Article version
 ```
 
-Only explicit confirmation performs the upload.
+Configured Git failures fail closed. Management must **not** silently fall back to a potentially stale deployed snapshot.
 
-New uploads require non-empty alt metadata on both client workflow and backend validation.
+When Git publication is intentionally not configured, deployed bundled content may still be read for the authoring/validation UI, but writes remain disabled.
 
-The manifest persists:
+### 3.3 Write API
+
+```text
+POST /api/manage/blog
+PUT  /api/manage/blog/:id
+```
+
+Both require `blog.manage` through the accepted Nitro authorization boundary.
+
+The browser may submit only editor-owned state plus optimistic version:
+
+```text
+expectedVersion
+slug
+status
+hero
+localizations
+body
+```
+
+It cannot author:
 
 ```text
 id
-folder
-sourceName
-alt
-createdAt
-full key/url/dimensions/size
-thumbnail key/url/dimensions/size
+author
+publishedAt
+updatedAt
 ```
 
-Legacy manifests created before persisted alt support remain readable with:
+Those remain server-owned.
+
+### 3.4 Identity + timestamps
+
+New Article id is deterministically derived from the initial slug and collision-resolved (`-2`, `-3`, ...). After creation the repository directory/id is immutable.
+
+Server rules:
 
 ```text
-alt = ""
+updatedAt   -> assigned on every canonical save
+publishedAt -> assigned on first publish only, then preserved
+public author -> Prompt Draft editorial identity
 ```
 
-so founder test assets and existing managed images are not hidden or invalidated.
+The full resulting Article package is validated through the accepted Article/repository validators before Git mutation.
 
-Uploads are recorded in `admin_audit_log` as:
+### 3.5 Atomic Git mutation
+
+One Article save uses Git Data API semantics:
 
 ```text
-blog.media.upload
+read branch HEAD + tree
+-> build Article tree entries
+-> POST one Git tree using base_tree
+-> POST one Git commit
+-> PATCH branch ref with force=false
 ```
 
-with the authenticated admin actor.
+`article.json`, `en.md`, and `fa.md` therefore advance under one commit rather than independent file commits. Removing a locale body is represented as a tree deletion in that same commit.
 
-## Media Gallery UI
+### 3.6 Optimistic conflict/reconciliation
 
-Reusable component:
+Article version is a deterministic SHA-256 projection of that Article's canonical repository files.
+
+Existing-Article writes require the version returned when the Article was loaded. If the Article changed meanwhile, save returns conflict and does not overwrite the newer content.
+
+If only the branch moved between read and ref update, the writer re-reads once and retries. The Article version guard runs again after that re-read, so unrelated branch motion can recover while target-Article motion still conflicts.
+
+Current implementation intentionally supports a single retry; repeated branch movement fails closed.
+
+### 3.7 Audit receipt
+
+After a successful Git write, Nitro forwards a small authenticated receipt to backend:
 
 ```text
-app/components/manage/MediaGallery.vue
+POST /api/admin/blog/publication-audit
 ```
 
-It follows `UI_IMPLEMENTATION_GUIDELINES.md` and uses Prompt Draft UI primitives.
-
-Accepted/finalized interaction contract:
+Receipt contains only:
 
 ```text
-current-folder row
--> divider
--> folder buttons
--> Images section aligned to flex-start
--> managed image cards
--> footer actions
+action
+articleId
+slug
+status
+commitSha
+branch
 ```
 
-Folder entries use `el-button` with the project component semantics requested by founder review:
+Backend resolves the real authenticated admin actor, requires `blog.manage`, and records `blog.article.create|update|publish|unpublish` in `admin_audit_log`.
+
+Git commit and DB audit are not one distributed transaction. Therefore a successful Git commit is never falsely reported as a failed save merely because the secondary audit insertion failed; the response exposes `auditRecorded=false` so the condition remains visible without encouraging duplicate Git retries.
+
+## 4. Management UX
+
+The accepted 4E.4 authoring UI now exposes one state-driven canonical action:
 
 ```text
-mode = undefined
-color = background
-text-color = normal
-icon-color = normal50
-rules = rsc
+Draft                -> Save draft
+First published save -> Publish article
+Published Article    -> Update article
 ```
 
-Selecting an already-selected image toggles it back to unselected.
+Local canonical validation runs before write. Successful saves replace editor state with the server-returned canonical Article/version and display the short commit SHA plus the explicit deployment-lag message.
 
-The native file input remains only as an unavoidable browser file capability sink.
+Conflict errors instruct the editor to reload rather than overwrite remote changes.
 
-## Hero integration
+## 5. Focused verification
 
-Hero Media no longer exposes raw URL / thumbnail / dimension inputs.
+New root command:
 
-Gallery selection provides:
+```powershell
+pnpm test:blog-publish
+```
+
+It covers:
 
 ```text
-fullUrl
-thumbnailUrl
-width
-height
+strict audit receipt contract
+server-only Git credentials
+public runtime GitHub isolation
+configured-management fail-closed behavior
+atomic tree/commit/ref writer
+server-owned metadata
+identity collision handling
+Article versioning
+branch-race retry
+management write/API/UI source contracts
 ```
 
-The existing Hero selection behavior is preserved.
-
-## Markdown image integration
-
-The Markdown Image toolbar action opens the same Gallery.
-
-After selecting an asset:
-
-```text
-Gallery selection
--> image/alt modal
--> selected image preview
--> persisted asset alt as editable default
--> insert real fullUrl into Markdown
-```
-
-If editor text is selected before opening the workflow, that selected text may override the default alt prefill for this insertion only.
-
-Inserted Markdown remains:
-
-```markdown
-![contextual alt](https://.../blog/...full.webp)
-```
-
-No base64 image payload enters canonical Markdown.
-
-## Markdown preview finalization
-
-Source and Preview panes align to the top of their grid track.
-
-Preview HTML uses:
-
-```text
-color: var(--normalText)
-```
-
-Rendered images are constrained responsively:
-
-```text
-max-width: min(100%, 400px)
-max-height: 400px
-width: auto
-height: auto
-object-fit: contain
-```
-
-This caps both tall and wide images without distorting aspect ratio.
-
-## Repository metadata UI refinement
-
-The Repository Metadata container now uses:
-
-```text
-rules="css"
-```
-
-so its content follows the same top/start alignment contract established during founder UI review.
-
-## Focused verification
-
-Root commands:
+Because the Git lane also changed accepted Blog management UI/composable contracts, rerun:
 
 ```powershell
 pnpm test:blog-manage
-pnpm test:blog-media
 ```
 
-When both pass, both changed services must be rebuilt:
+The already accepted Media implementation itself did not change in this lane, so `pnpm test:blog-media` can return at the 4E.6 aggregate gate unless a media-specific regression appears.
+
+## 6. Smallest rebuild after focused tests
+
+This lane changed both runtime services:
+
+```text
+backend/src/adminBlogPublicationAudit* + adminArchiveRoute -> API image
+server/** + app/** + i18n/** + Compose Git env wiring        -> frontend/Nitro image
+```
+
+After focused tests pass:
 
 ```powershell
 pnpm api
 pnpm frontend
 ```
 
-Do not use `pnpm stack` unless a later verification step proves it necessary.
+Do **not** run `pnpm stack` by default.
 
-Founder smoke must verify:
+## 7. Founder runtime verification target
+
+With the real Git token stored only in local `.env`, verify:
 
 ```text
-folder label removed
-current-folder divider present
-folder buttons use project el-button styling
-Images label aligned start
-selection toggles on second click
-file selection stages preview instead of immediate upload
-alt is mandatory before new upload
-new uploaded asset retains alt after re-browse
-legacy no-alt images still appear
-Markdown image flow shows selected image + persisted editable alt
-editor + preview panes start at top
-preview images never exceed 400px on either axis
-Hero selection remains unchanged
-Link modal remains unchanged
-Repository Metadata aligns start
-Light + Dark remain theme-safe
+/manage/blog reads canonical Git and reports Git/write-ready state
+Save Draft creates one canonical Git commit and stable Article id
+second save preserves id and advances updatedAt/version
+first Publish assigns publishedAt
+later published updates preserve publishedAt
+two-tab stale save conflicts instead of overwriting
+Git Article directory contains valid article.json + locale bodies
+audit log records authenticated actor + small receipt metadata
+public Blog does not change until deployment includes the Git commit
 ```
 
-## Git publication lane — pending
+For a local positive public proof after an Article publish, first pull the Git commit created by the application, then rebuild frontend; otherwise the host working tree/image is intentionally still on the older deployment snapshot.
 
-Still not implemented:
+## 8. Deferred/non-blocking V1 option
 
-```text
-canonical Git repository write adapter
-save draft to Git
-publish transition to Git
-optimistic conflict/version checks
-repository reconciliation
-optional explicit Arvan emergency publication metadata
-```
+Explicit emergency Arvan editorial publication metadata remains optional and is **not implemented** in this slice. Arvan remains media infrastructure and must not become an uncontrolled equal content source.
 
-Git remains the only canonical editorial source.
-
-No temporary container filesystem, database copy, or browser editor state may become canonical while this lane is pending.
-
-## Current state
+## 9. Current state
 
 ```text
-4E.4 -> verification in progress / NOT ACCEPTED
-4E.5 media lane -> IMPLEMENTED / VERIFICATION PENDING
-4E.5 Git publication lane -> NOT STARTED
-4E.5 overall -> NOT ACCEPTED
+4E.4 -> DONE / ACCEPTED
+4E.5 media lane -> DONE / FOUNDER VERIFIED / ACCEPTED
+4E.5 Git publication lane -> IMPLEMENTED / VERIFICATION PENDING
+4E.5 overall -> IN PROGRESS / NOT ACCEPTED
 4E.6 -> NOT STARTED
 ```
+
+Do not mark 4E.5 overall accepted until focused tests, required service builds, real canonical Git runtime proof, and explicit founder acceptance are complete.
