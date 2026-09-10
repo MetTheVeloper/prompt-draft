@@ -50,7 +50,7 @@ function createEmptyGitFetch({ failFirstPatch = false } = {}) {
     if (method === 'POST' && parsed.pathname.endsWith('/git/commits')) {
       return response({ sha: patchCalls === 0 ? 'f'.repeat(40) : '1'.repeat(40) }, 201)
     }
-    if (method === 'PATCH' && parsed.pathname.includes('/git/ref/heads/')) {
+    if (method === 'PATCH' && parsed.pathname.includes('/git/refs/heads/')) {
       patchCalls += 1
       if (failFirstPatch && patchCalls === 1) return response({ message: 'Update is not a fast forward' }, 422)
       return response({ object: { sha: body.sha } })
@@ -113,6 +113,23 @@ test('new Blog draft is committed atomically with server-owned metadata', async 
   assert.equal(result.action, 'create')
   assert.match(result.version, /^[a-f0-9]{64}$/)
   assert.equal(git.patchCalls, 1)
+
+  const refReadCall = git.calls.find(call => (
+    call.method === 'GET' && new URL(call.url).pathname.includes('/git/ref/heads/')
+  ))
+  assert.ok(refReadCall)
+  assert.match(
+    new URL(refReadCall.url).pathname,
+    /\/git\/ref\/heads\/feature\/growth-foundation$/,
+  )
+
+  const refUpdateCall = git.calls.find(call => call.method === 'PATCH')
+  assert.ok(refUpdateCall)
+  assert.match(
+    new URL(refUpdateCall.url).pathname,
+    /\/git\/refs\/heads\/feature\/growth-foundation$/,
+  )
+  assert.doesNotMatch(new URL(refUpdateCall.url).pathname, /\/git\/ref\/heads\//)
 
   const treeCall = git.calls.find(call => call.method === 'POST' && new URL(call.url).pathname.endsWith('/git/trees'))
   assert.ok(treeCall)
