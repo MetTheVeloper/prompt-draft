@@ -23,7 +23,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.5 ACCEPTED / 4E.6 NEXT
+  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.5 ACCEPTED / 4E.6 IMPLEMENTED + VERIFICATION NEXT
   4F Integration / Legacy Retirement            -> NOT STARTED
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
@@ -40,6 +40,7 @@ docs/strategy/MILESTONE_21_5_PHASE4E_2_PUBLIC_BLOG.md
 docs/strategy/MILESTONE_21_5_PHASE4E_3_BLOG_INVENTORY.md
 docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
+docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
 ```
 
 ## Verification workflow
@@ -232,16 +233,30 @@ The temporary smoke Article was removed from the canonical branch after verifica
 
 Real Git token must never be pasted into chat or committed.
 
-## 4E.6 — NEXT
+## 4E.6 — IMPLEMENTED / VERIFICATION NEXT / NOT ACCEPTED
 
-Aggregate Blog/public/staging/static acceptance begins now that 4E.5 is accepted.
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
+```
+
+Root gates:
+
+```text
+pnpm test:phase4e-final
+pnpm smoke:phase4e-final
+pnpm verify:phase4e-static
+```
+
+The 4E.6 harness changes only scripts/package/docs, so no Docker rebuild is required before running these gates. Static positive published-Article coverage uses a deterministic untracked fixture that is removed in `finally`; external staging remains noindex and may legitimately contain zero published Blog Articles.
 
 Target:
 
 ```text
 accepted 4A–4D regressions
 all Blog contract/public/inventory/manage/media/publication regressions
-positive published Article SSR fixture
+positive published Article static fixture
 404/canonical/localization checks
 structured data + hreflang
 sitemap/llms parity
@@ -276,11 +291,11 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_PHASE4E_BLOG_V1.md
-4. read 4E.1 through 4E.5 records
+4. read 4E.1 through 4E.6 records
 5. inspect latest feature/growth-foundation HEAD
 6. confirm 4E.1-4E.5 are ACCEPTED
-7. current task = 4E.6 aggregate Blog/public/staging/static acceptance
-8. use time-first verification and smallest rebuild scope
+7. current task = run 4E.6 aggregate Blog/public/staging/static acceptance gates
+8. use time-first verification; no rebuild for scripts/docs-only 4E.6 harness
 9. keep grassic.ir noindex and prompt-draft.ir untouched
 10. do not close Phase 4E without explicit founder acceptance of 4E.6
 ```
