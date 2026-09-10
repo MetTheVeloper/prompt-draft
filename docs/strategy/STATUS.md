@@ -23,7 +23,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.4 ACCEPTED / 4E.5 GIT PUBLICATION VERIFICATION
+  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.4 ACCEPTED / 4E.5 RUNTIME PUBLICATION PROOF NEXT
   4F Integration / Legacy Retirement            -> NOT STARTED
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
@@ -192,9 +192,7 @@ founder functional behavior/UI verification -> PASS
 founder -> تایید
 ```
 
-4E.4 was accepted as read + author + validate. Canonical Git writes are owned by 4E.5.
-
-## 4E.5 — IN PROGRESS
+## 4E.5 — IN PROGRESS / RUNTIME PUBLICATION PROOF NEXT
 
 Canonical record:
 
@@ -206,50 +204,41 @@ Current lanes:
 
 ```text
 Media Lane           -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-Git Publication Lane -> IMPLEMENTED / VERIFICATION PENDING
+Git Publication Lane -> IMPLEMENTED / FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT
 4E.5 overall         -> NOT ACCEPTED
 ```
 
 Accepted media includes shared Arvan/S3 authority, `blog/` namespace, Gallery browsing/upload, persisted alt metadata, legacy manifest compatibility, admin audit, Hero + Markdown integration and no base64 Markdown.
 
-Implemented Git publication includes:
+Implemented Git publication includes server-only Git configuration, canonical Git management reads, fail-closed configured reads, strict editor-owned write input, server-owned identity/timestamps/author, atomic Git tree+commit+non-force ref update, optimistic Article versioning, one guarded ref-race retry, backend audit receipt and deployment-local public Blog runtime.
+
+Focused/build evidence on 2026-09-10:
 
 ```text
-server-only BLOG_GITHUB_* config
-canonical Git management reads when configured
-configured Git failures fail closed
-POST /api/manage/blog
-PUT /api/manage/blog/:id
-strict editor-owned write payload + expectedVersion
-server-owned id / author / publishedAt / updatedAt
-whole-repository validation before mutation
-one Git tree + one commit + force=false ref update
-SHA-256 Article version conflict guard
-one guarded retry for unrelated branch movement
-backend authenticated publication audit receipt
-public Blog remains deployment-local, never live GitHub-backed
+pnpm test:blog-publish -> 13/13 PASS
+pnpm test:blog-manage  -> 46/46 PASS
+pnpm api               -> PASS / container started
+pnpm frontend          -> PASS / Nuxt + Nitro production build complete / container started
 ```
 
-New focused command:
-
-```powershell
-pnpm test:blog-publish
-```
-
-Current verification order:
+Current next gate:
 
 ```text
-pnpm test:blog-publish
--> pnpm test:blog-manage
--> if green: pnpm api
--> pnpm frontend
--> founder canonical Git Save Draft / Update / Publish / stale-conflict proof
--> explicit founder acceptance
+configure BLOG_GITHUB_* only in local .env
+-> recreate frontend container with runtime env
+-> confirm /manage/blog reports Git/write-ready
+-> Save Draft real Git commit
+-> Update preserves Article id + advances version/updatedAt
+-> first Publish assigns publishedAt
+-> stale two-tab save conflicts
+-> confirm audit receipt
+-> confirm public Blog remains unchanged until explicit rebuild/deploy
+-> founder acceptance
 ```
 
-Real Git token belongs only in `.env`/secret storage; never paste or commit it.
+For a temporary smoke Article, do not rebuild frontend after publishing it until the temporary Article is removed/reverted from the canonical branch.
 
-A canonical Git save does not update public Blog until the next deployment/build contains that commit. This is intentional and preserves the no-request-time-GitHub architecture.
+Real Git token must never be pasted into chat or committed.
 
 ## 4E.6 — NOT STARTED
 
@@ -282,10 +271,8 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 4. read 4E.1 through 4E.5 records
 5. inspect latest feature/growth-foundation HEAD
 6. confirm 4E.1-4E.4 and 4E.5 Media are ACCEPTED
-7. current task = 4E.5 Git publication verification
-8. run pnpm test:blog-publish then pnpm test:blog-manage
-9. if green run pnpm api then pnpm frontend
-10. verify real canonical Git write/update/publish/conflict behavior
-11. keep grassic.ir noindex and prompt-draft.ir untouched
-12. do not accept 4E.5 without explicit founder acceptance
+7. confirm 4E.5 Git Publication focused tests + builds are verified
+8. current task = real canonical Git runtime Save/Update/Publish/conflict/audit proof
+9. keep grassic.ir noindex and prompt-draft.ir untouched
+10. do not accept 4E.5 without explicit founder acceptance
 ```
