@@ -8,6 +8,8 @@ import { handleAuthRequest } from './auth.mjs'
 import { handleEconomyRequest } from './economy.mjs'
 import { handleHomeDiscoveryRequest } from './homeDiscovery.mjs'
 import { handleProductAnalyticsRequest } from './productAnalytics.mjs'
+import { handlePublicCreatorRequest } from './publicCreator.mjs'
+import { handlePublicInventoryRequest } from './publicInventory.mjs'
 import { handlePublicPromptRequest } from './publicPrompt.mjs'
 import { handleUserAvatarRequest } from './userAvatar.mjs'
 import { handleUserPreferencesRequest } from './userPreferences.mjs'
@@ -534,6 +536,30 @@ const server = createServer(async (request, response) => {
 
   if (
     await handlePublicPromptRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handlePublicCreatorRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handlePublicInventoryRequest({
       request,
       response,
       url,
