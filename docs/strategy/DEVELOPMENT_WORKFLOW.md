@@ -2,9 +2,17 @@
 
 Status: **PROJECT-WIDE OPERATIONAL RULE**
 
-Date: 2026-09-09
+Date: 2026-09-10
 
 This document defines the default local-development and verification workflow for Prompt Draft. It is intentionally project-wide rather than milestone-specific.
+
+For UI implementation, this workflow has one mandatory companion source of truth:
+
+```text
+docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
+```
+
+Any task that creates or changes UI must follow that document in addition to the rebuild/verification rules below.
 
 ## 1. Core rule: smallest rebuild scope
 
@@ -206,6 +214,7 @@ For every future implementation/verification instruction, including in a new cha
 3. select the smallest service scope;
 4. prefer the root package script for that scope;
 5. explain broader rebuilds only when they are truly necessary;
-6. never default to `pnpm stack` for convenience.
+6. never default to `pnpm stack` for convenience;
+7. for any UI task, read and obey `docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md` before implementation.
 
 This rule remains active unless the founder explicitly overrides it for a specific verification run.
