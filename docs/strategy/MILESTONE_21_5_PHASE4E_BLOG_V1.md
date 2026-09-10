@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **IN PROGRESS / 4E.1–4E.4 ACCEPTED / 4E.5 MEDIA ACCEPTED + GIT PUBLICATION IMPLEMENTED / VERIFICATION PENDING**
+Status: **IN PROGRESS / 4E.1–4E.5 ACCEPTED / 4E.6 NEXT**
 
 Date: 2026-09-10
 
@@ -125,8 +125,6 @@ canonical Article validation
 Prompt Draft el-* / theme-first UI
 ```
 
-4E.4 was deliberately accepted as the read + author + validate slice; canonical Git writes belong to 4E.5.
-
 Final founder evidence:
 
 ```text
@@ -135,7 +133,7 @@ functional authoring/editor/context-menu/UI behavior -> founder verified
 founder -> تایید
 ```
 
-## 4E.5 — CURRENT
+## 4E.5 — DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED 2026-09-10
 
 Canonical record:
 
@@ -143,12 +141,12 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 ```
 
-Current state:
+Accepted state:
 
 ```text
-Media Lane            -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-Git Publication Lane  -> IMPLEMENTED / VERIFICATION PENDING
-4E.5 overall          -> IN PROGRESS / NOT ACCEPTED
+Media Lane            -> DONE / FOUNDER VERIFIED / ACCEPTED
+Git Publication Lane  -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
+4E.5 overall          -> DONE / ACCEPTED
 ```
 
 ### Accepted Media direction
@@ -166,7 +164,7 @@ Hero + Markdown image integration
 no base64 canonical Markdown
 ```
 
-### Implemented Git publication direction
+### Accepted Git publication direction
 
 ```text
 server-only BLOG_GITHUB_* configuration
@@ -185,29 +183,30 @@ backend actor audit receipt after successful Git commit
 public Blog remains deploy-local and does not live-query Git
 ```
 
+Runtime founder proof covered real Save Draft, update, first publish, published update, two-tab stale conflict, audit receipt, deployment-lag 404 and unpublish. `publishedAt` was assigned once and preserved while `updatedAt` advanced. The temporary smoke Article was removed from the canonical branch before any subsequent build.
+
 A Git write is canonical immediately in Git, but the public runtime reflects it only after the next deployment/build containing that commit. This is an intentional consequence of the accepted no-request-time-GitHub architecture.
 
-Focused verification now begins with:
+## 4E.6 — NEXT
 
-```powershell
-pnpm test:blog-publish
-pnpm test:blog-manage
+4E.6 is the aggregate Blog/public/staging/static acceptance pass.
+
+Final target includes:
+
+```text
+accepted 4A–4D regressions
+all Blog contract/public/inventory/manage/media/publication regressions
+positive published Article SSR
+404 + canonical + localization behavior
+structured data
+sitemap/llms parity
+Manage authorization
+Git publication regression proof
+static generation
+external staging noindex verification
 ```
 
-If both pass, the smallest changed-service rebuild is:
-
-```powershell
-pnpm api
-pnpm frontend
-```
-
-No full `pnpm stack` by default.
-
-4E.5 must not be accepted until real canonical Git Save/Publish/conflict behavior and explicit founder acceptance are proven.
-
-## 4E.6 — NOT STARTED
-
-Final target includes accepted 4A–4D regressions, all Blog contract/public/inventory/manage/media/publication regressions, positive published Article SSR, 404/canonical/localization, structured data, sitemap/llms parity, Manage authorization, Git publication proof, static generation and external staging noindex verification.
+4E itself must not be closed until 4E.6 passes and receives explicit founder acceptance.
 
 ## Hard rules
 
@@ -229,11 +228,10 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 ## Current next action
 
 ```text
-1. pnpm test:blog-publish
-2. pnpm test:blog-manage
-3. if green -> pnpm api
-4. pnpm frontend
-5. founder canonical Git Save Draft / Update / Publish / stale-conflict runtime verification
-6. explicit founder acceptance
-7. only then start 4E.6
+1. start 4E.6 aggregate audit from latest feature/growth-foundation HEAD
+2. inspect changed-service scope before any rebuild
+3. run narrow Blog + accepted public regression suites first
+4. run only required frontend/backend/static/staging verification
+5. keep grassic.ir noindex and prompt-draft.ir untouched
+6. explicit founder acceptance closes Phase 4E
 ```
