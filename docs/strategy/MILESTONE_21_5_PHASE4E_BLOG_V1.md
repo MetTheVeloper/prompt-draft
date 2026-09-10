@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **REOPENED / 4E.1–4E.6 ACCEPTED / 4E.7 IMPLEMENTED / FOUNDER UI VERIFICATION NEXT**
+Status: **DONE / FOUNDER VERIFIED / ACCEPTED**
 
 Date: 2026-09-10
 
@@ -68,7 +68,7 @@ GitHub is never queried per public Blog request.
 4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED
 4E.5 Blog Media + Git Publication          -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
 4E.6 Final Aggregate Acceptance            -> DONE / FOUNDER VERIFIED / ACCEPTED
-4E.7 Shared Article Presentation           -> IMPLEMENTED / FOUNDER UI VERIFICATION NEXT / NOT ACCEPTED
+4E.7 Shared Article Presentation           -> DONE / FOUNDER UI VERIFIED / ACCEPTED
 ```
 
 ## 4E.1 — Article contract
@@ -201,22 +201,26 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
 ```
 
-Founder-requested final UI addendum:
+Accepted final UI presentation contract:
 
 ```text
 Manage preview + public Blog detail share BlogArticlePresentation
 existing safe Markdown renderer remains authoritative
-heading hierarchy becomes open-by-default collapsible details/summary sections
-shared typography for body/headings/lists/quotes/code/links/images
+heading hierarchy is open-by-default collapsible details/summary sections
+shared typography covers body/headings/lists/quotes/code/links/citations/images
+section boundaries avoid duplicate adjacent dividers
+[^reference] syntax renders compact theme-native citation badges
 inline Article images retain the accepted 400px presentation cap
 inline Article images open via global modal on click / Enter / Space
 public Hero uses the same global image lightbox workflow
+localized Article title is the one page H1
+canonical Blog body rejects manual Markdown H1 outside fenced code
 Prompt Draft theme/component/modal systems remain authoritative
 ```
 
-4E.7 changes presentation only. It does not alter Article metadata, Git publication, public API, SEO/indexability, sitemap/llms or staging noindex semantics.
+Focused Blog tests and the frontend rebuild completed without error. Founder visual/behavior verification covered EN/FA, Light/Dark, collapsible hierarchy, shared Manage/public rendering, citation badges, divider behavior, H1 enforcement and image lightbox behavior. The founder explicitly accepted 4E.7 on 2026-09-10.
 
-Because frontend source changes, focused Blog tests plus `pnpm frontend` are required. 4F remains blocked until founder visual/behavior verification and explicit 4E.7 acceptance.
+4E.7 did not alter Article metadata ownership, Git publication, public API eligibility, sitemap/llms policy or staging noindex semantics.
 
 ## Hard rules
 
@@ -232,14 +236,14 @@ DO NOT expose draft/unpublished Article URLs in sitemap/llms.
 DO NOT recreate Blog indexability outside the Article contract.
 DO NOT let Blog SEO override staging noindex.
 DO NOT expose BLOG_GITHUB_TOKEN through public runtime config.
+DO NOT allow canonical Blog body Markdown H1; the localized Article title owns page H1.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
 ## Current gate
 
 ```text
-4E.1–4E.6 -> remain DONE / ACCEPTED
-4E.7      -> IMPLEMENTED / FOUNDER UI VERIFICATION NEXT
-Phase 4E -> temporarily REOPENED for final presentation addendum
-4F       -> blocked until 4E.7 acceptance
+4E.1–4E.7 -> DONE / ACCEPTED
+Phase 4E -> DONE / FOUNDER VERIFIED / ACCEPTED
+4F       -> NEXT
 ```
