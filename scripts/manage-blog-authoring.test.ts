@@ -33,6 +33,33 @@ test('Blog management page is permission-gated and reuses canonical validator + 
   assert.doesNotMatch(editor, /v-html="model"/)
 })
 
+test('Blog management UI is built from Prompt Draft el primitives instead of page-local native controls', () => {
+  const page = source('app/pages/manage/blog.vue')
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+
+  assert.match(page, /<el-flex\b/)
+  assert.match(page, /<el-grid\b/)
+  assert.match(page, /<el-text\b/)
+  assert.match(page, /<el-text-field\b/)
+  assert.match(page, /<el-dropdown\b/)
+  assert.match(page, /<el-button\b/)
+  assert.match(page, /<el-divider\b/)
+  assert.doesNotMatch(page, /<(?:input|textarea|select|option|button|label|section|div|span|h[1-6]|p|strong|small|code|ul|li)\b/i)
+  assert.doesNotMatch(page, /<style\b/i)
+
+  assert.match(editor, /<el-text-field\b/)
+  assert.match(editor, /type="textarea"/)
+  assert.match(editor, /<el-button\b/)
+  assert.match(editor, /<el-grid\b/)
+  assert.match(editor, /<el-flex\b/)
+  assert.match(editor, /<el-text\b/)
+  assert.doesNotMatch(editor, /<(?:textarea|button|label|section|span|strong|em)\b/i)
+
+  const nativeDivs = editor.match(/<div\b/gi) ?? []
+  assert.equal(nativeDivs.length, 1)
+  assert.match(editor, /<div[\s\S]*?v-html="previewHtml"/)
+})
+
 test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
   const draft = source('app/utils/manageBlogDraft.ts')
   const page = source('app/pages/manage/blog.vue')
@@ -86,22 +113,26 @@ test('Blog management localization is registered for EN and FA', () => {
   assert.match(fa, /مخزن/)
   assert.match(en, /repositoryMetadata/)
   assert.match(fa, /repositoryMetadata/)
+  assert.match(en, /toolbarLabel/)
+  assert.match(fa, /toolbarLabel/)
 })
 
-test('Blog management neutral styling uses project theme tokens instead of hardcoded white or black', () => {
+test('Blog management neutral styling uses project theme semantics instead of hardcoded white or black', () => {
   const page = source('app/pages/manage/blog.vue')
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
 
-  for (const css of [page, editor]) {
-    assert.doesNotMatch(css, /rgb\(\s*255[ ,]/i)
-    assert.doesNotMatch(css, /rgb\(\s*0[ ,]+0[ ,]+0/i)
-    assert.doesNotMatch(css, /#(?:fff|ffffff|000|000000)\b/i)
-    assert.doesNotMatch(css, /(?:color|background(?:-color)?):\s*(?:white|black)\b/i)
+  for (const ui of [page, editor]) {
+    assert.doesNotMatch(ui, /rgb\(\s*255[ ,]/i)
+    assert.doesNotMatch(ui, /rgb\(\s*0[ ,]+0[ ,]+0/i)
+    assert.doesNotMatch(ui, /#(?:fff|ffffff|000|000000)\b/i)
+    assert.doesNotMatch(ui, /(?:color|background(?:-color)?):\s*(?:white|black)\b/i)
   }
 
-  assert.match(page, /var\(--normalText\)/)
-  assert.match(page, /var\(--themeSurface\)/)
-  assert.match(editor, /var\(--normalText\)/)
+  assert.match(page, /bg="surface"/)
+  assert.match(page, /bc="normal15"/)
+  assert.match(page, /color="normal55"/)
+  assert.match(editor, /bg="normal5"/)
+  assert.match(editor, /bc="normal15"/)
   assert.match(editor, /var\(--normalText5\)/)
 })
 
