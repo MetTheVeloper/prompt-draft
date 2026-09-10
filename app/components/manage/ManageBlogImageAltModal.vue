@@ -43,7 +43,7 @@ async function submit() {
         v-model="alt"
         :actions="false"
         :placeholder="t('manage.blog.markdown.imageAltPlaceholder')"
-        @input="error = ''"
+        @update:model-value="error = ''"
       />
       <el-text v-if="error" color="red" :size="10">
         {{ error }}
