@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E Blog V1
 
-Status: **IN PROGRESS / 4E.1–4E.5 ACCEPTED / 4E.6 NEXT**
+Status: **IN PROGRESS / 4E.1–4E.5 ACCEPTED / 4E.6 IMPLEMENTED / VERIFICATION NEXT**
 
 Date: 2026-09-10
 
@@ -187,26 +187,33 @@ Runtime founder proof covered real Save Draft, update, first publish, published 
 
 A Git write is canonical immediately in Git, but the public runtime reflects it only after the next deployment/build containing that commit. This is an intentional consequence of the accepted no-request-time-GitHub architecture.
 
-## 4E.6 — NEXT
+## 4E.6 — IMPLEMENTED / VERIFICATION NEXT / NOT ACCEPTED
 
-4E.6 is the aggregate Blog/public/staging/static acceptance pass.
-
-Final target includes:
+Canonical record:
 
 ```text
-accepted 4A–4D regressions
-all Blog contract/public/inventory/manage/media/publication regressions
-positive published Article SSR
-404 + canonical + localization behavior
-structured data
-sitemap/llms parity
-Manage authorization
-Git publication regression proof
-static generation
-external staging noindex verification
+docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
 ```
 
-4E itself must not be closed until 4E.6 passes and receives explicit founder acceptance.
+4E.6 adds no new product feature. It is the aggregate Blog/public/staging/static acceptance harness.
+
+Root gates:
+
+```powershell
+pnpm test:phase4e-final
+pnpm smoke:phase4e-final
+pnpm verify:phase4e-static
+```
+
+The aggregate regression re-runs the accepted 4A–4D baseline plus every Blog contract/public/inventory/manage/media/publication suite.
+
+The staging smoke targets `https://grassic.ir` by default, refuses `prompt-draft.ir`, reruns the accepted external 4D smoke and adds Blog API/index/404/canonical/hreflang/noindex/privacy checks.
+
+Because the canonical repository intentionally contains no temporary published Article after 4E.5, the positive EN/FA published Article static path uses a deterministic untracked fixture only during `verify:phase4e-static`. The wrapper removes the fixture in `finally`, whether the test passes or fails. The generated output must include both localized Article routes, BlogPosting JSON-LD, canonical URLs, sitemap entries and llms entries.
+
+The 4E.6 harness itself changes only `scripts/**`, `package.json` and docs, so no Docker rebuild is required before these verification commands.
+
+4E itself must not be closed until all three 4E.6 gates pass and receive explicit founder acceptance.
 
 ## Hard rules
 
@@ -228,10 +235,11 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 ## Current next action
 
 ```text
-1. start 4E.6 aggregate audit from latest feature/growth-foundation HEAD
-2. inspect changed-service scope before any rebuild
-3. run narrow Blog + accepted public regression suites first
-4. run only required frontend/backend/static/staging verification
-5. keep grassic.ir noindex and prompt-draft.ir untouched
+1. pull latest feature/growth-foundation
+2. pnpm test:phase4e-final
+3. pnpm smoke:phase4e-final
+4. pnpm verify:phase4e-static
+5. confirm content/blog contains no phase4e-final-published-fixture afterward
 6. explicit founder acceptance closes Phase 4E
+7. then start Phase 4F Integration / Legacy Retirement
 ```
