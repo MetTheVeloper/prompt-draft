@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C + 4D DONE + ACCEPTED / 4E REOPENED FOR 4E.7 / 4F BLOCKED**
+Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F NEXT**
 
 Date: 2026-09-10
 
@@ -54,8 +54,8 @@ Accepted foundations include Nuxt SSR for acquisition surfaces, explicit client-
 21.5.4B Public Prompt Architecture                         DONE / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
 21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
-21.5.4E Blog V1                                            REOPENED / 4E.1-4E.6 ACCEPTED / 4E.7 UI VERIFICATION NEXT
-21.5.4F Integration / Verification / Legacy Retirement     BLOCKED UNTIL 4E.7 ACCEPTANCE
+21.5.4E Blog V1                                            DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
+21.5.4F Integration / Verification / Legacy Retirement     NEXT
 ```
 
 Required order remains:
@@ -144,7 +144,7 @@ pnpm verify:phase4d-static    PASS
 
 Historical acceptance snapshot was 220 sitemap URLs / 220 llms URLs / 331 prerendered routes. Counts are evidence, not permanent constants.
 
-## 9. Phase 4E — Blog V1 — REOPENED FOR FINAL UI ADDENDUM
+## 9. Accepted Phase 4E — Blog V1
 
 Canonical source of truth:
 
@@ -152,13 +152,13 @@ Canonical source of truth:
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
 ```
 
-Accepted aggregate record:
+Aggregate acceptance record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
 ```
 
-Current UI addendum record:
+Final shared-presentation acceptance record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
@@ -190,7 +190,7 @@ Arvan Object Storage    -> managed media + explicit optional emergency role
 
 Repository-backed does **not** mean request-time GitHub. Public Blog reads deployed bundled content; legacy static generation reads the same validated build-workspace Blog repository snapshot.
 
-4E state:
+Accepted 4E state:
 
 ```text
 4E.1 Article Contract + Repository Loader -> DONE / ACCEPTED
@@ -199,10 +199,10 @@ Repository-backed does **not** mean request-time GitHub. Public Blog reads deplo
 4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED
 4E.5 Media + Git Publication               -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
 4E.6 Aggregate acceptance                  -> DONE / FOUNDER VERIFIED / ACCEPTED
-4E.7 Shared Article Presentation           -> IMPLEMENTED / FOUNDER UI VERIFICATION NEXT / NOT ACCEPTED
+4E.7 Shared Article Presentation           -> DONE / FOUNDER UI VERIFIED / ACCEPTED
 ```
 
-Previously accepted 4E.6 gates remain valid:
+Accepted 4E.6 gates:
 
 ```text
 pnpm test:phase4e-final    PASS
@@ -210,7 +210,7 @@ pnpm smoke:phase4e-final   PASS
 pnpm verify:phase4e-static PASS
 ```
 
-4E.7 is presentation-only and must not alter those accepted semantics. It introduces one shared Blog body presentation component for Manage preview and public Blog detail, hierarchical collapsible headings, centralized theme-native prose/code/quote/list/image styling and global-modal image zoom. The existing safe Markdown renderer remains authoritative.
+4E.7 added one shared Blog body presentation component for Manage preview and public Blog detail, hierarchical collapsible headings, centralized theme-native prose/code/quote/list/image styling, citation badges, single section-boundary dividers, global-modal image zoom and the one-H1 contract. The localized Article title owns the page H1; canonical body Markdown H1 is rejected outside fenced code. Focused Blog tests/frontend verification completed without error and the founder explicitly accepted the UI/behavior on 2026-09-10.
 
 ### Locked Article/content model
 
@@ -274,11 +274,12 @@ DO NOT create Git and Arvan as uncontrolled equal content sources.
 DO NOT embed base64 images in Markdown.
 DO NOT add draft/unpublished Blog URLs to sitemap/llms.
 DO NOT create a second public-indexability system.
+DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title owns H1.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
 ## 12. Current next action
 
-Phase 4E.1–4E.6 remain accepted. Current gate is 4E.7 founder UI verification.
+Phase 4E is complete and accepted. The next phase is **4F — Integration / Verification / Legacy Retirement**.
 
-Run the focused Blog regressions and frontend-only rebuild, verify shared presentation/collapse/lightbox in EN/FA and Light/Dark, then require explicit founder acceptance. Only after that may Phase 4E be closed again and 4F begin.
+Before deleting or retiring anything, audit the current branch for legacy/transitional routes, compatibility paths, duplicate SEO ownership, old generators and redundant artifacts. Preserve every accepted 4A–4E public/indexability/security contract and remove only redundancy that is proven safe to retire.
