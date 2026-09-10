@@ -1,6 +1,8 @@
 export type PublicMarkdownRenderOptions = {
   headingOffset?: number
+  minimumHeadingLevel?: number
   externalRel?: string
+  renderCitations?: boolean
 }
 
 function escapeHtml(value: string) {
@@ -26,7 +28,7 @@ function safePublicUrl(value: string) {
   }
 }
 
-function renderInline(value: string, externalRel: string) {
+function renderInline(value: string, externalRel: string, renderCitations: boolean) {
   const tokens: string[] = []
   const store = (html: string) => {
     const index = tokens.push(html) - 1
@@ -38,6 +40,13 @@ function renderInline(value: string, externalRel: string) {
   source = source.replace(/`([^`\n]+)`/g, (_match, code: string) => {
     return store(`<code>${escapeHtml(code)}</code>`)
   })
+
+  if (renderCitations) {
+    source = source.replace(/\[\^([A-Za-z0-9][A-Za-z0-9._:-]{0,79})\]/g, (_match, citation: string) => {
+      const escapedCitation = escapeHtml(citation)
+      return store(`<span class="public-markdown-citation" data-citation="${escapedCitation}">${escapedCitation}</span>`)
+    })
+  }
 
   source = source.replace(/!\[([^\]]*)\]\(([^)\s]+)\)/g, (_match, alt: string, rawUrl: string) => {
     const url = safePublicUrl(rawUrl)
@@ -82,9 +91,11 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
   if (!source) return ''
 
   const headingOffset = Math.max(0, Math.min(5, Number(options.headingOffset) || 0))
+  const minimumHeadingLevel = Math.max(1, Math.min(6, Number(options.minimumHeadingLevel) || 1))
   const externalRel = typeof options.externalRel === 'string' && options.externalRel.trim()
     ? options.externalRel.trim()
     : 'noopener noreferrer'
+  const renderCitations = options.renderCitations === true
 
   const lines = source.split('\n')
   const html: string[] = []
@@ -114,8 +125,11 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
     const heading = line.match(/^\s*(#{1,6})\s+(.+?)\s*#*\s*$/)
     if (heading) {
       const markdownLevel = heading[1].length
-      const htmlLevel = Math.min(markdownLevel + headingOffset, 6)
-      html.push(`<h${htmlLevel}>${renderInline(heading[2], externalRel)}</h${htmlLevel}>`)
+      const htmlLevel = Math.max(
+        minimumHeadingLevel,
+        Math.min(markdownLevel + headingOffset, 6),
+      )
+      html.push(`<h${htmlLevel}>${renderInline(heading[2], externalRel, renderCitations)}</h${htmlLevel}>`)
       index += 1
       continue
     }
@@ -134,7 +148,7 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
         quote.push(match[1])
         index += 1
       }
-      html.push(`<blockquote>${renderInline(quote.join(' '), externalRel)}</blockquote>`)
+      html.push(`<blockquote>${renderInline(quote.join(' '), externalRel, renderCitations)}</blockquote>`)
       continue
     }
 
@@ -143,7 +157,7 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
       while (index < lines.length) {
         const match = lines[index].match(/^\s*[-+*]\s+(.+)$/)
         if (!match) break
-        items.push(`<li>${renderInline(match[1], externalRel)}</li>`)
+        items.push(`<li>${renderInline(match[1], externalRel, renderCitations)}</li>`)
         index += 1
       }
       html.push(`<ul>${items.join('')}</ul>`)
@@ -155,7 +169,7 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
       while (index < lines.length) {
         const match = lines[index].match(/^\s*\d+[.)]\s+(.+)$/)
         if (!match) break
-        items.push(`<li>${renderInline(match[1], externalRel)}</li>`)
+        items.push(`<li>${renderInline(match[1], externalRel, renderCitations)}</li>`)
         index += 1
       }
       html.push(`<ol>${items.join('')}</ol>`)
@@ -172,7 +186,7 @@ export function renderPublicMarkdown(value: unknown, options: PublicMarkdownRend
       paragraph.push(lines[index].trim())
       index += 1
     }
-    html.push(`<p>${renderInline(paragraph.join(' '), externalRel)}</p>`)
+    html.push(`<p>${renderInline(paragraph.join(' '), externalRel, renderCitations)}</p>`)
   }
 
   return html.join('\n')
