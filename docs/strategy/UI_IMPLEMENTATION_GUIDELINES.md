@@ -6,7 +6,7 @@ Date: 2026-09-10
 
 This document defines the default implementation rules for all Prompt Draft UI work. It is project-wide and applies across milestones, branches, pages, components, refactors, and screenshot-driven implementation.
 
-The goal is to preserve Prompt Draft's existing theme system, utility system, color system, and `el-*` component system while keeping custom CSS as close to zero as practical.
+The goal is to preserve Prompt Draft's existing theme system, utility system, color system, `el-*` component system, global interaction primitives, and established page patterns while keeping custom CSS as close to zero as practical.
 
 ## 1. Core rule: screenshots are not the color source of truth
 
@@ -36,11 +36,12 @@ For every UI element, use this order of preference:
 existing Prompt Draft el-* component
 -> existing component props
 -> existing project utility classes
+-> existing global interaction systems (modal/menu/tooltip/etc.)
 -> existing theme/color CSS variables
 -> minimal scoped CSS only for behavior/layout not expressible above
 ```
 
-Do not jump directly to handwritten CSS when the component system or utility system already expresses the requirement.
+Do not jump directly to handwritten HTML/CSS when the component system, utility system, or existing global interaction primitives already express the requirement.
 
 Before creating new UI primitives or CSS, inspect adjacent accepted surfaces, especially existing `/manage/**` pages, for the project-native pattern.
 
@@ -59,8 +60,11 @@ el-button
 el-text-field
 el-dropdown
 el-multi-select
+el-switch
 el-divider
 el-avatar
+el-modal / global modal system
+other existing el-* primitives
 ```
 
 Examples of the intended style:
@@ -202,7 +206,7 @@ Current patterns include:
 <el-text :color="statusColor(...)" />
 ```
 
-The goal is not literal copy/paste. The goal is semantic consistency with the existing system.
+The goal is not literal copy/paste. The goal is semantic consistency with the existing system **and reuse of the same component APIs**.
 
 A new `/manage/**` surface should look correct in both Light and Dark themes without needing page-specific theme overrides.
 
@@ -216,6 +220,7 @@ Use:
 el-text-field
 el-dropdown
 el-multi-select
+el-switch
 other existing el-* form primitives
 ```
 
@@ -271,12 +276,14 @@ For every UI task, especially screenshot-driven tasks:
 
 1. identify the closest existing accepted page/component;
 2. inspect existing `el-*` primitives that can implement the UI;
-3. inspect available utility classes before adding CSS;
-4. use semantic theme/color tokens, never screenshot-derived white/black;
-5. omit `color` props when default `normal` is correct;
-6. add scoped CSS only for the remaining structural/behavioral gap;
-7. verify no unnecessary raw colors were introduced;
-8. verify Light and Dark theme behavior before acceptance.
+3. inspect the actual component API/source when needed instead of assuming generic Vue/HTML prop names;
+4. inspect available utility classes before adding CSS;
+5. inspect existing global systems for modals, menus, tooltips, feedback, and related interaction patterns;
+6. use semantic theme/color tokens, never screenshot-derived white/black;
+7. omit `color` props when default `normal` is correct;
+8. add scoped CSS only for the remaining structural/behavioral gap;
+9. verify no unnecessary native controls or raw colors were introduced;
+10. verify Light and Dark theme behavior before acceptance.
 
 ## 13. Review checklist / anti-regression rule
 
@@ -303,17 +310,30 @@ or:
 have a genuine explicit fixed-contrast reason
 ```
 
-The same principle applies to arbitrary raw colors that duplicate an existing semantic theme token.
+Also check for avoidable native controls:
+
+```text
+<input>
+<textarea>
+<select>
+<button>
+```
+
+when a Prompt Draft primitive already exists for the same role.
+
+The same principle applies to arbitrary raw colors or page-local styling patterns that duplicate an existing semantic theme token or component capability.
 
 ## 14. Assistant operating requirement
 
 For every future Prompt Draft UI implementation, including in a new chat:
 
 ```text
+Prompt Draft UI system > generic web primitives
 Theme system > screenshot pixel appearance
 Component system > custom HTML/CSS
 Component props > custom CSS
 Utilities > custom CSS
+Global modal/menu systems > bespoke dialogs/menus
 Theme tokens > raw colors
 normal/default > explicit white/black
 minimal scoped CSS > page-local styling systems
@@ -321,4 +341,139 @@ minimal scoped CSS > page-local styling systems
 
 The assistant must not infer white/black styling from Light/Dark screenshots. It must preserve the project's semantic theme behavior and existing UI primitives by default.
 
-This rule remains active unless the founder explicitly requests a fixed-color exception for a specific UI element.
+This rule remains active unless the founder explicitly requests a fixed-color or custom-primitive exception for a specific UI element.
+
+## 15. Treat the Prompt Draft UI stack as one integrated design system
+
+The project UI is not merely a color palette. It is an integrated stack consisting of:
+
+```text
+el-* components
+component props and defaults
+layout semantics (rules/gap/padding/radius/border/background)
+utility classes
+theme/color tokens and alpha variants
+global modal system
+global menu/dropdown system
+tooltip/feedback patterns
+icon system
+localization/direction behavior
+responsive conventions
+accepted page composition patterns
+```
+
+A correct implementation should compose these layers rather than recreate any one of them locally.
+
+For example, a new card should normally be expressed through `el-flex` props, text through `el-text`, input through `el-text-field`, action through `el-button`, and selection through `el-dropdown`. It should **not** be a native `div + label + input + button` bundle with a new page-local CSS mini-framework.
+
+The objective is not simply visual similarity. The objective is to inherit all the behavior already encoded by the system: Light/Dark theme, typography, spacing, hover/focus states, disabled states, responsive behavior, RTL/LTR support, and future global design changes.
+
+## 16. Component APIs are part of the source of truth
+
+Do not assume that Prompt Draft components use generic HTML or third-party prop names.
+
+Before using an unfamiliar `el-*` primitive, inspect its current implementation or a nearby accepted usage. Examples include project-specific contracts such as:
+
+```text
+el-button -> disable, mode, color, type, icon, label, tooltip, p, radius, ...
+el-flex   -> rules, gap, p, radius, br, bc, bg, ...
+el-text   -> color, size, weight, type, localize, ...
+el-text-field -> modelValue, type, rows, actions, disabled, readonly, ...
+el-dropdown -> modelValue, items, item mappings, icon, disabled, ...
+```
+
+The exact source code wins over assumptions.
+
+This prevents two classes of bug:
+
+```text
+visual inconsistency caused by bypassing component defaults
+runtime/build bugs caused by using the wrong prop/event contract
+```
+
+Accepted adjacent code such as `/manage/archive` and `/manage/users` is both a visual reference and an API-usage reference.
+
+## 17. Reuse global interaction systems instead of building local ones
+
+When a workflow needs a modal, menu, tooltip, confirmation, selection dialog, or related global interaction, inspect and reuse the existing project system first.
+
+Preferred pattern:
+
+```text
+useModal / global modal components
+useMenu / el-dropdown / global menu
+el-tooltip / existing feedback primitives
+```
+
+Avoid:
+
+```text
+page-local fixed overlays
+handmade dialog backdrops
+one-off dropdown implementations
+one-off tooltip CSS
+custom z-index stacks
+```
+
+A feature-specific modal body component is fine when the workflow is unique, but the modal shell, lifecycle, actions, sizing, backdrop, escape behavior, and theme should come from the global system.
+
+The same rule applies to reusable workflows such as media selection: if multiple product surfaces need the same interaction, prefer one reusable project component/workflow rather than multiple feature-specific implementations.
+
+## 18. Native DOM is an implementation detail, not the default UI layer
+
+Some native elements remain legitimate when they are not acting as project UI primitives. Examples:
+
+```text
+a required v-html render sink for already-sanitized rich text
+an image/video/canvas element whose browser behavior is itself the feature
+an accessibility/semantic container for which no project primitive is appropriate
+a browser-only input capability not covered by the component system
+```
+
+These exceptions do not justify hand-building ordinary controls or typography.
+
+Rule of thumb:
+
+```text
+if the user perceives it as a Prompt Draft control/surface/text primitive -> prefer el-* / project system
+if it is a low-level browser render sink or capability -> native DOM may be appropriate
+```
+
+Even native exceptions must inherit theme and layout behavior from the surrounding Prompt Draft components.
+
+## 19. Utility classes and component props should absorb ordinary layout CSS
+
+The project already includes reusable utilities for common layout and behavior, including patterns such as:
+
+```text
+w100 / h100
+fw
+ofh / overflow helpers
+cursor/pointer helpers
+direction helpers
+spacing/radius/border classes generated by the utility system
+semantic text/background utility classes
+```
+
+Before adding a scoped CSS declaration for width, flex wrapping, overflow, alignment, direction, spacing, ordinary radius, ordinary border, or semantic colors, check whether a component prop or existing utility already covers it.
+
+Scoped CSS should increasingly become limited to truly component-specific presentation such as rich-text descendant selectors, unusual responsive geometry, pseudo-elements, and browser quirks.
+
+## 20. Page-local UI systems are prohibited by default
+
+Do not create a parallel visual/component vocabulary inside one feature.
+
+Examples of patterns to avoid:
+
+```text
+.manage-feature-panel + local panel CSS when el-flex props cover it
+.manage-feature-input + custom field styling when el-text-field exists
+.manage-feature-button + native button CSS when el-button exists
+custom status colors when project semantic colors exist
+custom tabs when el-button/el-menu patterns cover the interaction
+custom modal shell when global modal exists
+```
+
+When a genuinely reusable capability is missing, prefer adding or extracting a reusable project component that follows the existing system rather than burying a new primitive inside one page.
+
+For high-risk or newly introduced UI surfaces, focused source regression tests may enforce these invariants (for example, preventing avoidable native controls, raw colors, or page-local styling systems from returning).
