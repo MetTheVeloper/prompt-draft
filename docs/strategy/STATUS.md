@@ -24,7 +24,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-  4F Integration / Legacy Retirement            -> NEXT
+  4F Integration / Legacy Retirement            -> IN PROGRESS / AUDIT COMPLETE / FIRST RETIREMENT IMPLEMENTED
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
 
@@ -153,6 +153,46 @@ pnpm verify:phase4e-static -> PASS
 
 Final 4E.7 acceptance additionally verified the shared `BlogArticlePresentation` across Manage/public surfaces, hierarchical collapsible sections, theme-native prose/code/quote/list/link styling, citation badges, one-boundary section dividers, global image lightbox, RTL/LTR behavior and the one-H1 contract where the localized Article title owns H1 and body Markdown H1 is rejected outside code fences.
 
+---
+
+# Phase 4F Integration / Legacy Retirement — IN PROGRESS
+
+4F.1 evidence closure is complete. The accepted 4A–4E contracts remain the source of truth; `/prompts?id=...`, `/user`, the `/dashboard` compatibility redirect, the shared public inventory/runtime delivery stack, Blog Nitro repository loader, static-generation compatibility path, application noindex policy and staging noindex layers remain KEEP.
+
+First evidence-backed retirement batch:
+
+```text
+95b7d7717544d8f8c8b2fb717342cecf2432b12c
+  -> removed legacy Discovery generated-HTML cleanup from scripts/generate-public-seo.ts
+
+d44e3cb1bb257f4b8d2faa34393275c54385b47c
+  -> inverted Discovery regression expectations so legacy cleanup/markers must remain absent
+```
+
+Retired behavior:
+
+```text
+LEGACY_DISCOVERY_SNAPSHOT_PATTERN
+LEGACY_DISCOVERY_STRUCTURED_PATTERN
+readGeneratedHtml()
+cleanupLegacyDiscoveryArtifacts()
+legacy Discovery cleanup calls/logging
+```
+
+The native Discovery SSR/prerender implementation remains authoritative. `scripts/generate-public-seo.ts` remains active for sitemap/llms/robots static compatibility and still consumes the shared public URL inventory.
+
+Verification state:
+
+```text
+isolated current public-seo-generator contract assertions -> PASS 2/2
+branch diff/source verification                            -> PASS
+service rebuild                                            -> NOT REQUIRED
+founder-local pnpm test:discovery-seo                      -> PENDING
+current full static verification                           -> PENDING
+```
+
+Important 4F integration finding: `scripts/phase4d-static-generate-verification.mjs` still computes the pre-Blog expected URL count and therefore does not model the accepted 4E Blog inventory. Do not treat that historical verifier as the current standalone integration gate until it is explicitly updated or retired with evidence. `scripts/blog-static-generate-verification.ts` / `pnpm verify:phase4e-static` use the current shared Blog-aware inventory and remain the accepted post-4E static baseline.
+
 ## Hard rules
 
 ```text
@@ -182,7 +222,9 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 5. inspect latest feature/growth-foundation HEAD
 6. confirm 4E.1-4E.7 are DONE / ACCEPTED
 7. current task = Phase 4F Integration / Verification / Legacy Retirement
-8. audit legacy/transitional routes, generators, SEO duplication and compatibility paths before deletion
-9. preserve accepted public/indexability/security contracts while retiring only proven redundancy
-10. do not touch prompt-draft.ir before explicit rollout
+8. 4F.1 audit is complete; first legacy Discovery cleanup retirement is implemented
+9. run the focused Discovery regression, then the current Blog-aware static integration gate without rebuilding services
+10. investigate the now-pre-Blog Phase 4D static verifier before updating or retiring it
+11. preserve accepted public/indexability/security contracts while retiring only proven redundancy
+12. do not touch prompt-draft.ir before explicit rollout
 ```
