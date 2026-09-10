@@ -62,6 +62,9 @@
     "test:blog-manage": "tsx --test backend/src/blogAuthorization.test.mjs server/utils/blogManageAuthorization.test.ts scripts/manage-blog-draft.test.ts scripts/manage-blog-authoring.test.ts scripts/blog-contract.test.ts scripts/public-creator-markdown.test.ts",
     "test:blog-media": "tsx --test backend/src/archiveStorage.test.mjs backend/src/adminBlogMedia.test.mjs scripts/blog-media-authoring.test.ts",
     "test:blog-publish": "tsx --test backend/src/adminBlogPublicationAudit.test.mjs server/utils/blogGitRepository.test.ts scripts/blog-publication-contract.test.ts",
+    "test:phase4e-final": "node scripts/phase4e-final-regression.mjs",
+    "smoke:phase4e-final": "node scripts/phase4e-final-staging-smoke.mjs",
+    "verify:phase4e-static": "node scripts/phase4e-final-static-verification.mjs",
     "test:reference-catalog": "tsx --test scripts/reference-catalog.test.ts",
     "test:actions-api": "tsx --test scripts/actions-api.test.ts scripts/actions-variables.test.ts scripts/actions-variables-ui-migration.test.ts scripts/actions-modules.test.ts scripts/actions-module-entities.test.ts scripts/actions-module-entity-fields.test.ts scripts/actions-typography.test.ts scripts/actions-scenes.test.ts scripts/actions-layouts.test.ts scripts/actions-assignment-scopes.test.ts scripts/actions-color-palette.test.ts scripts/actions-material-assignments.test.ts scripts/actions-pose-assignments.test.ts scripts/actions-expression-assignments.test.ts scripts/actions-lighting-effects.test.ts scripts/actions-hair.test.ts scripts/actions-outfit.test.ts scripts/actions-prompt-settings.test.ts scripts/actions-prompt-read.test.ts scripts/actions-prompt-compile.test.ts scripts/actions-public-contract.test.ts scripts/actions-public-ids.test.ts",
     "test:wizard": "tsx --test scripts/wizard-definition.test.ts scripts/wizard-session.test.ts scripts/wizard-portrait.test.ts scripts/wizard-portrait-v2.test.ts scripts/wizard-subject-overrides.test.ts scripts/wizard-completion.test.ts scripts/wizard-lighting-environment.test.ts scripts/wizard-subject-definitions.test.ts scripts/wizard-living-presentation.test.ts scripts/wizard-living-scene.test.ts scripts/wizard-living-final.test.ts scripts/wizard-living-review.test.ts scripts/wizard-direction-ready.test.ts scripts/wizard-living-localization.test.ts",
@@ -96,6 +99,7 @@
     "nuxt": "^4.4.6",
     "pinia": "^3.0.4",
     "qrcode": "^1.5.4",
+    "sass-embedded": "^1.100.0",
     "vue": "^3.5.34",
     "vue-router": "^5.0.7"
   },
