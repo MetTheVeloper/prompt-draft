@@ -23,8 +23,8 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-  4F Integration / Legacy Retirement            -> NEXT
+  4E Blog V1                                    -> REOPENED / 4E.1-4E.6 ACCEPTED / 4E.7 UI VERIFICATION NEXT
+  4F Integration / Legacy Retirement            -> BLOCKED UNTIL 4E.7 ACCEPTANCE
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
 
@@ -41,6 +41,7 @@ docs/strategy/MILESTONE_21_5_PHASE4E_3_BLOG_INVENTORY.md
 docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
+docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
 ```
 
 ## Verification workflow
@@ -118,9 +119,9 @@ Historical pre-Blog sitemap/llms count was 220; this is evidence only, not a per
 
 ---
 
-# Phase 4E Blog V1 — DONE / ACCEPTED
+# Phase 4E Blog V1 — REOPENED FOR FINAL UI ADDENDUM
 
-Editorial architecture:
+Editorial architecture remains:
 
 ```text
 Git repository          -> canonical editorial source
@@ -130,7 +131,7 @@ Arvan Object Storage    -> Blog media + explicit optional mirror/emergency role
 
 Never query GitHub per public Blog request.
 
-Accepted slices:
+Accepted historical slices remain accepted:
 
 ```text
 4E.1 Article Contract + Repository Loader -> DONE / ACCEPTED
@@ -141,7 +142,7 @@ Accepted slices:
 4E.6 Final Aggregate Acceptance            -> DONE / FOUNDER VERIFIED / ACCEPTED
 ```
 
-Final aggregate evidence:
+Previously accepted aggregate evidence remains valid:
 
 ```text
 pnpm test:phase4e-final    -> PASS
@@ -149,26 +150,30 @@ pnpm smoke:phase4e-final   -> PASS
 pnpm verify:phase4e-static -> PASS
 ```
 
-Final Blog sub-suite evidence:
+## 4E.7 — Shared Article Presentation — IMPLEMENTED / UI VERIFICATION NEXT
+
+Canonical record:
 
 ```text
-Blog contract/runtime loader        -> 20/20 PASS
-Public Blog SSR/SEO/projection      -> 28/28 PASS
-Blog inventory/sitemap/llms         -> 19/19 PASS
-Blog management                     -> 46/46 PASS
-Blog media/Gallery                  -> 15/15 PASS
-Git publication/audit               -> 14/14 PASS
+docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
 ```
 
-Founder runtime verification additionally proved real Save Draft, update, stale two-tab conflict protection, first publish, published update, `auditRecorded=true`, deployment-lag behavior and unpublish with preserved `publishedAt`.
+Founder-requested final presentation contract:
 
-The deterministic published EN/FA static fixture prerendered successfully, joined sitemap/llms, emitted BlogPosting/canonical output and was removed afterward. `content/blog` was clean at final acceptance.
+```text
+Manage Markdown preview and public Blog detail share BlogArticlePresentation
+existing safe Markdown renderer remains authoritative
+heading hierarchy becomes open-by-default collapsible details/summary sections
+shared themed typography for headings/body/lists/quotes/code/links/images
+inline Article images preserve the accepted 400px cap
+inline Article images open through the global modal lightbox on click/Enter/Space
+public Hero uses the same image lightbox workflow
+no second Markdown engine, sanitizer, modal system or theme vocabulary
+```
 
-## Phase 4F — NEXT
+This is frontend-only. Required verification is focused Blog regression plus `pnpm frontend`; no API or full-stack rebuild is required.
 
-Phase 4F is the integration / verification / legacy-retirement pass for the completed Phase 4 public-content platform. It must begin with an audit of surviving legacy generators, duplicate SEO/content paths, transitional compatibility code, deprecated routes/artifacts and deployment assumptions before anything is removed.
-
-Do not remove compatibility code merely because a newer path exists; each retirement needs proof that the accepted runtime, static compatibility, staging behavior and protected/public boundaries remain intact.
+4F must not begin until founder UI verification and explicit 4E.7 acceptance.
 
 ## Hard rules
 
@@ -194,11 +199,11 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-4. read MILESTONE_21_5_PHASE4E_BLOG_V1.md + 4E.6 final acceptance record
+4. read MILESTONE_21_5_PHASE4E_BLOG_V1.md + 4E.7 record
 5. inspect latest feature/growth-foundation HEAD
-6. confirm 4A-4E are DONE / ACCEPTED
-7. current task = Phase 4F Integration / Verification / Legacy Retirement audit
-8. inventory legacy/transitional paths before deleting anything
-9. use time-first verification and smallest rebuild scope
-10. keep grassic.ir noindex and prompt-draft.ir untouched
+6. confirm 4E.1-4E.6 remain DONE / ACCEPTED
+7. current task = verify 4E.7 shared Article presentation
+8. run focused Blog tests then pnpm frontend
+9. founder checks EN/FA, Light/Dark, collapsible heading hierarchy and global image lightbox
+10. only explicit founder acceptance re-closes 4E and unblocks 4F
 ```
