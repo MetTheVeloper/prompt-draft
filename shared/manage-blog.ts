@@ -1,8 +1,12 @@
 import type {
   BlogArticle,
   BlogArticleStatus,
+  BlogHero,
+  BlogLocalizationMetadata,
   BlogLocale,
 } from './blog-article'
+
+export type ManageBlogRepositorySource = 'git' | 'deployed'
 
 export type ManageBlogArticleSummary = {
   id: string
@@ -17,11 +21,34 @@ export type ManageBlogArticleSummary = {
 export type ManageBlogListResponse = {
   ok: true
   articles: ManageBlogArticleSummary[]
+  repositorySource: ManageBlogRepositorySource
+  writeConfigured: boolean
 }
 
 export type ManageBlogArticleResponse = {
   ok: true
   article: BlogArticle
+  version: string | null
+  repositorySource: ManageBlogRepositorySource
+  writeConfigured: boolean
+}
+
+export type ManageBlogWriteInput = {
+  expectedVersion: string | null
+  slug: string
+  status: BlogArticleStatus
+  hero: BlogHero | null
+  localizations: Partial<Record<BlogLocale, BlogLocalizationMetadata>>
+  body: Partial<Record<BlogLocale, string>>
+}
+
+export type ManageBlogWriteResponse = {
+  ok: true
+  article: BlogArticle
+  version: string
+  commitSha: string
+  repositorySource: 'git'
+  auditRecorded: boolean
 }
 
 export function projectManageBlogArticleSummary(
