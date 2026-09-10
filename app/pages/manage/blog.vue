@@ -411,9 +411,10 @@ onMounted(async () => {
 .manage-blog-state,
 .manage-blog-table {
   width: 100%;
-  border: 1px solid rgb(255 255 255 / 9%);
+  border: 1px solid var(--normalText15);
   border-radius: 14px;
-  background: rgb(255 255 255 / 3%);
+  background: var(--themeSurface);
+  color: var(--normalText);
 }
 
 .manage-blog-notice {
@@ -432,7 +433,7 @@ onMounted(async () => {
 .manage-blog-notice p,
 .manage-blog-validation p {
   margin: 0;
-  color: rgb(255 255 255 / 58%);
+  color: var(--normalText55);
   font-size: 12px;
   line-height: 1.7;
 }
@@ -441,19 +442,19 @@ onMounted(async () => {
   flex: 0 0 auto;
   padding: 4px 8px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 8%);
-  color: rgb(255 255 255 / 65%);
+  background: var(--normalText10);
+  color: var(--normalText60);
   font: 700 11px/1 monospace;
 }
 
 .manage-blog-state {
   padding: 24px;
   text-align: center;
-  color: rgb(255 255 255 / 58%);
+  color: var(--normalText55);
 }
 
 .manage-blog-state--error {
-  color: #ff9b9b;
+  color: var(--themeRed);
 }
 
 .manage-blog-table {
@@ -470,7 +471,7 @@ onMounted(async () => {
 }
 
 .manage-blog-table__head {
-  color: rgb(255 255 255 / 48%);
+  color: var(--normalText50);
   font-size: 11px;
   font-weight: 700;
   text-transform: uppercase;
@@ -479,7 +480,7 @@ onMounted(async () => {
 
 .manage-blog-table__article {
   border: 0;
-  border-top: 1px solid rgb(255 255 255 / 7%);
+  border-top: 1px solid var(--normalText10);
   background: transparent;
   color: inherit;
   text-align: inherit;
@@ -487,7 +488,7 @@ onMounted(async () => {
 }
 
 .manage-blog-table__article:hover {
-  background: rgb(255 255 255 / 4%);
+  background: var(--normalText5);
 }
 
 .manage-blog-table__article strong,
@@ -498,7 +499,7 @@ onMounted(async () => {
 .manage-blog-table__article small,
 .manage-blog-table__article code {
   margin-top: 2px;
-  color: rgb(255 255 255 / 45%);
+  color: var(--normalText45);
   font-size: 11px;
 }
 
@@ -507,15 +508,15 @@ onMounted(async () => {
 }
 
 .manage-blog-status[data-status='published'] {
-  color: #86efac;
+  color: var(--themeGreen);
 }
 
 .manage-blog-status[data-status='draft'] {
-  color: #facc15;
+  color: var(--themeOrange);
 }
 
 .manage-blog-edit {
-  color: rgb(255 255 255 / 58%);
+  color: var(--normalText55);
   font-size: 12px;
 }
 
@@ -525,6 +526,7 @@ onMounted(async () => {
 
 .manage-blog-panel h3 {
   margin: 0 0 14px;
+  color: var(--normalText);
   font-size: 14px;
 }
 
@@ -546,7 +548,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   gap: 6px;
-  color: rgb(255 255 255 / 58%);
+  color: var(--normalText55);
   font-size: 12px;
 }
 
@@ -555,13 +557,21 @@ onMounted(async () => {
 .manage-blog-panel select {
   width: 100%;
   box-sizing: border-box;
-  border: 1px solid rgb(255 255 255 / 10%);
+  border: 1px solid var(--normalText15);
   border-radius: 10px;
   outline: none;
-  background: rgb(0 0 0 / 18%);
-  color: inherit;
+  background: var(--normalText5);
+  color: var(--normalText);
   padding: 10px 11px;
   font: inherit;
+}
+
+.manage-blog-panel input:focus,
+.manage-blog-panel textarea:focus,
+.manage-blog-panel select:focus {
+  border-color: var(--primary);
+  background: var(--normalText10);
+  box-shadow: 0 0 0 3px var(--primary15);
 }
 
 .manage-blog-panel textarea {
@@ -577,7 +587,7 @@ onMounted(async () => {
   display: flex;
   gap: 6px;
   padding: 8px;
-  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  border-bottom: 1px solid var(--normalText10);
 }
 
 .manage-blog-localization__tabs button {
@@ -585,13 +595,18 @@ onMounted(async () => {
   border-radius: 9px;
   padding: 8px 12px;
   background: transparent;
-  color: rgb(255 255 255 / 58%);
+  color: var(--normalText55);
   cursor: pointer;
 }
 
+.manage-blog-localization__tabs button:hover {
+  background: var(--normalText5);
+  color: var(--normalText);
+}
+
 .manage-blog-localization__tabs button.active {
-  background: rgb(255 255 255 / 9%);
-  color: inherit;
+  background: var(--normalText10);
+  color: var(--normalText);
 }
 
 .manage-blog-localization__body {
@@ -606,17 +621,17 @@ onMounted(async () => {
 }
 
 .manage-blog-validation[data-state='valid'] {
-  border-color: rgb(134 239 172 / 28%);
+  border-color: var(--themeGreen30);
 }
 
 .manage-blog-validation[data-state='invalid'] {
-  border-color: rgb(248 113 113 / 35%);
+  border-color: var(--themeRed35);
 }
 
 .manage-blog-validation ul {
   margin: 10px 0 0;
   padding-inline-start: 22px;
-  color: #ffb4b4;
+  color: var(--themeRed);
   font-size: 12px;
   line-height: 1.65;
 }
