@@ -1,9 +1,9 @@
 import { requireBlogManage } from './blogManageAuthorization'
 import {
   BlogGitRepositoryError,
-  resolveBlogGitConfig,
   writeBlogGitArticle,
 } from './blogGitRepository'
+import { getConfiguredBlogGitRepository } from './blogManageRepository'
 import { recordBlogPublicationAudit } from './blogPublicationAudit'
 
 const ARTICLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
@@ -30,10 +30,9 @@ export async function saveManageBlogArticle(event: any, articleId: string | null
     throw createError({ statusCode: 404, statusMessage: 'Blog Article not found' })
   }
 
-  const runtime = useRuntimeConfig(event)
   let gitConfig
   try {
-    gitConfig = resolveBlogGitConfig(runtime)
+    gitConfig = getConfiguredBlogGitRepository()
   } catch (error) {
     rethrowBlogWriteError(error)
   }
