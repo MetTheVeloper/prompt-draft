@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F NEXT**
+Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F IN PROGRESS**
 
 Date: 2026-09-10
 
@@ -55,7 +55,7 @@ Accepted foundations include Nuxt SSR for acquisition surfaces, explicit client-
 21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
 21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
 21.5.4E Blog V1                                            DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-21.5.4F Integration / Verification / Legacy Retirement     NEXT
+21.5.4F Integration / Verification / Legacy Retirement     IN PROGRESS
 ```
 
 Required order remains:
@@ -278,8 +278,24 @@ DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title 
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
-## 12. Current next action
+## 12. Current Phase 4F state / next action
 
-Phase 4E is complete and accepted. The next phase is **4F — Integration / Verification / Legacy Retirement**.
+4F.1 evidence closure is complete. The audit found no public/protected boundary defect requiring redesign and retained all accepted 4A–4E contracts. Application routes `/prompts` and `/user`, the `/dashboard` compatibility redirect, the static-generation compatibility path, Blog Nitro repository loading, shared public URL inventory and staging/application noindex layers remain KEEP.
 
-Before deleting or retiring anything, audit the current branch for legacy/transitional routes, compatibility paths, duplicate SEO ownership, old generators and redundant artifacts. Preserve every accepted 4A–4E public/indexability/security contract and remove only redundancy that is proven safe to retire.
+The first evidence-backed legacy retirement is implemented:
+
+```text
+95b7d7717544d8f8c8b2fb717342cecf2432b12c
+  -> retire legacy Discovery generated-HTML cleanup from scripts/generate-public-seo.ts
+
+d44e3cb1bb257f4b8d2faa34393275c54385b47c
+  -> require Discovery regression coverage to keep cleanup/legacy markers absent
+```
+
+The native Discovery SSR/prerender implementation is now the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active only for its current shared sitemap/llms/robots compatibility role.
+
+Verification for this retirement is not yet founder-local accepted. No Docker service rebuild is required because only build/test tooling changed. Run the focused Discovery regression first, then the current post-Blog static integration gate.
+
+A new 4F integration finding remains **INVESTIGATE**: `scripts/phase4d-static-generate-verification.mjs` still calculates the old pre-Blog expected URL count and therefore is not a current Blog-aware integration verifier. Do not delete it merely because it is historical. Determine whether to update it to the accepted shared inventory or retire it after proving that no active workflow/caller requires the historical standalone command. `scripts/blog-static-generate-verification.ts` and `pnpm verify:phase4e-static` are currently Blog-aware and derive their expected URL set from the shared inventory.
+
+Preserve every accepted public/indexability/security contract and continue to remove only redundancy that is proven safe to retire.
