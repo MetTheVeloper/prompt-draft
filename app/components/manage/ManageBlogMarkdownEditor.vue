@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import type { GlobalMenuItem } from '~/composables/useMenu'
+
 const props = withDefaults(defineProps<{
   locale: 'en' | 'fa'
   placeholder?: string
@@ -11,6 +13,7 @@ const model = defineModel<string>({ default: '' })
 const linkModal = useBlogLinkModal()
 const mediaGallery = useMediaGalleryModal()
 const imageAltModal = useBlogImageAltModal()
+const menu = useMenu()
 
 type TextFieldHandle = {
   el?: HTMLInputElement | HTMLTextAreaElement | null
@@ -33,6 +36,16 @@ function getTextarea() {
   return element as HTMLTextAreaElement
 }
 
+function syncEditorHeight() {
+  const element = getTextarea()
+  if (!element) return
+
+  element.style.height = 'auto'
+  element.style.overflowY = 'hidden'
+  element.style.resize = 'none'
+  element.style.height = `${element.scrollHeight}px`
+}
+
 function currentRange(): EditorRange {
   const element = getTextarea()
   if (!element) {
@@ -52,33 +65,44 @@ async function replaceRange(range: Pick<EditorRange, 'start' | 'end'>, replaceme
   model.value = `${model.value.slice(0, range.start)}${replacement}${model.value.slice(range.end)}`
 
   await nextTick()
+  syncEditorHeight()
   const element = getTextarea()
   editorField.value?.focus?.()
   element?.setSelectionRange(range.start, range.start + replacement.length)
 }
 
-async function replaceSelection(transform: (selected: string) => string) {
-  const range = currentRange()
+async function replaceSelection(
+  transform: (selected: string) => string,
+  range: EditorRange = currentRange(),
+) {
   await replaceRange(range, transform(range.selected))
 }
 
-function wrap(prefix: string, suffix = prefix, fallback = 'text') {
-  return replaceSelection(selected => `${prefix}${selected || fallback}${suffix}`)
+function wrap(
+  prefix: string,
+  suffix = prefix,
+  fallback = 'text',
+  range: EditorRange = currentRange(),
+) {
+  return replaceSelection(selected => `${prefix}${selected || fallback}${suffix}`, range)
 }
 
-function prefixLines(prefix: string, fallback = 'text') {
+function prefixLines(
+  prefix: string,
+  fallback = 'text',
+  range: EditorRange = currentRange(),
+) {
   return replaceSelection((selected) => {
     const source = selected || fallback
     return source.split('\n').map(line => `${prefix}${line}`).join('\n')
-  })
+  }, range)
 }
 
 function escapeMarkdownText(value: string) {
   return value.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]')
 }
 
-function insertLink() {
-  const range = currentRange()
+function insertLink(range: EditorRange = currentRange()) {
   linkModal.open({
     initialLabel: range.selected,
     onInsert: ({ label, url }) => replaceRange(
@@ -88,8 +112,7 @@ function insertLink() {
   })
 }
 
-function insertImage() {
-  const range = currentRange()
+function insertImage(range: EditorRange = currentRange()) {
   mediaGallery.open({
     onSelect: (asset) => {
       imageAltModal.open({
@@ -103,6 +126,86 @@ function insertImage() {
     },
   })
 }
+
+function markdownMenuItems(range: EditorRange): GlobalMenuItem[] {
+  return [
+    {
+      type: 'header',
+      label: t('manage.blog.markdown.toolbarLabel'),
+    },
+    {
+      label: 'H2',
+      handler: () => prefixLines('## ', 'Heading', range),
+    },
+    {
+      label: 'H3',
+      handler: () => prefixLines('### ', 'Heading', range),
+    },
+    {
+      label: t('manage.blog.markdown.bold'),
+      icon: 'format_bold',
+      handler: () => wrap('**', '**', 'bold', range),
+    },
+    {
+      label: t('manage.blog.markdown.italic'),
+      icon: 'format_italic',
+      handler: () => wrap('*', '*', 'italic', range),
+    },
+    {
+      label: t('manage.blog.markdown.quote'),
+      icon: 'format_quote',
+      handler: () => prefixLines('> ', 'Quote', range),
+    },
+    {
+      label: t('manage.blog.markdown.code'),
+      icon: 'code',
+      handler: () => wrap('`', '`', 'code', range),
+    },
+    {
+      label: t('manage.blog.markdown.list'),
+      icon: 'format_list_bulleted',
+      handler: () => prefixLines('- ', 'List item', range),
+    },
+    {
+      label: t('manage.blog.markdown.link'),
+      icon: 'link',
+      handler: () => insertLink(range),
+    },
+    {
+      label: t('manage.blog.markdown.image'),
+      icon: 'image',
+      handler: () => insertImage(range),
+    },
+  ]
+}
+
+function openMarkdownContextMenu(event: MouseEvent) {
+  if (!(event.target instanceof HTMLTextAreaElement)) return
+
+  event.preventDefault()
+  event.stopPropagation()
+
+  const range = currentRange()
+
+  menu.open({
+    mode: 'point',
+    event,
+    options: {
+      closeOnScroll: false,
+      zIndex: 30000,
+      minWidth: 200,
+    },
+    items: markdownMenuItems(range),
+  })
+}
+
+watch(model, () => {
+  void nextTick(syncEditorHeight)
+}, { flush: 'post' })
+
+onMounted(() => {
+  void nextTick(syncEditorHeight)
+})
 </script>
 
 <template>
@@ -121,8 +224,8 @@ function insertImage() {
       <el-button type="fab" mode="flat" icon="format_quote" :tooltip="t('manage.blog.markdown.quote')" @click="prefixLines('> ', 'Quote')" />
       <el-button type="fab" mode="flat" icon="code" :tooltip="t('manage.blog.markdown.code')" @click="wrap('`', '`', 'code')" />
       <el-button type="fab" mode="flat" icon="format_list_bulleted" :tooltip="t('manage.blog.markdown.list')" @click="prefixLines('- ', 'List item')" />
-      <el-button type="fab" mode="flat" icon="link" :tooltip="t('manage.blog.markdown.link')" @click="insertLink" />
-      <el-button type="fab" mode="flat" icon="image" :tooltip="t('manage.blog.markdown.image')" @click="insertImage" />
+      <el-button type="fab" mode="flat" icon="link" :tooltip="t('manage.blog.markdown.link')" @click="insertLink()" />
+      <el-button type="fab" mode="flat" icon="image" :tooltip="t('manage.blog.markdown.image')" @click="insertImage()" />
     </el-flex>
 
     <el-grid
@@ -131,7 +234,7 @@ function insertImage() {
       align-items="start"
       class="w100 blog-markdown-panes"
     >
-      <el-flex rules="css" :gap="6" class="w100">
+      <el-flex rules="css" :gap="6" class="w100" @contextmenu="openMarkdownContextMenu">
         <el-text color="normal55" :size="11" :weight="700">
           {{ t('manage.blog.markdown.source') }}
         </el-text>
