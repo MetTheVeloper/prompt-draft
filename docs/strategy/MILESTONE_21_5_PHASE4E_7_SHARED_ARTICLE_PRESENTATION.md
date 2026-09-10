@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.7 Shared Article Presentation
 
-Status: **IMPLEMENTED / FOUNDER UI VERIFICATION IN PROGRESS / NOT ACCEPTED**
+Status: **DONE / FOUNDER UI VERIFIED / ACCEPTED**
 
 Date: 2026-09-10
 
@@ -28,7 +28,7 @@ renderPublicMarkdown
 
 No second Markdown engine or sanitizer is introduced.
 
-Both surfaces must render the same component:
+Both surfaces render the same component:
 
 ```text
 /manage/blog Markdown preview -> BlogArticlePresentation
@@ -92,7 +92,7 @@ inline Article images
 
 Styling uses Prompt Draft theme variables only. Rich-text descendant CSS is an explicit exception allowed by `UI_IMPLEMENTATION_GUIDELINES.md` because these nodes are sanitized `v-html` render output rather than ordinary application controls.
 
-The previously accepted Article image presentation cap remains:
+The accepted Article image presentation cap remains:
 
 ```text
 max-width: min(100%, 400px)
@@ -111,7 +111,7 @@ Blog Markdown reference markers using the accepted compact syntax:
 
 render as small inline citation badges instead of raw bracket text. The shared Markdown engine only enables this transformation for Blog rendering, so Creator Markdown behavior does not change.
 
-The badge visually follows the Prompt Draft component semantics requested by the founder:
+The badge visually follows Prompt Draft component semantics:
 
 ```text
 background -> normal15
@@ -157,9 +157,9 @@ media upload/storage
 
 The only Markdown grammar tightening in this addendum is the explicit Blog H1 reservation described above.
 
-## Verification
+## Verification and founder acceptance
 
-Focused gates:
+Focused gates completed without error:
 
 ```powershell
 pnpm test:blog-contract
@@ -169,47 +169,30 @@ pnpm test:blog-media
 pnpm frontend
 ```
 
-Founder UI smoke must verify EN + FA and Light + Dark where practical:
+Founder UI/behavior verification covered EN + FA and Light + Dark where practical, including:
 
 ```text
-Manage preview and public Article body are visually identical for the same Markdown
+Manage preview and public Article body share the same presentation
 H2/H3 hierarchy collapses and expands correctly
 parent collapse hides nested subsection content
-section boundaries do not render duplicate adjacent dividers
+section boundaries no longer render duplicate adjacent dividers
 paragraph/list/quote/code/link typography is readable
 [^reference] markers render as compact citation badges
 inline image cap remains correct
 inline image hover shows zoom cursor
-inline image click opens global image modal
-keyboard Enter/Space opens focused inline image
-public Hero image opens the same modal
-modal closes by close button / Escape / backdrop
-RTL presentation remains correct
-public Article title is the page H1 and canonical body H1 validation fails
+inline image click opens the global image modal
+public Hero uses the same image lightbox workflow
+RTL presentation is correct
+public Article title owns the page H1
+canonical body H1 validation rejects manual Markdown H1 outside code fences
 ```
 
-Because this slice changes frontend application source, the smallest runtime rebuild is:
-
-```powershell
-pnpm frontend
-```
-
-No API rebuild or full stack rebuild is required.
+The founder explicitly accepted the final 4E.7 UI on 2026-09-10 after confirming the focused tests had no errors and the final behavior matched the requested presentation contract.
 
 ## Acceptance effect
 
-4E.1–4E.6 remain historically accepted. While this addendum is open:
-
 ```text
-Phase 4E -> REOPENED FOR FINAL UI ADDENDUM
-4E.7 -> IMPLEMENTED / FOUNDER UI VERIFICATION IN PROGRESS / NOT ACCEPTED
-4F -> BLOCKED UNTIL 4E.7 ACCEPTANCE
-```
-
-After founder verification and explicit acceptance:
-
-```text
-4E.7 -> DONE / FOUNDER VERIFIED / ACCEPTED
-Phase 4E -> DONE / ACCEPTED again
-4F -> NEXT
+4E.7   -> DONE / FOUNDER UI VERIFIED / ACCEPTED
+Phase 4E -> DONE / ACCEPTED
+4F     -> NEXT
 ```
