@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.6 Blog V1 Final Acceptance
 
-Status: **IMPLEMENTED / VERIFICATION NEXT / NOT ACCEPTED**
+Status: **DONE / FOUNDER VERIFIED / ACCEPTED**
 
 Date: 2026-09-10
 
@@ -26,7 +26,7 @@ Accepted dependencies:
 
 ## 2. Time-first verification scope
 
-The 4E.6 implementation itself changes only:
+The 4E.6 harness itself changes only:
 
 ```text
 scripts/**
@@ -34,17 +34,9 @@ package.json
 docs/**
 ```
 
-It does not change frontend application source, backend runtime source, Dockerfiles, Compose topology, SQL or production configuration.
+No Docker rebuild was required for the final harness acceptance pass. Runtime-source fixes discovered by the static gate were limited to the legacy-static Blog loader/build path and were verified with the narrow Blog contract/static gates before the final aggregate rerun.
 
-Therefore the default verification for this slice is:
-
-```text
-no Docker rebuild
-```
-
-Existing accepted/running services are used by the aggregate and static checks. Rebuild only if a failing gate proves that runtime source/images are stale or a later fix changes runtime code.
-
-## 3. Aggregate regression gate
+## 3. Aggregate regression gate — PASS
 
 Root command:
 
@@ -52,21 +44,24 @@ Root command:
 pnpm test:phase4e-final
 ```
 
-This runs, in order:
+Accepted 2026-09-10. The aggregate gate reran the accepted Phase 4A–4D baseline plus all Blog contract/public/inventory/manage/media/publication suites and finished with:
 
 ```text
-accepted Phase 4A–4D aggregate regression
-Blog Article contract/runtime loader
-Public Blog SSR/SEO/projection
-Blog inventory/sitemap/llms integration
-Blog management authorization/authoring
-managed Blog media/Gallery
-canonical Git publication/audit
+[phase4e-final] PASS: Phase 4A–4D baseline and all Blog contract/public/inventory/manage/media/publication regressions passed.
 ```
 
-The command intentionally performs no Docker rebuild.
+Observed Blog sub-suite evidence in the final pass:
 
-## 4. External staging gate
+```text
+Blog Article contract/runtime loader        -> 20/20 PASS
+Public Blog SSR + SEO + projection          -> 28/28 PASS
+Blog sitemap / llms / inventory integration -> 19/19 PASS
+Blog management authorization + authoring   -> 46/46 PASS
+Managed Blog media + Gallery authoring       -> 15/15 PASS
+Canonical Git publication + audit            -> 14/14 PASS
+```
+
+## 4. External staging gate — PASS
 
 Root command:
 
@@ -74,32 +69,15 @@ Root command:
 pnpm smoke:phase4e-final
 ```
 
-Default target:
+Accepted staging target:
 
 ```text
 https://grassic.ir
 ```
 
-It refuses to target `prompt-draft.ir`.
+The smoke preserved the accepted external 4D baseline and Blog-specific behavior including public Blog API/index behavior, staging global noindex, canonical/hreflang, 404 behavior and public/private projection boundaries. `prompt-draft.ir` was not targeted.
 
-The staging smoke first reruns the accepted 4D external baseline and then verifies Blog-specific behavior:
-
-```text
-/api/public/blog?locale=en|fa -> 200 + public-safe projection
-/blog + /fa/blog -> 200
-staging X-Robots-Tag noindex preserved
-canonical + reciprocal hreflang preserved
-CollectionPage + ItemList structured data present
-missing Blog detail -> 404
-removed publication-smoke slug -> 404
-no protected/private serialized fields
-```
-
-If staging has a real published Blog Article, a representative EN/FA detail is also checked for 200, canonical, BlogPosting and noindex.
-
-If staging intentionally has no published Article, positive published-detail rendering is not silently waived; it is mandatory in the deterministic static fixture gate below.
-
-## 5. Deterministic positive published-Article static gate
+## 5. Deterministic positive published-Article static gate — PASS
 
 Root command:
 
@@ -107,7 +85,7 @@ Root command:
 pnpm verify:phase4e-static
 ```
 
-The canonical repository intentionally contains no temporary smoke Article after 4E.5. To prove positive published Article static behavior without publishing fake content, this command creates an untracked deterministic fixture only for the duration of verification:
+The canonical repository intentionally contains no temporary smoke Article after 4E.5. Positive published Article static behavior is therefore tested with an untracked deterministic fixture created only for the verification run:
 
 ```text
 content/blog/phase4e-final-published-fixture/
@@ -116,64 +94,67 @@ content/blog/phase4e-final-published-fixture/
   fa.md
 ```
 
-The wrapper then runs the accepted Blog static verifier, which itself performs one production-like `pnpm generate` against the running local public inventory API.
-
-The final gate explicitly verifies generated EN + FA Article HTML for:
+The accepted final run proved:
 
 ```text
-200-equivalent generated route presence
-localized fixture title
-BlogPosting JSON-LD
-canonical URL
-no inherited noindex in indexing-enabled static output
-sitemap inclusion
-llms.txt inclusion
+/blog/phase4e-final-published-fixture     -> prerendered successfully
+/fa/blog/phase4e-final-published-fixture  -> prerendered successfully
+BlogPosting JSON-LD                      -> PASS
+localized canonical URLs                 -> PASS
+sitemap inclusion                        -> PASS
+llms.txt inclusion                       -> PASS
+indexing-enabled static output noindex   -> absent as required
 ```
 
-The fixture directory is removed in a `finally` block whether verification passes or fails. It is never committed and must never be deployed.
+Final static evidence:
+
+```text
+Expected canonical URL count: 224
+Published Blog Article inventory: 1
+Blog index HTML checked: 2
+Blog Article HTML checked: 2
+phase4e-static PASS
+Temporary fixture removed from content/blog
+```
+
+The static gate exposed and resolved two real legacy-static gaps before acceptance:
+
+1. dynamic Blog Article routes were not guaranteed in the explicit prerender route set;
+2. the static prerender runtime needed the validated build-workspace `content/blog` snapshot rather than relying only on Nitro `assets:blog`.
+
+The final architecture keeps normal Docker/Nitro public runtime on bundled `assets:blog`, while `NUXT_LEGACY_STATIC_GENERATE=true` reads the same validated repository snapshot from the build workspace. No request-time GitHub dependency was introduced.
 
 ## 6. Positive SSR coverage model
 
-4E.6 intentionally splits positive published Article coverage across deterministic tests rather than keeping a fake Article in the canonical branch:
+Accepted positive published Article coverage is intentionally split across deterministic layers rather than keeping fake content in the canonical branch:
 
 ```text
 shared/public projection tests -> published Article projection behavior
-SSR/SEO contract tests         -> native Blog detail route ownership and BlogPosting path
+SSR/SEO contract tests         -> native Blog detail ownership + BlogPosting path
 4E.5 runtime proof             -> real Git publish/update/unpublish workflow
 4E.6 static fixture            -> generated EN/FA published Article HTML + inventory inclusion
 staging smoke                  -> real deployed noindex/canonical/404 behavior
 ```
 
-Once a real production-intended Blog Article exists on staging, the same staging smoke automatically exercises the positive detail case as well.
-
-## 7. Acceptance requirements
-
-4E.6 can be accepted only when all three root gates pass:
+## 7. Final acceptance observations
 
 ```text
-pnpm test:phase4e-final
-pnpm smoke:phase4e-final
-pnpm verify:phase4e-static
+pnpm test:phase4e-final   -> PASS
+pnpm smoke:phase4e-final  -> PASS
+pnpm verify:phase4e-static -> PASS
+content/blog fixture cleanup -> PASS / clean
+staging remains globally noindex -> PASS
+prompt-draft.ir untouched -> PASS
+founder explicit acceptance -> PASS
 ```
 
-Additional required observations:
-
-```text
-no temporary fixture remains in content/blog after static verification
-grassic.ir remains globally noindex
-prompt-draft.ir was never targeted
-no unexpected rebuild was required
-```
-
-Explicit founder acceptance is required after evidence is reviewed.
+Warnings emitted during Nuxt generation about duplicate auto-import names, sourcemaps and large chunks are non-blocking build warnings and did not fail the accepted Blog/static contracts.
 
 ## 8. Completion effect
 
-When 4E.6 is accepted:
-
 ```text
-Phase 4E Blog V1 -> DONE / ACCEPTED
-Next -> Phase 4F Integration / Legacy Retirement
+Phase 4E Blog V1 -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
+Next -> Phase 4F Integration / Verification / Legacy Retirement
 ```
 
-Do not start 4F cleanup/retirement before 4E is explicitly closed.
+4F may now begin. Phase 4E must not be reopened casually; follow-up preview/presentation polish can be scheduled as an independent UI slice unless it changes an accepted Blog contract.
