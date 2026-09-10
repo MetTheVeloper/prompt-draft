@@ -241,7 +241,7 @@ onBeforeUnmount(() => {
           v-model="pendingAlt"
           :actions="false"
           :placeholder="t('manage.blog.media.uploadAltPlaceholder')"
-          @input="pendingError = ''"
+          @update:model-value="pendingError = ''"
         />
         <el-text v-if="pendingError" color="red" :size="10">
           {{ pendingError }}
