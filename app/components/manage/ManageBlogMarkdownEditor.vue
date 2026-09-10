@@ -6,14 +6,31 @@ const props = withDefaults(defineProps<{
   placeholder: '',
 })
 
+const { t } = useI18n()
 const model = defineModel<string>({ default: '' })
-const textarea = ref<HTMLTextAreaElement | null>(null)
+
+type TextFieldHandle = {
+  el?: HTMLInputElement | HTMLTextAreaElement | null
+  focus?: () => void
+}
+
+const editorField = ref<TextFieldHandle | null>(null)
 const previewHtml = computed(() => renderPublicBlogMarkdown(model.value))
 const direction = computed(() => props.locale === 'fa' ? 'rtl' : 'ltr')
 
+function getTextarea() {
+  const element = editorField.value?.el
+  if (!element || !('selectionStart' in element)) return null
+  return element as HTMLTextAreaElement
+}
+
 async function replaceSelection(transform: (selected: string) => string) {
-  const element = textarea.value
-  if (!element) return
+  const element = getTextarea()
+
+  if (!element) {
+    model.value = `${model.value}${transform('')}`
+    return
+  }
 
   const start = element.selectionStart ?? 0
   const end = element.selectionEnd ?? start
@@ -22,7 +39,7 @@ async function replaceSelection(transform: (selected: string) => string) {
   model.value = `${model.value.slice(0, start)}${replacement}${model.value.slice(end)}`
 
   await nextTick()
-  element.focus()
+  editorField.value?.focus?.()
   element.setSelectionRange(start, start + replacement.length)
 }
 
@@ -47,146 +64,104 @@ function insertImage() {
 </script>
 
 <template>
-  <div class="blog-markdown-editor">
-    <div class="blog-markdown-editor__toolbar" role="toolbar" aria-label="Markdown formatting">
-      <button type="button" @click="prefixLines('## ', 'Heading')">H2</button>
-      <button type="button" @click="prefixLines('### ', 'Heading')">H3</button>
-      <button type="button" @click="wrap('**', '**', 'bold')"><strong>B</strong></button>
-      <button type="button" @click="wrap('*', '*', 'italic')"><em>I</em></button>
-      <button type="button" @click="prefixLines('> ', 'Quote')">❝</button>
-      <button type="button" @click="wrap('`', '`', 'code')">&lt;/&gt;</button>
-      <button type="button" @click="prefixLines('- ', 'List item')">• List</button>
-      <button type="button" @click="insertLink">Link</button>
-      <button type="button" @click="insertImage">Image</button>
-    </div>
+  <el-flex rules="csc" :gap="10" class="w100">
+    <el-flex
+      rules="rsc"
+      :gap="6"
+      class="w100 fw"
+      role="toolbar"
+      :aria-label="t('manage.blog.markdown.toolbarLabel')"
+    >
+      <el-button mode="flat" label="H2" @click="prefixLines('## ', 'Heading')" />
+      <el-button mode="flat" label="H3" @click="prefixLines('### ', 'Heading')" />
+      <el-button mode="flat" icon="format_bold" :tooltip="t('manage.blog.markdown.bold')" @click="wrap('**', '**', 'bold')" />
+      <el-button mode="flat" icon="format_italic" :tooltip="t('manage.blog.markdown.italic')" @click="wrap('*', '*', 'italic')" />
+      <el-button mode="flat" icon="format_quote" :tooltip="t('manage.blog.markdown.quote')" @click="prefixLines('> ', 'Quote')" />
+      <el-button mode="flat" icon="code" :tooltip="t('manage.blog.markdown.code')" @click="wrap('`', '`', 'code')" />
+      <el-button mode="flat" icon="format_list_bulleted" :tooltip="t('manage.blog.markdown.list')" @click="prefixLines('- ', 'List item')" />
+      <el-button mode="flat" icon="link" :tooltip="t('manage.blog.markdown.link')" @click="insertLink" />
+      <el-button mode="flat" icon="image" :tooltip="t('manage.blog.markdown.image')" @click="insertImage" />
+    </el-flex>
 
-    <div class="blog-markdown-editor__panes">
-      <label class="blog-markdown-editor__pane">
-        <span class="blog-markdown-editor__label">Markdown</span>
-        <textarea
-          ref="textarea"
+    <el-grid
+      cols="minmax(0, 1fr) minmax(0, 1fr)"
+      :gap="12"
+      class="w100 blog-markdown-panes"
+    >
+      <el-flex rules="ccs" :gap="6" class="w100">
+        <el-text color="normal55" :size="11" :weight="700">
+          {{ t('manage.blog.markdown.source') }}
+        </el-text>
+        <el-text-field
+          ref="editorField"
           v-model="model"
+          type="textarea"
+          :rows="15"
+          :actions="false"
           :dir="direction"
           :placeholder="placeholder"
           spellcheck="true"
         />
-      </label>
+      </el-flex>
 
-      <section class="blog-markdown-editor__pane" :dir="direction">
-        <span class="blog-markdown-editor__label">Preview</span>
-        <div
-          v-if="previewHtml"
-          class="blog-markdown-editor__preview"
-          v-html="previewHtml"
-        />
-        <div v-else class="blog-markdown-editor__empty">Nothing to preview yet.</div>
-      </section>
-    </div>
-  </div>
+      <el-flex rules="ccs" :gap="6" class="w100" :dir="direction">
+        <el-text color="normal55" :size="11" :weight="700">
+          {{ t('manage.blog.markdown.preview') }}
+        </el-text>
+
+        <el-flex
+          rules="ccs"
+          :gap="8"
+          :p="14"
+          bg="normal5"
+          :radius="12"
+          :br="1"
+          bc="normal15"
+          class="w100 blog-markdown-preview-shell"
+        >
+          <div
+            v-if="previewHtml"
+            class="blog-markdown-preview w100"
+            v-html="previewHtml"
+          />
+          <el-text v-else color="normal40" :size="12">
+            {{ t('manage.blog.markdown.emptyPreview') }}
+          </el-text>
+        </el-flex>
+      </el-flex>
+    </el-grid>
+  </el-flex>
 </template>
 
 <style scoped>
-.blog-markdown-editor {
-  display: grid;
-  gap: 10px;
-  width: 100%;
-  color: var(--normalText);
-}
-
-.blog-markdown-editor__toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.blog-markdown-editor__toolbar button {
-  border: 1px solid var(--normalText15);
-  border-radius: 8px;
-  background: var(--normalText5);
-  color: var(--normalText);
-  padding: 6px 9px;
-  cursor: pointer;
-  font: inherit;
-  font-size: 12px;
-}
-
-.blog-markdown-editor__toolbar button:hover {
-  background: var(--normalText10);
-}
-
-.blog-markdown-editor__panes {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 12px;
-}
-
-.blog-markdown-editor__pane {
-  display: grid;
-  align-content: start;
-  gap: 6px;
-  min-width: 0;
-}
-
-.blog-markdown-editor__label {
-  color: var(--normalText55);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.blog-markdown-editor textarea,
-.blog-markdown-editor__preview,
-.blog-markdown-editor__empty {
+.blog-markdown-preview-shell {
   min-height: 360px;
-  border: 1px solid var(--normalText15);
-  border-radius: 12px;
-  background: var(--normalText5);
-  color: var(--normalText);
-  padding: 14px;
-}
-
-.blog-markdown-editor textarea {
-  width: 100%;
-  resize: vertical;
-  outline: none;
-  font: 500 13px/1.75 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-}
-
-.blog-markdown-editor textarea:focus {
-  border-color: var(--primary);
-  background: var(--normalText10);
-  box-shadow: 0 0 0 3px var(--primary15);
-}
-
-.blog-markdown-editor__preview {
   overflow-wrap: anywhere;
+}
+
+.blog-markdown-preview {
   line-height: 1.8;
 }
 
-.blog-markdown-editor__preview :deep(img) {
+.blog-markdown-preview :deep(img) {
   max-width: 100%;
   height: auto;
   border-radius: 10px;
 }
 
-.blog-markdown-editor__preview :deep(pre) {
+.blog-markdown-preview :deep(pre) {
   overflow: auto;
   padding: 12px;
   border-radius: 10px;
   background: var(--normalText5);
 }
 
-.blog-markdown-editor__empty {
-  color: var(--normalText40);
-}
-
 @media (max-width: 980px) {
-  .blog-markdown-editor__panes {
-    grid-template-columns: 1fr;
+  .blog-markdown-panes {
+    grid-template-columns: 1fr !important;
   }
 
-  .blog-markdown-editor textarea,
-  .blog-markdown-editor__preview,
-  .blog-markdown-editor__empty {
+  .blog-markdown-preview-shell {
     min-height: 260px;
   }
 }
