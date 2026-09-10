@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4E.5 Blog Media + Git Publication
 
-Status: **IN PROGRESS / MEDIA LANE DONE + ACCEPTED / GIT PUBLICATION FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT / NOT ACCEPTED**
+Status: **DONE / FOUNDER-LOCAL + STAGING RUNTIME VERIFIED / ACCEPTED 2026-09-10**
 
 Date: 2026-09-10
 
@@ -28,7 +28,7 @@ Lane A -> managed Blog media on existing Arvan/S3 authority
 Lane B -> canonical Git save/publish + optimistic reconciliation
 ```
 
-Lane A is founder-verified and accepted. Lane B is implemented, focused-test verified and Docker build verified. Real canonical Git runtime proof remains before 4E.5 can be accepted.
+Both lanes are founder-verified and accepted.
 
 ## 2. Lane A — Managed Blog Media — ACCEPTED
 
@@ -50,7 +50,7 @@ Accepted behavior includes ListObjectsV2 browsing, required persisted default al
 
 Founder explicitly confirmed the finalized behavior was fully tested and correct on 2026-09-10.
 
-## 3. Lane B — Canonical Git Publication — IMPLEMENTED
+## 3. Lane B — Canonical Git Publication — ACCEPTED
 
 Canonical editorial authority remains:
 
@@ -67,7 +67,7 @@ content/blog in Git
 -> request-time public SSR
 ```
 
-**Public Blog never queries GitHub per request.** A successful management Git save does not become public until the next deployment/build containing that Git commit.
+**Public Blog never queries GitHub per request.** A successful management Git save becomes canonical in Git immediately but does not become public until the next deployment/build containing that Git commit.
 
 ### 3.1 Server-only Git configuration
 
@@ -148,10 +148,19 @@ read branch HEAD + tree
 -> build Article tree entries
 -> POST one Git tree using base_tree
 -> POST one Git commit
--> PATCH branch ref with force=false
+-> PATCH /git/refs/heads/<branch> with force=false
 ```
 
 `article.json`, `en.md`, and `fa.md` therefore advance under one commit rather than independent file commits. Removing a locale body is represented as a tree deletion in that same commit.
+
+The read/write ref-path distinction is intentional:
+
+```text
+GET   /git/ref/heads/<branch>
+PATCH /git/refs/heads/<branch>
+```
+
+A runtime 404 found during founder smoke exposed the incorrect singular PATCH path; the implementation and regression mock were corrected before acceptance.
 
 ### 3.6 Optimistic conflict/reconciliation
 
@@ -184,9 +193,11 @@ Backend resolves the authenticated admin actor, requires `blog.manage`, and reco
 
 Git commit and DB audit are not one distributed transaction. A successful Git commit is never falsely reported as failed merely because the secondary audit insert failed; the response exposes `auditRecorded=false` instead.
 
+Founder runtime proof confirmed `auditRecorded=true` for the real publication/update flow.
+
 ## 4. Management UX
 
-The accepted 4E.4 authoring UI now exposes one state-driven canonical action:
+The accepted authoring UI exposes one state-driven canonical action:
 
 ```text
 Draft                -> Save draft
@@ -194,16 +205,16 @@ First published save -> Publish article
 Published Article    -> Update article
 ```
 
-Local canonical validation runs before write. Successful saves replace editor state with the server-returned canonical Article/version and display the short commit SHA plus the explicit deployment-lag message.
+Local canonical validation runs before write. Validate Article reports through the global modal and retains a neutral inline summary. Successful saves replace editor state with the server-returned canonical Article/version and display the short commit SHA plus the explicit deployment-lag message.
 
 Conflict errors instruct the editor to reload rather than overwrite remote changes.
 
-## 5. Verification evidence — 2026-09-10
+## 5. Focused/build verification evidence — 2026-09-10
 
 Founder-local focused verification:
 
 ```text
-pnpm test:blog-publish -> 13/13 PASS
+pnpm test:blog-publish -> PASS
 pnpm test:blog-manage  -> 46/46 PASS
 ```
 
@@ -216,38 +227,66 @@ pnpm frontend -> PASS / Nuxt + Nitro production build complete / container start
 
 The existing duplicate-auto-import and chunk-size notices remain warnings and did not fail the build.
 
-This closes the focused-test + build preflight. No additional rebuild is required before configuring runtime Git credentials unless runtime source changes.
+## 6. Founder runtime verification — PASS / ACCEPTED
 
-## 6. Founder runtime verification — NEXT
+Real canonical Git runtime smoke was executed against `feature/growth-foundation` with runtime-only Git credentials.
 
-With a real GitHub token stored only in local `.env`, verify in order:
+Verified sequence:
 
 ```text
-/manage/blog reports canonical Git/write-ready state
-Save Draft creates exactly one canonical Git commit and stable Article id
-second Draft save preserves id and advances updatedAt/version
-first Publish assigns publishedAt
-later published update preserves publishedAt
-two-tab stale save returns conflict instead of overwriting
-Git Article directory contains valid article.json + locale body files
-audit receipt is recorded for authenticated actor
-public Blog remains unchanged until a deployment/build includes the Git commit
+/manage/blog -> Git canonical / write-ready
+Save Draft -> PASS
+Article id -> stable and server-owned
+Article package -> article.json + en.md + fa.md in one Git commit
+Draft update -> PASS / updatedAt + version advance
+stale second tab -> conflict / no overwrite
+first Publish -> PASS / publishedAt assigned
+published update -> PASS / publishedAt preserved / updatedAt advanced
+publication audit receipt -> auditRecorded=true
+public Blog before rebuild/deploy -> 404 / unchanged bundled runtime
+unpublish back to Draft -> PASS / publishedAt preserved / updatedAt advanced
 ```
 
-For a temporary smoke Article, do not rebuild frontend after publishing it until the temporary Article is removed/reverted from the canonical branch. This prevents the test Article from entering deployed public Blog assets.
+Notable runtime commits used as evidence:
 
-## 7. Deferred/non-blocking V1 option
+```text
+a8cb1ef8... -> blog: create blog-publication-smoke-20260910
+f159ea30... -> blog: update blog-publication-smoke-20260910
+f87772a4... -> blog: publish blog-publication-smoke-20260910
+328b9a5c... -> published update / audit proof
+7fbd9780... -> blog: unpublish blog-publication-smoke-20260910
+```
+
+The temporary smoke Article was then removed from the canonical branch in one atomic cleanup commit before any subsequent rebuild, so test content cannot enter deployed public Blog assets.
+
+## 7. Accepted invariants
+
+```text
+Git remains canonical editorial authority.
+Arvan remains media authority, not a parallel uncontrolled editorial source.
+Public Blog never queries GitHub per request.
+Management writes fail closed when canonical Git is configured but unavailable.
+Browser cannot own id/author/publication timestamps.
+Every Article mutation advances one Git commit.
+Stale Article versions cannot overwrite newer canonical content.
+First publish assigns publishedAt; later writes preserve it.
+Authenticated publication actions are auditable.
+Draft/unpublished content does not become public through management writes alone.
+BLOG_GITHUB_TOKEN remains server-only.
+```
+
+## 8. Deferred/non-blocking V1 option
 
 Explicit emergency Arvan editorial publication metadata remains optional and is not implemented in this slice. Arvan remains media infrastructure and must not become an uncontrolled equal content source.
 
-## 8. Current state
+## 9. Final state
 
 ```text
 4E.4 -> DONE / ACCEPTED
 4E.5 media lane -> DONE / FOUNDER VERIFIED / ACCEPTED
-4E.5 Git publication lane -> IMPLEMENTED / FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT
-4E.5 overall -> IN PROGRESS / NOT ACCEPTED
-4E.6 -> NOT STARTED
+4E.5 Git publication lane -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
+4E.5 overall -> DONE / ACCEPTED 2026-09-10
+4E.6 -> NEXT
 ```
 
-Do not mark 4E.5 overall accepted until real canonical Git Save/Update/Publish/conflict/audit behavior is founder-verified and explicitly accepted.
+4E.5 is closed. Continue with 4E.6 aggregate Blog/public/staging/static acceptance before Phase 4E itself is closed.
