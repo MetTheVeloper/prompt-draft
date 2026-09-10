@@ -23,7 +23,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.4 ACCEPTED / 4E.5 RUNTIME PUBLICATION PROOF NEXT
+  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.5 ACCEPTED / 4E.6 NEXT
   4F Integration / Legacy Retirement            -> NOT STARTED
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
@@ -192,7 +192,7 @@ founder functional behavior/UI verification -> PASS
 founder -> تایید
 ```
 
-## 4E.5 — IN PROGRESS / RUNTIME PUBLICATION PROOF NEXT
+## 4E.5 — DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED 2026-09-10
 
 Canonical record:
 
@@ -200,49 +200,57 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 ```
 
-Current lanes:
+Accepted lanes:
 
 ```text
-Media Lane           -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-Git Publication Lane -> IMPLEMENTED / FOCUSED + BUILD VERIFIED / RUNTIME PROOF NEXT
-4E.5 overall         -> NOT ACCEPTED
+Media Lane           -> DONE / FOUNDER VERIFIED / ACCEPTED
+Git Publication Lane -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
+4E.5 overall         -> DONE / ACCEPTED
 ```
 
 Accepted media includes shared Arvan/S3 authority, `blog/` namespace, Gallery browsing/upload, persisted alt metadata, legacy manifest compatibility, admin audit, Hero + Markdown integration and no base64 Markdown.
 
-Implemented Git publication includes server-only Git configuration, canonical Git management reads, fail-closed configured reads, strict editor-owned write input, server-owned identity/timestamps/author, atomic Git tree+commit+non-force ref update, optimistic Article versioning, one guarded ref-race retry, backend audit receipt and deployment-local public Blog runtime.
+Accepted Git publication includes server-only Git configuration, canonical Git management reads, fail-closed configured reads, strict editor-owned write input, server-owned identity/timestamps/author, atomic Git tree+commit+non-force ref update, optimistic Article versioning, guarded ref-race retry, backend audit receipt and deployment-local public Blog runtime.
 
-Focused/build evidence on 2026-09-10:
-
-```text
-pnpm test:blog-publish -> 13/13 PASS
-pnpm test:blog-manage  -> 46/46 PASS
-pnpm api               -> PASS / container started
-pnpm frontend          -> PASS / Nuxt + Nitro production build complete / container started
-```
-
-Current next gate:
+Verification evidence includes:
 
 ```text
-configure BLOG_GITHUB_* only in local .env
--> recreate frontend container with runtime env
--> confirm /manage/blog reports Git/write-ready
--> Save Draft real Git commit
--> Update preserves Article id + advances version/updatedAt
--> first Publish assigns publishedAt
--> stale two-tab save conflicts
--> confirm audit receipt
--> confirm public Blog remains unchanged until explicit rebuild/deploy
--> founder acceptance
+focused Blog publication/manage suites -> PASS
+pnpm api -> PASS
+pnpm frontend -> PASS
+real Save Draft -> PASS
+real Draft update -> PASS
+stale two-tab write -> CONFLICT / no overwrite
+first Publish -> PASS / publishedAt assigned
+published update -> PASS / publishedAt preserved / updatedAt advanced
+auditRecorded -> true
+public route before rebuild -> 404 / deployment-lag contract PASS
+unpublish -> PASS / publishedAt preserved
 ```
 
-For a temporary smoke Article, do not rebuild frontend after publishing it until the temporary Article is removed/reverted from the canonical branch.
+The temporary smoke Article was removed from the canonical branch after verification and before any subsequent rebuild.
 
 Real Git token must never be pasted into chat or committed.
 
-## 4E.6 — NOT STARTED
+## 4E.6 — NEXT
 
-Aggregate Blog/public/staging/static acceptance begins only after 4E.5 is explicitly accepted.
+Aggregate Blog/public/staging/static acceptance begins now that 4E.5 is accepted.
+
+Target:
+
+```text
+accepted 4A–4D regressions
+all Blog contract/public/inventory/manage/media/publication regressions
+positive published Article SSR fixture
+404/canonical/localization checks
+structured data + hreflang
+sitemap/llms parity
+Manage authorization
+Git publication regression proof
+static generation
+external staging noindex verification
+explicit founder acceptance
+```
 
 ## Hard rules
 
@@ -270,9 +278,9 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 3. read MILESTONE_21_5_PHASE4E_BLOG_V1.md
 4. read 4E.1 through 4E.5 records
 5. inspect latest feature/growth-foundation HEAD
-6. confirm 4E.1-4E.4 and 4E.5 Media are ACCEPTED
-7. confirm 4E.5 Git Publication focused tests + builds are verified
-8. current task = real canonical Git runtime Save/Update/Publish/conflict/audit proof
+6. confirm 4E.1-4E.5 are ACCEPTED
+7. current task = 4E.6 aggregate Blog/public/staging/static acceptance
+8. use time-first verification and smallest rebuild scope
 9. keep grassic.ir noindex and prompt-draft.ir untouched
-10. do not accept 4E.5 without explicit founder acceptance
+10. do not close Phase 4E without explicit founder acceptance of 4E.6
 ```
