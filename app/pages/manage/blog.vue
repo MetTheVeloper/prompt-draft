@@ -1,11 +1,15 @@
 <script setup lang="ts">
 import ManageBlogMarkdownEditor from '~/components/manage/ManageBlogMarkdownEditor.vue'
 import { AUTH_PERMISSIONS } from '~/config/authorization'
-import type { ManageBlogArticleSummary } from '../../../shared/manage-blog'
+import type {
+  ManageBlogArticleSummary,
+  ManageBlogRepositorySource,
+} from '~/shared/manage-blog'
 import type { BlogLocale } from '~/shared/blog-article'
 import {
   blogArticleToManageDraft,
   createEmptyManageBlogDraft,
+  manageBlogDraftToWriteInput,
   validateManageBlogDraft,
   type ManageBlogDraft,
 } from '~/utils/manageBlogDraft'
@@ -31,6 +35,12 @@ const activeLocale = ref<BlogLocale>('en')
 const validation = ref<ReturnType<typeof validateManageBlogDraft> | null>(null)
 const draft = reactive<ManageBlogDraft>(createEmptyManageBlogDraft())
 const blogLocales: BlogLocale[] = ['en', 'fa']
+const repositorySource = ref<ManageBlogRepositorySource>('deployed')
+const writeConfigured = ref(false)
+const articleVersion = ref<string | null>(null)
+const saving = ref(false)
+const saveError = ref('')
+const saveNotice = ref('')
 
 const editingId = computed(() => (
   typeof route.query.article === 'string' ? route.query.article.trim() : ''
@@ -47,6 +57,25 @@ const editorTitle = computed(() => (
 const articleCountLabel = computed(() => t('manage.blog.list.count', {
   count: articles.value.length,
 }))
+
+const repositoryNoticeDetail = computed(() => (
+  writeConfigured.value
+    ? t('manage.blog.editor.gitReadyDetail')
+    : t('manage.blog.editor.gitUnavailableDetail')
+))
+
+const repositorySourceLabel = computed(() => t(
+  `manage.blog.editor.repositorySources.${repositorySource.value}`,
+))
+
+const saveActionLabel = computed(() => {
+  if (draft.status === 'draft') return t('manage.blog.actions.saveDraft')
+  if (!draft.publishedAt.trim()) return t('manage.blog.actions.publish')
+  return t('manage.blog.actions.updatePublished')
+})
+
+const saveActionIcon = computed(() => draft.status === 'published' ? 'publish' : 'save')
+const saveActionColor = computed(() => draft.status === 'published' ? 'green' : 'prim')
 
 const statusItems = computed(() => [
   {
@@ -78,7 +107,7 @@ const activeTitle = computed({
   set: value => {
     if (activeLocale.value === 'en') draft.enTitle = value
     else draft.faTitle = value
-    validation.value = null
+    invalidateEditorState()
   },
 })
 const activeDescription = computed({
@@ -86,7 +115,7 @@ const activeDescription = computed({
   set: value => {
     if (activeLocale.value === 'en') draft.enDescription = value
     else draft.faDescription = value
-    validation.value = null
+    invalidateEditorState()
   },
 })
 const activeHeroAlt = computed({
@@ -94,7 +123,7 @@ const activeHeroAlt = computed({
   set: value => {
     if (activeLocale.value === 'en') draft.enAlt = value
     else draft.faAlt = value
-    validation.value = null
+    invalidateEditorState()
   },
 })
 const activeBody = computed({
@@ -102,7 +131,7 @@ const activeBody = computed({
   set: value => {
     if (activeLocale.value === 'en') draft.enBody = value
     else draft.faBody = value
-    validation.value = null
+    invalidateEditorState()
   },
 })
 
@@ -137,11 +166,20 @@ function statusColor(status: ManageBlogArticleSummary['status']) {
   return status === 'published' ? 'green' : 'orange'
 }
 
+function invalidateEditorState() {
+  validation.value = null
+  saveError.value = ''
+  saveNotice.value = ''
+}
+
 function resetDraft() {
   Object.assign(draft, createEmptyManageBlogDraft())
   activeLocale.value = 'en'
   validation.value = null
   editorError.value = ''
+  articleVersion.value = null
+  saveError.value = ''
+  saveNotice.value = ''
 }
 
 function formatDate(value: string | null) {
@@ -204,10 +242,10 @@ function chooseHero() {
       draft.heroWidth = String(asset.width)
       draft.heroHeight = String(asset.height)
       if (changed) {
-        draft.enAlt = ''
+        draft.enAlt = asset.alt
         draft.faAlt = ''
       }
-      validation.value = null
+      invalidateEditorState()
     },
   })
 }
@@ -219,7 +257,15 @@ function removeHero() {
   draft.heroHeight = ''
   draft.enAlt = ''
   draft.faAlt = ''
-  validation.value = null
+  invalidateEditorState()
+}
+
+function applyRepositoryState(response: {
+  repositorySource: ManageBlogRepositorySource
+  writeConfigured: boolean
+}) {
+  repositorySource.value = response.repositorySource
+  writeConfigured.value = response.writeConfigured
 }
 
 async function refresh() {
@@ -228,6 +274,7 @@ async function refresh() {
   try {
     const response = await blogApi.list()
     articles.value = response.articles
+    applyRepositoryState(response)
   } catch (error) {
     console.error('[Prompt Draft] Blog management list failed', error)
     loadError.value = t('manage.blog.loadError')
@@ -239,6 +286,7 @@ async function refresh() {
 async function syncEditorFromRoute() {
   validation.value = null
   editorError.value = ''
+  saveError.value = ''
 
   if (isCreating.value) {
     resetDraft()
@@ -252,6 +300,8 @@ async function syncEditorFromRoute() {
     const response = await blogApi.load(editingId.value)
     Object.assign(draft, blogArticleToManageDraft(response.article))
     activeLocale.value = response.article.localizations.en ? 'en' : 'fa'
+    articleVersion.value = response.version
+    applyRepositoryState(response)
   } catch (error) {
     console.error('[Prompt Draft] Blog management article load failed', error)
     editorError.value = t('manage.blog.editor.missing')
@@ -282,11 +332,67 @@ function runValidation() {
   validation.value = validateManageBlogDraft(draft)
 }
 
+function getBlogWriteErrorCode(error: any) {
+  return error?.data?.data?.code || error?.data?.code || ''
+}
+
+async function saveArticle() {
+  saveError.value = ''
+  saveNotice.value = ''
+  const localValidation = validateManageBlogDraft(draft)
+  validation.value = localValidation
+  if (!localValidation.ok) return
+
+  if (!writeConfigured.value) {
+    saveError.value = t('manage.blog.editor.gitNotConfigured')
+    return
+  }
+
+  saving.value = true
+  const wasCreating = isCreating.value
+  try {
+    const input = manageBlogDraftToWriteInput(
+      draft,
+      editingId.value ? articleVersion.value : null,
+    )
+    const response = editingId.value
+      ? await blogApi.update(editingId.value, input)
+      : await blogApi.create(input)
+
+    Object.assign(draft, blogArticleToManageDraft(response.article))
+    articleVersion.value = response.version
+    repositorySource.value = response.repositorySource
+    writeConfigured.value = true
+    validation.value = validateManageBlogDraft(draft)
+    saveNotice.value = response.auditRecorded
+      ? t('manage.blog.editor.savedDetail', { commit: response.commitSha.slice(0, 7) })
+      : t('manage.blog.editor.savedWithoutAudit', { commit: response.commitSha.slice(0, 7) })
+
+    await refresh()
+    if (wasCreating) {
+      await router.replace({
+        path: route.path,
+        query: { article: response.article.id },
+      })
+    }
+  } catch (error) {
+    console.error('[Prompt Draft] Blog canonical save failed', error)
+    const code = getBlogWriteErrorCode(error)
+    if (code === 'BLOG_ARTICLE_CONFLICT' || code === 'BLOG_SLUG_CONFLICT') {
+      saveError.value = t('manage.blog.editor.conflict')
+    } else if (code === 'BLOG_GIT_NOT_CONFIGURED') {
+      saveError.value = t('manage.blog.editor.gitNotConfigured')
+    } else {
+      saveError.value = t('manage.blog.editor.saveError')
+    }
+  } finally {
+    saving.value = false
+  }
+}
+
 watch(
   () => draft.status,
-  () => {
-    validation.value = null
-  },
+  () => invalidateEditorState(),
 )
 
 watch(
@@ -314,16 +420,21 @@ onMounted(async () => {
       bc="normal15"
       class="w100"
     >
-      <el-icon icon="info" color="blue" :size="18" />
+      <el-icon :icon="writeConfigured ? 'cloud_done' : 'info'" :color="writeConfigured ? 'green' : 'blue'" :size="18" />
       <el-flex rules="ccs" :gap="3" class="fg100">
         <el-text :size="12" :weight="800">
           {{ t('manage.blog.editor.repositoryNotice') }}
         </el-text>
         <el-text color="normal55" :size="11">
-          {{ t('manage.blog.editor.repositoryNoticeDetail') }}
+          {{ repositoryNoticeDetail }}
         </el-text>
       </el-flex>
-      <el-text color="normal45" :size="10" :weight="700" font="monospace">4E.4</el-text>
+      <el-flex rules="ccs" :gap="2">
+        <el-text :color="writeConfigured ? 'green' : 'normal45'" :size="10" :weight="700">
+          {{ repositorySourceLabel }}
+        </el-text>
+        <el-text color="normal45" :size="9" :weight="700" font="monospace">4E.5</el-text>
+      </el-flex>
     </el-flex>
 
     <template v-if="!editorOpen">
@@ -426,7 +537,7 @@ onMounted(async () => {
           <el-text type="h3" :size="20" :weight="800">{{ editorTitle }}</el-text>
           <el-text v-if="editingId" :size="12" color="normal55">{{ draft.slug }}</el-text>
         </el-flex>
-        <el-flex rules="rcc" :gap="8">
+        <el-flex rules="rcc" :gap="8" class="fw">
           <el-button
             icon="arrow_back"
             :label="t('manage.blog.actions.backToList')"
@@ -436,11 +547,28 @@ onMounted(async () => {
           <el-button
             icon="fact_check"
             :label="t('manage.blog.actions.validate')"
-            color="prim"
-            :disable="editorLoading"
+            mode="flat"
+            :disable="editorLoading || saving"
             @click="runValidation"
           />
+          <el-button
+            :icon="saveActionIcon"
+            :label="saving ? t('manage.blog.actions.saving') : saveActionLabel"
+            :color="saveActionColor"
+            :disable="editorLoading || saving || !writeConfigured"
+            @click="saveArticle"
+          />
         </el-flex>
+      </el-flex>
+
+      <el-flex v-if="saveError" rules="rsc" :gap="8" class="w100" bg="red10" :p="12" :radius="10">
+        <el-icon icon="error" color="red" :size="18" />
+        <el-text color="red" :size="12">{{ saveError }}</el-text>
+      </el-flex>
+
+      <el-flex v-else-if="saveNotice" rules="rsc" :gap="8" class="w100" bg="green10" :p="12" :radius="10">
+        <el-icon icon="check_circle" color="green" :size="18" />
+        <el-text color="green" :size="12">{{ saveNotice }}</el-text>
       </el-flex>
 
       <el-flex v-if="editorLoading" rules="ccc" class="w100" :p="30">
@@ -472,7 +600,7 @@ onMounted(async () => {
                 v-model="draft.slug"
                 :actions="false"
                 :placeholder="t('manage.blog.placeholders.slug')"
-                @update:model-value="validation = null"
+                @update:model-value="invalidateEditorState"
               />
             </el-flex>
 
