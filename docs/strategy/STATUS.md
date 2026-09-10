@@ -23,8 +23,8 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> REOPENED / 4E.1-4E.6 ACCEPTED / 4E.7 UI VERIFICATION NEXT
-  4F Integration / Legacy Retirement            -> BLOCKED UNTIL 4E.7 ACCEPTANCE
+  4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
+  4F Integration / Legacy Retirement            -> NEXT
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
 
@@ -119,9 +119,9 @@ Historical pre-Blog sitemap/llms count was 220; this is evidence only, not a per
 
 ---
 
-# Phase 4E Blog V1 — REOPENED FOR FINAL UI ADDENDUM
+# Phase 4E Blog V1 — DONE / ACCEPTED
 
-Editorial architecture remains:
+Editorial architecture:
 
 ```text
 Git repository          -> canonical editorial source
@@ -131,7 +131,7 @@ Arvan Object Storage    -> Blog media + explicit optional mirror/emergency role
 
 Never query GitHub per public Blog request.
 
-Accepted historical slices remain accepted:
+Accepted slices:
 
 ```text
 4E.1 Article Contract + Repository Loader -> DONE / ACCEPTED
@@ -140,9 +140,10 @@ Accepted historical slices remain accepted:
 4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED
 4E.5 Blog Media + Git Publication          -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
 4E.6 Final Aggregate Acceptance            -> DONE / FOUNDER VERIFIED / ACCEPTED
+4E.7 Shared Article Presentation           -> DONE / FOUNDER UI VERIFIED / ACCEPTED
 ```
 
-Previously accepted aggregate evidence remains valid:
+Accepted aggregate evidence:
 
 ```text
 pnpm test:phase4e-final    -> PASS
@@ -150,30 +151,7 @@ pnpm smoke:phase4e-final   -> PASS
 pnpm verify:phase4e-static -> PASS
 ```
 
-## 4E.7 — Shared Article Presentation — IMPLEMENTED / UI VERIFICATION NEXT
-
-Canonical record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
-```
-
-Founder-requested final presentation contract:
-
-```text
-Manage Markdown preview and public Blog detail share BlogArticlePresentation
-existing safe Markdown renderer remains authoritative
-heading hierarchy becomes open-by-default collapsible details/summary sections
-shared themed typography for headings/body/lists/quotes/code/links/images
-inline Article images preserve the accepted 400px cap
-inline Article images open through the global modal lightbox on click/Enter/Space
-public Hero uses the same image lightbox workflow
-no second Markdown engine, sanitizer, modal system or theme vocabulary
-```
-
-This is frontend-only. Required verification is focused Blog regression plus `pnpm frontend`; no API or full-stack rebuild is required.
-
-4F must not begin until founder UI verification and explicit 4E.7 acceptance.
+Final 4E.7 acceptance additionally verified the shared `BlogArticlePresentation` across Manage/public surfaces, hierarchical collapsible sections, theme-native prose/code/quote/list/link styling, citation badges, one-boundary section dividers, global image lightbox, RTL/LTR behavior and the one-H1 contract where the localized Article title owns H1 and body Markdown H1 is rejected outside code fences.
 
 ## Hard rules
 
@@ -190,6 +168,7 @@ DO NOT put draft/unpublished Blog URLs into sitemap/llms.
 DO NOT recreate Blog indexability outside Article contract.
 DO NOT let Blog SEO override staging noindex.
 DO NOT expose BLOG_GITHUB_TOKEN publicly.
+DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title owns H1.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
@@ -199,11 +178,11 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-4. read MILESTONE_21_5_PHASE4E_BLOG_V1.md + 4E.7 record
+4. read MILESTONE_21_5_PHASE4E_BLOG_V1.md + 4E.7 acceptance record
 5. inspect latest feature/growth-foundation HEAD
-6. confirm 4E.1-4E.6 remain DONE / ACCEPTED
-7. current task = verify 4E.7 shared Article presentation
-8. run focused Blog tests then pnpm frontend
-9. founder checks EN/FA, Light/Dark, collapsible heading hierarchy and global image lightbox
-10. only explicit founder acceptance re-closes 4E and unblocks 4F
+6. confirm 4E.1-4E.7 are DONE / ACCEPTED
+7. current task = Phase 4F Integration / Verification / Legacy Retirement
+8. audit legacy/transitional routes, generators, SEO duplication and compatibility paths before deletion
+9. preserve accepted public/indexability/security contracts while retiring only proven redundancy
+10. do not touch prompt-draft.ir before explicit rollout
 ```
