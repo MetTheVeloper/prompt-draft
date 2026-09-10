@@ -18,22 +18,28 @@ Accepted dependencies:
 4E.3 Shared Blog sitemap/llms/static inventory  -> ACCEPTED
 ```
 
+Companion media record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
+```
+
 ## 1. Purpose
 
-4E.4 introduces a permissioned Blog authoring workspace without creating a temporary canonical content store before the Git publication adapter exists.
+4E.4 provides the permissioned Blog authoring workspace while Git remains the only canonical editorial source.
 
-Target route:
+Routes:
 
 ```text
 /manage/blog
 /fa/manage/blog
 ```
 
-The route remains an application/private noindex surface through the inherited `/manage/**` policy.
+The inherited `/manage/**` noindex/application policy applies.
 
-## 2. Authorization contract
+## 2. Authorization
 
-New explicit permission:
+Explicit permission:
 
 ```text
 blog.manage
@@ -54,34 +60,18 @@ admin       -> blog.manage
 super_admin -> wildcard *
 ```
 
-`app/config/manage.ts` registers Blog as its own Manage section. It does not reuse Archive/System permissions.
-
-### server-side enforcement
-
-Nitro management endpoints do not trust client middleware alone.
-
-Every request:
-
-```text
-Authorization: Bearer ...
--> Nitro server/utils/blogManageAuthorization.ts
--> backend GET /api/auth/me
--> require blog.manage or *
--> fail closed on 401 / 403 / invalid upstream / unavailable upstream
-```
-
-Admin repository endpoints:
+Nitro repository endpoints:
 
 ```text
 GET /api/manage/blog
 GET /api/manage/blog/:id
 ```
 
+Every request revalidates its bearer token through backend `/api/auth/me`, requires `blog.manage` or wildcard, and fails closed.
+
 Responses are `Cache-Control: no-store`.
 
 ## 3. Repository read model
-
-Management reads the same deployed repository consumed by public Blog:
 
 ```text
 content/blog in Git
@@ -89,41 +79,42 @@ content/blog in Git
 -> loadBlogRepository()
 ```
 
-The list exposes repository Article summaries, including draft entries, only after `blog.manage` authorization.
+Management may read repository drafts only after authorization. Detail lookup uses stable Article id, not public slug. Public Blog requests never query GitHub.
 
-Detail loads one canonical Article by stable Article id, not public slug.
+## 4. Final authoring ownership contract
 
-No GitHub request is performed at runtime.
-
-## 4. Authoring workspace
-
-`app/pages/manage/blog.vue` provides:
+Founder review locked the following ownership rules:
 
 ```text
-repository Article list
-new Article authoring state
-edit existing Article state
-stable Article id
-public slug
-status draft/published
-publishedAt / updatedAt
-editorial author name + public URL
-hero URL / thumbnail / dimensions
-EN metadata + body + alt
-FA metadata + body + alt
-live public-safe Markdown preview
-validation result + exact contract issues
+Article id    -> system-owned / immutable
+publishedAt   -> system-owned
+updatedAt     -> system-owned
+public slug   -> editor-owned
+status        -> editor-owned
+public locales -> derived, never edited directly
+public author -> V1 system editorial identity (Prompt Draft)
+admin actor   -> internal authorization/audit identity, not public author metadata
 ```
 
-Existing Article ids are immutable in the editor because directory identity is stable independently of slug.
+The manual Editorial Identity form was removed.
 
-### component-first UI hardening
+`Public Locales` is no longer a disabled form field. EN/FA tabs surface derived states:
 
-Founder review exposed that the initial 4E.4 implementation recreated a local native form/styling system instead of following accepted `/manage/archive` and `/manage/users` patterns.
+```text
+Incomplete
+Complete
+Public
+```
 
-The authoring surface was rewritten under the project-wide `UI_IMPLEMENTATION_GUIDELINES.md` contract.
+## 5. Prompt Draft UI-system contract
 
-`app/pages/manage/blog.vue` now uses the Prompt Draft component system for the complete page surface:
+The entire Manage Blog UI follows:
+
+```text
+docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
+```
+
+Main primitives:
 
 ```text
 el-flex
@@ -136,175 +127,136 @@ el-dropdown
 el-divider
 ```
 
-The page no longer owns native form controls or page-local scoped CSS.
+No page-local native form system is allowed. Native DOM elements remain only when required as browser/render capability sinks, such as sanitized `v-html`, image rendering, or the hidden file picker used by Media Gallery.
 
-Neutral/theme behavior comes from component defaults and semantic props:
+Neutral styling comes from project component defaults and semantic theme tokens. Screenshot pixels are never treated as color authority.
 
-```text
-surface
-normal / normalXX
-normal15 borders
-prim actions
-green published/success
-orange draft
-red errors
-```
-
-No screenshot-derived white/black styling is permitted.
-
-Focused source regression now requires:
+The Repository Metadata panel uses:
 
 ```text
-no native input/textarea/select/button/label/section/etc. in manage/blog.vue
-no scoped style block in manage/blog.vue
-Prompt Draft el form/action/layout primitives present
-no hardcoded white/black neutral styling
+rules="css"
 ```
 
-## 5. Markdown editor decision
+so its content aligns to the start/top of its layout contract.
 
-4E.4 intentionally adds no new Markdown/editor dependency.
+## 6. Hero Media
 
-The local Markdown authoring component remains:
+Hero no longer exposes manual full URL, thumbnail URL, width, or height inputs.
+
+It uses the reusable managed Gallery implemented in the 4E.5 media lane:
+
+```text
+Gallery asset
+-> fullUrl
+-> thumbnailUrl
+-> width
+-> height
+-> Hero preview
+```
+
+Localized Hero alt remains Article-context metadata and is authored separately for EN/FA.
+
+## 7. Markdown editor
+
+No new Markdown dependency was added.
 
 ```text
 app/components/manage/ManageBlogMarkdownEditor.vue
 ```
 
-Its controls now also use the Prompt Draft component system:
+uses the Prompt Draft component system for toolbar, textarea, layout, labels and actions.
 
-```text
-format toolbar -> el-button
-Markdown body  -> el-text-field type="textarea"
-panes/layout   -> el-flex + el-grid
-labels/state   -> el-text
-```
-
-The only native element intentionally retained is the sanitized `v-html` render sink used to mount already-rendered preview HTML. It is not a form control or styling primitive.
-
-Scoped CSS in this component is limited to structural preview behavior that is not represented by ordinary component props/utilities:
-
-```text
-preview minimum height
-responsive two-pane -> one-pane geometry
-rendered Markdown img/pre presentation
-```
-
-Live preview calls:
+Live preview remains:
 
 ```text
 renderPublicBlogMarkdown
 -> renderPublicMarkdown
 ```
 
-Therefore editor preview and public Article rendering use the same accepted safe renderer.
+so editor preview and public Article rendering share the accepted safe renderer.
 
-The `md-editor-v3` candidate remains deferred: it is not required to satisfy 4E.4 and adding it would introduce a new dependency/renderer surface before publication/media integration is necessary.
+### Link workflow
 
-## 6. Canonical Article validation
+The Link toolbar action opens the global modal system, collects label + URL, and validates URL through the same public-safe Blog URL contract instead of inserting a placeholder URL.
 
-Client editor state is adapted by:
+### Image workflow
+
+The Image toolbar action uses the managed Gallery from 4E.5:
+
+```text
+Gallery
+-> selected managed image
+-> image preview + persisted default alt modal
+-> editable contextual alt
+-> real fullUrl inserted into Markdown
+```
+
+Selected editor text may override the default alt prefill for that insertion only.
+
+### Preview layout
+
+Both Markdown source and Preview panes align to the start/top of their shared grid track.
+
+Preview text uses:
+
+```text
+var(--normalText)
+```
+
+Rendered images are constrained without distortion:
+
+```text
+max-width: min(100%, 400px)
+max-height: 400px
+width: auto
+height: auto
+object-fit: contain
+```
+
+## 8. Canonical Article validation
+
+Editor state adapter:
 
 ```text
 app/utils/manageBlogDraft.ts
 ```
 
-Validation calls the accepted 4E.1 authority directly:
+Validation authority:
 
 ```text
 validateBlogArticlePackage
 ```
 
-The editor does not recreate:
+The editor does not recreate slug, locale, publication, Hero, Markdown safety, or timestamp policy.
+
+The accepted Nuxt app-graph hardening remains:
 
 ```text
-slug rules
-locale eligibility
-published locale derivation
-hero URL rules
-Markdown unsafe-protocol rules
-timestamp rules
+app/shared/blog-article.ts -> Nuxt/runtime authority
+shared/blog-article.ts     -> root re-export shim
+app/utils/manageBlogDraft.ts -> ../shared/blog-article
 ```
 
-`Article.availableLocales` shown in the editor is derived only from a successful canonical validation.
+This path works in Nitro bundling and standalone `tsx` tests.
 
-### Nitro app-graph hardening
+## 9. Canonical write boundary
 
-Founder verification exposed a Nitro bundle failure after Vite SSR compilation:
-
-```text
-RollupError: Could not resolve "../shared/blog-article.ts"
-from generated server Blog chunk
-```
-
-Cause:
-
-```text
-app/utils/manageBlogDraft.ts
--> runtime import ../../shared/blog-article
--> Vite SSR chunk retained a relative path outside the Nuxt app graph
--> Nitro later resolved that relative path from .nuxt/dist/server/_nuxt and failed
-```
-
-The accepted 4D Discovery pattern is reused:
-
-```text
-app/shared/blog-article.ts -> authoritative Blog Article contract for Nuxt app/runtime graph
-shared/blog-article.ts     -> thin re-export shim for root scripts/server consumers
-```
-
-`app/utils/manageBlogDraft.ts` imports through:
-
-```text
-../shared/blog-article
-```
-
-This path remains inside the Nuxt app graph while also resolving under standalone `tsx` tests. Page code may use the equivalent Nuxt alias form where standalone Node resolution is not involved.
-
-No Blog validation policy changed. This is build-graph hardening only.
-
-Focused source coverage guards both Nitro app-graph safety and standalone-test resolvability.
-
-## 7. Deliberate write boundary
-
-4E.4 is read + author + validate only.
-
-It intentionally does **not** implement:
+4E.4 still does not implement canonical Article writes:
 
 ```text
 POST /api/manage/blog
 PUT /api/manage/blog/:id
 DELETE /api/manage/blog/:id
-Git commit/write
-canonical save
-canonical publish
-Arvan media upload
+Git Article commit/write
+Save draft
+Publish Article
 ```
 
-Reason:
+Managed media exists in the 4E.5 media lane, but media storage does not make editor state canonical.
 
-```text
-Git is the accepted canonical editorial source.
-The Git publication/reconciliation adapter belongs to 4E.5.
-A temporary container filesystem/database/editor-state source would violate the accepted architecture.
-```
+Git publication/reconciliation remains pending in 4E.5.
 
-The UI explicitly communicates this boundary.
-
-## 8. Localization
-
-Fragments:
-
-```text
-i18n/locales/manage-blog.en.ts
-i18n/locales/manage-blog.fa.ts
-```
-
-Registered in `i18n/i18n.config.ts`.
-
-Manage section, authoring workflow, list count, Markdown labels, preview state and toolbar tooltips are bilingual.
-
-## 9. Focused tests
+## 10. Focused tests
 
 Root command:
 
@@ -312,85 +264,63 @@ Root command:
 pnpm test:blog-manage
 ```
 
-Coverage includes:
+Coverage includes permission parity, server-side auth, Article draft adapter, canonical validation, public-safe preview reuse, EN/FA localization, Nuxt app-graph safety, component-first UI rules, no raw editable system identity/timestamps, global Link workflow, top-aligned/theme-aware preview, read-only canonical boundary and previous 4E.1 regressions.
+
+Founder previously reached:
 
 ```text
-backend role permission grants
-Nitro auth boundary 401/403/502/fail-closed behavior
-frontend/backend permission parity
-Manage section registration
-page authorization middleware
-Nitro management endpoint authorization ownership
-canonical Article draft adapter
-published locale derivation
-unsafe Markdown rejection
-existing Article edit projection
-safe public Markdown preview reuse
-EN/FA management localization registration
-Nuxt app-graph Blog contract import guard
-component-first Manage UI guard
-native-form-control exclusion
-near-zero page CSS guard
-theme-token/no-hardcoded-white-black guard
-absence of write endpoints in 4E.4
-4E.1 Blog contract + public Markdown regression
+43/43 PASS
 ```
 
-## 10. Service verification scope
+before the latest combined media/UI finalization. Therefore the focused command must be rerun once more with the final source.
 
-4E.4 originally changed both services:
+## 11. Combined verification scope
 
-```text
-backend -> permission resolution
-frontend -> Manage UI + Nitro admin endpoints + localization
-```
+Latest finalization changes both frontend and backend through the companion 4E.5 media lane.
 
-Founder already verified the backend build successfully and direct unauthenticated Nitro Blog access returned:
-
-```text
-401
-```
-
-Founder also verified the Nitro import-path fixes through a successful frontend Docker build before the component-first UI rewrite.
-
-The latest changes are frontend/test/i18n/documentation only. Therefore the smallest remaining verification scope is:
+Run:
 
 ```powershell
 pnpm test:blog-manage
+pnpm test:blog-media
+```
+
+If both pass:
+
+```powershell
+pnpm api
 pnpm frontend
 ```
 
-Do not rebuild API or the full stack for this UI hardening.
+Do not run `pnpm stack` unless a concrete later gate requires it.
 
-After frontend succeeds, founder UI smoke must cover both Light and Dark themes:
+Founder UI smoke must cover EN/FA plus Light/Dark and verify:
 
 ```text
-admin account sees Blog Manage section
-/manage/blog loads
-/fa/manage/blog loads
-repository list/empty state loads
-New article opens
-all fields use Prompt Draft el controls
-status dropdown uses project dropdown component
-EN/FA tabs work
-Markdown toolbar uses project buttons
-Markdown body uses project text-field component
-Markdown preview renders
-invalid package shows validator issues
-complete draft validates successfully
-no canonical save/publish action is presented yet
-no fixed white/black regression in either theme
+Repository Metadata start alignment
+system-owned Article id/timestamps remain non-editable
+no manual Editorial Identity section
+locale states near EN/FA tabs
+Hero Gallery flow
+Link modal
+Image Gallery -> image/alt modal -> Markdown insertion
+source + Preview top alignment
+400px Preview image constraints
+canonical validation
+no canonical Article save/publish action yet
+no fixed white/black theme regression
 ```
 
-## 11. Current state
+## 12. Current state
 
 ```text
 4E.1 -> DONE / ACCEPTED
 4E.2 -> DONE / ACCEPTED
 4E.3 -> DONE / ACCEPTED
-4E.4 -> IMPLEMENTED / FOUNDER VERIFICATION IN PROGRESS / NOT ACCEPTED
-4E.5 -> NOT STARTED
+4E.4 -> IMPLEMENTED / VERIFICATION IN PROGRESS / NOT ACCEPTED
+4E.5 media lane -> IMPLEMENTED / VERIFICATION PENDING
+4E.5 Git publication lane -> NOT STARTED
 4E.6 -> NOT STARTED
 ```
 
-Do not mark 4E.4 accepted until focused tests, frontend build, founder Light/Dark UI smoke and explicit founder acceptance are complete.
+Do not mark 4E.4 accepted until final focused tests, required builds, founder UI smoke and explicit founder acceptance are complete.
