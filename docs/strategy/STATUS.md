@@ -23,7 +23,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
-  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.3 ACCEPTED / 4E.4 VERIFICATION / 4E.5 MEDIA VERIFICATION
+  4E Blog V1                                    -> IN PROGRESS / 4E.1-4E.4 ACCEPTED / 4E.5 GIT PUBLICATION VERIFICATION
   4F Integration / Legacy Retirement            -> NOT STARTED
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
@@ -52,7 +52,7 @@ inspect changed services
 -> explicit founder acceptance
 ```
 
-Time-first service rule:
+Service rule:
 
 ```text
 frontend only -> pnpm frontend
@@ -88,39 +88,22 @@ staging global noindex always wins
 
 ## Accepted public/protected boundaries
 
-Public Prompt:
-
 ```text
-/prompt/:id
-/fa/prompt/:id
-GET /api/public/prompts/:id
+Public Prompt  -> /prompt/:id, /fa/prompt/:id
+Protected Prompt detail -> /prompts?id=<id>, /fa/prompts?id=<id>
+Public Creator -> /creator/:username, /fa/creator/:username
+Public Blog    -> /blog, /blog/:slug, /fa/blog, /fa/blog/:slug
 ```
 
-Protected Prompt detail remains:
+Public surfaces never expose protected Prompt bodies/variants, private Drafts, email, internal UUID/source ids, balances, permissions, sessions, storage credentials or admin data.
 
-```text
-/prompts?id=<id>
-/fa/prompts?id=<id>
-GET /api/archive/:id
-```
-
-Public Creator:
-
-```text
-/creator/:username
-/fa/creator/:username
-GET /api/public/creators/:username
-```
-
-Creator policy:
+Creator policy remains:
 
 ```text
 accessible = active account + approved Creator + canonical username
 indexable = accessible + complete Creator profile
 discoverable = indexable
 ```
-
-Public surfaces never expose protected Prompt bodies/variants, private Drafts, email, internal UUID/source ids, balance, permissions, sessions, storage/provider/admin data.
 
 ## Accepted Phase 4D
 
@@ -130,16 +113,7 @@ pnpm smoke:phase4d-final   PASS
 pnpm verify:phase4d-static PASS
 ```
 
-Historical pre-Blog static snapshot:
-
-```text
-220 sitemap URLs
-220 llms URLs
-331 prerendered routes
-12 EN/FA Discovery pages checked
-```
-
-That 220 count is historical evidence, not a permanent constant.
+Historical pre-Blog sitemap/llms count was 220; this is evidence only, not a permanent constant.
 
 ---
 
@@ -149,31 +123,15 @@ Editorial architecture:
 
 ```text
 Git repository          -> canonical editorial source
-Nuxt/Nitro deployed app -> normal runtime source
-Arvan Object Storage    -> Blog media + explicit mirror/emergency role
+Nuxt/Nitro deployed app -> normal public runtime source
+Arvan Object Storage    -> Blog media + explicit optional mirror/emergency role
 ```
 
 Never query GitHub per public Blog request.
 
-## 4E.1 — ACCEPTED
+## 4E.1 — DONE / ACCEPTED
 
-```text
-content/blog/<articleId>/
-  article.json
-  en.md
-  fa.md
-```
-
-Public locale eligibility:
-
-```text
-status=published
-+ localized title
-+ localized description
-+ matching non-empty Markdown body
-```
-
-`availableLocales` is derived. V1 author is explicit editorial/site identity. Shared safe Markdown escapes raw HTML and rejects unsafe active URL schemes.
+Canonical `content/blog/<articleId>/article.json + en.md/fa.md` contract, derived locale eligibility, editorial author identity and shared safe Markdown are accepted.
 
 Evidence:
 
@@ -183,36 +141,9 @@ pnpm frontend -> PASS
 founder -> تایید
 ```
 
-## 4E.2 — ACCEPTED
+## 4E.2 — DONE / ACCEPTED
 
-Public routes:
-
-```text
-/blog
-/fa/blog
-/blog/:slug
-/fa/blog/:slug
-```
-
-Frontend Nitro projection:
-
-```text
-GET /api/public/blog?locale=en|fa
-GET /api/public/blog/:slug?locale=en|fa
-```
-
-Accepted:
-
-```text
-SSR Blog index/detail
-real 404 + canonical slug semantics
-safe Markdown HTML
-CollectionPage / ItemList
-BlogPosting JSON-LD
-OG/Twitter article metadata
-authoritative Article.availableLocales hreflang
-staging noindex preserved
-```
+SSR Blog index/detail, real 404/canonical semantics, public projection, SEO/structured data, hreflang and staging noindex are accepted.
 
 Evidence:
 
@@ -223,33 +154,9 @@ pnpm smoke:blog-public -> PASS
 founder -> تایید
 ```
 
-Positive runtime detail remains naturally deferred until the first real published Article exists.
+## 4E.3 — DONE / ACCEPTED
 
-## 4E.3 — ACCEPTED
-
-Record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4E_3_BLOG_INVENTORY.md
-```
-
-Accepted shared direction:
-
-```text
-Article.availableLocales
--> minimal Blog public inventory
--> shared buildPublicUrlInventory
--> sitemap.xml
--> llms.txt
--> legacy static generation
-```
-
-Accepted zero-Article snapshot:
-
-```text
-222 canonical URLs
-= historical 220 + /blog + /fa/blog
-```
+Blog Article inventory is integrated into shared sitemap/llms/static generation. Accepted zero-published-Article snapshot: 222 canonical URLs.
 
 Evidence:
 
@@ -257,101 +164,96 @@ Evidence:
 pnpm test:blog-inventory -> 19/19 PASS
 pnpm frontend -> PASS
 pnpm verify:blog-inventory-static -> PASS
-expected canonical URL count -> 222
-published Blog Article inventory -> 0
 founder -> تایید
 ```
 
-## 4E.4 — VERIFICATION IN PROGRESS
+## 4E.4 — DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
 
-Record:
-
-```text
-docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
-```
-
-Status:
+Accepted:
 
 ```text
-IMPLEMENTED / FOUNDER VERIFICATION IN PROGRESS / NOT ACCEPTED
+blog.manage permission
+/manage/blog + /fa/manage/blog
+system-owned Article id/timestamps/editorial author
+editor-owned slug/status/content
+EN/FA authoring + derived locale states
+canonical validation
+managed Hero selection
+Link modal + Gallery image insertion
+shared safe Markdown preview
+Prompt Draft el-* / theme-first UI
 ```
 
-Permission:
+Final evidence:
 
 ```text
-blog.manage
-user        -> no
-admin       -> yes
-super_admin -> wildcard
+pnpm test:blog-manage -> 46/46 PASS
+founder functional behavior/UI verification -> PASS
+founder -> تایید
 ```
 
-Manage routes:
+4E.4 was accepted as read + author + validate. Canonical Git writes are owned by 4E.5.
 
-```text
-/manage/blog
-/fa/manage/blog
-```
+## 4E.5 — IN PROGRESS
 
-Authoring workspace now follows the project `el-*`/theme/utility system and keeps Article identity/timestamps/editorial author system-owned. It supports EN/FA authoring, canonical validation, managed Hero selection, Link modal, Gallery image insertion, and shared safe Markdown preview.
-
-Founder evidence already includes:
-
-```text
-pnpm test:blog-manage -> 43/43 PASS before latest Gallery finalization
-backend build -> PASS before latest media finalization
-frontend/Nitro/Docker build -> PASS before latest media finalization
-unauthenticated /api/manage/blog -> 401
-functional Gallery + Link smoke -> good
-```
-
-Latest combined media/UI changes require focused rerun before acceptance.
-
-## 4E.5 — MEDIA LANE IMPLEMENTED / VERIFICATION PENDING
-
-Record:
+Canonical record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 ```
 
-Implemented:
+Current lanes:
 
 ```text
-existing Arvan/S3 SigV4 authority reused
-blog/ namespace confinement
-ListObjectsV2 folder browsing
-managed full + thumbnail + JSON manifest
-required persisted default alt for new uploads
-legacy no-alt manifest compatibility
-blog.manage authorization
-admin audit log
-reusable MediaGallery modal
-Hero image selection
-Markdown Gallery -> image preview -> editable default alt -> insertion
-selection toggle on second click
-component-system folder buttons
-Gallery layout finalization
-editor/preview top alignment
-400px Markdown preview image caps
-Repository Metadata start alignment
+Media Lane           -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
+Git Publication Lane -> IMPLEMENTED / VERIFICATION PENDING
+4E.5 overall         -> NOT ACCEPTED
 ```
 
-Still pending in 4E.5:
+Accepted media includes shared Arvan/S3 authority, `blog/` namespace, Gallery browsing/upload, persisted alt metadata, legacy manifest compatibility, admin audit, Hero + Markdown integration and no base64 Markdown.
+
+Implemented Git publication includes:
 
 ```text
-canonical Git write adapter
-Save draft
-Publish transition
-optimistic conflict/version handling
-repository reconciliation
-optional emergency Arvan publication metadata
+server-only BLOG_GITHUB_* config
+canonical Git management reads when configured
+configured Git failures fail closed
+POST /api/manage/blog
+PUT /api/manage/blog/:id
+strict editor-owned write payload + expectedVersion
+server-owned id / author / publishedAt / updatedAt
+whole-repository validation before mutation
+one Git tree + one commit + force=false ref update
+SHA-256 Article version conflict guard
+one guarded retry for unrelated branch movement
+backend authenticated publication audit receipt
+public Blog remains deployment-local, never live GitHub-backed
 ```
 
-Git remains the canonical editorial source. Blog media does not change this content-authority rule.
+New focused command:
+
+```powershell
+pnpm test:blog-publish
+```
+
+Current verification order:
+
+```text
+pnpm test:blog-publish
+-> pnpm test:blog-manage
+-> if green: pnpm api
+-> pnpm frontend
+-> founder canonical Git Save Draft / Update / Publish / stale-conflict proof
+-> explicit founder acceptance
+```
+
+Real Git token belongs only in `.env`/secret storage; never paste or commit it.
+
+A canonical Git save does not update public Blog until the next deployment/build contains that commit. This is intentional and preserves the no-request-time-GitHub architecture.
 
 ## 4E.6 — NOT STARTED
 
-Aggregate regression + external staging + static acceptance remains after 4E.5 is complete.
+Aggregate Blog/public/staging/static acceptance begins only after 4E.5 is explicitly accepted.
 
 ## Hard rules
 
@@ -362,11 +264,12 @@ DO NOT expose protected Prompt/private Draft/private account data.
 DO NOT query GitHub per public Blog request.
 DO NOT make Git + Arvan uncontrolled equal content sources.
 DO NOT embed base64 images in Markdown.
-DO NOT make editor-specific document state canonical.
+DO NOT make editor state canonical.
 DO NOT create fake localized Blog routes.
 DO NOT put draft/unpublished Blog URLs into sitemap/llms.
-DO NOT recreate Blog indexability policy outside Article contract.
+DO NOT recreate Blog indexability outside Article contract.
 DO NOT let Blog SEO override staging noindex.
+DO NOT expose BLOG_GITHUB_TOKEN publicly.
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
@@ -376,14 +279,13 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_PHASE4E_BLOG_V1.md
-4. read 4E.1 through 4E.5 dedicated records
+4. read 4E.1 through 4E.5 records
 5. inspect latest feature/growth-foundation HEAD
-6. confirm 4E.1, 4E.2, 4E.3 are DONE / ACCEPTED
-7. current task is combined 4E.4 + 4E.5 media founder verification
-8. run pnpm test:blog-manage -> pnpm test:blog-media
-9. if focused tests pass, run pnpm api -> pnpm frontend
-10. perform Gallery/Markdown EN/FA + Light/Dark UI smoke
-11. keep grassic.ir staging/noindex and prompt-draft.ir untouched
-12. do not accept 4E.4 or 4E.5 without explicit founder acceptance
-13. after media verification, continue 4E.5 Git publication lane
+6. confirm 4E.1-4E.4 and 4E.5 Media are ACCEPTED
+7. current task = 4E.5 Git publication verification
+8. run pnpm test:blog-publish then pnpm test:blog-manage
+9. if green run pnpm api then pnpm frontend
+10. verify real canonical Git write/update/publish/conflict behavior
+11. keep grassic.ir noindex and prompt-draft.ir untouched
+12. do not accept 4E.5 without explicit founder acceptance
 ```
