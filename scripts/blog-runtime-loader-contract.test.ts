@@ -31,3 +31,18 @@ test('Blog runtime public helpers consume derived locale eligibility rather than
   assert.match(loader, /article\.slug === slug/)
   assert.doesNotMatch(loader, /fallback/i)
 })
+
+test('legacy static generation explicitly prerenders authoritative Blog Article routes', async () => {
+  const [nuxtConfig, repositoryAdapter] = await Promise.all([
+    readFile('nuxt.config.ts', 'utf8'),
+    readFile('scripts/blog-repository.ts', 'utf8'),
+  ])
+
+  assert.match(repositoryAdapter, /readBlogRepositoryDirectorySync/)
+  assert.match(repositoryAdapter, /assertValidBlogRepositoryAssets\(assets\)/)
+  assert.match(nuxtConfig, /projectBlogPublicInventory\(readBlogRepositoryDirectorySync\(\)\)/)
+  assert.match(nuxtConfig, /publicBlogPostPath\(article\.slug\)/)
+  assert.match(nuxtConfig, /article\.availableLocales\.includes\(["']en["']\)/)
+  assert.match(nuxtConfig, /article\.availableLocales\.includes\(["']fa["']\)/)
+  assert.match(nuxtConfig, /\.\.\.publicBlogRoutes/)
+})
