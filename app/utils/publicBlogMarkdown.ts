@@ -14,6 +14,10 @@ function makeBlogImagesInteractive(html: string) {
   )
 }
 
+function dropTerminalDivider(blocks: string[]) {
+  if (blocks.at(-1) === '<hr>') blocks.pop()
+}
+
 function renderSection(section: BlogMarkdownSection): string {
   const content = [
     ...section.bodyHtml,
@@ -45,6 +49,10 @@ function sectionizeBlogMarkdownHtml(html: string) {
       continue
     }
 
+    const active = stack.at(-1)
+    if (active) dropTerminalDivider(active.bodyHtml)
+    else dropTerminalDivider(intro)
+
     const level = Number(heading[1])
     const section: BlogMarkdownSection = {
       level,
@@ -72,8 +80,9 @@ function sectionizeBlogMarkdownHtml(html: string) {
 
 export function renderPublicBlogMarkdown(value: unknown) {
   const html = renderPublicMarkdown(value, {
-    headingOffset: 1,
+    minimumHeadingLevel: 2,
     externalRel: 'noopener noreferrer',
+    renderCitations: true,
   })
 
   return sectionizeBlogMarkdownHtml(makeBlogImagesInteractive(html))
