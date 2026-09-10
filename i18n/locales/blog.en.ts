@@ -15,5 +15,6 @@ export default {
     published: 'Published',
     updated: 'Updated',
     by: 'By',
+    imagePreview: 'Image preview',
   },
 }
