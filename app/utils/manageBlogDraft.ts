@@ -5,12 +5,10 @@ import {
   type BlogLocale,
   type BlogValidationIssue,
 } from '../shared/blog-article'
-
-export const BLOG_SYSTEM_AUTHOR = Object.freeze({
-  kind: 'editorial' as const,
-  name: 'Prompt Draft',
-  url: '/',
-})
+import {
+  BLOG_SYSTEM_AUTHOR,
+  type ManageBlogWriteInput,
+} from '../shared/manage-blog'
 
 export type ManageBlogDraft = {
   id: string
@@ -84,9 +82,8 @@ export function deriveManageBlogDraftId(draft: Pick<ManageBlogDraft, 'id' | 'slu
   const canonicalId = draft.id.trim()
   if (canonicalId) return canonicalId
 
-  // New Article identity is system-owned. Until the canonical Git writer exists,
-  // validation uses the initial slug as the deterministic candidate. 4E.5 owns
-  // collision resolution and the first immutable repository directory id.
+  // Local validation needs a deterministic directory candidate before the first
+  // canonical save. The Git writer owns collision resolution and final identity.
   return draft.slug.trim()
 }
 
@@ -148,8 +145,6 @@ export function manageBlogDraftToPackage(draft: ManageBlogDraft) {
     if (draft.faAlt.trim()) alt.fa = draft.faAlt
   }
 
-  // Alt text is contextual localization metadata for an actual hero. Typing an
-  // alt before selecting media must not manufacture an invalid empty Hero object.
   const hasHero = Boolean(
     draft.heroFullUrl.trim() ||
     draft.heroThumbnailUrl.trim() ||
@@ -179,6 +174,22 @@ export function manageBlogDraftToPackage(draft: ManageBlogDraft) {
       localizations,
     },
     body,
+  }
+}
+
+export function manageBlogDraftToWriteInput(
+  draft: ManageBlogDraft,
+  expectedVersion: string | null,
+): ManageBlogWriteInput {
+  const pkg = manageBlogDraftToPackage(draft)
+
+  return {
+    expectedVersion,
+    slug: draft.slug,
+    status: draft.status,
+    hero: pkg.metadata.hero,
+    localizations: pkg.metadata.localizations,
+    body: pkg.body,
   }
 }
 
