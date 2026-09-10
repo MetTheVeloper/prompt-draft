@@ -1,5 +1,5 @@
-import { loadBlogRepository } from '../../../utils/blogRepository'
 import { requireBlogManage } from '../../../utils/blogManageAuthorization'
+import { getBlogManageRepository } from '../../../utils/blogManageRepository'
 
 const ARTICLE_ID_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 
@@ -12,8 +12,8 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: 'Blog Article not found' })
   }
 
-  const articles = await loadBlogRepository()
-  const article = articles.find(item => item.id === id) ?? null
+  const repository = await getBlogManageRepository(event)
+  const article = repository.articles.find(item => item.id === id) ?? null
   if (!article) {
     throw createError({ statusCode: 404, statusMessage: 'Blog Article not found' })
   }
@@ -21,5 +21,8 @@ export default defineEventHandler(async (event) => {
   return {
     ok: true,
     article,
+    version: repository.versions.get(id) ?? null,
+    repositorySource: repository.source,
+    writeConfigured: repository.writeConfigured,
   }
 })
