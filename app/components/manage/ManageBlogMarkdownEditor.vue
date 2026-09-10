@@ -9,6 +9,8 @@ const props = withDefaults(defineProps<{
 const { t } = useI18n()
 const model = defineModel<string>({ default: '' })
 const linkModal = useBlogLinkModal()
+const mediaGallery = useMediaGalleryModal()
+const imageAltModal = useBlogImageAltModal()
 
 type TextFieldHandle = {
   el?: HTMLInputElement | HTMLTextAreaElement | null
@@ -71,7 +73,7 @@ function prefixLines(prefix: string, fallback = 'text') {
   })
 }
 
-function escapeMarkdownLabel(value: string) {
+function escapeMarkdownText(value: string) {
   return value.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]')
 }
 
@@ -81,13 +83,24 @@ function insertLink() {
     initialLabel: range.selected,
     onInsert: ({ label, url }) => replaceRange(
       range,
-      `[${escapeMarkdownLabel(label)}](${url})`,
+      `[${escapeMarkdownText(label)}](${url})`,
     ),
   })
 }
 
 function insertImage() {
-  return replaceSelection(selected => `![${selected || 'alt text'}](https://example.com/image.webp)`)
+  const range = currentRange()
+  mediaGallery.open({
+    onSelect: (asset) => {
+      imageAltModal.open({
+        initialAlt: range.selected.trim(),
+        onInsert: alt => replaceRange(
+          range,
+          `![${escapeMarkdownText(alt)}](${asset.fullUrl})`,
+        ),
+      })
+    },
+  })
 }
 </script>
 

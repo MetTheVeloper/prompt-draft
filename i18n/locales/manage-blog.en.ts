@@ -121,6 +121,7 @@ export default {
         select: 'Select',
         confirm: 'Use selected image',
         noSelection: 'Select an image first.',
+        loadMore: 'Load more',
       },
       placeholders: {
         slug: 'e.g. anatomy-of-a-visual-prompt',

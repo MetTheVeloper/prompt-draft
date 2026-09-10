@@ -19,6 +19,7 @@ const route = useRoute()
 const router = useRouter()
 const auth = useAuth()
 const blogApi = useManageBlog()
+const mediaGallery = useMediaGalleryModal()
 const { locale, t } = useI18n()
 
 const articles = ref<ManageBlogArticleSummary[]>([])
@@ -64,6 +65,13 @@ const statusItems = computed(() => [
 
 const validationIssues = computed(() => validation.value?.issues ?? [])
 const activeDirection = computed(() => activeLocale.value === 'fa' ? 'rtl' : 'ltr')
+const heroPreviewUrl = computed(() => draft.heroThumbnailUrl.trim() || draft.heroFullUrl.trim())
+const heroDimensionsLabel = computed(() => {
+  const width = Number(draft.heroWidth)
+  const height = Number(draft.heroHeight)
+  if (!Number.isFinite(width) || !Number.isFinite(height) || width <= 0 || height <= 0) return ''
+  return t('manage.blog.hero.dimensions', { width, height })
+})
 
 const activeTitle = computed({
   get: () => activeLocale.value === 'en' ? draft.enTitle : draft.faTitle,
@@ -185,6 +193,33 @@ function localeStateColor(code: BlogLocale) {
   if (state === 'public') return 'green'
   if (state === 'complete') return 'blue'
   return 'normal45'
+}
+
+function chooseHero() {
+  mediaGallery.open({
+    onSelect: (asset) => {
+      const changed = draft.heroFullUrl.trim() !== asset.fullUrl
+      draft.heroFullUrl = asset.fullUrl
+      draft.heroThumbnailUrl = asset.thumbnailUrl
+      draft.heroWidth = String(asset.width)
+      draft.heroHeight = String(asset.height)
+      if (changed) {
+        draft.enAlt = ''
+        draft.faAlt = ''
+      }
+      validation.value = null
+    },
+  })
+}
+
+function removeHero() {
+  draft.heroFullUrl = ''
+  draft.heroThumbnailUrl = ''
+  draft.heroWidth = ''
+  draft.heroHeight = ''
+  draft.enAlt = ''
+  draft.faAlt = ''
+  validation.value = null
 }
 
 async function refresh() {
@@ -481,7 +516,7 @@ onMounted(async () => {
 
         <el-flex
           rules="csc"
-          :gap="16"
+          :gap="12"
           :p="18"
           bg="surface"
           :radius="16"
@@ -489,46 +524,51 @@ onMounted(async () => {
           bc="normal15"
           class="w100"
         >
-          <el-text :size="13" :weight="800">{{ t('manage.blog.groups.heroMedia') }}</el-text>
-          <el-grid cols="repeat(2, minmax(0, 1fr))" :gap="12" class="w100">
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroFullUrl') }}</el-text>
-              <el-text-field
-                v-model="draft.heroFullUrl"
-                :actions="false"
-                placeholder="/media/blog/hero.webp"
-              />
+          <el-flex rules="rbc" :gap="10" class="w100 fw">
+            <el-flex rules="ccs" :gap="3">
+              <el-text :size="13" :weight="800">{{ t('manage.blog.groups.heroMedia') }}</el-text>
+              <el-text color="normal50" :size="10">{{ t('manage.blog.hero.managedHint') }}</el-text>
             </el-flex>
+            <el-button
+              v-if="heroPreviewUrl"
+              icon="photo_library"
+              :label="t('manage.blog.actions.changeHero')"
+              mode="flat"
+              @click="chooseHero"
+            />
+          </el-flex>
 
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroThumbnailUrl') }}</el-text>
-              <el-text-field
-                v-model="draft.heroThumbnailUrl"
-                :actions="false"
-                placeholder="/media/blog/hero-thumb.webp"
+          <el-flex v-if="heroPreviewUrl" rules="csc" :gap="10" class="w100">
+            <img
+              :src="heroPreviewUrl"
+              :alt="activeHeroAlt || draft.enAlt || draft.faAlt || ''"
+              class="w100 br12"
+              style="display: block; max-height: 360px; object-fit: cover;"
+            >
+            <el-flex rules="rbc" :gap="10" class="w100 fw">
+              <el-text v-if="heroDimensionsLabel" color="normal55" :size="10">
+                {{ heroDimensionsLabel }}
+              </el-text>
+              <el-button
+                icon="delete"
+                :label="t('manage.blog.actions.removeHero')"
+                color="red"
+                mode="flat"
+                @click="removeHero"
               />
             </el-flex>
+          </el-flex>
 
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroWidth') }}</el-text>
-              <el-text-field
-                v-model="draft.heroWidth"
-                :actions="false"
-                inputmode="numeric"
-                placeholder="1600"
-              />
-            </el-flex>
-
-            <el-flex rules="ccs" :gap="6">
-              <el-text :size="11" :weight="700">{{ t('manage.blog.fields.heroHeight') }}</el-text>
-              <el-text-field
-                v-model="draft.heroHeight"
-                :actions="false"
-                inputmode="numeric"
-                placeholder="900"
-              />
-            </el-flex>
-          </el-grid>
+          <el-flex v-else rules="ccc" :gap="8" :p="24" bg="normal5" :radius="12" class="w100">
+            <el-icon icon="add_photo_alternate" :size="30" />
+            <el-text color="normal55" :size="11">{{ t('manage.blog.hero.empty') }}</el-text>
+            <el-button
+              icon="photo_library"
+              :label="t('manage.blog.actions.chooseHero')"
+              color="prim"
+              @click="chooseHero"
+            />
+          </el-flex>
         </el-flex>
 
         <el-flex

@@ -26,6 +26,48 @@ function encodeS3Key(key) {
     .join('/')
 }
 
+function awsUriEncode(value) {
+  return encodeURIComponent(String(value)).replace(/[!'()*]/g, character => (
+    `%${character.charCodeAt(0).toString(16).toUpperCase()}`
+  ))
+}
+
+function queryEntries(query) {
+  if (!query) return []
+  if (query instanceof URLSearchParams) return [...query.entries()]
+  if (typeof query !== 'object' || Array.isArray(query)) {
+    throw new Error('Archive storage query must be an object or URLSearchParams')
+  }
+
+  const entries = []
+  for (const [name, rawValue] of Object.entries(query)) {
+    if (rawValue === undefined || rawValue === null) continue
+    const values = Array.isArray(rawValue) ? rawValue : [rawValue]
+    for (const value of values) entries.push([name, String(value)])
+  }
+  return entries
+}
+
+function compareEncodedPair(left, right) {
+  if (left[0] < right[0]) return -1
+  if (left[0] > right[0]) return 1
+  if (left[1] < right[1]) return -1
+  if (left[1] > right[1]) return 1
+  return 0
+}
+
+export function canonicalizeArchiveStorageQuery(query) {
+  return queryEntries(query)
+    .map(([name, value]) => [awsUriEncode(name), awsUriEncode(value)])
+    .sort(compareEncodedPair)
+    .map(([name, value]) => `${name}=${value}`)
+    .join('&')
+}
+
+function canonicalizeUrlQuery(url) {
+  return canonicalizeArchiveStorageQuery(url.searchParams)
+}
+
 function sha256Hex(value) {
   return createHash('sha256').update(value).digest('hex')
 }
@@ -109,19 +151,25 @@ export function getArchiveStoragePublicUrl(key, config = getArchiveStorageConfig
   return encodedKey ? `${config.publicBaseUrl}/${encodedKey}` : config.publicBaseUrl
 }
 
-export function getArchiveStorageRequestUrl(key = null, config = getArchiveStorageConfig()) {
+export function getArchiveStorageRequestUrl(
+  key = null,
+  config = getArchiveStorageConfig(),
+  query = null,
+) {
   const endpoint = new URL(config.endpoint)
   const encodedKey = key ? encodeS3Key(key) : ''
 
   if (config.forcePathStyle) {
     const prefix = endpoint.pathname.replace(/\/+$/, '')
     endpoint.pathname = `${prefix}/${encodeURIComponent(config.bucket)}${encodedKey ? `/${encodedKey}` : ''}`
-    return endpoint
+  } else {
+    // Virtual-host mode expects ARCHIVE_S3_ENDPOINT to already identify the bucket host.
+    const prefix = endpoint.pathname.replace(/\/+$/, '')
+    endpoint.pathname = `${prefix}${encodedKey ? `/${encodedKey}` : '/'}`
   }
 
-  // Virtual-host mode expects ARCHIVE_S3_ENDPOINT to already identify the bucket host.
-  const prefix = endpoint.pathname.replace(/\/+$/, '')
-  endpoint.pathname = `${prefix}${encodedKey ? `/${encodedKey}` : '/'}`
+  const canonicalQuery = canonicalizeArchiveStorageQuery(query)
+  endpoint.search = canonicalQuery ? `?${canonicalQuery}` : ''
   return endpoint
 }
 
@@ -150,7 +198,7 @@ export function signArchiveStorageRequest({
   const canonicalRequest = [
     method.toUpperCase(),
     url.pathname || '/',
-    url.searchParams.toString(),
+    canonicalizeUrlQuery(url),
     canonicalHeaders,
     signedHeaders,
     payloadHash,
@@ -181,11 +229,12 @@ export function signArchiveStorageRequest({
 export async function requestArchiveStorage({
   method,
   key = null,
+  query = null,
   body = null,
   headers = {},
   config = getArchiveStorageConfig(),
 }) {
-  const url = getArchiveStorageRequestUrl(key, config)
+  const url = getArchiveStorageRequestUrl(key, config, query)
   const signed = signArchiveStorageRequest({ method, url, body, headers, config })
   const hasBody = !['GET', 'HEAD', 'DELETE'].includes(method.toUpperCase()) && signed.bodyBuffer.length > 0
 

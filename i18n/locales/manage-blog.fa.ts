@@ -121,6 +121,7 @@ export default {
         select: 'انتخاب',
         confirm: 'استفاده از تصویر انتخاب‌شده',
         noSelection: 'ابتدا یک تصویر را انتخاب کنید.',
+        loadMore: 'نمایش بیشتر',
       },
       placeholders: {
         slug: 'مثلاً anatomy-of-a-visual-prompt',

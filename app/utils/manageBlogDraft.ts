@@ -148,13 +148,13 @@ export function manageBlogDraftToPackage(draft: ManageBlogDraft) {
     if (draft.faAlt.trim()) alt.fa = draft.faAlt
   }
 
+  // Alt text is contextual localization metadata for an actual hero. Typing an
+  // alt before selecting media must not manufacture an invalid empty Hero object.
   const hasHero = Boolean(
     draft.heroFullUrl.trim() ||
     draft.heroThumbnailUrl.trim() ||
     draft.heroWidth.trim() ||
-    draft.heroHeight.trim() ||
-    draft.enAlt.trim() ||
-    draft.faAlt.trim(),
+    draft.heroHeight.trim(),
   )
 
   const updatedAt = effectiveUpdatedAt(draft)
