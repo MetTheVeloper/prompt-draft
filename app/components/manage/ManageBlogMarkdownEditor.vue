@@ -13,17 +13,22 @@ const model = defineModel<string>({ default: '' })
 const linkModal = useBlogLinkModal()
 const mediaGallery = useMediaGalleryModal()
 const imageAltModal = useBlogImageAltModal()
-const menu = useMenu()
 
 type TextFieldHandle = {
   el?: HTMLInputElement | HTMLTextAreaElement | null
-  focus?: () => void
+  focus?: (options?: FocusOptions) => void
 }
 
 type EditorRange = {
   start: number
   end: number
   selected: string
+}
+
+type TextFieldContextMenuContext = {
+  value: string
+  selectionStart: number
+  selectionEnd: number
 }
 
 const editorField = ref<TextFieldHandle | null>(null)
@@ -67,7 +72,7 @@ async function replaceRange(range: Pick<EditorRange, 'start' | 'end'>, replaceme
   await nextTick()
   syncEditorHeight()
   const element = getTextarea()
-  editorField.value?.focus?.()
+  editorField.value?.focus?.({ preventScroll: true })
   element?.setSelectionRange(range.start, range.start + replacement.length)
 }
 
@@ -179,23 +184,15 @@ function markdownMenuItems(range: EditorRange): GlobalMenuItem[] {
   ]
 }
 
-function openMarkdownContextMenu(event: MouseEvent) {
-  if (!(event.target instanceof HTMLTextAreaElement)) return
+function markdownContextMenuItems(context: TextFieldContextMenuContext): GlobalMenuItem[] {
+  const length = context.value.length
+  const start = Math.min(Math.max(context.selectionStart, 0), length)
+  const end = Math.min(Math.max(context.selectionEnd, start), length)
 
-  event.preventDefault()
-  event.stopPropagation()
-
-  const range = currentRange()
-
-  menu.open({
-    mode: 'point',
-    event,
-    options: {
-      closeOnScroll: false,
-      zIndex: 30000,
-      minWidth: 200,
-    },
-    items: markdownMenuItems(range),
+  return markdownMenuItems({
+    start,
+    end,
+    selected: context.value.slice(start, end),
   })
 }
 
@@ -234,7 +231,7 @@ onMounted(() => {
       align-items="start"
       class="w100 blog-markdown-panes"
     >
-      <el-flex rules="css" :gap="6" class="w100" @contextmenu="openMarkdownContextMenu">
+      <el-flex rules="css" :gap="6" class="w100">
         <el-text color="normal55" :size="11" :weight="700">
           {{ t('manage.blog.markdown.source') }}
         </el-text>
@@ -244,6 +241,7 @@ onMounted(() => {
           type="textarea"
           :rows="15"
           :actions="false"
+          :context-menu-items="markdownContextMenuItems"
           :dir="direction"
           :placeholder="placeholder"
           spellcheck="true"
