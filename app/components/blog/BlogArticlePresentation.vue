@@ -58,11 +58,12 @@ function onContentKeydown(event: KeyboardEvent) {
 
 .blog-article-rich-text :deep(.blog-article-section) {
   margin: 0;
-  border-bottom: 1px solid var(--normalText10);
 }
 
-.blog-article-rich-text :deep(.blog-article-section:last-child) {
-  border-bottom: 0;
+.blog-article-rich-text :deep(.blog-article-intro + .blog-article-section),
+.blog-article-rich-text :deep(.blog-article-section + .blog-article-section),
+.blog-article-rich-text :deep(.blog-article-section-content > .blog-article-section) {
+  border-top: 1px solid var(--normalText10);
 }
 
 .blog-article-rich-text :deep(.blog-article-section[data-heading-level="3"]),
@@ -180,6 +181,22 @@ function onContentKeydown(event: KeyboardEvent) {
   text-decoration: underline;
   text-decoration-thickness: 1px;
   text-underline-offset: 3px;
+}
+
+.blog-article-rich-text :deep(.public-markdown-citation) {
+  display: inline-flex;
+  align-items: center;
+  vertical-align: .1em;
+  margin-inline: .18em;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--normalText15);
+  color: var(--normalText70);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 1.5;
+  direction: ltr;
+  unicode-bidi: isolate;
 }
 
 .blog-article-rich-text :deep(blockquote) {
