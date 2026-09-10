@@ -117,14 +117,77 @@ validation result + exact contract issues
 
 Existing Article ids are immutable in the editor because directory identity is stable independently of slug.
 
+### component-first UI hardening
+
+Founder review exposed that the initial 4E.4 implementation recreated a local native form/styling system instead of following accepted `/manage/archive` and `/manage/users` patterns.
+
+The authoring surface was rewritten under the project-wide `UI_IMPLEMENTATION_GUIDELINES.md` contract.
+
+`app/pages/manage/blog.vue` now uses the Prompt Draft component system for the complete page surface:
+
+```text
+el-flex
+el-grid
+el-text
+el-icon
+el-button
+el-text-field
+el-dropdown
+el-divider
+```
+
+The page no longer owns native form controls or page-local scoped CSS.
+
+Neutral/theme behavior comes from component defaults and semantic props:
+
+```text
+surface
+normal / normalXX
+normal15 borders
+prim actions
+green published/success
+orange draft
+red errors
+```
+
+No screenshot-derived white/black styling is permitted.
+
+Focused source regression now requires:
+
+```text
+no native input/textarea/select/button/label/section/etc. in manage/blog.vue
+no scoped style block in manage/blog.vue
+Prompt Draft el form/action/layout primitives present
+no hardcoded white/black neutral styling
+```
+
 ## 5. Markdown editor decision
 
 4E.4 intentionally adds no new Markdown/editor dependency.
 
-A small local toolbar + textarea authoring component is used:
+The local Markdown authoring component remains:
 
 ```text
 app/components/manage/ManageBlogMarkdownEditor.vue
+```
+
+Its controls now also use the Prompt Draft component system:
+
+```text
+format toolbar -> el-button
+Markdown body  -> el-text-field type="textarea"
+panes/layout   -> el-flex + el-grid
+labels/state   -> el-text
+```
+
+The only native element intentionally retained is the sanitized `v-html` render sink used to mount already-rendered preview HTML. It is not a form control or styling primitive.
+
+Scoped CSS in this component is limited to structural preview behavior that is not represented by ordinary component props/utilities:
+
+```text
+preview minimum height
+responsive two-pane -> one-pane geometry
+rendered Markdown img/pre presentation
 ```
 
 Live preview calls:
@@ -136,7 +199,7 @@ renderPublicBlogMarkdown
 
 Therefore editor preview and public Article rendering use the same accepted safe renderer.
 
-The `md-editor-v3` candidate was re-audited but deferred: it is not required to satisfy 4E.4 and adding it would introduce a new dependency/renderer surface before publication/media integration is necessary.
+The `md-editor-v3` candidate remains deferred: it is not required to satisfy 4E.4 and adding it would introduce a new dependency/renderer surface before publication/media integration is necessary.
 
 ## 6. Canonical Article validation
 
@@ -188,12 +251,19 @@ The accepted 4D Discovery pattern is reused:
 ```text
 app/shared/blog-article.ts -> authoritative Blog Article contract for Nuxt app/runtime graph
 shared/blog-article.ts     -> thin re-export shim for root scripts/server consumers
-app runtime imports        -> ~/shared/blog-article
 ```
+
+`app/utils/manageBlogDraft.ts` imports through:
+
+```text
+../shared/blog-article
+```
+
+This path remains inside the Nuxt app graph while also resolving under standalone `tsx` tests. Page code may use the equivalent Nuxt alias form where standalone Node resolution is not involved.
 
 No Blog validation policy changed. This is build-graph hardening only.
 
-A focused source contract now guards against reintroducing the root-relative runtime import.
+Focused source coverage guards both Nitro app-graph safety and standalone-test resolvability.
 
 ## 7. Deliberate write boundary
 
@@ -223,7 +293,7 @@ The UI explicitly communicates this boundary.
 
 ## 8. Localization
 
-New fragments:
+Fragments:
 
 ```text
 i18n/locales/manage-blog.en.ts
@@ -232,7 +302,7 @@ i18n/locales/manage-blog.fa.ts
 
 Registered in `i18n/i18n.config.ts`.
 
-Manage section and authoring workflow are bilingual, including repository/editorial/hero section headings.
+Manage section, authoring workflow, list count, Markdown labels, preview state and toolbar tooltips are bilingual.
 
 ## 9. Focused tests
 
@@ -258,49 +328,41 @@ existing Article edit projection
 safe public Markdown preview reuse
 EN/FA management localization registration
 Nuxt app-graph Blog contract import guard
+component-first Manage UI guard
+native-form-control exclusion
+near-zero page CSS guard
+theme-token/no-hardcoded-white-black guard
 absence of write endpoints in 4E.4
 4E.1 Blog contract + public Markdown regression
 ```
 
 ## 10. Service verification scope
 
-4E.4 changes both services:
+4E.4 originally changed both services:
 
 ```text
 backend -> permission resolution
 frontend -> Manage UI + Nitro admin endpoints + localization
 ```
 
-Original verification order:
-
-```powershell
-pnpm test:blog-manage
-pnpm api
-pnpm frontend
-```
-
-Do not use `pnpm stack` unless a genuine cross-service problem requires it.
-
-### Founder evidence so far — 2026-09-10
+Founder already verified the backend build successfully and direct unauthenticated Nitro Blog access returned:
 
 ```text
-pnpm test:blog-manage -> 36/36 PASS before Nitro import hardening
-pnpm api              -> PASS / API image rebuilt / db+translator healthy / API started
-pnpm frontend         -> FAIL only at Nitro bundle phase on unresolved root-relative Blog contract import
+401
 ```
 
-The frontend failure was diagnosed and fixed as the app-graph hardening described above.
+Founder also verified the Nitro import-path fixes through a successful frontend Docker build before the component-first UI rewrite.
 
-Because no backend service source changed after the successful API rebuild, the remaining verification after pulling the fix is:
+The latest changes are frontend/test/i18n/documentation only. Therefore the smallest remaining verification scope is:
 
 ```powershell
 pnpm test:blog-manage
 pnpm frontend
 ```
 
-The focused suite now contains one additional app-graph regression test, so the expected test count is 37 if no other parallel test changes occur.
+Do not rebuild API or the full stack for this UI hardening.
 
-After frontend succeeds, founder UI/security smoke:
+After frontend succeeds, founder UI smoke must cover both Light and Dark themes:
 
 ```text
 admin account sees Blog Manage section
@@ -308,12 +370,16 @@ admin account sees Blog Manage section
 /fa/manage/blog loads
 repository list/empty state loads
 New article opens
+all fields use Prompt Draft el controls
+status dropdown uses project dropdown component
 EN/FA tabs work
+Markdown toolbar uses project buttons
+Markdown body uses project text-field component
 Markdown preview renders
 invalid package shows validator issues
 complete draft validates successfully
 no canonical save/publish action is presented yet
-unauthorized direct Nitro endpoint returns 401/403
+no fixed white/black regression in either theme
 ```
 
 ## 11. Current state
@@ -327,4 +393,4 @@ unauthorized direct Nitro endpoint returns 401/403
 4E.6 -> NOT STARTED
 ```
 
-Do not mark 4E.4 accepted until focused tests, frontend build, founder UI/security smoke and explicit founder acceptance are complete.
+Do not mark 4E.4 accepted until focused tests, frontend build, founder Light/Dark UI smoke and explicit founder acceptance are complete.
