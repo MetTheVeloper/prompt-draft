@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F NEXT**
+Status: **IN PROGRESS / 4A + 4B + 4C + 4D DONE + ACCEPTED / 4E REOPENED FOR 4E.7 / 4F BLOCKED**
 
 Date: 2026-09-10
 
@@ -54,8 +54,8 @@ Accepted foundations include Nuxt SSR for acquisition surfaces, explicit client-
 21.5.4B Public Prompt Architecture                         DONE / ACCEPTED
 21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
 21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
-21.5.4E Blog V1                                            DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-21.5.4F Integration / Verification / Legacy Retirement     NEXT
+21.5.4E Blog V1                                            REOPENED / 4E.1-4E.6 ACCEPTED / 4E.7 UI VERIFICATION NEXT
+21.5.4F Integration / Verification / Legacy Retirement     BLOCKED UNTIL 4E.7 ACCEPTANCE
 ```
 
 Required order remains:
@@ -144,7 +144,7 @@ pnpm verify:phase4d-static    PASS
 
 Historical acceptance snapshot was 220 sitemap URLs / 220 llms URLs / 331 prerendered routes. Counts are evidence, not permanent constants.
 
-## 9. Accepted 4E — Blog V1
+## 9. Phase 4E — Blog V1 — REOPENED FOR FINAL UI ADDENDUM
 
 Canonical source of truth:
 
@@ -152,10 +152,16 @@ Canonical source of truth:
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
 ```
 
-Final acceptance record:
+Accepted aggregate record:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
+```
+
+Current UI addendum record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
 ```
 
 Public routes:
@@ -184,7 +190,7 @@ Arvan Object Storage    -> managed media + explicit optional emergency role
 
 Repository-backed does **not** mean request-time GitHub. Public Blog reads deployed bundled content; legacy static generation reads the same validated build-workspace Blog repository snapshot.
 
-Accepted 4E slices:
+4E state:
 
 ```text
 4E.1 Article Contract + Repository Loader -> DONE / ACCEPTED
@@ -193,9 +199,10 @@ Accepted 4E slices:
 4E.4 Blog Management Authoring             -> DONE / FOUNDER VERIFIED / ACCEPTED
 4E.5 Media + Git Publication               -> DONE / FOUNDER RUNTIME VERIFIED / ACCEPTED
 4E.6 Aggregate acceptance                  -> DONE / FOUNDER VERIFIED / ACCEPTED
+4E.7 Shared Article Presentation           -> IMPLEMENTED / FOUNDER UI VERIFICATION NEXT / NOT ACCEPTED
 ```
 
-Final gates:
+Previously accepted 4E.6 gates remain valid:
 
 ```text
 pnpm test:phase4e-final    PASS
@@ -203,7 +210,7 @@ pnpm smoke:phase4e-final   PASS
 pnpm verify:phase4e-static PASS
 ```
 
-The final aggregate preserved the accepted 4A–4D baseline and passed all Blog contract/public/inventory/manage/media/publication regressions. Deterministic published EN/FA static detail routes prerendered successfully, joined sitemap + llms and were removed after verification.
+4E.7 is presentation-only and must not alter those accepted semantics. It introduces one shared Blog body presentation component for Manage preview and public Blog detail, hierarchical collapsible headings, centralized theme-native prose/code/quote/list/image styling and global-modal image zoom. The existing safe Markdown renderer remains authoritative.
 
 ### Locked Article/content model
 
@@ -272,6 +279,6 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 
 ## 12. Current next action
 
-Phase 4A–4E are closed and accepted. Phase 4F is next.
+Phase 4E.1–4E.6 remain accepted. Current gate is 4E.7 founder UI verification.
 
-Phase 4F must begin with an integration/retirement audit before deletion. Inventory and classify surviving legacy generators, duplicate SEO/content paths, static-only compatibility code, deprecated route/artifact generation and transitional adapters. Remove only paths proven redundant while preserving accepted SSR/runtime/static/staging and public/protected contracts.
+Run the focused Blog regressions and frontend-only rebuild, verify shared presentation/collapse/lightbox in EN/FA and Light/Dark, then require explicit founder acceptance. Only after that may Phase 4E be closed again and 4F begin.
