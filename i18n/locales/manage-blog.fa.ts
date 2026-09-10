@@ -63,6 +63,7 @@ export default {
           git: 'Git canonical',
           deployed: 'Snapshot deploy‌شده',
         },
+        validationModalTitle: 'اعتبارسنجی مقاله',
         validTitle: 'بسته مقاله معتبر است',
         validDetail: 'فیلدهای فعلی با قرارداد canonical مخزن سازگارند.',
         invalidTitle: 'بسته مقاله نیاز به اصلاح دارد',
