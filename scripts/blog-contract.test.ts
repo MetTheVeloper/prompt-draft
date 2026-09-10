@@ -44,7 +44,7 @@ test('published Blog Article derives only authoritative locale availability', ()
     directoryId: 'first-article',
     metadata: metadata(),
     body: {
-      en: '# English body\n\nUseful editorial content.',
+      en: '## English body\n\nUseful editorial content.',
     },
   })
 
@@ -71,8 +71,8 @@ test('draft Article never becomes publicly available even when localized bodies 
     directoryId: 'first-article',
     metadata: metadata({ status: 'draft', publishedAt: null }),
     body: {
-      en: '# Draft body',
-      fa: '# بدنه پیش‌نویس',
+      en: '## Draft body',
+      fa: '## بدنه پیش‌نویس',
     },
   })
 
@@ -88,7 +88,7 @@ test('Article metadata is strict, identity-stable and publication timestamps are
       extraEditorialState: 'private',
       updatedAt: '2026-09-08T19:00:00.000Z',
     }),
-    body: { en: '# Body' },
+    body: { en: '## Body' },
   })
 
   assert.equal(result.ok, false)
@@ -109,7 +109,7 @@ test('V1 author identity is explicit editorial metadata and cannot smuggle priva
         userId: '00000000-0000-0000-0000-000000000000',
       },
     }),
-    body: { en: '# Body' },
+    body: { en: '## Body' },
   })
 
   assert.equal(result.ok, false)
@@ -132,13 +132,34 @@ test('Blog Markdown validation rejects embedded data/base64 and unsafe destinati
   assert.ok(result.issues.some(item => item.path === 'body.en' && /unsafe Markdown/.test(item.message)))
 })
 
+test('Blog Article body reserves H1 for the public Article title while allowing code examples', () => {
+  const invalid = validateBlogArticlePackage({
+    directoryId: 'first-article',
+    metadata: metadata(),
+    body: { en: '# Duplicate page heading\n\nBody.' },
+  })
+  assert.equal(invalid.ok, false)
+  if (!invalid.ok) {
+    assert.ok(invalid.issues.some(item => item.path === 'body.en' && /must not contain an H1/.test(item.message)))
+  }
+
+  const valid = validateBlogArticlePackage({
+    directoryId: 'first-article',
+    metadata: metadata(),
+    body: {
+      en: '## Real body heading\n\n```md\n# code example only\n```',
+    },
+  })
+  assert.equal(valid.ok, true)
+})
+
 test('repository validation rejects duplicate slugs and orphan Article body files', () => {
   const assets = {
     'first-article/article.json': JSON.stringify(metadata()),
-    'first-article/en.md': '# First',
+    'first-article/en.md': '## First',
     'second-article/article.json': JSON.stringify(metadata({ id: 'second-article' })),
-    'second-article/en.md': '# Second',
-    'orphan-article/en.md': '# Orphan',
+    'second-article/en.md': '## Second',
+    'orphan-article/en.md': '## Orphan',
   }
 
   const result = validateBlogRepositoryAssets(assets)
@@ -152,8 +173,8 @@ test('repository validation produces deterministic Article packages from exact V
   const articles = assertValidBlogRepositoryAssets({
     'README.md': '# ignored repository guidance',
     'first-article/article.json': JSON.stringify(metadata()),
-    'first-article/en.md': '# English',
-    'first-article/fa.md': '# فارسی',
+    'first-article/en.md': '## English',
+    'first-article/fa.md': '## فارسی',
   })
 
   assert.equal(articles.length, 1)
@@ -168,7 +189,7 @@ test('filesystem adapter consumes the same shared repository contract', async ()
     const articleDir = join(root, 'first-article')
     await mkdir(articleDir, { recursive: true })
     await writeFile(join(articleDir, 'article.json'), JSON.stringify(metadata(), null, 2), 'utf8')
-    await writeFile(join(articleDir, 'en.md'), '# English body', 'utf8')
+    await writeFile(join(articleDir, 'en.md'), '## English body', 'utf8')
     const articles = await readBlogRepositoryDirectory(root)
     assert.equal(articles.length, 1)
     assert.deepEqual(articles[0].availableLocales, ['en'])
@@ -200,26 +221,30 @@ test('Blog Markdown renderer escapes raw HTML and rejects unsafe link/image prot
   assert.match(html, /src="https:\/\/cdn\.example\.com\/hero\.webp"/)
 })
 
-test('Blog Markdown presentation groups heading hierarchy into open collapsible sections and marks images zoomable', () => {
-  const html = renderPublicBlogMarkdown(`Intro paragraph.
+test('Blog Markdown presentation keeps H2/H3 hierarchy, citations and one section boundary', () => {
+  const html = renderPublicBlogMarkdown(`Intro paragraph [^openai-25].
 
-# Parent heading
+## Parent heading
 
 Parent body.
 
-## Child heading
+---
 
-Child body.
+### Child heading
 
-# Sibling heading
+Child body [^system-card].
+
+## Sibling heading
 
 ![zoom](https://cdn.example.com/zoom.webp)`)
 
-  assert.match(html, /<div class="blog-article-intro"><p>Intro paragraph\.<\/p><\/div>/)
+  assert.match(html, /<div class="blog-article-intro"><p>Intro paragraph <span class="public-markdown-citation" data-citation="openai-25">openai-25<\/span>\.<\/p><\/div>/)
   assert.equal((html.match(/<details class="blog-article-section"/g) ?? []).length, 3)
   assert.match(html, /data-heading-level="2" open><summary><h2>Parent heading<\/h2><\/summary>/)
   assert.match(html, /data-heading-level="3" open><summary><h3>Child heading<\/h3><\/summary>/)
   assert.match(html, /<h2>Parent heading<\/h2>[\s\S]*<h3>Child heading<\/h3>[\s\S]*<h2>Sibling heading<\/h2>/)
+  assert.match(html, /data-citation="system-card">system-card<\/span>/)
+  assert.equal(html.includes('<hr>'), false)
   assert.match(html, /data-blog-zoom="true" role="button" tabindex="0"/)
 })
 
