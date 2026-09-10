@@ -224,8 +224,16 @@ export function computeBlogArticleVersion(assets: Record<string, string>, articl
   return hash.digest('hex')
 }
 
-function branchRefPath(branch: string) {
-  return `/git/ref/heads/${branch.split('/').map(encodeURIComponent).join('/')}`
+function encodedBranchRef(branch: string) {
+  return branch.split('/').map(encodeURIComponent).join('/')
+}
+
+function branchRefReadPath(branch: string) {
+  return `/git/ref/heads/${encodedBranchRef(branch)}`
+}
+
+function branchRefUpdatePath(branch: string) {
+  return `/git/refs/heads/${encodedBranchRef(branch)}`
 }
 
 export async function readBlogGitRepository(
@@ -234,7 +242,7 @@ export async function readBlogGitRepository(
 ): Promise<BlogGitRepositorySnapshot> {
   const ref = await githubJson<{ object?: { sha?: string } }>(
     config,
-    branchRefPath(config.branch),
+    branchRefReadPath(config.branch),
     {},
     fetchImpl,
   )
@@ -506,7 +514,7 @@ async function commitArticleFiles({
   try {
     await githubJson(
       config,
-      branchRefPath(config.branch),
+      branchRefUpdatePath(config.branch),
       {
         method: 'PATCH',
         body: JSON.stringify({ sha: commit.sha, force: false }),
