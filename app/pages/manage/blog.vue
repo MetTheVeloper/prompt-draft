@@ -2,7 +2,7 @@
 import ManageBlogMarkdownEditor from '~/components/manage/ManageBlogMarkdownEditor.vue'
 import { AUTH_PERMISSIONS } from '~/config/authorization'
 import type { ManageBlogArticleSummary } from '../../../shared/manage-blog'
-import type { BlogLocale } from '../../../shared/blog-article'
+import type { BlogLocale } from '~/shared/blog-article'
 import {
   blogArticleToManageDraft,
   createEmptyManageBlogDraft,
@@ -29,6 +29,7 @@ const editorError = ref('')
 const activeLocale = ref<BlogLocale>('en')
 const validation = ref<ReturnType<typeof validateManageBlogDraft> | null>(null)
 const draft = reactive<ManageBlogDraft>(createEmptyManageBlogDraft())
+const blogLocales: BlogLocale[] = ['en', 'fa']
 
 const editingId = computed(() => (
   typeof route.query.article === 'string' ? route.query.article.trim() : ''
@@ -251,7 +252,7 @@ onMounted(async () => {
 
       <template v-else>
         <section class="manage-blog-panel">
-          <h3>Repository metadata</h3>
+          <h3>{{ t('manage.blog.groups.repositoryMetadata') }}</h3>
           <div class="manage-blog-grid manage-blog-grid--3">
             <label>
               <span>{{ t('manage.blog.fields.id') }}</span>
@@ -284,7 +285,7 @@ onMounted(async () => {
         </section>
 
         <section class="manage-blog-panel">
-          <h3>Editorial identity</h3>
+          <h3>{{ t('manage.blog.groups.editorialIdentity') }}</h3>
           <div class="manage-blog-grid manage-blog-grid--2">
             <label>
               <span>{{ t('manage.blog.fields.authorName') }}</span>
@@ -298,7 +299,7 @@ onMounted(async () => {
         </section>
 
         <section class="manage-blog-panel">
-          <h3>Hero media</h3>
+          <h3>{{ t('manage.blog.groups.heroMedia') }}</h3>
           <div class="manage-blog-grid manage-blog-grid--2">
             <label>
               <span>{{ t('manage.blog.fields.heroFullUrl') }}</span>
@@ -322,7 +323,7 @@ onMounted(async () => {
         <section class="manage-blog-panel manage-blog-localization">
           <div class="manage-blog-localization__tabs">
             <button
-              v-for="code in (['en', 'fa'] as BlogLocale[])"
+              v-for="code in blogLocales"
               :key="code"
               type="button"
               :class="{ active: activeLocale === code }"
@@ -423,31 +424,36 @@ onMounted(async () => {
   padding: 14px 16px;
 }
 
+.manage-blog-notice strong {
+  display: block;
+  margin-bottom: 4px;
+}
+
 .manage-blog-notice p,
 .manage-blog-validation p {
-  margin: 5px 0 0;
-  color: rgb(255 255 255 / 55%);
+  margin: 0;
+  color: rgb(255 255 255 / 58%);
   font-size: 12px;
   line-height: 1.7;
 }
 
 .manage-blog-notice__badge {
-  flex: none;
+  flex: 0 0 auto;
+  padding: 4px 8px;
   border-radius: 999px;
-  background: rgb(255 255 255 / 7%);
-  padding: 5px 9px;
-  font-size: 11px;
-  font-weight: 800;
+  background: rgb(255 255 255 / 8%);
+  color: rgb(255 255 255 / 65%);
+  font: 700 11px/1 monospace;
 }
 
 .manage-blog-state {
-  padding: 22px;
-  color: rgb(255 255 255 / 55%);
+  padding: 24px;
   text-align: center;
+  color: rgb(255 255 255 / 58%);
 }
 
 .manage-blog-state--error {
-  color: #ff8f8f;
+  color: #ff9b9b;
 }
 
 .manage-blog-table {
@@ -456,18 +462,19 @@ onMounted(async () => {
 
 .manage-blog-table__row {
   display: grid;
-  grid-template-columns: minmax(160px, 1.35fr) minmax(150px, 1fr) 110px 100px minmax(150px, 1fr) 70px;
+  grid-template-columns: minmax(180px, 2fr) minmax(120px, 1fr) 110px 90px 150px 70px;
   gap: 12px;
   align-items: center;
   width: 100%;
-  padding: 11px 14px;
+  padding: 12px 14px;
 }
 
 .manage-blog-table__head {
-  color: rgb(255 255 255 / 45%);
+  color: rgb(255 255 255 / 48%);
   font-size: 11px;
-  font-weight: 800;
+  font-weight: 700;
   text-transform: uppercase;
+  letter-spacing: .04em;
 }
 
 .manage-blog-table__article {
@@ -475,9 +482,8 @@ onMounted(async () => {
   border-top: 1px solid rgb(255 255 255 / 7%);
   background: transparent;
   color: inherit;
-  text-align: start;
+  text-align: inherit;
   cursor: pointer;
-  font: inherit;
 }
 
 .manage-blog-table__article:hover {
@@ -490,34 +496,35 @@ onMounted(async () => {
 }
 
 .manage-blog-table__article small,
-.manage-blog-table__article code,
-.manage-blog-edit {
-  color: rgb(255 255 255 / 48%);
+.manage-blog-table__article code {
+  margin-top: 2px;
+  color: rgb(255 255 255 / 45%);
   font-size: 11px;
 }
 
 .manage-blog-status {
-  width: fit-content;
-  border-radius: 999px;
-  padding: 4px 8px;
-  background: rgb(255 255 255 / 7%);
-  font-size: 11px;
-  font-weight: 700;
+  text-transform: capitalize;
 }
 
 .manage-blog-status[data-status='published'] {
-  background: rgb(72 199 142 / 15%);
-  color: #79d8aa;
+  color: #86efac;
+}
+
+.manage-blog-status[data-status='draft'] {
+  color: #facc15;
+}
+
+.manage-blog-edit {
+  color: rgb(255 255 255 / 58%);
+  font-size: 12px;
 }
 
 .manage-blog-panel {
-  display: grid;
-  gap: 14px;
   padding: 16px;
 }
 
 .manage-blog-panel h3 {
-  margin: 0;
+  margin: 0 0 14px;
   font-size: 14px;
 }
 
@@ -536,69 +543,62 @@ onMounted(async () => {
 
 .manage-blog-panel label,
 .manage-blog-localization__body > label {
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 6px;
-  min-width: 0;
-}
-
-.manage-blog-panel label > span,
-.manage-blog-localization__body > label > span {
-  color: rgb(255 255 255 / 55%);
-  font-size: 11px;
-  font-weight: 700;
-}
-
-.manage-blog-panel input,
-.manage-blog-panel select,
-.manage-blog-panel textarea {
-  width: 100%;
-  border: 1px solid rgb(255 255 255 / 10%);
-  border-radius: 9px;
-  background: rgb(0 0 0 / 15%);
-  color: inherit;
-  padding: 9px 10px;
-  outline: none;
-  font: inherit;
+  color: rgb(255 255 255 / 58%);
   font-size: 12px;
 }
 
-.manage-blog-panel input:focus,
-.manage-blog-panel select:focus,
-.manage-blog-panel textarea:focus {
-  border-color: rgb(255 255 255 / 24%);
+.manage-blog-panel input,
+.manage-blog-panel textarea,
+.manage-blog-panel select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 10px;
+  outline: none;
+  background: rgb(0 0 0 / 18%);
+  color: inherit;
+  padding: 10px 11px;
+  font: inherit;
 }
 
-.manage-blog-panel input:disabled {
-  opacity: .55;
+.manage-blog-panel textarea {
+  resize: vertical;
 }
 
 .manage-blog-localization {
-  gap: 12px;
+  padding: 0;
+  overflow: hidden;
 }
 
 .manage-blog-localization__tabs {
   display: flex;
   gap: 6px;
+  padding: 8px;
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
 }
 
 .manage-blog-localization__tabs button {
-  border: 1px solid rgb(255 255 255 / 9%);
+  border: 0;
   border-radius: 9px;
+  padding: 8px 12px;
   background: transparent;
-  color: inherit;
-  padding: 7px 12px;
+  color: rgb(255 255 255 / 58%);
   cursor: pointer;
-  font: inherit;
-  font-size: 12px;
 }
 
 .manage-blog-localization__tabs button.active {
-  background: rgb(255 255 255 / 10%);
+  background: rgb(255 255 255 / 9%);
+  color: inherit;
 }
 
 .manage-blog-localization__body {
-  display: grid;
-  gap: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
 }
 
 .manage-blog-validation {
@@ -606,29 +606,28 @@ onMounted(async () => {
 }
 
 .manage-blog-validation[data-state='valid'] {
-  border-color: rgb(72 199 142 / 30%);
+  border-color: rgb(134 239 172 / 28%);
 }
 
 .manage-blog-validation[data-state='invalid'] {
-  border-color: rgb(255 113 113 / 30%);
+  border-color: rgb(248 113 113 / 35%);
 }
 
 .manage-blog-validation ul {
-  display: grid;
-  gap: 5px;
   margin: 10px 0 0;
-  padding-inline-start: 20px;
+  padding-inline-start: 22px;
+  color: #ffb4b4;
   font-size: 12px;
-  line-height: 1.6;
+  line-height: 1.65;
 }
 
-@media (max-width: 1100px) {
-  .manage-blog-table__head {
-    display: none;
+@media (max-width: 980px) {
+  .manage-blog-table {
+    overflow-x: auto;
   }
 
   .manage-blog-table__row {
-    grid-template-columns: 1fr 1fr;
+    min-width: 820px;
   }
 
   .manage-blog-grid--3 {
@@ -636,10 +635,9 @@ onMounted(async () => {
   }
 }
 
-@media (max-width: 700px) {
+@media (max-width: 640px) {
   .manage-blog-grid--2,
-  .manage-blog-grid--3,
-  .manage-blog-table__row {
+  .manage-blog-grid--3 {
     grid-template-columns: 1fr;
   }
 }
