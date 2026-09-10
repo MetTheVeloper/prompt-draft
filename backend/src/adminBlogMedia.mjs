@@ -11,6 +11,7 @@ const BLOG_MEDIA_ROOT = 'blog/'
 const MAX_BODY_BYTES = 24 * 1024 * 1024
 const MAX_FULL_BYTES = 12 * 1024 * 1024
 const MAX_THUMBNAIL_BYTES = 4 * 1024 * 1024
+const MAX_ALT_LENGTH = 500
 const FULL_MAX_EDGE = 2048
 const THUMBNAIL_MAX_EDGE = 640
 const LIST_MAX_KEYS = 240
@@ -68,6 +69,16 @@ function requireDimension(value, label, maxEdge) {
   return value
 }
 
+function requireAlt(value) {
+  if (typeof value !== 'string') throw validationError('alt text is required')
+  const normalized = value.trim()
+  if (!normalized) throw validationError('alt text is required')
+  if (normalized.length > MAX_ALT_LENGTH) {
+    throw validationError(`alt text must be ${MAX_ALT_LENGTH} characters or fewer`)
+  }
+  return normalized
+}
+
 function validateUploadBody(body) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) {
     throw validationError('Blog media body must be an object')
@@ -98,6 +109,7 @@ function validateUploadBody(body) {
     sourceName: typeof body.sourceName === 'string'
       ? body.sourceName.trim().slice(0, 500)
       : '',
+    alt: requireAlt(body.alt),
     fullBuffer,
     thumbnailBuffer,
     width,
@@ -198,6 +210,7 @@ export function normalizeBlogMediaManifest(value) {
     try { return normalizeBlogMediaPrefix(value.folder) } catch { return null }
   })()
   const sourceName = typeof value.sourceName === 'string' ? value.sourceName.trim().slice(0, 500) : ''
+  const alt = typeof value.alt === 'string' ? value.alt.trim().slice(0, MAX_ALT_LENGTH) : ''
   const createdAt = typeof value.createdAt === 'string' && !Number.isNaN(Date.parse(value.createdAt))
     ? new Date(value.createdAt).toISOString()
     : null
@@ -232,6 +245,7 @@ export function normalizeBlogMediaManifest(value) {
     id,
     folder,
     sourceName: sourceName || id,
+    alt,
     createdAt,
     storageKey,
     thumbnailStorageKey,
@@ -311,6 +325,7 @@ async function auditBlogMediaUpload(actor, asset) {
       storageKey: asset.storageKey,
       thumbnailStorageKey: asset.thumbnailStorageKey,
       sourceName: asset.sourceName,
+      alt: asset.alt,
     }),
   ])
 }
@@ -326,6 +341,7 @@ async function uploadBlogMedia(actor, payload) {
     id,
     folder: keys.folder,
     sourceName: payload.sourceName || id,
+    alt: payload.alt,
     createdAt: createdAt.toISOString(),
     storageKey: keys.fullKey,
     thumbnailStorageKey: keys.thumbnailKey,
@@ -341,6 +357,7 @@ async function uploadBlogMedia(actor, payload) {
     id: asset.id,
     folder: asset.folder,
     sourceName: asset.sourceName,
+    alt: asset.alt,
     createdAt: asset.createdAt,
     full: {
       key: asset.storageKey,
