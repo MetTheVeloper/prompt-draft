@@ -1,7 +1,9 @@
 import type {
   ManageBlogArticleResponse,
   ManageBlogListResponse,
-} from '../../shared/manage-blog'
+  ManageBlogWriteInput,
+  ManageBlogWriteResponse,
+} from '../shared/manage-blog'
 
 export function useManageBlog() {
   const auth = useAuth()
@@ -18,8 +20,26 @@ export function useManageBlog() {
     })
   }
 
+  function create(input: ManageBlogWriteInput) {
+    return $fetch<ManageBlogWriteResponse>('/api/manage/blog', {
+      method: 'POST',
+      headers: auth.authHeaders(),
+      body: input,
+    })
+  }
+
+  function update(id: string, input: ManageBlogWriteInput) {
+    return $fetch<ManageBlogWriteResponse>(`/api/manage/blog/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      headers: auth.authHeaders(),
+      body: input,
+    })
+  }
+
   return {
     list,
     load,
+    create,
+    update,
   }
 }
