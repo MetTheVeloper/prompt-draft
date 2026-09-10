@@ -153,23 +153,35 @@ test('Blog management runtime contract stays inside the Nuxt app module graph an
   const page = source('app/pages/manage/blog.vue')
   const rootContract = source('shared/blog-article.ts')
   const appContract = source('app/shared/blog-article.ts')
+  const rootManageContract = source('shared/manage-blog.ts')
+  const appManageContract = source('app/shared/manage-blog.ts')
 
   assert.match(draft, /from ['"]\.\.\/shared\/blog-article['"]/)
+  assert.match(draft, /from ['"]\.\.\/shared\/manage-blog['"]/)
   assert.doesNotMatch(draft, /from ['"]~\/shared\/blog-article['"]/)
   assert.doesNotMatch(draft, /\.\.\/\.\.\/shared\/blog-article/)
   assert.match(page, /from ['"]~\/shared\/blog-article['"]/)
+  assert.match(page, /from ['"]~\/shared\/manage-blog['"]/)
   assert.match(rootContract, /export \* from ['"]\.\.\/app\/shared\/blog-article['"]/)
+  assert.match(rootManageContract, /export \* from ['"]\.\.\/app\/shared\/manage-blog['"]/)
   assert.match(appContract, /validateBlogArticlePackage/)
   assert.match(appContract, /validateBlogRepositoryAssets/)
+  assert.match(appManageContract, /ManageBlogWriteInput/)
 })
 
 test('Nitro management repository endpoints fail behind server-side permission verification', () => {
   const listRoute = source('server/api/manage/blog/index.get.ts')
   const detailRoute = source('server/api/manage/blog/[id].get.ts')
+  const createRoute = source('server/api/manage/blog/index.post.ts')
+  const updateRoute = source('server/api/manage/blog/[id].put.ts')
   const auth = source('server/utils/blogManageAuthorization.ts')
+  const writer = source('server/utils/blogManageWrite.ts')
 
   assert.match(listRoute, /requireBlogManage\(event\)/)
   assert.match(detailRoute, /requireBlogManage\(event\)/)
+  assert.match(createRoute, /saveManageBlogArticle\(event, null\)/)
+  assert.match(updateRoute, /saveManageBlogArticle\(event, articleId\)/)
+  assert.match(writer, /requireBlogManage\(event\)/)
   assert.match(auth, /\/api\/auth\/me/)
   assert.match(auth, /BLOG_MANAGE_PERMISSION\s*=\s*['"]blog\.manage['"]/)
   assert.match(auth, /Authorization:\s*authHeader/)
@@ -177,15 +189,23 @@ test('Nitro management repository endpoints fail behind server-side permission v
   assert.match(auth, /statusCode:\s*502/)
 })
 
-test('4E.4 remains read-only until the canonical Git publication adapter', () => {
-  assert.equal(existsSync('server/api/manage/blog/index.post.ts'), false)
-  assert.equal(existsSync('server/api/manage/blog/[id].put.ts'), false)
+test('4E.5 canonical write path keeps system metadata out of the browser payload', () => {
+  assert.equal(existsSync('server/api/manage/blog/index.post.ts'), true)
+  assert.equal(existsSync('server/api/manage/blog/[id].put.ts'), true)
   assert.equal(existsSync('server/api/manage/blog/[id].delete.ts'), false)
 
   const page = source('app/pages/manage/blog.vue')
-  assert.match(page, /repositoryNoticeDetail/)
-  assert.doesNotMatch(page, /saveArticle\(/)
-  assert.doesNotMatch(page, /publishArticle\(/)
+  const draft = source('app/utils/manageBlogDraft.ts')
+  const contract = source('app/shared/manage-blog.ts')
+
+  assert.match(page, /saveArticle\(/)
+  assert.match(page, /manageBlogDraftToWriteInput/)
+  assert.match(page, /articleVersion/)
+  assert.match(page, /writeConfigured/)
+  assert.match(draft, /manageBlogDraftToWriteInput/)
+  assert.match(contract, /expectedVersion:\s*string \| null/)
+  const writeType = contract.match(/export type ManageBlogWriteInput = \{([\s\S]*?)\n\}/)?.[1] ?? ''
+  assert.doesNotMatch(writeType, /\bid\b|author|publishedAt|updatedAt/)
 })
 
 test('Blog management localization is registered for EN and FA', () => {
@@ -203,6 +223,8 @@ test('Blog management localization is registered for EN and FA', () => {
   assert.match(fa, /repositoryMetadata/)
   assert.match(en, /toolbarLabel/)
   assert.match(fa, /toolbarLabel/)
+  assert.match(en, /saveDraft/)
+  assert.match(fa, /saveDraft/)
 })
 
 test('Blog management neutral styling uses project theme semantics instead of hardcoded white or black', () => {
