@@ -2,7 +2,7 @@
 
 Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F IN PROGRESS**
 
-Date: 2026-09-10
+Date: 2026-09-11
 
 Branch:
 
@@ -280,9 +280,11 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 
 ## 12. Current Phase 4F state / next action
 
-4F.1 evidence closure is complete. The audit found no public/protected boundary defect requiring redesign and retained all accepted 4A–4E contracts. Application routes `/prompts` and `/user`, the `/dashboard` compatibility redirect, the static-generation compatibility path, Blog Nitro repository loading, shared public URL inventory and staging/application noindex layers remain KEEP.
+4F.1 evidence closure is complete. The audit retained all accepted 4A–4E public/protected/indexability contracts. Application routes `/prompts` and `/user`, the `/dashboard` compatibility redirect, the static-generation compatibility path, Blog Nitro repository loading, shared public URL inventory and staging/application noindex layers remain KEEP.
 
-The first evidence-backed legacy retirement is implemented:
+### Verified legacy retirement
+
+The first evidence-backed retirement is implemented and founder-local verified:
 
 ```text
 95b7d7717544d8f8c8b2fb717342cecf2432b12c
@@ -292,10 +294,65 @@ d44e3cb1bb257f4b8d2faa34393275c54385b47c
   -> require Discovery regression coverage to keep cleanup/legacy markers absent
 ```
 
-The native Discovery SSR/prerender implementation is now the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active only for its current shared sitemap/llms/robots compatibility role.
+Founder-local evidence on 2026-09-11:
 
-Verification for this retirement is not yet founder-local accepted. No Docker service rebuild is required because only build/test tooling changed. Run the focused Discovery regression first, then the current post-Blog static integration gate.
+```text
+pnpm test:discovery-seo    -> PASS 8/8
+pnpm verify:phase4e-static -> PASS
+shared canonical URL count -> 224
+Nuxt prerendered routes    -> 341
+```
 
-A new 4F integration finding remains **INVESTIGATE**: `scripts/phase4d-static-generate-verification.mjs` still calculates the old pre-Blog expected URL count and therefore is not a current Blog-aware integration verifier. Do not delete it merely because it is historical. Determine whether to update it to the accepted shared inventory or retire it after proving that no active workflow/caller requires the historical standalone command. `scripts/blog-static-generate-verification.ts` and `pnpm verify:phase4e-static` are currently Blog-aware and derive their expected URL set from the shared inventory.
+The native Discovery SSR/prerender implementation is now the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active only for its shared sitemap/llms/robots compatibility role.
 
-Preserve every accepted public/indexability/security contract and continue to remove only redundancy that is proven safe to retire.
+### Integration defect — API source/runtime drift
+
+Branch-exact audit found that accepted `publicCreator.mjs` and `publicInventory.mjs` handlers existed but were never committed into the actual `backend/src/index.mjs` router. The founder-local API still served `/api/public/inventory`, demonstrating a stale/local API image rather than reproducible branch state. `compose.yaml`, `backend/Dockerfile`, `backend/package.json` and path-specific commit history establish that a fresh API build uses `backend/src/index.mjs` and that no later router-wiring commit existed.
+
+The repair changes no DTO, authorization, Creator policy or Prompt privacy contract. It only wires the existing handlers and adds a regression guard:
+
+```text
+c53febee08a99dd969e3c158fc4ec3578ad6bbd0
+  -> wire public Creator + public inventory handlers in backend/src/index.mjs
+
+e481364492ddd385592798e0357008153377458e
+  -> source-level public API routing guard
+
+0bb966c1da8aab6ec12a6f8b44c7cc2373786b07
+  -> include guard in backend test:public-creator
+
+77cc6fd232d121226269f606ea2cf76f78bb0fca
+  -> include guard in root test:public-inventory-api
+
+80c1b65cae29718f7ff2be728b8171d7500d8c2b
+  -> add root test:public-creator-api
+```
+
+This repair is **PENDING FOUNDER VERIFICATION**. Because backend source/test files changed, rebuild only API with `pnpm api`. Frontend and full-stack rebuilds are not required.
+
+### Static verifier replacement before legacy retirement
+
+The historical `verify:phase4d-static` remains accepted evidence for Phase 4D, but its implementation calculates the pre-Blog inventory and is stale as a current post-4E standalone gate.
+
+A new integrated replacement exists:
+
+```text
+81c5189df538dba674a73db3dbab990e5480cce7
+  -> scripts/phase4f-static-verification.ts
+```
+
+`pnpm verify:phase4f-static` runs the accepted Blog-aware `verify:phase4e-static` generation first and then reuses that output to verify all 12 EN/FA native Discovery pages for canonical/hreflang, CollectionPage + ItemList JSON-LD, retired legacy-marker absence, protected/legacy acquisition-link absence, production-like noindex behavior and private-data exclusion.
+
+Do **not** delete `scripts/phase4d-static-generate-verification.mjs` or remove `verify:phase4d-static` yet. Once `verify:phase4f-static` passes founder-local, the replacement gate will satisfy the remaining deletion proof and the historical standalone verifier can be retired without losing unique Discovery static coverage.
+
+Current verification sequence:
+
+```powershell
+git pull
+pnpm api
+pnpm test:public-inventory-api
+pnpm test:public-creator-api
+pnpm verify:phase4f-static
+```
+
+No `pnpm frontend` and no `pnpm stack` are required for this batch.
