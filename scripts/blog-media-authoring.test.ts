@@ -98,14 +98,17 @@ test('Markdown image workflow reuses Gallery and defaults editable alt from mana
   assert.match(altComposable, /asset:\s*BlogMediaAsset/)
 })
 
-test('Markdown authoring panes stay top-aligned and preview images are capped to 400px', () => {
+test('Markdown authoring panes stay top-aligned and shared article images keep the accepted 400px cap', () => {
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const presentation = source('app/components/blog/BlogArticlePresentation.vue')
 
   assert.match(editor, /align-items="start"/)
   assert.ok((editor.match(/<el-flex\s+rules="css"/g) ?? []).length >= 3)
-  assert.match(editor, /max-width:\s*min\(100%, 400px\)/)
-  assert.match(editor, /max-height:\s*400px/)
-  assert.match(editor, /object-fit:\s*contain/)
+  assert.match(editor, /<BlogArticlePresentation/)
+  assert.match(presentation, /max-width:\s*min\(100%, 400px\)/)
+  assert.match(presentation, /max-height:\s*400px/)
+  assert.match(presentation, /object-fit:\s*contain/)
+  assert.match(presentation, /cursor:\s*zoom-in/)
 })
 
 test('Blog media UI stays theme semantic without a parallel local color system', () => {
@@ -113,6 +116,8 @@ test('Blog media UI stays theme semantic without a parallel local color system',
     source('app/components/manage/MediaGallery.vue'),
     source('app/pages/manage/blog.vue'),
     source('app/components/manage/ManageBlogImageAltModal.vue'),
+    source('app/components/blog/BlogArticlePresentation.vue'),
+    source('app/components/blog/BlogImageLightboxModal.vue'),
   ]
 
   for (const ui of files) {
@@ -122,4 +127,5 @@ test('Blog media UI stays theme semantic without a parallel local color system',
     assert.doesNotMatch(ui, /(?:color|background(?:-color)?):\s*(?:white|black)\b/i)
   }
   assert.match(files[0], /var\(--normalText5\)/)
+  assert.match(files[3], /var\(--normalText5\)/)
 })
