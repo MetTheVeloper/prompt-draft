@@ -102,7 +102,7 @@ test('Markdown authoring panes stay top-aligned and preview images are capped to
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
 
   assert.match(editor, /align-items="start"/)
-  assert.ok((editor.match(/<el-flex rules="css"/g) ?? []).length >= 3)
+  assert.ok((editor.match(/<el-flex\s+rules="css"/g) ?? []).length >= 3)
   assert.match(editor, /max-width:\s*min\(100%, 400px\)/)
   assert.match(editor, /max-height:\s*400px/)
   assert.match(editor, /object-fit:\s*contain/)
