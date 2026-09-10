@@ -65,6 +65,7 @@ test('managed Blog media manifest only accepts public-safe Blog-scoped asset met
     id: '11111111-1111-4111-8111-111111111111',
     folder: '2026/09/',
     sourceName: 'hero.png',
+    alt: 'Editorial portrait with pink glasses',
     createdAt: '2026-09-10T06:00:00.000Z',
     full: {
       key: 'blog/2026/09/11111111-1111-4111-8111-111111111111.full.webp',
@@ -82,8 +83,31 @@ test('managed Blog media manifest only accepts public-safe Blog-scoped asset met
 
   assert.ok(manifest)
   assert.equal(manifest.folder, '2026/09/')
+  assert.equal(manifest.alt, 'Editorial portrait with pink glasses')
   assert.equal(manifest.width, 1600)
   assert.equal(manifest.thumbnailWidth, 640)
+
+  const legacy = normalizeBlogMediaManifest({
+    version: 1,
+    id: '22222222-2222-4222-8222-222222222222',
+    folder: '2026/09/',
+    sourceName: 'legacy.png',
+    createdAt: '2026-09-10T06:00:00.000Z',
+    full: {
+      key: 'blog/2026/09/22222222-2222-4222-8222-222222222222.full.webp',
+      url: 'https://cdn.example.test/blog/2026/09/legacy-full.webp',
+      width: 800,
+      height: 600,
+    },
+    thumbnail: {
+      key: 'blog/2026/09/22222222-2222-4222-8222-222222222222.thumb.webp',
+      url: 'https://cdn.example.test/blog/2026/09/legacy-thumb.webp',
+      width: 640,
+      height: 480,
+    },
+  })
+  assert.ok(legacy)
+  assert.equal(legacy.alt, '')
 
   const escaped = normalizeBlogMediaManifest({
     version: 1,
