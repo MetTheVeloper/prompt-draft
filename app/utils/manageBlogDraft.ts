@@ -4,7 +4,7 @@ import {
   type BlogArticleStatus,
   type BlogLocale,
   type BlogValidationIssue,
-} from '../../shared/blog-article'
+} from '~/shared/blog-article'
 
 export type ManageBlogDraft = {
   id: string
