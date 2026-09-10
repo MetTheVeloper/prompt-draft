@@ -102,6 +102,29 @@ test('Markdown preview is theme-colored and top-aligned', () => {
   assert.match(editor, /color:\s*var\(--normalText\)/)
 })
 
+test('Markdown editor grows with long-form content and exposes toolbar actions through the global point menu', () => {
+  const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+
+  assert.match(editor, /syncEditorHeight/)
+  assert.match(editor, /element\.style\.height\s*=\s*['"]auto['"]/)
+  assert.match(editor, /element\.style\.overflowY\s*=\s*['"]hidden['"]/)
+  assert.match(editor, /element\.style\.resize\s*=\s*['"]none['"]/)
+  assert.match(editor, /element\.scrollHeight/)
+  assert.match(editor, /watch\(model/)
+  assert.doesNotMatch(editor, /contenteditable/i)
+
+  assert.match(editor, /useMenu\(\)/)
+  assert.match(editor, /openMarkdownContextMenu/)
+  assert.match(editor, /@contextmenu="openMarkdownContextMenu"/)
+  assert.match(editor, /mode:\s*['"]point['"]/)
+  assert.match(editor, /const range = currentRange\(\)/)
+  assert.match(editor, /items:\s*markdownMenuItems\(range\)/)
+  assert.match(editor, /handler:\s*\(\) => insertLink\(range\)/)
+  assert.match(editor, /handler:\s*\(\) => insertImage\(range\)/)
+  assert.match(editor, /handler:\s*\(\) => wrap\(['"]\*\*['"]/)
+  assert.match(editor, /handler:\s*\(\) => prefixLines\(['"]## /)
+})
+
 test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
   const draft = source('app/utils/manageBlogDraft.ts')
   const page = source('app/pages/manage/blog.vue')
