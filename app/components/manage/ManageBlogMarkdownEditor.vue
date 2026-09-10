@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BlogArticlePresentation from '~/components/blog/BlogArticlePresentation.vue'
 import type { GlobalMenuItem } from '~/composables/useMenu'
 
 const props = withDefaults(defineProps<{
@@ -32,7 +33,6 @@ type TextFieldContextMenuContext = {
 }
 
 const editorField = ref<TextFieldHandle | null>(null)
-const previewHtml = computed(() => renderPublicBlogMarkdown(model.value))
 const direction = computed(() => props.locale === 'fa' ? 'rtl' : 'ltr')
 
 function getTextarea() {
@@ -263,10 +263,10 @@ onMounted(() => {
           bc="normal15"
           class="w100 blog-markdown-preview-shell"
         >
-          <div
-            v-if="previewHtml"
-            class="blog-markdown-preview w100"
-            v-html="previewHtml"
+          <BlogArticlePresentation
+            v-if="model.trim()"
+            :markdown="model"
+            :dir="direction"
           />
           <el-text v-else color="normal40" :size="12">
             {{ t('manage.blog.markdown.emptyPreview') }}
@@ -280,33 +280,6 @@ onMounted(() => {
 <style scoped>
 .blog-markdown-preview-shell {
   min-height: 360px;
-  overflow-wrap: anywhere;
-}
-
-.blog-markdown-preview {
-  color: var(--normalText);
-  line-height: 1.8;
-}
-
-.blog-markdown-preview :deep(a) {
-  color: var(--primary);
-}
-
-.blog-markdown-preview :deep(img) {
-  display: block;
-  max-width: min(100%, 400px);
-  max-height: 400px;
-  width: auto;
-  height: auto;
-  object-fit: contain;
-  border-radius: 10px;
-}
-
-.blog-markdown-preview :deep(pre) {
-  overflow: auto;
-  padding: 12px;
-  border-radius: 10px;
-  background: var(--normalText5);
 }
 
 @media (max-width: 980px) {
