@@ -19,9 +19,10 @@ test('frontend and backend share the explicit blog.manage permission contract', 
   assert.match(manage, /AUTH_PERMISSIONS\.BLOG_MANAGE/)
 })
 
-test('Blog management page is permission-gated and reuses canonical validator + safe renderer', () => {
+test('Blog management page is permission-gated and reuses canonical validator + shared safe presentation', () => {
   const page = source('app/pages/manage/blog.vue')
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const presentation = source('app/components/blog/BlogArticlePresentation.vue')
   const draft = source('app/utils/manageBlogDraft.ts')
 
   assert.match(page, /middleware:\s*['"]authorization['"]/)
@@ -29,13 +30,16 @@ test('Blog management page is permission-gated and reuses canonical validator + 
   assert.match(page, /validateManageBlogDraft/)
   assert.match(page, /ManageBlogMarkdownEditor/)
   assert.match(draft, /validateBlogArticlePackage/)
-  assert.match(editor, /renderPublicBlogMarkdown/)
+  assert.match(editor, /BlogArticlePresentation/)
+  assert.match(presentation, /renderPublicBlogMarkdown/)
+  assert.match(presentation, /v-html="renderedBody"/)
   assert.doesNotMatch(editor, /v-html="model"/)
 })
 
 test('Blog management UI is built from Prompt Draft el primitives instead of page-local native controls', () => {
   const page = source('app/pages/manage/blog.vue')
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const presentation = source('app/components/blog/BlogArticlePresentation.vue')
   const linkModal = source('app/components/manage/ManageBlogLinkModal.vue')
 
   assert.match(page, /<el-flex\b/)
@@ -54,10 +58,13 @@ test('Blog management UI is built from Prompt Draft el primitives instead of pag
   assert.match(editor, /<el-grid\b/)
   assert.match(editor, /<el-flex\b/)
   assert.match(editor, /<el-text\b/)
-  assert.doesNotMatch(editor, /<(?:textarea|button|label|section|span|strong|em)\b/i)
-  const nativeDivs = editor.match(/<div\b/gi) ?? []
+  assert.match(editor, /<BlogArticlePresentation\b/)
+  assert.doesNotMatch(editor, /<(?:textarea|button|label|section|div|span|strong|em)\b/i)
+
+  assert.match(presentation, /<el-flex\b/)
+  const nativeDivs = presentation.match(/<div\b/gi) ?? []
   assert.equal(nativeDivs.length, 1)
-  assert.match(editor, /<div[\s\S]*?v-html="previewHtml"/)
+  assert.match(presentation, /<div[\s\S]*?v-html="renderedBody"/)
 
   assert.match(linkModal, /<el-text-field\b/)
   assert.match(linkModal, /<el-button\b/)
@@ -96,10 +103,16 @@ test('Markdown link workflow uses the global modal and canonical Blog public URL
   assert.match(modalComposable, /ManageBlogLinkModal/)
 })
 
-test('Markdown preview is theme-colored and top-aligned', () => {
+test('Markdown preview is top-aligned and uses the same shared themed presentation as public Blog detail', () => {
   const editor = source('app/components/manage/ManageBlogMarkdownEditor.vue')
+  const presentation = source('app/components/blog/BlogArticlePresentation.vue')
+  const publicPage = source('app/pages/blog/[slug].vue')
+
+  assert.match(editor, /align-items="start"/)
   assert.match(editor, /rules="css"[\s\S]*blog-markdown-preview-shell/)
-  assert.match(editor, /color:\s*var\(--normalText\)/)
+  assert.match(editor, /<BlogArticlePresentation/)
+  assert.match(publicPage, /<BlogArticlePresentation/)
+  assert.match(presentation, /color:\s*var\(--normalText\)/)
 })
 
 test('Markdown editor grows with content without introducing contenteditable', () => {
@@ -146,6 +159,32 @@ test('Markdown toolbar restores selection focus without scrolling the page', () 
   assert.match(editor, /setSelectionRange\(range\.start, range\.start \+ replacement\.length\)/)
   assert.match(textField, /function focus\(options\?: FocusOptions\)/)
   assert.match(textField, /fieldRef\.value\?\.focus\(options\)/)
+})
+
+test('shared Blog presentation owns collapsible heading sections and global image lightbox behavior', () => {
+  const markdown = source('app/utils/publicBlogMarkdown.ts')
+  const presentation = source('app/components/blog/BlogArticlePresentation.vue')
+  const imageComposable = source('app/composables/useBlogImageLightbox.ts')
+  const imageModal = source('app/components/blog/BlogImageLightboxModal.vue')
+  const zoomImage = source('app/components/blog/BlogZoomableImage.vue')
+  const publicPage = source('app/pages/blog/[slug].vue')
+
+  assert.match(markdown, /<details class="blog-article-section"/)
+  assert.match(markdown, /<summary>\$\{section\.headingHtml\}<\/summary>/)
+  assert.match(markdown, /data-heading-level/)
+  assert.match(markdown, /data-blog-zoom="true"/)
+  assert.match(presentation, /useBlogImageLightbox\(\)/)
+  assert.match(presentation, /img\[data-blog-zoom="true"\]/)
+  assert.match(presentation, /cursor:\s*zoom-in/)
+  assert.match(presentation, /details:not\(\[open\]\)/)
+  assert.match(imageComposable, /useModal\(\)/)
+  assert.match(imageComposable, /BlogImageLightboxModal/)
+  assert.match(imageComposable, /calc\(100vw - 32px\)/)
+  assert.match(imageModal, /<el-flex\b/)
+  assert.match(imageModal, /cursor:\s*zoom-out/)
+  assert.doesNotMatch(imageModal, /position:\s*fixed/)
+  assert.match(zoomImage, /useBlogImageLightbox\(\)/)
+  assert.match(publicPage, /<BlogZoomableImage/)
 })
 
 test('Blog management runtime contract stays inside the Nuxt app module graph and remains standalone-testable', () => {
@@ -232,6 +271,8 @@ test('Blog management neutral styling uses project theme semantics instead of ha
     source('app/pages/manage/blog.vue'),
     source('app/components/manage/ManageBlogMarkdownEditor.vue'),
     source('app/components/manage/ManageBlogLinkModal.vue'),
+    source('app/components/blog/BlogArticlePresentation.vue'),
+    source('app/components/blog/BlogImageLightboxModal.vue'),
   ]
 
   for (const ui of files) {
@@ -243,13 +284,14 @@ test('Blog management neutral styling uses project theme semantics instead of ha
 
   const page = files[0]
   const editor = files[1]
+  const presentation = files[3]
   assert.match(page, /bg="surface"/)
   assert.match(page, /bc="normal15"/)
   assert.match(page, /color="normal55"/)
   assert.match(editor, /bg="normal5"/)
   assert.match(editor, /bc="normal15"/)
-  assert.match(editor, /var\(--normalText5\)/)
-  assert.match(editor, /var\(--normalText\)/)
+  assert.match(presentation, /var\(--normalText5\)/)
+  assert.match(presentation, /var\(--normalText\)/)
 })
 
 test('4E.4 adds no editor dependency or second Markdown engine', () => {
