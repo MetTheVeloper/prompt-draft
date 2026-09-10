@@ -33,6 +33,20 @@ test('Blog management page is permission-gated and reuses canonical validator + 
   assert.doesNotMatch(editor, /v-html="model"/)
 })
 
+test('Blog management runtime contract stays inside the Nuxt app module graph', () => {
+  const draft = source('app/utils/manageBlogDraft.ts')
+  const page = source('app/pages/manage/blog.vue')
+  const rootContract = source('shared/blog-article.ts')
+  const appContract = source('app/shared/blog-article.ts')
+
+  assert.match(draft, /from ['"]~\/shared\/blog-article['"]/)
+  assert.match(page, /from ['"]~\/shared\/blog-article['"]/)
+  assert.doesNotMatch(draft, /\.\.\/\.\.\/shared\/blog-article/)
+  assert.match(rootContract, /export \* from ['"]\.\.\/app\/shared\/blog-article['"]/)
+  assert.match(appContract, /validateBlogArticlePackage/)
+  assert.match(appContract, /validateBlogRepositoryAssets/)
+})
+
 test('Nitro management repository endpoints fail behind server-side permission verification', () => {
   const listRoute = source('server/api/manage/blog/index.get.ts')
   const detailRoute = source('server/api/manage/blog/[id].get.ts')
@@ -69,6 +83,8 @@ test('Blog management localization is registered for EN and FA', () => {
   assert.match(i18n, /manage-blog\.fa/)
   assert.match(en, /repository-backed bilingual Blog articles/)
   assert.match(fa, /مخزن/)
+  assert.match(en, /repositoryMetadata/)
+  assert.match(fa, /repositoryMetadata/)
 })
 
 test('4E.4 adds no editor dependency or second Markdown engine', () => {
