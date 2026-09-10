@@ -2,8 +2,8 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 
 import type { BlogArticle } from '../shared/blog-article'
+import { BLOG_SYSTEM_AUTHOR } from '../shared/manage-blog'
 import {
-  BLOG_SYSTEM_AUTHOR,
   blogArticleToManageDraft,
   createEmptyManageBlogDraft,
   deriveManageBlogDraftId,
