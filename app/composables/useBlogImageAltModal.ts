@@ -1,10 +1,12 @@
 import ManageBlogImageAltModal from '~/components/manage/ManageBlogImageAltModal.vue'
+import type { BlogMediaAsset } from '~/types/blogMedia'
 
 export function useBlogImageAltModal() {
   const modal = useModal()
   const { t } = useI18n()
 
   function open(options: {
+    asset: BlogMediaAsset
     initialAlt?: string
     onInsert: (alt: string) => void | Promise<void>
   }) {
@@ -16,7 +18,8 @@ export function useBlogImageAltModal() {
       },
       component: ManageBlogImageAltModal,
       props: {
-        initialAlt: options.initialAlt || '',
+        asset: options.asset,
+        initialAlt: options.initialAlt || options.asset.alt || '',
         onInsert: options.onInsert,
       },
       options: {
