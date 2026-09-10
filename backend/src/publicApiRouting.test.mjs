@@ -10,14 +10,12 @@ test('API entrypoint wires canonical public Prompt, Creator, and inventory handl
     ['handlePublicCreatorRequest', './publicCreator.mjs'],
     ['handlePublicInventoryRequest', './publicInventory.mjs'],
   ]) {
-    assert.match(
-      indexSource,
-      new RegExp(`import \\{ ${handler} \\} from ['\"]${modulePath.replace('.', '\\.') }['\"]`),
+    assert.ok(
+      indexSource.includes(`import { ${handler} } from '${modulePath}'`),
       `${handler} must be imported by backend/src/index.mjs`,
     )
-    assert.match(
-      indexSource,
-      new RegExp(`await ${handler}\\(\\{`),
+    assert.ok(
+      indexSource.includes(`await ${handler}({`),
       `${handler} must be dispatched by backend/src/index.mjs`,
     )
   }
