@@ -25,8 +25,8 @@ function validArticle() {
       },
     },
     body: {
-      en: '# Structure\n\nEnglish body',
-      fa: '# ساختار\n\nمتن فارسی',
+      en: '## Structure\n\nEnglish body',
+      fa: '## ساختار\n\nمتن فارسی',
     },
   })
   assert.equal(result.ok, true)
