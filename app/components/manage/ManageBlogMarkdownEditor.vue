@@ -74,13 +74,13 @@ function insertImage() {
     >
       <el-button mode="flat" label="H2" @click="prefixLines('## ', 'Heading')" />
       <el-button mode="flat" label="H3" @click="prefixLines('### ', 'Heading')" />
-      <el-button mode="flat" icon="format_bold" :tooltip="t('manage.blog.markdown.bold')" @click="wrap('**', '**', 'bold')" />
-      <el-button mode="flat" icon="format_italic" :tooltip="t('manage.blog.markdown.italic')" @click="wrap('*', '*', 'italic')" />
-      <el-button mode="flat" icon="format_quote" :tooltip="t('manage.blog.markdown.quote')" @click="prefixLines('> ', 'Quote')" />
-      <el-button mode="flat" icon="code" :tooltip="t('manage.blog.markdown.code')" @click="wrap('`', '`', 'code')" />
-      <el-button mode="flat" icon="format_list_bulleted" :tooltip="t('manage.blog.markdown.list')" @click="prefixLines('- ', 'List item')" />
-      <el-button mode="flat" icon="link" :tooltip="t('manage.blog.markdown.link')" @click="insertLink" />
-      <el-button mode="flat" icon="image" :tooltip="t('manage.blog.markdown.image')" @click="insertImage" />
+      <el-button type="fab" mode="flat" icon="format_bold" :tooltip="t('manage.blog.markdown.bold')" @click="wrap('**', '**', 'bold')" />
+      <el-button type="fab" mode="flat" icon="format_italic" :tooltip="t('manage.blog.markdown.italic')" @click="wrap('*', '*', 'italic')" />
+      <el-button type="fab" mode="flat" icon="format_quote" :tooltip="t('manage.blog.markdown.quote')" @click="prefixLines('> ', 'Quote')" />
+      <el-button type="fab" mode="flat" icon="code" :tooltip="t('manage.blog.markdown.code')" @click="wrap('`', '`', 'code')" />
+      <el-button type="fab" mode="flat" icon="format_list_bulleted" :tooltip="t('manage.blog.markdown.list')" @click="prefixLines('- ', 'List item')" />
+      <el-button type="fab" mode="flat" icon="link" :tooltip="t('manage.blog.markdown.link')" @click="insertLink" />
+      <el-button type="fab" mode="flat" icon="image" :tooltip="t('manage.blog.markdown.image')" @click="insertImage" />
     </el-flex>
 
     <el-grid
