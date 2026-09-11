@@ -3,10 +3,12 @@ import type { PublicCreatorLinkType, PublicCreatorLocale } from '~/composables/u
 import { renderPublicCreatorMarkdown } from '~/utils/publicCreatorMarkdown'
 import {
   buildPublicCreatorStructuredData,
-  normalizePublicSiteUrl,
   publicCreatorSeoImage,
-  toAbsolutePublicUrl,
 } from '~/utils/publicCreatorSeo'
+import {
+  normalizePublicSiteUrl,
+  toAbsolutePublicUrl,
+} from '~/utils/publicPromptSeo'
 import {
   normalizePublicCreatorUsername,
   publicCreatorPath,
