@@ -10,7 +10,7 @@ import type {
   PromptSettings,
 } from "./compilePromptCore";
 import {
-  compilePromptOutput as compilePromptOutputCore,
+  compilePromptOutputCore,
   getSystemPromptVariables,
 } from "./compilePromptCore";
 import { rewritePromptFacingStructuredOutput } from "./promptOutputAliases";
