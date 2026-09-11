@@ -1,6 +1,6 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–4 DONE + ACCEPTED / PHASE 5 NEXT**
+Status: **IN PROGRESS / PHASES 1–4 DONE + ACCEPTED / PHASE 5.1 IN PROGRESS**
 
 Date: 2026-09-11
 
@@ -28,6 +28,7 @@ docs/strategy/MILESTONE_21_5_PHASE1_HYBRID_SSR.md
 docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
+docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
 docs/strategy/STATUS.md
 ```
 
@@ -379,25 +380,39 @@ Phase 4 is closed.
 
 ## 7. Phase 5 — Organic Acquisition Launch & Measurement
 
-Status: **NEXT / NOT STARTED**
+Status: **IN PROGRESS / PHASE 5.1 LAUNCH READINESS CONTRACT + AUDIT**
+
+Canonical Phase 5 record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+```
 
 Goal:
 
 ```text
-turn rendering/SEO work into a measurable acquisition experiment
+turn rendering/SEO work into a safe, reversible and measurable acquisition experiment
 ```
 
-Required work:
+Phase 5 is deliberately sequenced so production is not changed before readiness is explicit:
 
 ```text
-production cutover + rollback procedure
-Google Search Console setup
-sitemap submission/indexing inspection
-first Blog content batch
-analytics for Blog/public acquisition surfaces
-organic landing/referrer analysis where privacy-appropriate
-links from organic content into useful Prompt Draft surfaces
-baseline + post-launch measurement cadence
+5.1 Launch Readiness
+  -> runtime/deployment/env/indexability inventory
+  -> Search Console + acquisition measurement baseline
+  -> production cutover + rollback contract
+  -> founder readiness signoff
+
+5.2 Acquisition Measurement Instrumentation
+  -> only the gaps proven by the 5.1 audit
+
+5.3 Founder-approved Production Cutover
+  -> blocked until 5.1 is accepted and required measurement gaps are closed
+
+5.4 Initial Acquisition Launch + Measurement Cadence
+  -> production Search Console/sitemap/indexing evidence
+  -> first acquisition content/internal-link verification
+  -> baseline + repeatable measurement review
 ```
 
 External acquisition evidence:
@@ -414,7 +429,17 @@ Prompt Draft product analytics / Growth metrics
 
 Do not confuse search impressions/clicks with product engagement, and do not label measured acquisition-surface users as whole-product DAU/MAU without sufficient instrumentation.
 
-Phase 5 must begin with a controlled launch plan. Staging remains globally noindex until the explicit production cutover step, and `prompt-draft.ir` must not be changed before the founder explicitly approves that rollout.
+Search Console setup is part of readiness/launch evidence, not an assumed completed dependency. The Phase 5.1 audit must record the intended property scope/ownership verification, production sitemap submission plan and representative URL inspection/indexing checks.
+
+Current hard boundary:
+
+```text
+staging NUXT_PUBLIC_NOINDEX=true -> KEEP
+prompt-draft.ir                  -> UNTOUCHED
+production DNS/Tunnel/indexability changes -> explicit founder approval required
+```
+
+Phase 5.1 is the current implementation slice. No production cutover has been executed.
 
 ---
 
@@ -516,12 +541,15 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Begin Phase 5 — Organic Acquisition Launch & Measurement:
-  -> audit current production/staging hostname + noindex configuration
-  -> define explicit production cutover and rollback procedure before changing prompt-draft.ir
-  -> define Google Search Console property/verification + sitemap submission plan
-  -> establish pre-launch indexing/acquisition measurement baseline
-  -> prepare the first production Blog/acquisition content batch and internal links
-  -> verify acquisition-surface analytics and privacy-appropriate referrer/landing evidence
-  -> only then execute the founder-approved production cutover and begin measurement cadence
+Continue Phase 5.1 — Launch Readiness:
+  -> re-read latest feature/growth-foundation HEAD
+  -> audit branch-exact runtime/deployment/env/indexability configuration
+  -> audit existing analytics/measurement implementation before adding instrumentation
+  -> define Search Console property/verification + production sitemap/indexing plan
+  -> write the exact production cutover + rollback runbook
+  -> classify only proven measurement gaps into Phase 5.2
+  -> preserve staging NUXT_PUBLIC_NOINDEX=true
+  -> stop before any prompt-draft.ir / production Cloudflare change and obtain explicit founder approval
 ```
+
+For docs-only planning changes, no rebuild is required. For implementation, follow `DEVELOPMENT_WORKFLOW.md` and use the smallest service/test scope.
