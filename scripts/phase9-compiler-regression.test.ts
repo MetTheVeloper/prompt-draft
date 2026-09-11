@@ -83,7 +83,7 @@ function withUnusedEntity(values: ModuleValues): ModuleValues {
 
 function expectedHeadlessPromptCore() {
   return committedSource(baseline, "app/utils/compilePrompt.ts")
-    .replace("// app/utils/compilePrompt.ts", "// app/utils/compilePromptCore.ts")
+    .replace("// app/utils/compilePrompt.ts", "// @unimport-disable\n// app/utils/compilePromptCore.ts")
     .replace(
       "import { usePromptVariables } from '~/composables/prompt/usePromptVariables'\n",
       "",
@@ -208,6 +208,7 @@ test("typed user reference ownership stays pure while UI synchronization remains
   assert.ok(wrapper.includes("getUserVariableOwnership(),"));
   assert.ok(wrapper.includes("setSubjectType(settings.subjectType || \"unspecified\")"));
   assert.ok(wrapper.includes("setSystemPromptVariables(systemVariables)"));
+  assert.ok(wrapper.includes('export * from "./compilePromptCore";'));
   assert.ok(
     wrapper.includes(
       "syncPromptRuntimeState(result.effectiveSettings, result.systemVariables);",
@@ -221,6 +222,7 @@ test("typed user reference ownership stays pure while UI synchronization remains
     "the pure compile must finish before UI runtime synchronization",
   );
 
+  assert.ok(core.startsWith("// @unimport-disable\n"));
   assert.ok(!core.includes("usePromptVariables"));
   assert.ok(!core.includes("usePromptSubjectContext"));
   assert.ok(!core.includes("syncActiveSystemPromptVariables(settings)"));
