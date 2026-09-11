@@ -9,6 +9,7 @@ import {
 } from '../app/utils/publicCreatorSeo'
 
 const pageUrl = new URL('../app/pages/creator/[username].vue', import.meta.url)
+const creatorSeoUrl = new URL('../app/utils/publicCreatorSeo.ts', import.meta.url)
 
 const CREATOR: PublicCreator = {
   identity: {
@@ -66,6 +67,18 @@ test('Creator SEO image prefers cover, then avatar, then the site fallback', () 
     ...CREATOR,
     identity: { ...CREATOR.identity, cover: null, avatarUrl: null },
   }), '/pwa-512x512.png')
+})
+
+test('Creator SEO keeps shared URL helpers owned by publicPromptSeo only', async () => {
+  const [creatorSeoSource, pageSource] = await Promise.all([
+    readFile(creatorSeoUrl, 'utf8'),
+    readFile(pageUrl, 'utf8'),
+  ])
+
+  assert.match(creatorSeoSource, /from '\.\/publicPromptSeo'/)
+  assert.doesNotMatch(creatorSeoSource, /export\s*\{[^}]*normalizePublicSiteUrl[^}]*\}/s)
+  assert.doesNotMatch(creatorSeoSource, /export\s*\{[^}]*toAbsolutePublicUrl[^}]*\}/s)
+  assert.match(pageSource, /from '~\/utils\/publicPromptSeo'/)
 })
 
 test('builds localized EN ProfilePage + Person JSON-LD from the public allowlist', () => {
