@@ -1,8 +1,8 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–3 DONE / PHASE 4 IN PROGRESS**
+Status: **IN PROGRESS / PHASES 1–4 DONE + ACCEPTED / PHASE 5 NEXT**
 
-Date: 2026-09-07
+Date: 2026-09-11
 
 Branch:
 
@@ -297,7 +297,7 @@ Phase 3 is closed.
 
 ## 6. Phase 4 — SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A STARTED**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11**
 
 Canonical Phase 4 record:
 
@@ -305,24 +305,24 @@ Canonical Phase 4 record:
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 ```
 
-Goal:
+Goal achieved:
 
 ```text
 replace tactical SPA SEO workarounds with native rendering where appropriate and establish reusable public-content SEO primitives
 ```
 
-Execution slices:
+Completed execution slices:
 
 ```text
-21.5.4A — SEO Contracts & Route Semantics                         IN PROGRESS
-21.5.4B — Public Prompt Architecture                              NOT STARTED
-21.5.4C — Public Creator Architecture + Indexability Policy       NOT STARTED
-21.5.4D — Sitemap / Robots / Discovery Migration                  NOT STARTED
-21.5.4E — Blog V1                                                 NOT STARTED
-21.5.4F — SEO Integration / Verification / Legacy Retirement      NOT STARTED
+21.5.4A — SEO Contracts & Route Semantics                         DONE / ACCEPTED
+21.5.4B — Public Prompt Architecture                              DONE / ACCEPTED
+21.5.4C — Public Creator Architecture + Indexability Policy       DONE / ACCEPTED
+21.5.4D — Sitemap / Robots / Discovery Migration + AI Discovery   DONE / ACCEPTED
+21.5.4E — Blog V1                                                 DONE / ACCEPTED
+21.5.4F — SEO Integration / Verification / Legacy Retirement      DONE / ACCEPTED
 ```
 
-Accepted Phase 4 architecture now includes:
+Accepted Phase 4 architecture includes:
 
 ```text
 public Prompt canonical route -> /prompt/:id
@@ -330,21 +330,20 @@ public Creator canonical route -> /creator/:username
 /user remains private/account-oriented and non-canonical for Creator SEO
 Creator thin/new/incomplete pages may remain accessible but noindex
 nonexistent/removed/moderation-prohibited Creator state -> unavailable/404 semantics
-Creator eligibility must be shared and server-authoritative
+Creator eligibility is shared and server-authoritative
 English/default locale -> unprefixed URL
 Persian -> /fa prefix
-both EN/FA may be indexable when authoritative localized content exists
+both EN/FA may be indexable only when authoritative localized content exists
 self-canonical localized URLs + reciprocal language alternates
 Blog V1 -> repository-backed editorial content, not a database CMS
-/manage/blog -> Markdown-producing admin authoring UI
-current preferred editor candidate -> md-editor-v3, implementation-time validated
+/manage/blog -> canonical Git-backed authoring workflow
 Git repository -> canonical editorial source
-Arvan Object Storage -> Blog mirror/emergency publication store
+Arvan Object Storage -> Blog media + explicit optional emergency role
 Docker/Nitro deployed content -> normal request-time Blog source
 Blog images -> existing/shared Arvan media upload pipeline; no base64 in Markdown
+shared Blog-aware public inventory -> sitemap.xml + llms.txt
+native Discovery SSR/prerender -> visible Discovery SEO/JSON-LD authority
 ```
-
-Locale-prefix activation is intentionally gated behind an internal-navigation audit because the current application still contains raw internal paths that could otherwise drop a Persian user back onto an unprefixed English route. This is an implementation-order constraint, not a reversal of the accepted `prefix_except_default` direction.
 
 Security boundary remains absolute:
 
@@ -355,13 +354,32 @@ SSR must not bypass account/email authorization
 public SEO projections expose only intentionally public information
 ```
 
-The existing `scripts/generate-public-seo.ts` remains a temporary historical/rollback compatibility path. It must be removed or reduced only after native Phase 4 SEO/sitemap behavior is verified; duplicate SEO systems must not survive by inertia.
+Phase 4F completed the retirement/integration audit. Accepted compatibility paths were retained when still required, obsolete pre-Blog/legacy Discovery verification code was retired only after replacement coverage passed, branch/runtime API drift was repaired, and duplicate Nuxt auto-import ownership was removed while preserving the accepted prompt-compiler Core/Pure/runtime architecture.
+
+Final Phase 4 acceptance evidence on 2026-09-11 included:
+
+```text
+pnpm test:public-creator-web -> PASS 20/20
+pnpm test:phase9-regression  -> PASS 9/9
+pnpm frontend                -> PASS
+pnpm verify:phase4f-static   -> PASS
+sitemap URLs                 -> 224
+llms URLs                    -> 224
+Nuxt prerendered routes      -> 341
+native Discovery HTML        -> 12 checked
+```
+
+The final frontend/static build contained none of the previously reported duplicate-import warnings for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` or `compilePromptOutput`.
+
+No production cutover was part of Phase 4. Staging remains `NUXT_PUBLIC_NOINDEX=true`; `prompt-draft.ir` remains untouched until explicit Phase 5 rollout.
+
+Phase 4 is closed.
 
 ---
 
 ## 7. Phase 5 — Organic Acquisition Launch & Measurement
 
-Status: **NOT STARTED**
+Status: **NEXT / NOT STARTED**
 
 Goal:
 
@@ -395,6 +413,8 @@ Prompt Draft product analytics / Growth metrics
 ```
 
 Do not confuse search impressions/clicks with product engagement, and do not label measured acquisition-surface users as whole-product DAU/MAU without sufficient instrumentation.
+
+Phase 5 must begin with a controlled launch plan. Staging remains globally noindex until the explicit production cutover step, and `prompt-draft.ir` must not be changed before the founder explicitly approves that rollout.
 
 ---
 
@@ -435,7 +455,7 @@ The repository contract must be structured so a later database/CMS migration cha
 
 ## 9. Domain Expansion relationship
 
-Phase 2 — Domain Expansion remains the next major strategic roadmap phase.
+Phase 2 — Domain Expansion remains the next major strategic roadmap phase after Milestone 21.5.
 
 First domain:
 
@@ -496,10 +516,12 @@ No phase is DONE because code merely exists.
 Current next action:
 
 ```text
-Continue Phase 4A:
-  -> mature the existing usePublicSeo primitive
-  -> apply route-level metadata to existing SSR acquisition surfaces
-  -> audit/migrate localized internal navigation
-  -> activate EN unprefixed + FA /fa routing after the navigation regression gate is safe
-  -> then begin Public Prompt 4B
+Begin Phase 5 — Organic Acquisition Launch & Measurement:
+  -> audit current production/staging hostname + noindex configuration
+  -> define explicit production cutover and rollback procedure before changing prompt-draft.ir
+  -> define Google Search Console property/verification + sitemap submission plan
+  -> establish pre-launch indexing/acquisition measurement baseline
+  -> prepare the first production Blog/acquisition content batch and internal links
+  -> verify acquisition-surface analytics and privacy-appropriate referrer/landing evidence
+  -> only then execute the founder-approved production cutover and begin measurement cadence
 ```
