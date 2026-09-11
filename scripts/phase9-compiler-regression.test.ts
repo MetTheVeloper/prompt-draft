@@ -13,7 +13,6 @@ import { compileSceneResourceModule } from "../app/utils/compileSceneResource";
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const baseline = "83ed3e6374f8fc85e8a3b48f822cb75a1c1f862c";
-const promptCompileBaseline = "73f28f35e49d68d0ac285f4e05bbf4583a2a2931";
 
 function normalizeSource(value: string) {
   return value.replace(/\r\n/g, "\n");
@@ -83,7 +82,7 @@ function withUnusedEntity(values: ModuleValues): ModuleValues {
 
 function expectedHeadlessPromptCore() {
   return committedSource(baseline, "app/utils/compilePrompt.ts")
-    .replace("// app/utils/compilePrompt.ts", "// @unimport-disable\n// app/utils/compilePromptCore.ts")
+    .replace("// app/utils/compilePrompt.ts", "// app/utils/compilePromptCore.ts")
     .replace(
       "import { usePromptVariables } from '~/composables/prompt/usePromptVariables'\n",
       "",
@@ -107,11 +106,20 @@ function expectedHeadlessPromptCore() {
     .replace("preserveMainSubject: true", "preserveMainSubject: false")
     .replace("preserveIdentity: true", "preserveIdentity: false")
     .replace("preserveComposition: true", "preserveComposition: false")
-    .replaceAll("attached reference image", "attached reference image(s)");
+    .replaceAll("attached reference image", "attached reference image(s)")
+    .replace(
+      "export function compilePromptOutput(\n",
+      "export function compilePromptOutputCore(\n",
+    );
 }
 
-test("prompt compile extraction does not modify draft persistence/import-export", () => {
-  assertWorkingPathUnchanged("app/pages/create.vue", promptCompileBaseline);
+test("Create UI stays on the runtime prompt compiler adapter", () => {
+  const createPage = currentSource("app/pages/create.vue");
+
+  assert.ok(createPage.includes("../utils/compilePrompt"));
+  assert.ok(createPage.includes("compilePromptOutput"));
+  assert.ok(!createPage.includes("compilePromptCore"));
+  assert.ok(!createPage.includes("compilePromptPure"));
 });
 
 test("legacy Layout/Pose/Expression/Color/Texture compilers are unchanged from baseline", () => {
@@ -222,11 +230,12 @@ test("typed user reference ownership stays pure while UI synchronization remains
     "the pure compile must finish before UI runtime synchronization",
   );
 
-  assert.ok(core.startsWith("// @unimport-disable\n"));
   assert.ok(!core.includes("usePromptVariables"));
   assert.ok(!core.includes("usePromptSubjectContext"));
   assert.ok(!core.includes("syncActiveSystemPromptVariables(settings)"));
   assert.ok(core.includes("export function getSystemPromptVariables("));
+  assert.ok(core.includes("export function compilePromptOutputCore("));
+  assert.ok(!core.includes("export function compilePromptOutput("));
 });
 
 test("Scene presentation aliases remain format-specific in the pure final adapter", () => {
