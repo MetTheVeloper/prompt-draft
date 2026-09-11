@@ -54,7 +54,6 @@
     "smoke:phase4c-final": "node scripts/phase4c-final-staging-smoke.mjs",
     "test:phase4d-final": "node scripts/phase4d-final-regression.mjs",
     "smoke:phase4d-final": "node scripts/phase4d-final-staging-smoke.mjs",
-    "verify:phase4d-static": "node scripts/phase4d-static-generate-verification.mjs",
     "test:blog-contract": "tsx --test scripts/blog-contract.test.ts scripts/blog-runtime-loader-contract.test.ts scripts/public-creator-markdown.test.ts",
     "test:blog-public": "tsx --test scripts/public-blog-projection.test.ts scripts/public-blog-seo.test.ts scripts/public-blog-ssr-contract.test.ts scripts/blog-contract.test.ts scripts/blog-runtime-loader-contract.test.ts scripts/public-routes.test.ts",
     "smoke:blog-public": "node scripts/public-blog-local-smoke.mjs",
