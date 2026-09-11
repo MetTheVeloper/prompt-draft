@@ -18,14 +18,14 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
 21.5.1 Hybrid / SSR Architecture                -> DONE / ACCEPTED
 21.5.2 Docker Production Runtime                -> DONE / ACCEPTED
 21.5.3 Cloudflare Production Path               -> DONE / ACCEPTED
-21.5.4 SEO/Public Content Architecture          -> IN PROGRESS
+21.5.4 SEO/Public Content Architecture          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
   4A SEO Contracts & Route Semantics            -> DONE / ACCEPTED
   4B Public Prompt Architecture                 -> DONE / ACCEPTED
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-  4F Integration / Legacy Retirement            -> IN PROGRESS / AUTO-IMPORT CLEANUP PENDING VERIFICATION
-21.5.5 Organic Acquisition Launch               -> NOT STARTED
+  4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
+21.5.5 Organic Acquisition Launch               -> NEXT
 ```
 
 ## Mandatory sources
@@ -33,6 +33,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
 ```text
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
+docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
 docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
@@ -155,9 +156,9 @@ Final 4E.7 acceptance additionally verified the shared `BlogArticlePresentation`
 
 ---
 
-# Phase 4F Integration / Legacy Retirement — IN PROGRESS
+# Phase 4F Integration / Legacy Retirement — DONE / ACCEPTED
 
-4F.1 evidence closure is complete. The accepted 4A–4E contracts remain the source of truth; `/prompts?id=...`, `/user`, the `/dashboard` compatibility redirect, the shared public inventory/runtime delivery stack, Blog Nitro repository loader, static-generation compatibility path, application noindex policy and staging noindex layers remain KEEP.
+4F closed the integration gap between the accepted 4A–4E architecture and reproducible branch/runtime/static behavior. The accepted public/protected/indexability contracts remain authoritative; `/prompts?id=...`, `/user`, the `/dashboard` compatibility redirect, the shared public inventory/runtime delivery stack, Blog Nitro repository loader, static-generation compatibility path, application noindex policy and staging noindex layers remain KEEP.
 
 ## Verified retirement — legacy Discovery generated-HTML cleanup
 
@@ -222,19 +223,9 @@ The old `scripts/phase4d-static-generate-verification.mjs` calculated the pre-Bl
   -> scripts/phase4f-static-verification.ts
 ```
 
-Founder-local verification on 2026-09-11:
-
-```text
-pnpm verify:phase4f-static -> PASS
-shared sitemap URLs         -> 224
-shared llms URLs            -> 224
-Nuxt prerendered routes     -> 341
-native Discovery HTML       -> 12 EN/FA pages checked
-```
-
 The replacement verifies the accepted Blog-aware static inventory and then reuses that output to verify all native Discovery pages for canonical/hreflang, CollectionPage + ItemList JSON-LD, absence of retired legacy markers, absence of protected/legacy acquisition links, production-like noindex behavior and private-data exclusion.
 
-Deletion gates are satisfied: accepted replacement exists, no unique caller remains, regression coverage exists, and founder-local static generation passed. Retirement commits:
+Deletion gates were satisfied and the historical verifier/command were retired:
 
 ```text
 8ff6d970e5c0c0aa6b2c4c77f1f2cd4ef0cd9953
@@ -246,13 +237,13 @@ b9692880ca01a480d1adbd4f42312e85a35bc682
 
 Historical 4D acceptance evidence remains documented; only the obsolete implementation/command was retired.
 
-## Implemented 4F cleanup — duplicate Nuxt auto-import ownership
+## Verified 4F cleanup — unique Nuxt auto-import ownership
 
-The verified static build exposed duplicate Nuxt auto-import warnings for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` and `compilePromptOutput`. Branch-exact audit established two separate causes rather than one generic duplication problem.
+The integration build exposed duplicate Nuxt auto-import ownership for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` and `compilePromptOutput`.
 
-Creator SEO URL helpers have one implementation in `publicPromptSeo.ts`; `publicCreatorSeo.ts` only consumed and re-exported them. The re-exports were retired and the Creator page now imports the shared helpers directly. Regression coverage now requires that ownership to remain unique.
+Creator SEO URL helpers now have one implementation/ownership path: `publicPromptSeo.ts` owns the shared URL helpers, `publicCreatorSeo.ts` consumes without re-exporting them, and the Creator page imports the shared URL helpers directly. Regression coverage requires this ownership to remain unique.
 
-The compiler warning was not safe to solve by deleting either implementation. `compilePromptCore.ts` is the accepted headless compiler, while `compilePrompt.ts` is the UI/runtime adapter that synchronizes prompt-variable and subject state after the pure compile. To preserve that architecture and avoid Nuxt scanning the headless implementation as a second auto-import source, the Core module now opts out of directory auto-import scanning with the supported `// @unimport-disable` directive. `compilePrompt.ts` continues to re-export the Core API and remains the auto-import/runtime owner of `compilePromptOutput`.
+The compiler required a different solution because both implementations are intentional: `compilePromptCore.ts` is the accepted headless compiler while `compilePrompt.ts` is the UI/runtime adapter. An initial module-scan opt-out did not remove Nuxt 4's duplicate warning in the founder build, so the final accepted solution preserves behavior while making ownership explicit: the Core export is now `compilePromptOutputCore`; `compilePromptPure.ts` imports that internal name directly; and the runtime wrapper remains the sole public/auto-import owner of `compilePromptOutput`.
 
 Implementation commits:
 
@@ -266,28 +257,52 @@ ca94e206cffad7d965ca4aeefb206e6349d845e4
 d9e0c3d8aa1c869a516f2cd8f74e45e44d00bf97
   -> add regression coverage for unique Creator SEO helper ownership
 
-12db8c0521e8c3faea3e233d666e723fd421e07c
-  -> opt headless compilePromptCore.ts out of Nuxt/unimport directory scanning
+6908d7523575b5d18298495f98a8a53220f7f8cf
+  -> give the headless prompt compiler Core a unique compilePromptOutputCore export
 
-cba7aabfabdc173ca330d2e3d233b694b209d435
-  -> preserve the headless/runtime boundary in Phase 9 regression coverage
+e31a4e2d7b8cc4dc82a8e0c6571bb234be4442bf
+  -> consume the unique Core export from the pure compiler adapter
+
+77375c828927b5a69324c2b91cbf598d693e26f1
+  -> replace the stale Create-page historical guard with runtime/Core boundary coverage and lock unique compiler export ownership
 ```
 
-This cleanup is **PENDING FOUNDER VERIFICATION**. It changes frontend source and tests only; no backend rebuild is required.
+Founder-local final acceptance evidence on 2026-09-11:
 
-Current verification sequence:
+```text
+pnpm test:public-creator-web -> PASS 20/20
+pnpm test:phase9-regression  -> PASS 9/9
+pnpm frontend                -> PASS / fresh frontend image built and started
+Nuxt duplicate-import warnings for:
+  toAbsolutePublicUrl        -> ABSENT
+  normalizePublicSiteUrl     -> ABSENT
+  compilePromptOutput        -> ABSENT
 
-```powershell
-git pull
-pnpm test:public-creator-web
-pnpm test:phase9-regression
-pnpm frontend
-pnpm verify:phase4f-static
+pnpm verify:phase4f-static   -> PASS
+shared sitemap URLs          -> 224
+shared llms URLs             -> 224
+Nuxt prerendered routes      -> 341
+native Discovery HTML        -> 12 EN/FA pages checked
+Blog index HTML              -> 2 checked
+Blog Article HTML            -> 2 checked
 ```
 
-Expected build result: the prior duplicate-import warnings for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` and `compilePromptOutput` are absent. Other unrelated Nuxt/Vite warnings are not part of this cleanup.
+The remaining sourcemap, chunk-size, Nitro cache-driver and orphan-container warnings observed during local build/static generation are unrelated non-blocking warnings and are outside this Phase 4F cleanup contract.
 
-Do not run `pnpm api` or `pnpm stack` for this batch.
+## Phase 4 closure
+
+```text
+21.5.4A -> DONE / ACCEPTED
+21.5.4B -> DONE / ACCEPTED
+21.5.4C -> DONE / ACCEPTED
+21.5.4D -> DONE / ACCEPTED
+21.5.4E -> DONE / ACCEPTED
+21.5.4F -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
+```
+
+Milestone 21.5 Phase 4 — SEO/Public Content Architecture is therefore **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**.
+
+No production cutover was performed. `prompt-draft.ir` remains untouched and staging must keep `NUXT_PUBLIC_NOINDEX=true` until the explicit acquisition-launch/cutover step.
 
 ## Hard rules
 
@@ -313,15 +328,12 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 ```text
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
-3. read MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
-4. read MILESTONE_21_5_PHASE4E_BLOG_V1.md + 4E.7 acceptance record
-5. inspect latest feature/growth-foundation HEAD
-6. confirm 4E.1-4E.7 are DONE / ACCEPTED
-7. current task = Phase 4F Integration / Verification / Legacy Retirement
-8. legacy Discovery cleanup retirement is founder-local verified
-9. public Creator/inventory router repair is founder-local verified
-10. Phase 4D standalone static verifier has been replaced by verify:phase4f-static and retired
-11. duplicate auto-import ownership cleanup is implemented and pending founder-local frontend/static verification
-12. preserve accepted public/indexability/security/compiler boundaries
-13. do not touch prompt-draft.ir before explicit rollout
+3. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+4. read MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md when Phase 4 contracts are relevant
+5. inspect latest feature/growth-foundation HEAD before every decision/write
+6. confirm 21.5.4 / 4A-4F are DONE / ACCEPTED
+7. current task = 21.5.5 Organic Acquisition Launch & Measurement
+8. preserve all accepted public/indexability/security/compiler boundaries
+9. keep staging NUXT_PUBLIC_NOINDEX=true until explicit cutover
+10. do not touch prompt-draft.ir before explicit rollout
 ```
