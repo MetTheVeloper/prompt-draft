@@ -1,3 +1,4 @@
+// @unimport-disable
 // app/utils/compilePromptCore.ts
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
