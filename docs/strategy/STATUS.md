@@ -24,7 +24,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4C Public Creator + Indexability              -> DONE / ACCEPTED
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-  4F Integration / Legacy Retirement            -> IN PROGRESS / CORE INTEGRATION VERIFIED / LEGACY VERIFIER RETIRED
+  4F Integration / Legacy Retirement            -> IN PROGRESS / AUTO-IMPORT CLEANUP PENDING VERIFICATION
 21.5.5 Organic Acquisition Launch               -> NOT STARTED
 ```
 
@@ -151,7 +151,7 @@ pnpm smoke:phase4e-final   -> PASS
 pnpm verify:phase4e-static -> PASS
 ```
 
-Final 4E.7 acceptance additionally verified the shared `BlogArticlePresentation` across Manage/public surfaces, hierarchical collapsible sections, theme-native prose/code/quote/list/link styling, citation badges, one-boundary section dividers, global image lightbox, RTL/LTR behavior and the one-H1 contract where the localized Article title owns H1 and body Markdown H1 is rejected outside code fences.
+Final 4E.7 acceptance additionally verified the shared `BlogArticlePresentation` across Manage/public surfaces, hierarchical collapsible sections, theme-native prose/code/quote/list/link styling, citation badges, one-boundary section dividers, global image lightbox, RTL/LTR behavior and the one-H1 contract where the localized Article title owns H1 and body Markdown H1 is rejected outside fenced code fences.
 
 ---
 
@@ -246,19 +246,48 @@ b9692880ca01a480d1adbd4f42312e85a35bc682
 
 Historical 4D acceptance evidence remains documented; only the obsolete implementation/command was retired.
 
-## Open 4F finding — duplicate auto-import warnings
+## Implemented 4F cleanup — duplicate Nuxt auto-import ownership
 
-The verified static build still reports duplicate Nuxt auto-import warnings for:
+The verified static build exposed duplicate Nuxt auto-import warnings for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` and `compilePromptOutput`. Branch-exact audit established two separate causes rather than one generic duplication problem.
+
+Creator SEO URL helpers have one implementation in `publicPromptSeo.ts`; `publicCreatorSeo.ts` only consumed and re-exported them. The re-exports were retired and the Creator page now imports the shared helpers directly. Regression coverage now requires that ownership to remain unique.
+
+The compiler warning was not safe to solve by deleting either implementation. `compilePromptCore.ts` is the accepted headless compiler, while `compilePrompt.ts` is the UI/runtime adapter that synchronizes prompt-variable and subject state after the pure compile. To preserve that architecture and avoid Nuxt scanning the headless implementation as a second auto-import source, the Core module now opts out of directory auto-import scanning with the supported `// @unimport-disable` directive. `compilePrompt.ts` continues to re-export the Core API and remains the auto-import/runtime owner of `compilePromptOutput`.
+
+Implementation commits:
 
 ```text
-toAbsolutePublicUrl
-normalizePublicSiteUrl
-compilePromptOutput
+2d94442ea9b859bc30af244bf7fcd9925ebdb788
+  -> remove duplicate Creator SEO URL-helper re-exports
+
+ca94e206cffad7d965ca4aeefb206e6349d845e4
+  -> import shared URL helpers directly in the Public Creator page
+
+d9e0c3d8aa1c869a516f2cd8f74e45e44d00bf97
+  -> add regression coverage for unique Creator SEO helper ownership
+
+12db8c0521e8c3faea3e233d666e723fd421e07c
+  -> opt headless compilePromptCore.ts out of Nuxt/unimport directory scanning
+
+cba7aabfabdc173ca330d2e3d233b694b209d435
+  -> preserve the headless/runtime boundary in Phase 9 regression coverage
 ```
 
-This is the next evidence-based 4F investigation. Do not delete or merge either implementation until real callers, accepted ownership and regression coverage are checked branch-exact.
+This cleanup is **PENDING FOUNDER VERIFICATION**. It changes frontend source and tests only; no backend rebuild is required.
 
-No frontend/backend rebuild is required merely for the verifier retirement/docs batch.
+Current verification sequence:
+
+```powershell
+git pull
+pnpm test:public-creator-web
+pnpm test:phase9-regression
+pnpm frontend
+pnpm verify:phase4f-static
+```
+
+Expected build result: the prior duplicate-import warnings for `toAbsolutePublicUrl`, `normalizePublicSiteUrl` and `compilePromptOutput` are absent. Other unrelated Nuxt/Vite warnings are not part of this cleanup.
+
+Do not run `pnpm api` or `pnpm stack` for this batch.
 
 ## Hard rules
 
@@ -292,7 +321,7 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 8. legacy Discovery cleanup retirement is founder-local verified
 9. public Creator/inventory router repair is founder-local verified
 10. Phase 4D standalone static verifier has been replaced by verify:phase4f-static and retired
-11. next 4F task = investigate duplicate auto-import warnings branch-exact before any refactor
-12. preserve accepted public/indexability/security contracts
+11. duplicate auto-import ownership cleanup is implemented and pending founder-local frontend/static verification
+12. preserve accepted public/indexability/security/compiler boundaries
 13. do not touch prompt-draft.ir before explicit rollout
 ```
