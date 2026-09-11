@@ -139,7 +139,7 @@ Acceptance gates:
 ```text
 pnpm test:phase4d-final       PASS
 pnpm smoke:phase4d-final      PASS
-pnpm verify:phase4d-static    PASS
+pnpm verify:phase4d-static    PASS (historical acceptance command; retired during 4F)
 ```
 
 Historical acceptance snapshot was 220 sitemap URLs / 220 llms URLs / 331 prerendered routes. Counts are evidence, not permanent constants.
@@ -282,16 +282,14 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 
 4F.1 evidence closure is complete. The audit retained all accepted 4A–4E public/protected/indexability contracts. Application routes `/prompts` and `/user`, the `/dashboard` compatibility redirect, the static-generation compatibility path, Blog Nitro repository loading, shared public URL inventory and staging/application noindex layers remain KEEP.
 
-### Verified legacy retirement
-
-The first evidence-backed retirement is implemented and founder-local verified:
+### Verified legacy Discovery cleanup retirement
 
 ```text
 95b7d7717544d8f8c8b2fb717342cecf2432b12c
   -> retire legacy Discovery generated-HTML cleanup from scripts/generate-public-seo.ts
 
 d44e3cb1bb257f4b8d2faa34393275c54385b47c
-  -> require Discovery regression coverage to keep cleanup/legacy markers absent
+  -> regression contract requires cleanup/legacy markers to remain absent
 ```
 
 Founder-local evidence on 2026-09-11:
@@ -303,20 +301,20 @@ shared canonical URL count -> 224
 Nuxt prerendered routes    -> 341
 ```
 
-The native Discovery SSR/prerender implementation is now the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active only for its shared sitemap/llms/robots compatibility role.
+The native Discovery SSR/prerender implementation is the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active for shared sitemap/llms/robots compatibility.
 
-### Integration defect — API source/runtime drift
+### Verified API source/runtime repair
 
-Branch-exact audit found that accepted `publicCreator.mjs` and `publicInventory.mjs` handlers existed but were never committed into the actual `backend/src/index.mjs` router. The founder-local API still served `/api/public/inventory`, demonstrating a stale/local API image rather than reproducible branch state. `compose.yaml`, `backend/Dockerfile`, `backend/package.json` and path-specific commit history establish that a fresh API build uses `backend/src/index.mjs` and that no later router-wiring commit existed.
+Branch-exact audit found accepted `publicCreator.mjs` and `publicInventory.mjs` handlers present but not routed by committed `backend/src/index.mjs`; the pre-rebuild local image therefore represented source/runtime drift.
 
-The repair changes no DTO, authorization, Creator policy or Prompt privacy contract. It only wires the existing handlers and adds a regression guard:
+Repair commits:
 
 ```text
 c53febee08a99dd969e3c158fc4ec3578ad6bbd0
-  -> wire public Creator + public inventory handlers in backend/src/index.mjs
+  -> wire public Creator + public inventory handlers
 
 e481364492ddd385592798e0357008153377458e
-  -> source-level public API routing guard
+  -> add public API routing regression guard
 
 0bb966c1da8aab6ec12a6f8b44c7cc2373786b07
   -> include guard in backend test:public-creator
@@ -328,31 +326,63 @@ e481364492ddd385592798e0357008153377458e
   -> add root test:public-creator-api
 ```
 
-This repair is **PENDING FOUNDER VERIFICATION**. Because backend source/test files changed, rebuild only API with `pnpm api`. Frontend and full-stack rebuilds are not required.
+Founder-local verification on 2026-09-11:
 
-### Static verifier replacement before legacy retirement
+```text
+pnpm api                       -> PASS / fresh API image built and started
+pnpm test:public-inventory-api -> PASS 17/17
+pnpm test:public-creator-api   -> PASS 11/11
+```
 
-The historical `verify:phase4d-static` remains accepted evidence for Phase 4D, but its implementation calculates the pre-Blog inventory and is stale as a current post-4E standalone gate.
+No DTO, authorization, Creator policy or Prompt privacy contract changed.
 
-A new integrated replacement exists:
+### Verified replacement + retirement of historical Phase 4D standalone static verifier
+
+The historical `scripts/phase4d-static-generate-verification.mjs` calculated the old pre-Blog inventory, so it could not remain the current post-4E integration source of truth.
+
+Replacement:
 
 ```text
 81c5189df538dba674a73db3dbab990e5480cce7
   -> scripts/phase4f-static-verification.ts
 ```
 
-`pnpm verify:phase4f-static` runs the accepted Blog-aware `verify:phase4e-static` generation first and then reuses that output to verify all 12 EN/FA native Discovery pages for canonical/hreflang, CollectionPage + ItemList JSON-LD, retired legacy-marker absence, protected/legacy acquisition-link absence, production-like noindex behavior and private-data exclusion.
+`pnpm verify:phase4f-static` first runs the accepted Blog-aware Phase 4E static generation and then reuses the same output to verify all 12 EN/FA native Discovery pages for canonical/hreflang, CollectionPage + ItemList JSON-LD, retired marker absence, protected/legacy acquisition-link absence, production-like noindex behavior and private-data exclusion.
 
-Do **not** delete `scripts/phase4d-static-generate-verification.mjs` or remove `verify:phase4d-static` yet. Once `verify:phase4f-static` passes founder-local, the replacement gate will satisfy the remaining deletion proof and the historical standalone verifier can be retired without losing unique Discovery static coverage.
+Founder-local evidence on 2026-09-11:
 
-Current verification sequence:
-
-```powershell
-git pull
-pnpm api
-pnpm test:public-inventory-api
-pnpm test:public-creator-api
-pnpm verify:phase4f-static
+```text
+pnpm verify:phase4f-static -> PASS
+sitemap URL set             -> 224
+llms URL set                -> 224
+Nuxt prerendered routes     -> 341
+native Discovery pages      -> 12 checked
 ```
 
-No `pnpm frontend` and no `pnpm stack` are required for this batch.
+All deletion gates are now satisfied: accepted replacement exists, unique Discovery coverage is preserved, the replacement passed against a fresh API image, and the old standalone verifier has no required current role.
+
+Retirement:
+
+```text
+8ff6d970e5c0c0aa6b2c4c77f1f2cd4ef0cd9953
+  -> remove root verify:phase4d-static script entry
+
+b9692880ca01a480d1adbd4f42312e85a35bc682
+  -> delete scripts/phase4d-static-generate-verification.mjs
+```
+
+The historical Phase 4D acceptance record remains documentation evidence; only the obsolete executable verifier was retired.
+
+### Open 4F investigation — duplicate Nuxt auto-import warnings
+
+The verified static build reports duplicate auto-import ownership for:
+
+```text
+toAbsolutePublicUrl
+normalizePublicSiteUrl
+compilePromptOutput
+```
+
+These warnings are non-blocking but are now the next 4F audit target. Before any consolidation/deletion, inspect branch-exact implementations, real callers, accepted ownership and regression coverage. Do not infer that either duplicate is safe to remove merely from the warning.
+
+No service rebuild is required for the verifier retirement/docs batch.
