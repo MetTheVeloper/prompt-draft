@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 4 SEO Platform & Public Content Architecture
 
-Status: **IN PROGRESS / 4A + 4B + 4C + 4D + 4E DONE + ACCEPTED / 4F IN PROGRESS**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11**
 
 Date: 2026-09-11
 
@@ -55,10 +55,10 @@ Accepted foundations include Nuxt SSR for acquisition surfaces, explicit client-
 21.5.4C Public Creator + Indexability Policy               DONE / ACCEPTED
 21.5.4D Sitemap / Robots / Discovery + AI Discovery        DONE / ACCEPTED 2026-09-09
 21.5.4E Blog V1                                            DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
-21.5.4F Integration / Verification / Legacy Retirement     IN PROGRESS
+21.5.4F Integration / Verification / Legacy Retirement     DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
 ```
 
-Required order remains:
+Required order was completed as planned:
 
 ```text
 4A -> 4B -> 4C -> 4D -> 4E -> 4F
@@ -278,111 +278,107 @@ DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title 
 DO NOT touch prompt-draft.ir before explicit rollout.
 ```
 
-## 12. Current Phase 4F state / next action
+## 12. Accepted Phase 4F — Integration / Verification / Legacy Retirement
 
-4F.1 evidence closure is complete. The audit retained all accepted 4A–4E public/protected/indexability contracts. Application routes `/prompts` and `/user`, the `/dashboard` compatibility redirect, the static-generation compatibility path, Blog Nitro repository loading, shared public URL inventory and staging/application noindex layers remain KEEP.
+4F audited integration behavior before deleting or consolidating anything. It retained accepted compatibility/application paths when they still had real callers or runtime roles, repaired branch/runtime drift, replaced the stale pre-Blog static verifier, retired obsolete legacy Discovery cleanup, and removed duplicate Nuxt auto-import ownership without changing accepted compiler behavior or public/security contracts.
 
-### Verified legacy Discovery cleanup retirement
+### Retained compatibility/runtime paths
+
+```text
+/prompts?id=:id                       -> protected application Prompt detail
+/user                                 -> account/Draft surface
+/dashboard                            -> compatibility redirect to /manage/dashboard
+scripts/run-static-generate.mjs       -> legacy static-generation compatibility
+scripts/generate-public-seo.ts        -> shared sitemap/llms/robots static compatibility
+server/utils/public-seo-inventory.ts  -> shared inventory contract
+Blog Nitro repository loader          -> request-time deployed content source
+staging noindex middleware/meta        -> required until explicit production cutover
+```
+
+### Verified retirements and repairs
 
 ```text
 95b7d7717544d8f8c8b2fb717342cecf2432b12c
-  -> retire legacy Discovery generated-HTML cleanup from scripts/generate-public-seo.ts
+  -> retire legacy Discovery generated-HTML cleanup
 
 d44e3cb1bb257f4b8d2faa34393275c54385b47c
-  -> regression contract requires cleanup/legacy markers to remain absent
-```
+  -> require retired cleanup/legacy markers to remain absent
 
-Founder-local evidence on 2026-09-11:
-
-```text
-pnpm test:discovery-seo    -> PASS 8/8
-pnpm verify:phase4e-static -> PASS
-shared canonical URL count -> 224
-Nuxt prerendered routes    -> 341
-```
-
-The native Discovery SSR/prerender implementation is the only owner of visible Discovery HTML/SEO/JSON-LD. The static public SEO generator remains active for shared sitemap/llms/robots compatibility.
-
-### Verified API source/runtime repair
-
-Branch-exact audit found accepted `publicCreator.mjs` and `publicInventory.mjs` handlers present but not routed by committed `backend/src/index.mjs`; the pre-rebuild local image therefore represented source/runtime drift.
-
-Repair commits:
-
-```text
 c53febee08a99dd969e3c158fc4ec3578ad6bbd0
-  -> wire public Creator + public inventory handlers
+  -> wire public Creator + public inventory handlers into backend entrypoint
 
 e481364492ddd385592798e0357008153377458e
-  -> add public API routing regression guard
-
 0bb966c1da8aab6ec12a6f8b44c7cc2373786b07
-  -> include guard in backend test:public-creator
-
 77cc6fd232d121226269f606ea2cf76f78bb0fca
-  -> include guard in root test:public-inventory-api
-
 80c1b65cae29718f7ff2be728b8171d7500d8c2b
-  -> add root test:public-creator-api
-```
+  -> lock public API router coverage into focused root/backend tests
 
-Founder-local verification on 2026-09-11:
-
-```text
-pnpm api                       -> PASS / fresh API image built and started
-pnpm test:public-inventory-api -> PASS 17/17
-pnpm test:public-creator-api   -> PASS 11/11
-```
-
-No DTO, authorization, Creator policy or Prompt privacy contract changed.
-
-### Verified replacement + retirement of historical Phase 4D standalone static verifier
-
-The historical `scripts/phase4d-static-generate-verification.mjs` calculated the old pre-Blog inventory, so it could not remain the current post-4E integration source of truth.
-
-Replacement:
-
-```text
 81c5189df538dba674a73db3dbab990e5480cce7
-  -> scripts/phase4f-static-verification.ts
-```
+  -> add integrated Blog-aware Phase 4F static gate
 
-`pnpm verify:phase4f-static` first runs the accepted Blog-aware Phase 4E static generation and then reuses the same output to verify all 12 EN/FA native Discovery pages for canonical/hreflang, CollectionPage + ItemList JSON-LD, retired marker absence, protected/legacy acquisition-link absence, production-like noindex behavior and private-data exclusion.
-
-Founder-local evidence on 2026-09-11:
-
-```text
-pnpm verify:phase4f-static -> PASS
-sitemap URL set             -> 224
-llms URL set                -> 224
-Nuxt prerendered routes     -> 341
-native Discovery pages      -> 12 checked
-```
-
-All deletion gates are now satisfied: accepted replacement exists, unique Discovery coverage is preserved, the replacement passed against a fresh API image, and the old standalone verifier has no required current role.
-
-Retirement:
-
-```text
 8ff6d970e5c0c0aa6b2c4c77f1f2cd4ef0cd9953
-  -> remove root verify:phase4d-static script entry
-
 b9692880ca01a480d1adbd4f42312e85a35bc682
-  -> delete scripts/phase4d-static-generate-verification.mjs
+  -> retire historical Phase 4D standalone static verifier command/implementation
 ```
 
-The historical Phase 4D acceptance record remains documentation evidence; only the obsolete executable verifier was retired.
+### Unique Nuxt auto-import ownership
 
-### Open 4F investigation — duplicate Nuxt auto-import warnings
+Creator shared URL-helper ownership is now singular: `publicPromptSeo.ts` owns `toAbsolutePublicUrl` and `normalizePublicSiteUrl`; Creator-specific code consumes those helpers without re-exporting them.
 
-The verified static build reports duplicate auto-import ownership for:
+The prompt compiler keeps the accepted architecture while making export ownership explicit:
 
 ```text
-toAbsolutePublicUrl
-normalizePublicSiteUrl
-compilePromptOutput
+compilePromptCore.ts -> headless compiler / compilePromptOutputCore
+compilePromptPure.ts -> pure final adapter consuming compilePromptOutputCore
+compilePrompt.ts     -> UI/runtime adapter / sole public compilePromptOutput owner
+create.vue           -> runtime adapter only; does not bypass into Core/Pure internals
 ```
 
-These warnings are non-blocking but are now the next 4F audit target. Before any consolidation/deletion, inspect branch-exact implementations, real callers, accepted ownership and regression coverage. Do not infer that either duplicate is safe to remove merely from the warning.
+Final compiler cleanup commits:
 
-No service rebuild is required for the verifier retirement/docs batch.
+```text
+6908d7523575b5d18298495f98a8a53220f7f8cf
+  -> unique compilePromptOutputCore headless export
+
+e31a4e2d7b8cc4dc82a8e0c6571bb234be4442bf
+  -> pure adapter consumes the unique Core export
+
+77375c828927b5a69324c2b91cbf598d693e26f1
+  -> focused runtime/Core boundary regression and unique export ownership guard
+```
+
+### Final founder-local evidence — 2026-09-11
+
+```text
+pnpm test:public-creator-web -> PASS 20/20
+pnpm test:phase9-regression  -> PASS 9/9
+
+pnpm frontend                -> PASS / fresh frontend image built and started
+Nuxt duplicate imports:
+  toAbsolutePublicUrl        -> ABSENT
+  normalizePublicSiteUrl     -> ABSENT
+  compilePromptOutput        -> ABSENT
+
+pnpm verify:phase4f-static   -> PASS
+shared sitemap URLs          -> 224
+shared llms URLs             -> 224
+Nuxt prerendered routes      -> 341
+native Discovery HTML        -> 12 EN/FA pages checked
+Blog index HTML              -> 2 checked
+Blog Article HTML            -> 2 checked
+```
+
+The integrated gate verified the Blog-aware shared inventory, native Discovery canonical/hreflang + CollectionPage/ItemList JSON-LD, absence of retired markers, absence of protected/legacy acquisition links, production-like indexability behavior and private-data exclusion.
+
+Remaining Nuxt/Vite sourcemap and chunk-size warnings, the Nitro cache-driver externalization warning and the existing orphan `cloudflared` container warning were non-blocking and unrelated to the Phase 4 contract.
+
+### Phase 4 acceptance
+
+All six Phase 4 slices are accepted. No production cutover was performed as part of acceptance. Staging remains globally noindex and `prompt-draft.ir` remains untouched.
+
+```text
+Phase 4 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
+NEXT    -> 21.5.5 Organic Acquisition Launch & Measurement
+```
+
+The next phase must turn the accepted SEO/public-content platform into a controlled measurable launch rather than changing the accepted Phase 4 architecture by default.
