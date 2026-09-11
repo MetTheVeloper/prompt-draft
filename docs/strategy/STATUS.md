@@ -25,7 +25,11 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4D Sitemap / Robots / Discovery / llms        -> DONE / ACCEPTED 2026-09-09
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
   4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
-21.5.5 Organic Acquisition Launch               -> NEXT
+21.5.5 Organic Acquisition Launch               -> IN PROGRESS
+  5.1 Launch Readiness                          -> IN PROGRESS / CONTRACT + AUDIT
+  5.2 Acquisition Measurement Instrumentation   -> PENDING 5.1 GAP AUDIT
+  5.3 Founder-approved Production Cutover       -> BLOCKED UNTIL READINESS ACCEPTED
+  5.4 Initial Launch + Measurement Cadence      -> PENDING PRODUCTION CUTOVER
 ```
 
 ## Mandatory sources
@@ -34,6 +38,8 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
 docs/strategy/MILESTONE_21_5_PHASE4E_1_ARTICLE_CONTRACT.md
@@ -58,6 +64,7 @@ inspect changed services
 Service rule:
 
 ```text
+docs only     -> no rebuild
 frontend only -> pnpm frontend
 backend only  -> pnpm api
 both changed  -> pnpm api + pnpm frontend
@@ -304,6 +311,46 @@ Milestone 21.5 Phase 4 — SEO/Public Content Architecture is therefore **DONE /
 
 No production cutover was performed. `prompt-draft.ir` remains untouched and staging must keep `NUXT_PUBLIC_NOINDEX=true` until the explicit acquisition-launch/cutover step.
 
+---
+
+# Phase 5 Organic Acquisition Launch & Measurement — IN PROGRESS
+
+Canonical record:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+```
+
+Current slice:
+
+```text
+5.1 Launch Readiness -> IN PROGRESS / CONTRACT + AUDIT
+```
+
+Phase 5.1 exists to establish a branch-exact runtime/deployment/environment/indexability inventory, Search Console and acquisition-measurement baseline, explicit production cutover procedure, explicit rollback procedure and founder readiness signoff **before** production is changed.
+
+Execution slices:
+
+```text
+5.1A runtime/deployment/env/indexability inventory
+5.1B Search Console + acquisition measurement baseline
+5.1C production cutover + rollback contract
+5.1D founder readiness signoff
+5.2 acquisition measurement instrumentation only for gaps proven by 5.1
+5.3 founder-approved production cutover
+5.4 initial acquisition launch + measurement cadence
+```
+
+Current hard boundary:
+
+```text
+staging NUXT_PUBLIC_NOINDEX=true -> KEEP
+prompt-draft.ir                  -> UNTOUCHED
+production DNS/Tunnel/indexability changes -> require explicit founder approval
+```
+
+This documentation start is docs-only; no frontend/backend rebuild is required. Phase 4 remains accepted and must not be re-audited from scratch unless Phase 5 reveals a concrete regression.
+
 ## Hard rules
 
 ```text
@@ -321,6 +368,7 @@ DO NOT let Blog SEO override staging noindex.
 DO NOT expose BLOG_GITHUB_TOKEN publicly.
 DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title owns H1.
 DO NOT touch prompt-draft.ir before explicit rollout.
+DO NOT change production DNS/Tunnel/indexability without explicit founder approval.
 ```
 
 ## Resume instruction
@@ -329,11 +377,13 @@ DO NOT touch prompt-draft.ir before explicit rollout.
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
-4. read MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md when Phase 4 contracts are relevant
-5. inspect latest feature/growth-foundation HEAD before every decision/write
-6. confirm 21.5.4 / 4A-4F are DONE / ACCEPTED
-7. current task = 21.5.5 Organic Acquisition Launch & Measurement
-8. preserve all accepted public/indexability/security/compiler boundaries
-9. keep staging NUXT_PUBLIC_NOINDEX=true until explicit cutover
-10. do not touch prompt-draft.ir before explicit rollout
+4. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md as the current Phase 5 source of truth
+5. read MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md for accepted staging/cutover baseline
+6. inspect latest feature/growth-foundation HEAD before every decision/write
+7. confirm 21.5.4 / 4A-4F remain DONE / ACCEPTED; do not restart Phase 4 audit without a concrete regression
+8. current task = 21.5.5 / Phase 5.1 Launch Readiness
+9. begin with 5.1A runtime/deployment/env/indexability inventory + 5.1B measurement/Search Console audit
+10. preserve all accepted public/indexability/security/compiler boundaries
+11. keep staging NUXT_PUBLIC_NOINDEX=true
+12. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
 ```
