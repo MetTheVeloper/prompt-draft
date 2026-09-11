@@ -28,8 +28,6 @@ export type PublicCreatorStructuredData = {
   }
 }
 
-export { normalizePublicSiteUrl, toAbsolutePublicUrl }
-
 export function publicCreatorSeoImage(
   creator: PublicCreator,
   fallbackPath = '/pwa-512x512.png',
