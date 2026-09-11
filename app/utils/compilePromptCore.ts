@@ -1,4 +1,3 @@
-// @unimport-disable
 // app/utils/compilePromptCore.ts
 import type { ModuleSubjectType, PromptKeyModule } from '../modules/types'
 import { optimizeNaturalPrompt } from './optimizeNaturalPrompt'
@@ -1105,7 +1104,7 @@ function logNaturalOptimizerResult(payload: {
   console.groupEnd()
 }
 
-export function compilePromptOutput(
+export function compilePromptOutputCore(
   modules: PromptKeyModule[],
   outputs: ModuleOutputMap,
   settings: PromptSettings,
