@@ -3,7 +3,7 @@ using System.Windows;
 
 namespace PromptDraft.ServerManager;
 
-public partial class App : Application
+public partial class App : System.Windows.Application
 {
     private const string MutexName = "Local\\PromptDraft.ServerManager.SingleInstance";
     private Mutex? _mutex;
