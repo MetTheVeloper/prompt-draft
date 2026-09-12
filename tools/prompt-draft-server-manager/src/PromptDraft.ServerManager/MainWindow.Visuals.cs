@@ -1,9 +1,10 @@
 using System.Windows;
-using System.Windows.Media;
 using System.Windows.Threading;
 using MaterialDesignThemes.Wpf;
 using PromptDraft.ServerManager.Models;
 using PromptDraft.ServerManager.Services;
+using WpfBrush = System.Windows.Media.Brush;
+using WpfBrushes = System.Windows.Media.Brushes;
 using WpfButton = System.Windows.Controls.Button;
 using WpfExpander = System.Windows.Controls.Expander;
 using WpfOrientation = System.Windows.Controls.Orientation;
@@ -165,8 +166,8 @@ public partial class MainWindow
 
     private void SetNeutral(PackIcon icon) => icon.Foreground = ResourceBrush("ManagerNeutralBrush");
 
-    private Brush ResourceBrush(string key) =>
-        TryFindResource(key) as Brush ?? Brushes.Gray;
+    private WpfBrush ResourceBrush(string key) =>
+        TryFindResource(key) as WpfBrush ?? WpfBrushes.Gray;
 
     private static void SetIcon(PackIcon icon, params string[] candidates)
     {
