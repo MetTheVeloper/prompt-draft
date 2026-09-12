@@ -15,6 +15,7 @@ const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const publicBlog = usePublicBlog()
+const analytics = useProductAnalytics()
 
 const activeLocale = computed<PublicBlogLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
 const { data: response } = await useAsyncData(
@@ -52,6 +53,15 @@ usePublicSeo({
   canonicalPath,
   alternateLocales: ['en', 'fa'],
   structuredData,
+})
+
+onMounted(() => {
+  void analytics.track('public_blog_index_view', {
+    resource: {
+      type: 'public_blog',
+      id: 'index',
+    },
+  })
 })
 
 function formatDate(value: string) {
