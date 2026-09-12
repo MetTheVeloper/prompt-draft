@@ -36,7 +36,7 @@ On the Windows founder machine:
 - pnpm (for the existing project scripts)
 - .NET 8 SDK only when building from source
 
-Default repo path is `G:\ZADAK\prompt-draft`. The current V1 settings model already persists the repo path, but the graphical browse/change flow is still a remaining hardening item.
+Default repo path is `G:\ZADAK\prompt-draft`. The owner-unlocked UI can browse to another repository root. A selected path is validated by requiring `package.json` and `compose.yaml`, saved to settings, and applied on the next Server Manager launch.
 
 ## Build
 
@@ -57,11 +57,67 @@ Generated `dist`, `bin`, `obj`, owner credentials and logs must not be committed
 
 ## Owner access
 
-On first run, the first password submitted to the Owner Access panel initializes the local owner credential. V1 requires at least eight characters. The password itself is never stored. The app derives a 32-byte Argon2id verifier using a random salt and uses constant-time comparison on future unlock attempts.
+Owner access is independent from Prompt Draft account login and is required before any management command, Docker log stream, repository-path change, or in-app activity log is exposed.
+
+### First run
+
+The first run shows both `Owner password` and `Confirm owner password`.
+
+```text
+enter at least 8 characters
+-> enter the same value again
+-> Unlock
+-> Argon2id verifier is written to owner.auth
+```
+
+The password itself is never stored. The app derives a 32-byte Argon2id verifier using a random salt and uses constant-time comparison on future unlock attempts.
+
+### Later runs
+
+```text
+enter the same owner password
+-> Unlock
+```
+
+The owner can explicitly select `Lock` without closing the application. Locking immediately disables management actions and hides activity logs again while read-only health monitoring keeps running.
 
 The credential is machine-local in the current implementation. Portable encrypted owner credentials and optional trusted-device enrollment remain future hardening work.
 
-Management actions and in-app activity logs stay locked until owner authentication succeeds. Read-only health monitoring starts without unlocking so runtime status remains observable without granting control.
+## Safe operation surface
+
+All management operations are predefined in the command registry. There is no arbitrary command textbox.
+
+### Whole Cloudflare-enabled stack
+
+```text
+Ensure Server Running -> non-build docker compose up -d
+Restart Server        -> non-build docker compose restart
+Stop Server           -> existing stack:cloudflare:stop command
+Refresh Status        -> read-only health/public checks
+Stack Logs            -> cancellable streaming stack logs window
+```
+
+### Frontend
+
+```text
+Build / Start       -> pnpm frontend
+Rebuild & Restart   -> pnpm frontend:restart
+Stop                -> pnpm frontend:stop
+Status              -> pnpm frontend:status
+Logs                -> cancellable streaming frontend logs window
+```
+
+### API
+
+```text
+Build / Start       -> pnpm api
+Rebuild & Restart   -> pnpm api:restart
+Stop                -> pnpm api:stop
+Status              -> pnpm api:status
+Logs                -> cancellable streaming API logs window
+```
+
+The UI intentionally labels the frontend/API restart operations as `Rebuild & Restart` because the current root scripts include `--build`.
 
 ## Monitoring
 
@@ -131,6 +187,8 @@ This split is intentional so the manager can be tested alongside another active 
 
 Log retention defaults to 14 days. Secrets and environment values must never be written to these logs or settings.
 
+Docker log windows use only predefined registry commands, stream stdout/stderr asynchronously, and terminate their child process when `Stop stream` is selected or the window closes.
+
 ## Verification ledger
 
 ### 2026-09-12 — Release build
@@ -175,6 +233,7 @@ Implemented:
 - EN/FA + LTR/RTL switching
 - single-instance guard
 - Argon2id owner lock
+- first-run password confirmation + explicit relock
 - safe `ProcessStartInfo.ArgumentList` command runner
 - central command registry
 - local target boundary ready for future remote target
@@ -188,17 +247,18 @@ Implemented:
 - incident/recovery desktop notifications
 - daily disk logs and retention
 - persisted non-secret settings
+- owner-gated repository folder picker with validation
+- stack/frontend/API operation surface with honest build/restart naming
+- cancellable dedicated stack/frontend/API log windows
 - startup install/remove scripts
 - founder-local Release build verification
 - founder Light/Dark + EN/FA runtime UI verification
 
 Still required before V1 acceptance:
 
+- compile/runtime verification of the new owner confirmation/relock/repo picker/service-control/log-viewer slice
 - owner unlock + persistence/relaunch runtime verification
-- configurable repo-path browse/change UI
-- first-run owner-password confirmation/reset/recovery UX
-- dedicated long-running Docker log viewer/cancellation
-- full safe stack/frontend/API operation surface
+- owner password change/recovery policy
 - unit tests for state transitions, debounce, recovery, command registry, settings and endpoint aggregation
 - founder-local integration tests A-H
 - final Material 3 polish and bilingual copy pass
