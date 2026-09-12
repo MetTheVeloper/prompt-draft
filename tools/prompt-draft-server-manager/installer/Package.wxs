@@ -1,0 +1,41 @@
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package Name="Prompt Draft Server Manager"
+           Manufacturer="MetTheVeloper"
+           Version="0.1.0"
+           UpgradeCode="7C5BCE90-F0F6-44F0-8D0D-48575BEF38D5"
+           Scope="perMachine">
+    <SummaryInformation Description="Prompt Draft Server Manager" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Prompt Draft Server Manager is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+
+    <StandardDirectory Id="ProgramFiles6432Folder">
+      <Directory Id="CompanyFolder" Name="MetTheVeloper">
+        <Directory Id="INSTALLFOLDER" Name="Prompt Draft Server Manager" />
+      </Directory>
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="ApplicationProgramsFolder" Name="Prompt Draft Server Manager" />
+    </StandardDirectory>
+
+    <Component Id="MainExecutableComponent" Directory="INSTALLFOLDER" Guid="*" Bitness="always64">
+      <File Id="ManagerExecutable"
+            Source="$(var.PublishDir)\PromptDraft.ServerManager.exe"
+            KeyPath="yes">
+        <Shortcut Id="StartMenuShortcut"
+                  Directory="ApplicationProgramsFolder"
+                  Name="Prompt Draft Server Manager"
+                  Description="Prompt Draft operations console"
+                  WorkingDirectory="INSTALLFOLDER"
+                  Advertise="yes" />
+      </File>
+      <RemoveFolder Id="RemoveApplicationProgramsFolder"
+                    Directory="ApplicationProgramsFolder"
+                    On="uninstall" />
+    </Component>
+
+    <Feature Id="MainFeature" Title="Prompt Draft Server Manager" Level="1">
+      <ComponentRef Id="MainExecutableComponent" />
+    </Feature>
+  </Package>
+</Wix>
