@@ -1,0 +1,8 @@
+<Project Sdk="WixToolset.Sdk/7.0.0">
+  <PropertyGroup>
+    <OutputType>Package</OutputType>
+    <Platform>x64</Platform>
+    <OutputName>PromptDraftServerManager-Setup</OutputName>
+    <PublishDir Condition="'$(PublishDir)' == ''">$(MSBuildThisFileDirectory)..\dist\publish</PublishDir>
+  </PropertyGroup>
+</Project>
