@@ -2,8 +2,8 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="Prompt Draft Server Manager" Height="780" Width="1180"
-        MinHeight="660" MinWidth="980"
+        Title="Prompt Draft Server Manager" Height="820" Width="1220"
+        MinHeight="700" MinWidth="1040"
         WindowStartupLocation="CenterScreen"
         TextElement.Foreground="{DynamicResource MaterialDesignBody}"
         Background="{DynamicResource MaterialDesignPaper}"
@@ -50,26 +50,58 @@
 
     <Grid Grid.Row="6">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="340" />
+        <ColumnDefinition Width="360" />
         <ColumnDefinition Width="16" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
 
       <materialDesign:Card Grid.Column="0" Padding="20">
-        <StackPanel>
-          <TextBlock x:Name="OwnerAccessTitle" Text="Owner access" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock x:Name="OwnerAccessDescription" Text="Unlock before running management actions." TextWrapping="Wrap" Opacity="0.7" Margin="0,8,0,16" />
-          <PasswordBox x:Name="OwnerPassword" materialDesign:HintAssist.Hint="Owner password" Margin="0,0,0,12" />
-          <Button x:Name="UnlockButton" Content="Unlock" Style="{StaticResource MaterialDesignRaisedButton}" Click="UnlockButton_Click" />
-          <TextBlock x:Name="AuthStateText" Text="Locked" Margin="0,12,0,0" Opacity="0.7" />
-          <Separator Margin="0,20,0,16" />
-          <TextBlock x:Name="TargetLabel" Text="Target" FontWeight="SemiBold" />
-          <TextBlock x:Name="TargetPathText" TextWrapping="Wrap" Opacity="0.65" Margin="0,4,0,16" FontSize="11" />
-          <Button x:Name="EnsureButton" Content="Ensure Server Running" Margin="0,0,0,8" IsEnabled="False" Click="EnsureButton_Click" />
-          <Button x:Name="RestartButton" Content="Restart Server" Margin="0,0,0,8" IsEnabled="False" Click="RestartButton_Click" />
-          <Button x:Name="StopButton" Content="Stop Server" Margin="0,0,0,8" IsEnabled="False" Click="StopButton_Click" />
-          <Button x:Name="RefreshButton" Content="Refresh Status" IsEnabled="False" Click="RefreshButton_Click" />
-        </StackPanel>
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+          <StackPanel>
+            <TextBlock x:Name="OwnerAccessTitle" Text="Owner access" FontSize="18" FontWeight="SemiBold" />
+            <TextBlock x:Name="OwnerAccessDescription" Text="Unlock before running management actions." TextWrapping="Wrap" Opacity="0.7" Margin="0,8,0,8" />
+            <TextBlock x:Name="FirstRunHint" Text="First run: create an owner password and confirm it." TextWrapping="Wrap" Opacity="0.65" Margin="0,0,0,12" Visibility="Collapsed" />
+            <PasswordBox x:Name="OwnerPassword" materialDesign:HintAssist.Hint="Owner password" Margin="0,0,0,12" />
+            <PasswordBox x:Name="ConfirmOwnerPassword" materialDesign:HintAssist.Hint="Confirm owner password" Margin="0,0,0,12" Visibility="Collapsed" />
+            <Button x:Name="UnlockButton" Content="Unlock" Style="{StaticResource MaterialDesignRaisedButton}" Click="UnlockButton_Click" />
+            <Button x:Name="LockButton" Content="Lock" Margin="0,8,0,0" Visibility="Collapsed" Click="LockButton_Click" />
+            <TextBlock x:Name="AuthStateText" Text="Locked" Margin="0,12,0,0" Opacity="0.7" />
+
+            <Separator Margin="0,20,0,16" />
+            <TextBlock x:Name="TargetLabel" Text="Target" FontWeight="SemiBold" />
+            <TextBlock x:Name="TargetPathText" TextWrapping="Wrap" Opacity="0.65" Margin="0,4,0,8" FontSize="11" />
+            <Button x:Name="BrowseRepoButton" Content="Choose repository folder" Margin="0,0,0,6" IsEnabled="False" Click="BrowseRepoButton_Click" />
+            <TextBlock x:Name="RepoPathNotice" TextWrapping="Wrap" Opacity="0.65" Margin="0,0,0,16" FontSize="11" />
+
+            <TextBlock x:Name="StackOperationsLabel" Text="Server stack" FontWeight="SemiBold" Margin="0,0,0,8" />
+            <Button x:Name="EnsureButton" Content="Ensure Server Running" Margin="0,0,0,8" IsEnabled="False" Click="EnsureButton_Click" />
+            <Button x:Name="RestartButton" Content="Restart Server (no build)" Margin="0,0,0,8" IsEnabled="False" Click="RestartButton_Click" />
+            <Button x:Name="StopButton" Content="Stop Server" Margin="0,0,0,8" IsEnabled="False" Click="StopButton_Click" />
+            <Button x:Name="RefreshButton" Content="Refresh Status" Margin="0,0,0,8" IsEnabled="False" Click="RefreshButton_Click" />
+            <Button x:Name="StackLogsButton" Content="Stack Logs" IsEnabled="False" Click="StackLogsButton_Click" />
+
+            <Separator Margin="0,18,0,10" />
+            <Expander x:Name="FrontendExpander" Header="Frontend" IsExpanded="False">
+              <StackPanel Margin="0,8,0,4">
+                <Button x:Name="FrontendBuildButton" Content="Build / Start" Margin="0,0,0,8" IsEnabled="False" Click="FrontendBuildButton_Click" />
+                <Button x:Name="FrontendRestartButton" Content="Rebuild &amp; Restart" Margin="0,0,0,8" IsEnabled="False" Click="FrontendRestartButton_Click" />
+                <Button x:Name="FrontendStopButton" Content="Stop" Margin="0,0,0,8" IsEnabled="False" Click="FrontendStopButton_Click" />
+                <Button x:Name="FrontendStatusButton" Content="Status" Margin="0,0,0,8" IsEnabled="False" Click="FrontendStatusButton_Click" />
+                <Button x:Name="FrontendLogsButton" Content="Logs" IsEnabled="False" Click="FrontendLogsButton_Click" />
+              </StackPanel>
+            </Expander>
+
+            <Expander x:Name="ApiExpander" Header="API" IsExpanded="False" Margin="0,8,0,0">
+              <StackPanel Margin="0,8,0,4">
+                <Button x:Name="ApiBuildButton" Content="Build / Start" Margin="0,0,0,8" IsEnabled="False" Click="ApiBuildButton_Click" />
+                <Button x:Name="ApiRestartButton" Content="Rebuild &amp; Restart" Margin="0,0,0,8" IsEnabled="False" Click="ApiRestartButton_Click" />
+                <Button x:Name="ApiStopButton" Content="Stop" Margin="0,0,0,8" IsEnabled="False" Click="ApiStopButton_Click" />
+                <Button x:Name="ApiStatusButton" Content="Status" Margin="0,0,0,8" IsEnabled="False" Click="ApiStatusButton_Click" />
+                <Button x:Name="ApiLogsButton" Content="Logs" IsEnabled="False" Click="ApiLogsButton_Click" />
+              </StackPanel>
+            </Expander>
+          </StackPanel>
+        </ScrollViewer>
       </materialDesign:Card>
 
       <materialDesign:Card Grid.Column="2" Padding="20">
