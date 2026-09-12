@@ -16,6 +16,17 @@ export type AdminGrowthSummary = {
     copySessionRate: number;
     unlocks: number;
   };
+  launchFunnel: {
+    publicPromptViews: number;
+    publicPromptViewSessions: number;
+    publicCreatorViews: number;
+    publicCreatorViewSessions: number;
+    copyClicks: number;
+    copyClickSessions: number;
+    unlockClicks: number;
+    unlockClickSessions: number;
+    completedUnlocks: number;
+  };
   referrals: {
     linkOpens: number;
     signups: number;
@@ -42,6 +53,10 @@ export type AdminGrowthDailyPoint = {
   day: string;
   promptViews: number;
   promptCopies: number;
+  publicPromptViews: number;
+  publicCreatorViews: number;
+  promptCopyClicks: number;
+  promptUnlockClicks: number;
   referralOpens: number;
   referralSignups: number;
   goinIssued: number;
