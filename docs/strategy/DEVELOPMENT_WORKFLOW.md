@@ -2,7 +2,7 @@
 
 Status: **PROJECT-WIDE OPERATIONAL RULE**
 
-Date: 2026-09-10
+Date: 2026-09-12
 
 This document defines the default local-development and verification workflow for Prompt Draft. It is intentionally project-wide rather than milestone-specific.
 
@@ -24,6 +24,7 @@ Use this order of preference:
 
 ```text
 no rebuild
+-> environment-only service recreate when image content did not change
 -> one service rebuild
 -> multiple required services
 -> full stack only when genuinely required
@@ -127,23 +128,36 @@ If the image already contains the test, run only the requested test command.
 
 When both runtime images genuinely changed, rebuilding both is justified. Prefer the smallest command that covers the changed services. Use full stack only when that is materially simpler or required by shared runtime changes.
 
-### Compose/environment/runtime-topology changes
+### Environment-only changes
 
-Changes to Compose files, service wiring, Dockerfiles shared by multiple services, or environment contracts may justify:
+If only runtime environment values changed and the already-built image contains the accepted source, rebuilding the image is wasted time. Recreate only the affected container so Compose reads the new `.env` values:
+
+```powershell
+pnpm api:recreate
+pnpm frontend:recreate
+```
+
+Use only the service(s) whose runtime environment actually changed.
+
+This rule is especially important for production cutover configuration such as browser API origin, public site URL, noindex state or API CORS when the verified image itself is unchanged.
+
+### Compose/runtime-topology changes
+
+Changes to Compose files, service wiring, Dockerfiles shared by multiple services, network topology or another image-affecting runtime contract may justify:
 
 ```powershell
 pnpm stack
 ```
 
-Use force recreate only when stale container state, changed environment, or container topology requires it.
+Do not use `pnpm stack` merely because an environment value changed. Use force recreate only when changed environment or container topology requires a new container instance.
 
 ## 4. Restart/recreate is not a substitute for reasoning
 
 Do not recommend `*:restart` merely because something looks stale.
 
-First determine whether source code is baked into an image. If code changed and the image must be rebuilt, a plain container restart cannot load that source. Conversely, if no image content changed, rebuilding is wasted time.
+First determine whether source code is baked into an image. If code changed and the image must be rebuilt, a plain container restart/recreate cannot load that source. Conversely, if no image content changed, rebuilding is wasted time.
 
-`--force-recreate` should be exceptional, not routine.
+`--force-recreate` is appropriate for a confirmed runtime-environment change where the existing image is already the desired image. It should not be used as generic troubleshooting ritual.
 
 ## 5. `git pull` rule
 
@@ -188,11 +202,13 @@ Root `package.json` is the command reference. Intended service-scoped commands i
 
 ```powershell
 pnpm frontend
+pnpm frontend:recreate
 pnpm frontend:restart
 pnpm frontend:status
 pnpm frontend:logs
 
 pnpm api
+pnpm api:recreate
 pnpm api:restart
 pnpm api:status
 pnpm api:logs
@@ -203,7 +219,7 @@ pnpm stack:status
 pnpm stack:logs
 ```
 
-`frontend` and `api` are the normal rebuild commands for service-local source changes. `stack` is reserved for changes that genuinely cross service boundaries or require the complete stack to be rebuilt.
+`frontend` and `api` are the normal rebuild commands for service-local source changes. `frontend:recreate` and `api:recreate` are for environment-only changes when the image content is already correct. `stack` is reserved for changes that genuinely cross service boundaries or require the complete stack to be rebuilt.
 
 ## 9. Assistant operating requirement
 
@@ -211,10 +227,11 @@ For every future implementation/verification instruction, including in a new cha
 
 1. inspect which files/services changed;
 2. decide whether any rebuild is required at all;
-3. select the smallest service scope;
-4. prefer the root package script for that scope;
-5. explain broader rebuilds only when they are truly necessary;
-6. never default to `pnpm stack` for convenience;
-7. for any UI task, read and obey `docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md` before implementation.
+3. distinguish source/image changes from environment-only changes;
+4. select the smallest service scope;
+5. prefer the root package script for that scope;
+6. explain broader rebuilds only when they are truly necessary;
+7. never default to `pnpm stack` for convenience;
+8. for any UI task, read and obey `docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md` before implementation.
 
 This rule remains active unless the founder explicitly overrides it for a specific verification run.
