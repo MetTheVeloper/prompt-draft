@@ -9,6 +9,8 @@ public static class CommandRegistry
         ["DockerInfo"] = new("docker.exe", ["info"], TimeSpan.FromSeconds(20)),
         // Routine startup is intentionally non-build. Existing pnpm stack:cloudflare includes --build.
         ["EnsureCloudflareStack"] = new("docker.exe", ["compose", "-f", "compose.yaml", "-f", "compose.cloudflare.yaml", "up", "-d"], TimeSpan.FromMinutes(3)),
+        ["RestartCloudflareStack"] = new("docker.exe", ["compose", "-f", "compose.yaml", "-f", "compose.cloudflare.yaml", "restart"], TimeSpan.FromMinutes(3)),
+        ["CloudflareStatusJson"] = new("docker.exe", ["compose", "-f", "compose.yaml", "-f", "compose.cloudflare.yaml", "ps", "--format", "json"], TimeSpan.FromSeconds(30)),
         ["CloudflareStatus"] = new("pnpm.cmd", ["stack:cloudflare:status"], TimeSpan.FromSeconds(30)),
         ["FrontendBuild"] = new("pnpm.cmd", ["frontend"], TimeSpan.FromMinutes(15)),
         ["FrontendRestart"] = new("pnpm.cmd", ["frontend:restart"], TimeSpan.FromMinutes(15)),

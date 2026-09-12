@@ -2,13 +2,16 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
-        Title="Prompt Draft Server Manager" Height="760" Width="1180"
-        MinHeight="640" MinWidth="980"
-        WindowStartupLocation="CenterScreen">
+        Title="Prompt Draft Server Manager" Height="780" Width="1180"
+        MinHeight="660" MinWidth="980"
+        WindowStartupLocation="CenterScreen"
+        Closing="Window_Closing">
   <Grid Margin="24">
     <Grid.RowDefinitions>
       <RowDefinition Height="Auto" />
       <RowDefinition Height="16" />
+      <RowDefinition Height="Auto" />
+      <RowDefinition Height="12" />
       <RowDefinition Height="Auto" />
       <RowDefinition Height="16" />
       <RowDefinition Height="*" />
@@ -25,17 +28,24 @@
       </StackPanel>
     </DockPanel>
 
-    <UniformGrid Grid.Row="2" Columns="5">
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock Text="Docker" FontWeight="SemiBold"/><TextBlock x:Name="DockerState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock Text="Stack" FontWeight="SemiBold"/><TextBlock x:Name="StackState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock Text="Tunnel" FontWeight="SemiBold"/><TextBlock x:Name="TunnelState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock Text="Staging" FontWeight="SemiBold"/><TextBlock x:Name="StagingState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Padding="16"><StackPanel><TextBlock Text="Production" FontWeight="SemiBold"/><TextBlock x:Name="ProductionState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
+    <materialDesign:Card Grid.Row="2" Padding="14">
+      <DockPanel>
+        <TextBlock x:Name="ManagerStateText" Text="Initializing" FontWeight="SemiBold" />
+        <TextBlock x:Name="LastCheckedText" DockPanel.Dock="Right" HorizontalAlignment="Right" Opacity="0.65" Text="Waiting for first check..." />
+      </DockPanel>
+    </materialDesign:Card>
+
+    <UniformGrid Grid.Row="4" Columns="5">
+      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="DockerLabel" Text="Docker" FontWeight="SemiBold"/><TextBlock x:Name="DockerState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="StackLabel" Text="Stack" FontWeight="SemiBold"/><TextBlock x:Name="StackState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="TunnelLabel" Text="Tunnel" FontWeight="SemiBold"/><TextBlock x:Name="TunnelState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="StagingLabel" Text="Staging" FontWeight="SemiBold"/><TextBlock x:Name="StagingState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="StagingDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel></materialDesign:Card>
+      <materialDesign:Card Padding="16"><StackPanel><TextBlock x:Name="ProductionLabel" Text="Production" FontWeight="SemiBold"/><TextBlock x:Name="ProductionState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="ProductionDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel></materialDesign:Card>
     </UniformGrid>
 
-    <Grid Grid.Row="4">
+    <Grid Grid.Row="6">
       <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="320" />
+        <ColumnDefinition Width="340" />
         <ColumnDefinition Width="16" />
         <ColumnDefinition Width="*" />
       </Grid.ColumnDefinitions>
@@ -43,12 +53,16 @@
       <materialDesign:Card Grid.Column="0" Padding="20">
         <StackPanel>
           <TextBlock x:Name="OwnerAccessTitle" Text="Owner access" FontSize="18" FontWeight="SemiBold" />
-          <TextBlock x:Name="OwnerAccessDescription" Text="Unlock before running management actions." TextWrapping="Wrap" Opacity="0.7" Margin="0,8,0,20" />
+          <TextBlock x:Name="OwnerAccessDescription" Text="Unlock before running management actions." TextWrapping="Wrap" Opacity="0.7" Margin="0,8,0,16" />
           <PasswordBox x:Name="OwnerPassword" materialDesign:HintAssist.Hint="Owner password" Margin="0,0,0,12" />
           <Button x:Name="UnlockButton" Content="Unlock" Style="{StaticResource MaterialDesignRaisedButton}" Click="UnlockButton_Click" />
           <TextBlock x:Name="AuthStateText" Text="Locked" Margin="0,12,0,0" Opacity="0.7" />
-          <Separator Margin="0,24,0,20" />
+          <Separator Margin="0,20,0,16" />
+          <TextBlock x:Name="TargetLabel" Text="Target" FontWeight="SemiBold" />
+          <TextBlock x:Name="TargetPathText" TextWrapping="Wrap" Opacity="0.65" Margin="0,4,0,16" FontSize="11" />
           <Button x:Name="EnsureButton" Content="Ensure Server Running" Margin="0,0,0,8" IsEnabled="False" Click="EnsureButton_Click" />
+          <Button x:Name="RestartButton" Content="Restart Server" Margin="0,0,0,8" IsEnabled="False" Click="RestartButton_Click" />
+          <Button x:Name="StopButton" Content="Stop Server" Margin="0,0,0,8" IsEnabled="False" Click="StopButton_Click" />
           <Button x:Name="RefreshButton" Content="Refresh Status" IsEnabled="False" Click="RefreshButton_Click" />
         </StackPanel>
       </materialDesign:Card>
@@ -56,7 +70,8 @@
       <materialDesign:Card Grid.Column="2" Padding="20">
         <DockPanel>
           <TextBlock DockPanel.Dock="Top" x:Name="ActivityTitle" Text="Activity" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
-          <TextBox x:Name="LogBox" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" BorderThickness="0" />
+          <TextBlock x:Name="ActivityLockedText" Text="Unlock owner access to view activity logs." HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.65" />
+          <TextBox x:Name="LogBox" Visibility="Collapsed" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" BorderThickness="0" />
         </DockPanel>
       </materialDesign:Card>
     </Grid>

@@ -7,10 +7,12 @@ public partial class App : Application
 {
     private const string MutexName = "Local\\PromptDraft.ServerManager.SingleInstance";
     private Mutex? _mutex;
+    private bool _ownsMutex;
 
     protected override void OnStartup(StartupEventArgs e)
     {
         _mutex = new Mutex(initiallyOwned: true, MutexName, out var createdNew);
+        _ownsMutex = createdNew;
         if (!createdNew)
         {
             MessageBox.Show("Prompt Draft Server Manager is already running.", "Prompt Draft Server Manager", MessageBoxButton.OK, MessageBoxImage.Information);
@@ -23,7 +25,7 @@ public partial class App : Application
 
     protected override void OnExit(ExitEventArgs e)
     {
-        _mutex?.ReleaseMutex();
+        if (_ownsMutex) _mutex?.ReleaseMutex();
         _mutex?.Dispose();
         base.OnExit(e);
     }
