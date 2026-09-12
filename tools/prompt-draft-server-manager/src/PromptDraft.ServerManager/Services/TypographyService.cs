@@ -1,6 +1,7 @@
 using System.IO;
 using System.Net.Http;
-using System.Windows.Media;
+using WpfFontFamily = System.Windows.Media.FontFamily;
+using WpfFonts = System.Windows.Media.Fonts;
 
 namespace PromptDraft.ServerManager.Services;
 
@@ -12,8 +13,8 @@ public sealed class TypographyService
 
     public static TypographyService Instance { get; } = new();
 
-    public FontFamily EnglishFont { get; private set; } = new("DM Sans, Segoe UI");
-    public FontFamily PersianFont { get; private set; } = new("Vazirmatn, Segoe UI");
+    public WpfFontFamily EnglishFont { get; private set; } = new("DM Sans, Segoe UI");
+    public WpfFontFamily PersianFont { get; private set; } = new("Vazirmatn, Segoe UI");
     public bool IsCached { get; private set; }
 
     private TypographyService() { }
@@ -68,12 +69,12 @@ public sealed class TypographyService
         }
     }
 
-    private static FontFamily CreatePrivateFont(string directory, string expectedFamilyName, FontFamily fallback)
+    private static WpfFontFamily CreatePrivateFont(string directory, string expectedFamilyName, WpfFontFamily fallback)
     {
         try
         {
             var directoryUri = new Uri(directory.TrimEnd(Path.DirectorySeparatorChar) + Path.DirectorySeparatorChar, UriKind.Absolute);
-            var family = Fonts.GetFontFamilies(directoryUri)
+            var family = WpfFonts.GetFontFamilies(directoryUri)
                 .FirstOrDefault(candidate => candidate.Source.Contains(expectedFamilyName, StringComparison.OrdinalIgnoreCase));
             return family ?? fallback;
         }
