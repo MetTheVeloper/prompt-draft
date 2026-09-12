@@ -5,6 +5,11 @@
         Title="Prompt Draft Server Manager" Height="780" Width="1180"
         MinHeight="660" MinWidth="980"
         WindowStartupLocation="CenterScreen"
+        TextElement.Foreground="{DynamicResource MaterialDesignBody}"
+        Background="{DynamicResource MaterialDesignPaper}"
+        FontFamily="{DynamicResource MaterialDesignFont}"
+        TextOptions.TextFormattingMode="Ideal"
+        TextOptions.TextRenderingMode="Auto"
         Closing="Window_Closing">
   <Grid Margin="24">
     <Grid.RowDefinitions>
