@@ -8,6 +8,7 @@ public sealed class ManagerSettings
     public int PublicPollSeconds { get; set; } = 15;
     public bool NotificationEnabled { get; set; } = true;
     public bool MinimizeToTray { get; set; } = true;
+    public bool AutoStartDocker { get; set; } = true;
     public int LogRetentionDays { get; set; } = 14;
     public string Theme { get; set; } = "Light";
     public string Language { get; set; } = "en";
