@@ -27,7 +27,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
 21.5.5 Organic Acquisition Launch               -> IN PROGRESS
   5.1 Launch Readiness                          -> IN PROGRESS / CONTRACT + AUDIT
-  5.2 Acquisition Measurement Instrumentation   -> IN PROGRESS / CORE PROMPT+CREATOR IMPLEMENTED / RUNTIME VERIFY PENDING
+  5.2 Acquisition Measurement Instrumentation   -> IN PROGRESS / ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING
   5.3 Founder-approved Production Cutover       -> BLOCKED UNTIL READINESS ACCEPTED
   5.4 Initial Launch + Measurement Cadence      -> PENDING PRODUCTION CUTOVER
 ```
@@ -325,12 +325,12 @@ Current slices:
 
 ```text
 5.1 Launch Readiness                        -> IN PROGRESS / CONTRACT + AUDIT
-5.2 Acquisition Measurement Instrumentation -> IN PROGRESS / CORE PROMPT+CREATOR IMPLEMENTED / RUNTIME VERIFY PENDING
+5.2 Acquisition Measurement Instrumentation -> IN PROGRESS / ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING
 ```
 
 Phase 5.1 exists to establish a branch-exact runtime/deployment/environment/indexability inventory, Search Console and acquisition-measurement baseline, explicit production cutover procedure, explicit rollback procedure and founder readiness signoff **before** production is changed.
 
-Phase 5.2 now extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Public Prompt/Creator browser views and protected Prompt copy/unlock intent are instrumented; completed unlock and Goin spend remain derived from transactional source-of-truth tables. Blog/Discovery landing instrumentation and founder-local runtime verification remain pending.
+Phase 5.2 extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Client-mounted acquisition views now cover public Prompt, public Creator, Blog index, Blog Article and taxonomy-backed Discovery routes; protected Prompt copy/unlock intent is instrumented; successful clipboard copy remains separately measured; completed unlock and Goin spend remain derived from transactional source-of-truth tables. Founder-local/runtime verification is still pending before 5.2 can be accepted.
 
 Execution slices:
 
@@ -385,9 +385,11 @@ DO NOT change production DNS/Tunnel/indexability without explicit founder approv
 6. inspect latest feature/growth-foundation HEAD before every decision/write
 7. confirm 21.5.4 / 4A-4F remain DONE / ACCEPTED; do not restart Phase 4 audit without a concrete regression
 8. current task = 21.5.5 / Phase 5.1 + Phase 5.2
-9. verify the core Prompt/Creator instrumentation with focused tests + pnpm api/pnpm frontend, then close only the still-required Blog/Discovery measurement gaps
-10. continue 5.1C production cutover/rollback contract and Search Console readiness in parallel
-11. preserve all accepted public/indexability/security/compiler boundaries
-12. keep staging NUXT_PUBLIC_NOINDEX=true
-13. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
+9. run focused Phase 5.2 source tests, rebuild only pnpm api + pnpm frontend, and smoke Prompt/Creator/Blog/Discovery plus protected copy/unlock behavior
+10. verify /api/admin/growth/summary launchFunnel against transactional unlock/Goin evidence; do not treat aggregate surface counts as a strict sequential funnel
+11. if focused verification passes, record founder-local Phase 5.2 acceptance
+12. continue 5.1C production cutover/rollback contract and Search Console readiness
+13. preserve all accepted public/indexability/security/compiler boundaries
+14. keep staging NUXT_PUBLIC_NOINDEX=true
+15. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
 ```
