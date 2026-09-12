@@ -4,6 +4,9 @@ type ProductAnalyticsEventName =
   | 'referral_link_open'
   | 'public_prompt_view'
   | 'public_creator_view'
+  | 'public_blog_index_view'
+  | 'public_blog_article_view'
+  | 'public_discovery_view'
   | 'prompt_copy_clicked'
   | 'prompt_unlock_clicked'
 
@@ -12,6 +15,8 @@ type ProductAnalyticsResourceType =
   | 'referral_username'
   | 'public_prompt'
   | 'public_creator'
+  | 'public_blog'
+  | 'public_discovery'
 
 type ProductAnalyticsMetadata = Record<string, string | number | boolean | null>
 
