@@ -27,9 +27,14 @@
              IsReadOnly="True"
              AcceptsReturn="True"
              TextWrapping="NoWrap"
-             FontFamily="Consolas"
+             FontFamily="Cascadia Mono, Consolas"
              FontSize="12"
+             Padding="6,4,12,4"
              VerticalScrollBarVisibility="Auto"
-             HorizontalScrollBarVisibility="Auto" />
+             HorizontalScrollBarVisibility="Auto">
+      <TextBox.Resources>
+        <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource ManagerMinimalScrollBar}" />
+      </TextBox.Resources>
+    </TextBox>
   </Grid>
 </Window>
