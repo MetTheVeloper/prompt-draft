@@ -18,12 +18,23 @@
       <Style x:Key="ManagerMinimalScrollBar"
              TargetType="{x:Type ScrollBar}"
              BasedOn="{StaticResource MaterialDesignScrollBarMinimal}">
-        <Setter Property="Width" Value="7" />
-        <Setter Property="MinWidth" Value="7" />
-        <Setter Property="Height" Value="7" />
-        <Setter Property="MinHeight" Value="7" />
         <Setter Property="Margin" Value="10,3,2,3" />
         <Setter Property="Opacity" Value="0.72" />
+        <Style.Triggers>
+          <Trigger Property="Orientation" Value="Vertical">
+            <Setter Property="Width" Value="7" />
+            <Setter Property="MinWidth" Value="7" />
+            <Setter Property="Height" Value="Auto" />
+            <Setter Property="MinHeight" Value="0" />
+          </Trigger>
+          <Trigger Property="Orientation" Value="Horizontal">
+            <Setter Property="Height" Value="7" />
+            <Setter Property="MinHeight" Value="7" />
+            <Setter Property="Width" Value="Auto" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="Margin" Value="3,10,3,2" />
+          </Trigger>
+        </Style.Triggers>
       </Style>
     </ResourceDictionary>
   </Application.Resources>
