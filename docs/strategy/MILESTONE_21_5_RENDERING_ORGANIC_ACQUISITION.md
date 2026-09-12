@@ -1,8 +1,8 @@
 # Milestone 21.5 — Rendering & Organic Acquisition Foundation
 
-Status: **IN PROGRESS / PHASES 1–4 DONE + ACCEPTED / PHASE 5.1 IN PROGRESS**
+Status: **IN PROGRESS / PHASES 1–4 DONE + ACCEPTED / PHASE 5.1 IN PROGRESS / PHASE 5.2 ACCEPTED**
 
-Date: 2026-09-11
+Date: 2026-09-12
 
 Branch:
 
@@ -29,6 +29,7 @@ docs/strategy/MILESTONE_21_5_PHASE2_DOCKER_RUNTIME.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+docs/strategy/MILESTONE_21_5_PHASE5_2_VERIFICATION.md
 docs/strategy/STATUS.md
 ```
 
@@ -380,12 +381,13 @@ Phase 4 is closed.
 
 ## 7. Phase 5 — Organic Acquisition Launch & Measurement
 
-Status: **IN PROGRESS / PHASE 5.1 LAUNCH READINESS CONTRACT + AUDIT**
+Status: **IN PROGRESS / PHASE 5.1 LAUNCH READINESS / PHASE 5.2 DONE + ACCEPTED**
 
-Canonical Phase 5 record:
+Canonical Phase 5 records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+docs/strategy/MILESTONE_21_5_PHASE5_2_VERIFICATION.md
 ```
 
 Goal:
@@ -404,16 +406,33 @@ Phase 5 is deliberately sequenced so production is not changed before readiness 
   -> founder readiness signoff
 
 5.2 Acquisition Measurement Instrumentation
-  -> only the gaps proven by the 5.1 audit
+  -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-12
+  -> acquisition surfaces + protected Prompt intent measured through existing first-party analytics
+  -> completed unlock + Goin economy remain transactional truth
 
 5.3 Founder-approved Production Cutover
-  -> blocked until 5.1 is accepted and required measurement gaps are closed
+  -> blocked until 5.1 readiness is accepted and founder explicitly approves production changes
 
 5.4 Initial Acquisition Launch + Measurement Cadence
   -> production Search Console/sitemap/indexing evidence
   -> first acquisition content/internal-link verification
   -> baseline + repeatable measurement review
 ```
+
+Phase 5.2 founder-local acceptance evidence:
+
+```text
+pnpm test:product-analytics-web -> PASS 5/5
+pnpm api                        -> PASS
+pnpm test:product-analytics     -> PASS 8/8
+pnpm frontend                   -> PASS
+pnpm stack:cloudflare:status    -> PASS
+browser -> analytics API -> DB  -> PASS on available Prompt/Creator/Blog-index/Discovery staging surfaces
+protected Prompt intent/copy    -> PASS / unlock_clicked -> copy_clicked -> archive_copy
+admin growth summary            -> HTTP 200 / launchFunnel + transactional economy values verified
+```
+
+A published English staging Blog Article fixture was unavailable during runtime smoke; automated frontend/backend event contracts cover that route and the missing fixture is deferred evidence rather than a Phase 5.2 blocker.
 
 External acquisition evidence:
 
@@ -429,7 +448,7 @@ Prompt Draft product analytics / Growth metrics
 
 Do not confuse search impressions/clicks with product engagement, and do not label measured acquisition-surface users as whole-product DAU/MAU without sufficient instrumentation.
 
-Search Console setup is part of readiness/launch evidence, not an assumed completed dependency. The Phase 5.1 audit must record the intended property scope/ownership verification, production sitemap submission plan and representative URL inspection/indexing checks.
+Search Console setup is part of readiness/launch evidence, not an assumed completed dependency. Phase 5.1 must still record the intended property scope/ownership verification, production sitemap submission plan and representative URL inspection/indexing checks.
 
 Current hard boundary:
 
@@ -543,11 +562,11 @@ Current next action:
 ```text
 Continue Phase 5.1 — Launch Readiness:
   -> re-read latest feature/growth-foundation HEAD
-  -> audit branch-exact runtime/deployment/env/indexability configuration
-  -> audit existing analytics/measurement implementation before adding instrumentation
-  -> define Search Console property/verification + production sitemap/indexing plan
-  -> write the exact production cutover + rollback runbook
-  -> classify only proven measurement gaps into Phase 5.2
+  -> complete branch-exact production runtime/deployment/env/indexability inventory
+  -> finalize Search Console property/ownership + production sitemap/indexing plan
+  -> finalize exact production DNS/Tunnel/API-cache/www/noindex cutover + rollback values
+  -> obtain founder readiness signoff
+  -> preserve accepted Phase 5.2 measurement contract
   -> preserve staging NUXT_PUBLIC_NOINDEX=true
   -> stop before any prompt-draft.ir / production Cloudflare change and obtain explicit founder approval
 ```
