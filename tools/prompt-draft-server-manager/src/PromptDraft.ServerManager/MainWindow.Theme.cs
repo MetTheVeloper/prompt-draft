@@ -13,5 +13,7 @@ public partial class MainWindow
             Dispatcher.BeginInvoke(
                 DispatcherPriority.Background,
                 new Action(() => WindowThemeService.Apply(this, _dark)));
+
+        _ = AutoStartDockerAsync();
     }
 }
