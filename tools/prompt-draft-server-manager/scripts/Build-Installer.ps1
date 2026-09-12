@@ -31,22 +31,26 @@ if ($command) { $makensis = $command.Source }
 
 if (-not $makensis) {
   $candidates = @(
-    (Join-Path ${env:ProgramFiles(x86)} "NSIS\makensis.exe"),
-    (Join-Path $env:ProgramFiles "NSIS\makensis.exe"),
-    (Join-Path $env:LOCALAPPDATA "Programs\NSIS\makensis.exe")
-  ) | Where-Object { $_ -and (Test-Path $_) }
+    @(
+      (Join-Path ${env:ProgramFiles(x86)} "NSIS\makensis.exe"),
+      (Join-Path $env:ProgramFiles "NSIS\makensis.exe"),
+      (Join-Path $env:LOCALAPPDATA "Programs\NSIS\makensis.exe")
+    ) | Where-Object { $_ -and (Test-Path $_) }
+  )
 
   if ($candidates.Count -gt 0) { $makensis = $candidates[0] }
 }
 
 if (-not $makensis) {
-  Write-Host "" 
+  Write-Host ""
   Write-Host "NSIS is required to build the Windows setup executable." -ForegroundColor Yellow
   Write-Host "Install it once with:" -ForegroundColor Yellow
-  Write-Host "  winget install -e --id NSIS.NSIS" -ForegroundColor White
+  Write-Host "  winget install -e --id NSIS.NSIS --source winget" -ForegroundColor White
   Write-Host "Then run this Build-Installer.ps1 script again." -ForegroundColor Yellow
   throw "NSIS makensis.exe was not found."
 }
+
+Write-Host "Using NSIS: $makensis" -ForegroundColor DarkGray
 
 & $makensis `
   "/DPublishDir=$publishDir" `
@@ -55,8 +59,8 @@ if (-not $makensis) {
 
 if ($LASTEXITCODE -ne 0) { throw "NSIS installer build failed." }
 
-$setups = Get-ChildItem $installerDir -Filter *.exe -Recurse
-if (-not $setups) { throw "Installer build completed but no setup executable was found." }
+$setups = @(Get-ChildItem $installerDir -Filter *.exe -Recurse)
+if ($setups.Count -eq 0) { throw "Installer build completed but no setup executable was found." }
 
 Write-Host "Installer output:" -ForegroundColor Green
 $setups | ForEach-Object { Write-Host $_.FullName }
