@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 5.1C Arvan → Cloudflare DNS Migration Plan
 
-Status: **DESIGN COMPLETE / EXECUTION NOT AUTHORIZED**
+Status: **DESIGN COMPLETE / STAGING PREPARATION IN PROGRESS / EXECUTION NOT AUTHORIZED**
 
 Date: 2026-09-12
 
@@ -123,17 +123,21 @@ These tasks prepare the target configuration while Arvan remains authoritative. 
 
 ### S1 — add `prompt-draft.ir` to the existing Cloudflare account as a Full zone
 
-Required evidence to record:
+Founder/dashboard evidence captured on 2026-09-12:
 
 ```text
 zone status before NS switch -> pending / not authoritative
-Cloudflare-assigned NS #1    -> <record exact value>
-Cloudflare-assigned NS #2    -> <record exact value>
+Cloudflare-assigned NS #1    -> justin.ns.cloudflare.com
+Cloudflare-assigned NS #2    -> sharon.ns.cloudflare.com
 plan                          -> Free
 DNS setup                     -> Full
 ```
 
-Do not assume the nameserver pair assigned to `grassic.ir` will be reused.
+Cloudflare Quick Scan initially discovered the two public Arvan edge A records for both apex and `www`, plus the existing MX record. The four imported A records were deliberately removed from the pending Cloudflare zone because they represented the old Arvan edge path, not the target Tunnel topology. The MX record was preserved unchanged.
+
+The authoritative nameservers at the registrar/IRNIC have **not** been changed. Production therefore remains on Arvan.
+
+Do not assume the nameserver pair assigned to `grassic.ir` will be reused; the production pair above is the recorded source of truth for the future cutover.
 
 ### S2 — preserve the current non-Tunnel DNS contract
 
@@ -306,8 +310,14 @@ a.ns.arvancdn.ir
 y.ns.arvancdn.ir
 ```
 
-with the exact Cloudflare-assigned `prompt-draft.ir` nameserver pair captured during S1.
+with:
 
+```text
+justin.ns.cloudflare.com
+sharon.ns.cloudflare.com
+```
+
+Do not execute this nameserver change without explicit founder authorization in the cutover turn.
 Do not delete the Arvan DNS zone or Arvan Storage origin.
 
 ### C6 — verify authority and production endpoints
@@ -406,8 +416,8 @@ staging is healthy and X-Robots-Tag noindex is restored
 Infrastructure discovery is no longer a blocker. Remaining gates are explicit decisions/preparation steps:
 
 ```text
-[ ] add prompt-draft.ir as pending Cloudflare Full zone
-[ ] record production Cloudflare-assigned nameservers
+[x] add prompt-draft.ir as pending Cloudflare Full zone
+[x] record production Cloudflare-assigned nameservers
 [ ] accept exact MX treatment (`contact`, priority 10) or explicitly change mail policy
 [ ] stage www -> apex 301 rule
 [ ] stage api.prompt-draft.ir bypass-cache rule
