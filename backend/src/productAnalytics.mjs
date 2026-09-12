@@ -5,6 +5,7 @@ const ANALYTICS_EVENTS_PATH = '/api/analytics/events'
 const MAX_BODY_BYTES = 8 * 1024
 const MAX_PATH_LENGTH = 500
 const MAX_VARIANT_KEY_LENGTH = 100
+const MAX_PUBLIC_SLUG_LENGTH = 100
 const SUPPORTED_LOCALES = new Set(['en', 'fa'])
 
 const EVENT_RULES = Object.freeze({
@@ -33,6 +34,21 @@ const EVENT_RULES = Object.freeze({
     resourceIdKind: 'username',
     metadataKeys: Object.freeze([]),
   }),
+  public_blog_index_view: Object.freeze({
+    resourceType: 'public_blog',
+    resourceIdKind: 'public_slug',
+    metadataKeys: Object.freeze([]),
+  }),
+  public_blog_article_view: Object.freeze({
+    resourceType: 'public_blog',
+    resourceIdKind: 'public_slug',
+    metadataKeys: Object.freeze([]),
+  }),
+  public_discovery_view: Object.freeze({
+    resourceType: 'public_discovery',
+    resourceIdKind: 'public_slug',
+    metadataKeys: Object.freeze([]),
+  }),
   prompt_copy_clicked: Object.freeze({
     resourceType: 'public_prompt',
     resourceIdKind: 'positive_numeric_id',
@@ -56,6 +72,12 @@ function isUuid(value) {
 
 function isUsername(value) {
   return typeof value === 'string' && /^[a-z0-9._-]{3,64}$/.test(value)
+}
+
+function isPublicSlug(value) {
+  return typeof value === 'string' &&
+    value.length <= MAX_PUBLIC_SLUG_LENGTH &&
+    /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
 }
 
 function isJsonRequest(request) {
@@ -117,6 +139,16 @@ function validateResourceId(id, rule, errors) {
       errors.push(validationError(
         'resource.id',
         'resource.id must be a normalized 3-64 character username',
+      ))
+    }
+    return
+  }
+
+  if (rule.resourceIdKind === 'public_slug') {
+    if (!isPublicSlug(id)) {
+      errors.push(validationError(
+        'resource.id',
+        `resource.id must be a normalized public slug up to ${MAX_PUBLIC_SLUG_LENGTH} characters`,
       ))
     }
     return
