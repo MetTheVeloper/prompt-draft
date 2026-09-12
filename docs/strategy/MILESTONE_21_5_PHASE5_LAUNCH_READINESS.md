@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 5 Organic Acquisition Launch & Measurement
 
-Status: **IN PROGRESS / 5.1 READINESS AUDIT + 5.2 MEASUREMENT IMPLEMENTATION**
+Status: **IN PROGRESS / 5.1 READINESS AUDIT + 5.2 ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING**
 
 Date: 2026-09-12
 
@@ -222,10 +222,10 @@ Closing 5.1 does not itself mean production has been cut over.
 Status:
 
 ```text
-IN PROGRESS / CORE PROMPT + CREATOR INSTRUMENTATION IMPLEMENTED / RUNTIME VERIFICATION PENDING
+IN PROGRESS / ACQUISITION SURFACE CAPTURE IMPLEMENTED / RUNTIME VERIFICATION PENDING
 ```
 
-The 5.1 measurement audit proved the existing first-party pipeline is the correct canonical analytics system, but it did not yet measure the public Prompt/Creator acquisition surfaces or explicit Prompt copy/unlock intent needed for the launch experiment.
+The 5.1 measurement audit proved the existing first-party pipeline is the correct canonical analytics system. Phase 5.2 extends that pipeline across the accepted public acquisition surfaces and the protected Prompt copy/unlock intent path without creating a second analytics system.
 
 ### 5.2A — Event + trust contract
 
@@ -240,8 +240,13 @@ Current allowed public/client event taxonomy:
 | `referral_link_open` | `referral_username` | referral link opened | observational |
 | `public_prompt_view` | `public_prompt` | valid public Prompt page mounted in browser | acquisition view |
 | `public_creator_view` | `public_creator` | valid public Creator page mounted in browser | acquisition view |
+| `public_blog_index_view` | `public_blog` / `index` | public Blog index mounted in browser | acquisition view |
+| `public_blog_article_view` | `public_blog` / canonical slug | valid public Blog Article mounted in browser | acquisition view |
+| `public_discovery_view` | `public_discovery` / taxonomy slug | valid taxonomy-backed Discovery route mounted in browser | acquisition view |
 | `prompt_copy_clicked` | `public_prompt` | user initiated protected Prompt copy flow | intent |
 | `prompt_unlock_clicked` | `public_prompt` | locked Prompt required unlock and user initiated it | intent |
+
+Public Blog/Discovery resource slugs use a bounded normalized kebab-case validator. Arbitrary path-like, uppercase or overlong identifiers are rejected by the public analytics endpoint.
 
 The public analytics endpoint explicitly does **not** accept trusted conversion names such as:
 
@@ -257,13 +262,16 @@ Those outcomes remain derived from transactional records.
 Implemented on the existing `/api/analytics/events` contract:
 
 ```text
-public_prompt_view    -> positive numeric public Prompt id
-public_creator_view   -> normalized canonical Creator username
-prompt_copy_clicked   -> positive numeric public Prompt id
-prompt_unlock_clicked -> positive numeric public Prompt id
+public_prompt_view        -> positive numeric public Prompt id
+public_creator_view       -> normalized canonical Creator username
+public_blog_index_view    -> public_blog / index
+public_blog_article_view  -> public_blog / normalized canonical Blog slug
+public_discovery_view     -> public_discovery / normalized taxonomy slug
+prompt_copy_clicked       -> positive numeric public Prompt id
+prompt_unlock_clicked     -> positive numeric public Prompt id
 ```
 
-No SQL migration was required because `product_analytics_events` already supports the envelope. Event/resource validation was extended in `backend/src/productAnalytics.mjs` and protected by `backend/src/productAnalytics.test.mjs`.
+No SQL migration was required because `product_analytics_events` already supports the envelope. Event/resource validation is extended in `backend/src/productAnalytics.mjs` and protected by `backend/src/productAnalytics.test.mjs`.
 
 ### 5.2C — Frontend instrumentation hooks
 
@@ -276,17 +284,27 @@ app/pages/prompt/[id].vue
 app/pages/creator/[username].vue
   -> public_creator_view in onMounted only after canonicalization + valid public Creator data exists
 
+app/pages/blog/index.vue
+  -> public_blog_index_view in onMounted after successful Blog index SSR load
+
+app/pages/blog/[slug].vue
+  -> public_blog_article_view in onMounted after Article load + canonical slug resolution
+
+app/pages/discover/[slug].vue
+  -> public_discovery_view in onMounted only when route slug resolves to the accepted Discovery taxonomy
+  -> invalid/not-found Discovery state does not emit a view event
+
 app/components/prompts/PromptDetail.vue
   -> prompt_copy_clicked when a real copy attempt starts
   -> prompt_unlock_clicked only inside the locked/unlock-required branch
   -> existing prompt_archive_copy remains after successful clipboard write
 ```
 
-The page-view events are client-mounted rather than SSR-render counted, avoiding automatic bot/request counting as internal product engagement and avoiding duplicate server/client events.
+The public page-view events are client-mounted rather than SSR-render counted, avoiding automatic bot/request counting as internal product engagement and avoiding duplicate server/client events.
 
 ### 5.2D — Trusted conversion reporting
 
-`backend/src/adminGrowth.mjs` now exposes a `launchFunnel` summary and daily acquisition/intent fields while preserving transactional sources for completed outcomes.
+`backend/src/adminGrowth.mjs` exposes a `launchFunnel` summary and daily acquisition/intent fields while preserving transactional sources for completed outcomes.
 
 Current `launchFunnel` fields:
 
@@ -295,6 +313,12 @@ publicPromptViews
 publicPromptViewSessions
 publicCreatorViews
 publicCreatorViewSessions
+publicBlogIndexViews
+publicBlogIndexViewSessions
+publicBlogArticleViews
+publicBlogArticleViewSessions
+publicDiscoveryViews
+publicDiscoveryViewSessions
 copyClicks
 copyClickSessions
 unlockClicks
@@ -326,31 +350,43 @@ Backend event-validation contract:
 pnpm test:product-analytics
 ```
 
-Because the current implementation changes both `app/**` and `backend/src/**`, founder-local runtime verification requires the smallest two service rebuilds rather than `pnpm stack`:
+Because the implementation changes both `app/**` and `backend/src/**`, founder-local runtime verification requires the smallest two service rebuilds rather than `pnpm stack`:
 
 ```text
+pnpm test:product-analytics-web
 pnpm api
 pnpm test:product-analytics
 pnpm frontend
-pnpm test:product-analytics-web
 ```
 
 The source-only instrumentation test does not itself require a rebuild, but the API container must be rebuilt before the changed backend source/test exists inside the running image and the frontend image must be rebuilt before runtime smoke verification.
 
-### 5.2F — Explicit remaining measurement gaps
-
-Phase 5.2 is not complete yet. Remaining work is deliberately narrow:
+Runtime smoke should cover representative EN/FA routes where authoritative content exists:
 
 ```text
-Blog landing/article view instrumentation is not yet implemented
-Discovery landing view instrumentation is not yet implemented
-raw document.referrer is intentionally not captured
-privacy-safe landing/source classification remains undecided
-founder-local API/frontend rebuild + focused runtime verification remains pending
-staging behavior should be smoke-tested before acceptance
+public Prompt
+public Creator
+Blog index
+Blog Article
+Discovery category
+protected Prompt copy/unlock flow
+/api/admin/growth/summary?days=7
 ```
 
-Any referrer/source work should prefer normalized source categories or an allowlisted attribution contract rather than storing arbitrary full referrer URLs/query strings.
+For admin reporting, verify the API `launchFunnel` payload directly unless/until the Manage Growth UI explicitly renders every new field.
+
+### 5.2F — Explicit remaining work before acceptance
+
+The acquisition-surface capture gap is now implemented. Phase 5.2 remains open only for verification and an explicit attribution-policy decision:
+
+```text
+founder-local API/frontend rebuild + focused tests remain pending
+staging/local behavioral smoke remains pending
+raw document.referrer is intentionally not captured
+privacy-safe landing/source classification remains optional/undecided rather than silently collecting arbitrary referrer data
+```
+
+A launch can compare Search Console acquisition evidence with internal landing/action evidence without storing raw referrer URLs. If first-party source attribution is later required, prefer normalized source categories and an allowlisted UTM/source contract rather than arbitrary full referrer URLs/query strings.
 
 Use the smallest implementation necessary. Do not introduce a second analytics system merely because Phase 5 exists.
 
@@ -448,13 +484,13 @@ Continue Phase 5 without touching production:
 
 ```text
 1. verify the current feature/growth-foundation HEAD locally
-2. run pnpm test:product-analytics-web before any rebuild
+2. run pnpm test:product-analytics-web before rebuilds
 3. rebuild only API with pnpm api, then run pnpm test:product-analytics
 4. rebuild only frontend with pnpm frontend
-5. smoke public Prompt + Creator view instrumentation and protected copy/unlock intent on staging/local runtime
-6. verify /manage/growth launchFunnel values against transactional unlock/Goin evidence
-7. implement only the still-required Blog/Discovery measurement gaps
-8. continue 5.1C cutover/rollback and Search Console readiness work
+5. smoke Prompt/Creator/Blog/Discovery client view events and protected copy/unlock intent
+6. verify /api/admin/growth/summary?days=7 launchFunnel values against transactional unlock/Goin evidence
+7. if focused verification passes, record Phase 5.2 founder-local acceptance
+8. continue 5.1C exact production cutover/rollback runbook + Search Console readiness
 9. stop before any production-changing action and obtain explicit founder approval
 ```
 
