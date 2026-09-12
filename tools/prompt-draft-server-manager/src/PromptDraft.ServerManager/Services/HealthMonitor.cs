@@ -75,7 +75,9 @@ public sealed class HealthMonitor : IAsyncDisposable
 
     private void PublishIfReady()
     {
-        ServerStatusSnapshot? snapshot;
+        ServerStatusSnapshot snapshot;
+        IReadOnlyList<IncidentChange> changes;
+
         lock (_sync)
         {
             if (_local is null || _public is null) return;
@@ -86,10 +88,11 @@ public sealed class HealthMonitor : IAsyncDisposable
                 _public.Staging,
                 _public.Production,
                 DateTimeOffset.Now);
+            changes = _incidents.Evaluate(snapshot);
         }
 
         SnapshotUpdated?.Invoke(this, snapshot);
-        foreach (var change in _incidents.Evaluate(snapshot))
+        foreach (var change in changes)
         {
             _ = _logger.WriteAsync(change.Opened ? "WARN" : "INFO", "Incident", change.Message);
             IncidentChanged?.Invoke(this, change);
