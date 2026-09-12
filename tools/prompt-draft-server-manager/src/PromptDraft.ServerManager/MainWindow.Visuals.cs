@@ -7,6 +7,7 @@ using WpfBrush = System.Windows.Media.Brush;
 using WpfBrushes = System.Windows.Media.Brushes;
 using WpfButton = System.Windows.Controls.Button;
 using WpfExpander = System.Windows.Controls.Expander;
+using WpfHorizontalAlignment = System.Windows.HorizontalAlignment;
 using WpfOrientation = System.Windows.Controls.Orientation;
 using WpfStackPanel = System.Windows.Controls.StackPanel;
 using WpfTextBlock = System.Windows.Controls.TextBlock;
@@ -187,7 +188,7 @@ public partial class MainWindow
         var icon = new PackIcon { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
         SetIcon(icon, iconName, "CircleOutline");
         var label = new WpfTextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        var content = new WpfStackPanel { Orientation = WpfOrientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        var content = new WpfStackPanel { Orientation = WpfOrientation.Horizontal, HorizontalAlignment = WpfHorizontalAlignment.Center };
         content.Children.Add(icon);
         content.Children.Add(label);
         button.Content = content;
