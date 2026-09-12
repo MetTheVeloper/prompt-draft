@@ -6,5 +6,5 @@ namespace PromptDraft.ServerManager.Security;
 /// </summary>
 public static class DevelopmentSecurityOptions
 {
-    public const bool BypassOwnerAccess = true;
+    public static readonly bool BypassOwnerAccess = true;
 }
