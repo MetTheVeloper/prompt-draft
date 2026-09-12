@@ -9,6 +9,10 @@ dist
 # Node dependencies
 node_modules
 
+# .NET build outputs
+**/bin/
+**/obj/
+
 # Logs
 logs
 *.log
