@@ -71,7 +71,7 @@ public sealed class LocalServerTarget
         return new(local.DockerReady, local.StackHealthy, local.TunnelRunning, publicStatus.Staging, publicStatus.Production, DateTimeOffset.Now);
     }
 
-    private async Task EnsureDockerReadyAsync(CancellationToken cancellationToken)
+    public async Task EnsureDockerReadyAsync(CancellationToken cancellationToken)
     {
         if (await ProbeDockerAsync(cancellationToken)) return;
 
