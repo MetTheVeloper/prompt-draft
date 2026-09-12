@@ -147,14 +147,31 @@ Build succeeded.
 
 Status: `FOUNDER-LOCAL BUILD VERIFIED`
 
-Runtime/UI behavior is not considered verified by this build alone.
+### 2026-09-12 — Material theme/runtime UI
+
+Founder runtime screenshots verified:
+
+```text
+Light theme -> readable Material surfaces + foregrounds
+Dark theme  -> readable Material surfaces + foregrounds
+Windows title bar follows app Light/Dark theme
+Persian RTL layout remains intact in both themes
+English/LTR and Persian/RTL switching remain functional
+Docker / Stack / Tunnel / Staging / Production status cards remain readable
+```
+
+The earlier Dark-theme defect where WPF text stayed dark on dark Material surfaces was corrected by binding the root window to Material dynamic foreground/background resources and synchronizing the Windows chrome with the app base theme.
+
+Status: `FOUNDER-UI VERIFIED / LIGHT + DARK ACCEPTED`
+
+This does not yet verify destructive/runtime management actions, reboot startup, outage/recovery scenarios or the final published executable.
 
 ## Current implementation checkpoint
 
 Implemented:
 
 - WPF/Material 3 shell
-- Light/Dark switching
+- theme-semantic Light/Dark switching with Windows chrome synchronization
 - EN/FA + LTR/RTL switching
 - single-instance guard
 - Argon2id owner lock
@@ -173,10 +190,11 @@ Implemented:
 - persisted non-secret settings
 - startup install/remove scripts
 - founder-local Release build verification
+- founder Light/Dark + EN/FA runtime UI verification
 
 Still required before V1 acceptance:
 
-- first full founder runtime/UI pass
+- owner unlock + persistence/relaunch runtime verification
 - configurable repo-path browse/change UI
 - first-run owner-password confirmation/reset/recovery UX
 - dedicated long-running Docker log viewer/cancellation
