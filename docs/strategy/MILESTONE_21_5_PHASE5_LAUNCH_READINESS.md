@@ -1,8 +1,8 @@
 # Milestone 21.5 — Phase 5 Organic Acquisition Launch & Measurement
 
-Status: **IN PROGRESS / PHASE 5.1 LAUNCH READINESS CONTRACT + AUDIT**
+Status: **IN PROGRESS / 5.1 READINESS AUDIT + 5.2 MEASUREMENT IMPLEMENTATION**
 
-Date: 2026-09-11
+Date: 2026-09-12
 
 Branch:
 
@@ -142,6 +142,37 @@ identify missing instrumentation as explicit Phase 5.2 work
 
 Do not infer whole-product DAU/MAU from acquisition-surface events unless instrumentation genuinely supports that interpretation.
 
+Branch-exact measurement audit result on 2026-09-12:
+
+```text
+first-party event table       -> backend/sql/020_product_analytics_events.sql
+public analytics endpoint     -> POST /api/analytics/events
+backend validation/storage    -> backend/src/productAnalytics.mjs
+frontend sender/identity      -> app/composables/useProductAnalytics.ts
+admin measurement aggregation -> backend/src/adminGrowth.mjs
+```
+
+The existing pipeline already provided anonymous/session IDs, optional authenticated-user linkage, locale/path, bounded metadata, idempotent event IDs and fail-open client delivery so analytics cannot block the primary product action.
+
+Existing pre-5.2 behavioral events were:
+
+```text
+prompt_archive_view
+prompt_archive_copy
+referral_link_open
+```
+
+Trusted conversion/economy evidence already existed outside the observational analytics table:
+
+```text
+completed Prompt unlock -> user_content_unlocks
+Goin issue/spend ledger  -> user_economy_events
+```
+
+This means Phase 5.2 must extend the existing first-party pipeline rather than add a second analytics system or duplicate transactional truth as client events.
+
+Search Console inspection did not evidence a Prompt Draft production property in the connected account. The observed connected property was `sc-domain:verta.ir`; production `prompt-draft.ir` property scope, ownership verification and sitemap submission remain explicit founder-controlled readiness tasks.
+
 ### 5.1C — Production cutover + rollback contract
 
 Before any production change, write an ordered runbook containing:
@@ -191,20 +222,135 @@ Closing 5.1 does not itself mean production has been cut over.
 Status:
 
 ```text
-PENDING 5.1 MEASUREMENT AUDIT
+IN PROGRESS / CORE PROMPT + CREATOR INSTRUMENTATION IMPLEMENTED / RUNTIME VERIFICATION PENDING
 ```
 
-Only implement this slice if 5.1 proves that current instrumentation is incomplete for the acquisition experiment.
+The 5.1 measurement audit proved the existing first-party pipeline is the correct canonical analytics system, but it did not yet measure the public Prompt/Creator acquisition surfaces or explicit Prompt copy/unlock intent needed for the launch experiment.
 
-Potential scope must be driven by the audit, not assumed upfront. Expected questions include:
+### 5.2A — Event + trust contract
+
+Client-origin analytics remain observational. They can measure views and intent but must not be treated as authoritative proof that an economic conversion completed.
+
+Current allowed public/client event taxonomy:
+
+| Event | Resource | Meaning | Trust |
+| --- | --- | --- | --- |
+| `prompt_archive_view` | `prompt_archive_item` | protected Prompt detail viewed | observational |
+| `prompt_archive_copy` | `prompt_archive_item` | clipboard copy succeeded | observational success |
+| `referral_link_open` | `referral_username` | referral link opened | observational |
+| `public_prompt_view` | `public_prompt` | valid public Prompt page mounted in browser | acquisition view |
+| `public_creator_view` | `public_creator` | valid public Creator page mounted in browser | acquisition view |
+| `prompt_copy_clicked` | `public_prompt` | user initiated protected Prompt copy flow | intent |
+| `prompt_unlock_clicked` | `public_prompt` | locked Prompt required unlock and user initiated it | intent |
+
+The public analytics endpoint explicitly does **not** accept trusted conversion names such as:
 
 ```text
-Can we attribute public landing surfaces?
-Can we distinguish Blog/Prompt/Creator/Discovery entry routes?
-Can we measure useful downstream product actions?
-Can we preserve privacy while retaining useful referrer/landing evidence?
-Can external Search Console evidence and internal engagement evidence be compared without conflating them?
+prompt_unlock_completed
+goin_spent
 ```
+
+Those outcomes remain derived from transactional records.
+
+### 5.2B — Backend event layer
+
+Implemented on the existing `/api/analytics/events` contract:
+
+```text
+public_prompt_view    -> positive numeric public Prompt id
+public_creator_view   -> normalized canonical Creator username
+prompt_copy_clicked   -> positive numeric public Prompt id
+prompt_unlock_clicked -> positive numeric public Prompt id
+```
+
+No SQL migration was required because `product_analytics_events` already supports the envelope. Event/resource validation was extended in `backend/src/productAnalytics.mjs` and protected by `backend/src/productAnalytics.test.mjs`.
+
+### 5.2C — Frontend instrumentation hooks
+
+Implemented branch-exact hooks:
+
+```text
+app/pages/prompt/[id].vue
+  -> public_prompt_view in onMounted only after valid SSR/public data exists
+
+app/pages/creator/[username].vue
+  -> public_creator_view in onMounted only after canonicalization + valid public Creator data exists
+
+app/components/prompts/PromptDetail.vue
+  -> prompt_copy_clicked when a real copy attempt starts
+  -> prompt_unlock_clicked only inside the locked/unlock-required branch
+  -> existing prompt_archive_copy remains after successful clipboard write
+```
+
+The page-view events are client-mounted rather than SSR-render counted, avoiding automatic bot/request counting as internal product engagement and avoiding duplicate server/client events.
+
+### 5.2D — Trusted conversion reporting
+
+`backend/src/adminGrowth.mjs` now exposes a `launchFunnel` summary and daily acquisition/intent fields while preserving transactional sources for completed outcomes.
+
+Current `launchFunnel` fields:
+
+```text
+publicPromptViews
+publicPromptViewSessions
+publicCreatorViews
+publicCreatorViewSessions
+copyClicks
+copyClickSessions
+unlockClicks
+unlockClickSessions
+completedUnlocks
+```
+
+Trust boundary:
+
+```text
+views/click intent -> product_analytics_events
+completed unlock   -> user_content_unlocks
+Goin spend         -> user_economy_events
+```
+
+Do not calculate or present these aggregate counts as a strict sequential conversion funnel without session/resource cohort analysis; users may enter protected Prompt surfaces directly or return through different routes.
+
+### 5.2E — Current verification contract
+
+Focused source contract:
+
+```text
+pnpm test:product-analytics-web
+```
+
+Backend event-validation contract:
+
+```text
+pnpm test:product-analytics
+```
+
+Because the current implementation changes both `app/**` and `backend/src/**`, founder-local runtime verification requires the smallest two service rebuilds rather than `pnpm stack`:
+
+```text
+pnpm api
+pnpm test:product-analytics
+pnpm frontend
+pnpm test:product-analytics-web
+```
+
+The source-only instrumentation test does not itself require a rebuild, but the API container must be rebuilt before the changed backend source/test exists inside the running image and the frontend image must be rebuilt before runtime smoke verification.
+
+### 5.2F — Explicit remaining measurement gaps
+
+Phase 5.2 is not complete yet. Remaining work is deliberately narrow:
+
+```text
+Blog landing/article view instrumentation is not yet implemented
+Discovery landing view instrumentation is not yet implemented
+raw document.referrer is intentionally not captured
+privacy-safe landing/source classification remains undecided
+founder-local API/frontend rebuild + focused runtime verification remains pending
+staging behavior should be smoke-tested before acceptance
+```
+
+Any referrer/source work should prefer normalized source categories or an allowlisted attribution contract rather than storing arbitrary full referrer URLs/query strings.
 
 Use the smallest implementation necessary. Do not introduce a second analytics system merely because Phase 5 exists.
 
@@ -298,16 +444,18 @@ Production verification must never be smuggled into an implementation step. Any 
 
 ## 9. Immediate next action
 
-Continue with the branch-exact Phase 5.1 audit:
+Continue Phase 5 without touching production:
 
 ```text
-1. re-read latest feature/growth-foundation HEAD
-2. inventory runtime/deployment/env/indexability configuration from repository + founder-controlled deployment evidence
-3. inventory existing analytics/measurement implementation without assuming filenames or providers
-4. record Search Console property/verification/sitemap plan
-5. produce the cutover + rollback checklist
-6. classify any missing measurement work into Phase 5.2
-7. stop before production-changing actions and obtain explicit founder approval
+1. verify the current feature/growth-foundation HEAD locally
+2. run pnpm test:product-analytics-web before any rebuild
+3. rebuild only API with pnpm api, then run pnpm test:product-analytics
+4. rebuild only frontend with pnpm frontend
+5. smoke public Prompt + Creator view instrumentation and protected copy/unlock intent on staging/local runtime
+6. verify /manage/growth launchFunnel values against transactional unlock/Goin evidence
+7. implement only the still-required Blog/Discovery measurement gaps
+8. continue 5.1C cutover/rollback and Search Console readiness work
+9. stop before any production-changing action and obtain explicit founder approval
 ```
 
 Phase 4 is accepted. Do not restart its audit from scratch unless Phase 5 reveals a concrete regression.
