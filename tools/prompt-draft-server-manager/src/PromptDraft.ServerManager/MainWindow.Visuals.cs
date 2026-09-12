@@ -1,10 +1,14 @@
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Media;
 using System.Windows.Threading;
 using MaterialDesignThemes.Wpf;
 using PromptDraft.ServerManager.Models;
 using PromptDraft.ServerManager.Services;
+using WpfButton = System.Windows.Controls.Button;
+using WpfExpander = System.Windows.Controls.Expander;
+using WpfOrientation = System.Windows.Controls.Orientation;
+using WpfStackPanel = System.Windows.Controls.StackPanel;
+using WpfTextBlock = System.Windows.Controls.TextBlock;
 
 namespace PromptDraft.ServerManager;
 
@@ -177,23 +181,23 @@ public partial class MainWindow
         icon.Visibility = Visibility.Collapsed;
     }
 
-    private static void SetLabeledButton(Button button, string iconName, string text)
+    private static void SetLabeledButton(WpfButton button, string iconName, string text)
     {
         var icon = new PackIcon { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
         SetIcon(icon, iconName, "CircleOutline");
-        var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        var content = new StackPanel { Orientation = Orientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
+        var label = new WpfTextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        var content = new WpfStackPanel { Orientation = WpfOrientation.Horizontal, HorizontalAlignment = HorizontalAlignment.Center };
         content.Children.Add(icon);
         content.Children.Add(label);
         button.Content = content;
     }
 
-    private static void SetExpanderHeader(Expander expander, string iconName, string text)
+    private static void SetExpanderHeader(WpfExpander expander, string iconName, string text)
     {
         var icon = new PackIcon { Width = 18, Height = 18, VerticalAlignment = VerticalAlignment.Center };
         SetIcon(icon, iconName, "CircleOutline");
-        var label = new TextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
-        var content = new StackPanel { Orientation = Orientation.Horizontal };
+        var label = new WpfTextBlock { Text = text, VerticalAlignment = VerticalAlignment.Center, Margin = new Thickness(8, 0, 0, 0) };
+        var content = new WpfStackPanel { Orientation = WpfOrientation.Horizontal };
         content.Children.Add(icon);
         content.Children.Add(label);
         expander.Header = content;
@@ -202,7 +206,7 @@ public partial class MainWindow
     private void CopyActivityButton_Click(object sender, RoutedEventArgs e)
     {
         if (string.IsNullOrWhiteSpace(LogBox.Text)) return;
-        Clipboard.SetText(LogBox.Text);
+        System.Windows.Clipboard.SetText(LogBox.Text);
     }
 
     private void ClearActivityButton_Click(object sender, RoutedEventArgs e) => LogBox.Clear();
