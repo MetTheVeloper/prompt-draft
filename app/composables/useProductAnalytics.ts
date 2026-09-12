@@ -2,10 +2,16 @@ type ProductAnalyticsEventName =
   | 'prompt_archive_view'
   | 'prompt_archive_copy'
   | 'referral_link_open'
+  | 'public_prompt_view'
+  | 'public_creator_view'
+  | 'prompt_copy_clicked'
+  | 'prompt_unlock_clicked'
 
 type ProductAnalyticsResourceType =
   | 'prompt_archive_item'
   | 'referral_username'
+  | 'public_prompt'
+  | 'public_creator'
 
 type ProductAnalyticsMetadata = Record<string, string | number | boolean | null>
 
