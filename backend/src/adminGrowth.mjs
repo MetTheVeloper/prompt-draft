@@ -55,6 +55,22 @@ async function getSummary(days) {
           COUNT(DISTINCT session_id) FILTER (
             WHERE event_name = 'prompt_archive_copy'
           )::int AS prompt_copy_sessions,
+          (COUNT(*) FILTER (WHERE event_name = 'public_prompt_view'))::int AS public_prompt_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_creator_view'))::int AS public_creator_views,
+          (COUNT(*) FILTER (WHERE event_name = 'prompt_copy_clicked'))::int AS prompt_copy_clicks,
+          (COUNT(*) FILTER (WHERE event_name = 'prompt_unlock_clicked'))::int AS prompt_unlock_clicks,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'public_prompt_view'
+          )::int AS public_prompt_view_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'public_creator_view'
+          )::int AS public_creator_view_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'prompt_copy_clicked'
+          )::int AS prompt_copy_click_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'prompt_unlock_clicked'
+          )::int AS prompt_unlock_click_sessions,
           (COUNT(*) FILTER (WHERE event_name = 'referral_link_open'))::int AS referral_link_opens
         FROM analytics_window
       ),
@@ -119,6 +135,14 @@ async function getSummary(days) {
         analytics_metrics.prompt_copies AS "promptCopies",
         analytics_metrics.prompt_view_sessions AS "promptViewSessions",
         analytics_metrics.prompt_copy_sessions AS "promptCopySessions",
+        analytics_metrics.public_prompt_views AS "publicPromptViews",
+        analytics_metrics.public_creator_views AS "publicCreatorViews",
+        analytics_metrics.prompt_copy_clicks AS "promptCopyClicks",
+        analytics_metrics.prompt_unlock_clicks AS "promptUnlockClicks",
+        analytics_metrics.public_prompt_view_sessions AS "publicPromptViewSessions",
+        analytics_metrics.public_creator_view_sessions AS "publicCreatorViewSessions",
+        analytics_metrics.prompt_copy_click_sessions AS "promptCopyClickSessions",
+        analytics_metrics.prompt_unlock_click_sessions AS "promptUnlockClickSessions",
         analytics_metrics.referral_link_opens AS "referralLinkOpens",
         referral_metrics.signups AS "referralSignups",
         economy_metrics.issued AS "goinIssued",
@@ -165,6 +189,17 @@ async function getSummary(days) {
         ? Math.round((promptCopySessions / promptViewSessions) * 1000) / 10
         : 0,
       unlocks: toNumber(row.promptUnlocks),
+    },
+    launchFunnel: {
+      publicPromptViews: toNumber(row.publicPromptViews),
+      publicPromptViewSessions: toNumber(row.publicPromptViewSessions),
+      publicCreatorViews: toNumber(row.publicCreatorViews),
+      publicCreatorViewSessions: toNumber(row.publicCreatorViewSessions),
+      copyClicks: toNumber(row.promptCopyClicks),
+      copyClickSessions: toNumber(row.promptCopyClickSessions),
+      unlockClicks: toNumber(row.promptUnlockClicks),
+      unlockClickSessions: toNumber(row.promptUnlockClickSessions),
+      completedUnlocks: toNumber(row.promptUnlocks),
     },
     referrals: {
       linkOpens: referralLinkOpens,
@@ -214,6 +249,10 @@ async function getDailySeries(days) {
           (received_at AT TIME ZONE 'UTC')::date AS day,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_archive_view'))::int AS views,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_archive_copy'))::int AS copies,
+          (COUNT(*) FILTER (WHERE event_name = 'public_prompt_view'))::int AS public_prompt_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_creator_view'))::int AS public_creator_views,
+          (COUNT(*) FILTER (WHERE event_name = 'prompt_copy_clicked'))::int AS prompt_copy_clicks,
+          (COUNT(*) FILTER (WHERE event_name = 'prompt_unlock_clicked'))::int AS prompt_unlock_clicks,
           (COUNT(*) FILTER (WHERE event_name = 'referral_link_open'))::int AS referral_opens
         FROM product_analytics_events
         WHERE (received_at AT TIME ZONE 'UTC')::date >= (SELECT start_day FROM bounds)
@@ -249,6 +288,10 @@ async function getDailySeries(days) {
         days.day,
         COALESCE(analytics.views, 0)::int AS views,
         COALESCE(analytics.copies, 0)::int AS copies,
+        COALESCE(analytics.public_prompt_views, 0)::int AS "publicPromptViews",
+        COALESCE(analytics.public_creator_views, 0)::int AS "publicCreatorViews",
+        COALESCE(analytics.prompt_copy_clicks, 0)::int AS "promptCopyClicks",
+        COALESCE(analytics.prompt_unlock_clicks, 0)::int AS "promptUnlockClicks",
         COALESCE(analytics.referral_opens, 0)::int AS "referralOpens",
         COALESCE(referral_signups.signups, 0)::int AS "referralSignups",
         COALESCE(economy.issued, 0)::bigint AS issued,
@@ -270,6 +313,10 @@ async function getDailySeries(days) {
       : String(row.day).slice(0, 10),
     promptViews: toNumber(row.views),
     promptCopies: toNumber(row.copies),
+    publicPromptViews: toNumber(row.publicPromptViews),
+    publicCreatorViews: toNumber(row.publicCreatorViews),
+    promptCopyClicks: toNumber(row.promptCopyClicks),
+    promptUnlockClicks: toNumber(row.promptUnlockClicks),
     referralOpens: toNumber(row.referralOpens),
     referralSignups: toNumber(row.referralSignups),
     goinIssued: toNumber(row.issued),
@@ -398,8 +445,12 @@ export async function handleAdminGrowthRequest({
             'prompt_archive_view',
             'prompt_archive_copy',
             'referral_link_open',
+            'public_prompt_view',
+            'public_creator_view',
+            'prompt_copy_clicked',
+            'prompt_unlock_clicked',
           ],
-          note: 'Audience activity is based on currently instrumented growth surfaces, not whole-product DAU/MAU.',
+          note: 'Acquisition views and intent come from first-party product analytics; completed unlocks and Goin spend come from transactional source-of-truth tables. Metrics do not represent whole-product DAU/MAU.',
         },
       },
       corsHeaders,
