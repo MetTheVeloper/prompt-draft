@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 5 Organic Acquisition Launch & Measurement
 
-Status: **IN PROGRESS / 5.1 READINESS AUDIT + 5.2 ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING**
+Status: **IN PROGRESS / 5.1 READINESS AUDIT + 5.2 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**
 
 Date: 2026-09-12
 
@@ -89,7 +89,7 @@ prove Prompt Draft can be switched from the accepted production-like staging pat
 
 ### 5.1A — Runtime / deployment / environment / indexability inventory
 
-Audit the branch and the founder-controlled deployment configuration before proposing any production change.
+Audit the branch and founder-controlled deployment configuration before proposing any production change.
 
 Required inventory:
 
@@ -110,11 +110,9 @@ secrets that must remain local/uncommitted
 actual deploy/restart/recovery commands
 ```
 
-Do not assume that staging values can be copied blindly. Record every hostname/config change explicitly before cutover.
+Do not assume staging values can be copied blindly. Record every hostname/config change explicitly before cutover.
 
 ### 5.1B — Search Console + acquisition measurement baseline
-
-Audit what measurement already exists before adding instrumentation.
 
 Required Search Console readiness:
 
@@ -127,22 +125,9 @@ use URL Inspection/Page Indexing evidence for representative canonical routes
 capture baseline and post-launch search impressions/clicks/indexing evidence
 ```
 
-Google Search Console distinguishes Domain properties from URL-prefix properties; the final property choice and verification method must be recorded during this audit rather than assumed in advance. Sitemap submission tells Google where the sitemap is; it does not guarantee crawling or indexing.
+Search Console property scope and verification method must be recorded rather than assumed. Sitemap submission identifies the sitemap location; it does not guarantee crawling or indexing.
 
-Required internal measurement audit:
-
-```text
-identify current analytics/event pipeline and its canonical source
-verify whether Blog/public Prompt/public Creator/Discovery landing views are measurable
-verify meaningful product actions from those acquisition surfaces are measurable
-verify landing/referrer evidence is captured only where privacy-appropriate
-separate external search evidence from internal product engagement evidence
-identify missing instrumentation as explicit Phase 5.2 work
-```
-
-Do not infer whole-product DAU/MAU from acquisition-surface events unless instrumentation genuinely supports that interpretation.
-
-Branch-exact measurement audit result on 2026-09-12:
+Branch-exact internal measurement audit on 2026-09-12 identified:
 
 ```text
 first-party event table       -> backend/sql/020_product_analytics_events.sql
@@ -152,30 +137,24 @@ frontend sender/identity      -> app/composables/useProductAnalytics.ts
 admin measurement aggregation -> backend/src/adminGrowth.mjs
 ```
 
-The existing pipeline already provided anonymous/session IDs, optional authenticated-user linkage, locale/path, bounded metadata, idempotent event IDs and fail-open client delivery so analytics cannot block the primary product action.
-
-Existing pre-5.2 behavioral events were:
-
-```text
-prompt_archive_view
-prompt_archive_copy
-referral_link_open
-```
-
-Trusted conversion/economy evidence already existed outside the observational analytics table:
+Trusted conversion/economy evidence remains outside the observational analytics table:
 
 ```text
 completed Prompt unlock -> user_content_unlocks
 Goin issue/spend ledger  -> user_economy_events
 ```
 
-This means Phase 5.2 must extend the existing first-party pipeline rather than add a second analytics system or duplicate transactional truth as client events.
-
-Search Console inspection did not evidence a Prompt Draft production property in the connected account. The observed connected property was `sc-domain:verta.ir`; production `prompt-draft.ir` property scope, ownership verification and sitemap submission remain explicit founder-controlled readiness tasks.
+Search Console inspection did not evidence a Prompt Draft production property in the connected account. The observed connected property was `sc-domain:verta.ir`; production `prompt-draft.ir` property scope, ownership verification and sitemap submission remain founder-controlled readiness tasks.
 
 ### 5.1C — Production cutover + rollback contract
 
-Before any production change, write an ordered runbook containing:
+Repository-side cutover/rollback runbook:
+
+```text
+docs/strategy/MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md
+```
+
+The runbook must keep an ordered sequence for:
 
 ```text
 pre-cutover backup/checkpoint
@@ -195,16 +174,27 @@ exact rollback steps
 post-rollback verification
 ```
 
-The stable production path must not be replaced until this runbook is complete and the founder explicitly approves execution.
+Critical accepted cutover constraints already recorded:
+
+```text
+NUXT_PUBLIC_NOINDEX is process-wide for the frontend container
+one frontend container cannot simultaneously serve grassic.ir as noindex and prompt-draft.ir as indexable
+initial cutover must retire staging frontend ingress before production noindex=false
+current staging fallback Worker is staging-specific and must not be attached unchanged to production
+production API needs its own explicit Cloudflare cache-bypass verification/rule
+www.prompt-draft.ir policy must be explicit; preferred canonical behavior is edge/DNS redirect to apex
+```
+
+The stable production path must not be replaced until readiness is accepted and the founder explicitly approves execution.
 
 ### 5.1D — Founder readiness signoff
 
-Phase 5.1 can close only when the evidence demonstrates:
+Phase 5.1 can close only when evidence demonstrates:
 
 ```text
 configuration inventory is complete
 production indexability state is intentional
-measurement gaps are known
+measurement gaps are closed/accepted
 Search Console setup plan is explicit
 cutover sequence is explicit
 rollback sequence is explicit
@@ -222,16 +212,22 @@ Closing 5.1 does not itself mean production has been cut over.
 Status:
 
 ```text
-IN PROGRESS / ACQUISITION SURFACE CAPTURE IMPLEMENTED / RUNTIME VERIFICATION PENDING
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-12
 ```
 
-The 5.1 measurement audit proved the existing first-party pipeline is the correct canonical analytics system. Phase 5.2 extends that pipeline across the accepted public acquisition surfaces and the protected Prompt copy/unlock intent path without creating a second analytics system.
+Verification record:
 
-### 5.2A — Event + trust contract
+```text
+docs/strategy/MILESTONE_21_5_PHASE5_2_VERIFICATION.md
+```
 
-Client-origin analytics remain observational. They can measure views and intent but must not be treated as authoritative proof that an economic conversion completed.
+The 5.1 audit proved the existing first-party pipeline is the canonical analytics system. Phase 5.2 extended that pipeline across the accepted public acquisition surfaces and protected Prompt copy/unlock intent path without creating a second analytics system.
 
-Current allowed public/client event taxonomy:
+### 5.2A — Accepted event + trust contract
+
+Client-origin analytics remain observational. They measure views and intent but are not authoritative proof that an economic conversion completed.
+
+Allowed public/client taxonomy:
 
 | Event | Resource | Meaning | Trust |
 | --- | --- | --- | --- |
@@ -246,16 +242,14 @@ Current allowed public/client event taxonomy:
 | `prompt_copy_clicked` | `public_prompt` | user initiated protected Prompt copy flow | intent |
 | `prompt_unlock_clicked` | `public_prompt` | locked Prompt required unlock and user initiated it | intent |
 
-Public Blog/Discovery resource slugs use a bounded normalized kebab-case validator. Arbitrary path-like, uppercase or overlong identifiers are rejected by the public analytics endpoint.
+Public Blog/Discovery resource slugs use a bounded normalized kebab-case validator. Arbitrary path-like, uppercase or overlong identifiers are rejected.
 
-The public analytics endpoint explicitly does **not** accept trusted conversion names such as:
+The public analytics endpoint does **not** accept trusted conversion names such as:
 
 ```text
 prompt_unlock_completed
 goin_spent
 ```
-
-Those outcomes remain derived from transactional records.
 
 ### 5.2B — Backend event layer
 
@@ -271,11 +265,11 @@ prompt_copy_clicked       -> positive numeric public Prompt id
 prompt_unlock_clicked     -> positive numeric public Prompt id
 ```
 
-No SQL migration was required because `product_analytics_events` already supports the envelope. Event/resource validation is extended in `backend/src/productAnalytics.mjs` and protected by `backend/src/productAnalytics.test.mjs`.
+No SQL migration was required because `product_analytics_events` already supports the envelope. Validation is in `backend/src/productAnalytics.mjs`, protected by `backend/src/productAnalytics.test.mjs`.
 
 ### 5.2C — Frontend instrumentation hooks
 
-Implemented branch-exact hooks:
+Accepted hooks:
 
 ```text
 app/pages/prompt/[id].vue
@@ -291,7 +285,7 @@ app/pages/blog/[slug].vue
   -> public_blog_article_view in onMounted after Article load + canonical slug resolution
 
 app/pages/discover/[slug].vue
-  -> public_discovery_view in onMounted only when route slug resolves to the accepted Discovery taxonomy
+  -> public_discovery_view in onMounted only for accepted Discovery taxonomy
   -> invalid/not-found Discovery state does not emit a view event
 
 app/components/prompts/PromptDetail.vue
@@ -300,13 +294,13 @@ app/components/prompts/PromptDetail.vue
   -> existing prompt_archive_copy remains after successful clipboard write
 ```
 
-The public page-view events are client-mounted rather than SSR-render counted, avoiding automatic bot/request counting as internal product engagement and avoiding duplicate server/client events.
+Public page-view events are client-mounted rather than SSR-request counted, avoiding automatic bot/request counting and duplicate server/client events.
 
 ### 5.2D — Trusted conversion reporting
 
-`backend/src/adminGrowth.mjs` exposes a `launchFunnel` summary and daily acquisition/intent fields while preserving transactional sources for completed outcomes.
+`backend/src/adminGrowth.mjs` exposes `launchFunnel` acquisition/intent fields while preserving transactional sources for completed outcomes.
 
-Current `launchFunnel` fields:
+Accepted `launchFunnel` fields:
 
 ```text
 publicPromptViews
@@ -334,61 +328,50 @@ completed unlock   -> user_content_unlocks
 Goin spend         -> user_economy_events
 ```
 
-Do not calculate or present these aggregate counts as a strict sequential conversion funnel without session/resource cohort analysis; users may enter protected Prompt surfaces directly or return through different routes.
+These aggregate counts must not be presented as a strict sequential conversion funnel without cohort/session/resource analysis.
 
-### 5.2E — Current verification contract
+### 5.2E — Accepted verification evidence
 
-Focused source contract:
-
-```text
-pnpm test:product-analytics-web
-```
-
-Backend event-validation contract:
+Founder-local automated verification:
 
 ```text
-pnpm test:product-analytics
+pnpm test:product-analytics-web -> PASS 5/5
+pnpm api                        -> PASS / API healthy
+pnpm test:product-analytics     -> PASS 8/8
+pnpm frontend                   -> PASS / Nuxt client + SSR/Nitro build
+pnpm stack:cloudflare:status    -> PASS / staging topology healthy
 ```
 
-Because the implementation changes both `app/**` and `backend/src/**`, founder-local runtime verification requires the smallest two service rebuilds rather than `pnpm stack`:
-
-```text
-pnpm test:product-analytics-web
-pnpm api
-pnpm test:product-analytics
-pnpm frontend
-```
-
-The source-only instrumentation test does not itself require a rebuild, but the API container must be rebuilt before the changed backend source/test exists inside the running image and the frontend image must be rebuilt before runtime smoke verification.
-
-Runtime smoke should cover representative EN/FA routes where authoritative content exists:
+Behavioral staging verification persisted real browser-originated acquisition events for:
 
 ```text
 public Prompt
 public Creator
 Blog index
-Blog Article
-Discovery category
-protected Prompt copy/unlock flow
-/api/admin/growth/summary?days=7
+Discovery
 ```
 
-For admin reporting, verify the API `launchFunnel` payload directly unless/until the Manage Growth UI explicitly renders every new field.
-
-### 5.2F — Explicit remaining work before acceptance
-
-The acquisition-surface capture gap is now implemented. Phase 5.2 remains open only for verification and an explicit attribution-policy decision:
+The protected Prompt flow persisted the expected ordered events:
 
 ```text
-founder-local API/frontend rebuild + focused tests remain pending
-staging/local behavioral smoke remains pending
-raw document.referrer is intentionally not captured
-privacy-safe landing/source classification remains optional/undecided rather than silently collecting arbitrary referrer data
+prompt_unlock_clicked
+-> prompt_copy_clicked
+-> prompt_archive_copy
 ```
 
-A launch can compare Search Console acquisition evidence with internal landing/action evidence without storing raw referrer URLs. If first-party source attribution is later required, prefer normalized source categories and an allowlisted UTM/source contract rather than arbitrary full referrer URLs/query strings.
+The authorized admin summary returned HTTP 200 with populated acquisition/intent `launchFunnel` counters and transactional `completedUnlocks`/economy values.
 
-Use the smallest implementation necessary. Do not introduce a second analytics system merely because Phase 5 exists.
+A published English staging Blog Article fixture was unavailable during runtime smoke, so `public_blog_article_view` runtime evidence is deferred. Its contract is covered by passing frontend and backend automated tests and is not a 5.2 acceptance blocker.
+
+Initial-launch attribution remains privacy-minimal:
+
+```text
+raw document.referrer -> NOT CAPTURED
+arbitrary query strings -> NOT CAPTURED
+normalized/allowlisted source attribution -> optional future follow-up
+```
+
+Phase 5.2 is therefore **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**.
 
 ---
 
@@ -397,7 +380,7 @@ Use the smallest implementation necessary. Do not introduce a second analytics s
 Status:
 
 ```text
-BLOCKED UNTIL 5.1 ACCEPTED AND REQUIRED 5.2 GAPS CLOSED
+BLOCKED UNTIL 5.1 READINESS ACCEPTED + EXPLICIT FOUNDER CUTOVER APPROVAL
 ```
 
 Production cutover is an explicit founder-authorized operation.
@@ -411,7 +394,7 @@ DO NOT remove staging noindex
 DO NOT submit a staging sitemap as the production acquisition property
 ```
 
-At cutover, use the accepted runbook from 5.1C rather than improvising configuration changes.
+At cutover, use the accepted 5.1C runbook rather than improvising configuration changes.
 
 ---
 
@@ -430,13 +413,13 @@ establish a repeatable review cadence
 record defects and follow-up experiments from evidence, not assumptions
 ```
 
-Search Console evidence is delayed/external acquisition evidence; Prompt Draft analytics are internal behavioral evidence. Both are required for a useful acquisition experiment, but they answer different questions.
+Search Console evidence is delayed/external acquisition evidence; Prompt Draft analytics are internal behavioral evidence. They answer different questions and should remain separately interpreted.
 
 ---
 
 ## 7. Non-goals
 
-Phase 5.1 does not include:
+Phase 5 does not include:
 
 ```text
 production cutover without founder approval
@@ -447,7 +430,7 @@ Domain Expansion implementation
 new payment/commerce scope
 new public exposure of protected Prompt/private Draft/account data
 blanket Cloudflare HTML/API caching
-analytics implementation before the existing pipeline is audited
+a second analytics system
 ```
 
 ---
@@ -467,11 +450,12 @@ inspect actual changed files/services
 Service rule:
 
 ```text
-docs-only      -> no rebuild
-frontend-only  -> pnpm frontend
-backend-only   -> pnpm api
-both changed   -> pnpm api + pnpm frontend
-pnpm stack     -> only when genuinely required
+docs-only       -> no rebuild
+environment-only -> recreate only affected service(s)
+frontend-only   -> pnpm frontend
+backend-only    -> pnpm api
+both changed    -> pnpm api + pnpm frontend
+pnpm stack      -> only when genuinely required
 ```
 
 Production verification must never be smuggled into an implementation step. Any action that changes `prompt-draft.ir`, production DNS, production Cloudflare routing or production indexability requires explicit founder approval in that turn.
@@ -483,15 +467,11 @@ Production verification must never be smuggled into an implementation step. Any 
 Continue Phase 5 without touching production:
 
 ```text
-1. verify the current feature/growth-foundation HEAD locally
-2. run pnpm test:product-analytics-web before rebuilds
-3. rebuild only API with pnpm api, then run pnpm test:product-analytics
-4. rebuild only frontend with pnpm frontend
-5. smoke Prompt/Creator/Blog/Discovery client view events and protected copy/unlock intent
-6. verify /api/admin/growth/summary?days=7 launchFunnel values against transactional unlock/Goin evidence
-7. if focused verification passes, record Phase 5.2 founder-local acceptance
-8. continue 5.1C exact production cutover/rollback runbook + Search Console readiness
-9. stop before any production-changing action and obtain explicit founder approval
+1. finish 5.1A production runtime/deployment/environment/indexability inventory
+2. finish 5.1B Search Console property/ownership plan and production measurement baseline
+3. audit/finalize 5.1C exact DNS/Tunnel/API-cache/www/noindex cutover + rollback values
+4. obtain 5.1D founder readiness signoff
+5. stop before any production-changing action and obtain explicit founder cutover approval
 ```
 
-Phase 4 is accepted. Do not restart its audit from scratch unless Phase 5 reveals a concrete regression.
+Phase 4 is accepted and Phase 5.2 is accepted. Do not restart either audit from scratch unless Phase 5.1 reveals a concrete regression.
