@@ -14,6 +14,7 @@ const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const { mobile, tablet } = useScreen()
 const publicDiscovery = usePublicDiscovery()
+const analytics = useProductAnalytics()
 const cinemaMounted = ref(false)
 
 const slug = computed(() => {
@@ -139,6 +140,15 @@ usePublicSeo({
 })
 
 onMounted(() => {
+  if (definition.value) {
+    void analytics.track('public_discovery_view', {
+      resource: {
+        type: 'public_discovery',
+        id: definition.value.slug,
+      },
+    })
+  }
+
   requestAnimationFrame(() => {
     cinemaMounted.value = true
   })
