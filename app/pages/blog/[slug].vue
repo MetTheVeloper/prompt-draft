@@ -18,6 +18,7 @@ const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const publicBlog = usePublicBlog()
+const analytics = useProductAnalytics()
 
 function readHttpStatus(error: unknown) {
   if (!error || typeof error !== 'object') return null
@@ -113,6 +114,15 @@ useHead(() => ({
       ]
     : [],
 }))
+
+onMounted(() => {
+  void analytics.track('public_blog_article_view', {
+    resource: {
+      type: 'public_blog',
+      id: article.value!.slug,
+    },
+  })
+})
 
 function formatDate(value: string) {
   const date = new Date(value)
