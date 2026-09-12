@@ -18,6 +18,7 @@ const config = useRuntimeConfig()
 const { t, locale } = useI18n()
 const localePath = useLocalePath()
 const publicPromptApi = usePublicPrompt()
+const analytics = useProductAnalytics()
 
 function readRouteId(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value
@@ -115,6 +116,15 @@ usePublicSeo({
   imageUrl: seoImage,
   alternateLocales,
   structuredData,
+})
+
+onMounted(() => {
+  void analytics.track('public_prompt_view', {
+    resource: {
+      type: 'public_prompt',
+      id: String(publicId),
+    },
+  })
 })
 
 const modelLabel = computed(() => {
