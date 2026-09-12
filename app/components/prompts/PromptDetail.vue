@@ -284,9 +284,23 @@ async function copyPrompt() {
   const value = activePrompt.value?.prompt || ''
   if (!value || copyBusy.value || promptUnlock.pending.value) return
 
+  void analytics.track('prompt_copy_clicked', {
+    resource: {
+      type: 'public_prompt',
+      id: String(props.item.id),
+    },
+  })
+
   copyError.value = null
 
   if (!promptUnlock.unlocked.value) {
+    void analytics.track('prompt_unlock_clicked', {
+      resource: {
+        type: 'public_prompt',
+        id: String(props.item.id),
+      },
+    })
+
     const unlockResult = await promptUnlock.unlock(props.item.id)
 
     if (!unlockResult) {
