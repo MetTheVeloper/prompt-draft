@@ -36,6 +36,7 @@
     "test:public-inventory-api": "docker compose exec api node --test src/publicInventory.test.mjs src/publicPrompt.test.mjs src/publicApiRouting.test.mjs",
     "test:public-creator-api": "docker compose exec api npm run test:public-creator",
     "test:product-analytics": "docker compose exec api node --test src/productAnalytics.test.mjs",
+    "test:product-analytics-web": "tsx --test scripts/product-analytics-instrumentation.test.ts",
     "test:robots-policy": "tsx --test scripts/public-robots.test.ts scripts/runtime-seo-delivery-contract.test.ts",
     "test:llms-discovery": "tsx --test scripts/public-llms.test.ts scripts/public-seo-generator-contract.test.ts scripts/runtime-seo-delivery-contract.test.ts",
     "test:discovery-seo": "tsx --test scripts/public-discovery-seo.test.ts scripts/public-discovery-visual-contract.test.ts scripts/public-seo-generator-contract.test.ts",
