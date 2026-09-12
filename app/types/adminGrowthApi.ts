@@ -21,6 +21,12 @@ export type AdminGrowthSummary = {
     publicPromptViewSessions: number;
     publicCreatorViews: number;
     publicCreatorViewSessions: number;
+    publicBlogIndexViews: number;
+    publicBlogIndexViewSessions: number;
+    publicBlogArticleViews: number;
+    publicBlogArticleViewSessions: number;
+    publicDiscoveryViews: number;
+    publicDiscoveryViewSessions: number;
     copyClicks: number;
     copyClickSessions: number;
     unlockClicks: number;
@@ -55,6 +61,9 @@ export type AdminGrowthDailyPoint = {
   promptCopies: number;
   publicPromptViews: number;
   publicCreatorViews: number;
+  publicBlogIndexViews: number;
+  publicBlogArticleViews: number;
+  publicDiscoveryViews: number;
   promptCopyClicks: number;
   promptUnlockClicks: number;
   referralOpens: number;
