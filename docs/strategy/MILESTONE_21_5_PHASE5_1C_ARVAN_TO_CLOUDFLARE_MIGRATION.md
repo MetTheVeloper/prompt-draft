@@ -197,16 +197,19 @@ The exact Cloudflare redirect mechanism may be a Redirect Rule or equivalent edg
 
 ### S5 — stage production API cache bypass
 
-Create a production-zone rule equivalent to the accepted staging rule:
+Prepared and dashboard-verified on 2026-09-12 in the pending production zone:
 
 ```text
 name -> Bypass Prompt Draft API
 match -> (http.host eq "api.prompt-draft.ir")
 action -> Bypass cache
-status -> Active at production activation
+status -> Active
+order -> 1
 ```
 
-Do not mutate the staging `api.grassic.ir` rule into the production rule before staging retirement. Keep the two policies independently reversible.
+This is a separate production-zone rule; the accepted staging rule for `api.grassic.ir` remains unchanged and independently reversible.
+
+Because the production zone is still pending and Arvan remains authoritative, the staged rule does not yet alter public production traffic.
 
 ### S6 — Search Console ownership record
 
@@ -433,7 +436,7 @@ Infrastructure discovery is no longer a blocker. Remaining gates are explicit de
 [x] record production Cloudflare-assigned nameservers
 [ ] accept exact MX treatment (`contact`, priority 10) or explicitly change mail policy
 [ ] stage www -> apex 301 rule
-[ ] stage api.prompt-draft.ir bypass-cache rule
+[x] stage api.prompt-draft.ir bypass-cache rule
 [x] stage production Tunnel published applications
 [ ] accept Search Console Domain-property/TXT plan
 [ ] select exact cutover SHA
