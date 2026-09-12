@@ -26,6 +26,7 @@ public partial class LogViewerWindow : Window
         _fa = fa;
 
         FlowDirection = _fa ? System.Windows.FlowDirection.RightToLeft : System.Windows.FlowDirection.LeftToRight;
+        FontFamily = _fa ? TypographyService.Instance.PersianFont : TypographyService.Instance.EnglishFont;
         StatusText.Text = _fa ? "در حال اتصال به جریان لاگ..." : "Connecting to log stream...";
         StopButton.Content = _fa ? "توقف جریان" : "Stop stream";
         SourceInitialized += (_, _) => WindowThemeService.Apply(this, _dark);
