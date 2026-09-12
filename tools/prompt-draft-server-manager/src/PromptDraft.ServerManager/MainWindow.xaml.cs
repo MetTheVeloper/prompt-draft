@@ -180,7 +180,7 @@ public partial class MainWindow : Window
 
     private void ApplyLanguage()
     {
-        FlowDirection = _fa ? FlowDirection.RightToLeft : FlowDirection.LeftToRight;
+        FlowDirection = _fa ? System.Windows.FlowDirection.RightToLeft : System.Windows.FlowDirection.LeftToRight;
         Language = System.Windows.Markup.XmlLanguage.GetLanguage(_fa ? "fa-IR" : CultureInfo.CurrentUICulture.IetfLanguageTag);
         LanguageButton.Content = _fa ? "EN" : "FA";
         SubtitleText.Text = T("Local operations console", "کنسول مدیریت محلی");
