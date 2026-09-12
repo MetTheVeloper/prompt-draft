@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-11
+Last updated: 2026-09-12
 
 Branch:
 
@@ -27,7 +27,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
 21.5.5 Organic Acquisition Launch               -> IN PROGRESS
   5.1 Launch Readiness                          -> IN PROGRESS / CONTRACT + AUDIT
-  5.2 Acquisition Measurement Instrumentation   -> PENDING 5.1 GAP AUDIT
+  5.2 Acquisition Measurement Instrumentation   -> IN PROGRESS / CORE PROMPT+CREATOR IMPLEMENTED / RUNTIME VERIFY PENDING
   5.3 Founder-approved Production Cutover       -> BLOCKED UNTIL READINESS ACCEPTED
   5.4 Initial Launch + Measurement Cadence      -> PENDING PRODUCTION CUTOVER
 ```
@@ -321,13 +321,16 @@ Canonical record:
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
 ```
 
-Current slice:
+Current slices:
 
 ```text
-5.1 Launch Readiness -> IN PROGRESS / CONTRACT + AUDIT
+5.1 Launch Readiness                        -> IN PROGRESS / CONTRACT + AUDIT
+5.2 Acquisition Measurement Instrumentation -> IN PROGRESS / CORE PROMPT+CREATOR IMPLEMENTED / RUNTIME VERIFY PENDING
 ```
 
 Phase 5.1 exists to establish a branch-exact runtime/deployment/environment/indexability inventory, Search Console and acquisition-measurement baseline, explicit production cutover procedure, explicit rollback procedure and founder readiness signoff **before** production is changed.
+
+Phase 5.2 now extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Public Prompt/Creator browser views and protected Prompt copy/unlock intent are instrumented; completed unlock and Goin spend remain derived from transactional source-of-truth tables. Blog/Discovery landing instrumentation and founder-local runtime verification remain pending.
 
 Execution slices:
 
@@ -349,7 +352,7 @@ prompt-draft.ir                  -> UNTOUCHED
 production DNS/Tunnel/indexability changes -> require explicit founder approval
 ```
 
-This documentation start is docs-only; no frontend/backend rebuild is required. Phase 4 remains accepted and must not be re-audited from scratch unless Phase 5 reveals a concrete regression.
+Current Phase 5.2 source implementation changes both frontend and backend. Per the project workflow, runtime verification requires only `pnpm api` + `pnpm frontend`; a full `pnpm stack` is not justified. No production route, DNS, Tunnel or indexability change has been made.
 
 ## Hard rules
 
@@ -381,9 +384,10 @@ DO NOT change production DNS/Tunnel/indexability without explicit founder approv
 5. read MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md for accepted staging/cutover baseline
 6. inspect latest feature/growth-foundation HEAD before every decision/write
 7. confirm 21.5.4 / 4A-4F remain DONE / ACCEPTED; do not restart Phase 4 audit without a concrete regression
-8. current task = 21.5.5 / Phase 5.1 Launch Readiness
-9. begin with 5.1A runtime/deployment/env/indexability inventory + 5.1B measurement/Search Console audit
-10. preserve all accepted public/indexability/security/compiler boundaries
-11. keep staging NUXT_PUBLIC_NOINDEX=true
-12. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
+8. current task = 21.5.5 / Phase 5.1 + Phase 5.2
+9. verify the core Prompt/Creator instrumentation with focused tests + pnpm api/pnpm frontend, then close only the still-required Blog/Discovery measurement gaps
+10. continue 5.1C production cutover/rollback contract and Search Console readiness in parallel
+11. preserve all accepted public/indexability/security/compiler boundaries
+12. keep staging NUXT_PUBLIC_NOINDEX=true
+13. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
 ```
