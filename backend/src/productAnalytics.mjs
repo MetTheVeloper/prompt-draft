@@ -23,6 +23,26 @@ const EVENT_RULES = Object.freeze({
     resourceIdKind: 'username',
     metadataKeys: Object.freeze([]),
   }),
+  public_prompt_view: Object.freeze({
+    resourceType: 'public_prompt',
+    resourceIdKind: 'positive_numeric_id',
+    metadataKeys: Object.freeze([]),
+  }),
+  public_creator_view: Object.freeze({
+    resourceType: 'public_creator',
+    resourceIdKind: 'username',
+    metadataKeys: Object.freeze([]),
+  }),
+  prompt_copy_clicked: Object.freeze({
+    resourceType: 'public_prompt',
+    resourceIdKind: 'positive_numeric_id',
+    metadataKeys: Object.freeze([]),
+  }),
+  prompt_unlock_clicked: Object.freeze({
+    resourceType: 'public_prompt',
+    resourceIdKind: 'positive_numeric_id',
+    metadataKeys: Object.freeze([]),
+  }),
 })
 
 function isPlainObject(value) {
@@ -290,6 +310,8 @@ function validateEventBody(body) {
     },
   }
 }
+
+export { validateEventBody as validateProductAnalyticsEventBody }
 
 async function insertEvent(event, userId) {
   const result = await queryDatabase(
