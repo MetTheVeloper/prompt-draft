@@ -2,9 +2,9 @@ import {
   buildPublicUrlInventory,
   renderLlmsTxt,
 } from '../../scripts/public-url-inventory'
+import { isPublicIndexingEnabledForRequest } from '../../shared/public-indexing-policy'
 import {
   fetchRuntimePublicInventory,
-  isPublicIndexingEnabled,
   loadRuntimeBlogPublicInventory,
   normalizePublicAbsoluteUrl,
 } from '../utils/public-seo-inventory'
@@ -12,7 +12,10 @@ import {
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
   const siteUrl = normalizePublicAbsoluteUrl(config.public.siteUrl)
-  const indexingEnabled = isPublicIndexingEnabled(config.public.noindex)
+  const indexingEnabled = isPublicIndexingEnabledForRequest(
+    config.public.noindex,
+    getRequestHost(event),
+  )
 
   if (!siteUrl) {
     throw createError({
