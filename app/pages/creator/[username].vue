@@ -24,6 +24,7 @@ const config = useRuntimeConfig()
 const { locale, t } = useI18n()
 const localePath = useLocalePath()
 const publicCreatorApi = usePublicCreator()
+const analytics = useProductAnalytics()
 
 function readRouteUsername(value: unknown) {
   const raw = Array.isArray(value) ? value[0] : value
@@ -116,6 +117,15 @@ usePublicSeo({
   alternateLocales: ['en', 'fa'],
   noindex: creatorNoindex,
   structuredData,
+})
+
+onMounted(() => {
+  void analytics.track('public_creator_view', {
+    resource: {
+      type: 'public_creator',
+      id: canonicalUsername,
+    },
+  })
 })
 
 const localizedSkills = computed(() => identity.value.skills.map(skill => ({
