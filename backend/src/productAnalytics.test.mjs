@@ -80,6 +80,66 @@ test('public creator view accepts a normalized public creator username', () => {
   assert.equal(validation.event?.resourceId, 'creator.name')
 })
 
+test('public Blog index and article events accept normalized public slugs', () => {
+  for (const [eventName, id, path] of [
+    ['public_blog_index_view', 'index', '/blog'],
+    ['public_blog_article_view', 'launch-measurement', '/blog/launch-measurement'],
+  ]) {
+    const validation = validateProductAnalyticsEventBody(createEventBody({
+      eventName,
+      resource: {
+        type: 'public_blog',
+        id,
+      },
+      path,
+    }))
+
+    assert.deepEqual(validation.errors, [], eventName)
+    assert.equal(validation.event?.resourceType, 'public_blog')
+    assert.equal(validation.event?.resourceId, id)
+  }
+})
+
+test('public Discovery view accepts a normalized taxonomy slug', () => {
+  const validation = validateProductAnalyticsEventBody(createEventBody({
+    eventName: 'public_discovery_view',
+    resource: {
+      type: 'public_discovery',
+      id: 'product-photography',
+    },
+    path: '/discover/product-photography',
+  }))
+
+  assert.deepEqual(validation.errors, [])
+  assert.equal(validation.event?.resourceType, 'public_discovery')
+  assert.equal(validation.event?.resourceId, 'product-photography')
+})
+
+test('public slug resources reject uppercase, path-like and unbounded identifiers', () => {
+  for (const id of [
+    'Launch-Measurement',
+    'launch/measurement',
+    `${'a'.repeat(100)}-overflow`,
+  ]) {
+    const validation = validateProductAnalyticsEventBody(createEventBody({
+      eventName: 'public_blog_article_view',
+      resource: {
+        type: 'public_blog',
+        id,
+      },
+      path: '/blog/example',
+    }))
+
+    assert.equal(validation.event, null)
+    assert.deepEqual(validation.errors, [
+      {
+        field: 'resource.id',
+        message: 'resource.id must be a normalized public slug up to 100 characters',
+      },
+    ], id)
+  }
+})
+
 test('public analytics events reject mismatched resource types', () => {
   const validation = validateProductAnalyticsEventBody(createEventBody({
     eventName: 'public_prompt_view',
