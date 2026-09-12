@@ -180,6 +180,8 @@ public sealed class LocalServerTarget
         throw new DirectoryNotFoundException("Prompt Draft repository could not be located. Configure the repository path before using server actions.");
     }
 
-    private static bool IsRepoRoot(string? path) =>
-        !string.IsNullOrWhiteSpace(path) && File.Exists(Path.Combine(path, "package.json")) && File.Exists(Path.Combine(path, "compose.yaml"));
+    public static bool IsRepoRoot(string? path) =>
+        !string.IsNullOrWhiteSpace(path) &&
+        File.Exists(Path.Combine(path, "package.json")) &&
+        File.Exists(Path.Combine(path, "compose.yaml"));
 }
