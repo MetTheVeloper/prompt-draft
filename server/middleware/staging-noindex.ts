@@ -1,7 +1,10 @@
-export default defineEventHandler((event) => {
-  const noindex = String(process.env.NUXT_PUBLIC_NOINDEX ?? '').toLowerCase() === 'true'
+import { isPublicIndexingEnabledForRequest } from '../../shared/public-indexing-policy'
 
-  if (!noindex) return
+export default defineEventHandler((event) => {
+  const config = useRuntimeConfig(event)
+  const requestHost = getRequestHost(event)
+
+  if (isPublicIndexingEnabledForRequest(config.public.noindex, requestHost)) return
 
   setHeader(event, 'X-Robots-Tag', 'noindex, nofollow, noarchive')
 })
