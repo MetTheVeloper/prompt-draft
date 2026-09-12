@@ -12,12 +12,20 @@ public static class CommandRegistry
         ["RestartCloudflareStack"] = new("docker.exe", ["compose", "-f", "compose.yaml", "-f", "compose.cloudflare.yaml", "restart"], TimeSpan.FromMinutes(3)),
         ["CloudflareStatusJson"] = new("docker.exe", ["compose", "-f", "compose.yaml", "-f", "compose.cloudflare.yaml", "ps", "--format", "json"], TimeSpan.FromSeconds(30)),
         ["CloudflareStatus"] = new("pnpm.cmd", ["stack:cloudflare:status"], TimeSpan.FromSeconds(30)),
+        ["CloudflareLogs"] = new("pnpm.cmd", ["stack:cloudflare:logs"], TimeSpan.FromHours(24)),
+
         ["FrontendBuild"] = new("pnpm.cmd", ["frontend"], TimeSpan.FromMinutes(15)),
         ["FrontendRestart"] = new("pnpm.cmd", ["frontend:restart"], TimeSpan.FromMinutes(15)),
         ["FrontendStop"] = new("pnpm.cmd", ["frontend:stop"], TimeSpan.FromMinutes(2)),
+        ["FrontendStatus"] = new("pnpm.cmd", ["frontend:status"], TimeSpan.FromSeconds(30)),
+        ["FrontendLogs"] = new("pnpm.cmd", ["frontend:logs"], TimeSpan.FromHours(24)),
+
         ["ApiBuild"] = new("pnpm.cmd", ["api"], TimeSpan.FromMinutes(15)),
         ["ApiRestart"] = new("pnpm.cmd", ["api:restart"], TimeSpan.FromMinutes(15)),
         ["ApiStop"] = new("pnpm.cmd", ["api:stop"], TimeSpan.FromMinutes(2)),
+        ["ApiStatus"] = new("pnpm.cmd", ["api:status"], TimeSpan.FromSeconds(30)),
+        ["ApiLogs"] = new("pnpm.cmd", ["api:logs"], TimeSpan.FromHours(24)),
+
         ["StopCloudflareStack"] = new("pnpm.cmd", ["stack:cloudflare:stop"], TimeSpan.FromMinutes(3))
     };
 }
