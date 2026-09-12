@@ -57,6 +57,9 @@ async function getSummary(days) {
           )::int AS prompt_copy_sessions,
           (COUNT(*) FILTER (WHERE event_name = 'public_prompt_view'))::int AS public_prompt_views,
           (COUNT(*) FILTER (WHERE event_name = 'public_creator_view'))::int AS public_creator_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_blog_index_view'))::int AS public_blog_index_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_blog_article_view'))::int AS public_blog_article_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_discovery_view'))::int AS public_discovery_views,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_copy_clicked'))::int AS prompt_copy_clicks,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_unlock_clicked'))::int AS prompt_unlock_clicks,
           COUNT(DISTINCT session_id) FILTER (
@@ -65,6 +68,15 @@ async function getSummary(days) {
           COUNT(DISTINCT session_id) FILTER (
             WHERE event_name = 'public_creator_view'
           )::int AS public_creator_view_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'public_blog_index_view'
+          )::int AS public_blog_index_view_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'public_blog_article_view'
+          )::int AS public_blog_article_view_sessions,
+          COUNT(DISTINCT session_id) FILTER (
+            WHERE event_name = 'public_discovery_view'
+          )::int AS public_discovery_view_sessions,
           COUNT(DISTINCT session_id) FILTER (
             WHERE event_name = 'prompt_copy_clicked'
           )::int AS prompt_copy_click_sessions,
@@ -137,10 +149,16 @@ async function getSummary(days) {
         analytics_metrics.prompt_copy_sessions AS "promptCopySessions",
         analytics_metrics.public_prompt_views AS "publicPromptViews",
         analytics_metrics.public_creator_views AS "publicCreatorViews",
+        analytics_metrics.public_blog_index_views AS "publicBlogIndexViews",
+        analytics_metrics.public_blog_article_views AS "publicBlogArticleViews",
+        analytics_metrics.public_discovery_views AS "publicDiscoveryViews",
         analytics_metrics.prompt_copy_clicks AS "promptCopyClicks",
         analytics_metrics.prompt_unlock_clicks AS "promptUnlockClicks",
         analytics_metrics.public_prompt_view_sessions AS "publicPromptViewSessions",
         analytics_metrics.public_creator_view_sessions AS "publicCreatorViewSessions",
+        analytics_metrics.public_blog_index_view_sessions AS "publicBlogIndexViewSessions",
+        analytics_metrics.public_blog_article_view_sessions AS "publicBlogArticleViewSessions",
+        analytics_metrics.public_discovery_view_sessions AS "publicDiscoveryViewSessions",
         analytics_metrics.prompt_copy_click_sessions AS "promptCopyClickSessions",
         analytics_metrics.prompt_unlock_click_sessions AS "promptUnlockClickSessions",
         analytics_metrics.referral_link_opens AS "referralLinkOpens",
@@ -195,6 +213,12 @@ async function getSummary(days) {
       publicPromptViewSessions: toNumber(row.publicPromptViewSessions),
       publicCreatorViews: toNumber(row.publicCreatorViews),
       publicCreatorViewSessions: toNumber(row.publicCreatorViewSessions),
+      publicBlogIndexViews: toNumber(row.publicBlogIndexViews),
+      publicBlogIndexViewSessions: toNumber(row.publicBlogIndexViewSessions),
+      publicBlogArticleViews: toNumber(row.publicBlogArticleViews),
+      publicBlogArticleViewSessions: toNumber(row.publicBlogArticleViewSessions),
+      publicDiscoveryViews: toNumber(row.publicDiscoveryViews),
+      publicDiscoveryViewSessions: toNumber(row.publicDiscoveryViewSessions),
       copyClicks: toNumber(row.promptCopyClicks),
       copyClickSessions: toNumber(row.promptCopyClickSessions),
       unlockClicks: toNumber(row.promptUnlockClicks),
@@ -251,6 +275,9 @@ async function getDailySeries(days) {
           (COUNT(*) FILTER (WHERE event_name = 'prompt_archive_copy'))::int AS copies,
           (COUNT(*) FILTER (WHERE event_name = 'public_prompt_view'))::int AS public_prompt_views,
           (COUNT(*) FILTER (WHERE event_name = 'public_creator_view'))::int AS public_creator_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_blog_index_view'))::int AS public_blog_index_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_blog_article_view'))::int AS public_blog_article_views,
+          (COUNT(*) FILTER (WHERE event_name = 'public_discovery_view'))::int AS public_discovery_views,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_copy_clicked'))::int AS prompt_copy_clicks,
           (COUNT(*) FILTER (WHERE event_name = 'prompt_unlock_clicked'))::int AS prompt_unlock_clicks,
           (COUNT(*) FILTER (WHERE event_name = 'referral_link_open'))::int AS referral_opens
@@ -290,6 +317,9 @@ async function getDailySeries(days) {
         COALESCE(analytics.copies, 0)::int AS copies,
         COALESCE(analytics.public_prompt_views, 0)::int AS "publicPromptViews",
         COALESCE(analytics.public_creator_views, 0)::int AS "publicCreatorViews",
+        COALESCE(analytics.public_blog_index_views, 0)::int AS "publicBlogIndexViews",
+        COALESCE(analytics.public_blog_article_views, 0)::int AS "publicBlogArticleViews",
+        COALESCE(analytics.public_discovery_views, 0)::int AS "publicDiscoveryViews",
         COALESCE(analytics.prompt_copy_clicks, 0)::int AS "promptCopyClicks",
         COALESCE(analytics.prompt_unlock_clicks, 0)::int AS "promptUnlockClicks",
         COALESCE(analytics.referral_opens, 0)::int AS "referralOpens",
@@ -315,6 +345,9 @@ async function getDailySeries(days) {
     promptCopies: toNumber(row.copies),
     publicPromptViews: toNumber(row.publicPromptViews),
     publicCreatorViews: toNumber(row.publicCreatorViews),
+    publicBlogIndexViews: toNumber(row.publicBlogIndexViews),
+    publicBlogArticleViews: toNumber(row.publicBlogArticleViews),
+    publicDiscoveryViews: toNumber(row.publicDiscoveryViews),
     promptCopyClicks: toNumber(row.promptCopyClicks),
     promptUnlockClicks: toNumber(row.promptUnlockClicks),
     referralOpens: toNumber(row.referralOpens),
@@ -447,6 +480,9 @@ export async function handleAdminGrowthRequest({
             'referral_link_open',
             'public_prompt_view',
             'public_creator_view',
+            'public_blog_index_view',
+            'public_blog_article_view',
+            'public_discovery_view',
             'prompt_copy_clicked',
             'prompt_unlock_clicked',
           ],
