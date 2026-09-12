@@ -43,10 +43,18 @@ public partial class MainWindow : Window
         TargetPathText.Text = _target.RepoRoot;
         _monitor.Start();
         _ = _logger.WriteAsync("INFO", "Manager", "Application started; read-only monitoring enabled");
+        if (DevelopmentSecurityOptions.BypassOwnerAccess)
+            _ = _logger.WriteAsync("WARN", "Security", "DEVELOPMENT OWNER BYPASS ACTIVE");
     }
 
     private async void UnlockButton_Click(object sender, RoutedEventArgs e)
     {
+        if (DevelopmentSecurityOptions.BypassOwnerAccess)
+        {
+            ConfigureOwnerAccess();
+            return;
+        }
+
         var password = OwnerPassword.Password;
         if (string.IsNullOrWhiteSpace(password)) return;
 
@@ -90,6 +98,12 @@ public partial class MainWindow : Window
 
     private async void LockButton_Click(object sender, RoutedEventArgs e)
     {
+        if (DevelopmentSecurityOptions.BypassOwnerAccess)
+        {
+            ConfigureOwnerAccess();
+            return;
+        }
+
         _unlocked = false;
         SetActionButtons(false);
         LockButton.Visibility = Visibility.Collapsed;
@@ -102,6 +116,26 @@ public partial class MainWindow : Window
 
     private void ConfigureOwnerAccess()
     {
+        if (DevelopmentSecurityOptions.BypassOwnerAccess)
+        {
+            _unlocked = true;
+            FirstRunHint.Visibility = Visibility.Collapsed;
+            OwnerPassword.Visibility = Visibility.Collapsed;
+            ConfirmOwnerPassword.Visibility = Visibility.Collapsed;
+            UnlockButton.Visibility = Visibility.Collapsed;
+            LockButton.Visibility = Visibility.Collapsed;
+            OwnerAccessDescription.Text = T(
+                "Development bypass is active. Owner authentication is temporarily disabled.",
+                "حالت توسعه فعال است؛ احراز هویت مالک موقتاً غیرفعال شده است.");
+            AuthStateText.Text = T("Development bypass active", "دسترسی توسعه‌ای فعال است");
+            SetActionButtons(true);
+            LogBox.Visibility = Visibility.Visible;
+            ActivityLockedText.Visibility = Visibility.Collapsed;
+            return;
+        }
+
+        OwnerPassword.Visibility = Visibility.Visible;
+        UnlockButton.Visibility = Visibility.Visible;
         var firstRun = !_auth.IsConfigured;
         FirstRunHint.Visibility = firstRun ? Visibility.Visible : Visibility.Collapsed;
         ConfirmOwnerPassword.Visibility = firstRun ? Visibility.Visible : Visibility.Collapsed;
