@@ -39,6 +39,7 @@ public partial class MainWindow : Window
         ConfigureTray();
         ApplyTheme();
         ApplyLanguage();
+        ConfigureOwnerAccess();
         TargetPathText.Text = _target.RepoRoot;
         _monitor.Start();
         _ = _logger.WriteAsync("INFO", "Manager", "Application started; read-only monitoring enabled");
@@ -48,14 +49,22 @@ public partial class MainWindow : Window
     {
         var password = OwnerPassword.Password;
         if (string.IsNullOrWhiteSpace(password)) return;
-        if (!_auth.IsConfigured && password.Length < 8)
+
+        var firstRun = !_auth.IsConfigured;
+        if (firstRun && password.Length < 8)
         {
             AuthStateText.Text = T("Use at least 8 characters for the owner password.", "رمز مالک باید حداقل ۸ کاراکتر باشد.");
             return;
         }
 
+        if (firstRun && !string.Equals(password, ConfirmOwnerPassword.Password, StringComparison.Ordinal))
+        {
+            AuthStateText.Text = T("Passwords do not match.", "دو رمز واردشده یکسان نیستند.");
+            return;
+        }
+
         bool ok;
-        if (!_auth.IsConfigured)
+        if (firstRun)
         {
             await _auth.InitializeAsync(password);
             ok = true;
@@ -67,24 +76,137 @@ public partial class MainWindow : Window
         }
 
         OwnerPassword.Clear();
+        ConfirmOwnerPassword.Clear();
         _unlocked = ok;
         AuthStateText.Text = ok ? T("Unlocked", "باز شد") : T("Invalid password", "رمز نادرست است");
         SetActionButtons(ok);
+        LockButton.Visibility = ok ? Visibility.Visible : Visibility.Collapsed;
+        UnlockButton.IsEnabled = !ok;
         LogBox.Visibility = ok ? Visibility.Visible : Visibility.Collapsed;
         ActivityLockedText.Visibility = ok ? Visibility.Collapsed : Visibility.Visible;
+        ConfigureOwnerAccess();
         await _logger.WriteAsync(ok ? "INFO" : "WARN", "Security", ok ? "Owner access unlocked" : "Owner authentication failed");
+    }
+
+    private async void LockButton_Click(object sender, RoutedEventArgs e)
+    {
+        _unlocked = false;
+        SetActionButtons(false);
+        LockButton.Visibility = Visibility.Collapsed;
+        UnlockButton.IsEnabled = true;
+        LogBox.Visibility = Visibility.Collapsed;
+        ActivityLockedText.Visibility = Visibility.Visible;
+        AuthStateText.Text = T("Locked", "قفل است");
+        await _logger.WriteAsync("INFO", "Security", "Owner access locked");
+    }
+
+    private void ConfigureOwnerAccess()
+    {
+        var firstRun = !_auth.IsConfigured;
+        FirstRunHint.Visibility = firstRun ? Visibility.Visible : Visibility.Collapsed;
+        ConfirmOwnerPassword.Visibility = firstRun ? Visibility.Visible : Visibility.Collapsed;
+        OwnerAccessDescription.Text = firstRun
+            ? T("Create the local owner password before management actions are enabled.", "برای فعال شدن عملیات مدیریتی، رمز مالک محلی را ایجاد کنید.")
+            : T("Unlock before running management actions.", "پیش از اجرای عملیات مدیریتی، برنامه را باز کنید.");
+        FirstRunHint.Text = T("First run: enter at least 8 characters and confirm the same password.", "اجرای اول: رمزی با حداقل ۸ کاراکتر وارد و همان رمز را تأیید کنید.");
+    }
+
+    private async void BrowseRepoButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!_unlocked) return;
+        using var dialog = new System.Windows.Forms.FolderBrowserDialog
+        {
+            Description = T("Choose the Prompt Draft repository root", "پوشه ریشه مخزن Prompt Draft را انتخاب کنید"),
+            SelectedPath = _settings.RepoPath,
+            ShowNewFolderButton = false,
+            UseDescriptionForTitle = true
+        };
+
+        if (dialog.ShowDialog() != System.Windows.Forms.DialogResult.OK) return;
+        if (!LocalServerTarget.IsRepoRoot(dialog.SelectedPath))
+        {
+            RepoPathNotice.Text = T("That folder does not contain package.json and compose.yaml.", "این پوشه شامل package.json و compose.yaml نیست.");
+            return;
+        }
+
+        _settings.RepoPath = dialog.SelectedPath;
+        await _settingsService.SaveAsync(_settings);
+        RepoPathNotice.Text = T(
+            "Repository path saved. Restart Server Manager to apply it to monitoring and commands.",
+            "مسیر مخزن ذخیره شد. برای اعمال آن در مانیتورینگ و دستورات، Server Manager را دوباره اجرا کنید.");
+        await _logger.WriteAsync("INFO", "Settings", "Repository path changed; restart required to apply target");
     }
 
     private async void EnsureButton_Click(object sender, RoutedEventArgs e) =>
         await ExecuteActionAsync("Stack", ManagerOperationalState.StartingStack, ct => _target.EnsureRunningAsync(ct));
 
     private async void RestartButton_Click(object sender, RoutedEventArgs e) =>
-        await ExecuteActionAsync("Stack", ManagerOperationalState.StartingStack, ct => _target.RunRegisteredCommandAsync("RestartCloudflareStack", ct));
+        await ExecuteRegisteredActionAsync("Stack", "RestartCloudflareStack", ManagerOperationalState.StartingStack);
 
     private async void StopButton_Click(object sender, RoutedEventArgs e) =>
-        await ExecuteActionAsync("Stack", ManagerOperationalState.Stopping, ct => _target.RunRegisteredCommandAsync("StopCloudflareStack", ct));
+        await ExecuteRegisteredActionAsync("Stack", "StopCloudflareStack", ManagerOperationalState.Stopping);
 
     private async void RefreshButton_Click(object sender, RoutedEventArgs e) => await RefreshAsync();
+
+    private async void FrontendBuildButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("Frontend", "FrontendBuild", ManagerOperationalState.StartingStack);
+
+    private async void FrontendRestartButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("Frontend", "FrontendRestart", ManagerOperationalState.StartingStack);
+
+    private async void FrontendStopButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("Frontend", "FrontendStop", ManagerOperationalState.Stopping);
+
+    private async void FrontendStatusButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteStatusCommandAsync("Frontend", "FrontendStatus");
+
+    private async void ApiBuildButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("API", "ApiBuild", ManagerOperationalState.StartingStack);
+
+    private async void ApiRestartButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("API", "ApiRestart", ManagerOperationalState.StartingStack);
+
+    private async void ApiStopButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteRegisteredActionAsync("API", "ApiStop", ManagerOperationalState.Stopping);
+
+    private async void ApiStatusButton_Click(object sender, RoutedEventArgs e) =>
+        await ExecuteStatusCommandAsync("API", "ApiStatus");
+
+    private void StackLogsButton_Click(object sender, RoutedEventArgs e) => OpenLogViewer(T("Stack logs", "لاگ‌های استک"), "CloudflareLogs");
+    private void FrontendLogsButton_Click(object sender, RoutedEventArgs e) => OpenLogViewer(T("Frontend logs", "لاگ‌های فرانت‌اند"), "FrontendLogs");
+    private void ApiLogsButton_Click(object sender, RoutedEventArgs e) => OpenLogViewer(T("API logs", "لاگ‌های API"), "ApiLogs");
+
+    private void OpenLogViewer(string title, string commandName)
+    {
+        if (!_unlocked) return;
+        var viewer = new LogViewerWindow(title, _target.RepoRoot, CommandRegistry.Commands[commandName], _dark, _fa)
+        {
+            Owner = this
+        };
+        viewer.Show();
+    }
+
+    private Task ExecuteRegisteredActionAsync(string subsystem, string commandName, ManagerOperationalState state) =>
+        ExecuteActionAsync(subsystem, state, ct => _target.RunRegisteredCommandAsync(commandName, ct));
+
+    private async Task ExecuteStatusCommandAsync(string subsystem, string commandName)
+    {
+        if (!_unlocked) return;
+        SetActionButtons(false);
+        try
+        {
+            var result = await _target.RunRegisteredCommandAsync(commandName, CancellationToken.None);
+            await _logger.WriteAsync(result.ExitCode == 0 ? "INFO" : "ERROR", subsystem, CompactSummary(result));
+        }
+        catch (Exception ex)
+        {
+            await _logger.WriteAsync("ERROR", subsystem, ex.Message);
+        }
+        finally
+        {
+            SetActionButtons(_unlocked);
+        }
+    }
 
     private async Task ExecuteActionAsync(string subsystem, ManagerOperationalState transientState, Func<CancellationToken, Task<CommandResult>> action)
     {
@@ -95,7 +217,7 @@ public partial class MainWindow : Window
         {
             await _logger.WriteAsync("INFO", subsystem, $"Operator action started: {transientState}");
             var result = await action(CancellationToken.None);
-            await _logger.WriteAsync(result.ExitCode == 0 ? "INFO" : "ERROR", subsystem, result.Summary);
+            await _logger.WriteAsync(result.ExitCode == 0 ? "INFO" : "ERROR", subsystem, CompactSummary(result));
             await RefreshAsync();
         }
         catch (Exception ex)
@@ -108,6 +230,13 @@ public partial class MainWindow : Window
         {
             SetActionButtons(_unlocked);
         }
+    }
+
+    private static string CompactSummary(CommandResult result)
+    {
+        var summary = result.Summary.Replace("\r", string.Empty).Trim();
+        const int limit = 1600;
+        return summary.Length <= limit ? summary : "…" + summary[^limit..];
     }
 
     private async Task RefreshAsync()
@@ -175,6 +304,7 @@ public partial class MainWindow : Window
         _fa = !_fa;
         _settings.Language = _fa ? "fa" : "en";
         ApplyLanguage();
+        ConfigureOwnerAccess();
         _ = _settingsService.SaveAsync(_settings);
     }
 
@@ -185,13 +315,23 @@ public partial class MainWindow : Window
         LanguageButton.Content = _fa ? "EN" : "FA";
         SubtitleText.Text = T("Local operations console", "کنسول مدیریت محلی");
         OwnerAccessTitle.Text = T("Owner access", "دسترسی مالک");
-        OwnerAccessDescription.Text = T("Unlock before running management actions.", "پیش از اجرای عملیات مدیریتی، برنامه را باز کنید.");
         UnlockButton.Content = T("Unlock", "باز کردن");
+        LockButton.Content = T("Lock", "قفل کردن");
         TargetLabel.Text = T("Target", "مقصد");
+        BrowseRepoButton.Content = T("Choose repository folder", "انتخاب پوشه مخزن");
+        StackOperationsLabel.Text = T("Server stack", "استک سرور");
         EnsureButton.Content = T("Ensure Server Running", "اطمینان از اجرای سرور");
-        RestartButton.Content = T("Restart Server", "راه‌اندازی مجدد سرور");
+        RestartButton.Content = T("Restart Server (no build)", "راه‌اندازی مجدد سرور (بدون بیلد)");
         StopButton.Content = T("Stop Server", "توقف سرور");
         RefreshButton.Content = T("Refresh Status", "به‌روزرسانی وضعیت");
+        StackLogsButton.Content = T("Stack Logs", "لاگ‌های استک");
+        FrontendExpander.Header = T("Frontend", "فرانت‌اند");
+        ApiExpander.Header = "API";
+        FrontendBuildButton.Content = ApiBuildButton.Content = T("Build / Start", "بیلد / اجرا");
+        FrontendRestartButton.Content = ApiRestartButton.Content = T("Rebuild & Restart", "بیلد مجدد و راه‌اندازی");
+        FrontendStopButton.Content = ApiStopButton.Content = T("Stop", "توقف");
+        FrontendStatusButton.Content = ApiStatusButton.Content = T("Status", "وضعیت");
+        FrontendLogsButton.Content = ApiLogsButton.Content = T("Logs", "لاگ‌ها");
         ActivityTitle.Text = T("Activity", "فعالیت‌ها");
         ActivityLockedText.Text = T("Unlock owner access to view activity logs.", "برای مشاهده گزارش فعالیت‌ها، دسترسی مالک را باز کنید.");
         DockerLabel.Text = T("Docker", "داکر");
@@ -263,6 +403,18 @@ public partial class MainWindow : Window
         RestartButton.IsEnabled = enabled;
         StopButton.IsEnabled = enabled;
         RefreshButton.IsEnabled = enabled;
+        StackLogsButton.IsEnabled = enabled;
+        BrowseRepoButton.IsEnabled = enabled;
+        FrontendBuildButton.IsEnabled = enabled;
+        FrontendRestartButton.IsEnabled = enabled;
+        FrontendStopButton.IsEnabled = enabled;
+        FrontendStatusButton.IsEnabled = enabled;
+        FrontendLogsButton.IsEnabled = enabled;
+        ApiBuildButton.IsEnabled = enabled;
+        ApiRestartButton.IsEnabled = enabled;
+        ApiStopButton.IsEnabled = enabled;
+        ApiStatusButton.IsEnabled = enabled;
+        ApiLogsButton.IsEnabled = enabled;
     }
 
     private string StateText(bool healthy) => healthy ? T("Healthy", "سالم") : T("Offline", "آفلاین");
