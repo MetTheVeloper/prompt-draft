@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 5.2 Acquisition Measurement Verification
 
-Status: **FOUNDER-LOCAL AUTOMATED VERIFICATION PASS / BEHAVIORAL SMOKE PENDING**
+Status: **FOUNDER-LOCAL AUTOMATED VERIFICATION PASS / PUBLIC ACQUISITION BEHAVIORAL SMOKE PASS / INTENT + GROWTH SUMMARY PENDING**
 
 Date: 2026-09-12
 
@@ -10,7 +10,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Verified branch head before this evidence record:
+Verified branch head before initial evidence record:
 
 ```text
 3580edc4aea14db11574bc38c7d489884fb02c61
@@ -152,9 +152,57 @@ The `orphan container (prompt-draft-cloudflared-1)` warning emitted by service-s
 
 The Windows Git warning about inability to unlink two `.git/objects/pack/*.idx` files did not prevent fetch, object resolution, or fast-forward update. It is not a Phase 5.2 blocker. Investigate local file locking only if it recurs or later Git maintenance fails.
 
-## 3. Verified trust boundary
+## 3. Founder staging behavioral smoke — public acquisition views
 
-Automated verification preserves the accepted measurement trust boundary:
+Founder confirmed the staging frontend runtime configuration directly from the running container:
+
+```text
+NUXT_PUBLIC_API_BASE=https://api.grassic.ir
+NUXT_PUBLIC_SITE_URL=https://grassic.ir
+NUXT_PUBLIC_NOINDEX=true
+```
+
+The original sitemap-based smoke discovery method was rejected after runtime evidence because staging intentionally runs with `NUXT_PUBLIC_NOINDEX=true`, and the accepted sitemap route returns an empty inventory when public indexing is disabled. Runtime smoke samples were instead resolved from server-authoritative public inventory / Blog API data plus the accepted Discovery taxonomy.
+
+Resolved and opened staging surfaces:
+
+```text
+https://grassic.ir/prompt/6
+https://grassic.ir/creator/grassias
+https://grassic.ir/blog
+https://grassic.ir/discover/portrait-photography
+```
+
+No English published Blog Article slug was returned by the public Blog listing during this smoke. Therefore the absence of `public_blog_article_view` in this run is an unavailable-fixture condition, not a failed event path. The Blog Article contract remains covered by the passing automated instrumentation and backend validation tests until a published staging Article is available for runtime smoke.
+
+Founder queried `product_analytics_events` immediately after loading the public surfaces and confirmed persisted browser-originated events:
+
+```text
+public_prompt_view     | public_prompt    | 6                    | /prompt/6                      | en
+public_creator_view    | public_creator   | grassias             | /creator/grassias              | en
+public_blog_index_view | public_blog      | index                | /blog                          | en
+public_discovery_view  | public_discovery | portrait-photography | /discover/portrait-photography | en
+```
+
+This is direct behavioral evidence that the staging path is operational end-to-end:
+
+```text
+browser client mount
+  -> useProductAnalytics
+  -> https://api.grassic.ir/api/analytics/events
+  -> backend validation / ingestion
+  -> product_analytics_events persistence
+```
+
+Result:
+
+```text
+PASS for all currently available representative public acquisition surfaces
+```
+
+## 4. Verified trust boundary
+
+Verification preserves the accepted measurement trust boundary:
 
 ```text
 acquisition views / click intent -> product_analytics_events
@@ -165,20 +213,19 @@ Goin issue/spend                  -> user_economy_events
 
 Client analytics are not authoritative conversion evidence.
 
-## 4. Remaining acceptance gate
+## 5. Remaining acceptance gate
 
-Phase 5.2 is not yet marked fully accepted because behavioral/runtime smoke evidence is still required.
+Phase 5.2 is not yet marked fully accepted because protected Prompt intent and aggregate reporting still need founder-local behavioral evidence.
 
 Remaining checks:
 
 ```text
-1. visit representative public Prompt route and confirm public_prompt_view is stored
-2. visit representative public Creator route and confirm public_creator_view is stored
-3. visit Blog index and a valid Article and confirm both Blog view events
-4. visit a valid Discovery route and confirm public_discovery_view
-5. exercise protected Prompt copy and locked-unlock intent paths
-6. verify /api/admin/growth/summary?days=7 exposes the expected launchFunnel counters
-7. compare completed unlock / Goin evidence against transactional source-of-truth tables, not client events
+1. exercise protected Prompt copy flow and confirm prompt_copy_clicked
+2. if the selected Prompt is locked, confirm prompt_unlock_clicked before the unlock attempt
+3. after successful clipboard copy, confirm existing prompt_archive_copy success analytics still persists
+4. verify /api/admin/growth/summary?days=7 exposes the expected launchFunnel counters
+5. compare completed unlock / Goin evidence against transactional source-of-truth tables, not client events
+6. when a published staging Blog Article becomes available, perform the deferred public_blog_article_view runtime smoke
 ```
 
 Initial-launch attribution policy remains privacy-minimal:
@@ -189,7 +236,7 @@ arbitrary query strings -> NOT CAPTURED
 normalized/allowlisted source attribution -> optional future follow-up, not required for Phase 5.2 acceptance
 ```
 
-## 5. Production boundary
+## 6. Production boundary
 
 No production-changing action is authorized by this verification record.
 
@@ -203,4 +250,4 @@ production Worker policy    -> untouched
 production Search Console   -> no submission until approved production launch
 ```
 
-Next gate: behavioral smoke + `launchFunnel` verification, then Phase 5.2 can be marked founder-local accepted if no regression is found.
+Next gate: protected Prompt intent/copy behavioral smoke + `launchFunnel` verification, then Phase 5.2 can be marked founder-local accepted if no regression is found.
