@@ -154,22 +154,35 @@ Do not change it to `contact.prompt-draft.ir`, another mail host, or remove it m
 
 No TXT or CAA records are present in the captured Arvan zone.
 
+Parent-zone DNSSEC evidence captured on 2026-09-12 returned no DS record for `prompt-draft.ir`; only the `.ir` authority SOA was returned. There is therefore no active parent DS record to remove before the future nameserver cutover.
+
 ### S3 — stage production Tunnel published applications
 
-Prepare, but do not activate authoritative traffic yet:
+Prepared on 2026-09-12 while Arvan remains authoritative:
 
 ```text
 prompt-draft.ir     -> http://frontend:3000
 api.prompt-draft.ir -> http://api:4000
 ```
 
-Expected Tunnel target under Cloudflare DNS:
+Founder/dashboard evidence confirms both published applications were added to the existing remote-managed Tunnel `prompt-draft-production` with default application settings. Cloudflare created proxied CNAME records in the pending production zone pointing both hostnames to:
 
 ```text
 98f97826-f2dd-422a-ba4f-3f5e716b32cb.cfargotunnel.com
 ```
 
-Both application records must be proxied through Cloudflare.
+The Tunnel route list now contains all four expected staging/prepared-production mappings:
+
+```text
+grassic.ir             -> http://frontend:3000
+api.grassic.ir         -> http://api:4000
+prompt-draft.ir        -> http://frontend:3000
+api.prompt-draft.ir    -> http://api:4000
+```
+
+Because `prompt-draft.ir` is still delegated to the Arvan nameservers, these pending Cloudflare DNS records do not yet control public production traffic.
+
+Both production application records must remain proxied through Cloudflare.
 
 ### S4 — stage `www -> apex` redirect
 
@@ -421,7 +434,7 @@ Infrastructure discovery is no longer a blocker. Remaining gates are explicit de
 [ ] accept exact MX treatment (`contact`, priority 10) or explicitly change mail policy
 [ ] stage www -> apex 301 rule
 [ ] stage api.prompt-draft.ir bypass-cache rule
-[ ] stage production Tunnel published applications
+[x] stage production Tunnel published applications
 [ ] accept Search Console Domain-property/TXT plan
 [ ] select exact cutover SHA
 [ ] founder 5.1D readiness signoff
