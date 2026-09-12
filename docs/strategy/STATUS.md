@@ -26,7 +26,7 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
   4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
 21.5.5 Organic Acquisition Launch               -> IN PROGRESS
-  5.1 Launch Readiness                          -> IN PROGRESS / CONTRACT + AUDIT
+  5.1 Launch Readiness                          -> IN PROGRESS / AUDIT + CUTOVER RUNBOOK DRAFTED
   5.2 Acquisition Measurement Instrumentation   -> IN PROGRESS / ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING
   5.3 Founder-approved Production Cutover       -> BLOCKED UNTIL READINESS ACCEPTED
   5.4 Initial Launch + Measurement Cadence      -> PENDING PRODUCTION CUTOVER
@@ -39,6 +39,7 @@ docs/strategy/DEVELOPMENT_WORKFLOW.md
 docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+docs/strategy/MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_BLOG_V1.md
@@ -64,11 +65,19 @@ inspect changed services
 Service rule:
 
 ```text
-docs only     -> no rebuild
-frontend only -> pnpm frontend
-backend only  -> pnpm api
-both changed  -> pnpm api + pnpm frontend
+docs only       -> no rebuild
+environment only -> recreate only affected service(s)
+frontend only   -> pnpm frontend
+backend only    -> pnpm api
+both changed    -> pnpm api + pnpm frontend
 pnpm stack only when genuinely required
+```
+
+Environment-only service shortcuts:
+
+```text
+pnpm api:recreate
+pnpm frontend:recreate
 ```
 
 ## Accepted runtime/staging baseline
@@ -315,20 +324,23 @@ No production cutover was performed. `prompt-draft.ir` remains untouched and sta
 
 # Phase 5 Organic Acquisition Launch & Measurement — IN PROGRESS
 
-Canonical record:
+Canonical records:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+docs/strategy/MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md
 ```
 
 Current slices:
 
 ```text
-5.1 Launch Readiness                        -> IN PROGRESS / CONTRACT + AUDIT
+5.1 Launch Readiness                        -> IN PROGRESS / AUDIT + CUTOVER RUNBOOK DRAFTED
 5.2 Acquisition Measurement Instrumentation -> IN PROGRESS / ACQUISITION CAPTURE IMPLEMENTED / RUNTIME VERIFY PENDING
 ```
 
 Phase 5.1 exists to establish a branch-exact runtime/deployment/environment/indexability inventory, Search Console and acquisition-measurement baseline, explicit production cutover procedure, explicit rollback procedure and founder readiness signoff **before** production is changed.
+
+Phase 5.1C repository-side runbook is now drafted. It records a critical cutover constraint: `NUXT_PUBLIC_NOINDEX` is process-wide, so one frontend container cannot simultaneously serve `grassic.ir` as noindex and `prompt-draft.ir` as indexable. The initial-cutover policy is therefore to retire the staging frontend ingress before setting production noindex=false. The existing staging fallback Worker must not be attached unchanged to production because its copy/behavior is staging-specific.
 
 Phase 5.2 extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Client-mounted acquisition views now cover public Prompt, public Creator, Blog index, Blog Article and taxonomy-backed Discovery routes; protected Prompt copy/unlock intent is instrumented; successful clipboard copy remains separately measured; completed unlock and Goin spend remain derived from transactional source-of-truth tables. Founder-local/runtime verification is still pending before 5.2 can be accepted.
 
@@ -347,12 +359,12 @@ Execution slices:
 Current hard boundary:
 
 ```text
-staging NUXT_PUBLIC_NOINDEX=true -> KEEP
+staging NUXT_PUBLIC_NOINDEX=true -> KEEP until approved cutover sequence retires staging frontend ingress
 prompt-draft.ir                  -> UNTOUCHED
 production DNS/Tunnel/indexability changes -> require explicit founder approval
 ```
 
-Current Phase 5.2 source implementation changes both frontend and backend. Per the project workflow, runtime verification requires only `pnpm api` + `pnpm frontend`; a full `pnpm stack` is not justified. No production route, DNS, Tunnel or indexability change has been made.
+Current Phase 5.2 source implementation changes both frontend and backend. Per the project workflow, runtime verification requires only `pnpm api` + `pnpm frontend`; a full `pnpm stack` is not justified. Environment-only cutover changes later use `pnpm api:recreate` / `pnpm frontend:recreate` after the verified images already exist. No production route, DNS, Tunnel or indexability change has been made.
 
 ## Hard rules
 
@@ -370,6 +382,7 @@ DO NOT recreate Blog indexability outside Article contract.
 DO NOT let Blog SEO override staging noindex.
 DO NOT expose BLOG_GITHUB_TOKEN publicly.
 DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title owns H1.
+DO NOT attach the staging fallback Worker unchanged to prompt-draft.ir.
 DO NOT touch prompt-draft.ir before explicit rollout.
 DO NOT change production DNS/Tunnel/indexability without explicit founder approval.
 ```
@@ -381,15 +394,16 @@ DO NOT change production DNS/Tunnel/indexability without explicit founder approv
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 4. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md as the current Phase 5 source of truth
-5. read MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md for accepted staging/cutover baseline
-6. inspect latest feature/growth-foundation HEAD before every decision/write
-7. confirm 21.5.4 / 4A-4F remain DONE / ACCEPTED; do not restart Phase 4 audit without a concrete regression
-8. current task = 21.5.5 / Phase 5.1 + Phase 5.2
-9. run focused Phase 5.2 source tests, rebuild only pnpm api + pnpm frontend, and smoke Prompt/Creator/Blog/Discovery plus protected copy/unlock behavior
-10. verify /api/admin/growth/summary launchFunnel against transactional unlock/Goin evidence; do not treat aggregate surface counts as a strict sequential funnel
-11. if focused verification passes, record founder-local Phase 5.2 acceptance
-12. continue 5.1C production cutover/rollback contract and Search Console readiness
-13. preserve all accepted public/indexability/security/compiler boundaries
-14. keep staging NUXT_PUBLIC_NOINDEX=true
-15. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
+5. read MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md before any cutover discussion
+6. read MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md for accepted staging baseline
+7. inspect latest feature/growth-foundation HEAD before every decision/write
+8. confirm 21.5.4 / 4A-4F remain DONE / ACCEPTED; do not restart Phase 4 audit without a concrete regression
+9. current task = 21.5.5 / Phase 5.1 + Phase 5.2
+10. run focused Phase 5.2 source tests, rebuild only pnpm api + pnpm frontend, and smoke Prompt/Creator/Blog/Discovery plus protected copy/unlock behavior
+11. verify /api/admin/growth/summary launchFunnel against transactional unlock/Goin evidence; do not treat aggregate surface counts as a strict sequential funnel
+12. if focused verification passes, record founder-local Phase 5.2 acceptance
+13. complete the external current-production DNS/origin snapshot required by 5.1C and confirm www/Search Console policy
+14. preserve all accepted public/indexability/security/compiler boundaries
+15. keep staging NUXT_PUBLIC_NOINDEX=true until the founder-approved cutover step explicitly retires staging frontend ingress
+16. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
 ```
