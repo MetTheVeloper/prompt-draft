@@ -15,7 +15,11 @@ public partial class App : System.Windows.Application
         _ownsMutex = createdNew;
         if (!createdNew)
         {
-            MessageBox.Show("Prompt Draft Server Manager is already running.", "Prompt Draft Server Manager", MessageBoxButton.OK, MessageBoxImage.Information);
+            System.Windows.MessageBox.Show(
+                "Prompt Draft Server Manager is already running.",
+                "Prompt Draft Server Manager",
+                System.Windows.MessageBoxButton.OK,
+                System.Windows.MessageBoxImage.Information);
             Shutdown();
             return;
         }
