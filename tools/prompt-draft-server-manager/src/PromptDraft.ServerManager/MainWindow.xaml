@@ -10,6 +10,7 @@
         FontFamily="{DynamicResource MaterialDesignFont}"
         TextOptions.TextFormattingMode="Ideal"
         TextOptions.TextRenderingMode="Auto"
+        Loaded="Window_Loaded"
         Closing="Window_Closing">
   <Grid Margin="24">
     <Grid.RowDefinitions>
@@ -28,24 +29,67 @@
         <TextBlock x:Name="SubtitleText" Text="Local operations console" Opacity="0.7" Margin="0,4,0,0" />
       </StackPanel>
       <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-        <Button x:Name="LanguageButton" Content="FA" Margin="0,0,8,0" Padding="16,8" Click="LanguageButton_Click" />
-        <Button x:Name="ThemeButton" Content="Dark" Padding="16,8" Click="ThemeButton_Click" />
+        <Button x:Name="LanguageButton"
+                Width="40" Height="40" Margin="0,0,8,0" Padding="8"
+                Style="{StaticResource MaterialDesignIconButton}"
+                Click="LanguageButton_Click">
+          <materialDesign:PackIcon x:Name="LanguageToggleIcon" Width="22" Height="22" />
+        </Button>
+        <Button x:Name="ThemeButton"
+                Width="40" Height="40" Padding="8"
+                Style="{StaticResource MaterialDesignIconButton}"
+                Click="ThemeButton_Click">
+          <materialDesign:PackIcon x:Name="ThemeToggleIcon" Width="22" Height="22" />
+        </Button>
       </StackPanel>
     </DockPanel>
 
     <materialDesign:Card Grid.Row="2" Padding="14">
       <DockPanel>
-        <TextBlock x:Name="ManagerStateText" Text="Initializing" FontWeight="SemiBold" />
-        <TextBlock x:Name="LastCheckedText" DockPanel.Dock="Right" HorizontalAlignment="Right" Opacity="0.65" Text="Waiting for first check..." />
+        <StackPanel Orientation="Horizontal">
+          <materialDesign:PackIcon x:Name="ManagerStateVisualIcon" Width="20" Height="20" Margin="0,0,8,0" VerticalAlignment="Center" />
+          <TextBlock x:Name="ManagerStateText" Text="Initializing" FontWeight="SemiBold" VerticalAlignment="Center" />
+        </StackPanel>
+        <TextBlock x:Name="LastCheckedText" DockPanel.Dock="Right" HorizontalAlignment="Right" VerticalAlignment="Center" Opacity="0.65" Text="Waiting for first check..." />
       </DockPanel>
     </materialDesign:Card>
 
     <UniformGrid Grid.Row="4" Columns="5">
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="DockerLabel" Text="Docker" FontWeight="SemiBold"/><TextBlock x:Name="DockerState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="StackLabel" Text="Stack" FontWeight="SemiBold"/><TextBlock x:Name="StackState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="TunnelLabel" Text="Tunnel" FontWeight="SemiBold"/><TextBlock x:Name="TunnelState" Text="Unknown" Margin="0,8,0,0"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Margin="0,0,10,0" Padding="16"><StackPanel><TextBlock x:Name="StagingLabel" Text="Staging" FontWeight="SemiBold"/><TextBlock x:Name="StagingState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="StagingDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel></materialDesign:Card>
-      <materialDesign:Card Padding="16"><StackPanel><TextBlock x:Name="ProductionLabel" Text="Production" FontWeight="SemiBold"/><TextBlock x:Name="ProductionState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="ProductionDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel></materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <materialDesign:PackIcon x:Name="DockerVisualIcon" Width="24" Height="24" Margin="0,1,12,0" />
+          <StackPanel Grid.Column="1"><TextBlock x:Name="DockerLabel" Text="Docker" FontWeight="SemiBold"/><TextBlock x:Name="DockerState" Text="Unknown" Margin="0,8,0,0"/></StackPanel>
+        </Grid>
+      </materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <materialDesign:PackIcon x:Name="StackVisualIcon" Width="24" Height="24" Margin="0,1,12,0" />
+          <StackPanel Grid.Column="1"><TextBlock x:Name="StackLabel" Text="Stack" FontWeight="SemiBold"/><TextBlock x:Name="StackState" Text="Unknown" Margin="0,8,0,0"/></StackPanel>
+        </Grid>
+      </materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <materialDesign:PackIcon x:Name="TunnelVisualIcon" Width="24" Height="24" Margin="0,1,12,0" />
+          <StackPanel Grid.Column="1"><TextBlock x:Name="TunnelLabel" Text="Tunnel" FontWeight="SemiBold"/><TextBlock x:Name="TunnelState" Text="Unknown" Margin="0,8,0,0"/></StackPanel>
+        </Grid>
+      </materialDesign:Card>
+      <materialDesign:Card Margin="0,0,10,0" Padding="16">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <materialDesign:PackIcon x:Name="StagingVisualIcon" Width="24" Height="24" Margin="0,1,12,0" />
+          <StackPanel Grid.Column="1"><TextBlock x:Name="StagingLabel" Text="Staging" FontWeight="SemiBold"/><TextBlock x:Name="StagingState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="StagingDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel>
+        </Grid>
+      </materialDesign:Card>
+      <materialDesign:Card Padding="16">
+        <Grid>
+          <Grid.ColumnDefinitions><ColumnDefinition Width="Auto"/><ColumnDefinition Width="*"/></Grid.ColumnDefinitions>
+          <materialDesign:PackIcon x:Name="ProductionVisualIcon" Width="24" Height="24" Margin="0,1,12,0" />
+          <StackPanel Grid.Column="1"><TextBlock x:Name="ProductionLabel" Text="Production" FontWeight="SemiBold"/><TextBlock x:Name="ProductionState" Text="Unknown" Margin="0,8,0,0"/><TextBlock x:Name="ProductionDetail" Text="Frontend: ? / API: ?" Opacity="0.6" Margin="0,4,0,0" FontSize="11"/></StackPanel>
+        </Grid>
+      </materialDesign:Card>
     </UniformGrid>
 
     <Grid Grid.Row="6">
@@ -56,7 +100,10 @@
       </Grid.ColumnDefinitions>
 
       <materialDesign:Card Grid.Column="0" Padding="20">
-        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
+        <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled" Padding="0,0,10,0">
+          <ScrollViewer.Resources>
+            <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource ManagerMinimalScrollBar}" />
+          </ScrollViewer.Resources>
           <StackPanel>
             <TextBlock x:Name="OwnerAccessTitle" Text="Owner access" FontSize="18" FontWeight="SemiBold" />
             <TextBlock x:Name="OwnerAccessDescription" Text="Unlock before running management actions." TextWrapping="Wrap" Opacity="0.7" Margin="0,8,0,8" />
@@ -106,9 +153,23 @@
 
       <materialDesign:Card Grid.Column="2" Padding="20">
         <DockPanel>
-          <TextBlock DockPanel.Dock="Top" x:Name="ActivityTitle" Text="Activity" FontSize="18" FontWeight="SemiBold" Margin="0,0,0,12" />
+          <DockPanel DockPanel.Dock="Top" Margin="0,0,0,12">
+            <TextBlock x:Name="ActivityTitle" Text="Activity" FontSize="18" FontWeight="SemiBold" VerticalAlignment="Center" />
+            <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+              <Button x:Name="CopyActivityButton" Width="36" Height="36" Padding="7" Margin="0,0,4,0" Style="{StaticResource MaterialDesignIconButton}" Click="CopyActivityButton_Click">
+                <materialDesign:PackIcon x:Name="CopyActivityIcon" Width="19" Height="19" />
+              </Button>
+              <Button x:Name="ClearActivityButton" Width="36" Height="36" Padding="7" Style="{StaticResource MaterialDesignIconButton}" Click="ClearActivityButton_Click">
+                <materialDesign:PackIcon x:Name="ClearActivityIcon" Width="19" Height="19" />
+              </Button>
+            </StackPanel>
+          </DockPanel>
           <TextBlock x:Name="ActivityLockedText" Text="Unlock owner access to view activity logs." HorizontalAlignment="Center" VerticalAlignment="Center" Opacity="0.65" />
-          <TextBox x:Name="LogBox" Visibility="Collapsed" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" BorderThickness="0" />
+          <TextBox x:Name="LogBox" Visibility="Collapsed" IsReadOnly="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto" AcceptsReturn="True" BorderThickness="0" Padding="4,2,10,2">
+            <TextBox.Resources>
+              <Style TargetType="{x:Type ScrollBar}" BasedOn="{StaticResource ManagerMinimalScrollBar}" />
+            </TextBox.Resources>
+          </TextBox>
         </DockPanel>
       </materialDesign:Card>
     </Grid>
