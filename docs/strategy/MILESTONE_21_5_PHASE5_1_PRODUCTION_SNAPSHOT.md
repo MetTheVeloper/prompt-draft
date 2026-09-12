@@ -1,6 +1,6 @@
 # Milestone 21.5 — Phase 5.1 External Production Snapshot
 
-Status: **PARTIAL SNAPSHOT CAPTURED / DNS AUTHORITY + DASHBOARD DETAILS PENDING**
+Status: **PARTIAL SNAPSHOT CAPTURED / DNS AUTHORITY + TUNNEL EVIDENCE CAPTURED / WORKER + CACHE + EXACT MX EXPORT PENDING**
 
 Date: 2026-09-12
 
@@ -51,8 +51,6 @@ response metadata is consistent with the existing object-storage/static producti
 this is the current rollback user path until the production cutover is explicitly approved
 ```
 
-Exact DNS record type/value and exact ArvanCloud dashboard origin configuration are not yet recorded and must not be guessed from HTTP headers alone.
-
 ### `https://api.prompt-draft.ir/api/db-check`
 
 Observed:
@@ -67,7 +65,7 @@ Interpretation:
 ```text
 there is currently no publicly resolving production API hostname at api.prompt-draft.ir
 production API ingress will therefore be a new launch record/path rather than a replacement for a currently working public API hostname
-rollback for this hostname is expected to mean removing/restoring the pre-cutover non-existent state unless later dashboard evidence proves otherwise
+rollback for this hostname means restoring the pre-cutover unresolved/non-existent state unless later evidence proves otherwise
 ```
 
 ### `https://www.prompt-draft.ir/`
@@ -86,25 +84,177 @@ Accepted current behavior:
 www.prompt-draft.ir -> 301 redirect to https://prompt-draft.ir/
 ```
 
-This resolves the launch canonical-host policy direction: preserve apex as canonical and preserve/replicate the `www -> apex` redirect during cutover rather than serving an independent application origin on `www`.
+Preserve apex as canonical and preserve/replicate the `www -> apex` redirect during cutover rather than serving an independent application origin on `www`.
 
 ---
 
-## 2. Production rollback implications now known
+## 2. Authoritative production DNS + Arvan origin evidence
+
+Founder-provided ArvanCloud dashboard evidence and public DNS resolution now close the DNS-authority question.
+
+Authoritative nameservers:
+
+```text
+a.ns.arvancdn.ir
+y.ns.arvancdn.ir
+```
+
+Therefore:
+
+```text
+prompt-draft.ir is currently authoritative on ArvanCloud DNS
+Cloudflare is NOT currently authoritative for the production zone
+```
+
+Public apex resolution observed:
+
+```text
+prompt-draft.ir A -> 185.143.233.238
+prompt-draft.ir A -> 185.143.234.238
+```
+
+Arvan DNS dashboard records observed:
+
+```text
+@   ANAME -> prompt-draft.s3-website.ir-thr-at1.arvanstorage.ir.
+            Arvan cloud/CDN proxy: ON
+            TTL: automatic
+
+www CNAME -> prompt-draft.s3-website.ir-thr-at1.arvanstorage.ir.
+            Arvan cloud/CDN proxy: ON
+            TTL: automatic
+
+@   MX    -> contact.
+            priority: 10
+            TTL: 2 minutes
+            NOTE: exact MX target must be confirmed from Arvan DNS export before nameserver migration; do not retype it from screenshot alone
+
+@   NS    -> y.ns.arvancdn.ir.
+            TTL: 2 hours
+
+@   NS    -> a.ns.arvancdn.ir.
+            TTL: 2 hours
+```
+
+Current production origin/rollback target is now materially known:
+
+```text
+origin object website -> prompt-draft.s3-website.ir-thr-at1.arvanstorage.ir.
+Arvan CDN/proxy        -> enabled for apex + www
+current apex behavior  -> stable static/object-storage production
+current www behavior   -> public 301 to apex through ArvanCloud
+```
+
+Before nameserver migration, use Arvan's DNS export/download function and preserve the complete zone file outside the repository. This is especially important for the observed MX record and any records not visible in the dashboard screenshot.
+
+---
+
+## 3. Production rollback implications now known
 
 Current stable rollback direction:
 
 ```text
-frontend user path -> restore existing ArvanCloud-served prompt-draft.ir path
-www policy         -> restore/preserve 301 redirect to https://prompt-draft.ir/
-production API     -> restore pre-cutover unresolved/non-existent api.prompt-draft.ir state unless contrary dashboard evidence is captured
+frontend user path -> restore Arvan authoritative nameservers if they were changed
+frontend apex DNS  -> restore @ ANAME to prompt-draft.s3-website.ir-thr-at1.arvanstorage.ir. with Arvan proxy enabled
+www DNS/origin     -> restore www CNAME to the same Arvan Storage website target and preserve public 301 behavior
+production API     -> remove/restore api.prompt-draft.ir to the pre-cutover unresolved/non-existent state
 ```
 
-Do not replace the current production frontend DNS/origin until its exact DNS record(s), proxy/CDN state and ArvanCloud origin/storage configuration have been captured from the authoritative dashboard.
+Nameserver rollback is slower and broader than a single-record rollback. Therefore the complete Cloudflare zone must be staged and verified before the registrar/IRNIC nameserver switch is executed.
+
+Do not delete the Arvan zone or object-storage website during the initial production cutover. It remains the rollback origin until post-launch stability is accepted.
 
 ---
 
-## 3. Search Console snapshot
+## 4. Cloudflare target-path snapshot captured
+
+Founder-provided Cloudflare dashboard evidence on 2026-09-12 shows:
+
+```text
+Cloudflare plan for grassic.ir -> Free
+DNS setup                     -> Full
+only active domain shown      -> grassic.ir
+prompt-draft.ir Cloudflare zone -> not yet present
+```
+
+Cloudflare-assigned nameservers for the existing `grassic.ir` zone:
+
+```text
+justin.ns.cloudflare.com
+sharon.ns.cloudflare.com
+```
+
+These are evidence for the staging zone only. Do NOT assume `prompt-draft.ir` will receive the same nameserver pair when it is added to Cloudflare.
+
+### Accepted Tunnel evidence
+
+```text
+CLOUDFLARE_TUNNEL_NAME=prompt-draft-production
+CLOUDFLARE_TUNNEL_ID=98f97826-f2dd-422a-ba4f-3f5e716b32cb
+Tunnel status=Healthy
+Active replicas=1
+cloudflared version=2026.8.3
+Current route count=2
+```
+
+Observed current published applications:
+
+```text
+grassic.ir
+api.grassic.ir
+```
+
+Observed Cloudflare DNS records for staging:
+
+```text
+grassic.ir
+  CNAME -> 98f97826-f2dd-422a-ba4f-3f5e716b32cb.cfargotunnel.com
+  proxied
+  TTL auto
+
+api.grassic.ir
+  CNAME -> 98f97826-f2dd-422a-ba4f-3f5e716b32cb.cfargotunnel.com
+  proxied
+  TTL auto
+```
+
+This confirms the accepted remote-managed Tunnel remains healthy and can be reused for production published applications if the production zone is onboarded to the same Cloudflare account.
+
+---
+
+## 5. Production DNS-zone strategy now resolved at design level
+
+Cloudflare Tunnel DNS uses a `<UUID>.cfargotunnel.com` target and only proxies a Tunnel hostname through DNS records in the same Cloudflare account.
+
+Current Cloudflare documentation also confirms:
+
+```text
+Free / Pro -> primary/full DNS setup only
+Business / Enterprise -> CNAME/partial setup available
+```
+
+The observed account/zone is Free. Therefore the launch design for the current plan is:
+
+```text
+1. export/backup the complete authoritative Arvan DNS zone
+2. add prompt-draft.ir to the same Cloudflare account
+3. keep the new Cloudflare zone pending; do NOT switch nameservers yet
+4. reproduce every required non-production-Tunnel DNS record exactly, including mail/verification records
+5. stage the intended production Tunnel DNS/published-application records in Cloudflare
+6. stage www -> apex redirect behavior in Cloudflare
+7. stage production API cache bypass and required Worker/rule policy
+8. record the Cloudflare-assigned nameservers for prompt-draft.ir
+9. verify the prepared zone against the Arvan export
+10. only after explicit founder approval, change authoritative nameservers at the registrar/IRNIC layer
+```
+
+Do not attempt a Free-plan partial-CNAME design that leaves Arvan authoritative while expecting the Tunnel hostname to behave as a normal proxied Cloudflare application.
+
+An upgrade to Business/Enterprise would reopen a partial-zone option, but that is not required by the accepted architecture and should not be introduced unless deliberately chosen.
+
+---
+
+## 6. Search Console snapshot
 
 The connected Search Console integration inspected on 2026-09-12 exposes:
 
@@ -122,82 +272,36 @@ preferred verification -> DNS TXT ownership verification
 sitemap submission -> only after production cutover/indexability verification
 ```
 
-The DNS TXT verification record is a production DNS change and must not be added without explicit founder approval.
+The DNS TXT verification record is a production DNS change. It may be staged in the pending Cloudflare zone before nameserver cutover, but it does not become authoritative until the production zone is switched and must not be treated as verified before then.
 
 ---
 
-## 4. Critical DNS-authority question still open
+## 7. Evidence still required before 5.1D readiness signoff
 
-The HTTP response proves the current application is served by ArvanCloud, but it does not by itself prove which provider is authoritative for the `prompt-draft.ir` DNS zone.
-
-Before finalizing the Tunnel cutover mechanics, capture:
+Captured:
 
 ```text
-prompt-draft.ir authoritative NS records
-exact apex DNS record type/value/TTL
-exact www DNS/redirect configuration
-confirmation that api.prompt-draft.ir is absent in the authoritative DNS dashboard
+production authoritative DNS provider -> ArvanCloud
+production authoritative NS values    -> captured
+apex production origin                -> captured
+www production origin                 -> captured
+production API absent                 -> captured
+Cloudflare plan/setup                 -> Free / Full
+Tunnel name/id/status                 -> captured
+Tunnel staging published applications -> captured
+Tunnel DNS targets                    -> captured
 ```
 
-Why this matters:
+Still required:
 
 ```text
-if prompt-draft.ir is already Cloudflare-authoritative
--> production Tunnel hostname creation is mechanically straightforward
-
-if prompt-draft.ir is authoritative elsewhere (for example ArvanCloud DNS)
--> apex/Tunnel cutover needs an explicit DNS-zone strategy before launch
--> do not discover or improvise that strategy during the maintenance window
-```
-
----
-
-## 5. Cloudflare target-path snapshot still required
-
-The accepted staging target architecture remains:
-
-```text
-grassic.ir     -> Cloudflare Worker/Tunnel -> frontend:3000
-api.grassic.ir -> Cloudflare Tunnel        -> api:4000
-```
-
-Before founder readiness signoff, record read-only dashboard evidence for:
-
-```text
-CLOUDFLARE_TUNNEL_NAME
-CLOUDFLARE_TUNNEL_ID
-CURRENT_TUNNEL_PUBLIC_HOSTNAMES
-CURRENT_WORKER_ROUTES
-CURRENT_CACHE_RULES
-CURRENT_API_BYPASS_RULE
-```
-
-Also confirm that production `api.prompt-draft.ir` receives an explicit API cache-bypass rule at cutover; the accepted staging bypass only covers `api.grassic.ir`.
-
----
-
-## 6. Current Phase 5.1 state
-
-Known:
-
-```text
-Phase 5.2 measurement -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-production apex       -> HTTP 200 through ArvanCloud
-production www        -> HTTP 301 to apex through ArvanCloud
-production API        -> currently unresolved
-Search Console        -> prompt-draft.ir property not evidenced in connected account
-www policy            -> preserve redirect to apex
-```
-
-Still required before 5.1D readiness signoff:
-
-```text
-authoritative production NS evidence
-exact current production DNS/origin rollback values
-ArvanCloud production origin/dashboard snapshot
-Cloudflare Tunnel name/id/public-hostname snapshot
-Cloudflare Worker/cache-rule snapshot
-explicit production API bypass plan
+complete Arvan DNS export / exact MX target and any hidden records
+current Arvan redirect/origin rule evidence explaining www -> apex
+Cloudflare Worker routes snapshot
+Cloudflare cache rules snapshot
+current staging API bypass rule snapshot
+production API bypass rule design staged/recorded
+Cloudflare-assigned nameservers for prompt-draft.ir after the zone is added (adding a pending zone is not authorization to change authoritative NS)
 Search Console Domain-property ownership plan accepted by founder
 exact cutover SHA selected
 explicit founder readiness acceptance
@@ -208,6 +312,7 @@ Until those gates are closed:
 ```text
 prompt-draft.ir production path -> untouched
 api.prompt-draft.ir             -> untouched/unresolved
+production authoritative NS     -> ArvanCloud
 production DNS                  -> untouched
 production indexability         -> untouched
 staging NUXT_PUBLIC_NOINDEX     -> true
