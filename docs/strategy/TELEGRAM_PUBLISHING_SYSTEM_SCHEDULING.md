@@ -22,15 +22,15 @@ This document records the execution timing decision for the founder-provided `TE
 
 ## 1. Current Campaign Engine reality used for scheduling
 
-Latest branch state audited before this decision:
+Current accepted branch state:
 
 ```text
 CE1 Foundation                 -> DONE / VERIFIED / ACCEPTED
 Expiring / Promotional Goin V1 -> DONE / VERIFIED / ACCEPTED
 CE2.1 Runtime Core             -> DONE / VERIFIED / ACCEPTED
-CE2.2 Actions / Attempts       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
-CE3 Promotion Surfaces         -> NEXT
-CE4 Custom Game + Chance Wheel -> NOT STARTED
+CE2.2 Actions / Attempts       -> DONE / VERIFIED / ACCEPTED
+CE3 Promotion Surfaces         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+CE4 Custom Game + Chance Wheel -> NEXT
 CE5 /manage/marketing          -> NOT STARTED
 CE6 Measurement               -> NOT STARTED
 CE7 Final Verification         -> NOT STARTED
@@ -43,26 +43,27 @@ Current repository facts relevant to Telegram scheduling:
 /manage/marketing does not exist yet.
 /manage/telegram does not exist yet.
 app/config/manage.ts does not yet register marketing or telegram sections.
-Campaign public/runtime API contracts exist, but the Nuxt /campaign/:slug page surface is not yet present.
-Campaign attribution and on-site promotion work still belongs to CE3.
-Game/wheel entry and server-authoritative mechanic behavior still belongs to CE4.
+Campaign public/runtime API contracts exist.
+CE3 on-site promotion + bounded attribution handoff is accepted.
+The Nuxt /campaign/:slug entry surface and game/wheel experience still belong to CE4.
 Backend authorization already has super_admin wildcard semantics and Campaign permissions.
 ```
 
-Therefore immediate Telegram implementation would create temporary integration boundaries before the Campaign entry/admin surfaces are stable.
+Therefore Telegram still correctly waits until Campaign entry/mechanic surfaces are stable.
 
 ## 2. Scheduling decision
 
-Telegram publishing will **not** be implemented inside CE3 and will **not** interrupt CE3/CE4 prerequisites.
+Telegram publishing will **not** be implemented inside CE4 and did not interrupt CE3.
 
 The shared Telegram foundation enters as a dedicated bridge slice:
 
 ```text
 CE3
-  -> on-site Campaign promotion + attribution contracts
+  -> accepted on-site Campaign promotion + attribution contracts
 
 CE4
-  -> Campaign experience / custom game / chance wheel authority
+  -> Campaign public entry experience
+  -> custom game / chance wheel authority
   -> stable Campaign entry target
 
 CE4.5 — Shared Telegram Publishing Foundation
@@ -91,19 +92,19 @@ This ordering is authoritative unless the founder explicitly changes it later.
 
 CE3 owns Prompt Draft-rendered promotion surfaces such as header/floating/modal/dashboard placements.
 
-Telegram is an external distribution channel. It shares the broader discovery/entry concept, but it must not be forced into the same rendering/placement model.
+Telegram is an external distribution channel. It shares discovery/entry concepts but must not be forced into the same rendering/placement model.
 
-CE3 should establish attribution semantics that Telegram later consumes, but CE3 should not contain Telegram Bot API or Telegram publication persistence.
+CE3 established bounded on-site attribution semantics that later external entry channels can align with. It correctly did not contain Telegram Bot API or Telegram publication persistence.
 
 ### Not before CE4
 
 A Campaign Telegram CTA must point into a stable Prompt Draft Campaign entry experience.
 
-CE4 is where mechanic-specific Campaign behavior, game/wheel authority, and the final public Campaign experience boundary become sufficiently concrete. Building Telegram before that would risk encoding temporary entry-point assumptions.
+CE4 is where the public Campaign entry, custom-game trust boundary and chance-wheel authority become concrete. Building Telegram before CE4 acceptance would encode temporary entry assumptions.
 
 ### Before CE5
 
-CE5 creates `/manage/marketing`, which is the first real Campaign operator surface.
+CE5 creates `/manage/marketing`, the first real Campaign operator surface.
 
 The shared Telegram foundation must exist before Campaign Telegram UI is added so CE5 can consume the same `TelegramPostComposer` and backend publisher from day one.
 
@@ -111,7 +112,7 @@ Do not build a temporary Campaign-specific Telegram modal/publisher in CE5 and r
 
 ## 4. Shared subsystem boundary
 
-The mandatory architecture remains:
+Mandatory architecture:
 
 ```text
 /manage/archive ───────┐
@@ -129,7 +130,7 @@ The mandatory architecture remains:
 
 There must be exactly one publishing subsystem.
 
-Prompt Archive, Campaign Engine, and manual publishing are producers of a shared Telegram post draft. They must not contain duplicated Telegram Bot API logic.
+Prompt Archive, Campaign Engine and manual publishing are producers of a shared Telegram post draft. They must not contain duplicated Telegram Bot API logic.
 
 Campaign Engine itself remains Telegram-agnostic and continues to own only Campaign business logic.
 
@@ -191,7 +192,7 @@ TG4 is integrated while building `/manage/marketing`, after the shared foundatio
 
 Campaign source code may build a Telegram draft from the safe public Campaign projection, but publication always goes through the shared publisher.
 
-Campaign CTA entry must preserve existing Campaign attribution semantics, conceptually:
+Campaign CTA entry must preserve accepted Campaign attribution semantics, conceptually:
 
 ```text
 source    = telegram
@@ -270,6 +271,7 @@ docs/strategy/CAMPAIGN_ENGINE_V1.md
 docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+docs/strategy/CAMPAIGN_ENGINE_CE3_IMPLEMENTATION.md
 this scheduling document
 ```
 
@@ -288,11 +290,11 @@ Arvan media/storage
 all existing Telegram-related Prompt/Archive fields
 ```
 
-Then verify current official Telegram Bot API / Mini App deep-link, media, init-data, and security constraints before freezing implementation contracts.
+Then verify current official Telegram Bot API / Mini App deep-link, media, init-data and security constraints before freezing implementation contracts.
 
 ## 11. Verification discipline
 
-This scheduling change is documentation-only and requires no Docker rebuild.
+This scheduling update is documentation-only and requires no Docker rebuild.
 
 Future TG slices must use the project time-first workflow:
 
@@ -308,10 +310,10 @@ inspect exactly changed services
 
 ## 12. Current execution order
 
-The next Campaign implementation remains:
+The next Campaign implementation is now:
 
 ```text
-CE3 — Promotion Surfaces
+CE4 — Custom Game + Chance Wheel
 ```
 
 Telegram implementation begins only after CE4 acceptance, as:
