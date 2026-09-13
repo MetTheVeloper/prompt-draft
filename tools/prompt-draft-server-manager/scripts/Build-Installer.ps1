@@ -10,6 +10,7 @@ $publishDir = Join-Path $toolRoot "dist\publish"
 $installerDir = Join-Path $toolRoot "dist\installer"
 $generatedDir = Join-Path $toolRoot "dist\generated"
 $appIcon = Join-Path $generatedDir "PromptDraft.ico"
+$appExe = Join-Path $publishDir "PromptDraft.ServerManager.exe"
 
 Write-Host "Prompt Draft Server Manager installer build" -ForegroundColor Cyan
 Write-Warning "This development build currently includes DEVELOPMENT OWNER BYPASS. Do not treat it as a secured release."
@@ -33,12 +34,21 @@ dotnet publish $appProject `
   -r win-x64 `
   --self-contained true `
   -p:PublishSingleFile=true `
+  -p:IncludeNativeLibrariesForSelfExtract=true `
   "-p:ApplicationIcon=$appIcon" `
   -p:DebugType=None `
   -p:DebugSymbols=false `
   -o $publishDir
 
 if ($LASTEXITCODE -ne 0) { throw "dotnet publish failed." }
+if (-not (Test-Path $appExe)) { throw "Published application executable was not found at '$appExe'." }
+
+$publishFiles = @(Get-ChildItem $publishDir -File -Recurse)
+$publishSize = ($publishFiles | Measure-Object Length -Sum).Sum
+Write-Host ("Publish payload: {0} file(s), {1:N1} MB" -f $publishFiles.Count, ($publishSize / 1MB)) -ForegroundColor DarkGray
+$publishFiles | ForEach-Object {
+  Write-Host ("  {0}" -f $_.FullName.Substring($publishDir.Length + 1)) -ForegroundColor DarkGray
+}
 
 $makensis = $null
 $command = Get-Command makensis.exe -ErrorAction SilentlyContinue
