@@ -61,7 +61,7 @@ function definitionFor(slug, { maxAttempts = 1, period = 'calendar_day', timezon
     promotions: [],
     mechanics: [{
       id: 'game',
-      type: 'custom_game',
+      type: 'task_list',
       config: { public: {} },
       attemptPolicy: {
         maxAttempts,
