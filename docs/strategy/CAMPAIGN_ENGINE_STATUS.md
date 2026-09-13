@@ -1,6 +1,6 @@
 # Campaign Engine — Status
 
-Last updated: 2026-09-09
+Last updated: 2026-09-13
 
 Branch:
 
@@ -16,24 +16,29 @@ Campaign Engine V1 source of truth    -> DOCUMENTED
 Database schema V1                    -> DESIGNED
 API / Runtime Contract V1             -> DESIGNED
 Runtime implementation                -> NOT STARTED
-Migration 029                         -> RESERVED BY DESIGN / NOT CREATED
+Migration 029                         -> AVAILABLE AT HANDOFF / NOT CREATED / RE-AUDIT BEFORE WRITE
 /manage/marketing                     -> NOT STARTED
 Public /campaign/[slug] runtime       -> NOT STARTED
 Local verification                    -> NOT STARTED
+Selected next implementation slice    -> CE1 FOUNDATION
 ```
 
-Parallel project state:
+Current project transition:
 
 ```text
-Milestone 21.5 Rendering & Organic Acquisition -> IN PROGRESS
-Phase 21.5.4A -> ACCEPTED
-Phase 21.5.4B -> ACCEPTED
-Phase 21.5.4C -> ACCEPTED
-Phase 21.5.4D -> NEXT
-
-Campaign Engine is a parallel commercialization/marketing platform track.
-It does not replace or reorder the accepted 21.5 execution chain.
+Milestone 21.5 production runtime     -> ACTIVE / FOUNDER VERIFIED
+Milestone 21.5 SEO/indexability       -> DEFERRED / NUXT_PUBLIC_NOINDEX=true
+Domain Expansion implementation       -> SCALE-GATED / NOT NEXT IMMEDIATE EXECUTION
+Campaign Engine V1                    -> SELECTED NEXT PRE-SCALE ENGINEERING TRACK
 ```
+
+Authoritative transition record:
+
+```text
+docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+```
+
+Campaign Engine is a pre-scale commercialization/marketing platform track. It may proceed while 21.5 SEO launch remains deferred. It does not turn SEO on, and it does not start Domain Expansion.
 
 ---
 
@@ -46,6 +51,15 @@ Read in this order before implementation:
 2. docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 3. docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 4. docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+5. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+6. docs/strategy/STATUS.md
+```
+
+Mandatory project workflow sources:
+
+```text
+docs/strategy/DEVELOPMENT_WORKFLOW.md
+docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 ```
 
 Inherited contracts that remain authoritative:
@@ -160,19 +174,21 @@ New marketing permissions are preferred over reusing system.settings.manage.
 
 ## Current schema decision
 
-Current SQL migration ceiling on the branch:
+Latest branch audit at the pre-scale handoff found the SQL migration ceiling is still:
 
 ```text
 028_seed_profile_skill_taxonomy.sql
 ```
 
-Reserved first Campaign migration:
+Therefore the first Campaign migration is currently available as:
 
 ```text
 029_campaign_engine_v1.sql
 ```
 
 It is not created yet.
+
+This number is **not a permanent reservation**. Re-audit `backend/sql` from the latest branch HEAD immediately before creating the first Campaign migration because parallel work may consume `029`.
 
 Proposed V1 runtime tables:
 
@@ -282,13 +298,13 @@ Not all mechanics need to ship in the first code commit. The registry contract m
 Status:
 
 ```text
-NEXT WHEN CAMPAIGN IMPLEMENTATION IS STARTED
+NEXT / SELECTED IMPLEMENTATION SLICE
 ```
 
 Scope:
 
 ```text
-029_campaign_engine_v1.sql
+first available Campaign migration number (029 only if still free at implementation time)
 marketing permissions
 Campaign Definition validator
 Campaign head/draft persistence
@@ -308,6 +324,8 @@ slug rules enforced
 private/public projection validator established
 no existing Economy/Analytics behavior changed
 ```
+
+CE1 should begin with a branch-exact capability and migration audit before code writes. Reuse existing authorization/database patterns where semantics match.
 
 ### CE2 — Runtime Core
 
@@ -393,6 +411,8 @@ permissions
 EN/FA management copy where required by existing Manage convention
 ```
 
+All CE5 UI work must follow `UI_IMPLEMENTATION_GUIDELINES.md` and reuse the current Manage design system rather than inventing a separate admin shell.
+
 ### CE6 — Measurement & Reconciliation
 
 Status:
@@ -440,8 +460,11 @@ preview cannot grant reward
 published version remains immutable
 published slug remains stable
 SSR/public campaign route works EN/FA
-pnpm generate passes
+global NUXT_PUBLIC_NOINDEX=true still wins during current pre-scale development mode
+smallest-scope build/runtime verification passes
 ```
+
+Do not use the historical `pnpm generate` requirement as the default Campaign acceptance command now that the accepted runtime is Nuxt/Nitro SSR/hybrid. Select verification according to `DEVELOPMENT_WORKFLOW.md` and the actual files/services changed.
 
 ---
 
@@ -459,6 +482,8 @@ random-draw settlement UI
 cross-campaign workflow automation
 anonymous server device fingerprinting
 separate campaign analytics warehouse
+Domain Expansion implementation
+production SEO/indexability launch
 ```
 
 ---
@@ -468,31 +493,41 @@ separate campaign analytics warehouse
 Use this context:
 
 ```text
-Continue Campaign Engine V1 from docs/strategy/CAMPAIGN_ENGINE_STATUS.md on branch feature/growth-foundation.
+Continue Campaign Engine V1 on branch feature/growth-foundation.
 
-Before any implementation read:
-- docs/strategy/CAMPAIGN_ENGINE_V1.md
-- docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
-- docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
-- docs/strategy/CAMPAIGN_ENGINE_STATUS.md
-- docs/strategy/STATUS.md
+Before any decision or write:
+1. re-read the latest branch HEAD; parallel work may have landed
+2. read docs/strategy/DEVELOPMENT_WORKFLOW.md
+3. read docs/strategy/CAMPAIGN_ENGINE_V1.md
+4. read docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+5. read docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+6. read docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+7. read docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+8. read docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+9. read docs/strategy/STATUS.md
 
-Do not change the accepted Milestone 21.5 sequence. Campaign Engine is a parallel track.
-Current Campaign implementation state should be IMPLEMENTATION NOT STARTED unless STATUS says otherwise.
-First implementation slice is CE1 Foundation and the reserved migration number is 029, but verify the branch migration ceiling again before creating any SQL file.
+Current intended state at handoff:
+- Campaign Engine implementation has NOT started
+- CE1 Foundation is the selected next implementation slice
+- Domain Expansion implementation is scale-gated and must NOT be started
+- production runtime is active on prompt-draft.ir / api.prompt-draft.ir
+- SEO launch is intentionally deferred; NUXT_PUBLIC_NOINDEX=true must remain in force
+- current audited migration ceiling was 028, so 029 was available, but re-audit backend/sql before creating any migration
+
+Start with a branch-exact CE1 capability audit. Determine what already exists in database helpers, authorization, economy, analytics and Manage infrastructure. Then write the smallest CE1 implementation plan and proceed without duplicating existing systems.
 ```
-
-The migration number must always be re-audited before implementation because other parallel work may consume `029` first.
 
 ---
 
 ## Hard rules
 
 ```text
-DO NOT claim migration 029 exists before it is created.
-DO NOT start from stale migration ceiling without re-auditing the branch.
+DO NOT assume migration 029 is still free without a fresh audit.
 DO NOT create campaign-specific Economy or Analytics systems.
 DO NOT let custom campaign UI bypass runtime contracts.
-DO NOT change accepted 21.5 contracts as a side effect of Campaign work.
+DO NOT change accepted 21.5 runtime/indexability contracts as a side effect of Campaign work.
+DO NOT enable production SEO/indexing during Campaign implementation.
+DO NOT start Domain Expansion implementation during this pre-scale track.
 DO NOT mark implementation VERIFIED before explicit local evidence and founder acceptance.
+DO NOT default to pnpm stack; follow the smallest-scope verification workflow.
 ```
