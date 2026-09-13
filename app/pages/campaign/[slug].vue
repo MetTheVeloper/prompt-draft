@@ -224,7 +224,6 @@ onMounted(async () => {
 <style scoped>
 .campaign-public-page {
   min-height: 100%;
-  background: var(--themeBackground);
 }
 
 .campaign-public-shell {
