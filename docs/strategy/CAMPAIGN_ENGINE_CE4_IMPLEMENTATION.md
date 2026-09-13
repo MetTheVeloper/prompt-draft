@@ -1,6 +1,6 @@
 # Campaign Engine — CE4 Public Experience + Trusted Mechanics Implementation
 
-Status: **CE4.1 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2A DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2B IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION · CE4.3 NOT STARTED**
+Status: **CE4.1 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.3A BACKEND IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION · CE4.3B NOT STARTED**
 
 Date: 2026-09-13
 
@@ -19,7 +19,7 @@ CE2.1 Runtime Core             -> DONE / VERIFIED / ACCEPTED
 CE2.2 Actions / Attempts       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 CE3 Promotion Surfaces         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 CE4.1 Public Campaign          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
-CE4.2A Trusted Custom Game     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+CE4.2 Custom Game              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 ```
 
 After CE4 acceptance, the scheduled next bridge remains:
@@ -36,7 +36,8 @@ CE4 keeps the founder-approved V1 scope but is verified in slices:
 CE4.1  -> Public Campaign Experience + participation/state client
 CE4.2A -> Custom Game trusted backend runtime
 CE4.2B -> Custom Game renderer/client
-CE4.3  -> Chance Wheel server-authoritative RNG + mechanic-outcome reward settlement
+CE4.3A -> Chance Wheel trusted backend runtime + mechanic-outcome reward settlement
+CE4.3B -> Chance Wheel renderer/client
 ```
 
 This split does not reduce CE4 scope. It establishes the generic public Campaign entry first, then adds mechanic-specific authority without weakening CE2.2 attempts/actions.
@@ -158,9 +159,9 @@ DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 
 ---
 
-## CE4.2 — Custom Game
+## CE4.2 — Custom Game — ACCEPTED
 
-CE4.2 is intentionally split into backend authority first and UI second.
+CE4.2 was intentionally split into backend authority first and UI second.
 
 ### CE4.2A — Trusted backend runtime — ACCEPTED
 
@@ -228,42 +229,13 @@ lose
 
 The attempt is persisted as resolved before completion evaluation. Trusted events are `attempt_resolved` for every valid resolution and `game_won` only for a server-verified win.
 
-The existing `mechanic_outcome` completion resolver can consume the persisted result. Existing atomic completion reward settlement remains the only Goin issuance path.
+The existing `mechanic_outcome` completion resolver consumes the persisted result. Existing atomic completion reward settlement remains the only Goin issuance path for completion-triggered Custom Game rewards.
 
-#### Idempotency and race boundary
+#### CE4.2A verification evidence
 
-CE4.2A reuses CE2.2 identities and locking:
+Founder first ran the aggregate CE4.2A + inherited regression gate. New custom-game/runtime tests were green; two stale generic CE2.2 fixtures were then corrected to the mechanic-neutral `task_list` type rather than weakening production validation.
 
-```text
-server-created attempt
-participation row serialization
-attempt row lock for resolution
-request-hash idempotency conflict detection
-one accepted action per participation/idempotency key
-resolved attempt cannot be resolved again through a new accepted transition
-```
-
-#### Founder-local verification evidence
-
-Founder first ran the aggregate CE4.2A + inherited regression gate:
-
-```powershell
-docker compose exec api node --test src/campaignCustomGame.test.mjs src/campaignActionsAttempts.test.mjs src/campaignRuntime.test.mjs
-```
-
-Result:
-
-```text
-15 total
-13 pass
-2 fail
-```
-
-The new custom-game tests were all green and the CE2.1 runtime tests were all green. The two failures were isolated to the old CE2.2 generic fixture because that fixture still modeled a `custom_game` without the verifier contract that CE4.2A now correctly requires.
-
-Production runtime was not weakened to satisfy stale test data. The generic CE2.2 fixture was changed to the mechanic-neutral `task_list` type, preserving the purpose of those attempt/action tests.
-
-Founder then ran the smallest focused rerun:
+Focused rerun:
 
 ```powershell
 docker compose exec api node --test src/campaignActionsAttempts.test.mjs
@@ -276,33 +248,27 @@ Result:
 0 FAIL
 ```
 
-Combined evidence therefore proves:
+Combined evidence proved definition validation, private verifier isolation, server-verified win/lose, trusted outcome persistence, completion/reward settlement, retry idempotency and inherited CE2.1/CE2.2 behavior.
 
-```text
-custom-game definition validation -> PASS
-private verifier does not enter public challenge -> PASS
-server-verified win/lose -> PASS
-resolved attempt persistence -> PASS
-trusted outcome/completion/reward path -> PASS
-retry/idempotency -> PASS
-wrong answer cannot create trusted win/reward -> PASS
-CE2.2 generic attempt/action regression -> PASS
-CE2.1 runtime regression -> PASS
-```
-
-CE4.2A is therefore:
+CE4.2A is:
 
 ```text
 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 ```
 
-### CE4.2B — Renderer / client — IMPLEMENTED / AWAITING VERIFICATION
+### CE4.2B — Renderer / client — ACCEPTED
 
-Implementation commit:
+Implementation/fix commits include:
 
 ```text
 38200d0441693f3de296513d42266ba9039a5016
   feat: add Campaign custom game client
+
+71ca4c0993f23c0d99c02b4360b9e493d5db51bd
+  fix: restore persisted custom game outcome
+
+c4afcce5ed500223bb5983f7f71eaec07673a4b6
+  fix: render persisted custom game result
 ```
 
 Frontend scope:
@@ -342,64 +308,201 @@ reserve attempt
 -> refresh authoritative caller state
 ```
 
-The browser never receives private verifier material and never chooses success, reward amount or reward expiry.
+Browser storage is recovery-only and never authoritative for eligibility, attempt usage, answer correctness, result or reward.
 
-#### Recovery/idempotency
+After founder verification exposed a persistence-rendering gap, the client was hardened to recover the last trusted result from `campaign_mechanic_states.state.lastOutcome` when no current browser attempt object exists. This means a completed result survives refresh, locale changes and theme changes without relying on session storage.
 
-A pending reservation idempotency key is held in `sessionStorage` only as a recovery aid. Reloading an unresolved challenge replays the same reservation request and receives the established attempt rather than consuming a new attempt slot.
+#### CE4.2B founder-local evidence
 
-Action identities are stable per attempt:
-
-```text
-campaign:game:start:<attemptId>
-campaign:game:finish:<attemptId>
-```
-
-The answer snapshot is held for same-request retry after a transient submission failure so a retry cannot silently mutate the already-established idempotency request.
-
-Browser storage is never authoritative for eligibility, attempt usage, answer correctness, result or reward.
-
-#### UI contract
-
-The renderer uses the existing Prompt Draft UI system:
+Founder completed the intended flow with a controlled active fixture:
 
 ```text
-el-flex
-el-text
-el-text-field
-el-button
-semantic normal / prim / red / green / orange colors
+participation start                  -> PASS
+attempt reservation                  -> PASS
+wrong answer                         -> trusted lose / PASS
+retry                                -> PASS
+correct Persian-equivalent answer    -> trusted win / PASS
+Campaign status                      -> Rewarded
+remaining attempts                   -> 0
+persisted result after refresh        -> PASS
+EN                                   -> Correct / Result confirmed
+FA                                   -> درست بود / نتیجه تأیید شد
+Light theme                          -> PASS
+Dark theme                           -> PASS
 ```
 
-No native form-control system, raw colors or custom page-local CSS framework was introduced. EN/FA strings are supplied through the existing i18n merge configuration.
+The final persisted-result verification was explicitly accepted by the founder on 2026-09-13.
 
-#### Verification gate
-
-CE4.2B changed frontend/i18n only. Smallest required build is:
-
-```powershell
-pnpm frontend
-```
-
-After a clean build, a controlled local-only active custom-game fixture should verify:
+CE4.2B and CE4.2 overall are therefore:
 
 ```text
-participation start
-attempt reservation
-public challenge rendering
-refresh/recovery without consuming another attempt
-wrong answer -> server-returned non-success result
-correct answer -> server-returned success result
-remaining-attempt state refresh
-EN/FA + RTL
-Light/Dark
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 ```
-
-Do not mark CE4.2B or CE4.2 overall accepted until that gate is clean.
 
 ---
 
 ## CE4.3 — Chance Wheel
+
+CE4.3 is split into trusted backend authority and renderer/client verification:
+
+```text
+CE4.3A -> backend RNG / persisted outcome / mechanic-outcome rewards
+CE4.3B -> wheel renderer / animation of already-persisted result
+```
+
+### CE4.3A — Trusted backend runtime — IMPLEMENTED / AWAITING VERIFICATION
+
+Implementation commits currently include:
+
+```text
+59e9d3f2cd4cf96b56e7c6d39e4badeb38771296
+  feat: add Campaign chance wheel authority
+
+20ca2c08a54e75f1e8436004f3cb2da1b8d7ef89
+  feat: validate Campaign chance wheel definitions
+
+44c483e7b4cf630698aacf461bc6a82c8cd9da98
+  test: cover Campaign chance wheel authority
+
+212be3f06e1e4b548029092dcd475eee7d0b7c90
+  feat: settle Campaign mechanic outcome rewards
+
+33b41824a10306c5adbead132b0b40fd4fdc9b1a
+  feat: resolve Campaign chance wheel spins
+
+fffedcd6d3fa14e9950ca01670d750038238b76d
+  test: verify Campaign chance wheel runtime
+
+a558fd892e6a063eea8ca77e54effec55ca65e48
+  fix: keep Campaign wheel weights private
+
+e8d58692bccfc2ba7b23aa4878928c688e5524f1
+  test: reject public Campaign wheel weights
+```
+
+Backend scope:
+
+```text
+backend/src/campaignChanceWheel.mjs
+backend/src/campaignChanceWheel.test.mjs
+backend/src/campaignChanceWheelRuntime.test.mjs
+backend/src/campaignOutcomeSettlement.mjs
+backend/src/campaignActions.mjs
+backend/src/campaignRuntimeDefinition.mjs
+```
+
+No SQL migration is required. CE4.3 reuses:
+
+```text
+campaign_attempts                 -> authoritative attempt/outcome row
+campaign_actions                  -> idempotent untrusted request audit
+campaign_events                   -> trusted wheel_resolved/reward events
+campaign_mechanic_states          -> latest persisted mechanic result
+campaign_reward_budgets           -> budget serialization
+campaign_reward_grants            -> qualification/grant reconciliation
+user_economy_events               -> sole Goin ledger
+```
+
+#### Public/private definition boundary
+
+V1 wheel configuration uses:
+
+```text
+config.public.segments
+  -> ordered public segment keys + localized labels
+
+config.private.weights
+  -> positive integer server-only weights
+```
+
+Publish validation rejects malformed segment/weight mappings, unknown reward outcomes, public `weights`, segment-level `weight`, and unsupported public/private fields. Generic public Campaign projection still serializes only `config.public`; private weights never enter the browser projection.
+
+#### Server-authoritative spin flow
+
+CE4.3A reuses the existing CE2.2 routes:
+
+```text
+POST /api/campaigns/:slug/mechanics/:mechanicId/attempts
+POST /api/campaigns/:slug/actions
+```
+
+The accepted wheel action envelope is:
+
+```text
+action   = spin_requested
+payload  = {}
+evidence = { attemptId }
+```
+
+The browser cannot submit an outcome. Any extra outcome-like payload fails schema validation.
+
+Server flow:
+
+```text
+reserve server attempt
+-> serialize participation
+-> lock caller-owned attempt
+-> crypto.randomInt weighted selection using private weights
+-> persist campaign_attempts.outcome before response
+-> persist latest mechanic state
+-> create trusted wheel_resolved event
+-> settle matching mechanic_outcome rewards
+-> refresh optional Campaign completion state
+-> return the already-persisted result
+```
+
+A resolved attempt cannot be spun again with a new action identity. A retry with the same accepted action idempotency key returns the persisted result without replaying effects.
+
+#### Mechanic-outcome reward settlement
+
+Wheel rewards use attempt-specific qualification identity:
+
+```text
+mechanic_outcome:<mechanicId>:<attemptId>
+```
+
+This allows repeated daily outcome rewards when `perUserLimit` is omitted while preserving same-attempt idempotency. V1 `perUserLimit = 1` remains enforceable across qualifications.
+
+Settlement stays inside the same DB transaction and reuses the accepted Economy primitive. Budget rows are locked before commitment, budget exhaustion records a failed Campaign grant rather than issuing Goin, and expiring wheel rewards use the existing `expiresAfterSeconds` contract.
+
+A daily wheel normally keeps Campaign participation `in_progress`; a mechanic-outcome reward alone does not terminally mark the Campaign `rewarded`. This preserves future daily eligibility unless the Campaign definition itself has a terminal completion rule.
+
+#### CE4.3A focused verification gate
+
+Changed files are backend/test only, so the smallest image rebuild is:
+
+```powershell
+pnpm api
+```
+
+Then run the focused CE4.3 + shared Campaign regression set:
+
+```powershell
+docker compose exec api node --test src/campaignChanceWheel.test.mjs src/campaignChanceWheelRuntime.test.mjs src/campaignCustomGame.test.mjs src/campaignActionsAttempts.test.mjs src/campaignAttemptTerminal.test.mjs src/campaignRuntime.test.mjs
+```
+
+Required evidence includes:
+
+```text
+public/private wheel definition validation
+private weights absent from public projection
+server weighted outcome persistence
+browser outcome forgery rejected
+same-action retry idempotency
+new action cannot re-resolve a resolved attempt
+mechanic_outcome qualification key
+single Economy issuance per qualification
+expiring reward issuance
+budget exhaustion without overspend
+calendar-day timezone attempt limit
+Custom Game / CE2.2 / terminal / CE2.1 regressions remain green
+```
+
+Parallel daily-spin race verification remains a CE4.3A acceptance gate. It must be exercised after the focused suite against a controlled local runtime fixture; do not infer it merely from sequential tests.
+
+Do not mark CE4.3A accepted until this gate and the parallel race proof are clean.
+
+### CE4.3B — Renderer / client
 
 Status:
 
@@ -407,25 +510,22 @@ Status:
 NOT STARTED
 ```
 
-Target scope after CE4.2 acceptance:
+Target client contract:
 
 ```text
-chance_wheel definition public/private configuration split
-server-side cryptographic RNG
-server-side weighted outcome resolution
-attempt row lock / one-resolution semantics
-calendar-day timezone limits through existing attempt periods
-persist outcome before client animation
-trusted wheel_resolved / mechanic outcome event
-mechanic-outcome reward settlement through existing Economy transaction boundary
-qualification_key idempotency
-budget exhaustion behavior
-parallel spin verification
-safe public outcome projection
-wheel renderer animation consumes server result only
+render public segment labels/order only
+reserve attempt through the existing Campaign mechanics client
+submit spin_requested without an outcome
+wait for persisted server result
+animate only to that returned result
+refresh authoritative caller state
+recover the last trusted wheel outcome after refresh
+show server-derived next eligibility / attempts
+EN/FA + RTL
+Light/Dark
 ```
 
-The browser may animate a result only after receiving the persisted server outcome. It may never submit or select the winning segment.
+Animation is presentation only. The browser may never select the winning segment locally, even temporarily as an authoritative value.
 
 ---
 
@@ -435,9 +535,9 @@ CE4 overall remains incomplete until all slices are founder-verified and accepte
 
 ```text
 CE4.1 public Campaign page / participation entry -> ACCEPTED
-CE4.2A trusted custom-game backend              -> ACCEPTED
-CE4.2B custom-game renderer/client              -> IMPLEMENTED / VERIFICATION PENDING
-CE4.3 server-authoritative chance wheel         -> NOT STARTED
+CE4.2 Custom Game                              -> ACCEPTED
+CE4.3A chance-wheel backend authority          -> IMPLEMENTED / VERIFICATION PENDING
+CE4.3B chance-wheel renderer/client            -> NOT STARTED
 ```
 
 Then execution moves to:
