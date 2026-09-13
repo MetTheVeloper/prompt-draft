@@ -1,4 +1,8 @@
 import { getCampaignMechanic } from './campaignRegistry.mjs'
+import {
+  getCampaignPromotionRenderer,
+  isCampaignPromotionSlot,
+} from './campaignPromotionRegistry.mjs'
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -31,17 +35,124 @@ function collectMechanicOutcomeIds(rule, output = new Set()) {
   return output
 }
 
+function validatePromotionDefinition(promotion, index, promotionIds, errors) {
+  const base = `promotions[${index}]`
+  if (!isObject(promotion)) {
+    errors.push(issue(base, 'CAMPAIGN_PROMOTION_INVALID', 'promotion must be an object'))
+    return
+  }
+
+  const id = typeof promotion.id === 'string' ? promotion.id.trim() : ''
+  if (!/^[A-Za-z0-9._-]{1,100}$/.test(id)) {
+    errors.push(issue(`${base}.id`, 'CAMPAIGN_PROMOTION_ID_INVALID', 'promotion id must be 1-100 path-safe characters'))
+  } else if (promotionIds.has(id)) {
+    errors.push(issue(`${base}.id`, 'CAMPAIGN_PROMOTION_ID_DUPLICATE', 'promotion ids must be unique'))
+  } else {
+    promotionIds.add(id)
+  }
+
+  if (!isCampaignPromotionSlot(promotion.slot)) {
+    errors.push(issue(
+      `${base}.slot`,
+      'CAMPAIGN_PROMOTION_SLOT_INVALID',
+      'promotion slot must be site_header, floating_corner, modal, or dashboard_banner',
+    ))
+  }
+
+  const renderer = promotion.renderer
+  if (
+    !isObject(renderer) ||
+    !['builtin', 'custom'].includes(renderer.kind) ||
+    typeof renderer.key !== 'string' ||
+    !renderer.key.trim()
+  ) {
+    errors.push(issue(`${base}.renderer`, 'CAMPAIGN_PROMOTION_RENDERER_INVALID', 'promotion renderer reference is invalid'))
+  } else {
+    const registered = getCampaignPromotionRenderer(renderer.key)
+    if (!registered || registered.kind !== renderer.kind) {
+      errors.push(issue(`${base}.renderer.key`, 'CAMPAIGN_PROMOTION_RENDERER_UNKNOWN', 'promotion renderer is not registered'))
+    } else if (isCampaignPromotionSlot(promotion.slot) && !registered.slots.includes(promotion.slot)) {
+      errors.push(issue(`${base}.renderer.key`, 'CAMPAIGN_PROMOTION_RENDERER_SLOT_MISMATCH', 'promotion renderer does not support this slot'))
+    }
+  }
+
+  if (promotion.schedule !== undefined) {
+    if (!isObject(promotion.schedule)) {
+      errors.push(issue(`${base}.schedule`, 'CAMPAIGN_PROMOTION_SCHEDULE_INVALID', 'promotion schedule must be an object'))
+    } else {
+      const startsAt = promotion.schedule.startsAt
+      const endsAt = promotion.schedule.endsAt
+      if (startsAt !== undefined && (typeof startsAt !== 'string' || Number.isNaN(Date.parse(startsAt)))) {
+        errors.push(issue(`${base}.schedule.startsAt`, 'CAMPAIGN_PROMOTION_START_INVALID', 'promotion startsAt must be a valid timestamp'))
+      }
+      if (endsAt !== undefined && (typeof endsAt !== 'string' || Number.isNaN(Date.parse(endsAt)))) {
+        errors.push(issue(`${base}.schedule.endsAt`, 'CAMPAIGN_PROMOTION_END_INVALID', 'promotion endsAt must be a valid timestamp'))
+      }
+      if (
+        typeof startsAt === 'string' && typeof endsAt === 'string' &&
+        !Number.isNaN(Date.parse(startsAt)) && !Number.isNaN(Date.parse(endsAt)) &&
+        Date.parse(endsAt) <= Date.parse(startsAt)
+      ) {
+        errors.push(issue(`${base}.schedule.endsAt`, 'CAMPAIGN_PROMOTION_END_BEFORE_START', 'promotion endsAt must be after startsAt'))
+      }
+    }
+  }
+
+  if (promotion.dismiss !== undefined) {
+    const dismiss = promotion.dismiss
+    if (!isObject(dismiss) || typeof dismiss.enabled !== 'boolean') {
+      errors.push(issue(`${base}.dismiss`, 'CAMPAIGN_PROMOTION_DISMISS_INVALID', 'dismiss must contain an enabled boolean'))
+    } else if (dismiss.enabled) {
+      if (!['session', 'device', 'user'].includes(dismiss.persistence)) {
+        errors.push(issue(`${base}.dismiss.persistence`, 'CAMPAIGN_PROMOTION_DISMISS_PERSISTENCE_INVALID', 'dismiss persistence must be session, device, or user'))
+      }
+      if (
+        dismiss.ttlSeconds !== undefined &&
+        (!Number.isSafeInteger(dismiss.ttlSeconds) || dismiss.ttlSeconds <= 0)
+      ) {
+        errors.push(issue(`${base}.dismiss.ttlSeconds`, 'CAMPAIGN_PROMOTION_DISMISS_TTL_INVALID', 'dismiss ttlSeconds must be a positive integer'))
+      }
+    }
+  }
+
+  if (promotion.frequencyCap !== undefined) {
+    const cap = promotion.frequencyCap
+    if (!isObject(cap)) {
+      errors.push(issue(`${base}.frequencyCap`, 'CAMPAIGN_PROMOTION_FREQUENCY_INVALID', 'frequencyCap must be an object'))
+    } else {
+      if (!Number.isSafeInteger(cap.maxImpressions) || cap.maxImpressions <= 0 || cap.maxImpressions > 1000) {
+        errors.push(issue(`${base}.frequencyCap.maxImpressions`, 'CAMPAIGN_PROMOTION_FREQUENCY_MAX_INVALID', 'maxImpressions must be an integer between 1 and 1000'))
+      }
+      if (!['session', 'day', 'campaign'].includes(cap.period)) {
+        errors.push(issue(`${base}.frequencyCap.period`, 'CAMPAIGN_PROMOTION_FREQUENCY_PERIOD_INVALID', 'frequency period must be session, day, or campaign'))
+      }
+    }
+  }
+
+  if (promotion.priority !== undefined && !Number.isSafeInteger(promotion.priority)) {
+    errors.push(issue(`${base}.priority`, 'CAMPAIGN_PROMOTION_PRIORITY_INVALID', 'promotion priority must be an integer'))
+  }
+}
+
 export function validateCampaignRuntimeDefinition(definition) {
   const errors = []
   const rewards = Array.isArray(definition?.rewards) ? definition.rewards : []
   const mechanics = Array.isArray(definition?.mechanics) ? definition.mechanics : []
+  const promotions = Array.isArray(definition?.promotions) ? definition.promotions : []
   const mechanicById = new Map(
     mechanics
       .filter(mechanic => typeof mechanic?.id === 'string')
       .map(mechanic => [mechanic.id, mechanic]),
   )
   const rewardIds = new Set()
+  const promotionIds = new Set()
   const completionOutcomeIds = collectMechanicOutcomeIds(definition?.completion)
+
+  if (!Array.isArray(definition?.promotions)) {
+    errors.push(issue('promotions', 'CAMPAIGN_PROMOTIONS_INVALID', 'promotions must be an array'))
+  } else {
+    promotions.forEach((promotion, index) => validatePromotionDefinition(promotion, index, promotionIds, errors))
+  }
 
   mechanics.forEach((mechanic, index) => {
     const base = `mechanics[${index}]`
