@@ -1,6 +1,6 @@
 # Campaign Engine — CE4 Public Experience + Trusted Mechanics Implementation
 
-Status: **CE4.1 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2A IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION · CE4.2B NOT STARTED · CE4.3 NOT STARTED**
+Status: **CE4.1 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2A DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13 · CE4.2B IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION · CE4.3 NOT STARTED**
 
 Date: 2026-09-13
 
@@ -19,6 +19,7 @@ CE2.1 Runtime Core             -> DONE / VERIFIED / ACCEPTED
 CE2.2 Actions / Attempts       -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 CE3 Promotion Surfaces         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 CE4.1 Public Campaign          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+CE4.2A Trusted Custom Game     -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
 ```
 
 After CE4 acceptance, the scheduled next bridge remains:
@@ -130,11 +131,9 @@ read bounded pending attribution
 -> consume attribution only after successful start
 ```
 
-Failed participation therefore does not silently lose attribution before retry.
-
 ### Founder-local verification evidence
 
-Founder ran the required smallest frontend scope:
+Founder ran:
 
 ```powershell
 pnpm frontend
@@ -143,34 +142,15 @@ pnpm frontend
 Result:
 
 ```text
-Nuxt client build -> PASS
-Nuxt SSR build    -> PASS
-Nitro build       -> PASS
+Nuxt client build  -> PASS
+Nuxt SSR build     -> PASS
+Nitro build        -> PASS
 frontend container -> STARTED
 ```
 
-Non-blocking warnings were limited to the already-known sourcemap/chunk-size output and orphan cloudflared notice.
+The archived CE3 local fixture was visually verified on both EN and FA routes in Light and Dark mode. Archived lifecycle and closed participation behavior were correct.
 
-The archived CE3 local fixture was then visually verified on:
-
-```text
-/campaign/ce3-visual-fixture
-/fa/campaign/ce3-visual-fixture
-```
-
-Verified:
-
-```text
-EN public route renders
-FA route renders RTL correctly
-archived lifecycle displays correctly
-closed Campaign does not offer Start Participation
-Light Mode is correct
-Dark Mode is correct
-shared header/shell remains correct
-```
-
-Founder supplied clean Light/Dark screenshots for both EN and FA. CE4.1 is therefore:
+CE4.1 is therefore:
 
 ```text
 DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
@@ -182,13 +162,7 @@ DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 
 CE4.2 is intentionally split into backend authority first and UI second.
 
-### CE4.2A — Trusted backend runtime
-
-Status:
-
-```text
-IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
-```
+### CE4.2A — Trusted backend runtime — ACCEPTED
 
 Implementation commits:
 
@@ -198,9 +172,12 @@ e23f70dd2aeeca67a535e9de72a3d0f0cf8b473d
 
 a13e56e0bfd85f06c6391f7d5a1d97c565d76ba2
   fix: harden trusted custom game validation
+
+668a5fbc68a6b6becec47a61919ee6196ff223e8
+  test: keep CE2.2 attempt fixture mechanic-neutral
 ```
 
-Changed backend files:
+Changed backend/runtime files:
 
 ```text
 backend/src/campaignCustomGame.mjs
@@ -210,15 +187,7 @@ backend/src/campaignActions.mjs
 backend/src/campaignRuntimeDefinition.mjs
 ```
 
-No SQL migration is required. Migration 029 already provides:
-
-```text
-campaign_attempts.private_context
-campaign_attempts.outcome
-campaign_attempts.started_at
-campaign_attempts.submitted_at
-campaign_attempts.resolved_at
-```
+No SQL migration was required. Migration 029 already provides `private_context`, `outcome`, and attempt lifecycle timestamps.
 
 #### Server-verifiable V1 contract
 
@@ -228,7 +197,7 @@ The first V1 verifier is:
 exact_answer_v1
 ```
 
-Its private definition contains the accepted answers. Publish validation requires a valid custom-game verifier and attempt policy before a Campaign Version may be published.
+Its accepted answers live only in `config.private.verifier`. Publish validation requires a valid custom-game verifier and attempt policy.
 
 On attempt reservation the server:
 
@@ -236,7 +205,7 @@ On attempt reservation the server:
 selects the challenge
 normalizes accepted answers
 creates a random per-attempt salt
-stores only salted SHA-256 answer hashes in private_context
+stores salted SHA-256 answer hashes in private_context
 projects only challenge id + localized prompt to the browser
 ```
 
@@ -250,36 +219,20 @@ payload = { answer }
 evidence = { attemptId }
 ```
 
-The server resolves the authenticated participation and caller-owned attempt, locks the attempt, validates the evidence, evaluates the answer and decides exactly one trusted outcome:
+The server locks the caller-owned attempt, validates evidence, checks the answer and decides exactly one trusted outcome:
 
 ```text
 win
 lose
 ```
 
-The persisted attempt becomes `resolved` before completion evaluation.
+The attempt is persisted as resolved before completion evaluation. Trusted events are `attempt_resolved` for every valid resolution and `game_won` only for a server-verified win.
 
-Trusted events:
-
-```text
-attempt_resolved -> every valid resolution
-game_won         -> server-verified win only
-```
-
-The existing `mechanic_outcome` completion resolver can then read the persisted resolved attempt. If Campaign completion matches, the already accepted atomic Campaign-completion reward settlement may issue Goin through `user_economy_events`.
-
-A browser assertion such as:
-
-```text
-won = true
-rewardAmount = 9999
-```
-
-has no authoritative meaning. Malformed/unsupported client game-finished assertions remain rejected and cannot produce a trusted success event.
+The existing `mechanic_outcome` completion resolver can consume the persisted result. Existing atomic completion reward settlement remains the only Goin issuance path.
 
 #### Idempotency and race boundary
 
-CE4.2A reuses CE2.2 action and attempt identities:
+CE4.2A reuses CE2.2 identities and locking:
 
 ```text
 server-created attempt
@@ -287,63 +240,162 @@ participation row serialization
 attempt row lock for resolution
 request-hash idempotency conflict detection
 one accepted action per participation/idempotency key
-resolved attempt cannot be resolved again through a new accepted state transition
+resolved attempt cannot be resolved again through a new accepted transition
 ```
 
-Retrying the same accepted finish request returns established state without replaying trusted events or reward effects.
+#### Founder-local verification evidence
 
-#### Current verification gate
-
-CE4.2A is backend-only. The smallest required founder-local verification is:
+Founder first ran the aggregate CE4.2A + inherited regression gate:
 
 ```powershell
-pnpm api
-
-docker compose exec api node --test \
-  src/campaignCustomGame.test.mjs \
-  src/campaignActionsAttempts.test.mjs \
-  src/campaignRuntime.test.mjs
+docker compose exec api node --test src/campaignCustomGame.test.mjs src/campaignActionsAttempts.test.mjs src/campaignRuntime.test.mjs
 ```
 
-The focused custom-game tests cover:
+Result:
 
 ```text
-private verifier validation
-safe public challenge projection
-server-verified win
-resolved attempt persistence
-trusted game_won / attempt_resolved events
-completion evaluation from trusted mechanic outcome
-one Goin grant/economy event on win
-retry idempotency
-wrong answer -> lose with no trusted win/reward
+15 total
+13 pass
+2 fail
 ```
 
-The CE2.2 and CE2.1 suites are included because CE4.2A extends those accepted runtime boundaries.
+The new custom-game tests were all green and the CE2.1 runtime tests were all green. The two failures were isolated to the old CE2.2 generic fixture because that fixture still modeled a `custom_game` without the verifier contract that CE4.2A now correctly requires.
 
-Do not mark CE4.2A verified until this gate is clean.
+Production runtime was not weakened to satisfy stale test data. The generic CE2.2 fixture was changed to the mechanic-neutral `task_list` type, preserving the purpose of those attempt/action tests.
 
-### CE4.2B — Renderer / client
+Founder then ran the smallest focused rerun:
 
-Status:
+```powershell
+docker compose exec api node --test src/campaignActionsAttempts.test.mjs
+```
+
+Result:
 
 ```text
-NOT STARTED
+5/5 PASS
+0 FAIL
 ```
 
-After CE4.2A verification, CE4.2B will add:
+Combined evidence therefore proves:
 
 ```text
-attempt reservation client
-attempt_started client action
-custom-game challenge rendering from publicContext only
-game_finished answer submission
-server-returned outcome presentation
-EN/FA + Light/Dark UI
-no client-side winner/reward authority
+custom-game definition validation -> PASS
+private verifier does not enter public challenge -> PASS
+server-verified win/lose -> PASS
+resolved attempt persistence -> PASS
+trusted outcome/completion/reward path -> PASS
+retry/idempotency -> PASS
+wrong answer cannot create trusted win/reward -> PASS
+CE2.2 generic attempt/action regression -> PASS
+CE2.1 runtime regression -> PASS
 ```
 
-CE4.2 overall remains incomplete until CE4.2B is verified and the remaining mechanic-outcome reward integration required by the V1 contract is explicitly closed before acceptance.
+CE4.2A is therefore:
+
+```text
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+```
+
+### CE4.2B — Renderer / client — IMPLEMENTED / AWAITING VERIFICATION
+
+Implementation commit:
+
+```text
+38200d0441693f3de296513d42266ba9039a5016
+  feat: add Campaign custom game client
+```
+
+Frontend scope:
+
+```text
+app/composables/useCampaignMechanics.ts
+app/composables/useCampaignCustomGame.ts
+app/components/campaign/CustomGame.vue
+app/components/campaign/ChallengeResult.vue
+app/pages/campaign/[slug].vue
+i18n/i18n.config.ts
+i18n/locales/campaign-game.en.ts
+i18n/locales/campaign-game.fa.ts
+```
+
+The accepted CE4.1 `DefaultExperience` remains unchanged. The public Campaign page adds custom-game mechanics additively after the generic Campaign experience only when the authenticated caller has a participation.
+
+#### Client runtime boundary
+
+The client reuses the accepted backend routes:
+
+```text
+POST /api/campaigns/:slug/mechanics/:mechanicId/attempts
+POST /api/campaigns/:slug/actions
+```
+
+Flow:
+
+```text
+reserve attempt
+-> receive publicContext only
+-> submit attempt_started
+-> render localized public challenge
+-> submit user answer as untrusted payload
+-> server decides/persists outcome
+-> render only server-returned attempt.outcome
+-> refresh authoritative caller state
+```
+
+The browser never receives private verifier material and never chooses success, reward amount or reward expiry.
+
+#### Recovery/idempotency
+
+A pending reservation idempotency key is held in `sessionStorage` only as a recovery aid. Reloading an unresolved challenge replays the same reservation request and receives the established attempt rather than consuming a new attempt slot.
+
+Action identities are stable per attempt:
+
+```text
+campaign:game:start:<attemptId>
+campaign:game:finish:<attemptId>
+```
+
+The answer snapshot is held for same-request retry after a transient submission failure so a retry cannot silently mutate the already-established idempotency request.
+
+Browser storage is never authoritative for eligibility, attempt usage, answer correctness, result or reward.
+
+#### UI contract
+
+The renderer uses the existing Prompt Draft UI system:
+
+```text
+el-flex
+el-text
+el-text-field
+el-button
+semantic normal / prim / red / green / orange colors
+```
+
+No native form-control system, raw colors or custom page-local CSS framework was introduced. EN/FA strings are supplied through the existing i18n merge configuration.
+
+#### Verification gate
+
+CE4.2B changed frontend/i18n only. Smallest required build is:
+
+```powershell
+pnpm frontend
+```
+
+After a clean build, a controlled local-only active custom-game fixture should verify:
+
+```text
+participation start
+attempt reservation
+public challenge rendering
+refresh/recovery without consuming another attempt
+wrong answer -> server-returned non-success result
+correct answer -> server-returned success result
+remaining-attempt state refresh
+EN/FA + RTL
+Light/Dark
+```
+
+Do not mark CE4.2B or CE4.2 overall accepted until that gate is clean.
 
 ---
 
@@ -383,7 +435,8 @@ CE4 overall remains incomplete until all slices are founder-verified and accepte
 
 ```text
 CE4.1 public Campaign page / participation entry -> ACCEPTED
-CE4.2 server-verifiable custom game             -> IN PROGRESS
+CE4.2A trusted custom-game backend              -> ACCEPTED
+CE4.2B custom-game renderer/client              -> IMPLEMENTED / VERIFICATION PENDING
 CE4.3 server-authoritative chance wheel         -> NOT STARTED
 ```
 
