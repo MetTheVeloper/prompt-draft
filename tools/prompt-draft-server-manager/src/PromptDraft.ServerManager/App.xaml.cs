@@ -31,13 +31,13 @@ public partial class App : System.Windows.Application
         }
 
         base.OnStartup(e);
-        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown;
 
         try
         {
             var window = new MainWindow();
             MainWindow = window;
-            ShutdownMode = ShutdownMode.OnMainWindowClose;
+            ShutdownMode = System.Windows.ShutdownMode.OnMainWindowClose;
             window.Show();
             window.Activate();
         }
