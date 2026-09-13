@@ -46,5 +46,16 @@ export default {
       invalidAttempt: 'این نوبت دیگر معتبر نیست.',
       error: 'دوباره امتحان کن.',
     },
+    notice: {
+      attempts_exhausted: {
+        title: 'فعلاً نوبتی باقی نمونده',
+        body: 'در حال حاضر نوبت دیگری برای این فعالیت در دسترس نیست.',
+      },
+      attempts_exhausted_calendar_day: {
+        title: 'نوبت‌های امروزت تموم شد',
+        body: 'بعد از شارژ دوباره می‌تونی امتحان کنی.',
+      },
+      countdown: 'زمان باقی‌مانده تا شارژ نوبت‌ها',
+    },
   },
 }

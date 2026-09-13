@@ -166,27 +166,51 @@ onMounted(async () => {
         @start="startParticipation"
       />
 
-      <CampaignCustomGame
-        v-for="mechanic in customGames"
-        v-if="callerState?.participation"
-        :key="mechanic.id"
+      <CampaignRuntimeNoticeHost
+        v-if="callerState"
         :campaign="campaign"
-        :mechanic="mechanic"
         :state="callerState"
-        :refreshing="refreshingState"
+        placement="campaign"
         @refresh="refreshCallerState"
       />
 
-      <CampaignChanceWheel
-        v-for="mechanic in chanceWheels"
-        v-if="callerState?.participation"
-        :key="mechanic.id"
-        :campaign="campaign"
-        :mechanic="mechanic"
-        :state="callerState"
-        :refreshing="refreshingState"
-        @refresh="refreshCallerState"
-      />
+      <template v-for="mechanic in customGames" :key="`game:${mechanic.id}`">
+        <CampaignCustomGame
+          v-if="callerState?.participation"
+          :campaign="campaign"
+          :mechanic="mechanic"
+          :state="callerState"
+          :refreshing="refreshingState"
+          @refresh="refreshCallerState"
+        />
+        <CampaignRuntimeNoticeHost
+          v-if="callerState?.participation"
+          :campaign="campaign"
+          :state="callerState"
+          placement="mechanic"
+          :mechanic-id="mechanic.id"
+          @refresh="refreshCallerState"
+        />
+      </template>
+
+      <template v-for="mechanic in chanceWheels" :key="`wheel:${mechanic.id}`">
+        <CampaignChanceWheel
+          v-if="callerState?.participation"
+          :campaign="campaign"
+          :mechanic="mechanic"
+          :state="callerState"
+          :refreshing="refreshingState"
+          @refresh="refreshCallerState"
+        />
+        <CampaignRuntimeNoticeHost
+          v-if="callerState?.participation"
+          :campaign="campaign"
+          :state="callerState"
+          placement="mechanic"
+          :mechanic-id="mechanic.id"
+          @refresh="refreshCallerState"
+        />
+      </template>
 
       <el-flex v-if="!rendererComponent" rules="csc" :gap="8" :p="16" :radius="14" :br="1" bc="normal15" bg="surface" class="w100">
         <el-text color="red" :size="13" :weight="700">{{ t('campaign.rendererUnavailable') }}</el-text>

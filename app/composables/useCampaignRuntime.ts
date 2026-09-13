@@ -129,6 +129,26 @@ export type CampaignAttemptAvailability = {
   reasonCode?: string
 }
 
+export type CampaignRuntimeNoticeContent = {
+  title?: string
+  body?: string
+}
+
+export type CampaignRuntimeNotice = {
+  id: string
+  placement: 'campaign' | 'mechanic'
+  tone: 'neutral' | 'info' | 'success' | 'warning'
+  mechanicId?: string
+  templateKey?: 'attempts_exhausted' | 'attempts_exhausted_calendar_day'
+  content?: Partial<Record<CampaignLocale, CampaignRuntimeNoticeContent>>
+  period?: 'campaign' | 'calendar_day' | 'rolling_24h' | 'session'
+  reasonCode?: string
+  countdown?: {
+    source: 'nextEligibleAt'
+    targetAt: string
+  }
+}
+
 export type CampaignCallerState = {
   ok: true
   campaign: {
@@ -141,6 +161,8 @@ export type CampaignCallerState = {
   participation: CampaignParticipation | null
   mechanics: CampaignMechanicState[]
   attemptAvailability: CampaignAttemptAvailability[]
+  serverNow?: string
+  activeNotices?: CampaignRuntimeNotice[]
   effects: unknown[]
   economy?: unknown
 }
