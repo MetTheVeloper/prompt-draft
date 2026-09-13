@@ -9,7 +9,7 @@ const flow = useCampaignCustomGame(props, () => locale.value === 'fa' ? 'fa' : '
   <el-flex rules="csc" :gap="12" :p="16" :radius="14" :br="1" bc="normal15" bg="surface" class="w100">
     <el-flex rules="rbc" :gap="12" class="w100 fw">
       <el-text :size="13" :weight="700">{{ t('campaign.game.title') }}</el-text>
-      <el-text v-if="flow.availability.value" color="normal55" :size="11">{{ t('campaign.game.remaining', { count: flow.availability.value.remainingAttempts }) }}</el-text>
+      <el-text v-if="flow.remainingAttempts.value !== null" color="normal55" :size="11">{{ t('campaign.game.remaining', { count: flow.remainingAttempts.value }) }}</el-text>
     </el-flex>
     <el-text color="normal55" :size="11">{{ t('campaign.game.serverVerified') }}</el-text>
     <el-text v-if="refreshing || flow.recovering.value" color="normal55" :size="12">{{ t('campaign.game.recovering') }}</el-text>
