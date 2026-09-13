@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-12
+Last updated: 2026-09-13
 
 Branch:
 
@@ -26,10 +26,10 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   4E Blog V1                                    -> DONE / FOUNDER VERIFIED / ACCEPTED 2026-09-10
   4F Integration / Legacy Retirement            -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-11
 21.5.5 Organic Acquisition Launch               -> IN PROGRESS
-  5.1 Launch Readiness                          -> IN PROGRESS / AUDIT + CUTOVER RUNBOOK DRAFTED
+  5.1 Launch Readiness                          -> IN PROGRESS / PROD RUNTIME VERIFIED / SEO DEFERRED
   5.2 Acquisition Measurement Instrumentation   -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-12
-  5.3 Founder-approved Production Cutover       -> BLOCKED UNTIL 5.1 READINESS ACCEPTED + EXPLICIT FOUNDER APPROVAL
-  5.4 Initial Launch + Measurement Cadence      -> PENDING PRODUCTION CUTOVER
+  5.3 Founder-approved Production Cutover       -> PARTIAL / RUNTIME CUTOVER VERIFIED / INDEXABILITY DEFERRED 2026-09-13
+  5.4 Initial Launch + Measurement Cadence      -> DEFERRED UNTIL SEO LAUNCH
 ```
 
 ## Mandatory sources
@@ -40,6 +40,7 @@ docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 docs/strategy/MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
 docs/strategy/MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md
+docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
 docs/strategy/MILESTONE_21_5_PHASE5_2_VERIFICATION.md
 docs/strategy/MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md
 docs/strategy/MILESTONE_21_5_PHASE4_SEO_PUBLIC_CONTENT.md
@@ -81,7 +82,7 @@ pnpm api:recreate
 pnpm frontend:recreate
 ```
 
-## Accepted runtime/staging baseline
+## Accepted runtime baseline
 
 ```text
 Nuxt SSR by default for acquisition surfaces
@@ -89,9 +90,15 @@ explicit client-only application route policy
 Nuxt/Nitro node-server Docker runtime
 independent backend API retained
 server-internal API origin separated from browser API origin
-Cloudflare staging: grassic.ir + api.grassic.ir
-NUXT_PUBLIC_NOINDEX=true on staging
-prompt-draft.ir remains untouched
+production frontend: prompt-draft.ir -> Cloudflare -> Tunnel -> frontend:3000
+production API: api.prompt-draft.ir -> Cloudflare -> Tunnel -> api:4000
+retained staging frontend: grassic.ir -> same frontend runtime
+NUXT_PUBLIC_API_BASE=https://api.prompt-draft.ir
+NUXT_PUBLIC_SITE_URL=https://prompt-draft.ir
+NUXT_PUBLIC_NOINDEX=true
+CORS allows https://prompt-draft.ir and retained https://grassic.ir
+production and staging currently both emit noindex
+SEO/indexing launch is intentionally deferred
 ```
 
 ## Accepted locale/indexing contract
@@ -103,7 +110,9 @@ self canonical per authoritative locale
 reciprocal hreflang only for authoritative locales
 x-default -> EN/default when EN exists
 no fake localized fallback pages
-staging global noindex always wins
+explicit global noindex always wins
+when global noindex is false, only exact host prompt-draft.ir may become indexable
+staging/preview/unknown hosts remain forced noindex by host-aware runtime policy
 ```
 
 ## Accepted public/protected boundaries
@@ -319,7 +328,7 @@ The remaining sourcemap, chunk-size, Nitro cache-driver and orphan-container war
 
 Milestone 21.5 Phase 4 — SEO/Public Content Architecture is therefore **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED**.
 
-No production cutover was performed. `prompt-draft.ir` remains untouched and staging must keep `NUXT_PUBLIC_NOINDEX=true` until the explicit acquisition-launch/cutover step.
+The former pre-cutover statement that `prompt-draft.ir` was untouched is historical only. On 2026-09-13 the founder approved and verified production runtime activation while explicitly keeping SEO/indexing disabled. The authoritative current checkpoint is `MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md`.
 
 ---
 
@@ -330,21 +339,40 @@ Canonical records:
 ```text
 docs/strategy/MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
 docs/strategy/MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md
+docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
 docs/strategy/MILESTONE_21_5_PHASE5_2_VERIFICATION.md
 ```
 
 Current slices:
 
 ```text
-5.1 Launch Readiness                         -> IN PROGRESS / AUDIT + CUTOVER RUNBOOK DRAFTED
+5.1 Launch Readiness                         -> IN PROGRESS / PROD RUNTIME VERIFIED / SEO DEFERRED
 5.2 Acquisition Measurement Instrumentation -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-12
+5.3 Production Cutover                      -> PARTIAL / RUNTIME VERIFIED / INDEXABILITY DEFERRED 2026-09-13
+5.4 Initial acquisition/SEO launch          -> DEFERRED UNTIL FOUNDER DECIDES PRODUCT IS READY
 ```
 
-Phase 5.1 exists to establish a branch-exact runtime/deployment/environment/indexability inventory, Search Console and acquisition-measurement baseline, explicit production cutover procedure, explicit rollback procedure and founder readiness signoff **before** production is changed.
+Phase 5.1 established the branch/runtime/deployment/indexability inventory, measurement baseline and cutover/rollback discipline. The production runtime is now active, but the founder intentionally separated production runtime activation from SEO launch.
 
-Phase 5.1C repository-side runbook is drafted. It records a critical cutover constraint: `NUXT_PUBLIC_NOINDEX` is process-wide, so one frontend container cannot simultaneously serve `grassic.ir` as noindex and `prompt-draft.ir` as indexable. The initial-cutover policy is therefore to retire the staging frontend ingress before setting production noindex=false. The existing staging fallback Worker must not be attached unchanged to production because its copy/behavior is staging-specific.
+The earlier 5.1C process-wide-only constraint has been superseded by verified host-aware runtime indexability. `NUXT_PUBLIC_NOINDEX=true` still globally forces noindex. If a future founder-approved SEO launch changes it to false, only exact host `prompt-draft.ir` may become indexable; `grassic.ir` and unknown/preview hosts remain noindex through the host-aware guard.
 
-Phase 5.2 is accepted. It extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Client-mounted acquisition views cover public Prompt, public Creator, Blog index, Blog Article and taxonomy-backed Discovery routes; protected Prompt copy/unlock intent is instrumented; successful clipboard copy remains separately measured; completed unlock and Goin spend remain derived from transactional source-of-truth tables.
+Production-runtime verification on 2026-09-13 established:
+
+```text
+API + frontend containers              -> healthy
+https://api.prompt-draft.ir             -> HTTP 200 / DYNAMIC
+production CORS                         -> allows https://prompt-draft.ir
+retained staging browser origin         -> allows https://grassic.ir
+https://prompt-draft.ir/                -> HTTP 200 + X-Robots-Tag noindex
+https://grassic.ir/                     -> HTTP 200 + X-Robots-Tag noindex
+production Blog canonical              -> https://prompt-draft.ir/blog
+production Blog robots meta             -> noindex, nofollow, noarchive
+runtime public API                      -> https://api.prompt-draft.ir
+runtime public site URL                 -> https://prompt-draft.ir
+runtime noindex                         -> true
+```
+
+Phase 5.2 remains accepted. It extends the existing first-party `product_analytics_events` pipeline rather than introducing a second analytics system. Client-mounted acquisition views cover public Prompt, public Creator, Blog index, Blog Article and taxonomy-backed Discovery routes; protected Prompt copy/unlock intent is instrumented; successful clipboard copy remains separately measured; completed unlock and Goin spend remain derived from transactional source-of-truth tables.
 
 Founder-local acceptance evidence on 2026-09-12:
 
@@ -367,21 +395,24 @@ Execution slices:
 5.1A runtime/deployment/env/indexability inventory
 5.1B Search Console + acquisition measurement baseline
 5.1C production cutover + rollback contract
-5.1D founder readiness signoff
+5.1D founder readiness signoff / runtime-vs-SEO split
 5.2 acquisition measurement instrumentation -> DONE / ACCEPTED
-5.3 founder-approved production cutover
-5.4 initial acquisition launch + measurement cadence
+5.3 production runtime activation -> VERIFIED; indexability deliberately deferred
+5.4 SEO/acquisition launch + measurement cadence -> FUTURE
 ```
 
 Current hard boundary:
 
 ```text
-staging NUXT_PUBLIC_NOINDEX=true -> KEEP until approved cutover sequence retires staging frontend ingress
-prompt-draft.ir                  -> UNTOUCHED
+production runtime values      -> ACTIVE
+prompt-draft.ir                -> live production runtime
+api.prompt-draft.ir            -> live production API
+NUXT_PUBLIC_NOINDEX=true       -> KEEP
+prompt-draft.ir page noindex   -> MUST remain present
+retained grassic.ir noindex    -> MUST remain present
+Search Console/sitemap launch  -> DEFERRED
 production DNS/Tunnel/indexability changes -> require explicit founder approval
 ```
-
-Phase 5.2 acceptance changed only repository code/docs and staging verification. No production route, DNS, Tunnel, Worker or indexability change has been made. Current work returns to Phase 5.1 readiness closure; environment-only cutover changes later use `pnpm api:recreate` / `pnpm frontend:recreate` when verified images already exist.
 
 ## Hard rules
 
@@ -396,12 +427,13 @@ DO NOT make editor state canonical.
 DO NOT create fake localized Blog routes.
 DO NOT put draft/unpublished Blog URLs into sitemap/llms.
 DO NOT recreate Blog indexability outside Article contract.
-DO NOT let Blog SEO override staging noindex.
+DO NOT let Blog SEO override explicit global noindex.
 DO NOT expose BLOG_GITHUB_TOKEN publicly.
 DO NOT allow canonical Blog body Markdown H1 outside fenced code; Article title owns H1.
 DO NOT attach the staging fallback Worker unchanged to prompt-draft.ir.
-DO NOT touch prompt-draft.ir before explicit rollout.
-DO NOT change production DNS/Tunnel/indexability without explicit founder approval.
+DO NOT set NUXT_PUBLIC_NOINDEX=false without fresh explicit founder approval.
+DO NOT submit production sitemap/Search Console launch while SEO launch is deferred.
+DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder approval.
 ```
 
 ## Resume instruction
@@ -410,17 +442,17 @@ DO NOT change production DNS/Tunnel/indexability without explicit founder approv
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
 3. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
-4. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md as the current Phase 5 source of truth
-5. read MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md before any cutover discussion
-6. read MILESTONE_21_5_PHASE5_2_VERIFICATION.md for accepted measurement evidence
-7. read MILESTONE_21_5_PHASE3_CLOUDFLARE_PRODUCTION_PATH.md for accepted staging baseline
+4. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+5. read MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md for historical cutover/rollback detail
+6. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md as the authoritative current runtime amendment
+7. read MILESTONE_21_5_PHASE5_2_VERIFICATION.md for accepted measurement evidence
 8. inspect latest feature/growth-foundation HEAD before every decision/write
 9. confirm 21.5.4 / 4A-4F and 21.5.5/5.2 remain DONE / ACCEPTED; do not restart accepted audits without a concrete regression
-10. current task = close 21.5.5 / Phase 5.1 readiness
-11. complete the external current-production DNS/origin snapshot required by 5.1C
-12. confirm production www policy, production API cache-bypass policy and Search Console property/ownership plan
-13. finalize 5.1C exact cutover/rollback values and obtain 5.1D founder readiness signoff
-14. preserve all accepted public/indexability/security/compiler/measurement boundaries
-15. keep staging NUXT_PUBLIC_NOINDEX=true until the founder-approved cutover step explicitly retires staging frontend ingress
-16. do not touch prompt-draft.ir or production Cloudflare routing before explicit founder approval
+10. production runtime is active on prompt-draft.ir + api.prompt-draft.ir
+11. keep NUXT_PUBLIC_NOINDEX=true while active product development/testing continues
+12. keep prompt-draft.ir and grassic.ir both noindex in the current mode
+13. normal product development may continue against the production runtime
+14. future SEO launch is a separate explicit founder decision and must re-verify host-aware noindex behavior before changing it
+15. Search Console/sitemap submission and acquisition launch cadence remain deferred until SEO launch
+16. preserve all accepted public/indexability/security/compiler/measurement boundaries
 ```
