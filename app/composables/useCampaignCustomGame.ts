@@ -105,8 +105,9 @@ export function useCampaignCustomGame(
     try {
       const response = await api.reserveAttempt(props.campaign.slug, props.mechanic.id, key)
       attempt.value = response.attempt
+      refresh()
       if (response.attempt.status === 'reserved') await startReserved(response.attempt)
-      else if (response.attempt.status === 'resolved') { clearKey(); refresh() }
+      else if (response.attempt.status === 'resolved') clearKey()
     } catch (value) { error.value = mapError(value) } finally { reserving.value = false }
   }
 
