@@ -8,8 +8,12 @@
   !define OutputDir "."
 !endif
 
+!ifndef InstallerIcon
+  !error "InstallerIcon define is required."
+!endif
+
 !define APP_NAME "Prompt Draft Server Manager"
-!define APP_VERSION "0.1.0"
+!define APP_VERSION "0.1.1"
 !define APP_PUBLISHER "MetTheVeloper"
 !define APP_EXE "PromptDraft.ServerManager.exe"
 !define APP_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PromptDraftServerManager"
@@ -22,13 +26,16 @@ InstallDir "$LOCALAPPDATA\Programs\MetTheVeloper\Prompt Draft Server Manager"
 InstallDirRegKey HKCU "Software\MetTheVeloper\PromptDraftServerManager" "InstallDir"
 RequestExecutionLevel user
 SetCompressor /SOLID lzma
+Icon "${InstallerIcon}"
+UninstallIcon "${InstallerIcon}"
 
-VIProductVersion "0.1.0.0"
+VIProductVersion "0.1.1.0"
 VIAddVersionKey /LANG=1033 "ProductName" "${APP_NAME}"
 VIAddVersionKey /LANG=1033 "CompanyName" "${APP_PUBLISHER}"
 VIAddVersionKey /LANG=1033 "FileDescription" "Prompt Draft local operations console"
 VIAddVersionKey /LANG=1033 "FileVersion" "${APP_VERSION}"
 VIAddVersionKey /LANG=1033 "ProductVersion" "${APP_VERSION}"
+VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 MetTheVeloper"
 
 !define MUI_ABORTWARNING
 !define MUI_FINISHPAGE_RUN "$INSTDIR\${APP_EXE}"
