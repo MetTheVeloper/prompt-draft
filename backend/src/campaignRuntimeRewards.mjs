@@ -22,6 +22,11 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
   let latestEconomy = null
 
   for (const reward of rewards) {
+    const qualificationKey = 'campaign_completion'
+    const grantIdempotencyKey = `campaign:grant:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:${qualificationKey}`
+    const economyIdempotencyKey = `campaign:reward:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:${qualificationKey}`
+    const qualification = { trigger: qualificationKey }
+
     const existingResult = await execute(
       `
         SELECT
@@ -30,13 +35,15 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
           amount,
           economy_event_id AS "economyEventId",
           failure_code AS "failureCode",
-          granted_at AS "grantedAt"
+          granted_at AS "grantedAt",
+          failed_at AS "failedAt"
         FROM campaign_reward_grants
         WHERE participation_id = $1
           AND reward_definition_id = $2
+          AND qualification_key = $3
         LIMIT 1
       `,
-      [runtime.id, reward.id],
+      [runtime.id, reward.id, qualificationKey],
     )
     const existing = existingResult.rows[0]
     if (existing) {
@@ -84,13 +91,19 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
               participation_id,
               user_id,
               reward_definition_id,
+              qualification_key,
+              reward_type,
               status,
               amount,
               idempotency_key,
+              qualification,
               failure_code,
               failed_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'failed', $7, $8, 'CAMPAIGN_REWARD_EXHAUSTED', $9)
+            VALUES (
+              $1, $2, $3, $4, $5, $6, $7, 'goin', 'failed', $8, $9, $10::jsonb,
+              'CAMPAIGN_REWARD_EXHAUSTED', $11
+            )
           `,
           [
             grantId,
@@ -99,8 +112,10 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
             runtime.id,
             runtime.userId,
             reward.id,
+            qualificationKey,
             reward.amount,
-            `campaign:grant:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:campaign_completion`,
+            grantIdempotencyKey,
+            JSON.stringify(qualification),
             asOf.toISOString(),
           ],
         )
@@ -124,7 +139,6 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
     }
 
     const grantId = randomUUID()
-    const grantIdempotencyKey = `campaign:grant:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:campaign_completion`
     await execute(
       `
         INSERT INTO campaign_reward_grants (
@@ -134,11 +148,14 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
           participation_id,
           user_id,
           reward_definition_id,
+          qualification_key,
+          reward_type,
           status,
           amount,
-          idempotency_key
+          idempotency_key,
+          qualification
         )
-        VALUES ($1, $2, $3, $4, $5, $6, 'pending', $7, $8)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, 'goin', 'pending', $8, $9, $10::jsonb)
       `,
       [
         grantId,
@@ -147,8 +164,10 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
         runtime.id,
         runtime.userId,
         reward.id,
+        qualificationKey,
         reward.amount,
         grantIdempotencyKey,
+        JSON.stringify(qualification),
       ],
     )
 
@@ -174,13 +193,13 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
         unitDelta: reward.amount,
         sourceType: 'campaign_reward',
         sourceId: grantId,
-        idempotencyKey: `campaign:reward:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:campaign_completion`,
+        idempotencyKey: economyIdempotencyKey,
         metadata: {
           campaignId: runtime.campaignId,
           campaignVersionId: runtime.campaignVersionId,
           participationId: runtime.id,
           rewardDefinitionId: reward.id,
-          qualificationKey: 'campaign_completion',
+          qualificationKey,
         },
         expiresAt,
       },
@@ -194,6 +213,7 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
         SET status = 'granted',
             economy_event_id = $2,
             failure_code = NULL,
+            failed_at = NULL,
             granted_at = $3,
             updated_at = $3
         WHERE id = $1
