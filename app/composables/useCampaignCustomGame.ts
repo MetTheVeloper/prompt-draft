@@ -30,15 +30,30 @@ export function useCampaignCustomGame(
   const submitting = ref(false)
   const error = ref('')
   const recoveredParticipationId = ref('')
+  const latestParticipationStatus = ref<string | null>(null)
 
   const participation = computed(() => props.state.participation)
   const availability = computed(() => props.state.attemptAvailability.find(item => item.mechanicId === props.mechanic.id) ?? null)
+  const participationStatus = computed(() => latestParticipationStatus.value ?? participation.value?.status ?? null)
+  const participationOpen = computed(() => participationStatus.value === 'started' || participationStatus.value === 'in_progress')
   const progressOpen = computed(() => props.campaign.status === 'active' || (
     props.campaign.status === 'ended' && props.campaign.lifecycle.participationAfterEnd === 'allow_existing_only'
   ))
   const busy = computed(() => recovering.value || reserving.value || starting.value || submitting.value)
-  const canReserve = computed(() => Boolean(participation.value && progressOpen.value && availability.value?.available && !busy.value))
+  const canReserve = computed(() => Boolean(participation.value && participationOpen.value && progressOpen.value && availability.value?.available && !busy.value))
   const answerValid = computed(() => answer.value.trim().length > 0 && answer.value.trim().length <= 240)
+  const remainingAttempts = computed(() => {
+    const current = availability.value
+    if (!current) return null
+    if (!participationOpen.value) return 0
+    const reported = Number(current.remainingAttempts ?? 0)
+    const maxAttempts = Number(current.maxAttempts ?? 0)
+    const attemptIndex = Number(attempt.value?.attemptIndex ?? 0)
+    if (maxAttempts > 0 && attemptIndex > 0) {
+      return Math.max(0, Math.min(reported, maxAttempts - attemptIndex))
+    }
+    return Math.max(0, reported)
+  })
 
   const challengePrompt = computed(() => {
     const context = attempt.value?.publicContext
@@ -58,7 +73,7 @@ export function useCampaignCustomGame(
   })
 
   const canTryAgain = computed(() => {
-    if (!attempt.value || attempt.value.status !== 'resolved' || !availability.value?.available || !progressOpen.value) return false
+    if (!attempt.value || attempt.value.status !== 'resolved' || !participationOpen.value || !availability.value?.available || !progressOpen.value) return false
     return Number(availability.value.usedAttempts ?? -1) >= attempt.value.attemptIndex
   })
 
@@ -95,6 +110,7 @@ export function useCampaignCustomGame(
         payload: {}, evidence: { attemptId: current.id },
       })
       attempt.value = response.result.attempt ?? current
+      latestParticipationStatus.value = response.result.participation?.status ?? latestParticipationStatus.value
     } catch (value) { error.value = mapError(value) } finally { starting.value = false }
   }
 
@@ -139,6 +155,7 @@ export function useCampaignCustomGame(
         payload: { answer: snapshot }, evidence: { attemptId: attempt.value.id },
       })
       if (response.result.attempt) attempt.value = response.result.attempt
+      latestParticipationStatus.value = response.result.participation?.status ?? latestParticipationStatus.value
       if (attempt.value?.status === 'resolved') clearKey()
       refresh()
     } catch (value) { error.value = mapError(value) } finally { submitting.value = false }
@@ -162,11 +179,15 @@ export function useCampaignCustomGame(
     try { await reserveWithKey(key) } finally { recovering.value = false }
   }
 
+  watch(() => participation.value?.status, (status) => {
+    latestParticipationStatus.value = status ?? null
+  }, { immediate: true })
   watch(() => participation.value?.id, recover, { immediate: true })
 
   return {
     attempt, answer, submittedAnswer, recovering, reserving, starting, submitting, error,
-    availability, progressOpen, busy, canReserve, answerValid, challengePrompt, outcome, canTryAgain,
+    availability, remainingAttempts, participationOpen, progressOpen, busy, canReserve, answerValid,
+    challengePrompt, outcome, canTryAgain,
     begin, retryStart, submit, tryAgain,
   }
 }
