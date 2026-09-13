@@ -13,14 +13,15 @@ Track status:
 ```text
 Founder direction / scenarios         -> APPROVED
 Campaign Engine V1 source of truth    -> DOCUMENTED
-Database schema V1                    -> DESIGNED
+Database schema V1                    -> DESIGNED + CE1 FOUNDATION IMPLEMENTED
 API / Runtime Contract V1             -> DESIGNED
-Runtime implementation                -> NOT STARTED
-Migration 029                         -> AVAILABLE AT HANDOFF / NOT CREATED / RE-AUDIT BEFORE WRITE
+CE1 Foundation implementation         -> IMPLEMENTED
+CE1 founder-local verification        -> VERIFIED 2026-09-13
+CE1 explicit founder acceptance       -> PENDING
+Migration 029                         -> CREATED / LOCALLY APPLIED / VERIFIED
 /manage/marketing                     -> NOT STARTED
 Public /campaign/[slug] runtime       -> NOT STARTED
-Local verification                    -> NOT STARTED
-Selected next implementation slice    -> CE1 FOUNDATION
+Next implementation slice             -> PAUSED PENDING FOUNDER CONSULTATION
 ```
 
 Current project transition:
@@ -29,13 +30,7 @@ Current project transition:
 Milestone 21.5 production runtime     -> ACTIVE / FOUNDER VERIFIED
 Milestone 21.5 SEO/indexability       -> DEFERRED / NUXT_PUBLIC_NOINDEX=true
 Domain Expansion implementation       -> SCALE-GATED / NOT NEXT IMMEDIATE EXECUTION
-Campaign Engine V1                    -> SELECTED NEXT PRE-SCALE ENGINEERING TRACK
-```
-
-Authoritative transition record:
-
-```text
-docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+Campaign Engine V1                    -> ACTIVE PRE-SCALE ENGINEERING TRACK
 ```
 
 Campaign Engine is a pre-scale commercialization/marketing platform track. It may proceed while 21.5 SEO launch remains deferred. It does not turn SEO on, and it does not start Domain Expansion.
@@ -51,8 +46,10 @@ Read in this order before implementation:
 2. docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 3. docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 4. docs/strategy/CAMPAIGN_ENGINE_STATUS.md
-5. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-6. docs/strategy/STATUS.md
+5. docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+6. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+7. docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+8. docs/strategy/STATUS.md
 ```
 
 Mandatory project workflow sources:
@@ -77,53 +74,6 @@ app/config/manage.ts
 
 ---
 
-## Founder scenarios the contract must preserve
-
-### Scenario A — custom game
-
-```text
-real game component
-  -> emits bounded action/evidence
-  -> server validates outcome
-  -> validated winner can receive Goin
-```
-
-Custom UI is not reward authority.
-
-### Scenario B — Payiz seasonal festival
-
-```text
-/campaign/payiz
-
-season-long campaign
-countdown/title/content
-ANY:
-  4 referrals
-  OR 5 Prompt unlocks
-  OR 10 public Drafts
-
-promotion surfaces:
-  header
-  floating dismissible block
-  custom modal
-
-successful qualification -> Goin reward
-```
-
-Promotion is separate from the Campaign Page/Experience.
-
-### Scenario C — daily chance wheel
-
-```text
-one valid spin per authenticated user per configured calendar day
-server reserves attempt
-server RNG resolves/persists outcome
-browser only animates returned result
-outcome-specific Goin reward when applicable
-```
-
----
-
 ## Accepted architectural decisions
 
 ```text
@@ -134,7 +84,6 @@ Canonical public route:
   /fa/campaign/:slug
 
 Published slug is durable/immutable in V1.
-
 Campaign Definition is versioned data.
 Published versions are immutable.
 Participation locks to the exact version it started under.
@@ -149,7 +98,6 @@ Completion uses a recursive RuleExpression tree.
 
 Client Actions are untrusted.
 Server Domain Events are trusted.
-
 Attempts are first-class runtime objects.
 Daily attempt periods require explicit timezone.
 Chance/random reward outcome is server-authoritative.
@@ -167,30 +115,126 @@ Global reward budget is transactionally guarded.
 Reward qualification and Goin issuance are idempotent.
 
 /manage/marketing reuses the existing Manage shell.
-New marketing permissions are preferred over reusing system.settings.manage.
+Campaign permissions extend the existing authorization system.
 ```
+
+Founder scenarios remain authoritative in `CAMPAIGN_ENGINE_V1.md`, including custom game, Payiz seasonal campaign and daily chance wheel trust-boundary examples.
 
 ---
 
-## Current schema decision
+## CE1 — Foundation
 
-Latest branch audit at the pre-scale handoff found the SQL migration ceiling is still:
+Status:
+
+```text
+IMPLEMENTED / FOUNDER-LOCAL VERIFIED 2026-09-13 / EXPLICIT ACCEPTANCE PENDING
+```
+
+Implementation commit:
+
+```text
+1f8c35ee9041e600ba6d99d37c595f446842d000
+feat: add Campaign Engine CE1 foundation
+```
+
+Implemented files:
+
+```text
+backend/sql/029_campaign_engine_v1.sql
+backend/src/authorization.mjs
+backend/src/campaignDefinition.mjs
+backend/src/campaignFoundation.test.mjs
+backend/src/campaignRegistry.mjs
+backend/src/campaignRules.mjs
+backend/src/campaigns.mjs
+```
+
+Implemented CE1 scope:
+
+```text
+Campaign migration 029
+marketing permissions
+Campaign Definition validator
+Campaign head/draft persistence
+optimistic draft revisions
+immutable publish versions
+publish idempotency under Campaign row lock
+admin_audit_log writes for Campaign create/update/publish
+Renderer Registry skeleton
+Mechanic Registry skeleton
+Metric Registry skeleton
+RuleExpression validator/evaluator
+deterministic canonical definition hashing
+```
+
+Authorization currently implements:
+
+```text
+marketing.campaigns.view
+marketing.campaigns.manage
+marketing.campaigns.publish
+marketing.metrics.view
+
+user        -> none
+admin       -> campaign view + marketing metrics
+super_admin -> all via existing wildcard
+```
+
+Admin mutation/publish remains intentionally restricted until broadened deliberately.
+
+---
+
+## CE1 founder-local evidence
+
+Canonical evidence record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+```
+
+Verified on 2026-09-13:
+
+```text
+pnpm api
+  -> PASS / API image rebuilt and started
+
+docker compose exec api node --test src/campaignFoundation.test.mjs
+  -> PASS 9/9
+
+docker compose exec api npm run db:schema
+  -> PASS / 001 through 029 applied
+
+docker compose exec db psql -U prompt_draft -d prompt_draft -c "\dt campaign*"
+  -> PASS / 10 expected Campaign tables present
+```
+
+The API build emitted an unrelated orphan `prompt-draft-cloudflared-1` warning. No orphan removal or production topology change was performed.
+
+Because only backend/SQL changed, frontend rebuild, `pnpm generate` and `pnpm stack` were correctly not used.
+
+The current evidence proves build/start, focused contract tests, schema application and expected table presence. A separate persistence round-trip / direct immutable-version mutation rejection probe has not yet been executed and remains optional additional closure evidence before explicit founder acceptance.
+
+CE1 must therefore **not** be marked DONE/ACCEPTED yet.
+
+---
+
+## Current schema foundation
+
+The implementation-time branch audit confirmed the prior migration ceiling was:
 
 ```text
 028_seed_profile_skill_taxonomy.sql
 ```
 
-Therefore the first Campaign migration is currently available as:
+The first Campaign migration therefore became:
 
 ```text
 029_campaign_engine_v1.sql
 ```
 
-It is not created yet.
+Founder-local schema application has now verified migration 029.
 
-This number is **not a permanent reservation**. Re-audit `backend/sql` from the latest branch HEAD immediately before creating the first Campaign migration because parallel work may consume `029`.
-
-Proposed V1 runtime tables:
+Campaign tables:
 
 ```text
 campaigns
@@ -205,7 +249,7 @@ campaign_reward_grants
 campaign_promotion_user_states
 ```
 
-Existing tables reused:
+Existing systems reused rather than duplicated:
 
 ```text
 users
@@ -216,6 +260,8 @@ referrals
 user_content_unlocks
 other canonical product resources behind Metric Registry resolvers
 ```
+
+Published `campaign_versions` have DB-level UPDATE/DELETE rejection triggers in migration 029.
 
 ---
 
@@ -254,29 +300,6 @@ Do not implement nested independent Economy/Campaign transactions for one reward
 
 ---
 
-## Proposed authorization
-
-New permission keys:
-
-```text
-marketing.campaigns.view
-marketing.campaigns.manage
-marketing.campaigns.publish
-marketing.metrics.view
-```
-
-Safe initial role direction:
-
-```text
-user        -> none
-admin       -> campaign view + marketing metrics
-super_admin -> all via existing wildcard
-```
-
-Mutation/publish can be broadened later deliberately.
-
----
-
 ## V1 mechanic target
 
 ```text
@@ -287,52 +310,18 @@ chance_wheel
 custom
 ```
 
-Not all mechanics need to ship in the first code commit. The registry contract must exist before campaign-specific implementation.
+The registry contract exists in CE1. Individual runtime mechanics are not implied complete by that skeleton.
 
 ---
 
-## Implementation roadmap
-
-### CE1 — Foundation
-
-Status:
-
-```text
-NEXT / SELECTED IMPLEMENTATION SLICE
-```
-
-Scope:
-
-```text
-first available Campaign migration number (029 only if still free at implementation time)
-marketing permissions
-Campaign Definition validator
-Campaign head/draft persistence
-immutable publish versions
-Renderer Registry skeleton
-Mechanic Registry skeleton
-Metric Registry skeleton
-RuleExpression validator/evaluator tests
-```
-
-Acceptance focus:
-
-```text
-schema rerunnable
-published version immutable through service path
-slug rules enforced
-private/public projection validator established
-no existing Economy/Analytics behavior changed
-```
-
-CE1 should begin with a branch-exact capability and migration audit before code writes. Reuse existing authorization/database patterns where semantics match.
+## Remaining implementation roadmap
 
 ### CE2 — Runtime Core
 
 Status:
 
 ```text
-NOT STARTED
+NOT STARTED / DO NOT START UNTIL FOUNDER CONSULTATION COMPLETES
 ```
 
 Scope:
@@ -464,11 +453,11 @@ global NUXT_PUBLIC_NOINDEX=true still wins during current pre-scale development 
 smallest-scope build/runtime verification passes
 ```
 
-Do not use the historical `pnpm generate` requirement as the default Campaign acceptance command now that the accepted runtime is Nuxt/Nitro SSR/hybrid. Select verification according to `DEVELOPMENT_WORKFLOW.md` and the actual files/services changed.
+Do not use historical `pnpm generate` as the default Campaign acceptance command. Select verification from `DEVELOPMENT_WORKFLOW.md` according to actual changed files/services.
 
 ---
 
-## Deferred / explicitly not part of first implementation
+## Deferred / explicitly out of current slice
 
 ```text
 advanced segment builder
@@ -488,46 +477,52 @@ production SEO/indexability launch
 
 ---
 
-## Resume prompt for a future chat
+## Resume instruction
 
-Use this context:
+Before any new Campaign implementation:
 
 ```text
-Continue Campaign Engine V1 on branch feature/growth-foundation.
-
-Before any decision or write:
-1. re-read the latest branch HEAD; parallel work may have landed
-2. read docs/strategy/DEVELOPMENT_WORKFLOW.md
-3. read docs/strategy/CAMPAIGN_ENGINE_V1.md
-4. read docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
-5. read docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
-6. read docs/strategy/CAMPAIGN_ENGINE_STATUS.md
-7. read docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-8. read docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
-9. read docs/strategy/STATUS.md
-
-Current intended state at handoff:
-- Campaign Engine implementation has NOT started
-- CE1 Foundation is the selected next implementation slice
-- Domain Expansion implementation is scale-gated and must NOT be started
-- production runtime is active on prompt-draft.ir / api.prompt-draft.ir
-- SEO launch is intentionally deferred; NUXT_PUBLIC_NOINDEX=true must remain in force
-- current audited migration ceiling was 028, so 029 was available, but re-audit backend/sql before creating any migration
-
-Start with a branch-exact CE1 capability audit. Determine what already exists in database helpers, authorization, economy, analytics and Manage infrastructure. Then write the smallest CE1 implementation plan and proceed without duplicating existing systems.
+1. read latest feature/growth-foundation HEAD
+2. read DEVELOPMENT_WORKFLOW.md
+3. read CAMPAIGN_ENGINE_V1.md
+4. read CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+5. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+6. read CAMPAIGN_ENGINE_STATUS.md
+7. read CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+8. read MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+9. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+10. read STATUS.md
 ```
+
+Current intended state:
+
+```text
+CE1 Foundation implementation -> IMPLEMENTED
+CE1 local evidence             -> VERIFIED
+CE1 explicit acceptance        -> PENDING
+next slice                      -> PAUSED FOR FOUNDER CONSULTATION
+Domain Expansion               -> SCALE-GATED
+production runtime             -> ACTIVE
+production SEO/indexability    -> DEFERRED
+NUXT_PUBLIC_NOINDEX            -> true / KEEP
+```
+
+Re-audit database helpers, Economy internals, authorization, Product Analytics and Manage shell again before CE2 because parallel work may change them.
 
 ---
 
 ## Hard rules
 
 ```text
-DO NOT assume migration 029 is still free without a fresh audit.
 DO NOT create campaign-specific Economy or Analytics systems.
 DO NOT let custom campaign UI bypass runtime contracts.
+DO NOT let browser input decide reward amount, winner/result or authoritative user identity.
+DO NOT mutate published Campaign Versions.
 DO NOT change accepted 21.5 runtime/indexability contracts as a side effect of Campaign work.
 DO NOT enable production SEO/indexing during Campaign implementation.
+DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder approval.
 DO NOT start Domain Expansion implementation during this pre-scale track.
-DO NOT mark implementation VERIFIED before explicit local evidence and founder acceptance.
+DO NOT mark CE1 DONE/ACCEPTED before explicit founder acceptance.
+DO NOT start CE2 until the pending founder consultation is resolved.
 DO NOT default to pnpm stack; follow the smallest-scope verification workflow.
 ```
