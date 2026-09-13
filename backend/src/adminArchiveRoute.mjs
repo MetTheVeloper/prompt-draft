@@ -2,6 +2,7 @@ import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { handleAdminBlogMediaRequest } from './adminBlogMedia.mjs'
 import { handleAdminBlogPublicationAuditRequest } from './adminBlogPublicationAudit.mjs'
+import { handleAdminTelegramRoute } from './adminTelegramRoute.mjs'
 import { handleArchivePromotionRequest } from './archivePromotion.mjs'
 import { validatePublishedArchiveLocalization } from './archivePublishedLocalization.mjs'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
@@ -15,9 +16,9 @@ export async function handleAdminArchiveRoute({
   corsHeaders,
   sendJson,
 }) {
-  // Blog admin capabilities currently reuse this already-wired admin-content
-  // routing slot. Each Blog handler owns its blog.manage authorization and
-  // returns false for every unrelated pathname.
+  // Blog and Telegram admin capabilities currently reuse this already-wired
+  // admin-content routing slot. Each handler owns its authorization boundary
+  // and returns false for every unrelated pathname.
   const blogPublicationAuditHandled = await handleAdminBlogPublicationAuditRequest({
     request,
     response,
@@ -35,6 +36,15 @@ export async function handleAdminArchiveRoute({
     sendJson,
   })
   if (blogMediaHandled) return true
+
+  const telegramHandled = await handleAdminTelegramRoute({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (telegramHandled) return true
 
   const isArchiveAdminPath =
     url.pathname === '/api/admin/archive' ||
