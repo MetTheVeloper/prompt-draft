@@ -12,9 +12,12 @@ import {
   loadCampaignAttempt,
   mapCampaignAttempt,
 } from './campaignAttempts.mjs'
+import { validateCustomGameSubmission } from './campaignCustomGame.mjs'
+import { refreshCampaignParticipationInTransaction } from './campaignRuntime.mjs'
 
 const IDEMPOTENCY_KEY_MAX = 240
 const NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
+const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -22,9 +25,7 @@ function isObject(value) {
 
 function stableValue(value) {
   if (Array.isArray(value)) return value.map(stableValue)
-  if (isObject(value)) {
-    return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]))
-  }
+  if (isObject(value)) return Object.fromEntries(Object.keys(value).sort().map(key => [key, stableValue(value[key])]))
   return value
 }
 
@@ -35,17 +36,14 @@ function normalizeIdempotencyKey(value) {
 }
 
 export function hashCampaignActionRequest({ mechanicId, action, payload = {}, evidence = {} }) {
-  return createHash('sha256')
-    .update(JSON.stringify(stableValue({ mechanicId, action, payload, evidence })))
-    .digest('hex')
+  return createHash('sha256').update(JSON.stringify(stableValue({ mechanicId, action, payload, evidence }))).digest('hex')
 }
 
 async function readMechanicState(execute, participationId, mechanicId) {
   const result = await execute(
     `SELECT mechanic_id AS "mechanicId", state, revision, updated_at AS "updatedAt"
      FROM campaign_mechanic_states
-     WHERE participation_id = $1 AND mechanic_id = $2
-     LIMIT 1`,
+     WHERE participation_id = $1 AND mechanic_id = $2 LIMIT 1`,
     [participationId, mechanicId],
   )
   const row = result.rows[0]
@@ -56,9 +54,7 @@ async function readMechanicState(execute, participationId, mechanicId) {
 
 export async function readCampaignMechanicStates(execute, runtime) {
   const output = []
-  for (const mechanic of runtime.definition.mechanics ?? []) {
-    output.push(await readMechanicState(execute, runtime.id, mechanic.id))
-  }
+  for (const mechanic of runtime.definition.mechanics ?? []) output.push(await readMechanicState(execute, runtime.id, mechanic.id))
   return output
 }
 
@@ -68,20 +64,10 @@ async function persistAction(execute, input) {
     `INSERT INTO campaign_actions
        (id, participation_id, mechanic_id, action_name, idempotency_key, request_hash,
         payload, evidence, accepted, rejection_code, received_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7::jsonb, $8::jsonb, $9, $10, $11)`,
-    [
-      id,
-      input.runtime.id,
-      input.mechanicId,
-      input.action,
-      input.idempotencyKey,
-      input.requestHash,
-      JSON.stringify(input.payload ?? {}),
-      JSON.stringify(input.evidence ?? {}),
-      input.accepted,
-      input.rejectionCode ?? null,
-      input.receivedAt.toISOString(),
-    ],
+     VALUES ($1,$2,$3,$4,$5,$6,$7::jsonb,$8::jsonb,$9,$10,$11)`,
+    [id, input.runtime.id, input.mechanicId, input.action, input.idempotencyKey, input.requestHash,
+      JSON.stringify(input.payload ?? {}), JSON.stringify(input.evidence ?? {}), input.accepted,
+      input.rejectionCode ?? null, input.receivedAt.toISOString()],
   )
   return id
 }
@@ -90,9 +76,7 @@ async function loadExistingAction(execute, participationId, idempotencyKey) {
   const result = await execute(
     `SELECT id, mechanic_id AS "mechanicId", action_name AS action,
             request_hash AS "requestHash", accepted, rejection_code AS "rejectionCode", evidence
-     FROM campaign_actions
-     WHERE participation_id = $1 AND idempotency_key = $2
-     LIMIT 1`,
+     FROM campaign_actions WHERE participation_id = $1 AND idempotency_key = $2 LIMIT 1`,
     [participationId, idempotencyKey],
   )
   return result.rows[0] ?? null
@@ -101,13 +85,10 @@ async function loadExistingAction(execute, participationId, idempotencyKey) {
 async function appendActionEvent(execute, runtime, { mechanicId, eventName, actionId, metadata, createdAt }) {
   await execute(
     `INSERT INTO campaign_events
-       (id, campaign_id, campaign_version_id, participation_id, mechanic_id,
-        event_name, source_action_id, metadata, created_at)
-     VALUES ($1, $2, $3, $4, $5, $6, $7, $8::jsonb, $9)`,
-    [
-      randomUUID(), runtime.campaignId, runtime.campaignVersionId, runtime.id,
-      mechanicId, eventName, actionId, JSON.stringify(metadata ?? {}), createdAt.toISOString(),
-    ],
+       (id,campaign_id,campaign_version_id,participation_id,mechanic_id,event_name,source_action_id,metadata,created_at)
+     VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb,$9)`,
+    [randomUUID(), runtime.campaignId, runtime.campaignVersionId, runtime.id, mechanicId, eventName, actionId,
+      JSON.stringify(metadata ?? {}), createdAt.toISOString()],
   )
 }
 
@@ -119,17 +100,115 @@ async function rejectAction(execute, input, code) {
 function validAttemptStarted(payload, evidence) {
   return isObject(payload) && Object.keys(payload).length === 0 &&
     isObject(evidence) && Object.keys(evidence).length === 1 &&
-    typeof evidence.attemptId === 'string' &&
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(evidence.attemptId)
+    typeof evidence.attemptId === 'string' && UUID_PATTERN.test(evidence.attemptId)
+}
+
+async function ensureMechanicState(execute, runtime, mechanicId, effectiveAt) {
+  await execute(
+    `INSERT INTO campaign_mechanic_states (participation_id, mechanic_id, state, revision, updated_at)
+     VALUES ($1,$2,'{}'::jsonb,1,$3)
+     ON CONFLICT (participation_id, mechanic_id) DO NOTHING`,
+    [runtime.id, mechanicId, effectiveAt.toISOString()],
+  )
+  await execute(
+    `SELECT participation_id FROM campaign_mechanic_states
+     WHERE participation_id = $1 AND mechanic_id = $2 FOR UPDATE`,
+    [runtime.id, mechanicId],
+  )
+}
+
+async function handleCustomGameFinished(client, execute, common, mechanic, effectiveAt) {
+  const attemptId = common.evidence?.attemptId
+  if (typeof attemptId !== 'string' || !UUID_PATTERN.test(attemptId)) {
+    return rejectAction(execute, common, 'CAMPAIGN_ACTION_SCHEMA_INVALID')
+  }
+  const attempt = await loadCampaignAttempt(execute, {
+    participationId: common.runtime.id,
+    mechanicId: common.mechanicId,
+    attemptId,
+    lock: true,
+  })
+  if (!attempt) return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_INVALID')
+  if (attempt.status !== 'started') return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_STATE_INVALID')
+
+  const verification = validateCustomGameSubmission({ attempt, payload: common.payload, evidence: common.evidence })
+  if (!verification.ok) return rejectAction(execute, common, verification.code)
+
+  const actionId = await persistAction(execute, { ...common, accepted: true })
+  await execute(
+    `UPDATE campaign_attempts
+     SET status = 'resolved', submitted_at = COALESCE(submitted_at, $2), resolved_at = COALESCE(resolved_at, $2),
+         outcome = $3::jsonb
+     WHERE id = $1`,
+    [attempt.id, effectiveAt.toISOString(), JSON.stringify({ key: verification.outcome })],
+  )
+
+  await ensureMechanicState(execute, common.runtime, common.mechanicId, effectiveAt)
+  await execute(
+    `UPDATE campaign_mechanic_states
+     SET state = jsonb_build_object(
+           'lastAttemptId', $3::text,
+           'lastAction', 'game_finished',
+           'lastActionAt', $4::timestamptz,
+           'lastOutcome', $5::text
+         ),
+         revision = revision + 1,
+         updated_at = $4::timestamptz
+     WHERE participation_id = $1 AND mechanic_id = $2`,
+    [common.runtime.id, common.mechanicId, attempt.id, effectiveAt.toISOString(), verification.outcome],
+  )
+
+  await appendActionEvent(execute, common.runtime, {
+    mechanicId: common.mechanicId,
+    eventName: 'attempt_resolved',
+    actionId,
+    metadata: { attemptId: attempt.id, outcome: verification.outcome },
+    createdAt: effectiveAt,
+  })
+  if (verification.outcome === 'win') {
+    await appendActionEvent(execute, common.runtime, {
+      mechanicId: common.mechanicId,
+      eventName: 'game_won',
+      actionId,
+      metadata: { attemptId: attempt.id, outcome: 'win' },
+      createdAt: effectiveAt,
+    })
+  }
+
+  const refreshed = await refreshCampaignParticipationInTransaction(client, {
+    participationId: common.runtime.id,
+    asOf: effectiveAt,
+  })
+  const updatedAttempt = await loadCampaignAttempt(execute, {
+    participationId: common.runtime.id,
+    mechanicId: common.mechanicId,
+    attemptId: attempt.id,
+  })
+  const effects = [
+    { type: 'attempt_resolved', attemptId: attempt.id, outcome: verification.outcome },
+    ...(verification.outcome === 'win' ? [{ type: 'game_won', attemptId: attempt.id }] : []),
+    ...(refreshed?.effects ?? []),
+  ]
+
+  return {
+    ok: true,
+    accepted: true,
+    duplicate: false,
+    result: {
+      participation: refreshed?.participation ?? mapParticipation(common.runtime),
+      mechanicState: await readMechanicState(execute, common.runtime.id, common.mechanicId),
+      attempt: mapCampaignAttempt(updatedAttempt, mechanic.attemptPolicy),
+      effects,
+      ...(refreshed?.economy ? { economy: refreshed.economy } : {}),
+    },
+  }
 }
 
 export async function submitCampaignActionInTransaction(client, input) {
   const execute = client.query.bind(client)
   const idempotencyKey = normalizeIdempotencyKey(input.idempotencyKey)
-  if (
-    !idempotencyKey || !NAME_PATTERN.test(input.mechanicId ?? '') || !NAME_PATTERN.test(input.action ?? '') ||
-    !isObject(input.payload ?? {}) || !isObject(input.evidence ?? {})
-  ) {
+  if (!idempotencyKey || !NAME_PATTERN.test(input.mechanicId ?? '') || !NAME_PATTERN.test(input.action ?? '') ||
+      !isObject(input.payload ?? {}) || !isObject(input.evidence ?? {})) {
     return { ok: false, code: 'CAMPAIGN_ACTION_INPUT_INVALID' }
   }
 
@@ -140,24 +219,17 @@ export async function submitCampaignActionInTransaction(client, input) {
   const requestHash = hashCampaignActionRequest(input)
   const existing = await loadExistingAction(execute, runtime.id, idempotencyKey)
   if (existing) {
-    if (existing.requestHash && existing.requestHash !== requestHash) {
-      return { ok: false, code: 'CAMPAIGN_IDEMPOTENCY_CONFLICT', duplicate: true }
-    }
-    if (!existing.accepted) {
-      return { ok: false, code: existing.rejectionCode ?? 'CAMPAIGN_ACTION_REJECTED', duplicate: true }
-    }
+    if (existing.requestHash && existing.requestHash !== requestHash) return { ok: false, code: 'CAMPAIGN_IDEMPOTENCY_CONFLICT', duplicate: true }
+    if (!existing.accepted) return { ok: false, code: existing.rejectionCode ?? 'CAMPAIGN_ACTION_REJECTED', duplicate: true }
     const mechanic = findCampaignMechanic(runtime, input.mechanicId)
     const mechanicState = await readMechanicState(execute, runtime.id, input.mechanicId)
     const attempt = existing.evidence?.attemptId
       ? await loadCampaignAttempt(execute, { participationId: runtime.id, mechanicId: input.mechanicId, attemptId: existing.evidence.attemptId })
       : null
     return {
-      ok: true,
-      accepted: true,
-      duplicate: true,
+      ok: true, accepted: true, duplicate: true,
       result: {
-        participation: mapParticipation(runtime),
-        mechanicState,
+        participation: mapParticipation(runtime), mechanicState,
         attempt: mechanic?.attemptPolicy && attempt ? mapCampaignAttempt(attempt, mechanic.attemptPolicy) : null,
         effects: [],
       },
@@ -170,69 +242,42 @@ export async function submitCampaignActionInTransaction(client, input) {
   }
 
   const common = {
-    runtime,
-    mechanicId: input.mechanicId,
-    action: input.action,
-    idempotencyKey,
-    requestHash,
-    payload: input.payload ?? {},
-    evidence: input.evidence ?? {},
-    receivedAt: effectiveAt,
+    runtime, mechanicId: input.mechanicId, action: input.action, idempotencyKey, requestHash,
+    payload: input.payload ?? {}, evidence: input.evidence ?? {}, receivedAt: effectiveAt,
   }
   const mechanic = findCampaignMechanic(runtime, input.mechanicId)
   if (!mechanic) return rejectAction(execute, common, 'CAMPAIGN_MECHANIC_NOT_FOUND')
+
+  if (mechanic.type === 'custom_game' && input.action === 'game_finished') {
+    return handleCustomGameFinished(client, execute, common, mechanic, effectiveAt)
+  }
+
   if (input.action !== 'attempt_started') return rejectAction(execute, common, 'CAMPAIGN_ACTION_UNSUPPORTED')
   if (!mechanic.attemptPolicy || !validAttemptStarted(common.payload, common.evidence)) {
     return rejectAction(execute, common, 'CAMPAIGN_ACTION_SCHEMA_INVALID')
   }
 
   const attempt = await loadCampaignAttempt(execute, {
-    participationId: runtime.id,
-    mechanicId: input.mechanicId,
-    attemptId: common.evidence.attemptId,
-    lock: true,
+    participationId: runtime.id, mechanicId: input.mechanicId, attemptId: common.evidence.attemptId, lock: true,
   })
   if (!attempt) return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_INVALID')
-  if (!['reserved', 'started'].includes(attempt.status)) {
-    return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_STATE_INVALID')
-  }
+  if (!['reserved', 'started'].includes(attempt.status)) return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_STATE_INVALID')
 
   const actionId = await persistAction(execute, { ...common, accepted: true })
   const effects = []
   if (attempt.status === 'reserved') {
-    await execute(
-      `UPDATE campaign_attempts SET status = 'started', started_at = COALESCE(started_at, $2) WHERE id = $1`,
-      [attempt.id, effectiveAt.toISOString()],
-    )
-    await execute(
-      `INSERT INTO campaign_mechanic_states (participation_id, mechanic_id, state, revision, updated_at)
-       VALUES ($1, $2, '{}'::jsonb, 1, $3)
-       ON CONFLICT (participation_id, mechanic_id) DO NOTHING`,
-      [runtime.id, input.mechanicId, effectiveAt.toISOString()],
-    )
-    await execute(
-      `SELECT participation_id FROM campaign_mechanic_states
-       WHERE participation_id = $1 AND mechanic_id = $2 FOR UPDATE`,
-      [runtime.id, input.mechanicId],
-    )
+    await execute(`UPDATE campaign_attempts SET status='started', started_at=COALESCE(started_at,$2) WHERE id=$1`, [attempt.id, effectiveAt.toISOString()])
+    await ensureMechanicState(execute, runtime, input.mechanicId, effectiveAt)
     await execute(
       `UPDATE campaign_mechanic_states
-       SET state = jsonb_build_object(
-             'lastAttemptId', $3::text,
-             'lastAction', 'attempt_started',
-             'lastActionAt', $4::timestamptz
-           ),
-           revision = revision + 1,
-           updated_at = $4::timestamptz
-       WHERE participation_id = $1 AND mechanic_id = $2`,
+       SET state = jsonb_build_object('lastAttemptId',$3::text,'lastAction','attempt_started','lastActionAt',$4::timestamptz),
+           revision = revision + 1, updated_at = $4::timestamptz
+       WHERE participation_id=$1 AND mechanic_id=$2`,
       [runtime.id, input.mechanicId, attempt.id, effectiveAt.toISOString()],
     )
     await appendActionEvent(execute, runtime, {
-      mechanicId: input.mechanicId,
-      eventName: 'attempt_started',
-      actionId,
-      metadata: { attemptId: attempt.id },
-      createdAt: effectiveAt,
+      mechanicId: input.mechanicId, eventName: 'attempt_started', actionId,
+      metadata: { attemptId: attempt.id }, createdAt: effectiveAt,
     })
     effects.push({ type: 'attempt_started', attemptId: attempt.id })
   }
@@ -241,9 +286,7 @@ export async function submitCampaignActionInTransaction(client, input) {
     participationId: runtime.id, mechanicId: input.mechanicId, attemptId: attempt.id,
   })
   return {
-    ok: true,
-    accepted: true,
-    duplicate: false,
+    ok: true, accepted: true, duplicate: false,
     result: {
       participation: mapParticipation(runtime),
       mechanicState: await readMechanicState(execute, runtime.id, input.mechanicId),

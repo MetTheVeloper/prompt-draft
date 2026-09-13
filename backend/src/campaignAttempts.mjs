@@ -9,6 +9,7 @@ import {
   loadPublishedCampaignBySlug,
   participationAllowsProgress,
 } from './campaignRuntimeShared.mjs'
+import { prepareCustomGameAttemptContext } from './campaignCustomGame.mjs'
 
 const IDEMPOTENCY_KEY_MAX = 240
 const MECHANIC_ID_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
@@ -101,6 +102,7 @@ export function getAttemptPeriodDescriptor({ policy, runtime, asOf = new Date(),
 
 export function mapCampaignAttempt(row, policy, nextEligibleAt = null) {
   if (!row) return null
+  const publicContext = row.privateContext?.publicContext
   return {
     id: row.id,
     mechanicId: row.mechanicId,
@@ -108,7 +110,9 @@ export function mapCampaignAttempt(row, policy, nextEligibleAt = null) {
     attemptIndex: Number(row.attemptIndex),
     period: { type: policy.period, nextEligibleAt },
     expiresAt: toIso(row.expiresAt),
-    publicContext: {},
+    publicContext: publicContext && typeof publicContext === 'object' && !Array.isArray(publicContext)
+      ? publicContext
+      : {},
     ...(row.outcome ? { outcome: row.outcome } : {}),
   }
 }
@@ -157,7 +161,8 @@ export async function loadCampaignAttempt(execute, { participationId, mechanicId
   const filter = attemptId ? 'id = $3' : 'idempotency_key = $3'
   const value = attemptId ?? idempotencyKey
   const result = await execute(
-    `SELECT id, mechanic_id AS "mechanicId", status, attempt_index AS "attemptIndex", outcome, expires_at AS "expiresAt"
+    `SELECT id, mechanic_id AS "mechanicId", status, attempt_index AS "attemptIndex",
+            private_context AS "privateContext", outcome, expires_at AS "expiresAt"
      FROM campaign_attempts
      WHERE participation_id = $1 AND mechanic_id = $2 AND ${filter}
      LIMIT 1 ${lock ? 'FOR UPDATE' : ''}`,
@@ -200,12 +205,29 @@ export async function reserveCampaignAttemptInTransaction(client, input) {
   }
 
   const attemptId = randomUUID()
+  let privateContext = {}
+  if (mechanic.type === 'custom_game') {
+    const prepared = prepareCustomGameAttemptContext({ mechanic, attemptId })
+    if (!prepared.ok) return prepared
+    privateContext = prepared.privateContext
+  }
+
   const result = await execute(
     `INSERT INTO campaign_attempts
        (id, participation_id, mechanic_id, period_key, attempt_index, status, idempotency_key, private_context, created_at)
-     VALUES ($1, $2, $3, $4, $5, 'reserved', $6, '{}'::jsonb, $7)
-     RETURNING id, mechanic_id AS "mechanicId", status, attempt_index AS "attemptIndex", outcome, expires_at AS "expiresAt"`,
-    [attemptId, runtime.id, input.mechanicId, descriptor.periodKey, usage.count + 1, idempotencyKey, effectiveAt.toISOString()],
+     VALUES ($1, $2, $3, $4, $5, 'reserved', $6, $7::jsonb, $8)
+     RETURNING id, mechanic_id AS "mechanicId", status, attempt_index AS "attemptIndex",
+               private_context AS "privateContext", outcome, expires_at AS "expiresAt"`,
+    [
+      attemptId,
+      runtime.id,
+      input.mechanicId,
+      descriptor.periodKey,
+      usage.count + 1,
+      idempotencyKey,
+      JSON.stringify(privateContext),
+      effectiveAt.toISOString(),
+    ],
   )
   await appendCampaignEvent(execute, runtime, 'attempt_created', {
     attemptId, attemptIndex: usage.count + 1, period: mechanic.attemptPolicy.period,
