@@ -73,8 +73,8 @@ export function useCampaignCustomGame(
   })
 
   const canTryAgain = computed(() => {
-    if (!attempt.value || attempt.value.status !== 'resolved' || !participationOpen.value || !availability.value?.available || !progressOpen.value) return false
-    return Number(availability.value.usedAttempts ?? -1) >= attempt.value.attemptIndex
+    if (!attempt.value || attempt.value.status !== 'resolved' || !participationOpen.value || !progressOpen.value) return false
+    return (remainingAttempts.value ?? 0) > 0
   })
 
   const storageKey = computed(() => `prompt-draft:campaign-game:attempt:v1:${props.campaign.slug}:${participation.value?.id ?? 'anonymous'}:${props.mechanic.id}`)
