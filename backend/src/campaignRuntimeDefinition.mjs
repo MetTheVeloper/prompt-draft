@@ -1,4 +1,5 @@
 import { getCampaignMechanic } from './campaignRegistry.mjs'
+import { validateCustomGameDefinition } from './campaignCustomGame.mjs'
 import {
   getCampaignPromotionRenderer,
   isCampaignPromotionSlot,
@@ -165,6 +166,10 @@ export function validateCampaignRuntimeDefinition(definition) {
         'CAMPAIGN_MECHANIC_ID_INVALID',
         'mechanic id must be 1-100 path-safe characters',
       ))
+    }
+
+    if (mechanic?.type === 'custom_game') {
+      errors.push(...validateCustomGameDefinition(mechanic, base))
     }
 
     if (mechanic?.attemptPolicy === undefined) return

@@ -248,7 +248,11 @@ export async function submitCampaignActionInTransaction(client, input) {
   const mechanic = findCampaignMechanic(runtime, input.mechanicId)
   if (!mechanic) return rejectAction(execute, common, 'CAMPAIGN_MECHANIC_NOT_FOUND')
 
-  if (mechanic.type === 'custom_game' && input.action === 'game_finished') {
+  if (
+    mechanic.type === 'custom_game' &&
+    input.action === 'game_finished' &&
+    typeof common.evidence?.attemptId === 'string'
+  ) {
     return handleCustomGameFinished(client, execute, common, mechanic, effectiveAt)
   }
 
