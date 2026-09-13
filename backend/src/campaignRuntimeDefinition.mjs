@@ -1,6 +1,10 @@
 import { getCampaignMechanic } from './campaignRegistry.mjs'
 import { validateCustomGameDefinition } from './campaignCustomGame.mjs'
 import {
+  getChanceWheelSegmentKeys,
+  validateChanceWheelDefinition,
+} from './campaignChanceWheel.mjs'
+import {
   getCampaignPromotionRenderer,
   isCampaignPromotionSlot,
 } from './campaignPromotionRegistry.mjs'
@@ -171,6 +175,9 @@ export function validateCampaignRuntimeDefinition(definition) {
     if (mechanic?.type === 'custom_game') {
       errors.push(...validateCustomGameDefinition(mechanic, base))
     }
+    if (mechanic?.type === 'chance_wheel') {
+      errors.push(...validateChanceWheelDefinition(mechanic, base))
+    }
 
     if (mechanic?.attemptPolicy === undefined) return
     const policy = mechanic.attemptPolicy
@@ -278,6 +285,16 @@ export function validateCampaignRuntimeDefinition(definition) {
           `${base}.trigger.mechanicId`,
           'CAMPAIGN_CLIENT_REPORTED_REWARD_FORBIDDEN',
           'client_reported mechanic outcomes cannot directly authorize Goin',
+        ))
+      }
+      if (
+        mechanic.type === 'chance_wheel' &&
+        !getChanceWheelSegmentKeys(mechanic).has(trigger.outcome.trim())
+      ) {
+        errors.push(issue(
+          `${base}.trigger.outcome`,
+          'CAMPAIGN_WHEEL_REWARD_OUTCOME_UNKNOWN',
+          'chance_wheel reward outcome must reference a public wheel segment',
         ))
       }
       return
