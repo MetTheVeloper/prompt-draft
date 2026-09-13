@@ -8,6 +8,16 @@ function issue(path, code, message) {
   return { path, code, message }
 }
 
+function validTimeZone(value) {
+  if (typeof value !== 'string' || !value.trim()) return false
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: value }).format(new Date())
+    return true
+  } catch {
+    return false
+  }
+}
+
 function collectMechanicOutcomeIds(rule, output = new Set()) {
   if (!isObject(rule)) return output
   if (rule.type === 'all' || rule.type === 'any') {
@@ -16,9 +26,7 @@ function collectMechanicOutcomeIds(rule, output = new Set()) {
   }
   if (rule.type === 'not') return collectMechanicOutcomeIds(rule.rule, output)
   if (rule.type === 'condition' && rule.condition?.source === 'mechanic_outcome') {
-    if (typeof rule.condition.mechanicId === 'string') {
-      output.add(rule.condition.mechanicId)
-    }
+    if (typeof rule.condition.mechanicId === 'string') output.add(rule.condition.mechanicId)
   }
   return output
 }
@@ -35,21 +43,59 @@ export function validateCampaignRuntimeDefinition(definition) {
   const rewardIds = new Set()
   const completionOutcomeIds = collectMechanicOutcomeIds(definition?.completion)
 
+  mechanics.forEach((mechanic, index) => {
+    const base = `mechanics[${index}]`
+    if (
+      typeof mechanic?.id !== 'string' ||
+      !/^[A-Za-z0-9._-]{1,100}$/.test(mechanic.id)
+    ) {
+      errors.push(issue(
+        `${base}.id`,
+        'CAMPAIGN_MECHANIC_ID_INVALID',
+        'mechanic id must be 1-100 path-safe characters',
+      ))
+    }
+
+    if (mechanic?.attemptPolicy === undefined) return
+    const policy = mechanic.attemptPolicy
+    if (!isObject(policy)) {
+      errors.push(issue(
+        `${base}.attemptPolicy`,
+        'CAMPAIGN_ATTEMPT_POLICY_INVALID',
+        'attemptPolicy must be an object',
+      ))
+      return
+    }
+    if (!Number.isSafeInteger(policy.maxAttempts) || policy.maxAttempts <= 0 || policy.maxAttempts > 1000) {
+      errors.push(issue(
+        `${base}.attemptPolicy.maxAttempts`,
+        'CAMPAIGN_ATTEMPT_MAX_INVALID',
+        'maxAttempts must be an integer between 1 and 1000',
+      ))
+    }
+    if (!['campaign', 'calendar_day', 'rolling_24h', 'session'].includes(policy.period)) {
+      errors.push(issue(
+        `${base}.attemptPolicy.period`,
+        'CAMPAIGN_ATTEMPT_PERIOD_INVALID',
+        'attempt period must be campaign, calendar_day, rolling_24h, or session',
+      ))
+    }
+    if (policy.period === 'calendar_day' && !validTimeZone(policy.timezone)) {
+      errors.push(issue(
+        `${base}.attemptPolicy.timezone`,
+        'CAMPAIGN_TIMEZONE_INVALID',
+        'calendar_day attempt policy requires a valid IANA timezone',
+      ))
+    }
+  })
+
   rewards.forEach((reward, index) => {
     const base = `rewards[${index}]`
     const rewardId = typeof reward?.id === 'string' ? reward.id.trim() : ''
     if (!rewardId || rewardId.length > 100) {
-      errors.push(issue(
-        `${base}.id`,
-        'CAMPAIGN_REWARD_ID_INVALID',
-        'reward id must be 1-100 characters',
-      ))
+      errors.push(issue(`${base}.id`, 'CAMPAIGN_REWARD_ID_INVALID', 'reward id must be 1-100 characters'))
     } else if (rewardIds.has(rewardId)) {
-      errors.push(issue(
-        `${base}.id`,
-        'CAMPAIGN_REWARD_ID_DUPLICATE',
-        'reward ids must be unique',
-      ))
+      errors.push(issue(`${base}.id`, 'CAMPAIGN_REWARD_ID_DUPLICATE', 'reward ids must be unique'))
     } else {
       rewardIds.add(rewardId)
     }
@@ -63,11 +109,7 @@ export function validateCampaignRuntimeDefinition(definition) {
     }
 
     if (reward?.budget !== undefined) {
-      if (
-        !isObject(reward.budget) ||
-        !Number.isSafeInteger(reward.budget.maxAmount) ||
-        reward.budget.maxAmount < reward.amount
-      ) {
+      if (!isObject(reward.budget) || !Number.isSafeInteger(reward.budget.maxAmount) || reward.budget.maxAmount < reward.amount) {
         errors.push(issue(
           `${base}.budget.maxAmount`,
           'CAMPAIGN_REWARD_BUDGET_INVALID',
@@ -89,11 +131,7 @@ export function validateCampaignRuntimeDefinition(definition) {
 
     const trigger = reward?.trigger
     if (!isObject(trigger)) {
-      errors.push(issue(
-        `${base}.trigger`,
-        'CAMPAIGN_REWARD_TRIGGER_INVALID',
-        'reward trigger is required',
-      ))
+      errors.push(issue(`${base}.trigger`, 'CAMPAIGN_REWARD_TRIGGER_INVALID', 'reward trigger is required'))
       return
     }
 
