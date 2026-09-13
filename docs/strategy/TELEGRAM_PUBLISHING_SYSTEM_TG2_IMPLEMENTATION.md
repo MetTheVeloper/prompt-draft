@@ -1,6 +1,6 @@
 # Telegram Publishing System — TG2 Composer + Manage Surface
 
-Status: **TG1 ACCEPTED / TG2 IMPLEMENTED / AWAITING FOUNDER-LOCAL BUILD + VISUAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL BUILD + VISUAL VERIFIED / ACCEPTED 2026-09-13**
 
 Date: 2026-09-13
 
@@ -106,7 +106,7 @@ TG2 follows `UI_IMPLEMENTATION_GUIDELINES.md`:
 - responsive wrapping through existing flex utilities;
 - English and Persian strings live in dedicated Manage locale fragments and merge through `i18n/i18n.config.ts`.
 
-Light/Dark and EN/FA remain founder-visual verification requirements.
+Light/Dark and EN/FA were founder-visual verified before acceptance.
 
 ## 7. Backend / database scope
 
@@ -121,11 +121,11 @@ POST /api/admin/telegram/publications
 POST /api/admin/telegram/publications/:id/retry
 ```
 
-Therefore TG2 verification does not require `pnpm api`, `db:schema`, or `pnpm stack`.
+Therefore TG2 verification did not require `pnpm api`, `db:schema`, or `pnpm stack`.
 
-## 8. Founder-local verification gate
+## 8. Founder-local verification evidence
 
-Smallest required build scope:
+Founder-local verification was completed on 2026-09-13 with the smallest required frontend scope:
 
 ```powershell
 cd G:\ZADAK\prompt-draft
@@ -135,35 +135,44 @@ pnpm locale:audit:parity
 pnpm frontend
 ```
 
-Then, while logged in as `super_admin`, inspect:
+Observed localization audit:
 
 ```text
-/manage/telegram
-/fa/manage/telegram
+Missing in EN:        0
+Dynamic key patterns: 0
+Hardcoded candidates: 0
 ```
 
-Required visual/behavior evidence:
+The existing repository-wide FA parity backlog remained present (`Missing in FA: 111`, `Extra in FA: 183`) and was not introduced by TG2. The TG2 EN/FA surface itself rendered correctly in founder screenshots.
+
+Frontend production build completed successfully through client, SSR server and Nitro output. Existing non-blocking warnings remained limited to the known Nuxt module-preload sourcemap warning, large chunk warnings and the orphan `cloudflared` container warning.
+
+Founder visual evidence confirmed:
 
 ```text
 Telegram section appears for super_admin
-EN + FA render correctly
-Light + Dark render correctly
+/manage/telegram renders in EN and FA
+Light and Dark themes both render correctly
 configuration status is readable
-when local Telegram env is missing, Publish is safely disabled
-caption/media/CTA editing updates Preview
-multiple photo URL rows can be added/removed up to backend limit
-multiple CTA rows can be added/removed up to backend limit
-publication history empty state or existing rows render correctly
-failed rows expose Retry; delivery_unknown rows do not
+missing local Telegram env produces Not configured / پیکربندی نشده
+Publish is safely disabled while server configuration is absent
+Composer caption/media/CTA controls render correctly
+Prompt Draft preview renders correctly
+publication-history empty state renders correctly
 ```
 
-Do not configure a production Telegram bot/channel or send a real post merely to satisfy TG2 UI verification. A controlled real-channel smoke may happen later when the founder explicitly chooses to configure the local/staging bot.
+No production bot token, production channel configuration or real Telegram delivery was required for this TG2 acceptance gate.
 
-## 9. Acceptance boundary
+## 9. Acceptance
 
-TG2 is not accepted until founder-local build and visual evidence are clean.
+TG2 is accepted:
 
-After TG2 acceptance:
+```text
+TG1 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+TG2 -> DONE / FOUNDER-LOCAL BUILD + VISUAL VERIFIED / ACCEPTED 2026-09-13
+```
+
+Next slice:
 
 ```text
 TG3 — Prompt Archive adapter -> same TelegramPostComposer + same TG1 publisher
