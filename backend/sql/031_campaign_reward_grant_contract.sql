@@ -59,8 +59,13 @@ ALTER TABLE campaign_reward_grants
 -- Migration 029 accidentally enforced only one reward-definition grant for an
 -- entire participation. V1 qualification_key is the retry-safe identity that
 -- permits legitimate repeated rewards such as daily wheel/game outcomes.
+--
+-- PostgreSQL auto-generated the original two-column UNIQUE constraint with the
+-- 63-byte identifier below. The earlier follow-up attempted to drop a longer
+-- guessed name, which PostgreSQL truncated differently and therefore left the
+-- legacy constraint active on existing databases.
 ALTER TABLE campaign_reward_grants
-  DROP CONSTRAINT IF EXISTS campaign_reward_grants_participation_id_reward_definition_id_key;
+  DROP CONSTRAINT IF EXISTS campaign_reward_grants_participation_id_reward_definition_i_key;
 
 DO $$
 BEGIN
