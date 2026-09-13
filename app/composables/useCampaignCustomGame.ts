@@ -33,6 +33,7 @@ export function useCampaignCustomGame(
   const latestParticipationStatus = ref<string | null>(null)
 
   const participation = computed(() => props.state.participation)
+  const mechanicState = computed(() => props.state.mechanics.find(item => item.mechanicId === props.mechanic.id) ?? null)
   const availability = computed(() => props.state.attemptAvailability.find(item => item.mechanicId === props.mechanic.id) ?? null)
   const participationStatus = computed(() => latestParticipationStatus.value ?? participation.value?.status ?? null)
   const participationOpen = computed(() => participationStatus.value === 'started' || participationStatus.value === 'in_progress')
@@ -72,9 +73,16 @@ export function useCampaignCustomGame(
     return value.key === 'win' || value.key === 'lose' ? value.key : null
   })
 
+  const persistedOutcome = computed<'win' | 'lose' | null>(() => {
+    const state = mechanicState.value?.state
+    if (!isObject(state) || state.lastAction !== 'game_finished') return null
+    return state.lastOutcome === 'win' || state.lastOutcome === 'lose' ? state.lastOutcome : null
+  })
+
   const canTryAgain = computed(() => {
-    if (!attempt.value || attempt.value.status !== 'resolved' || !participationOpen.value || !progressOpen.value) return false
-    return (remainingAttempts.value ?? 0) > 0
+    if (!participationOpen.value || !progressOpen.value || (remainingAttempts.value ?? 0) <= 0) return false
+    if (attempt.value) return attempt.value.status === 'resolved' && outcome.value === 'lose'
+    return persistedOutcome.value === 'lose'
   })
 
   const storageKey = computed(() => `prompt-draft:campaign-game:attempt:v1:${props.campaign.slug}:${participation.value?.id ?? 'anonymous'}:${props.mechanic.id}`)
@@ -187,7 +195,7 @@ export function useCampaignCustomGame(
   return {
     attempt, answer, submittedAnswer, recovering, reserving, starting, submitting, error,
     availability, remainingAttempts, participationOpen, progressOpen, busy, canReserve, answerValid,
-    challengePrompt, outcome, canTryAgain,
+    challengePrompt, outcome, persistedOutcome, canTryAgain,
     begin, retryStart, submit, tryAgain,
   }
 }
