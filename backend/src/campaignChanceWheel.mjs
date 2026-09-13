@@ -4,6 +4,9 @@ const KEY_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
 const MAX_SEGMENTS = 50
 const MAX_WEIGHT = 1_000_000_000
 const MAX_TOTAL_WEIGHT = 1_000_000_000
+const PUBLIC_CONFIG_FIELDS = new Set(['segments'])
+const PRIVATE_CONFIG_FIELDS = new Set(['weights'])
+const SEGMENT_FIELDS = new Set(['key', 'label'])
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -46,10 +49,34 @@ export function validateChanceWheelDefinition(mechanic, base = 'mechanic') {
     return errors
   }
 
+  for (const field of Object.keys(publicConfig)) {
+    if (!PUBLIC_CONFIG_FIELDS.has(field)) {
+      errors.push(issue(
+        `${base}.config.public.${field}`,
+        'CAMPAIGN_WHEEL_PUBLIC_CONFIG_FIELD_UNSUPPORTED',
+        'chance_wheel public config may expose only segments',
+      ))
+    }
+  }
+
   const segmentKeys = new Set()
   segments.forEach((segment, index) => {
     const path = `${base}.config.public.segments[${index}]`
-    const key = typeof segment?.key === 'string' ? segment.key.trim() : ''
+    if (!isObject(segment)) {
+      errors.push(issue(path, 'CAMPAIGN_WHEEL_SEGMENT_INVALID', 'wheel segment must be an object'))
+      return
+    }
+    for (const field of Object.keys(segment)) {
+      if (!SEGMENT_FIELDS.has(field)) {
+        errors.push(issue(
+          `${path}.${field}`,
+          'CAMPAIGN_WHEEL_SEGMENT_FIELD_UNSUPPORTED',
+          'public wheel segments may expose only key and label',
+        ))
+      }
+    }
+
+    const key = typeof segment.key === 'string' ? segment.key.trim() : ''
     if (!KEY_PATTERN.test(key)) {
       errors.push(issue(`${path}.key`, 'CAMPAIGN_WHEEL_SEGMENT_KEY_INVALID', 'wheel segment key must be 1-100 path-safe characters'))
     } else if (segmentKeys.has(key)) {
@@ -58,7 +85,7 @@ export function validateChanceWheelDefinition(mechanic, base = 'mechanic') {
       segmentKeys.add(key)
     }
 
-    if (!validLocalizedLabel(segment?.label)) {
+    if (!validLocalizedLabel(segment.label)) {
       errors.push(issue(`${path}.label`, 'CAMPAIGN_WHEEL_SEGMENT_LABEL_INVALID', 'wheel segment label must contain non-empty en/fa localized text'))
     }
   })
@@ -70,6 +97,16 @@ export function validateChanceWheelDefinition(mechanic, base = 'mechanic') {
       'chance_wheel requires private outcome weights',
     ))
     return errors
+  }
+
+  for (const field of Object.keys(privateConfig)) {
+    if (!PRIVATE_CONFIG_FIELDS.has(field)) {
+      errors.push(issue(
+        `${base}.config.private.${field}`,
+        'CAMPAIGN_WHEEL_PRIVATE_CONFIG_FIELD_UNSUPPORTED',
+        'chance_wheel V1 private config may contain only weights',
+      ))
+    }
   }
 
   let totalWeight = 0
