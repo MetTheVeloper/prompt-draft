@@ -1,6 +1,6 @@
 # Milestone 21.5 — Pre-Scale Execution Handoff
 
-Status: **FOUNDER-APPROVED EXECUTION HANDOFF / PRODUCTION RUNTIME ACTIVE / SEO DEFERRED / DOMAIN EXPANSION SCALE-GATED / CAMPAIGN CE1 VERIFIED**
+Status: **FOUNDER-APPROVED EXECUTION HANDOFF / PRODUCTION RUNTIME ACTIVE / SEO DEFERRED / DOMAIN EXPANSION SCALE-GATED / CAMPAIGN CE1 ACCEPTED / EXPIRING GOIN IN VERIFICATION**
 
 Date: 2026-09-13
 
@@ -16,7 +16,7 @@ Current authoritative runtime checkpoint:
 docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
 ```
 
-Campaign Engine sources of truth:
+Campaign Engine / Economy transition sources of truth:
 
 ```text
 docs/strategy/CAMPAIGN_ENGINE_V1.md
@@ -24,6 +24,7 @@ docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
 ```
 
 ---
@@ -103,9 +104,9 @@ Current implementation state:
 architecture/source of truth -> DOCUMENTED
 database schema              -> DESIGNED
 API/runtime contract         -> DESIGNED
-CE1 Foundation               -> IMPLEMENTED / FOUNDER-LOCAL VERIFIED 2026-09-13
-CE1 explicit acceptance      -> PENDING
-next implementation slice    -> PAUSED PENDING FOUNDER CONSULTATION
+CE1 Foundation               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+Economy prerequisite         -> EXPIRING / PROMOTIONAL GOIN V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION
+next Campaign slice          -> CE2 AFTER ECONOMY VERIFICATION
 ```
 
 CE1 implementation commit:
@@ -115,7 +116,7 @@ CE1 implementation commit:
 feat: add Campaign Engine CE1 foundation
 ```
 
-Founder-local verification evidence:
+Founder-local CE1 verification evidence:
 
 ```text
 pnpm api
@@ -131,40 +132,93 @@ docker compose exec db psql -U prompt_draft -d prompt_draft -c "\dt campaign*"
   -> PASS / 10 expected Campaign tables present
 ```
 
-Canonical evidence record:
+Canonical CE1 evidence record:
 
 ```text
 docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
 ```
 
-CE1 is **not** marked DONE/ACCEPTED yet. Explicit founder acceptance remains required. A separate persistence round-trip/direct immutable-version mutation rejection probe has not yet been executed and is recorded transparently in the CE1 verification doc.
+The founder clarified that a clean-log response of "ظاهرا اوکیه" is acceptance when engineering review finds no hidden blocker. CE1 logs were clean and no hidden blocker was found, so CE1 is accepted.
 
-Do **not** start CE2 until the founder consultation requested after CE1 verification is complete.
+A separate direct immutable-version mutation rejection probe remains optional hardening evidence, not a CE1 blocker.
 
 ---
 
-## 5. Campaign authority boundaries that remain mandatory
+## 5. Expiring / Promotional Goin prerequisite before CE2
+
+Before starting CE2, the founder selected an Economy extension to prevent promotional Campaign rewards from becoming unlimited permanent money supply.
+
+Canonical contract:
+
+```text
+docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
+```
+
+Implementation commit:
+
+```text
+ddff7f0458281ba8abcd57c6a23ff614d5fb3ef5
+feat: add expiring promotional Goin
+```
+
+Implemented direction:
+
+```text
+user_economy_events stays the authoritative Goin event ledger
+no second wallet or balance column
+positive credits may opt into expires_at
+historical/existing Goin remains permanent by default
+spending uses FEFO: earliest-expiring active Goin first
+expiring-credit allocations preserve consumption provenance
+only unspent remainder expires
+Prompt Archive debit uses the shared Economy primitive
+operator outstanding uses expiry-aware balance state
+```
+
+The Economy extension also introduces the transaction-aware primitive CE2 already required:
+
+```text
+backend/src/economyCore.mjs
+recordUserEconomyEventInTransaction(client, input, options)
+```
+
+Campaign reward settlement must reuse this primitive inside the Campaign transaction. Do not create nested independent Economy transactions or a Campaign wallet.
+
+CE2 remains blocked until founder-local verification of this Economy extension is clean.
+
+---
+
+## 6. Campaign authority boundaries that remain mandatory
 
 Campaign Engine must preserve the existing authority boundaries:
 
 ```text
-user_economy_events       -> authoritative Goin ledger
+user_economy_events       -> authoritative Goin event ledger
+Economy expiry/allocation -> authoritative spendable-balance provenance
 product_analytics_events  -> observational analytics only
 admin_audit_log           -> privileged mutation audit
 backend authorization     -> authoritative permission enforcement
 campaign_versions         -> immutable published Campaign snapshots
-browser/client            -> never authoritative reward/winner/user identity source
+browser/client            -> never authoritative reward amount/expiry/winner/user identity source
 ```
 
 No Campaign wallet or parallel Goin balance is allowed.
 
-CE1 intentionally does not connect reward settlement because current `recordUserEconomyEvent()` opens its own transaction. Before Campaign reward settlement, CE2 must introduce an executor/client-aware internal Economy primitive or equivalent so qualification, budget reservation, Campaign Reward Grant and `user_economy_events` issuance can share one transaction.
+Campaign reward correctness requires one transaction covering:
+
+```text
+reward qualification
+budget reservation
+campaign_reward_grant
+user_economy_events credit
+reward reconciliation/state/events
+```
 
 ---
 
-## 6. CE1 foundation now present
+## 7. CE1 foundation now present
 
-Migration:
+Campaign migration:
 
 ```text
 backend/sql/029_campaign_engine_v1.sql
@@ -213,7 +267,7 @@ super_admin -> all via existing wildcard
 
 ---
 
-## 7. 21.5 invariants while Campaign Engine work proceeds
+## 8. 21.5 invariants while Campaign Engine work proceeds
 
 Keep:
 
@@ -246,7 +300,7 @@ Campaign public routes may eventually be built and production-tested while globa
 
 ---
 
-## 8. Deferred 21.5 work
+## 9. Deferred 21.5 work
 
 The following remains intentionally deferred rather than forgotten:
 
@@ -269,7 +323,7 @@ and re-audit the latest branch/runtime before changing indexability.
 
 ---
 
-## 9. Current transition instruction
+## 10. Current transition instruction
 
 Immediate execution state:
 
@@ -277,8 +331,9 @@ Immediate execution state:
 21.5 production runtime / SEO-off checkpoint -> KEEP
 Domain Expansion implementation              -> DEFER UNTIL SCALE GATE
 Campaign Engine V1                           -> ACTIVE PRE-SCALE TRACK
-CE1 Foundation                               -> IMPLEMENTED / LOCAL VERIFIED / ACCEPTANCE PENDING
-CE2 or any next Campaign slice               -> PAUSED FOR FOUNDER CONSULTATION
+CE1 Foundation                               -> DONE / VERIFIED / ACCEPTED
+Expiring / Promotional Goin V1               -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
+CE2 Runtime Core                             -> NEXT AFTER ECONOMY VERIFICATION
 ```
 
 Before any further Campaign write:
@@ -288,7 +343,8 @@ Before any further Campaign write:
 2. read DEVELOPMENT_WORKFLOW.md
 3. read CAMPAIGN_ENGINE_STATUS.md
 4. read CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-5. read the Campaign V1 schema/runtime source-of-truth docs
-6. preserve production noindex and Domain Expansion scale gate
-7. resolve the pending founder consultation before selecting the next slice
+5. read EXPIRING_PROMOTIONAL_GOIN_V1.md
+6. read the Campaign V1 schema/runtime source-of-truth docs
+7. preserve production noindex and Domain Expansion scale gate
+8. verify/accept Expiring Goin before starting CE2
 ```
