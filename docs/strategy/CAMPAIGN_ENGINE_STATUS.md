@@ -8,59 +8,81 @@ Branch:
 feature/growth-foundation
 ```
 
-Track status:
+Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE3 ACCEPTED / CE4 NEXT**
+
+## Current execution state
 
 ```text
 Founder direction / scenarios         -> APPROVED
-Campaign Engine V1 source of truth    -> DOCUMENTED
-Database schema V1                    -> DESIGNED + CE1 FOUNDATION IMPLEMENTED
-API / Runtime Contract V1             -> DESIGNED
-CE1 Foundation implementation         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
-Migration 029                         -> CREATED / LOCALLY APPLIED / VERIFIED
-Expiring / Promotional Goin V1        -> IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
-/manage/marketing                     -> NOT STARTED
-Public /campaign/[slug] runtime       -> NOT STARTED
-Next Campaign slice                   -> CE2 AFTER EXPIRING GOIN VERIFICATION
+Campaign Engine V1 contract           -> DOCUMENTED
+CE1 Foundation                        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+Expiring / Promotional Goin V1        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+CE2.1 Runtime Core                    -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+CE2.2 Actions / Attempts              -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+CE3 Promotion Surfaces                -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
+CE4 Custom Game + Chance Wheel        -> NEXT
+CE4.5 Shared Telegram Publishing      -> SCHEDULED AFTER CE4 / BEFORE CE5
+CE5 /manage/marketing                 -> NOT STARTED
+CE6 Measurement & Reconciliation      -> NOT STARTED
+CE7 Final Verification                -> NOT STARTED
 ```
 
-Current project transition:
+Production/indexability invariants remain unchanged:
 
 ```text
-Milestone 21.5 production runtime     -> ACTIVE / FOUNDER VERIFIED
-Milestone 21.5 SEO/indexability       -> DEFERRED / NUXT_PUBLIC_NOINDEX=true
-Domain Expansion implementation       -> SCALE-GATED / NOT NEXT IMMEDIATE EXECUTION
-Campaign Engine V1                    -> ACTIVE PRE-SCALE ENGINEERING TRACK
-Economy prerequisite before CE2       -> EXPIRING / PROMOTIONAL GOIN V1
+production runtime active
+NUXT_PUBLIC_NOINDEX=true -> KEEP
+SEO/indexability launch  -> DEFERRED
+Domain Expansion         -> SCALE-GATED / NOT CURRENT IMPLEMENTATION
 ```
 
-Campaign Engine is a pre-scale commercialization/marketing platform track. It may proceed while 21.5 SEO launch remains deferred. It does not turn SEO on, and it does not start Domain Expansion.
+Campaign Engine work must not alter production DNS/Tunnel/Worker/indexability as a side effect.
 
 ---
 
-## Canonical Campaign Engine sources
+## Canonical sources — read before any new Campaign implementation
 
-Read in this order before implementation:
-
-```text
-1. docs/strategy/CAMPAIGN_ENGINE_V1.md
-2. docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
-3. docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
-4. docs/strategy/CAMPAIGN_ENGINE_STATUS.md
-5. docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-6. docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
-7. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-8. docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
-9. docs/strategy/STATUS.md
-```
-
-Mandatory project workflow sources:
+Project workflow:
 
 ```text
 docs/strategy/DEVELOPMENT_WORKFLOW.md
 docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 ```
 
-Inherited contracts that remain authoritative:
+Campaign architecture:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_V1.md
+docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+```
+
+Accepted implementation/verification records:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
+docs/strategy/CAMPAIGN_ENGINE_CE2_1_VERIFICATION.md
+docs/strategy/CAMPAIGN_ENGINE_CE2_2_IMPLEMENTATION.md
+docs/strategy/CAMPAIGN_ENGINE_CE3_IMPLEMENTATION.md
+```
+
+Scheduled Telegram bridge:
+
+```text
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_SCHEDULING.md
+```
+
+Production/pre-scale context:
+
+```text
+docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+docs/strategy/STATUS.md
+```
+
+Inherited platform contracts remain authoritative:
 
 ```text
 docs/strategy/MILESTONE_21A_ANALYTICS_DESIGN.md
@@ -68,18 +90,15 @@ docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
 docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
-docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
 backend/src/economy.mjs
 backend/src/economyCore.mjs
 backend/src/authorization.mjs
 app/config/manage.ts
 ```
 
-For spendable-balance semantics, `EXPIRING_PROMOTIONAL_GOIN_V1.md` amends the older plain-`SUM(unit_delta)` shorthand when expiring credits exist.
-
 ---
 
-## Accepted architectural decisions
+## Accepted architectural invariants
 
 ```text
 Campaign is a domain object, not a page type.
@@ -89,155 +108,60 @@ Canonical public route:
   /fa/campaign/:slug
 
 Published slug is durable/immutable in V1.
-Campaign Definition is versioned data.
-Published versions are immutable.
-Participation locks to the exact version it started under.
+Published Campaign Versions are immutable.
+Participation locks to the exact published version it started under.
 
-Mutable config lives as campaign draft definition.
-Published polymorphic config is stored as canonical JSONB.
-Runtime authority is normalized relational state.
+Canonical Campaign Definition is versioned data.
+Browser receives only safe public projections.
+Private mechanic/reward/operator configuration never leaks through generic serialization.
 
 Mechanics are registry-driven and composable.
-Metric conditions use a trusted Metric Registry.
-Completion uses a recursive RuleExpression tree.
+Trusted metrics come only from the Metric Registry.
+Client Actions are untrusted input/audit evidence.
+Trusted Domain Events are server-created.
+Attempts are first-class server runtime objects.
 
-Client Actions are untrusted.
-Server Domain Events are trusted.
-Attempts are first-class runtime objects.
-Daily attempt periods require explicit timezone.
-Chance/random reward outcome is server-authoritative.
+Browser never decides:
+  authoritative user identity
+  eligibility
+  accepted completion
+  winner/result
+  reward amount
+  reward expiry
+  reward grant
 
-Promotion Surfaces are separate from Campaign Experience.
-App shell should expose generic campaign placement hosts.
-
-Product Analytics remains observational only.
-Campaign domain state/reward facts remain authoritative separately.
+Chance/random outcomes are server-authoritative.
+Custom UI must use the same Campaign runtime contracts.
 
 Campaign Reward Grant reconciles to the existing user_economy_events ledger.
-No campaign wallet or parallel Goin balance is allowed.
-
-Campaign reward credits may deliberately be expiring/promotional.
-Expiring credits remain in the same Economy ledger.
+No Campaign wallet or second Goin balance is allowed.
+Promotional Goin may expire inside the same Economy ledger.
 Debits consume active expiring Goin FEFO before permanent Goin.
+Campaign reward budgets are transactionally guarded.
+Reward qualification + issuance are idempotent.
 
-Global reward budget is transactionally guarded.
-Reward qualification and Goin issuance are idempotent.
+Product Analytics is observational only.
+admin_audit_log remains the privileged mutation audit.
 
-/manage/marketing reuses the existing Manage shell.
-Campaign permissions extend the existing authorization system.
+Promotion Surfaces are separate from Campaign Experience.
+App shell uses generic Campaign placement hosts.
+
+/manage/marketing must reuse the existing Manage shell and authorization system.
 ```
-
-Founder scenarios remain authoritative in `CAMPAIGN_ENGINE_V1.md`, including custom game, Payiz seasonal campaign and daily chance wheel trust-boundary examples.
 
 ---
 
-## CE1 — Foundation
+## Database state
 
-Status:
-
-```text
-DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
-```
-
-Implementation commit:
-
-```text
-1f8c35ee9041e600ba6d99d37c595f446842d000
-feat: add Campaign Engine CE1 foundation
-```
-
-Implemented files:
-
-```text
-backend/sql/029_campaign_engine_v1.sql
-backend/src/authorization.mjs
-backend/src/campaignDefinition.mjs
-backend/src/campaignFoundation.test.mjs
-backend/src/campaignRegistry.mjs
-backend/src/campaignRules.mjs
-backend/src/campaigns.mjs
-```
-
-Implemented CE1 scope:
-
-```text
-Campaign migration 029
-marketing permissions
-Campaign Definition validator
-Campaign head/draft persistence
-optimistic draft revisions
-immutable publish versions
-publish idempotency under Campaign row lock
-admin_audit_log writes for Campaign create/update/publish
-Renderer Registry skeleton
-Mechanic Registry skeleton
-Metric Registry skeleton
-RuleExpression validator/evaluator
-deterministic canonical definition hashing
-```
-
-Authorization currently implements:
-
-```text
-marketing.campaigns.view
-marketing.campaigns.manage
-marketing.campaigns.publish
-marketing.metrics.view
-
-user        -> none
-admin       -> campaign view + marketing metrics
-super_admin -> all via existing wildcard
-```
-
-Admin mutation/publish remains intentionally restricted until broadened deliberately.
-
----
-
-## CE1 founder-local evidence
-
-Canonical evidence record:
-
-```text
-docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-```
-
-Verified on 2026-09-13:
-
-```text
-pnpm api
-  -> PASS / API image rebuilt and started
-
-docker compose exec api node --test src/campaignFoundation.test.mjs
-  -> PASS 9/9
-
-docker compose exec api npm run db:schema
-  -> PASS / 001 through 029 applied
-
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\dt campaign*"
-  -> PASS / 10 expected Campaign tables present
-```
-
-The API build emitted an unrelated orphan `prompt-draft-cloudflared-1` warning. No orphan removal or production topology change was performed.
-
-Because only backend/SQL changed, frontend rebuild, `pnpm generate` and `pnpm stack` were correctly not used.
-
-The founder clarified the project convention that a clean-log response of "ظاهرا اوکیه" means no issue is seen and the supplied logs are being handed to engineering for hidden-problem review. The supplied CE1 logs were clean and no hidden blocker was found. CE1 is therefore accepted.
-
-A separate persistence round-trip / direct immutable-version mutation rejection probe remains useful optional hardening evidence, but is not a CE1 acceptance blocker.
-
----
-
-## Current schema foundation
-
-The first Campaign migration is:
+Verified Campaign/Economy migrations through this track:
 
 ```text
 029_campaign_engine_v1.sql
+030_expiring_promotional_goin.sql
+031_campaign_reward_grant_contract.sql
 ```
 
-Founder-local schema application verified migration 029.
-
-Campaign tables:
+Campaign foundation tables from 029:
 
 ```text
 campaigns
@@ -252,15 +176,7 @@ campaign_reward_grants
 campaign_promotion_user_states
 ```
 
-The next migration number was re-audited before Economy work and became:
-
-```text
-030_expiring_promotional_goin.sql
-```
-
-Migration 030 is an Economy extension, not a Campaign-owned wallet/schema fork.
-
-Existing systems reused rather than duplicated:
+Existing systems reused instead of duplicated:
 
 ```text
 users
@@ -269,103 +185,284 @@ product_analytics_events
 admin_audit_log
 referrals
 user_content_unlocks
-other canonical product resources behind Metric Registry resolvers
+prompt_drafts / canonical product resources behind Metric Registry resolvers
 ```
 
-Published `campaign_versions` have DB-level UPDATE/DELETE rejection triggers in migration 029.
+Published `campaign_versions` have DB-level UPDATE/DELETE rejection. CE3 visual verification independently exercised the UPDATE rejection and received:
+
+```text
+ERROR: published campaign versions are immutable
+```
 
 ---
 
-## Economy prerequisite before CE2
+## CE1 — Foundation — ACCEPTED
 
-Founder-approved sequencing on 2026-09-13:
-
-```text
-CE1 accepted
--> implement Expiring / Promotional Goin V1
--> verify/accept Economy extension locally
--> resume CE2 Runtime Core
-```
-
-Implementation commit:
+Accepted scope:
 
 ```text
-ddff7f0458281ba8abcd57c6a23ff614d5fb3ef5
-feat: add expiring promotional Goin
+Campaign schema foundation
+marketing permissions
+Campaign Definition validation
+Campaign head/draft persistence
+optimistic draft revisions
+immutable publish versions
+publish idempotency under Campaign row lock
+admin_audit_log writes for privileged Campaign mutations
+Renderer / Mechanic / Metric Registry foundations
+RuleExpression validation/evaluation
+deterministic definition hashing
 ```
 
-Canonical contract:
+Authorization baseline:
+
+```text
+marketing.campaigns.view
+marketing.campaigns.manage
+marketing.campaigns.publish
+marketing.metrics.view
+
+user        -> none
+admin       -> campaign view + marketing metrics
+super_admin -> all via existing wildcard
+```
+
+Canonical verification record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+```
+
+---
+
+## Expiring / Promotional Goin V1 — ACCEPTED
+
+Accepted Economy extension:
+
+```text
+positive credits may have nullable expires_at
+per-debit provenance allocations
+FEFO consumption of active expiring credits
+permanent Goin never expires
+no promotional wallet / no second balance
+dynamic spendable balance excludes expired unspent remainder
+Campaign budget limits issued volume
+expiry limits outstanding duration
+no promo-to-permanent laundering
+```
+
+Campaign runtime uses the transaction-aware Economy primitive so reward qualification, budget reservation, grant creation and Economy issuance can share one transaction.
+
+Canonical contract/verification record:
 
 ```text
 docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
 ```
 
-The Economy work implements the transaction boundary CE2 already required:
+---
+
+## CE2.1 — Runtime Core — ACCEPTED
+
+Accepted runtime:
 
 ```text
-backend/src/economyCore.mjs
-recordUserEconomyEventInTransaction(client, input, options)
+public Campaign projection
+caller-aware state read
+participation creation/version lock
+trusted Metric Registry refresh
+completion evaluation
+atomic Campaign completion reward settlement
+publish-time reward budget seeding
+expiring Campaign Goin rewards
+reward/budget/economy reconciliation
+retry idempotency
 ```
 
-Campaign reward correctness still requires one transaction covering:
+Public runtime routes include:
 
 ```text
-reward qualification
-budget reservation
-campaign_reward_grant
-user_economy_events credit
-reward reconciliation/state/events
+GET  /api/campaigns/:slug
+GET  /api/campaigns/:slug/state
+POST /api/campaigns/:slug/participation
 ```
 
-CE2 must call the transaction-aware Economy primitive inside the Campaign settlement transaction. It must not open a nested independent Economy transaction.
+Authoritative V1 metrics activated:
 
-For expiring Campaign rewards, CE2 may issue the same Goin credit with an authoritative server-selected `expiresAt`. Campaign budgets limit how much can be issued; expiry limits how long promotional supply remains spendable.
+```text
+referrals.completed.count
+prompts.unlocked.count
+drafts.public.count
+prompts.created.count
+```
 
-Do not start CE2 implementation until the Expiring / Promotional Goin V1 local verification is clean.
+Canonical verification record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE2_1_VERIFICATION.md
+```
 
 ---
 
-## V1 mechanic target
+## CE2.2 — Actions / Attempts — ACCEPTED
+
+Accepted runtime:
 
 ```text
-metric_goal
-task_list
-custom_game
-chance_wheel
-custom
+server-side attempt reservation
+campaign/calendar_day/rolling_24h/session periods
+server IANA timezone handling
+attempt limits
+idempotent reservations
+Action audit + request-hash conflict protection
+mechanic-state revision/serialization
+trusted action/event linkage
+safe generic attempt_started action
+unsupported browser-reported game_finished/outcome rejected
 ```
 
-The registry contract exists in CE1. Individual runtime mechanics are not implied complete by that skeleton.
+Routes include:
+
+```text
+POST /api/campaigns/:slug/mechanics/:mechanicId/attempts
+POST /api/campaigns/:slug/actions
+```
+
+Authentication is checked before Campaign existence on protected mutation paths so unauthenticated probing returns 401 rather than leaking Campaign existence.
+
+Canonical implementation/verification record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE2_2_IMPLEMENTATION.md
+```
 
 ---
 
-## Remaining implementation roadmap
+## CE3 — Promotion Surfaces — ACCEPTED
 
-### CE2 — Runtime Core
-
-Status:
+Accepted backend:
 
 ```text
-NOT STARTED / BLOCKED ON EXPIRING GOIN LOCAL VERIFICATION
+promotion selection API
+four V1 slot contracts
+schedule/lifecycle filtering
+deterministic ordering
+safe localized projection
+authenticated user dismissal state
+session/device browser-local dismissal
+frequency caps as presentation controls
+publish-time renderer/slot/config validation
 ```
 
-Scope:
+Accepted frontend:
 
 ```text
-public campaign projection
-optional caller-aware campaign read
-participation start/state
-metric re-evaluation
-client Action protocol
-trusted Domain Events
-use transaction-aware Economy primitive
-Campaign Reward Grant
-optional authoritative Campaign reward expiry
-atomic reward budget
-idempotency/concurrency tests
+site_header host inside existing Header
+floating_corner shared overlay host
+modal through existing global modal system
+generic dashboard_banner renderer contract without misusing admin /manage/dashboard
+EN/FA localized rendering
+Light/Dark rendering
+bounded on-site Campaign attribution handoff for CE4
 ```
 
-### CE3 — Promotion Surfaces
+Product Analytics observational events:
+
+```text
+campaign_promotion_impression
+campaign_promotion_click
+campaign_promotion_dismiss
+```
+
+Founder-local evidence:
+
+```text
+CE3.1 aggregate backend regression -> 18/18 PASS
+CE3.2 focused backend regression   -> 13/13 PASS
+pnpm frontend                      -> Nuxt client/SSR/Nitro PASS
+controlled visual fixture          -> header/floating/modal + Light/Dark + FA/RTL PASS
+Founder acceptance                 -> 2026-09-13
+```
+
+Canonical implementation/verification record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE3_IMPLEMENTATION.md
+```
+
+---
+
+# NEXT — CE4 Custom Game + Chance Wheel
+
+CE4 must build on CE2.2 Attempts rather than inventing another attempt system.
+
+Target scope:
+
+```text
+generic Nuxt /campaign/[slug] entry experience
+EN + /fa Campaign route behavior
+consume bounded pending attribution from CE3
+stable Campaign entry target for later Telegram integration
+
+custom_game mechanic runtime contract
+server-verifiable / server-authoritative completion boundary
+game-specific accepted actions/evidence
+trusted mechanic outcome persistence
+mechanic_outcome qualification/reward integration
+
+chance_wheel public/private config split
+server-side RNG / persisted authoritative result
+configured calendar-day timezone limit using CE2.2 attempts
+parallel spin/race verification
+browser animation consumes already-decided server outcome
+
+no browser-authoritative winner, reward amount or reward expiry
+```
+
+Before implementation, re-audit the current renderer registry, Campaign public projection, CE2.2 action/attempt runtime, reward settlement, locale routing and UI system. Do not assume the old pre-CE2 roadmap implementation details are still correct.
+
+Smallest-scope verification must be selected only after identifying actual CE4 changed files/services.
+
+---
+
+## CE4.5 — Shared Telegram Publishing Foundation — SCHEDULED
+
+Founder-approved direction:
+
+```text
+Telegram = Preview + CTA
+Mini App = Entry point
+Prompt Draft = all business logic
+```
+
+Timing:
+
+```text
+CE4 ACCEPTED
+-> CE4.5 shared Telegram foundation
+-> CE5 /manage/marketing consumes the shared Telegram subsystem
+```
+
+CE4.5 is **not part of CE4 implementation** and must not interrupt CE4 prerequisites.
+
+Canonical scheduling decision:
+
+```text
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_SCHEDULING.md
+```
+
+Required shared architecture later:
+
+```text
+/manage/archive ----\
+/manage/marketing ----> TelegramPostComposer -> shared backend TelegramPublisher
+/manage/telegram ----/
+```
+
+Prompt and Campaign must never grow separate Telegram publishers or Telegram-side business logic.
+
+---
+
+## CE5 — /manage/marketing
 
 Status:
 
@@ -373,62 +470,23 @@ Status:
 NOT STARTED
 ```
 
-Scope:
-
-```text
-campaign promotion selection API
-site_header placement
-floating/modal overlay host
-authenticated user dismiss state
-session/device local dismissal
-Product Analytics allowlist/instrumentation for observational promotion events
-```
-
-### CE4 — Custom Game + Chance Wheel
-
-Status:
-
-```text
-NOT STARTED
-```
-
-Scope:
-
-```text
-attempt creation/runtime
-custom_game contract implementation
-server-verifiable/server-authoritative trust enforcement
-chance_wheel private/public config split
-server RNG
-calendar-day limit + timezone
-parallel spin verification
-```
-
-### CE5 — `/manage/marketing`
-
-Status:
-
-```text
-NOT STARTED
-```
-
-Scope:
+Target scope:
 
 ```text
 Manage section registration
-campaign list
-campaign editor
-preview
-validate
-publish
+campaign list/editor
+preview/validate/publish
 pause/resume/end/archive
 permissions
-EN/FA management copy where required by existing Manage convention
+EN/FA management copy under existing Manage conventions
+TG4 Campaign adapter to the already-built shared Telegram subsystem
 ```
 
-All CE5 UI work must follow `UI_IMPLEMENTATION_GUIDELINES.md` and reuse the current Manage design system rather than inventing a separate admin shell.
+All UI must follow `UI_IMPLEMENTATION_GUIDELINES.md` and reuse the current Manage design system.
 
-### CE6 — Measurement & Reconciliation
+---
+
+## CE6 — Measurement & Reconciliation
 
 Status:
 
@@ -436,7 +494,7 @@ Status:
 NOT STARTED
 ```
 
-Scope:
+Target scope:
 
 ```text
 funnel summary
@@ -444,12 +502,17 @@ participants
 rewards
 budget remaining
 failed reward inspection
-campaign grant -> economy event reconciliation
-promotion top-of-funnel measurement honesty
-promotional Goin issued / spent / expired / outstanding reconciliation
+Campaign grant -> Economy event reconciliation
+promotion top-of-funnel measurement
+Telegram attribution measurement through existing analytics contracts
+promotional Goin issued/spent/expired/outstanding reconciliation
 ```
 
-### CE7 — Verification / Acceptance
+No second analytics warehouse.
+
+---
+
+## CE7 — Final Verification / Acceptance
 
 Status:
 
@@ -457,36 +520,34 @@ Status:
 NOT STARTED
 ```
 
-Required proof includes:
+Aggregate proof must include at least:
 
 ```text
 private config cannot leak
-browser cannot choose reward amount
-browser cannot choose reward expiry
+browser cannot choose user identity
+browser cannot choose reward amount/expiry
 browser cannot choose wheel result
-browser cannot assert another user identity
 one user cannot obtain duplicate V1 participation
-same Action retry cannot duplicate effects
+Action retries cannot duplicate effects
 parallel completion cannot duplicate reward
-parallel daily wheel cannot allocate > configured attempts
+parallel daily wheel cannot exceed configured attempts
 reward budget cannot overspend under race
-campaign reward maps to exactly one Economy event
-expiring campaign reward cannot burn permanent Goin
+Campaign reward maps to exactly one Economy event
+expiring Campaign reward cannot burn permanent Goin
 Product Analytics outage cannot break reward correctness
 admin permission boundaries work
 preview cannot grant reward
 published version remains immutable
 published slug remains stable
-SSR/public campaign route works EN/FA
-global NUXT_PUBLIC_NOINDEX=true still wins during current pre-scale development mode
+public Campaign EN/FA route works
+Campaign + Telegram integration respects shared publisher boundary if CE4.5/CE5 are in accepted V1 surface
+global NUXT_PUBLIC_NOINDEX=true still wins
 smallest-scope build/runtime verification passes
 ```
 
-Do not use historical `pnpm generate` as the default Campaign acceptance command. Select verification from `DEVELOPMENT_WORKFLOW.md` according to actual changed files/services.
-
 ---
 
-## Deferred / explicitly out of current slice
+## Deferred / out of current slice
 
 ```text
 advanced segment builder
@@ -499,59 +560,63 @@ leaderboard UI
 random-draw settlement UI
 cross-campaign workflow automation
 anonymous server device fingerprinting
-separate campaign analytics warehouse
+separate Campaign analytics warehouse
 Domain Expansion implementation
 production SEO/indexability launch
+Telegram automatic Prompt publishing TG5 unless separately promoted by founder
 ```
 
 ---
 
 ## Resume instruction
 
-Before any new Campaign implementation:
+Before the next Campaign write:
 
 ```text
-1. read latest feature/growth-foundation HEAD
+1. re-read latest feature/growth-foundation HEAD
 2. read DEVELOPMENT_WORKFLOW.md
-3. read CAMPAIGN_ENGINE_V1.md
-4. read CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
-5. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
-6. read CAMPAIGN_ENGINE_STATUS.md
-7. read CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-8. read EXPIRING_PROMOTIONAL_GOIN_V1.md
-9. read MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-10. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
-11. read STATUS.md
+3. read UI_IMPLEMENTATION_GUIDELINES.md for UI work
+4. read CAMPAIGN_ENGINE_V1.md
+5. read CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+6. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+7. read CAMPAIGN_ENGINE_STATUS.md
+8. read CE2.1 / CE2.2 / CE3 accepted records relevant to the change
+9. inspect the actual current code touched by CE4
+10. choose the smallest verification scope
 ```
 
-Current intended state:
+Current intended execution order:
 
 ```text
-CE1 Foundation                -> DONE / VERIFIED / ACCEPTED
-Expiring Promotional Goin V1  -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
-CE2 Runtime Core              -> NEXT AFTER ECONOMY VERIFICATION
-Domain Expansion              -> SCALE-GATED
-production runtime            -> ACTIVE
-production SEO/indexability   -> DEFERRED
-NUXT_PUBLIC_NOINDEX           -> true / KEEP
+CE1        -> ACCEPTED
+Expiring Goin -> ACCEPTED
+CE2.1      -> ACCEPTED
+CE2.2      -> ACCEPTED
+CE3        -> ACCEPTED
+CE4        -> NEXT
+CE4.5      -> AFTER CE4
+CE5        -> AFTER CE4.5
+CE6        -> LATER
+CE7        -> FINAL
 ```
-
-Re-audit database helpers, Economy internals, authorization, Product Analytics and Manage shell again before CE2 because parallel work may change them.
 
 ---
 
 ## Hard rules
 
 ```text
-DO NOT create campaign-specific Economy or Analytics systems.
+DO NOT create Campaign-specific Economy or Analytics systems.
 DO NOT create a promotional wallet or second Goin balance.
-DO NOT let custom campaign UI bypass runtime contracts.
+DO NOT let custom Campaign UI bypass runtime contracts.
 DO NOT let browser input decide reward amount, reward expiry, winner/result or authoritative user identity.
 DO NOT mutate published Campaign Versions.
-DO NOT change accepted 21.5 runtime/indexability contracts as a side effect of Campaign work.
+DO NOT create a second attempt system in CE4; reuse CE2.2 Attempts.
+DO NOT treat Product Analytics as completion/reward authority.
+DO NOT change accepted production runtime/indexability contracts as a Campaign side effect.
 DO NOT enable production SEO/indexing during Campaign implementation.
 DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder approval.
-DO NOT start Domain Expansion implementation during this pre-scale track.
-DO NOT start CE2 until Expiring / Promotional Goin V1 local verification is clean.
-DO NOT default to pnpm stack; follow the smallest-scope verification workflow.
+DO NOT start Domain Expansion during this pre-scale track.
+DO NOT implement Telegram inside CE4; CE4.5 timing is already scheduled.
+DO NOT create separate Prompt/Campaign Telegram publishers later.
+DO NOT default to pnpm stack; follow DEVELOPMENT_WORKFLOW.md.
 ```
