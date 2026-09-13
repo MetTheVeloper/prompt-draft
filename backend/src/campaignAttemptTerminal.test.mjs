@@ -6,6 +6,7 @@ import {
   readCampaignAttemptAvailability,
   reserveCampaignAttemptInTransaction,
 } from './campaignAttempts.mjs'
+import { submitCampaignActionInTransaction } from './campaignActions.mjs'
 import { loadParticipationRuntime } from './campaignRuntimeShared.mjs'
 
 const ROLLBACK_CODE = 'CAMPAIGN_CE42_TERMINAL_TEST_ROLLBACK'
@@ -25,7 +26,7 @@ async function withRollbackFixture(work) {
   }
 }
 
-test('rewarded participation exposes no attempts and cannot reserve a new one', async () => {
+test('rewarded participation exposes no attempts and rejects new mechanic progress', async () => {
   await withRollbackFixture(async ({ client, execute }) => {
     const userId = randomUUID()
     const campaignId = randomUUID()
@@ -91,5 +92,24 @@ test('rewarded participation exposes no attempts and cannot reserve a new one', 
       asOf: new Date('2026-09-13T10:05:00.000Z'),
     })
     assert.deepEqual(reservation, { ok: false, code: 'CAMPAIGN_PARTICIPATION_CLOSED' })
+
+    const attemptId = randomUUID()
+    await execute(
+      `INSERT INTO campaign_attempts
+         (id, participation_id, mechanic_id, period_key, attempt_index, status, idempotency_key, created_at)
+       VALUES ($1, $2, 'game', $3, 1, 'reserved', 'seed:reserved-before-completion', $4)`,
+      [attemptId, participationId, `campaign:${versionId}`, '2026-09-13T09:30:00.000Z'],
+    )
+    const action = await submitCampaignActionInTransaction(client, {
+      slug,
+      userId,
+      mechanicId: 'game',
+      action: 'attempt_started',
+      idempotencyKey: 'action:after-reward',
+      payload: {},
+      evidence: { attemptId },
+      asOf: new Date('2026-09-13T10:05:00.000Z'),
+    })
+    assert.deepEqual(action, { ok: false, code: 'CAMPAIGN_PARTICIPATION_CLOSED' })
   })
 })
