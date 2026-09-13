@@ -87,9 +87,10 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
               status,
               amount,
               idempotency_key,
-              failure_code
+              failure_code,
+              failed_at
             )
-            VALUES ($1, $2, $3, $4, $5, $6, 'failed', $7, $8, 'CAMPAIGN_REWARD_EXHAUSTED')
+            VALUES ($1, $2, $3, $4, $5, $6, 'failed', $7, $8, 'CAMPAIGN_REWARD_EXHAUSTED', $9)
           `,
           [
             grantId,
@@ -100,6 +101,7 @@ export async function settleCompletionRewards({ client, execute, runtime, asOf }
             reward.id,
             reward.amount,
             `campaign:grant:v1:${runtime.campaignVersionId}:${runtime.id}:${reward.id}:campaign_completion`,
+            asOf.toISOString(),
           ],
         )
         await appendCampaignEvent(

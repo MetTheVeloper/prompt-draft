@@ -25,14 +25,14 @@ export function deriveCampaignEffectiveStatus(
   if (!definition) return 'draft'
   if (archivedAt) return 'archived'
   if (manuallyEndedAt) return 'ended'
-  if (pausedAt) return 'paused'
 
   const now = asDate(asOf, new Date())
   const startsAt = asDate(definition.lifecycle?.startsAt)
   const endsAt = asDate(definition.lifecycle?.endsAt)
 
-  if (startsAt && now.getTime() < startsAt.getTime()) return 'scheduled'
   if (endsAt && now.getTime() >= endsAt.getTime()) return 'ended'
+  if (pausedAt) return 'paused'
+  if (startsAt && now.getTime() < startsAt.getTime()) return 'scheduled'
   return 'active'
 }
 

@@ -398,7 +398,7 @@ export async function startCampaignParticipation({
     await appendCampaignEvent(
       execute,
       runtime,
-      'campaign_started',
+      'participation_started',
       { attribution: normalizeAttribution(attribution) },
     )
 
