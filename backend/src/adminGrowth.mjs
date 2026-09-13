@@ -124,11 +124,7 @@ async function getSummary(days) {
         SELECT
           COALESCE(SUM(balance), 0)::bigint AS outstanding,
           (COUNT(*) FILTER (WHERE balance > 0))::int AS holders
-        FROM (
-          SELECT user_id, SUM(unit_delta)::bigint AS balance
-          FROM user_economy_events
-          GROUP BY user_id
-        ) balances
+        FROM user_economy_balance_state
       ),
       unlock_metrics AS (
         SELECT COUNT(*)::int AS unlocks
