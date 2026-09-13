@@ -7,6 +7,7 @@ namespace PromptDraft.ServerManager.Services;
 public sealed class TrayService : IDisposable
 {
     private readonly Forms.NotifyIcon _icon;
+    private readonly Icon? _ownedApplicationIcon;
     private readonly Forms.ToolStripMenuItem _openItem;
     private readonly Forms.ToolStripMenuItem _ensureItem;
     private readonly Forms.ToolStripMenuItem _restartItem;
@@ -30,14 +31,30 @@ public sealed class TrayService : IDisposable
         var menu = new Forms.ContextMenuStrip();
         menu.Items.AddRange(new Forms.ToolStripItem[] { _openItem, new Forms.ToolStripSeparator(), _ensureItem, _restartItem, _stopItem, new Forms.ToolStripSeparator(), _exitItem });
 
+        _ownedApplicationIcon = LoadApplicationIcon();
         _icon = new Forms.NotifyIcon
         {
-            Icon = SystemIcons.Application,
+            Icon = _ownedApplicationIcon ?? SystemIcons.Application,
             Text = "Prompt Draft Server Manager",
             Visible = true,
             ContextMenuStrip = menu
         };
         _icon.DoubleClick += (_, _) => OpenRequested?.Invoke();
+    }
+
+    private static Icon? LoadApplicationIcon()
+    {
+        try
+        {
+            var processPath = Environment.ProcessPath;
+            return string.IsNullOrWhiteSpace(processPath)
+                ? null
+                : Icon.ExtractAssociatedIcon(processPath);
+        }
+        catch
+        {
+            return null;
+        }
     }
 
     public void UpdateState(ManagerOperationalState state)
@@ -66,5 +83,6 @@ public sealed class TrayService : IDisposable
     {
         _icon.Visible = false;
         _icon.Dispose();
+        _ownedApplicationIcon?.Dispose();
     }
 }
