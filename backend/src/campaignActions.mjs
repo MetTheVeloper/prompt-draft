@@ -13,6 +13,8 @@ import {
   mapCampaignAttempt,
 } from './campaignAttempts.mjs'
 import { validateCustomGameSubmission } from './campaignCustomGame.mjs'
+import { selectChanceWheelOutcome } from './campaignChanceWheel.mjs'
+import { settleMechanicOutcomeRewards } from './campaignOutcomeSettlement.mjs'
 import { refreshCampaignParticipationInTransaction } from './campaignRuntime.mjs'
 
 const IDEMPOTENCY_KEY_MAX = 240
@@ -102,6 +104,10 @@ function validAttemptStarted(payload, evidence) {
   return isObject(payload) && Object.keys(payload).length === 0 &&
     isObject(evidence) && Object.keys(evidence).length === 1 &&
     typeof evidence.attemptId === 'string' && UUID_PATTERN.test(evidence.attemptId)
+}
+
+function validWheelSpin(payload, evidence) {
+  return validAttemptStarted(payload, evidence)
 }
 
 async function ensureMechanicState(execute, runtime, mechanicId, effectiveAt) {
@@ -205,6 +211,127 @@ async function handleCustomGameFinished(client, execute, common, mechanic, effec
   }
 }
 
+async function handleChanceWheelSpin(client, execute, common, mechanic, effectiveAt) {
+  if (!validWheelSpin(common.payload, common.evidence)) {
+    return rejectAction(execute, common, 'CAMPAIGN_ACTION_SCHEMA_INVALID')
+  }
+
+  const attempt = await loadCampaignAttempt(execute, {
+    participationId: common.runtime.id,
+    mechanicId: common.mechanicId,
+    attemptId: common.evidence.attemptId,
+    lock: true,
+  })
+  if (!attempt) return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_INVALID')
+  if (attempt.status !== 'reserved') return rejectAction(execute, common, 'CAMPAIGN_ATTEMPT_STATE_INVALID')
+
+  const selection = selectChanceWheelOutcome(mechanic)
+  if (!selection.ok) return rejectAction(execute, common, selection.code)
+
+  const actionId = await persistAction(execute, { ...common, accepted: true })
+  await execute(
+    `UPDATE campaign_attempts
+     SET status='resolved',
+         started_at=COALESCE(started_at,$2),
+         submitted_at=COALESCE(submitted_at,$2),
+         resolved_at=COALESCE(resolved_at,$2),
+         outcome=$3::jsonb
+     WHERE id=$1`,
+    [attempt.id, effectiveAt.toISOString(), JSON.stringify({ key: selection.outcome })],
+  )
+
+  await ensureMechanicState(execute, common.runtime, common.mechanicId, effectiveAt)
+  await execute(
+    `UPDATE campaign_mechanic_states
+     SET state=jsonb_build_object(
+           'lastAttemptId',$3::text,
+           'lastAction','spin_requested',
+           'lastActionAt',$4::timestamptz,
+           'lastOutcome',$5::text
+         ),
+         revision=revision+1,
+         updated_at=$4::timestamptz
+     WHERE participation_id=$1 AND mechanic_id=$2`,
+    [common.runtime.id, common.mechanicId, attempt.id, effectiveAt.toISOString(), selection.outcome],
+  )
+
+  await appendActionEvent(execute, common.runtime, {
+    mechanicId: common.mechanicId,
+    eventName: 'wheel_resolved',
+    actionId,
+    metadata: { attemptId: attempt.id, outcome: selection.outcome },
+    createdAt: effectiveAt,
+  })
+
+  const rewardSettlement = await settleMechanicOutcomeRewards({
+    client,
+    execute,
+    runtime: common.runtime,
+    mechanicId: common.mechanicId,
+    outcome: selection.outcome,
+    attemptId: attempt.id,
+    asOf: effectiveAt,
+  })
+
+  const refreshed = await refreshCampaignParticipationInTransaction(client, {
+    participationId: common.runtime.id,
+    asOf: effectiveAt,
+  })
+  const updatedAttempt = await loadCampaignAttempt(execute, {
+    participationId: common.runtime.id,
+    mechanicId: common.mechanicId,
+    attemptId: attempt.id,
+  })
+
+  const rewardEffects = rewardSettlement.results.flatMap(reward => {
+    if (reward.duplicate) return []
+    if (reward.status === 'granted') {
+      return [{
+        type: 'reward_granted',
+        reward: {
+          id: reward.rewardId,
+          type: 'goin',
+          amount: reward.amount,
+          grantId: reward.grantId,
+          economyEventId: reward.economyEventId,
+          ...(reward.expiresAt ? { expiresAt: reward.expiresAt } : {}),
+        },
+      }]
+    }
+    if (reward.status === 'failed') {
+      return [{
+        type: 'reward_failed',
+        reward: {
+          id: reward.rewardId,
+          type: 'goin',
+          amount: reward.amount,
+          grantId: reward.grantId,
+          failureCode: reward.failureCode,
+        },
+      }]
+    }
+    return []
+  })
+
+  const economy = refreshed?.economy ?? rewardSettlement.economy
+  return {
+    ok: true,
+    accepted: true,
+    duplicate: false,
+    result: {
+      participation: refreshed?.participation ?? mapParticipation(common.runtime),
+      mechanicState: await readMechanicState(execute, common.runtime.id, common.mechanicId),
+      attempt: mapCampaignAttempt(updatedAttempt, mechanic.attemptPolicy),
+      effects: [
+        { type: 'wheel_resolved', attemptId: attempt.id, outcome: selection.outcome },
+        ...rewardEffects,
+        ...(refreshed?.effects ?? []),
+      ],
+      ...(economy ? { economy } : {}),
+    },
+  }
+}
+
 export async function submitCampaignActionInTransaction(client, input) {
   const execute = client.query.bind(client)
   const idempotencyKey = normalizeIdempotencyKey(input.idempotencyKey)
@@ -258,6 +385,10 @@ export async function submitCampaignActionInTransaction(client, input) {
     typeof common.evidence?.attemptId === 'string'
   ) {
     return handleCustomGameFinished(client, execute, common, mechanic, effectiveAt)
+  }
+
+  if (mechanic.type === 'chance_wheel' && input.action === 'spin_requested') {
+    return handleChanceWheelSpin(client, execute, common, mechanic, effectiveAt)
   }
 
   if (input.action !== 'attempt_started') return rejectAction(execute, common, 'CAMPAIGN_ACTION_UNSUPPORTED')
