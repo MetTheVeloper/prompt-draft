@@ -9,6 +9,9 @@ type ProductAnalyticsEventName =
   | 'public_discovery_view'
   | 'prompt_copy_clicked'
   | 'prompt_unlock_clicked'
+  | 'campaign_promotion_impression'
+  | 'campaign_promotion_click'
+  | 'campaign_promotion_dismiss'
 
 type ProductAnalyticsResourceType =
   | 'prompt_archive_item'
@@ -17,6 +20,7 @@ type ProductAnalyticsResourceType =
   | 'public_creator'
   | 'public_blog'
   | 'public_discovery'
+  | 'campaign_promotion'
 
 type ProductAnalyticsMetadata = Record<string, string | number | boolean | null>
 
