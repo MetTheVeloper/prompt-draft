@@ -46,5 +46,16 @@ export default {
       invalidAttempt: 'This spin is no longer valid.',
       error: 'Please try again.',
     },
+    notice: {
+      attempts_exhausted: {
+        title: 'No attempts available',
+        body: 'There are no attempts available for this activity right now.',
+      },
+      attempts_exhausted_calendar_day: {
+        title: "That's all for today",
+        body: 'Come back when today’s attempts reset.',
+      },
+      countdown: 'Time until attempts reset',
+    },
   },
 }
