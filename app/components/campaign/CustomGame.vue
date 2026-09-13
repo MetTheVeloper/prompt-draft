@@ -13,6 +13,13 @@ const flow = useCampaignCustomGame(props, () => locale.value === 'fa' ? 'fa' : '
     </el-flex>
     <el-text color="normal55" :size="11">{{ t('campaign.game.serverVerified') }}</el-text>
     <el-text v-if="refreshing || flow.recovering.value" color="normal55" :size="12">{{ t('campaign.game.recovering') }}</el-text>
+    <CampaignChallengeResult
+      v-else-if="!flow.attempt.value && flow.persistedOutcome.value"
+      :passed="flow.persistedOutcome.value === 'win'"
+      :can-retry="flow.canTryAgain.value"
+      :busy="flow.busy.value"
+      @retry="flow.tryAgain"
+    />
     <template v-else-if="!flow.attempt.value">
       <el-text color="normal55" :size="12">{{ t('campaign.game.helper') }}</el-text>
       <el-button v-if="flow.canReserve.value" color="prim" :disable="flow.busy.value" :label="t('campaign.game.start')" @click="flow.begin" />
