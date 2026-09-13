@@ -1,6 +1,6 @@
 # Campaign Engine — CE2.2 Actions / Attempts Runtime
 
-Status: **IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13**
 
 Date: 2026-09-13
 
@@ -14,7 +14,7 @@ feature/growth-foundation
 
 ```text
 CE1 Foundation                 -> DONE / VERIFIED / ACCEPTED
-Expiring / Promotional Goin V1 -> VERIFIED / ACCEPTED
+Expiring / Promotional Goin V1 -> DONE / VERIFIED / ACCEPTED
 CE2.1 Runtime Core             -> DONE / VERIFIED / ACCEPTED
 ```
 
@@ -51,6 +51,7 @@ Implementation commits:
 32bce0faf8c98369d533e9cd81e2c2d947b64fc6  feat: route Campaign attempts and actions
 aa9e910436ae8936cff7466ba5a900db0c3931c2  feat: add Campaign attempts and actions runtime
 98dea7e662092527f1e2d98038c84f19c06f8ba6  fix: fail closed on invalid attempt timezone
+6bc2c35d8bdde3c17dba89c6110e00fd826e8fff  fix: type Campaign mechanic action timestamp
 ```
 
 Primary files:
@@ -109,7 +110,7 @@ reward expiry
 Economy event identity
 ```
 
-## Verification scope
+## Founder-local verification evidence
 
 Changed service scope:
 
@@ -117,33 +118,43 @@ Changed service scope:
 backend only
 ```
 
-No SQL migration was added by CE2.2, therefore no `db:schema` rerun is required solely for this slice after migration 031 was already locally verified.
+No SQL migration was added by CE2.2, therefore no `db:schema` rerun was required after migration 031 had already been locally verified.
 
-Smallest verification:
+Initial focused regression on 2026-09-13:
 
 ```powershell
 pnpm api
 docker compose exec api node --test src/campaignActionsAttempts.test.mjs src/campaignRuntime.test.mjs src/campaignFoundation.test.mjs
 ```
 
-Optional HTTP auth-boundary smoke without needing a real campaign fixture:
-
-```powershell
-curl.exe -i -X POST http://localhost:4000/api/campaigns/nonexistent/mechanics/game/attempts ^
-  -H "Content-Type: application/json" ^
-  -d "{\"idempotencyKey\":\"smoke-attempt\"}"
-```
-
-Expected without Authorization header:
+Result:
 
 ```text
-HTTP 401
-Authentication required
+20 tests
+19 pass
+1 fail
 ```
 
-No frontend rebuild, `pnpm generate`, or `pnpm stack` is required.
+The single failure was isolated to the `attempt_started` mechanic-state timestamp update. PostgreSQL inferred one shared parameter as `text` because it was also used inside JSON construction, then rejected that value for `updated_at TIMESTAMPTZ`.
 
-## Focused test expectations
+The runtime behavior was unchanged; commit `6bc2c35d8bdde3c17dba89c6110e00fd826e8fff` added explicit `timestamptz` casts to the two affected SQL expressions.
+
+Founder reran the smallest affected suite:
+
+```powershell
+pnpm api
+docker compose exec api node --test src/campaignActionsAttempts.test.mjs
+```
+
+Result:
+
+```text
+5 tests
+5 pass
+0 fail
+```
+
+Verified behaviors:
 
 ```text
 calendar-day period key + nextEligibleAt honor configured timezone
@@ -158,7 +169,32 @@ mechanic state revision advances under lock
 attempt_started trusted event links to source action
 same Action retry does not replay effects
 same idempotency key + changed payload returns CAMPAIGN_IDEMPOTENCY_CONFLICT
-unsupported game_finished remains rejected and cannot produce game_won/attempt_resolved/reward_granted
+unsupported game_finished remains rejected and cannot produce trusted success effects
 ```
 
-Do not mark CE2.2 DONE until founder-local evidence is clean and no hidden blocker is found.
+HTTP auth-boundary smoke:
+
+```powershell
+curl.exe -i -X POST http://localhost:4000/api/campaigns/nonexistent/mechanics/game/attempts -H "Content-Type: application/json" -d '{"idempotencyKey":"smoke-attempt"}'
+```
+
+Result:
+
+```text
+HTTP/1.1 401 Unauthorized
+{"ok":false,"message":"Authentication required"}
+```
+
+This confirms the authenticated runtime boundary does not disclose campaign existence before authentication.
+
+The only runtime warning was the already-known unrelated orphan `prompt-draft-cloudflared-1` Compose warning. No topology cleanup was performed as part of CE2.2.
+
+Because only backend source/tests changed, frontend rebuild, `pnpm generate`, `db:schema`, and `pnpm stack` were correctly not used.
+
+No hidden blocker remains in the supplied founder-local evidence. CE2.2 is therefore accepted.
+
+## Next boundary
+
+CE2 generic runtime is now established far enough for subsequent slices to build on it without letting browser actions become outcome/reward authority.
+
+Next Campaign work should follow the current Campaign Engine scheduling documentation and re-read the latest branch before every write.
