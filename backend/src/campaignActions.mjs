@@ -18,6 +18,7 @@ import { refreshCampaignParticipationInTransaction } from './campaignRuntime.mjs
 const IDEMPOTENCY_KEY_MAX = 240
 const NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const PARTICIPATION_PROGRESS_STATUSES = new Set(['started', 'in_progress'])
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -239,6 +240,9 @@ export async function submitCampaignActionInTransaction(client, input) {
   const status = deriveCampaignEffectiveStatus(runtime, effectiveAt)
   if (!participationAllowsProgress(runtime, status)) {
     return { ok: false, code: status === 'ended' ? 'CAMPAIGN_PARTICIPATION_CLOSED' : 'CAMPAIGN_NOT_ACTIVE' }
+  }
+  if (!PARTICIPATION_PROGRESS_STATUSES.has(runtime.status)) {
+    return { ok: false, code: 'CAMPAIGN_PARTICIPATION_CLOSED' }
   }
 
   const common = {
