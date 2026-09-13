@@ -8,6 +8,7 @@ import {
   getCampaignPromotionRenderer,
   isCampaignPromotionSlot,
 } from './campaignPromotionRegistry.mjs'
+import { validateCampaignRuntimeNotices } from './campaignRuntimeNotices.mjs'
 
 function isObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
@@ -158,6 +159,8 @@ export function validateCampaignRuntimeDefinition(definition) {
   } else {
     promotions.forEach((promotion, index) => validatePromotionDefinition(promotion, index, promotionIds, errors))
   }
+
+  errors.push(...validateCampaignRuntimeNotices(definition))
 
   mechanics.forEach((mechanic, index) => {
     const base = `mechanics[${index}]`

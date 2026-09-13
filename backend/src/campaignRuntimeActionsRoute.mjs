@@ -2,7 +2,10 @@ import { createHash } from 'node:crypto'
 import { getAuthenticatedUser, getAuthToken } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
 import { getCampaignCallerState } from './campaignRuntime.mjs'
-import { loadParticipationRuntime } from './campaignRuntimeShared.mjs'
+import {
+  loadParticipationRuntime,
+  loadPublishedCampaignBySlug,
+} from './campaignRuntimeShared.mjs'
 import {
   readCampaignAttemptAvailability,
   reserveCampaignAttempt,
@@ -11,6 +14,7 @@ import {
   readCampaignMechanicStates,
   submitCampaignAction,
 } from './campaignActions.mjs'
+import { evaluateCampaignRuntimeNotices } from './campaignRuntimeNotices.mjs'
 
 const MAX_BODY_BYTES = 16 * 1024
 const NAME_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
@@ -138,20 +142,43 @@ export async function handleCampaignActionsRequest({ request, response, url, cor
   try {
     const runtimeSessionKey = sessionKey(request)
     if (route.kind === 'state') {
-      const result = await getCampaignCallerState({ slug: route.slug, userId: user.id })
-      if (!result.ok || !result.participation) {
+      const effectiveAt = new Date()
+      const result = await getCampaignCallerState({ slug: route.slug, userId: user.id, asOf: effectiveAt })
+      if (!result.ok) {
         await sendServiceResult(response, sendJson, corsHeaders, result)
         return true
       }
-      const runtime = await loadParticipationRuntime(result.participation.id, queryDatabase)
-      if (runtime) {
-        result.mechanics = await readCampaignMechanicStates(queryDatabase, runtime)
-        result.attemptAvailability = await readCampaignAttemptAvailability({
-          runtime,
-          sessionKey: runtimeSessionKey,
-          executor: queryDatabase,
-        })
+
+      let definition = null
+      if (result.participation) {
+        const runtime = await loadParticipationRuntime(result.participation.id, queryDatabase)
+        if (runtime) {
+          definition = runtime.definition
+          result.mechanics = await readCampaignMechanicStates(queryDatabase, runtime)
+          result.attemptAvailability = await readCampaignAttemptAvailability({
+            runtime,
+            sessionKey: runtimeSessionKey,
+            asOf: effectiveAt,
+            executor: queryDatabase,
+          })
+        }
       }
+
+      if (!definition) {
+        const published = await loadPublishedCampaignBySlug(route.slug, queryDatabase)
+        definition = published?.definition ?? null
+      }
+
+      const notices = evaluateCampaignRuntimeNotices({
+        definition,
+        campaignStatus: result.campaign.status,
+        participation: result.participation,
+        attemptAvailability: result.attemptAvailability,
+        asOf: effectiveAt,
+      })
+      result.serverNow = notices.serverNow
+      result.activeNotices = notices.activeNotices
+
       sendJson(response, 200, result, corsHeaders)
       return true
     }
