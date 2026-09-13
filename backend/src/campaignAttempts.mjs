@@ -64,6 +64,9 @@ export function getAttemptPeriodDescriptor({ policy, runtime, asOf = new Date(),
     return { ok: true, periodKey: `campaign:${runtime.campaignVersionId}`, nextEligibleAt: null, rollingStartAt: null }
   }
   if (policy.period === 'calendar_day') {
+    if (typeof policy.timezone !== 'string' || !policy.timezone.trim()) {
+      return { ok: false, code: 'CAMPAIGN_ATTEMPT_POLICY_INVALID' }
+    }
     try {
       const parts = zonedParts(effectiveAt, policy.timezone)
       const day = `${String(parts.year).padStart(4, '0')}-${String(parts.month).padStart(2, '0')}-${String(parts.day).padStart(2, '0')}`
