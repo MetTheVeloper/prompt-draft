@@ -1,6 +1,6 @@
 # Campaign Engine — CE3 Promotion Surfaces Implementation
 
-Status: **CE3.1 BACKEND IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **CE3.1 FOUNDER-LOCAL VERIFIED / CE3.2 IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
 
 Date: 2026-09-13
 
@@ -65,6 +65,40 @@ private/unknown promotion fields never projected
 runtime fail-closed handling for legacy malformed published promotion JSON
 ```
 
+## CE3.1 founder-local evidence
+
+Founder-local verification on 2026-09-13:
+
+```text
+pnpm api
+  -> API rebuilt successfully
+
+node --test
+  campaignPromotions.test.mjs
+  campaignFoundation.test.mjs
+  campaignRuntime.test.mjs
+
+18 tests
+18 pass
+0 fail
+```
+
+HTTP smoke:
+
+```text
+GET /api/campaign-promotions?slot=site_header
+-> 200
+-> {"ok":true,"slot":"site_header","promotions":[]}
+
+GET /api/campaign-promotions?slot=telegram
+-> 400
+-> CAMPAIGN_PROMOTION_SLOT_INVALID
+```
+
+The unrelated existing orphan `cloudflared` Compose warning remains outside Campaign Engine scope.
+
+CE3.1 is therefore technically founder-local verified. Founder acceptance has not yet been recorded separately.
+
 ## Promotion renderer registry
 
 CE3 introduces a dedicated promotion renderer registry rather than mixing placement renderers with Campaign page renderers.
@@ -82,7 +116,7 @@ Publish validation rejects unknown renderer keys and renderer/slot mismatches.
 
 ## Promotion publish validation
 
-Published Campaign Definitions now validate:
+Published Campaign Definitions validate:
 
 ```text
 promotion ids are unique/path-safe
@@ -98,7 +132,7 @@ priority is an integer
 
 ## Persistence
 
-No migration is required for CE3.1.
+No migration is required for CE3.
 
 Migration 029 already provides:
 
@@ -112,7 +146,19 @@ campaign_promotion_user_states
   updated_at
 ```
 
-User dismissal therefore naturally resets when a campaign publishes a new version unless that new version is dismissed again.
+User dismissal naturally resets when a campaign publishes a new version unless that new version is dismissed again.
+
+CE3.2 browser-local state uses version-scoped keys for:
+
+```text
+session dismissal -> sessionStorage
+device dismissal  -> localStorage
+frequency session -> sessionStorage
+frequency day     -> localStorage + browser-local day key
+frequency campaign-> localStorage
+```
+
+These controls are presentation-only and never authorize participation/reward/economy state.
 
 ## Selection ordering
 
@@ -125,11 +171,11 @@ campaign slug ASC
 promotion id ASC
 ```
 
-Frontend may later choose slot capacity from this already stable order.
+Frontend chooses the first candidate still allowed by local dismissal/frequency state.
 
 ## Public projection boundary
 
-CE3.1 never returns raw Campaign Definition JSON.
+CE3 never returns raw Campaign Definition JSON.
 
 Promotion response exposes only:
 
@@ -148,32 +194,146 @@ safe frequencyCap config
 
 Unknown/legacy fields are not serialized.
 
-## CE3.2 next scope after CE3.1 verification
+## CE3.2 implemented scope
+
+Frontend implementation adds:
 
 ```text
-CampaignPlacement generic component
-site_header host
-floating/modal CampaignOverlayHost
-dashboard_banner host on the authenticated user surface
-session dismissal -> sessionStorage
-device dismissal -> localStorage
-presentation-only frequency caps
-campaign_promotion_impression analytics
-campaign_promotion_click analytics
-campaign_promotion_dismiss analytics
-existing Product Analytics endpoint/allowlist only
+useCampaignPromotions
+CampaignPlacement
+CampaignPromotionSurface
+CampaignHeaderHost
+CampaignOverlayHost
+
+site_header -> teleported into the existing Prompt Draft Header
+floating_corner -> shared global overlay host
+modal -> existing useModal / global modal system
+dashboard_banner -> renderer + generic placement support ready
 ```
 
-Product Analytics remains observational and cannot mutate Campaign business state.
+No campaign-specific conditionals were added to the global shell.
 
-Campaign CTA target remains `/campaign/:slug`; CE4 will implement/stabilize the Campaign experience target. CE3 must not invent CE4 mechanic behavior.
+### Header integration
 
-## Verification scope
+`site_header` uses the existing Header DOM as its host through Vue Teleport.
 
-Changed runtime service in CE3.1:
+This avoids changing the global content-height calculation or creating a second header shell. On mobile the CTA uses the existing `el-button` fab behavior.
+
+### Floating integration
+
+The floating card uses Prompt Draft `el-flex`, `el-text`, and `el-button` primitives and semantic theme tokens.
+
+The only scoped CSS introduced is structural geometry:
 
 ```text
-backend only
+fixed positioning
+logical inline edge
+bottom offset
+maximum responsive width
+z-index
+```
+
+No raw feature colors or page-local visual system were introduced.
+
+### Modal integration
+
+Campaign modal promotions use the existing global `useModal` / `<el-modal>` system.
+
+Campaign Engine does not create its own backdrop, Escape handling, modal stack, or theme implementation.
+
+### dashboard_banner mounting decision
+
+The repository's current `/dashboard` route is a legacy redirect to:
+
+```text
+/manage/dashboard
+```
+
+and that destination requires the admin-only `dashboard.view` permission. Ordinary users do not have that permission.
+
+Therefore CE3 deliberately does **not** mount a customer Campaign `dashboard_banner` into `/manage/dashboard` merely because the slot is named `dashboard_banner`.
+
+Current direction:
+
+```text
+renderer contract        -> implemented
+CampaignPlacement support -> implemented
+admin Manage dashboard   -> intentionally not used as a customer promotion surface
+end-user dashboard host  -> attach when a legitimate end-user dashboard surface exists
+```
+
+This prevents Campaign discovery UI from leaking into an operator-only administration surface.
+
+## Attribution handoff to CE4
+
+Promotion activation stores one bounded pending attribution object in `sessionStorage`, keyed by Campaign slug:
+
+```json
+{
+  "source": "onsite",
+  "medium": "campaign_promotion",
+  "campaign": "payiz",
+  "placement": "site_header",
+  "referrer": "/prompts"
+}
+```
+
+Only fields already accepted by the Campaign participation runtime contract are stored.
+
+The referrer uses `route.path`, not arbitrary query strings, so CE3 does not persist sensitive/unbounded URL query payloads.
+
+`readPendingCampaignAttribution(slug, { consume })` is the explicit handoff for CE4 Campaign landing/start implementation.
+
+CE3 does not start participation on click and does not invent CE4 behavior.
+
+## Product Analytics
+
+The existing `/api/analytics/events` endpoint is extended with only these observational events:
+
+```text
+campaign_promotion_impression
+campaign_promotion_click
+campaign_promotion_dismiss
+```
+
+Resource contract:
+
+```text
+resource.type = campaign_promotion
+resource.id   = campaign slug
+```
+
+Bounded allowlisted metadata:
+
+```text
+promotionId
+slot
+campaignVersion
+rendererKey
+dismissPersistence
+```
+
+Analytics failure cannot block:
+
+```text
+rendering
+click/navigation
+dismissal
+participation
+reward
+budget
+Economy
+```
+
+No new campaign analytics ingestion endpoint was created.
+
+## CE3.2 verification scope
+
+Changed runtime services:
+
+```text
+backend -> Product Analytics allowlist/validation
+frontend -> promotion composable/components/global hosts
 ```
 
 No SQL migration changed.
@@ -182,35 +342,23 @@ Smallest founder-local verification:
 
 ```powershell
 pnpm api
-docker compose exec api node --test src/campaignPromotions.test.mjs src/campaignFoundation.test.mjs
+
+docker compose exec api node --test src/productAnalytics.test.mjs src/campaignPromotions.test.mjs
+
+pnpm frontend
 ```
 
-HTTP smoke:
+No `db:schema`, `pnpm generate`, or `pnpm stack` is required.
 
-```powershell
-curl.exe -i "http://localhost:4000/api/campaign-promotions?slot=site_header"
-```
+Because the current database has no active configured promotion, an empty promotion response is expected and does not visually exercise the renderer. Visual founder verification of an actual header/floating/modal promotion requires a real published Campaign Definition with that promotion configured; do not add production-like seed side effects merely for reassurance.
 
-Expected with no active configured promotions:
+## Acceptance gate
+
+Do not mark CE3.2 or CE3 overall DONE/ACCEPTED until:
 
 ```text
-HTTP 200
-{"ok":true,"slot":"site_header","promotions":[]}
+backend focused regression is clean
+Nuxt frontend build is clean
+no hidden runtime error is observed
+Founder acceptance is explicit or equivalent under project convention
 ```
-
-Invalid slot smoke:
-
-```powershell
-curl.exe -i "http://localhost:4000/api/campaign-promotions?slot=telegram"
-```
-
-Expected:
-
-```text
-HTTP 400
-CAMPAIGN_PROMOTION_SLOT_INVALID
-```
-
-No frontend rebuild, `db:schema`, `pnpm generate`, or `pnpm stack` is required for CE3.1.
-
-Do not mark CE3.1 DONE until founder-local evidence is clean and no hidden blocker is found.
