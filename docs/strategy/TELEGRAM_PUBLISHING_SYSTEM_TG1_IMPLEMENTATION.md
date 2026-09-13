@@ -1,6 +1,6 @@
 # Telegram Publishing System — TG1 Shared Backend Foundation
 
-Status: **TG1 BACKEND IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13**
 
 Date: 2026-09-13
 
@@ -207,11 +207,9 @@ Therefore TG1 does not mutate those legacy Archive fields.
 
 TG3 will later adapt `/manage/archive` to this shared publisher and may reconcile a successful Prompt publication back into those compatibility fields where useful. Those fields must not become the future publication ledger and cannot represent all multi-message/multi-publication history.
 
-## 10. TG1 verification gate
+## 10. TG1 verification and acceptance
 
-TG1 changes backend runtime, Docker API environment and SQL migration only. No frontend rebuild is required.
-
-Founder-local verification:
+Founder-local verification completed on 2026-09-13 with the required smallest backend scope:
 
 ```powershell
 cd G:\ZADAK\prompt-draft
@@ -224,23 +222,35 @@ docker compose exec api npm run db:schema
 docker compose exec api node --test src/telegramPublishing.test.mjs
 ```
 
-Safe auth-boundary smoke with no Telegram credentials required:
+Evidence:
+
+```text
+API Docker build -> successful
+schema migrations -> 001 through 032 applied successfully
+032_telegram_publishing_foundation.sql -> applied successfully
+telegramPublishing.test.mjs -> 10/10 pass, 0 fail
+```
+
+Covered behavior includes direct Mini App `startapp` routing, token secrecy, source-neutral payload hashing, validation, text/photo/album publication forms, definite Telegram rejection, `delivery_unknown` transport behavior, partial album identity preservation and exact-super-admin route authorization.
+
+Safe unauthenticated auth-boundary smoke:
 
 ```powershell
 curl.exe -i "http://localhost:4000/api/admin/telegram/config"
 ```
 
-Expected without auth:
+Observed:
 
 ```text
-HTTP 401
+HTTP/1.1 401 Unauthorized
+{"ok":false,"message":"Authentication required"}
 ```
 
-Do not configure a production bot/channel or send a real Telegram post merely to satisfy TG1 verification. Transport behavior is covered by deterministic fake-fetch tests; real-channel smoke can happen later under founder control.
+No real Telegram bot/channel publication was required for TG1 acceptance. Transport behavior remains deterministically covered with fake Telegram responses.
 
-## 11. Next slice after acceptance
+Founder acceptance: **ACCEPTED 2026-09-13**.
 
-After TG1 founder-local acceptance:
+## 11. Next slice
 
 ```text
 TG2 — shared TelegramPostComposer + /manage/telegram
