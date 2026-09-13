@@ -52,6 +52,7 @@ if (!runtime.value) throw createError({ statusCode: 404, statusMessage: 'Campaig
 
 const campaign = computed(() => runtime.value!.campaign)
 const customGames = computed(() => campaign.value.mechanics.filter(mechanic => mechanic.type === 'custom_game' && mechanic.attemptPolicy))
+const chanceWheels = computed(() => campaign.value.mechanics.filter(mechanic => mechanic.type === 'chance_wheel' && mechanic.attemptPolicy))
 const activeLocale = computed<CampaignLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
 const localeAvailable = computed(() => campaign.value.experience.locales.includes(activeLocale.value) && Boolean(campaign.value.experience.content[activeLocale.value]?.title))
 
@@ -167,6 +168,17 @@ onMounted(async () => {
 
       <CampaignCustomGame
         v-for="mechanic in customGames"
+        v-if="callerState?.participation"
+        :key="mechanic.id"
+        :campaign="campaign"
+        :mechanic="mechanic"
+        :state="callerState"
+        :refreshing="refreshingState"
+        @refresh="refreshCallerState"
+      />
+
+      <CampaignChanceWheel
+        v-for="mechanic in chanceWheels"
         v-if="callerState?.participation"
         :key="mechanic.id"
         :campaign="campaign"
