@@ -88,6 +88,16 @@ test('chance wheel definition requires public segments and private positive weig
   assert.ok(validateChanceWheelDefinition(extra).some(error => error.code === 'CAMPAIGN_WHEEL_WEIGHT_UNKNOWN_SEGMENT'))
 })
 
+test('chance wheel publish contract rejects weight-like data on the public side', () => {
+  const publicWeights = structuredClone(mechanic())
+  publicWeights.config.public.weights = { goin_5: 1 }
+  assert.ok(validateChanceWheelDefinition(publicWeights).some(error => error.code === 'CAMPAIGN_WHEEL_PUBLIC_CONFIG_FIELD_UNSUPPORTED'))
+
+  const segmentWeight = structuredClone(mechanic())
+  segmentWeight.config.public.segments[0].weight = 1
+  assert.ok(validateChanceWheelDefinition(segmentWeight).some(error => error.code === 'CAMPAIGN_WHEEL_SEGMENT_FIELD_UNSUPPORTED'))
+})
+
 test('chance wheel selection uses only server private weights', () => {
   const wheel = mechanic()
   assert.deepEqual(selectChanceWheelOutcome(wheel, () => 0), { ok: true, outcome: 'goin_5' })
