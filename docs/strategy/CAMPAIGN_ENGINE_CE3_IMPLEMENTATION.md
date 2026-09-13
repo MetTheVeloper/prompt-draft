@@ -1,6 +1,6 @@
 # Campaign Engine — CE3 Promotion Surfaces Implementation
 
-Status: **CE3.1 FOUNDER-LOCAL VERIFIED / CE3.2 IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION**
+Status: **CE3.1 FOUNDER-LOCAL VERIFIED / CE3.2 CODE+BUILD FOUNDER-LOCAL VERIFIED / VISUAL ACCEPTANCE PENDING**
 
 Date: 2026-09-13
 
@@ -256,10 +256,10 @@ Therefore CE3 deliberately does **not** mount a customer Campaign `dashboard_ban
 Current direction:
 
 ```text
-renderer contract        -> implemented
+renderer contract         -> implemented
 CampaignPlacement support -> implemented
-admin Manage dashboard   -> intentionally not used as a customer promotion surface
-end-user dashboard host  -> attach when a legitimate end-user dashboard surface exists
+admin Manage dashboard    -> intentionally not used as a customer promotion surface
+end-user dashboard host   -> attach when a legitimate end-user dashboard surface exists
 ```
 
 This prevents Campaign discovery UI from leaking into an operator-only administration surface.
@@ -327,30 +327,51 @@ Economy
 
 No new campaign analytics ingestion endpoint was created.
 
-## CE3.2 verification scope
+## CE3.2 founder-local code/build evidence
 
-Changed runtime services:
+Founder-local verification on 2026-09-13:
 
 ```text
-backend -> Product Analytics allowlist/validation
-frontend -> promotion composable/components/global hosts
-```
-
-No SQL migration changed.
-
-Smallest founder-local verification:
-
-```powershell
 pnpm api
+  -> API rebuilt successfully
 
-docker compose exec api node --test src/productAnalytics.test.mjs src/campaignPromotions.test.mjs
+node --test
+  productAnalytics.test.mjs
+  campaignPromotions.test.mjs
+
+13 tests
+13 pass
+0 fail
 
 pnpm frontend
+  -> Nuxt client build successful
+  -> Nuxt SSR build successful
+  -> Nitro server build successful
+  -> frontend container started successfully
 ```
 
-No `db:schema`, `pnpm generate`, or `pnpm stack` is required.
+Observed build warnings were the existing/general Nuxt sourcemap and chunk-size warnings, with no CE3 compile or runtime build failure.
 
-Because the current database has no active configured promotion, an empty promotion response is expected and does not visually exercise the renderer. Visual founder verification of an actual header/floating/modal promotion requires a real published Campaign Definition with that promotion configured; do not add production-like seed side effects merely for reassurance.
+The unrelated orphan `cloudflared` Compose warning remains outside Campaign Engine scope.
+
+Therefore CE3.2 code + production-build verification is clean. Final CE3 acceptance still requires a controlled visual exercise of real promotion projections in Light/Dark and dismissal behavior.
+
+## Visual verification policy
+
+The normal local database currently has no active configured Campaign promotion, so empty promotion responses are expected and cannot visually exercise the renderers.
+
+For final CE3 visual verification, use a clearly named **local-only temporary published Campaign fixture** that:
+
+```text
+uses a dedicated fixture Campaign slug/UUIDs
+contains no rewards or economy effects
+contains only CE3 promotion definitions
+is inserted directly into the local database
+is removable after verification
+is never committed as a production seed/migration
+```
+
+This keeps verification realistic without introducing permanent product data or migration side effects.
 
 ## Acceptance gate
 
@@ -359,6 +380,9 @@ Do not mark CE3.2 or CE3 overall DONE/ACCEPTED until:
 ```text
 backend focused regression is clean
 Nuxt frontend build is clean
+header / floating / modal visual surfaces are founder-checked
+Light and Dark theme behavior is checked
+local dismissal behavior is checked
 no hidden runtime error is observed
 Founder acceptance is explicit or equivalent under project convention
 ```
