@@ -13,7 +13,7 @@
 !endif
 
 !define APP_NAME "Prompt Draft Server Manager"
-!define APP_VERSION "0.1.1"
+!define APP_VERSION "0.1.2"
 !define APP_PUBLISHER "MetTheVeloper"
 !define APP_EXE "PromptDraft.ServerManager.exe"
 !define APP_REG_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\PromptDraftServerManager"
@@ -29,7 +29,7 @@ SetCompressor /SOLID lzma
 Icon "${InstallerIcon}"
 UninstallIcon "${InstallerIcon}"
 
-VIProductVersion "0.1.1.0"
+VIProductVersion "0.1.2.0"
 VIAddVersionKey /LANG=1033 "ProductName" "${APP_NAME}"
 VIAddVersionKey /LANG=1033 "CompanyName" "${APP_PUBLISHER}"
 VIAddVersionKey /LANG=1033 "FileDescription" "Prompt Draft local operations console"
@@ -54,8 +54,13 @@ VIAddVersionKey /LANG=1033 "LegalCopyright" "Copyright 2026 MetTheVeloper"
 Section "Install" SEC_MAIN
   SetShellVarContext current
   SetOutPath "$INSTDIR"
+  SetOverwrite on
 
-  File "${PublishDir}\${APP_EXE}"
+  ; Install the complete publish payload, not just the managed launcher.
+  ; Self-contained WPF publishes can emit native sidecar libraries that are
+  ; required before managed startup code is reached. Omitting them causes the
+  ; process to terminate before our startup diagnostics can write a log.
+  File /r "${PublishDir}\*.*"
 
   WriteRegStr HKCU "Software\MetTheVeloper\PromptDraftServerManager" "InstallDir" "$INSTDIR"
 
@@ -87,7 +92,7 @@ Section "Uninstall"
   Delete "$SMPROGRAMS\${APP_NAME}\${APP_NAME}.lnk"
   RMDir "$SMPROGRAMS\${APP_NAME}"
 
-  Delete "$INSTDIR\${APP_EXE}"
-  Delete "$INSTDIR\Uninstall.exe"
-  RMDir "$INSTDIR"
+  ; The uninstaller runs from a temporary copy, so the whole install payload
+  ; can be removed safely, including native runtime sidecars.
+  RMDir /r "$INSTDIR"
 SectionEnd
