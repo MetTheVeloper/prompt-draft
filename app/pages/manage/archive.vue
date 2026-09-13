@@ -955,6 +955,11 @@ onBeforeUnmount(() => {
           />
         </template>
       </el-flex>
+
+      <ArchiveTelegramAdapter
+        v-if="editingItem"
+        :item="editingItem"
+      />
     </template>
   </el-flex>
 
