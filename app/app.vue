@@ -48,6 +48,9 @@ onMounted(() => {
     <NuxtPage />
   </NuxtLayout>
 
+  <CampaignHeaderHost />
+  <CampaignOverlayHost />
+
   <el-variable-fab />
 
   <el-global-menu />

@@ -115,6 +115,81 @@ test('public Discovery view accepts a normalized taxonomy slug', () => {
   assert.equal(validation.event?.resourceId, 'product-photography')
 })
 
+test('campaign promotion observational events accept bounded promotion metadata', () => {
+  for (const eventName of [
+    'campaign_promotion_impression',
+    'campaign_promotion_click',
+    'campaign_promotion_dismiss',
+  ]) {
+    const validation = validateProductAnalyticsEventBody(createEventBody({
+      eventName,
+      resource: {
+        type: 'campaign_promotion',
+        id: 'payiz',
+      },
+      path: '/prompts',
+      metadata: {
+        promotionId: 'payiz-header',
+        slot: 'site_header',
+        campaignVersion: 2,
+        rendererKey: 'header-campaign-cta-v1',
+        dismissPersistence: 'user',
+      },
+    }))
+
+    assert.deepEqual(validation.errors, [], eventName)
+    assert.equal(validation.event?.resourceType, 'campaign_promotion')
+    assert.equal(validation.event?.resourceId, 'payiz')
+    assert.equal(validation.event?.metadata.promotionId, 'payiz-header')
+    assert.equal(validation.event?.metadata.campaignVersion, 2)
+  }
+})
+
+test('campaign promotion analytics rejects malformed or unknown presentation metadata', () => {
+  const malformed = validateProductAnalyticsEventBody(createEventBody({
+    eventName: 'campaign_promotion_impression',
+    resource: {
+      type: 'campaign_promotion',
+      id: 'payiz',
+    },
+    metadata: {
+      promotionId: 'bad/id',
+      slot: 'telegram',
+      campaignVersion: 0,
+      rendererKey: 'bad renderer',
+      dismissPersistence: 'forever',
+    },
+  }))
+
+  assert.equal(malformed.event, null)
+  assert.ok(malformed.errors.some(item => item.field === 'metadata.promotionId'))
+  assert.ok(malformed.errors.some(item => item.field === 'metadata.slot'))
+  assert.ok(malformed.errors.some(item => item.field === 'metadata.campaignVersion'))
+  assert.ok(malformed.errors.some(item => item.field === 'metadata.rendererKey'))
+  assert.ok(malformed.errors.some(item => item.field === 'metadata.dismissPersistence'))
+
+  const unknown = validateProductAnalyticsEventBody(createEventBody({
+    eventName: 'campaign_promotion_click',
+    resource: {
+      type: 'campaign_promotion',
+      id: 'payiz',
+    },
+    metadata: {
+      promotionId: 'payiz-header',
+      slot: 'site_header',
+      campaignVersion: 2,
+      rendererKey: 'header-campaign-cta-v1',
+      secret: 'nope',
+    },
+  }))
+
+  assert.equal(unknown.event, null)
+  assert.deepEqual(unknown.errors, [{
+    field: 'metadata.secret',
+    message: 'metadata field is not allowed for this event',
+  }])
+})
+
 test('public slug resources reject uppercase, path-like and unbounded identifiers', () => {
   for (const id of [
     'Launch-Measurement',

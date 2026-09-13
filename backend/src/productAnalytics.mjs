@@ -1,12 +1,22 @@
 import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
+import { isCampaignPromotionSlot } from './campaignPromotionRegistry.mjs'
 
 const ANALYTICS_EVENTS_PATH = '/api/analytics/events'
 const MAX_BODY_BYTES = 8 * 1024
 const MAX_PATH_LENGTH = 500
 const MAX_VARIANT_KEY_LENGTH = 100
 const MAX_PUBLIC_SLUG_LENGTH = 100
+const CAMPAIGN_PROMOTION_ID_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
 const SUPPORTED_LOCALES = new Set(['en', 'fa'])
+
+const CAMPAIGN_PROMOTION_METADATA_KEYS = Object.freeze([
+  'promotionId',
+  'slot',
+  'campaignVersion',
+  'rendererKey',
+  'dismissPersistence',
+])
 
 const EVENT_RULES = Object.freeze({
   prompt_archive_view: Object.freeze({
@@ -58,6 +68,21 @@ const EVENT_RULES = Object.freeze({
     resourceType: 'public_prompt',
     resourceIdKind: 'positive_numeric_id',
     metadataKeys: Object.freeze([]),
+  }),
+  campaign_promotion_impression: Object.freeze({
+    resourceType: 'campaign_promotion',
+    resourceIdKind: 'public_slug',
+    metadataKeys: CAMPAIGN_PROMOTION_METADATA_KEYS,
+  }),
+  campaign_promotion_click: Object.freeze({
+    resourceType: 'campaign_promotion',
+    resourceIdKind: 'public_slug',
+    metadataKeys: CAMPAIGN_PROMOTION_METADATA_KEYS,
+  }),
+  campaign_promotion_dismiss: Object.freeze({
+    resourceType: 'campaign_promotion',
+    resourceIdKind: 'public_slug',
+    metadataKeys: CAMPAIGN_PROMOTION_METADATA_KEYS,
   }),
 })
 
@@ -175,6 +200,60 @@ function validateResource(value, rule, errors) {
   return errors.length ? null : { type, id }
 }
 
+function validateCampaignPromotionMetadata(value, errors) {
+  const promotionId = typeof value.promotionId === 'string'
+    ? value.promotionId.trim()
+    : ''
+  const slot = typeof value.slot === 'string' ? value.slot.trim() : ''
+  const rendererKey = typeof value.rendererKey === 'string'
+    ? value.rendererKey.trim()
+    : ''
+  const campaignVersion = Number(value.campaignVersion)
+  const dismissPersistence = value.dismissPersistence === undefined
+    ? null
+    : typeof value.dismissPersistence === 'string'
+      ? value.dismissPersistence.trim()
+      : ''
+
+  if (!CAMPAIGN_PROMOTION_ID_PATTERN.test(promotionId)) {
+    errors.push(validationError(
+      'metadata.promotionId',
+      'metadata.promotionId must be 1-100 path-safe characters',
+    ))
+  }
+  if (!isCampaignPromotionSlot(slot)) {
+    errors.push(validationError('metadata.slot', 'metadata.slot is not a supported campaign promotion slot'))
+  }
+  if (!Number.isSafeInteger(campaignVersion) || campaignVersion <= 0) {
+    errors.push(validationError('metadata.campaignVersion', 'metadata.campaignVersion must be a positive integer'))
+  }
+  if (!CAMPAIGN_PROMOTION_ID_PATTERN.test(rendererKey)) {
+    errors.push(validationError(
+      'metadata.rendererKey',
+      'metadata.rendererKey must be 1-100 path-safe characters',
+    ))
+  }
+  if (
+    dismissPersistence !== null &&
+    !['session', 'device', 'user'].includes(dismissPersistence)
+  ) {
+    errors.push(validationError(
+      'metadata.dismissPersistence',
+      'metadata.dismissPersistence must be session, device, or user',
+    ))
+  }
+
+  if (errors.length) return null
+
+  return {
+    promotionId,
+    slot,
+    campaignVersion,
+    rendererKey,
+    ...(dismissPersistence ? { dismissPersistence } : {}),
+  }
+}
+
 function validateMetadata(eventName, value, rule, errors) {
   const metadata = value === undefined ? {} : value
 
@@ -221,6 +300,10 @@ function validateMetadata(eventName, value, rule, errors) {
 
   if (eventName === 'referral_link_open') {
     return {}
+  }
+
+  if (eventName.startsWith('campaign_promotion_')) {
+    return validateCampaignPromotionMetadata(metadata, errors)
   }
 
   return {}
