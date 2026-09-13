@@ -15,12 +15,15 @@ $outputDirectory = Split-Path -Parent $OutputIco
 New-Item -ItemType Directory -Force -Path $outputDirectory | Out-Null
 
 $sizes = @(16, 20, 24, 32, 40, 48, 64, 128, 256)
-$payloads = New-Object System.Collections.Generic.List[byte[]]
+$payloads = [System.Collections.Generic.List[byte[]]]::new()
 $source = [System.Drawing.Image]::FromFile($sourcePath)
 
 try {
   foreach ($size in $sizes) {
-    $bitmap = New-Object System.Drawing.Bitmap($size, $size, [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
+    $bitmap = [System.Drawing.Bitmap]::new(
+      $size,
+      $size,
+      [System.Drawing.Imaging.PixelFormat]::Format32bppArgb)
     try {
       $graphics = [System.Drawing.Graphics]::FromImage($bitmap)
       try {
@@ -30,13 +33,14 @@ try {
         $graphics.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
         $graphics.SmoothingMode = [System.Drawing.Drawing2D.SmoothingMode]::HighQuality
         $graphics.PixelOffsetMode = [System.Drawing.Drawing2D.PixelOffsetMode]::HighQuality
-        $graphics.DrawImage($source, 0, 0, $size, $size)
+        $destination = [System.Drawing.Rectangle]::new(0, 0, $size, $size)
+        $graphics.DrawImage($source, $destination)
       }
       finally {
         $graphics.Dispose()
       }
 
-      $stream = New-Object System.IO.MemoryStream
+      $stream = [System.IO.MemoryStream]::new()
       try {
         $bitmap.Save($stream, [System.Drawing.Imaging.ImageFormat]::Png)
         $payloads.Add($stream.ToArray())
@@ -55,7 +59,7 @@ finally {
 }
 
 $fileStream = [System.IO.File]::Create($OutputIco)
-$writer = New-Object System.IO.BinaryWriter($fileStream)
+$writer = [System.IO.BinaryWriter]::new($fileStream)
 try {
   # ICONDIR
   $writer.Write([UInt16]0)
@@ -66,10 +70,11 @@ try {
   for ($index = 0; $index -lt $sizes.Count; $index++) {
     $size = $sizes[$index]
     $payload = $payloads[$index]
+    $dimension = if ($size -eq 256) { 0 } else { $size }
 
     # ICONDIRENTRY. Width/height of 0 represents 256px.
-    $writer.Write([byte]($(if ($size -eq 256) { 0 } else { $size })))
-    $writer.Write([byte]($(if ($size -eq 256) { 0 } else { $size })))
+    $writer.Write([byte]$dimension)
+    $writer.Write([byte]$dimension)
     $writer.Write([byte]0)
     $writer.Write([byte]0)
     $writer.Write([UInt16]1)
@@ -85,7 +90,6 @@ try {
 }
 finally {
   $writer.Dispose()
-  $fileStream.Dispose()
 }
 
 Write-Host "Generated Windows icon: $OutputIco" -ForegroundColor DarkGray
