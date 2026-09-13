@@ -1,25 +1,16 @@
 import { randomUUID } from 'node:crypto'
-import { queryDatabase, withDatabaseTransaction } from './database.mjs'
+import { withDatabaseTransaction } from './database.mjs'
 import {
   canonicalizeCampaignDefinition,
   hashCampaignDefinition,
   validateCampaignDefinition,
-  validateCampaignHeadInput,
 } from './campaignDefinition.mjs'
 
-function mapCampaign(row) {
-  if (!row) return null
-  return {
-    id: row.id,
-    slug: row.slug,
-    internalName: row.internalName,
-    draftDefinition: row.draftDefinition,
-    draftRevision: Number(row.draftRevision),
-    currentPublishedVersionId: row.currentPublishedVersionId ?? null,
-    createdAt: row.createdAt.toISOString(),
-    updatedAt: row.updatedAt.toISOString(),
-  }
-}
+export {
+  createCampaignHead,
+  getCampaignHead,
+  replaceCampaignDraft,
+} from './campaignsFoundation.mjs'
 
 async function writeAudit(execute, actorUserId, action, metadata) {
   await execute(
@@ -31,175 +22,22 @@ async function writeAudit(execute, actorUserId, action, metadata) {
   )
 }
 
-export async function createCampaignHead({
-  slug,
-  internalName,
-  definition = {},
-  actorUserId,
-}) {
-  const headErrors = validateCampaignHeadInput({ slug, internalName })
-  const draftValidation = validateCampaignDefinition(definition, {
-    mode: 'draft',
-    headSlug: slug,
-  })
-
-  if (headErrors.length || draftValidation.errors.length) {
-    return {
-      ok: false,
-      code: 'CAMPAIGN_DRAFT_INVALID',
-      validation: {
-        publishable: false,
-        errors: [...headErrors, ...draftValidation.errors],
-        warnings: draftValidation.warnings,
-      },
-    }
-  }
-
-  return withDatabaseTransaction(async client => {
-    const execute = client.query.bind(client)
-    const id = randomUUID()
-    const canonical = canonicalizeCampaignDefinition(definition)
-    const result = await execute(
+export async function seedCampaignRewardBudgets(execute, versionId, definition) {
+  for (const reward of definition.rewards ?? []) {
+    if (!reward?.budget) continue
+    await execute(
       `
-        INSERT INTO campaigns (
-          id,
-          slug,
-          internal_name,
-          draft_definition,
-          created_by,
-          updated_by
+        INSERT INTO campaign_reward_budgets (
+          campaign_version_id,
+          reward_definition_id,
+          max_amount
         )
-        VALUES ($1, $2, $3, $4::jsonb, $5, $5)
-        RETURNING
-          id,
-          slug,
-          internal_name AS "internalName",
-          draft_definition AS "draftDefinition",
-          draft_revision AS "draftRevision",
-          current_published_version_id AS "currentPublishedVersionId",
-          created_at AS "createdAt",
-          updated_at AS "updatedAt"
+        VALUES ($1, $2, $3)
+        ON CONFLICT (campaign_version_id, reward_definition_id) DO NOTHING
       `,
-      [id, slug, internalName.trim(), JSON.stringify(canonical), actorUserId],
+      [versionId, reward.id, reward.budget.maxAmount],
     )
-
-    await writeAudit(
-      execute,
-      actorUserId,
-      'marketing.campaign_created',
-      { campaignId: id, slug },
-    )
-
-    return { ok: true, campaign: mapCampaign(result.rows[0]) }
-  })
-}
-
-export async function getCampaignHead(id, executor = queryDatabase) {
-  const result = await executor(
-    `
-      SELECT
-        id,
-        slug,
-        internal_name AS "internalName",
-        draft_definition AS "draftDefinition",
-        draft_revision AS "draftRevision",
-        current_published_version_id AS "currentPublishedVersionId",
-        created_at AS "createdAt",
-        updated_at AS "updatedAt"
-      FROM campaigns
-      WHERE id = $1
-      LIMIT 1
-    `,
-    [id],
-  )
-  return mapCampaign(result.rows[0])
-}
-
-export async function replaceCampaignDraft({
-  id,
-  expectedRevision,
-  definition,
-  actorUserId,
-}) {
-  return withDatabaseTransaction(async client => {
-    const execute = client.query.bind(client)
-    const locked = await execute(
-      `
-        SELECT slug, draft_revision AS "draftRevision"
-        FROM campaigns
-        WHERE id = $1
-        FOR UPDATE
-      `,
-      [id],
-    )
-    const head = locked.rows[0]
-
-    if (!head) return { ok: false, code: 'CAMPAIGN_NOT_FOUND' }
-    if (Number(head.draftRevision) !== Number(expectedRevision)) {
-      return { ok: false, code: 'CAMPAIGN_DRAFT_REVISION_CONFLICT' }
-    }
-
-    const validation = validateCampaignDefinition(definition, {
-      mode: 'draft',
-      headSlug: head.slug,
-    })
-    if (validation.errors.length) {
-      return {
-        ok: false,
-        code: 'CAMPAIGN_DRAFT_INVALID',
-        validation,
-      }
-    }
-
-    const canonical = canonicalizeCampaignDefinition(definition)
-    const currentHash = hashCampaignDefinition(canonicalizeCampaignDefinition(
-      (await execute(
-        `SELECT draft_definition AS definition FROM campaigns WHERE id = $1`,
-        [id],
-      )).rows[0]?.definition ?? {},
-    ))
-    const nextHash = hashCampaignDefinition(canonical)
-
-    if (currentHash === nextHash) {
-      return {
-        ok: true,
-        changed: false,
-        draftRevision: Number(head.draftRevision),
-        validation,
-      }
-    }
-
-    const result = await execute(
-      `
-        UPDATE campaigns
-        SET
-          draft_definition = $2::jsonb,
-          draft_revision = draft_revision + 1,
-          updated_by = $3,
-          updated_at = NOW()
-        WHERE id = $1
-        RETURNING draft_revision AS "draftRevision"
-      `,
-      [id, JSON.stringify(canonical), actorUserId],
-    )
-
-    await writeAudit(
-      execute,
-      actorUserId,
-      'marketing.campaign_draft_updated',
-      {
-        campaignId: id,
-        draftRevision: Number(result.rows[0].draftRevision),
-      },
-    )
-
-    return {
-      ok: true,
-      changed: true,
-      draftRevision: Number(result.rows[0].draftRevision),
-      validation,
-    }
-  })
+  }
 }
 
 export async function publishCampaign({
@@ -207,7 +45,7 @@ export async function publishCampaign({
   expectedDraftRevision,
   idempotencyKey,
   actorUserId,
-}) {
+}, { transactionRunner = withDatabaseTransaction } = {}) {
   if (
     typeof idempotencyKey !== 'string' ||
     !idempotencyKey.trim() ||
@@ -216,7 +54,7 @@ export async function publishCampaign({
     return { ok: false, code: 'CAMPAIGN_PUBLISH_IDEMPOTENCY_KEY_INVALID' }
   }
 
-  return withDatabaseTransaction(async client => {
+  return transactionRunner(async client => {
     const execute = client.query.bind(client)
     const locked = await execute(
       `
@@ -239,7 +77,8 @@ export async function publishCampaign({
         SELECT
           id,
           version_number AS "versionNumber",
-          definition_hash AS "definitionHash"
+          definition_hash AS "definitionHash",
+          definition
         FROM campaign_versions
         WHERE campaign_id = $1
           AND publish_idempotency_key = $2
@@ -248,7 +87,16 @@ export async function publishCampaign({
       [id, idempotencyKey.trim()],
     )
     if (existing.rows[0]) {
-      return { ok: true, duplicate: true, version: existing.rows[0] }
+      await seedCampaignRewardBudgets(execute, existing.rows[0].id, existing.rows[0].definition)
+      return {
+        ok: true,
+        duplicate: true,
+        version: {
+          id: existing.rows[0].id,
+          versionNumber: Number(existing.rows[0].versionNumber),
+          definitionHash: existing.rows[0].definitionHash,
+        },
+      }
     }
 
     if (Number(campaign.draftRevision) !== Number(expectedDraftRevision)) {
@@ -304,6 +152,8 @@ export async function publishCampaign({
         actorUserId,
       ],
     )
+
+    await seedCampaignRewardBudgets(execute, versionId, canonical)
 
     await execute(
       `

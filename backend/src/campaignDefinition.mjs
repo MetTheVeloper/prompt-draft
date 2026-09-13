@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { getCampaignMechanic, getCampaignRenderer } from './campaignRegistry.mjs'
 import { validateRuleExpression } from './campaignRules.mjs'
+import { validateCampaignRuntimeDefinition } from './campaignRuntimeDefinition.mjs'
 
 export const CAMPAIGN_SLUG_PATTERN = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const LOCALES = new Set(['en', 'fa'])
@@ -291,7 +292,6 @@ export function validateCampaignDefinition(
   }
 
   const mechanicIds = new Set()
-  const mechanicTrust = new Map()
 
   if (!Array.isArray(definition.mechanics)) {
     errors.push(error(
@@ -325,8 +325,6 @@ export function validateCampaignDefinition(
           'CAMPAIGN_MECHANIC_UNKNOWN',
           'mechanic type is not registered',
         ))
-      } else if (mechanic?.id) {
-        mechanicTrust.set(mechanic.id, registry.trustModel)
       }
 
       if (!isObject(mechanic?.config) || !isObject(mechanic.config.public)) {
@@ -394,17 +392,9 @@ export function validateCampaignDefinition(
     ))
   }
 
-  if (rewardBearing) {
-    const clientReportedMechanic = [...mechanicTrust.entries()]
-      .find(([, trustModel]) => trustModel === 'client_reported')
-    if (clientReportedMechanic) {
-      errors.push(error(
-        `mechanics.${clientReportedMechanic[0]}`,
-        'CAMPAIGN_CLIENT_REPORTED_REWARD_FORBIDDEN',
-        'client_reported mechanics cannot participate in a reward-bearing V1 campaign',
-      ))
-    }
-  }
+  const runtimeValidation = validateCampaignRuntimeDefinition(definition)
+  errors.push(...runtimeValidation.errors)
+  warnings.push(...runtimeValidation.warnings)
 
   return {
     publishable: errors.length === 0,

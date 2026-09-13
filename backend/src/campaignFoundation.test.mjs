@@ -159,20 +159,32 @@ test('reward-bearing campaigns require authenticated participation', () => {
   ))
 })
 
-test('client_reported mechanics cannot be reward-bearing in V1', () => {
-  const result = validateCampaignDefinition(
-    definition({
-      mechanics: [
-        {
-          id: 'client-game',
-          type: 'custom',
-          config: { public: {} },
-        },
-      ],
-    }),
-    { headSlug: 'payiz' },
-  )
-  assert.ok(result.errors.some(
+test('client_reported mechanics may coexist but cannot authorize Goin', () => {
+  const decorative = definition({
+    mechanics: [
+      {
+        id: 'client-step',
+        type: 'custom',
+        config: { public: {} },
+      },
+    ],
+  })
+  const allowed = validateCampaignDefinition(decorative, { headSlug: 'payiz' })
+  assert.equal(allowed.publishable, true)
+
+  const authoritative = definition({
+    mechanics: decorative.mechanics,
+    completion: {
+      type: 'condition',
+      condition: {
+        source: 'mechanic_outcome',
+        mechanicId: 'client-step',
+        outcome: 'done',
+      },
+    },
+  })
+  const rejected = validateCampaignDefinition(authoritative, { headSlug: 'payiz' })
+  assert.ok(rejected.errors.some(
     item => item.code === 'CAMPAIGN_CLIENT_REPORTED_REWARD_FORBIDDEN',
   ))
 })
