@@ -58,13 +58,6 @@ export function useCampaignChanceWheel(
     props.campaign.status === 'ended' && props.campaign.lifecycle.participationAfterEnd === 'allow_existing_only'
   ))
   const busy = computed(() => props.refreshing || recovering.value || reserving.value || spinning.value)
-  const canSpin = computed(() => Boolean(
-    participation.value &&
-    participationOpen.value &&
-    progressOpen.value &&
-    availability.value?.available &&
-    !busy.value
-  ))
 
   const segments = computed(() => readSegments(props.mechanic))
   const possibleLabels = computed(() => segments.value.map((segment) => {
@@ -86,6 +79,15 @@ export function useCampaignChanceWheel(
     }
     return Math.max(0, reported)
   })
+
+  const canSpin = computed(() => Boolean(
+    participation.value &&
+    participationOpen.value &&
+    progressOpen.value &&
+    availability.value?.available &&
+    (remainingAttempts.value ?? 0) > 0 &&
+    !busy.value
+  ))
 
   const attemptOutcomeKey = computed(() => {
     const value = attempt.value?.outcome
