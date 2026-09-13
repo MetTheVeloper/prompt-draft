@@ -13,6 +13,7 @@ import { prepareCustomGameAttemptContext } from './campaignCustomGame.mjs'
 
 const IDEMPOTENCY_KEY_MAX = 240
 const MECHANIC_ID_PATTERN = /^[A-Za-z0-9._-]{1,100}$/
+const PARTICIPATION_PROGRESS_STATUSES = new Set(['started', 'in_progress'])
 const formatterCache = new Map()
 
 function toIso(value) {
@@ -199,6 +200,10 @@ export async function reserveCampaignAttemptInTransaction(client, input) {
     return { ok: true, duplicate: true, attempt: mapCampaignAttempt(existing, mechanic.attemptPolicy, usage.nextEligibleAt) }
   }
 
+  if (!PARTICIPATION_PROGRESS_STATUSES.has(runtime.status)) {
+    return { ok: false, code: 'CAMPAIGN_PARTICIPATION_CLOSED' }
+  }
+
   const usage = await readAttemptUsage(execute, { runtime, mechanicId: input.mechanicId, policy: mechanic.attemptPolicy, descriptor, asOf: effectiveAt })
   if (usage.count >= mechanic.attemptPolicy.maxAttempts) {
     return { ok: false, code: 'CAMPAIGN_ATTEMPT_LIMIT_REACHED', nextEligibleAt: usage.nextEligibleAt }
@@ -242,6 +247,14 @@ export function reserveCampaignAttempt(input) {
 
 export async function readCampaignAttemptAvailability({ runtime, sessionKey = null, asOf = new Date(), executor = queryDatabase }) {
   const effectiveAt = asDate(asOf, new Date())
+  const campaignStatus = deriveCampaignEffectiveStatus(runtime, effectiveAt)
+  const lifecycleOpen = participationAllowsProgress(runtime, campaignStatus)
+  const participationOpen = PARTICIPATION_PROGRESS_STATUSES.has(runtime.status)
+  const blockedReason = !lifecycleOpen
+    ? (campaignStatus === 'ended' ? 'CAMPAIGN_PARTICIPATION_CLOSED' : 'CAMPAIGN_NOT_ACTIVE')
+    : !participationOpen
+      ? 'CAMPAIGN_PARTICIPATION_CLOSED'
+      : null
   const output = []
   for (const mechanic of runtime.definition.mechanics ?? []) {
     if (!mechanic.attemptPolicy) continue
@@ -251,15 +264,16 @@ export async function readCampaignAttemptAvailability({ runtime, sessionKey = nu
       continue
     }
     const usage = await readAttemptUsage(executor, { runtime, mechanicId: mechanic.id, policy: mechanic.attemptPolicy, descriptor, asOf: effectiveAt })
-    const remaining = Math.max(0, mechanic.attemptPolicy.maxAttempts - usage.count)
+    const remaining = blockedReason ? 0 : Math.max(0, mechanic.attemptPolicy.maxAttempts - usage.count)
     output.push({
       mechanicId: mechanic.id,
       period: mechanic.attemptPolicy.period,
       maxAttempts: mechanic.attemptPolicy.maxAttempts,
       usedAttempts: usage.count,
       remainingAttempts: remaining,
-      available: remaining > 0,
-      nextEligibleAt: usage.nextEligibleAt,
+      available: !blockedReason && remaining > 0,
+      nextEligibleAt: blockedReason ? null : usage.nextEligibleAt,
+      ...(blockedReason ? { reasonCode: blockedReason } : {}),
     })
   }
   return output
