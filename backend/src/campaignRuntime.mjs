@@ -16,6 +16,8 @@ import {
 } from './campaignRuntimeShared.mjs'
 import { settleCompletionRewards } from './campaignRuntimeRewards.mjs'
 
+export { buildPublicCampaignProjection, deriveCampaignEffectiveStatus }
+
 export async function refreshCampaignParticipationInTransaction(
   client,
   { participationId, asOf = new Date() },
