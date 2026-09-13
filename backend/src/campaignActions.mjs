@@ -220,10 +220,10 @@ export async function submitCampaignActionInTransaction(client, input) {
        SET state = jsonb_build_object(
              'lastAttemptId', $3::text,
              'lastAction', 'attempt_started',
-             'lastActionAt', $4::text
+             'lastActionAt', $4::timestamptz
            ),
            revision = revision + 1,
-           updated_at = $4
+           updated_at = $4::timestamptz
        WHERE participation_id = $1 AND mechanic_id = $2`,
       [runtime.id, input.mechanicId, attempt.id, effectiveAt.toISOString()],
     )
