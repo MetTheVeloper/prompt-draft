@@ -17,6 +17,10 @@ export const PERMISSIONS = Object.freeze({
   ARCHIVE_VIEW: 'archive.view',
   ARCHIVE_MANAGE: 'archive.manage',
   BLOG_MANAGE: 'blog.manage',
+  MARKETING_CAMPAIGNS_VIEW: 'marketing.campaigns.view',
+  MARKETING_CAMPAIGNS_MANAGE: 'marketing.campaigns.manage',
+  MARKETING_CAMPAIGNS_PUBLISH: 'marketing.campaigns.publish',
+  MARKETING_METRICS_VIEW: 'marketing.metrics.view',
 })
 
 const ROLE_PERMISSIONS = Object.freeze({
@@ -30,6 +34,8 @@ const ROLE_PERMISSIONS = Object.freeze({
     PERMISSIONS.ARCHIVE_VIEW,
     PERMISSIONS.ARCHIVE_MANAGE,
     PERMISSIONS.BLOG_MANAGE,
+    PERMISSIONS.MARKETING_CAMPAIGNS_VIEW,
+    PERMISSIONS.MARKETING_METRICS_VIEW,
   ]),
   super_admin: Object.freeze(['*']),
 })
