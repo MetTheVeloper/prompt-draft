@@ -24,6 +24,8 @@ import authEn from './locales/auth.en'
 import authFa from './locales/auth.fa'
 import growthEn from './locales/growth.en'
 import growthFa from './locales/growth.fa'
+import campaignGameEn from './locales/campaign-game.en'
+import campaignGameFa from './locales/campaign-game.fa'
 import publicCreatorEn from './locales/public-creator.en'
 import publicCreatorFa from './locales/public-creator.fa'
 import blogEn from './locales/blog.en'
@@ -158,7 +160,7 @@ const enMessagesBase = deepMerge(
   flatToNested(enConsolidated),
 )
 
-const enGrowth = deepMerge(growthEn, publicCreatorEn)
+const enGrowth = deepMerge(deepMerge(growthEn, campaignGameEn), publicCreatorEn)
 const enMessages = deepMerge(deepMerge(deepMerge(enMessagesBase, enGrowth), blogEn), errorsEn)
 
 const faConsolidated = {
@@ -216,7 +218,7 @@ const faMessagesBase = deepMerge(
   flatToNested(faConsolidated),
 )
 
-const faGrowth = deepMerge(growthFa, publicCreatorFa)
+const faGrowth = deepMerge(deepMerge(growthFa, campaignGameFa), publicCreatorFa)
 const faMessages = deepMerge(deepMerge(deepMerge(faMessagesBase, faGrowth), blogFa), errorsFa)
 
 export default defineI18nConfig(() => ({

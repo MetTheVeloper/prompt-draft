@@ -26,9 +26,7 @@ function safeCanonicalPath(value: unknown, fallback: string) {
   return path.split(/[?#]/, 1)[0] || fallback
 }
 
-definePageMeta({
-  key: route => route.fullPath,
-})
+definePageMeta({ key: route => route.fullPath })
 
 const route = useRoute()
 const { t, locale } = useI18n()
@@ -38,52 +36,32 @@ const campaignApi = useCampaignRuntime()
 const promotions = useCampaignPromotions()
 
 const slug = readRouteSlug(route.params.slug)
-if (!slug) {
-  throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
-}
+if (!slug) throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
 
-const { data: runtime } = await useAsyncData(
-  `public-campaign:${slug}`,
-  async () => {
-    try {
-      return await campaignApi.loadPublic(slug)
-    } catch (error) {
-      if (readCampaignApiStatus(error) === 404) {
-        throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
-      }
-
-      console.error('[Prompt Draft] public Campaign SSR fetch failed', error)
-      throw createError({ statusCode: 502, statusMessage: 'Campaign is temporarily unavailable' })
-    }
-  },
-)
-
-if (!runtime.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
-}
-
-const campaign = computed(() => runtime.value!.campaign)
-const activeLocale = computed<CampaignLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
-const localeAvailable = computed(() => {
-  return campaign.value.experience.locales.includes(activeLocale.value) &&
-    Boolean(campaign.value.experience.content[activeLocale.value]?.title)
-})
-
-if (!localeAvailable.value) {
-  throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
-}
-
-watch(activeLocale, () => {
-  if (!localeAvailable.value) {
-    showError(createError({ statusCode: 404, statusMessage: 'Campaign not found' }))
+const { data: runtime } = await useAsyncData(`public-campaign:${slug}`, async () => {
+  try {
+    return await campaignApi.loadPublic(slug)
+  } catch (error) {
+    if (readCampaignApiStatus(error) === 404) throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
+    console.error('[Prompt Draft] public Campaign SSR fetch failed', error)
+    throw createError({ statusCode: 502, statusMessage: 'Campaign is temporarily unavailable' })
   }
 })
 
+if (!runtime.value) throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
+
+const campaign = computed(() => runtime.value!.campaign)
+const customGames = computed(() => campaign.value.mechanics.filter(mechanic => mechanic.type === 'custom_game' && mechanic.attemptPolicy))
+const activeLocale = computed<CampaignLocale>(() => locale.value === 'fa' ? 'fa' : 'en')
+const localeAvailable = computed(() => campaign.value.experience.locales.includes(activeLocale.value) && Boolean(campaign.value.experience.content[activeLocale.value]?.title))
+
+if (!localeAvailable.value) throw createError({ statusCode: 404, statusMessage: 'Campaign not found' })
+watch(activeLocale, () => {
+  if (!localeAvailable.value) showError(createError({ statusCode: 404, statusMessage: 'Campaign not found' }))
+})
+
 const localizedContent = computed(() => campaign.value.experience.content[activeLocale.value]!)
-const canonicalPath = computed(() => safeCanonicalPath(
-  campaign.value.experience.seo?.canonicalPath,
-  `/campaign/${slug}`,
-))
+const canonicalPath = computed(() => safeCanonicalPath(campaign.value.experience.seo?.canonicalPath, `/campaign/${slug}`))
 const alternateLocales = computed(() => campaign.value.experience.locales)
 
 usePublicSeo({
@@ -110,7 +88,6 @@ const viewer = computed<CampaignViewer>(() => {
       ...(callerState.value.economy !== undefined ? { economy: callerState.value.economy } : {}),
     }
   }
-
   return {
     ...runtime.value!.viewer,
     authenticated: authReady.value ? auth.isLoggedIn.value : runtime.value!.viewer.authenticated,
@@ -119,10 +96,7 @@ const viewer = computed<CampaignViewer>(() => {
 
 const rendererComponent = computed(() => {
   const renderer = campaign.value.experience.renderer
-  if (renderer?.kind === 'builtin' && renderer.key === 'campaign-default-v1') {
-    return CampaignDefaultExperience
-  }
-  return null
+  return renderer?.kind === 'builtin' && renderer.key === 'campaign-default-v1' ? CampaignDefaultExperience : null
 })
 
 async function refreshCallerState() {
@@ -130,7 +104,6 @@ async function refreshCallerState() {
     callerState.value = null
     return
   }
-
   refreshingState.value = true
   try {
     callerState.value = await campaignApi.loadState(slug)
@@ -142,10 +115,7 @@ async function refreshCallerState() {
 }
 
 async function signIn() {
-  await navigateTo(localePath({
-    path: '/login',
-    query: { next: route.fullPath },
-  }))
+  await navigateTo(localePath({ path: '/login', query: { next: route.fullPath } }))
 }
 
 async function startParticipation() {
@@ -155,7 +125,6 @@ async function startParticipation() {
     return
   }
   if (starting.value) return
-
   starting.value = true
   try {
     const attribution = promotions.readPendingCampaignAttribution(slug)
@@ -164,13 +133,9 @@ async function startParticipation() {
     await refreshCallerState()
   } catch (error) {
     const code = readCampaignApiErrorCode(error)
-    if (code === 'CAMPAIGN_NOT_ELIGIBLE') {
-      actionError.value = t('campaign.participation.notEligible')
-    } else if (code === 'CAMPAIGN_NOT_ACTIVE' || code === 'CAMPAIGN_PARTICIPATION_CLOSED') {
-      actionError.value = t('campaign.participation.closed')
-    } else {
-      actionError.value = t('campaign.participation.error')
-    }
+    if (code === 'CAMPAIGN_NOT_ELIGIBLE') actionError.value = t('campaign.participation.notEligible')
+    else if (code === 'CAMPAIGN_NOT_ACTIVE' || code === 'CAMPAIGN_PARTICIPATION_CLOSED') actionError.value = t('campaign.participation.closed')
+    else actionError.value = t('campaign.participation.error')
   } finally {
     starting.value = false
   }
@@ -185,10 +150,7 @@ onMounted(async () => {
 
 <template>
   <main class="campaign-public-page w100">
-    <el-flex
-      rules="csc"
-      :p="[32, 16]"
-      class="campaign-public-shell w100">
+    <el-flex rules="csc" :gap="18" :p="[32, 16]" class="campaign-public-shell w100">
       <component
         :is="rendererComponent"
         v-if="rendererComponent"
@@ -203,31 +165,25 @@ onMounted(async () => {
         @start="startParticipation"
       />
 
-      <el-flex
-        v-else
-        rules="csc"
-        :gap="8"
-        :p="16"
-        :radius="14"
-        :br="1"
-        bc="normal15"
-        bg="surface"
-        class="w100">
-        <el-text color="red" :size="13" :weight="700">
-          {{ t('campaign.rendererUnavailable') }}
-        </el-text>
+      <CampaignCustomGame
+        v-for="mechanic in customGames"
+        v-if="callerState?.participation"
+        :key="mechanic.id"
+        :campaign="campaign"
+        :mechanic="mechanic"
+        :state="callerState"
+        :refreshing="refreshingState"
+        @refresh="refreshCallerState"
+      />
+
+      <el-flex v-if="!rendererComponent" rules="csc" :gap="8" :p="16" :radius="14" :br="1" bc="normal15" bg="surface" class="w100">
+        <el-text color="red" :size="13" :weight="700">{{ t('campaign.rendererUnavailable') }}</el-text>
       </el-flex>
     </el-flex>
   </main>
 </template>
 
 <style scoped>
-.campaign-public-page {
-  min-height: 100%;
-}
-
-.campaign-public-shell {
-  max-width: 920px;
-  margin-inline: auto;
-}
+.campaign-public-page { min-height: 100%; }
+.campaign-public-shell { max-width: 920px; margin-inline: auto; }
 </style>
