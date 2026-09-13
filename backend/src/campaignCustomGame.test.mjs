@@ -151,6 +151,7 @@ test('custom game attempt exposes only public challenge context', async () => {
 
 test('server verifies custom game win, persists trusted outcome, completes campaign, and grants Goin once', async () => {
   await withRollbackFixture(async ({ client, execute }) => {
+    const base = new Date()
     const definition = definitionFor(`ce42-win-${randomUUID()}`.slice(0, 80))
     const fixture = await insertRuntimeFixture(execute, definition)
     const reserved = await reserveCampaignAttemptInTransaction(client, {
@@ -158,7 +159,7 @@ test('server verifies custom game win, persists trusted outcome, completes campa
       userId: fixture.userId,
       mechanicId: 'game',
       idempotencyKey: 'attempt:win',
-      asOf: new Date('2026-09-13T10:00:00.000Z'),
+      asOf: base,
     })
     const started = await submitCampaignActionInTransaction(client, {
       slug: definition.identity.slug,
@@ -168,7 +169,7 @@ test('server verifies custom game win, persists trusted outcome, completes campa
       idempotencyKey: 'action:start:win',
       payload: {},
       evidence: { attemptId: reserved.attempt.id },
-      asOf: new Date('2026-09-13T10:01:00.000Z'),
+      asOf: new Date(base.getTime() + 1000),
     })
     assert.equal(started.result.attempt.status, 'started')
 
@@ -180,7 +181,7 @@ test('server verifies custom game win, persists trusted outcome, completes campa
       idempotencyKey: 'action:finish:win',
       payload: { answer: ' ORBIT ' },
       evidence: { attemptId: reserved.attempt.id },
-      asOf: new Date('2026-09-13T10:02:00.000Z'),
+      asOf: new Date(base.getTime() + 2000),
     }
     const finished = await submitCampaignActionInTransaction(client, input)
     assert.equal(finished.ok, true)
