@@ -15,13 +15,12 @@ Founder direction / scenarios         -> APPROVED
 Campaign Engine V1 source of truth    -> DOCUMENTED
 Database schema V1                    -> DESIGNED + CE1 FOUNDATION IMPLEMENTED
 API / Runtime Contract V1             -> DESIGNED
-CE1 Foundation implementation         -> IMPLEMENTED
-CE1 founder-local verification        -> VERIFIED 2026-09-13
-CE1 explicit founder acceptance       -> PENDING
+CE1 Foundation implementation         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 Migration 029                         -> CREATED / LOCALLY APPLIED / VERIFIED
+Expiring / Promotional Goin V1        -> IMPLEMENTED / AWAITING FOUNDER-LOCAL VERIFICATION
 /manage/marketing                     -> NOT STARTED
 Public /campaign/[slug] runtime       -> NOT STARTED
-Next implementation slice             -> PAUSED PENDING FOUNDER CONSULTATION
+Next Campaign slice                   -> CE2 AFTER EXPIRING GOIN VERIFICATION
 ```
 
 Current project transition:
@@ -31,6 +30,7 @@ Milestone 21.5 production runtime     -> ACTIVE / FOUNDER VERIFIED
 Milestone 21.5 SEO/indexability       -> DEFERRED / NUXT_PUBLIC_NOINDEX=true
 Domain Expansion implementation       -> SCALE-GATED / NOT NEXT IMMEDIATE EXECUTION
 Campaign Engine V1                    -> ACTIVE PRE-SCALE ENGINEERING TRACK
+Economy prerequisite before CE2       -> EXPIRING / PROMOTIONAL GOIN V1
 ```
 
 Campaign Engine is a pre-scale commercialization/marketing platform track. It may proceed while 21.5 SEO launch remains deferred. It does not turn SEO on, and it does not start Domain Expansion.
@@ -47,9 +47,10 @@ Read in this order before implementation:
 3. docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 4. docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 5. docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-6. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-7. docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
-8. docs/strategy/STATUS.md
+6. docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
+7. docs/strategy/MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+8. docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+9. docs/strategy/STATUS.md
 ```
 
 Mandatory project workflow sources:
@@ -67,10 +68,14 @@ docs/strategy/MILESTONE_21E_INTERNAL_ECONOMY_DESIGN.md
 docs/strategy/MILESTONE_21E_GOIN_ISSUANCE_V1.md
 docs/strategy/MILESTONE_21E3_ECONOMY_UX_MANAGE.md
 docs/strategy/MILESTONE_21F_GROWTH_METRICS.md
+docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
 backend/src/economy.mjs
+backend/src/economyCore.mjs
 backend/src/authorization.mjs
 app/config/manage.ts
 ```
+
+For spendable-balance semantics, `EXPIRING_PROMOTIONAL_GOIN_V1.md` amends the older plain-`SUM(unit_delta)` shorthand when expiring credits exist.
 
 ---
 
@@ -111,6 +116,10 @@ Campaign domain state/reward facts remain authoritative separately.
 Campaign Reward Grant reconciles to the existing user_economy_events ledger.
 No campaign wallet or parallel Goin balance is allowed.
 
+Campaign reward credits may deliberately be expiring/promotional.
+Expiring credits remain in the same Economy ledger.
+Debits consume active expiring Goin FEFO before permanent Goin.
+
 Global reward budget is transactionally guarded.
 Reward qualification and Goin issuance are idempotent.
 
@@ -127,7 +136,7 @@ Founder scenarios remain authoritative in `CAMPAIGN_ENGINE_V1.md`, including cus
 Status:
 
 ```text
-IMPLEMENTED / FOUNDER-LOCAL VERIFIED 2026-09-13 / EXPLICIT ACCEPTANCE PENDING
+DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
 ```
 
 Implementation commit:
@@ -212,27 +221,21 @@ The API build emitted an unrelated orphan `prompt-draft-cloudflared-1` warning. 
 
 Because only backend/SQL changed, frontend rebuild, `pnpm generate` and `pnpm stack` were correctly not used.
 
-The current evidence proves build/start, focused contract tests, schema application and expected table presence. A separate persistence round-trip / direct immutable-version mutation rejection probe has not yet been executed and remains optional additional closure evidence before explicit founder acceptance.
+The founder clarified the project convention that a clean-log response of "ظاهرا اوکیه" means no issue is seen and the supplied logs are being handed to engineering for hidden-problem review. The supplied CE1 logs were clean and no hidden blocker was found. CE1 is therefore accepted.
 
-CE1 must therefore **not** be marked DONE/ACCEPTED yet.
+A separate persistence round-trip / direct immutable-version mutation rejection probe remains useful optional hardening evidence, but is not a CE1 acceptance blocker.
 
 ---
 
 ## Current schema foundation
 
-The implementation-time branch audit confirmed the prior migration ceiling was:
-
-```text
-028_seed_profile_skill_taxonomy.sql
-```
-
-The first Campaign migration therefore became:
+The first Campaign migration is:
 
 ```text
 029_campaign_engine_v1.sql
 ```
 
-Founder-local schema application has now verified migration 029.
+Founder-local schema application verified migration 029.
 
 Campaign tables:
 
@@ -248,6 +251,14 @@ campaign_reward_budgets
 campaign_reward_grants
 campaign_promotion_user_states
 ```
+
+The next migration number was re-audited before Economy work and became:
+
+```text
+030_expiring_promotional_goin.sql
+```
+
+Migration 030 is an Economy extension, not a Campaign-owned wallet/schema fork.
 
 Existing systems reused rather than duplicated:
 
@@ -265,18 +276,38 @@ Published `campaign_versions` have DB-level UPDATE/DELETE rejection triggers in 
 
 ---
 
-## Important implementation finding — Economy transaction boundary
+## Economy prerequisite before CE2
 
-Current:
+Founder-approved sequencing on 2026-09-13:
 
 ```text
-backend/src/economy.mjs
-recordUserEconomyEvent()
+CE1 accepted
+-> implement Expiring / Promotional Goin V1
+-> verify/accept Economy extension locally
+-> resume CE2 Runtime Core
 ```
 
-opens its own transaction.
+Implementation commit:
 
-Campaign reward correctness requires one transaction covering:
+```text
+ddff7f0458281ba8abcd57c6a23ff614d5fb3ef5
+feat: add expiring promotional Goin
+```
+
+Canonical contract:
+
+```text
+docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
+```
+
+The Economy work implements the transaction boundary CE2 already required:
+
+```text
+backend/src/economyCore.mjs
+recordUserEconomyEventInTransaction(client, input, options)
+```
+
+Campaign reward correctness still requires one transaction covering:
 
 ```text
 reward qualification
@@ -286,17 +317,11 @@ user_economy_events credit
 reward reconciliation/state/events
 ```
 
-Therefore CE2 must first refactor/extract an internal transaction-aware Economy primitive while preserving current exported Economy behavior.
+CE2 must call the transaction-aware Economy primitive inside the Campaign settlement transaction. It must not open a nested independent Economy transaction.
 
-Required conceptual direction:
+For expiring Campaign rewards, CE2 may issue the same Goin credit with an authoritative server-selected `expiresAt`. Campaign budgets limit how much can be issued; expiry limits how long promotional supply remains spendable.
 
-```text
-recordUserEconomyEventInTransaction(client, input)
-```
-
-or equivalent executor-aware internal function.
-
-Do not implement nested independent Economy/Campaign transactions for one reward.
+Do not start CE2 implementation until the Expiring / Promotional Goin V1 local verification is clean.
 
 ---
 
@@ -321,7 +346,7 @@ The registry contract exists in CE1. Individual runtime mechanics are not implie
 Status:
 
 ```text
-NOT STARTED / DO NOT START UNTIL FOUNDER CONSULTATION COMPLETES
+NOT STARTED / BLOCKED ON EXPIRING GOIN LOCAL VERIFICATION
 ```
 
 Scope:
@@ -333,8 +358,9 @@ participation start/state
 metric re-evaluation
 client Action protocol
 trusted Domain Events
-Economy transaction-aware refactor
+use transaction-aware Economy primitive
 Campaign Reward Grant
+optional authoritative Campaign reward expiry
 atomic reward budget
 idempotency/concurrency tests
 ```
@@ -420,6 +446,7 @@ budget remaining
 failed reward inspection
 campaign grant -> economy event reconciliation
 promotion top-of-funnel measurement honesty
+promotional Goin issued / spent / expired / outstanding reconciliation
 ```
 
 ### CE7 — Verification / Acceptance
@@ -435,6 +462,7 @@ Required proof includes:
 ```text
 private config cannot leak
 browser cannot choose reward amount
+browser cannot choose reward expiry
 browser cannot choose wheel result
 browser cannot assert another user identity
 one user cannot obtain duplicate V1 participation
@@ -443,6 +471,7 @@ parallel completion cannot duplicate reward
 parallel daily wheel cannot allocate > configured attempts
 reward budget cannot overspend under race
 campaign reward maps to exactly one Economy event
+expiring campaign reward cannot burn permanent Goin
 Product Analytics outage cannot break reward correctness
 admin permission boundaries work
 preview cannot grant reward
@@ -489,22 +518,22 @@ Before any new Campaign implementation:
 5. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 6. read CAMPAIGN_ENGINE_STATUS.md
 7. read CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-8. read MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
-9. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
-10. read STATUS.md
+8. read EXPIRING_PROMOTIONAL_GOIN_V1.md
+9. read MILESTONE_21_5_PRE_SCALE_EXECUTION_HANDOFF.md
+10. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
+11. read STATUS.md
 ```
 
 Current intended state:
 
 ```text
-CE1 Foundation implementation -> IMPLEMENTED
-CE1 local evidence             -> VERIFIED
-CE1 explicit acceptance        -> PENDING
-next slice                      -> PAUSED FOR FOUNDER CONSULTATION
-Domain Expansion               -> SCALE-GATED
-production runtime             -> ACTIVE
-production SEO/indexability    -> DEFERRED
-NUXT_PUBLIC_NOINDEX            -> true / KEEP
+CE1 Foundation                -> DONE / VERIFIED / ACCEPTED
+Expiring Promotional Goin V1  -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
+CE2 Runtime Core              -> NEXT AFTER ECONOMY VERIFICATION
+Domain Expansion              -> SCALE-GATED
+production runtime            -> ACTIVE
+production SEO/indexability   -> DEFERRED
+NUXT_PUBLIC_NOINDEX           -> true / KEEP
 ```
 
 Re-audit database helpers, Economy internals, authorization, Product Analytics and Manage shell again before CE2 because parallel work may change them.
@@ -515,14 +544,14 @@ Re-audit database helpers, Economy internals, authorization, Product Analytics a
 
 ```text
 DO NOT create campaign-specific Economy or Analytics systems.
+DO NOT create a promotional wallet or second Goin balance.
 DO NOT let custom campaign UI bypass runtime contracts.
-DO NOT let browser input decide reward amount, winner/result or authoritative user identity.
+DO NOT let browser input decide reward amount, reward expiry, winner/result or authoritative user identity.
 DO NOT mutate published Campaign Versions.
 DO NOT change accepted 21.5 runtime/indexability contracts as a side effect of Campaign work.
 DO NOT enable production SEO/indexing during Campaign implementation.
 DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder approval.
 DO NOT start Domain Expansion implementation during this pre-scale track.
-DO NOT mark CE1 DONE/ACCEPTED before explicit founder acceptance.
-DO NOT start CE2 until the pending founder consultation is resolved.
+DO NOT start CE2 until Expiring / Promotional Goin V1 local verification is clean.
 DO NOT default to pnpm stack; follow the smallest-scope verification workflow.
 ```
