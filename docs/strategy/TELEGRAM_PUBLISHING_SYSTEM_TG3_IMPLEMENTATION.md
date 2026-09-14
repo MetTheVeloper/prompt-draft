@@ -1,8 +1,8 @@
 # Telegram Publishing System — TG3 Prompt Archive Adapter
 
-Status: **TG1 ACCEPTED / TG2 ACCEPTED / TG3 IMPLEMENTED / AWAITING FOUNDER-LOCAL BUILD + VISUAL VERIFICATION**
+Status: **TG1 ACCEPTED / TG2 ACCEPTED / TG3 IMPLEMENTED + HARDENED / ARCHIVE MANAGEMENT ACCEPTED / TG3 FINAL ACCEPTANCE PENDING**
 
-Date: 2026-09-13
+Date: 2026-09-14
 
 Branch: `feature/growth-foundation`
 
@@ -36,27 +36,48 @@ The frontend gate is convenience only. TG1 remains authoritative and re-checks e
 
 Draft and archived Prompt items are not offered as Telegram publication sources.
 
-## 3. Public-safe prefill
+## 3. Current public-safe Prompt prefill
 
-Opening the Archive Telegram adapter prefills only public presentation data from the persisted published Archive item:
+The implementation was refined after the original TG3 draft so the current source-of-truth prefill is bilingual and channel-ready rather than Manage-locale-only.
 
-```text
-localized public title
-localized public description
-persisted public HTTPS images, in Archive order, capped by TG1 maxMedia
-one Prompt Draft Mini App CTA
-```
-
-The private/protected Prompt body is never copied into the Telegram caption, CTA or start parameter.
-
-The selected Prompt Archive locale follows the currently active Manage locale:
+Opening the Archive Telegram adapter derives only public presentation data from the persisted published Archive item:
 
 ```text
-EN Manage -> English title + description
-FA Manage -> Persian title + description
+caption line 1 -> <Persian title> | <English title> 👇
+then           -> Persian public description
+separator      -> ---
+then           -> English public description
+separator      -> ---
+then           -> normalized public hashtags from Archive tags
+
+media          -> persisted public HTTPS Archive images in Archive order, capped by TG1 maxMedia
+
+CTA 1          -> Get Prompt | دریافت پرامپت
+                  startParam = prompt_<publicId>
+
+CTA 2          -> گروه پرسش و پاسخ
+                  fixed direct HTTPS URL = https://t.me/prompt_draft_group
+
+album CTA text -> Preview Model: <preview model> | Optimized for: <optimization models>
 ```
 
-Changing locale recreates the Composer draft from the corresponding localized public projection.
+The private/protected Prompt body is never copied into the Telegram caption, CTA, start parameter or model summary.
+
+This refinement was implemented in:
+
+```text
+c0f3dbdadde2b3dc6a14e75c7a8e3aa009d87158
+feat: improve Archive Telegram prefill
+```
+
+The shared Telegram contract was also extended/tested for credential-free direct HTTPS CTA URLs rather than creating Prompt-specific Telegram keyboard logic:
+
+```text
+ee48f98e0553dc0c8267f54d8514cb5559601a87
+test: cover direct Telegram CTA URLs
+```
+
+TG1 remains responsible for resolving Mini App `startParam` CTAs into the configured bot/Mini App route. Direct HTTPS CTAs are validated by the shared Telegram post contract and passed through the shared publisher.
 
 ## 4. Source identity and Mini App entry token
 
@@ -82,8 +103,6 @@ Prompt public id 123
 -> startParam = prompt_123
 -> TG1 resolves the authoritative Mini App URL
 ```
-
-The browser never submits an arbitrary CTA URL. TG1 remains the only layer that resolves the configured bot username + Mini App short name into the Telegram URL.
 
 TG3 freezes only the outbound Prompt entry token shape. Telegram Mini App bootstrap/routing that consumes this token is a separate integration concern and must preserve Prompt Draft as the authority for unlock, copy, identity and Goin behavior.
 
@@ -111,18 +130,18 @@ Historical/legacy values may remain visible and editable under the existing Arch
 
 ## 6. Composer behavior
 
-The adapter reuses `TelegramPostComposer.vue` unchanged.
+The adapter reuses the shared `TelegramPostComposer.vue`; publication still follows the TG1/TG2 path.
 
-Therefore TG3 inherits the accepted TG2 behavior:
+TG3 therefore inherits the shared behavior:
 
 ```text
 text / caption editing
 public HTTPS photo editing
 multiple media up to backend limit
-one or more safe Mini App CTAs
+Mini App startParam CTAs resolved by TG1
+validated direct HTTPS CTAs
 live Prompt Draft-styled preview
 idempotency identity reset only when the operator edits the draft
-server-controlled CTA URL resolution
 safe disabled state when Telegram server config is incomplete
 ```
 
@@ -130,11 +149,11 @@ The adapter lazy-loads safe Telegram configuration only when the super admin ope
 
 ## 7. Backend / database scope
 
-TG3 adds no backend runtime change and no SQL migration.
+The original TG3 adapter itself added no separate backend runtime or SQL persistence model. It consumes the accepted TG1 routes and shared publication ledger.
 
-It consumes the accepted TG1 routes and persistence model unchanged.
+The later shared direct-CTA extension remains part of the single Telegram contract/publisher; it did not introduce a Prompt-specific backend path.
 
-No Archive mutation is performed after Telegram publication, so TG3 cannot accidentally collapse multiple shared publication records back into the legacy scalar Telegram fields.
+No Archive mutation is performed after Telegram publication, so TG3 cannot collapse multiple shared publication records back into the legacy scalar Telegram fields.
 
 ## 8. UI / theme boundary
 
@@ -149,54 +168,76 @@ no new local design system
 no page-specific theme override
 ```
 
-The adapter adds no custom CSS.
+The adapter itself adds no parallel design system.
 
-## 9. Founder-local verification gate
+## 9. Archive management/image hardening — ACCEPTED
 
-Changed runtime scope is frontend-only.
+TG3 integration exposed several Archive-editor issues that were fixed before treating the operator surface as stable.
 
-Smallest required verification:
-
-```powershell
-cd G:\ZADAK\prompt-draft
-
-git pull
-pnpm frontend
-```
-
-No `pnpm api`, `db:schema` or `pnpm stack` is required for TG3.
-
-Then, while logged in as `super_admin`, inspect a **published** Prompt Archive item in:
+Canonical acceptance record:
 
 ```text
-/manage/archive?edit=<publicId>
-/fa/manage/archive?edit=<publicId>
+docs/strategy/PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
 ```
 
-Required evidence:
+Accepted implementation checkpoints:
+
+```text
+0942b4ff469b6bd1aee8425cf5914b8c8d10102e
+feat: expand Archive model metadata
+
+5e12bb76cb71f475f12a52cb69067ba5576ad21e
+fix: preserve Archive publication status on edits
+
+61ec45217a0fd413513ab36bcc1609de6b728b2b
+fix: sync Archive image batch preparation state
+```
+
+Founder-local verification on 2026-09-14 confirmed the Archive management/image workflow is fully correct, including status-preserving metadata/media edits and multi-image batch preparation without stale `Preparing` state.
+
+This Archive checkpoint is **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED** and must not be reopened without a concrete regression.
+
+It does not, by itself, fabricate evidence for the remaining Telegram-specific TG3 checks below.
+
+## 10. Remaining TG3 founder-local acceptance gate
+
+The shared adapter is implemented and the underlying Archive editor is now accepted. TG3 itself should be marked accepted only after the Telegram-specific behavior is explicitly confirmed against the current bilingual prefill contract.
+
+Required remaining evidence:
 
 ```text
 Telegram adapter appears only for a published Archive item
 opening it renders the exact shared TG2 TelegramPostComposer
-EN prefill uses English public title + description
-FA prefill uses Persian public title + description
+caption contains FA title | EN title, FA description, EN description and normalized hashtags
 persisted public HTTPS Archive images are prefilled in order
-CTA is prefilled and its safe start parameter is prompt_<publicId>
-Prompt body is not copied into the Telegram caption or CTA
+Prompt CTA uses safe startParam prompt_<publicId>
+community CTA uses the fixed direct HTTPS group URL
+album CTA text shows Preview Model + Optimized for metadata
+Prompt body is absent from caption, CTA payloads and model summary
 Light theme renders correctly
 Dark theme renders correctly
-when local Telegram config is missing, preview remains usable and Publish remains safely disabled
+when Telegram config is missing, preview remains usable and Publish remains safely disabled
 moving the Archive item back to draft removes/closes the Telegram adapter
 existing legacy Telegram message id / URL are not mutated by opening or composing
 ```
 
 A real Telegram bot/channel post is not required for TG3 acceptance when local Telegram configuration is intentionally absent.
 
-## 10. Acceptance boundary
+The Archive workflow has already been rebuilt and founder-tested. This documentation update is docs-only and requires no additional Docker rebuild.
 
-TG3 is not accepted until founder-local frontend build and visual/behavior evidence are clean.
+## 11. Acceptance boundary and next slice
 
-After TG3 acceptance, CE4.5 is complete and the next Campaign slice is:
+Current state:
+
+```text
+TG1 -> DONE / ACCEPTED
+TG2 -> DONE / ACCEPTED
+TG3 implementation -> DONE
+Archive management/image hardening -> DONE / ACCEPTED 2026-09-14
+TG3 Telegram-specific founder acceptance -> NEXT GATE
+```
+
+After that TG3-specific acceptance is explicitly recorded, CE4.5 is complete and the next Campaign slice is:
 
 ```text
 CE5 — /manage/marketing
