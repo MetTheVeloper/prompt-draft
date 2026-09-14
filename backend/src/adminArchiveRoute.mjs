@@ -2,11 +2,15 @@ import { handleAdminArchiveRequest } from './adminArchive.mjs'
 import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { handleAdminBlogMediaRequest } from './adminBlogMedia.mjs'
 import { handleAdminBlogPublicationAuditRequest } from './adminBlogPublicationAudit.mjs'
+import { handleAdminCampaignRoute } from './adminCampaignRoute.mjs'
 import { handleAdminTelegramRoute } from './adminTelegramRoute.mjs'
 import { handleArchivePromotionRequest } from './archivePromotion.mjs'
 import { validatePublishedArchiveLocalization } from './archivePublishedLocalization.mjs'
 import { PERMISSIONS, hasPermission } from './authorization.mjs'
 import { getAuthenticatedUser } from './auth.mjs'
+import { handleCampaignActionsRequest } from './campaignRuntimeActionsRoute.mjs'
+import { handleCampaignPromotionsRequest } from './campaignPromotionsRoute.mjs'
+import { handleCampaignRuntimeRequest } from './campaignRuntimeRoute.mjs'
 import { queryDatabase } from './database.mjs'
 
 export async function handleAdminArchiveRoute({
@@ -16,9 +20,46 @@ export async function handleAdminArchiveRoute({
   corsHeaders,
   sendJson,
 }) {
-  // Blog and Telegram admin capabilities currently reuse this already-wired
-  // admin-content routing slot. Each handler owns its authorization boundary
-  // and returns false for every unrelated pathname.
+  // This already-wired routing slot hosts modular capabilities whose handlers
+  // own their authorization boundaries and return false for unrelated paths.
+  // Campaign actions must run before the broader runtime handler because the
+  // latter deliberately treats unknown /api/campaigns/* paths as not found.
+  const campaignActionsHandled = await handleCampaignActionsRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (campaignActionsHandled) return true
+
+  const campaignPromotionsHandled = await handleCampaignPromotionsRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (campaignPromotionsHandled) return true
+
+  const campaignRuntimeHandled = await handleCampaignRuntimeRequest({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (campaignRuntimeHandled) return true
+
+  const adminCampaignHandled = await handleAdminCampaignRoute({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (adminCampaignHandled) return true
+
   const blogPublicationAuditHandled = await handleAdminBlogPublicationAuditRequest({
     request,
     response,
