@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import CampaignDefinitionForm from "~/components/manage/CampaignDefinitionForm.vue";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type {
@@ -16,7 +17,6 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuth();
 const campaignsApi = useAdminCampaigns();
-const modal = useModal();
 const { t, locale } = useI18n();
 const { mobile, tablet } = useScreen();
 
@@ -25,8 +25,11 @@ const editorOpen = ref(false);
 const creating = ref(false);
 const routeSyncReady = ref(false);
 const feedback = ref("");
-const definitionText = ref("{}");
-const loadedDefinitionText = ref("{}");
+const definitionDraft = ref<AdminCampaignDefinition>({});
+const loadedDefinitionSnapshot = ref("{}");
+const rawEditorOpen = ref(false);
+const rawDefinitionText = ref("{}");
+const rawJsonError = ref("");
 
 const createForm = reactive({
   slug: "",
@@ -46,34 +49,25 @@ const canManage = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_M
 const canPublish = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_PUBLISH));
 const selectedCampaign = computed(() => campaignsApi.selected.value);
 const metricColumns = computed(() => mobile.value ? 1 : tablet.value ? 2 : 5);
-
-const parsedDefinition = computed<AdminCampaignDefinition | null>(() => {
-  try {
-    const value = JSON.parse(definitionText.value);
-    return value && typeof value === "object" && !Array.isArray(value)
-      ? value as AdminCampaignDefinition
-      : null;
-  } catch {
-    return null;
-  }
-});
-
 const definitionDirty = computed(() => (
-  definitionText.value !== loadedDefinitionText.value
+  serializeDefinition(definitionDraft.value) !== loadedDefinitionSnapshot.value
+));
+const builderIssues = computed(() => (
+  definitionDirty.value
+    ? []
+    : selectedCampaign.value?.validation.errors ?? []
 ));
 
 const canCreate = computed(() => (
   canManage.value &&
   Boolean(createForm.slug.trim()) &&
   Boolean(createForm.internalName.trim()) &&
-  Boolean(parsedDefinition.value) &&
   !campaignsApi.mutating.value
 ));
 
 const canSaveDraft = computed(() => (
   canManage.value &&
   Boolean(selectedCampaign.value) &&
-  Boolean(parsedDefinition.value) &&
   definitionDirty.value &&
   !campaignsApi.mutating.value
 ));
@@ -135,6 +129,65 @@ const runtimeCards = computed(() => {
   ];
 });
 
+function cloneDefinition(value: AdminCampaignDefinition): AdminCampaignDefinition {
+  return JSON.parse(JSON.stringify(value ?? {}));
+}
+
+function serializeDefinition(value: AdminCampaignDefinition) {
+  return JSON.stringify(value ?? {});
+}
+
+function prettyDefinition(value: AdminCampaignDefinition) {
+  return JSON.stringify(value ?? {}, null, 2);
+}
+
+function createStarterDefinition(slug = "", internalName = ""): AdminCampaignDefinition {
+  return {
+    schemaVersion: "campaign.v1",
+    identity: {
+      slug,
+      internalName,
+    },
+    objective: {
+      type: "engagement",
+    },
+    lifecycle: {
+      startsAt: "",
+      endsAt: null,
+      timezone: "Asia/Tehran",
+    },
+    eligibility: {
+      authenticated: true,
+    },
+    experience: {
+      renderer: {
+        kind: "builtin",
+        key: "campaign-default-v1",
+      },
+      locales: ["en", "fa"],
+      defaultLocale: "en",
+      content: {
+        en: {
+          title: "",
+          description: "",
+        },
+        fa: {
+          title: "",
+          description: "",
+        },
+      },
+      seo: {
+        indexing: "noindex",
+        endBehavior: "archive",
+      },
+    },
+    promotions: [],
+    mechanics: [],
+    completion: null,
+    rewards: [],
+  };
+}
+
 function formatNumber(value: number) {
   return new Intl.NumberFormat(locale.value === "fa" ? "fa-IR" : "en-US").format(value);
 }
@@ -178,11 +231,39 @@ function parseCampaignId(value: unknown) {
     : null;
 }
 
+function syncRawFromDefinition() {
+  rawDefinitionText.value = prettyDefinition(definitionDraft.value);
+  rawJsonError.value = "";
+}
+
 function syncDefinitionFromSelected() {
   const campaign = selectedCampaign.value;
-  const value = JSON.stringify(campaign?.draftDefinition ?? {}, null, 2);
-  definitionText.value = value;
-  loadedDefinitionText.value = value;
+  const definition = cloneDefinition(campaign?.draftDefinition ?? {});
+  definitionDraft.value = definition;
+  loadedDefinitionSnapshot.value = serializeDefinition(definition);
+  syncRawFromDefinition();
+}
+
+function toggleRawEditor() {
+  rawEditorOpen.value = !rawEditorOpen.value;
+  if (rawEditorOpen.value) syncRawFromDefinition();
+}
+
+function applyRawDefinition() {
+  try {
+    const parsed = JSON.parse(rawDefinitionText.value);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      rawJsonError.value = t("manage.marketing.editor.invalidJson");
+      return;
+    }
+
+    definitionDraft.value = cloneDefinition(parsed as AdminCampaignDefinition);
+    rawDefinitionText.value = prettyDefinition(definitionDraft.value);
+    rawJsonError.value = "";
+    feedback.value = t("manage.marketing.editor.rawApplied");
+  } catch {
+    rawJsonError.value = t("manage.marketing.editor.invalidJson");
+  }
 }
 
 async function setEditQuery(id: string | null, mode: "push" | "replace" = "replace") {
@@ -209,6 +290,7 @@ async function syncEditorFromRoute() {
 
   creating.value = false;
   editorOpen.value = true;
+  rawEditorOpen.value = false;
   feedback.value = "";
   const campaign = await campaignsApi.get(id);
   if (campaign) syncDefinitionFromSelected();
@@ -222,8 +304,10 @@ async function openCreate() {
   campaignsApi.clearSelected();
   createForm.slug = "";
   createForm.internalName = "";
-  definitionText.value = "{}";
-  loadedDefinitionText.value = "{}";
+  definitionDraft.value = createStarterDefinition();
+  loadedDefinitionSnapshot.value = serializeDefinition(definitionDraft.value);
+  rawEditorOpen.value = false;
+  syncRawFromDefinition();
   feedback.value = "";
   creating.value = true;
   editorOpen.value = true;
@@ -233,18 +317,27 @@ async function openCreate() {
 async function closeEditor() {
   creating.value = false;
   editorOpen.value = false;
+  rawEditorOpen.value = false;
   campaignsApi.clearSelected();
   feedback.value = "";
   await setEditQuery(null, "replace");
 }
 
 async function createCampaign() {
-  if (!canCreate.value || !parsedDefinition.value) return;
+  if (!canCreate.value) return;
+
+  const definition = cloneDefinition(definitionDraft.value) as Record<string, any>;
+  definition.schemaVersion = definition.schemaVersion || "campaign.v1";
+  definition.identity = {
+    ...(definition.identity && typeof definition.identity === "object" ? definition.identity : {}),
+    slug: createForm.slug.trim(),
+    internalName: createForm.internalName.trim(),
+  };
 
   const campaign = await campaignsApi.create({
     slug: createForm.slug.trim(),
     internalName: createForm.internalName.trim(),
-    definition: parsedDefinition.value,
+    definition,
   });
   if (!campaign) return;
 
@@ -266,12 +359,12 @@ async function reloadSelected() {
 
 async function saveDraft() {
   const campaign = selectedCampaign.value;
-  if (!campaign || !canSaveDraft.value || !parsedDefinition.value) return;
+  if (!campaign || !canSaveDraft.value) return;
 
   const response = await campaignsApi.saveDraft(
     campaign.id,
     campaign.draftRevision,
-    parsedDefinition.value,
+    cloneDefinition(definitionDraft.value),
   );
   if (!response) {
     if (campaignsApi.errorCode.value === "CAMPAIGN_DRAFT_REVISION_CONFLICT") {
@@ -280,7 +373,8 @@ async function saveDraft() {
     return;
   }
 
-  loadedDefinitionText.value = definitionText.value;
+  loadedDefinitionSnapshot.value = serializeDefinition(definitionDraft.value);
+  syncRawFromDefinition();
   feedback.value = response.changed
     ? t("manage.marketing.editor.saved")
     : t("manage.marketing.editor.unchanged");
@@ -373,7 +467,7 @@ onMounted(async () => {
       :p="12"
       :radius="12">
       <el-icon icon="visibility" color="blue" :size="18" />
-      <el-text :size="12" color="normal" class="fg100">
+      <el-text :size="12" class="fg100">
         {{ t("manage.marketing.editor.readOnlyHint") }}
       </el-text>
     </el-flex>
@@ -404,67 +498,13 @@ onMounted(async () => {
       <el-text :size="12" color="green">{{ feedback }}</el-text>
     </el-flex>
 
-    <el-flex
-      v-if="creating"
-      rules="csc"
-      :gap="14"
-      class="w100"
-      bg="surface"
-      :p="16"
-      :radius="14"
-      :br="1"
-      bc="normal15">
-      <el-grid cols="minmax(220px, 1fr) minmax(260px, 1fr)" :gap="12" class="w100">
-        <el-flex rules="ccs" :gap="6">
-          <el-text :size="12" :weight="700">{{ t("manage.marketing.fields.slug") }}</el-text>
-          <el-text-field
-            v-model="createForm.slug"
-            :actions="false"
-            :disabled="campaignsApi.mutating.value"
-          />
-        </el-flex>
-        <el-flex rules="ccs" :gap="6">
-          <el-text :size="12" :weight="700">{{ t("manage.marketing.fields.internalName") }}</el-text>
-          <el-text-field
-            v-model="createForm.internalName"
-            :actions="false"
-            :disabled="campaignsApi.mutating.value"
-          />
-        </el-flex>
-      </el-grid>
-
-      <el-flex rules="ccs" :gap="6" class="w100">
-        <el-text :size="12" :weight="700">{{ t("manage.marketing.fields.definition") }}</el-text>
-        <el-text-field
-          v-model="definitionText"
-          type="textarea"
-          :rows="18"
-          :actions="false"
-          dir="ltr"
-          :disabled="campaignsApi.mutating.value"
-        />
-        <el-text v-if="!parsedDefinition" :size="11" color="red">
-          {{ t("manage.marketing.editor.invalidJson") }}
-        </el-text>
-      </el-flex>
-
-      <el-flex rules="rec" class="w100">
-        <el-button
-          color="prim"
-          icon="add_circle"
-          :label="t('manage.marketing.actions.create')"
-          :disable="!canCreate"
-          @click="createCampaign"
-        />
-      </el-flex>
-    </el-flex>
-
-    <el-flex v-else-if="campaignsApi.loadingDetail.value" rules="ccc" class="w100" :p="30">
+    <el-flex v-if="!creating && campaignsApi.loadingDetail.value" rules="ccc" class="w100" :p="30">
       <el-text color="normal55">{{ t("manage.marketing.loading") }}</el-text>
     </el-flex>
 
-    <template v-else-if="selectedCampaign">
+    <template v-else>
       <el-flex
+        v-if="selectedCampaign"
         rules="csc"
         :gap="12"
         class="w100"
@@ -506,7 +546,7 @@ onMounted(async () => {
         </el-grid>
       </el-flex>
 
-      <el-flex rules="ccs" :gap="10" class="w100">
+      <el-flex v-if="selectedCampaign" rules="ccs" :gap="10" class="w100">
         <el-text :size="16" :weight="800">{{ t("manage.marketing.metrics.title") }}</el-text>
         <el-grid :cols="metricColumns" :gap="10" class="w100">
           <ManageMetricCard
@@ -520,36 +560,97 @@ onMounted(async () => {
         </el-grid>
       </el-flex>
 
+      <CampaignDefinitionForm
+        v-if="creating"
+        v-model="definitionDraft"
+        v-model:slug="createForm.slug"
+        v-model:internal-name="createForm.internalName"
+        :head-editable="true"
+        :disabled="campaignsApi.mutating.value"
+      />
+
+      <CampaignDefinitionForm
+        v-else-if="selectedCampaign"
+        v-model="definitionDraft"
+        :slug="selectedCampaign.slug"
+        :internal-name="selectedCampaign.internalName"
+        :head-editable="false"
+        :disabled="!canManage || campaignsApi.mutating.value"
+        :issues="builderIssues"
+      />
+
       <el-flex
         rules="csc"
-        :gap="12"
+        :gap="10"
         class="w100"
         bg="surface"
-        :p="16"
+        :p="14"
         :radius="14"
         :br="1"
         bc="normal15">
         <el-flex rules="rbc" :gap="10" class="w100" wrap>
-          <el-text :size="16" :weight="800">{{ t("manage.marketing.fields.definition") }}</el-text>
+          <el-flex rules="ccs" :gap="3" class="fg100">
+            <el-text :size="13" :weight="800">{{ t("manage.marketing.advanced.title") }}</el-text>
+            <el-text :size="10" color="normal55">{{ t("manage.marketing.advanced.hint") }}</el-text>
+          </el-flex>
+          <el-button
+            mode="flat"
+            icon="data_object"
+            :label="rawEditorOpen ? t('manage.marketing.actions.hideRaw') : t('manage.marketing.actions.showRaw')"
+            @click="toggleRawEditor"
+          />
+        </el-flex>
+
+        <template v-if="rawEditorOpen">
+          <el-text-field
+            v-model="rawDefinitionText"
+            type="textarea"
+            :rows="16"
+            :actions="false"
+            dir="ltr"
+            :disabled="!canManage || campaignsApi.mutating.value"
+          />
+          <el-text v-if="rawJsonError" :size="11" color="red">{{ rawJsonError }}</el-text>
+          <el-flex rules="rsc" :gap="8" class="w100" wrap>
+            <el-button
+              color="prim"
+              icon="sync"
+              :label="t('manage.marketing.actions.applyRaw')"
+              :disable="!canManage || campaignsApi.mutating.value"
+              @click="applyRawDefinition"
+            />
+            <el-button
+              mode="flat"
+              icon="restart_alt"
+              :label="t('manage.marketing.actions.resetRaw')"
+              @click="syncRawFromDefinition"
+            />
+          </el-flex>
+        </template>
+      </el-flex>
+
+      <el-flex
+        rules="rbc"
+        :gap="10"
+        class="w100"
+        bg="surface"
+        :p="14"
+        :radius="14"
+        :br="1"
+        bc="normal15"
+        wrap>
+        <el-flex rules="rsc" :gap="8" wrap>
           <el-text v-if="definitionDirty" :size="11" color="orange">
-            {{ t("manage.marketing.editor.unsavedJson") }}
+            {{ t("manage.marketing.editor.unsavedForm") }}
+          </el-text>
+          <el-text v-else-if="selectedCampaign" :size="11" color="normal55">
+            {{ t("manage.marketing.editor.savedForm") }}
           </el-text>
         </el-flex>
 
-        <el-text-field
-          v-model="definitionText"
-          type="textarea"
-          :rows="22"
-          :actions="false"
-          dir="ltr"
-          :disabled="!canManage || campaignsApi.mutating.value"
-        />
-        <el-text v-if="!parsedDefinition" :size="11" color="red">
-          {{ t("manage.marketing.editor.invalidJson") }}
-        </el-text>
-
-        <el-flex rules="rsc" :gap="8" class="w100" wrap>
+        <el-flex rules="rsc" :gap="8" wrap>
           <el-button
+            v-if="selectedCampaign"
             mode="flat"
             icon="refresh"
             :label="t('manage.marketing.actions.reload')"
@@ -557,7 +658,15 @@ onMounted(async () => {
             @click="reloadSelected"
           />
           <el-button
-            v-if="canManage"
+            v-if="creating"
+            color="prim"
+            icon="add_circle"
+            :label="t('manage.marketing.actions.create')"
+            :disable="!canCreate"
+            @click="createCampaign"
+          />
+          <el-button
+            v-if="selectedCampaign && canManage"
             color="prim"
             icon="save"
             :label="t('manage.marketing.actions.saveDraft')"
@@ -565,7 +674,7 @@ onMounted(async () => {
             @click="saveDraft"
           />
           <el-button
-            v-if="canManage"
+            v-if="selectedCampaign && canManage"
             mode="flat"
             icon="fact_check"
             :label="t('manage.marketing.actions.validate')"
@@ -573,7 +682,7 @@ onMounted(async () => {
             @click="validateDraft"
           />
           <el-button
-            v-if="canPublish"
+            v-if="selectedCampaign && canPublish"
             color="green"
             icon="publish"
             :label="t('manage.marketing.actions.publish')"
@@ -584,6 +693,7 @@ onMounted(async () => {
       </el-flex>
 
       <el-flex
+        v-if="selectedCampaign"
         rules="csc"
         :gap="10"
         class="w100"
@@ -604,14 +714,19 @@ onMounted(async () => {
           </el-text>
         </el-flex>
 
+        <el-flex v-if="definitionDirty" rules="rsc" :gap="8" class="w100" bg="orange10" :p="10" :radius="10">
+          <el-icon icon="edit_note" color="orange" :size="16" />
+          <el-text :size="10" color="normal55">{{ t("manage.marketing.validation.stale") }}</el-text>
+        </el-flex>
+
         <el-text
-          v-if="!selectedCampaign.validation.errors.length && !selectedCampaign.validation.warnings.length"
+          v-else-if="!selectedCampaign.validation.errors.length && !selectedCampaign.validation.warnings.length"
           :size="12"
           color="normal55">
           {{ t("manage.marketing.validation.noIssues") }}
         </el-text>
 
-        <el-flex v-if="selectedCampaign.validation.errors.length" rules="ccs" :gap="5" class="w100">
+        <el-flex v-if="!definitionDirty && selectedCampaign.validation.errors.length" rules="ccs" :gap="5" class="w100">
           <el-text :size="12" :weight="800" color="red">{{ t("manage.marketing.validation.errors") }}</el-text>
           <el-text
             v-for="(issue, index) in selectedCampaign.validation.errors"
@@ -622,7 +737,7 @@ onMounted(async () => {
           </el-text>
         </el-flex>
 
-        <el-flex v-if="selectedCampaign.validation.warnings.length" rules="ccs" :gap="5" class="w100">
+        <el-flex v-if="!definitionDirty && selectedCampaign.validation.warnings.length" rules="ccs" :gap="5" class="w100">
           <el-text :size="12" :weight="800" color="orange">{{ t("manage.marketing.validation.warnings") }}</el-text>
           <el-text
             v-for="(issue, index) in selectedCampaign.validation.warnings"
@@ -634,7 +749,7 @@ onMounted(async () => {
         </el-flex>
       </el-flex>
 
-      <el-flex v-if="canPublish && selectedCampaign.publishedVersion" rules="rsc" :gap="8" class="w100" wrap>
+      <el-flex v-if="canPublish && selectedCampaign?.publishedVersion" rules="rsc" :gap="8" class="w100" wrap>
         <el-button
           v-if="selectedCampaign.status === 'active' || selectedCampaign.status === 'scheduled'"
           mode="flat"
@@ -665,7 +780,6 @@ onMounted(async () => {
         <el-button
           v-if="selectedCampaign.status !== 'archived'"
           mode="flat"
-          color="normal"
           icon="inventory_2"
           :label="t('manage.marketing.actions.archive')"
           :disable="campaignsApi.mutating.value"
