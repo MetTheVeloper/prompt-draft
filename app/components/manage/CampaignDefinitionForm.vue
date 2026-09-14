@@ -42,7 +42,7 @@ const objectiveItems = computed(() => [
 ].map(value => ({
   value,
   label: t(`manage.marketing.builder.objectives.${value}`),
-}))); 
+})));
 
 const rendererItems = computed(() => [
   {
@@ -83,26 +83,33 @@ function getPath(path: string[], fallback: any = undefined) {
   return current === undefined ? fallback : current;
 }
 
-function setPath(path: string[], value: any) {
-  if (!path.length) return;
-
-  const next = cloneDefinition(props.modelValue);
-  let current: JsonObject = next;
-
-  for (let index = 0; index < path.length - 1; index += 1) {
-    const key = path[index];
+function ensureObjectPath(root: JsonObject, path: string[]) {
+  let current = root;
+  for (const key of path) {
     const existing = current[key];
     if (!existing || typeof existing !== "object" || Array.isArray(existing)) {
       current[key] = {};
     }
     current = current[key];
   }
+  return current;
+}
 
-  const finalKey = path[path.length - 1];
-  if (value === undefined) delete current[finalKey];
-  else current[finalKey] = value;
-
+function patchDefinition(mutator: (next: JsonObject) => void) {
+  const next = cloneDefinition(props.modelValue);
+  mutator(next);
   emit("update:modelValue", next);
+}
+
+function setPath(path: string[], value: any) {
+  if (!path.length) return;
+
+  patchDefinition((next) => {
+    const parent = ensureObjectPath(next, path.slice(0, -1));
+    const finalKey = path[path.length - 1];
+    if (value === undefined) delete parent[finalKey];
+    else parent[finalKey] = value;
+  });
 }
 
 function issuesFor(prefixes: string[]) {
@@ -198,13 +205,19 @@ const locales = computed<CampaignLocale[]>({
   },
   set: (value) => {
     const normalized = value.filter((locale): locale is CampaignLocale => locale === "en" || locale === "fa");
-    const next = normalized.length ? normalized : ["en"];
-    setPath(["experience", "locales"], next);
+    const selected = normalized.length ? normalized : ["en"];
 
-    const currentDefault = String(getPath(["experience", "defaultLocale"], "en"));
-    if (!next.includes(currentDefault as CampaignLocale)) {
-      setPath(["experience", "defaultLocale"], next[0]);
-    }
+    patchDefinition((next) => {
+      const experience = ensureObjectPath(next, ["experience"]);
+      experience.locales = selected;
+
+      const currentDefault = typeof experience.defaultLocale === "string"
+        ? experience.defaultLocale
+        : "en";
+      if (!selected.includes(currentDefault as CampaignLocale)) {
+        experience.defaultLocale = selected[0];
+      }
+    });
   },
 });
 
