@@ -1,8 +1,8 @@
 # Telegram Publishing System — TG3 Prompt Archive Adapter
 
-Status: **TG1 ACCEPTED / TG2 ACCEPTED / TG3 IMPLEMENTED + HARDENED / ARCHIVE MANAGEMENT ACCEPTED / TG3 FINAL ACCEPTANCE PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15**
 
-Date: 2026-09-14
+Date: 2026-09-15
 
 Branch: `feature/growth-foundation`
 
@@ -36,9 +36,9 @@ The frontend gate is convenience only. TG1 remains authoritative and re-checks e
 
 Draft and archived Prompt items are not offered as Telegram publication sources.
 
-## 3. Current public-safe Prompt prefill
+## 3. Accepted public-safe Prompt prefill
 
-The implementation was refined after the original TG3 draft so the current source-of-truth prefill is bilingual and channel-ready rather than Manage-locale-only.
+The implementation was refined after the original TG3 draft so the accepted source-of-truth prefill is bilingual and channel-ready rather than Manage-locale-only.
 
 Opening the Archive Telegram adapter derives only public presentation data from the persisted published Archive item:
 
@@ -197,50 +197,43 @@ Founder-local verification on 2026-09-14 confirmed the Archive management/image 
 
 This Archive checkpoint is **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED** and must not be reopened without a concrete regression.
 
-It does not, by itself, fabricate evidence for the remaining Telegram-specific TG3 checks below.
+## 10. TG3 founder-local acceptance evidence
 
-## 10. Remaining TG3 founder-local acceptance gate
+Founder-local verification completed on 2026-09-15 against the current published Prompt Archive workflow.
 
-The shared adapter is implemented and the underlying Archive editor is now accepted. TG3 itself should be marked accepted only after the Telegram-specific behavior is explicitly confirmed against the current bilingual prefill contract.
-
-Required remaining evidence:
+Confirmed behavior:
 
 ```text
-Telegram adapter appears only for a published Archive item
-opening it renders the exact shared TG2 TelegramPostComposer
-caption contains FA title | EN title, FA description, EN description and normalized hashtags
-persisted public HTTPS Archive images are prefilled in order
-Prompt CTA uses safe startParam prompt_<publicId>
-community CTA uses the fixed direct HTTPS group URL
-album CTA text shows Preview Model + Optimized for metadata
-Prompt body is absent from caption, CTA payloads and model summary
-Light theme renders correctly
-Dark theme renders correctly
-when Telegram config is missing, preview remains usable and Publish remains safely disabled
-moving the Archive item back to draft removes/closes the Telegram adapter
-existing legacy Telegram message id / URL are not mutated by opening or composing
+Telegram Archive prefill renders with the expected persisted Prompt presentation values
+bilingual caption/title/description prefill is correct
+persisted images and Telegram CTA/model prefill are correct
+no TG3 prefill regression was observed
+Archive Update changes preserves publication state
+Archive Update changes immediately refreshes the Telegram Composer prefill from the newly persisted values
 ```
 
-A real Telegram bot/channel post is not required for TG3 acceptance when local Telegram configuration is intentionally absent.
+The last point is part of the accepted interaction contract: the Telegram adapter must consume current persisted Archive data rather than retaining a stale Composer snapshot after an operator update.
 
-The Archive workflow has already been rebuilt and founder-tested. This documentation update is docs-only and requires no additional Docker rebuild.
+No real Telegram bot/channel delivery was required for this TG3 acceptance boundary; TG1 transport and TG2 shared Composer contracts were already separately accepted.
 
 ## 11. Acceptance boundary and next slice
 
-Current state:
+Final state:
 
 ```text
 TG1 -> DONE / ACCEPTED
 TG2 -> DONE / ACCEPTED
-TG3 implementation -> DONE
+TG3 -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
 Archive management/image hardening -> DONE / ACCEPTED 2026-09-14
-TG3 Telegram-specific founder acceptance -> NEXT GATE
+CE4.5 Shared Telegram Publishing Foundation -> DONE / ACCEPTED
 ```
 
-After that TG3-specific acceptance is explicitly recorded, CE4.5 is complete and the next Campaign slice is:
+The next active Campaign slice is:
 
 ```text
 CE5 — /manage/marketing
   -> Campaign operator surface
   -> TG4 Campaign adapter reusing the same TelegramPostComposer + TG1 publisher
 ```
+
+This documentation-only acceptance update requires no Docker rebuild.
