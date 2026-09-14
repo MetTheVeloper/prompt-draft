@@ -13,6 +13,13 @@ const PREFIX = '/api/admin/campaigns'
 const MAX_BODY_BYTES = 512 * 1024
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const STATUSES = new Set(['draft', 'scheduled', 'active', 'paused', 'ended', 'archived'])
+const LIFECYCLE_ACTIONS = new Set(['pause', 'resume', 'end', 'archive'])
+const LIFECYCLE_AUDIT_ACTIONS = Object.freeze({
+  pause: 'marketing.campaign_paused',
+  resume: 'marketing.campaign_resumed',
+  end: 'marketing.campaign_ended',
+  archive: 'marketing.campaign_archived',
+})
 
 class CampaignAdminError extends Error {
   constructor(code, message, status = 400, details = {}) {
@@ -212,11 +219,11 @@ async function listCampaigns(params) {
 
   if (params.cursor) {
     values.push(params.cursor.updatedAt, params.cursor.id)
-    filters.push(`(rows."updatedAt", rows.id) < ($${values.length - 1}::timestamptz, $${values.length}::uuid)`)
+    filters.push(`(campaign_rows."updatedAt", campaign_rows.id) < ($${values.length - 1}::timestamptz, $${values.length}::uuid)`)
   }
   if (params.status) {
     values.push(params.status)
-    filters.push(`rows.status = $${values.length}`)
+    filters.push(`campaign_rows.status = $${values.length}`)
   }
 
   values.push(params.limit + 1)
@@ -225,7 +232,7 @@ async function listCampaigns(params) {
 
   const result = await queryDatabase(
     `
-      WITH rows AS (
+      WITH campaign_rows AS (
         SELECT
           c.id,
           c.slug,
@@ -264,7 +271,7 @@ async function listCampaigns(params) {
         LEFT JOIN campaign_versions cv ON cv.id = c.current_published_version_id
       )
       SELECT *
-      FROM rows
+      FROM campaign_rows
       ${whereClause}
       ORDER BY "updatedAt" DESC, id DESC
       LIMIT $${limitParameter}
@@ -743,7 +750,7 @@ async function mutateLifecycle(actor, id, action) {
       }
     }
 
-    await auditCampaignMutation(client, actor, `marketing.campaign_${action}d`, {
+    await auditCampaignMutation(client, actor, LIFECYCLE_AUDIT_ACTIONS[action], {
       campaignId: id,
       fromStatus: currentStatus,
     })
@@ -862,6 +869,12 @@ export async function handleAdminCampaignRoute({
       return true
     }
 
+    if (LIFECYCLE_ACTIONS.has(route.kind)) {
+      const campaign = await mutateLifecycle(user, route.id, route.kind)
+      sendJson(response, 200, { ok: true, campaign }, corsHeaders)
+      return true
+    }
+
     if (!isJsonRequest(request)) {
       sendJson(response, 415, { ok: false, message: 'Content-Type must be application/json' }, corsHeaders)
       return true
@@ -887,9 +900,7 @@ export async function handleAdminCampaignRoute({
       return true
     }
 
-    assertAllowedFields(body, new Set())
-    const campaign = await mutateLifecycle(user, route.id, route.kind)
-    sendJson(response, 200, { ok: true, campaign }, corsHeaders)
+    sendJson(response, 404, { ok: false, message: 'Not Found' }, corsHeaders)
     return true
   } catch (error) {
     sendError(error, response, sendJson, corsHeaders)
