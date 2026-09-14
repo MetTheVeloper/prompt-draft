@@ -4,7 +4,7 @@ import {
 } from "~/config/authorization";
 
 export type ManageSection = {
-  key: "dashboard" | "growth" | "users" | "archive" | "blog" | "economy" | "telegram";
+  key: "dashboard" | "growth" | "users" | "archive" | "blog" | "marketing" | "economy" | "telegram";
   icon: string;
   route: string;
   requiredPermission: AuthPermission;
@@ -40,6 +40,12 @@ export const MANAGE_SECTIONS: readonly ManageSection[] = [
     icon: "article",
     route: "/manage/blog",
     requiredPermission: AUTH_PERMISSIONS.BLOG_MANAGE,
+  },
+  {
+    key: "marketing",
+    icon: "campaign",
+    route: "/manage/marketing",
+    requiredPermission: AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_VIEW,
   },
   {
     key: "telegram",
