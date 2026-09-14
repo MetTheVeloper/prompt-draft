@@ -1,6 +1,6 @@
 # Prompt Draft Strategy / Growth Foundation Status
 
-Last updated: 2026-09-13
+Last updated: 2026-09-14
 
 Branch:
 
@@ -30,6 +30,15 @@ Milestone 21.5 Rendering & Organic Acquisition  -> IN PROGRESS
   5.2 Acquisition Measurement Instrumentation   -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-12
   5.3 Founder-approved Production Cutover       -> PARTIAL / RUNTIME CUTOVER VERIFIED / INDEXABILITY DEFERRED 2026-09-13
   5.4 Initial Launch + Measurement Cadence      -> DEFERRED UNTIL SEO LAUNCH
+
+Pre-scale execution lane                        -> ACTIVE
+Campaign Engine CE1-CE4                         -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED
+CE4.5 Shared Telegram Publishing                -> IN PROGRESS
+  TG1 Shared Backend Foundation                 -> DONE / ACCEPTED 2026-09-13
+  TG2 Composer + /manage/telegram               -> DONE / ACCEPTED 2026-09-13
+  TG3 Prompt Archive Adapter                    -> IMPLEMENTED + HARDENED / FINAL TG3 ACCEPTANCE PENDING
+Prompt Archive management/image workflow        -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-14
+Next pre-scale gate                             -> TG3 FINAL ACCEPTANCE, THEN CE5 /manage/marketing + TG4
 ```
 
 ## Mandatory sources
@@ -52,6 +61,13 @@ docs/strategy/MILESTONE_21_5_PHASE4E_4_BLOG_MANAGEMENT.md
 docs/strategy/MILESTONE_21_5_PHASE4E_5_BLOG_MEDIA_PUBLISH.md
 docs/strategy/MILESTONE_21_5_PHASE4E_6_FINAL_ACCEPTANCE.md
 docs/strategy/MILESTONE_21_5_PHASE4E_7_SHARED_ARTICLE_PRESENTATION.md
+
+docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+docs/strategy/CAMPAIGN_ENGINE_CE4_ACCEPTANCE.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
+docs/strategy/PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
 ```
 
 ## Verification workflow
@@ -414,6 +430,60 @@ Search Console/sitemap launch  -> DEFERRED
 production DNS/Tunnel/indexability changes -> require explicit founder approval
 ```
 
+---
+
+# Current Pre-Scale Product Checkpoint — 2026-09-14
+
+Normal product development is active while the SEO/indexability launch remains intentionally deferred.
+
+Campaign Engine has advanced beyond the earlier CE1-era handoff:
+
+```text
+CE1 Foundation                 -> ACCEPTED
+Expiring / Promotional Goin V1 -> ACCEPTED
+CE2.1 Runtime Core             -> ACCEPTED
+CE2.2 Actions / Attempts       -> ACCEPTED
+CE3 Promotion Surfaces         -> ACCEPTED
+CE4 Public Campaign + Mechanics-> ACCEPTED
+CE4.5 Shared Telegram          -> IN PROGRESS
+  TG1                          -> ACCEPTED
+  TG2                          -> ACCEPTED
+  TG3                          -> IMPLEMENTED + HARDENED / FINAL TG3 ACCEPTANCE PENDING
+Archive management/images      -> ACCEPTED 2026-09-14
+```
+
+Canonical current Campaign/pre-scale status:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+```
+
+Canonical Archive operator acceptance:
+
+```text
+docs/strategy/PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
+```
+
+The accepted Archive checkpoint freezes these operator semantics:
+
+```text
+published metadata/media edits preserve publication status
+Update changes is used for non-draft edits
+Save as draft remains the draft/create action
+status changes require explicit status actions
+multi-image preparation completes without stale Preparing state
+```
+
+Immediate execution gate:
+
+```text
+finish TG3 Telegram-specific founder acceptance
+-> mark CE4.5 COMPLETE
+-> start CE5 /manage/marketing + TG4 Campaign Telegram adapter
+```
+
+Archive management/image behavior is no longer a TG3 blocker and should not be reopened without a concrete regression.
+
 ## Hard rules
 
 ```text
@@ -434,6 +504,8 @@ DO NOT attach the staging fallback Worker unchanged to prompt-draft.ir.
 DO NOT set NUXT_PUBLIC_NOINDEX=false without fresh explicit founder approval.
 DO NOT submit production sitemap/Search Console launch while SEO launch is deferred.
 DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder approval.
+DO NOT reopen accepted Archive management/image behavior without a concrete regression.
+DO NOT create a second Telegram publisher, publication ledger, wallet, analytics pipeline or Campaign authority.
 ```
 
 ## Resume instruction
@@ -441,18 +513,23 @@ DO NOT change production DNS/Tunnel/Worker/indexability without explicit founder
 ```text
 1. read STATUS.md
 2. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
-3. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
-4. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
-5. read MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md for historical cutover/rollback detail
-6. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md as the authoritative current runtime amendment
-7. read MILESTONE_21_5_PHASE5_2_VERIFICATION.md for accepted measurement evidence
-8. inspect latest feature/growth-foundation HEAD before every decision/write
-9. confirm 21.5.4 / 4A-4F and 21.5.5/5.2 remain DONE / ACCEPTED; do not restart accepted audits without a concrete regression
-10. production runtime is active on prompt-draft.ir + api.prompt-draft.ir
-11. keep NUXT_PUBLIC_NOINDEX=true while active product development/testing continues
-12. keep prompt-draft.ir and grassic.ir both noindex in the current mode
-13. normal product development may continue against the production runtime
-14. future SEO launch is a separate explicit founder decision and must re-verify host-aware noindex behavior before changing it
-15. Search Console/sitemap submission and acquisition launch cadence remain deferred until SEO launch
-16. preserve all accepted public/indexability/security/compiler/measurement boundaries
+3. read CAMPAIGN_ENGINE_STATUS.md for the current pre-scale execution state
+4. read PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md for the accepted Archive operator contract
+5. read TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md for the immediate TG3 acceptance gate
+6. read MILESTONE_21_5_RENDERING_ORGANIC_ACQUISITION.md
+7. read MILESTONE_21_5_PHASE5_LAUNCH_READINESS.md
+8. read MILESTONE_21_5_PHASE5_1C_PRODUCTION_CUTOVER_RUNBOOK.md for historical cutover/rollback detail
+9. read MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md as the authoritative current runtime amendment
+10. read MILESTONE_21_5_PHASE5_2_VERIFICATION.md for accepted measurement evidence
+11. inspect latest feature/growth-foundation HEAD before every decision/write
+12. keep 21.5.4 / 4A-4F, 21.5.5/5.2 and Campaign CE1-CE4 accepted unless a concrete regression exists
+13. keep Prompt Archive management/image workflow DONE / ACCEPTED unless a concrete regression exists
+14. production runtime remains active on prompt-draft.ir + api.prompt-draft.ir
+15. keep NUXT_PUBLIC_NOINDEX=true while active product development/testing continues
+16. keep prompt-draft.ir and grassic.ir both noindex in the current mode
+17. finish the TG3 Telegram-specific acceptance checklist without reopening accepted Archive image work
+18. after TG3 acceptance, CE5 /manage/marketing + TG4 is the next implementation slice
+19. future SEO launch is a separate explicit founder decision and must re-verify host-aware noindex behavior before changing it
+20. Search Console/sitemap submission and acquisition launch cadence remain deferred until SEO launch
+21. preserve all accepted public/indexability/security/compiler/measurement/Campaign/Telegram boundaries
 ```
