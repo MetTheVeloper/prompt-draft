@@ -12,6 +12,10 @@ export const AUTH_PERMISSIONS = {
   ARCHIVE_MANAGE: "archive.manage",
   BLOG_MANAGE: "blog.manage",
   TELEGRAM_MANAGE: "telegram.manage",
+  MARKETING_CAMPAIGNS_VIEW: "marketing.campaigns.view",
+  MARKETING_CAMPAIGNS_MANAGE: "marketing.campaigns.manage",
+  MARKETING_CAMPAIGNS_PUBLISH: "marketing.campaigns.publish",
+  MARKETING_METRICS_VIEW: "marketing.metrics.view",
 } as const;
 
 export type AuthPermission =
