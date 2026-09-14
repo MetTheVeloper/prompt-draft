@@ -6,9 +6,11 @@ import {
   validateArchiveDescriptionInput,
 } from './archiveDescriptionInput.mjs'
 
-const ARCHIVE_MODELS = Object.freeze(['dall-e', 'gpt-image-1'])
+const ARCHIVE_PREVIEW_MODELS = Object.freeze(['dall-e', 'gpt-image-1'])
+const ARCHIVE_OPTIMIZATION_MODELS = Object.freeze([...ARCHIVE_PREVIEW_MODELS, 'gemini', 'midjourney'])
 const ARCHIVE_STATUSES = Object.freeze(['draft', 'published', 'archived'])
-const ARCHIVE_MODEL_SET = new Set(ARCHIVE_MODELS)
+const ARCHIVE_PREVIEW_MODEL_SET = new Set(ARCHIVE_PREVIEW_MODELS)
+const ARCHIVE_OPTIMIZATION_MODEL_SET = new Set(ARCHIVE_OPTIMIZATION_MODELS)
 const ARCHIVE_STATUS_SET = new Set(ARCHIVE_STATUSES)
 const DEFAULT_LIMIT = 20
 const MAX_LIMIT = 100
@@ -111,7 +113,7 @@ function parseListQuery(url) {
   if (status && !ARCHIVE_STATUS_SET.has(status)) errors.push({ field: 'status', message: 'status must be draft, published, or archived' })
 
   const model = rawModel?.trim() || ''
-  if (model && !ARCHIVE_MODEL_SET.has(model)) errors.push({ field: 'model', message: 'model must be dall-e or gpt-image-1' })
+  if (model && !ARCHIVE_PREVIEW_MODEL_SET.has(model)) errors.push({ field: 'model', message: 'model must be dall-e or gpt-image-1' })
 
   return { errors, limit, cursor: cursor || null, query, status, model }
 }
@@ -158,13 +160,13 @@ function validateArchiveInput(body) {
     errors.push({ field: 'prompt', message: `prompt must be a non-empty string up to ${MAX_PROMPT_LENGTH} characters` })
   }
 
-  if (!ARCHIVE_MODEL_SET.has(body.previewModel)) {
+  if (!ARCHIVE_PREVIEW_MODEL_SET.has(body.previewModel)) {
     errors.push({ field: 'previewModel', message: 'previewModel must be dall-e or gpt-image-1' })
   }
 
   if (
     !Array.isArray(body.optimizedFor) || body.optimizedFor.length === 0 ||
-    body.optimizedFor.some(value => !ARCHIVE_MODEL_SET.has(value)) ||
+    body.optimizedFor.some(value => !ARCHIVE_OPTIMIZATION_MODEL_SET.has(value)) ||
     new Set(body.optimizedFor).size !== body.optimizedFor.length
   ) {
     errors.push({ field: 'optimizedFor', message: 'optimizedFor must contain one or more unique supported models' })

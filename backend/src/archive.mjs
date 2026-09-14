@@ -2,7 +2,8 @@ import { getAuthenticatedUser } from './auth.mjs'
 import { queryDatabase } from './database.mjs'
 import { createProfileRequirementPayload } from './profileRequirements.mjs'
 
-const ARCHIVE_MODELS = new Set(['dall-e', 'gpt-image-1'])
+const ARCHIVE_PREVIEW_MODELS = new Set(['dall-e', 'gpt-image-1'])
+const ARCHIVE_OPTIMIZATION_MODELS = new Set(['dall-e', 'gpt-image-1', 'gemini', 'midjourney'])
 const ARCHIVE_SORTS = new Set(['newest', 'oldest'])
 const DEFAULT_LIMIT = 24
 const MAX_LIMIT = 100
@@ -23,7 +24,7 @@ function normalizeLocalizedDescription(value) {
 }
 
 function normalizeModelList(value) {
-  return Array.isArray(value) ? value.filter(model => ARCHIVE_MODELS.has(model)) : []
+  return Array.isArray(value) ? value.filter(model => ARCHIVE_OPTIMIZATION_MODELS.has(model)) : []
 }
 
 function mapArchiveImage(value) {
@@ -93,7 +94,7 @@ function parseSort(value) {
 
 function parseModel(value) {
   if (value == null || value === '' || value === 'all') return null
-  return ARCHIVE_MODELS.has(value) ? value : undefined
+  return ARCHIVE_PREVIEW_MODELS.has(value) ? value : undefined
 }
 
 function parseSearch(value) {

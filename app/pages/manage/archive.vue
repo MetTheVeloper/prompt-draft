@@ -9,7 +9,10 @@ import type {
   AdminArchiveUpsertInput,
 } from "~/types/adminArchiveApi";
 import type { PreparedArchiveImage } from "~/types/archiveImage";
-import type { PromptArchiveModel } from "~/types/promptArchive";
+import type {
+  PromptArchiveModel,
+  PromptArchiveOptimizationModel,
+} from "~/types/promptArchive";
 
 definePageMeta({
   middleware: "authorization",
@@ -55,7 +58,7 @@ const form = reactive({
   publishedAt: "",
   prompt: "",
   previewModel: "gpt-image-1" as PromptArchiveModel,
-  optimizedFor: ["gpt-image-1"] as PromptArchiveModel[],
+  optimizedFor: ["gpt-image-1"] as PromptArchiveOptimizationModel[],
   tags: [] as string[],
 });
 
@@ -91,11 +94,15 @@ const statusFilterItems = computed(() => [
 ]);
 
 const modelItems = computed(() => [
-  { value: "gpt-image-1", label: "GPT-Image-1", icon: "image" },
+  { value: "gpt-image-1", label: "GPT-Image", icon: "image" },
   { value: "dall-e", label: "DALL-E", icon: "image" },
 ]);
 
-const optimizedForItems = computed(() => modelItems.value);
+const optimizedForItems = computed(() => [
+  ...modelItems.value,
+  { value: "gemini", label: "Gemini", icon: "auto_awesome" },
+  { value: "midjourney", label: "Midjourney", icon: "palette" },
+]);
 const tagItems = computed(() => canonicalTags.value.map(tag => ({
   value: tag,
   label: formatTag(tag),
@@ -1077,7 +1084,7 @@ onBeforeUnmount(() => {
             <el-text :size="11" :weight="700" :color="statusColor(item.status)">
               {{ statusLabel(item.status) }}
             </el-text>
-            <el-text :size="11">{{ item.previewModel === 'gpt-image-1' ? 'GPT-Image-1' : 'DALL-E' }}</el-text>
+            <el-text :size="11">{{ item.previewModel === 'gpt-image-1' ? 'GPT-Image' : 'DALL-E' }}</el-text>
             <el-text :size="11" :localize="true">{{ item.imageCount }}</el-text>
             <el-text :size="10" color="normal60" class="archive-tags-cell">
               {{ item.tags.slice(0, 4).map(formatTag).join(' · ') || '—' }}
