@@ -405,7 +405,7 @@ input[type="time"],
 input[type="datetime-local"],
 input[type="month"],
 input[type="week"] {
-  color-scheme: dark;
+  color: var(--normalText);
 }
 
 input[type="date"]::-webkit-calendar-picker-indicator,
@@ -413,9 +413,15 @@ input[type="time"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator,
 input[type="month"]::-webkit-calendar-picker-indicator,
 input[type="week"]::-webkit-calendar-picker-indicator {
+  width: 18px;
+  height: 18px;
+  padding: 0;
   cursor: pointer;
-  opacity: 0.7;
-  filter: invert(1);
+  opacity: 1;
+  background: var(--normalText);
+  filter: none;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .89-2 2v14c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2Zm0 16H5V9h14v11ZM5 7V6h14v1H5Z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Cpath d='M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-2 .89-2 2v14c0 1.11.89 2 2 2h14c1.11 0 2-.89 2-2V6c0-1.11-.89-2-2-2Zm0 16H5V9h14v11ZM5 7V6h14v1H5Z'/%3E%3C/svg%3E") center / 16px 16px no-repeat;
 }
 
 /* ---------------------------------------------
