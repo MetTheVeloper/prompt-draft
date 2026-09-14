@@ -221,7 +221,7 @@ async function uploadArchiveImage(actor, archiveItemId, payload) {
       const sourceKind = nextSourceKind(locked.sourceKind)
       await client.query(`
         UPDATE prompt_archive_items
-        SET status = 'draft', source_kind = $2, updated_by = $3, updated_at = NOW()
+        SET source_kind = $2, updated_by = $3, updated_at = NOW()
         WHERE id = $1
       `, [archiveItemId, sourceKind, actor.id])
 
@@ -286,7 +286,7 @@ async function deleteArchiveImage(actor, archiveItemId, imageId) {
     await normalizePositionsAfterDelete(client, archiveItemId)
     const sourceKind = nextSourceKind(item.sourceKind)
     await client.query(`
-      UPDATE prompt_archive_items SET status = 'draft', source_kind = $2, updated_by = $3, updated_at = NOW()
+      UPDATE prompt_archive_items SET source_kind = $2, updated_by = $3, updated_at = NOW()
       WHERE id = $1
     `, [archiveItemId, sourceKind, actor.id])
 
@@ -334,7 +334,7 @@ async function reorderArchiveImages(actor, archiveItemId, imageIds) {
 
     const sourceKind = nextSourceKind(item.sourceKind)
     await client.query(`
-      UPDATE prompt_archive_items SET status = 'draft', source_kind = $2, updated_by = $3, updated_at = NOW()
+      UPDATE prompt_archive_items SET source_kind = $2, updated_by = $3, updated_at = NOW()
       WHERE id = $1
     `, [archiveItemId, sourceKind, actor.id])
 

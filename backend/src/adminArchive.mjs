@@ -511,7 +511,6 @@ async function updateArchiveItem(actor, id, input) {
           prompt = $9,
           preview_model = $10,
           optimized_for = $11::text[],
-          status = 'draft',
           source_kind = $12,
           updated_by = $13,
           updated_at = NOW()
@@ -538,7 +537,7 @@ async function updateArchiveItem(actor, id, input) {
       telegramMessageId: input.telegramMessageId,
       previousTelegramMessageId: nullableNumber(existing.telegram_message_id),
       fromStatus: existing.status,
-      toStatus: 'draft',
+      toStatus: existing.status,
       fromSourceKind: existing.source_kind,
       toSourceKind: sourceKind,
     })

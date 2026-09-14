@@ -121,6 +121,12 @@ const currentStatusLabel = computed(() => (
     : t("manage.archive.statuses.draft")
 ));
 
+const primarySaveLabel = computed(() => (
+  editingItem.value && editingItem.value.status !== "draft"
+    ? t("manage.archive.actions.updateChanges")
+    : t("manage.archive.actions.saveDraft")
+));
+
 const canSave = computed(() => {
   return (
     canManage.value &&
@@ -930,7 +936,7 @@ onBeforeUnmount(() => {
           v-if="canManage"
           color="prim"
           icon="save"
-          :label="t('manage.archive.actions.saveDraft')"
+          :label="primarySaveLabel"
           :disable="!canSave"
           @click="saveMetadata"
         />
