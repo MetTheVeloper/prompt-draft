@@ -23,6 +23,7 @@ const api = usePromptDraftApi();
 const archiveDeepLink = useAdminArchiveDeepLink();
 const modal = useModal();
 const { locale, t } = useI18n();
+const { t: theme } = useTheme();
 
 const items = ref<AdminArchiveSummary[]>([]);
 const loading = ref(false);
@@ -64,6 +65,9 @@ let editorRequestVersion = 0;
 let routeSyncReady = false;
 
 const canManage = computed(() => auth.can(AUTH_PERMISSIONS.ARCHIVE_MANAGE));
+const currentThemeMode = computed(() => (
+  unref(theme)?.theme?.mode === "light" ? "light" : "dark"
+));
 const hasPreparedImages = computed(() => preparedImages.value.length > 0);
 const hasPendingPreparedImages = computed(() => (
   preparedImages.value.some(item => item.status !== "ready")
@@ -683,6 +687,12 @@ onBeforeUnmount(() => {
     </el-flex>
 
     <template v-else>
+      <ArchiveTelegramAdapter
+        v-if="editingItem?.status === 'published'"
+        :item="editingItem"
+        :disable="editorBusy"
+      />
+
       <el-flex
         rules="csc"
         :gap="16"
@@ -772,6 +782,7 @@ onBeforeUnmount(() => {
               v-model="form.publishedAt"
               type="datetime-local"
               class="archive-native-input"
+              :style="{ colorScheme: currentThemeMode }"
               :disabled="!canManage || editorBusy"
             >
           </el-flex>
@@ -955,11 +966,6 @@ onBeforeUnmount(() => {
           />
         </template>
       </el-flex>
-
-      <ArchiveTelegramAdapter
-        v-if="editingItem"
-        :item="editingItem"
-      />
     </template>
   </el-flex>
 
@@ -1111,16 +1117,17 @@ onBeforeUnmount(() => {
   width: 100%;
   min-height: 42px;
   padding: 8px 11px;
-  border: 1px solid color-mix(in srgb, currentColor 16%, transparent);
+  border: 1px solid var(--normalText15);
   border-radius: 11px;
-  background: color-mix(in srgb, currentColor 5%, transparent);
-  color: inherit;
+  background: var(--normalText5);
+  color: var(--normalText);
+  caret-color: var(--normalText);
   font: inherit;
   outline: none;
 }
 
 .archive-native-input:focus {
-  border-color: color-mix(in srgb, currentColor 38%, transparent);
+  border-color: color-mix(in srgb, var(--normalText) 38%, transparent);
 }
 
 .archive-existing-images {
