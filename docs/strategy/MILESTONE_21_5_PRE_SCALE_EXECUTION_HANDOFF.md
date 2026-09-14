@@ -1,8 +1,8 @@
 # Milestone 21.5 — Pre-Scale Execution Handoff
 
-Status: **FOUNDER-APPROVED EXECUTION HANDOFF / PRODUCTION RUNTIME ACTIVE / SEO DEFERRED / DOMAIN EXPANSION SCALE-GATED / CAMPAIGN CE1 ACCEPTED / EXPIRING GOIN IN VERIFICATION**
+Status: **FOUNDER-APPROVED PRE-SCALE EXECUTION / PRODUCTION RUNTIME ACTIVE / SEO DEFERRED / CAMPAIGN CE4 ACCEPTED / CE4.5 TG3 FINAL ACCEPTANCE NEXT**
 
-Date: 2026-09-13
+Date: 2026-09-14
 
 Branch:
 
@@ -10,28 +10,17 @@ Branch:
 feature/growth-foundation
 ```
 
-Current authoritative runtime checkpoint:
+This file is the pre-scale handoff index. Detailed implementation/acceptance evidence lives in the linked strategy records; do not use older sequencing notes as current status when they conflict with the current Campaign/Telegram status docs.
+
+## 1. Runtime checkpoint remains unchanged
+
+Canonical production-runtime checkpoint:
 
 ```text
 docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
 ```
 
-Campaign Engine / Economy transition sources of truth:
-
-```text
-docs/strategy/CAMPAIGN_ENGINE_V1.md
-docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
-docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
-docs/strategy/CAMPAIGN_ENGINE_STATUS.md
-docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
-```
-
----
-
-## 1. Founder sequencing decision
-
-Milestone 21.5 has reached the intended safe operating checkpoint for continued product development:
+Current production posture:
 
 ```text
 production runtime      -> ACTIVE / VERIFIED
@@ -43,308 +32,293 @@ SEO launch              -> DEFERRED
 Search Console launch   -> DEFERRED
 ```
 
-The product remains under active development/testing. SEO/indexing must stay disabled until a future explicit founder approval.
+Normal product engineering may continue against the production runtime while SEO/indexing stays disabled.
 
-Milestone 21.5 therefore remains technically open for deferred SEO-launch work, but it no longer blocks normal product engineering.
-
----
+Do not change DNS, Tunnel, Worker, Search Console submission or indexability as a side effect of pre-scale product work.
 
 ## 2. Domain Expansion remains scale-gated
 
-Domain Expansion remains a major strategic capability and a future proof that Prompt Draft's Semantic Prompt Engine generalizes beyond the current image-focused domain.
-
-However, the founder has explicitly classified Domain Expansion as a **scale-stage advantage**, not the immediate engineering track.
+Domain Expansion remains a strategic future capability, not the current implementation track.
 
 Current policy:
 
 ```text
-DO NOT start Domain Expansion implementation merely because 21.5 runtime work reached a pause point.
+DO NOT start Domain Expansion implementation merely because production runtime is active.
 
 Before Domain Expansion implementation:
-  -> product should reach the appropriate scale/readiness stage
-  -> founder should explicitly select the scale gate
-  -> domain research + semantic modeling must be mature
+  -> product reaches the intended scale/readiness stage
+  -> founder explicitly selects the scale gate
+  -> domain research + semantic modeling are mature
 ```
 
-Domain research may continue in parallel; implementation is intentionally deferred.
+Research may continue independently; implementation remains deferred.
 
----
+## 3. Current pre-scale lane
 
-## 3. Pre-scale execution lane
+The selected active lane is Campaign/Telegram commercialization infrastructure on top of the accepted Prompt Draft runtime, Economy and public/protected boundaries.
 
-Between the current 21.5 checkpoint and the future Domain Expansion scale gate, Prompt Draft may execute platform work that improves acquisition, retention, commercialization readiness, operator capability and economic experimentation without prematurely multiplying semantic domains.
-
-Examples include:
+Current state:
 
 ```text
-Campaign Engine
-marketing/operator tooling
-campaign-driven Goin incentives
-promotion surfaces
-measurement/reconciliation
-production reliability work
-other founder-selected pre-scale product systems
+Campaign Engine CE1 Foundation                -> ACCEPTED
+Expiring / Promotional Goin V1               -> ACCEPTED
+Campaign Engine CE2.1 Runtime Core            -> ACCEPTED
+Campaign Engine CE2.2 Actions / Attempts      -> ACCEPTED
+Campaign Engine CE3 Promotion Surfaces        -> ACCEPTED
+Campaign Engine CE4 Public Experience         -> ACCEPTED 2026-09-13
+
+CE4.5 Shared Telegram Publishing              -> IN PROGRESS
+  TG1 Shared Backend Foundation               -> ACCEPTED 2026-09-13
+  TG2 Composer + /manage/telegram             -> ACCEPTED 2026-09-13
+  TG3 Prompt Archive Adapter                  -> IMPLEMENTED + HARDENED / FINAL TG3 ACCEPTANCE PENDING
+
+Prompt Archive management/image workflow      -> ACCEPTED 2026-09-14
+
+CE5 /manage/marketing + TG4                   -> NEXT AFTER TG3 ACCEPTANCE
+CE6 Measurement & Reconciliation              -> NOT STARTED
+CE7 Final Verification                        -> NOT STARTED
 ```
 
-These tracks must reuse the accepted Growth Foundation contracts rather than create parallel wallets, analytics stores, authorization systems or rendering stacks.
-
----
-
-## 4. Selected pre-scale engineering track — Campaign Engine V1
-
-Founder-selected track:
+Canonical current status:
 
 ```text
-Campaign Engine V1
+docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 ```
 
-Current implementation state:
+## 4. Mandatory current sources
+
+Project workflow:
 
 ```text
-architecture/source of truth -> DOCUMENTED
-database schema              -> DESIGNED
-API/runtime contract         -> DESIGNED
-CE1 Foundation               -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-13
-Economy prerequisite         -> EXPIRING / PROMOTIONAL GOIN V1 IMPLEMENTED / AWAITING LOCAL VERIFICATION
-next Campaign slice          -> CE2 AFTER ECONOMY VERIFICATION
+docs/strategy/DEVELOPMENT_WORKFLOW.md
+docs/strategy/UI_IMPLEMENTATION_GUIDELINES.md
 ```
 
-CE1 implementation commit:
+Campaign architecture/status:
 
 ```text
-1f8c35ee9041e600ba6d99d37c595f446842d000
-feat: add Campaign Engine CE1 foundation
+docs/strategy/CAMPAIGN_ENGINE_V1.md
+docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+docs/strategy/CAMPAIGN_ENGINE_STATUS.md
+docs/strategy/CAMPAIGN_ENGINE_CE4_ACCEPTANCE.md
 ```
 
-Founder-local CE1 verification evidence:
+Telegram bridge:
 
 ```text
-pnpm api
-  -> PASS / backend image rebuilt and started
-
-docker compose exec api node --test src/campaignFoundation.test.mjs
-  -> PASS 9/9
-
-docker compose exec api npm run db:schema
-  -> PASS / migrations 001 through 029 applied
-
-docker compose exec db psql -U prompt_draft -d prompt_draft -c "\dt campaign*"
-  -> PASS / 10 expected Campaign tables present
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_SCHEDULING.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
 ```
 
-Canonical CE1 evidence record:
+Archive management acceptance:
 
 ```text
-docs/strategy/CAMPAIGN_ENGINE_CE1_VERIFICATION.md
+docs/strategy/PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
 ```
 
-The founder clarified that a clean-log response of "ظاهرا اوکیه" is acceptance when engineering review finds no hidden blocker. CE1 logs were clean and no hidden blocker was found, so CE1 is accepted.
-
-A separate direct immutable-version mutation rejection probe remains optional hardening evidence, not a CE1 blocker.
-
----
-
-## 5. Expiring / Promotional Goin prerequisite before CE2
-
-Before starting CE2, the founder selected an Economy extension to prevent promotional Campaign rewards from becoming unlimited permanent money supply.
-
-Canonical contract:
+Production/no-SEO boundary:
 
 ```text
-docs/strategy/EXPIRING_PROMOTIONAL_GOIN_V1.md
-```
-
-Implementation commit:
-
-```text
-ddff7f0458281ba8abcd57c6a23ff614d5fb3ef5
-feat: add expiring promotional Goin
-```
-
-Implemented direction:
-
-```text
-user_economy_events stays the authoritative Goin event ledger
-no second wallet or balance column
-positive credits may opt into expires_at
-historical/existing Goin remains permanent by default
-spending uses FEFO: earliest-expiring active Goin first
-expiring-credit allocations preserve consumption provenance
-only unspent remainder expires
-Prompt Archive debit uses the shared Economy primitive
-operator outstanding uses expiry-aware balance state
-```
-
-The Economy extension also introduces the transaction-aware primitive CE2 already required:
-
-```text
-backend/src/economyCore.mjs
-recordUserEconomyEventInTransaction(client, input, options)
-```
-
-Campaign reward settlement must reuse this primitive inside the Campaign transaction. Do not create nested independent Economy transactions or a Campaign wallet.
-
-CE2 remains blocked until founder-local verification of this Economy extension is clean.
-
----
-
-## 6. Campaign authority boundaries that remain mandatory
-
-Campaign Engine must preserve the existing authority boundaries:
-
-```text
-user_economy_events       -> authoritative Goin event ledger
-Economy expiry/allocation -> authoritative spendable-balance provenance
-product_analytics_events  -> observational analytics only
-admin_audit_log           -> privileged mutation audit
-backend authorization     -> authoritative permission enforcement
-campaign_versions         -> immutable published Campaign snapshots
-browser/client            -> never authoritative reward amount/expiry/winner/user identity source
-```
-
-No Campaign wallet or parallel Goin balance is allowed.
-
-Campaign reward correctness requires one transaction covering:
-
-```text
-reward qualification
-budget reservation
-campaign_reward_grant
-user_economy_events credit
-reward reconciliation/state/events
-```
-
----
-
-## 7. CE1 foundation now present
-
-Campaign migration:
-
-```text
-backend/sql/029_campaign_engine_v1.sql
-```
-
-Verified Campaign tables:
-
-```text
-campaigns
-campaign_versions
-campaign_participations
-campaign_actions
-campaign_events
-campaign_mechanic_states
-campaign_attempts
-campaign_reward_budgets
-campaign_reward_grants
-campaign_promotion_user_states
-```
-
-CE1 also introduced/extended:
-
-```text
-Campaign Definition validator
-Campaign head/draft persistence
-optimistic draft revisions
-immutable publish versions
-publish idempotency
-Renderer Registry skeleton
-Mechanic Registry skeleton
-Metric Registry skeleton
-RuleExpression validator/evaluator
-marketing.campaigns.view
-marketing.campaigns.manage
-marketing.campaigns.publish
-marketing.metrics.view
-```
-
-Safe current role direction remains:
-
-```text
-user        -> no Campaign permissions
-admin       -> campaign view + marketing metrics
-super_admin -> all via existing wildcard
-```
-
----
-
-## 8. 21.5 invariants while Campaign Engine work proceeds
-
-Keep:
-
-```text
-Nuxt SSR/hybrid route contract
-production runtime through Cloudflare Tunnel
-prompt-draft.ir canonical production host
-api.prompt-draft.ir browser API origin
-server-internal API -> http://api:4000
-host-aware indexability guard
-NUXT_PUBLIC_NOINDEX=true
-production + staging noindex behavior
-public/protected Prompt and Creator boundaries
-Blog/public SEO architecture
-first-party acquisition analytics contract
-```
-
-Do not:
-
-```text
-turn SEO/indexing on as a side effect of Campaign work
-submit production sitemap/Search Console launch work
-change production DNS/Tunnel/Worker/indexability without explicit founder approval
-weaken public/private data boundaries
-start Domain Expansion implementation
-create Campaign-specific Economy or Analytics authorities
-```
-
-Campaign public routes may eventually be built and production-tested while global noindex remains active.
-
----
-
-## 9. Deferred 21.5 work
-
-The following remains intentionally deferred rather than forgotten:
-
-```text
-NUXT_PUBLIC_NOINDEX=false
-production SEO/indexability launch
-Search Console production property/launch workflow
-sitemap submission for acquisition launch
-representative production indexing evidence
-initial organic acquisition measurement cadence
-```
-
-When the founder later decides the product is ready for SEO launch, resume from:
-
-```text
+docs/strategy/STATUS.md
 docs/strategy/MILESTONE_21_5_PHASE5_PRODUCTION_RUNTIME_NOSEO_CHECKPOINT.md
 ```
 
-and re-audit the latest branch/runtime before changing indexability.
+Before any new decision/write, always inspect the then-current `feature/growth-foundation` HEAD first.
 
----
-
-## 10. Current transition instruction
-
-Immediate execution state:
+## 5. Authorities that must remain singular
 
 ```text
-21.5 production runtime / SEO-off checkpoint -> KEEP
-Domain Expansion implementation              -> DEFER UNTIL SCALE GATE
-Campaign Engine V1                           -> ACTIVE PRE-SCALE TRACK
-CE1 Foundation                               -> DONE / VERIFIED / ACCEPTED
-Expiring / Promotional Goin V1               -> IMPLEMENTED / AWAITING LOCAL VERIFICATION
-CE2 Runtime Core                             -> NEXT AFTER ECONOMY VERIFICATION
+backend authorization      -> permission authority
+user_economy_events        -> authoritative Goin ledger
+product_analytics_events   -> observational analytics
+admin_audit_log            -> privileged mutation audit
+campaign_versions          -> immutable published Campaign snapshots
+telegram_publications      -> Telegram publication ledger
+Prompt Draft backend       -> unlock/copy/Goin/business logic authority
 ```
 
-Before any further Campaign write:
+Do not introduce parallel wallet, analytics, authorization, Campaign, Prompt-unlock or Telegram-publication authorities.
+
+## 6. Campaign Engine accepted direction
+
+Campaign remains a domain object rather than a page type.
+
+Frozen public route:
 
 ```text
-1. re-read latest feature/growth-foundation HEAD
-2. read DEVELOPMENT_WORKFLOW.md
-3. read CAMPAIGN_ENGINE_STATUS.md
-4. read CAMPAIGN_ENGINE_CE1_VERIFICATION.md
-5. read EXPIRING_PROMOTIONAL_GOIN_V1.md
-6. read the Campaign V1 schema/runtime source-of-truth docs
-7. preserve production noindex and Domain Expansion scale gate
-8. verify/accept Expiring Goin before starting CE2
+/campaign/:slug
+/fa/campaign/:slug
 ```
+
+Frozen trust boundary:
+
+```text
+browser may express intent
+backend decides identity, eligibility, trusted progress, attempts, outcomes and rewards
+published Campaign Versions are immutable
+participation locks to the exact published version it started under
+Campaign rewards reconcile to user_economy_events
+```
+
+Chance/random outcomes remain server-authoritative.
+
+Promotional Goin uses the same Economy ledger and accepted expiry/FEFO semantics.
+
+## 7. Shared Telegram direction
+
+Frozen architecture:
+
+```text
+Telegram = Preview + CTA
+Mini App = Entry point
+Prompt Draft = all business logic
+```
+
+Shared path:
+
+```text
+/manage/archive ----\
+/manage/marketing ----> TelegramPostComposer -> shared Telegram Publishing API -> TelegramPublisher
+/manage/telegram ----/
+```
+
+Prompt Archive and Campaign Engine must not gain separate Telegram clients, publication ledgers, retry state or delivery authority.
+
+Telegram must not decide Campaign eligibility/rewards or Prompt unlock/Goin state.
+
+## 8. Archive management/image workflow — CLOSED
+
+Canonical acceptance:
+
+```text
+docs/strategy/PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
+Status -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-14
+```
+
+Frozen operator behavior:
+
+```text
+new/draft item                -> Save as draft
+published/archived item       -> Update changes
+metadata save                 -> preserve publication status
+prepared-image upload         -> preserve publication status
+persisted image delete/reorder-> preserve publication status
+status mutation               -> explicit Publish / Move to draft / Archive / Restore draft only
+multi-image preparation       -> all selected images reach terminal state without stale Preparing state
+```
+
+Do not reopen this workflow absent a concrete regression.
+
+## 9. Immediate next gate — TG3 final acceptance
+
+TG3 implementation is present and the underlying Archive editor is now accepted.
+
+Immediate work is **not another Archive redesign**. It is a focused founder-local acceptance pass for the Telegram-specific TG3 contract in:
+
+```text
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
+```
+
+The current checklist covers:
+
+```text
+published-only adapter visibility
+shared TelegramPostComposer reuse
+bilingual FA/EN public Prompt caption
+public image ordering
+hashtags
+Prompt Mini App CTA -> prompt_<publicId>
+fixed community direct-HTTPS CTA
+Preview Model + Optimized for album CTA text
+absence of protected Prompt body
+Light/Dark rendering
+safe disabled Publish state when Telegram config is missing
+adapter removal when item moves back to draft
+no mutation of legacy Archive Telegram scalar fields while composing
+```
+
+A real Telegram delivery is not required when local credentials/channel config are intentionally absent.
+
+Once this checklist is explicitly accepted:
+
+```text
+TG3 -> ACCEPTED
+CE4.5 -> COMPLETE
+```
+
+## 10. Next implementation after TG3 — CE5
+
+After TG3 acceptance, begin:
+
+```text
+CE5 — /manage/marketing
+```
+
+CE5 target:
+
+```text
+Campaign list/editor
+Campaign Definition editing/validation
+preview/publish
+pause/resume/end/archive
+existing marketing permissions
+existing Manage UI conventions
+EN/FA management copy
+TG4 Campaign Telegram adapter reusing the shared TelegramPostComposer + TG1 publisher
+Campaign Telegram entry/attribution aligned with accepted CE3 attribution semantics
+```
+
+CE5 must not create a temporary Campaign-specific Telegram implementation.
+
+## 11. Verification discipline
+
+Use `DEVELOPMENT_WORKFLOW.md` for every slice:
+
+```text
+inspect exact changed files/services
+-> run focused tests
+-> no rebuild for docs-only
+-> pnpm frontend for frontend-only
+-> pnpm api for backend-only
+-> rebuild both only when both changed
+-> pnpm stack only when genuinely required
+```
+
+Do not recommend restart/recreate or `git pull` reflexively.
+
+## 12. Hard boundaries
+
+```text
+KEEP NUXT_PUBLIC_NOINDEX=true until fresh founder approval for SEO launch.
+KEEP prompt-draft.ir and retained grassic.ir noindex in current mode.
+DO NOT start Domain Expansion before its scale gate.
+DO NOT weaken public/protected Prompt boundaries.
+DO NOT make protected Archive detail public.
+DO NOT create a second Goin ledger.
+DO NOT create a second Campaign authority.
+DO NOT create a second Telegram publisher/ledger.
+DO NOT move Campaign/Prompt business logic into Telegram.
+DO NOT reopen CE1-CE4 or accepted Archive management work without a concrete regression.
+```
+
+## 13. Resume instruction
+
+```text
+1. inspect latest feature/growth-foundation HEAD
+2. read STATUS.md
+3. read DEVELOPMENT_WORKFLOW.md + UI_IMPLEMENTATION_GUIDELINES.md
+4. read CAMPAIGN_ENGINE_STATUS.md
+5. read TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
+6. read PROMPT_ARCHIVE_MANAGEMENT_ACCEPTANCE.md
+7. keep CE1-CE4 accepted unless a concrete regression exists
+8. keep Archive management/images accepted unless a concrete regression exists
+9. finish TG3 Telegram-specific acceptance
+10. then start CE5 /manage/marketing + TG4
+11. keep SEO launch deferred / noindex true
+12. keep Domain Expansion scale-gated
+```
+
+This ordering remains authoritative until the founder explicitly changes it.
