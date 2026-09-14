@@ -64,6 +64,11 @@ function updateItems(value: PreparedArchiveImage[]) {
   emit("update:modelValue", normalizePositions(value));
 }
 
+async function updateItemsAndFlush(value: PreparedArchiveImage[]) {
+  updateItems(value);
+  await nextTick();
+}
+
 function openFilePicker() {
   if (!props.disabled) fileInput.value?.click();
 }
@@ -131,7 +136,7 @@ async function addFiles(files: File[]) {
       error: null,
     };
 
-    updateItems([...items.value, item]);
+    await updateItemsAndFlush([...items.value, item]);
 
     try {
       const output = await prepareArchiveImage(file);
@@ -145,7 +150,7 @@ async function addFiles(files: File[]) {
       const fullPreview = ownUrl(output.fullBlob);
       const thumbnailPreview = ownUrl(output.thumbnailBlob);
 
-      updateItems(items.value.map(candidate => (
+      await updateItemsAndFlush(items.value.map(candidate => (
         candidate.id === item.id
           ? {
               ...candidate,
@@ -159,7 +164,7 @@ async function addFiles(files: File[]) {
       )));
     } catch (error) {
       console.error("[ArchiveImageManager] image preparation failed", error);
-      updateItems(items.value.map(candidate => (
+      await updateItemsAndFlush(items.value.map(candidate => (
         candidate.id === item.id
           ? {
               ...candidate,
