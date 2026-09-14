@@ -112,20 +112,33 @@ function normalizeCtas(ctas, routing, errors) {
     }
 
     const label = normalizeText(cta.label)
-    const startParam = normalizeText(cta.startParam)
+    const hasStartParam = cta.startParam !== undefined && cta.startParam !== null
+    const hasUrl = cta.url !== undefined && cta.url !== null
+
     if (!label || label.length > MAX_CTA_LABEL) {
       errors.push(fieldError(`${base}.label`, `CTA label must be 1-${MAX_CTA_LABEL} characters`))
     }
-    if (!START_PARAM_PATTERN.test(startParam)) {
-      errors.push(fieldError(`${base}.startParam`, 'startParam must be 1-512 ASCII letters, digits, underscore, or dash'))
+    if (hasStartParam === hasUrl) {
+      errors.push(fieldError(base, 'CTA must set exactly one of startParam or url'))
+      return null
     }
 
-    if (!label || !START_PARAM_PATTERN.test(startParam) || !routing) return null
-    return {
-      label,
-      startParam,
-      url: buildTelegramMiniAppUrl(routing, startParam),
+    if (hasStartParam) {
+      const startParam = normalizeText(cta.startParam)
+      if (!START_PARAM_PATTERN.test(startParam)) {
+        errors.push(fieldError(`${base}.startParam`, 'startParam must be 1-512 ASCII letters, digits, underscore, or dash'))
+      }
+      if (!label || !START_PARAM_PATTERN.test(startParam) || !routing) return null
+      return {
+        label,
+        startParam,
+        url: buildTelegramMiniAppUrl(routing, startParam),
+      }
     }
+
+    const url = normalizeHttpsUrl(cta.url, `${base}.url`, errors)
+    if (!label || !url) return null
+    return { label, url }
   }).filter(Boolean)
 }
 

@@ -19,11 +19,14 @@ export type TelegramPostMediaInput = {
 
 export type TelegramPostCtaInput = {
   label: string;
-  startParam: string;
+  startParam?: string;
+  url?: string;
 };
 
-export type TelegramPostCta = TelegramPostCtaInput & {
+export type TelegramPostCta = {
+  label: string;
   url: string;
+  startParam?: string;
 };
 
 export type TelegramPublicationInput = {

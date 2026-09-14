@@ -1,4 +1,5 @@
 export type PromptArchiveModel = 'dall-e' | 'gpt-image-1'
+export type PromptArchiveOptimizationModel = PromptArchiveModel | 'gemini' | 'midjourney'
 
 export type PromptArchiveLocalizedTitle = {
   en: string
@@ -32,7 +33,7 @@ export type PromptArchiveListItem = {
   telegramUrl: string | null
   model: {
     previewGeneratedWith: PromptArchiveModel
-    optimizedFor: PromptArchiveModel[]
+    optimizedFor: PromptArchiveOptimizationModel[]
   }
   tags: string[]
   coverImage: PromptArchiveImage | null
@@ -89,7 +90,7 @@ export type PromptArchiveLegacyItem = {
   telegramUrl: string
   model: {
     previewGeneratedWith: PromptArchiveModel
-    optimizedFor: PromptArchiveModel[]
+    optimizedFor: PromptArchiveOptimizationModel[]
   }
   images: string[]
   prompt: string
@@ -105,7 +106,7 @@ export type PromptArchiveSnapshotItem = {
   telegramUrl: string | null
   model: {
     previewGeneratedWith: PromptArchiveModel
-    optimizedFor: PromptArchiveModel[]
+    optimizedFor: PromptArchiveOptimizationModel[]
   }
   images: PromptArchiveImage[]
   prompt: string
@@ -119,7 +120,7 @@ export type PromptArchiveModelHistoryItem = {
   announcementMessageId?: number
   announcedAt?: string
   previewGeneratedWith: PromptArchiveModel
-  optimizedFor: PromptArchiveModel[]
+  optimizedFor: PromptArchiveOptimizationModel[]
 }
 
 export type PromptArchiveLegacyPayload = {

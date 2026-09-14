@@ -53,10 +53,12 @@ const idempotencyKey = ref(createIdempotencyKey());
 const normalizedMedia = computed(() => (
   mediaUrls.value.map(value => value.trim()).filter(Boolean)
 ));
-const normalizedCtas = computed(() => (
+const normalizedCtas = computed<TelegramPostCtaInput[]>(() => (
   ctas.value.map(item => ({
     label: item.label.trim(),
-    startParam: item.startParam.trim(),
+    ...(item.url !== undefined
+      ? { url: item.url.trim() }
+      : { startParam: (item.startParam ?? "").trim() }),
   }))
 ));
 const captionLimit = computed(() => normalizedMedia.value.length ? 1024 : 4096);
@@ -81,7 +83,11 @@ const validationMessage = computed(() => {
   if (normalizedMedia.value.some(url => !validHttpsUrl(url))) return t("manage.telegram.composer.mediaHttpsOnly");
   if (ctas.value.length < 1 || ctas.value.length > props.config.maxCtas) return t("manage.telegram.composer.ctaCount", { max: props.config.maxCtas });
   if (normalizedCtas.value.some(item => !item.label || item.label.length > 64)) return t("manage.telegram.composer.ctaLabelInvalid");
-  if (normalizedCtas.value.some(item => !/^[A-Za-z0-9_-]{1,512}$/.test(item.startParam))) return t("manage.telegram.composer.startParamInvalid");
+  if (normalizedCtas.value.some(item => (
+    item.url !== undefined
+      ? !validHttpsUrl(item.url)
+      : !/^[A-Za-z0-9_-]{1,512}$/.test(item.startParam ?? "")
+  ))) return t("manage.telegram.composer.startParamInvalid");
   if (multiMediaCtaText.value.trim().length > 256) return t("manage.telegram.composer.multiMediaTextTooLong");
   return "";
 });
@@ -271,6 +277,15 @@ async function publish() {
             style="flex: 1 1 180px;"
           />
           <el-text-field
+            v-if="cta.url !== undefined"
+            v-model="cta.url"
+            :actions="false"
+            :disabled="publishing"
+            placeholder="https://..."
+            style="flex: 1 1 220px;"
+          />
+          <el-text-field
+            v-else
             v-model="cta.startParam"
             :actions="false"
             :disabled="publishing"

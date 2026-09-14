@@ -1,6 +1,7 @@
 import type {
   PromptArchiveLocalizedTitle,
   PromptArchiveModel,
+  PromptArchiveOptimizationModel,
   PromptArchiveVariant,
 } from "~/types/promptArchive";
 
@@ -20,7 +21,7 @@ export type AdminArchiveSummary = {
   publishedAt: string;
   telegramUrl: string | null;
   previewModel: PromptArchiveModel;
-  optimizedFor: PromptArchiveModel[];
+  optimizedFor: PromptArchiveOptimizationModel[];
   tags: string[];
   status: AdminArchiveStatus;
   sourceKind: AdminArchiveSourceKind;
@@ -65,7 +66,7 @@ export type AdminArchiveUpsertInput = {
   publishedAt: string;
   prompt: string;
   previewModel: PromptArchiveModel;
-  optimizedFor: PromptArchiveModel[];
+  optimizedFor: PromptArchiveOptimizationModel[];
   tags: string[];
 };
 

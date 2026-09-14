@@ -8,6 +8,7 @@ import type {
   TelegramPublication,
   TelegramPublicationSource,
 } from "~/types/adminTelegramApi";
+import type { PromptArchiveOptimizationModel } from "~/types/promptArchive";
 
 const props = defineProps<{
   item: AdminArchiveItem;
@@ -16,7 +17,7 @@ const props = defineProps<{
 const auth = useAuth();
 const telegram = useAdminTelegram();
 const modal = useModal();
-const { locale, t } = useI18n();
+const { t } = useI18n();
 
 const composerOpen = ref(false);
 const configLoading = ref(false);
@@ -35,21 +36,39 @@ function isPublicHttpsUrl(value: string | null | undefined): value is string {
   }
 }
 
-const localizedTitle = computed(() => (
-  locale.value === "fa" ? props.item.title.fa : props.item.title.en
-));
+function toTelegramHashtag(tag: string) {
+  const normalized = tag
+    .trim()
+    .replace(/[-\s]+/g, "_")
+    .replace(/[^\p{L}\p{N}_]+/gu, "")
+    .replace(/^_+|_+$/g, "");
+  return normalized ? `#${normalized}` : "";
+}
 
-const localizedDescription = computed(() => (
-  locale.value === "fa"
-    ? props.item.description.fa ?? ""
-    : props.item.description.en ?? ""
-));
+function archiveModelLabel(value: PromptArchiveOptimizationModel) {
+  if (value === "gpt-image-1") return "GPT-Image";
+  if (value === "dall-e") return "DALL-E";
+  if (value === "gemini") return "Gemini";
+  if (value === "midjourney") return "Midjourney";
+  return value;
+}
 
-const initialCaption = computed(() => (
-  [localizedTitle.value.trim(), localizedDescription.value.trim()]
+const initialCaption = computed(() => {
+  const tags = props.item.tags
+    .map(toTelegramHashtag)
     .filter(Boolean)
-    .join("\n\n")
-));
+    .join(" ");
+
+  return [
+    `${props.item.title.fa.trim()} | ${props.item.title.en.trim()} 👇`,
+    "",
+    (props.item.description.fa ?? "").trim(),
+    "---",
+    (props.item.description.en ?? "").trim(),
+    "---",
+    tags,
+  ].join("\n").trim();
+});
 
 const initialMedia = computed(() => {
   const maximum = config.value?.maxMedia ?? 10;
@@ -64,13 +83,23 @@ const source = computed<TelegramPublicationSource>(() => ({
   id: props.item.id,
 }));
 
-const initialCtas = computed<TelegramPostCtaInput[]>(() => [{
-  label: t("manage.telegram.composer.defaultCta"),
-  startParam: `prompt_${props.item.publicId}`,
-}]);
+const initialCtas = computed<TelegramPostCtaInput[]>(() => [
+  {
+    label: "Get Prompt | دریافت پرامپت",
+    startParam: `prompt_${props.item.publicId}`,
+  },
+  {
+    label: "گروه پرسش و پاسخ",
+    url: "https://t.me/prompt_draft_group",
+  },
+]);
+
+const initialMultiMediaCtaText = computed(() => (
+  `Preview Model: ${archiveModelLabel(props.item.previewModel)} | Optimized for: ${props.item.optimizedFor.map(archiveModelLabel).join(",")}`
+));
 
 const composerKey = computed(() => (
-  `${props.item.id}:${props.item.updatedAt}:${locale.value}`
+  `${props.item.id}:${props.item.updatedAt}`
 ));
 
 async function openComposer() {
@@ -187,6 +216,7 @@ watch(
       :initial-caption="initialCaption"
       :initial-media="initialMedia"
       :initial-ctas="initialCtas"
+      :initial-multi-media-cta-text="initialMultiMediaCtaText"
       @published="onPublished"
     />
   </el-flex>
