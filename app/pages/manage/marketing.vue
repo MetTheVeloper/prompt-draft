@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import CampaignDefinitionForm from "~/components/manage/CampaignDefinitionForm.vue";
 import CampaignDraftPreview from "~/components/manage/CampaignDraftPreview.vue";
+import CampaignTelegramAdapter from "~/components/manage/CampaignTelegramAdapter.vue";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
 import type { GlobalMenuItem } from "~/composables/useMenu";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
@@ -52,6 +53,7 @@ const statuses: AdminCampaignStatus[] = [
 
 const canManage = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_MANAGE));
 const canPublish = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_PUBLISH));
+const canManageTelegram = computed(() => auth.can(AUTH_PERMISSIONS.TELEGRAM_MANAGE));
 const selectedCampaign = computed(() => campaignsApi.selected.value);
 const metricColumns = computed(() => mini.value ? 2 : 5);
 const definitionDirty = computed(() => (
@@ -490,6 +492,32 @@ async function changeLifecycle(action: "pause" | "resume" | "end" | "archive") {
   await loadList();
 }
 
+function openCampaignTelegram() {
+  const campaign = selectedCampaign.value;
+  if (!campaign?.publishedVersion || !canManageTelegram.value) return;
+
+  modal.open({
+    header: {
+      icon: "send",
+      title: t("manage.sections.telegram.label"),
+      desc: t("manage.telegram.composer.subtitle"),
+      color: "blue",
+    },
+    component: CampaignTelegramAdapter,
+    props: { campaign },
+    actions: [{
+      label: t("components.modal.actions.close"),
+      icon: "close",
+      mode: "flat",
+      close: true,
+    }],
+    options: {
+      width: 1180,
+      maxHeight: "90vh",
+    },
+  });
+}
+
 function openCampaignActions() {
   const campaign = selectedCampaign.value;
   if (!campaign) return;
@@ -502,6 +530,15 @@ function openCampaignActions() {
       handler: () => reloadSelected(),
     },
   ];
+
+  if (canManageTelegram.value && campaign.publishedVersion) {
+    items.push({
+      label: t("manage.sections.telegram.label"),
+      icon: "send",
+      color: "blue",
+      handler: () => openCampaignTelegram(),
+    });
+  }
 
   if (canPublish.value && campaign.publishedVersion) {
     items.push(
