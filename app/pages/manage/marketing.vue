@@ -587,20 +587,32 @@ onMounted(async () => {
         :br="1"
         bc="normal15">
         <el-flex :rules="mini ? 'css' : 'rbc'" :gap="10" class="w100" wrap>
-          <el-flex :rules="mini ? 'css' : 'rcc'" :gap="8" :class="mini ? 'w100' : ''" wrap>
+          <el-flex v-if="mini" rules="css" :gap="8" class="w100">
             <el-flex rules="rsc" :gap="8" class="w100" wrap>
               <el-text :size="12" :weight="800">{{ selectedCampaign.internalName }}</el-text>
               <el-text
                 :size="11"
                 :weight="800"
                 :color="statusColor(selectedCampaign.status)"
-                :marker="mini ? undefined : 'normal10'"
                 :p="[4, 7]"
                 :radius="100">
                 {{ statusLabel(selectedCampaign.status) }}
               </el-text>
             </el-flex>
             <el-text :size="11" color="normal45" class="marketing-breakable">{{ selectedCampaign.slug }}</el-text>
+          </el-flex>
+          <el-flex v-else rules="rcc" :gap="8" wrap>
+            <el-text :size="12" :weight="800">{{ selectedCampaign.internalName }}</el-text>
+            <el-text :size="11" color="normal45">{{ selectedCampaign.slug }}</el-text>
+            <el-text
+              :size="11"
+              :weight="800"
+              :color="statusColor(selectedCampaign.status)"
+              marker="normal10"
+              :p="[4, 7]"
+              :radius="100">
+              {{ statusLabel(selectedCampaign.status) }}
+            </el-text>
           </el-flex>
           <el-text :size="10" color="normal45" class="marketing-breakable">{{ selectedCampaign.id }}</el-text>
         </el-flex>
