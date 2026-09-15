@@ -225,9 +225,17 @@ export async function handleAdminManagedMediaRoute({
     return true
   }
 
+  let config
+  try {
+    config = getArchiveStorageConfig()
+  } catch (error) {
+    console.error('[Prompt Draft API] managed media storage is not configured', error)
+    sendJson(response, 503, { ok: false, message: 'Managed media storage is not configured' }, corsHeaders)
+    return true
+  }
+
   const imageId = randomUUID()
   const keys = managedMediaStorageKeys(payload.scope, imageId)
-  const config = getArchiveStorageConfig()
   const uploadedKeys = []
 
   try {
