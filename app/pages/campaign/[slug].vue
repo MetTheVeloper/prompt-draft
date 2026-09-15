@@ -19,13 +19,6 @@ function readRouteSlug(value: unknown) {
   return CAMPAIGN_SLUG_PATTERN.test(slug) && slug.length <= 100 ? slug : null
 }
 
-function safeCanonicalPath(value: unknown, fallback: string) {
-  if (typeof value !== 'string') return fallback
-  const path = value.trim()
-  if (!path.startsWith('/') || path.startsWith('//')) return fallback
-  return path.split(/[?#]/, 1)[0] || fallback
-}
-
 definePageMeta({ key: route => route.fullPath })
 
 const route = useRoute()
@@ -62,7 +55,7 @@ watch(activeLocale, () => {
 })
 
 const localizedContent = computed(() => campaign.value.experience.content[activeLocale.value]!)
-const canonicalPath = computed(() => safeCanonicalPath(campaign.value.experience.seo?.canonicalPath, `/campaign/${slug}`))
+const canonicalPath = computed(() => campaign.value.experience.seo?.indexing === 'index' ? `/campaign/${slug}` : '')
 const alternateLocales = computed(() => campaign.value.experience.locales)
 
 usePublicSeo({
