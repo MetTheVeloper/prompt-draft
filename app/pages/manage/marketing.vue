@@ -2,6 +2,7 @@
 import CampaignDefinitionForm from "~/components/manage/CampaignDefinitionForm.vue";
 import CampaignDraftPreview from "~/components/manage/CampaignDraftPreview.vue";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
+import type { GlobalMenuItem } from "~/composables/useMenu";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type {
   AdminCampaignDefinition,
@@ -19,6 +20,7 @@ const router = useRouter();
 const auth = useAuth();
 const campaignsApi = useAdminCampaigns();
 const modal = useModal();
+const menuApi = useMenu();
 const { t, locale } = useI18n();
 const { mini } = useScreen();
 
@@ -32,6 +34,7 @@ const loadedDefinitionSnapshot = ref("{}");
 const rawEditorOpen = ref(false);
 const rawDefinitionText = ref("{}");
 const rawJsonError = ref("");
+const actionsMenuAnchor = ref<any>(null);
 
 const createForm = reactive({
   slug: "",
@@ -432,9 +435,6 @@ async function validateDraft() {
 
   const response = await campaignsApi.validate(campaign.id, campaign.draftRevision);
   if (!response) return;
-  feedback.value = response.publishable
-    ? t("manage.marketing.editor.publishable")
-    : t("manage.marketing.editor.notPublishable");
 
   const issueDescriptions = [
     ...response.errors.map(issue => `${t("manage.marketing.validation.errors")}: ${issueLabel(issue)}`),
@@ -488,6 +488,81 @@ async function changeLifecycle(action: "pause" | "resume" | "end" | "archive") {
   syncDefinitionFromSelected();
   feedback.value = t("manage.marketing.editor.lifecycleUpdated");
   await loadList();
+}
+
+function openCampaignActions() {
+  const campaign = selectedCampaign.value;
+  if (!campaign) return;
+
+  const items: GlobalMenuItem[] = [
+    {
+      label: t("manage.marketing.actions.reload"),
+      icon: "refresh",
+      disabled: () => campaignsApi.mutating.value,
+      handler: () => reloadSelected(),
+    },
+  ];
+
+  if (canPublish.value && campaign.publishedVersion) {
+    items.push(
+      { type: "divider" },
+      {
+        type: "header",
+        label: t("manage.marketing.operations.title"),
+      },
+    );
+
+    if (campaign.status === "active" || campaign.status === "scheduled") {
+      items.push({
+        label: t("manage.marketing.actions.pause"),
+        icon: "pause_circle",
+        color: "orange",
+        disabled: () => campaignsApi.mutating.value,
+        handler: () => changeLifecycle("pause"),
+      });
+    }
+
+    if (campaign.status === "paused") {
+      items.push({
+        label: t("manage.marketing.actions.resume"),
+        icon: "play_circle",
+        color: "green",
+        disabled: () => campaignsApi.mutating.value,
+        handler: () => changeLifecycle("resume"),
+      });
+    }
+
+    if (campaign.status !== "ended" && campaign.status !== "archived") {
+      items.push({
+        label: t("manage.marketing.actions.end"),
+        icon: "stop_circle",
+        color: "orange",
+        disabled: () => campaignsApi.mutating.value,
+        handler: () => changeLifecycle("end"),
+      });
+    }
+
+    if (campaign.status !== "archived") {
+      items.push({
+        label: t("manage.marketing.actions.archive"),
+        icon: "inventory_2",
+        color: "red",
+        disabled: () => campaignsApi.mutating.value,
+        handler: () => changeLifecycle("archive"),
+      });
+    }
+  }
+
+  menuApi.open({
+    mode: "dropdown",
+    anchor: actionsMenuAnchor.value,
+    placement: "bottom-end",
+    items,
+    options: {
+      minWidth: 220,
+      maxWidth: 280,
+    },
+  });
 }
 
 watch(statusFilter, () => {
@@ -647,6 +722,95 @@ onMounted(async () => {
         </el-grid>
       </el-flex>
 
+      <el-flex
+        :rules="mini ? 'css' : 'rbc'"
+        :gap="10"
+        class="w100"
+        bg="surface"
+        :p="14"
+        :radius="14"
+        :br="1"
+        bc="normal15">
+        <el-flex rules="rsc" :gap="8" :class="{ w100: mini }" wrap>
+          <el-text v-if="definitionDirty" :size="11" color="orange">
+            {{ t("manage.marketing.editor.unsavedForm") }}
+          </el-text>
+          <el-text
+            v-else-if="selectedCampaign"
+            :size="11"
+            :weight="700"
+            :color="selectedCampaign.validation.publishable ? 'green' : 'orange'">
+            {{ selectedCampaign.validation.publishable
+              ? t("manage.marketing.editor.publishable")
+              : t("manage.marketing.editor.notPublishable") }}
+          </el-text>
+        </el-flex>
+
+        <el-flex rules="rsc" :gap="8" :class="['fw', { w100: mini }]">
+          <el-button
+            v-if="creating"
+            color="prim"
+            icon="add_circle"
+            :type="mini ? 'fab' : 'normal'"
+            :tooltip="mini ? t('manage.marketing.actions.create') : false"
+            :label="t('manage.marketing.actions.create')"
+            :disable="!canCreate"
+            @click="createCampaign"
+          />
+          <el-button
+            v-if="selectedCampaign && canManage"
+            color="prim"
+            icon="save"
+            :type="mini ? 'fab' : 'normal'"
+            :tooltip="mini ? t('manage.marketing.actions.saveDraft') : false"
+            :label="t('manage.marketing.actions.saveDraft')"
+            :disable="!canSaveDraft"
+            @click="saveDraft"
+          />
+          <el-button
+            v-if="creating || selectedCampaign"
+            mode="flat"
+            color="blue"
+            icon="visibility"
+            :type="mini ? 'fab' : 'normal'"
+            :tooltip="mini ? t('manage.marketing.actions.preview') : false"
+            :label="t('manage.marketing.actions.preview')"
+            :disable="campaignsApi.mutating.value"
+            @click="openDraftPreview"
+          />
+          <el-button
+            v-if="selectedCampaign && canManage"
+            mode="flat"
+            icon="fact_check"
+            :type="mini ? 'fab' : 'normal'"
+            :tooltip="mini ? t('manage.marketing.actions.validate') : false"
+            :label="t('manage.marketing.actions.validate')"
+            :disable="!canValidate"
+            @click="validateDraft"
+          />
+          <el-button
+            v-if="selectedCampaign && canPublish"
+            color="green"
+            icon="publish"
+            :type="mini ? 'fab' : 'normal'"
+            :tooltip="mini ? t('manage.marketing.actions.publish') : false"
+            :label="t('manage.marketing.actions.publish')"
+            :disable="!canPublishDraft"
+            @click="publishDraft"
+          />
+          <el-button
+            v-if="selectedCampaign"
+            ref="actionsMenuAnchor"
+            mode="flat"
+            type="fab"
+            icon="more_horiz"
+            :tooltip="t('manage.marketing.operations.title')"
+            :disable="campaignsApi.mutating.value"
+            @click="openCampaignActions"
+          />
+        </el-flex>
+      </el-flex>
+
       <CampaignDefinitionForm
         v-if="creating"
         v-model="definitionDraft"
@@ -714,201 +878,6 @@ onMounted(async () => {
             />
           </el-flex>
         </template>
-      </el-flex>
-
-      <el-flex
-        :rules="mini ? 'css' : 'rbc'"
-        :gap="10"
-        class="w100"
-        bg="surface"
-        :p="14"
-        :radius="14"
-        :br="1"
-        bc="normal15"
-        wrap>
-        <el-flex rules="rsc" :gap="8" :class="{ w100: mini }" wrap>
-          <el-text v-if="definitionDirty" :size="11" color="orange">
-            {{ t("manage.marketing.editor.unsavedForm") }}
-          </el-text>
-          <el-text v-else-if="selectedCampaign" :size="11" color="normal55">
-            {{ t("manage.marketing.editor.savedForm") }}
-          </el-text>
-        </el-flex>
-
-        <el-flex rules="rsc" :gap="8" :class="{ w100: mini }" wrap>
-          <el-button
-            v-if="selectedCampaign"
-            mode="flat"
-            icon="refresh"
-            :label="t('manage.marketing.actions.reload')"
-            :disable="campaignsApi.mutating.value"
-            @click="reloadSelected"
-          />
-          <el-button
-            v-if="creating"
-            color="prim"
-            icon="add_circle"
-            :label="t('manage.marketing.actions.create')"
-            :disable="!canCreate"
-            @click="createCampaign"
-          />
-          <el-button
-            v-if="selectedCampaign && canManage"
-            color="prim"
-            icon="save"
-            :label="t('manage.marketing.actions.saveDraft')"
-            :disable="!canSaveDraft"
-            @click="saveDraft"
-          />
-          <el-button
-            v-if="creating || selectedCampaign"
-            mode="flat"
-            color="blue"
-            icon="visibility"
-            :label="t('manage.marketing.actions.preview')"
-            :disable="campaignsApi.mutating.value"
-            @click="openDraftPreview"
-          />
-          <el-button
-            v-if="selectedCampaign && canManage"
-            mode="flat"
-            icon="fact_check"
-            :label="t('manage.marketing.actions.validate')"
-            :disable="!canValidate"
-            @click="validateDraft"
-          />
-          <el-button
-            v-if="selectedCampaign && canPublish"
-            color="green"
-            icon="publish"
-            :label="t('manage.marketing.actions.publish')"
-            :disable="!canPublishDraft"
-            @click="publishDraft"
-          />
-        </el-flex>
-      </el-flex>
-
-      <el-flex
-        v-if="selectedCampaign"
-        rules="css"
-        :gap="10"
-        class="w100"
-        bg="surface"
-        :p="16"
-        :radius="14"
-        :br="1"
-        bc="normal15">
-        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="8" class="w100" wrap>
-          <el-text :size="16" :weight="800">{{ t("manage.marketing.validation.title") }}</el-text>
-          <el-text
-            :size="11"
-            :weight="700"
-            :color="selectedCampaign.validation.publishable ? 'green' : 'orange'">
-            {{ selectedCampaign.validation.publishable
-              ? t("manage.marketing.editor.publishable")
-              : t("manage.marketing.editor.notPublishable") }}
-          </el-text>
-        </el-flex>
-
-        <el-flex v-if="definitionDirty" rules="rsc" :gap="8" class="w100" bg="orange10" :p="10" :radius="10">
-          <el-icon icon="edit_note" color="orange" :size="16" />
-          <el-text :size="10" color="normal55">{{ t("manage.marketing.validation.stale") }}</el-text>
-        </el-flex>
-
-        <el-text
-          v-else-if="!selectedCampaign.validation.errors.length && !selectedCampaign.validation.warnings.length"
-          :size="12"
-          color="normal55">
-          {{ t("manage.marketing.validation.noIssues") }}
-        </el-text>
-
-        <el-flex v-if="!definitionDirty && selectedCampaign.validation.errors.length" rules="css" :gap="5" class="w100">
-          <el-text :size="12" :weight="800" color="red">{{ t("manage.marketing.validation.errors") }}</el-text>
-          <el-text
-            v-for="(issue, index) in selectedCampaign.validation.errors"
-            :key="`error-${index}`"
-            :size="11"
-            color="red">
-            • {{ issueLabel(issue) }}
-          </el-text>
-        </el-flex>
-
-        <el-flex v-if="!definitionDirty && selectedCampaign.validation.warnings.length" rules="css" :gap="5" class="w100">
-          <el-text :size="12" :weight="800" color="orange">{{ t("manage.marketing.validation.warnings") }}</el-text>
-          <el-text
-            v-for="(issue, index) in selectedCampaign.validation.warnings"
-            :key="`warning-${index}`"
-            :size="11"
-            color="orange">
-            • {{ issueLabel(issue) }}
-          </el-text>
-        </el-flex>
-      </el-flex>
-
-      <el-flex
-        v-if="canPublish && selectedCampaign?.publishedVersion"
-        rules="css"
-        :gap="12"
-        class="w100"
-        bg="surface"
-        :p="16"
-        :radius="14"
-        :br="1"
-        bc="normal15">
-        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="10" class="w100" wrap>
-          <el-flex rules="css" :gap="3" :class="mini ? 'w100' : 'fg100'">
-            <el-text :size="15" :weight="800">{{ t("manage.marketing.operations.title") }}</el-text>
-            <el-text :size="10" color="normal55">{{ t("manage.marketing.operations.hint") }}</el-text>
-          </el-flex>
-          <el-text
-            :size="11"
-            :weight="800"
-            :color="statusColor(selectedCampaign.status)"
-            :marker="mini ? undefined : 'normal10'"
-            :p="[4, 7]"
-            :radius="100">
-            {{ t("manage.marketing.operations.currentStatus", { status: statusLabel(selectedCampaign.status) }) }}
-          </el-text>
-        </el-flex>
-        <el-divider />
-        <el-flex rules="rsc" :gap="8" class="w100" wrap>
-          <el-button
-            v-if="selectedCampaign.status === 'active' || selectedCampaign.status === 'scheduled'"
-            mode="flat"
-            color="orange"
-            icon="pause_circle"
-            :label="t('manage.marketing.actions.pause')"
-            :disable="campaignsApi.mutating.value"
-            @click="changeLifecycle('pause')"
-          />
-          <el-button
-            v-if="selectedCampaign.status === 'paused'"
-            mode="flat"
-            color="green"
-            icon="play_circle"
-            :label="t('manage.marketing.actions.resume')"
-            :disable="campaignsApi.mutating.value"
-            @click="changeLifecycle('resume')"
-          />
-          <el-button
-            v-if="selectedCampaign.status !== 'ended' && selectedCampaign.status !== 'archived'"
-            mode="flat"
-            color="orange"
-            icon="stop_circle"
-            :label="t('manage.marketing.actions.end')"
-            :disable="campaignsApi.mutating.value"
-            @click="changeLifecycle('end')"
-          />
-          <el-button
-            v-if="selectedCampaign.status !== 'archived'"
-            mode="flat"
-            color="red"
-            icon="inventory_2"
-            :label="t('manage.marketing.actions.archive')"
-            :disable="campaignsApi.mutating.value"
-            @click="changeLifecycle('archive')"
-          />
-        </el-flex>
       </el-flex>
     </template>
   </el-flex>
