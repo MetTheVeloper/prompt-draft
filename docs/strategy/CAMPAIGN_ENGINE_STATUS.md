@@ -8,7 +8,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE4.5 ACCEPTED / CE5 MANAGE MARKETING + PREVIEW + TG4 ACCEPTED / CE5 AGGREGATE VERIFICATION NEXT**
+Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE1-CE5 ACCEPTED / CE6 MEASUREMENT & RECONCILIATION NEXT**
 
 ## Current execution state
 
@@ -26,13 +26,13 @@ CE4.5 Shared Telegram Publishing      -> DONE / ACCEPTED
   TG2 Composer + /manage/telegram     -> DONE / FOUNDER-LOCAL BUILD + VISUAL VERIFIED / ACCEPTED 2026-09-13
   TG3 Prompt Archive Adapter          -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
   Archive management/image workflow  -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-14
-CE5 /manage/marketing + TG4           -> IN PROGRESS
-  Campaign admin/operator foundation -> IMPLEMENTED
-  Structured Manage Marketing UX     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-  Draft Preview                      -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-  TG4 Campaign Telegram adapter      -> FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
-  CE5 aggregate verification         -> NEXT
-CE6 Measurement & Reconciliation      -> NOT STARTED
+CE5 /manage/marketing + TG4           -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
+  Campaign admin/operator foundation -> ACCEPTED
+  Structured Manage Marketing UX     -> ACCEPTED
+  Draft Preview                      -> ACCEPTED
+  TG4 Campaign Telegram adapter      -> ACCEPTED
+  CE5 aggregate verification         -> ACCEPTED
+CE6 Measurement & Reconciliation      -> NEXT / NOT STARTED
 CE7 Final Verification                -> NOT STARTED
 ```
 
@@ -66,6 +66,7 @@ docs/strategy/CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 docs/strategy/CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
+docs/strategy/CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
 ```
 
 Accepted Campaign / Economy records:
@@ -77,6 +78,7 @@ docs/strategy/CAMPAIGN_ENGINE_CE2_1_VERIFICATION.md
 docs/strategy/CAMPAIGN_ENGINE_CE2_2_IMPLEMENTATION.md
 docs/strategy/CAMPAIGN_ENGINE_CE3_IMPLEMENTATION.md
 docs/strategy/CAMPAIGN_ENGINE_CE4_ACCEPTANCE.md
+docs/strategy/CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
 ```
 
 Telegram bridge records:
@@ -178,7 +180,7 @@ Telegram must never decide Campaign eligibility, participation, attempts, outcom
 
 ## Database/runtime state already accepted
 
-Campaign/Economy/Telegram migrations through the current track include:
+Campaign/Economy/Telegram migrations through CE5 include:
 
 ```text
 029_campaign_engine_v1.sql
@@ -214,7 +216,7 @@ Published `campaign_versions` remain DB-protected against UPDATE/DELETE.
 
 ---
 
-## CE1 through CE4 — ACCEPTED
+## CE1 through CE4 — DONE / ACCEPTED
 
 CE1 accepted the Campaign Definition/schema/registry/authorization foundation.
 
@@ -248,72 +250,48 @@ Do not redesign TG1-TG3 or Archive management unless a concrete regression is fo
 
 ---
 
-## CE5 Manage Marketing — IN PROGRESS
+## CE5 Manage Marketing — DONE / ACCEPTED 2026-09-15
 
-Canonical current checkpoint:
+Canonical records:
 
 ```text
 docs/strategy/CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
-```
-
-### Manage Marketing operator UX — ACCEPTED 2026-09-15
-
-Founder-local verification covers the structured editor, scheduling, localized content, SEO behavior, validation, lifecycle controls, responsive mobile/tablet treatment and the final compact action-toolbar/three-dot-menu cleanup.
-
-### Draft Preview — ACCEPTED 2026-09-15
-
-Draft Preview reuses the existing Campaign renderer from current local form state while remaining isolated from participation, attempts, rewards, Goin issuance and reward budgets.
-
-### TG4 Campaign Telegram adapter — ACCEPTED 2026-09-15
-
-Canonical TG4 records:
-
-```text
+docs/strategy/CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
-Accepted path:
+Accepted CE5 scope:
 
 ```text
-/manage/marketing
-  -> CampaignTelegramAdapter
-  -> TelegramPostComposer
-  -> shared managed image upload
-  -> TG1 shared publisher
-  -> real Telegram channel delivery
-  -> Campaign Mini App CTA
-  -> public Campaign
+/manage/marketing list/editor
+structured Campaign Definition authoring
+validate / immutable publish
+lifecycle controls
+safe Draft Preview
+responsive EN/FA operator UX
+TG4 Campaign -> shared Telegram publishing bridge
+shared managed-image uploader for Telegram media
 ```
 
-TG4 prefill reads only the immutable current `publishedVersion.definition`.
+Founder-local verification covered the operator form and responsive UI, Draft Preview with unsaved state, and TG4 end-to-end through a dedicated Telegram test channel.
 
-Shared source identity:
+TG4 acceptance evidence includes:
 
 ```text
-source.type    = campaign
-source.id      = Campaign UUID
-source.version = published version number
+managed-media backend contract tests -> 3/3 pass
+real image post -> delivered to Telegram test channel
+Join Campaign CTA -> rendered
+CTA -> opened configured Telegram Mini App
+Mini App -> resolved intended Campaign
 ```
 
-Mini App Campaign CTA:
+CE5 aggregate verification confirms the accepted slices compose while preserving version immutability, server runtime/reward authority, the shared Economy ledger, shared Telegram publication authority and the independent production noindex gate.
+
+Result:
 
 ```text
-campaign_<slug>
-```
-
-Founder-local verification confirmed a real image post in a dedicated Telegram test channel and a working Join Campaign CTA that opened the configured Mini App on the intended Campaign. Managed-media scope tests passed 3/3.
-
-Telegram entry attribution remains metadata only. Server Campaign runtime remains authoritative.
-
-Current CE5 completion order:
-
-```text
-Manage Marketing operator surface -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-Draft Preview                     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-TG4 Campaign Telegram adapter     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-CE5 aggregate verification        -> NEXT
-CE6 Measurement & Reconciliation  -> AFTER CE5 ACCEPTANCE
+CE5 Manage Marketing -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
 ```
 
 ---
@@ -323,22 +301,45 @@ CE6 Measurement & Reconciliation  -> AFTER CE5 ACCEPTANCE
 Status:
 
 ```text
-NOT STARTED
+NEXT / NOT STARTED
 ```
 
-Expected scope from the V1 plan:
+V1 scope:
 
 ```text
 funnel summary
-participant/reward inspection
+participant / reward inspection
 budget remaining
 Economy transaction trace
-placement/mechanic/reward reconciliation
+placement / mechanic / reward reconciliation
 ```
 
 The existing `/manage/marketing` runtime summary cards are useful CE5 operator context but do not by themselves satisfy CE6.
 
+CE6 must reconcile existing authoritative systems rather than create new ones:
+
+```text
+Campaign runtime + trusted domain events
+product_analytics_events
+campaign_reward_budgets
+campaign_reward_grants
+user_economy_events
+admin authorization + admin_audit_log
+```
+
 Telegram acquisition must feed existing Product Analytics + Campaign runtime + Economy authorities rather than create a second analytics pipeline.
+
+CE6 must not introduce:
+
+```text
+a second wallet
+a second reward ledger
+a second analytics warehouse
+a client-authoritative reporting path
+a Campaign-specific Telegram analytics authority
+```
+
+---
 
 ## CE7 — Final Verification
 
@@ -348,34 +349,26 @@ Status:
 NOT STARTED
 ```
 
-CE7 is the aggregate Campaign/Telegram integration acceptance boundary after CE5/CE6 and any required pre-CE7 retry/reconciliation hardening.
+CE7 is the aggregate Campaign/Telegram integration acceptance boundary after CE6 and any required pre-CE7 reconciliation hardening.
 
 ---
 
-## Resume instruction
+## Resume instruction — CE6 next
 
 ```text
 1. inspect latest feature/growth-foundation HEAD before every decision/write
 2. read DEVELOPMENT_WORKFLOW.md and UI_IMPLEMENTATION_GUIDELINES.md
-3. read CAMPAIGN_ENGINE_STATUS.md and CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
-4. keep CE1-CE4.5 accepted unless a concrete regression exists
-5. keep Manage Marketing, Draft Preview and TG4 accepted unless a concrete regression exists
-6. complete CE5 aggregate verification next
-7. after CE5 acceptance, proceed to CE6
-8. keep NUXT_PUBLIC_NOINDEX=true and SEO launch deferred
-9. do not start Domain Expansion implementation before its scale gate
-10. do not create parallel wallet, analytics, authorization, Campaign or Telegram authorities
+3. read CAMPAIGN_ENGINE_V1.md
+4. read CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
+5. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
+6. read CAMPAIGN_ENGINE_STATUS.md
+7. read CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
+8. preserve CE1-CE5 acceptance unless a concrete regression exists
+9. start CE6 Measurement & Reconciliation
+10. keep NUXT_PUBLIC_NOINDEX=true and SEO launch deferred
+11. do not start Domain Expansion implementation before its scale gate
+12. do not create parallel wallet, analytics, authorization, Campaign or Telegram authorities
+13. apply time-first verification and smallest rebuild scope to every CE6 slice
 ```
 
-TG4 managed-media runtime verification scope is frontend + API, with no SQL migration:
-
-```powershell
-pnpm api
-pnpm frontend
-```
-
-Focused managed-media contract verification:
-
-```powershell
-docker compose exec api node --test src/adminManagedMediaRoute.test.mjs
-```
+This CE5 closure is documentation-only, so no Docker rebuild is required.
