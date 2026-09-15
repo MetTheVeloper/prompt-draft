@@ -1,6 +1,6 @@
 # Campaign Engine — CE5 Manage Marketing
 
-Status: **IN PROGRESS / MANAGE MARKETING OPERATOR SURFACE FOUNDER-LOCAL VERIFIED 2026-09-15 / DRAFT PREVIEW + TG4 REMAIN**
+Status: **IN PROGRESS / MANAGE MARKETING + DRAFT PREVIEW FOUNDER-LOCAL ACCEPTED 2026-09-15 / TG4 IMPLEMENTED — VERIFICATION PENDING**
 
 Date: 2026-09-15
 
@@ -26,6 +26,7 @@ docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
 ```
 
 ---
@@ -41,13 +42,13 @@ lifecycle controls
 TG4 Campaign -> shared Telegram publishing adapter
 ```
 
-CE5 must reuse the existing Manage shell, backend authorization, Campaign runtime contracts and shared Telegram subsystem. It must not create parallel Campaign, authorization, wallet, analytics or Telegram authorities.
+CE5 reuses the existing Manage shell, backend authorization, Campaign runtime contracts and shared Telegram subsystem. It must not create parallel Campaign, authorization, wallet, analytics or Telegram authorities.
 
 ---
 
-## 2. Implemented operator foundation
+## 2. Manage Marketing operator surface — accepted 2026-09-15
 
-The current branch contains the Campaign admin/backend and frontend operator foundation, including:
+The current branch contains and the founder locally verified the Campaign admin/operator foundation, including:
 
 ```text
 Campaign admin API foundation
@@ -65,56 +66,145 @@ runtime summary cards
 EN/FA management copy
 ```
 
-The structured form preserves the underlying Campaign Definition contract rather than introducing a second UI-only schema.
+Accepted UX behavior includes:
+
+```text
+Objective dropdown explanations
+Gregorian EN/FA schedule fields
+IANA timezone selection
+side-by-side localized EN/FA content above mini layouts
+stacked localized cards on mobile/tablet
+forced EN LTR / FA RTL
+automatic /campaign/:slug canonical derivation
+no Campaign canonical while indexing = noindex
+Validate result modal
+responsive mobile/tablet form layout
+responsive two-column mini runtime summary
+compact top-of-form action toolbar
+mini FAB actions
+Reload + lifecycle operations inside the shared three-dot menu
+no duplicated bottom validation card
+no duplicated bottom Campaign operations card
+```
+
+End and Archive confirmations remain preserved.
+
+The production-wide crawl gate remains independent:
+
+```text
+NUXT_PUBLIC_NOINDEX=true -> KEEP until separate founder-approved SEO launch
+```
 
 ---
 
-## 3. Founder-local verified UX checkpoint — 2026-09-15
+## 3. Draft Preview — founder-local accepted 2026-09-15
 
-The founder manually verified the current `/manage/marketing` experience after the CE5 UI/UX refinement slice and confirmed all requested changes behave correctly.
+Draft Preview is implemented and founder-local verified.
+
+Canonical preview path:
+
+```text
+current local Campaign form state
+  -> safe draft projection
+  -> existing campaign-default-v1 renderer
+  -> Manage modal
+```
 
 Accepted behavior:
 
 ```text
-Objective dropdown
-  -> each objective includes a concise explanation of when to select it
-
-Schedule
-  -> Starts at / Ends at use the reusable Gregorian date-time field
-  -> both EN and FA use Gregorian dates
-  -> timezone is selected from valid IANA timezone values rather than free text
-  -> persisted lifecycle timestamps remain absolute ISO timestamps
-
-Localized Campaign content
-  -> Title and Description are vertically stacked inside each locale card
-  -> English and Persian locale cards are side-by-side above tablet size
-  -> locale cards stack on tablet/mobile
-  -> English content is forced LTR
-  -> Persian content is forced RTL
-
-SEO/indexability
-  -> manual Canonical path input is removed
-  -> indexable Campaign canonical is derived from /campaign/:slug
-  -> no Campaign canonical is emitted while Campaign indexing = noindex
-  -> global NUXT_PUBLIC_NOINDEX=true remains authoritative and unchanged
-
-Publish validation
-  -> validation state remains visible in the page
-  -> explicit Validate also opens a result modal
-  -> modal shows publishable/not-publishable state plus validation errors/warnings
-
-Lifecycle operations
-  -> Pause / Resume / End / Archive live inside a dedicated Campaign operations card
-  -> current lifecycle status is visible with the operations
-  -> warning/destructive visual hierarchy is explicit
-  -> End and Archive confirmations remain preserved
+unsaved form edits appear immediately in Preview
+EN/FA locale switching works
+new Campaign can be previewed before Create draft
+published/active Campaign draft edits can be previewed before Save
+interactive mechanics are intentionally disabled
+unsupported renderer produces an explicit unavailable state
+mobile/tablet/desktop modal remains usable
 ```
 
-This verification closes the current Manage Marketing UI/UX refinement checkpoint. It does **not** close CE5 as a whole because Draft Preview and TG4 are still outstanding.
+Preview remains sandboxed:
+
+```text
+no real participation
+no real attempts
+no real completion/reward mutation
+no real Goin issuance
+no reward budget consumption
+```
+
+The Preview renderer does not call production action/reward endpoints with a hidden preview flag.
+
+Relevant Preview implementation line:
+
+```text
+7b0d1c2d  feat: add safe Campaign draft preview
+8ef2d3da  feat: wire Campaign draft preview
+2d1c31f3  feat: improve Campaign form mini layout
+47b5df40  feat: improve Marketing editor mini layout
+ff93ed4a  fix: preserve Marketing desktop summary layout
+b9e37aeb  feat: simplify Campaign editor actions
+```
 
 ---
 
-## 4. Canonical public route and canonical behavior
+## 4. TG4 Campaign Telegram adapter — implemented / verification pending
+
+TG4 is implemented through the accepted shared Telegram architecture:
+
+```text
+/manage/marketing
+  -> CampaignTelegramAdapter
+  -> TelegramPostComposer
+  -> TG1 shared backend TelegramPublisher
+  -> telegram_publications
+```
+
+TG4 uses the immutable current published Campaign version as its publication source. Mutable draft state is never used for Telegram prefill.
+
+Shared source identity:
+
+```text
+source.type    = campaign
+source.id      = Campaign UUID
+source.version = immutable published version number
+```
+
+Campaign Mini App CTA:
+
+```text
+campaign_<slug>
+```
+
+Telegram entry routes to the public Campaign with bounded attribution:
+
+```text
+source = telegram
+medium = campaign_channel
+campaign = <slug>
+metadata.placement = telegram_channel
+```
+
+Telegram remains distribution/entry only; Prompt Draft remains authoritative for identity, eligibility, participation, attempts, completion, outcome and rewards.
+
+TG4 implementation commits:
+
+```text
+acc6e5b6  feat: add Campaign Telegram adapter
+d8528037  feat: route Telegram Campaign start params
+c879a800  feat: capture Telegram Campaign attribution
+d73085ee  feat: connect Campaigns to Telegram composer
+05c7e64f  docs: record TG4 Campaign Telegram implementation
+```
+
+Canonical TG4 verification details live in:
+
+```text
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
+```
+
+---
+
+## 5. Canonical public route and SEO behavior
 
 Campaign public routing remains:
 
@@ -123,9 +213,7 @@ Campaign public routing remains:
 /fa/campaign/:slug
 ```
 
-For the current CE5 contract, the operator does not author a free-form canonical path.
-
-Effective page behavior:
+Effective SEO behavior:
 
 ```text
 Campaign indexing = index
@@ -138,110 +226,29 @@ Campaign indexing = noindex
   -> robots remains noindex
 ```
 
-The production-wide launch gate remains independent:
-
-```text
-NUXT_PUBLIC_NOINDEX=true -> KEEP until separate founder-approved SEO launch
-```
-
-CE5 must not use Campaign editing as a side door to activate production indexing.
+CE5 must not use Campaign editing or Telegram distribution as a side door to activate production indexing.
 
 ---
 
-## 5. Implementation checkpoints in the current CE5 line
+## 6. CE5 completion gate
 
-Relevant implementation history includes:
-
-```text
-18b68ddf  feat: add Campaign admin API foundation
-6cc17b8f  fix: wire Campaign runtime and admin routes
-629c7fdd  fix: harden Campaign admin lifecycle API
-fc26155b  feat: add Campaign admin API types
-94340b40  feat: add Campaign admin client
-fb9d9073  feat: expose Campaign admin permissions
-4281d3a6  feat: add Marketing manage section
-ee825866  feat: add Campaign operator surface
-a41fb79f  feat: add structured Campaign definition form
-d64117ec  feat: make Campaign form the primary editor
-115c224f  fix: keep Campaign locale edits atomic
-2de30888  feat: add reusable Gregorian date-time field
-31cf0eba  feat: improve Campaign form scheduling and locale UX
-d3784e76  feat: expand Campaign builder UX copy
-d6741f38  feat: localize Campaign builder UX
-b076c9ff  fix: derive public Campaign canonical from slug
-6ca369ba  feat: improve Campaign validation and lifecycle UX
-```
-
-The founder-local UX verification described above was completed against the branch state through `6ca369ba`.
-
----
-
-## 6. NEXT — CE5 Draft Preview
-
-The next implementation slice is the still-open Preview requirement from the Campaign Engine API/runtime contract.
-
-Required direction:
+Current sequence:
 
 ```text
-current mutable Campaign draft
-  -> same Campaign renderer registry
-  -> preview mode
-  -> operator-visible preview
-```
-
-Preview is explicitly non-authoritative and non-reward-capable:
-
-```text
-no real participation
-no real attempts
-no real completion/reward mutation
-no real Goin issuance
-no reward budget consumption
-```
-
-Prefer rendering directly from the current editor/draft state when possible. If a backend preview projection is later required, it must remain an isolated safe projection and must not route through production action endpoints with a hidden preview flag.
-
-Preview should preserve the current EN/FA renderer behavior and must not weaken the public/private Campaign projection boundary.
-
----
-
-## 7. AFTER PREVIEW — TG4 Campaign Telegram adapter
-
-After Draft Preview, complete the remaining CE5 Telegram integration:
-
-```text
-/manage/marketing
-  -> Campaign Telegram adapter
-  -> existing TelegramPostComposer
-  -> existing TG1 shared publisher
-  -> telegram_publications shared ledger
-```
-
-TG4 must not create a Campaign-specific Bot API client, modal/publisher, publication ledger or retry system.
-
-Campaign Telegram CTA attribution must align with the already accepted Campaign attribution semantics. Telegram remains distribution/entry only; Prompt Draft remains authoritative for identity, eligibility, participation, attempts, outcome and rewards.
-
----
-
-## 8. CE5 completion gate
-
-CE5 may be marked DONE / ACCEPTED only after the remaining Preview and TG4 work is implemented and verified.
-
-Expected order:
-
-```text
-Manage Marketing operator surface  -> FOUNDER-LOCAL VERIFIED 2026-09-15
-Draft Preview                      -> NEXT
-TG4 Campaign Telegram adapter      -> AFTER PREVIEW
-CE5 aggregate verification         -> THEN
+Manage Marketing operator surface  -> FOUNDER-LOCAL ACCEPTED 2026-09-15
+Draft Preview                      -> FOUNDER-LOCAL ACCEPTED 2026-09-15
+TG4 Campaign Telegram adapter      -> IMPLEMENTED / VERIFICATION PENDING
+CE5 aggregate verification         -> AFTER TG4 ACCEPTANCE
 CE6 Measurement & Reconciliation   -> AFTER CE5 ACCEPTANCE
 ```
 
-CE6 remains a separate slice. The existing runtime summary cards on `/manage/marketing` do not by themselves satisfy CE6 participant/reward inspection, budget reconciliation and Economy trace requirements.
+CE5 may be marked DONE / ACCEPTED only after TG4 founder-local verification and the CE5 aggregate checkpoint.
+
+CE6 remains separate. The existing runtime summary cards on `/manage/marketing` do not by themselves satisfy CE6 participant/reward inspection, budget reconciliation and Economy trace requirements.
 
 ---
 
-## 9. Verification / resume rule
+## 7. Verification / resume rule
 
 Before the next write:
 
@@ -249,10 +256,14 @@ Before the next write:
 1. inspect latest feature/growth-foundation HEAD
 2. read DEVELOPMENT_WORKFLOW.md and UI_IMPLEMENTATION_GUIDELINES.md
 3. read CAMPAIGN_ENGINE_STATUS.md and this CE5 checkpoint
-4. implement the smallest Draft Preview slice first
+4. verify TG4 through the shared Telegram publisher
 5. preserve production NUXT_PUBLIC_NOINDEX=true
 6. do not reopen accepted CE1-CE4.5 work without a concrete regression
-7. after Preview, implement TG4 only through the shared Telegram architecture
+7. after TG4 acceptance, run CE5 aggregate verification before CE6
 ```
 
-This documentation checkpoint itself requires no rebuild.
+Current TG4 implementation is frontend-only, so local runtime verification requires only:
+
+```powershell
+pnpm frontend
+```
