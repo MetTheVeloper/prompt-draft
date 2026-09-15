@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { createServer } from 'node:http'
 import { handleAdminArchiveRoute } from './adminArchiveRoute.mjs'
+import { handleCampaignAdminRequest } from './campaignAdminRouter.mjs'
 import { handleAdminEconomyRoute } from './adminEconomyRoute.mjs'
 import { handleAdminGrowthRequest } from './adminGrowth.mjs'
 import { handleArchiveRequest } from './archive.mjs'
@@ -584,6 +585,18 @@ const server = createServer(async (request, response) => {
 
   if (
     await handleProductAnalyticsRequest({
+      request,
+      response,
+      url,
+      corsHeaders,
+      sendJson,
+    })
+  ) {
+    return
+  }
+
+  if (
+    await handleCampaignAdminRequest({
       request,
       response,
       url,
