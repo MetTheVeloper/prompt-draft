@@ -3,6 +3,7 @@ import { handleAdminArchiveMediaRequest } from './adminArchiveMedia.mjs'
 import { handleAdminBlogMediaRequest } from './adminBlogMedia.mjs'
 import { handleAdminBlogPublicationAuditRequest } from './adminBlogPublicationAudit.mjs'
 import { handleAdminCampaignRoute } from './adminCampaignRoute.mjs'
+import { handleAdminManagedMediaRoute } from './adminManagedMediaRoute.mjs'
 import { handleAdminTelegramRoute } from './adminTelegramRoute.mjs'
 import { handleArchivePromotionRequest } from './archivePromotion.mjs'
 import { validatePublishedArchiveLocalization } from './archivePublishedLocalization.mjs'
@@ -77,6 +78,15 @@ export async function handleAdminArchiveRoute({
     sendJson,
   })
   if (blogMediaHandled) return true
+
+  const managedMediaHandled = await handleAdminManagedMediaRoute({
+    request,
+    response,
+    url,
+    corsHeaders,
+    sendJson,
+  })
+  if (managedMediaHandled) return true
 
   const telegramHandled = await handleAdminTelegramRoute({
     request,
