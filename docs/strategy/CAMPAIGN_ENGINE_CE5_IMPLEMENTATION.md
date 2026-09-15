@@ -1,6 +1,6 @@
 # Campaign Engine — CE5 Manage Marketing
 
-Status: **IN PROGRESS / MANAGE MARKETING + DRAFT PREVIEW FOUNDER-LOCAL ACCEPTED 2026-09-15 / TG4 IMPLEMENTED — VERIFICATION PENDING**
+Status: **IN PROGRESS / MANAGE MARKETING + DRAFT PREVIEW + TG4 FOUNDER-LOCAL ACCEPTED 2026-09-15 / AGGREGATE VERIFICATION NEXT**
 
 Date: 2026-09-15
 
@@ -27,6 +27,7 @@ docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
 ---
@@ -147,9 +148,9 @@ b9e37aeb  feat: simplify Campaign editor actions
 
 ---
 
-## 4. TG4 Campaign Telegram adapter — implemented / verification pending
+## 4. TG4 Campaign Telegram adapter — founder-local accepted 2026-09-15
 
-TG4 is implemented through the accepted shared Telegram architecture:
+TG4 is accepted through the shared Telegram architecture:
 
 ```text
 /manage/marketing
@@ -186,20 +187,14 @@ metadata.placement = telegram_channel
 
 Telegram remains distribution/entry only; Prompt Draft remains authoritative for identity, eligibility, participation, attempts, completion, outcome and rewards.
 
-TG4 implementation commits:
+TG4 also includes shared managed-image hardening. `ArchiveImageManager` now wraps the reusable `ManagedImageUploader`, and Telegram uses the same browser image preparation flow. Prepared Telegram images upload only on explicit Publish through server-owned `scope = telegram` Object Storage paths.
+
+Founder-local end-to-end verification used a dedicated Telegram test channel and confirmed real image publication plus a working `Join Campaign` CTA that opened the configured Mini App on the intended Campaign. Focused managed-media backend contract tests passed 3/3.
+
+Canonical acceptance record:
 
 ```text
-acc6e5b6  feat: add Campaign Telegram adapter
-d8528037  feat: route Telegram Campaign start params
-c879a800  feat: capture Telegram Campaign attribution
-d73085ee  feat: connect Campaigns to Telegram composer
-05c7e64f  docs: record TG4 Campaign Telegram implementation
-```
-
-Canonical TG4 verification details live in:
-
-```text
-docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
 ---
@@ -237,12 +232,12 @@ Current sequence:
 ```text
 Manage Marketing operator surface  -> FOUNDER-LOCAL ACCEPTED 2026-09-15
 Draft Preview                      -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-TG4 Campaign Telegram adapter      -> IMPLEMENTED / VERIFICATION PENDING
-CE5 aggregate verification         -> AFTER TG4 ACCEPTANCE
+TG4 Campaign Telegram adapter      -> FOUNDER-LOCAL ACCEPTED 2026-09-15
+CE5 aggregate verification         -> NEXT
 CE6 Measurement & Reconciliation   -> AFTER CE5 ACCEPTANCE
 ```
 
-CE5 may be marked DONE / ACCEPTED only after TG4 founder-local verification and the CE5 aggregate checkpoint.
+CE5 may be marked DONE / ACCEPTED only after the aggregate checkpoint.
 
 CE6 remains separate. The existing runtime summary cards on `/manage/marketing` do not by themselves satisfy CE6 participant/reward inspection, budget reconciliation and Economy trace requirements.
 
@@ -256,14 +251,21 @@ Before the next write:
 1. inspect latest feature/growth-foundation HEAD
 2. read DEVELOPMENT_WORKFLOW.md and UI_IMPLEMENTATION_GUIDELINES.md
 3. read CAMPAIGN_ENGINE_STATUS.md and this CE5 checkpoint
-4. verify TG4 through the shared Telegram publisher
+4. run CE5 aggregate verification across accepted Manage Marketing, Draft Preview and TG4 paths
 5. preserve production NUXT_PUBLIC_NOINDEX=true
 6. do not reopen accepted CE1-CE4.5 work without a concrete regression
-7. after TG4 acceptance, run CE5 aggregate verification before CE6
+7. after CE5 aggregate acceptance, proceed to CE6
 ```
 
-Current TG4 implementation is frontend-only, so local runtime verification requires only:
+TG4 managed-media runtime scope is frontend + API, with no SQL migration:
 
 ```powershell
+pnpm api
 pnpm frontend
+```
+
+Focused managed-media verification:
+
+```powershell
+docker compose exec api node --test src/adminManagedMediaRoute.test.mjs
 ```
