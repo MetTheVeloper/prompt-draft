@@ -71,6 +71,7 @@ async function loadRemoteCollageImage(url: string, index: number) {
 }
 
 export function useHeadlessCollageImage() {
+  const componentInstance = getCurrentInstance()
   const canvasRef = ref<HTMLCanvasElement | null>(null)
   const activeMode = ref<CollageMode>('image')
   const images = ref<CollageImageItem[]>([])
@@ -284,6 +285,16 @@ export function useHeadlessCollageImage() {
       canvasAspectRatioOrientation.value = 'vertical'
     })
   }
+
+  onMounted(() => {
+    if (canvasRef.value) return
+
+    const templateRefs = componentInstance?.proxy?.$refs as Record<string, unknown> | undefined
+    const element = templateRefs?.['promptCollage.canvasRef']
+    if (element instanceof HTMLCanvasElement) {
+      canvasRef.value = element
+    }
+  })
 
   onBeforeUnmount(() => {
     renderer.stopVideoRenderer()
