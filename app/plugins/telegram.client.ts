@@ -64,10 +64,13 @@ export default defineNuxtPlugin(() => {
       guide: '/guide',
     }
 
+    const promptMatch = /^prompt_(\d+)$/.exec(startParam)
     const campaignMatch = /^campaign_([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(startParam)
-    const target = campaignMatch
-      ? `/campaign/${campaignMatch[1]}?source=telegram&medium=campaign_channel`
-      : routes[startParam]
+    const target = promptMatch
+      ? `/prompt/${promptMatch[1]}`
+      : campaignMatch
+        ? `/campaign/${campaignMatch[1]}?source=telegram&medium=campaign_channel`
+        : routes[startParam]
 
     if (target && router.currentRoute.value.fullPath !== target) {
       await router.replace(target)
