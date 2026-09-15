@@ -8,7 +8,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE1-CE5 ACCEPTED / CE6 MEASUREMENT & RECONCILIATION NEXT**
+Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE1-CE5 ACCEPTED / CE6 IN PROGRESS / CE6.1 IMPLEMENTED / VERIFICATION PENDING**
 
 ## Current execution state
 
@@ -32,7 +32,8 @@ CE5 /manage/marketing + TG4           -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTE
   Draft Preview                      -> ACCEPTED
   TG4 Campaign Telegram adapter      -> ACCEPTED
   CE5 aggregate verification         -> ACCEPTED
-CE6 Measurement & Reconciliation      -> NEXT / NOT STARTED
+CE6 Measurement & Reconciliation      -> IN PROGRESS
+  CE6.1 Measurement Summary          -> IMPLEMENTED / VERIFICATION PENDING
 CE7 Final Verification                -> NOT STARTED
 ```
 
@@ -67,6 +68,7 @@ docs/strategy/CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 docs/strategy/CAMPAIGN_ENGINE_STATUS.md
 docs/strategy/CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
 docs/strategy/CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
+docs/strategy/CAMPAIGN_ENGINE_CE6_IMPLEMENTATION.md
 ```
 
 Accepted Campaign / Economy records:
@@ -301,7 +303,13 @@ CE5 Manage Marketing -> DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
 Status:
 
 ```text
-NEXT / NOT STARTED
+IN PROGRESS / CE6.1 IMPLEMENTED / VERIFICATION PENDING
+```
+
+Canonical implementation record:
+
+```text
+docs/strategy/CAMPAIGN_ENGINE_CE6_IMPLEMENTATION.md
 ```
 
 V1 scope:
@@ -313,6 +321,10 @@ budget remaining
 Economy transaction trace
 placement / mechanic / reward reconciliation
 ```
+
+CE6.1 currently implements the backend current-published-version summary contract for authoritative funnel stages, reward/budget totals and separately labelled observational promotion impressions/clicks. Campaign landing-page views remain `null` because that event is not yet instrumented; unknown values must not be reported as zero.
+
+The CE6 audit also found a concrete CE5 integration regression: `backend/src/adminCampaignRoute.mjs` existed but was not registered by the Docker API entrypoint. CE6.1 repairs only that missing registration and leaves the accepted CE5 route implementation unchanged.
 
 The existing `/manage/marketing` runtime summary cards are useful CE5 operator context but do not by themselves satisfy CE6.
 
@@ -353,7 +365,7 @@ CE7 is the aggregate Campaign/Telegram integration acceptance boundary after CE6
 
 ---
 
-## Resume instruction — CE6 next
+## Resume instruction — CE6 current
 
 ```text
 1. inspect latest feature/growth-foundation HEAD before every decision/write
@@ -362,13 +374,14 @@ CE7 is the aggregate Campaign/Telegram integration acceptance boundary after CE6
 4. read CAMPAIGN_ENGINE_DB_SCHEMA_V1.md
 5. read CAMPAIGN_ENGINE_API_RUNTIME_CONTRACT_V1.md
 6. read CAMPAIGN_ENGINE_STATUS.md
-7. read CAMPAIGN_ENGINE_CE5_ACCEPTANCE.md
+7. read CAMPAIGN_ENGINE_CE6_IMPLEMENTATION.md
 8. preserve CE1-CE5 acceptance unless a concrete regression exists
-9. start CE6 Measurement & Reconciliation
-10. keep NUXT_PUBLIC_NOINDEX=true and SEO launch deferred
-11. do not start Domain Expansion implementation before its scale gate
-12. do not create parallel wallet, analytics, authorization, Campaign or Telegram authorities
-13. apply time-first verification and smallest rebuild scope to every CE6 slice
+9. verify CE6.1 with backend-only rebuild: pnpm api
+10. after CE6.1 verification continue with participant/reward inspection and Economy trace
+11. keep NUXT_PUBLIC_NOINDEX=true and SEO launch deferred
+12. do not start Domain Expansion implementation before its scale gate
+13. do not create parallel wallet, analytics, authorization, Campaign or Telegram authorities
+14. apply time-first verification and smallest rebuild scope to every CE6 slice
 ```
 
-This CE5 closure is documentation-only, so no Docker rebuild is required.
+CE6.1 touches backend + docs only, so frontend and full-stack rebuilds are not required for this slice.
