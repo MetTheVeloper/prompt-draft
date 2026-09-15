@@ -1,6 +1,6 @@
 # Telegram Publishing System — TG4 Campaign Adapter
 
-Status: **IMPLEMENTED / SHARED MEDIA HARDENING IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING**
+Status: **DONE / FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15**
 
 Date: 2026-09-15
 
@@ -27,6 +27,7 @@ docs/strategy/CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
 ---
@@ -223,41 +224,45 @@ aa555fc7  feat: add shared managed image uploader
 
 ---
 
-## 7. Verification gate
+## 7. Verification — accepted 2026-09-15
 
-TG4 is not accepted until founder-local verification confirms at minimum:
+Founder-local verification confirmed the Campaign Telegram flow end-to-end against a dedicated Telegram test channel.
+
+Accepted evidence:
 
 ```text
-1. published Campaign shows Telegram in the three-dot menu
-2. draft-only Campaign does not expose the TG4 action
-3. Telegram composer opens from /manage/marketing
-4. caption uses the published immutable version, not unsaved/saved draft edits
-5. source is campaign + Campaign UUID + published version
-6. Campaign CTA is campaign_<slug>
-7. shared uploader accepts picker / drag-drop / clipboard images
-8. Telegram image preparation shows preview / reorder / remove behavior
-9. prepared images are not uploaded until Publish is requested
-10. Publish uploads prepared images through the managed telegram scope
-11. raw public HTTPS URLs remain available through Advanced URLs
-12. publishing goes through the existing shared Telegram publisher
-13. Telegram Mini App CTA opens the correct public Campaign
-14. login return preserves the Telegram entry context
-15. starting participation records Telegram attribution without changing runtime authority
-16. Prompt Archive image preparation still behaves correctly after the shared-component refactor
-17. EN/FA and mobile/tablet/desktop composer behavior remain usable
+published Campaign exposes Telegram from /manage/marketing
+shared composer opens with Campaign content and CTA
+shared managed image uploader prepares local media
+focused managed-media backend contract tests pass 3/3
+real Telegram image post is delivered to the test channel
+Join Campaign CTA is rendered on the real post
+CTA opens the configured Telegram Mini App
+Mini App resolves the intended public Campaign
+server Campaign runtime remains authoritative after Telegram entry
 ```
 
-Changed runtime scope is now frontend + API, with no SQL migration:
+The real delivery test intentionally used a non-production Telegram channel.
+
+Canonical acceptance record:
+
+```text
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
+```
+
+TG4 is accepted and no longer blocks CE5 aggregate verification.
+
+Future TG4 regression scope is frontend + API, with no SQL migration:
 
 ```powershell
 pnpm api
 pnpm frontend
 ```
 
-Optional focused backend contract check after the API container is rebuilt:
+Focused managed-media contract check:
 
 ```powershell
 docker compose exec api node --test src/adminManagedMediaRoute.test.mjs
 ```
 
-Do not run `pnpm stack` or `db:schema` for this hardening slice.
+Do not run `pnpm stack` or `db:schema` solely for TG4 media hardening.
