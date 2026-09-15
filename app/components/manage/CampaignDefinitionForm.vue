@@ -34,8 +34,8 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
-const { mobile, tablet } = useScreen();
-const localeContentColumns = computed(() => mobile.value || tablet.value ? 1 : 2);
+const { mini } = useScreen();
+const localeContentColumns = computed(() => mini.value ? 1 : 2);
 
 const OBJECTIVE_TYPES = [
   "acquisition",
@@ -398,11 +398,11 @@ const currentRendererItems = computed(() => {
 </script>
 
 <template>
-  <el-flex rules="css" :gap="14" class="w100">
+  <el-flex rules="css" :gap="14" class="w100" :class="{ 'campaign-definition-form--mini': mini }">
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbs" :gap="10" class="w100" wrap>
+      <el-flex :rules="mini ? 'css' : 'rbs'" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8"><el-icon icon="badge" :size="18" color="prim" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.basics") }}</el-text></el-flex>
-        <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.basics") }}</el-text>
+        <el-text :size="11" color="normal55" :class="{ w100: mini }">{{ t("manage.marketing.builder.hints.basics") }}</el-text>
       </el-flex>
       <el-grid cols="repeat(auto-fit, minmax(220px, 1fr))" :gap="12" class="w100">
         <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.fields.slug") }}</el-text><el-text-field v-model="slugModel" :actions="false" :disabled="disabled || !headEditable" dir="ltr" /></el-flex>
@@ -414,18 +414,18 @@ const currentRendererItems = computed(() => {
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbs" :gap="10" class="w100" wrap>
+      <el-flex :rules="mini ? 'css' : 'rbs'" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8"><el-icon icon="track_changes" :size="18" color="blue" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.objective") }}</el-text></el-flex>
-        <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.objective") }}</el-text>
+        <el-text :size="11" color="normal55" :class="{ w100: mini }">{{ t("manage.marketing.builder.hints.objective") }}</el-text>
       </el-flex>
-      <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.objectiveType") }}</el-text><el-dropdown v-model="objectiveType" :items="objectiveItems" :disabled="disabled" /></el-flex>
+      <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.objectiveType") }}</el-text><el-dropdown v-model="objectiveType" class="campaign-objective-dropdown" :items="objectiveItems" :disabled="disabled" /></el-flex>
       <el-text v-for="(issue, index) in objectiveIssues" :key="`objective-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbs" :gap="10" class="w100" wrap>
+      <el-flex :rules="mini ? 'css' : 'rbs'" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8"><el-icon icon="schedule" :size="18" color="orange" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.schedule") }}</el-text></el-flex>
-        <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.schedule") }}</el-text>
+        <el-text :size="11" color="normal55" :class="{ w100: mini }">{{ t("manage.marketing.builder.hints.schedule") }}</el-text>
       </el-flex>
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
         <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.startsAt") }}</el-text><el-date-time-field v-model="startsAtLocal" :disabled="disabled" /></el-flex>
@@ -437,9 +437,9 @@ const currentRendererItems = computed(() => {
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbs" :gap="10" class="w100" wrap>
+      <el-flex :rules="mini ? 'css' : 'rbs'" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8"><el-icon icon="verified_user" :size="18" color="green" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.eligibility") }}</el-text></el-flex>
-        <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.eligibility") }}</el-text>
+        <el-text :size="11" color="normal55" :class="{ w100: mini }">{{ t("manage.marketing.builder.hints.eligibility") }}</el-text>
       </el-flex>
       <el-switch v-model="authenticated" icon="lock_person" :label="t('manage.marketing.builder.fields.authenticated')" :disable="disabled" />
       <el-flex v-if="hasEligibilityRules" rules="rsc" :gap="8" class="w100" bg="blue10" :p="10" :radius="10"><el-icon icon="info" color="blue" :size="16" /><el-text :size="10" color="normal55">{{ t("manage.marketing.builder.hints.rulesPreserved") }}</el-text></el-flex>
@@ -447,9 +447,9 @@ const currentRendererItems = computed(() => {
     </el-flex>
 
     <el-flex rules="css" :gap="14" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbs" :gap="10" class="w100" wrap>
+      <el-flex :rules="mini ? 'css' : 'rbs'" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8"><el-icon icon="web" :size="18" color="prim" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.experience") }}</el-text></el-flex>
-        <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.experience") }}</el-text>
+        <el-text :size="11" color="normal55" :class="{ w100: mini }">{{ t("manage.marketing.builder.hints.experience") }}</el-text>
       </el-flex>
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
         <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.renderer") }}</el-text><el-dropdown v-model="rendererRef" :items="currentRendererItems" :disabled="disabled" /></el-flex>
@@ -484,3 +484,11 @@ const currentRendererItems = computed(() => {
     </el-flex>
   </el-flex>
 </template>
+
+<style scoped>
+.campaign-definition-form--mini .campaign-objective-dropdown :deep(.wsnw) {
+  white-space: normal;
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+</style>
