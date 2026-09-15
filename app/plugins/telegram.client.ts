@@ -1,3 +1,5 @@
+import { resolveTelegramStartParam } from '~/utils/telegramStartParam'
+
 export default defineNuxtPlugin(() => {
   const router = useRouter()
 
@@ -58,19 +60,7 @@ export default defineNuxtPlugin(() => {
 
     if (!startParam) return
 
-    const routes: Record<string, string> = {
-      create: '/create',
-      collage: '/collage',
-      guide: '/guide',
-    }
-
-    const promptMatch = /^prompt_(\d+)$/.exec(startParam)
-    const campaignMatch = /^campaign_([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(startParam)
-    const target = promptMatch
-      ? `/prompts?id=${encodeURIComponent(promptMatch[1])}`
-      : campaignMatch
-        ? `/campaign/${campaignMatch[1]}?source=telegram&medium=campaign_channel`
-        : routes[startParam]
+    const target = resolveTelegramStartParam(startParam)
 
     if (target && router.currentRoute.value.fullPath !== target) {
       await router.replace(target)
