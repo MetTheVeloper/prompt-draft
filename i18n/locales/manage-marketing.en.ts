@@ -29,6 +29,7 @@ export default {
         back: "Back to Campaigns",
         create: "Create draft",
         saveDraft: "Save draft",
+        preview: "Preview",
         validate: "Validate",
         publish: "Publish version",
         pause: "Pause",
@@ -159,6 +160,15 @@ export default {
       advanced: {
         title: "Advanced definition",
         hint: "Raw JSON is an optional escape hatch for power users and unsupported fields. The structured form remains the primary editor.",
+      },
+      preview: {
+        title: "Draft preview",
+        description: "Render the current local Campaign draft without saving, publishing, or entering runtime.",
+        safeMode: "Preview mode — runtime actions are disabled.",
+        unsavedHint: "Unsaved form edits are included. No participation, attempts, rewards, or reward-budget writes can occur here.",
+        localeUnavailable: "The current app locale does not have previewable Campaign content in this draft.",
+        rendererUnavailable: "This Campaign renderer is not available in Draft Preview yet.",
+        mechanicsDisabled: "Interactive Campaign mechanics are intentionally disabled in Draft Preview.",
       },
       validation: {
         title: "Publish validation",

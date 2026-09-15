@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import CampaignDefinitionForm from "~/components/manage/CampaignDefinitionForm.vue";
+import CampaignDraftPreview from "~/components/manage/CampaignDraftPreview.vue";
 import ManageMetricCard from "~/components/manage/ManageMetricCard.vue";
 import { AUTH_PERMISSIONS } from "~/config/authorization";
 import type {
@@ -265,6 +266,49 @@ function applyRawDefinition() {
   } catch {
     rawJsonError.value = t("manage.marketing.editor.invalidJson");
   }
+}
+
+function previewDefinition() {
+  const definition = cloneDefinition(definitionDraft.value) as Record<string, any>;
+
+  if (creating.value) {
+    definition.identity = {
+      ...(definition.identity && typeof definition.identity === "object" ? definition.identity : {}),
+      slug: createForm.slug.trim(),
+      internalName: createForm.internalName.trim(),
+    };
+  }
+
+  return definition as AdminCampaignDefinition;
+}
+
+function openDraftPreview() {
+  const campaign = selectedCampaign.value;
+
+  modal.open({
+    header: {
+      icon: "visibility",
+      title: t("manage.marketing.preview.title"),
+      desc: t("manage.marketing.preview.description"),
+      color: "blue",
+    },
+    component: CampaignDraftPreview,
+    props: {
+      definition: previewDefinition(),
+      campaignId: campaign?.id || "campaign-draft-preview",
+      publishedVersion: campaign?.publishedVersion?.version ?? 0,
+    },
+    actions: [{
+      label: t("components.modal.actions.close"),
+      icon: "close",
+      mode: "flat",
+      close: true,
+    }],
+    options: {
+      width: 980,
+      maxHeight: "90vh",
+    },
+  });
 }
 
 async function setEditQuery(id: string | null, mode: "push" | "replace" = "replace") {
@@ -701,6 +745,15 @@ onMounted(async () => {
             :label="t('manage.marketing.actions.saveDraft')"
             :disable="!canSaveDraft"
             @click="saveDraft"
+          />
+          <el-button
+            v-if="creating || selectedCampaign"
+            mode="flat"
+            color="blue"
+            icon="visibility"
+            :label="t('manage.marketing.actions.preview')"
+            :disable="campaignsApi.mutating.value"
+            @click="openDraftPreview"
           />
           <el-button
             v-if="selectedCampaign && canManage"
