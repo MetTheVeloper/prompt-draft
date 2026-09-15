@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import ManagedImageUploader from "~/components/manage/ManagedImageUploader.vue";
+import { useHeadlessCollageImage } from "~/composables/collage/useHeadlessCollageImage";
+import {
+  COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS,
+  COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_OPTIONS,
+} from "~/constants/collage";
+import type { ElDropdownValue } from "~/types/dropdown";
 import type { PreparedManagedImage } from "~/types/managedImage";
+import type {
+  CollageCanvasAspectRatioLock,
+  CollageCanvasAspectRatioOrientation,
+  CollageLayoutConstraintMode,
+} from "~/types/collage";
 import type {
   AdminTelegramConfig,
   TelegramPostCtaInput,
@@ -11,6 +22,7 @@ import {
   MANAGED_IMAGE_FULL_MAX_EDGE,
   MANAGED_IMAGE_FULL_WEBP_QUALITY,
   MANAGED_IMAGE_THUMBNAIL_MAX_EDGE,
+  prepareManagedImage,
 } from "~/utils/managedImageProcessing";
 
 const props = withDefaults(defineProps<{
@@ -37,11 +49,18 @@ const emit = defineEmits<{
 const { t } = useI18n();
 const telegram = useAdminTelegram();
 const managedMedia = useAdminManagedMedia();
+const promptCollage = useHeadlessCollageImage();
+
+const promptCollageMode = computed(() => (
+  props.source.type === "prompt_archive" && props.initialMedia.length >= 2
+));
 
 const caption = ref(props.initialCaption);
 const mediaUrls = ref([...props.initialMedia]);
 const preparedMedia = ref<PreparedManagedImage[]>([]);
 const uploadedPreparedUrls = new Map<string, string>();
+let uploadedPromptCollageUrl: string | null = null;
+let uploadedPromptCollageRevision: number | null = null;
 const externalMediaOpen = ref(false);
 const ctas = ref<TelegramPostCtaInput[]>(
   props.initialCtas.length
@@ -64,7 +83,11 @@ const idempotencyKey = ref(createIdempotencyKey());
 const normalizedMedia = computed(() => (
   mediaUrls.value.map(value => value.trim()).filter(Boolean)
 ));
-const totalMediaCount = computed(() => normalizedMedia.value.length + preparedMedia.value.length);
+const totalMediaCount = computed(() => (
+  promptCollageMode.value
+    ? (promptCollage.images.value.length ? 1 : 0)
+    : normalizedMedia.value.length + preparedMedia.value.length
+));
 const maxPreparedMedia = computed(() => Math.max(0, props.config.maxMedia - normalizedMedia.value.length));
 const normalizedCtas = computed<TelegramPostCtaInput[]>(() => (
   ctas.value.map(item => ({
@@ -83,6 +106,9 @@ const previewMedia = computed(() => [
 ]);
 const firstPreviewMedia = computed(() => previewMedia.value[0] || "");
 const extraMediaCount = computed(() => Math.max(0, previewMedia.value.length - 1));
+const promptCollageRatioOptions = COLLAGE_CANVAS_ASPECT_RATIO_LOCK_OPTIONS;
+const promptCollageOrientationOptions = COLLAGE_CANVAS_ASPECT_RATIO_ORIENTATION_OPTIONS;
+const promptCollageConstraintOptions: CollageLayoutConstraintMode[] = ["controlled", "free"];
 
 const managedImageLabels = computed(() => ({
   title: t("manage.telegram.composer.uploadMediaTitle"),
@@ -118,12 +144,15 @@ function validHttpsUrl(value: string) {
 const validationMessage = computed(() => {
   const text = caption.value.trim();
   if (!props.config.configured) return t("manage.telegram.composer.notConfigured");
+  if (promptCollageMode.value && promptCollage.loading.value) return t("manage.telegram.composer.collageLoading");
+  if (promptCollageMode.value && promptCollage.loadError.value) return t("manage.telegram.composer.collageCorsFailed");
+  if (promptCollageMode.value && (promptCollage.isRendering.value || !promptCollage.ready.value)) return t("manage.telegram.composer.collageWait");
   if (!text && totalMediaCount.value === 0) return t("manage.telegram.composer.captionRequired");
   if (text.length > captionLimit.value) return t("manage.telegram.composer.captionTooLong", { max: captionLimit.value });
   if (totalMediaCount.value > props.config.maxMedia) return t("manage.telegram.composer.tooManyMedia", { max: props.config.maxMedia });
-  if (preparedMedia.value.some(item => item.status === "processing")) return t("manage.telegram.composer.uploadMediaWait");
-  if (preparedMedia.value.some(item => item.status === "error")) return t("manage.telegram.composer.uploadMediaErrorHint");
-  if (normalizedMedia.value.some(url => !validHttpsUrl(url))) return t("manage.telegram.composer.mediaHttpsOnly");
+  if (!promptCollageMode.value && preparedMedia.value.some(item => item.status === "processing")) return t("manage.telegram.composer.uploadMediaWait");
+  if (!promptCollageMode.value && preparedMedia.value.some(item => item.status === "error")) return t("manage.telegram.composer.uploadMediaErrorHint");
+  if (!promptCollageMode.value && normalizedMedia.value.some(url => !validHttpsUrl(url))) return t("manage.telegram.composer.mediaHttpsOnly");
   if (ctas.value.length < 1 || ctas.value.length > props.config.maxCtas) return t("manage.telegram.composer.ctaCount", { max: props.config.maxCtas });
   if (normalizedCtas.value.some(item => !item.label || item.label.length > 64)) return t("manage.telegram.composer.ctaLabelInvalid");
   if (normalizedCtas.value.some(item => (
@@ -131,7 +160,7 @@ const validationMessage = computed(() => {
       ? !validHttpsUrl(item.url)
       : !/^[A-Za-z0-9_-]{1,512}$/.test(item.startParam ?? "")
   ))) return t("manage.telegram.composer.startParamInvalid");
-  if (multiMediaCtaText.value.trim().length > 256) return t("manage.telegram.composer.multiMediaTextTooLong");
+  if (!promptCollageMode.value && multiMediaCtaText.value.trim().length > 256) return t("manage.telegram.composer.multiMediaTextTooLong");
   return "";
 });
 
@@ -164,11 +193,14 @@ function resetDraft() {
   mediaUrls.value = [...props.initialMedia];
   preparedMedia.value = [];
   uploadedPreparedUrls.clear();
+  uploadedPromptCollageUrl = null;
+  uploadedPromptCollageRevision = null;
   externalMediaOpen.value = false;
   ctas.value = props.initialCtas.length
     ? props.initialCtas.map(item => ({ ...item }))
     : [{ label: t("manage.telegram.composer.defaultCta"), startParam: "" }];
   multiMediaCtaText.value = props.initialMultiMediaCtaText;
+  if (promptCollageMode.value) promptCollage.resetLayout();
   publishError.value = "";
   idempotencyKey.value = createIdempotencyKey();
 }
@@ -186,6 +218,40 @@ watch(
   },
   { deep: true },
 );
+
+watch(
+  () => promptCollage.revision.value,
+  () => {
+    if (!promptCollageMode.value) return;
+    uploadedPromptCollageUrl = null;
+    uploadedPromptCollageRevision = null;
+    publishError.value = "";
+    idempotencyKey.value = createIdempotencyKey();
+  },
+);
+
+onMounted(() => {
+  if (promptCollageMode.value) {
+    void promptCollage.setSourceUrls(props.initialMedia);
+  }
+});
+
+function updatePromptCollageConstraint(value: ElDropdownValue) {
+  promptCollage.setLayoutConstraintMode(String(value) as CollageLayoutConstraintMode);
+}
+
+function updatePromptCollageRatio(value: ElDropdownValue) {
+  promptCollage.setCanvasAspectRatioLock(String(value) as CollageCanvasAspectRatioLock);
+}
+
+function updatePromptCollageOrientation(value: ElDropdownValue) {
+  promptCollage.setCanvasAspectRatioOrientation(String(value) as CollageCanvasAspectRatioOrientation);
+}
+
+function getPromptCollageRatioLabel(option: (typeof promptCollageRatioOptions)[number]) {
+  if ("labelKey" in option && option.labelKey) return t(option.labelKey);
+  return "label" in option && option.label ? option.label : option.value;
+}
 
 async function uploadPreparedMedia() {
   const urls: string[] = [];
@@ -205,14 +271,49 @@ async function uploadPreparedMedia() {
   return urls;
 }
 
+async function uploadPromptCollage() {
+  const revision = promptCollage.revision.value;
+  if (uploadedPromptCollageUrl && uploadedPromptCollageRevision === revision) {
+    return uploadedPromptCollageUrl;
+  }
+
+  await promptCollage.render();
+  const blob = await promptCollage.getExportBlob("image/png", 0.96);
+  if (!blob) throw new Error(t("manage.telegram.composer.collageExportFailed"));
+
+  const file = new File(
+    [blob],
+    `telegram-prompt-collage-${Date.now()}.png`,
+    { type: "image/png", lastModified: Date.now() },
+  );
+  const output = await prepareManagedImage(file);
+  const prepared: PreparedManagedImage = {
+    id: `prompt-collage:${revision}`,
+    sourceFile: file,
+    sourceName: file.name,
+    sourceSize: file.size,
+    ...output,
+    previewUrl: null,
+    thumbnailPreviewUrl: null,
+    position: 0,
+    status: "ready",
+    error: null,
+  };
+  const response = await managedMedia.uploadPreparedImage("telegram", prepared);
+  uploadedPromptCollageUrl = response.image.fullUrl;
+  uploadedPromptCollageRevision = revision;
+  return response.image.fullUrl;
+}
+
 async function publish() {
   if (!canPublish.value) return;
   publishing.value = true;
   publishError.value = "";
 
   try {
-    const uploadedMedia = await uploadPreparedMedia();
-    const publicationMedia = [...normalizedMedia.value, ...uploadedMedia];
+    const publicationMedia = promptCollageMode.value
+      ? [await uploadPromptCollage()]
+      : [...normalizedMedia.value, ...await uploadPreparedMedia()];
     const response = await telegram.publish({
       idempotencyKey: idempotencyKey.value,
       source: props.source,
@@ -220,7 +321,9 @@ async function publish() {
         caption: caption.value.trim(),
         media: publicationMedia.map(url => ({ type: "photo" as const, url })),
         ctas: normalizedCtas.value,
-        multiMediaCtaText: multiMediaCtaText.value.trim() || null,
+        multiMediaCtaText: promptCollageMode.value
+          ? null
+          : multiMediaCtaText.value.trim() || null,
       },
     });
     emit("published", response.publication, response.duplicate);
@@ -231,7 +334,9 @@ async function publish() {
       ? fieldMessage
       : typeof value?.data?.message === "string"
         ? value.data.message
-        : t("manage.telegram.composer.publishFailed");
+        : error instanceof Error && error.message
+          ? error.message
+          : t("manage.telegram.composer.publishFailed");
   } finally {
     publishing.value = false;
   }
@@ -280,7 +385,121 @@ async function publish() {
 
       <el-divider />
 
-      <el-flex rules="csc" :gap="10" class="w100">
+      <el-flex v-if="promptCollageMode" rules="csc" :gap="12" class="w100">
+        <el-flex rules="ccs" :gap="2" class="w100">
+          <el-text :size="12" :weight="800">{{ t("manage.telegram.composer.collageTitle") }}</el-text>
+          <el-text :size="10" color="normal55">{{ t("manage.telegram.composer.collageHint", { count: initialMedia.length }) }}</el-text>
+        </el-flex>
+
+        <el-flex
+          rules="csc"
+          :gap="10"
+          :p="12"
+          :radius="12"
+          :br="1"
+          bc="normal15"
+          class="w100">
+          <el-flex rules="rsc" :gap="10" class="w100 fw">
+            <el-flex rules="ccs" :gap="5" style="flex: 1 1 180px;">
+              <el-text :size="10" color="normal55">{{ t("manage.telegram.composer.collageConstraint") }}</el-text>
+              <el-dropdown
+                :model-value="promptCollage.layoutConstraintMode.value"
+                :items="promptCollageConstraintOptions"
+                :item-label="(value) => t(`manage.telegram.composer.collageConstraints.${value}`)"
+                :item-value="(value) => value"
+                :disabled="publishing"
+                @update:model-value="updatePromptCollageConstraint"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="5" style="flex: 1 1 180px;">
+              <el-text :size="10" color="normal55">{{ t("manage.telegram.composer.collageRatio") }}</el-text>
+              <el-dropdown
+                :model-value="promptCollage.canvasAspectRatioLock.value"
+                :items="promptCollageRatioOptions"
+                :item-label="getPromptCollageRatioLabel"
+                item-value="value"
+                :disabled="publishing"
+                @update:model-value="updatePromptCollageRatio"
+              />
+            </el-flex>
+
+            <el-flex rules="ccs" :gap="5" style="flex: 1 1 180px;">
+              <el-text :size="10" color="normal55">{{ t("manage.telegram.composer.collageOrientation") }}</el-text>
+              <el-dropdown
+                :model-value="promptCollage.canvasAspectRatioOrientation.value"
+                :items="promptCollageOrientationOptions"
+                :item-label="(value) => t(`manage.telegram.composer.collageOrientations.${value}`)"
+                :item-value="(value) => value"
+                :disabled="publishing || promptCollage.canvasAspectRatioLock.value === 'auto'"
+                @update:model-value="updatePromptCollageOrientation"
+              />
+            </el-flex>
+          </el-flex>
+
+          <el-flex rules="rsc" :gap="8" class="w100 fw">
+            <el-button
+              icon="casino"
+              mode="flat"
+              :label="t('manage.telegram.composer.collageShuffleLayout')"
+              :disable="publishing || promptCollage.loading.value"
+              @click="promptCollage.shuffleLayout"
+            />
+            <el-button
+              icon="shuffle"
+              mode="flat"
+              :label="t('manage.telegram.composer.collageShuffleImages')"
+              :disable="publishing || promptCollage.loading.value"
+              @click="promptCollage.shuffleImages"
+            />
+            <el-button
+              icon="restart_alt"
+              mode="flat"
+              :label="t('manage.telegram.composer.collageReset')"
+              :disable="publishing || promptCollage.loading.value"
+              @click="promptCollage.resetLayout"
+            />
+          </el-flex>
+
+          <el-grid v-if="promptCollage.images.value.length" :cols="2" :gap="8" class="w100">
+            <el-flex
+              v-for="(image, index) in promptCollage.images.value"
+              :key="image.id"
+              rules="rsc"
+              :gap="8"
+              :p="8"
+              :radius="10"
+              bg="normal5">
+              <img :src="image.url" :alt="image.name" class="telegram-collage-source-thumb" />
+              <el-text :size="10" color="normal55" style="flex: 1 1 auto;">{{ index + 1 }}</el-text>
+              <el-button
+                icon="arrow_back"
+                mode="flat"
+                :disable="publishing || index === 0"
+                @click="promptCollage.moveImage(image.id, -1)"
+              />
+              <el-button
+                icon="arrow_forward"
+                mode="flat"
+                :disable="publishing || index === promptCollage.images.value.length - 1"
+                @click="promptCollage.moveImage(image.id, 1)"
+              />
+            </el-flex>
+          </el-grid>
+
+          <el-text v-if="promptCollage.loadError.value" :size="10" color="red">
+            {{ t("manage.telegram.composer.collageCorsDetail") }}
+          </el-text>
+          <el-text v-else-if="promptCollage.loading.value" :size="10" color="normal55">
+            {{ t("manage.telegram.composer.collageLoading") }}
+          </el-text>
+          <el-text v-else :size="10" color="normal45">
+            {{ t("manage.telegram.composer.collageDeferredUpload") }}
+          </el-text>
+        </el-flex>
+      </el-flex>
+
+      <el-flex v-else rules="csc" :gap="10" class="w100">
         <el-flex rules="rsc" :gap="8" class="w100 fw">
           <el-flex rules="ccs" :gap="2" style="flex: 1 1 220px;">
             <el-text :size="12" :weight="800">{{ t("manage.telegram.composer.media") }}</el-text>
@@ -408,7 +627,7 @@ async function publish() {
         </el-flex>
       </el-flex>
 
-      <el-flex v-if="totalMediaCount > 1" rules="ccs" :gap="6" class="w100">
+      <el-flex v-if="!promptCollageMode && totalMediaCount > 1" rules="ccs" :gap="6" class="w100">
         <el-text :size="11" :weight="700">{{ t("manage.telegram.composer.multiMediaCtaText") }}</el-text>
         <el-text-field
           v-model="multiMediaCtaText"
@@ -454,13 +673,19 @@ async function publish() {
         <el-text :size="10" color="normal55">{{ t("manage.telegram.preview.subtitle") }}</el-text>
       </el-flex>
 
+      <canvas
+        v-if="promptCollageMode"
+        ref="promptCollage.canvasRef"
+        class="telegram-post-preview-image telegram-post-preview-canvas"
+        :aria-label="t('manage.telegram.preview.imageAlt')"
+      />
       <img
-        v-if="firstPreviewMedia"
+        v-else-if="firstPreviewMedia"
         :src="firstPreviewMedia"
         :alt="t('manage.telegram.preview.imageAlt')"
         class="telegram-post-preview-image"
       />
-      <el-text v-if="extraMediaCount" :size="10" color="normal55">
+      <el-text v-if="!promptCollageMode && extraMediaCount" :size="10" color="normal55">
         {{ t("manage.telegram.preview.moreMedia", { count: extraMediaCount }) }}
       </el-text>
 
@@ -484,7 +709,7 @@ async function publish() {
         />
       </el-flex>
 
-      <el-text v-if="totalMediaCount > 1 && multiMediaCtaText.trim()" :size="10" color="normal55">
+      <el-text v-if="!promptCollageMode && totalMediaCount > 1 && multiMediaCtaText.trim()" :size="10" color="normal55">
         {{ multiMediaCtaText.trim() }}
       </el-text>
     </el-flex>
@@ -498,5 +723,17 @@ async function publish() {
   max-height: 320px;
   object-fit: cover;
   border-radius: 12px;
+}
+
+.telegram-post-preview-canvas {
+  height: auto;
+}
+
+.telegram-collage-source-thumb {
+  display: block;
+  width: 44px;
+  height: 44px;
+  object-fit: cover;
+  border-radius: 8px;
 }
 </style>
