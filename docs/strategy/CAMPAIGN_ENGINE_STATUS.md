@@ -8,7 +8,7 @@ Branch:
 feature/growth-foundation
 ```
 
-Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE4.5 ACCEPTED / CE5 MANAGE MARKETING + PREVIEW ACCEPTED / TG4 IMPLEMENTED — VERIFICATION PENDING**
+Status: **ACTIVE PRE-SCALE ENGINEERING TRACK / CE4.5 ACCEPTED / CE5 MANAGE MARKETING + PREVIEW + TG4 ACCEPTED / CE5 AGGREGATE VERIFICATION NEXT**
 
 ## Current execution state
 
@@ -30,8 +30,8 @@ CE5 /manage/marketing + TG4           -> IN PROGRESS
   Campaign admin/operator foundation -> IMPLEMENTED
   Structured Manage Marketing UX     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
   Draft Preview                      -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-  TG4 Campaign Telegram adapter      -> IMPLEMENTED / FOUNDER-LOCAL VERIFICATION PENDING
-  CE5 aggregate verification         -> AFTER TG4 ACCEPTANCE
+  TG4 Campaign Telegram adapter      -> FOUNDER-LOCAL VERIFIED / ACCEPTED 2026-09-15
+  CE5 aggregate verification         -> NEXT
 CE6 Measurement & Reconciliation      -> NOT STARTED
 CE7 Final Verification                -> NOT STARTED
 ```
@@ -87,6 +87,7 @@ docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG1_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
 Archive operator acceptance:
@@ -233,7 +234,7 @@ CE1-CE4 must not be reopened without a concrete regression.
 
 ## CE4.5 Shared Telegram Publishing — DONE / ACCEPTED
 
-TG1, TG2 and TG3 are accepted. Shared Telegram publishing is the only Telegram publication authority used by TG4.
+TG1, TG2 and TG3 are accepted. Shared Telegram publishing remains the only Telegram publication authority used by TG4.
 
 Canonical records:
 
@@ -243,7 +244,7 @@ docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG2_IMPLEMENTATION.md
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG3_IMPLEMENTATION.md
 ```
 
-Do not redesign TG1-TG3 or Archive management while implementing TG4 unless a concrete regression is found.
+Do not redesign TG1-TG3 or Archive management unless a concrete regression is found.
 
 ---
 
@@ -263,22 +264,26 @@ Founder-local verification covers the structured editor, scheduling, localized c
 
 Draft Preview reuses the existing Campaign renderer from current local form state while remaining isolated from participation, attempts, rewards, Goin issuance and reward budgets.
 
-### TG4 Campaign Telegram adapter — IMPLEMENTED / VERIFICATION PENDING
+### TG4 Campaign Telegram adapter — ACCEPTED 2026-09-15
 
-Canonical TG4 record:
+Canonical TG4 records:
 
 ```text
 docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_IMPLEMENTATION.md
+docs/strategy/TELEGRAM_PUBLISHING_SYSTEM_TG4_ACCEPTANCE.md
 ```
 
-Implemented path:
+Accepted path:
 
 ```text
 /manage/marketing
   -> CampaignTelegramAdapter
   -> TelegramPostComposer
+  -> shared managed image upload
   -> TG1 shared publisher
-  -> telegram_publications
+  -> real Telegram channel delivery
+  -> Campaign Mini App CTA
+  -> public Campaign
 ```
 
 TG4 prefill reads only the immutable current `publishedVersion.definition`.
@@ -297,24 +302,17 @@ Mini App Campaign CTA:
 campaign_<slug>
 ```
 
-Telegram entry attribution:
+Founder-local verification confirmed a real image post in a dedicated Telegram test channel and a working Join Campaign CTA that opened the configured Mini App on the intended Campaign. Managed-media scope tests passed 3/3.
 
-```text
-source = telegram
-medium = campaign_channel
-campaign = <slug>
-metadata.placement = telegram_channel
-```
-
-The query/attribution handoff is metadata only. Server Campaign runtime remains authoritative.
+Telegram entry attribution remains metadata only. Server Campaign runtime remains authoritative.
 
 Current CE5 completion order:
 
 ```text
 Manage Marketing operator surface -> FOUNDER-LOCAL ACCEPTED 2026-09-15
 Draft Preview                     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
-TG4 Campaign Telegram adapter     -> IMPLEMENTED / VERIFY NEXT
-CE5 aggregate verification        -> AFTER TG4 ACCEPTANCE
+TG4 Campaign Telegram adapter     -> FOUNDER-LOCAL ACCEPTED 2026-09-15
+CE5 aggregate verification        -> NEXT
 CE6 Measurement & Reconciliation  -> AFTER CE5 ACCEPTANCE
 ```
 
@@ -361,16 +359,23 @@ CE7 is the aggregate Campaign/Telegram integration acceptance boundary after CE5
 2. read DEVELOPMENT_WORKFLOW.md and UI_IMPLEMENTATION_GUIDELINES.md
 3. read CAMPAIGN_ENGINE_STATUS.md and CAMPAIGN_ENGINE_CE5_IMPLEMENTATION.md
 4. keep CE1-CE4.5 accepted unless a concrete regression exists
-5. keep Manage Marketing and Draft Preview accepted unless a concrete regression exists
-6. founder-local verify TG4 through the shared Telegram publisher
-7. after TG4 acceptance, complete CE5 aggregate verification before CE6
+5. keep Manage Marketing, Draft Preview and TG4 accepted unless a concrete regression exists
+6. complete CE5 aggregate verification next
+7. after CE5 acceptance, proceed to CE6
 8. keep NUXT_PUBLIC_NOINDEX=true and SEO launch deferred
 9. do not start Domain Expansion implementation before its scale gate
 10. do not create parallel wallet, analytics, authorization, Campaign or Telegram authorities
 ```
 
-TG4 implementation changes are frontend-only. Local runtime verification scope:
+TG4 managed-media runtime verification scope is frontend + API, with no SQL migration:
 
 ```powershell
+pnpm api
 pnpm frontend
+```
+
+Focused managed-media contract verification:
+
+```powershell
+docker compose exec api node --test src/adminManagedMediaRoute.test.mjs
 ```
