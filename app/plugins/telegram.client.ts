@@ -67,7 +67,7 @@ export default defineNuxtPlugin(() => {
     const promptMatch = /^prompt_(\d+)$/.exec(startParam)
     const campaignMatch = /^campaign_([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(startParam)
     const target = promptMatch
-      ? `/prompt/${promptMatch[1]}`
+      ? `/prompts?id=${encodeURIComponent(promptMatch[1])}`
       : campaignMatch
         ? `/campaign/${campaignMatch[1]}?source=telegram&medium=campaign_channel`
         : routes[startParam]
