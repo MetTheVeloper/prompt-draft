@@ -17,6 +17,7 @@ const route = useRoute();
 const router = useRouter();
 const auth = useAuth();
 const campaignsApi = useAdminCampaigns();
+const modal = useModal();
 const { t, locale } = useI18n();
 const { mobile, tablet } = useScreen();
 
@@ -390,6 +391,34 @@ async function validateDraft() {
   feedback.value = response.publishable
     ? t("manage.marketing.editor.publishable")
     : t("manage.marketing.editor.notPublishable");
+
+  const issueDescriptions = [
+    ...response.errors.map(issue => `${t("manage.marketing.validation.errors")}: ${issueLabel(issue)}`),
+    ...response.warnings.map(issue => `${t("manage.marketing.validation.warnings")}: ${issueLabel(issue)}`),
+  ];
+  modal.open({
+    header: {
+      icon: response.publishable ? "check_circle" : "warning",
+      title: t("manage.marketing.validation.modalTitle"),
+      color: response.publishable ? "green" : "orange",
+    },
+    title: response.publishable
+      ? t("manage.marketing.validation.successTitle")
+      : t("manage.marketing.validation.failureTitle"),
+    descriptions: [
+      response.publishable
+        ? t("manage.marketing.validation.successDetail")
+        : t("manage.marketing.validation.failureDetail"),
+      ...issueDescriptions,
+    ],
+    actions: [{
+      label: t("components.modal.actions.close"),
+      icon: "check_circle",
+      color: response.publishable ? "green" : "orange",
+      close: true,
+    }],
+    options: { width: 620 },
+  });
 }
 
 async function publishDraft() {
@@ -749,42 +778,70 @@ onMounted(async () => {
         </el-flex>
       </el-flex>
 
-      <el-flex v-if="canPublish && selectedCampaign?.publishedVersion" rules="rsc" :gap="8" class="w100" wrap>
-        <el-button
-          v-if="selectedCampaign.status === 'active' || selectedCampaign.status === 'scheduled'"
-          mode="flat"
-          color="orange"
-          icon="pause_circle"
-          :label="t('manage.marketing.actions.pause')"
-          :disable="campaignsApi.mutating.value"
-          @click="changeLifecycle('pause')"
-        />
-        <el-button
-          v-if="selectedCampaign.status === 'paused'"
-          mode="flat"
-          color="green"
-          icon="play_circle"
-          :label="t('manage.marketing.actions.resume')"
-          :disable="campaignsApi.mutating.value"
-          @click="changeLifecycle('resume')"
-        />
-        <el-button
-          v-if="selectedCampaign.status !== 'ended' && selectedCampaign.status !== 'archived'"
-          mode="flat"
-          color="orange"
-          icon="stop_circle"
-          :label="t('manage.marketing.actions.end')"
-          :disable="campaignsApi.mutating.value"
-          @click="changeLifecycle('end')"
-        />
-        <el-button
-          v-if="selectedCampaign.status !== 'archived'"
-          mode="flat"
-          icon="inventory_2"
-          :label="t('manage.marketing.actions.archive')"
-          :disable="campaignsApi.mutating.value"
-          @click="changeLifecycle('archive')"
-        />
+      <el-flex
+        v-if="canPublish && selectedCampaign?.publishedVersion"
+        rules="css"
+        :gap="12"
+        class="w100"
+        bg="surface"
+        :p="16"
+        :radius="14"
+        :br="1"
+        bc="normal15">
+        <el-flex rules="rbc" :gap="10" class="w100" wrap>
+          <el-flex rules="css" :gap="3" class="fg100">
+            <el-text :size="15" :weight="800">{{ t("manage.marketing.operations.title") }}</el-text>
+            <el-text :size="10" color="normal55">{{ t("manage.marketing.operations.hint") }}</el-text>
+          </el-flex>
+          <el-text
+            :size="11"
+            :weight="800"
+            :color="statusColor(selectedCampaign.status)"
+            marker="normal10"
+            :p="[4, 7]"
+            :radius="100">
+            {{ t("manage.marketing.operations.currentStatus", { status: statusLabel(selectedCampaign.status) }) }}
+          </el-text>
+        </el-flex>
+        <el-divider />
+        <el-flex rules="rsc" :gap="8" class="w100" wrap>
+          <el-button
+            v-if="selectedCampaign.status === 'active' || selectedCampaign.status === 'scheduled'"
+            mode="flat"
+            color="orange"
+            icon="pause_circle"
+            :label="t('manage.marketing.actions.pause')"
+            :disable="campaignsApi.mutating.value"
+            @click="changeLifecycle('pause')"
+          />
+          <el-button
+            v-if="selectedCampaign.status === 'paused'"
+            mode="flat"
+            color="green"
+            icon="play_circle"
+            :label="t('manage.marketing.actions.resume')"
+            :disable="campaignsApi.mutating.value"
+            @click="changeLifecycle('resume')"
+          />
+          <el-button
+            v-if="selectedCampaign.status !== 'ended' && selectedCampaign.status !== 'archived'"
+            mode="flat"
+            color="orange"
+            icon="stop_circle"
+            :label="t('manage.marketing.actions.end')"
+            :disable="campaignsApi.mutating.value"
+            @click="changeLifecycle('end')"
+          />
+          <el-button
+            v-if="selectedCampaign.status !== 'archived'"
+            mode="flat"
+            color="red"
+            icon="inventory_2"
+            :label="t('manage.marketing.actions.archive')"
+            :disable="campaignsApi.mutating.value"
+            @click="changeLifecycle('archive')"
+          />
+        </el-flex>
       </el-flex>
     </template>
   </el-flex>
