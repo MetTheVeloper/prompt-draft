@@ -93,6 +93,21 @@ const rendererComponent = computed(() => {
   return renderer?.kind === 'builtin' && renderer.key === 'campaign-default-v1' ? CampaignDefaultExperience : null
 })
 
+function readTelegramAttribution() {
+  const source = Array.isArray(route.query.source) ? route.query.source[0] : route.query.source
+  const medium = Array.isArray(route.query.medium) ? route.query.medium[0] : route.query.medium
+  if (source !== 'telegram' || medium !== 'campaign_channel') return null
+
+  return {
+    source: 'telegram',
+    medium: 'campaign_channel',
+    campaign: slug,
+    metadata: {
+      placement: 'telegram_channel',
+    },
+  }
+}
+
 async function refreshCallerState() {
   if (!import.meta.client || !auth.isLoggedIn.value) {
     callerState.value = null
@@ -121,9 +136,17 @@ async function startParticipation() {
   if (starting.value) return
   starting.value = true
   try {
-    const attribution = promotions.readPendingCampaignAttribution(slug)
-    await campaignApi.startParticipation(slug, attribution ?? {})
-    promotions.readPendingCampaignAttribution(slug, { consume: true })
+    const telegramAttribution = readTelegramAttribution()
+    const onsiteAttribution = telegramAttribution
+      ? null
+      : promotions.readPendingCampaignAttribution(slug)
+    await campaignApi.startParticipation(
+      slug,
+      telegramAttribution ?? onsiteAttribution ?? {},
+    )
+    if (onsiteAttribution) {
+      promotions.readPendingCampaignAttribution(slug, { consume: true })
+    }
     await refreshCallerState()
   } catch (error) {
     const code = readCampaignApiErrorCode(error)
