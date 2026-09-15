@@ -6,6 +6,13 @@ import type {
 
 type JsonObject = Record<string, any>;
 type CampaignLocale = "en" | "fa";
+type DateTimeParts = {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+};
 
 const props = withDefaults(defineProps<{
   modelValue: AdminCampaignDefinition;
@@ -27,8 +34,10 @@ const emit = defineEmits<{
 }>();
 
 const { t } = useI18n();
+const { mobile, tablet } = useScreen();
+const localeContentColumns = computed(() => mobile.value || tablet.value ? 1 : 2);
 
-const objectiveItems = computed(() => [
+const OBJECTIVE_TYPES = [
   "acquisition",
   "activation",
   "education",
@@ -39,9 +48,12 @@ const objectiveItems = computed(() => [
   "conversion",
   "monetization",
   "other",
-].map(value => ({
+] as const;
+
+const objectiveItems = computed(() => OBJECTIVE_TYPES.map(value => ({
   value,
   label: t(`manage.marketing.builder.objectives.${value}`),
+  description: t(`manage.marketing.builder.objectiveDescriptions.${value}`),
 })));
 
 const rendererItems = computed(() => [
@@ -68,6 +80,34 @@ const seoEndBehaviorItems = computed(() => [
   { value: "redirect", label: t("manage.marketing.builder.endBehavior.redirect") },
 ]);
 
+const FALLBACK_TIMEZONES = [
+  "UTC",
+  "Asia/Tehran",
+  "Asia/Dubai",
+  "Asia/Istanbul",
+  "Europe/Amsterdam",
+  "Europe/Berlin",
+  "Europe/London",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+  "Asia/Tokyo",
+  "Asia/Singapore",
+  "Australia/Sydney",
+];
+
+function supportedTimezones() {
+  try {
+    const values = (Intl as typeof Intl & {
+      supportedValuesOf?: (key: "timeZone") => string[];
+    }).supportedValuesOf?.("timeZone");
+    return values?.length ? values : FALLBACK_TIMEZONES;
+  } catch {
+    return FALLBACK_TIMEZONES;
+  }
+}
+
 function cloneDefinition(value: AdminCampaignDefinition): JsonObject {
   return JSON.parse(JSON.stringify(value ?? {}));
 }
@@ -75,9 +115,7 @@ function cloneDefinition(value: AdminCampaignDefinition): JsonObject {
 function getPath(path: string[], fallback: any = undefined) {
   let current: any = props.modelValue ?? {};
   for (const key of path) {
-    if (!current || typeof current !== "object" || Array.isArray(current)) {
-      return fallback;
-    }
+    if (!current || typeof current !== "object" || Array.isArray(current)) return fallback;
     current = current[key];
   }
   return current === undefined ? fallback : current;
@@ -87,9 +125,7 @@ function ensureObjectPath(root: JsonObject, path: string[]) {
   let current = root;
   for (const key of path) {
     const existing = current[key];
-    if (!existing || typeof existing !== "object" || Array.isArray(existing)) {
-      current[key] = {};
-    }
+    if (!existing || typeof existing !== "object" || Array.isArray(existing)) current[key] = {};
     current = current[key];
   }
   return current;
@@ -103,7 +139,6 @@ function patchDefinition(mutator: (next: JsonObject) => void) {
 
 function setPath(path: string[], value: any) {
   if (!path.length) return;
-
   patchDefinition((next) => {
     const parent = ensureObjectPath(next, path.slice(0, -1));
     const finalKey = path[path.length - 1];
@@ -129,6 +164,87 @@ const objectiveIssues = computed(() => issuesFor(["objective"]));
 const scheduleIssues = computed(() => issuesFor(["lifecycle"]));
 const eligibilityIssues = computed(() => issuesFor(["eligibility"]));
 const experienceIssues = computed(() => issuesFor(["experience"]));
+
+function pad2(value: number) {
+  return String(value).padStart(2, "0");
+}
+
+function parseDateTimeLocal(value: string): DateTimeParts | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(value);
+  if (!match) return null;
+  return {
+    year: Number(match[1]),
+    month: Number(match[2]),
+    day: Number(match[3]),
+    hour: Number(match[4]),
+    minute: Number(match[5]),
+  };
+}
+
+function partsInTimeZone(timestamp: number, zone: string): DateTimeParts | null {
+  try {
+    const formatter = new Intl.DateTimeFormat("en-CA", {
+      timeZone: zone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      hourCycle: "h23",
+    });
+    const parts = Object.fromEntries(
+      formatter.formatToParts(new Date(timestamp))
+        .filter(part => part.type !== "literal")
+        .map(part => [part.type, part.value]),
+    );
+    return {
+      year: Number(parts.year),
+      month: Number(parts.month),
+      day: Number(parts.day),
+      hour: Number(parts.hour),
+      minute: Number(parts.minute),
+    };
+  } catch {
+    return null;
+  }
+}
+
+function isoToLocalDateTime(iso: string, zone: string) {
+  const timestamp = Date.parse(iso);
+  if (Number.isNaN(timestamp)) return "";
+  const parts = partsInTimeZone(timestamp, zone);
+  if (!parts) return "";
+  return `${parts.year}-${pad2(parts.month)}-${pad2(parts.day)}T${pad2(parts.hour)}:${pad2(parts.minute)}`;
+}
+
+function localDateTimeToIso(value: string, zone: string) {
+  const target = parseDateTimeLocal(value);
+  if (!target) return "";
+
+  const targetAsUtc = Date.UTC(target.year, target.month - 1, target.day, target.hour, target.minute);
+  let guess = targetAsUtc;
+
+  for (let index = 0; index < 4; index += 1) {
+    const projected = partsInTimeZone(guess, zone);
+    if (!projected) return "";
+    const projectedAsUtc = Date.UTC(
+      projected.year,
+      projected.month - 1,
+      projected.day,
+      projected.hour,
+      projected.minute,
+    );
+    const delta = targetAsUtc - projectedAsUtc;
+    guess += delta;
+    if (!delta) break;
+  }
+
+  const verified = partsInTimeZone(guess, zone);
+  if (!verified || Object.keys(target).some(key => verified[key as keyof DateTimeParts] !== target[key as keyof DateTimeParts])) {
+    return "";
+  }
+  return new Date(guess).toISOString();
+}
 
 const slugModel = computed({
   get: () => props.slug,
@@ -157,19 +273,47 @@ const objectiveType = computed({
   set: (value: string | number | boolean | null) => setPath(["objective", "type"], String(value ?? "engagement")),
 });
 
-const startsAt = computed({
-  get: () => String(getPath(["lifecycle", "startsAt"], "")),
-  set: (value: string) => setPath(["lifecycle", "startsAt"], value.trim()),
-});
-
-const endsAt = computed({
-  get: () => String(getPath(["lifecycle", "endsAt"], "") ?? ""),
-  set: (value: string) => setPath(["lifecycle", "endsAt"], value.trim() || null),
-});
-
 const timezone = computed({
   get: () => String(getPath(["lifecycle", "timezone"], "Asia/Tehran")),
-  set: (value: string) => setPath(["lifecycle", "timezone"], value.trim()),
+  set: (value: string | number | boolean | null) => {
+    const nextZone = String(value ?? "UTC");
+    const previousZone = String(getPath(["lifecycle", "timezone"], "Asia/Tehran"));
+    const startsWallTime = isoToLocalDateTime(String(getPath(["lifecycle", "startsAt"], "")), previousZone);
+    const endsWallTime = isoToLocalDateTime(String(getPath(["lifecycle", "endsAt"], "") ?? ""), previousZone);
+
+    patchDefinition((next) => {
+      const lifecycle = ensureObjectPath(next, ["lifecycle"]);
+      lifecycle.timezone = nextZone;
+      if (startsWallTime) lifecycle.startsAt = localDateTimeToIso(startsWallTime, nextZone) || lifecycle.startsAt;
+      if (endsWallTime) lifecycle.endsAt = localDateTimeToIso(endsWallTime, nextZone) || lifecycle.endsAt;
+    });
+  },
+});
+
+const timezoneItems = computed(() => {
+  const current = timezone.value;
+  const values = Array.from(new Set([...supportedTimezones(), current])).filter(Boolean).sort();
+  return values.map(value => ({ value, label: value }));
+});
+
+const startsAtLocal = computed({
+  get: () => isoToLocalDateTime(String(getPath(["lifecycle", "startsAt"], "")), timezone.value),
+  set: (value: string) => {
+    const iso = localDateTimeToIso(value, timezone.value);
+    if (iso) setPath(["lifecycle", "startsAt"], iso);
+  },
+});
+
+const endsAtLocal = computed({
+  get: () => isoToLocalDateTime(String(getPath(["lifecycle", "endsAt"], "") ?? ""), timezone.value),
+  set: (value: string) => {
+    if (!value) {
+      setPath(["lifecycle", "endsAt"], null);
+      return;
+    }
+    const iso = localDateTimeToIso(value, timezone.value);
+    if (iso) setPath(["lifecycle", "endsAt"], iso);
+  },
 });
 
 const authenticated = computed({
@@ -191,9 +335,10 @@ const rendererRef = computed({
   set: (value: string | number | boolean | null) => {
     const raw = String(value ?? "builtin:campaign-default-v1");
     const separator = raw.indexOf(":");
-    const kind = separator >= 0 ? raw.slice(0, separator) : "builtin";
-    const key = separator >= 0 ? raw.slice(separator + 1) : raw;
-    setPath(["experience", "renderer"], { kind, key });
+    setPath(["experience", "renderer"], {
+      kind: separator >= 0 ? raw.slice(0, separator) : "builtin",
+      key: separator >= 0 ? raw.slice(separator + 1) : raw,
+    });
   },
 });
 
@@ -206,25 +351,16 @@ const locales = computed<CampaignLocale[]>({
   set: (value) => {
     const normalized = value.filter((locale): locale is CampaignLocale => locale === "en" || locale === "fa");
     const selected = normalized.length ? normalized : ["en"];
-
     patchDefinition((next) => {
       const experience = ensureObjectPath(next, ["experience"]);
       experience.locales = selected;
-
-      const currentDefault = typeof experience.defaultLocale === "string"
-        ? experience.defaultLocale
-        : "en";
-      if (!selected.includes(currentDefault as CampaignLocale)) {
-        experience.defaultLocale = selected[0];
-      }
+      const currentDefault = typeof experience.defaultLocale === "string" ? experience.defaultLocale : "en";
+      if (!selected.includes(currentDefault as CampaignLocale)) experience.defaultLocale = selected[0];
     });
   },
 });
 
-const defaultLocaleItems = computed(() => (
-  localeItems.value.filter(item => locales.value.includes(item.value as CampaignLocale))
-));
-
+const defaultLocaleItems = computed(() => localeItems.value.filter(item => locales.value.includes(item.value as CampaignLocale)));
 const defaultLocale = computed({
   get: () => String(getPath(["experience", "defaultLocale"], locales.value[0] || "en")),
   set: (value: string | number | boolean | null) => setPath(["experience", "defaultLocale"], String(value ?? "en")),
@@ -246,17 +382,10 @@ const seoIndexing = computed({
   get: () => String(getPath(["experience", "seo", "indexing"], "noindex")),
   set: (value: string | number | boolean | null) => setPath(["experience", "seo", "indexing"], String(value ?? "noindex")),
 });
-
-const seoCanonicalPath = computed({
-  get: () => String(getPath(["experience", "seo", "canonicalPath"], "")),
-  set: (value: string) => setPath(["experience", "seo", "canonicalPath"], value.trim() || undefined),
-});
-
 const seoEndBehavior = computed({
   get: () => String(getPath(["experience", "seo", "endBehavior"], "archive")),
   set: (value: string | number | boolean | null) => setPath(["experience", "seo", "endBehavior"], String(value ?? "archive")),
 });
-
 const seoRedirectPath = computed({
   get: () => String(getPath(["experience", "seo", "redirectPath"], "")),
   set: (value: string) => setPath(["experience", "seo", "redirectPath"], value.trim() || undefined),
@@ -264,14 +393,7 @@ const seoRedirectPath = computed({
 
 const currentRendererItems = computed(() => {
   if (rendererItems.value.some(item => item.value === rendererRef.value)) return rendererItems.value;
-  return [
-    {
-      value: rendererRef.value,
-      label: rendererRef.value,
-      description: t("manage.marketing.builder.renderers.legacy"),
-    },
-    ...rendererItems.value,
-  ];
+  return [{ value: rendererRef.value, label: rendererRef.value, description: t("manage.marketing.builder.renderers.legacy") }, ...rendererItems.value];
 });
 </script>
 
@@ -279,208 +401,86 @@ const currentRendererItems = computed(() => {
   <el-flex rules="css" :gap="14" class="w100">
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
       <el-flex rules="rbs" :gap="10" class="w100" wrap>
-        <el-flex rules="rsc" :gap="8">
-          <el-icon icon="badge" :size="18" color="prim" />
-          <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.basics") }}</el-text>
-        </el-flex>
+        <el-flex rules="rsc" :gap="8"><el-icon icon="badge" :size="18" color="prim" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.basics") }}</el-text></el-flex>
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.basics") }}</el-text>
       </el-flex>
-
       <el-grid cols="repeat(auto-fit, minmax(220px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.fields.slug") }}</el-text>
-          <el-text-field v-model="slugModel" :actions="false" :disabled="disabled || !headEditable" dir="ltr" />
-        </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.fields.internalName") }}</el-text>
-          <el-text-field v-model="internalNameModel" :actions="false" :disabled="disabled || !headEditable" />
-        </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.schemaVersion") }}</el-text>
-          <el-dropdown
-            v-model="schemaVersion"
-            :items="[{ value: 'campaign.v1', label: 'campaign.v1' }]"
-            :disabled="disabled"
-          />
-        </el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.fields.slug") }}</el-text><el-text-field v-model="slugModel" :actions="false" :disabled="disabled || !headEditable" dir="ltr" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.fields.internalName") }}</el-text><el-text-field v-model="internalNameModel" :actions="false" :disabled="disabled || !headEditable" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.schemaVersion") }}</el-text><el-dropdown v-model="schemaVersion" :items="[{ value: 'campaign.v1', label: 'campaign.v1' }]" :disabled="disabled" /></el-flex>
       </el-grid>
-
-      <el-text v-if="!headEditable" :size="10" color="normal45">
-        {{ t("manage.marketing.builder.hints.headLocked") }}
-      </el-text>
-      <el-text v-for="(issue, index) in basicsIssues" :key="`basics-${index}`" :size="10" color="red">
-        • {{ issueLabel(issue) }}
-      </el-text>
+      <el-text v-if="!headEditable" :size="10" color="normal45">{{ t("manage.marketing.builder.hints.headLocked") }}</el-text>
+      <el-text v-for="(issue, index) in basicsIssues" :key="`basics-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
       <el-flex rules="rbs" :gap="10" class="w100" wrap>
-        <el-flex rules="rsc" :gap="8">
-          <el-icon icon="track_changes" :size="18" color="blue" />
-          <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.objective") }}</el-text>
-        </el-flex>
+        <el-flex rules="rsc" :gap="8"><el-icon icon="track_changes" :size="18" color="blue" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.objective") }}</el-text></el-flex>
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.objective") }}</el-text>
       </el-flex>
-
-      <el-flex rules="css" :gap="6" class="w100">
-        <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.objectiveType") }}</el-text>
-        <el-dropdown v-model="objectiveType" :items="objectiveItems" :disabled="disabled" />
-      </el-flex>
-      <el-text v-for="(issue, index) in objectiveIssues" :key="`objective-${index}`" :size="10" color="red">
-        • {{ issueLabel(issue) }}
-      </el-text>
+      <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.objectiveType") }}</el-text><el-dropdown v-model="objectiveType" :items="objectiveItems" :disabled="disabled" /></el-flex>
+      <el-text v-for="(issue, index) in objectiveIssues" :key="`objective-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
       <el-flex rules="rbs" :gap="10" class="w100" wrap>
-        <el-flex rules="rsc" :gap="8">
-          <el-icon icon="schedule" :size="18" color="orange" />
-          <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.schedule") }}</el-text>
-        </el-flex>
+        <el-flex rules="rsc" :gap="8"><el-icon icon="schedule" :size="18" color="orange" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.schedule") }}</el-text></el-flex>
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.schedule") }}</el-text>
       </el-flex>
-
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.startsAt") }}</el-text>
-          <el-text-field
-            v-model="startsAt"
-            :actions="false"
-            :disabled="disabled"
-            dir="ltr"
-            :placeholder="t('manage.marketing.builder.placeholders.timestamp')"
-          />
-        </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endsAt") }}</el-text>
-          <el-text-field
-            v-model="endsAt"
-            :actions="false"
-            :disabled="disabled"
-            dir="ltr"
-            :placeholder="t('manage.marketing.builder.placeholders.optionalTimestamp')"
-          />
-        </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.timezone") }}</el-text>
-          <el-text-field
-            v-model="timezone"
-            :actions="false"
-            :disabled="disabled"
-            dir="ltr"
-            :placeholder="t('manage.marketing.builder.placeholders.timezone')"
-          />
-        </el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.startsAt") }}</el-text><el-date-time-field v-model="startsAtLocal" :disabled="disabled" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endsAt") }}</el-text><el-date-time-field v-model="endsAtLocal" :disabled="disabled" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.timezone") }}</el-text><el-dropdown v-model="timezone" :items="timezoneItems" :disabled="disabled" /></el-flex>
       </el-grid>
-      <el-text v-for="(issue, index) in scheduleIssues" :key="`schedule-${index}`" :size="10" color="red">
-        • {{ issueLabel(issue) }}
-      </el-text>
+      <el-text :size="10" color="normal45">{{ t("manage.marketing.builder.hints.scheduleLocalTime") }}</el-text>
+      <el-text v-for="(issue, index) in scheduleIssues" :key="`schedule-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
 
     <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
       <el-flex rules="rbs" :gap="10" class="w100" wrap>
-        <el-flex rules="rsc" :gap="8">
-          <el-icon icon="verified_user" :size="18" color="green" />
-          <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.eligibility") }}</el-text>
-        </el-flex>
+        <el-flex rules="rsc" :gap="8"><el-icon icon="verified_user" :size="18" color="green" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.eligibility") }}</el-text></el-flex>
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.eligibility") }}</el-text>
       </el-flex>
-
-      <el-switch
-        v-model="authenticated"
-        icon="lock_person"
-        :label="t('manage.marketing.builder.fields.authenticated')"
-        :disable="disabled"
-      />
-
-      <el-flex v-if="hasEligibilityRules" rules="rsc" :gap="8" class="w100" bg="blue10" :p="10" :radius="10">
-        <el-icon icon="info" color="blue" :size="16" />
-        <el-text :size="10" color="normal55">{{ t("manage.marketing.builder.hints.rulesPreserved") }}</el-text>
-      </el-flex>
-      <el-text v-for="(issue, index) in eligibilityIssues" :key="`eligibility-${index}`" :size="10" color="red">
-        • {{ issueLabel(issue) }}
-      </el-text>
+      <el-switch v-model="authenticated" icon="lock_person" :label="t('manage.marketing.builder.fields.authenticated')" :disable="disabled" />
+      <el-flex v-if="hasEligibilityRules" rules="rsc" :gap="8" class="w100" bg="blue10" :p="10" :radius="10"><el-icon icon="info" color="blue" :size="16" /><el-text :size="10" color="normal55">{{ t("manage.marketing.builder.hints.rulesPreserved") }}</el-text></el-flex>
+      <el-text v-for="(issue, index) in eligibilityIssues" :key="`eligibility-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
 
     <el-flex rules="css" :gap="14" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
       <el-flex rules="rbs" :gap="10" class="w100" wrap>
-        <el-flex rules="rsc" :gap="8">
-          <el-icon icon="web" :size="18" color="prim" />
-          <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.experience") }}</el-text>
-        </el-flex>
+        <el-flex rules="rsc" :gap="8"><el-icon icon="web" :size="18" color="prim" /><el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.experience") }}</el-text></el-flex>
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.experience") }}</el-text>
       </el-flex>
-
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.renderer") }}</el-text>
-          <el-dropdown v-model="rendererRef" :items="currentRendererItems" :disabled="disabled" />
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.renderer") }}</el-text><el-dropdown v-model="rendererRef" :items="currentRendererItems" :disabled="disabled" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.locales") }}</el-text><el-multi-select v-model="locales" :items="localeItems" :disabled="disabled" /></el-flex>
+        <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.defaultLocale") }}</el-text><el-dropdown v-model="defaultLocale" :items="defaultLocaleItems" :disabled="disabled" /></el-flex>
+      </el-grid>
+
+      <el-grid :cols="localeContentColumns" :gap="12" class="w100">
+        <el-flex v-if="locales.includes('en')" rules="css" :gap="10" class="w100" bg="normal5" :p="12" :radius="12" dir="ltr">
+          <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.en") }}</el-text>
+          <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text><el-text-field v-model="titleEn" :actions="false" :disabled="disabled" dir="ltr" /></el-flex>
+          <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text><el-text-field v-model="descriptionEn" type="textarea" :rows="3" :actions="false" :disabled="disabled" dir="ltr" /></el-flex>
         </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.locales") }}</el-text>
-          <el-multi-select v-model="locales" :items="localeItems" :disabled="disabled" />
-        </el-flex>
-        <el-flex rules="css" :gap="6">
-          <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.defaultLocale") }}</el-text>
-          <el-dropdown v-model="defaultLocale" :items="defaultLocaleItems" :disabled="disabled" />
+        <el-flex v-if="locales.includes('fa')" rules="css" :gap="10" class="w100" bg="normal5" :p="12" :radius="12" dir="rtl">
+          <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.fa") }}</el-text>
+          <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text><el-text-field v-model="titleFa" :actions="false" :disabled="disabled" dir="rtl" /></el-flex>
+          <el-flex rules="css" :gap="6" class="w100"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text><el-text-field v-model="descriptionFa" type="textarea" :rows="3" :actions="false" :disabled="disabled" dir="rtl" /></el-flex>
         </el-flex>
       </el-grid>
 
-      <el-flex v-if="locales.includes('en')" rules="css" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
-        <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.en") }}</el-text>
-        <el-grid cols="repeat(auto-fit, minmax(260px, 1fr))" :gap="10" class="w100">
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text>
-            <el-text-field v-model="titleEn" :actions="false" :disabled="disabled" />
-          </el-flex>
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text>
-            <el-text-field v-model="descriptionEn" type="textarea" :rows="3" :actions="false" :disabled="disabled" />
-          </el-flex>
-        </el-grid>
-      </el-flex>
-
-      <el-flex v-if="locales.includes('fa')" rules="css" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
-        <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.fa") }}</el-text>
-        <el-grid cols="repeat(auto-fit, minmax(260px, 1fr))" :gap="10" class="w100">
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text>
-            <el-text-field v-model="titleFa" :actions="false" :disabled="disabled" dir="rtl" />
-          </el-flex>
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text>
-            <el-text-field v-model="descriptionFa" type="textarea" :rows="3" :actions="false" :disabled="disabled" dir="rtl" />
-          </el-flex>
-        </el-grid>
-      </el-flex>
-
       <el-divider />
-
       <el-flex rules="css" :gap="10" class="w100">
         <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.sections.seo") }}</el-text>
         <el-grid cols="repeat(auto-fit, minmax(220px, 1fr))" :gap="12" class="w100">
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.indexing") }}</el-text>
-            <el-dropdown v-model="seoIndexing" :items="seoIndexingItems" :disabled="disabled" />
-          </el-flex>
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.canonicalPath") }}</el-text>
-            <el-text-field v-model="seoCanonicalPath" :actions="false" :disabled="disabled" dir="ltr" placeholder="/campaign/..." />
-          </el-flex>
-          <el-flex rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endBehavior") }}</el-text>
-            <el-dropdown v-model="seoEndBehavior" :items="seoEndBehaviorItems" :disabled="disabled" />
-          </el-flex>
-          <el-flex v-if="seoEndBehavior === 'redirect'" rules="css" :gap="6">
-            <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.redirectPath") }}</el-text>
-            <el-text-field v-model="seoRedirectPath" :actions="false" :disabled="disabled" dir="ltr" />
-          </el-flex>
+          <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.indexing") }}</el-text><el-dropdown v-model="seoIndexing" :items="seoIndexingItems" :disabled="disabled" /></el-flex>
+          <el-flex rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endBehavior") }}</el-text><el-dropdown v-model="seoEndBehavior" :items="seoEndBehaviorItems" :disabled="disabled" /></el-flex>
+          <el-flex v-if="seoEndBehavior === 'redirect'" rules="css" :gap="6"><el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.redirectPath") }}</el-text><el-text-field v-model="seoRedirectPath" :actions="false" :disabled="disabled" dir="ltr" /></el-flex>
         </el-grid>
+        <el-text :size="10" color="normal45">{{ seoIndexing === 'index' ? t('manage.marketing.builder.hints.canonicalAutomatic', { path: `/campaign/${slug}` }) : t('manage.marketing.builder.hints.canonicalDisabled') }}</el-text>
       </el-flex>
-
-      <el-text v-for="(issue, index) in experienceIssues" :key="`experience-${index}`" :size="10" color="red">
-        • {{ issueLabel(issue) }}
-      </el-text>
+      <el-text v-for="(issue, index) in experienceIssues" :key="`experience-${index}`" :size="10" color="red">• {{ issueLabel(issue) }}</el-text>
     </el-flex>
   </el-flex>
 </template>
