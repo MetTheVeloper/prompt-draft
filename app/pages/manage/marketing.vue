@@ -20,7 +20,7 @@ const auth = useAuth();
 const campaignsApi = useAdminCampaigns();
 const modal = useModal();
 const { t, locale } = useI18n();
-const { mobile, tablet } = useScreen();
+const { mini } = useScreen();
 
 const statusFilter = ref<"" | AdminCampaignStatus>("");
 const editorOpen = ref(false);
@@ -50,7 +50,7 @@ const statuses: AdminCampaignStatus[] = [
 const canManage = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_MANAGE));
 const canPublish = computed(() => auth.can(AUTH_PERMISSIONS.MARKETING_CAMPAIGNS_PUBLISH));
 const selectedCampaign = computed(() => campaignsApi.selected.value);
-const metricColumns = computed(() => mobile.value ? 1 : tablet.value ? 2 : 5);
+const metricColumns = computed(() => mini.value ? 2 : 5);
 const definitionDirty = computed(() => (
   serializeDefinition(definitionDraft.value) !== loadedDefinitionSnapshot.value
 ));
@@ -511,8 +511,8 @@ onMounted(async () => {
 
 <template>
   <el-flex v-if="editorOpen" rules="css" :gap="16" class="w100">
-    <el-flex rules="rbc" :gap="12" class="w100" wrap>
-      <el-flex rules="css" :gap="4" class="fg100">
+    <el-flex :rules="mini ? 'css' : 'rbc'" :gap="12" class="w100" wrap>
+      <el-flex rules="css" :gap="4" :class="mini ? 'w100' : 'fg100'">
         <el-text :size="19" :weight="800">
           {{ creating
             ? t("manage.marketing.editor.createTitle")
@@ -586,24 +586,26 @@ onMounted(async () => {
         :radius="14"
         :br="1"
         bc="normal15">
-        <el-flex rules="rbc" :gap="10" class="w100" wrap>
-          <el-flex rules="rcc" :gap="8" wrap>
-            <el-text :size="12" :weight="800">{{ selectedCampaign.internalName }}</el-text>
-            <el-text :size="11" color="normal45">{{ selectedCampaign.slug }}</el-text>
-            <el-text
-              :size="11"
-              :weight="800"
-              :color="statusColor(selectedCampaign.status)"
-              marker="normal10"
-              :p="[4, 7]"
-              :radius="100">
-              {{ statusLabel(selectedCampaign.status) }}
-            </el-text>
+        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="10" class="w100" wrap>
+          <el-flex :rules="mini ? 'css' : 'rcc'" :gap="8" :class="mini ? 'w100' : ''" wrap>
+            <el-flex rules="rsc" :gap="8" class="w100" wrap>
+              <el-text :size="12" :weight="800">{{ selectedCampaign.internalName }}</el-text>
+              <el-text
+                :size="11"
+                :weight="800"
+                :color="statusColor(selectedCampaign.status)"
+                :marker="mini ? undefined : 'normal10'"
+                :p="[4, 7]"
+                :radius="100">
+                {{ statusLabel(selectedCampaign.status) }}
+              </el-text>
+            </el-flex>
+            <el-text :size="11" color="normal45" class="marketing-breakable">{{ selectedCampaign.slug }}</el-text>
           </el-flex>
-          <el-text :size="10" color="normal45">{{ selectedCampaign.id }}</el-text>
+          <el-text :size="10" color="normal45" class="marketing-breakable">{{ selectedCampaign.id }}</el-text>
         </el-flex>
 
-        <el-grid cols="repeat(auto-fit, minmax(150px, 1fr))" :gap="10" class="w100">
+        <el-grid :cols="mini ? 2 : 'repeat(auto-fit, minmax(150px, 1fr))'" :gap="10" class="w100">
           <el-flex rules="css" :gap="3">
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.version") }}</el-text>
             <el-text :size="12" :weight="700">{{ selectedCampaign.publishedVersion?.version ?? "—" }}</el-text>
@@ -612,7 +614,7 @@ onMounted(async () => {
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.draftRevision") }}</el-text>
             <el-text :size="12" :weight="700">{{ selectedCampaign.draftRevision }}</el-text>
           </el-flex>
-          <el-flex rules="css" :gap="3">
+          <el-flex rules="css" :gap="3" :class="{ 'marketing-meta-wide': mini }">
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.updatedAt") }}</el-text>
             <el-text :size="12" :weight="700">{{ formatDate(selectedCampaign.updatedAt) }}</el-text>
           </el-flex>
@@ -661,8 +663,8 @@ onMounted(async () => {
         :radius="14"
         :br="1"
         bc="normal15">
-        <el-flex rules="rbc" :gap="10" class="w100" wrap>
-          <el-flex rules="css" :gap="3" class="fg100">
+        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="10" class="w100" wrap>
+          <el-flex rules="css" :gap="3" :class="mini ? 'w100' : 'fg100'">
             <el-text :size="13" :weight="800">{{ t("manage.marketing.advanced.title") }}</el-text>
             <el-text :size="10" color="normal55">{{ t("manage.marketing.advanced.hint") }}</el-text>
           </el-flex>
@@ -703,7 +705,7 @@ onMounted(async () => {
       </el-flex>
 
       <el-flex
-        rules="rbc"
+        :rules="mini ? 'css' : 'rbc'"
         :gap="10"
         class="w100"
         bg="surface"
@@ -712,7 +714,7 @@ onMounted(async () => {
         :br="1"
         bc="normal15"
         wrap>
-        <el-flex rules="rsc" :gap="8" wrap>
+        <el-flex rules="rsc" :gap="8" :class="{ w100: mini }" wrap>
           <el-text v-if="definitionDirty" :size="11" color="orange">
             {{ t("manage.marketing.editor.unsavedForm") }}
           </el-text>
@@ -721,7 +723,7 @@ onMounted(async () => {
           </el-text>
         </el-flex>
 
-        <el-flex rules="rsc" :gap="8" wrap>
+        <el-flex rules="rsc" :gap="8" :class="{ w100: mini }" wrap>
           <el-button
             v-if="selectedCampaign"
             mode="flat"
@@ -784,7 +786,7 @@ onMounted(async () => {
         :radius="14"
         :br="1"
         bc="normal15">
-        <el-flex rules="rbc" :gap="8" class="w100" wrap>
+        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="8" class="w100" wrap>
           <el-text :size="16" :weight="800">{{ t("manage.marketing.validation.title") }}</el-text>
           <el-text
             :size="11"
@@ -841,8 +843,8 @@ onMounted(async () => {
         :radius="14"
         :br="1"
         bc="normal15">
-        <el-flex rules="rbc" :gap="10" class="w100" wrap>
-          <el-flex rules="css" :gap="3" class="fg100">
+        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="10" class="w100" wrap>
+          <el-flex rules="css" :gap="3" :class="mini ? 'w100' : 'fg100'">
             <el-text :size="15" :weight="800">{{ t("manage.marketing.operations.title") }}</el-text>
             <el-text :size="10" color="normal55">{{ t("manage.marketing.operations.hint") }}</el-text>
           </el-flex>
@@ -850,7 +852,7 @@ onMounted(async () => {
             :size="11"
             :weight="800"
             :color="statusColor(selectedCampaign.status)"
-            marker="normal10"
+            :marker="mini ? undefined : 'normal10'"
             :p="[4, 7]"
             :radius="100">
             {{ t("manage.marketing.operations.currentStatus", { status: statusLabel(selectedCampaign.status) }) }}
@@ -900,12 +902,12 @@ onMounted(async () => {
   </el-flex>
 
   <el-flex v-else rules="css" :gap="16" class="w100">
-    <el-flex rules="rbc" :gap="12" class="w100" wrap>
-      <el-flex rules="css" :gap="4" class="fg100">
+    <el-flex :rules="mini ? 'css' : 'rbc'" :gap="12" class="w100" wrap>
+      <el-flex rules="css" :gap="4" :class="mini ? 'w100' : 'fg100'">
         <el-text :size="20" :weight="800">{{ t("manage.marketing.title") }}</el-text>
         <el-text :size="12" color="normal55">{{ t("manage.marketing.subtitle") }}</el-text>
       </el-flex>
-      <el-flex rules="rcc" :gap="8">
+      <el-flex rules="rcc" :gap="8" :class="{ w100: mini }" wrap>
         <el-button
           mode="flat"
           icon="refresh"
@@ -971,16 +973,16 @@ onMounted(async () => {
         :radius="14"
         :br="1"
         bc="normal15">
-        <el-flex rules="rbc" :gap="8" class="w100">
+        <el-flex :rules="mini ? 'css' : 'rbc'" :gap="8" class="w100">
           <el-flex rules="css" :gap="3" class="fg100">
             <el-text :size="14" :weight="800">{{ campaign.internalName }}</el-text>
-            <el-text :size="10" color="normal45">{{ campaign.slug }}</el-text>
+            <el-text :size="10" color="normal45" class="marketing-breakable">{{ campaign.slug }}</el-text>
           </el-flex>
           <el-text
             :size="10"
             :weight="800"
             :color="statusColor(campaign.status)"
-            marker="normal10"
+            :marker="mini ? undefined : 'normal10'"
             :p="[4, 7]"
             :radius="100">
             {{ statusLabel(campaign.status) }}
@@ -1029,3 +1031,14 @@ onMounted(async () => {
     </el-flex>
   </el-flex>
 </template>
+
+<style scoped>
+.marketing-breakable {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.marketing-meta-wide {
+  grid-column: 1 / -1;
+}
+</style>
