@@ -437,9 +437,9 @@ onMounted(async () => {
 </script>
 
 <template>
-  <el-flex v-if="editorOpen" rules="csc" :gap="16" class="w100">
+  <el-flex v-if="editorOpen" rules="css" :gap="16" class="w100">
     <el-flex rules="rbc" :gap="12" class="w100" wrap>
-      <el-flex rules="ccs" :gap="4" class="fg100">
+      <el-flex rules="css" :gap="4" class="fg100">
         <el-text :size="19" :weight="800">
           {{ creating
             ? t("manage.marketing.editor.createTitle")
@@ -505,7 +505,7 @@ onMounted(async () => {
     <template v-else>
       <el-flex
         v-if="selectedCampaign"
-        rules="csc"
+        rules="css"
         :gap="12"
         class="w100"
         bg="surface"
@@ -531,22 +531,22 @@ onMounted(async () => {
         </el-flex>
 
         <el-grid cols="repeat(auto-fit, minmax(150px, 1fr))" :gap="10" class="w100">
-          <el-flex rules="ccs" :gap="3">
+          <el-flex rules="css" :gap="3">
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.version") }}</el-text>
             <el-text :size="12" :weight="700">{{ selectedCampaign.publishedVersion?.version ?? "—" }}</el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="3">
+          <el-flex rules="css" :gap="3">
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.draftRevision") }}</el-text>
             <el-text :size="12" :weight="700">{{ selectedCampaign.draftRevision }}</el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="3">
+          <el-flex rules="css" :gap="3">
             <el-text :size="10" color="normal45">{{ t("manage.marketing.fields.updatedAt") }}</el-text>
             <el-text :size="12" :weight="700">{{ formatDate(selectedCampaign.updatedAt) }}</el-text>
           </el-flex>
         </el-grid>
       </el-flex>
 
-      <el-flex v-if="selectedCampaign" rules="ccs" :gap="10" class="w100">
+      <el-flex v-if="selectedCampaign" rules="css" :gap="10" class="w100">
         <el-text :size="16" :weight="800">{{ t("manage.marketing.metrics.title") }}</el-text>
         <el-grid :cols="metricColumns" :gap="10" class="w100">
           <ManageMetricCard
@@ -580,7 +580,7 @@ onMounted(async () => {
       />
 
       <el-flex
-        rules="csc"
+        rules="css"
         :gap="10"
         class="w100"
         bg="surface"
@@ -589,7 +589,7 @@ onMounted(async () => {
         :br="1"
         bc="normal15">
         <el-flex rules="rbc" :gap="10" class="w100" wrap>
-          <el-flex rules="ccs" :gap="3" class="fg100">
+          <el-flex rules="css" :gap="3" class="fg100">
             <el-text :size="13" :weight="800">{{ t("manage.marketing.advanced.title") }}</el-text>
             <el-text :size="10" color="normal55">{{ t("manage.marketing.advanced.hint") }}</el-text>
           </el-flex>
@@ -694,7 +694,7 @@ onMounted(async () => {
 
       <el-flex
         v-if="selectedCampaign"
-        rules="csc"
+        rules="css"
         :gap="10"
         class="w100"
         bg="surface"
@@ -726,7 +726,7 @@ onMounted(async () => {
           {{ t("manage.marketing.validation.noIssues") }}
         </el-text>
 
-        <el-flex v-if="!definitionDirty && selectedCampaign.validation.errors.length" rules="ccs" :gap="5" class="w100">
+        <el-flex v-if="!definitionDirty && selectedCampaign.validation.errors.length" rules="css" :gap="5" class="w100">
           <el-text :size="12" :weight="800" color="red">{{ t("manage.marketing.validation.errors") }}</el-text>
           <el-text
             v-for="(issue, index) in selectedCampaign.validation.errors"
@@ -737,7 +737,7 @@ onMounted(async () => {
           </el-text>
         </el-flex>
 
-        <el-flex v-if="!definitionDirty && selectedCampaign.validation.warnings.length" rules="ccs" :gap="5" class="w100">
+        <el-flex v-if="!definitionDirty && selectedCampaign.validation.warnings.length" rules="css" :gap="5" class="w100">
           <el-text :size="12" :weight="800" color="orange">{{ t("manage.marketing.validation.warnings") }}</el-text>
           <el-text
             v-for="(issue, index) in selectedCampaign.validation.warnings"
@@ -789,9 +789,9 @@ onMounted(async () => {
     </template>
   </el-flex>
 
-  <el-flex v-else rules="csc" :gap="16" class="w100">
+  <el-flex v-else rules="css" :gap="16" class="w100">
     <el-flex rules="rbc" :gap="12" class="w100" wrap>
-      <el-flex rules="ccs" :gap="4" class="fg100">
+      <el-flex rules="css" :gap="4" class="fg100">
         <el-text :size="20" :weight="800">{{ t("manage.marketing.title") }}</el-text>
         <el-text :size="12" color="normal55">{{ t("manage.marketing.subtitle") }}</el-text>
       </el-flex>
@@ -854,7 +854,7 @@ onMounted(async () => {
       <el-flex
         v-for="campaign in campaignsApi.campaigns.value"
         :key="campaign.id"
-        rules="csc"
+        rules="css"
         :gap="12"
         bg="surface"
         :p="14"
@@ -862,7 +862,7 @@ onMounted(async () => {
         :br="1"
         bc="normal15">
         <el-flex rules="rbc" :gap="8" class="w100">
-          <el-flex rules="ccs" :gap="3" class="fg100">
+          <el-flex rules="css" :gap="3" class="fg100">
             <el-text :size="14" :weight="800">{{ campaign.internalName }}</el-text>
             <el-text :size="10" color="normal45">{{ campaign.slug }}</el-text>
           </el-flex>
@@ -878,19 +878,19 @@ onMounted(async () => {
         </el-flex>
 
         <el-grid cols="1fr 1fr" :gap="8" class="w100">
-          <el-flex rules="ccs" :gap="2">
+          <el-flex rules="css" :gap="2">
             <el-text :size="9" color="normal45">{{ t("manage.marketing.fields.participants") }}</el-text>
             <el-text :size="12" :weight="700">{{ formatNumber(campaign.participants) }}</el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="2">
+          <el-flex rules="css" :gap="2">
             <el-text :size="9" color="normal45">{{ t("manage.marketing.fields.goinGranted") }}</el-text>
             <el-text :size="12" :weight="700">{{ formatNumber(campaign.goinGranted) }}</el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="2">
+          <el-flex rules="css" :gap="2">
             <el-text :size="9" color="normal45">{{ t("manage.marketing.fields.version") }}</el-text>
             <el-text :size="12" :weight="700">{{ campaign.currentVersion ?? "—" }}</el-text>
           </el-flex>
-          <el-flex rules="ccs" :gap="2">
+          <el-flex rules="css" :gap="2">
             <el-text :size="9" color="normal45">{{ t("manage.marketing.fields.draftRevision") }}</el-text>
             <el-text :size="12" :weight="700">{{ campaign.draftRevision }}</el-text>
           </el-flex>
