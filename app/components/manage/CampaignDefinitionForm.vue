@@ -276,9 +276,9 @@ const currentRendererItems = computed(() => {
 </script>
 
 <template>
-  <el-flex rules="csc" :gap="14" class="w100">
-    <el-flex rules="csc" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbc" :gap="10" class="w100" wrap>
+  <el-flex rules="css" :gap="14" class="w100">
+    <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
+      <el-flex rules="rbs" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8">
           <el-icon icon="badge" :size="18" color="prim" />
           <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.basics") }}</el-text>
@@ -287,15 +287,15 @@ const currentRendererItems = computed(() => {
       </el-flex>
 
       <el-grid cols="repeat(auto-fit, minmax(220px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.fields.slug") }}</el-text>
           <el-text-field v-model="slugModel" :actions="false" :disabled="disabled || !headEditable" dir="ltr" />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.fields.internalName") }}</el-text>
           <el-text-field v-model="internalNameModel" :actions="false" :disabled="disabled || !headEditable" />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.schemaVersion") }}</el-text>
           <el-dropdown
             v-model="schemaVersion"
@@ -313,8 +313,8 @@ const currentRendererItems = computed(() => {
       </el-text>
     </el-flex>
 
-    <el-flex rules="csc" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbc" :gap="10" class="w100" wrap>
+    <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
+      <el-flex rules="rbs" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8">
           <el-icon icon="track_changes" :size="18" color="blue" />
           <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.objective") }}</el-text>
@@ -322,7 +322,7 @@ const currentRendererItems = computed(() => {
         <el-text :size="11" color="normal55">{{ t("manage.marketing.builder.hints.objective") }}</el-text>
       </el-flex>
 
-      <el-flex rules="ccs" :gap="6" class="w100">
+      <el-flex rules="css" :gap="6" class="w100">
         <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.objectiveType") }}</el-text>
         <el-dropdown v-model="objectiveType" :items="objectiveItems" :disabled="disabled" />
       </el-flex>
@@ -331,8 +331,8 @@ const currentRendererItems = computed(() => {
       </el-text>
     </el-flex>
 
-    <el-flex rules="csc" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbc" :gap="10" class="w100" wrap>
+    <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
+      <el-flex rules="rbs" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8">
           <el-icon icon="schedule" :size="18" color="orange" />
           <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.schedule") }}</el-text>
@@ -341,7 +341,7 @@ const currentRendererItems = computed(() => {
       </el-flex>
 
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.startsAt") }}</el-text>
           <el-text-field
             v-model="startsAt"
@@ -351,7 +351,7 @@ const currentRendererItems = computed(() => {
             :placeholder="t('manage.marketing.builder.placeholders.timestamp')"
           />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endsAt") }}</el-text>
           <el-text-field
             v-model="endsAt"
@@ -361,7 +361,7 @@ const currentRendererItems = computed(() => {
             :placeholder="t('manage.marketing.builder.placeholders.optionalTimestamp')"
           />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.timezone") }}</el-text>
           <el-text-field
             v-model="timezone"
@@ -377,8 +377,8 @@ const currentRendererItems = computed(() => {
       </el-text>
     </el-flex>
 
-    <el-flex rules="csc" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbc" :gap="10" class="w100" wrap>
+    <el-flex rules="css" :gap="12" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
+      <el-flex rules="rbs" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8">
           <el-icon icon="verified_user" :size="18" color="green" />
           <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.eligibility") }}</el-text>
@@ -402,8 +402,8 @@ const currentRendererItems = computed(() => {
       </el-text>
     </el-flex>
 
-    <el-flex rules="csc" :gap="14" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
-      <el-flex rules="rbc" :gap="10" class="w100" wrap>
+    <el-flex rules="css" :gap="14" class="w100" bg="surface" :p="16" :radius="14" :br="1" bc="normal15">
+      <el-flex rules="rbs" :gap="10" class="w100" wrap>
         <el-flex rules="rsc" :gap="8">
           <el-icon icon="web" :size="18" color="prim" />
           <el-text :size="15" :weight="800">{{ t("manage.marketing.builder.sections.experience") }}</el-text>
@@ -412,42 +412,42 @@ const currentRendererItems = computed(() => {
       </el-flex>
 
       <el-grid cols="repeat(auto-fit, minmax(230px, 1fr))" :gap="12" class="w100">
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.renderer") }}</el-text>
           <el-dropdown v-model="rendererRef" :items="currentRendererItems" :disabled="disabled" />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.locales") }}</el-text>
           <el-multi-select v-model="locales" :items="localeItems" :disabled="disabled" />
         </el-flex>
-        <el-flex rules="ccs" :gap="6">
+        <el-flex rules="css" :gap="6">
           <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.defaultLocale") }}</el-text>
           <el-dropdown v-model="defaultLocale" :items="defaultLocaleItems" :disabled="disabled" />
         </el-flex>
       </el-grid>
 
-      <el-flex v-if="locales.includes('en')" rules="csc" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
+      <el-flex v-if="locales.includes('en')" rules="css" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
         <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.en") }}</el-text>
         <el-grid cols="repeat(auto-fit, minmax(260px, 1fr))" :gap="10" class="w100">
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text>
             <el-text-field v-model="titleEn" :actions="false" :disabled="disabled" />
           </el-flex>
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text>
             <el-text-field v-model="descriptionEn" type="textarea" :rows="3" :actions="false" :disabled="disabled" />
           </el-flex>
         </el-grid>
       </el-flex>
 
-      <el-flex v-if="locales.includes('fa')" rules="csc" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
+      <el-flex v-if="locales.includes('fa')" rules="css" :gap="8" class="w100" bg="normal5" :p="12" :radius="12">
         <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.locales.fa") }}</el-text>
         <el-grid cols="repeat(auto-fit, minmax(260px, 1fr))" :gap="10" class="w100">
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.title") }}</el-text>
             <el-text-field v-model="titleFa" :actions="false" :disabled="disabled" dir="rtl" />
           </el-flex>
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.description") }}</el-text>
             <el-text-field v-model="descriptionFa" type="textarea" :rows="3" :actions="false" :disabled="disabled" dir="rtl" />
           </el-flex>
@@ -456,22 +456,22 @@ const currentRendererItems = computed(() => {
 
       <el-divider />
 
-      <el-flex rules="ccs" :gap="10" class="w100">
+      <el-flex rules="css" :gap="10" class="w100">
         <el-text :size="12" :weight="800">{{ t("manage.marketing.builder.sections.seo") }}</el-text>
         <el-grid cols="repeat(auto-fit, minmax(220px, 1fr))" :gap="12" class="w100">
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.indexing") }}</el-text>
             <el-dropdown v-model="seoIndexing" :items="seoIndexingItems" :disabled="disabled" />
           </el-flex>
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.canonicalPath") }}</el-text>
             <el-text-field v-model="seoCanonicalPath" :actions="false" :disabled="disabled" dir="ltr" placeholder="/campaign/..." />
           </el-flex>
-          <el-flex rules="ccs" :gap="6">
+          <el-flex rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.endBehavior") }}</el-text>
             <el-dropdown v-model="seoEndBehavior" :items="seoEndBehaviorItems" :disabled="disabled" />
           </el-flex>
-          <el-flex v-if="seoEndBehavior === 'redirect'" rules="ccs" :gap="6">
+          <el-flex v-if="seoEndBehavior === 'redirect'" rules="css" :gap="6">
             <el-text :size="11" :weight="700">{{ t("manage.marketing.builder.fields.redirectPath") }}</el-text>
             <el-text-field v-model="seoRedirectPath" :actions="false" :disabled="disabled" dir="ltr" />
           </el-flex>
