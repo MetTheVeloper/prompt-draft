@@ -12,9 +12,7 @@ export default {
       loading: "Loading Campaigns…",
       empty: "No Campaigns found.",
       loadError: "Failed to load Campaigns.",
-      filters: {
-        all: "All",
-      },
+      filters: { all: "All" },
       statuses: {
         draft: "Draft",
         scheduled: "Scheduled",
@@ -92,10 +90,13 @@ export default {
           basics: "Campaign identity and schema contract.",
           headLocked: "Campaign head identity is read-only on this editor surface. Published slug durability remains protected by the backend contract.",
           objective: "Choose the primary growth or product objective for this Campaign.",
-          schedule: "Use ISO date/time values and a valid IANA timezone.",
+          schedule: "Choose Gregorian local date/time values and the Campaign timezone.",
+          scheduleLocalTime: "The selected date and time are interpreted in the Campaign timezone and stored as an absolute ISO timestamp.",
           eligibility: "Reward-bearing Campaigns must require authenticated participation.",
           rulesPreserved: "This Campaign already has advanced eligibility rules. They are preserved here and will be editable in the Rules builder slice.",
           experience: "Configure the public renderer, locales, localized content, and default indexability behavior.",
+          canonicalAutomatic: "Canonical is automatic for indexable Campaigns: {path}",
+          canonicalDisabled: "No canonical is emitted while this Campaign is noindex.",
         },
         fields: {
           schemaVersion: "Schema version",
@@ -115,8 +116,8 @@ export default {
           redirectPath: "Redirect path",
         },
         placeholders: {
-          timestamp: "2026-10-01T12:00:00+03:30",
-          optionalTimestamp: "Optional ISO date/time",
+          timestamp: "2026-10-01T12:00",
+          optionalTimestamp: "Optional date/time",
           timezone: "Asia/Tehran",
         },
         objectives: {
@@ -131,18 +132,24 @@ export default {
           monetization: "Monetization",
           other: "Other",
         },
+        objectiveDescriptions: {
+          acquisition: "Choose when the Campaign is meant to bring new users or audiences into Prompt Draft.",
+          activation: "Choose when the goal is to get new or inactive users to complete a first meaningful action.",
+          education: "Choose when the Campaign teaches users a feature, workflow, or product capability.",
+          engagement: "Choose when the goal is more participation, interaction, or repeated activity during the Campaign.",
+          retention: "Choose when the Campaign is designed to keep existing users active over time.",
+          reactivation: "Choose when the goal is to bring dormant or lapsed users back.",
+          referral: "Choose when participants are encouraged to invite or refer other users.",
+          conversion: "Choose when the Campaign should move users toward a specific completion or business action.",
+          monetization: "Choose when the primary goal is purchase, paid usage, or revenue generation.",
+          other: "Choose when none of the standard Campaign objectives accurately describes the goal.",
+        },
         renderers: {
           default: "Default Campaign page",
           legacy: "Existing definition renderer",
         },
-        locales: {
-          en: "English",
-          fa: "Persian",
-        },
-        indexing: {
-          noindex: "Noindex",
-          index: "Indexable",
-        },
+        locales: { en: "English", fa: "Persian" },
+        indexing: { noindex: "Noindex", index: "Indexable" },
         endBehavior: {
           archive: "Keep archived Campaign page",
           gone: "Return gone / unavailable",
@@ -159,10 +166,18 @@ export default {
         stale: "Validation shown on the server belongs to the saved draft. Save these form changes before validating again.",
         errors: "Errors",
         warnings: "Warnings",
+        modalTitle: "Campaign validation",
+        successTitle: "Ready to publish",
+        successDetail: "The saved Campaign draft passed publish validation.",
+        failureTitle: "Campaign needs attention",
+        failureDetail: "Resolve the validation errors before publishing this draft.",
       },
-      metrics: {
-        title: "Runtime summary",
+      operations: {
+        title: "Campaign operations",
+        hint: "Lifecycle actions affect the published Campaign runtime, not the editable draft.",
+        currentStatus: "Current status: {status}",
       },
+      metrics: { title: "Runtime summary" },
     },
   },
 };
