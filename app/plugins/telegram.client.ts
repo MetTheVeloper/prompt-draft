@@ -64,9 +64,12 @@ export default defineNuxtPlugin(() => {
       guide: '/guide',
     }
 
-    const target = routes[startParam]
+    const campaignMatch = /^campaign_([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(startParam)
+    const target = campaignMatch
+      ? `/campaign/${campaignMatch[1]}?source=telegram&medium=campaign_channel`
+      : routes[startParam]
 
-    if (target && router.currentRoute.value.path !== target) {
+    if (target && router.currentRoute.value.fullPath !== target) {
       await router.replace(target)
     }
   }
