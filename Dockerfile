@@ -3,7 +3,7 @@ FROM node:24-alpine AS builder
 WORKDIR /app
 
 # Bootstrap the pinned package manager before copying project manifests so
-# ordinary package.json/lockfile changes do not invalidate the Corepack layer.
+# ordinary source changes do not invalidate the Corepack layer.
 # Docker Desktop connections can intermittently expose unreachable IPv6 routes,
 # so prefer IPv4 DNS ordering and retry the one-time Corepack download.
 ARG PNPM_VERSION=11.6.0
@@ -16,14 +16,11 @@ RUN corepack enable && \
       sleep 5; \
     done
 
+# Dependency downloads are keyed only by the package manifests. As long as
+# package.json and pnpm-lock.yaml are unchanged, Docker can reuse this layer and
+# no registry access is needed for ordinary frontend source edits.
 COPY package.json pnpm-lock.yaml ./
-COPY . .
 
-# Keep the pnpm content-addressable store across Docker builds. The registry can
-# be slow or intermittently unavailable on the local development connection, so
-# use conservative concurrency, longer fetch timeouts and retries. The outer
-# retry loop reuses the same BuildKit cache and lets a partially completed
-# install continue instead of discarding already downloaded packages.
 RUN --mount=type=cache,id=prompt-draft-pnpm-store,target=/pnpm/store,sharing=locked \
     pnpm config set store-dir /pnpm/store && \
     pnpm config set network-concurrency 8 && \
@@ -32,11 +29,24 @@ RUN --mount=type=cache,id=prompt-draft-pnpm-store,target=/pnpm/store,sharing=loc
     pnpm config set fetch-retry-maxtimeout 120000 && \
     pnpm config set fetch-timeout 300000 && \
     for attempt in 1 2 3; do \
-      pnpm install --frozen-lockfile && break; \
+      NODE_OPTIONS=--dns-result-order=ipv4first pnpm fetch --frozen-lockfile && break; \
       if [ "$attempt" = "3" ]; then exit 1; fi; \
-      echo "pnpm install failed on attempt $attempt; retrying with cached downloads..."; \
+      echo "pnpm fetch failed on attempt $attempt; retrying with cached downloads..."; \
       sleep 5; \
     done
+
+# Copy application source only after the dependency-fetch layer. Source edits
+# invalidate the install/build layers below, but not the registry-download layer.
+COPY . .
+
+# The project postinstall runs `nuxt prepare`, which needs the application
+# source/config to exist. Install from the already-fetched store in strict
+# offline mode so normal frontend rebuilds cannot spend time re-downloading
+# packages. The shared BuildKit store also survives lockfile changes and lets
+# pnpm fetch only newly introduced package content.
+RUN --mount=type=cache,id=prompt-draft-pnpm-store,target=/pnpm/store,sharing=locked \
+    pnpm config set store-dir /pnpm/store && \
+    pnpm install --offline --frozen-lockfile
 
 ENV NODE_ENV=production
 # Nuxt's SSR bundle for this project exceeds Node's ~2 GB default heap while
